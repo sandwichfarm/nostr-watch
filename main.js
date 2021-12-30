@@ -11,7 +11,8 @@ const App = {
         'wss://rsslay.fiatjaf.com',
         'wss://nostr-relay.herokuapp.com',
         "wss://freedom-relay.herokuapp.com/ws",
-        "wss://nodestr-relay.dolu.dev/ws"
+        "wss://nodestr-relay.dolu.dev/ws",
+        "wss://nostrrr.bublina.eu.org"
       ],
       status: {}
     }

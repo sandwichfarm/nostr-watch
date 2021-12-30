@@ -7,7 +7,11 @@ const App = {
       relays: [
         'wss://nostr-pub.wellorder.net',
         'wss://relayer.fiatjaf.com',
-        'wss://nostr.rocks'
+        'wss://nostr.rocks',
+        'wss://rsslay.fiatjaf.com',
+        'wss://nostr-relay.herokuapp.com',
+        "wss://freedom-relay.herokuapp.com/ws",
+        "wss://nodestr-relay.dolu.dev/ws"
       ],
       status: {}
     }

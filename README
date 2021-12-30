@@ -1,0 +1,4 @@
+nostr-relay-registry
+--------------------
+
+a dynamic registry of nostr relays that tests for very basic tasks in real-time.

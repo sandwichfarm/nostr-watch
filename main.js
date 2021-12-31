@@ -98,7 +98,20 @@ const App = {
             )
           )
         ])
-      )
+      ),
+      h('tr', [
+        h('th', {style: {textAlign: 'right'}}, 'Your relay here:'),
+        h('th', {colSpan: 3}, [
+          h(
+            'a',
+            {
+              href: 'https://github.com/fiatjaf/nostr-relay-registry',
+              style: {color: 'black'}
+            },
+            '________________'
+          )
+        ])
+      ])
     ])
   }
 }

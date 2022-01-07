@@ -13,7 +13,8 @@ const App = {
         "wss://freedom-relay.herokuapp.com/ws",
         "wss://nodestr-relay.dolu.dev/ws",
         "wss://nostrrr.bublina.eu.org",
-        "wss://nostr-relay.freeberty.net"
+        "wss://nostr-relay.freeberty.net",
+        "wss://nostr.bitcoiner.social"
       ],
       status: {}
     }

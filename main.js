@@ -16,7 +16,8 @@ const App = {
         "wss://nostr-relay.freeberty.net",
         "wss://nostr.bitcoiner.social",
         "wss://nostr-relay.wlvs.space",
-        "wss://nostr.onsats.org"
+        "wss://nostr.onsats.org",
+        "wss://nostr-relay.untethr.me"
       ],
       status: {}
     }

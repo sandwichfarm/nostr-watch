@@ -62,7 +62,7 @@ const App = {
               clearTimeout(willUnsub)
             },
             filter: {
-              id: '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0'
+              ids: ['41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0']
             }
           },
           'nostr-registry'

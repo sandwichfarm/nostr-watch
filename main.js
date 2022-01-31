@@ -1,24 +1,32 @@
 import {createApp, h} from 'vue'
 import {relayConnect} from 'nostr-tools/relay'
 
+const isUsingTor = () => window.location.hostname.endsWith('.onion')
+
+const clearnetRelays = [
+  'wss://nostr-pub.wellorder.net',
+  'wss://relayer.fiatjaf.com',
+  'wss://nostr.rocks',
+  'wss://rsslay.fiatjaf.com',
+  'wss://nostr-relay.herokuapp.com',
+  "wss://freedom-relay.herokuapp.com/ws",
+  "wss://nodestr-relay.dolu.dev/ws",
+  "wss://nostrrr.bublina.eu.org",
+  "wss://nostr-relay.freeberty.net",
+  "wss://nostr.bitcoiner.social",
+  "wss://nostr-relay.wlvs.space",
+  "wss://nostr.onsats.org",
+  "wss://nostr-relay.untethr.me"
+]
+
+const torRelays = [
+  'ws://jgqaglhautb4k6e6i2g34jakxiemqp6z4wynlirltuukgkft2xuglmqd.onion'
+]
+
 const App = {
   data() {
     return {
-      relays: [
-        'wss://nostr-pub.wellorder.net',
-        'wss://relayer.fiatjaf.com',
-        'wss://nostr.rocks',
-        'wss://rsslay.fiatjaf.com',
-        'wss://nostr-relay.herokuapp.com',
-        "wss://freedom-relay.herokuapp.com/ws",
-        "wss://nodestr-relay.dolu.dev/ws",
-        "wss://nostrrr.bublina.eu.org",
-        "wss://nostr-relay.freeberty.net",
-        "wss://nostr.bitcoiner.social",
-        "wss://nostr-relay.wlvs.space",
-        "wss://nostr.onsats.org",
-        "wss://nostr-relay.untethr.me"
-      ],
+      relays: isUsingTor() ? torRelays : clearnetRelays,
       status: {}
     }
   },

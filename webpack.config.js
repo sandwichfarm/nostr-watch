@@ -18,10 +18,5 @@ module.exports = {
       stream: 'readable-stream/readable.js',
       crypto: false
     }
-  },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: 'index.html'
-    })
-  ],
+  }
 }

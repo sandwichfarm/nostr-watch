@@ -1,15 +1,17 @@
 {
   "dependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
     "buffer": "^6.0.3",
-    "nostr-tools": "^0.12.4",
+    "esbuild": "^0.14.21",
+    "esbuild-plugin-alias": "^0.2.1",
+    "events": "^3.3.0",
+    "nostr-tools": "^0.22.1",
     "readable-stream": "^3.6.0",
     "vue": "3"
   },
-  "devDependencies": {
-    "webpack": "^5.65.0",
-    "webpack-cli": "^4.9.1"
-  },
+  "devDependencies": {},
   "scripts": {
-    "build": "mkdir -p dist/ && cp index.html dist/ && webpack"
+    "build": "./build.js prod",
+    "watch": "ag -l --js | entr ./build.js"
   }
 }

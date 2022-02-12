@@ -82,7 +82,18 @@ const App = {
       h('tr', [h('th'), h('th', 'connect'), h('th', 'read'), h('th', 'write')]),
       ...this.relays.map(url =>
         h('tr', [
-          h('th', {style: {textAlign: 'right'}}, url),
+          h(
+            'th',
+            {
+              style: {
+                textAlign: 'right',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word',
+                wordBreak: 'break-all'
+              }
+            },
+            url
+          ),
           ...['didConnect', 'didQuery', 'didPublish'].map(attr =>
             h(
               'td',

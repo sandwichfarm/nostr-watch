@@ -2,7 +2,9 @@ FROM node:14-alpine as build
 
 WORKDIR /app
 
-COPY index.html main.js package.json build.js /app/
+COPY public/index.html /app/public/index.html
+
+COPY main.js package.json build.js /app/
 
 RUN yarn \
   && yarn run build

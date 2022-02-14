@@ -15,7 +15,8 @@ const App = {
         'wss://nostr-relay.wlvs.space',
         'wss://nostr.onsats.org',
         'wss://nostr-relay.untethr.me',
-        'ws://jgqaglhautb4k6e6i2g34jakxiemqp6z4wynlirltuukgkft2xuglmqd.onion'
+        'ws://jgqaglhautb4k6e6i2g34jakxiemqp6z4wynlirltuukgkft2xuglmqd.onion',
+        'wss://nostr-verified.wellorder.net'
       ],
       status: {}
     }

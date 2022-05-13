@@ -18,7 +18,8 @@ const App = {
         'ws://jgqaglhautb4k6e6i2g34jakxiemqp6z4wynlirltuukgkft2xuglmqd.onion',
         'wss://nostr-verified.wellorder.net',
         'wss://nostr.drss.io',
-        'wss://nostr.unknown.place'
+        'wss://nostr.unknown.place',
+        'wss://relay.damus.io'
       ],
       status: {}
     }

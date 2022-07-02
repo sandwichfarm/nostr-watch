@@ -19,7 +19,7 @@ const App = {
         'wss://nostr-verified.wellorder.net',
         'wss://nostr.drss.io',
         'wss://nostr.unknown.place',
-        'wss://relay.damus.io'
+        'wss://relay.damus.io',
         'wss://nostr.openchain.fr'
       ],
       status: {}

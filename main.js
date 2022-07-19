@@ -20,7 +20,8 @@ const App = {
         'wss://nostr.drss.io',
         'wss://nostr.unknown.place',
         'wss://relay.damus.io',
-        'wss://nostr.openchain.fr'
+        'wss://nostr.openchain.fr',
+        'wss://nostr.delo.software',
       ],
       status: {}
     }

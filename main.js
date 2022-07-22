@@ -22,6 +22,7 @@ const App = {
         'wss://relay.damus.io',
         'wss://nostr.openchain.fr',
         'wss://nostr.delo.software',
+        'wss://relay.nostr.info',
       ],
       status: {}
     }

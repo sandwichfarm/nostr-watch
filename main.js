@@ -23,7 +23,8 @@ const App = {
         'wss://nostr.openchain.fr',
         'wss://nostr.delo.software',
         'wss://relay.nostr.info',
-        'wss://relay.minds.com/nostr/v1/ws'
+        'wss://relay.minds.com/nostr/v1/ws',
+        'wss://nostr.zaprite.io'
       ],
       status: {}
     }

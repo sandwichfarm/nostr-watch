@@ -25,7 +25,8 @@ const App = {
         'wss://relay.nostr.info',
         'wss://relay.minds.com/nostr/v1/ws',
         'wss://nostr.zaprite.io',
-        'wss://nostr.oxtr.dev'
+        'wss://nostr.oxtr.dev',
+        'wss://nostr.ono.re'
       ],
       status: {}
     }

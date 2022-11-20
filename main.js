@@ -1,37 +1,12 @@
 import {createApp, h} from 'vue'
 import {relayConnect} from 'nostr-tools/relay'
+import yaml from 'js-yaml'
+import fs from 'fs'
 
 const App = {
   data() {
     return {
-      relays: [
-        'wss://nostr-pub.wellorder.net',
-        'wss://relayer.fiatjaf.com',
-        'wss://nostr.rocks',
-        'wss://rsslay.fiatjaf.com',
-        'wss://freedom-relay.herokuapp.com/ws',
-        'wss://nostr-relay.freeberty.net',
-        'wss://nostr.bitcoiner.social',
-        'wss://nostr-relay.wlvs.space',
-        'wss://nostr.onsats.org',
-        'wss://nostr-relay.untethr.me',
-        'wss://nostr.semisol.dev',
-        'wss://nostr-pub.semisol.dev',
-        'ws://jgqaglhautb4k6e6i2g34jakxiemqp6z4wynlirltuukgkft2xuglmqd.onion',
-        'wss://nostr-verified.wellorder.net',
-        'wss://nostr.drss.io',
-        'wss://nostr.unknown.place',
-        'wss://relay.damus.io',
-        'wss://nostr.openchain.fr',
-        'wss://nostr.delo.software',
-        'wss://relay.nostr.info',
-        'wss://relay.minds.com/nostr/v1/ws',
-        'wss://nostr.zaprite.io',
-        'wss://nostr.oxtr.dev',
-        'wss://nostr.ono.re',
-        'wss://relay.grunch.dev',
-        'wss://relay.cynsar.foundation'
-      ],
+      relays: yaml.load(fs.readFileSync('relays.yml', 'utf8')).relays,
       status: {}
     }
   },
@@ -92,59 +67,59 @@ const App = {
     })
   },
 
-  render() {
-    return h('table', {style: {fontSize: '28px'}}, [
-      h('tr', [h('th'), h('th', 'connect'), h('th', 'read'), h('th', 'write')]),
-      ...this.relays.map(url =>
-        h('tr', [
-          h(
-            'th',
-            {
-              style: {
-                textAlign: 'right',
-                whiteSpace: 'pre-wrap',
-                wordWrap: 'break-word',
-                wordBreak: 'break-all'
-              }
-            },
-            url
-          ),
-          ...['didConnect', 'didQuery', 'didPublish'].map(attr =>
-            h(
-              'td',
-              {
-                style: {
-                  fontSize: '50px',
-                  textAlign: 'center',
-                  padding: '5px 35px',
-                  color:
-                    this.status?.[url]?.[attr] === true
-                      ? 'green'
-                      : this.status?.[url]?.[attr] === false
-                      ? 'red'
-                      : 'silver'
-                }
-              },
-              '•'
-            )
-          )
-        ])
-      ),
-      h('tr', [
-        h('th', {style: {textAlign: 'right'}}, 'Your relay here:'),
-        h('th', {colSpan: 3}, [
-          h(
-            'a',
-            {
-              href: 'https://github.com/fiatjaf/nostr-relay-registry',
-              style: {color: 'black'}
-            },
-            '________________'
-          )
-        ])
-      ])
-    ])
-  }
+  // render() {
+  //   return h('table', {style: {fontSize: '28px'}}, [
+  //     h('tr', [h('th'), h('th', 'connect'), h('th', 'read'), h('th', 'write')]),
+  //     ...this.relays.map(url =>
+  //       h('tr', [
+  //         h(
+  //           'th',
+  //           {
+  //             style: {
+  //               textAlign: 'right',
+  //               whiteSpace: 'pre-wrap',
+  //               wordWrap: 'break-word',
+  //               wordBreak: 'break-all'
+  //             }
+  //           },
+  //           url
+  //         ),
+  //         ...['didConnect', 'didQuery', 'didPublish'].map(attr =>
+  //           h(
+  //             'td',
+  //             {
+  //               style: {
+  //                 fontSize: '50px',
+  //                 textAlign: 'center',
+  //                 padding: '5px 35px',
+  //                 color:
+  //                   this.status?.[url]?.[attr] === true
+  //                     ? 'green'
+  //                     : this.status?.[url]?.[attr] === false
+  //                     ? 'red'
+  //                     : 'silver'
+  //               }
+  //             },
+  //             '•'
+  //           )
+  //         )
+  //       ])
+  //     ),
+  //     h('tr', [
+  //       h('th', {style: {textAlign: 'right'}}, 'Your relay here:'),
+  //       h('th', {colSpan: 3}, [
+  //         h(
+  //           'a',
+  //           {
+  //             href: 'https://github.com/fiatjaf/nostr-relay-registry',
+  //             style: {color: 'black'}
+  //           },
+  //           '________________'
+  //         )
+  //       ])
+  //     ])
+  //   ])
+  // }
 }
 
 createApp(App).mount('#app')

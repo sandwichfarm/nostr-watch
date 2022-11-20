@@ -3,6 +3,7 @@
 const esbuild = require('esbuild')
 const alias = require('esbuild-plugin-alias')
 const nodeGlobals = require('@esbuild-plugins/node-globals-polyfill').default
+const vuePlugin = require("esbuild-vue");
 
 const prod = process.argv.indexOf('prod') !== -1
 
@@ -15,8 +16,10 @@ esbuild
       alias({
         stream: require.resolve('readable-stream')
       }),
-      nodeGlobals({buffer: true})
+      nodeGlobals({buffer: true}),
+      vuePlugin(),
     ],
+    minify: true,
     sourcemap: prod ? false : 'inline',
     define: {
       window: 'self',

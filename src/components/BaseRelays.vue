@@ -131,6 +131,7 @@
 <script>
 import { defineComponent} from 'vue'
 import { relayConnect } from 'nostr-tools/relay'
+import { Relay } from 'nostr'
 
 import { Row, Column } from 'vue-grid-responsive';
 import Popper from "vue3-popper";
@@ -256,36 +257,62 @@ export default defineComponent({
 
     testConnect (url) {
       console.log(url, "CONNECT", "TEST")
-      this.connections[url] = relayConnect(
-        url,
-        // () => {},
-        (message) => {
+      this.connections[url] = Relay(url)
+
+      this.connections[url]
+        .on('open', (e) => {
+          console.log('open', e)
+          this.send({
+            id: '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0',
+            pubkey:
+              '5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541',
+            created_at: 1640305962,
+            kind: 1,
+            tags: [],
+            content: 'running branle',
+            sig: '08e6303565e9282f32bed41eee4136f45418f366c0ec489ef4f90d13de1b3b9fb45e14c74f926441f8155236fb2f6fef5b48a5c52b19298a0585a2c06afe39ed'
+          })
+          this.subscribe(`read_test_${url}`, {limit: 1, kinds:[1]})
+        })
+        .on('error', (e) => {
+          console.log('error', e)
+        })
+        .on('close', (e) => {
+          console.log('close', e)
+        })
+        .on('message', (message) => {
           console.log(url, "CONNECT", "SUCCESS")
           const hash = this.sha1(message)
           let   message_obj = RELAY_MESSAGES[hash]
           let   code_obj = RELAY_CODES[message_obj.code]
 
-          console.log(hash)
-          console.dir(message_obj)
-          console.dir(code_obj)
-
           message_obj.type = code_obj.type
-
           this.status[url].messages[message] = message_obj
-
           this.adjustStatus(url, hash)
-          // console.log("RECIEVED MESSAGE!")
-          // console.dir(this.status[url].messages)
-        },
-        () => {
-          console.log(url, "CONNECT", "FAILURE")
-          this.status[url].didConnect = false
-          this.status[url].didRead = false
-          this.status[url].didWrite = false
-          this.setComplete(url)
-        }
-      )
-      this.status[url].didConnect = true
+        })
+
+
+      //   // () => {},
+      //   (message) => {
+      //
+      //
+      //     console.log(hash)
+      //     console.dir(message_obj)
+      //     console.dir(code_obj)
+      //
+      //
+      //     // console.log("RECIEVED MESSAGE!")
+      //     // console.dir(this.status[url].messages)
+      //   },
+      //   () => {
+      //     console.log(url, "CONNECT", "FAILURE")
+      //     this.status[url].didConnect = false
+      //     this.status[url].didRead = false
+      //     this.status[url].didWrite = false
+      //     this.setComplete(url)
+      //   }
+      // )
+      // this.status[url].didConnect = true
     },
 
     async testRead (url) {
@@ -294,6 +321,8 @@ export default defineComponent({
       console.log(url, "READ", "TEST")
       let start
       start = Date.now();
+
+
       let {unsub} = await this.connections[url].sub(
         {
           cb: () => {
@@ -324,16 +353,7 @@ export default defineComponent({
       console.log(url, "WRITE", "TEST")
       let start
       start = Date.now();
-      await this.connections[url].publish({
-        id: '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0',
-        pubkey:
-          '5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541',
-        created_at: 1640305962,
-        kind: 1,
-        tags: [],
-        content: 'running branle',
-        sig: '08e6303565e9282f32bed41eee4136f45418f366c0ec489ef4f90d13de1b3b9fb45e14c74f926441f8155236fb2f6fef5b48a5c52b19298a0585a2c06afe39ed'
-      })
+      await this.connections[url].publish()
       this.latency[url].write = Date.now() - start;
     },
 

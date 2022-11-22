@@ -14,6 +14,13 @@ module.exports = defineConfig({
         chunks: "all",
       },
     },
+    resolve: {
+      fallback: {
+        "fs": false,
+        "tls": false,
+        "net": false,
+      }
+    },
   },
   chainWebpack: config => {
     config.module

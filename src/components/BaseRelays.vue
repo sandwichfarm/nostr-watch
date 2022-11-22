@@ -129,9 +129,10 @@
 </template>
 
 <script>
+/* eslint-disable */
 import { defineComponent} from 'vue'
-import { relayConnect } from 'nostr-tools/relay'
-import { Relay } from 'nostr'
+// import { relayConnect } from 'nostr-tools/relay'
+import { RelayPool, Relay } from 'nostr'
 
 import { Row, Column } from 'vue-grid-responsive';
 import Popper from "vue3-popper";
@@ -162,6 +163,7 @@ export default defineComponent({
       nextPing: Date.now() + (60*1000),
       connections: {},
       latency: {},
+      pool: null,
     }
   },
 
@@ -248,48 +250,60 @@ export default defineComponent({
     },
 
     setComplete (url) {
+      let connect = typeof this.status?.[url]?.didConnect !== 'undefined',
+          read = typeof this.status?.[url]?.didRead !== 'undefined',
+          write = typeof this.status?.[url]?.didWrite !== 'undefined'
+
+      console.log(connect, read, write)
+
       this.setAggregateStatus(url)
-      this.status[url].complete = true
+
+      if(connect && read && write) {
+        this.status[url].complete = true
+        this.connections[url].close()
+      }
+
     },
     generateKey (url, key) {
       return `${url}_${key}`
     },
 
     testConnect (url) {
-      console.log(url, "CONNECT", "TEST")
-      this.connections[url] = Relay(url)
-
-      this.connections[url]
-        .on('open', (e) => {
-          console.log('open', e)
-          this.send({
-            id: '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0',
-            pubkey:
-              '5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541',
-            created_at: 1640305962,
-            kind: 1,
-            tags: [],
-            content: 'running branle',
-            sig: '08e6303565e9282f32bed41eee4136f45418f366c0ec489ef4f90d13de1b3b9fb45e14c74f926441f8155236fb2f6fef5b48a5c52b19298a0585a2c06afe39ed'
-          })
-          this.subscribe(`read_test_${url}`, {limit: 1, kinds:[1]})
-        })
-        .on('error', (e) => {
-          console.log('error', e)
-        })
-        .on('close', (e) => {
-          console.log('close', e)
-        })
-        .on('message', (message) => {
-          console.log(url, "CONNECT", "SUCCESS")
-          const hash = this.sha1(message)
-          let   message_obj = RELAY_MESSAGES[hash]
-          let   code_obj = RELAY_CODES[message_obj.code]
-
-          message_obj.type = code_obj.type
-          this.status[url].messages[message] = message_obj
-          this.adjustStatus(url, hash)
-        })
+      // console.log(url, "CONNECT", "TEST")
+      // const self = this
+      // this.connections[url] = Relay(url)
+      // console.log(this.connections[url])
+      // this.connections[url]
+      //   .on('open', (e) => {
+      //     console.log('open', e)
+      //     self.testWrite(url)
+      //     self.testRead(url)
+      //   })
+      //   .on('error', (e) => {
+      //     console.log('error', e)
+      //   })
+      //
+      //   .on('message', (message) => {
+      //     console.log('message', message)
+      //
+      //     // console.log(url, "CONNECT", "SUCCESS")
+      //     // const hash = this.sha1(message)
+      //     // let   message_obj = RELAY_MESSAGES[hash]
+      //     // let   code_obj = RELAY_CODES[message_obj.code]
+      //     //
+      //     // message_obj.type = code_obj.type
+      //     // this.status[url].messages[message] = message_obj
+      //     // this.adjustStatus(url, hash)
+      //   })
+      //   .on('event', (relay, sub_id, ev) => {
+      //     console.log('event', relay, sub_id, ev)
+      //   })
+      //   .on('notice', (message) => {
+      //     console.log('notice', message)
+      //   })
+      //   .on('close', (e) => {
+      //     console.log('close', e)
+      //   })
 
 
       //   // () => {},
@@ -316,79 +330,121 @@ export default defineComponent({
     },
 
     async testRead (url) {
-      console.dir(this.connections[url])
-      // console.log(this.connections[url]['get status']())
-      console.log(url, "READ", "TEST")
-      let start
-      start = Date.now();
-
-
-      let {unsub} = await this.connections[url].sub(
-        {
-          cb: () => {
-            console.log(url, "READ", "SUCCESS")
-            this.status[url].didRead = true
-            this.setComplete(url)
-            this.latency[url].read = Date.now() - start;
-            unsub()
-            clearTimeout(willUnsub)
-          },
-          filter: {
-            ids: [
-              '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0'
-            ]
-          }
-        },
-        'nostr-registry'
-      )
-      let willUnsub = setTimeout(() => {
-        unsub()
-        console.log(url, "READ", "FAILURE")
-        if(!this.status[url].maybe_public) this.status[url].didRead = false
-        this.setComplete(url)
-      }, 10000)
+      // console.log(url, "READ", "TEST")
+      this.connections[url].subscribe(this.getID(url, "read"), {limit: 1, kinds:[1]})
+      // console.dir(this.connections[url])
+      // // console.log(this.connections[url]['get status']())
+      // console.log(url, "READ", "TEST")
+      // let start
+      // start = Date.now();
+      //
+      //
+      // let {unsub} = await this.connections[url].sub(
+      //   {
+      //     cb: () => {
+      //       console.log(url, "READ", "SUCCESS")
+      //       this.status[url].didRead = true
+      //       this.setComplete(url)
+      //       this.latency[url].read = Date.now() - start;
+      //       unsub()
+      //       clearTimeout(willUnsub)
+      //     },
+      //     filter: {
+      //       ids: [
+      //         '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0'
+      //       ]
+      //     }
+      //   },
+      //   'nostr-registry'
+      // )
+      // let willUnsub = setTimeout(() => {
+      //   unsub()
+      //   console.log(url, "READ", "FAILURE")
+      //   if(!this.status[url].maybe_public) this.status[url].didRead = false
+      //   this.setComplete(url)
+      // }, 10000)
     },
 
     async testWrite (url) {
-      console.log(url, "WRITE", "TEST")
-      let start
-      start = Date.now();
-      await this.connections[url].publish()
-      this.latency[url].write = Date.now() - start;
+      this.connections[url].send({
+        id: '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0',
+        pubkey:
+          '5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541',
+        created_at: 1640305962,
+        kind: 1,
+        tags: [],
+        content: 'running branle',
+        sig: '08e6303565e9282f32bed41eee4136f45418f366c0ec489ef4f90d13de1b3b9fb45e14c74f926441f8155236fb2f6fef5b48a5c52b19298a0585a2c06afe39ed'
+      })
+      this.connections[url].subscribe(this.getID(url, "write"), {limit: 1, kinds:[1], ids:['41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0']})
+    },
+
+    getID(url, keyword) {
+      return `${keyword}_${url}`
     },
 
     async testRelay (url) {
       this.lastPing = Date.now()
       this.latency[url] = {}
       this.status[url].messages = {}
-      try {
 
-        //Test Connect
-        this.testConnect(url)
+      let relay
 
-        //Test Write
-        try {
-          await this.testWrite(url)
-          console.log(url, "WRITE", "SUCCESS")
-          this.status[url].didWrite = true
-        } catch (err) {
-          console.log(url, "WRITE", "FAILURE")
-          this.status[url].didWrite = false
+      relay = Relay(url)
+      relay.on('open', e => {
+          console.log(url, "OPEN")
+          this.status[url].didConnect = true
+          this.testRead(url)
+          this.testWrite(url)
+          this.setComplete(url)
+        })
+      relay.on('eose', e => {
+      	// relay.close()
+      })
+      relay.on('ok', () => {
+        // console.log('ok')
+        // console.dir(arguments)
+      })
+      relay.on('error', (e, b) => {
+        this.status[url].didConnect = false
+      })
+      relay.on('close', (e) => {
+        // console.log('close', e)
+        // console.dir(arguments)
+      })
+
+      relay.on('other', (e) => {
+        console.log('OTHER!!!!', e)
+      })
+
+      relay.on('event', (sub_id, ev) => {
+        // console.log('event', sub_id, ev)
+        if(sub_id == this.getID(url, "read")) {
+          // console.log("SUCCESS:", "READ")
+          this.status[url].didRead = true
           this.setComplete(url)
         }
+        if(sub_id == this.getID(url, "write")) {
+          // console.log("SUCCESS:", "WRITE")
+          this.status[url].didWrite = true
+          this.setComplete(url)
+        }
+        // relay.unsubscribe(sub_id)
+      })
 
-        //Test Read
-        this.testRead(url)
+      relay.on('message', (message) => {
+        // console.log('message', message)
+        // console.dir(arguments)
+      })
 
-      } catch (err) {
-        this.status[url].didConnect = false
-        this.setComplete(url)
-      }
+      relay.on('notice', (message) => {
+        // console.log('notice', message)
+        // console.dir(arguments)
+      })
 
-      if(this.status[url].didRead){
-        this.setLatency(url)
-      }
+      this.connections[url] = relay
 
+      this.setLatency(url)
       await this.getIP(url)
       await this.setGeo(url)
       this.setFlag(url)
@@ -403,7 +459,7 @@ export default defineComponent({
     },
 
     testRelayLatency(){
-      console.log('testing latency')
+      // console.log('testing latency')
       this.relays.forEach(url => {
         // this.testWrite(url, true)
         this.testRead(url, true)
@@ -418,7 +474,7 @@ export default defineComponent({
         .then(response => response.json())
         .then((data) => { ip = data.Answer ? data.Answer[data.Answer.length-1].data : false });
       this.status[url].ip = ip
-      console.log('IP:', ip)
+      // console.log('IP:', ip)
     },
 
     async setGeo(url){
@@ -426,7 +482,7 @@ export default defineComponent({
       await fetch(`http://ip-api.com/json/${this.status[url].ip}`, { headers: { 'accept': 'application/dns-json' } })
         .then(response => response.json())
         .then((data) => { this.status[url].geo = data });
-      console.dir(this.status[url].geo)
+      // console.dir(this.status[url].geo)
     },
 
     setFlag (url) {
@@ -466,15 +522,15 @@ export default defineComponent({
       await this.testRelay(url)
     })
 
-    // eslint-disable-next-line
-    let latencyTimeout = setTimeout(() => { this.testRelayLatency() }, 10000)
-
-    // eslint-disable-next-line
-    let latencyIntVal = setInterval(() => { this.testRelayLatency() }, refreshMillis)
-    // eslint-disable-next-line
-    let counterIntVal = setInterval(() => {
-      this.nextPing = Math.round((this.lastPing + refreshMillis - Date.now())/1000)
-    }, 1000)
+    // // eslint-disable-next-line
+    // let latencyTimeout = setTimeout(() => { this.testRelayLatency() }, 10000)
+    //
+    // // eslint-disable-next-line
+    // let latencyIntVal = setInterval(() => { this.testRelayLatency() }, refreshMillis)
+    // // eslint-disable-next-line
+    // let counterIntVal = setInterval(() => {
+    //   this.nextPing = Math.round((this.lastPing + refreshMillis - Date.now())/1000)
+    // }, 1000)
 
   },
 

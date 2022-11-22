@@ -1,20 +1,69 @@
 {
+  "name": "nostr-relay-registry",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve --host localhost",
+    "build": "vue-cli-service build",
+    "watch": "vue-cli-service build --watch",
+    "lint": "vue-cli-service lint"
+  },
   "dependencies": {
-    "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
-    "buffer": "^6.0.3",
-    "esbuild": "^0.14.21",
-    "esbuild-plugin-alias": "^0.2.1",
-    "events": "^3.3.0",
-    "nostr-tools": "^0.22.1",
-    "readable-stream": "^3.6.0",
-    "vue": "3"
+    "core-js": "^3.8.3",
+    "country-code-emoji": "2.3.0",
+    "doh-resolver": "1.2.8",
+    "geoip-lite": "1.4.6",
+    "global": "4.4.0",
+    "ip-fetch": "1.0.10",
+    "js-yaml": "4.1.0",
+    "json-loader": "^0.5.7",
+    "json-server": "0.17.1",
+    "leaflet": "1.9.3",
+    "node-emoji": "1.11.0",
+    "node-polyfill-webpack-plugin": "2.0.1",
+    "nostr": "https://github.com/dskvr/nostr-js",
+    "nostr-tools": "0.24.1",
+    "onion-regex": "2.0.8",
+    "requests": "0.3.0",
+    "socks-proxy-agent": "7.0.0",
+    "stream-browserify": "3.0.0",
+    "vue": "^3.2.13",
+    "vue-grid-responsive": "1.3.0",
+    "vue-nav-tabs": "0.5.7",
+    "vue-simple-maps": "1.1.3",
+    "vue3-popper": "1.5.0",
+    "yaml-loader": "^0.6.0",
+    "yaml2json": "1.0.2"
   },
   "devDependencies": {
-    "esbuild-vue": "1.2.2",
-    "json-server": "0.17.1"
+    "@babel/core": "^7.12.16",
+    "@babel/eslint-parser": "^7.12.16",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^8.0.3",
+    "vue-cli-plugin-yaml-loader": "~1.0.0",
+    "webpack-cli": "5.0.0"
   },
-  "scripts": {
-    "build": "./build.js prod",
-    "watch": "ag -l --js | entr ./build.js"
-  }
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "@babel/eslint-parser"
+    },
+    "rules": {}
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
 }

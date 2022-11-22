@@ -1,7 +1,4 @@
 relays:
-  - 'wss://nostr-pub.wellorder.net'
-  - 'wss://relayer.fiatjaf.com'
-  - 'wss://nostr.rocks'
   - 'wss://rsslay.fiatjaf.com'
   - 'wss://freedom-relay.herokuapp.com/ws'
   - 'wss://nostr-relay.freeberty.net'
@@ -11,7 +8,6 @@ relays:
   - 'wss://nostr-relay.untethr.me'
   - 'wss://nostr.semisol.dev'
   - 'wss://nostr-pub.semisol.dev'
-  - 'ws://jgqaglhautb4k6e6i2g34jakxiemqp6z4wynlirltuukgkft2xuglmqd.onion'
   - 'wss://nostr-verified.wellorder.net'
   - 'wss://nostr.drss.io'
   - 'wss://nostr.unknown.place'
@@ -25,3 +21,7 @@ relays:
   - 'wss://nostr.ono.re'
   - 'wss://relay.grunch.dev'
   - 'wss://relay.cynsar.foundation'
+  - 'wss://nostr-pub.wellorder.net'
+  - 'wss://relayer.fiatjaf.com'
+  - 'wss://nostr.rocks'
+  - 'wss://nostr.sandwich.farm'

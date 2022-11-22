@@ -1,23 +1,24 @@
 # nostr-relay-registry
 
-A dynamic registry of nostr relays that tests for very basic tasks in real-time.
-
-## Docker
-
-Build the docker image:
-
-```bash
-docker build -t nostr-relay-registry .
+## Project setup
+```
+yarn install
 ```
 
-Run the container interactively:
-
-```bash
-docker run --rm -it --name=nostr-relay-registry -p 8080:80 nostr-relay-registry
+### Compiles and hot-reloads for development
+```
+yarn serve
 ```
 
-Run container in the background:
-
-```bash
-docker run -d --restart unless-stopped --name nostr-relay-registry -p 8080:80 nostr-relay-registry
+### Compiles and minifies for production
 ```
+yarn build
+```
+
+### Lints and fixes files
+```
+yarn lint
+```
+
+### Customize configuration
+See [Configuration Reference](https://cli.vuejs.org/config/).

@@ -254,7 +254,7 @@ export default defineComponent({
           read = typeof this.status?.[url]?.didRead !== 'undefined',
           write = typeof this.status?.[url]?.didWrite !== 'undefined'
 
-      console.log(connect, read, write)
+      // console.log(connect, read, write)
 
       this.setAggregateStatus(url)
 
@@ -366,7 +366,7 @@ export default defineComponent({
     },
 
     async testWrite (url) {
-      this.connections[url].send({
+      const message = {
         id: '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0',
         pubkey:
           '5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541',
@@ -375,7 +375,8 @@ export default defineComponent({
         tags: [],
         content: 'running branle',
         sig: '08e6303565e9282f32bed41eee4136f45418f366c0ec489ef4f90d13de1b3b9fb45e14c74f926441f8155236fb2f6fef5b48a5c52b19298a0585a2c06afe39ed'
-      })
+      }
+      this.connections[url].send(["EVENT", message])
       this.connections[url].subscribe(this.getID(url, "write"), {limit: 1, kinds:[1], ids:['41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0']})
     },
 
@@ -392,7 +393,7 @@ export default defineComponent({
 
       relay = Relay(url)
       relay.on('open', e => {
-          console.log(url, "OPEN")
+          // console.log(url, "OPEN")
           this.status[url].didConnect = true
           this.testRead(url)
           this.testWrite(url)
@@ -406,6 +407,7 @@ export default defineComponent({
         // console.dir(arguments)
       })
       relay.on('error', (e, b) => {
+        // console.log(b, e)
         this.status[url].didConnect = false
       })
       relay.on('close', (e) => {
@@ -414,7 +416,7 @@ export default defineComponent({
       })
 
       relay.on('other', (e) => {
-        console.log('OTHER!!!!', e)
+        // console.log('OTHER!!!!', e)
       })
 
       relay.on('event', (sub_id, ev) => {
@@ -438,15 +440,15 @@ export default defineComponent({
       })
 
       relay.on('notice', (message) => {
-        // console.log('notice', message)
+        console.log('notice', message)
         // console.dir(arguments)
       })
 
       this.connections[url] = relay
 
       this.setLatency(url)
-      await this.getIP(url)
-      await this.setGeo(url)
+      // await this.getIP(url)
+      // await this.setGeo(url)
       this.setFlag(url)
     },
 

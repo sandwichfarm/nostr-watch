@@ -1,7 +1,7 @@
 messages:
   11cb5ca38038c3eb41bd014814f6e2e18da18ff1:
     text: "we don't accept any events"
-    code: "READ_ONLY"
+    code: "CONNECT_ONLY"
 
   1003d4ec1466033d0dcc4a1babc6c5f409784593:
     text: "NIP-05 verification needed to publish events"
@@ -24,18 +24,21 @@ messages:
     text: 'failed to save event from 5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541'
     code: 'BLOCKS_WRITE_STATUS_CHECK'
 codes:
+  CONNECT_ONLY:
+    type: "very_restricted"
+    description: "This relay can be connected to, but has zero read/write access"
   READ_ONLY:
     type: "write_restricted"
     description: "This relay only access read queries"
   WRITE_ONLY:
-    type: "write_restricted"
+    type: "read_restricted"
     description: "This relay only accepts the publishing of events"
   NIP_05_REQUIRED:
     type: "write_restricted"
     description: "This relay only accepts the publishing of events from NIP-05 verified public keys"
   WHITELIST_REQUIRED:
     type: "write_restricted"
-    description: "This relay onoly accepts the publishing of events from whitelisted public keys"
+    description: "This relay only accepts the publishing of events from whitelisted public keys"
   BLOCKS_WRITE_STATUS_CHECK:
     type: "maybe_public"
     description: "This relay blocks the events that enable us to test writing to the relay, so there's some uncertainty"

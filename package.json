@@ -25,6 +25,8 @@
     "nostr-tools": "0.24.1",
     "onion-regex": "2.0.8",
     "requests": "0.3.0",
+    "sass": "1.56.1",
+    "sass-loader": "13.2.0",
     "socks-proxy-agent": "7.0.0",
     "stream-browserify": "3.0.0",
     "vue": "^3.2.13",

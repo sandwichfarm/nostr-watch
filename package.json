@@ -21,7 +21,7 @@
     "leaflet": "1.9.3",
     "node-emoji": "1.11.0",
     "node-polyfill-webpack-plugin": "2.0.1",
-    "nostr": "0.2.4",
+    "nostr": "0.2.5",
     "nostr-tools": "0.24.1",
     "onion-regex": "2.0.8",
     "requests": "0.3.0",

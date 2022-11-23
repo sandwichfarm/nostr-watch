@@ -142,6 +142,8 @@ import emoji from 'node-emoji'
 import { relays } from '../../relays.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
+import { Inspector, Observation } from '../../../nostr-relay-inspector'
+
 import crypto from "crypto"
 
 const refreshMillis = 3*60*1000
@@ -169,22 +171,25 @@ export default defineComponent({
   },
 
   mounted() {
-    this.relays.forEach(async url => {
-      this.status[url] = {}
-      await this.testRelay(url)
+    this.relays.forEach(async relay => {
+      this.status[relay] = {}
+      const inspect = new Inspector(relay)
+      console.dir(inspect)
+      inspect.run()
+      // await this.testRelay(url)
     })
 
-    let latencyIntVal
-    let counterIntVal
-
-    // eslint-disable-next-line
-    let latencyTimeout = setTimeout(() => {
-      this.testRelayLatency()
-      // eslint-disable-next-line
-      latencyIntVal = setInterval(() => { this.testRelayLatency() }, refreshMillis)
-      // eslint-disable-next-line
-      latencyIntVal = setInterval(() => { this.nextPing = Math.round((this.lastPing + refreshMillis - Date.now())/1000)}, 1000)
-    }, 10000)
+    // let latencyIntVal
+    // let counterIntVal
+    //
+    // // eslint-disable-next-line
+    // let latencyTimeout = setTimeout(() => {
+    //   this.testRelayLatency()
+    //   // eslint-disable-next-line
+    //   latencyIntVal = setInterval(() => { this.testRelayLatency() }, refreshMillis)
+    //   // eslint-disable-next-line
+    //   latencyIntVal = setInterval(() => { this.nextPing = Math.round((this.lastPing + refreshMillis - Date.now())/1000)}, 1000)
+    // }, 10000)
   },
 
   methods: {

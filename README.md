@@ -1,4 +1,8 @@
-# nostr-relay-registry
+# nostr-watch
+
+A client-side nostr network status built with Vue3, jb55/nostr-js, dskvr/nostr-relay-inspector and heavily inspired by fiatfiaj/nostr-relay-registry. 
+
+This is a work in progress.
 
 ## Project setup
 ```

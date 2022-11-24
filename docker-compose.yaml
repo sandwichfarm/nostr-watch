@@ -6,4 +6,4 @@ services:
        logging:
             options:
                 max-size: 1g
-       image: nrr
+       image: nostr-relay-status

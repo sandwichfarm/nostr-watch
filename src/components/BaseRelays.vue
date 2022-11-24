@@ -1,16 +1,68 @@
 <template>
-  <div>
-    <div class="text-h5 text-bold q-py-md q-px-sm full-width flex row justify-start">
-      <h1>Nostr Relay Status <sup>alpha</sup></h1>
-      <span>Next ping in {{ nextPing }} seconds</span> |
-      <span v-if="relays.filter((url) => status[url] && !status[url].complete).length > 0">Processing {{relays.filter((url) => status[url].complete).length}}/{{relays.length}}</span>
-    </div>
+  <div id="wrapper">
+    <!-- <div class="text-h5 text-bold q-py-md q-px-sm full-width flex row justify-start">
+       |
+      <span></span> -->
+
+    <!-- </div> -->
+    <row container :gutter="12">
+      <column :xs="12" :md="6" :lg="6" class="title-card">
+        <h1>nostr.watch<sup>alpha</sup></h1>
+        <!-- <span>Next ping in {{ nextPing }} seconds</span> -->
+      </column>
+      <column :xs="12" :md="6" :lg="6" class="title-info-card gradient">
+        <span v-if="(relaysTotal()-relaysConnected()>0)">Processing {{ relaysCompleted() }}/{{ relaysTotal() }}</span>
+      </column>
+    </row>
 
     <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="6">
-        <div>
-          <h2><span class="indicator badge readwrite">{{ query('public').length }}</span>Public</h2>
+      <column :xs="12" :md="12" :lg="12">
+        <div class="block">
+
           <table class="online public"  v-if="query('public').length > 0">
+            <tr><td colspan="11"><h2><span class="indicator badge readwrite">{{ query('public').length }}</span>Public</h2></td></tr>
+            <tr>
+              <th></th>
+              <th></th>
+              <th><span class="verified-shape-wrapper"><span class="shape verified"></span></span></th>
+              <th>🌎</th>
+              <th>⌛️</th>
+              <th>🔌</th>
+              <th>👁️‍🗨️</th>
+              <th>ℹ️</th>
+              <th>✏️</th>
+              <th>NIP-15</th>
+              <th>NIP-20</th>
+              <!-- <th>FILTER: LIMIT</th> -->
+            </tr>
+            <tr v-for="relay in query('public')" :key="{relay}" :class="getLoadingClass(relay)" class="online public">
+              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
+              <td class="left-align relay-url" @click="copy(relay)">{{ relay }}</td>
+              <td></td>
+              <td>{{result[relay].flag}}</td>
+              <td><span>{{ result[relay].latency.final }}<span v-if="result[relay].check.latency">ms</span></span></td>
+              <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
+              <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
+              <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
+              <td>
+                <ul v-if="Object.keys(messages[relay].notices).length">
+                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in messages[relay].notices" :key="generateKey(relay, key)">✉️</li>
+                </ul>
+              </td>
+
+
+              <td>{{ setCheck(connections[relay].nip(15)) }}</td>
+              <td>{{ setCheck(connections[relay].nip(20)) }}</td>
+              <!-- <td>{{ setCaution(result[relay].didSubscribeFilterLimit) }}</td> -->
+            </tr>
+          <!-- </table>
+        </div> -->
+      <!-- </column>
+
+      <column :xs="12" :md="12" :lg="6"> -->
+        <!-- <div class="block"> -->
+          <tr><td colspan="11"><h2><span class="indicator badge write-only">{{ query('restricted').length }}</span>Restricted</h2></td></tr>
+          <!-- <table class="online"> -->
             <tr>
               <th></th>
               <th></th>
@@ -25,98 +77,74 @@
               <th>⌛️</th>
               <th>NIP-15</th>
               <th>NIP-20</th>
-              <th>FILTER: LIMIT</th>
             </tr>
-            <tr v-for="relay in query('public')" :key="{relay}" :class="getLoadingClass(relay)">
-              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateStatusClass(relay)"></span></td>
+            <tr v-for="relay in query('restricted')" :key="{relay}" :class="getLoadingClass(relay)" class="online">
+              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"><span></span><span></span></span></td>
               <td class="left-align relay-url" @click="copy(relay)">{{ relay }}</td>
               <td>
-                <ul v-if="Object.keys(status[relay].notes).length">
-                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in status[relay].notes" :key="generateKey(relay, key)">✉️</li>
+                <ul v-if="Object.keys(messages[relay].notices).length">
+                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in messages[relay].notices" :key="generateKey(relay, key)">✉️</li>
                 </ul>
               </td>
-              <td :key="generateKey(relay, 'didConnect')"><span :class="getStatusClass(relay, 'didConnect')"></span></td>
-              <td :key="generateKey(relay, 'didRead')"><span :class="getStatusClass(relay, 'didRead')"></span></td>
-              <td :key="generateKey(relay, 'didWrite')"><span :class="getStatusClass(relay, 'didWrite')"></span></td>
+              <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
+              <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
+              <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
               <td></td>
-              <td>{{status[relay].flag}}</td>
-              <td><span v-if="status[relay].didConnect">{{ status[relay].latency }}<span v-if="status[relay].latency">ms</span></span></td>
-              <td>{{ setCheck(status[relay].didNip15) }}</td>
-              <td>{{ setCheck(status[relay].didNip20) }}</td>
-              <td>{{ setCaution(status[relay].didSubscribeFilterLimit) }}</td>
+              <td>{{result[relay].flag}}</td>
+              <td><span>{{ result[relay].latency.final }}<span v-if="result[relay].check.latency">ms</span></span></td>
+              <td>{{ setCheck(connections[relay].nip(15)) }}</td>
+              <td>{{ setCheck(connections[relay].nip(20)) }}</td>
             </tr>
-          </table>
-        </div>
-      </column>
-
-      <column :xs="12" :md="12" :lg="6">
-        <div>
-          <h2><span class="indicator badge write-only">{{ query('restricted').length }}</span>Restricted</h2>
-          <table class="online">
+          <!-- </table> -->
+        <!-- </div> -->
+        <!-- <div class="block"> -->
+          <tr> <td colspan="11"><h2><span class="indicator badge offline">{{ query('offline').length }}</span>Offline</h2></td></tr>
+          <!-- <table v-if="query('offline').length > 0"> -->
             <tr>
               <th></th>
               <th></th>
+              <th>ℹ️</th>
               <th>🔌</th>
               <th>👁️‍🗨️</th>
               <th>✏️</th>
-              <th>🌎</th>
-              <th>⌛️</th>
-              <th>ℹ️</th>
-            </tr>
-            <tr v-for="relay in query('restricted')" :key="{relay}" :class="getLoadingClass(relay)">
-              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateStatusClass(relay)"><span></span><span></span></span></td>
-              <td class="left-align relay-url"  @click="copy(relay)">{{ relay }}</td>
-              <td :key="generateKey(relay, 'didConnect')"><span :class="getStatusClass(relay, 'didConnect')"></span></td>
-              <td :key="generateKey(relay, 'didRead')"><span :class="getStatusClass(relay, 'didRead')"></span></td>
-              <td :key="generateKey(relay, 'didWrite')"><span :class="getStatusClass(relay, 'didWrite')"></span></td>
-              <td>{{status[relay].flag}}</td>
-              <td><span v-if="status[relay].didConnect">{{ status[relay].latency }}<span v-if="status[relay].latency">ms</span></span></td>
-              <td>
-                <ul v-if="Object.keys(status[relay].notes).length">
-                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in status[relay].notes" :key="generateKey(relay, key)">✉️</li>
-                </ul>
-              </td>
-            </tr>
-          </table>
 
-          <h2><span class="indicator badge offline">{{ query('offline').length }}</span>Offline</h2>
-          <table v-if="query('offline').length > 0">
-            <tr>
               <th></th>
               <th></th>
-              <th>🔌</th>
-              <th>👁️‍🗨️</th>
-              <th>✏️</th>
-              <th>ℹ️</th>
+              <th></th>
+              <th></th>
+              <th></th>
             </tr>
             <tr v-for="relay in query('offline')" :key="{relay}" :class="getLoadingClass(relay)">
-              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateStatusClass(relay)"></span></td>
+              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
               <td class="left-align relay-url">{{ relay }}</td>
-              <td :key="generateKey(relay, 'didConnect')"><span :class="getStatusClass(relay, 'didConnect')"></span></td>
-              <td :key="generateKey(relay, 'didRead')"><span :class="getStatusClass(relay, 'didRead')"></span></td>
-              <td :key="generateKey(relay, 'didWrite')"><span :class="getStatusClass(relay, 'didWrite')"></span></td>
               <td>
-                <ul v-if="Object.keys(status[relay].notes).length">
-                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in status[relay].notes" :key="generateKey(relay, key)">✉️</li>
+                <ul v-if="Object.keys(messages[relay].notices).length">
+                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in messages[relay].notices" :key="generateKey(relay, key)">✉️</li>
                 </ul>
               </td>
+              <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
+              <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
+              <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
             </tr>
           </table>
         </div>
       </column>
     </row>
 
+
+
     <!-- <h2>Processing</h2>
-    <table v-if="relays.filter((url) => status[url] && !status[url].complete).length > 0">
+    <table v-if="relays.filter((relay) => result[relay] && !result[relay].state=='complete').length > 0">
       <tr>
         <th></th>
       </tr>
-      <tr v-for="relay in relays.filter((url) => !status[url].complete)" :key="{relay}" :class="getLoadingClass(relay)">
+      <tr v-for="relay in relays.filter((url) => !result[url].state=='complete')" :key="{relay}" :class="getLoadingClass(relay)">
         <td>{{ relay }}</td>
       </tr>
     </table>
     <a href="./relays/">JSON API</a> -->
-    <a class="credit" href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>
+
+    <span class="credit"><a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>, built with <a href="">nostr-js</a> and <a href="">nostr-relay-inspector</a>, inspired by <a href="">nostr-relay-registry</a></span>
 
   </div>
 </template>
@@ -159,163 +187,71 @@ export default defineComponent({
   data() {
     return {
       relays,
-      status: {},
+      result: {},
       lastPing: Date.now(),
       nextPing: Date.now() + (60*1000),
       connections: {},
-      latency: {},
       pool: null,
       timeouts: {},
       nips: {},
+      messages: {},
+      count: 0,
     }
   },
 
-  mounted() {
-    this.relays.forEach(async relay => {
-      this.status[relay] = {}
-      const inspect = new Inspector(relay)
-      console.dir(inspect)
-      inspect.run()
-      // await this.testRelay(url)
-    })
-
-    // let latencyIntVal
-    // let counterIntVal
-    //
-    // // eslint-disable-next-line
-    // let latencyTimeout = setTimeout(() => {
-    //   this.testRelayLatency()
-    //   // eslint-disable-next-line
-    //   latencyIntVal = setInterval(() => { this.testRelayLatency() }, refreshMillis)
-    //   // eslint-disable-next-line
-    //   latencyIntVal = setInterval(() => { this.nextPing = Math.round((this.lastPing + refreshMillis - Date.now())/1000)}, 1000)
+  async mounted() {
+    // //console.log(this.relays.filter((relay) => this.result?.[relay] && !this.result?.[relay].state=='complete').length)
+    this.relays.forEach(relay => { this.check(relay) })
+    // setTimeout(() => {
+    //   this.relays.forEach(relay => { this.checkLatency(relay) })
     // }, 10000)
+
   },
+
+  computed: {},
 
   methods: {
 
-    hardFail(url) {
-      if(!this.status[url]) this.status[url] = {}
-      this.status[url].didConnect = false
-      this.status[url].didRead = false
-      this.status[url].didWrite = false
-      this.tryComplete(url)
-      if(this.connections[url].close) this.connections[url].close()
+    check(relay){
+
+      //console.log(relay, 'checking', this.count++)
+      let inspect = new Inspector(relay, {
+          checkLatency: true,
+          run: true,
+          setIP: true,
+          setGeo: true
+        })
+        .on('open', (e, result) => {
+          this.result[relay] = result
+        })
+        .on('complete', (instance) => {
+          this.result[relay] = instance.result
+          this.messages[relay] = instance.inbox
+          this.setFlag(relay)
+          this.setAggregateResult(relay)
+          //console.log('result state', instance.result)
+          //console.log('messages', this.messages[relay].notices.length ? this.messages[relay].notices : null)
+          // this.adjustResult(relay)
+          // //console.log(this.connections[relay])
+
+        })
+        .on('close', () => {
+          // delete this.connections[relay]
+        })
+      //
+      // setTimeout( () => {
+      //   inspect
+      //     .reset()
+      //   inspect
+      //     .run()
+      //   //console.log('reset and run')
+      // }, 25000)
+      this.connections[relay] = inspect
     },
 
-    async testRelay (url) {
-      this.lastPing = Date.now()
-      this.latency[url] = {}
-      this.timeouts[url] = {}
-      this.status[url].notes = {}
-      this.status[url].state = 'pending'
-      this.nips[url] = new Array(99).fill(null);
-      this.status[url].readEventCount = 0
-      this.status[url].writeEventCount = 0
-      this.status[url].latencyEventCount = 0
-      this.status[url].didNip15 = false
-      this.status[url].didNip20 = false
-
-      this.timeouts[url].didConnect = setTimeout(() => {
-        console.log(url, "TIMEOUT")
-        if(Object.keys(this.status[url].notes).length == 0) this.status[url].notes['Reason: Timeout'] = {}
-        this.hardFail(url)
-      }, 20000)
-
-      let relay = Relay(url, {reconnect: false})
-      relay.on('open', e => {
-        console.log(url, "OPEN")
-        clearTimeout(this.timeouts[url].didConnect)
-        this.status[url].didConnect = true
-        this.testRead(url, "testRead")
-        this.testWrite(url, "testWrite")
-        this.tryComplete(url)
-        console.log(url, "did connect", this.status[url].didConnect)
-      })
-      relay.on('eose', e => {
-        //console.log('EOSE', e)
-        // relay.close()
-        this.tryComplete(url)
-        this.status[url].didNip15 = true
-      })
-      relay.on('error', (e) => {
-        //console.log('ERROR', e)
-        clearTimeout(this.timeouts[url].didConnect)
-        this.status[url].notes['Reason: Error'] = {}
-        this.hardFail(url)
-      })
-
-      relay.on('ok', () => {
-        this.status[url].didNip20 = true
-      })
-
-      relay.on('close', (e) => {
-        console.log('close', e)
-        // console.dir(arguments)
-      })
-
-      relay.on('other', (e) => {
-        // console.log('OTHER!!!!', e)
-      })
-
-      relay.on('event', (sub_id, ev) => {
-        // console.log('event', sub_id, ev)
-        if(sub_id == this.getID(url, "testRead")) {
-          // console.log("SUCCESS:", "READ")
-          this.status[url].readEventCount++
-          this.status[url].didRead = true
-          clearTimeout(this.timeouts[url].testRead)
-          this.connections[url].unsubscribe(sub_id)
-          // this.tryComplete(url)
-          this.tryComplete(url)
-        }
-        if(sub_id == this.getID(url, "testWrite")) {
-          if(this.status[url].writeEventCount < 1) {
-            // console.log("SUCCESS:", "WRITE")
-            this.status[url].didWrite = true
-            console.log(ev)
-            // this.tryComplete(url)
-            //console.log(url, this.timeouts[url].testWrite)
-            clearTimeout(this.timeouts[url].testWrite)
-            this.tryComplete(url)
-          }
-          this.status[url].writeEventCount++
-        }
-        if(sub_id == this.getID(url, "testLatency")) {
-          if(this.status[url].latencyEventCount < 1) {
-            console.log(url, "SUCCESS:", "test latency")
-            clearTimeout(this.timeouts[url].testLatency)
-            console.log(this.latency[url].start, this.latency[url].final)
-            this.latency[url].final = Date.now() - this.latency[url].start
-            this.setLatency(url)
-          }
-          this.status[url].latencyEventCount++
-          // this.tryComplete(url)
-          //console.log(url, this.timeouts[url].testRead)
-        }
-        // relay.unsubscribe(sub_id)
-      })
-
-      relay.on('message', (message) => {
-        // console.log('message', message)
-        // console.dir(arguments)
-      })
-
-      relay.on('notice', (message) => {
-        const hash = this.sha1(message)
-        let   message_obj = RELAY_MESSAGES[hash]
-        let   code_obj = RELAY_CODES[message_obj.code]
-
-        message_obj.type = code_obj.type
-        message_obj.hash = hash
-        this.status[url].notes[code_obj.description] = message_obj
-        // this.adjustStatus(url, hash)
-      })
-      this.connections[url] = relay
-      await this.getIP(url)
-      await this.setGeo(url)
-      this.setFlag(url)
-      // this.setNip05(url)
+    checkLatency(relay) {
+      this.connections[relay].opts.checkLatency = true
+      this.connections[relay].checkLatency()
     },
 
     // query (group, filterType) {
@@ -323,78 +259,92 @@ export default defineComponent({
       let unordered,
           filterFn
 
-      // if(filterByType) {
-      //   filterFn = (relay) => this.status?.[relay]?.aggregate == group || this.status?.[relay]?.[filterType];
-      // } else {
-      filterFn = (relay) => this.status?.[relay]?.aggregate == group
-      // }
+      filterFn = (relay) => this.result?.[relay]?.aggregate == group
 
       unordered = this.relays.filter(filterFn);
 
       if (unordered.length) {
         return unordered.sort((relay1, relay2) => {
-          return this.status?.[relay1]?.latency - this.status?.[relay2]?.latency
+          return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
         })
       }
 
       return []
     },
 
-    getAggregateStatusClass (url) {
-      let status = ''
-      if (this.status?.[url]?.aggregate == null) {
-        status = 'unprocessed'
-      }
-      else if (this.status?.[url]?.aggregate == 'public') {
-        status = 'readwrite'
-      }
-      else if (this.status?.[url]?.aggregate == 'restricted') {
-        if(this.status?.[url]?.didWrite) {
-          status = 'write-only'
-        } else {
-          status = 'read-only'
+    adjustResult (url) {
+      Object.entries(this.messages[url].notices).forEach( ([key, value]) => {
+        if(!value.hasOwnProperty("hash")) return
+        let code = RELAY_MESSAGES[value.hash].code,
+            type = RELAY_CODES[code].type
+
+        this.result[url][type] = code
+        if (type == "maybe_public") {
+          this.result[url].check.write = false
+          this.result[url].aggregate = 'public'
         }
-      }
-      else if (this.status?.[url]?.aggregate == 'offline') {
-        status = 'offline'
-      }
-      return `aggregate indicator ${status}`
+        if (type == "write_restricted") {
+          this.result[url].check.write = false
+        }
+      })
     },
 
-    getStatusClass (url, key) {
-      let status = this.status?.[url]?.[key] === true
+    getAggregateResultClass (url) {
+      let result = ''
+      if (this.result?.[url]?.aggregate == null) {
+        result = 'unprocessed'
+      }
+      else if (this.result?.[url]?.aggregate == 'public') {
+        result = 'readwrite'
+      }
+      else if (this.result?.[url]?.aggregate == 'restricted') {
+        if(this.result?.[url]?.check.write) {
+          result = 'write-only'
+        } else {
+          result = 'read-only'
+        }
+      }
+      else if (this.result?.[url]?.aggregate == 'offline') {
+        result = 'offline'
+      }
+      return `aggregate indicator ${result}`
+    },
+
+    getResultClass (url, key) {
+
+      let result = this.result?.[url]?.check?.[key] === true
       ? 'success'
-      : this.status?.[url]?.[key] === false
+      : this.result?.[url]?.check?.[key] === false
         ? 'failure'
         : 'pending'
-      return `indicator ${status}`
+      return `indicator ${result}`
     },
 
     getLoadingClass (url) {
-      return this.status?.[url]?.complete ? "relay loaded" : "relay"
+      return this.result?.[url]?.state == 'complete' ? "relay loaded" : "relay"
     },
 
     // setNip05(url){
     //   const data = nip05(url.replace('wss://', ''))
     //   if(data.length) {
     //     this.nips[url][5] = data
-    //     this.status[url].nip05 = true
+    //     this.result[url].nip05 = true
     //   }
     // },
 
-    setAggregateStatus (url) {
+    setAggregateResult (url) {
       let aggregateTally = 0
-      aggregateTally += this.status?.[url]?.didConnect ? 1 : 0
-      aggregateTally += this.status?.[url]?.didRead ? 1 : 0
-      aggregateTally += this.status?.[url]?.didWrite ? 1 : 0
+      aggregateTally += this.result?.[url]?.check.connect ? 1 : 0
+      aggregateTally += this.result?.[url]?.check.read ? 1 : 0
+      aggregateTally += this.result?.[url]?.check.write ? 1 : 0
       if (aggregateTally == 3) {
-        this.status[url].aggregate = 'public'
+        this.result[url].aggregate = 'public'
       }
       else if (aggregateTally == 0) {
-        this.status[url].aggregate = 'offline'
+        this.result[url].aggregate = 'offline'
       }
       else {
-        this.status[url].aggregate = 'restricted'
+        this.result[url].aggregate = 'restricted'
       }
     },
 
@@ -402,64 +352,12 @@ export default defineComponent({
       try {
         await navigator.clipboard.writeText(text);
       } catch($e) {
-        console.log('Cannot copy');
+        //console.log('Cannot copy');
       }
     },
 
-    tryComplete (url) {
-      let connect = typeof this.status?.[url]?.didConnect !== 'undefined',
-          read = typeof this.status?.[url]?.didRead !== 'undefined',
-          write = typeof this.status?.[url]?.didWrite !== 'undefined'
-
-      console.log(url, 'trying complete', connect, read, write)
-
-      if(connect && read && write) {
-        console.log(url, 'did complete')
-        this.setAggregateStatus(url)
-        this.adjustStatus(url)
-        this.status[url].complete = true
-        this.status[url].testing = false
-        if(this.status[url].readEventCount > 1) {
-          this.status[url].didSubscribeFilterLimit = false
-        } else {
-          this.status[url].didSubscribeFilterLimit = true
-        }
-      }
-    },
     generateKey (url, key) {
       return `${url}_${key}`
-    },
-
-    async testRead (url, id, benchmark) {
-      const subid = this.getID(url, id)
-      if(benchmark) this.latency[url].start = Date.now()
-      if(benchmark) console.log(url, subid, this.latency[url].start)
-      this.connections[url].subscribe(subid, {limit: 1, kinds:[1]})
-      this.timeouts[url][id] = setTimeout(() => {
-        if(!benchmark) this.status[url].didRead = false
-        this.tryComplete(url)
-      }, 3000)
-    },
-
-    async testWrite (url, id, benchmark) {
-      // console.log(url, "WRITE", "TEST")
-      const message = {
-        id: '41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0',
-        pubkey:
-          '5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541',
-        created_at: 1640305962,
-        kind: 1,
-        tags: [],
-        content: 'running branle',
-        sig: '08e6303565e9282f32bed41eee4136f45418f366c0ec489ef4f90d13de1b3b9fb45e14c74f926441f8155236fb2f6fef5b48a5c52b19298a0585a2c06afe39ed'
-      }
-      this.connections[url].send(["EVENT", message])
-      this.connections[url].subscribe(this.getID(url, id), {limit: 1, kinds:[1], ids:['41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0']})
-      this.timeouts[url][id] = setTimeout(() => {
-        console.log(url, "did write", id, false)
-        if(!benchmark) this.status[url].didWrite = false
-        this.tryComplete(url)
-      }, 10000)
     },
 
     getID(url, keyword) {
@@ -471,43 +369,17 @@ export default defineComponent({
     },
 
     setLatency(url) {
-      // console.log(this.status[url].didConnect === true, this.status[url]. latency,this.latency[url].final)
-      if (this.status[url].didConnect === true) this.status[url].latency = this.latency[url].final
-      // console.log(this.status[url].didConnect === true, this.status[url]. latency,this.latency[url].final)
-      console.log("latency",this.latency[url])
+      // //console.log(this.result[url].check.connect === true, this.result[url]. latency,this.latency[url].final)
+      if (this.result[url].check.connect === true) this.result[url].latency = this.latency[url].final
+      // //console.log(this.result[url].check.connect === true, this.result[url]. latency,this.latency[url].final)
+      //console.log("latency",this.latency[url])
     },
 
-    testRelayLatency(){
-      console.log('testing latency')
-      this.relays.forEach(url => {
-        console.log(url, 'did read', this.status[url].didRead)
-        if(this.status[url].didRead) {
-          console.log(url, 'testing read')
-          this.testRead(url, "testLatency", true)
-        }
-        this.lastPing = Date.now()
-      })
-    },
 
-    async getIP(url){
-      let ip
-      await fetch(`https://1.1.1.1/dns-query?name=${url.replace('wss://', '')}`, { headers: { 'accept': 'application/dns-json' } })
-        .then(response => response.json())
-        .then((data) => { ip = data.Answer ? data.Answer[data.Answer.length-1].data : false });
-      this.status[url].ip = ip
-      // console.log('IP:', ip)
-    },
 
-    async setGeo(url){
-      if (!this.status[url].ip) return
-      await fetch(`http://ip-api.com/json/${this.status[url].ip}`, { headers: { 'accept': 'application/dns-json' } })
-        .then(response => response.json())
-        .then((data) => { this.status[url].geo = data });
-      // console.dir(this.status[url].geo)
-    },
 
     setFlag (url) {
-      this.status[url].flag = this.status[url].geo?.countryCode ? countryCodeEmoji(this.status[url].geo.countryCode) : emoji.get('shrug');
+      this.result[url].flag = this.result[url].geo?.countryCode ? countryCodeEmoji(this.result[url].geo.countryCode) : emoji.get('shrug');
     },
 
     setCheck (bool) {
@@ -522,28 +394,24 @@ export default defineComponent({
       return !bool ? '⚠️' : ''
     },
 
-
-
-    adjustStatus (url) {
-      Object.entries(this.status[url].notes).forEach( ([key, value]) => {
-        if(!value.hasOwnProperty("hash")) return
-        let code = RELAY_MESSAGES[value.hash].code,
-            type = RELAY_CODES[code].type
-
-        this.status[url][type] = code
-        if (type == "maybe_public") {
-          this.status[url].didWrite = false
-          this.status[url].aggregate = 'public'
-        }
-        if (type == "write_restricted") {
-          this.status[url].didWrite = false
-        }
-      })
+    relaysTotal () {
+      return this.relays.length
     },
+
+    relaysConnected () {
+      return Object.keys(this.result).length
+    },
+
+    relaysCompleted () {
+      let value = Object.entries(this.result).length
+      console.log(value)
+      return value
+    },
+
 
     sha1 (message) {
       const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
-      // console.log(message, ':', hash)
+      // //console.log(message, ':', hash)
       return hash
     },
   },
@@ -602,7 +470,7 @@ tr.relay.loaded td {
 
 .badge.write-only,
 .badge.read-only,
-table.online.public .indicator.failure {
+tr.online.public .indicator.failure {
   background-color:orange !important;
 }
 
@@ -687,7 +555,7 @@ border-color: rgba(255,0,0,0.5);
   border-color: rgba(255,0,0,0.5);
 }
 
-table.online .relay-url {
+tr.online .relay-url {
   cursor: pointer;
 }
 
@@ -730,11 +598,77 @@ sup {
 
 .credit {
   display:inline-block;
-  text-decoration:none;
+
   color:#333;
-  text-transform: uppercase;
+  text-transform: lowercase;
   font-size:12px;
   margin-top:25px;
+}
+
+.credit a {
+  text-decoration:none;
+}
+
+#wrapper {
+  max-width:1400px;
+  margin:0 auto;
+}
+
+div.block {
+  display:block;
+  margin:40px 0;
+}
+
+.title-card {
+  text-align:left;
+}
+
+.title-card h1 {
+  font-size:4.5em;
+  text-align:left;
+}
+
+.row {
+  -webkit-box-shadow: 0px 1px 32px 4px rgba(0,0,0,0.16);
+  -moz-box-shadow: 0px 1px 32px 4px rgba(0,0,0,0.16);
+  box-shadow: 0px 1px 32px 4px rgba(0,0,0,0.16);
+}
+
+.title-info-card {
+  border-radius: 20px;
+  text-align:center;
+}
+
+.title-info-card span {
+  display:inline-block;
+  margin-top:0.80em;
+  font-size: 4em;
+  letter-spacing: -0.1em;
+  text-align:right;
+}
+
+
+.gradient {
+    animation-duration: 1.8s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-name: placeHolderShimmer;
+    animation-timing-function: linear;
+    background: #f6f7f8;
+    background: linear-gradient(to right, #fafafa 8%, #f4f4f4 38%, #fafafa 54%);
+    background-size: 1000px 640px;
+
+    position: relative;
+
+}
+
+@keyframes placeHolderShimmer{
+    0%{
+        background-position: -468px 0
+    }
+    100%{
+        background-position: 468px 0
+    }
 }
 
 </style>

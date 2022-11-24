@@ -1,17 +1,14 @@
 <template>
-  <div id="wrapper">
+  <div id="wrapper" :class="loadingComplete()">
     <!-- <div class="text-h5 text-bold q-py-md q-px-sm full-width flex row justify-start">
        |
       <span></span> -->
 
     <!-- </div> -->
     <row container :gutter="12">
-      <column :xs="12" :md="6" :lg="6" class="title-card">
+      <column :xs="12" :md="12" :lg="12" class="title-card">
         <h1>nostr.watch<sup>alpha</sup></h1>
         <!-- <span>Next ping in {{ nextPing }} seconds</span> -->
-      </column>
-      <column :xs="12" :md="6" :lg="6" class="title-info-card gradient">
-        <span v-if="(relaysTotal()-relaysConnected()>0)">Processing {{ relaysCompleted() }}/{{ relaysTotal() }}</span>
       </column>
     </row>
 
@@ -19,38 +16,55 @@
       <column :xs="12" :md="12" :lg="12">
         <div class="block">
 
-          <table class="online public"  v-if="query('public').length > 0">
+          <table>
             <tr><td colspan="11"><h2><span class="indicator badge readwrite">{{ query('public').length }}</span>Public</h2></td></tr>
-            <tr>
-              <th></th>
-              <th></th>
-              <th><span class="verified-shape-wrapper"><span class="shape verified"></span></span></th>
-              <th>🌎</th>
-              <th>⌛️</th>
-              <th>🔌</th>
-              <th>👁️‍🗨️</th>
-              <th>ℹ️</th>
-              <th>✏️</th>
-              <th>NIP-15</th>
-              <th>NIP-20</th>
+            <tr class="online public"  v-if="query('public').length > 0">
+              <th class="table-column status-indicator"></th>
+              <th class="table-column relay"></th>
+              <th class="table-column verified"><span class="verified-shape-wrapper"><span class="shape verified"></span></span></th>
+              <!-- <th class="table-column location" v-tooltip:top.tooltip="Ping">
+                🌎
+              </th> -->
+              <th class="table-column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
+                ⌛️
+              </th>
+              <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
+                🔌
+              </th>
+              <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
+                👁️‍🗨️
+              </th>
+              <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
+                ✏️
+              </th>
+              <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
+                ℹ️
+              </th>
+              <th class="table-column nip nip-15" v-tooltip:top.tooltip="'Does the relay support NIP-15'">
+                NIP-15
+              </th>
+              <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
+                NIP-20
+              </th>
               <!-- <th>FILTER: LIMIT</th> -->
             </tr>
             <tr v-for="relay in query('public')" :key="{relay}" :class="getLoadingClass(relay)" class="online public">
               <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
               <td class="left-align relay-url" @click="copy(relay)">{{ relay }}</td>
               <td></td>
-              <td>{{result[relay].flag}}</td>
+              <!-- <td>{{result[relay].flag}}</td> -->
               <td><span>{{ result[relay].latency.final }}<span v-if="result[relay].check.latency">ms</span></span></td>
               <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
               <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
               <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
               <td>
-                <ul v-if="Object.keys(messages[relay].notices).length">
-                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in messages[relay].notices" :key="generateKey(relay, key)">✉️</li>
+                <ul v-if="result[relay].observations && result[relay].observations.length">
+                  <li class="observation" v-for="(alert) in result[relay].observations" :key="generateKey(relay, alert.description)">
+                    <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'notice'">✉️</span>
+                    <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'caution'">⚠️</span>
+                  </li>
                 </ul>
               </td>
-
-
               <td>{{ setCheck(connections[relay].nip(15)) }}</td>
               <td>{{ setCheck(connections[relay].nip(20)) }}</td>
               <!-- <td>{{ setCaution(result[relay].didSubscribeFilterLimit) }}</td> -->
@@ -61,37 +75,54 @@
 
       <column :xs="12" :md="12" :lg="6"> -->
         <!-- <div class="block"> -->
-          <tr><td colspan="11"><h2><span class="indicator badge write-only">{{ query('restricted').length }}</span>Restricted</h2></td></tr>
+            <tr><td colspan="11"><h2><span class="indicator badge write-only">{{ query('restricted').length }}</span>Restricted</h2></td></tr>
           <!-- <table class="online"> -->
-            <tr>
-              <th></th>
-              <th></th>
-              <th>ℹ️</th>
-              <th>🔌</th>
-              <th>👁️‍🗨️</th>
-              <th>✏️</th>
-              <th><span class="verified-shape-wrapper"><span class="shape verified"></span></span></th>
-              <th>🌎</th>
-              <!-- <td>wl</td>
-              <td>nip-05><td> -->
-              <th>⌛️</th>
-              <th>NIP-15</th>
-              <th>NIP-20</th>
+            <tr class="online"  v-if="query('restricted').length > 0">
+              <th class="table-column status-indicator"></th>
+              <th class="table-column relay"></th>
+              <th class="table-column verified"><span class="verified-shape-wrapper"><span class="shape verified"></span></span></th>
+              <!-- <th class="table-column location" v-tooltip:top.tooltip="Ping">
+                🌎
+              </th> -->
+              <th class="table-column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
+                ⌛️
+              </th>
+              <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
+                🔌
+              </th>
+              <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
+                👁️‍🗨️
+              </th>
+              <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
+                ✏️
+              </th>
+              <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
+                ℹ️
+              </th>
+              <th class="table-column nip nip-15" v-tooltip:top.tooltip="'Does the relay support NIP-15'">
+                NIP-15
+              </th>
+              <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
+                NIP-20
+              </th>
             </tr>
             <tr v-for="relay in query('restricted')" :key="{relay}" :class="getLoadingClass(relay)" class="online">
               <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"><span></span><span></span></span></td>
               <td class="left-align relay-url" @click="copy(relay)">{{ relay }}</td>
-              <td>
-                <ul v-if="Object.keys(messages[relay].notices).length">
-                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in messages[relay].notices" :key="generateKey(relay, key)">✉️</li>
-                </ul>
-              </td>
+              <td></td>
+              <!-- <td>{{result[relay].flag}}</td> -->
+              <td><span>{{ result[relay].latency.final }}<span v-if="result[relay].check.latency">ms</span></span></td>
               <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
               <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
               <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
-              <td></td>
-              <td>{{result[relay].flag}}</td>
-              <td><span>{{ result[relay].latency.final }}<span v-if="result[relay].check.latency">ms</span></span></td>
+              <td>
+                <ul v-if="result[relay].observations && result[relay].observations.length">
+                  <li class="observation" v-for="(alert) in result[relay].observations" :key="generateKey(relay, alert.description)">
+                    <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'notice'">✉️</span>
+                    <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'caution'">⚠️</span>
+                  </li>
+                </ul>
+              </td>
               <td>{{ setCheck(connections[relay].nip(15)) }}</td>
               <td>{{ setCheck(connections[relay].nip(20)) }}</td>
             </tr>
@@ -100,34 +131,54 @@
         <!-- <div class="block"> -->
           <tr> <td colspan="11"><h2><span class="indicator badge offline">{{ query('offline').length }}</span>Offline</h2></td></tr>
           <!-- <table v-if="query('offline').length > 0"> -->
-            <tr>
+            <tr class="offline"  v-if="query('offline').length > 0">
+              <th class="table-column status-indicator"></th>
+              <th class="table-column relay"></th>
+              <th class="table-column verified"></th>
+              <th class="table-column location"></th>
               <th></th>
-              <th></th>
-              <th>ℹ️</th>
-              <th>🔌</th>
-              <th>👁️‍🗨️</th>
-              <th>✏️</th>
-
-              <th></th>
-              <th></th>
-              <th></th>
+              <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
+                🔌
+              </th>
+              <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
+                👁️‍🗨️
+              </th>
+              <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
+                ✏️
+              </th>
+              <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
+                ℹ️
+              </th>
               <th></th>
               <th></th>
             </tr>
             <tr v-for="relay in query('offline')" :key="{relay}" :class="getLoadingClass(relay)">
               <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
               <td class="left-align relay-url">{{ relay }}</td>
-              <td>
-                <ul v-if="Object.keys(messages[relay].notices).length">
-                  <li v-tooltip:left.tooltip="key" v-for="(message, key) in messages[relay].notices" :key="generateKey(relay, key)">✉️</li>
-                </ul>
-              </td>
+              <td></td>
+              <td></td>
+              <td></td>
               <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
               <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
               <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
+              <td>
+                <ul v-if="messages[relay].notices.length">
+                  <li v-tooltip:left.tooltip="message" v-for="(message) in messages[relay].notices" :key="generateKey(relay, message)">✉️</li>
+                </ul>
+              </td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
             </tr>
           </table>
         </div>
+      </column>
+    </row>
+
+    <row container :gutter="12">
+      <column :xs="12" :md="12" :lg="12" class="processing-card loading">
+        <span v-if="(relaysTotal()-relaysConnected()>0)">Processing {{ relaysCompleted() }}/{{ relaysTotal() }}</span>
       </column>
     </row>
 
@@ -159,7 +210,7 @@ import TooltipComponent from './TooltipComponent.vue'
 // import nip06 from 'nostr-tools/nip06'
 
 // import { relayConnect } from 'nostr-tools/relay'
-import { RelayPool, Relay } from 'nostr'
+import {  Relay } from 'nostr'
 
 import { Row, Column } from 'vue-grid-responsive';
 import Popper from "vue3-popper";
@@ -170,13 +221,14 @@ import emoji from 'node-emoji'
 import { relays } from '../../relays.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
-import { Inspector, Observation } from '../../../nostr-relay-inspector'
+import { Inspector, Observation } from '../../lib/nostr-relay-inspector'
 
 import crypto from "crypto"
 
 const refreshMillis = 3*60*1000
 
 export default defineComponent({
+  title: "nostr.watch registry & netw ork status",
   name: 'BaseRelays',
   components: {
     Row,
@@ -188,13 +240,13 @@ export default defineComponent({
     return {
       relays,
       result: {},
+      messages: {},
+      connections: {},
+      nips: {},
+      alerts: {},
+      timeouts: {},
       lastPing: Date.now(),
       nextPing: Date.now() + (60*1000),
-      connections: {},
-      pool: null,
-      timeouts: {},
-      nips: {},
-      messages: {},
       count: 0,
     }
   },
@@ -218,15 +270,17 @@ export default defineComponent({
       let inspect = new Inspector(relay, {
           checkLatency: true,
           run: true,
-          setIP: true,
-          setGeo: true
+          setIP: false,
+          setGeo: false
         })
         .on('open', (e, result) => {
           this.result[relay] = result
         })
         .on('complete', (instance) => {
+
           this.result[relay] = instance.result
           this.messages[relay] = instance.inbox
+          // console.log('notices', this.messages[relay])
           this.setFlag(relay)
           this.setAggregateResult(relay)
           //console.log('result state', instance.result)
@@ -234,6 +288,24 @@ export default defineComponent({
           // this.adjustResult(relay)
           // //console.log(this.connections[relay])
 
+        })
+        .on('notice', (notice) => {
+          const hash = this.sha1(notice)
+          let   message_obj = RELAY_MESSAGES[hash]
+          let   code_obj = RELAY_CODES[message_obj.code]
+
+          let response_obj = {...message_obj, ...code_obj}
+
+          this.result[relay].observations.push( new Observation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
+
+          console.log(this.result[relay].observations)
+
+          // if (Array.isArray(this.alerts[relay]))
+          // this.alerts[relay] = new Array()
+          //
+          // console.log('alerts', this.alerts, Array.isArray(this.alerts[relay]), this.alerts[relay], response_obj)
+          //
+          // this.alerts[relay].push = response_obj
         })
         .on('close', () => {
           // delete this.connections[relay]
@@ -414,6 +486,10 @@ export default defineComponent({
       // //console.log(message, ':', hash)
       return hash
     },
+
+    loadingComplete(){
+      return this.relaysTotal()-this.relaysCompleted() == 0 ? 'loaded' : ''
+    }
   },
 
 })
@@ -591,11 +667,6 @@ tr.online .relay-url {
   transform: rotate(75deg);
 }
 
-sup {
-  color: #c0c0c0;
-  font-size:15px;
-}
-
 .credit {
   display:inline-block;
 
@@ -619,13 +690,27 @@ div.block {
   margin:40px 0;
 }
 
+h1 {
+  position:relative;
+  display:inline-block;
+  margin: 0 auto
+}
+
+h1 sup {
+  color: #c0c0c0;
+  font-size:15px;
+  position:absolute;
+  right: -45px;
+  top:15px;
+}
+
 .title-card {
-  text-align:left;
+  text-align:center;
 }
 
 .title-card h1 {
   font-size:4.5em;
-  text-align:left;
+  text-align:center;
 }
 
 .row {
@@ -647,8 +732,17 @@ div.block {
   text-align:right;
 }
 
+.processing-card {
+  margin: 0.8em 0;
+  display:block;
+  margin:1.5em 0;
+  font-size: 4em;
+  letter-spacing: -0.1em;
+  text-align:center;
+}
 
-.gradient {
+
+.loading {
     animation-duration: 1.8s;
     animation-fill-mode: forwards;
     animation-iteration-count: infinite;
@@ -657,9 +751,14 @@ div.block {
     background: #f6f7f8;
     background: linear-gradient(to right, #fafafa 8%, #f4f4f4 38%, #fafafa 54%);
     background-size: 1000px 640px;
-
     position: relative;
 
+}
+
+.loaded .loading {
+  animation: none;
+  bakground:none;
+  display:none;
 }
 
 @keyframes placeHolderShimmer{
@@ -669,6 +768,11 @@ div.block {
     100%{
         background-position: 468px 0
     }
+}
+
+li.observation {
+  display: inline;
+  cursor: pointer;
 }
 
 </style>

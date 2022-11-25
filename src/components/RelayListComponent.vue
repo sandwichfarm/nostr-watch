@@ -31,21 +31,92 @@
     <!-- <th>FILTER: LIMIT</th> -->
   </tr>
   <tr v-for="relay in query('public')" :key="{relay}" :class="getLoadingClass(relay)" class="online public">
-
+    <RelaySingleComponent
+      :relay="relay"
+      :result="result[relay]"
+      :showColumns="showColumns"
+      :connection="connections[relay]"
+    />
     <!-- <td>{{ setCaution(result[relay].didSubscribeFilterLimit) }}</td> -->
   </tr>
 </template>
 
 <script>
+/* eslint-disable */
 import { defineComponent} from 'vue'
+import RelaySingleComponent from './RelaySingleComponent.vue'
+
 export default defineComponent({
-  name: 'RelaySingle',
+  name: 'RelayListComponent',
   components: {
-    Popper
+    RelaySingleComponent
   },
-
+  props: {
+    relays:{
+      type: Object,
+      default(rawProps){
+        return []
+      }
+    },
+    result: {
+      type: Object,
+      default(rawProps){
+        return {}
+      }
+    },
+    messages: {
+      type: Object,
+      default(rawProps){
+        return {}
+      }
+    },
+    alerts: {
+      type: Object,
+      default(rawProps){
+        return {}
+      }
+    },
+    connections: {
+      type: Object,
+      default(rawProps){
+        return {}
+      }
+    },
+    showColumns: {
+      type: Object,
+      default(rawProps) {
+        return {
+          connectionStatuses: false,
+          nips: false,
+          geo: false,
+          additionalInfo: false
+        }
+      }
+    }
+  },
   data() {
+    return {}
+  },
+  methods: {
+    query (group) {
+      let unordered,
+          filterFn
 
+      filterFn = (relay) => this.result?.[relay]?.aggregate == group
+
+      unordered = this.relays.filter(filterFn);
+
+      if (unordered.length) {
+        return unordered.sort((relay1, relay2) => {
+          return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
+        })
+      }
+
+      return []
+    },
+    getLoadingClass (url) {
+      return this.result?.[url]?.state == 'complete' ? "relay loaded" : "relay"
+    },
   }
 })
 </script>

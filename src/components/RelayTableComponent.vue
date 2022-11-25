@@ -15,62 +15,14 @@
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12">
         <div class="block">
-
           <table>
-            <tr><td colspan="11"><h2><span class="indicator badge readwrite">{{ query('public').length }}</span>Public</h2></td></tr>
-            <tr class="online public"  v-if="query('public').length > 0">
-              <th class="table-column status-indicator"></th>
-              <th class="table-column relay"></th>
-              <th class="table-column verified"><span class="verified-shape-wrapper"><span class="shape verified"></span></span></th>
-              <!-- <th class="table-column location" v-tooltip:top.tooltip="Ping">
-                🌎
-              </th> -->
-              <th class="table-column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
-                ⌛️
-              </th>
-              <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
-                🔌
-              </th>
-              <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
-                👁️‍🗨️
-              </th>
-              <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
-                ✏️
-              </th>
-              <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
-                ℹ️
-              </th>
-              <th class="table-column nip nip-15" v-tooltip:top.tooltip="'Does the relay support NIP-15'">
-                NIP-15
-              </th>
-              <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
-                NIP-20
-              </th>
-              <!-- <th>FILTER: LIMIT</th> -->
-            </tr>
-            <tr v-for="relay in query('public')" :key="{relay}" :class="getLoadingClass(relay)" class="online public">
-              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
-              <td class="left-align relay-url" @click="copy(relay)">{{ relay }}</td>
-              <td>
-                <span v-tooltip:top.tooltip="nip05List(relay)"> <span class="verified-shape-wrapper" v-if="result[relay].nips[5]"><span class="shape verified"></span></span></span>
-              </td>
-              <!-- <td>{{result[relay].flag}}</td> -->
-              <td><span>{{ result[relay].latency.final }}<span v-if="result[relay].check.latency">ms</span></span></td>
-              <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
-              <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
-              <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
-              <td>
-                <ul v-if="result[relay].observations && result[relay].observations.length">
-                  <li class="observation" v-for="(alert) in result[relay].observations" :key="generateKey(relay, alert.description)">
-                    <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'notice'">✉️</span>
-                    <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'caution'">⚠️</span>
-                  </li>
-                </ul>
-              </td>
-              <td>{{ setCheck(connections[relay].nip(15)) }}</td>
-              <td>{{ setCheck(connections[relay].nip(20)) }}</td>
-              <!-- <td>{{ setCaution(result[relay].didSubscribeFilterLimit) }}</td> -->
-            </tr>
+            <RelayListComponent
+              :relays="relays"
+              :result="result"
+              :messages="messages"
+              :alerts="alerts"
+              :connections="connections"
+            />
           <!-- </table>
         </div> -->
       <!-- </column>
@@ -206,6 +158,7 @@
 /* eslint-disable */
 import { defineComponent} from 'vue'
 import TooltipComponent from './TooltipComponent.vue'
+import RelayListComponent from './RelayListComponent.vue'
 
 // import nip04 from 'nostr-tools/nip04'
 // import nip05 from '../../node_modules/nostr-tools/nip05'
@@ -233,11 +186,12 @@ const refreshMillis = 3*60*1000
 
 export default defineComponent({
   title: "nostr.watch registry & netw ork status",
-  name: 'BaseRelays',
+  name: 'RelayTableComponent',
   components: {
     Row,
     Column,
-    TooltipComponent
+    TooltipComponent,
+    RelayListComponent
   },
 
   data() {
@@ -501,288 +455,6 @@ export default defineComponent({
 </script>
 
 <style lang='css' scoped>
-.q-tabs {
-  border-bottom: 1px solid var(--q-accent)
-}
 
-table {
-  width:100%;
-}
-
-.left-align {
-  text-align:left;
-}
-
-tr.relay td {
-  font-style: italic;
-  opacity: 0.5;
-}
-
-tr.relay.loaded td {
-  font-style: normal;
-  opacity: 1;
-}
-
-.indicator {
-  display:block;
-  margin: 0 auto;
-  height: 14px;
-  width: 14px;
-  border-radius: 7px;
-  border-width:0px;
-}
-
-.badge {
-  height:auto;
-  width: auto;
-  display:inline-block;
-  padding: 2px 5px;
-  font-size: 15px;
-  position: relative;
-  top: -3px;
-  min-width: 15px;
-  margin-right:5px;
-}
-
-.badge.readwrite,
-.badge.offline {
-  color: white;
-}
-
-.badge.write-only,
-.badge.read-only,
-tr.online .indicator.failure {
-  background-color:orange !important;
-}
-
-.aggregate.indicator {
-    background-color: transparent;
-    border-radius: 0px;
-    border-style: solid;
-}
-
-.indicator.pernding {
-  background-color: #c0c0c0;
-  border-color: rgba(55,55,55,0.5);
-}
-
-.indicator.success {
-  background-color: green;
-  border-color: rgba(0,255,0,0.5);
-}
-
-.indicator.failure {
-  background-color: red;
-border-color: rgba(255,0,0,0.5);
-}
-
-.indicator.caution {
-  background-color: orange;
-  border-color: rgba(255, 191, 0,0.5);
-}
-
-.indicator.readwrite {
-  background-color: green;
-  border-color: rgba(0,255,0,0.5);
-}
-
-.indicator.read-only {
-  position:relative;
-  border-color: transparent;
-  background-color: transparent
-}
-
-.indicator.read-only span:first-child {
-  position:absolute;
-  width: 0;
-  height: 0;
-  border-top: 14px solid green;
-  border-right: 14px solid transparent;
-}
-
-.indicator.read-only span:last-child {
-  position:absolute;
-  width: 0;
-  height: 0;
-  border-bottom: 14px solid orange;
-  border-left: 14px solid transparent;
-}
-
-
-.indicator.write-only {
-  position:relative;
-  border-color: transparent;
-  background-color: transparent
-}
-
-.indicator.write-only span:first-child {
-  position:absolute;
-  width: 0;
-  height: 0;
-  border-bottom: 14px solid orange;
-  border-left: 14px solid transparent;
-}
-
-.indicator.write-only span:last-child {
-  position:absolute;
-  width: 0;
-  height: 0;
-  border-top: 14px solid green;
-  border-right: 14px solid transparent;
-}
-
-.indicator.offline {
-  background-color: red;
-  border-color: rgba(255,0,0,0.5);
-}
-
-tr.online .relay-url {
-  cursor: pointer;
-}
-
-.verified-shape-wrapper {
-  display:inline-block;
-  width: 16px;
-  height: 16px;
-}
-
-.shape.verified {
-  background: #777;
-  width: 16px;
-  height: 16px;
-  position: relative;
-  top: 5px;
-  left:-5px;
-  text-align: center;
-}
-
-th .shape.verified:before,
-th .shape.verified:after {
-  background:#c0c0c0 !important;
-}
-.shape.verified:before,
-.shape.verified:after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 13px;
-  width: 13px;
-  background: #777;
-}
-.shape.verified:before {
-  transform: rotate(30deg);
-}
-.shape.verified:after {
-  transform: rotate(75deg);
-}
-
-.credit {
-  display:inline-block;
-
-  color:#333;
-  text-transform: lowercase;
-  font-size:12px;
-  margin-top:25px;
-}
-
-.credit a {
-  text-decoration:none;
-}
-
-#wrapper {
-  max-width:1400px;
-  margin:0 auto;
-}
-
-div.block {
-  display:block;
-  margin:40px 0;
-}
-
-h1 {
-  position:relative;
-  display:inline-block;
-  margin: 0 auto
-}
-
-h1 sup {
-  color: #c0c0c0;
-  font-size:15px;
-  position:absolute;
-  right: -45px;
-  top:15px;
-}
-
-.title-card {
-  text-align:center;
-}
-
-.title-card h1 {
-  font-size:4.5em;
-  text-align:center;
-}
-
-.row {
-  -webkit-box-shadow: 0px 1px 32px 4px rgba(0,0,0,0.16);
-  -moz-box-shadow: 0px 1px 32px 4px rgba(0,0,0,0.16);
-  box-shadow: 0px 1px 32px 4px rgba(0,0,0,0.16);
-}
-
-.title-info-card {
-  border-radius: 20px;
-  text-align:center;
-}
-
-.title-info-card span {
-  display:inline-block;
-  margin-top:0.80em;
-  font-size: 4em;
-  letter-spacing: -0.1em;
-  text-align:right;
-}
-
-.processing-card {
-  margin: 0.8em 0;
-  display:block;
-  margin:1.5em 0;
-  font-size: 4em;
-  letter-spacing: -0.1em;
-  text-align:center;
-}
-
-
-.loading {
-    animation-duration: 1.8s;
-    animation-fill-mode: forwards;
-    animation-iteration-count: infinite;
-    animation-name: placeHolderShimmer;
-    animation-timing-function: linear;
-    background: #f6f7f8;
-    background: linear-gradient(to right, #fafafa 8%, #f4f4f4 38%, #fafafa 54%);
-    background-size: 1000px 640px;
-    position: relative;
-
-}
-
-.loaded .loading {
-  animation: none;
-  bakground:none;
-  display:none;
-}
-
-@keyframes placeHolderShimmer{
-    0%{
-        background-position: -468px 0
-    }
-    100%{
-        background-position: 468px 0
-    }
-}
-
-li.observation {
-  display: inline;
-  cursor: pointer;
-}
 
 </style>

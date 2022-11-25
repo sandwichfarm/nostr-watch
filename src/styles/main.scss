@@ -46,13 +46,23 @@ tr.relay.loaded td {
   margin-right:5px;
 }
 
-.badge.readwrite,
-.badge.offline {
+.public .badge,
+.offline .badge {
   color: white;
 }
 
-.badge.write-only,
-.badge.read-only,
+.public.online .badge {
+  background:green
+}
+
+.restricted.online .badge {
+  background:orange
+}
+
+.offline .badge {
+  background:red
+}
+
 tr.online .indicator.failure {
   background-color:orange !important;
 }
@@ -63,7 +73,7 @@ tr.online .indicator.failure {
     border-style: solid;
 }
 
-.indicator.pernding {
+.indicator.pending {
   background-color: #c0c0c0;
   border-color: rgba(55,55,55,0.5);
 }
@@ -83,18 +93,18 @@ border-color: rgba(255,0,0,0.5);
   border-color: rgba(255, 191, 0,0.5);
 }
 
-.indicator.readwrite {
+.indicator.public {
   background-color: green;
   border-color: rgba(0,255,0,0.5);
 }
 
-.indicator.read-only {
+.indicator.restricted {
   position:relative;
   border-color: transparent;
   background-color: transparent
 }
 
-.indicator.read-only span:first-child {
+.indicator.restricted span:first-child {
   position:absolute;
   width: 0;
   height: 0;
@@ -102,7 +112,7 @@ border-color: rgba(255,0,0,0.5);
   border-right: 14px solid transparent;
 }
 
-.indicator.read-only span:last-child {
+.indicator.restricted span:last-child {
   position:absolute;
   width: 0;
   height: 0;
@@ -110,28 +120,28 @@ border-color: rgba(255,0,0,0.5);
   border-left: 14px solid transparent;
 }
 
-
-.indicator.write-only {
-  position:relative;
-  border-color: transparent;
-  background-color: transparent
-}
-
-.indicator.write-only span:first-child {
-  position:absolute;
-  width: 0;
-  height: 0;
-  border-bottom: 14px solid orange;
-  border-left: 14px solid transparent;
-}
-
-.indicator.write-only span:last-child {
-  position:absolute;
-  width: 0;
-  height: 0;
-  border-top: 14px solid green;
-  border-right: 14px solid transparent;
-}
+//
+// .indicator.restricted {
+//   position:relative;
+//   border-color: transparent;
+//   background-color: transparent
+// }
+//
+// .indicator.restricted span:first-child {
+//   position:absolute;
+//   width: 0;
+//   height: 0;
+//   border-bottom: 14px solid orange;
+//   border-left: 14px solid transparent;
+// }
+//
+// .indicator.restricted span:last-child {
+//   position:absolute;
+//   width: 0;
+//   height: 0;
+//   border-top: 14px solid green;
+//   border-right: 14px solid transparent;
+// }
 
 .indicator.offline {
   background-color: red;
@@ -141,6 +151,9 @@ border-color: rgba(255,0,0,0.5);
 tr.online .relay-url {
   cursor: pointer;
 }
+
+
+
 
 .verified-shape-wrapper {
   display:inline-block;
@@ -255,16 +268,15 @@ h1 sup {
 
 
 .loading {
-    animation-duration: 1.8s;
-    animation-fill-mode: forwards;
-    animation-iteration-count: infinite;
-    animation-name: placeHolderShimmer;
-    animation-timing-function: linear;
-    background: #f6f7f8;
-    background: linear-gradient(to right, #fafafa 8%, #f4f4f4 38%, #fafafa 54%);
-    background-size: 1000px 640px;
-    position: relative;
-
+  animation-duration: 1.8s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: infinite;
+  animation-name: placeHolderShimmer;
+  animation-timing-function: linear;
+  background: #f6f7f8;
+  background: linear-gradient(to right, #fafafa 8%, #f4f4f4 38%, #fafafa 54%);
+  background-size: 1000px 640px;
+  position: relative
 }
 
 .loaded .loading {
@@ -285,4 +297,10 @@ h1 sup {
 li.observation {
   display: inline;
   cursor: pointer;
+}
+
+tr.offline .verified, tr.offline .verified *,
+tr.offline .latency,
+tr.offline .nip {
+  visibility: hidden;
 }

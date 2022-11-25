@@ -1,15 +1,38 @@
 <template>
-  <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
-  <td class="left-align relay-url" @click="copy(relay)">{{ relay }}</td>
-  <td>
-    <span v-tooltip:top.tooltip="nip05List(relay)"> <span class="verified-shape-wrapper" v-if="result.nips[5]"><span class="shape verified"></span></span></span>
+  <td class="status-indicator" :key="generateKey(relay, 'aggregate')">
+    <span :class="result.aggregate" class="aggregate indicator">
+        <span></span>
+        <span></span>
+    </span>
   </td>
+
+  <td class="relay left-align relay-url" @click="copy(relay)">
+    {{ relay }}
+  </td>
+
+  <td class="verified">
+    <span v-tooltip:top.tooltip="nip05List()"> <span class="verified-shape-wrapper" v-if="result.nips[5]"><span class="shape verified"></span></span></span>
+  </td>
+
   <!-- <td>{{result.flag}}</td> -->
-  <td><span>{{ result.latency.final }}<span v-if="result.check.latency">ms</span></span></td>
-  <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
-  <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
-  <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
-  <td>
+
+  <td class="latency">
+    <span>{{ result.latency.final }}<span v-if="result.check.latency">ms</span></span>
+  </td>
+
+  <td class="connect" :key="generateKey(relay, 'check.connect')">
+    <span :class="getResultClass(relay, 'connect')"></span>
+  </td>
+
+  <td class="read" :key="generateKey(relay, 'check.read')">
+    <span :class="getResultClass(relay, 'read')"></span>
+  </td>
+
+  <td class="write" :key="generateKey(relay, 'check.write')">
+    <span :class="getResultClass(relay, 'write')"></span>
+  </td>
+
+  <td class="info">
     <ul v-if="result.observations && result.observations.length">
       <li class="observation" v-for="(alert) in result.observations" :key="generateKey(relay, alert.description)">
         <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'notice'">✉️</span>
@@ -17,14 +40,20 @@
       </li>
     </ul>
   </td>
-  <td>{{ setCheck(connection.nip(15)) }}</td>
-  <td>{{ setCheck(connection.nip(20)) }}</td>
+
+  <td class="nip nip-15">
+    {{ setCheck(connection.nip(15)) }}
+  </td>
+
+  <td class="nip nip-20">
+    {{ setCheck(connection.nip(20)) }}
+  </td>
 </template>
 
 <script>
 /* eslint-disable */
 import { defineComponent} from 'vue'
-import InspectorRelayResult from 'nostr-relay-inspector'
+// import InspectorRelayResult from 'nostr-relay-inspector'
 
 export default defineComponent({
   name: 'RelaySingleComponent',
@@ -34,7 +63,7 @@ export default defineComponent({
     result: {
       type: Object,
       default(rawProps){
-        return InspectorRelayResult
+        return {}
       }
     },
     showColumns: {
@@ -64,26 +93,6 @@ export default defineComponent({
     return {}
   },
   methods: {
-     getAggregateResultClass (url) {
-       let result = ''
-       if (this.result?.aggregate == null) {
-         result = 'unprocessed'
-       }
-       else if (this.result?.aggregate == 'public') {
-         result = 'readwrite'
-       }
-       else if (this.result?.aggregate == 'restricted') {
-         if(this.result?.check.write) {
-           result = 'write-only'
-         } else {
-           result = 'read-only'
-         }
-       }
-       else if (this.result?.aggregate == 'offline') {
-         result = 'offline'
-       }
-       return `aggregate indicator ${result}`
-     },
      getResultClass (url, key) {
 
        let result = this.result?.check?.[key] === true
@@ -113,8 +122,10 @@ export default defineComponent({
      setCaution (bool) {
        return !bool ? '⚠️' : ''
      },
-     nip05List (url) {
+     nip05List () {
+       // console.log(this.result)
        let string = ''
+
        if(this.result.nips[5]) {
          string = `${string}Relay domain contains NIP-05 verification data for:`
          let users = Object.entries(this.result.nips[5]),

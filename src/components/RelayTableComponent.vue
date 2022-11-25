@@ -17,114 +17,32 @@
         <div class="block">
           <table>
             <RelayListComponent
+              section="public"
               :relays="relays"
               :result="result"
               :messages="messages"
               :alerts="alerts"
               :connections="connections"
             />
-          <!-- </table>
-        </div> -->
-      <!-- </column>
 
-      <column :xs="12" :md="12" :lg="6"> -->
-        <!-- <div class="block"> -->
-            <tr><td colspan="11"><h2><span class="indicator badge write-only">{{ query('restricted').length }}</span>Restricted</h2></td></tr>
-          <!-- <table class="online"> -->
-            <tr class="online"  v-if="query('restricted').length > 0">
-              <th class="table-column status-indicator"></th>
-              <th class="table-column relay"></th>
-              <th class="table-column verified"><span class="verified-shape-wrapper"><span class="shape verified"></span></span></th>
-              <!-- <th class="table-column location" v-tooltip:top.tooltip="Ping">
-                🌎
-              </th> -->
-              <th class="table-column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
-                ⌛️
-              </th>
-              <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
-                🔌
-              </th>
-              <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
-                👁️‍🗨️
-              </th>
-              <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
-                ✏️
-              </th>
-              <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
-                ℹ️
-              </th>
-              <th class="table-column nip nip-15" v-tooltip:top.tooltip="'Does the relay support NIP-15'">
-                NIP-15
-              </th>
-              <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
-                NIP-20
-              </th>
-            </tr>
-            <tr v-for="relay in query('restricted')" :key="{relay}" :class="getLoadingClass(relay)" class="online">
-              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"><span></span><span></span></span></td>
-              <td class="left-align relay-url" @click="copy(relay)">{{ relay }}</td>
-              <td></td>
-              <!-- <td>{{result[relay].flag}}</td> -->
-              <td><span>{{ result[relay].latency.final }}<span v-if="result[relay].check.latency">ms</span></span></td>
-              <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
-              <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
-              <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
-              <td>
-                <ul v-if="result[relay].observations && result[relay].observations.length">
-                  <li class="observation" v-for="(alert) in result[relay].observations" :key="generateKey(relay, alert.description)">
-                    <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'notice'">✉️</span>
-                    <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'caution'">⚠️</span>
-                  </li>
-                </ul>
-              </td>
-              <td>{{ setCheck(connections[relay].nip(15)) }}</td>
-              <td>{{ setCheck(connections[relay].nip(20)) }}</td>
-            </tr>
-          <!-- </table> -->
-        <!-- </div> -->
-        <!-- <div class="block"> -->
-          <tr> <td colspan="11"><h2><span class="indicator badge offline">{{ query('offline').length }}</span>Offline</h2></td></tr>
-          <!-- <table v-if="query('offline').length > 0"> -->
-            <tr class="offline"  v-if="query('offline').length > 0">
-              <th class="table-column status-indicator"></th>
-              <th class="table-column relay"></th>
-              <th class="table-column verified"></th>
-              <!-- <th class="table-column location"></th> -->
-              <th></th>
-              <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
-                🔌
-              </th>
-              <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
-                👁️‍🗨️
-              </th>
-              <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
-                ✏️
-              </th>
-              <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
-                ℹ️
-              </th>
-              <th></th>
-              <th></th>
-            </tr>
-            <tr v-for="relay in query('offline')" :key="{relay}" :class="getLoadingClass(relay)">
-              <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
-              <td class="left-align relay-url">{{ relay }}</td>
-              <!-- <td></td> -->
-              <td></td>
-              <td></td>
-              <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
-              <td :key="generateKey(relay, 'check.read')"><span :class="getResultClass(relay, 'read')"></span></td>
-              <td :key="generateKey(relay, 'check.write')"><span :class="getResultClass(relay, 'write')"></span></td>
-              <td>
-                <ul v-if="messages[relay].notices.length">
-                  <li v-tooltip:left.tooltip="message" v-for="(message) in messages[relay].notices" :key="generateKey(relay, message)">✉️</li>
-                </ul>
-              </td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-            </tr>
+            <RelayListComponent
+              section="restricted"
+              :relays="relays"
+              :result="result"
+              :messages="messages"
+              :alerts="alerts"
+              :connections="connections"
+            />
+
+            <RelayListComponent
+              section="offline"
+              :relays="relays"
+              :result="result"
+              :messages="messages"
+              :alerts="alerts"
+              :connections="connections"
+            />
+
           </table>
         </div>
       </column>
@@ -135,19 +53,6 @@
         <span v-if="(relaysTotal()-relaysConnected()>0)">Processing {{ relaysCompleted() }}/{{ relaysTotal() }}</span>
       </column>
     </row>
-
-
-
-    <!-- <h2>Processing</h2>
-    <table v-if="relays.filter((relay) => result[relay] && !result[relay].state=='complete').length > 0">
-      <tr>
-        <th></th>
-      </tr>
-      <tr v-for="relay in relays.filter((url) => !result[url].state=='complete')" :key="{relay}" :class="getLoadingClass(relay)">
-        <td>{{ relay }}</td>
-      </tr>
-    </table>
-    <a href="./relays/">JSON API</a> -->
 
     <span class="credit"><a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>, built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
 
@@ -210,16 +115,9 @@ export default defineComponent({
   },
 
   async mounted() {
-    // //console.log(this.relays.filter((relay) => this.result?.[relay] && !this.result?.[relay].state=='complete').length)
     this.relays.forEach(async relay => {
-      // const nip05 = await searchDomain(relay)
-      // console.log(relay, 'search domain', nip05)
       this.check(relay)
     })
-    // setTimeout(() => {
-    //   this.relays.forEach(relay => { this.checkLatency(relay) })
-    // }, 10000)
-
   },
 
   computed: {},
@@ -256,17 +154,8 @@ export default defineComponent({
 
           console.log(this.result[relay].observations)
         })
-        .on('close', () => {
-          // delete this.connections[relay]
-        })
-      //
-      // setTimeout( () => {
-      //   inspect
-      //     .reset()
-      //   inspect
-      //     .run()
-      //   //console.log('reset and run')
-      // }, 25000)
+        .on('close', () => {})
+
       this.connections[relay] = inspect
     },
 
@@ -300,27 +189,6 @@ export default defineComponent({
           this.result[relay].aggregate = 'public'
         }
       })
-    },
-
-    getAggregateResultClass (url) {
-      let result = ''
-      if (this.result?.[url]?.aggregate == null) {
-        result = 'unprocessed'
-      }
-      else if (this.result?.[url]?.aggregate == 'public') {
-        result = 'readwrite'
-      }
-      else if (this.result?.[url]?.aggregate == 'restricted') {
-        if(this.result?.[url]?.check.write) {
-          result = 'write-only'
-        } else {
-          result = 'read-only'
-        }
-      }
-      else if (this.result?.[url]?.aggregate == 'offline') {
-        result = 'offline'
-      }
-      return `aggregate indicator ${result}`
     },
 
     getResultClass (url, key) {

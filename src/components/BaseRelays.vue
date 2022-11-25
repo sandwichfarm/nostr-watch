@@ -51,7 +51,9 @@
             <tr v-for="relay in query('public')" :key="{relay}" :class="getLoadingClass(relay)" class="online public">
               <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
               <td class="left-align relay-url" @click="copy(relay)">{{ relay }}</td>
-              <td></td>
+              <td>
+                <span v-tooltip:top.tooltip="nip05List(relay)"> <span class="verified-shape-wrapper" v-if="result[relay].nips[5]"><span class="shape verified"></span></span></span>
+              </td>
               <!-- <td>{{result[relay].flag}}</td> -->
               <td><span>{{ result[relay].latency.final }}<span v-if="result[relay].check.latency">ms</span></span></td>
               <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
@@ -195,7 +197,7 @@
     </table>
     <a href="./relays/">JSON API</a> -->
 
-    <span class="credit"><a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>, built with <a href="">nostr-js</a> and <a href="">nostr-relay-inspector</a>, inspired by <a href="">nostr-relay-registry</a></span>
+    <span class="credit"><a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>, built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
 
   </div>
 </template>
@@ -218,10 +220,12 @@ import onionRegex from 'onion-regex';
 import countryCodeEmoji from 'country-code-emoji'
 import emoji from 'node-emoji'
 
+
 import { relays } from '../../relays.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
 import { Inspector, Observation } from 'nostr-relay-inspector'
+// import { Inspector, Observation } from '../../lib/nostr-relay-inspector'
 
 import crypto from "crypto"
 
@@ -253,7 +257,11 @@ export default defineComponent({
 
   async mounted() {
     // //console.log(this.relays.filter((relay) => this.result?.[relay] && !this.result?.[relay].state=='complete').length)
-    this.relays.forEach(relay => { this.check(relay) })
+    this.relays.forEach(async relay => {
+      // const nip05 = await searchDomain(relay)
+      // console.log(relay, 'search domain', nip05)
+      this.check(relay)
+    })
     // setTimeout(() => {
     //   this.relays.forEach(relay => { this.checkLatency(relay) })
     // }, 10000)
@@ -265,11 +273,13 @@ export default defineComponent({
   methods: {
 
     check(relay){
+
       let inspect = new Inspector(relay, {
           checkLatency: true,
           run: true,
           setIP: false,
-          setGeo: false
+          setGeo: false,
+          checkNip05: true
         })
         .on('open', (e, result) => {
           this.result[relay] = result
@@ -457,6 +467,24 @@ export default defineComponent({
       return value
     },
 
+    nip05List (url) {
+      let string = ''
+      if(this.result[url].nips[5]) {
+        string = `${string}Relay domain contains NIP-05 verification data for:`
+        let users = Object.entries(this.result[url].nips[5]),
+            count = 0
+        users.forEach( ([key, value]) => {
+          count++
+          string = `${string} @${key} ${(count!=users.length) ? 'and' : ''}`
+        })
+      }
+      return string
+    },
+
+    // searchDomain(domain){
+    //   return searchDomain(domain)
+    // },
+
 
     sha1 (message) {
       const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
@@ -523,7 +551,7 @@ tr.relay.loaded td {
 
 .badge.write-only,
 .badge.read-only,
-tr.online.public .indicator.failure {
+tr.online .indicator.failure {
   background-color:orange !important;
 }
 
@@ -619,13 +647,18 @@ tr.online .relay-url {
 }
 
 .shape.verified {
-  background: blue;
+  background: #777;
   width: 16px;
   height: 16px;
   position: relative;
   top: 5px;
   left:-5px;
   text-align: center;
+}
+
+th .shape.verified:before,
+th .shape.verified:after {
+  background:#c0c0c0 !important;
 }
 .shape.verified:before,
 .shape.verified:after {
@@ -635,7 +668,7 @@ tr.online .relay-url {
   left: 0;
   height: 13px;
   width: 13px;
-  background: blue;
+  background: #777;
 }
 .shape.verified:before {
   transform: rotate(30deg);

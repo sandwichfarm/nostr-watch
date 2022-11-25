@@ -135,7 +135,7 @@
               <th class="table-column status-indicator"></th>
               <th class="table-column relay"></th>
               <th class="table-column verified"></th>
-              <th class="table-column location"></th>
+              <!-- <th class="table-column location"></th> -->
               <th></th>
               <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
                 🔌
@@ -155,7 +155,7 @@
             <tr v-for="relay in query('offline')" :key="{relay}" :class="getLoadingClass(relay)">
               <td :key="generateKey(relay, 'aggregate')"><span :class="getAggregateResultClass(relay)"></span></td>
               <td class="left-align relay-url">{{ relay }}</td>
-              <td></td>
+              <!-- <td></td> -->
               <td></td>
               <td></td>
               <td :key="generateKey(relay, 'check.connect')"><span :class="getResultClass(relay, 'connect')"></span></td>
@@ -265,8 +265,6 @@ export default defineComponent({
   methods: {
 
     check(relay){
-
-      //console.log(relay, 'checking', this.count++)
       let inspect = new Inspector(relay, {
           checkLatency: true,
           run: true,
@@ -277,17 +275,11 @@ export default defineComponent({
           this.result[relay] = result
         })
         .on('complete', (instance) => {
-
           this.result[relay] = instance.result
           this.messages[relay] = instance.inbox
-          // console.log('notices', this.messages[relay])
           this.setFlag(relay)
           this.setAggregateResult(relay)
-          //console.log('result state', instance.result)
-          //console.log('messages', this.messages[relay].notices.length ? this.messages[relay].notices : null)
-          // this.adjustResult(relay)
-          // //console.log(this.connections[relay])
-
+          this.adjustResult(relay)
         })
         .on('notice', (notice) => {
           const hash = this.sha1(notice)
@@ -299,13 +291,6 @@ export default defineComponent({
           this.result[relay].observations.push( new Observation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
 
           console.log(this.result[relay].observations)
-
-          // if (Array.isArray(this.alerts[relay]))
-          // this.alerts[relay] = new Array()
-          //
-          // console.log('alerts', this.alerts, Array.isArray(this.alerts[relay]), this.alerts[relay], response_obj)
-          //
-          // this.alerts[relay].push = response_obj
         })
         .on('close', () => {
           // delete this.connections[relay]
@@ -344,19 +329,11 @@ export default defineComponent({
       return []
     },
 
-    adjustResult (url) {
-      Object.entries(this.messages[url].notices).forEach( ([key, value]) => {
-        if(!value.hasOwnProperty("hash")) return
-        let code = RELAY_MESSAGES[value.hash].code,
-            type = RELAY_CODES[code].type
-
-        this.result[url][type] = code
-        if (type == "maybe_public") {
-          this.result[url].check.write = false
-          this.result[url].aggregate = 'public'
-        }
-        if (type == "write_restricted") {
-          this.result[url].check.write = false
+    adjustResult (relay) {
+      this.result[relay].observations.forEach( observation => {
+        if (observation.code == "BLOCKS_WRITE_STATUS_CHECK") {
+          this.result[relay].check.write = false
+          this.result[relay].aggregate = 'public'
         }
       })
     },

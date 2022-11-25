@@ -1,4 +1,8 @@
-# nostr-relay-registry
+# nostr-watch
+
+A client-side nostr network status built with Vue3, jb55/nostr-js, dskvr/nostr-relay-inspector and NIP validation scripts from fiatjiaf/nostr-tools. Originally a fork of fiatfiaj/nostr-relay-registry, but completely rewritten and connection functionality was ported to jb55/nostr-js from fiatjiaf/nostr-tools. 
+
+This is a work in progress.
 
 ## Project setup
 ```

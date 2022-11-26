@@ -1,6 +1,6 @@
 # nostr-watch
 
-A client-side nostr network status built with Vue3, [nostr-js](http://github.com/jb55/nostr-js) and [dskvr/nostr-relay-inspector](http://github.com/). Goal is to produce a client-side app that collects detailed information about nostr relays and the network in general to assist users, developers and relay operators alike.
+A client-side nostr network status built with Vue3, [nostr-js](https://github.com/jb55/nostr-js) and [dskvr/nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). Goal is to produce a client-side app that collects detailed information about nostr relays and the network in general to assist users, developers and relay operators alike.
 
 ## Goals 
 - [x] Rapidly learn Nostr Protocol _Personal Goal_
@@ -28,8 +28,6 @@ A client-side nostr network status built with Vue3, [nostr-js](http://github.com
 - [ ] Different views for different audiences (users
 - [ ] Shareable VUE components 
 
-and NIP validation scripts from [fiatjaf/nostr-tools](http://github.com/fiatjaf/nostr-tools). Originally a fork of [fiatjaf/nostr-relay-registry](http://github.com/fiatjaf/nostr-relay-registry), but completely rewritten and connection functionality was ported to [jb55/nostr-js](http://github.com/jb55/nostr-js).
-
 ## Project setup
 ```
 yarn install
@@ -56,5 +54,5 @@ yarn lint
 yarn docker:build
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+## About
+Originally a fork of [fiatjaf/nostr-relay-registry](http://github.com/fiatjaf/nostr-relay-registry), but completely rewritten and connection functionality was ported to [jb55/nostr-js](http://github.com/jb55/nostr-js).

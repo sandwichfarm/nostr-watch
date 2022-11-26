@@ -304,3 +304,26 @@ tr.offline .latency,
 tr.offline .nip {
   visibility: hidden;
 }
+
+
+@media only screen and (min-device-width: 640px)
+                   and (max-device-width: 480px)
+                   and (orientation: portrait) {
+
+ table .latency,
+ table .verified,
+ table .nip {
+   display: none;
+ }
+
+}
+
+@media only screen and (min-device-width: 640px)
+                   and (max-device-width: 480px)
+                   and (orientation: landscape) {
+
+ table .nip {
+   display: none;
+ }
+
+}

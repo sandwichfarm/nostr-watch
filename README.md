@@ -26,8 +26,9 @@ A client-side nostr network status built with Vue3, [nostr-js](https://github.co
 - [ ] Tests
 
 ## Todo [Future] 
-- [ ] Different views for different audiences (users
-- [ ] Shareable VUE components 
+- [ ] Different views for different audiences (users, developers, relay operators)
+- [ ] Badges 
+- [ ] Shareable Vue3 components 
 
 ## Project setup
 ```

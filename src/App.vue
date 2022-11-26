@@ -1,14 +1,14 @@
 <template>
-  <BaseRelays />
+  <RelayTableComponent />
 </template>
 
 <script>
-import BaseRelays from './components/BaseRelays.vue'
+import RelayTableComponent from './components/RelayTableComponent.vue'
 
 export default {
   name: 'App',
   components: {
-    BaseRelays,
+    RelayTableComponent,
   }
 }
 </script>

@@ -11,7 +11,8 @@ A client-side nostr network status built with Vue3, [nostr-js](https://github.co
 - [x] Real-time relay status 
 - [x] Real-time, client-centric latency tests 
 - [x] Relay Identities
-- [x] JSON for known relays shared via [/relays.json](https://nostr.watch/relays.json)
+- [x] Static JSON API for **all** known relays shared via [/relays.json](https://nostr.watch/relays.json)
+- [ ] Dynamic JSON API for **online** relays
 - [ ] Detailed Relay Modal view _In Progress_ 
 - [ ] Relay Behavior Analysis _In progress_
 - [ ] NIP Checks _In progress_ 

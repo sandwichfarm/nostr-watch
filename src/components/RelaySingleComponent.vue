@@ -7,7 +7,7 @@
   </td>
 
   <td class="relay left-align relay-url">
-    <span @click="copy">{{ relay }}</span>
+    <span @click="copy(relay)">{{ relay }}</span>
   </td>
 
   <td class="verified">
@@ -182,6 +182,7 @@ export default defineComponent({
        return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
      },
      async copy(text) {
+       console.log('copy', text)
        try {
          await navigator.clipboard.writeText(text);
        } catch($e) {

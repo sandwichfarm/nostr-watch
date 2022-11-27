@@ -170,13 +170,6 @@ export default defineComponent({
       }
     },
 
-    async copy(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch($e) {
-        //console.log('Cannot copy');
-      }
-    },
 
     relaysTotal () {
       return this.relays.length

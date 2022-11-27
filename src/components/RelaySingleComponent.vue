@@ -53,7 +53,7 @@
         <div v-if="result.info?.description">
           {{ result.info?.description }} <br/>
           <strong v-if="result.info?.pubkey">Public Key:</strong> {{ result.info?.pubkey }} <br/>
-          <strong v-if="result.info?.contact">Contact:</strong> {{ result.info?.contact }}
+          <strong v-if="result.info?.contact">Contact:</strong> <SafeMail :email="result.info?.contact" :title="title" v-if="result.info?.contact" />
         </div>
         <!-- <div>
           <h4>Status</h4>
@@ -82,12 +82,14 @@
 import { defineComponent} from 'vue'
 import { VueFinalModal } from 'vue-final-modal'
 import InspectorRelayResult from 'nostr-relay-inspector'
+import SafeMail from "@2alheure/vue-safe-mail";
 
 
 export default defineComponent({
   name: 'RelaySingleComponent',
   components: {
-    VueFinalModal
+    VueFinalModal,
+    SafeMail
   },
   props: {
     relay: String,

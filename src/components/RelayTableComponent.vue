@@ -1,5 +1,5 @@
 <template>
-  <NavComponent />
+  <!-- <NavComponent /> -->
   <div id="wrapper" :class="loadingComplete()">
 
     <row container :gutter="12">
@@ -60,7 +60,7 @@
 <script>
 import { defineComponent} from 'vue'
 import RelayListComponent from './RelayListComponent.vue'
-import NavComponent from './NavComponent.vue'
+// import NavComponent from './NavComponent.vue'
 
 import { Row, Column } from 'vue-grid-responsive';
 
@@ -79,7 +79,7 @@ export default defineComponent({
     Row,
     Column,
     RelayListComponent,
-    NavComponent
+    // NavComponent
   },
 
   data() {

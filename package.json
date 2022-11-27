@@ -13,6 +13,7 @@
     "docker:push": "docker push registry.digitalocean.com/sandwich-farm/nostr-relay-status"
   },
   "dependencies": {
+    "@2alheure/vue-safe-mail": "1.0.3",
     "core-js": "^3.8.3",
     "country-code-emoji": "2.3.0",
     "cross-fetch": "3.1.5",

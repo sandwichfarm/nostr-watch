@@ -6,12 +6,12 @@
     </span>
   </td>
 
-  <td class="relay left-align relay-url" @click="copy(relay)">
-    {{ relay }}
+  <td class="relay left-align relay-url">
+    <span @click="copy">{{ relay }}</span>
   </td>
 
   <td class="verified">
-    <span v-tooltip:top.tooltip="nip05List()"> <span class="verified-shape-wrapper" v-if="result.nips[5]"><span class="shape verified"></span></span></span>
+    <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="result.identities"><span class="shape verified"></span></span></span>
   </td>
 
   <!-- <td>{{result.flag}}</td> -->
@@ -41,29 +41,69 @@
     </ul>
   </td>
 
-  <td class="nip nip-15">
+  <td class="nip nip-11">
+    <a v-if="result.info" @click="showModal=true">✅ </a>
+  </td>
+
+  <!-- <td class="nip nip-15">
     {{ setCheck(connection.nip(15)) }}
   </td>
 
   <td class="nip nip-20">
     {{ setCheck(connection.nip(20)) }}
-  </td>
+  </td> -->
+  <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
+    <div class="modal__title">
+      <slot name="title">{{ result.info?.name }}</slot>
+    </div>
+    <div class="modal__content">
+        <div v-if="result.info?.description">
+          {{ result.info?.description }} <br/>
+          <strong v-if="result.info?.pubkey">Public Key:</strong> {{ result.info?.pubkey }} <br/>
+          <strong v-if="result.info?.contact">Contact:</strong> {{ result.info?.contact }}
+        </div>
+        <!-- <div>
+          <h4>Status</h4>
+          <ul>
+            <li><strong>Connected</strong> <span :class="getResultClass(relay, 'connect')" class="connect indicator"></span></li>
+            <li><strong>Read</strong> <span :class="getResultClass(relay, 'read')" class="read indicator"></span></li>
+            <li><strong>Write</strong> <span :class="getResultClass(relay, 'write')" class="write indicator"></span></li>
+          </ul>
+        </div> -->
+        <h4>Relay Info</h4>
+        <ul>
+          <li><strong>Software:</strong> {{ result.info?.software }} </li>
+          <li><strong>Version</strong>: {{ result.info?.version }} </li>
+        </ul>
+        <h4>NIP Support</h4>
+        <ul>
+          <li v-for="(nip) in result.info?.supported_nips" :key="`${relay}_${nip}`">
+              <a :href="nipLink(nip)" target="_blank">{{ nipFormatted(nip) }}</a>
+          </li>
+        </ul>
+    </div>
+  </vue-final-modal>
 </template>
 
 <script>
 /* eslint-disable */
 import { defineComponent} from 'vue'
-// import InspectorRelayResult from 'nostr-relay-inspector'
+import { VueFinalModal, ModalsContainer } from 'vue-final-modal'
+import InspectorRelayResult from 'nostr-relay-inspector'
 
 export default defineComponent({
   name: 'RelaySingleComponent',
-  components: {},
+  components: {
+    RelaySingleModalComponent,
+    VueFinalModal,
+    ModalsContainer,
+  },
   props: {
     relay: String,
     result: {
       type: Object,
       default(rawProps){
-        return {}
+        return structuredClone(InspectorRelayResult)
       }
     },
     showColumns: {
@@ -90,11 +130,12 @@ export default defineComponent({
     }
   },
   data() {
-    return {}
+    return {
+      showModal: false
+    }
   },
   methods: {
      getResultClass (url, key) {
-
        let result = this.result?.check?.[key] === true
        ? 'success'
        : this.result?.check?.[key] === false
@@ -122,14 +163,15 @@ export default defineComponent({
      setCaution (bool) {
        return !bool ? '⚠️' : ''
      },
-     nip05List () {
+     identityList () {
        // console.log(this.result)
        let string = ''
 
-       if(this.result.nips[5]) {
+       if(this.result.identities) {
          string = `${string}Relay domain contains NIP-05 verification data for:`
-         let users = Object.entries(this.result.nips[5]),
+         let users = Object.entries(this.result.identities),
              count = 0
+
          users.forEach( ([key, value]) => {
            count++
            string = `${string} @${key} ${(count!=users.length) ? 'and' : ''}`
@@ -137,6 +179,90 @@ export default defineComponent({
        }
        return string
      },
+     nipSignature(key){
+       return key.toString().length == 1 ? `0${key}` : key
+     },
+     nipFormatted(key){
+       return `NIP-${this.nipSignature(key)}`
+     },
+     nipLink(key){
+       return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
+     },
+     getResultClass (url, key) {
+       let result = this.result?.check?.[key] === true
+       ? 'success'
+       : this.result?.check?.[key] === false
+         ? 'failure'
+         : 'pending'
+       return `indicator ${result}`
+     },
+     async copy(text) {
+       try {
+         await navigator.clipboard.writeText(text);
+       } catch($e) {
+         //console.log('Cannot copy');
+       }
+     },
    }
 })
 </script>
+
+<style scoped>
+ul {
+  margin:0;
+  padding:0;
+}
+
+li {
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+
+::v-deep(.modal-container) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+::v-deep(.modal-content) {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 90%;
+  margin: 0 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.25rem;
+  background: #fff;
+}
+.modal__title {
+  margin: 0 2rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.modal__content {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+.modal__action {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 1rem 0 0;
+}
+.modal__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.nip-11 a { cursor: pointer }
+</style>
+
+<style scoped>
+.dark-mode div ::v-deep(.modal-content) {
+  border-color: #2d3748;
+  background-color: #1a202c;
+}
+</style>

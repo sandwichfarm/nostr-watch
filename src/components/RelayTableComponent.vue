@@ -82,8 +82,8 @@ import emoji from 'node-emoji'
 import { relays } from '../../relays.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
-// import { Inspector, Observation } from 'nostr-relay-inspector'
-import { Inspector, Observation } from '../../lib/nostr-relay-inspector'
+// import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
+import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector'
 
 import crypto from "crypto"
 
@@ -151,7 +151,7 @@ export default defineComponent({
 
           let response_obj = {...message_obj, ...code_obj}
 
-          this.result[relay].observations.push( new Observation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
+          this.result[relay].observations.push( new InspectorObservation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
 
           console.log(this.result[relay].observations)
         })
@@ -286,7 +286,6 @@ export default defineComponent({
 
     relaysCompleted () {
       let value = Object.entries(this.result).length
-      console.log(value)
       return value
     },
 

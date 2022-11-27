@@ -34,11 +34,14 @@
     <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
       ℹ️
     </th>
-    <th class="table-column nip nip-15" v-tooltip:top.tooltip="'Does the relay support NIP-15'">
+    <!-- <th class="table-column nip nip-15" v-tooltip:top.tooltip="'Does the relay support NIP-15'">
       <span>NIP-15</span>
     </th>
     <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
       <span>NIP-20</span>
+    </th> -->
+    <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
+      <span>NIP-11</span>
     </th>
     <!-- <th>FILTER: LIMIT</th> -->
   </tr>

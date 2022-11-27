@@ -1,10 +1,7 @@
 <template>
+  <NavComponent />
   <div id="wrapper" :class="loadingComplete()">
-    <!-- <div class="text-h5 text-bold q-py-md q-px-sm full-width flex row justify-start">
-       |
-      <span></span> -->
 
-    <!-- </div> -->
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12" class="title-card">
         <h1>nostr.watch<sup>alpha</sup></h1>
@@ -16,6 +13,7 @@
       <column :xs="12" :md="12" :lg="12">
         <div class="block">
           <table>
+
             <RelayListComponent
               section="public"
               :relays="relays"
@@ -60,34 +58,19 @@
 </template>
 
 <script>
-/* eslint-disable */
 import { defineComponent} from 'vue'
-import TooltipComponent from './TooltipComponent.vue'
 import RelayListComponent from './RelayListComponent.vue'
-
-// import nip04 from 'nostr-tools/nip04'
-// import nip05 from '../../node_modules/nostr-tools/nip05'
-// import nip06 from 'nostr-tools/nip06'
-
-// import { relayConnect } from 'nostr-tools/relay'
-import {  Relay } from 'nostr'
+import NavComponent from './NavComponent.vue'
 
 import { Row, Column } from 'vue-grid-responsive';
-import Popper from "vue3-popper";
-import onionRegex from 'onion-regex';
-import countryCodeEmoji from 'country-code-emoji'
-import emoji from 'node-emoji'
-
 
 import { relays } from '../../relays.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
-// import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
-import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector'
+import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
+// import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector'
 
 import crypto from "crypto"
-
-const refreshMillis = 3*60*1000
 
 export default defineComponent({
   title: "nostr.watch registry & netw ork status",
@@ -95,8 +78,8 @@ export default defineComponent({
   components: {
     Row,
     Column,
-    TooltipComponent,
-    RelayListComponent
+    RelayListComponent,
+    NavComponent
   },
 
   data() {
@@ -115,9 +98,11 @@ export default defineComponent({
   },
 
   async mounted() {
+    console.log('mounted')
     this.relays.forEach(async relay => {
       this.check(relay)
     })
+
   },
 
   computed: {},
@@ -140,7 +125,7 @@ export default defineComponent({
         .on('complete', (instance) => {
           this.result[relay] = instance.result
           this.messages[relay] = instance.inbox
-          this.setFlag(relay)
+          // this.setFlag(relay)
           this.setAggregateResult(relay)
           this.adjustResult(relay)
         })
@@ -160,29 +145,6 @@ export default defineComponent({
       this.connections[relay] = inspect
     },
 
-    checkLatency(relay) {
-      this.connections[relay].opts.checkLatency = true
-      this.connections[relay].checkLatency()
-    },
-
-    // query (group, filterType) {
-    query (group) {
-      let unordered,
-          filterFn
-
-      filterFn = (relay) => this.result?.[relay]?.aggregate == group
-
-      unordered = this.relays.filter(filterFn);
-
-      if (unordered.length) {
-        return unordered.sort((relay1, relay2) => {
-          return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
-        })
-      }
-
-      return []
-    },
-
     adjustResult (relay) {
       this.result[relay].observations.forEach( observation => {
         if (observation.code == "BLOCKS_WRITE_STATUS_CHECK") {
@@ -191,28 +153,6 @@ export default defineComponent({
         }
       })
     },
-
-    getResultClass (url, key) {
-
-      let result = this.result?.[url]?.check?.[key] === true
-      ? 'success'
-      : this.result?.[url]?.check?.[key] === false
-        ? 'failure'
-        : 'pending'
-      return `indicator ${result}`
-    },
-
-    getLoadingClass (url) {
-      return this.result?.[url]?.state == 'complete' ? "relay loaded" : "relay"
-    },
-
-    // setNip05(url){
-    //   const data = nip05(url.replace('wss://', ''))
-    //   if(data.length) {
-    //     this.nips[url][5] = data
-    //     this.result[url].nip05 = true
-    //   }
-    // },
 
     setAggregateResult (url) {
       let aggregateTally = 0
@@ -238,44 +178,6 @@ export default defineComponent({
       }
     },
 
-    generateKey (url, key) {
-      return `${url}_${key}`
-    },
-
-    getID(url, keyword) {
-      return `${keyword}_${url}`
-    },
-
-    isOnion(url){
-      return onionRegex().test(url)
-    },
-
-    setLatency(url) {
-      // //console.log(this.result[url].check.connect === true, this.result[url]. latency,this.latency[url].final)
-      if (this.result[url].check.connect === true) this.result[url].latency = this.latency[url].final
-      // //console.log(this.result[url].check.connect === true, this.result[url]. latency,this.latency[url].final)
-      //console.log("latency",this.latency[url])
-    },
-
-
-
-
-    setFlag (url) {
-      this.result[url].flag = this.result[url].geo?.countryCode ? countryCodeEmoji(this.result[url].geo.countryCode) : emoji.get('shrug');
-    },
-
-    setCheck (bool) {
-      return bool ? '✅ ' : ''
-    },
-
-    setCross (bool) {
-      return !bool ? '❌' : ''
-    },
-
-    setCaution (bool) {
-      return !bool ? '⚠️' : ''
-    },
-
     relaysTotal () {
       return this.relays.length
     },
@@ -288,25 +190,6 @@ export default defineComponent({
       let value = Object.entries(this.result).length
       return value
     },
-
-    nip05List (url) {
-      let string = ''
-      if(this.result[url].nips[5]) {
-        string = `${string}Relay domain contains NIP-05 verification data for:`
-        let users = Object.entries(this.result[url].nips[5]),
-            count = 0
-        users.forEach( ([key, value]) => {
-          count++
-          string = `${string} @${key} ${(count!=users.length) ? 'and' : ''}`
-        })
-      }
-      return string
-    },
-
-    // searchDomain(domain){
-    //   return searchDomain(domain)
-    // },
-
 
     sha1 (message) {
       const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
@@ -321,8 +204,3 @@ export default defineComponent({
 
 })
 </script>
-
-<style lang='css' scoped>
-
-
-</style>

@@ -1,16 +1,21 @@
 <template>
-  <tr :class="getHeadingClass(section)">
+  <tr :class="getHeadingClass()">
+    <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
+      <div class="modal__content">
+        <span>
+          {{ queryJson(section) }}
+        </span>
+      </div>
+    </vue-final-modal>
     <td colspan="11">
-      <h2><span class="indicator badge">{{ query(section).length }}</span>{{ section }}</h2>
+      <h2><span class="indicator badge">{{ query(section).length }}</span>{{ section }} <a @click="showModal=true" class="section-json">{...}</a></h2>
     </td>
   </tr>
-  <tr :class="getHeadingClass(section)"  v-if="query(section).length > 0">
-    <th class="table-column status-indicator">
+  <tr :class="getHeadingClass()"  v-if="query(section).length > 0">
+    <th class="table-column status-indicator"></th>
 
-    </th>
-    <th class="table-column relay">
+    <th class="table-column relay"></th>
 
-    </th>
     <th class="table-column verified">
       <span class="verified-shape-wrapper">
         <span class="shape verified"></span>
@@ -34,16 +39,9 @@
     <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
       ℹ️
     </th>
-    <!-- <th class="table-column nip nip-15" v-tooltip:top.tooltip="'Does the relay support NIP-15'">
-      <span>NIP-15</span>
-    </th>
-    <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
-      <span>NIP-20</span>
-    </th> -->
     <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
       <span>NIP-11</span>
     </th>
-    <!-- <th>FILTER: LIMIT</th> -->
   </tr>
   <tr v-for="relay in query(section)" :key="{relay}" :class="getResultClass(relay)" class="relay">
     <RelaySingleComponent
@@ -52,19 +50,22 @@
       :showColumns="showColumns"
       :connection="connections[relay]"
     />
-    <!-- <td>{{ setCaution(result[relay].didSubscribeFilterLimit) }}</td> -->
   </tr>
 </template>
 
 <script>
-/* eslint-disable */
+/*eslint no-warning-comments: "error"*/
+
 import { defineComponent} from 'vue'
 import RelaySingleComponent from './RelaySingleComponent.vue'
+import { VueFinalModal } from 'vue-final-modal'
+
 
 export default defineComponent({
   name: 'RelayListComponent',
   components: {
-    RelaySingleComponent
+    RelaySingleComponent,
+    VueFinalModal
   },
   props: {
     section: {
@@ -74,37 +75,37 @@ export default defineComponent({
     },
     relays:{
       type: Object,
-      default(rawProps){
-        return []
+      default(){
+        return {}
       }
     },
     result: {
       type: Object,
-      default(rawProps){
+      default(){
         return {}
       }
     },
     messages: {
       type: Object,
-      default(rawProps){
+      default(){
         return {}
       }
     },
     alerts: {
       type: Object,
-      default(rawProps){
+      default(){
         return {}
       }
     },
     connections: {
       type: Object,
-      default(rawProps){
+      default(){
         return {}
       }
     },
     showColumns: {
       type: Object,
-      default(rawProps) {
+      default() {
         return {
           connectionStatuses: false,
           nips: false,
@@ -115,12 +116,16 @@ export default defineComponent({
     }
   },
   data() {
-    return {}
+    return {
+      showModal: false
+    }
   },
-  computed: {
+  mounted(){
+    console.log('')
   },
+  computed: {},
   methods: {
-    getHeadingClass(section){
+    getHeadingClass(){
       return {
         online: this.section != "offline",
         public: this.section == "public",
@@ -136,11 +141,11 @@ export default defineComponent({
         public: this.section == "public"
       }
     },
-    query (group) {
+    query (aggregate) {
       let unordered,
           filterFn
 
-      filterFn = (relay) => this.result?.[relay]?.aggregate == group
+      filterFn = (relay) => this.result?.[relay]?.aggregate == aggregate
 
       unordered = this.relays.filter(filterFn);
 
@@ -152,7 +157,13 @@ export default defineComponent({
 
       return []
     },
+    queryJson(aggregate){
+      const relays = this.query(aggregate)
+      const result = {}
+      result.relays = relays.map( relay => relay )
+      return JSON.stringify(result,null,'\t')
 
+    }
   }
 })
 </script>
@@ -163,4 +174,58 @@ export default defineComponent({
     letter-spacing:-1px;
     font-size:12px;
   }
-</style>
+
+  .section-json {
+    font-size:13px;
+    color: #555;
+    cursor:pointer;
+  }
+
+  ::v-deep(.modal-container) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  ::v-deep(.modal-content) {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    max-height: 90%;
+    max-width:400px;
+    margin: 0 1rem;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.25rem;
+    background: #fff;
+  }
+  .modal__title {
+    margin: 0 2rem 0 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  .modal__content {
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+  .modal__action {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 1rem 0 0;
+  }
+  .modal__close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .nip-11 a { cursor: pointer }
+  </style>
+
+  <style scoped>
+  .dark-mode div ::v-deep(.modal-content) {
+    border-color: #2d3748;
+    background-color: #1a202c;
+  }
+  </style>

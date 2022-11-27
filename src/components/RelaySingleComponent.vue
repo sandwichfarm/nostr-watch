@@ -45,13 +45,6 @@
     <a v-if="result.info" @click="showModal=true">✅ </a>
   </td>
 
-  <!-- <td class="nip nip-15">
-    {{ setCheck(connection.nip(15)) }}
-  </td>
-
-  <td class="nip nip-20">
-    {{ setCheck(connection.nip(20)) }}
-  </td> -->
   <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
     <div class="modal__title">
       <slot name="title">{{ result.info?.name }}</slot>
@@ -86,29 +79,27 @@
 </template>
 
 <script>
-/* eslint-disable */
 import { defineComponent} from 'vue'
-import { VueFinalModal, ModalsContainer } from 'vue-final-modal'
+import { VueFinalModal } from 'vue-final-modal'
 import InspectorRelayResult from 'nostr-relay-inspector'
+
 
 export default defineComponent({
   name: 'RelaySingleComponent',
   components: {
-    RelaySingleModalComponent,
-    VueFinalModal,
-    ModalsContainer,
+    VueFinalModal
   },
   props: {
     relay: String,
     result: {
       type: Object,
-      default(rawProps){
+      default(){
         return structuredClone(InspectorRelayResult)
       }
     },
     showColumns: {
       type: Object,
-      default(rawProps) {
+      default() {
         return {
           connectionStatuses: false,
           nips: false,
@@ -119,7 +110,7 @@ export default defineComponent({
     },
     connection: {
       type: Object,
-      default(rawProps) {
+      default() {
         return {
           connectionStatuses: false,
           nips: false,
@@ -143,15 +134,15 @@ export default defineComponent({
          : 'pending'
        return `indicator ${result}`
      },
-     getLoadingClass (url) {
+     getLoadingClass () {
        return this.result?.state == 'complete' ? "relay loaded" : "relay"
      },
      generateKey (url, key) {
        return `${url}_${key}`
      },
-     setFlag (url) {
+     /*setFlag () {
        this.result.flag = this.result.geo?.countryCode ? countryCodeEmoji(this.result.geo.countryCode) : emoji.get('shrug');
-     },
+     },*/
 
      setCheck (bool) {
        return bool ? '✅ ' : ''
@@ -172,7 +163,7 @@ export default defineComponent({
          let users = Object.entries(this.result.identities),
              count = 0
 
-         users.forEach( ([key, value]) => {
+         users.forEach( ([key]) => {
            count++
            string = `${string} @${key} ${(count!=users.length) ? 'and' : ''}`
          })
@@ -187,14 +178,6 @@ export default defineComponent({
      },
      nipLink(key){
        return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
-     },
-     getResultClass (url, key) {
-       let result = this.result?.check?.[key] === true
-       ? 'success'
-       : this.result?.check?.[key] === false
-         ? 'failure'
-         : 'pending'
-       return `indicator ${result}`
      },
      async copy(text) {
        try {
@@ -217,6 +200,11 @@ li {
   margin:0;
   padding:0;
   list-style:none;
+}
+
+td.nip-11,
+td.verified span {
+  cursor: pointer
 }
 
 ::v-deep(.modal-container) {
@@ -257,10 +245,7 @@ li {
   right: 0.5rem;
 }
 
-.nip-11 a { cursor: pointer }
-</style>
 
-<style scoped>
 .dark-mode div ::v-deep(.modal-content) {
   border-color: #2d3748;
   background-color: #1a202c;

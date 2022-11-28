@@ -24,7 +24,6 @@ relays:
   - 'wss://relay.cynsar.foundation'
   - 'wss://nostr-pub.wellorder.net'
   - 'wss://relayer.fiatjaf.com'
-  - 'wss://relay.sovereign-stack.org'
   - 'wss://relay.oldcity-bitcoiners.info'
   - 'wss://relay.bitid.nz'
   - 'wss://relay.nostr.xyz'

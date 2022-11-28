@@ -301,7 +301,8 @@ li.observation {
 
 tr.offline .verified, tr.offline .verified *,
 tr.offline .latency,
-tr.offline .nip {
+tr.offline .nip,
+tr.offline .location {
   visibility: hidden;
 }
 

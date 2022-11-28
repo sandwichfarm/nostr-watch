@@ -8,7 +8,7 @@
       </div>
     </vue-final-modal>
     <td colspan="11">
-      <h2><span class="indicator badge">{{ query(section).length }}</span>{{ section }} <a @click="showModal=true" class="section-json">{...}</a></h2>
+      <h2><span class="indicator badge">{{ query(section).length }}</span>{{ section }} <a @click="showModal=true" class="section-json" v-if="showJson">{...}</a></h2>
     </td>
   </tr>
   <tr :class="getHeadingClass()"  v-if="query(section).length > 0">
@@ -21,9 +21,9 @@
         <span class="shape verified"></span>
       </span>
     </th>
-    <!-- <th class="table-column location" v-tooltip:top.tooltip="Ping">
+    <th class="table-column location" v-tooltip:top.tooltip="Ping">
       🌎
-    </th> -->
+    </th>
     <th class="table-column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
       ⌛️
     </th>
@@ -47,6 +47,7 @@
     <RelaySingleComponent
       :relay="relay"
       :result="result[relay]"
+      :geo="geo[relay]"
       :showColumns="showColumns"
       :connection="connections[relay]"
     />
@@ -54,7 +55,6 @@
 </template>
 
 <script>
-/*eslint no-warning-comments: "error"*/
 
 import { defineComponent} from 'vue'
 import RelaySingleComponent from './RelaySingleComponent.vue'
@@ -68,10 +68,16 @@ export default defineComponent({
     VueFinalModal
   },
   props: {
+    showJson: {
+      type: Boolean,
+      default(){
+        return true
+      }
+    },
     section: {
       type: String,
       required: true,
-      default: "publik"
+      default: "public"
     },
     relays:{
       type: Object,
@@ -80,6 +86,12 @@ export default defineComponent({
       }
     },
     result: {
+      type: Object,
+      default(){
+        return {}
+      }
+    },
+    geo: {
       type: Object,
       default(){
         return {}
@@ -149,6 +161,10 @@ export default defineComponent({
 
       unordered = this.relays.filter(filterFn);
 
+      if(!this.isDone()) {
+        return unordered
+      }
+
       if (unordered.length) {
         return unordered.sort((relay1, relay2) => {
           return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
@@ -162,8 +178,20 @@ export default defineComponent({
       const result = {}
       result.relays = relays.map( relay => relay )
       return JSON.stringify(result,null,'\t')
-
-    }
+    },
+    relaysTotal () {
+      return this.relays.length-1
+    },
+    relaysConnected () {
+      return Object.keys(this.result).length
+    },
+    relaysCompleted () {
+      let value = Object.entries(this.result).length
+      return value
+    },
+    isDone(){
+      return this.relaysTotal()-this.relaysCompleted() == 0
+    },
   }
 })
 </script>

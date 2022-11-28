@@ -7,14 +7,14 @@
   </td>
 
   <td class="relay left-align relay-url">
-    <span @click="copy(relay)">{{ relay }}</span>
+    <span @click="copy(relay)" v-tooltip:top.tooltip="'Click to copy'">{{ relay }}</span>
   </td>
 
   <td class="verified">
-    <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="result.identities"><span class="shape verified"></span></span></span>
+    <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="Object.entries(result.identities).length"><span class="shape verified"></span></span></span>
   </td>
 
-  <!-- <td>{{result.flag}}</td> -->
+  <td class="location">{{ getFlag() }}</td>
 
   <td class="latency">
     <span>{{ result.latency.final }}<span v-if="result.check.latency">ms</span></span>
@@ -47,13 +47,13 @@
 
   <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
     <div class="modal__title">
-      <slot name="title">{{ result.info?.name }}</slot>
+      <span>{{ result.info?.name }}</span>
     </div>
     <div class="modal__content">
         <div v-if="result.info?.description">
           {{ result.info?.description }} <br/>
           <strong v-if="result.info?.pubkey">Public Key:</strong> {{ result.info?.pubkey }} <br/>
-          <strong v-if="result.info?.contact">Contact:</strong> <SafeMail :email="result.info?.contact" :title="title" v-if="result.info?.contact" />
+          <strong v-if="result.info?.contact">Contact:</strong> <SafeMail :email="result.info?.contact" v-if="result.info?.contact" />
         </div>
         <!-- <div>
           <h4>Status</h4>
@@ -83,7 +83,8 @@ import { defineComponent} from 'vue'
 import { VueFinalModal } from 'vue-final-modal'
 import InspectorRelayResult from 'nostr-relay-inspector'
 import SafeMail from "@2alheure/vue-safe-mail";
-
+import { countryCodeEmoji } from 'country-code-emoji';
+import emoji from 'node-emoji';
 
 export default defineComponent({
   name: 'RelaySingleComponent',
@@ -97,6 +98,12 @@ export default defineComponent({
       type: Object,
       default(){
         return structuredClone(InspectorRelayResult)
+      }
+    },
+    geo: {
+      type: Object,
+      default(){
+        return {}
       }
     },
     showColumns: {
@@ -142,9 +149,10 @@ export default defineComponent({
      generateKey (url, key) {
        return `${url}_${key}`
      },
-     /*setFlag () {
-       this.result.flag = this.result.geo?.countryCode ? countryCodeEmoji(this.result.geo.countryCode) : emoji.get('shrug');
-     },*/
+
+     getFlag () {
+       return this.geo?.countryCode ? countryCodeEmoji(this.geo.countryCode) : emoji.get('shrug');
+     },
 
      setCheck (bool) {
        return bool ? '✅ ' : ''
@@ -157,18 +165,30 @@ export default defineComponent({
        return !bool ? '⚠️' : ''
      },
      identityList () {
-       // console.log(this.result)
-       let string = ''
+       let string = '',
+           extraString = '',
+           users = Object.entries(this.result.identities),
+           count = 0
+
+        console.log(this.result.uri, 'admin', this.result.identities.serverAdmin)
 
        if(this.result.identities) {
-         string = `${string}Relay domain contains NIP-05 verification data for:`
-         let users = Object.entries(this.result.identities),
-             count = 0
+         if(this.result.identities.serverAdmin) {
+           string = `Relay has registered an administrator pubkey: ${this.result.identities.serverAdmin}. `
+           extraString = "Additionally, "
+         }
 
-         users.forEach( ([key]) => {
-           count++
-           string = `${string} @${key} ${(count!=users.length) ? 'and' : ''}`
-         })
+         const total = users.filter(([key]) => key!='serverAdmin').length,
+               isOne = total==1
+
+         if(total) {
+           string = `${string}${extraString}Relay domain contains NIP-05 verification data for:`
+           users.forEach( ([key]) => {
+             if(key == "serverAdmin") return
+             count++
+             string = `${string} ${(count==total && !isOne) ? 'and' : ''}  @${key}${(count!=total && !isOne) ? ', ' : ''}`
+           })
+         }
        }
        return string
      },

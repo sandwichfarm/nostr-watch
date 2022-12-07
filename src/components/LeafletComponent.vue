@@ -30,6 +30,7 @@
       :weight="6"
       :color="getCircleColor(relay)"
       :fillOpacity="1"
+      :class="relay"
       >
       <l-popup>
         {{ relay }}

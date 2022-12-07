@@ -1,5 +1,15 @@
 <template>
-  <l-map ref="map" v-model:zoom="zoom" :center="[47.41322, -1.219482]"  style="height:50vh">
+
+  <l-map
+    ref="map"
+    v-model:zoom="zoom"
+    :center="[47.41322, -1.219482]"
+    :minZoom="zoom"
+    :maxZoom="zoom"
+    :zoomControl="false"
+    style="height:50vh"
+    >
+
     <l-tile-layer
       url="http://{s}.tile.osm.org/{z}/{x}/{y}.png"
       layer-type="base"
@@ -16,7 +26,8 @@
       v-for="([relay, entry]) in Object.entries(geo)"
       :lat-lng="getLatLng(entry)"
       :key="relay"
-      :radius="4"
+      :radius="3"
+      :weight="6"
       :color="getCircleColor(relay)"
       :fillOpacity="1"
       >
@@ -26,6 +37,7 @@
       </l-popup>
     </l-circle-marker>
   </l-map>
+
 </template>
 <script>
 import "leaflet/dist/leaflet.css"
@@ -55,7 +67,7 @@ export default {
         console.log('woof', relay, this.result[relay]?.aggregate)
         return '#FF0000'
       }
-      return '#A0A0A0'
+      return 'transparent'
     }
   },
   async mounted() {
@@ -78,15 +90,17 @@ export default {
   data() {
     return {
       zoom: 2
-
-
     };
   },
 };
 </script>
 
-<style scoped>
+<style>
 .leaflet-container {
+  margin-top:37px;
   height:250px !important;
+}
+.leaflet-control-zoom {
+  display: none !important;
 }
 </style>

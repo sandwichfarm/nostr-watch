@@ -1,39 +1,92 @@
 <template>
-  <l-map ref="map" v-model:zoom="zoom" :center="[47.41322, -1.219482]">
+  <l-map ref="map" v-model:zoom="zoom" :center="[47.41322, -1.219482]"  style="height:50vh">
     <l-tile-layer
-      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      url="http://{s}.tile.osm.org/{z}/{x}/{y}.png"
       layer-type="base"
       name="OpenStreetMap"
-    ></l-tile-layer>
+    />
 
-    <l-marker v-for="([relay, result]) in Object.entries(results)" :lat-lng="result.geo.latlng" draggable>
+    <!-- <l-marker v-for="([relay, result]) in Object.entries(geo)" :lat-lng="getLatLng(result)" :key="relay">
       <l-popup>
-        {{ result.uri }}
+        {{ relay }}
       </l-popup>
-    </l-marker>
+    </l-marker> -->
+
+    <l-circle-marker
+      v-for="([relay, entry]) in Object.entries(geo)"
+      :lat-lng="getLatLng(entry)"
+      :key="relay"
+      :radius="4"
+      :color="getCircleColor(relay)"
+      :fillOpacity="1"
+      >
+      <l-popup>
+        {{ relay }}
+        meopw
+      </l-popup>
+    </l-circle-marker>
   </l-map>
 </template>
 <script>
 import "leaflet/dist/leaflet.css"
-import { LMap, LTileLayer, LMarker } from "@vue-leaflet/vue-leaflet";
+import { LMap, LTileLayer, LCircleMarker } from "@vue-leaflet/vue-leaflet";
 export default {
   components: {
     LMap,
     LTileLayer,
-    LMarker,
-    LPopup,
+    LCircleMarker,
+  },
+  methods: {
+    getLatLng(geo){
+      console.log('meow', [geo.lat, geo.lon])
+      return [geo.lat, geo.lon]
+    },
+    getCircleColor(relay){
+
+      if(this.result[relay]?.aggregate == 'public') {
+        console.log('woof', relay, this.result[relay]?.aggregate)
+        return '#00AA00'
+      }
+      else if(this.result[relay]?.aggregate == 'restricted') {
+        console.log('woof', relay, this.result[relay]?.aggregate)
+        return '#FFA500'
+      }
+      else if(this.result[relay]?.aggregate == 'offline') {
+        console.log('woof', relay, this.result[relay]?.aggregate)
+        return '#FF0000'
+      }
+      return '#A0A0A0'
+    }
+  },
+  async mounted() {
+    console.log('GEO', Object.entries(this.geo))
+  },
+  props: {
+    geo: {
+      type: Object,
+      default(){
+        return {}
+      }
+    },
+    result: {
+      type: Object,
+      default(){
+        return {}
+      }
+    },
   },
   data() {
     return {
-      markers: {
-        type: Object,
-        default(){
-          return {}
-        }
-      }
+      zoom: 2
+
+
     };
   },
 };
 </script>
 
-<style></style>
+<style scoped>
+.leaflet-container {
+  height:250px !important;
+}
+</style>

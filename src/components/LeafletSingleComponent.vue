@@ -23,9 +23,7 @@
     </l-marker> -->
 
     <l-circle-marker
-      v-for="([relay, entry]) in Object.entries(geo)"
       :lat-lng="getLatLng(entry)"
-      :key="relay"
       :radius="3"
       :weight="6"
       :color="getCircleColor(relay)"
@@ -67,7 +65,9 @@ export default {
       return 'transparent'
     }
   },
-  async mounted() {},
+  async mounted() {
+    console.log('GEO', Object.entries(this.geo))
+  },
   props: {
     geo: {
       type: Object,

@@ -1,15 +1,12 @@
 <template>
-  <RelayTableComponent />
+  <router-view></router-view>
 </template>
 
 <script>
-import RelayTableComponent from './components/RelayTableComponent.vue'
 
 export default {
   name: 'App',
-  components: {
-    RelayTableComponent,
-  }
+  components: {}
 }
 </script>
 

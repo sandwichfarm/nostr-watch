@@ -55,14 +55,14 @@
           <strong v-if="result.info?.pubkey">Public Key:</strong> {{ result.info?.pubkey }} <br/>
           <strong v-if="result.info?.contact">Contact:</strong> <SafeMail :email="result.info?.contact" v-if="result.info?.contact" />
         </div>
-        <!-- <div>
+        <div>
           <h4>Status</h4>
           <ul>
             <li><strong>Connected</strong> <span :class="getResultClass(relay, 'connect')" class="connect indicator"></span></li>
             <li><strong>Read</strong> <span :class="getResultClass(relay, 'read')" class="read indicator"></span></li>
             <li><strong>Write</strong> <span :class="getResultClass(relay, 'write')" class="write indicator"></span></li>
           </ul>
-        </div> -->
+        </div>
         <h4>Relay Info</h4>
         <ul>
           <li><strong>Software:</strong> {{ result.info?.software }} </li>

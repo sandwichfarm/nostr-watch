@@ -1,60 +1,125 @@
 <template>
+  <LeafletSingleComponent
+    :geo="geo"
+    :relay="relay"
+    :result="result"
+  />
   <!-- <NavComponent /> -->
-  <div id="wrapper" :class="loadingComplete()">
+  <div id="wrapper">
+
 
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12" class="title-card">
-        <h1>nostr.watch<sup>{{version}}</sup></h1>
-        <h2>{{relayUrl()}}</h2>
+        <div style="display: none">{{result}}</div> <!-- ? -->
+
+        <h1>{{ relayUrl() }}</h1>
+        <!-- <h2>nostr.watch<sup>{{version}}</sup></h2> -->
+        <br >
+
+        <span  class="badges">
+          <span><img :src="badgeCheck('connect')" /></span>
+          <span><img :src="badgeCheck('read')" /></span>
+          <span><img :src="badgeCheck('write')" /></span>
+        </span>
+
+        <br />
+
+        <span v-if="result.info?.supported_nips" class="badges">
+          <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`">
+              <a :href="nipLink(nip)" target="_blank"><img :src="badgeLink(nip)" /></a>
+          </span>
+        </span>
+
+        <!--table>
+          <tr>
+            <th colspan="3"><h4>Status</h4></th>
+          </tr>
+          <tr v-if="result.checkClass">
+            <td :class="result.checkClass.connect" class="connect indicator">Connected</td>
+            <td :class="result.checkClass.read" class="read indicator">Read</td>
+            <td :class="result.checkClass.write" class="write indicator">Write</td>
+          </tr>
+        </table-->
+
+
+        <table v-if="result.info">
+          <tr>
+            <th colspan="2"><h4>Info</h4></th>
+          </tr>
+          <tr v-for="(value, key) in Object.entries(result.info).filter(value => value[0] != 'id' && value[0] != 'supported_nips')" :key="`${value}_${key}`">
+              <td>{{ value[0] }}</td>
+              <td v-if="value[0]!='contact' && value[0]!='pubkey' && value[0]!='software' && value[0]!='version'">{{ value[1] }} </td>
+              <td v-if="value[0]=='contact'"><SafeMail :email="value[1]" /></td>
+              <td v-if="value[0]=='pubkey' || value[0]=='version'"><code>{{ value[1] }}</code></td>
+              <td v-if="value[0]=='software'"><a href="{{ value[1] }}">{{ value[1] }}</a></td>
+          </tr>
+        </table>
+
+        <h4>Identities</h4>
+        <table v-if="result.identities">
+
+          <tr v-for="(value, key) in Object.entries(result?.identities)" :key="`${value}_${key}`">
+
+            <td>{{ value[0] }}</td>
+            <td><code>{{ value[1] }}</code></td>
+          </tr>
+        </table>
+
+        <div style="display: none">{{result}}</div> <!-- ? -->
       </column>
     </row>
 
     <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12">
-        <LeafletSingleComponent
-          :geo="geo"
-          :relay="relay"
-          :result="result"
-        />
+      <column :xs="12" :md="6" :lg="6" class="title-card">
+
+        <h4>GEO {{geo?.countryCode ? getFlag() : ''}}</h4>
+        <table v-if="geo[relay]">
+          <tr v-for="(value, key) in Object.entries(geo[relay])" :key="`${value}_${key}`">
+            <td>{{ value[0] }}</td>
+            <td>{{ value[1] }} </td>
+          </tr>
+        </table>
+
       </column>
+      <column :xs="12" :md="6" :lg="6" class="title-card">
+        <h4>DNS</h4>
+        <table v-if="geo[relay]">
+          <tr v-for="(value, key) in Object.entries(geo[relay].dns)" :key="`${value}_${key}`">
+            <td>{{ value[0] }}</td>
+            <td>{{ value[1] }} </td>
+          </tr>
+        </table>
+
+        <div style="display: none">{{result}}</div> <!-- ? -->
+
+
+
+
+      </column>
+
+
     </row>
+
+
 
     <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12">
-        <div class="block">
-          <div v-if="result.info?.description">
-            {{ result.info?.description }} <br/>
-            <strong v-if="result.info?.pubkey">Public Key:</strong> {{ result.info?.pubkey }} <br/>
-            <strong v-if="result.info?.contact">Contact:</strong> <SafeMail :email="result.info?.contact" v-if="result.info?.contact" />
-          </div>
-          <div>
-            <h4>Status</h4>
-            <ul>
-              <li><strong>Connected</strong> <span :class="getResultClass(relay, 'connect')" class="connect indicator"></span></li>
-              <li><strong>Read</strong> <span :class="getResultClass(relay, 'read')" class="read indicator"></span></li>
-              <li><strong>Write</strong> <span :class="getResultClass(relay, 'write')" class="write indicator"></span></li>
-            </ul>
-          </div>
-          <h4>Relay Info</h4>
-          <ul>
-            <li><strong>Software:</strong> {{ result.info?.software }} </li>
-            <li><strong>Version</strong>: {{ result.info?.version }} </li>
-          </ul>
-          <h4>NIP Support</h4>
-          <ul>
-            <li v-for="(nip) in result.info?.supported_nips" :key="`${relay}_${nip}`">
-                <a :href="nipLink(nip)" target="_blank">{{ nipFormatted(nip) }}</a>
-            </li>
-          </ul>
-        </div>
+      <column :xs="12" :md="6" :lg="6">
+      <div style="display: none">{{result}}</div> <!-- ? -->
+
+
+
+
+      </column>
+      <column :xs="12" :md="6" :lg="6">
+
+
+
+    <!-- <h4 v-if="result.info?.supported_nips">NIP Support</h4> -->
+
+
+
       </column>
     </row>
-
-    <!-- <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12" class="processing-card loading">
-        <span v-if="(relaysTotal()-relaysConnected()>0)">Processing {{ relaysConnected() }}/{{ relaysTotal() }}</span>
-      </column>
-    </row> -->
 
     <span class="credit"><a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>, built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
 
@@ -65,6 +130,9 @@
 import { defineComponent} from 'vue'
 import LeafletSingleComponent from '../components/LeafletSingleComponent.vue'
 // import NavComponent from './NavComponent.vue'\
+
+import SafeMail from "@2alheure/vue-safe-mail";
+
 
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
@@ -77,8 +145,8 @@ import { relays } from '../../relays.yaml'
 import { geo } from '../../geo.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
-import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
-// import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector'
+/* import { Inspector, InspectorObservation } from 'nostr-relay-inspector' */
+import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector'
 
 import crypto from "crypto"
 
@@ -88,8 +156,9 @@ export default defineComponent({
   components: {
     Row,
     Column,
-    LeafletSingleComponent
+    LeafletSingleComponent,
     // NavComponent
+    SafeMail
   },
 
   data() {
@@ -97,7 +166,6 @@ export default defineComponent({
       relays,
       result: {},
       messages: {},
-      connections: {},
       nips: {},
       alerts: {},
       timeouts: {},
@@ -113,7 +181,9 @@ export default defineComponent({
   async mounted() {
     console.log('mounted')
     this.relay = this.relayUrl()
+    console.log('relay', this.relay)
     this.check(this.relay)
+    console.log('relay is compete', this.relay, this.result.check)
   },
 
   computed: {
@@ -125,12 +195,18 @@ export default defineComponent({
       // We will see what `params` is shortly
       return `wss://${this.$route.params.relayUrl}`
     },
-    check(relay){
+    async check(relay){
+      //const self = this
+      /* return new Promise(function(resolve, reject) { */
+        /* let nip = new Array(99).fill(false);
+        nip[5] = true
+        nip[11] = true */
 
       const opts = {
           checkLatency: true,
-          setIP: false,
-          setGeo: false,
+          checkNips: true,
+          /* checkNip: nip, */
+          /* debug: true */
         }
 
       let inspect = new Inspector(relay, opts)
@@ -139,14 +215,23 @@ export default defineComponent({
         })
         .on('open', (e, result) => {
           this.result = result
+          this.result.checkClass = {read: null, write: null, connect: null}
+          this.setResultClass('connect')
+          /* console.log('result on open', this.result) */
         })
         .on('complete', (instance) => {
-          console.log('on_complete', instance.result.aggregate)
+          /* console.log('on_complete', instance.result.aggregate) */
           this.result = instance.result
-          this.messages[relay] = instance.inbox
-          // this.setFlag(relay)
-          this.setAggregateResult(relay)
-          // this.adjustResult(relay)
+          this.messages[this.relay] = instance.inbox
+
+          /* this.setFlag(relay) */
+          this.setAggregateResult()
+          /* this.adjustResult(relay) */
+          this.setResultClass('read')
+          this.setResultClass('write')
+          /* console.log(this.result)
+          console.log(this.result.info.supported_nips) */
+          /* resolve(this.result) */
         })
         .on('notice', (notice) => {
           const hash = this.sha1(notice)
@@ -157,23 +242,31 @@ export default defineComponent({
 
           this.result.observations.push( new InspectorObservation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
 
-          console.log(this.result.observations)
+          /* console.log(this.result.observations) */
         })
-        .on('close', () => {})
-        .on('error', () => {
-
+        .on('close', (msg) => {
+          console.warn("CAUTION", msg)
+          /* console.log('supported_nips', inspect.result.info) */
+          })
+        .on('error', (err) => {
+          console.error("ERROR", err)
+          /* reject(err) */
         })
         .run()
 
-      this.connections[relay] = inspect
+      return inspect;
+      /* }) */
+
     },
-    getResultClass (url, key) {
+    setResultClass (key) {
       let result = this.result?.check?.[key] === true
       ? 'success'
       : this.result?.check?.[key] === false
         ? 'failure'
         : 'pending'
-      return `indicator ${result}`
+
+      /* console.log('result class', result) */
+      this.result.checkClass[key] = result
     },
     getLoadingClass () {
       return this.result?.state == 'complete' ? "relay loaded" : "relay"
@@ -190,6 +283,14 @@ export default defineComponent({
       return bool ? '✅ ' : ''
     },
 
+    badgeLink(nip){
+      return `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
+    },
+
+    badgeCheck(which){
+      return `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${which}&color=${this.result?.check?.[which] ? 'green' : 'red'}`
+    },
+
     setCross (bool) {
       return !bool ? '❌' : ''
     },
@@ -202,7 +303,7 @@ export default defineComponent({
           users = Object.entries(this.result.identities),
           count = 0
 
-       console.log(this.result.uri, 'admin', this.result.identities.serverAdmin)
+       // console.log(this.result.uri, 'admin', this.result.identities.serverAdmin)
 
       if(this.result.identities) {
         if(this.result.identities.serverAdmin) {
@@ -234,7 +335,7 @@ export default defineComponent({
       return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
     },
     async copy(text) {
-      console.log('copy', text)
+      // console.log('copy', text)
       try {
         await navigator.clipboard.writeText(text);
       } catch($e) {
@@ -251,11 +352,13 @@ export default defineComponent({
     //   })
     // },
 
-    setAggregateResult (relay) {
+    setAggregateResult () {
+      if(!this.result) return
+
       let aggregateTally = 0
-      aggregateTally += this.result?.[relay]?.check.connect ? 1 : 0
-      aggregateTally += this.result?.[relay]?.check.read ? 1 : 0
-      aggregateTally += this.result?.[relay]?.check.write ? 1 : 0
+      aggregateTally += this.result?.check.connect ? 1 : 0
+      aggregateTally += this.result?.check.read ? 1 : 0
+      aggregateTally += this.result?.check.write ? 1 : 0
       if (aggregateTally == 3) {
         this.result.aggregate = 'public'
       }
@@ -267,13 +370,7 @@ export default defineComponent({
       }
     },
 
-    relaysTotal () {
-      return this.relays.length-1 //TODO: Figure out WHY?
-    },
 
-    relaysConnected () {
-      return Object.entries(this.result).length
-    },
 
     sha1 (message) {
       const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
@@ -281,14 +378,21 @@ export default defineComponent({
       return hash
     },
 
-    isDone(){
-      return this.relaysTotal()-this.relaysConnected() == 0
-    },
-
-    loadingComplete(){
-      return this.isDone() ? 'loaded' : ''
-    },
   },
 
 })
 </script>
+<style scoped>
+ul, ul li { padding:0; margin:0; list-style:none; }
+td { padding:5px 10px; }
+th h4 { text-align:center; padding:5px 10px; margin:0 0 6px; background:#f0f0f0; }
+table {width:90%; max-width:90%; margin:0 auto 20px ; border: 2px solid #f5f5f5; padding:20px}
+tr td:first-child { text-align:right }
+tr td:last-child { text-align:left }
+.indicator { display: table-cell; width:33% ; font-weight:bold; text-align: center !important; color: white; text-transform: uppercase; font-size:0.8em}
+body, .grid-column { padding:0; margin:0; }
+.badges { display:block; margin: 10px 0 0}
+.badges > span {margin-right:5px}
+#wrapper {max-width:800px}
+h1 {margin: 25px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
+</style>

@@ -7,7 +7,8 @@
   </td>
 
   <td class="relay left-align relay-url">
-    <span @click="copy(relay)" v-tooltip:top.tooltip="'Click to copy'">{{ relay }}</span>
+    <router-link :to="`/${relayClean(relay)}`" active-class="active">{{ relay }}</router-link>
+    <!-- <span @click="copy(relay)" v-tooltip:top.tooltip="'Click to copy'">{{ relay }}</span> -->
   </td>
 
   <td class="verified">
@@ -41,9 +42,9 @@
     </ul>
   </td>
 
-  <td class="nip nip-11">
+  <!-- <td class="nip nip-11">
     <a v-if="result.info" @click="showModal=true">✅ </a>
-  </td>
+  </td> -->
 
   <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
     <div class="modal__title">
@@ -191,6 +192,9 @@ export default defineComponent({
          }
        }
        return string
+     },
+     relayClean(relay) {
+       return relay.replace('wss://', '')
      },
      nipSignature(key){
        return key.toString().length == 1 ? `0${key}` : key

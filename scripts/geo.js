@@ -8,31 +8,48 @@ let object,
     result,
     file = fs.readFileSync('./relays.yaml', 'utf8')
 
-const getIp = async function(relay){
-  let ip
+const getDns = async function(relay){
+  let dns
   await fetch(`https://1.1.1.1/dns-query?name=${relay.replace('wss://', '')}`, { headers: { 'accept': 'application/dns-json' } })
     .then(response => response.json())
-    .then((data) => { ip = data.Answer ? data.Answer[data.Answer.length-1].data : false })
+    .then((data) => { dns = data.Answer ? data.Answer : false })
     .catch(err => console.log('./scripts/geo.js', err))
+  return dns
+}
+
+const getIp = async function(dns){
+  let ip;
+  if(dns)
+    ip = dns[dns.length-1].data
   return ip
 }
 
 const getGeo = async function(ip) {
   let geo
   await fetch(`http://ip-api.com/json/${ip}`, { headers: { 'accept': 'application/dns-json' } })
-    .then(response => response.json())
-    .then((data) => { geo = data })
-    .catch(err => console.log('./scripts/geo.js', err))
-  return geo
+          .then(response => response.json())
+          .then((data) => { geo = data })
+          .catch(err => console.log('./scripts/geo.js', err))
+  return geo;
 }
 
 const query = async function(){
+
   const relays = YAML.parse(file).relays,
         result = {}
 
   for (const relay of relays) {
-    ip = await getIp(relay)
+    let dns, ip, geo
+    dns = await getDns(relay)
+    ip = await getIp(dns)
+    // console.log(dns, ip)
     geo = await getGeo(ip)
+
+    console.log(geo, ip, dns)
+
+    if(dns)
+      geo.dns = dns[dns.length-1]
+
     if(geo.status == 'success')
       result[relay] = geo
   }

@@ -39,9 +39,9 @@
     <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
       ℹ️
     </th>
-    <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
+    <!-- <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
       <span>NIP-11</span>
-    </th>
+    </th> -->
   </tr>
   <tr v-for="relay in query(section)" :key="{relay}" :class="getResultClass(relay)" class="relay">
     <RelaySingleComponent
@@ -180,7 +180,7 @@ export default defineComponent({
       return JSON.stringify(result,null,'\t')
     },
     relaysTotal () {
-      return this.relays.length-1
+      return this.relays.length
     },
     relaysConnected () {
       return Object.keys(this.result).length

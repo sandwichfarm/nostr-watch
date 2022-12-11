@@ -52,7 +52,7 @@
               :connections="connections"
             />
 
-            <!-- <RelayListComponent
+            <RelayListComponent
               section="processing"
               :relays="relays"
               :result="result"
@@ -60,7 +60,7 @@
               :alerts="alerts"
               :connections="connections"
               :showJson="false"
-            /> -->
+            />
 
           </table>
         </div>
@@ -203,7 +203,7 @@ export default defineComponent({
     },
 
     relaysTotal () {
-      return this.relays.length-1 //TODO: Figure out WHY?
+      return this.relays.length //TODO: Figure out WHY?
     },
 
     relaysConnected () {

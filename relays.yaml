@@ -3,6 +3,7 @@ relays:
   - 'wss://freedom-relay.herokuapp.com/ws'
   - 'wss://nostr-relay.freeberty.net'
   - 'wss://nostr-relay.wlvs.space'
+  - 'wss://nostr-relay-dev.wlvs.space'
   - 'wss://nostr.onsats.org'
   - 'wss://nostr-relay.untethr.me'
   - 'wss://nostr-relay.lnmarkets.com'

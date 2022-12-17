@@ -31,9 +31,12 @@ jobs:
         run: yarn docker:push
 
       - name: Pull new image and restart
-        uses: appleboy/ssh-action@v0.1.2
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{secrets.SSH_DEPLOY_HOST}}
           key: ${{secrets.SSH_DEPLOY_KEY}} 
           username: deploy
-          script: docker pull registry.digitalocean.com/sandwich-farm/nostr-relay-status:latest && docker-compose stop && docker-compose up -d
+          script: |
+            docker pull registry.digitalocean.com/sandwich-farm/nostr-relay-status:latest
+            docker-compose stop
+            docker-compose up -d

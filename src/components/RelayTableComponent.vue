@@ -10,6 +10,15 @@
 
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12">
+        <LeafletComponent
+          :geo="geo"
+          :result="result"
+        />
+      </column>
+    </row>
+
+    <row container :gutter="12">
+      <column :xs="12" :md="12" :lg="12">
         <div class="block">
           <table>
 
@@ -72,6 +81,7 @@
 <script>
 import { defineComponent} from 'vue'
 import RelayListComponent from './RelayListComponent.vue'
+import LeafletComponent from './LeafletComponent.vue'
 // import NavComponent from './NavComponent.vue'
 
 import { Row, Column } from 'vue-grid-responsive';
@@ -94,6 +104,7 @@ export default defineComponent({
     Row,
     Column,
     RelayListComponent,
+    LeafletComponent
     // NavComponent
   },
 
@@ -202,6 +213,11 @@ export default defineComponent({
       return Object.entries(this.result).length
     },
 
+    relaysComplete () {
+      if(!Object.keys(this.results).length) return 0
+      return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
+    },
+
     sha1 (message) {
       const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
       // //console.log(message, ':', hash)
@@ -209,7 +225,7 @@ export default defineComponent({
     },
 
     isDone(){
-      return this.relaysTotal()-this.relaysConnected() == 0
+      return this.relaysTotal()-this.relaysComplete() == 0
     },
 
     loadingComplete(){

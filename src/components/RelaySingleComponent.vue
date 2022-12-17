@@ -1,23 +1,25 @@
 <template>
   <td class="status-indicator" :key="generateKey(relay, 'aggregate')">
-    <span :class="result.aggregate" class="aggregate indicator">
+    <span :class="result?.aggregate" class="aggregate indicator">
         <span></span>
         <span></span>
     </span>
   </td>
 
   <td class="relay left-align relay-url">
-    <span @click="copy(relay)" v-tooltip:top.tooltip="'Click to copy'">{{ relay }}</span>
+    <router-link :to="`/relay/${relayClean(relay)}`" active-class="active">{{ relay }}</router-link>
   </td>
 
   <td class="verified">
-    <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="Object.entries(result.identities).length"><span class="shape verified"></span></span></span>
+    <span v-if="result?.identities">
+      <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="Object.entries(result?.identities).length"><span class="shape verified"></span></span></span>
+    </span>
   </td>
 
   <td class="location">{{ getFlag() }}</td>
 
   <td class="latency">
-    <span>{{ result.latency.final }}<span v-if="result.check.latency">ms</span></span>
+    <span>{{ result?.latency.final }}<span v-if="result?.check.latency">ms</span></span>
   </td>
 
   <td class="connect" :key="generateKey(relay, 'check.connect')">
@@ -33,44 +35,44 @@
   </td>
 
   <td class="info">
-    <ul v-if="result.observations && result.observations.length">
-      <li class="observation" v-for="(alert) in result.observations" :key="generateKey(relay, alert.description)">
+    <ul v-if="result?.observations && result?.observations.length">
+      <li class="observation" v-for="(alert) in result?.observations" :key="generateKey(relay, alert.description)">
         <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'notice'">✉️</span>
         <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'caution'">⚠️</span>
       </li>
     </ul>
   </td>
 
-  <td class="nip nip-11">
-    <a v-if="result.info" @click="showModal=true">✅ </a>
-  </td>
+  <!-- <td class="nip nip-11">
+    <a v-if="result?.info" @click="showModal=true">✅ </a>
+  </td> -->
 
   <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
     <div class="modal__title">
-      <span>{{ result.info?.name }}</span>
+      <span>{{ result?.info?.name }}</span>
     </div>
     <div class="modal__content">
-        <div v-if="result.info?.description">
-          {{ result.info?.description }} <br/>
-          <strong v-if="result.info?.pubkey">Public Key:</strong> {{ result.info?.pubkey }} <br/>
-          <strong v-if="result.info?.contact">Contact:</strong> <SafeMail :email="result.info?.contact" v-if="result.info?.contact" />
+        <div v-if="result?.info?.description">
+          {{ result?.info?.description }} <br/>
+          <strong v-if="result?.info?.pubkey">Public Key:</strong> {{ result?.info?.pubkey }} <br/>
+          <strong v-if="result?.info?.contact">Contact:</strong> <SafeMail :email="result?.info?.contact" v-if="result?.info?.contact" />
         </div>
-        <!-- <div>
+        <div>
           <h4>Status</h4>
           <ul>
             <li><strong>Connected</strong> <span :class="getResultClass(relay, 'connect')" class="connect indicator"></span></li>
             <li><strong>Read</strong> <span :class="getResultClass(relay, 'read')" class="read indicator"></span></li>
             <li><strong>Write</strong> <span :class="getResultClass(relay, 'write')" class="write indicator"></span></li>
           </ul>
-        </div> -->
+        </div>
         <h4>Relay Info</h4>
         <ul>
-          <li><strong>Software:</strong> {{ result.info?.software }} </li>
-          <li><strong>Version</strong>: {{ result.info?.version }} </li>
+          <li><strong>Software:</strong> {{ result?.info?.software }} </li>
+          <li><strong>Version</strong>: {{ result?.info?.version }} </li>
         </ul>
         <h4>NIP Support</h4>
         <ul>
-          <li v-for="(nip) in result.info?.supported_nips" :key="`${relay}_${nip}`">
+          <li v-for="(nip) in result?.info?.supported_nips" :key="`${relay}_${nip}`">
               <a :href="nipLink(nip)" target="_blank">{{ nipFormatted(nip) }}</a>
           </li>
         </ul>
@@ -167,14 +169,16 @@ export default defineComponent({
      identityList () {
        let string = '',
            extraString = '',
-           users = Object.entries(this.result.identities),
+           users = Object.entries(this.result?.identities),
            count = 0
 
-        console.log(this.result.uri, 'admin', this.result.identities.serverAdmin)
+       // if(!this.result?.identities) return
 
-       if(this.result.identities) {
-         if(this.result.identities.serverAdmin) {
-           string = `Relay has registered an administrator pubkey: ${this.result.identities.serverAdmin}. `
+       console.log(this.result?.uri, 'admin', this.result?.identities.serverAdmin, this.result.info)
+
+       if(this.result?.identities) {
+         if(this.result?.identities.serverAdmin) {
+           string = `Relay has registered an administrator pubkey: ${this.result?.identities.serverAdmin}. `
            extraString = "Additionally, "
          }
 
@@ -191,6 +195,9 @@ export default defineComponent({
          }
        }
        return string
+     },
+     relayClean(relay) {
+       return relay.replace('wss://', '')
      },
      nipSignature(key){
        return key.toString().length == 1 ? `0${key}` : key
@@ -272,5 +279,10 @@ td.verified span {
 .dark-mode div ::v-deep(.modal-content) {
   border-color: #2d3748;
   background-color: #1a202c;
+}
+
+.restricted.aggregate.indicator {
+  position:relative;
+  left:-7px;
 }
 </style>

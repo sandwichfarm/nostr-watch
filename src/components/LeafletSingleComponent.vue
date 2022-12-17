@@ -7,7 +7,6 @@
     :minZoom="zoom"
     :maxZoom="zoom"
     :zoomControl="false"
-    style="height:50vh"
     >
 
     <l-tile-layer
@@ -23,9 +22,7 @@
     </l-marker> -->
 
     <l-circle-marker
-      v-for="([relay, entry]) in Object.entries(geo)"
-      :lat-lng="getLatLng(entry)"
-      :key="relay"
+      :lat-lng="getLatLng()"
       :radius="3"
       :weight="6"
       :color="getCircleColor(relay)"
@@ -34,7 +31,6 @@
       >
       <l-popup>
         {{ relay }}
-        meopw
       </l-popup>
     </l-circle-marker>
   </l-map>
@@ -42,16 +38,19 @@
 </template>
 <script>
 import "leaflet/dist/leaflet.css"
-import { LMap, LTileLayer, LCircleMarker } from "@vue-leaflet/vue-leaflet";
+import { LMap, LTileLayer, LCircleMarker, LPopup } from "@vue-leaflet/vue-leaflet";
 export default {
   components: {
     LMap,
     LTileLayer,
     LCircleMarker,
+    LPopup
   },
   methods: {
-    getLatLng(geo){
-      return [geo.lat, geo.lon]
+    getLatLng(){
+      console.log("geo", this.relay, this.geo[this.relay].lat, this.geo[this.relay].lon)
+      // if (!geo[this.relay]) console.log("no geo?", geo, this.relay, geo[this.relay])
+      return [this.geo[this.relay].lat, this.geo[this.relay].lon]
     },
     getCircleColor(relay){
 
@@ -64,10 +63,12 @@ export default {
       else if(this.result[relay]?.aggregate == 'offline') {
         return '#FF0000'
       }
-      return 'transparent'
+      return 'black'
     }
   },
-  async mounted() {},
+  async mounted() {
+    console.log('GEO', this.geo[this.relay])
+  },
   props: {
     geo: {
       type: Object,
@@ -79,6 +80,12 @@ export default {
       type: Object,
       default(){
         return {}
+      }
+    },
+    relay: {
+      type: String,
+      default(){
+        return ""
       }
     },
   },
@@ -93,7 +100,6 @@ export default {
 <style>
 .leaflet-container {
   margin:0;
-  padding:0;
   height:250px !important;
   width:100%;
 }

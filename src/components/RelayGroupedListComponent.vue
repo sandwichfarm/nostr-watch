@@ -1,17 +1,17 @@
 <template>
-  <tr>
+  <tr :class="getHeadingClass()">
     <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
       <div class="modal__content">
         <span>
-          {{ queryJson() }}
+          {{ queryJson(section) }}
         </span>
       </div>
     </vue-final-modal>
     <td colspan="11">
-      <h2><span class="indicator badge">{{ this.relays.length }}</span>Relays <a @click="showModal=true" class="section-json" v-if="showJson">{...}</a></h2>
+      <h2><span class="indicator badge">{{ query(section).length }}</span>{{ section }} <a @click="showModal=true" class="section-json" v-if="showJson">{...}</a></h2>
     </td>
   </tr>
-  <tr v-if="this.relays.length > 0">
+  <tr :class="getHeadingClass()"  v-if="query(section).length > 0">
     <th class="table-column status-indicator"></th>
 
     <th class="table-column relay"></th>
@@ -43,11 +43,12 @@
       <span>NIP-11</span>
     </th> -->
   </tr>
-  <tr v-for="relay in sortByLatency()" :key="{relay}" class="relay" :class="getResultClass(relay)">
+  <tr v-for="relay in query(section)" :key="{relay}" :class="getResultClass(relay)" class="relay">
     <RelaySingleComponent
       :relay="relay"
       :result="result[relay]"
       :geo="geo[relay]"
+      :showColumns="showColumns"
       :connection="connections[relay]"
     />
   </tr>
@@ -72,6 +73,11 @@ export default defineComponent({
       default(){
         return true
       }
+    },
+    section: {
+      type: String,
+      required: true,
+      default: ""
     },
     relays:{
       type: Object,
@@ -109,6 +115,23 @@ export default defineComponent({
         return {}
       }
     },
+    showColumns: {
+      type: Object,
+      default() {
+        return {
+          connectionStatuses: false,
+          nips: false,
+          geo: false,
+          additionalInfo: false
+        }
+      }
+    },
+    grouping: {
+      type: Boolean,
+      default(){
+        return true
+      }
+    }
   },
   data() {
     return {
@@ -120,91 +143,70 @@ export default defineComponent({
   },
   computed: {},
   methods: {
-    // getHeadingClass(){
-    //   return {
-    //     online: this.section != "offline",
-    //     public: this.section == "public",
-    //     offline: this.section == "offline",
-    //     restricted: this.section == "restricted"
-    //   }
-    // },
-    getResultClass (relay) {
+    getHeadingClass(){
       return {
-        loaded: this.result?.[relay]?.state == 'complete'
+        online: this.section != "offline",
+        public: this.section == "public",
+        offline: this.section == "offline",
+        restricted: this.section == "restricted"
       }
     },
-    sort_by_latency(ascending) {
-      const self = this
-      return function (a, b) {
-        // equal items sort equally
-        if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
-            return 0;
-        }
-
-        // nulls sort after anything else
-        if (self.result?.[a]?.latency.final === null) {
-            return 1;
-        }
-        if (self.result?.[b]?.latency.final === null) {
-            return -1;
-        }
-
-        // otherwise, if we're ascending, lowest sorts first
-        if (ascending) {
-            return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
-        }
-
-        // if descending, highest sorts first
-        return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
-      };
+    getResultClass (relay) {
+      return {
+        loaded: this.result?.[relay]?.state == 'complete',
+        online: this.section != "offline",
+        offline: this.section == "offline",
+        public: this.section == "public"
+      }
     },
-    sortByLatency () {
-      let unsorted
+    query (aggregate) {
+      let unsorted,
+          sorted,
+          filterFn
 
-      unsorted = this.relays;
+      filterFn = (relay) => this.grouping ? this.result?.[relay]?.aggregate == aggregate : true
+
+      unsorted = this.relays.filter(filterFn);
 
       console.log('unsorted', unsorted)
 
-      // console.log('isDone', this.isDone())
+      console.log('isDone', this.isDone())
 
-      // if(!this.isDone())
-      //   return unsorted
+      if(!this.isDone()) {
+        return unsorted
+      }
 
-      if (unsorted.length)
-        return unsorted.sort(this.sort_by_latency(true))
+      if (unsorted.length) {
+        sorted = unsorted.sort((relay1, relay2) => {
+          return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
+        })
+        console.log('sorted', sorted)
+        return sorted
+      }
 
       return []
     },
-    queryJson(){
-      const result = { relays: this.relays }
+    queryJson(aggregate){
+      const relays = this.query(aggregate)
+      const result = {}
+      result.relays = relays.map( relay => relay )
       return JSON.stringify(result,null,'\t')
     },
     relaysTotal () {
-      return this.relays.length //TODO: Figure out WHY?
+      return this.relays.length
     },
-
     relaysConnected () {
-      return Object.entries(this.result).length
+      return Object.keys(this.result).length
     },
-
-    relaysComplete () {
-      if(!Object.keys(this.results).length) return 0
-      return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
+    relaysCompleted () {
+      let value = Object.entries(this.result).map((value) => { return value.state == 'complete' }).length
+      console.log('relaysCompleted', value)
+      return value
     },
-
-    sha1 (message) {
-      const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
-      return hash
-    },
-
     isDone(){
-      console.log('is done', this.relaysTotal(), '-', this.relaysComplete(), '<=', 0, this.relaysTotal()-this.relaysComplete() <= 0)
-      return this.relaysTotal()-this.relaysComplete() <= 0
+      console.log('isDone()', this.relaysTotal(), '-', this.relaysCompleted(), '=', this.relaysTotal()-this.relaysCompleted()  )
+      return this.relaysTotal()-this.relaysCompleted() == 0
     },
-
-    loadingComplete(){
-      return this.isDone() ? 'loaded' : ''
-    }
   }
 })
 </script>

@@ -1,18 +1,15 @@
 {
   "name": "nostr-watch",
-<<<<<<< Updated upstream
-  "version": "0.0.11",
-=======
   "version": "0.0.14",
->>>>>>> Stashed changes
   "private": true,
   "scripts": {
     "prebuild": "node ./scripts/geo.js",
-    "serve": "yarn prebuild && vue-cli-service serve --host localhost",
+    "serve": "vue-cli-service serve --host localhost",
     "build": "yarn prebuild && vue-cli-service build",
     "watch": "yarn prebuild && vue-cli-service build --watch",
     "lint": "vue-cli-service lint",
     "docker": "yarn docker:build && yarn docker:tag && yarn docker:push",
+    "docker:up": "docker-compose up",
     "docker:build": "docker build . -t nostr-relay-status",
     "docker:tag": "docker tag nostr-relay-status:latest registry.digitalocean.com/sandwich-farm/nostr-relay-status",
     "docker:push": "docker push registry.digitalocean.com/sandwich-farm/nostr-relay-status"
@@ -34,7 +31,7 @@
     "node-emoji": "1.11.0",
     "node-polyfill-webpack-plugin": "2.0.1",
     "nostr": "0.2.5",
-    "nostr-relay-inspector": "0.0.7",
+    "nostr-relay-inspector": "0.0.9",
     "nostr-tools": "0.24.1",
     "onion-regex": "2.0.8",
     "requests": "0.3.0",
@@ -46,8 +43,11 @@
     "vue-final-modal": "3",
     "vue-grid-responsive": "1.3.0",
     "vue-nav-tabs": "0.5.7",
+    "vue-router": "4.1.6",
     "vue-simple-maps": "1.1.3",
     "vue3-popper": "1.5.0",
+    "vue3-storage": "0.1.11",
+    "vue3-tabs-component": "1.1.2",
     "yaml-loader": "^0.6.0",
     "yaml2json": "1.0.2"
   },

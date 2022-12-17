@@ -37,7 +37,7 @@ export default {
             setIP: false,
             setGeo: false,
             getInfo: true,
-            debug: true,
+            // debug: true,
             // data: { result: this.result[relay] }
           }
 

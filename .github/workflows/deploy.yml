@@ -1,0 +1,38 @@
+name: Build & Deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: Yarn Install
+        run: |
+          yarn install
+
+      - name: Docker Build
+        run: |
+          yarn docker:build
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Login to registry
+        run: doctl registry login -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Docker Deploy
+        run: |
+          yarn docker:deploy
+
+      - name: Pull new image and restart
+        uses: appleboy/ssh-action@v0.1.2
+        with:
+          host: ${{secrets.SSH_HOST}} # IP address of the server you wish to ssh into
+          key: ${{secrets.SSH_KEY}} # Private or public key of the server
+          username: ${{ secrets.SSH_USERNAME }} # User of the server you want to ssh into
+          script: docker pull registry.digitalocean.com/sandwich-farm/nostr-relay-status:latest && docker-compose stop && docker-compose up -d
+            

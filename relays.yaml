@@ -39,3 +39,4 @@ relays:
   - 'wss://nostr.zebedee.cloud'
   - 'wss://nostr-2.zebedee.cloud'
   - 'wss://nostr.shadownode.org'
+  - 'wss://nostr.nymsrelay.com/'

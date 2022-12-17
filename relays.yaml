@@ -38,3 +38,4 @@ relays:
   - 'wss://nostr.sandwich.farm'
   - 'wss://nostr.zebedee.cloud'
   - 'wss://nostr-2.zebedee.cloud'
+  - 'wss://nostr.shadownode.org'

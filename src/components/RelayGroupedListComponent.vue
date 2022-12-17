@@ -138,9 +138,7 @@ export default defineComponent({
       showModal: false
     }
   },
-  mounted(){
-    console.log('')
-  },
+  mounted(){},
   computed: {},
   methods: {
     getHeadingClass(){
@@ -168,10 +166,6 @@ export default defineComponent({
 
       unsorted = this.relays.filter(filterFn);
 
-      console.log('unsorted', unsorted)
-
-      console.log('isDone', this.isDone())
-
       if(!this.isDone()) {
         return unsorted
       }
@@ -180,7 +174,6 @@ export default defineComponent({
         sorted = unsorted.sort((relay1, relay2) => {
           return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
         })
-        console.log('sorted', sorted)
         return sorted
       }
 
@@ -200,11 +193,9 @@ export default defineComponent({
     },
     relaysCompleted () {
       let value = Object.entries(this.result).map((value) => { return value.state == 'complete' }).length
-      console.log('relaysCompleted', value)
       return value
     },
     isDone(){
-      console.log('isDone()', this.relaysTotal(), '-', this.relaysCompleted(), '=', this.relaysTotal()-this.relaysCompleted()  )
       return this.relaysTotal()-this.relaysCompleted() == 0
     },
   }

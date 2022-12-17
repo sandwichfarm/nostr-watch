@@ -172,10 +172,6 @@ export default defineComponent({
            users = Object.entries(this.result?.identities),
            count = 0
 
-       // if(!this.result?.identities) return
-
-       console.log(this.result?.uri, 'admin', this.result?.identities.serverAdmin, this.result.info)
-
        if(this.result?.identities) {
          if(this.result?.identities.serverAdmin) {
            string = `Relay has registered an administrator pubkey: ${this.result?.identities.serverAdmin}. `
@@ -209,11 +205,10 @@ export default defineComponent({
        return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
      },
      async copy(text) {
-       console.log('copy', text)
        try {
          await navigator.clipboard.writeText(text);
-       } catch($e) {
-         //console.log('Cannot copy');
+       } catch(err) {
+        console.error(err)
        }
      },
    }

@@ -177,8 +177,6 @@ export default defineComponent({
     
     if(this.isExpired())
       this.check(this.relay)
-
-    // console.log('zing ', (Date.now() - this.lastUpdate) /1000)
   },
 
   computed: {
@@ -247,10 +245,8 @@ export default defineComponent({
           this.result = result
           this.result.checkClass = {read: null, write: null, connect: null}
           this.setResultClass('connect')
-          /* console.log('result on open', this.result) */
         })
         .on('complete', (instance) => {
-          /* console.log('on_complete', instance.result.aggregate) */
           this.result = instance.result
           this.messages[this.relay] = instance.inbox
 
@@ -260,9 +256,6 @@ export default defineComponent({
           this.setResultClass('read')
           this.setResultClass('write')
           this.saveState(relay)
-          /* console.log(this.result)
-          console.log(this.result.info.supported_nips) */
-          /* resolve(this.result) */
         })
         .on('notice', (notice) => {
           const hash = this.sha1(notice)
@@ -272,16 +265,12 @@ export default defineComponent({
           let response_obj = {...message_obj, ...code_obj}
 
           this.result.observations.push( new InspectorObservation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
-
-          /* console.log(this.result.observations) */
         })
         .on('close', (msg) => {
           console.warn("CAUTION", msg)
-          /* console.log('supported_nips', inspect.result.info) */
           })
         .on('error', (err) => {
           console.error("ERROR", err)
-          /* reject(err) */
         })
         .run()
 
@@ -295,8 +284,6 @@ export default defineComponent({
       : this.result?.check?.[key] === false
         ? 'failure'
         : 'pending'
-
-      /* console.log('result class', result) */
       this.result.checkClass[key] = result
     },
     getLoadingClass () {
@@ -334,8 +321,6 @@ export default defineComponent({
           users = Object.entries(this.result.identities),
           count = 0
 
-       // console.log(this.result.uri, 'admin', this.result.identities.serverAdmin)
-
       if(this.result.identities) {
         if(this.result.identities.serverAdmin) {
           string = `Relay has registered an administrator pubkey: ${this.result.identities.serverAdmin}. `
@@ -366,22 +351,12 @@ export default defineComponent({
       return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
     },
     async copy(text) {
-      // console.log('copy', text)
       try {
         await navigator.clipboard.writeText(text);
-      } catch($e) {
-        //console.log('Cannot copy');
+      } catch(err) {
+        console.error(err)
       }
     },
-
-    // adjustResult (relay) {
-    //   this.result.observations.forEach( observation => {
-    //     if (observation.code == "BLOCKS_WRITE_STATUS_CHECK") {
-    //       this.result.check.write = false
-    //       this.result.aggregate = 'public'
-    //     }
-    //   })
-    // },
 
     setAggregateResult () {
       if(!this.result) return
@@ -401,11 +376,8 @@ export default defineComponent({
       }
     },
 
-
-
     sha1 (message) {
       const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
-      // //console.log(message, ':', hash)
       return hash
     },
 

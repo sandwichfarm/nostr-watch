@@ -59,7 +59,6 @@ export default defineComponent({
 
     if(this.isDone()) {
       this.saveState('lastUpdate')
-      console.log('isDone()', this.getState('lastUpdate') )
     }
 
     this.refreshData.untilNext = this.timeUntilRefresh() 

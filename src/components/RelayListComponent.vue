@@ -115,9 +115,7 @@ export default defineComponent({
       showModal: false
     }
   },
-  mounted(){
-    console.log('')
-  },
+  mounted(){},
   computed: {},
   methods: {
     // getHeadingClass(){

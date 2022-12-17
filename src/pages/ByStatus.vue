@@ -99,7 +99,7 @@ import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.ya
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
-  name: 'RelayTableComponent',
+  name: 'ByStatus',
   components: {
     Row,
     Column,
@@ -150,35 +150,14 @@ export default defineComponent({
       this.result[relay] = this.storage.getStorageSync(relay)
     })
 
-    console.log('meow', this.result)
-
     if(Object.keys(this.result).length)
       this.hasStorage = true
 
     if(this.isExpired())
       this.relays.forEach(async relay => await this.check(relay) )
 
-    console.log('zzz', this.result)
-
-    //   this.relays.forEach( relay => {
-    //     // this.result[relay].state = 'complete'
-    //     // this.setAggregateResult(relay)
-    //     // this.adjustResult(relay)
-    //     console.log('boom', relay, this.result[relay])
-    //   })
-    // }
-    // console.log(`zing ${Date.now()} - ${this.lastUpdate} = ${Date.now()-this.lastUpdate} > ${60*1000}`)
     return true
   },
-
-  // head: {
-  //   // creates a title tag in header.
-  //   base () {
-  //     return {
-  //       href: "/"
-  //     }
-  //   }
-  // },
 
   computed: {},
 

@@ -76,7 +76,7 @@ import { geo } from '../../geo.yaml'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
-  name: 'RelayTableComponent',
+  name: 'HomePage',
   components: {
     Row,
     Column,
@@ -118,8 +118,6 @@ export default defineComponent({
     })
 
     this.invalidate()
-
-    console.log('last update',-1*(Date.now()-(this.lastUpdate+this.preferences.cacheExpiration)))
   },
 
   computed: {

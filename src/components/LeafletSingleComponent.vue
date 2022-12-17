@@ -48,8 +48,6 @@ export default {
   },
   methods: {
     getLatLng(){
-      console.log("geo", this.relay, this.geo[this.relay].lat, this.geo[this.relay].lon)
-      // if (!geo[this.relay]) console.log("no geo?", geo, this.relay, geo[this.relay])
       return [this.geo[this.relay].lat, this.geo[this.relay].lon]
     },
     getCircleColor(relay){
@@ -66,9 +64,7 @@ export default {
       return 'black'
     }
   },
-  async mounted() {
-    console.log('GEO', this.geo[this.relay])
-  },
+  async mounted() {},
   props: {
     geo: {
       type: Object,

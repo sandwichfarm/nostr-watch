@@ -7,6 +7,7 @@
     <span>
       <PreferencesComponent />
     </span>
+
   </ul>
 </nav>
 </template>

@@ -48,13 +48,8 @@ export default {
           // .on('open', (e, result) => {
           //   this.result[relay] = result
           // })
-          .on('complete', (instance) => {
-            // console.log('getinfo()', instance.result.info)
-            
+          .on('complete', (instance) => {   
             this.result[relay] = instance.result
-            
-            // this.setFlag(relay)
-            // this.adjustResult(relay)
 
             this.result[relay].aggregate = this.getAggregate(relay)
 
@@ -90,7 +85,6 @@ export default {
 
       switch(type){
         case 'relay':
-          console.log('savestate', 'relay', data || this.result[data])
           if(data)
             data.aggregate = this.getAggregate(key)
           store = {
@@ -104,7 +98,6 @@ export default {
           }
           break;
         case 'messages':
-          console.log('savestate', 'messages', this.messages[data])
           store = {
             key: `${key}_inbox`,
             data: data || this.messages[key],
@@ -116,18 +109,15 @@ export default {
           }
           break;
         case 'lastUpdate':
-          console.log('savestate', 'lastUpdate', now)
           store = {
             key: "lastUpdate",
             data: now
           }
           success = () => {
-            // console.log('lastupdate success', successCallback.msg)
             this.lastUpdate = now
           }
           break;
         case 'preferences':
-          console.log('savestate', 'preferences', this.preferences)
           store = {
             key: "preferences",
             data: this.preferences
@@ -166,7 +156,6 @@ export default {
     },
 
     getAggregate: function(relay) {
-      console.log('getAggregate()', this.result?.[relay]?.check.connect, this.result?.[relay]?.check.read, this.result?.[relay]?.check.write)
       let aggregateTally = 0
       aggregateTally += this.result?.[relay]?.check.connect ? 1 : 0
       aggregateTally += this.result?.[relay]?.check.read ? 1 : 0
@@ -200,7 +189,6 @@ export default {
     },
 
     isDone: function(){
-      console.log('is done', this.relaysTotal(), '-', this.relaysConnected(), '<=', 0, this.relaysTotal()-this.relaysConnected() <= 0)
       return this.relaysTotal()-this.relaysComplete() <= 0
     },
 

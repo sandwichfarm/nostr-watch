@@ -161,13 +161,6 @@ export default defineComponent({
 
       unsorted = this.relays;
 
-      console.log('unsorted', unsorted)
-
-      // console.log('isDone', this.isDone())
-
-      // if(!this.isDone())
-      //   return unsorted
-
       if (unsorted.length)
         return unsorted.sort(this.sort_by_latency(true))
 
@@ -196,7 +189,6 @@ export default defineComponent({
     },
 
     isDone(){
-      console.log('is done', this.relaysTotal(), '-', this.relaysComplete(), '<=', 0, this.relaysTotal()-this.relaysComplete() <= 0)
       return this.relaysTotal()-this.relaysComplete() <= 0
     },
 

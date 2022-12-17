@@ -328,23 +328,3 @@ tr.offline .location {
  }
 
 }
-
-
-nav.menu a { 
-  text-decoration: none;
-  display: inline-block;
-  margin: 0 22px 0 0;
-  padding:5px 10px;
-  color:#000;
-  border-bottom: 1px dotted #999;
-}
-
-nav.menu a.active { 
-  background:#000;
-  color: #fff;
-  border: none;
-}
-
-nav.menu a:hover { 
-  background: #f0f0f0;
-}

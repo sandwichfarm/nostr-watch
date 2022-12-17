@@ -10,8 +10,10 @@
     <router-link :to="`/relay/${relayClean(relay)}`" active-class="active">{{ relay }}</router-link>
   </td>
 
-  <td class="verified" v-if="result?.identities">
-    <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="Object.entries(result?.identities).length"><span class="shape verified"></span></span></span>
+  <td class="verified">
+    <span v-if="result?.identities">
+      <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="Object.entries(result?.identities).length"><span class="shape verified"></span></span></span>
+    </span>
   </td>
 
   <td class="location">{{ getFlag() }}</td>

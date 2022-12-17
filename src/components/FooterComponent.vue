@@ -26,17 +26,4 @@
 </template>
 
 <script>
-export default defineComponent({
-  name: 'FooterComponent',
-  components: {},
-  props : {
-  },
-  updated : {
-  },
-  data() {
-    return {
-      preferences,
-      refreshData
-    }
-  }
 </script>

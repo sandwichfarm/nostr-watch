@@ -192,7 +192,7 @@ export default defineComponent({
 
   methods: {
     isExpired(){
-      return typeof this.lastUpdate === 'undefined' || Date.now() - this.lastUpdate > this.cacheExpiration
+      return typeof this.lastUpdate === 'undefined' || Date.now() - this.lastUpdate > this.preferences.cacheExpiration
     },
 
     saveState(relay){

@@ -28,8 +28,7 @@ jobs:
         run: doctl registry login -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Docker Deploy
-        run: |
-          yarn docker:deploy
+        run: yarn docker:push
 
       - name: Pull new image and restart
         uses: appleboy/ssh-action@v0.1.2

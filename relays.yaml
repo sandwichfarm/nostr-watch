@@ -5,6 +5,7 @@ relays:
   - 'wss://nostr-relay.wlvs.space'
   - 'wss://nostr.onsats.org'
   - 'wss://nostr-relay.untethr.me'
+  - 'wss://nostr-relay.lnmarkets.com'
   - 'wss://nostr.unknown.place'
   - 'wss://nostr.semisol.dev'
   - 'wss://nostr-pub.semisol.dev'

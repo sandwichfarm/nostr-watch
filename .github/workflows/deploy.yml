@@ -7,21 +7,24 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+
+      - name: Checkout 
+        uses: actions/checkout@v2
       
       - name: Yarn Install
-        run: |
-          yarn install
+        run: yarn install
 
-      - name: Docker Build
+      - name: Docker Build & tag
         run: |
           yarn docker:build
+          yarn docker:tag
 
-      - name: Install doctl
+      - name: Configure doctl
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Login to registry
+      - name: Login to doctl registry
         run: doctl registry login -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Docker Deploy
@@ -31,8 +34,7 @@ jobs:
       - name: Pull new image and restart
         uses: appleboy/ssh-action@v0.1.2
         with:
-          host: ${{secrets.SSH_HOST}} # IP address of the server you wish to ssh into
-          key: ${{secrets.SSH_KEY}} # Private or public key of the server
-          username: ${{ secrets.SSH_USERNAME }} # User of the server you want to ssh into
+          host: ${{secrets.SSH_DEPLOY_HOST}}
+          key: ${{secrets.SSH_DEPLOY_KEY}} 
+          username: ${{ secrets.SSH_DEPLOY_USERNAME }}
           script: docker pull registry.digitalocean.com/sandwich-farm/nostr-relay-status:latest && docker-compose stop && docker-compose up -d
-            

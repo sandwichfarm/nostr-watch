@@ -25,6 +25,19 @@ const localMethods = {
     nextRefresh: function(){
       return this.timeSince(Date.now()-(this.lastUpdate+this.preferences.cacheExpiration-Date.now()))
     },
+    setRefreshInterval: function(){
+      this.interval = setInterval(() => {
+        if(!this.preferences.refresh) return false
+        this.preferences = this.getState('preferences') || this.preferences
+
+        this.refreshData.untilNext = this.timeUntilRefresh() 
+        this.refreshData.sinceLast = this.timeSinceRefresh() 
+
+        if(this.isExpired())
+          this.invalidate()
+
+      }, 1000)
+    }
 }
 
 export default defineComponent({
@@ -40,16 +53,8 @@ export default defineComponent({
       sinceLast: this.timeSinceRefresh()
     })
 
-    setInterval(() => {
-      this.preferences = this.getState('preferences') || this.preferences
-
-      this.refreshData.untilNext = this.timeUntilRefresh() 
-      this.refreshData.sinceLast = this.timeSinceRefresh() 
-
-      if(this.isExpired())
-        this.invalidate()
-
-    }, 1000)
+    if(this.preferences.refresh)
+      this.setRefreshInterval()
   },
   updated(){
     this.saveState('preferences')
@@ -61,6 +66,9 @@ export default defineComponent({
 
     this.refreshData.untilNext = this.timeUntilRefresh() 
     this.refreshData.sinceLast = this.timeSinceRefresh() 
+
+    if(this.preferences.refresh)
+      this.setRefreshInterval()
   },
   computed: {},
   methods: Object.assign(localMethods, sharedMethods),

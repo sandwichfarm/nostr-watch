@@ -36,3 +36,5 @@ relays:
   - 'wss://astral.ninja'
   - 'wss://relay.sovereign-stack.org'
   - 'wss://nostr.sandwich.farm'
+  - 'wss://nostr.zebedee.cloud'
+  - 'wss://nostr-2.zebedee.cloud'

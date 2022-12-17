@@ -12,22 +12,17 @@ A client-side nostr network status built with Vue3, [nostr-js](https://github.co
 - [x] Real-time, client-centric latency tests 
 - [x] Relay Identities
 - [x] Static JSON API for **all** known relays shared via [/relays.json](https://nostr.watch/relays.json)
-- [ ] Detailed Relay Modal view _In Progress_ 
-- [ ] Relay Behavior Analysis _In progress_
-- [ ] NIP Checks _In progress_ 
-- [ ] Geo Checks (build-time) _In progress_ 
+- [x] Detailed Relay View
+- [x] Relay Behavior Analysis
+- [x] NIP Checks
+- [x] Geo Checks (build-time)
 - [ ] Optional Companion Backend for historical data and relay relief, front-end gracefully degrades if inaccessible. 
 - [ ] "Best Relays for a User" and "Best Relays for a Developer" dynamic aggregate, the former based largely on a balance of Latency and NIP support, the latter based largely on NIP support. Unique results for each visitor
 
 ## Todo [Road to Beta] 
 - [ ] Expose all features in frontend 
-- [ ] General Housekeeping 
+- [ ] Clean codebase 
 - [ ] Tests
-
-## Todo [Future] 
-- [ ] Different views for different audiences (users, developers, relay operators)
-- [ ] Badges 
-- [ ] Vue3 components package 
 
 ## Project setup
 ```

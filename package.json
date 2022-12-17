@@ -1,6 +1,6 @@
 {
   "name": "nostr-watch",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "private": true,
   "scripts": {
     "prebuild": "node ./scripts/geo.js",

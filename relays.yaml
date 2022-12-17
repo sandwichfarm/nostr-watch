@@ -16,6 +16,7 @@ relays:
   - 'wss://nostr.openchain.fr'
   - 'wss://nostr.delo.software'
   - 'wss://relay.nostr.info'
+  - 'wss://relay.nostr.pro'
   - 'wss://relay.minds.com/nostr/v1/ws'
   - 'wss://nostr.zaprite.io'
   - 'wss://nostr.oxtr.dev'

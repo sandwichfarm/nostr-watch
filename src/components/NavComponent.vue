@@ -1,8 +1,9 @@
 <template>
 <nav class="menu">
   <ul>
-    <li><a href="#">add relay</a></li>
-    <li><a href="#">github</a></li>
+    <router-link :to="`/`" active-class="active">Home</router-link>
+    <router-link :to="`/status`" active-class="active">Grouped</router-link>
+    <a href="https://github.com/dskvr/nostr-watch/edit/main/relays.yaml" target="_blank">Submit</a>
   </ul>
 </nav>
 </template>

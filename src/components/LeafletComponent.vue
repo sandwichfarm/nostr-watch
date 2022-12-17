@@ -92,8 +92,10 @@ export default {
 
 <style>
 .leaflet-container {
-  margin-top:37px;
+  margin:0;
+  padding:0;
   height:250px !important;
+  width:100%;
 }
 .leaflet-control-zoom {
   display: none !important;

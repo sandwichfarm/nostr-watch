@@ -45,7 +45,7 @@ const query = async function(){
     // console.log(dns, ip)
     geo = await getGeo(ip)
 
-    console.log(geo, ip, dns)
+    // console.log(geo, ip, dns)
 
     if(dns)
       geo.dns = dns[dns.length-1]

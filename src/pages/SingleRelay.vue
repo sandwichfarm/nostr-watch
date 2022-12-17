@@ -7,13 +7,22 @@
   <!-- <NavComponent /> -->
   <div id="wrapper">
 
+    <row container :gutter="12">
+      <column :xs="12" :md="12" :lg="12" class="title-card">
+        <h1>{{ relayUrl() }}</h1>
+      </column>
+    </row>
+
+    <row container :gutter="12">
+      <column :xs="12" :md="12" :lg="12" class="title-card">
+        <NavComponent />
+      </column>
+    </row>
+
 
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12" class="title-card">
         <div style="display: none">{{result}}</div> <!-- ? -->
-
-        <h1>{{ relayUrl() }}</h1>
-        <!-- <h2>nostr.watch<sup>{{version}}</sup></h2> -->
         <br >
 
         <span  class="badges">
@@ -92,32 +101,6 @@
 
         <div style="display: none">{{result}}</div> <!-- ? -->
 
-
-
-
-      </column>
-
-
-    </row>
-
-
-
-    <row container :gutter="12">
-      <column :xs="12" :md="6" :lg="6">
-      <div style="display: none">{{result}}</div> <!-- ? -->
-
-
-
-
-      </column>
-      <column :xs="12" :md="6" :lg="6">
-
-
-
-    <!-- <h4 v-if="result.info?.supported_nips">NIP Support</h4> -->
-
-
-
       </column>
     </row>
 
@@ -127,26 +110,29 @@
 </template>
 
 <script>
+
 import { defineComponent} from 'vue'
+import { useStorage } from "vue3-storage";
+
 import LeafletSingleComponent from '../components/LeafletSingleComponent.vue'
-// import NavComponent from './NavComponent.vue'\
-
-import SafeMail from "@2alheure/vue-safe-mail";
-
-
-import { countryCodeEmoji } from 'country-code-emoji';
-import emoji from 'node-emoji';
+import NavComponent from '../components/NavComponent.vue'
 
 import { Row, Column } from 'vue-grid-responsive';
+import SafeMail from "@2alheure/vue-safe-mail";
+import emoji from 'node-emoji';
+import { countryCodeEmoji } from 'country-code-emoji';
+
+// import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
+// import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector' 
+import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector' 
 
 import { version } from '../../package.json'
-
 import { relays } from '../../relays.yaml'
 import { geo } from '../../geo.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
-import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
-/* import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector' */
+
+
 
 import crypto from "crypto"
 
@@ -157,8 +143,8 @@ export default defineComponent({
     Row,
     Column,
     LeafletSingleComponent,
-    // NavComponent
-    SafeMail
+    NavComponent,
+    SafeMail,
   },
 
   data() {
@@ -169,28 +155,72 @@ export default defineComponent({
       nips: {},
       alerts: {},
       timeouts: {},
+      intervals: {},
       lastPing: Date.now(),
       nextPing: Date.now() + (60*1000),
       count: 0,
       geo,
       relay: "",
-      version: version
+      version: version,
+      storage: null,
+      lastUpdate: null,
+      cacheExpiration: 10*60*1000 //10 minutes
     }
   },
 
   async mounted() {
-    console.log('mounted')
     this.relay = this.relayUrl()
-    console.log('relay', this.relay)
-    this.check(this.relay)
-    console.log('relay is compete', this.relay, this.result.check)
+
+    this.storage = useStorage()
+    this.lastUpdate = this.storage.getStorageSync('lastUpdate')
+    this.result = this.storage.getStorageSync(this.relay)
+    
+    if(this.isExpired())
+      this.check(this.relay)
+
+    // console.log('zing ', (Date.now() - this.lastUpdate) /1000)
   },
 
   computed: {
 
   },
 
+  updated() {
+     Object.keys(this.timeouts).forEach(timeout => clearTimeout(this.timeouts[timeout]))
+     Object.keys(this.intervals).forEach(interval => clearInterval(this.intervals[interval]))
+  },
+
   methods: {
+    isExpired(){
+      return typeof this.lastUpdate === 'undefined' || Date.now() - this.lastUpdate > this.cacheExpiration
+    },
+
+    saveState(relay){
+      this.storage
+        .setStorage({
+          key: relay,
+          data: this.result
+        })
+        .then(successCallback => {
+          console.log(successCallback.errMsg);
+        })
+        .catch(failCallback => {  
+          console.log(failCallback.errMsg);
+        })
+
+      this.storage
+        .setStorage({
+          key: "lastUpdate",
+          data: Date.now()
+        })
+        .then(successCallback => {
+          console.log(successCallback.errMsg);
+          this.lastUpdate = Date.now()
+        })
+        .catch(failCallback => {
+          console.log(failCallback.errMsg);
+        })
+    },
     relayUrl() {
       // We will see what `params` is shortly
       return `wss://${this.$route.params.relayUrl}`
@@ -229,6 +259,7 @@ export default defineComponent({
           /* this.adjustResult(relay) */
           this.setResultClass('read')
           this.setResultClass('write')
+          this.saveState(relay)
           /* console.log(this.result)
           console.log(this.result.info.supported_nips) */
           /* resolve(this.result) */

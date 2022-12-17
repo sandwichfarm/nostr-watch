@@ -213,6 +213,11 @@ export default defineComponent({
       return Object.entries(this.result).length
     },
 
+    relaysComplete () {
+      if(!Object.keys(this.results).length) return 0
+      return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
+    },
+
     sha1 (message) {
       const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
       // //console.log(message, ':', hash)
@@ -220,7 +225,7 @@ export default defineComponent({
     },
 
     isDone(){
-      return this.relaysTotal()-this.relaysConnected() == 0
+      return this.relaysTotal()-this.relaysComplete() == 0
     },
 
     loadingComplete(){

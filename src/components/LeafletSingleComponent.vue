@@ -7,7 +7,6 @@
     :minZoom="zoom"
     :maxZoom="zoom"
     :zoomControl="false"
-    style="height:50vh"
     >
 
     <l-tile-layer
@@ -102,8 +101,7 @@ export default {
 .leaflet-container {
   margin:0;
   height:250px !important;
-  width:1000%;
-
+  width:100%;
 }
 .leaflet-control-zoom {
   display: none !important;

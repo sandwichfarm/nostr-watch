@@ -5,8 +5,12 @@
     <router-link :to="`/status`" active-class="active">Grouped</router-link>
     <a href="https://github.com/dskvr/nostr-watch/edit/main/relays.yaml" target="_blank">Add Relay</a>
     <span>
+      <a href="https://github.com/dskvr/nostr-watch">Git</a>
+    </span>
+    <span>
       <PreferencesComponent />
     </span>
+
   </ul>
 </nav>
 </template>

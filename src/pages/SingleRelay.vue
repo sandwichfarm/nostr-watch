@@ -122,9 +122,9 @@ import SafeMail from "@2alheure/vue-safe-mail";
 import emoji from 'node-emoji';
 import { countryCodeEmoji } from 'country-code-emoji';
 
-// import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
+import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
 // import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector' 
-import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector' 
+// import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector' 
 
 import { version } from '../../package.json'
 import { relays } from '../../relays.yaml'

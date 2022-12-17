@@ -58,38 +58,9 @@
               :showJson="false"
             />
 
-            </table>
-</div>
+        </table>
+      </div>
 
-
-
-
-
-
-    <!-- <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12">
-
-      </column>
-    </row> -->
-
-    <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12">
-        <div class="block">
-          <table>
-
-           
-
-
-          </table>
-        </div>
-      </column>
-    </row>
-
-    <!-- <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12" class="processing-card loading">
-        <span v-if="(relaysTotal()-relaysConnected()>0)">Processing {{ relaysConnected() }}/{{ relaysTotal() }}</span>
-      </column>
-    </row> -->
 
    <section id="footer">
       <RefreshComponent 

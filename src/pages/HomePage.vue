@@ -105,13 +105,7 @@ export default defineComponent({
     }
   },
 
-
-
-  updated(){
-    
-  },
-
-  
+  updated(){},
 
   async mounted() {
     this.storage = useStorage()
@@ -126,23 +120,6 @@ export default defineComponent({
     this.invalidate()
 
     console.log('last update',-1*(Date.now()-(this.lastUpdate+this.preferences.cacheExpiration)))
-
-    // this.refreshData = reactive({
-    //   untilNext: this.timeUntilRefresh(),
-    //   sinceLast: this.timeSinceRefresh()
-    // })
-
-    // setInterval(() => {
-
-    //   this.refreshData.untilNext = this.timeUntilRefresh() 
-    //   this.refreshData.sinceLast = this.timeSinceRefresh() 
-
-    //   console.log('timesince22222', this.refreshData.untilNext, this.refreshData.sinceLast)
-
-    //   if(this.isExpired())
-    //     this.invalidate()
-
-    // }, 1000)
   },
 
   computed: {

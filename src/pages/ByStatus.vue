@@ -92,7 +92,7 @@ import LeafletComponent from '../components/LeafletComponent.vue'
 import NavComponent from '../components/NavComponent.vue'
 import RefreshComponent from '../components/RefreshComponent.vue'
 
-import { version } from '../../package.json'
+import { version as nwVersion } from '../../package.json'
 import { relays } from '../../relays.yaml'
 import { geo } from '../../geo.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
@@ -125,7 +125,7 @@ export default defineComponent({
       count: 0,
       storage: null,
       geo,
-      version: version,
+      version: nwVersion,
       hasStorage: false,
       lastUpdate: null,
       cacheExpiration: (30*60*1000),

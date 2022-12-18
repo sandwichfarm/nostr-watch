@@ -44,6 +44,7 @@ relays:
   - 'wss://relay.valireum.net'
   - 'wss://nostr.fmt.wiz.biz'
   - 'wss://nostr.v0l.io'
+  - 'wss://nostr.fly.dev'
   - 'wss://nostr.nordlysln.net'
   - 'wss://nostr-relay.gkbrk.com'
   - 'wss://nostr.zerofeerouting.com'

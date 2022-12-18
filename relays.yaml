@@ -51,4 +51,5 @@ relays:
   - 'wss://nostr.zerofeerouting.com'
   - 'wss://no.str.cr'
   - 'wss://relay.nostr.ch'
+  - 'wss://rsslay.nostr.net'
 

@@ -52,4 +52,5 @@ relays:
   - 'wss://no.str.cr'
   - 'wss://relay.nostr.ch'
   - 'wss://rsslay.nostr.net'
+  - 'wss://nostr.cercatrova.me'
 

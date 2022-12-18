@@ -57,7 +57,6 @@
 
 import { defineComponent } from 'vue'
 import { useStorage } from "vue3-storage";
-// import { CallbackResult } from "vue3-storage/dist/lib/types";
 
 import { Row, Column } from 'vue-grid-responsive';
 // import { Inspector, InspectorObservation } from '../../lib/nostr-relay-inspector' 
@@ -75,8 +74,8 @@ import { relays } from '../../relays.yaml'
 import { geo } from '../../geo.yaml'
 
 export default defineComponent({
-  title: "nostr.watch registry & network status",
   name: 'HomePage',
+
   components: {
     Row,
     Column,

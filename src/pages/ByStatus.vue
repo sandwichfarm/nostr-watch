@@ -98,8 +98,8 @@ import { geo } from '../../geo.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
 export default defineComponent({
-  title: "nostr.watch registry & network status",
   name: 'ByStatus',
+  
   components: {
     Row,
     Column,

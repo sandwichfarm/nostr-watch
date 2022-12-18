@@ -43,6 +43,8 @@ export default defineComponent({
   name: 'RefreshComponent',
   components: {},
   mounted(){
+    clearInterval(this.interval)
+
     this.storage = useStorage()
     this.lastUpdate = this.getState('lastUpdate')|| this.lastUpdate
     this.preferences = this.getState('preferences') || this.preferences
@@ -57,7 +59,8 @@ export default defineComponent({
   updated(){
     this.saveState('preferences')
 
-    this.saveState('lastUpdate')
+    if(this.relays && this.isDone())
+      this.saveState('lastUpdate')
 
     this.refreshData.untilNext = this.timeUntilRefresh() 
     this.refreshData.sinceLast = this.timeSinceRefresh() 
@@ -72,9 +75,9 @@ export default defineComponent({
       }
     },
     relaysProp:{
-      type: Object,
+      type: Array,
       default(){
-        return {}
+        return []
       }
     },
     messagesProp:{

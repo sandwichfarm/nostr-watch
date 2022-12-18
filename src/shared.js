@@ -1,4 +1,5 @@
 import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
+// import { Inspector, InspectorObservation } from '../lib/nostr-relay-inspector'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../codes.yaml'
 
 import crypto from "crypto"
@@ -64,7 +65,13 @@ export default {
           })
           .on('notice', (notice) => {
             const hash = this.sha1(notice)  
+            console.log('hash', hash)
             let   message_obj = RELAY_MESSAGES[hash]
+            console.log('message_obj', message_obj)
+            
+            if(message_obj && Object.prototype.hasOwnProperty.call(message_obj, 'code'))
+              return
+
             let   code_obj = RELAY_CODES[message_obj.code]
 
             let response_obj = {...message_obj, ...code_obj}

@@ -109,9 +109,9 @@
     </row>
     
 
-    <RefreshComponent 
+   <!--  <RefreshComponent 
         :relay="relay"
-      />
+      /> -->
     <span class="credit"><a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>, built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
 
   </div>
@@ -124,7 +124,7 @@ import { useStorage } from "vue3-storage";
 
 import LeafletSingleComponent from '../components/LeafletSingleComponent.vue'
 import NavComponent from '../components/NavComponent.vue'
-import RefreshComponent from '../components/RefreshComponent.vue'
+// import RefreshComponent from '../components/RefreshComponent.vue'
 
 import { Row, Column } from 'vue-grid-responsive';
 import SafeMail from "@2alheure/vue-safe-mail";
@@ -163,15 +163,15 @@ const localMethods = {
 }
 
 export default defineComponent({
-  title: "nostr.watch registry & network status",
   name: 'SingleRelay',
+  
   components: {
     Row,
     Column,
     LeafletSingleComponent,
     NavComponent,
     SafeMail,
-    RefreshComponent,
+    // RefreshComponent,
   },
 
   data() {

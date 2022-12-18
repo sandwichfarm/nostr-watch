@@ -61,7 +61,7 @@
                   <td v-if="value[0]!='contact' && value[0]!='pubkey' && value[0]!='software' && value[0]!='version'">{{ value[1] }} </td>
                   <td v-if="value[0]=='contact'"><SafeMail :email="value[1]" /></td>
                   <td v-if="value[0]=='pubkey' || value[0]=='version'"><code>{{ value[1] }}</code></td>
-                  <td v-if="value[0]=='software'"><a href="{{ value[1] }}">{{ value[1] }}</a></td>
+                  <td v-if="value[0]=='software'"><a :href="value[1]">{{ value[1] }}</a></td>
               </tr>
             </tbody>
             <tr v-if="Object.entries(result.info).length == 0 && result.check.connect">

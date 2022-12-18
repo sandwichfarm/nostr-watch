@@ -163,6 +163,7 @@ const localMethods = {
 }
 
 export default defineComponent({
+  title: "nostr.watch registry & network status",
   name: 'SingleRelay',
   
   components: {

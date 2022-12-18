@@ -5,17 +5,15 @@ import Vue3Storage from "vue3-storage";
 import router from './router'
 import "./styles/main.scss"
 import directives from "./directives/"
-// import titleMixin from './mixins/titleMixin'
+import titleMixin from './mixins/titleMixin'
 import {Tabs, Tab} from 'vue3-tabs-component';
-import VueMeta from 'vue-meta'
 
 const app = createApp(App)
   .use(router)
-  .use(VueMeta)
   .use(Vue3Storage, { namespace: "nostrwatch_" })
   .component('tabs', Tabs)
   .component('tab', Tab)
-  // .mixin(titleMixin)
+  .mixin(titleMixin)
 
 directives(app);
 

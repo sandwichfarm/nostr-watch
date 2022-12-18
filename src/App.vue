@@ -7,18 +7,7 @@
 
 export default {
   name: 'App',
-  components: {},
-  metaInfo: {
-    title: 'nostr.watch registry & network status',
-    titleTemplate: '%s | nostr.watch',
-    meta: [
-      {
-        vmid: 'description',
-        name: 'description',
-        content: 'nostr.watch monitors the relays that make up the nostr network providing useful information for developers and users.'
-      }
-    ]
-  }
+  components: {}
 }
 </script>
 

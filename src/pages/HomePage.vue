@@ -74,6 +74,7 @@ import { relays } from '../../relays.yaml'
 import { geo } from '../../geo.yaml'
 
 export default defineComponent({
+  title: "nostr.watch registry & network status",
   name: 'HomePage',
 
   components: {

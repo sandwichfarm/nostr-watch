@@ -75,7 +75,7 @@
               <td>{{ value[0] }}</td>
               <td><code>{{ value[1] }}</code></td>
             </tr>
-            <tr v-if="!Object.keys(!result.identities).length">
+            <tr v-if="Object.entries(result.identities).length==0">
               Relay does not provide NIP-05 support and has not registered an administrator key.
             </tr>
           </table>

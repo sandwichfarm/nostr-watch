@@ -134,4 +134,7 @@ export default defineComponent({
   position:relative;
   z-index:1;
 }
+table {
+  border-collapse: collapse !important;
+}
 </style>

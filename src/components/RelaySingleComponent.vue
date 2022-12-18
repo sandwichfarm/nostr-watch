@@ -276,4 +276,9 @@ td.verified span {
   position:relative;
   left:-7px;
 }
+
+ td {
+    padding-top:2px;
+    padding-bottom:2px;
+  }
 </style>

@@ -13,6 +13,7 @@
       url="http://{s}.tile.osm.org/{z}/{x}/{y}.png"
       layer-type="base"
       name="OpenStreetMap"
+      attribution='<a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     />
 
     <!-- <l-marker v-for="([relay, result]) in Object.entries(geo)" :lat-lng="getLatLng(result)" :key="relay">

@@ -40,3 +40,4 @@ relays:
   - 'wss://nostr.nymsrelay.com/'
   - 'wss://expensive-relay.fiatjaf.com'
   - 'wss://relay.kronkltd.net'
+  - 'wss://relay.valireum.net'

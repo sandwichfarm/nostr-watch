@@ -45,3 +45,5 @@ relays:
   - 'wss://nostr.fmt.wiz.biz'
   - 'wss://nostr.v0l.io'
   - 'wss://nostr-relay.gkbrk.com'
+  - 'wss://nostr.zerofeerouting.com'
+  - 'wss://no.str.cr'

@@ -79,7 +79,7 @@
 <script>
 import { defineComponent} from 'vue'
 import { VueFinalModal } from 'vue-final-modal'
-import { InspectorRelayResult } from 'nostr-relay-inspector'
+import { InspectorResult } from 'nostr-relay-inspector'
 import SafeMail from "@2alheure/vue-safe-mail";
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
@@ -95,7 +95,7 @@ export default defineComponent({
     result: {
       type: Object,
       default(){
-        return structuredClone(InspectorRelayResult)
+        return structuredClone(InspectorResult)
       }
     },
     geo: {

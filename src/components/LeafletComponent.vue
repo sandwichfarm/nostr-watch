@@ -3,7 +3,7 @@
   <l-map
     ref="map"
     v-model:zoom="zoom"
-    :center="[47.41322, -1.219482]"
+    :center="[40.41322, -1.219482]"
     :minZoom="zoom"
     :maxZoom="zoom"
     :zoomControl="false"
@@ -33,10 +33,10 @@
       :fillOpacity="1"
       :class="relay"
       >
-      <l-popup>
+<!--       <l-popup>
         {{ relay }}
         meopw
-      </l-popup>
+      </l-popup> -->
     </l-circle-marker>
   </l-map>
 

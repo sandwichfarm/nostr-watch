@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "prebuild": "node ./scripts/geo.js",
-    "serve": "yarn prebuild && vue-cli-service serve --host localhost",
+    "serve": "vue-cli-service serve --host localhost",
     "build": "yarn prebuild && vue-cli-service build",
     "watch": "yarn prebuild && vue-cli-service build --watch",
     "lint": "vue-cli-service lint",

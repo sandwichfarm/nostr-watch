@@ -301,3 +301,8 @@ export default defineComponent({
 
 })
 </script>
+<style scoped>
+table {
+  border-collapse: collapse !important;
+}
+</style>

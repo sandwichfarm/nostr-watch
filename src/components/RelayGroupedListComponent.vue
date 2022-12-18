@@ -43,7 +43,7 @@
       <span>NIP-11</span>
     </th> -->
   </tr>
-  <tr v-for="relay in query(section)" :key="{relay}" :class="getResultClass(relay)" class="relay">
+  <tr v-for="(relay, index) in query(section)" :key="{relay}" :class="getResultClass(relay, index)" class="relay">
     <RelaySingleComponent
       :relay="relay"
       :result="result[relay]"
@@ -149,12 +149,13 @@ export default defineComponent({
         restricted: this.section == "restricted"
       }
     },
-    getResultClass (relay) {
+    getResultClass (relay, index) {
       return {
         loaded: this.result?.[relay]?.state == 'complete',
         online: this.section != "offline",
         offline: this.section == "offline",
-        public: this.section == "public"
+        public: this.section == "public",
+        even: index % 2,
       }
     },
     query (aggregate) {
@@ -255,11 +256,8 @@ export default defineComponent({
   }
 
   .nip-11 a { cursor: pointer }
-  </style>
 
-  <style scoped>
-  .dark-mode div ::v-deep(.modal-content) {
-    border-color: #2d3748;
-    background-color: #1a202c;
+  tr.even {
+    background:#f9f9f9
   }
   </style>

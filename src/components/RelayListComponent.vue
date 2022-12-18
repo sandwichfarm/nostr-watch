@@ -43,7 +43,7 @@
       <span>NIP-11</span>
     </th> -->
   </tr>
-  <tr v-for="relay in sortByLatency()" :key="{relay}" class="relay" :class="getResultClass(relay)">
+  <tr v-for="(relay, index) in sortByLatency()" :key="{relay}" class="relay" :class="getResultClass(relay, index)">
     <RelaySingleComponent
       :relay="relay"
       :result="result[relay]"
@@ -126,9 +126,10 @@ export default defineComponent({
     //     restricted: this.section == "restricted"
     //   }
     // },
-    getResultClass (relay) {
+    getResultClass (relay, index) {
       return {
-        loaded: this.result?.[relay]?.state == 'complete'
+        loaded: this.result?.[relay]?.state == 'complete',
+        even: index % 2
       }
     },
     sort_by_latency(ascending) {
@@ -252,11 +253,8 @@ export default defineComponent({
   }
 
   .nip-11 a { cursor: pointer }
-  </style>
 
-  <style scoped>
-  .dark-mode div ::v-deep(.modal-content) {
-    border-color: #2d3748;
-    background-color: #1a202c;
+  tr.even {
+    background:#f9f9f9
   }
   </style>

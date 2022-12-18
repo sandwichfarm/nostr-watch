@@ -41,3 +41,5 @@ relays:
   - 'wss://expensive-relay.fiatjaf.com'
   - 'wss://relay.kronkltd.net'
   - 'wss://nostr.r3d.red'
+  - 'wss://relay.valireum.net'
+  - 'wss://nostr.fmt.wiz.biz'

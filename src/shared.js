@@ -4,19 +4,22 @@ import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../codes.yaml'
 import crypto from "crypto"
 
 export default {
-	invalidate: function(force){
+	invalidate: async function(force, single){
       if(!this.isExpired() && !force) 
         return
 
-      this.relays.forEach(async relay => { 
-        await this.check(relay) 
-        this.relays[relay] = this.getState(relay)
-        this.messages[relay] = this.getState(`${relay}_inbox`) 
-      })
-
-      // if(this.preferences.refresh) 
-      //   this.timeouts.invalidate = setTimeout(()=> this.invalidate(), 1000)
-
+      if(single) {
+        await this.check(single) 
+        this.relays[single] = this.getState(single)
+        this.messages[single] = this.getState(`${single}_inbox`) 
+      } 
+      else {
+        this.relays.forEach(async relay => { 
+          await this.check(relay) 
+          this.relays[relay] = this.getState(relay)
+          this.messages[relay] = this.getState(`${relay}_inbox`) 
+        })
+      } 
     },
 
     isExpired: function(){

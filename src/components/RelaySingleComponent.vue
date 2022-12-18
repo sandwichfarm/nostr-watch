@@ -43,10 +43,6 @@
     </ul>
   </td>
 
-  <!-- <td class="nip nip-11">
-    <a v-if="result?.info" @click="showModal=true">✅ </a>
-  </td> -->
-
   <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
     <div class="modal__title">
       <span>{{ result?.info?.name }}</span>
@@ -83,7 +79,7 @@
 <script>
 import { defineComponent} from 'vue'
 import { VueFinalModal } from 'vue-final-modal'
-import InspectorRelayResult from 'nostr-relay-inspector'
+import { InspectorRelayResult } from 'nostr-relay-inspector'
 import SafeMail from "@2alheure/vue-safe-mail";
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';

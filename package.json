@@ -1,6 +1,6 @@
 {
   "name": "nostr-watch",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "private": true,
   "scripts": {
     "prebuild": "node ./scripts/geo.js",
@@ -31,8 +31,7 @@
     "node-emoji": "1.11.0",
     "node-polyfill-webpack-plugin": "2.0.1",
     "nostr": "0.2.5",
-    "nostr-relay-inspector": "0.0.9",
-    "nostr-tools": "0.24.1",
+    "nostr-relay-inspector": "0.0.10",
     "onion-regex": "2.0.8",
     "requests": "0.3.0",
     "sass": "1.56.1",

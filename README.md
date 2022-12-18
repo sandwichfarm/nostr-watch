@@ -2,11 +2,6 @@
 
 A client-side nostr network status built with Vue3, [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). Goal is to produce a client-side app that collects detailed information about nostr relays and the network in general to assist users, developers and relay operators alike.
 
-## Goals 
-- [x] Rapidly learn Nostr Protocol _Personal Goal_
-- [ ] Tool that can assist in a visual understanding of Nostr for developers 
-- [ ] Tool that can assist in onboarding for Users
-
 ## Features
 - [x] Real-time relay status 
 - [x] Real-time, client-centric latency tests 

@@ -1,6 +1,4 @@
 relays:
-  - 'wss://rsslay.fiatjaf.com'
-  - 'wss://relayer.fiatjaf.com'
   - 'wss://freedom-relay.herokuapp.com/ws'
   - 'wss://nostr-relay.freeberty.net'
   - 'wss://nostr-relay.wlvs.space'
@@ -39,3 +37,4 @@ relays:
   - 'wss://nostr.zebedee.cloud'
   - 'wss://nostr-2.zebedee.cloud'
   - 'wss://nostr.shadownode.org'
+  - 'wss://expensive-relay.fiatjaf.com'

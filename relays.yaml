@@ -68,3 +68,4 @@ relays:
   - 'wss://nostrrelay.com'
   - 'wss://nostr-01.bolt.observer'
   - 'wss://nostr.mom'
+  - 'wss://relay.nostr.au'

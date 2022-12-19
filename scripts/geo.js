@@ -29,7 +29,7 @@ const getGeo = async function(ip) {
   await fetch(`http://ip-api.com/json/${ip}`, { headers: { 'accept': 'application/dns-json' } })
           .then(response => response.json())
           .then((data) => { geo = data })
-          .catch(err => console.log('./scripts/geo.js', err))
+          .catch(err => console.error('./scripts/geo.js', err))
   return geo;
 }
 
@@ -47,10 +47,10 @@ const query = async function(){
 
     // console.log(geo, ip, dns)
 
-    if(dns)
+    if(geo && dns)
       geo.dns = dns[dns.length-1]
 
-    if(geo.status == 'success')
+    if(geo && geo.status == 'success')
       result[relay] = geo
   }
 
@@ -64,7 +64,7 @@ const run = async function(){
   yaml.contents = object
   // console.log(object)
   fs.writeFile('./geo.yaml', yaml.toString(), (err) => {
-    if (err) return console.log('./scripts/geo.js', err);
+    if (err) return console.error('./scripts/geo.js', err);
   });
 }
 

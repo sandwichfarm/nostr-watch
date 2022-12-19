@@ -1,4 +1,5 @@
 relays:
+  - 'wss://satstacker.cloud'
   - 'wss://freedom-relay.herokuapp.com/ws'
   - 'wss://nostr-relay.freeberty.net'
   - 'wss://nostr-relay.wlvs.space'

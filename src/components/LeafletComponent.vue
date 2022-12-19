@@ -85,7 +85,6 @@ export default {
     },
     toggleMap(){
       this.expanded = !this.expanded
-      console.log(this.expanded)
       setTimeout(() => { this.resetMapSize() }, 1)
     },
     mapToggleClass(){

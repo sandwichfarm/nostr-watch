@@ -120,7 +120,7 @@ export default {
 
 </script>
 
-<style>
+<style scoped>
 .leaflet-container {
   position:relative;
   z-index:1000;

@@ -1,5 +1,4 @@
 relays:
-  - 'wss://nostr.orba.ca'
   - 'wss://freedom-relay.herokuapp.com/ws'
   - 'wss://nostr-relay.freeberty.net'
   - 'wss://nostr-relay.wlvs.space'
@@ -58,4 +57,10 @@ relays:
   - 'wss://nostr-relay.nonce.academy'
   - 'wss://nostr.rewardsbunny.com'
   - 'wss://nostr.slothy.win'
+  - 'wss://nostr.coinos.io'
+  - 'wss://relay.nostropolis.xyz/websocket'
+  - 'wss://lv01.tater.ninja'
+  - 'wss://nostr-2.orba.ca'
+  - 'wss://nostr.orba.ca'
+  
   

@@ -56,3 +56,5 @@ relays:
   - 'wss://public.nostr.swissrouting.com'
   - 'wss://nostr-relay.nonce.academy'
   - 'wss://nostr.rewardsbunny.com'
+  - 'wss://nostr.slothy.win'
+  

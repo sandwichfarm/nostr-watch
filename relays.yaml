@@ -53,4 +53,4 @@ relays:
   - 'wss://relay.nostr.ch'
   - 'wss://rsslay.nostr.net'
   - 'wss://nostr.cercatrova.me'
-
+  - 'wss://nostr-relay.nonce.academy'

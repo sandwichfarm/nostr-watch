@@ -3,7 +3,7 @@
   <l-map
     ref="map"
     v-model:zoom="zoom"
-    :center="[40.41322, -1.219482]"
+    :center="center"
     :minZoom="zoom"
     :maxZoom="zoom"
     :zoomControl="false"
@@ -23,10 +23,10 @@
     </l-marker> -->
 
     <l-circle-marker
-      :lat-lng="getLatLng()"
+      :lat-lng="center"
       :radius="3"
       :weight="6"
-      :color="getCircleColor(relay)"
+      :color="markerColor"
       :fillOpacity="1"
       :class="relay"
       >
@@ -48,9 +48,22 @@ export default {
   },
   methods: {
     getLatLng(){
-      return [this.geo[this.relay].lat, this.geo[this.relay].lon]
+      if(!this.geo[this.relay]?.lat || !this.geo[this.relay]?.lon)
+        return
+
+      const ll = [this.geo[this.relay]?.lat, this.geo[this.relay]?.lon]
+      this.center = ll
+
+      return ll
     },
-    getCircleColor(relay){
+    getCircleColor(){
+
+      const relay = this.relay
+
+      console.log(this.geo[this.relay]?.lat, this.geo[this.relay]?.lon)
+
+      if(!this.geo[this.relay]?.lat || !this.geo[this.relay]?.lon)
+        return 'transparent'
 
       if(this.result[relay]?.aggregate == 'public') {
         return '#00AA00'
@@ -61,10 +74,17 @@ export default {
       else if(this.result[relay]?.aggregate == 'offline') {
         return '#FF0000'
       }
+
       return 'black'
+      
     }
   },
-  async mounted() {},
+  async mounted() {
+    setTimeout(() => {
+      this.center = this.getLatLng()
+      this.markerColor = this.getCircleColor()
+    }, 1)
+  },
   props: {
     geo: {
       type: Object,
@@ -87,7 +107,9 @@ export default {
   },
   data() {
     return {
-      zoom: 2
+      zoom: 2,
+      center: [40.41322, -1.219482],
+      markerColor: 'transparent'
     };
   },
 };

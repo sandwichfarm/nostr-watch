@@ -1,4 +1,6 @@
 relays:
+  - 'wss://nostr-3.orba.ca'
+  - 'wss://satstacker.cloud'
   - 'wss://freedom-relay.herokuapp.com/ws'
   - 'wss://nostr-relay.freeberty.net'
   - 'wss://nostr-relay.wlvs.space'
@@ -62,4 +64,6 @@ relays:
   - 'wss://lv01.tater.ninja'
   - 'wss://nostr-2.orba.ca'
   - 'wss://nostr.orba.ca'
-  
+  - 'wss://nostr.supremestack.xyz'
+  - 'wss://nostrrelay.com'
+  - 'wss://nostr-01.bolt.observer'

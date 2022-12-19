@@ -1,6 +1,6 @@
 {
   "name": "nostr-watch",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "private": true,
   "scripts": {
     "prebuild": "node ./scripts/geo.js",
@@ -39,7 +39,7 @@
     "sass-loader": "13.2.0",
     "socks-proxy-agent": "7.0.0",
     "stream-browserify": "3.0.0",
-    "vue": "^3.2.13",
+    "vue": "^3.2.45",
     "vue-final-modal": "3",
     "vue-grid-responsive": "1.3.0",
     "vue-meta": "3.0.0-alpha.2",

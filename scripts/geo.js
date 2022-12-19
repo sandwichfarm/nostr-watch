@@ -1,12 +1,12 @@
 const fetch = require('cross-fetch'),
-      // relays = require('../relays.yaml'),
       fs = require('fs'),
       YAML = require('yaml')
 
 let object,
     yaml,
     result,
-    file = fs.readFileSync('./relays.yaml', 'utf8')
+    file = fs.readFileSync('./relays.yaml', 'utf8'),
+    geoCache = fs.readFileSync('./cache/geo.yaml', 'utf8')
 
 const getDns = async function(relay){
   let dns
@@ -29,29 +29,32 @@ const getGeo = async function(ip) {
   await fetch(`http://ip-api.com/json/${ip}`, { headers: { 'accept': 'application/dns-json' } })
           .then(response => response.json())
           .then((data) => { geo = data })
-          .catch(err => console.log('./scripts/geo.js', err))
+          .catch(err => console.error('./scripts/geo.js', err))
   return geo;
 }
 
 const query = async function(){
 
-  const relays = YAML.parse(file).relays,
-        result = {}
+  const relays = YAML.parse(file).relays.reverse(),
+        result = YAML.parse(geoCache).geo || {}
 
   for (const relay of relays) {
     let dns, ip, geo
-    dns = await getDns(relay)
-    ip = await getIp(dns)
+    dns = await getDns(relay).catch()
+    ip = await getIp(dns).catch()
     // console.log(dns, ip)
-    geo = await getGeo(ip)
+    geo = await getGeo(ip).catch()
 
     // console.log(geo, ip, dns)
 
-    if(dns)
+    if(geo && dns)
       geo.dns = dns[dns.length-1]
 
-    if(geo.status == 'success')
+    if(geo && geo.status == 'success')
       result[relay] = geo
+
+    if(!geo)
+      console.warn('api was mean, no geo for', relay)
   }
 
   return result
@@ -63,8 +66,8 @@ const run = async function(){
   yaml = new YAML.Document()
   yaml.contents = object
   // console.log(object)
-  fs.writeFile('./geo.yaml', yaml.toString(), (err) => {
-    if (err) return console.log('./scripts/geo.js', err);
+  fs.writeFile('./cache/geo.yaml', yaml.toString(), (err) => {
+    if (err) return console.error('./scripts/geo.js', err);
   });
 }
 

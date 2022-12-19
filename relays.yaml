@@ -50,5 +50,16 @@ relays:
   - 'wss://nostr-relay.gkbrk.com'
   - 'wss://nostr.zerofeerouting.com'
   - 'wss://no.str.cr'
-  - 'relay.nostr.ch'
-
+  - 'wss://relay.nostr.ch'
+  - 'wss://rsslay.nostr.net'
+  - 'wss://nostr.cercatrova.me'
+  - 'wss://public.nostr.swissrouting.com'
+  - 'wss://nostr-relay.nonce.academy'
+  - 'wss://nostr.rewardsbunny.com'
+  - 'wss://nostr.slothy.win'
+  - 'wss://nostr.coinos.io'
+  - 'wss://relay.nostropolis.xyz/websocket'
+  - 'wss://lv01.tater.ninja'
+  - 'wss://nostr-2.orba.ca'
+  - 'wss://nostr.orba.ca'
+  

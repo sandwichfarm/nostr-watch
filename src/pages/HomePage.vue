@@ -71,7 +71,7 @@ import RefreshComponent from '../components/RefreshComponent.vue'
 
 import { version } from '../../package.json'
 import { relays } from '../../relays.yaml'
-import { geo } from '../../geo.yaml'
+import { geo } from '../../cache/geo.yaml'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",

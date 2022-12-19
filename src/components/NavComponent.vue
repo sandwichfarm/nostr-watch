@@ -8,7 +8,9 @@
     <span>
       <PreferencesComponent />
     </span>
-
+    <span>
+      <AlbyComponent />
+    </span>
   </ul>
 </nav>
 </template>
@@ -45,11 +47,13 @@ nav.menu a:hover {
 <script>
 import { defineComponent } from 'vue'
 import PreferencesComponent from '../components/PreferencesComponent.vue'
+import AlbyComponent from '../components/AlbyComponent.vue'
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'NavComponent',
   components: {
     PreferencesComponent,
+    AlbyComponent
   }
 });
 </script>

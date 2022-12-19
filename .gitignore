@@ -3,6 +3,4 @@ node_modules
 *.wasm
 public/main.js
 lib/nostr-relay-inspector
-geo.yaml
-geo.yml
 dist

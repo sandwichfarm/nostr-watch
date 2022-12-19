@@ -23,7 +23,7 @@
     </l-marker> -->
 
     <l-circle-marker
-      :lat-lng="getLatLng()"
+      :lat-lng="center"
       :radius="3"
       :weight="6"
       :color="getCircleColor(relay)"
@@ -48,8 +48,12 @@ export default {
   },
   methods: {
     getLatLng(){
+      if(!this.geo[this.relay])
+        return
+
       const ll = [this.geo[this.relay].lat, this.geo[this.relay].lon]
       this.center = ll
+
       return ll
     },
     getCircleColor(relay){
@@ -66,7 +70,9 @@ export default {
       return 'black'
     }
   },
-  async mounted() {},
+  async mounted() {
+    this.getLatLng()
+  },
   props: {
     geo: {
       type: Object,

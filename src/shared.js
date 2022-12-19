@@ -5,6 +5,32 @@ import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../codes.yaml'
 import crypto from "crypto"
 
 export default {
+
+  chunkedRelays: function(arr, size){
+    return arr.length > size
+              ? [arr.slice(0, size), ...this.chunkedRelays(arr.slice(size), size)]
+              : [arr];
+  },
+
+  processChunk: async function(chunk){
+    const promises = []
+    chunk.forEach(async (relay) => { 
+      const promise = new Promise((resolve, reject) => {
+        console.log('chunk', 'relay: begin', relay)
+        this.check(relay)
+          .then(() => {
+            this.relays[relay] = this.getState(relay)
+            this.messages[relay] = this.getState(`${relay}_inbox`) 
+            console.log('chunk', 'relay: finish', relay)
+            resolve()
+          })
+          .catch( () => reject() )
+      })
+      promises.push(promise)
+    })
+    return Promise.all(promises)
+  },
+
 	invalidate: async function(force, single){
       if(!this.isExpired() && !force) 
         return
@@ -15,11 +41,11 @@ export default {
         this.messages[single] = this.getState(`${single}_inbox`) 
       } 
       else {
-        this.relays.forEach(async relay => { 
-          await this.check(relay) 
-          this.relays[relay] = this.getState(relay)
-          this.messages[relay] = this.getState(`${relay}_inbox`) 
-        })
+        const chunks = this.chunkedRelays(this.relays, 10)
+        for(let index = 0; index < chunks.length; index ++) {
+          console.log('processing chunk', index, chunks[index])
+          await this.processChunk(chunks[index])
+        }
       } 
     },
 
@@ -33,25 +59,16 @@ export default {
 
     check: async function(relay){
       return new Promise( (resolve, reject) => {
-        // if(!this.isExpired())
-        //   return reject(relay)
 
         const opts = {
             checkLatency: true,
             setIP: false,
             setGeo: false,
             getInfo: true,
-            // debug: true,
-            // data: { result: this.result[relay] }
+            debug: true,
           }
 
         let inspect = new Inspector(relay, opts)
-          // .on('run', (result) => {
-          //   result.aggregate = 'processing'
-          // })
-          // .on('open', (e, result) => {
-          //   this.result[relay] = result
-          // })
           .on('complete', (instance) => {   
             this.result[relay] = instance.result
 
@@ -65,9 +82,7 @@ export default {
           })
           .on('notice', (notice) => {
             const hash = this.sha1(notice)  
-            console.log('hash', hash)
             let   message_obj = RELAY_MESSAGES[hash]
-            console.log('message_obj', message_obj)
             
             if(message_obj && Object.prototype.hasOwnProperty.call(message_obj, 'code'))
               return

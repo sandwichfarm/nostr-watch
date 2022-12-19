@@ -65,3 +65,4 @@ relays:
   - 'wss://nostr.orba.ca'
   - 'wss://nostr.supremestack.xyz'
   - 'wss://nostrrelay.com'
+  - 'wss://nostr-01.bolt.observer'

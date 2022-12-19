@@ -3,7 +3,7 @@
   <l-map
     ref="map"
     v-model:zoom="zoom"
-    :center="[40.41322, -1.219482]"
+    :center="center"
     :minZoom="zoom"
     :maxZoom="zoom"
     :zoomControl="false"
@@ -23,7 +23,7 @@
     </l-marker> -->
 
     <l-circle-marker
-      :lat-lng="getLatLng()"
+      :lat-lng="center"
       :radius="3"
       :weight="6"
       :color="getCircleColor(relay)"
@@ -48,7 +48,13 @@ export default {
   },
   methods: {
     getLatLng(){
-      return [this.geo[this.relay].lat, this.geo[this.relay].lon]
+      if(!this.geo[this.relay])
+        return
+
+      const ll = [this.geo[this.relay].lat, this.geo[this.relay].lon]
+      this.center = ll
+
+      return ll
     },
     getCircleColor(relay){
 
@@ -64,7 +70,9 @@ export default {
       return 'black'
     }
   },
-  async mounted() {},
+  async mounted() {
+    this.getLatLng()
+  },
   props: {
     geo: {
       type: Object,
@@ -87,7 +95,8 @@ export default {
   },
   data() {
     return {
-      zoom: 2
+      zoom: 2,
+      center: [40.41322, -1.219482]
     };
   },
 };

@@ -64,3 +64,4 @@ relays:
   - 'wss://nostr-2.orba.ca'
   - 'wss://nostr.orba.ca'
   - 'wss://nostr.supremestack.xyz'
+  - 'wss://nostrrelay.com'

@@ -58,4 +58,5 @@ relays:
   - 'wss://nostr.rewardsbunny.com'
   - 'wss://nostr.slothy.win'
   - 'wss://relay.nostropolis.xyz/websocket'
+  - 'wss://lv01.tater.ninja'
   

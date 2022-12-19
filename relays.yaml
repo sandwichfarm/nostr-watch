@@ -67,3 +67,4 @@ relays:
   - 'wss://nostr.supremestack.xyz'
   - 'wss://nostrrelay.com'
   - 'wss://nostr-01.bolt.observer'
+  - 'wss://nostr.mom'

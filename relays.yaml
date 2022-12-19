@@ -48,6 +48,7 @@ relays:
   - 'wss://relay.grunch.dev'
   - 'wss://relay.kronkltd.net'
   - 'wss://relay.minds.com/nostr/v1/ws'
+  - 'wss://relay.nostr.au'
   - 'wss://relay.nostr.ch'
   - 'wss://relay.nostr.info'
   - 'wss://relay.nostr.pro'

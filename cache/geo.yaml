@@ -17,7 +17,7 @@ geo:
     dns:
       name: nostr-relay.freeberty.net
       type: 1
-      TTL: 288
+      TTL: 300
       data: 194.5.154.8
   wss://nostr-relay.wlvs.space:
     status: success
@@ -37,7 +37,7 @@ geo:
     dns:
       name: wlvs.space
       type: 1
-      TTL: 3600
+      TTL: 1929
       data: 142.93.159.73
   wss://nostr-relay-dev.wlvs.space:
     status: success
@@ -57,7 +57,7 @@ geo:
     dns:
       name: wlvs.space
       type: 1
-      TTL: 3588
+      TTL: 3600
       data: 142.93.159.73
   wss://nostr.onsats.org:
     status: success
@@ -77,7 +77,7 @@ geo:
     dns:
       name: nostr.onsats.org
       type: 1
-      TTL: 352
+      TTL: 893
       data: 51.158.169.7
   wss://nostr-relay.untethr.me:
     status: success
@@ -97,7 +97,7 @@ geo:
     dns:
       name: nostr-relay.untethr.me
       type: 1
-      TTL: 392
+      TTL: 1448
       data: 35.208.215.21
   wss://nostr-relay.lnmarkets.com:
     status: success
@@ -117,7 +117,7 @@ geo:
     dns:
       name: nostr-relay.lnmarkets.com
       type: 1
-      TTL: 288
+      TTL: 191
       data: 86.104.228.8
   wss://nostr.unknown.place:
     status: success
@@ -157,7 +157,7 @@ geo:
     dns:
       name: api.semisol.dev
       type: 1
-      TTL: 108
+      TTL: 120
       data: 65.21.149.149
   wss://nostr-pub.semisol.dev:
     status: success
@@ -177,7 +177,7 @@ geo:
     dns:
       name: api.semisol.dev
       type: 1
-      TTL: 108
+      TTL: 120
       data: 65.21.149.149
   wss://nostr-verified.wellorder.net:
     status: success
@@ -197,7 +197,7 @@ geo:
     dns:
       name: wellorder.net
       type: 1
-      TTL: 26447
+      TTL: 28800
       data: 50.116.30.242
   wss://nostr.drss.io:
     status: success
@@ -237,7 +237,7 @@ geo:
     dns:
       name: nostr.rocks
       type: 1
-      TTL: 724
+      TTL: 1449
       data: 162.55.33.235
   wss://nostr.bitcoiner.social:
     status: success
@@ -257,7 +257,7 @@ geo:
     dns:
       name: bitcoiner.social
       type: 1
-      TTL: 1707
+      TTL: 3250
       data: 64.94.212.15
   wss://nostr.openchain.fr:
     status: success
@@ -297,7 +297,7 @@ geo:
     dns:
       name: nostr.delo.software
       type: 1
-      TTL: 2949
+      TTL: 3247
       data: 153.92.127.199
   wss://relay.nostr.info:
     status: success
@@ -317,7 +317,7 @@ geo:
     dns:
       name: relay.nostr.info
       type: 1
-      TTL: 1130
+      TTL: 1448
       data: 37.139.2.127
   wss://relay.nostr.pro:
     status: success
@@ -337,7 +337,7 @@ geo:
     dns:
       name: relay.nostr.pro
       type: 1
-      TTL: 74
+      TTL: 1799
       data: 209.188.21.227
   wss://relay.damus.io:
     status: success
@@ -353,12 +353,12 @@ geo:
     isp: Cloudflare, Inc.
     org: Cloudflare, Inc.
     as: AS13335 Cloudflare, Inc.
-    query: 172.67.206.128
+    query: 104.21.61.55
     dns:
       name: relay.damus.io
       type: 1
-      TTL: 288
-      data: 172.67.206.128
+      TTL: 300
+      data: 104.21.61.55
   wss://nostr.zaprite.io:
     status: success
     country: Canada
@@ -377,7 +377,7 @@ geo:
     dns:
       name: nostr.zaprite.io
       type: 1
-      TTL: 1537
+      TTL: 1447
       data: 170.75.170.238
   wss://nostr.oxtr.dev:
     status: success
@@ -397,7 +397,7 @@ geo:
     dns:
       name: nostr.oxtr.dev
       type: 1
-      TTL: 6547
+      TTL: 10800
       data: 128.199.50.246
   wss://nostr.ono.re:
     status: success
@@ -417,7 +417,7 @@ geo:
     dns:
       name: alephium.ono.re
       type: 1
-      TTL: 48
+      TTL: 60
       data: 195.15.243.36
   wss://relay.grunch.dev:
     status: success
@@ -437,7 +437,7 @@ geo:
     dns:
       name: relay.grunch.dev
       type: 1
-      TTL: 557
+      TTL: 745
       data: 142.93.5.66
   wss://relay.cynsar.foundation:
     status: success
@@ -457,7 +457,7 @@ geo:
     dns:
       name: relay.cynsar.foundation
       type: 1
-      TTL: 92
+      TTL: 300
       data: 104.21.76.158
   wss://nostr-pub.wellorder.net:
     status: success
@@ -477,7 +477,7 @@ geo:
     dns:
       name: wellorder.net
       type: 1
-      TTL: 23171
+      TTL: 24534
       data: 50.116.30.242
   wss://relay.oldcity-bitcoiners.info:
     status: success
@@ -497,7 +497,7 @@ geo:
     dns:
       name: oldcity-bitcoiners.info
       type: 1
-      TTL: 213
+      TTL: 300
       data: 99.184.79.163
   wss://relay.bitid.nz:
     status: success
@@ -517,7 +517,7 @@ geo:
     dns:
       name: relay.bitid.nz
       type: 1
-      TTL: 3508
+      TTL: 3600
       data: 135.125.129.135
   wss://relay.futohq.com:
     status: success
@@ -537,7 +537,7 @@ geo:
     dns:
       name: relay.futohq.com
       type: 1
-      TTL: 220
+      TTL: 300
       data: 143.198.29.31
   wss://nostr.rdfriedl.com:
     status: success
@@ -577,7 +577,7 @@ geo:
     dns:
       name: farscapian.com
       type: 1
-      TTL: 273
+      TTL: 199
       data: 99.184.79.163
   wss://astral.ninja:
     status: success
@@ -597,7 +597,7 @@ geo:
     dns:
       name: astral.ninja
       type: 1
-      TTL: 390
+      TTL: 1799
       data: 45.93.137.155
   wss://relay.sovereign-stack.org:
     status: success
@@ -617,7 +617,7 @@ geo:
     dns:
       name: sovereign-stack.org
       type: 1
-      TTL: 220
+      TTL: 300
       data: 99.184.79.163
   wss://nostr.sandwich.farm:
     status: success
@@ -637,7 +637,7 @@ geo:
     dns:
       name: nostr.sandwich.farm
       type: 1
-      TTL: 1030
+      TTL: 1401
       data: 46.101.217.80
   wss://nostr.zebedee.cloud:
     status: success
@@ -657,7 +657,7 @@ geo:
     dns:
       name: nostr.zebedee.cloud
       type: 1
-      TTL: 19
+      TTL: 1799
       data: 24.199.71.187
   wss://nostr-2.zebedee.cloud:
     status: success
@@ -677,7 +677,7 @@ geo:
     dns:
       name: nostr-2.zebedee.cloud
       type: 1
-      TTL: 1127
+      TTL: 1699
       data: 146.190.1.235
   wss://nostr.shadownode.org:
     status: success
@@ -697,7 +697,7 @@ geo:
     dns:
       name: shadownode.org
       type: 1
-      TTL: 260
+      TTL: 600
       data: 5.75.182.0
   wss://expensive-relay.fiatjaf.com:
     status: success
@@ -737,7 +737,7 @@ geo:
     dns:
       name: relay.kronkltd.net
       type: 1
-      TTL: 2868
+      TTL: 2920
       data: 143.244.222.111
   wss://relay.r3d.red:
     status: success
@@ -757,7 +757,7 @@ geo:
     dns:
       name: relay.r3d.red
       type: 1
-      TTL: 255
+      TTL: 300
       data: 185.194.143.52
   wss://relay.valireum.net:
     status: success
@@ -777,7 +777,7 @@ geo:
     dns:
       name: relay.valireum.net
       type: 1
-      TTL: 84164
+      TTL: 86057
       data: 45.79.126.217
   wss://nostr.fmt.wiz.biz:
     status: success
@@ -797,7 +797,7 @@ geo:
     dns:
       name: nostr.fmt.wiz.biz
       type: 1
-      TTL: 3600
+      TTL: 3259
       data: 103.99.170.125
   wss://nostr.v0l.io:
     status: success
@@ -877,7 +877,7 @@ geo:
     dns:
       name: nostr.nordlysln.net
       type: 1
-      TTL: 8574
+      TTL: 10800
       data: 84.215.64.137
   wss://nostr-relay.gkbrk.com:
     status: success
@@ -917,7 +917,7 @@ geo:
     dns:
       name: nostr.zerofeerouting.com
       type: 1
-      TTL: 85317
+      TTL: 86400
       data: 23.88.33.13
   wss://no.str.cr:
     status: success
@@ -957,7 +957,7 @@ geo:
     dns:
       name: nostr.ch
       type: 1
-      TTL: 1112
+      TTL: 3600
       data: 5.255.104.65
   wss://rsslay.nostr.net:
     status: success
@@ -997,7 +997,7 @@ geo:
     dns:
       name: nostr.cercatrova.me
       type: 1
-      TTL: 7207
+      TTL: 10800
       data: 135.181.202.138
   wss://public.nostr.swissrouting.com:
     status: success
@@ -1033,9 +1033,29 @@ geo:
     isp: Cloudflare, Inc.
     org: Cloudflare, Inc.
     as: AS13335 Cloudflare, Inc.
-    query: 104.21.1.54
+    query: 172.67.128.142
     dns:
       name: nostr-relay.nonce.academy
       type: 1
       TTL: 300
-      data: 104.21.1.54
+      data: 172.67.128.142
+  wss://nostr.rewardsbunny.com:
+    status: success
+    country: Singapore
+    countryCode: SG
+    region: "05"
+    regionName: South West
+    city: Singapore
+    zip: "627753"
+    lat: 1.32123
+    lon: 103.695
+    timezone: Asia/Singapore
+    isp: DigitalOcean, LLC
+    org: DigitalOcean, LLC
+    as: AS14061 DigitalOcean, LLC
+    query: 146.190.195.96
+    dns:
+      name: nostr.rewardsbunny.com
+      type: 1
+      TTL: 300
+      data: 146.190.195.96

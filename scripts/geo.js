@@ -35,7 +35,7 @@ const getGeo = async function(ip) {
 
 const query = async function(){
 
-  const relays = YAML.parse(file).relays,
+  const relays = YAML.parse(file).relays.reverse(),
         result = YAML.parse(geoCache).geo || {}
 
   for (const relay of relays) {

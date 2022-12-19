@@ -1,4 +1,5 @@
 relays:
+  - 'wss://nostr-3.orba.ca'
   - 'wss://satstacker.cloud'
   - 'wss://freedom-relay.herokuapp.com/ws'
   - 'wss://nostr-relay.freeberty.net'

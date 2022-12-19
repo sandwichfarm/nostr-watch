@@ -94,7 +94,7 @@ import RefreshComponent from '../components/RefreshComponent.vue'
 
 import { version as nwVersion } from '../../package.json'
 import { relays } from '../../relays.yaml'
-import { geo } from '../../geo.yaml'
+import { geo } from '../../cache/geo.yaml'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
 export default defineComponent({

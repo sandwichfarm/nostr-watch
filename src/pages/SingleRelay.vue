@@ -133,7 +133,7 @@ import sharedMethods from '../shared'
 
 import { version } from '../../package.json'
 import { relays } from '../../relays.yaml'
-import { geo } from '../../geo.yaml'
+import { geo } from '../../cache/geo.yaml'
 
 const localMethods = {
     relayUrl() {

@@ -1,5 +1,5 @@
-import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
-// import { Inspector, InspectorObservation } from '../lib/nostr-relay-inspector'
+// import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
+import { Inspector, InspectorObservation } from '../lib/nostr-relay-inspector'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../codes.yaml'
 
 import crypto from "crypto"
@@ -27,11 +27,6 @@ export default {
               }).catch( err => console.log(err))
           }).catch(err => console.log(err))
         }
-        // this.relays.forEach(async relay => { 
-        //   await this.check(relay) 
-        //   this.relays[relay] = this.getState(relay)
-        //   this.messages[relay] = this.getState(`${relay}_inbox`) 
-        // })
       } 
     },
 
@@ -41,6 +36,35 @@ export default {
 
     getState: function(key){
       return this.storage.getStorageSync(key)
+    },
+
+    query (aggregate) {
+      let unsorted,
+          sorted,
+          filterFn
+
+      filterFn = (relay) => this.grouping ? this.result?.[relay]?.aggregate == aggregate : true
+
+      unsorted = this.relays.filter(filterFn);
+
+      // if(!this.isDone()) {
+      //   return unsorted
+      // }
+
+      if (unsorted.length) {
+        sorted = unsorted
+          .sort((relay1, relay2) => {
+            return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
+          })
+          .sort((relay1, relay2) => {
+            let a = relay1,
+                b = relay2
+            return (a===null)-(b===null) || +(a>b)||-(a<b);
+          })
+        return sorted
+      }
+
+      return []
     },
 
     check: async function(relay){
@@ -96,7 +120,7 @@ export default {
     },
 
     onComplete(relay, resolve, reject){
-
+      relay, resolve, reject
     },
 
     saveState: function(type, key, data){

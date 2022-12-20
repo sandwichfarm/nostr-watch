@@ -37,9 +37,9 @@
       <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
         ✏️
       </th>
-      <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
+      <!-- <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
         ℹ️
-      </th>
+      </th> -->
       <!-- <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
         <span>NIP-11</span>
       </th> -->

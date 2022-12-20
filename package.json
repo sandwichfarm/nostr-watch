@@ -5,7 +5,7 @@
   "scripts": {
     "build": "vue-cli-service build",
     "prebuild": "yarn get:relays && yarn get:geo",
-    "get:relays": "node ./scripts/event-kind-3.js",
+    "get:relays": "node ./scripts/relays.js",
     "get:geo": "node ./scripts/geo.js",
     "serve": "vue-cli-service serve --host localhost",
     "watch": "yarn prebuild && vue-cli-service build --watch",
@@ -34,7 +34,7 @@
     "node-fetch": "3.3.0",
     "node-polyfill-webpack-plugin": "2.0.1",
     "nostr": "0.2.5",
-    "nostr-relay-inspector": "0.0.14",
+    "nostr-relay-inspector": "0.0.16",
     "onion-regex": "2.0.8",
     "requests": "0.3.0",
     "sass": "1.56.1",

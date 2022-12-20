@@ -17,6 +17,10 @@ const getDns = async function(relay){
   return dns
 }
 
+const delay = async function(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 const getIp = async function(dns){
   let ip;
   if(dns)
@@ -39,22 +43,26 @@ const query = async function(){
         result = YAML.parse(geoCache).geo || {}
 
   for (const relay of relays) {
-    let dns, ip, geo
-    dns = await getDns(relay).catch()
-    ip = await getIp(dns).catch()
-    // console.log(dns, ip)
-    geo = await getGeo(ip).catch()
+    await delay(1000).then(async () => {
+      console.log('getting relay geo', relay)
+      let dns, ip, geo
+      dns = await getDns(relay).catch()
+      ip = await getIp(dns).catch()
+      // console.log(dns, ip)
+      geo = await getGeo(ip).catch()
 
-    // console.log(geo, ip, dns)
+      // console.log(geo, ip, dns)
 
-    if(geo && dns)
-      geo.dns = dns[dns.length-1]
+      if(geo && dns)
+        geo.dns = dns[dns.length-1]
 
-    if(geo && geo.status == 'success')
-      result[relay] = geo
+      if(geo && geo.status == 'success')
+        result[relay] = geo
 
-    if(!geo)
-      console.warn('api was mean, no geo for', relay)
+      if(!geo)
+        console.warn('api was mean, no geo for', relay)
+    })
+    
   }
 
   return result
@@ -72,3 +80,4 @@ const run = async function(){
 }
 
 run()
+

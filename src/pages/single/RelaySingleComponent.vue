@@ -46,8 +46,7 @@
 
 <script>
 import { defineComponent} from 'vue'
-// import { InspectorResult } from 'nostr-relay-inspector'
-import { InspectorResult } from '../../../lib/nostr-relay-inspector'
+import { InspectorResult } from 'nostr-relay-inspector'
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
 

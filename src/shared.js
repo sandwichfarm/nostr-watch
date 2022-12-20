@@ -4,6 +4,8 @@ import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../codes.yaml'
 
 import crypto from "crypto"
 
+const connections = {}
+
 export default {
 	invalidate: async function(force, single){
       if(!this.isExpired() && !force) 
@@ -15,11 +17,21 @@ export default {
         this.messages[single] = this.getState(`${single}_inbox`) 
       } 
       else {
-        this.relays.forEach(async relay => { 
-          await this.check(relay) 
-          this.relays[relay] = this.getState(relay)
-          this.messages[relay] = this.getState(`${relay}_inbox`) 
-        })
+        for(let index = 0; index < this.relays.length; index++) {
+          let relay = this.relays[index]
+          await this.delay(20).then( () => { 
+            this.check(relay)
+              .then(() => {
+                this.result[relay] = this.getState(relay)
+                this.messages[relay] = this.getState(`${relay}_inbox`) 
+              }).catch( err => console.log(err))
+          }).catch(err => console.log(err))
+        }
+        // this.relays.forEach(async relay => { 
+        //   await this.check(relay) 
+        //   this.relays[relay] = this.getState(relay)
+        //   this.messages[relay] = this.getState(`${relay}_inbox`) 
+        // })
       } 
     },
 
@@ -37,21 +49,16 @@ export default {
         //   return reject(relay)
 
         const opts = {
-            checkLatency: true,
-            setIP: false,
-            setGeo: false,
+            checkLatency: true,          
             getInfo: true,
+            getIdentities: true,
             // debug: true,
             // data: { result: this.result[relay] }
           }
 
-        let inspect = new Inspector(relay, opts)
-          // .on('run', (result) => {
-          //   result.aggregate = 'processing'
-          // })
-          // .on('open', (e, result) => {
-          //   this.result[relay] = result
-          // })
+        connections[relay] = new Inspector(relay, opts)
+
+        connections[relay]
           .on('complete', (instance) => {   
             this.result[relay] = instance.result
 
@@ -60,19 +67,19 @@ export default {
             this.saveState('relay', relay)
             this.saveState('messages', relay,  instance.inbox)
             this.saveState('lastUpdate')
+
+            connections[relay].relay.close()
             
             resolve(this.result[relay])
           })
           .on('notice', (notice) => {
             const hash = this.sha1(notice)  
-            console.log('hash', hash)
             let   message_obj = RELAY_MESSAGES[hash]
-            console.log('message_obj', message_obj)
             
-            if(message_obj && Object.prototype.hasOwnProperty.call(message_obj, 'code'))
+            if(!message_obj || !Object.prototype.hasOwnProperty.call(message_obj, 'code'))
               return
 
-            let   code_obj = RELAY_CODES[message_obj.code]
+            let code_obj = RELAY_CODES[message_obj.code]
 
             let response_obj = {...message_obj, ...code_obj}
 
@@ -83,7 +90,8 @@ export default {
             reject(this.result[relay])
           })
           .run()
-        inspect
+
+        
       })
     },
 
@@ -190,7 +198,7 @@ export default {
     },
 
     relaysComplete: function() {
-      return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
+      return this.relays?.filter(relay => this.results?.[relay]?.state == 'complete').length
     },
 
     sha1: function(message) {
@@ -229,5 +237,9 @@ export default {
         return Math.floor(interval) + " minutes";
       }
       return Math.floor(seconds) + " seconds";
+    },
+
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     },
 }

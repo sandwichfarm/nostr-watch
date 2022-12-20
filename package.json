@@ -3,7 +3,9 @@
   "version": "0.0.21",
   "private": true,
   "scripts": {
-    "prebuild": "node ./scripts/geo.js",
+    "prebuild": "yarn relays:get && yarn geo",
+    "geo": "node ./scripts/geo.js",
+    "relays:get": "node ./scripts/event-kind-3.js",
     "serve": "vue-cli-service serve --host localhost",
     "build": "yarn prebuild && vue-cli-service build",
     "watch": "yarn prebuild && vue-cli-service build --watch",
@@ -31,7 +33,7 @@
     "node-emoji": "1.11.0",
     "node-polyfill-webpack-plugin": "2.0.1",
     "nostr": "0.2.5",
-    "nostr-relay-inspector": "0.0.12",
+    "nostr-relay-inspector": "0.0.13",
     "onion-regex": "2.0.8",
     "requests": "0.3.0",
     "sass": "1.56.1",
@@ -48,6 +50,8 @@
     "vue3-popper": "1.5.0",
     "vue3-storage": "0.1.11",
     "vue3-tabs-component": "1.1.2",
+    "write-yaml-file": "4.2.0",
+    "yaml-js": "0.3.1",
     "yaml-loader": "^0.6.0",
     "yaml2json": "1.0.2"
   },

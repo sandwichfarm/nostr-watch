@@ -3,7 +3,7 @@
 </template>
 
 <script>
-  import { defineComponent } from 'vue'
+import { defineComponent } from 'vue'
 import { useRoute } from 'vue-router'
 
 export default defineComponent({
@@ -17,6 +17,8 @@ export default defineComponent({
       clientId: "test_client",
       clientSecret: "test_secret",
       scopes: "account:read",
+      token : null,
+      user: {}
     }
   },
   mounted(){
@@ -42,8 +44,8 @@ export default defineComponent({
         else {
             message = "Error: " + response.error_description + " (" + response.error + ")";
         }
-
-        document.getElementById("result").innerHTML = message;
+        this.token = message
+        console.log('token', this.token)
       };
 
       xhr.responseType = 'json';
@@ -60,20 +62,32 @@ export default defineComponent({
         code: code
       }));
     }
-
-    if (!crypto.subtle) {
-      console.log('<p>' +
-        '<b>WARNING:</b> The script will fall back to using plain code challenge as crypto is not available.</p>' +
-        '<p>Javascript crypto services require that this site is served in a <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts">secure context</a>; ' +
-        'either from <b>(*.)localhost</b> or via <b>https</b>. </p>' +
-        '<p> You can add an entry to /etc/hosts like "127.0.0.1 public-test-client.localhost" and reload the site from there, enable SSL using something like <a href="https://letsencrypt.org/">letsencypt</a>, or refer to this <a href="https://stackoverflow.com/questions/46468104/how-to-use-subtlecrypto-in-chrome-window-crypto-subtle-is-undefined">stackoverflow article</a> for more alternatives.</p>' +
-        '<p>If Javascript crypto is available this message will disappear.</p>')
-    }
   },
   updated(){},
   computed: {},
   methods: {
-    auth: function(){
+    auth: async function(){
+
+      this.user.pubkey = await window.nostr.getPublicKey()
+      console.log('relays', await window.nostr.getRelays())
+      .catch(err => console.warn(err))
+
+      const event = {
+        tags: []
+        pubkey:this.user.p
+        kind: 1,
+        content: "hello world"
+      }
+      const signedEvent = await window.nostr
+        .signEvent(event)
+          .then(event => {
+            console.log('event', event)
+            console.log('signed event', signedEvent)
+          })
+          .catch(err => console.warn(err)) 
+
+    },
+    auth2: function(){
       var codeVerifier = this.generateRandomString(64);
 
       const challengeMethod = crypto.subtle ? "S256" : "plain"

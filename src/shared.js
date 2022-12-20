@@ -1,5 +1,5 @@
-import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
-// import { Inspector, InspectorObservation } from '../lib/nostr-relay-inspector'
+// import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
+import { Inspector, InspectorObservation } from '../lib/nostr-relay-inspector'
 import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../codes.yaml'
 
 import crypto from "crypto"

@@ -44,7 +44,7 @@
         <span>NIP-11</span>
       </th> -->
     </tr>
-    <tr v-for="(relay, index) in sort()" :key="{relay}" class="relay" :class="getResultClass(relay, index)">
+    <tr v-for="(relay, index) in sort(relays[relay]?.aggregate)" :key="{relay}" class="relay" :class="getResultClass(relay, index)">
       <RelaySingleComponent
         :relay="relay"
         :result="result[relay]"

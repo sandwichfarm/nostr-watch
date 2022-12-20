@@ -7,16 +7,19 @@ const connections = {}
 
 export default {
 	invalidate: async function(force, single){
-      console.log('ok')
+      
       if(!this.isExpired() && !force) 
         return
-
+      
       if(single) {
+
         await this.check(single) 
         this.relays[single] = this.getCache(single)
         this.messages[single] = this.getCache(`${single}_inbox`) 
       } 
       else {
+        console.log(this.relays)
+
         for(let index = 0; index < this.relays.length; index++) {
           let relay = this.relays[index]
           await this.delay(20).then( () => { 

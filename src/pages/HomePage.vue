@@ -38,6 +38,7 @@
                 section="processing"
                 :relays="relays"
                 :result="result"
+                :geo="geo"
                 :messages="messages"
                 :alerts="alerts"
                 :connections="connections"
@@ -63,9 +64,9 @@
 
     <section id="footer">
       <RefreshComponent 
-        :relaysProp="relays"
-        v-bind:resultProp="result"
-        :messagesProp="messages"
+        :relays="relays"
+        v-bind:result="result"
+        :messages="messages"
       />
 
       <span class="credit">
@@ -82,7 +83,7 @@ import { useStorage } from "vue3-storage";
 
 import { Row, Column } from 'vue-grid-responsive';
 
-import sharedMethods from '../shared'
+import RelaysLib from '../lib/relays-lib.js'
 
 import LeafletComponent from '../components/LeafletComponent.vue'
 import NavComponent from '../components/NavComponent.vue'
@@ -132,22 +133,20 @@ export default defineComponent({
 
   async mounted() {
     this.storage = useStorage()
-    this.lastUpdate = this.getState('lastUpdate')|| this.lastUpdate
-    this.preferences = this.getState('preferences') || this.preferences
+    this.lastUpdate = this.getCache('lastUpdate')|| this.lastUpdate
+    this.preferences = this.getCache('preferences') || this.preferences
 
     this.relays.forEach(async relay => {
-      this.result[relay] = this.getState(relay)
-      this.messages[relay] = this.getState(`${relay}_inbox`)
+      this.result[relay] = this.getCache(relay)
+      this.messages[relay] = this.getCache(`${relay}_inbox`)
     })
 
     this.invalidate()
   },
 
-  computed: {
-    
-  },
+  computed: {},
 
-  methods: sharedMethods
+  methods: RelaysLib
 
 })
 </script>

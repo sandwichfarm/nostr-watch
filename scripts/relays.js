@@ -60,7 +60,7 @@ run()
                         .trim()
                         .replace('\t', '')
                         .replace(/\s\t/g, '')
-                        .replace(/\/$/, "");
+                        .replace(/\/+$/, "");
               })
               .filter( relay => relay.startsWith('wss://') )
               .filter( relay => !relay.includes('localhost') )
@@ -73,7 +73,7 @@ run()
                         .trim()
                         .replace('\t', '')
                         .replace(/\s\t/g, '')
-                        .replace(/\/$/, "");
+                        .replace(/\/+$/, "");
               })
               .filter( relay => relay.startsWith('wss://') )
               .filter( relay => !relay.includes('localhost') )

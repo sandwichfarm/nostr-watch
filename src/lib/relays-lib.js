@@ -1,5 +1,5 @@
 import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
-import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../codes.yaml'
+import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
 import crypto from "crypto"
 
@@ -7,13 +7,14 @@ const connections = {}
 
 export default {
 	invalidate: async function(force, single){
+      console.log('ok')
       if(!this.isExpired() && !force) 
         return
 
       if(single) {
         await this.check(single) 
-        this.relays[single] = this.getState(single)
-        this.messages[single] = this.getState(`${single}_inbox`) 
+        this.relays[single] = this.getCache(single)
+        this.messages[single] = this.getCache(`${single}_inbox`) 
       } 
       else {
         for(let index = 0; index < this.relays.length; index++) {
@@ -21,8 +22,8 @@ export default {
           await this.delay(20).then( () => { 
             this.check(relay)
               .then(() => {
-                this.result[relay] = this.getState(relay)
-                this.messages[relay] = this.getState(`${relay}_inbox`) 
+                this.result[relay] = this.getCache(relay)
+                this.messages[relay] = this.getCache(`${relay}_inbox`) 
               }).catch( err => console.log(err))
           }).catch(err => console.log(err))
         }
@@ -33,11 +34,11 @@ export default {
       return typeof this.lastUpdate === 'undefined' || Date.now() - this.lastUpdate > this.preferences.cacheExpiration
     },
 
-    getState: function(key){
+    getCache: function(key){
       return this.storage.getStorageSync(key)
     },
 
-    query (aggregate) {
+    sort(aggregate) {
       let unsorted,
           sorted,
           filterFn
@@ -56,10 +57,16 @@ export default {
             return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
           })
           .sort((relay1, relay2) => {
-            let a = relay1,
-                b = relay2
-            return (a===null)-(b===null) || +(a>b)||-(a<b);
+            let a = this.result?.[relay1]?.latency.final ,
+                b = this.result?.[relay2]?.latency.final 
+            return (b != null) - (a != null) || a - b;
           })
+          .sort((relay1, relay2) => {
+            let x = this.result?.[relay2]?.check?.connect,
+                y = this.result?.[relay2]?.check?.connect
+
+            return (x === y)? 0 : x? -1 : 1;
+          });
         return sorted
       }
 
@@ -268,5 +275,40 @@ export default {
 
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
+    },
+    sort_by_latency(ascending) {
+      const self = this
+      return function (a, b) {
+        // equal items sort equally
+        if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
+            return 0;
+        }
+
+        // nulls sort after anything else
+        if (self.result?.[a]?.latency.final === null) {
+            return 1;
+        }
+        if (self.result?.[b]?.latency.final === null) {
+            return -1;
+        }
+
+        // otherwise, if we're ascending, lowest sorts first
+        if (ascending) {
+            return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
+        }
+
+        // if descending, highest sorts first
+        return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
+      };
+    },
+    sortByLatency () {
+      let unsorted
+
+      unsorted = this.relays;
+
+      if (unsorted.length)
+        return unsorted.sort(this.sort_by_latency(true))
+
+      return []
     },
 }

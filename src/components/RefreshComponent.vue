@@ -11,7 +11,7 @@
 
 <script>
 import { defineComponent, reactive } from 'vue'
-import sharedMethods from '../shared'
+import RelaysLib from '../lib/relays-lib.js'
 import { useStorage } from "vue3-storage";
 
 const localMethods = {
@@ -27,7 +27,7 @@ const localMethods = {
     },
     setRefreshInterval: function(){
       this.interval = setInterval(() => {
-        this.preferences = this.getState('preferences') || this.preferences
+        this.preferences = this.getCache('preferences') || this.preferences
 
         this.refreshData.untilNext = this.timeUntilRefresh() 
         this.refreshData.sinceLast = this.timeSinceRefresh() 
@@ -46,8 +46,8 @@ export default defineComponent({
     clearInterval(this.interval)
 
     this.storage = useStorage()
-    this.lastUpdate = this.getState('lastUpdate')|| this.lastUpdate
-    this.preferences = this.getState('preferences') || this.preferences
+    this.lastUpdate = this.getCache('lastUpdate')|| this.lastUpdate
+    this.preferences = this.getCache('preferences') || this.preferences
 
     this.refreshData = reactive({
       untilNext: this.timeUntilRefresh(),
@@ -66,7 +66,7 @@ export default defineComponent({
     this.refreshData.sinceLast = this.timeSinceRefresh() 
   },
   computed: {},
-  methods: Object.assign(localMethods, sharedMethods),
+  methods: Object.assign(localMethods, RelaysLib),
   props: {
     relay: {
       type: String,
@@ -79,7 +79,7 @@ export default defineComponent({
       default(){
         return []
       }
-    },
+    }, 
     messagesProp:{
       type: Object,
       default(){

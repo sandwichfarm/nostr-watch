@@ -76,8 +76,9 @@ button {
 
 <script>
 import { defineComponent } from 'vue'
-import sharedMethods from '../shared'
 import { useStorage } from "vue3-storage";
+
+import RelaysLib from '../lib/relays-lib.js'
 
 const localMethods = {
   toggle() {
@@ -90,13 +91,13 @@ export default defineComponent({
   components: {},
   mounted(){
     this.storage = useStorage()
-    this.preferences = this.getState('preferences') || this.preferences
+    this.preferences = this.getCache('preferences') || this.preferences
   },
   updated(){
     this.saveState('preferences')
   },
   computed: {},
-  methods: Object.assign(localMethods, sharedMethods),
+  methods: Object.assign(localMethods, RelaysLib),
   props: {},
   data() {
     return {

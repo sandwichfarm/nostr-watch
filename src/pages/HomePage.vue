@@ -176,7 +176,11 @@ a {
 }
 
 a:hover {
-  color: #333;
+  color: #000;
+}
+
+.nav-item.is-active a {
+  background:#f0f0f0;
 }
 
 li.nav-item a {

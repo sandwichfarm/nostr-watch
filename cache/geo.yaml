@@ -17,7 +17,7 @@ geo:
     dns:
       name: nostr-relay.freeberty.net
       type: 1
-      TTL: 300
+      TTL: 94
       data: 194.5.154.8
   wss://nostr-relay.wlvs.space:
     status: success
@@ -37,7 +37,7 @@ geo:
     dns:
       name: wlvs.space
       type: 1
-      TTL: 1938
+      TTL: 2070
       data: 142.93.159.73
   wss://nostr-relay-dev.wlvs.space:
     status: success
@@ -57,7 +57,7 @@ geo:
     dns:
       name: wlvs.space
       type: 1
-      TTL: 3600
+      TTL: 132
       data: 142.93.159.73
   wss://nostr.onsats.org:
     status: success
@@ -77,7 +77,7 @@ geo:
     dns:
       name: nostr.onsats.org
       type: 1
-      TTL: 2460
+      TTL: 3600
       data: 51.158.169.7
   wss://nostr-relay.untethr.me:
     status: success
@@ -97,7 +97,7 @@ geo:
     dns:
       name: nostr-relay.untethr.me
       type: 1
-      TTL: 134
+      TTL: 1682
       data: 35.208.215.21
   wss://nostr-relay.lnmarkets.com:
     status: success
@@ -117,7 +117,7 @@ geo:
     dns:
       name: nostr-relay.lnmarkets.com
       type: 1
-      TTL: 300
+      TTL: 99
       data: 86.104.228.8
   wss://nostr.unknown.place:
     status: success
@@ -137,7 +137,7 @@ geo:
     dns:
       name: nostr.unknown.place
       type: 1
-      TTL: 5713
+      TTL: 3497
       data: 38.242.216.240
   wss://nostr.semisol.dev:
     status: success
@@ -157,7 +157,7 @@ geo:
     dns:
       name: api.semisol.dev
       type: 1
-      TTL: 120
+      TTL: 96
       data: 65.21.149.149
   wss://nostr-pub.semisol.dev:
     status: success
@@ -197,7 +197,7 @@ geo:
     dns:
       name: wellorder.net
       type: 1
-      TTL: 28800
+      TTL: 21576
       data: 50.116.30.242
   wss://nostr.drss.io:
     status: success
@@ -217,7 +217,7 @@ geo:
     dns:
       name: nostr.drss.io
       type: 1
-      TTL: 300
+      TTL: 190
       data: 165.232.140.90
   wss://nostr.rocks:
     status: success
@@ -237,7 +237,7 @@ geo:
     dns:
       name: nostr.rocks
       type: 1
-      TTL: 1639
+      TTL: 278
       data: 162.55.33.235
   wss://nostr.bitcoiner.social:
     status: success
@@ -257,7 +257,7 @@ geo:
     dns:
       name: bitcoiner.social
       type: 1
-      TTL: 727
+      TTL: 3407
       data: 64.94.212.15
   wss://nostr.openchain.fr:
     status: success
@@ -297,7 +297,7 @@ geo:
     dns:
       name: nostr.delo.software
       type: 1
-      TTL: 3600
+      TTL: 3583
       data: 153.92.127.199
   wss://relay.nostr.info:
     status: success
@@ -317,7 +317,7 @@ geo:
     dns:
       name: relay.nostr.info
       type: 1
-      TTL: 1799
+      TTL: 1610
       data: 37.139.2.127
   wss://relay.nostr.pro:
     status: success
@@ -337,7 +337,7 @@ geo:
     dns:
       name: relay.nostr.pro
       type: 1
-      TTL: 1799
+      TTL: 1612
       data: 209.188.21.227
   wss://relay.damus.io:
     status: success
@@ -353,12 +353,12 @@ geo:
     isp: Cloudflare, Inc.
     org: Cloudflare, Inc.
     as: AS13335 Cloudflare, Inc.
-    query: 104.21.61.55
+    query: 172.67.206.128
     dns:
       name: relay.damus.io
       type: 1
-      TTL: 300
-      data: 104.21.61.55
+      TTL: 217
+      data: 172.67.206.128
   wss://nostr.zaprite.io:
     status: success
     country: Canada
@@ -377,7 +377,7 @@ geo:
     dns:
       name: nostr.zaprite.io
       type: 1
-      TTL: 1799
+      TTL: 288
       data: 170.75.170.238
   wss://nostr.oxtr.dev:
     status: success
@@ -397,7 +397,7 @@ geo:
     dns:
       name: nostr.oxtr.dev
       type: 1
-      TTL: 10800
+      TTL: 5381
       data: 128.199.50.246
   wss://nostr.ono.re:
     status: success
@@ -437,7 +437,7 @@ geo:
     dns:
       name: relay.grunch.dev
       type: 1
-      TTL: 323
+      TTL: 429
       data: 142.93.5.66
   wss://relay.cynsar.foundation:
     status: success
@@ -457,7 +457,7 @@ geo:
     dns:
       name: relay.cynsar.foundation
       type: 1
-      TTL: 300
+      TTL: 225
       data: 104.21.76.158
   wss://nostr-pub.wellorder.net:
     status: success
@@ -477,7 +477,7 @@ geo:
     dns:
       name: wellorder.net
       type: 1
-      TTL: 28737
+      TTL: 21597
       data: 50.116.30.242
   wss://relay.oldcity-bitcoiners.info:
     status: success
@@ -497,7 +497,7 @@ geo:
     dns:
       name: oldcity-bitcoiners.info
       type: 1
-      TTL: 300
+      TTL: 123
       data: 99.184.79.163
   wss://relay.bitid.nz:
     status: success
@@ -517,7 +517,7 @@ geo:
     dns:
       name: relay.bitid.nz
       type: 1
-      TTL: 732
+      TTL: 3509
       data: 135.125.129.135
   wss://relay.futohq.com:
     status: success
@@ -537,7 +537,7 @@ geo:
     dns:
       name: relay.futohq.com
       type: 1
-      TTL: 300
+      TTL: 234
       data: 143.198.29.31
   wss://nostr.rdfriedl.com:
     status: success
@@ -557,7 +557,7 @@ geo:
     dns:
       name: nostr.rdfriedl.com
       type: 1
-      TTL: 300
+      TTL: 212
       data: 136.37.5.54
   wss://relay.farscapian.com:
     status: success
@@ -577,7 +577,7 @@ geo:
     dns:
       name: farscapian.com
       type: 1
-      TTL: 147
+      TTL: 129
       data: 99.184.79.163
   wss://astral.ninja:
     status: success
@@ -597,7 +597,7 @@ geo:
     dns:
       name: astral.ninja
       type: 1
-      TTL: 1799
+      TTL: 1630
       data: 45.93.137.155
   wss://relay.sovereign-stack.org:
     status: success
@@ -617,7 +617,7 @@ geo:
     dns:
       name: sovereign-stack.org
       type: 1
-      TTL: 300
+      TTL: 132
       data: 99.184.79.163
   wss://nostr.sandwich.farm:
     status: success
@@ -637,7 +637,7 @@ geo:
     dns:
       name: nostr.sandwich.farm
       type: 1
-      TTL: 3121
+      TTL: 322
       data: 46.101.217.80
   wss://nostr.zebedee.cloud:
     status: success
@@ -657,7 +657,7 @@ geo:
     dns:
       name: nostr.zebedee.cloud
       type: 1
-      TTL: 1799
+      TTL: 304
       data: 24.199.71.187
   wss://nostr-2.zebedee.cloud:
     status: success
@@ -677,7 +677,7 @@ geo:
     dns:
       name: nostr-2.zebedee.cloud
       type: 1
-      TTL: 1799
+      TTL: 307
       data: 146.190.1.235
   wss://nostr.shadownode.org:
     status: success
@@ -697,7 +697,7 @@ geo:
     dns:
       name: shadownode.org
       type: 1
-      TTL: 600
+      TTL: 464
       data: 5.75.182.0
   wss://expensive-relay.fiatjaf.com:
     status: success
@@ -717,7 +717,7 @@ geo:
     dns:
       name: turgot.fiatjaf.com
       type: 1
-      TTL: 149
+      TTL: 300
       data: 107.189.30.195
   wss://relay.kronkltd.net:
     status: success
@@ -737,7 +737,7 @@ geo:
     dns:
       name: relay.kronkltd.net
       type: 1
-      TTL: 2824
+      TTL: 749
       data: 143.244.222.111
   wss://relay.r3d.red:
     status: success
@@ -757,7 +757,7 @@ geo:
     dns:
       name: relay.r3d.red
       type: 1
-      TTL: 300
+      TTL: 140
       data: 185.194.143.52
   wss://relay.valireum.net:
     status: success
@@ -777,7 +777,7 @@ geo:
     dns:
       name: relay.valireum.net
       type: 1
-      TTL: 86400
+      TTL: 78893
       data: 45.79.126.217
   wss://nostr.fmt.wiz.biz:
     status: success
@@ -797,7 +797,7 @@ geo:
     dns:
       name: nostr.fmt.wiz.biz
       type: 1
-      TTL: 1945
+      TTL: 1823
       data: 103.99.170.125
   wss://nostr.v0l.io:
     status: success
@@ -817,7 +817,7 @@ geo:
     dns:
       name: k.axst.io
       type: 1
-      TTL: 300
+      TTL: 233
       data: 137.74.201.19
   wss://relay.cryptocculture.com:
     status: success
@@ -837,7 +837,7 @@ geo:
     dns:
       name: relay.cryptocculture.com
       type: 1
-      TTL: 300
+      TTL: 79
       data: 149.248.196.200
   wss://nostr.fly.dev:
     status: success
@@ -877,7 +877,7 @@ geo:
     dns:
       name: nostr.nordlysln.net
       type: 1
-      TTL: 10800
+      TTL: 3483
       data: 84.215.64.137
   wss://nostr-relay.gkbrk.com:
     status: success
@@ -897,7 +897,7 @@ geo:
     dns:
       name: nostr-relay.gkbrk.com
       type: 1
-      TTL: 60
+      TTL: 45
       data: 207.154.239.26
   wss://nostr.zerofeerouting.com:
     status: success
@@ -917,7 +917,7 @@ geo:
     dns:
       name: nostr.zerofeerouting.com
       type: 1
-      TTL: 82091
+      TTL: 79260
       data: 23.88.33.13
   wss://no.str.cr:
     status: success
@@ -937,7 +937,7 @@ geo:
     dns:
       name: no.str.cr
       type: 1
-      TTL: 300
+      TTL: 147
       data: 143.202.162.130
   wss://relay.nostr.ch:
     status: success
@@ -957,7 +957,7 @@ geo:
     dns:
       name: nostr.ch
       type: 1
-      TTL: 3449
+      TTL: 3453
       data: 5.255.104.65
   wss://rsslay.nostr.net:
     status: success
@@ -977,7 +977,7 @@ geo:
     dns:
       name: rsslay.nostr.net
       type: 1
-      TTL: 150
+      TTL: 258
       data: 3.125.196.145
   wss://nostr.cercatrova.me:
     status: success
@@ -997,7 +997,7 @@ geo:
     dns:
       name: nostr.cercatrova.me
       type: 1
-      TTL: 10800
+      TTL: 3485
       data: 135.181.202.138
   wss://public.nostr.swissrouting.com:
     status: success
@@ -1017,7 +1017,7 @@ geo:
     dns:
       name: public.nostr.swissrouting.com
       type: 1
-      TTL: 300
+      TTL: 232
       data: 84.32.190.6
   wss://nostr-relay.nonce.academy:
     status: success
@@ -1033,12 +1033,12 @@ geo:
     isp: Cloudflare, Inc.
     org: Cloudflare, Inc.
     as: AS13335 Cloudflare, Inc.
-    query: 104.21.1.54
+    query: 172.67.128.142
     dns:
       name: nostr-relay.nonce.academy
       type: 1
-      TTL: 152
-      data: 104.21.1.54
+      TTL: 245
+      data: 172.67.128.142
   wss://nostr.rewardsbunny.com:
     status: success
     country: Singapore
@@ -1077,7 +1077,7 @@ geo:
     dns:
       name: nostr.orba.ca
       type: 1
-      TTL: 600
+      TTL: 465
       data: 102.130.122.185
   wss://nostr-2.orba.ca:
     status: success
@@ -1097,7 +1097,7 @@ geo:
     dns:
       name: nostr-2.orba.ca
       type: 1
-      TTL: 600
+      TTL: 92
       data: 35.160.119.172
   wss://lv01.tater.ninja:
     status: success
@@ -1117,48 +1117,48 @@ geo:
     dns:
       name: lv01.tater.ninja
       type: 1
-      TTL: 300
+      TTL: 160
       data: 205.185.114.10
   wss://nostr.coinos.io:
     status: success
-    country: Netherlands
-    countryCode: NL
-    region: NH
-    regionName: North Holland
-    city: Amsterdam
-    zip: "1012"
-    lat: 52.3759
-    lon: 4.8975
-    timezone: Europe/Amsterdam
+    country: United States
+    countryCode: US
+    region: CA
+    regionName: California
+    city: San Francisco
+    zip: "94107"
+    lat: 37.7803
+    lon: -122.39
+    timezone: America/Los_Angeles
     isp: Cloudflare, Inc.
-    org: CloudFlare, Inc.
+    org: Cloudflare, Inc.
     as: AS13335 Cloudflare, Inc.
-    query: 188.114.97.12
+    query: 104.21.37.76
     dns:
       name: nostr.coinos.io
       type: 1
-      TTL: 300
-      data: 188.114.97.12
+      TTL: 160
+      data: 104.21.37.76
   wss://nostr.slothy.win:
     status: success
-    country: Netherlands
-    countryCode: NL
-    region: NH
-    regionName: North Holland
-    city: Amsterdam
-    zip: "1012"
-    lat: 52.3759
-    lon: 4.8975
-    timezone: Europe/Amsterdam
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6532
+    lon: -79.3832
+    timezone: America/Toronto
     isp: Cloudflare, Inc.
-    org: CloudFlare, Inc.
+    org: Cloudflare, Inc.
     as: AS13335 Cloudflare, Inc.
-    query: 188.114.97.12
+    query: 104.21.4.73
     dns:
       name: nostr.slothy.win
       type: 1
-      TTL: 300
-      data: 188.114.97.12
+      TTL: 159
+      data: 104.21.4.73
   wss://nostrrelay.com:
     status: success
     country: Germany
@@ -1177,7 +1177,7 @@ geo:
     dns:
       name: nostrrelay.com
       type: 1
-      TTL: 1799
+      TTL: 27
       data: 159.69.59.39
   wss://satstacker.cloud:
     status: success
@@ -1197,5 +1197,805 @@ geo:
     dns:
       name: satstacker.cloud
       type: 1
-      TTL: 300
+      TTL: 105
       data: 74.91.124.242
+  wss://relay.nostropolis.xyz:
+    status: success
+    country: Netherlands
+    countryCode: NL
+    region: ZH
+    regionName: South Holland
+    city: Naaldwijk
+    zip: "2671"
+    lat: 51.9934
+    lon: 4.2158
+    timezone: Europe/Amsterdam
+    isp: IncogNET LLC
+    org: IncogNET LLC
+    as: AS210630 IncogNET LLC
+    query: 23.137.249.241
+    dns:
+      name: relay.nostropolis.xyz
+      type: 1
+      TTL: 29
+      data: 23.137.249.241
+  wss://nostr.jiashanlu.synology.me:
+    status: success
+    country: United Arab Emirates
+    countryCode: AE
+    region: DU
+    regionName: Dubai
+    city: Dubai
+    zip: ""
+    lat: 25.2633
+    lon: 55.3087
+    timezone: Asia/Dubai
+    isp: Emirates Telecommunications Corporation
+    org: Etisalat
+    as: AS5384 Emirates Telecommunications Corporation
+    query: 86.99.43.249
+    dns:
+      name: nostr.jiashanlu.synology.me
+      type: 1
+      TTL: 232
+      data: 86.99.43.249
+  wss://relay.nyc1.vinux.app:
+    status: success
+    country: United States
+    countryCode: US
+    region: NJ
+    regionName: New Jersey
+    city: North Bergen
+    zip: "07047"
+    lat: 40.793
+    lon: -74.0247
+    timezone: America/New_York
+    isp: DigitalOcean, LLC
+    org: DigitalOcean, LLC
+    as: AS14061 DigitalOcean, LLC
+    query: 137.184.136.200
+    dns:
+      name: relay.nyc1.vinux.app
+      type: 1
+      TTL: 3407
+      data: 137.184.136.200
+  wss://nostr.ethtozero.fr:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: QC
+    regionName: Quebec
+    city: Beauharnois
+    zip: J6N
+    lat: 45.3151
+    lon: -73.8779
+    timezone: America/Toronto
+    isp: OVH SAS
+    org: OVH Hosting, Inc.
+    as: AS16276 OVH SAS
+    query: 198.27.70.214
+    dns:
+      name: nostr.ethtozero.fr
+      type: 1
+      TTL: 9960
+      data: 198.27.70.214
+  wss://nostr.tunnelsats.com:
+    status: success
+    country: Turkey
+    countryCode: TR
+    region: "21"
+    regionName: Diyarbakir
+    city: Diyarbakır
+    zip: "21110"
+    lat: 37.9139
+    lon: 40.2213
+    timezone: Europe/Istanbul
+    isp: Contabo GmbH
+    org: Contabo GmbH
+    as: AS51167 Contabo GmbH
+    query: 38.242.151.13
+    dns:
+      name: nostr.tunnelsats.com
+      type: 1
+      TTL: 296
+      data: 38.242.151.13
+  wss://nostr-relay.trustbtc.org:
+    status: success
+    country: United States
+    countryCode: US
+    region: CA
+    regionName: California
+    city: San Francisco
+    zip: "94107"
+    lat: 37.7803
+    lon: -122.39
+    timezone: America/Los_Angeles
+    isp: Cloudflare, Inc.
+    org: Cloudflare, Inc.
+    as: AS13335 Cloudflare, Inc.
+    query: 104.21.38.42
+    dns:
+      name: nostr-relay.trustbtc.org
+      type: 1
+      TTL: 272
+      data: 104.21.38.42
+  wss://nostr.i.bitire.us:
+    status: success
+    country: United States
+    countryCode: US
+    region: WA
+    regionName: Washington
+    city: Sammamish
+    zip: "98075"
+    lat: 47.5871
+    lon: -122.0388
+    timezone: America/Los_Angeles
+    isp: Comcast Cable Communications, LLC
+    org: Comcast Cable Communications, Inc.
+    as: AS7922 Comcast Cable Communications, LLC
+    query: 98.232.91.38
+    dns:
+      name: home.cloudgeni.us
+      type: 1
+      TTL: 300
+      data: 98.232.91.38
+  wss://nostr.oooxxx.ml:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6532
+    lon: -79.3832
+    timezone: America/Toronto
+    isp: Cloudflare, Inc.
+    org: Cloudflare, Inc.
+    as: AS13335 Cloudflare, Inc.
+    query: 172.67.222.44
+    dns:
+      name: nostr.oooxxx.ml
+      type: 1
+      TTL: 277
+      data: 172.67.222.44
+  wss://relay.nostr-pub.wellorder.net:
+    status: success
+    country: United States
+    countryCode: US
+    region: TX
+    regionName: Texas
+    city: Richardson
+    zip: "75081"
+    lat: 32.9473
+    lon: -96.7028
+    timezone: America/Chicago
+    isp: Linode, LLC
+    org: Linode
+    as: AS63949 Linode, LLC
+    query: 50.116.30.242
+    dns:
+      name: wellorder.net
+      type: 1
+      TTL: 24684
+      data: 50.116.30.242
+  wss://nostr.mwmdev.com:
+    status: success
+    country: Portugal
+    countryCode: PT
+    region: "11"
+    regionName: Lisbon
+    city: Lisbon
+    zip: 1069-001
+    lat: 38.731
+    lon: -9.1373
+    timezone: Europe/Lisbon
+    isp: PT Comunicacoes S.A
+    org: PT Comunicacoes S.A.
+    as: AS3243 MEO - SERVICOS DE COMUNICACOES E MULTIMEDIA S.A.
+    query: 85.241.157.89
+    dns:
+      name: lumiar.myddns.me
+      type: 1
+      TTL: 7
+      data: 85.241.157.89
+  wss://relay.sendstr.com:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6532
+    lon: -79.3832
+    timezone: America/Toronto
+    isp: Cloudflare, Inc.
+    org: Cloudflare, Inc.
+    as: AS13335 Cloudflare, Inc.
+    query: 172.67.216.230
+    dns:
+      name: relay.sendstr.com
+      type: 1
+      TTL: 275
+      data: 172.67.216.230
+  wss://nostr.shawnyeager.net:
+    status: success
+    country: United States
+    countryCode: US
+    region: NJ
+    regionName: New Jersey
+    city: North Bergen
+    zip: "07047"
+    lat: 40.793
+    lon: -74.0247
+    timezone: America/New_York
+    isp: DigitalOcean, LLC
+    org: DigitalOcean, LLC
+    as: AS14061 DigitalOcean, LLC
+    query: 157.245.83.60
+    dns:
+      name: nostr.shawnyeager.net
+      type: 1
+      TTL: 900
+      data: 157.245.83.60
+  wss://nostr-relay.freedomnode.com:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6532
+    lon: -79.3832
+    timezone: America/Toronto
+    isp: Cloudflare, Inc.
+    org: Cloudflare, Inc.
+    as: AS13335 Cloudflare, Inc.
+    query: 104.21.18.112
+    dns:
+      name: nostr-relay.freedomnode.com
+      type: 1
+      TTL: 80
+      data: 104.21.18.112
+  wss://nostr.radixrat.com:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6547
+    lon: -79.3623
+    timezone: America/Toronto
+    isp: DigitalOcean, LLC
+    org: DigitalOcean, LLC
+    as: AS14061 DigitalOcean, LLC
+    query: 138.197.156.126
+    dns:
+      name: nostr.radixrat.com
+      type: 1
+      TTL: 2530
+      data: 138.197.156.126
+  wss://relay.21spirits.io:
+    status: success
+    country: Germany
+    countryCode: DE
+    region: HE
+    regionName: Hesse
+    city: Frankfurt am Main
+    zip: "60313"
+    lat: 50.1188
+    lon: 8.6843
+    timezone: Europe/Berlin
+    isp: DigitalOcean, LLC
+    org: DigitalOcean, LLC
+    as: AS14061 DigitalOcean, LLC
+    query: 142.93.97.140
+    dns:
+      name: relay.21spirits.io
+      type: 1
+      TTL: 399
+      data: 142.93.97.140
+  wss://zerosequioso.com:
+    status: success
+    country: United States
+    countryCode: US
+    region: WA
+    regionName: Washington
+    city: Seattle
+    zip: "98108"
+    lat: 47.6229
+    lon: -122.337
+    timezone: America/Los_Angeles
+    isp: Amazon.com, Inc.
+    org: AWS Global Accelerator (GLOBAL)
+    as: AS16509 Amazon.com, Inc.
+    query: 99.83.154.118
+    dns:
+      name: zerosequioso.com
+      type: 1
+      TTL: 192
+      data: 99.83.154.118
+  wss://r.alphaama.com:
+    status: success
+    country: Finland
+    countryCode: FI
+    region: "18"
+    regionName: Uusimaa
+    city: Helsinki
+    zip: "00100"
+    lat: 60.1719
+    lon: 24.9347
+    timezone: Europe/Helsinki
+    isp: Hetzner Online GmbH
+    org: HETZNER-DC
+    as: AS24940 Hetzner Online GmbH
+    query: 95.217.238.72
+    dns:
+      name: r.alphaama.com
+      type: 1
+      TTL: 3370
+      data: 95.217.238.72
+  wss://relay.grorp.com:
+    status: success
+    country: United States
+    countryCode: US
+    region: CA
+    regionName: California
+    city: Fremont
+    zip: "94536"
+    lat: 37.5625
+    lon: -122.0004
+    timezone: America/Los_Angeles
+    isp: Linode, LLC
+    org: Linode
+    as: AS63949 Linode, LLC
+    query: 66.175.223.60
+    dns:
+      name: relay.grorp.com
+      type: 1
+      TTL: 82265
+      data: 66.175.223.60
+  wss://nostr.actn.io:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6532
+    lon: -79.3832
+    timezone: America/Toronto
+    isp: Cloudflare, Inc.
+    org: Cloudflare, Inc.
+    as: AS13335 Cloudflare, Inc.
+    query: 172.67.220.7
+    dns:
+      name: nostr.actn.io
+      type: 1
+      TTL: 300
+      data: 172.67.220.7
+  wss://nostr-relay.derekross.me:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6532
+    lon: -79.3832
+    timezone: America/Toronto
+    isp: Cloudflare, Inc.
+    org: Cloudflare, Inc.
+    as: AS13335 Cloudflare, Inc.
+    query: 172.67.149.216
+    dns:
+      name: nostr-relay.derekross.me
+      type: 1
+      TTL: 257
+      data: 172.67.149.216
+  wss://nostrrr.bublina.eu.org:
+    status: success
+    country: Slovakia
+    countryCode: SK
+    region: BC
+    regionName: Banska Bystrica
+    city: Banská Bystrica
+    zip: 974 01
+    lat: 48.7491
+    lon: 19.1958
+    timezone: Europe/Bratislava
+    isp: Slovak Telecom AS6855
+    org: Slovak Telekom, a.s.
+    as: AS6855 Slovak Telekom, a.s.
+    query: 78.98.204.225
+    dns:
+      name: a.bublina.eu.org
+      type: 1
+      TTL: 61
+      data: 78.98.204.225
+  wss://rsslay.fiatjaf.com:
+    status: success
+    country: Germany
+    countryCode: DE
+    region: HE
+    regionName: Hesse
+    city: Frankfurt am Main
+    zip: "60313"
+    lat: 50.1109
+    lon: 8.68213
+    timezone: Europe/Berlin
+    isp: Amazon Technologies Inc.
+    org: AWS EC2 (eu-central-1)
+    as: AS16509 Amazon.com, Inc.
+    query: 3.125.196.145
+    dns:
+      name: rsslay.skunkworks.si
+      type: 1
+      TTL: 60
+      data: 3.125.196.145
+  wss://relayer.fiatjaf.com:
+    status: success
+    country: Luxembourg
+    countryCode: LU
+    region: LU
+    regionName: Luxembourg
+    city: Luxembourg
+    zip: L-1661
+    lat: 49.6113
+    lon: 6.1294
+    timezone: Europe/Luxembourg
+    isp: FranTech Solutions
+    org: BuyVM
+    as: AS53667 FranTech Solutions
+    query: 107.189.30.195
+    dns:
+      name: turgot.fiatjaf.com
+      type: 1
+      TTL: 300
+      data: 107.189.30.195
+  wss://relay.nostr.au:
+    status: success
+    country: Australia
+    countryCode: AU
+    region: VIC
+    regionName: Victoria
+    city: Melbourne
+    zip: "3207"
+    lat: -37.8372
+    lon: 144.9354
+    timezone: Australia/Melbourne
+    isp: The Constant Company, LLC
+    org: The Constant Company, LLC
+    as: AS20473 The Constant Company, LLC
+    query: 67.219.98.203
+    dns:
+      name: nostr.au
+      type: 1
+      TTL: 300
+      data: 67.219.98.203
+  wss://nostr.mom:
+    status: success
+    country: Lithuania
+    countryCode: LT
+    region: VL
+    regionName: Vilnius
+    city: Vilnius
+    zip: "08234"
+    lat: 54.7091
+    lon: 25.2971
+    timezone: Europe/Vilnius
+    isp: UAB "Interneto vizija"
+    org: UAB "Interneto vizija"
+    as: AS212531 Interneto vizija
+    query: 89.47.164.234
+    dns:
+      name: nostr.mom
+      type: 1
+      TTL: 31
+      data: 89.47.164.234
+  wss://nostr-01.bolt.observer:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6532
+    lon: -79.3832
+    timezone: America/Toronto
+    isp: Cloudflare, Inc.
+    org: Cloudflare, Inc.
+    as: AS13335 Cloudflare, Inc.
+    query: 172.67.73.4
+    dns:
+      name: nostr-01.bolt.observer
+      type: 1
+      TTL: 300
+      data: 172.67.73.4
+  wss://nostr.supremestack.xyz:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M3A
+    lat: 43.7696
+    lon: -79.3309
+    timezone: America/Toronto
+    isp: Cogent Communications
+    org: Lunanode Hosting Inc.
+    as: AS174 Cogent Communications
+    query: 170.75.175.107
+    dns:
+      name: nostr.supremestack.xyz
+      type: 1
+      TTL: 78943
+      data: 170.75.175.107
+  wss://nostr-3.orba.ca:
+    status: success
+    country: United States
+    countryCode: US
+    region: OR
+    regionName: Oregon
+    city: Portland
+    zip: "97207"
+    lat: 45.5235
+    lon: -122.676
+    timezone: America/Los_Angeles
+    isp: Amazon.com, Inc.
+    org: AWS EC2 (us-west-2)
+    as: AS16509 Amazon.com, Inc.
+    query: 35.90.216.28
+    dns:
+      name: nostr-3.orba.ca
+      type: 1
+      TTL: 600
+      data: 35.90.216.28
+  wss://mule.platanito.org:
+    status: success
+    country: United States
+    countryCode: US
+    region: NJ
+    regionName: New Jersey
+    city: Piscataway
+    zip: "08854"
+    lat: 40.5511
+    lon: -74.4606
+    timezone: America/New_York
+    isp: Choopa
+    org: Vultr Holdings, LLC
+    as: AS20473 The Constant Company, LLC
+    query: 140.82.60.65
+    dns:
+      name: mule.platanito.org
+      type: 1
+      TTL: 6467
+      data: 140.82.60.65
+  wss://nostr.8e23.net:
+    status: success
+    country: Germany
+    countryCode: DE
+    region: SN
+    regionName: Saxony
+    city: Falkenstein
+    zip: "08223"
+    lat: 50.475
+    lon: 12.365
+    timezone: Europe/Berlin
+    isp: Hetzner Online GmbH
+    org: Hetzner
+    as: AS24940 Hetzner Online GmbH
+    query: 88.99.13.172
+    dns:
+      name: nostr.8e23.net
+      type: 1
+      TTL: 270
+      data: 88.99.13.172
+  wss://nostr.pobblelabs.org:
+    status: success
+    country: United States
+    countryCode: US
+    region: NJ
+    regionName: New Jersey
+    city: Piscataway
+    zip: "08854"
+    lat: 40.5511
+    lon: -74.4606
+    timezone: America/New_York
+    isp: The Constant Company
+    org: Vultr Holdings, LLC
+    as: AS20473 The Constant Company, LLC
+    query: 173.199.124.157
+    dns:
+      name: nostr.pobblelabs.org
+      type: 1
+      TTL: 33
+      data: 173.199.124.157
+  wss://nostr-dev.wellorder.net:
+    status: success
+    country: United States
+    countryCode: US
+    region: TX
+    regionName: Texas
+    city: Richardson
+    zip: "75081"
+    lat: 32.9473
+    lon: -96.7028
+    timezone: America/Chicago
+    isp: Linode, LLC
+    org: Linode
+    as: AS63949 Linode, LLC
+    query: 50.116.30.242
+    dns:
+      name: wellorder.net
+      type: 1
+      TTL: 20853
+      data: 50.116.30.242
+  wss://nostr.hugo.md:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6532
+    lon: -79.3832
+    timezone: America/Toronto
+    isp: Cloudflare, Inc.
+    org: Cloudflare, Inc.
+    as: AS13335 Cloudflare, Inc.
+    query: 104.21.86.229
+    dns:
+      name: nostr.hugo.md
+      type: 1
+      TTL: 244
+      data: 104.21.86.229
+  wss://nostr2.namek.link:
+    status: success
+    country: Germany
+    countryCode: DE
+    region: BY
+    regionName: Bavaria
+    city: Nuremberg
+    zip: "90403"
+    lat: 49.4521
+    lon: 11.0767
+    timezone: Europe/Berlin
+    isp: Hetzner Online GmbH
+    org: Hetzner
+    as: AS24940 Hetzner Online GmbH
+    query: 49.12.204.248
+    dns:
+      name: nostr2.namek.link
+      type: 1
+      TTL: 272
+      data: 49.12.204.248
+  wss://nostr.namek.link:
+    status: success
+    country: Finland
+    countryCode: FI
+    region: "18"
+    regionName: Uusimaa
+    city: Helsinki
+    zip: "00100"
+    lat: 60.1719
+    lon: 24.9347
+    timezone: Europe/Helsinki
+    isp: Hetzner Online GmbH
+    org: HETZNER-DC
+    as: AS24940 Hetzner Online GmbH
+    query: 95.217.12.76
+    dns:
+      name: nostr.namek.link
+      type: 1
+      TTL: 299
+      data: 95.217.12.76
+  wss://nostr.satsophone.tk:
+    status: success
+    country: Australia
+    countryCode: AU
+    region: QLD
+    regionName: Queensland
+    city: Brisbane
+    zip: "4000"
+    lat: -27.4679
+    lon: 153.0325
+    timezone: Australia/Brisbane
+    isp: SUPERLOOP (AUSTRALIA) PTY LTD
+    org: SUPERLOOP (AUSTRALIA) PTY LTD
+    as: AS38195 Superloop
+    query: 125.253.102.237
+    dns:
+      name: nostr.satsophone.tk
+      type: 1
+      TTL: 3247
+      data: 125.253.102.237
+  wss://nostr.nymsrelay.com:
+    status: success
+    country: United States
+    countryCode: US
+    region: CA
+    regionName: California
+    city: San Francisco
+    zip: "94142"
+    lat: 37.7809
+    lon: -122.4245
+    timezone: America/Los_Angeles
+    isp: DigitalOcean
+    org: DigitalOcean, LLC
+    as: AS14061 DigitalOcean, LLC
+    query: 146.190.124.72
+    dns:
+      name: nymsrelay.com
+      type: 1
+      TTL: 195
+      data: 146.190.124.72
+  wss://nostr.yael.at:
+    status: success
+    country: Germany
+    countryCode: DE
+    region: HE
+    regionName: Hesse
+    city: Frankfurt am Main
+    zip: "60313"
+    lat: 50.1188
+    lon: 8.6843
+    timezone: Europe/Berlin
+    isp: DigitalOcean, LLC
+    org: DigitalOcean, LLC
+    as: AS14061 DigitalOcean, LLC
+    query: 142.93.175.165
+    dns:
+      name: nostr.yael.at
+      type: 1
+      TTL: 300
+      data: 142.93.175.165
+  wss://wlvs.space:
+    status: success
+    country: Canada
+    countryCode: CA
+    region: ON
+    regionName: Ontario
+    city: Toronto
+    zip: M5A
+    lat: 43.6547
+    lon: -79.3623
+    timezone: America/Toronto
+    isp: DigitalOcean, LLC
+    org: DigitalOcean, LLC
+    as: AS14061 DigitalOcean, LLC
+    query: 142.93.159.73
+    dns:
+      name: wlvs.space
+      type: 1
+      TTL: 3600
+      data: 142.93.159.73
+  wss://nostr.swiss-enigma.ch:
+    status: success
+    country: Finland
+    countryCode: FI
+    region: "18"
+    regionName: Uusimaa
+    city: Helsinki
+    zip: "00100"
+    lat: 60.1719
+    lon: 24.9347
+    timezone: Europe/Helsinki
+    isp: Hetzner Online GmbH
+    org: Hetzner
+    as: AS24940 Hetzner Online GmbH
+    query: 135.181.202.138
+    dns:
+      name: nostr.swiss-enigma.ch
+      type: 1
+      TTL: 2839
+      data: 135.181.202.138

@@ -97,3 +97,5 @@ relays:
   - wss://nostr1.tunnelsats.com
   - wss://nostr.tunnelsats.com
   - wss://nostr.hugo.md
+  - wss://nostr-relay.trustbtc.org
+  - wss://nostr.einundzwanzig.space

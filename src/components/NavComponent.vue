@@ -5,7 +5,7 @@
     <a href="https://github.com/dskvr/nostr-watch/edit/main/relays.yaml" target="_blank">Add Relay</a>
     <a href="relays.json"><code>{...}</code></a>
     <span>
-      <PreferencesComponent />
+      <PreferencesComponent :relays="relays" />
     </span>
 
   </ul>
@@ -49,6 +49,14 @@ export default defineComponent({
   name: 'NavComponent',
   components: {
     PreferencesComponent,
+  },
+  props: {
+    relays: {
+      type: Array,
+      default(){
+        return []
+      }
+    }
   }
 });
 </script>

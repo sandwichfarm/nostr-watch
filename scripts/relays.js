@@ -27,7 +27,7 @@ async function run(){
     pool
       .on('open', relay => {
         // console.log('open')
-        relay.subscribe(subid, {limit: 500, kinds:[3]})
+        relay.subscribe(subid, {limit: 1000, kinds:[3]})
       })
       .on('close', () => {
         // console.log('close')
@@ -44,7 +44,7 @@ async function run(){
     setTimeout( () => {
       pool.close()
       resolve(true) 
-    }, 2*1000 )
+    }, 20*1000 )
 
   })
 }
@@ -55,12 +55,13 @@ run()
     remote1 = Object.entries(relaysRemote)
               .filter( relay => Array.isArray(relay) )
               .map( relay => {
+                console.log("meow", relay)
                 return relay[0]
                         .toLowerCase()
                         .trim()
                         .replace('\t', '')
                         .replace(/\s\t/g, '')
-                        .replace(/\/+$/, "");
+                        .replace(/\/+$/, '');
               })
               .filter( relay => relay.startsWith('wss://') )
               .filter( relay => !relay.includes('localhost') )
@@ -73,11 +74,10 @@ run()
                         .trim()
                         .replace('\t', '')
                         .replace(/\s\t/g, '')
-                        .replace(/\/+$/, "");
+                        .replace(/\/+$/, '');
               })
               .filter( relay => relay.startsWith('wss://') )
               .filter( relay => !relay.includes('localhost') )
-
 
     let remoteMerged = remote1.concat(remote2)
 
@@ -110,7 +110,18 @@ run()
     })
     console.log('after check', remoteMerged.length)
 
-    const merged = relays.concat(remoteMerged)
+    let merged = relays.concat(remoteMerged)
+
+    merged = merged.map( relay => {
+                return relay
+                        .toLowerCase()
+                        .trim()
+                        .replace('\t', '')
+                        .replace(/\s\t/g, '')
+                        .replace(/\/+$/, '');
+              })
+
+    console.log(merged)
 
     const uniques = Array.from(new Set(merged))
 

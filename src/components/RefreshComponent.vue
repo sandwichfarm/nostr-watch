@@ -1,6 +1,6 @@
 <template>
 <section id="refresh">
-   <span>Updated {{ refreshData?.sinceLast }} ago <button @click="invalidate(true, this.relay)">Refresh{{ relay ? ` ${relay}` : "" }}</button></span>
+   <span>Updated {{ refreshData?.sinceLast }} ago <button @click="invalidate(true)">Refresh{{ relay ? ` ${relay}` : "" }}</button></span>
    <span v-if="preferences.refresh"> Next refresh in: {{ refreshData?.untilNext }}</span>
 </section>
 </template>
@@ -32,8 +32,10 @@ const localMethods = {
         this.refreshData.untilNext = this.timeUntilRefresh() 
         this.refreshData.sinceLast = this.timeSinceRefresh() 
 
-        if(this.isExpired() && this.preferences.refresh)
-          this.invalidate(false, this.relay)
+        console.log('is expired', this.isExpired())
+
+        // if(this.isExpired() && this.preferences.refresh)
+        //   this.invalidate(false, this.relay)
 
       }, 1000)
     }
@@ -57,10 +59,9 @@ export default defineComponent({
     this.setRefreshInterval()
   },
   updated(){
-    this.saveState('preferences')
-
-    if(this.relays && this.isDone())
-      this.saveState('lastUpdate')
+    this.setCache('preferences')
+    // if(this.relays && this.isDone())
+    //   this.setCache('lastUpdate')
 
     this.refreshData.untilNext = this.timeUntilRefresh() 
     this.refreshData.sinceLast = this.timeSinceRefresh() 

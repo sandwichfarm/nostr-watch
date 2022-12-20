@@ -22,13 +22,11 @@
             <input type="radio" id="10m" :value="1000*60*10" v-model="preferences.cacheExpiration" />
             <label for="10m">10 minutes</label>
           </li>
-          <li>
-            <input type="radio" id="1m" :value="1000*60" v-model="preferences.cacheExpiration" />
-            <label for="1m">1 Minute</label>
-          </li>
         </ul>        
       </span>
+      <button @click="clearData">Clear local data</button>
     </section>
+    
   </section>
 </template>
 
@@ -84,21 +82,36 @@ const localMethods = {
   toggle() {
      this.isActive = !this.isActive;
   },
+  clearData(){
+    this.relays.forEach( relay => {
+      console.log('clearing', relay)
+      this.removeCache(`${relay}`)
+      this.removeCache(`${relay}_inbox`)
+    })
+  }
 }
 
 export default defineComponent({
   name: 'PreferencesComponent',
   components: {},
   mounted(){
+
     this.storage = useStorage()
     this.preferences = this.getCache('preferences') || this.preferences
   },
   updated(){
-    this.saveState('preferences')
+    this.setCache('preferences')
   },
   computed: {},
   methods: Object.assign(localMethods, RelaysLib),
-  props: {},
+  props: {
+    relays: {
+      type: Array,
+      default(){
+        return []
+      }
+    }
+  },
   data() {
     return {
       storage: null,

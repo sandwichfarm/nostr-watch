@@ -3,25 +3,27 @@ import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.ya
 
 import crypto from "crypto"
 
-const connections = {}
-
 export default {
 	invalidate: async function(force, single){
       
       if(!this.isExpired() && !force) 
         return
+
+      this.setCache('lastUpdate')
+
+      console.log('invalidate', 'total relays', this.relays.length)
       
       if(single) {
-
         await this.check(single) 
         this.relays[single] = this.getCache(single)
         this.messages[single] = this.getCache(`${single}_inbox`) 
       } 
       else {
-        console.log(this.relays)
-
+        console.log('total relays', this.relays.length)
+        console.log(this.relays.length)
         for(let index = 0; index < this.relays.length; index++) {
           let relay = this.relays[index]
+          console.log('invalidating', relay)
           await this.delay(20).then( () => { 
             this.check(relay)
               .then(() => {
@@ -39,6 +41,10 @@ export default {
 
     getCache: function(key){
       return this.storage.getStorageSync(key)
+    },
+
+    removeCache: function(key){
+      return this.storage.removeStorageSync(key)
     },
 
     sort(aggregate) {
@@ -89,19 +95,19 @@ export default {
             // data: { result: this.result[relay] }
           }
 
-        connections[relay] = new Inspector(relay, opts)
+        let socket = new Inspector(relay, opts)
 
-        connections[relay]
+        socket
           .on('complete', (instance) => {   
             this.result[relay] = instance.result
 
             this.result[relay].aggregate = this.getAggregate(relay)
 
-            this.saveState('relay', relay)
-            this.saveState('messages', relay,  instance.inbox)
-            this.saveState('lastUpdate')
+            this.setCache('relay', relay)
+            this.setCache('messages', relay,  instance.inbox)
+            this.setCache('lastUpdate')
 
-            connections[relay].relay.close()
+            instance.relay.close()
             
             resolve(this.result[relay])
           })
@@ -132,7 +138,7 @@ export default {
       relay, resolve, reject
     },
 
-    saveState: function(type, key, data){
+    setCache: function(type, key, data){
       
       const now = Date.now()
 

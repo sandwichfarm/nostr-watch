@@ -39,7 +39,7 @@ relays:
   - wss://nostr.zebedee.cloud
   - wss://nostr-2.zebedee.cloud
   - wss://nostr.shadownode.org
-  - wss://nostr.nymsrelay.com/
+  - wss://nostr.nymsrelay.com
   - wss://expensive-relay.fiatjaf.com
   - wss://relay.kronkltd.net
   - wss://relay.r3d.red
@@ -74,32 +74,26 @@ relays:
   - wss://nostr.yael.at
   - wss://nostr-relay.trustbtc.org
   - wss://nostr.namek.link
-  - wss://nostr-pub.wellorder.net/
   - wss://nostr-relay.wolfandcrow.tech
   - wss://nostr.8e23.net
   - wss://nostr.actn.io
   - wss://relay.sendstr.com
-  - wss://nostr-2.zebedee.cloud/
-  - wss://nostr.rewardsbunny.com/
-  - wss://nostr.nymsrelay.com
   - wss://nostr.satsophone.tk
   - wss://nostr-relay.derekross.me
   - wss://nostr.jiashanlu.synology.me
   - wss://nostr.radixrat.com
-  - wss://nostr.oxtr.dev/
   - wss://nostr.shawnyeager.net
   - wss://nostr.pobblelabs.org
-  - wss://relay.dev.kronkltd.net/
-  - wss://relay.nostr.info/
+  - wss://relay.dev.kronkltd.net
   - wss://nostr2.namek.link
   - wss://nostr-dev.wellorder.net
-  - wss://nostr.semisol.dev/
-  - wss://expensive-relay.fiatjaf.com/
   - wss://nostr.mwmdev.com
   - wss://relay.21spirits.io
   - wss://nostr-relay.freedomnode.com
   - wss://relay.minds.io/nostr/v1/ws
   - wss://wlvs.space
-  - wss://relay.dev.kronkltd.net
+  - wss://nostr.einundzwanzig.space
+  - wss://nostr.d11n.net
+  - wss://nostr1.tunnelsats.com
   - wss://nostr.tunnelsats.com
   - wss://nostr.hugo.md

@@ -15,7 +15,7 @@
     
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12" class="title-card">
-        <NavComponent />
+        <NavComponent :relays="relays" />
       </column>
     </row>
 
@@ -63,9 +63,9 @@
     
     <section id="footer">
       <RefreshComponent 
-        :relays="relays"
-        v-bind:result="result"
-        :messages="messages"
+        :relaysProp="relays"
+        v-bind:resultProp="result"
+        :messagesProp="messages"
       />
 
       <span class="credit">
@@ -134,11 +134,11 @@ export default defineComponent({
     this.storage = useStorage()
     this.lastUpdate = this.getCache('lastUpdate')|| this.lastUpdate
     this.preferences = this.getCache('preferences') || this.preferences
+
     this.relays.forEach(async relay => {
       this.result[relay] = this.getCache(relay)
       this.messages[relay] = this.getCache(`${relay}_inbox`)
     })
-
     this.invalidate()
   },
 

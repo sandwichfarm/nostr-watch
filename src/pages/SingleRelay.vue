@@ -15,7 +15,7 @@
 
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12" class="title-card">
-        <NavComponent />
+        <NavComponent :relays="relays" />
       </column>
     </row>
 
@@ -129,7 +129,7 @@ import NavComponent from '../components/NavComponent.vue'
 import { Row, Column } from 'vue-grid-responsive';
 import SafeMail from "@2alheure/vue-safe-mail";
 
-import sharedMethods from '../shared'
+import RelaysLib from '../lib/relays-lib.js'
 
 import { version } from '../../package.json'
 import { relays } from '../../relays.yaml'
@@ -210,12 +210,12 @@ export default defineComponent({
 
   computed: {},
 
-  updated() {
-     Object.keys(this.timeouts).forEach(timeout => clearTimeout(this.timeouts[timeout]))
-     Object.keys(this.intervals).forEach(interval => clearInterval(this.intervals[interval]))
-  },
+  // updated() {
+  //    Object.keys(this.timeouts).forEach(timeout => clearTimeout(this.timeouts[timeout]))
+  //    Object.keys(this.intervals).forEach(interval => clearInterval(this.intervals[interval]))
+  // },
 
-  methods: Object.assign(localMethods, sharedMethods),
+  methods: Object.assign(localMethods, RelaysLib),
 
 })
 </script>

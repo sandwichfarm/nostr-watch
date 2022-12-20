@@ -73,8 +73,8 @@ export default defineComponent({
       .catch(err => console.warn(err))
 
       const event = {
-        tags: []
-        pubkey:this.user.p
+        tags: [],
+        pubkey:this.user.pubkey,
         kind: 1,
         content: "hello world"
       }

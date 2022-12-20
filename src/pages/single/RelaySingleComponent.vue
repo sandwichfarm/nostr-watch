@@ -34,61 +34,25 @@
     <span :class="getResultClass(relay, 'write')"></span>
   </td>
 
-  <td class="info">
+  <!-- <td class="info">
     <ul v-if="result?.observations && result?.observations.length">
       <li class="observation" v-for="(alert) in result?.observations" :key="generateKey(relay, alert.description)">
         <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'notice'">✉️</span>
         <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'caution'">⚠️</span>
       </li>
     </ul>
-  </td>
-
-  <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
-    <div class="modal__title">
-      <span>{{ result?.info?.name }}</span>
-    </div>
-    <div class="modal__content">
-        <div v-if="result?.info?.description">
-          {{ result?.info?.description }} <br/>
-          <strong v-if="result?.info?.pubkey">Public Key:</strong> {{ result?.info?.pubkey }} <br/>
-          <strong v-if="result?.info?.contact">Contact:</strong> <SafeMail :email="result?.info?.contact" v-if="result?.info?.contact" />
-        </div>
-        <div>
-          <h4>Status</h4>
-          <ul>
-            <li><strong>Connected</strong> <span :class="getResultClass(relay, 'connect')" class="connect indicator"></span></li>
-            <li><strong>Read</strong> <span :class="getResultClass(relay, 'read')" class="read indicator"></span></li>
-            <li><strong>Write</strong> <span :class="getResultClass(relay, 'write')" class="write indicator"></span></li>
-          </ul>
-        </div>
-        <h4>Relay Info</h4>
-        <ul>
-          <li><strong>Software:</strong> {{ result?.info?.software }} </li>
-          <li><strong>Version</strong>: {{ result?.info?.version }} </li>
-        </ul>
-        <h4>NIP Support</h4>
-        <ul>
-          <li v-for="(nip) in result?.info?.supported_nips" :key="`${relay}_${nip}`">
-              <a :href="nipLink(nip)" target="_blank">{{ nipFormatted(nip) }}</a>
-          </li>
-        </ul>
-    </div>
-  </vue-final-modal>
+  </td> -->
 </template>
 
 <script>
 import { defineComponent} from 'vue'
-import { VueFinalModal } from 'vue-final-modal'
 import { InspectorResult } from 'nostr-relay-inspector'
-import SafeMail from "@2alheure/vue-safe-mail";
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
 
 export default defineComponent({
   name: 'RelaySingleComponent',
   components: {
-    VueFinalModal,
-    SafeMail
   },
   props: {
     relay: String,

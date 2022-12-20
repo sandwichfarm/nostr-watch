@@ -1,7 +1,7 @@
 // /router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../pages/HomePage.vue'
-import ByStatus from '../pages/ByStatus.vue'
+// import ByStatus from '../pages/ByStatus.vue'
 import SingleRelay from '../pages/SingleRelay.vue'
 
 const routes = [
@@ -10,11 +10,11 @@ const routes = [
         // name: 'nostr.watch - :relayUrl',
         component: SingleRelay
     },
-    {
-        path: '/status',
-        // name: 'nostr.watch',
-        component: ByStatus
-    },
+    // {
+    //     path: '/availability',
+    //     // name: 'nostr.watch',
+    //     component: ByStatus
+    // },
     //  Added our new route file named profile.vue
     {
         path: '/',

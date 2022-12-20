@@ -1,25 +1,37 @@
-// import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
-import { Inspector, InspectorObservation } from '../lib/nostr-relay-inspector'
-import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../codes.yaml'
+import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
+import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
 
 import crypto from "crypto"
 
 export default {
 	invalidate: async function(force, single){
+      
       if(!this.isExpired() && !force) 
         return
 
+      this.setCache('lastUpdate')
+
+      console.log('invalidate', 'total relays', this.relays.length)
+      
       if(single) {
         await this.check(single) 
-        this.relays[single] = this.getState(single)
-        this.messages[single] = this.getState(`${single}_inbox`) 
+        this.relays[single] = this.getCache(single)
+        this.messages[single] = this.getCache(`${single}_inbox`) 
       } 
       else {
-        this.relays.forEach(async relay => { 
-          await this.check(relay) 
-          this.relays[relay] = this.getState(relay)
-          this.messages[relay] = this.getState(`${relay}_inbox`) 
-        })
+        console.log('total relays', this.relays.length)
+        console.log(this.relays.length)
+        for(let index = 0; index < this.relays.length; index++) {
+          let relay = this.relays[index]
+          console.log('invalidating', relay)
+          await this.delay(20).then( () => { 
+            this.check(relay)
+              .then(() => {
+                this.result[relay] = this.getCache(relay)
+                this.messages[relay] = this.getCache(`${relay}_inbox`) 
+              }).catch( err => console.log(err))
+          }).catch(err => console.log(err))
+        }
       } 
     },
 
@@ -27,8 +39,47 @@ export default {
       return typeof this.lastUpdate === 'undefined' || Date.now() - this.lastUpdate > this.preferences.cacheExpiration
     },
 
-    getState: function(key){
+    getCache: function(key){
       return this.storage.getStorageSync(key)
+    },
+
+    removeCache: function(key){
+      return this.storage.removeStorageSync(key)
+    },
+
+    sort(aggregate) {
+      let unsorted,
+          sorted,
+          filterFn
+
+      filterFn = (relay) => this.grouping ? this.result?.[relay]?.aggregate == aggregate : true
+
+      unsorted = this.relays.filter(filterFn);
+
+      // if(!this.isDone()) {
+      //   return unsorted
+      // }
+
+      if (unsorted.length) {
+        sorted = unsorted
+          .sort((relay1, relay2) => {
+            return this.result?.[relay1]?.latency.final - this.result?.[relay2]?.latency.final
+          })
+          .sort((relay1, relay2) => {
+            let a = this.result?.[relay1]?.latency.final ,
+                b = this.result?.[relay2]?.latency.final 
+            return (b != null) - (a != null) || a - b;
+          })
+          .sort((relay1, relay2) => {
+            let x = this.result?.[relay2]?.check?.connect,
+                y = this.result?.[relay2]?.check?.connect
+
+            return (x === y)? 0 : x? -1 : 1;
+          });
+        return sorted
+      }
+
+      return []
     },
 
     check: async function(relay){
@@ -37,42 +88,37 @@ export default {
         //   return reject(relay)
 
         const opts = {
-            checkLatency: true,
-            setIP: false,
-            setGeo: false,
+            checkLatency: true,          
             getInfo: true,
+            getIdentities: true,
             // debug: true,
             // data: { result: this.result[relay] }
           }
 
-        let inspect = new Inspector(relay, opts)
-          // .on('run', (result) => {
-          //   result.aggregate = 'processing'
-          // })
-          // .on('open', (e, result) => {
-          //   this.result[relay] = result
-          // })
+        let socket = new Inspector(relay, opts)
+
+        socket
           .on('complete', (instance) => {   
             this.result[relay] = instance.result
 
             this.result[relay].aggregate = this.getAggregate(relay)
 
-            this.saveState('relay', relay)
-            this.saveState('messages', relay,  instance.inbox)
-            this.saveState('lastUpdate')
+            this.setCache('relay', relay)
+            this.setCache('messages', relay,  instance.inbox)
+            this.setCache('lastUpdate')
+
+            instance.relay.close()
             
             resolve(this.result[relay])
           })
           .on('notice', (notice) => {
             const hash = this.sha1(notice)  
-            console.log('hash', hash)
             let   message_obj = RELAY_MESSAGES[hash]
-            console.log('message_obj', message_obj)
             
-            if(message_obj && Object.prototype.hasOwnProperty.call(message_obj, 'code'))
+            if(!message_obj || !Object.prototype.hasOwnProperty.call(message_obj, 'code'))
               return
 
-            let   code_obj = RELAY_CODES[message_obj.code]
+            let code_obj = RELAY_CODES[message_obj.code]
 
             let response_obj = {...message_obj, ...code_obj}
 
@@ -83,11 +129,16 @@ export default {
             reject(this.result[relay])
           })
           .run()
-        inspect
+
+        
       })
     },
 
-    saveState: function(type, key, data){
+    onComplete(relay, resolve, reject){
+      relay, resolve, reject
+    },
+
+    setCache: function(type, key, data){
       
       const now = Date.now()
 
@@ -190,7 +241,7 @@ export default {
     },
 
     relaysComplete: function() {
-      return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
+      return this.relays?.filter(relay => this.results?.[relay]?.state == 'complete').length
     },
 
     sha1: function(message) {
@@ -229,5 +280,44 @@ export default {
         return Math.floor(interval) + " minutes";
       }
       return Math.floor(seconds) + " seconds";
+    },
+
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    },
+    sort_by_latency(ascending) {
+      const self = this
+      return function (a, b) {
+        // equal items sort equally
+        if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
+            return 0;
+        }
+
+        // nulls sort after anything else
+        if (self.result?.[a]?.latency.final === null) {
+            return 1;
+        }
+        if (self.result?.[b]?.latency.final === null) {
+            return -1;
+        }
+
+        // otherwise, if we're ascending, lowest sorts first
+        if (ascending) {
+            return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
+        }
+
+        // if descending, highest sorts first
+        return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
+      };
+    },
+    sortByLatency () {
+      let unsorted
+
+      unsorted = this.relays;
+
+      if (unsorted.length)
+        return unsorted.sort(this.sort_by_latency(true))
+
+      return []
     },
 }

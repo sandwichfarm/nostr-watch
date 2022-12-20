@@ -1,17 +1,17 @@
 <template>
-  <tr>
+  <tr :class="getHeadingClass()">
     <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
       <div class="modal__content">
         <span>
-          {{ queryJson() }}
+          {{ queryJson(section) }}
         </span>
       </div>
     </vue-final-modal>
     <td colspan="11">
-      <h2><span class="indicator badge">{{ this.relays.length }}</span>Relays <a @click="showModal=true" class="section-json" v-if="showJson">{...}</a></h2>
+      <h2><span class="indicator badge">{{ sort(section).length }}</span>{{ section }} <a @click="showModal=true" class="section-json" v-if="showJson">{...}</a></h2>
     </td>
   </tr>
-  <tr v-if="this.relays.length > 0">
+  <tr :class="getHeadingClass()"  v-if="sort(section).length > 0">
     <th class="table-column status-indicator"></th>
 
     <th class="table-column relay"></th>
@@ -43,11 +43,12 @@
       <span>NIP-11</span>
     </th> -->
   </tr>
-  <tr v-for="(relay, index) in sortByLatency()" :key="{relay}" class="relay" :class="getResultClass(relay, index)">
+  <tr v-for="(relay, index) in sort(section)" :key="{relay}" :class="getResultClass(relay, index)" class="relay">
     <RelaySingleComponent
       :relay="relay"
       :result="result[relay]"
       :geo="geo[relay]"
+      :showColumns="showColumns"
       :connection="connections[relay]"
     />
   </tr>
@@ -56,9 +57,85 @@
 <script>
 
 import { defineComponent} from 'vue'
-import RelaySingleComponent from './RelaySingleComponent.vue'
 import { VueFinalModal } from 'vue-final-modal'
 
+import RelaySingleComponent from '../single/RelaySingleComponent.vue'
+
+import RelaysLib from '../../lib/relays-lib.js'
+
+const localMethods = {
+  getHeadingClass(){
+    return {
+      online: this.section != "offline",
+      public: this.section == "public",
+      offline: this.section == "offline",
+      restricted: this.section == "restricted"
+    }
+  },
+  getResultClass (relay, index) {
+    return {
+      loaded: this.result?.[relay]?.state == 'complete',
+      online: this.section != "offline",
+      offline: this.section == "offline",
+      public: this.section == "public",
+      even: index % 2,
+    }
+  },
+  sort_by_latency(ascending) {
+      const self = this
+      return function (a, b) {
+        // equal items sort equally
+        if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
+            return 0;
+        }
+
+        // nulls sort after anything else
+        if (self.result?.[a]?.latency.final === null) {
+            return 1;
+        }
+        if (self.result?.[b]?.latency.final === null) {
+            return -1;
+        }
+
+        // otherwise, if we're ascending, lowest sorts first
+        if (ascending) {
+            return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
+        }
+
+        // if descending, highest sorts first
+        return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
+      };
+    },
+    sortByLatency () {
+      let unsorted
+
+      unsorted = this.relays;
+
+      if (unsorted.length)
+        return unsorted.sort(this.sort_by_latency(true))
+
+      return []
+    },
+  queryJson(aggregate){
+    const relays = this.sort(aggregate)
+    const result = {}
+    result.relays = relays.map( relay => relay )
+    return JSON.stringify(result,null,'\t')
+  },
+  relaysTotal () {
+    return this.relays.length
+  },
+  relaysConnected () {
+    return Object.keys(this.result).length
+  },
+  relaysCompleted () {
+    let value = Object.entries(this.result).map((value) => { return value.state == 'complete' }).length
+    return value
+  },
+  isDone(){
+    return this.relaysTotal()-this.relaysCompleted() == 0
+  },
+}
 
 export default defineComponent({
   name: 'RelayListComponent',
@@ -72,6 +149,11 @@ export default defineComponent({
       default(){
         return true
       }
+    },
+    section: {
+      type: String,
+      required: true,
+      default: ""
     },
     relays:{
       type: Object,
@@ -109,6 +191,23 @@ export default defineComponent({
         return {}
       }
     },
+    showColumns: {
+      type: Object,
+      default() {
+        return {
+          connectionStatuses: false,
+          nips: false,
+          geo: false,
+          additionalInfo: false
+        }
+      }
+    },
+    grouping: {
+      type: Boolean,
+      default(){
+        return true
+      }
+    }
   },
   data() {
     return {
@@ -117,86 +216,7 @@ export default defineComponent({
   },
   mounted(){},
   computed: {},
-  methods: {
-    // getHeadingClass(){
-    //   return {
-    //     online: this.section != "offline",
-    //     public: this.section == "public",
-    //     offline: this.section == "offline",
-    //     restricted: this.section == "restricted"
-    //   }
-    // },
-    getResultClass (relay, index) {
-      return {
-        loaded: this.result?.[relay]?.state == 'complete',
-        even: index % 2
-      }
-    },
-    sort_by_latency(ascending) {
-      const self = this
-      return function (a, b) {
-        // equal items sort equally
-        if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
-            return 0;
-        }
-
-        // nulls sort after anything else
-        if (self.result?.[a]?.latency.final === null) {
-            return 1;
-        }
-        if (self.result?.[b]?.latency.final === null) {
-            return -1;
-        }
-
-        // otherwise, if we're ascending, lowest sorts first
-        if (ascending) {
-            return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
-        }
-
-        // if descending, highest sorts first
-        return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
-      };
-    },
-    sortByLatency () {
-      let unsorted
-
-      unsorted = this.relays;
-
-      if (unsorted.length)
-        return unsorted.sort(this.sort_by_latency(true))
-
-      return []
-    },
-    queryJson(){
-      const result = { relays: this.relays }
-      return JSON.stringify(result,null,'\t')
-    },
-    relaysTotal () {
-      return this.relays.length //TODO: Figure out WHY?
-    },
-
-    relaysConnected () {
-      return Object.entries(this.result).length
-    },
-
-    relaysComplete () {
-      if(!Object.keys(this.results).length) return 0
-      return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
-    },
-
-    sha1 (message) {
-      const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
-      return hash
-    },
-
-    isDone(){
-      return this.relaysTotal()-this.relaysComplete() <= 0
-    },
-
-    loadingComplete(){
-      return this.isDone() ? 'loaded' : ''
-    }
-  }
+  methods: Object.assign(localMethods, RelaysLib)
 })
 </script>
 

@@ -1,6 +1,6 @@
 <template>
 <section id="refresh">
-   <span>Updated {{ refreshData?.sinceLast }} ago <button @click="invalidate(true, this.relay)">Refresh{{ relay ? ` ${relay}` : "" }}</button></span>
+   <span>Updated {{ refreshData?.sinceLast }} ago <button @click="invalidate(true)">Refresh{{ relay ? ` ${relay}` : "" }}</button></span>
    <span v-if="preferences.refresh"> Next refresh in: {{ refreshData?.untilNext }}</span>
 </section>
 </template>
@@ -11,7 +11,7 @@
 
 <script>
 import { defineComponent, reactive } from 'vue'
-import sharedMethods from '../shared'
+import RelaysLib from '../lib/relays-lib.js'
 import { useStorage } from "vue3-storage";
 
 const localMethods = {
@@ -27,13 +27,15 @@ const localMethods = {
     },
     setRefreshInterval: function(){
       this.interval = setInterval(() => {
-        this.preferences = this.getState('preferences') || this.preferences
+        this.preferences = this.getCache('preferences') || this.preferences
 
         this.refreshData.untilNext = this.timeUntilRefresh() 
         this.refreshData.sinceLast = this.timeSinceRefresh() 
 
-        if(this.isExpired() && this.preferences.refresh)
-          this.invalidate(false, this.relay)
+        console.log('is expired', this.isExpired())
+
+        // if(this.isExpired() && this.preferences.refresh)
+        //   this.invalidate(false, this.relay)
 
       }, 1000)
     }
@@ -46,8 +48,8 @@ export default defineComponent({
     clearInterval(this.interval)
 
     this.storage = useStorage()
-    this.lastUpdate = this.getState('lastUpdate')|| this.lastUpdate
-    this.preferences = this.getState('preferences') || this.preferences
+    this.lastUpdate = this.getCache('lastUpdate')|| this.lastUpdate
+    this.preferences = this.getCache('preferences') || this.preferences
 
     this.refreshData = reactive({
       untilNext: this.timeUntilRefresh(),
@@ -57,16 +59,15 @@ export default defineComponent({
     this.setRefreshInterval()
   },
   updated(){
-    this.saveState('preferences')
-
-    if(this.relays && this.isDone())
-      this.saveState('lastUpdate')
+    this.setCache('preferences')
+    // if(this.relays && this.isDone())
+    //   this.setCache('lastUpdate')
 
     this.refreshData.untilNext = this.timeUntilRefresh() 
     this.refreshData.sinceLast = this.timeSinceRefresh() 
   },
   computed: {},
-  methods: Object.assign(localMethods, sharedMethods),
+  methods: Object.assign(localMethods, RelaysLib),
   props: {
     relay: {
       type: String,
@@ -79,7 +80,7 @@ export default defineComponent({
       default(){
         return []
       }
-    },
+    }, 
     messagesProp:{
       type: Object,
       default(){

@@ -1,7 +1,9 @@
 const { RelayPool, Relay } = require('nostr'),
       crypto = require('crypto'),
       writeYamlFile = require('write-yaml-file'),
-      fs = require('fs')
+      fs = require('fs'),
+      fetch = require('cross-fetch')
+
 
 const result = {},
       relays_endpoint = 'https://nostr.watch/relays.json'

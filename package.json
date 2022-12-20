@@ -31,6 +31,7 @@
     "json-server": "0.17.1",
     "leaflet": "1.9.3",
     "node-emoji": "1.11.0",
+    "node-fetch": "3.3.0",
     "node-polyfill-webpack-plugin": "2.0.1",
     "nostr": "0.2.5",
     "nostr-relay-inspector": "0.0.13",

@@ -66,11 +66,15 @@ export default defineComponent({
   updated(){},
   computed: {},
   methods: {
-    auth: async function(){
+    auth2: async function(){
+
+      await window.nostr.enable()
 
       this.user.pubkey = await window.nostr.getPublicKey()
-      console.log('relays', await window.nostr.getRelays())
-      .catch(err => console.warn(err))
+      console.log(this.user.pubkey)
+      console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
+
+      console.log(window.nostr)
 
       const event = {
         tags: [],
@@ -78,6 +82,7 @@ export default defineComponent({
         kind: 1,
         content: "hello world"
       }
+
       const signedEvent = await window.nostr
         .signEvent(event)
           .then(event => {
@@ -86,8 +91,10 @@ export default defineComponent({
           })
           .catch(err => console.warn(err)) 
 
+      console.log(signedEvent)
+
     },
-    auth2: function(){
+    auth: function(){
       var codeVerifier = this.generateRandomString(64);
 
       const challengeMethod = crypto.subtle ? "S256" : "plain"

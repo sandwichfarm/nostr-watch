@@ -95,6 +95,10 @@ export default {
       })
     },
 
+    onComplete(relay, resolve, reject){
+
+    },
+
     saveState: function(type, key, data){
       
       const now = Date.now()

@@ -34,8 +34,8 @@ const localMethods = {
 
         console.log('is expired', this.isExpired())
 
-        // if(this.isExpired() && this.preferences.refresh)
-        //   this.invalidate(false, this.relay)
+        if(this.isExpired() && this.preferences.refresh)
+          this.invalidate(false, this.relay)
 
       }, 1000)
     }
@@ -60,9 +60,7 @@ export default defineComponent({
   },
   updated(){
     this.setCache('preferences')
-    // if(this.relays && this.isDone())
-    //   this.setCache('lastUpdate')
-
+    
     this.refreshData.untilNext = this.timeUntilRefresh() 
     this.refreshData.sinceLast = this.timeSinceRefresh() 
   },

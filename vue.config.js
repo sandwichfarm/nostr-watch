@@ -20,7 +20,8 @@ module.exports = defineConfig({
         "tls": false,
         "net": false,
         "utf-8-validate": false,
-        "bufferutil": false
+        "bufferutil": false,
+        "config.js": false
       }
     },
   },

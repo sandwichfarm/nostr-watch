@@ -71,33 +71,32 @@ relays:
   - wss://relay.nostr.au
   - wss://expensive-relay.fiatjaf.com/
   - wss://nostr.swiss-enigma.ch
+  - wss://nostr-relay.derekross.me
+  - wss://nostr.actn.io
+  - wss://nostr.yael.at
+  - wss://nostr.nymsrelay.com
+  - wss://nostr-pub.wellorder.net/
   - wss://nostr-2.zebedee.cloud/
   - wss://nostr.rewardsbunny.com/
   - wss://wlvs.space
-  - wss://nostr.yael.at
-  - wss://nostr-relay.derekross.me
-  - wss://nostr.nymsrelay.com
-  - wss://nostr.actn.io
-  - wss://nostr.satsophone.tk
   - wss://nostr.namek.link
-  - wss://nostr2.namek.link
   - wss://nostr.radixrat.com
   - wss://nostr.oxtr.dev/
   - wss://nostr.shawnyeager.net
-  - wss://nostr.hugo.md
-  - wss://nostr.mwmdev.com
+  - wss://nostr2.namek.link
   - wss://nostr-dev.wellorder.net
   - wss://relay.minds.io/nostr/v1/ws
   - wss://relay.nostr.info/
-  - wss://nostr-pub.wellorder.net/
-  - wss://nostr.pobblelabs.org
-  - wss://nostr.8e23.net
-  - wss://nostr-relay.trustbtc.org
+  - wss://nostr-relay.freedomnode.com
   - wss://relay.sendstr.com
   - wss://nostr.oooxxx.ml
+  - wss://nostr-relay.trustbtc.org
+  - wss://nostr.pobblelabs.org
   - wss://mule.platanito.org
   - wss://relay.21spirits.io
+  - wss://relay.dev.kronkltd.net/
+  - wss://nostr.8e23.net
   - wss://relay.nostr.ch/
   - wss://nostr.jiashanlu.synology.me
-  - wss://relay.nostr.pro/
+  - wss://nostr.mwmdev.com
   - wss://nostr.tunnelsats.com

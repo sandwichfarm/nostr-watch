@@ -4,8 +4,7 @@ WORKDIR /app
 
 COPY . /app/
 
-RUN yarn \
-  && yarn build
+RUN yarn && yarn build
 
 RUN yarn global add yaml2json
 

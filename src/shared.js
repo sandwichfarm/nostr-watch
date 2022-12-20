@@ -24,8 +24,8 @@ export default {
               .then(() => {
                 this.result[relay] = this.getState(relay)
                 this.messages[relay] = this.getState(`${relay}_inbox`) 
-              })
-          }).catch()
+              }).catch( err => console.log(err))
+          }).catch(err => console.log(err))
         }
         // this.relays.forEach(async relay => { 
         //   await this.check(relay) 
@@ -68,7 +68,7 @@ export default {
             this.saveState('messages', relay,  instance.inbox)
             this.saveState('lastUpdate')
 
-            connections[relay].close()
+            connections[relay].relay.close()
             
             resolve(this.result[relay])
           })

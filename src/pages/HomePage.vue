@@ -112,7 +112,7 @@ export default defineComponent({
 
   data() {
     return {
-      relays: relays,
+      relays: Array.from( new Set(relays)),
       result: {},
       messages: {},
       connections: {},

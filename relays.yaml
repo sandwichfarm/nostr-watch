@@ -104,5 +104,5 @@ relays:
   - wss://relay.stoner.com
   - wss://nostr.mado.io
   - wss://nostr.gruntwerk.org
+  - wss://nostr.utxo.lol
   - wss://jiggytom.ddns.net
-  

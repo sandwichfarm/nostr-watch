@@ -96,7 +96,6 @@ relays:
   - wss://nostr.einundzwanzig.space
   - wss://nostr.d11n.net
   - wss://nostr1.tunnelsats.com
-  - wss://nostr.tunnelsats.com
   - wss://nostr.leximaster.com
   - wss://nostr.hugo.md
   - wss://nostr.robotechy.com

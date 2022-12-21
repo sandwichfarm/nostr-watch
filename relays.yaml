@@ -1,4 +1,5 @@
 relays:
+  - wss://relay.nyx.ma
   - wss://nostr.bongbong.com
   - wss://nostr-3.orba.ca
   - wss://satstacker.cloud

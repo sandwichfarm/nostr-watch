@@ -2,6 +2,7 @@ relays:
   - wss://relay.nyx.ma
   - wss://nostr.bongbong.com
   - wss://nostr-3.orba.ca
+  - wss://wizards.wormrobot.org
   - wss://satstacker.cloud
   - wss://freedom-relay.herokuapp.com/ws
   - wss://nostr-relay.freeberty.net

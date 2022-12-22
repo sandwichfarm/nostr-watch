@@ -109,4 +109,5 @@ relays:
   - wss://jiggytom.ddns.net
   - wss://nostr-relay.digitalmob.ro
   - wss://nostr.walletofsatoshi.com
+  - wss://nostr.roundrockbitcoiners.com
   - wss://nostr.orangepill.dev

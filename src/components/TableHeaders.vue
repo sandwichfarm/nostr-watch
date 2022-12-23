@@ -25,7 +25,4 @@
   <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
     ✏️
   </th>
-  <th class="table-column favorite" v-tooltip:top.tooltip="'Favorite a relay'">
-    ❤️
-  </th>
 </template>

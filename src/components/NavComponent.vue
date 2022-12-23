@@ -1,13 +1,12 @@
 <template>
 <nav class="menu">
   <ul>
-    <!-- <router-link :to="`/`" active-class="active" :class="">Home</router-link> -->
+    <router-link :to="`/`" active-class="active">Home</router-link>
     <a href="https://github.com/dskvr/nostr-watch/edit/main/relays.yaml" target="_blank">Add Relay</a>
     <a href="relays.json"><code>{...}</code></a>
     <span>
       <PreferencesComponent :relays="relays" />
     </span>
-
   </ul>
 </nav>
 </template>

@@ -60,7 +60,7 @@ export default {
 
       const relay = this.relay
 
-      console.log(this.geo[this.relay]?.lat, this.geo[this.relay]?.lon)
+      //console.log(this.geo[this.relay]?.lat, this.geo[this.relay]?.lon)
 
       if(!this.geo[this.relay]?.lat || !this.geo[this.relay]?.lon)
         return 'transparent'

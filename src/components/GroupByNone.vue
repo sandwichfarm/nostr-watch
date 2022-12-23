@@ -84,7 +84,7 @@ export default defineComponent({
     }
   },
   mounted(){
-    console.log(this.relays)
+    // console.log(this.relays)
   },
   data() {
     return {}

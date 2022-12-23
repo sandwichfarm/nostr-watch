@@ -4,14 +4,8 @@
     :relay="relay"
     :result="result"
   />
-  <!-- <NavComponent /> -->
-  <div id="wrapper">
 
-    <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12" class="title-card">
-        <h1>{{ relayUrl() }}</h1>
-      </column>
-    </row>
+  <div id="wrapper">
 
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12" class="title-card">
@@ -21,18 +15,26 @@
 
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12" class="title-card">
-        <div style="display: none">{{result}}</div> <!-- ? -->
-        <br >
+        <h1>{{ relayUrl() }}</h1>
+      </column>
+    </row>
+    
 
+    <row container :gutter="12">
+      <column :xs="12" :md="12" :lg="12" class="title-card">
         <span  class="badges">
           <span><img :src="badgeCheck('connect')" /></span>
           <span><img :src="badgeCheck('read')" /></span>
           <span><img :src="badgeCheck('write')" /></span>
         </span>
+
+        <span v-if="result.info?.supported_nips" class="badges">
+            <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`">
+                <a :href="nipLink(nip)" target="_blank"><img :src="badgeLink(nip)" /></a>
+            </span>
+          </span>
       </column>
     </row>
-
-    <br />
 
     <row container :gutter="12" v-if="!result?.check?.connect">
       <column :xs="12" :md="12" :lg="12" class="title-card">
@@ -40,16 +42,10 @@
       </column>
     </row>
 
-    <br />
-
     <row container :gutter="12" v-if="result?.check?.connect">
       <column :xs="12" :md="12" :lg="12" class="title-card">
 
-          <span v-if="result.info?.supported_nips" class="badges">
-            <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`">
-                <a :href="nipLink(nip)" target="_blank"><img :src="badgeLink(nip)" /></a>
-            </span>
-          </span>
+          
 
           <table v-if="result.info">
             <tr>
@@ -228,8 +224,8 @@ tr td:first-child { text-align:right }
 tr td:last-child { text-align:left }
 .indicator { display: table-cell; width:33% ; font-weight:bold; text-align: center !important; color: white; text-transform: uppercase; font-size:0.8em}
 body, .grid-column { padding:0; margin:0; }
-.badges { display:block; margin: 10px 0 0}
+.badges { display:block; margin: 10px 0 11px}
 .badges > span {margin-right:5px}
 #wrapper {max-width:800px}
-h1 {margin: 25px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
+h2 {font-size:40pt; margin: 25px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
 </style>

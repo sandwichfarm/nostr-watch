@@ -13,7 +13,9 @@
 
       <row container :gutter="12">
         <column :xs="12" :md="12" :lg="12" class="title-card">
-          <h2 @click="copy()">{{ relayUrl() }}</h2>
+          <span v-tooltip:top.tooltip="'Click to copy'" style="display:block">
+            <h2 @click="copy(relayUrl())">{{ relayUrl() }}</h2>
+          </span>
         </column>
       </row>
       
@@ -159,6 +161,14 @@ const localMethods = {
     nipLink(key){
       return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
     },
+
+    async copy(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch($e) {
+        //console.log('Cannot copy');
+      }
+    },
 }
 
 export default defineComponent({
@@ -233,6 +243,6 @@ body, .grid-column { padding:0; margin:0; }
 #wrapper {max-width:800px}
 
 
-#relay-wrapper { margin: 50px 0 20p;}
-h2 {cursor:pointer;font-size:40pt; margin: 25px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
+#relay-wrapper { margin: 50px 0 20px; padding: 20px 0}
+h2 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
 </style>

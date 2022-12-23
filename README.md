@@ -1,6 +1,8 @@
+> this project is alpha! changes are fast and hard. branching model and tests will come with beta. 
+
 # nostr-watch
 
-A client-side nostr network status built with Vue3, [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). Goal is to produce a client-side app that collects detailed information about nostr relays and the network in general to assist users, developers and relay operators alike.
+A client-side nostr network status built with Vue3, [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). Goal is to produce a client-side app that collects detailed information about nostr relays and the network in general to assist users, developers and relay operators alike
 
 ## Features
 - [x] Real-time relay status 

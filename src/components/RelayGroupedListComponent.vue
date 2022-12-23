@@ -2,9 +2,9 @@
   <tr :class="getHeadingClass()">
     <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
       <div class="modal__content">
-        <span>
+        <pre>
           {{ queryJson(section) }}
-        </span>
+        </pre>
       </div>
     </vue-final-modal>
     <td colspan="11">
@@ -201,11 +201,12 @@ export default defineComponent({
     align-items: center;
   }
   ::v-deep(.modal-content) {
+    text-align:left;
     position: relative;
     display: flex;
     flex-direction: column;
-    max-height: 90%;
-    max-width:400px;
+    max-height: 500px;
+    max-width:800px;
     margin: 0 1rem;
     padding: 1rem;
     border: 1px solid #e2e8f0;

@@ -201,7 +201,7 @@ export default defineComponent({
     display: flex;
     flex-direction: column;
     max-height: 90%;
-    max-width:400px;
+    max-width:800px;
     margin: 0 1rem;
     padding: 1rem;
     border: 1px solid #e2e8f0;

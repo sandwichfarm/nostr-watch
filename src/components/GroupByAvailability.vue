@@ -1,15 +1,6 @@
 <template>
   <table>
-    <RelayGroupedListComponent
-      section="favorites"
-      :relays="relays"
-      :result="result"
-      :geo="geo"
-      :messages="messages"
-      :alerts="alerts"
-      :connections="connections"
-    />
-    
+
     <RelayGroupedListComponent
       section="public"
       :relays="relays"

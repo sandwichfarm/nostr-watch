@@ -26,8 +26,8 @@
         v-for="([relay, entry]) in Object.entries(geo)"
         :lat-lng="getLatLng(entry)"
         :key="relay"
-        :radius="3"
-        :weight="6"
+        :radius="2"
+        :weight="4"
         :color="getCircleColor(relay)"
         :fillOpacity="1"
         :class="relay"
@@ -114,7 +114,6 @@ export default {
       }
     },
   },
-  
 };
 
 

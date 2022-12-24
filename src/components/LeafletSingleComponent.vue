@@ -24,8 +24,8 @@
 
     <l-circle-marker
       :lat-lng="center"
-      :radius="3"
-      :weight="6"
+      :radius="2"
+      :weight="4"
       :color="markerColor"
       :fillOpacity="1"
       :class="relay"

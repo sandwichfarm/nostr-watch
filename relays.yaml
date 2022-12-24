@@ -113,3 +113,5 @@ relays:
   - wss://nostr.roundrockbitcoiners.com
   - wss://nostr.orangepill.dev
   - wss://nostr1.starbackr.me
+  - wss://nostr-relay.alekberg.net
+  - wss://nostr.blocs.fr

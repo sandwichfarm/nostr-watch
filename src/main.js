@@ -7,9 +7,13 @@ import "./styles/main.scss"
 import directives from "./directives/"
 import titleMixin from './mixins/titleMixin'
 import {Tabs, Tab} from 'vue3-tabs-component';
+import { createPinia } from 'pinia'
+
+const pinia = createPinia()
 
 const app = createApp(App)
   .use(router)
+  .use(pinia)
   .use(Vue3Storage, { namespace: "nostrwatch_" })
   .component('tabs', Tabs)
   .component('tab', Tab)

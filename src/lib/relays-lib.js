@@ -4,35 +4,6 @@ import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.ya
 import crypto from "crypto"
 
 export default {
-	invalidate: async function(force, single){
-      
-      if(!this.isExpired() && !force) 
-        return
-
-      this.setCache('lastUpdate')
-
-      // console.log('invalidate', 'total relays', this.relays.length)
-      
-      if(single) {
-        await this.check(single) 
-        this.relays[single] = this.getCache(single)
-        this.messages[single] = this.getCache(`${single}_inbox`) 
-      } 
-      else {
-        for(let index = 0; index < this.relays.length; index++) {
-          let relay = this.relays[index]
-          // console.log('invalidating', relay)
-          await this.delay(20).then( () => { 
-            this.check(relay)
-              .then(() => {
-                this.result[relay] = this.getCache(relay)
-                this.messages[relay] = this.getCache(`${relay}_inbox`) 
-              }).catch( err => console.log(err))
-          }).catch(err => console.log(err))
-        }
-      } 
-    },
-
     isExpired: function(){
       return typeof this.lastUpdate === 'undefined' || Date.now() - this.lastUpdate > this.preferences.cacheExpiration
     },

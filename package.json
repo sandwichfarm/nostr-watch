@@ -38,6 +38,7 @@
     "nostr-relay-inspector": "0.0.16",
     "nostr-tools": "1.0.1",
     "onion-regex": "2.0.8",
+    "pinia": "2.0.28",
     "requests": "0.3.0",
     "sass": "1.56.1",
     "sass-loader": "13.2.0",

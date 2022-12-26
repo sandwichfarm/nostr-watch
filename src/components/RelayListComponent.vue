@@ -13,36 +13,7 @@
       </td>
     </tr>
     <tr v-if="this.relays.length > 0">
-      <th class="table-column status-indicator"></th>
-
-      <th class="table-column relay"></th>
-
-      <th class="table-column verified">
-        <span class="verified-shape-wrapper">
-          <span class="shape verified"></span>
-        </span>
-      </th>
-      <th class="table-column location" v-tooltip:top.tooltip="Ping">
-        🌎
-      </th>
-      <th class="table-column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
-        ⌛️
-      </th>
-      <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
-        🔌
-      </th>
-      <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
-        👁️‍🗨️
-      </th>
-      <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
-        ✏️
-      </th>
-      <!-- <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
-        ℹ️
-      </th> -->
-      <!-- <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
-        <span>NIP-11</span>
-      </th> -->
+      <TableHeaders />
     </tr>
     <tr v-for="(relay, index) in sort(relays[relay]?.aggregate)" :key="{relay}" class="relay" :class="getResultClass(relay, index)">
       <RelaySingleComponent
@@ -58,9 +29,10 @@
 import { defineComponent} from 'vue'
 import { VueFinalModal } from 'vue-final-modal'
 
-import RelaySingleComponent from '../single/RelaySingleComponent.vue'
+import RelaySingleComponent from './RelaySingleComponent.vue'
+import TableHeaders from './TableHeaders.vue'
 
-import RelaysLib from '../../lib/relays-lib.js'
+import RelaysLib from '../lib/relays-lib.js'
 
 const localMethods = {
     // getHeadingClass(){
@@ -148,7 +120,8 @@ export default defineComponent({
   name: 'RelayListComponent',
   components: {
     RelaySingleComponent,
-    VueFinalModal
+    VueFinalModal,
+    TableHeaders
   },
   props: {
     showJson: {
@@ -228,7 +201,7 @@ export default defineComponent({
     display: flex;
     flex-direction: column;
     max-height: 90%;
-    max-width:400px;
+    max-width:800px;
     margin: 0 1rem;
     padding: 1rem;
     border: 1px solid #e2e8f0;

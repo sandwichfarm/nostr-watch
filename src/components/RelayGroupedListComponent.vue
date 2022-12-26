@@ -2,9 +2,9 @@
   <tr :class="getHeadingClass()">
     <vue-final-modal v-model="showModal" classes="modal-container" content-class="modal-content">
       <div class="modal__content">
-        <span>
+        <pre>
           {{ queryJson(section) }}
-        </span>
+        </pre>
       </div>
     </vue-final-modal>
     <td colspan="11">
@@ -12,36 +12,7 @@
     </td>
   </tr>
   <tr :class="getHeadingClass()"  v-if="sort(section).length > 0">
-    <th class="table-column status-indicator"></th>
-
-    <th class="table-column relay"></th>
-
-    <th class="table-column verified">
-      <span class="verified-shape-wrapper">
-        <span class="shape verified"></span>
-      </span>
-    </th>
-    <th class="table-column location" v-tooltip:top.tooltip="Ping">
-      🌎
-    </th>
-    <th class="table-column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
-      ⌛️
-    </th>
-    <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
-      🔌
-    </th>
-    <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
-      👁️‍🗨️
-    </th>
-    <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
-      ✏️
-    </th>
-    <th class="table-column info" v-tooltip:top.tooltip="'Additional information detected regarding the relay during processing'">
-      ℹ️
-    </th>
-    <!-- <th class="table-column nip nip-20" v-tooltip:top.tooltip="'Does the relay support NIP-20'">
-      <span>NIP-11</span>
-    </th> -->
+    <TableHeaders />
   </tr>
   <tr v-for="(relay, index) in sort(section)" :key="{relay}" :class="getResultClass(relay, index)" class="relay">
     <RelaySingleComponent
@@ -55,13 +26,13 @@
 </template>
 
 <script>
-
 import { defineComponent} from 'vue'
 import { VueFinalModal } from 'vue-final-modal'
 
-import RelaySingleComponent from '../single/RelaySingleComponent.vue'
+import RelaySingleComponent from './RelaySingleComponent.vue'
+import TableHeaders from './TableHeaders.vue'
 
-import RelaysLib from '../../lib/relays-lib.js'
+import RelaysLib from '../lib/relays-lib.js'
 
 const localMethods = {
   getHeadingClass(){
@@ -82,40 +53,30 @@ const localMethods = {
     }
   },
   sort_by_latency(ascending) {
-      const self = this
-      return function (a, b) {
-        // equal items sort equally
-        if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
-            return 0;
-        }
+    const self = this
+    return function (a, b) {
+      // equal items sort equally
+      if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
+          return 0;
+      }
 
-        // nulls sort after anything else
-        if (self.result?.[a]?.latency.final === null) {
-            return 1;
-        }
-        if (self.result?.[b]?.latency.final === null) {
-            return -1;
-        }
+      // nulls sort after anything else
+      if (self.result?.[a]?.latency.final === null) {
+          return 1;
+      }
+      if (self.result?.[b]?.latency.final === null) {
+          return -1;
+      }
 
-        // otherwise, if we're ascending, lowest sorts first
-        if (ascending) {
-            return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
-        }
+      // otherwise, if we're ascending, lowest sorts first
+      if (ascending) {
+          return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
+      }
 
-        // if descending, highest sorts first
-        return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
-      };
-    },
-    sortByLatency () {
-      let unsorted
-
-      unsorted = this.relays;
-
-      if (unsorted.length)
-        return unsorted.sort(this.sort_by_latency(true))
-
-      return []
-    },
+      // if descending, highest sorts first
+      return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
+    };
+  },
   queryJson(aggregate){
     const relays = this.sort(aggregate)
     const result = {}
@@ -141,7 +102,8 @@ export default defineComponent({
   name: 'RelayListComponent',
   components: {
     RelaySingleComponent,
-    VueFinalModal
+    VueFinalModal,
+    TableHeaders
   },
   props: {
     showJson: {
@@ -239,11 +201,12 @@ export default defineComponent({
     align-items: center;
   }
   ::v-deep(.modal-content) {
+    text-align:left;
     position: relative;
     display: flex;
     flex-direction: column;
-    max-height: 90%;
-    max-width:400px;
+    max-height: 500px;
+    max-width:800px;
     margin: 0 1rem;
     padding: 1rem;
     border: 1px solid #e2e8f0;

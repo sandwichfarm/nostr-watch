@@ -1,6 +1,28 @@
 <template>
   <table>
-    <RelayListComponent
+
+    <RelayGroupedListComponent
+      section="public"
+      :relays="relays"
+      :result="result"
+      :geo="geo"
+      :messages="messages"
+      :alerts="alerts"
+      :connections="connections"
+    />
+
+    <RelayGroupedListComponent
+      section="restricted"
+      :relays="relays"
+      :result="result"
+      :geo="geo"
+      :messages="messages"
+      :alerts="alerts"
+      :connections="connections"
+    />
+
+    <RelayGroupedListComponent
+      section="offline"
       :relays="relays"
       :result="result"
       :geo="geo"
@@ -9,17 +31,19 @@
       :connections="connections"
     />
   </table>
-</template> 
+</template>
 
 <script>
+
+
 import { defineComponent} from 'vue'
-import RelayListComponent from '../lists/RelayListComponent.vue'
+import RelayGroupedListComponent from './RelayGroupedListComponent.vue'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
-  name: 'GroupByNone',
+  name: 'GroupByAvailability',
   components: {
-    RelayListComponent,
+    RelayGroupedListComponent,
   },
 
   props: {
@@ -28,6 +52,11 @@ export default defineComponent({
       default(){
         return true
       }
+    },
+    section: {
+      type: String,
+      required: true,
+      default: ""
     },
     relays:{
       type: Object,
@@ -83,15 +112,12 @@ export default defineComponent({
       }
     }
   },
-  mounted(){
-    console.log(this.relays)
-  },
+
   data() {
     return {}
   },
   computed: {},
 })
-
 </script>
 <style scoped>
 table {

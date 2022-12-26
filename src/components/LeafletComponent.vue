@@ -26,8 +26,8 @@
         v-for="([relay, entry]) in Object.entries(geo)"
         :lat-lng="getLatLng(entry)"
         :key="relay"
-        :radius="3"
-        :weight="6"
+        :radius="2"
+        :weight="4"
         :color="getCircleColor(relay)"
         :fillOpacity="1"
         :class="relay"
@@ -114,7 +114,6 @@ export default {
       }
     },
   },
-  
 };
 
 
@@ -123,7 +122,7 @@ export default {
 <style scoped>
 .leaflet-container {
   position:relative;
-  z-index:1000;
+  z-index:900;
   margin:0;
   padding:0;
   height:250px !important;
@@ -142,7 +141,7 @@ export default {
 
 button {
   position: relative;
-  z-index:1001;
+  z-index:901;
   top: -30px;
   background:rgba(255,255,255,0.5);
   border:0;

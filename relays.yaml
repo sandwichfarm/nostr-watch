@@ -1,5 +1,9 @@
 relays:
+  - wss://sg.qemura.xyz
+  - wss://relay.nyx.ma
+  - wss://nostr.bongbong.com
   - wss://nostr-3.orba.ca
+  - wss://wizards.wormrobot.org
   - wss://satstacker.cloud
   - wss://freedom-relay.herokuapp.com/ws
   - wss://nostr-relay.freeberty.net
@@ -95,6 +99,24 @@ relays:
   - wss://nostr.einundzwanzig.space
   - wss://nostr.d11n.net
   - wss://nostr1.tunnelsats.com
-  - wss://nostr.tunnelsats.com
   - wss://nostr.leximaster.com
   - wss://nostr.hugo.md
+  - wss://nostr.robotechy.com
+  - wss://nostr.mtandao.xyz
+  - wss://relay.stoner.com
+  - wss://nostr.mado.io
+  - wss://nostr.gruntwerk.org
+  - wss://nostr.utxo.lol
+  - wss://jiggytom.ddns.net
+  - wss://nostr-relay.digitalmob.ro
+  - wss://nostr.walletofsatoshi.com
+  - wss://nostr.roundrockbitcoiners.com
+  - wss://nostr.orangepill.dev
+  - wss://nostr1.starbackr.me
+  - wss://nostr-relay.alekberg.net
+  - wss://nostr.blocs.fr
+  - wss://nostr.f44.dev
+  - wss://nostr.demovement.net
+  - wss://nostr.mustardnodes.com
+  - wss://nostr.ethtozero.fr
+  - wss://nostr.hackerman.pro

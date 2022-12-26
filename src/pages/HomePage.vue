@@ -7,32 +7,12 @@
 
   <div id="wrapper">
     
-    <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12" class="title-card">
-        <h1>nostr.watch<sup>{{version}}</sup></h1>
-      </column>
-    </row>
+    <HeaderComponent :relays="relays" />
     
-    <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12" class="title-card">
-        <NavComponent :relays="relays" />
-      </column>
-    </row>
-
     <row container :gutter="12">
       <column :xs="12" :md="12" :lg="12" class="list">
         <span>Group By:</span>
         <tabs :options="{ useUrlFragment: false }" @clicked="tabClicked" @changed="tabChanged" nav-item-class="nav-item">
-            <tab name="None">
-              <GroupByNone
-                :relays="relays"
-                :result="result"
-                :geo="geo"
-                :messages="messages"
-                :alerts="alerts"
-                :connections="connections">
-              </GroupByNone>
-            </tab>
             <tab name="Availability">
               <GroupByAvailability
                 section="processing"
@@ -45,6 +25,17 @@
                 :showJson="false">
                 </GroupByAvailability>
             </tab>
+            <tab name="None">
+              <GroupByNone
+                :relays="relays"
+                :result="result"
+                :geo="geo"
+                :messages="messages"
+                :alerts="alerts"
+                :connections="connections">
+              </GroupByNone>
+            </tab>
+            
         </tabs>
       </column>
     </row>
@@ -85,15 +76,14 @@ import { Row, Column } from 'vue-grid-responsive';
 import RelaysLib from '../lib/relays-lib.js'
 
 import LeafletComponent from '../components/LeafletComponent.vue'
-import NavComponent from '../components/NavComponent.vue'
 import RefreshComponent from '../components/RefreshComponent.vue'
+import HeaderComponent from '../components/HeaderComponent.vue'
 
-import { version } from '../../package.json'
 import { relays } from '../../relays.yaml'
 import { geo } from '../../cache/geo.yaml'
 
-import GroupByNone from './groups/GroupByNone.vue'
-import GroupByAvailability from './groups/GroupByAvailability.vue'
+import GroupByNone from '../components/GroupByNone.vue'
+import GroupByAvailability from '../components/GroupByAvailability.vue'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
@@ -103,11 +93,10 @@ export default defineComponent({
     Row,
     Column,
     LeafletComponent,
-    NavComponent,
     RefreshComponent,
     GroupByAvailability,
     GroupByNone,
-
+    HeaderComponent
   },
 
   data() {
@@ -122,7 +111,6 @@ export default defineComponent({
       count: 0,
       storage: null,
       geo,
-      version: version,
       hasStorage: false,
       // cacheExpiration: 10*60*1000, //10 minutes
     }

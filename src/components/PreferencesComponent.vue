@@ -84,7 +84,7 @@ const localMethods = {
   },
   clearData(){
     this.relays.forEach( relay => {
-      console.log('clearing', relay)
+      // console.log('clearing', relay)
       this.removeCache(`${relay}`)
       this.removeCache(`${relay}_inbox`)
     })

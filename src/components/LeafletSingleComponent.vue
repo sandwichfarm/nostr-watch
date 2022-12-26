@@ -24,8 +24,8 @@
 
     <l-circle-marker
       :lat-lng="center"
-      :radius="3"
-      :weight="6"
+      :radius="2"
+      :weight="4"
       :color="markerColor"
       :fillOpacity="1"
       :class="relay"
@@ -60,7 +60,7 @@ export default {
 
       const relay = this.relay
 
-      console.log(this.geo[this.relay]?.lat, this.geo[this.relay]?.lon)
+      //console.log(this.geo[this.relay]?.lat, this.geo[this.relay]?.lon)
 
       if(!this.geo[this.relay]?.lat || !this.geo[this.relay]?.lon)
         return 'transparent'

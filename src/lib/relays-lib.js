@@ -11,7 +11,7 @@ export default {
 
       this.setCache('lastUpdate')
 
-      console.log('invalidate', 'total relays', this.relays.length)
+      // console.log('invalidate', 'total relays', this.relays.length)
       
       if(single) {
         await this.check(single) 
@@ -19,11 +19,11 @@ export default {
         this.messages[single] = this.getCache(`${single}_inbox`) 
       } 
       else {
-        console.log('total relays', this.relays.length)
-        console.log(this.relays.length)
+        // console.log('total relays', this.relays.length)
+        // console.log(this.relays.length)
         for(let index = 0; index < this.relays.length; index++) {
           let relay = this.relays[index]
-          console.log('invalidating', relay)
+          // console.log('invalidating', relay)
           await this.delay(20).then( () => { 
             this.check(relay)
               .then(() => {

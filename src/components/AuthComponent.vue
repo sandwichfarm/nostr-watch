@@ -1,11 +1,12 @@
 <template>
-  <button @click="auth">Login with Alby</button>
+  <button v-if="signer" @click="auth">Use Signer</button>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { validateEvent, verifySignature, getEventHash } from 'nostr-tools'
 export default defineComponent({
   name: 'AlbyComponent',
   components: {},
@@ -18,83 +19,101 @@ export default defineComponent({
       clientSecret: "test_secret",
       scopes: "account:read",
       token : null,
-      user: {}
+      user: {},
+      signer: false,
     }
   },
   mounted(){
-    const args = this.route.query
 
-    if(!Object.prototype.hasOwnProperty.call(args, 'code'))
-      return
+    this.showAuth()
+
+    // const args = this.route.query
+
+    // if(!Object.prototype.hasOwnProperty.call(args, 'code'))
+    //   return
     
-    const code = args?.code;
+    // const code = args?.code;
 
-    console.log('args', args)
+    // // console.log('args', args)
 
-    if (code) {
-      let xhr = new XMLHttpRequest();
+    // if (code) {
+    //   let xhr = new XMLHttpRequest();
 
-      xhr.onload = function() {
-        let response = xhr.response;
-        let message;
+    //   xhr.onload = function() {
+    //     let response = xhr.response;
+    //     let message;
 
-        if (xhr.status == 200) {
-            message = "Access Token: " + response.access_token;
-        }
-        else {
-            message = "Error: " + response.error_description + " (" + response.error + ")";
-        }
-        this.token = message
-        console.log('token', this.token)
-      };
+    //     if (xhr.status == 200) {
+    //         message = "Access Token: " + response.access_token;
+    //     }
+    //     else {
+    //         message = "Error: " + response.error_description + " (" + response.error + ")";
+    //     }
+    //     this.token = message
+    //     console.log('token', this.token)
+    //   };
 
-      xhr.responseType = 'json';
+    //   xhr.responseType = 'json';
       
-      xhr.open("POST", this.tokenEndpoint, true);
+    //   xhr.open("POST", this.tokenEndpoint, true);
 
-      xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-      xhr.setRequestHeader("Authorization", "Basic " + btoa(this.clientId + ":" + this.clientSecret));
+    //   xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    //   xhr.setRequestHeader("Authorization", "Basic " + btoa(this.clientId + ":" + this.clientSecret));
 
-      xhr.send(new URLSearchParams({
-        code_verifier: window.sessionStorage.getItem("code_verifier"),
-        grant_type: "authorization_code",
-        redirect_uri: "http://localhost:8080/",
-        code: code
-      }));
-    }
+    //   xhr.send(new URLSearchParams({
+    //     code_verifier: window.sessionStorage.getItem("code_verifier"),
+    //     grant_type: "authorization_code",
+    //     redirect_uri: "http://localhost:8080/",
+    //     code: code
+    //   }));
+    // }
   },
   updated(){},
   computed: {},
   methods: {
-    auth2: async function(){
-
-      await window.nostr.enable()
-
+    showAuth: async function(){
+      await new Promise( (resolve) => {
+        setTimeout( () => {
+          if(window.nostr instanceof Object)
+            resolve(this.signer = true)
+          else            
+            resolve()  
+        }, 1001)
+      })
+      console.log('signer enabled', this.signer)
+    },
+    auth: async function(){
       this.user.pubkey = await window.nostr.getPublicKey()
-      console.log(this.user.pubkey)
-      console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
+      console.log('pukey', this.user.pubkey)
+      // console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
 
-      console.log(window.nostr)
+      // console.log(window.nostr)
 
       const event = {
         tags: [],
         pubkey:this.user.pubkey,
-        kind: 1,
-        content: "hello world"
+        kind: 3,
+        content: "hello world",
+        created_at: Math.round(Date.now()/1000)
       }
 
-      const signedEvent = await window.nostr
-        .signEvent(event)
-          .then(event => {
-            console.log('event', event)
-            console.log('signed event', signedEvent)
+      event.id = getEventHash(event)
+
+      console.log('unsigned event', event)
+
+      const signedEvent = await window.nostr.signEvent(event)
+          .catch( function(error){
+            console.log('there was an error', error)
           })
-          .catch(err => console.warn(err)) 
 
-      console.log(signedEvent)
+      console.log('signed event', signedEvent)
 
+      let ok = validateEvent(signedEvent)
+      let veryOk = await verifySignature(signedEvent)
+
+      console.log('valid event?', ok, veryOk)
     },
-    auth: function(){
+    auth2: function(){
       var codeVerifier = this.generateRandomString(64);
 
       const challengeMethod = crypto.subtle ? "S256" : "plain"

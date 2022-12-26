@@ -19,8 +19,6 @@ export default {
         this.messages[single] = this.getCache(`${single}_inbox`) 
       } 
       else {
-        // console.log('total relays', this.relays.length)
-        // console.log(this.relays.length)
         for(let index = 0; index < this.relays.length; index++) {
           let relay = this.relays[index]
           // console.log('invalidating', relay)

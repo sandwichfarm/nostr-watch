@@ -8,7 +8,7 @@
       <PreferencesComponent :relays="relays" />
     </span>
     <span>
-      <AlbyComponent />
+      <AuthComponent />
     </span>
   </ul>
 </nav>
@@ -25,7 +25,6 @@ nav.menu a {
 
 nav.menu a { 
   text-decoration: none;
-
   margin: 0 22px 0 0;
   padding:5px 10px;
   color:#000;
@@ -46,13 +45,13 @@ nav.menu a:hover {
 <script>
 import { defineComponent } from 'vue'
 import PreferencesComponent from '../components/PreferencesComponent.vue'
-import AlbyComponent from '../components/AlbyComponent.vue'
+import AuthComponent from '../components/AuthComponent.vue'
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'NavComponent',
   components: {
     PreferencesComponent,
-    AlbyComponent
+    AuthComponent
   },
   props: {
     relays: {

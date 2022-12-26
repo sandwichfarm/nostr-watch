@@ -1,9 +1,5 @@
 relays:
-  - wss://sg.qemura.xyz
-  - wss://relay.nyx.ma
-  - wss://nostr.bongbong.com
   - wss://nostr-3.orba.ca
-  - wss://wizards.wormrobot.org
   - wss://satstacker.cloud
   - wss://freedom-relay.herokuapp.com/ws
   - wss://nostr-relay.freeberty.net
@@ -99,24 +95,69 @@ relays:
   - wss://nostr.einundzwanzig.space
   - wss://nostr.d11n.net
   - wss://nostr1.tunnelsats.com
+  - wss://nostr.tunnelsats.com
   - wss://nostr.leximaster.com
   - wss://nostr.hugo.md
+  - wss://mule.platanito.org
+  - wss://relay.ryzizub.com
+  - wss://nostr.w3ird.tech
   - wss://nostr.robotechy.com
-  - wss://nostr.mtandao.xyz
   - wss://relay.stoner.com
-  - wss://nostr.mado.io
+  - wss://relay.nostrmoto.xyz
+  - wss://relay.boring.surf
+  - wss://nostr.bongbong.com
   - wss://nostr.gruntwerk.org
-  - wss://nostr.utxo.lol
-  - wss://jiggytom.ddns.net
-  - wss://nostr-relay.digitalmob.ro
-  - wss://nostr.walletofsatoshi.com
-  - wss://nostr.roundrockbitcoiners.com
-  - wss://nostr.orangepill.dev
-  - wss://nostr1.starbackr.me
-  - wss://nostr-relay.alekberg.net
-  - wss://nostr.blocs.fr
-  - wss://nostr.f44.dev
-  - wss://nostr.demovement.net
-  - wss://nostr.mustardnodes.com
+  - wss://nostr.mado.io
+  - wss://nostr.corebreach.com
+  - wss://nostr.hyperlingo.com
   - wss://nostr.ethtozero.fr
+  - wss://nostr-relay.digitalmob.ro
+  - wss://relay.nvote.co
+  - wss://jiggytom.ddns.net
+  - wss://nostr.sectiontwo.org
+  - wss://nostr.roundrockbitcoiners.com
+  - wss://nostr.nodeofsven.com
+  - wss://nostr.jimc.me
+  - wss://nostr.utxo.lol
+  - wss://relay.lexingtonbitcoin.org
+  - wss://nostr.mikedilger.com
+  - wss://nostr.f44.dev
+  - wss://relay.nyx.ma
+  - wss://nostr.walletofsatoshi.com
+  - wss://nostr.shmueli.org
+  - wss://wizards.wormrobot.org
+  - wss://nostr.orangepill.dev
+  - wss://paid.no.str.cr
+  - wss://nostr.sovbit.com
+  - wss://nostr.datamagik.com
+  - wss://relay.nostrid.com
+  - wss://nostr1.starbackr.me
+  - wss://nostr-relay.schnitzel.world
+  - wss://relay.nostr.express
+  - wss://sg.qemura.xyz
+  - wss://nostr.formigator.eu
+  - wss://nostr.xpersona.net
+  - wss://relay.n057r.club
+  - wss://nostr.digitalreformation.info
+  - wss://nostr.gromeul.eu
+  - wss://nostr-relay.alekberg.net
+  - wss://nostr2.actn.io
+  - wss://nostr-relay.usebitcoin.space
+  - wss://nostrich.friendship.tw
+  - wss://nostr.mustardnodes.com
+  - wss://nostr-alpha.gruntwerk.org
+  - wss://nostr-relay.australiaeast.cloudapp.azure.com
+  - wss://nostr.bch.ninja
+  - wss://nostr-relay.smoove.net
+  - wss://nostr-relay.j3s7m4n.com
+  - wss://nostr.demovement.net
+  - wss://nostr.thesimplekid.com
+  - wss://nostr.aozing.com
+  - wss://nostr.blocs.fr
+  - wss://no.str.watch
+  - wss://nostr.vulpem.com
+  - wss://btc.klendazu.com
+  - wss://nostr.hackerman.pro.
   - wss://nostr.hackerman.pro
+  - wss://beta.nostr.v0l.io
+  - wss://nostr.itssilvestre.com

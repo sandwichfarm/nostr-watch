@@ -21,7 +21,7 @@ events.signEvent = async function(event){
   let veryOk = await verifySignature(event)
 }
 
-events.get10101 = async function (){
+events.get = async function (){
   const pool = new RelayPool(this.relays),
         subid = crypto.randomBytes(40).toString('hex')
 
@@ -39,7 +39,7 @@ events.get10101 = async function (){
   }, 10*1000 )
 }
 
-events.publish10101 = async function (){
+events.publish = async function (){
 
 }
 

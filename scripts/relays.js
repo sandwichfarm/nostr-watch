@@ -4,26 +4,60 @@ const { RelayPool, Relay } = require('nostr'),
       fs = require('fs'),
       fetch = require('cross-fetch')
 
-
 const result = {},
       relays_endpoint = 'https://nostr.watch/relays.json'
 
-const subid = crypto.randomBytes(40).toString('hex')
-
 let   relays = [],
-      relaysRemote = {}
+      relaysKnown = [],
+      relaysRemote = {},
+      remove = [],
+      uniques = null
+
+const run = async function(){
+  //discover relays [kind:3], "remoteRelays"
+  await discover().catch( err => console.warn(err) )
+
+  //Sanitize knownRelays to prevent dupes in uniques
+  sanitizeKnownRelays()
+
+  //sanitize remoteRelays
+  sanitizeRemoteRelays()
+
+  //check remoteRelays
+  await checkRemoteRelays()
+
+  //Remove offline remoteRelays
+  removeOfflineRelays()
+
+  //Combine knownRelays and remoteRelays
+  concatRelays()
+
+  //set uniques
+  uniques = new Set(relays)
+
+  //Write to file
+  await writeYamlFile('./relays.yaml', { relays: Array.from(uniques) })
+
+  process.exit()
+
+}
+
+const concatRelays = function(){
+  relays = relaysKnown.concat(relaysRemote)
+}
 
 async function getRelays(){
   return await fetch(relays_endpoint, { method: "Get" })
     .then(res => res.json())
-    .then(json => relays = json.relays) 
+    .then(json => relaysKnown = json.relays) 
 }
 
-async function run(){
+async function discover(){
   await getRelays()
 
   return new Promise(resolve => {
-    const pool = RelayPool(relays)
+    const subid = crypto.randomBytes(40).toString('hex')
+    const pool = RelayPool(['wss://nostr.sandwich.farm'])
     pool
       .on('open', relay => {
         // console.log('open')
@@ -36,7 +70,7 @@ async function run(){
         if(subid == _subid) {
           try { 
             relaysRemote = Object.assign(relaysRemote, JSON.parse(event.content))
-            // console.log( event.content ) 
+            relay.close()
           } catch(e) {""}
         }
       })
@@ -44,99 +78,66 @@ async function run(){
     setTimeout( () => {
       pool.close()
       resolve(true) 
-    }, 20*1000 )
+    }, 10*1000 )
 
   })
 }
 
-run()
-  .then( async () => {
-    
-    remote1 = Object.entries(relaysRemote)
+const sanitizeRemoteRelays = function(){
+  remote1 = Object.entries(relaysRemote)
               .filter( relay => Array.isArray(relay) )
-              .map( relay => {
-                console.log("meow", relay)
-                return relay[0]
-                        .toLowerCase()
-                        .trim()
-                        .replace('\t', '')
-                        .replace(/\s\t/g, '')
-                        .replace(/\/+$/, '');
-              })
+              .map( relay => sanitizeRelay(relay[0]) )
               .filter( relay => relay.startsWith('wss://') )
               .filter( relay => !relay.includes('localhost') )
 
-    remote2 = Object.entries(relaysRemote)
-              .filter( relay => typeof relay === 'String' )
-              .map( relay => {
-                return relay
-                        .toLowerCase()
-                        .trim()
-                        .replace('\t', '')
-                        .replace(/\s\t/g, '')
-                        .replace(/\/+$/, '');
-              })
+  remote2 = Object.entries(relaysRemote)
+              .filter( relay => relay instanceof String )
+              .map( relay => sanitizeRelay(relay) )
               .filter( relay => relay.startsWith('wss://') )
               .filter( relay => !relay.includes('localhost') )
 
-    let remoteMerged = remote1.concat(remote2)
+  relaysRemote = remote1.concat(remote2)
+}
 
-    // console.log(remoteMerged)
+const sanitizeKnownRelays = function(){
+  relaysKnown = relaysKnown.map( relay => sanitizeRelay(relay) ) //Known relays may have trailing slash
+}
 
-    const check = async function(relay){
-      return new Promise( (resolve, reject) => {
-        let socket = new Relay(relay)
-            socket
-              .on('open', resolve )
-              .on('error', reject )
-        setTimeout( reject, 1000)
-      })
-    }
+const sanitizeRelay = function(relay) {
+  return relay
+          .toLowerCase()
+          .trim()
+          .replace(/\s\t/g, '')
+          .replace(/\/+$/, '')
+          .replace(/^[^a-z\d]*|[^a-z\d]*$/gi, '');
+}
 
-    let remove = []
+const checkRemoteRelays = async function(){
+  for(let i=0;i<relaysRemote.length;i++) {
+    // console.log('check for connect', remoteMerged[i])
+    await checkRelay(relaysRemote[i])
+            .catch( () => {
+              remove.push(relaysRemote[i])
+              console.log('removals:', remove.length, relaysRemote[i])
+            })
+  }
+}
 
-    for(let i=0;i<remoteMerged.length;i++) {
-      // console.log('check for connect', remoteMerged[i])
-      await check(remoteMerged[i]).catch( (err) => {
-          // console.log(err)
-          remove.push(remoteMerged[i])
-          console.log('removals:', remove.length, remoteMerged[i])
-        })
-    }
-
-    console.log('before check', remoteMerged.length)
-    remoteMerged = remoteMerged.filter( relay => { 
-      return !remove.includes(relay) 
-    })
-    console.log('after check', remoteMerged.length)
-
-    let merged = relays.concat(remoteMerged)
-
-    merged = merged.map( relay => {
-                return relay
-                        .toLowerCase()
-                        .trim()
-                        .replace('\t', '')
-                        .replace(/\s\t/g, '')
-                        .replace(/\/+$/, '');
-              })
-
-    console.log(merged)
-
-    const uniques = Array.from(new Set(merged))
-
-    console.log('after concat', uniques.length)
-
-    let final = { relays: uniques }
-
-    // console.log(final)
-
-
-    await writeYamlFile('./relays.yaml', final)
-
-    process.exit()
-
-    
+const checkRelay = async function(relay){
+  return new Promise( (resolve, reject) => {
+    let socket = new Relay(relay)
+        socket
+          .on('open', relay => {
+            socket.close()
+            resolve()
+          })
+          .on('error', reject )
+    setTimeout( reject, 500 )
   })
-  .catch( err => console.warn(err) )
+}
 
+const removeOfflineRelays = function(){
+  relaysRemote = relaysRemote.filter( relay => !remove.includes(relay) )
+}
+
+run()

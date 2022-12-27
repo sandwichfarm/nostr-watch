@@ -1,7 +1,7 @@
 <template>
 <nav class="menu">
   <ul>
-    <router-link :to="`/`" active-class="active">Home</router-link>
+    <router-link :to="`/`" active-class="active">Relays</router-link>
     <a href="https://github.com/dskvr/nostr-watch/edit/main/relays.yaml" target="_blank">Add Relay</a>
     <a href="/relays.json"><code>{...}</code></a>
     <span>
@@ -30,7 +30,7 @@ nav.menu a {
 }
 
 nav.menu a.active { 
-  background:#000;
+  background:#000 !important;
   color: #fff;
   border: none;
 }

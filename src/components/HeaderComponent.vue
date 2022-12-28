@@ -10,6 +10,8 @@
       <NavComponent :relays="relays" />
     </column>
   </row>
+
+  
 </template>
 <script>
 import { version } from '../../package.json'
@@ -28,6 +30,12 @@ export default defineComponent({
       type: Array,
       default(){
         return []
+      }
+    },
+    result: {
+      type: Object,
+      default(){
+        return {}
       }
     },
   },

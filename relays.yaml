@@ -157,7 +157,11 @@ relays:
   - wss://no.str.watch
   - wss://nostr.vulpem.com
   - wss://btc.klendazu.com
-  - wss://nostr.hackerman.pro.
   - wss://nostr.hackerman.pro
-  - wss://beta.nostr.v0l.io
-  - wss://nostr.itssilvestre.com
+  - wss://relay.realsearch.cc
+  - wss://nostr.mrbits.it
+  - wss://nostr.coollamer.com
+  - wss://node01.nostress.cc
+  - wss://nostr.zenon.wtf
+  - wss://nostr.massmux.com
+  - wss://no.contry.xyz

@@ -62,7 +62,6 @@ const localMethods = {
     },
 
     relaysComplete () {
-      if(!Object.keys(this.results).length) return 0
       return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
     },
 

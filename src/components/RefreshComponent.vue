@@ -1,7 +1,12 @@
 <template>
 <section id="refresh">
-   <span>Updated {{ refreshData?.sinceLast }} ago <button @click="invalidate(true)">Refresh{{ relay ? ` ${relay}` : "" }}</button></span>
-   <span v-if="preferences.refresh"> Next refresh in: {{ refreshData?.untilNext }}</span>
+  <span>
+    Updated {{ refreshData?.sinceLast }} ago 
+    <button :disabled='disabled' @click="refreshNow()">Refresh{{ relay ? ` ${relay}` : "" }} Now</button>
+  </span>
+  <span v-if="preferences.refresh"> 
+    Next refresh in: {{ refreshData?.untilNext }}
+  </span>
 </section>
 </template>
 
@@ -21,9 +26,13 @@ const localMethods = {
     timeSinceRefresh(){
       return this.timeSince(this.lastUpdate)
     },
-
-    nextRefresh: function(){
-      return this.timeSince(Date.now()-(this.lastUpdate+this.preferences.cacheExpiration-Date.now()))
+    disableManualRefresh: function(){
+      //this is a hack.
+      const lastUpdate = this.getCache('lastUpdate')
+      if(Math.floor( ( Date.now()-lastUpdate )/1000 ) < 20)
+        this.disabled = true 
+      else
+        this.disabled = false
     },
     setRefreshInterval: function(){
       clearInterval(this.interval)
@@ -33,12 +42,16 @@ const localMethods = {
         this.refreshData.untilNext = this.timeUntilRefresh() 
         this.refreshData.sinceLast = this.timeSinceRefresh() 
 
-        //console.log('is expired', this.isExpired())
-
         if(this.isExpired() && this.preferences.refresh)
           this.invalidate(false, this.relay)
 
+        this.disableManualRefresh()
+
       }, 1000)
+    },
+    refreshNow(){
+      this.disabled = true
+      this.invalidate(true)
     }
 }
 
@@ -106,9 +119,17 @@ export default defineComponent({
       preferences: {
         refresh: true,
         cacheExpiration: 30*60*1000
-      }
+      },
+      disabled: true
     }
   },
 })
 </script>
+
+<style scoped>
+ #refresh { font-size: 12pt; color:#666; margin-bottom:15px }
+ #refresh button { cursor: pointer; border-radius: 3px; border: 1px solid #a0a0a0; color:#333 }
+ #refresh button:hover {color:#000;}
+ #refresh button[disabled] {color:#999 !important; border-color:#e0e0e0}
+</style>
 

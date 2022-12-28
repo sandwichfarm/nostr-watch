@@ -103,10 +103,6 @@ export default {
       })
     },
 
-    onComplete(relay, resolve, reject){
-      relay, resolve, reject
-    },
-
     setCache: function(type, key, data){
       
       const now = Date.now()
@@ -170,20 +166,6 @@ export default {
         this.storage.removeStorage(relay)
       })
     },
-    recheck: function(relay){
-      const inspect = this.connections[relay]
-      inspect.checkLatency()
-
-    },
-
-    adjustResult: function(relay) {
-      this.result[relay].observations.forEach( observation => {
-        if (observation.code == "BLOCKS_WRITE_STATUS_CHECK") {
-          this.result[relay].check.write = false
-          this.result[relay].aggregate = 'public'
-        }
-      })
-    },
 
     getAggregate: function(relay) {
       let aggregateTally = 0
@@ -202,7 +184,7 @@ export default {
     },
 
     relaysTotal: function() {
-      return this.relays.length //TODO: Figure out WHY?
+      return this.relays.length
     },
 
     relaysConnected: function() {
@@ -210,7 +192,7 @@ export default {
     },
 
     relaysComplete: function() {
-      return this.relays?.filter(relay => this.results?.[relay]?.state == 'complete').length
+      return this.relays?.filter(relay => this.result?.[relay]?.state == 'complete').length
     },
 
     sha1: function(message) {
@@ -227,8 +209,8 @@ export default {
     },
 
     timeSince: function(date) {
-      var seconds = Math.floor((new Date() - date) / 1000);
-      var interval = seconds / 31536000;
+      let seconds = Math.floor((new Date() - date) / 1000);
+      let interval = seconds / 31536000;
       if (interval > 1) {
         return Math.floor(interval) + " years";
       }

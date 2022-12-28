@@ -161,6 +161,7 @@ relays:
   - wss://relay.realsearch.cc
   - wss://nostr.mrbits.it
   - wss://nostr.coollamer.com
-  - wss://node01.nostress.c
+  - wss://node01.nostress.cc
   - wss://nostr.zenon.wtf
   - wss://nostr.massmux.com
+  - wss://no.contry.xyz

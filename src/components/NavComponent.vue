@@ -5,7 +5,7 @@
     <a href="https://github.com/dskvr/nostr-watch/edit/main/relays.yaml" target="_blank">Add Relay</a>
     <a href="/relays.json"><code>{...}</code></a>
     <span>
-      <PreferencesComponent :relays="relays" />
+      <PreferencesComponent />
     </span>
     <span>
       <AuthComponent />
@@ -46,6 +46,7 @@ nav.menu a:hover {
 import { defineComponent } from 'vue'
 import PreferencesComponent from '../components/PreferencesComponent.vue'
 import AuthComponent from '../components/AuthComponent.vue'
+
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'NavComponent',
@@ -53,13 +54,6 @@ export default defineComponent({
     PreferencesComponent,
     AuthComponent
   },
-  props: {
-    relays: {
-      type: Array,
-      default(){
-        return []
-      }
-    }
-  }
+  props: {}
 });
 </script>

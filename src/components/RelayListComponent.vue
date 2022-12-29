@@ -9,18 +9,16 @@
         </div>
       </vue-final-modal>
       <td colspan="11">
-        <h2><span class="indicator badge">{{ this.relays.length }}</span>Relays <a @click="showModal=true" class="section-json" v-if="showJson">{...}</a></h2>
+        <h2><span class="indicator badge">{{ this.store.relays.urls.length }}</span>Relays <a @click="showModal=true" class="section-json" v-if="showJson">{...}</a></h2>
       </td>
     </tr>
-    <tr v-if="this.relays.length > 0">
+    <tr v-if="this.store.relays.urls.length > 0">
       <TableHeaders />
     </tr>
-    <tr v-for="(relay, index) in sort(relays[relay]?.aggregate)" :key="{relay}" class="relay" :class="getResultClass(relay, index)">
-      <RelaySingleComponent
+    <tr v-for="(relay, index) in sort(store.relay.result[relay]?.aggregate)" :key="{relay}" class="relay" :class="getResultClass(relay, index)">
+      <RelaySingleComponent 
         :relay="relay"
-        :result="result[relay]"
-        :geo="geo[relay]"
-        :connection="connections[relay]" />
+      />
     </tr>
   </table>
 </template>
@@ -32,7 +30,9 @@ import { VueFinalModal } from 'vue-final-modal'
 import RelaySingleComponent from './RelaySingleComponent.vue'
 import TableHeaders from './TableHeaders.vue'
 
-import RelaysLib from '../lib/relays-lib.js'
+import RelaysLib from '../shared/relays-lib.js'
+
+import { store } from '../store'
 
 const localMethods = {
     // getHeadingClass(){
@@ -44,17 +44,18 @@ const localMethods = {
     //   }
     // },
     getResultClass (relay, index) {
+      console.log('state', this.store.relay.results?.[relay]?.state)
       return {
-        loaded: this.result?.[relay]?.state == 'complete',
+        loaded: this.store.relay.results?.[relay]?.state == 'complete',
         even: index % 2
       }
     },
     queryJson(){
-      const result = { relays: this.relays }
+      const result = { relays: this.store.relays.urls }
       return JSON.stringify(result,null,'\t')
     },
     relaysTotal () {
-      return this.relays.length //TODO: Figure out WHY?
+      return this.store.relays.urls.length //TODO: Figure out WHY?
     },
 
     relaysConnected () {
@@ -62,7 +63,7 @@ const localMethods = {
     },
 
     relaysComplete () {
-      return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
+      return this.store.relays.urls.filter(relay => this.results?.[relay]?.state == 'complete').length
     },
 
     sha1 (message) {
@@ -77,42 +78,6 @@ const localMethods = {
     loadingComplete(){
       return this.isDone() ? 'loaded' : ''
     },
-
-    sort_by_latency(ascending) {
-      const self = this
-      return function (a, b) {
-        // equal items sort equally
-        if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
-            return 0;
-        }
-
-        // nulls sort after anything else
-        if (self.result?.[a]?.latency.final === null) {
-            return 1;
-        }
-        if (self.result?.[b]?.latency.final === null) {
-            return -1;
-        }
-
-        // otherwise, if we're ascending, lowest sorts first
-        if (ascending) {
-            return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
-        }
-
-        // if descending, highest sorts first
-        return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
-      };
-    },
-    sortByLatency () {
-      let unsorted
-
-      unsorted = this.relays;
-
-      if (unsorted.length)
-        return unsorted.sort(this.sort_by_latency(true))
-
-      return []
-    },
   }
 
 export default defineComponent({
@@ -122,6 +87,17 @@ export default defineComponent({
     VueFinalModal,
     TableHeaders
   },
+  setup(){
+    return { 
+      store : {
+        relays: store.useRelaysStore(),
+        prefs: store.usePrefsStore() 
+      }
+    }
+  },
+  mounted(){
+    console.log('state', this.store.relay.results)
+  },
   props: {
     showJson: {
       type: Boolean,
@@ -129,49 +105,14 @@ export default defineComponent({
         return true
       }
     },
-    relays:{
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    result: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    geo: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    messages: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    alerts: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    connections: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
   },
   data() {
     return {
-      showModal: false
+      showModal: false,
+      relays: []
     }
   },
-  mounted(){},
+  
   computed: {},
   methods: Object.assign(localMethods, RelaysLib)
 })
@@ -198,7 +139,7 @@ export default defineComponent({
   ::v-deep(.modal-content) {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: Column;
     max-height: 90%;
     max-width:800px;
     margin: 0 1rem;

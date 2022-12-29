@@ -1,92 +1,63 @@
 <template>
   <!-- <NavComponent /> -->
-  <LeafletComponent
-    :geo="geo"
-    :result="result"
-  />
+  <LeafletComponent />
 
   <div id="wrapper">
+
+    <metainfo>
+      <template v-slot:title="{ content }">{{ content }}</template>
+    </metainfo>
     
-    <HeaderComponent :relays="relays" />
+    <HeaderComponent />
     
-    <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12" class="list">
+    <Row container :gutter="12">
+      <Column :xs="12" :md="12" :lg="12" class="list">
         <span>Group By:</span>
         <tabs :options="{ useUrlFragment: false }" @clicked="tabClicked" @changed="tabChanged" nav-item-class="nav-item">
             <tab name="Availability">
-              <GroupByAvailability
-                section="processing"
-                :relays="relays"
-                :result="result"
-                :geo="geo"
-                :messages="messages"
-                :alerts="alerts"
-                :connections="connections"
-                :showJson="false">
-                </GroupByAvailability>
+              <GroupByAvailability />
             </tab>
             <tab name="None">
-              <GroupByNone
-                :relays="relays"
-                :result="result"
-                :geo="geo"
-                :messages="messages"
-                :alerts="alerts"
-                :connections="connections">
-              </GroupByNone>
+              <GroupByNone />
             </tab>
-            
         </tabs>
-      </column>
-    </row>
-
-    <row container :gutter="12">
-      <column :xs="12" :md="12" :lg="12" class="list">
-        
-      </column>
-    </row>
-
-    <!-- <row container :gutter="12" v-if="(relaysTotal()-relaysConnected()>0)">
-      <column :xs="12" :md="12" :lg="12" class="processing-card loading">
-        <span>Processing {{ relaysConnected() }}/{{ relaysTotal() }}</span>
-      </column>
-    </row> -->
+      </Column>
+    </Row>
     
-    <section id="footer">
-      <RefreshComponent 
-        :relaysProp="relays"
-        v-bind:resultProp="result"
-        :messagesProp="messages"
-      />
+    <div id="footer">
+      <RefreshComponent />
 
       <span class="credit">
         <!-- <a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>,  -->
         built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
-    </section>
+      </div>
   </div>
 </template>
 <script>
 
 
 import { defineComponent } from 'vue'
-import { useStorage } from "vue3-storage";
 
 import { Row, Column } from 'vue-grid-responsive';
 
-import RelaysLib from '../lib/relays-lib.js'
+import RelaysLib from '../shared/relays-lib.js'
 
+import HeaderComponent from '../components/HeaderComponent.vue'
 import LeafletComponent from '../components/LeafletComponent.vue'
 import RefreshComponent from '../components/RefreshComponent.vue'
-import HeaderComponent from '../components/HeaderComponent.vue'
+
 
 import { relays } from '../../relays.yaml'
 import { geo } from '../../cache/geo.yaml'
 
+import { setupStore } from '@/store'
+
 import GroupByNone from '../components/GroupByNone.vue'
 import GroupByAvailability from '../components/GroupByAvailability.vue'
 
+import { useMeta } from 'vue-meta'
+
 export default defineComponent({
-  title: "nostr.watch registry & network status",
   name: 'HomePage',
 
   components: {
@@ -99,9 +70,20 @@ export default defineComponent({
     HeaderComponent
   },
 
+  setup(){
+    useMeta({
+      title: 'nostr.watch',
+      description: 'A robust client-side nostr relay monitor. Find fast nostr relays, view them on a map and monitor the network status of nostr.',
+      htmlAttrs: { lang: 'en', amp: true }
+    })
+    return { 
+      store : setupStore()
+    }
+  },
+
   data() {
     return {
-      relays: Array.from( new Set(relays)),
+      relays: [],
       result: {},
       messages: {},
       connections: {},
@@ -111,22 +93,20 @@ export default defineComponent({
       count: 0,
       storage: null,
       geo,
-      hasStorage: false,
-      // cacheExpiration: 10*60*1000, //10 minutes
     }
   },
 
   updated(){},
 
   async mounted() {
-    this.storage = useStorage()
-    this.lastUpdate = this.getCache('lastUpdate')|| this.lastUpdate
-    this.preferences = this.getCache('preferences') || this.preferences
+    this.store.relays.setRelays(relays)
+    this.store.relays.setGeo(geo)
 
-    this.relays.forEach(async relay => {
-      this.result[relay] = this.getCache(relay)
-      this.messages[relay] = this.getCache(`${relay}_inbox`)
-    })
+    this.relays = this.store.relays.getAll
+
+    this.lastUpdate = this.store.relays.lastUpdate
+    this.preferences = this.store.prefs.get
+
     this.invalidate()
   },
 
@@ -165,6 +145,10 @@ a {
 
 a:hover {
   color: #000;
+}
+
+.nav-item {
+  cursor:pointer
 }
 
 .nav-item.is-active a {

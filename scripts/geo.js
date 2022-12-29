@@ -5,8 +5,9 @@ const fetch = require('cross-fetch'),
 let object,
     yaml,
     result,
-    file = fs.readFileSync('./relays.yaml', 'utf8'),
-    geoCache = fs.readFileSync('./cache/geo.yaml', 'utf8')
+    relayUrls = fs.readFileSync('./relays.yaml', 'utf8'),
+    geoCache = fs.readFileSync('./cache/geo.yaml', 'utf8'),
+    continents = fs.readFileSync('./cache/continents.json', 'utf8')
 
 const getDns = async function(relay){
   let dns
@@ -37,25 +38,40 @@ const getGeo = async function(ip) {
   return geo;
 }
 
+const getContinent = function(countryCode) {
+  return JSON.parse(continents)
+    .filter( c => c.country_code == countryCode )
+    .map( cont => {
+      return {
+        continentCode: cont.continent_code,
+        continentName: cont.continent_name
+      }
+    })[0]
+}
+
 const query = async function(){
 
-  const relays = YAML.parse(file).relays.reverse(),
+  const relays = YAML.parse(relayUrls).relays.reverse(),
         result = YAML.parse(geoCache).geo || {}
 
   for (const relay of relays) {
     await delay(1000).then(async () => {
       console.log('getting relay geo', relay)
+
       let dns, ip, geo
+
       dns = await getDns(relay).catch()
       ip = await getIp(dns).catch()
-      // console.log(dns, ip)
       geo = await getGeo(ip).catch()
 
-      // console.log(geo, ip, dns)
+      if(geo)
+        geo = Object.assign(geo, getContinent(geo.countryCode))
 
-      if(geo && dns)
+      if(geo && dns){
         geo.dns = dns[dns.length-1]
-
+        delete geo.status
+      }
+  
       if(geo && geo.status == 'success')
         result[relay] = geo
 

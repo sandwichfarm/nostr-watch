@@ -1,4 +1,8 @@
 <template>
+  <metainfo>
+    <template v-slot:title="{ content }">{{ `${cleanUrl(this.relay)} | ${content}` }}</template>
+  </metainfo>
+
   <LeafletSingleComponent
     :geo="geo"
     :relay="relay"
@@ -11,17 +15,17 @@
 
     <div id="relay-wrapper">
 
-      <row container :gutter="12">
-        <column :xs="12" :md="12" :lg="12" class="title-card">
+      <Row container :gutter="12">
+        <Column :xs="12" :md="12" :lg="12" class="title-card">
           <span v-tooltip:top.tooltip="'Click to copy'" style="display:block">
             <h2 @click="copy(relayUrl())">{{ relayUrl() }}</h2>
           </span>
-        </column>
-      </row>
+        </Column>
+      </Row>
       
 
-      <row container :gutter="12">
-        <column :xs="12" :md="12" :lg="12" class="title-card">
+      <Row container :gutter="12">
+        <Column :xs="12" :md="12" :lg="12" class="title-card">
           <span  class="badges">
             <span><img :src="badgeCheck('connect')" /></span>
             <span><img :src="badgeCheck('read')" /></span>
@@ -33,17 +37,17 @@
                   <a :href="nipLink(nip)" target="_blank"><img :src="badgeLink(nip)" /></a>
               </span>
             </span>
-        </column>
-      </row>
+        </Column>
+      </Row>
 
-      <row container :gutter="12" v-if="!result?.check?.connect">
-        <column :xs="12" :md="12" :lg="12" class="title-card">
+      <Row container :gutter="12" v-if="!result?.check?.connect">
+        <Column :xs="12" :md="12" :lg="12" class="title-card">
           This relay appears to be offline.
-        </column>
-      </row>
+        </Column>
+      </Row>
 
-      <row container :gutter="12" v-if="result?.check?.connect">
-        <column :xs="12" :md="12" :lg="12" class="title-card">
+      <Row container :gutter="12" v-if="result?.check?.connect">
+        <Column :xs="12" :md="12" :lg="12" class="title-card">
             <table v-if="result.info">
               <tr>
                 <th colspan="2"><h4>Info</h4></th>
@@ -62,7 +66,6 @@
               </tr>
             </table>
 
-
             <table v-if="result.identities">
               <tr>
                 <th colspan="2"><h4>Identities</h4></th>
@@ -78,8 +81,8 @@
               </tbody>
             </table>
 
-          </column>
-          <column :xs="12" :md="6" :lg="6" class="title-card">
+          </Column>
+          <Column :xs="12" :md="6" :lg="6" class="title-card">
             <table v-if="geo[relay]">
               <tr>
                 <th colspan="2"><h4>GEO {{geo?.countryCode ? getFlag() : ''}}</h4></th>
@@ -91,8 +94,8 @@
                 </tr>
               </tbody>
             </table>
-          </column>
-          <column :xs="12" :md="6" :lg="6" class="title-card">
+          </Column>
+          <Column :xs="12" :md="6" :lg="6" class="title-card">
             <table v-if="geo[relay]">
               <tr>
                 <th colspan="2"><h4>DNS</h4></th>
@@ -104,8 +107,8 @@
               </tr>
               </tbody>
             </table>
-          </column> 
-      </row>
+          </Column> 
+      </Row>
       
 
      <!--  <RefreshComponent 
@@ -130,11 +133,16 @@ import HeaderComponent from '../components/HeaderComponent.vue'
 import { Row, Column } from 'vue-grid-responsive';
 import SafeMail from "@2alheure/vue-safe-mail";
 
-import RelaysLib from '../lib/relays-lib.js'
+import RelaysLib from '../shared/relays-lib.js'
 
 import { version } from '../../package.json'
 import { relays } from '../../relays.yaml'
 import { geo } from '../../cache/geo.yaml'
+
+import { setupStore } from '@/store'
+
+import { useMeta } from 'vue-meta'
+
 
 const localMethods = {
     relayUrl() {
@@ -172,14 +180,12 @@ const localMethods = {
 }
 
 export default defineComponent({
-  title: "nostr.watch registry & network status",
   name: 'SingleRelay',
   
   components: {
     Row,
     Column,
     LeafletSingleComponent,
-    // NavComponent,
     SafeMail,
     HeaderComponent,
     // RefreshComponent,
@@ -206,13 +212,24 @@ export default defineComponent({
     }
   },
 
+  setup(){
+    useMeta({
+      title: 'nostr.watch',
+      description: 'A robust client-side nostr relay monitor. Find fast nostr relays, view them on a map and monitor the network status of nostr.',
+      htmlAttrs: { lang: 'en', amp: true }
+    })
+    return { 
+      store : setupStore()
+    }
+  },
+
   async mounted() {
     this.relay = this.relayUrl()
 
     this.storage = useStorage()
-    this.lastUpdate = this.storage.getStorageSync('lastUpdate')
-    this.preferences = this.storage.getStorageSync('preferences')
-    this.result = this.storage.getStorageSync(this.relay)
+    this.lastUpdate = this.store.relays.getLastUpdate
+    // this.preferences = this.store.prefs.
+    this.result = this.store.relays.getResult(this.relay)
     
     if(this.isExpired())
       this.check(this.relay)
@@ -237,7 +254,7 @@ table {margin:20px 10px 20px; border: 2px solid #f5f5f5; padding:20px}
 tr td:first-child { text-align:right }
 tr td:last-child { text-align:left }
 .indicator { display: table-cell; width:33% ; font-weight:bold; text-align: center !important; color: white; text-transform: uppercase; font-size:0.8em}
-body, .grid-column { padding:0; margin:0; }
+body, .grid-Column { padding:0; margin:0; }
 .badges { display:block; margin: 10px 0 11px}
 .badges > span {margin-right:5px}
 #wrapper {max-width:800px}

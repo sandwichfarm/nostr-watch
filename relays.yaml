@@ -159,9 +159,9 @@ relays:
   - wss://btc.klendazu.com
   - wss://nostr.hackerman.pro
   - wss://relay.realsearch.cc
+  - wss://nostr3.actn.io
+  - wss://nostr.pwnshop.cloud
   - wss://nostr.mrbits.it
-  - wss://nostr.coollamer.com
-  - wss://node01.nostress.cc
-  - wss://nostr.zenon.wtf
+  - wss://echo.obsolete.org
+  - wss://brb.io
   - wss://nostr.massmux.com
-  - wss://no.contry.xyz

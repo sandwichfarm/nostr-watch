@@ -1,11 +1,11 @@
 <template>
 <section id="refresh">
   <span>
-    Updated {{ refreshData?.sinceLast }} ago 
+    Updated {{ sinceLast }} ago 
     <button :disabled='disabled' @click="refreshNow()">Refresh{{ relay ? ` ${relay}` : "" }} Now</button>
   </span>
-  <span v-if="preferences.refresh"> 
-    Next refresh in: {{ refreshData?.untilNext }}
+  <span v-if="store.prefs.refresh"> 
+    Next refresh in: {{ untilNext }}
   </span>
 </section>
 </template>
@@ -15,20 +15,21 @@
 </style>
 
 <script>
-import { defineComponent, reactive } from 'vue'
-import RelaysLib from '../lib/relays-lib.js'
-import { useStorage } from "vue3-storage";
+import { defineComponent  } from 'vue'
+import RelaysLib from '../shared/relays-lib.js'
+// import { useStorage } from "vue3-storage";
+import { store } from '../store'
 
 const localMethods = {
     timeUntilRefresh(){
-      return this.timeSince(Date.now()-(this.lastUpdate+this.preferences.cacheExpiration-Date.now())) 
+      return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
     },
     timeSinceRefresh(){
-      return this.timeSince(this.lastUpdate)
+      return this.timeSince(this.store.relays.lastUpdate)
     },
     disableManualRefresh: function(){
       //this is a hack.
-      const lastUpdate = this.getCache('lastUpdate')
+      const lastUpdate = this.store.relays.lastUpdate
       if(Math.floor( ( Date.now()-lastUpdate )/1000 ) < 20)
         this.disabled = true 
       else
@@ -37,16 +38,15 @@ const localMethods = {
     setRefreshInterval: function(){
       clearInterval(this.interval)
       this.interval = setInterval(() => {
-        this.preferences = this.getCache('preferences') || this.preferences
+        this.prefs = this.store.prefs.get
 
-        this.refreshData.untilNext = this.timeUntilRefresh() 
-        this.refreshData.sinceLast = this.timeSinceRefresh() 
+        this.untilNext = this.timeUntilRefresh() 
+        this.sinceLast = this.timeSinceRefresh() 
 
-        if(this.isExpired() && this.preferences.refresh)
-          this.invalidate(false, this.relay)
+        if(this.store.prefs.refresh )
+          this.invalidate()
 
         this.disableManualRefresh()
-
       }, 1000)
     },
     refreshNow(){
@@ -58,68 +58,43 @@ const localMethods = {
 export default defineComponent({
   name: 'RefreshComponent',
   components: {},
+  setup(){
+    return { 
+      store : {
+        relays: store.useRelaysStore(),
+        prefs: store.usePrefsStore() 
+      }
+    }
+  },
   mounted(){
+    this.relays = this.store.relays.getAll
+    this.lastUpdate = this.store.relays.lastUpdate
+
+    console.log('last update', this.lastUpdate)
+
     clearInterval(this.interval)
 
-    this.storage = useStorage()
-    this.lastUpdate = this.getCache('lastUpdate')|| this.lastUpdate
-    this.preferences = this.getCache('preferences') || this.preferences
-
-    this.refreshData = reactive({
-      untilNext: this.timeUntilRefresh(),
-      sinceLast: this.timeSinceRefresh()
-    })
+    this.untilNext = this.timeUntilRefresh() 
+    this.sinceLast = this.timeSinceRefresh() 
 
     this.setRefreshInterval()
   },
   updated(){
-    this.setCache('preferences')
-    
-    this.refreshData.untilNext = this.timeUntilRefresh() 
-    this.refreshData.sinceLast = this.timeSinceRefresh() 
+    this.untilNext = this.timeUntilRefresh() 
+    this.sinceLast = this.timeSinceRefresh() 
   },
   computed: {},
   methods: Object.assign(localMethods, RelaysLib),
-  props: {
-    relay: {
-      type: String,
-      default(){
-        return ""
-      }
-    },
-    relaysProp:{
-      type: Array,
-      default(){
-        return []
-      }
-    }, 
-    messagesProp:{
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    resultProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  props: {},
   data() {
     return {
-      relays: this.relaysProp,
-      result: this.resultProp,
-      messages: this.messagesProp,
-      storage: null,
+      relay: "",
+      relays: [],
+      refresh: {},
+      untilNext: null,
       lastUpdate: null,
-      refresh: true,
-      refreshData: this.refreshDataProp,
+      sinceLast: null,
       interval: null,
-      preferences: {
-        refresh: true,
-        cacheExpiration: 30*60*1000
-      },
       disabled: true
     }
   },

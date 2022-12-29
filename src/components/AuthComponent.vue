@@ -1,5 +1,5 @@
 <template>
-  <button v-if="signer" @click="auth">Use Signer</button>
+  <button v-if="signer" @click="auth">Sign</button>
 </template>
 
 <script>

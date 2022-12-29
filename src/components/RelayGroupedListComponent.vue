@@ -15,13 +15,7 @@
     <TableHeaders />
   </tr>
   <tr v-for="(relay, index) in sort(section)" :key="{relay}" :class="getResultClass(relay, index)" class="relay">
-    <RelaySingleComponent
-      :relay="relay"
-      :result="result[relay]"
-      :geo="geo[relay]"
-      :showColumns="showColumns"
-      :connection="connections[relay]"
-    />
+    <RelaySingleComponent />
   </tr>
 </template>
 
@@ -32,7 +26,7 @@ import { VueFinalModal } from 'vue-final-modal'
 import RelaySingleComponent from './RelaySingleComponent.vue'
 import TableHeaders from './TableHeaders.vue'
 
-import RelaysLib from '../lib/relays-lib.js'
+import RelaysLib from '../shared/relays-lib.js'
 
 const localMethods = {
   getHeadingClass(){
@@ -45,37 +39,12 @@ const localMethods = {
   },
   getResultClass (relay, index) {
     return {
-      loaded: this.result?.[relay]?.state == 'complete',
+      loaded: this.store.relays.results?.[relay]?.state == 'complete',
       online: this.section != "offline",
       offline: this.section == "offline",
       public: this.section == "public",
       even: index % 2,
     }
-  },
-  sort_by_latency(ascending) {
-    const self = this
-    return function (a, b) {
-      // equal items sort equally
-      if (self.result?.[a]?.latency.final === self.result?.[b]?.latency.final) {
-          return 0;
-      }
-
-      // nulls sort after anything else
-      if (self.result?.[a]?.latency.final === null) {
-          return 1;
-      }
-      if (self.result?.[b]?.latency.final === null) {
-          return -1;
-      }
-
-      // otherwise, if we're ascending, lowest sorts first
-      if (ascending) {
-          return self.result?.[a]?.latency.final - self.result?.[b]?.latency.final;
-      }
-
-      // if descending, highest sorts first
-      return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
-    };
   },
   queryJson(aggregate){
     const relays = this.sort(aggregate)
@@ -84,17 +53,17 @@ const localMethods = {
     return JSON.stringify(result,null,'\t')
   },
   relaysTotal () {
-    return this.relays.length
+    return this.store.relays.urls.length
   },
   relaysConnected () {
-    return Object.keys(this.result).length
+    return Object.keys(this.store.relays.results).length
   },
   relaysCompleted () {
-    let value = Object.entries(this.result).map((value) => { return value.state == 'complete' }).length
+    let value = Object.entries(this.store.relays.results).map((value) => { return value.state == 'complete' }).length
     return value
   },
   isDone(){
-    return this.relaysTotal()-this.relaysCompleted() == 0
+    return relaysTotal()-relaysCompleted() == 0
   },
 }
 
@@ -204,7 +173,7 @@ export default defineComponent({
     text-align:left;
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: Column;
     max-height: 500px;
     max-width:800px;
     margin: 0 1rem;

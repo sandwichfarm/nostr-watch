@@ -23,6 +23,9 @@ module.exports = defineConfig({
         "bufferutil": false
       }
     },
+    experiments: {
+      topLevelAwait: true
+    },
   },
   chainWebpack: config => {
     config.module

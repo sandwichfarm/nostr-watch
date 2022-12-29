@@ -19,7 +19,7 @@
   <td class="location">{{ getFlag() }}</td>
 
   <td class="latency">
-    <span>{{ result?.latency.final }}<span v-if="result?.check.latency">ms</span></span>
+    <span>{{ result?.latency?.final }}<span v-if="result?.check?.latency">ms</span></span>
   </td>
 
   <td class="connect" :key="generateKey(relay, 'check.connect')">
@@ -41,71 +41,59 @@
         <span v-tooltip:top.tooltip="alert.description" :class="alert.type" v-if="alert.type == 'caution'">⚠️</span>
       </li>
     </ul>
-  </td> -->
+  </td>-->
 </template>
 
 <script>
 import { defineComponent} from 'vue'
-import { InspectorResult } from 'nostr-relay-inspector'
+// import { InspectorResult } from 'nostr-relay-inspector'
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
+import { store } from '../store'
 
 export default defineComponent({
   name: 'RelaySingleComponent',
   components: {
   },
   props: {
-    relay: String,
-    result: {
-      type: Object,
+    relay:{
+      type: String,
       default(){
-        return structuredClone(InspectorResult)
-      }
-    },
-    geo: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    showColumns: {
-      type: Object,
-      default() {
-        return {
-          connectionStatuses: false,
-          nips: false,
-          geo: false,
-          additionalInfo: false
-        }
-      }
-    },
-    connection: {
-      type: Object,
-      default() {
-        return {
-          connectionStatuses: false,
-          nips: false,
-          geo: false,
-          additionalInfo: false
-        }
+        return ""
       }
     }
   },
   data() {
     return {
-      showModal: false
+      result: {},
+      geo: {},
+      showModal: false,
+      
+    }
+  },
+  mounted(){
+    this.result = this.store.relays.results[this.relay]
+    this.geo = this.store.relays.geo[this.relay]
+  },
+  setup(){
+    return { 
+      store : {
+        relays: store.useRelaysStore(),
+        prefs: store.usePrefsStore() 
+      }
     }
   },
   methods: {
      getResultClass (url, key) {
-       let result = this.result?.check?.[key] === true
+       let cl = this.result?.check?.[key] === true
        ? 'success'
        : this.result?.check?.[key] === false
          ? 'failure'
          : 'pending'
-       return `indicator ${result}`
+       return `indicator ${cl}`
      },
      getLoadingClass () {
+      console
        return this.result?.state == 'complete' ? "relay loaded" : "relay"
      },
      generateKey (url, key) {
@@ -200,7 +188,7 @@ td.verified span {
 ::v-deep(.modal-content) {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: Column;
   max-height: 90%;
   margin: 0 1rem;
   padding: 1rem;

@@ -3339,3 +3339,24 @@ geo:
       type: 1
       TTL: 358
       data: 164.90.218.45
+  wss://no.contry.xyz:
+    status: success
+    country: Japan
+    countryCode: JP
+    region: "13"
+    regionName: Tokyo
+    city: Shinagawa
+    zip: 105-8711
+    lat: 35.6096
+    lon: 139.7283
+    timezone: Asia/Tokyo
+    isp: Choopa
+    org: Vultr Holdings, LLC
+    as: AS20473 The Constant Company, LLC
+    query: 198.13.32.125
+    continent: {}
+    dns:
+      name: no.contry.xyz
+      type: 1
+      TTL: 300
+      data: 198.13.32.125

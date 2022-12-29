@@ -79,7 +79,6 @@ async function discover(){
       pool.close()
       resolve(true) 
     }, 10*1000 )
-
   })
 }
 

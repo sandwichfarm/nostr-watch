@@ -5,6 +5,37 @@ import { RelayPool } from 'nostr'
 
 const events = {}
 
+events.discoverRelays = async function(){
+  return new Promise(resolve => {
+    const subid = crypto.randomBytes(40).toString('hex')
+    const pool = RelayPool(['wss://nostr.sandwich.farm'])
+    pool
+      .on('open', relay => {
+        // console.log('open')
+        relay.subscribe(subid, {limit: 1000, kinds:[3]})
+      })
+      .on('close', () => {
+        // console.log('close')
+      })
+      .on('event', (relay, _subid, event) => {
+        if(subid == _subid) {
+          try { 
+            relaysRemote = Object.assign(relaysRemote, JSON.parse(event.content))
+            relay.close()
+          } catch(e) {""}
+        }
+      })
+    setTimeout( () => {
+      pool.close()
+      resolve(true) 
+    }, 10*1000 )
+  })
+}
+
+events.addRelay = async function(){
+  
+}
+
 events.signEvent = async function(event){
   let event = {
     kind: 10101,
@@ -43,4 +74,4 @@ events.publish = async function (){
 
 }
 
-export default events
+export default Events

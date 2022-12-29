@@ -4,10 +4,17 @@
 </template>
 
 <script>
+import { useMeta } from 'vue-meta'
 
 export default {
   name: 'App',
-  components: {}
+  components: {},
+  setup () {
+    useMeta({
+      title: 'nostr.watch registry & monitor',
+      htmlAttrs: { lang: 'en', amp: true }
+    })
+  }
 }
 </script>
 

@@ -34,7 +34,6 @@
         >
   <!--       <l-popup>
           {{ relay }}
-          meopw
         </l-popup> -->
       </l-circle-marker>
     </l-map>
@@ -49,6 +48,7 @@
 <script>
 import "leaflet/dist/leaflet.css"
 import { LMap, LTileLayer, LCircleMarker } from "@vue-leaflet/vue-leaflet"
+import { setupStore } from '@/store'
 
 export default {
   components: {
@@ -62,6 +62,15 @@ export default {
       center: [40.41322, -1.219482],
       expanded: false,
     };
+  },
+  setup(){
+    return { 
+      store : setupStore()
+    }
+  },
+  mounted() {
+    this.result = this.store.relays.getResults  
+    this.geo = this.store.relays.geo
   },
   methods: {
     mapHeight(){
@@ -97,23 +106,8 @@ export default {
         this.$refs.map.leafletObject.invalidateSize()
     }
   },
-  async mounted() {
-    
-  },
-  props: {
-    geo: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    result: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  
+  props: {},
 };
 
 

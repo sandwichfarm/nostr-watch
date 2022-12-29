@@ -1,28 +1,28 @@
 <template>
-  <th class="table-column status-indicator">
+  <th class="table-Column status-indicator">
     
   </th>
-  <th class="table-column relay">
+  <th class="table-Column relay">
     
   </th>
-  <th class="table-column verified">
+  <th class="table-Column verified">
     <span class="verified-shape-wrapper">
       <span class="shape verified"></span>
     </span>
   </th>
-  <th class="table-column location" v-tooltip:top.tooltip="Ping">
+  <th class="table-Column location" v-tooltip:top.tooltip="Ping">
     🌎
   </th>
-  <th class="table-column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
+  <th class="table-Column latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
     ⌛️
   </th>
-  <th class="table-column connect" v-tooltip:top.tooltip="'Relay connection status'">
+  <th class="table-Column connect" v-tooltip:top.tooltip="'Relay connection status'">
     🔌
   </th>
-  <th class="table-column read" v-tooltip:top.tooltip="'Relay read status'">
+  <th class="table-Column read" v-tooltip:top.tooltip="'Relay read status'">
     👁️‍🗨️
   </th>
-  <th class="table-column write" v-tooltip:top.tooltip="'Relay write status'">
+  <th class="table-Column write" v-tooltip:top.tooltip="'Relay write status'">
     ✏️
   </th>
 </template>

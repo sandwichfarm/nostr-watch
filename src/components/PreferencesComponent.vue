@@ -2,24 +2,24 @@
   <section id="preferences-toggle">
     <button @click="toggle">⚙️</button>
     <section id="preferences" :class="{active:isActive}">
-      <span><input type="checkbox" id="checkbox" v-model="preferences.refresh" /><label for="">Refresh Automatically</label></span>
-      <span v-if="preferences.refresh">
+      <span><input type="checkbox" id="checkbox" v-model="store.prefs.refresh" /><label for="">Refresh Automatically</label></span>
+      <span v-if="store.prefs.refresh">
         Refresh Every
         <ul>
           <li>
-            <input type="radio" id="1w" :value="1000*60*60*24*7" v-model="preferences.cacheExpiration" />
+            <input type="radio" id="1w" :value="1000*60*60*24*7" v-model="store.prefs.duration" />
             <label for="1w">1 Week</label>
           </li>
           <li>
-            <input type="radio" id="1d" :value="1000*60*60*24" v-model="preferences.cacheExpiration" />
+            <input type="radio" id="1d" :value="1000*60*60*24" v-model="store.prefs.duration" />
             <label for="1d">1 day</label>
           </li>
           <li>
-            <input type="radio" id="30m" :value="1000*60*30" v-model="preferences.cacheExpiration" />
+            <input type="radio" id="30m" :value="1000*60*30" v-model="store.prefs.duration" />
             <label for="30m">30 minutes</label>
           </li>
           <li>
-            <input type="radio" id="10m" :value="1000*60*10" v-model="preferences.cacheExpiration" />
+            <input type="radio" id="10m" :value="1000*60*10" v-model="store.prefs.duration" />
             <label for="10m">10 minutes</label>
           </li>
         </ul>        
@@ -29,6 +29,55 @@
     
   </section>
 </template>
+
+<script>
+import { defineComponent } from 'vue'
+import RelaysLib from '../shared/relays-lib.js'
+import { store } from '@/store'
+
+
+const localMethods = {
+  toggle() {
+     this.isActive = !this.isActive;
+  },
+  clearData(){
+    this.store.relays.clearResults()
+  }
+}
+
+export default defineComponent({
+  name: 'PreferencesComponent',
+  components: {},
+  setup(){
+    return { 
+      store : {
+        relays: store.useRelaysStore(),
+        prefs: store.usePrefsStore() 
+      }
+    }
+  },
+  mounted(){
+    // this.preferences = this
+  },
+  updated(){
+    // this.setCache('preferences')
+  },
+  computed: {},
+  methods: Object.assign(localMethods, RelaysLib),
+  props: {},
+  data() {
+    return {
+      storage: null,
+      refresh: true,
+      preferences: {
+        refresh: true,
+        cacheExpiration: 30*60*1000
+      },
+      isActive: false,
+    }
+  },
+})
+</script>
 
 <style scoped>
 section#preferences {
@@ -71,58 +120,3 @@ button {
   border: none; 
 }
 </style>
-
-<script>
-import { defineComponent } from 'vue'
-import { useStorage } from "vue3-storage";
-
-import RelaysLib from '../lib/relays-lib.js'
-
-const localMethods = {
-  toggle() {
-     this.isActive = !this.isActive;
-  },
-  clearData(){
-    this.relays.forEach( relay => {
-      // console.log('clearing', relay)
-      this.removeCache(`${relay}`)
-      this.removeCache(`${relay}_inbox`)
-    })
-  }
-}
-
-export default defineComponent({
-  name: 'PreferencesComponent',
-  components: {},
-  mounted(){
-
-    this.storage = useStorage()
-    this.preferences = this.getCache('preferences') || this.preferences
-  },
-  updated(){
-    this.setCache('preferences')
-  },
-  computed: {},
-  methods: Object.assign(localMethods, RelaysLib),
-  props: {
-    relays: {
-      type: Array,
-      default(){
-        return []
-      }
-    }
-  },
-  data() {
-    return {
-      storage: null,
-      refresh: true,
-      preferences: {
-        refresh: true,
-        cacheExpiration: 30*60*1000
-      },
-      isActive: false,
-    }
-  },
-})
-</script>
-

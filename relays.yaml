@@ -59,6 +59,7 @@ relays:
   - wss://nostr-relay.nonce.academy
   - wss://nostr.rewardsbunny.com
   - wss://nostr.slothy.win
+  - wss://nostr-verif.slothy.win
   - wss://nostr.coinos.io
   - wss://relay.nostropolis.xyz/websocket
   - wss://lv01.tater.ninja

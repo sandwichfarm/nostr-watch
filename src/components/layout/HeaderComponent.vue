@@ -16,7 +16,13 @@
           </div>
           <div class="hidden sm:ml-6 sm:block">
               <div class="flex space-x-4">
-              <a v-for="item in navigation" :key="item.name" :href="item.href" :class="[item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" :aria-current="item.current ? 'page' : undefined">{{ item.name }}</a>
+              <a v-for="item in navigation" 
+                :key="item.name" 
+                :href="item.href" 
+                :class="[item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" 
+                :aria-current="item.current ? 'page' : undefined">
+                  {{ item.name }}
+              </a>
               </div>
           </div>
           </div>
@@ -93,9 +99,10 @@ import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 <script>
 import { defineComponent } from 'vue'
-import PreferencesComponent from '../components/PreferencesComponent.vue'
-import AuthComponent from '../components/AuthComponent.vue'
+import PreferencesComponent from '../PreferencesComponent.vue'
+import AuthComponent from '../AuthComponent.vue'
 import { items as navigation } from '@/data/nav-main.yaml'
+import { setupStore } from '@/store'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
@@ -104,6 +111,11 @@ export default defineComponent({
     PreferencesComponent,
     AuthComponent
   },
-  props: {}
+  props: {},
+  setup(){
+    return { 
+      store : setupStore()
+    }
+  },
 });
 </script>

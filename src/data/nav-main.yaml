@@ -1,0 +1,7 @@
+items:
+  - name: Relays
+    href: '/'
+  - name: About
+    href: '/about'
+  - name: Git
+    href: 'https://github.com/dskvr/nostr-watch'

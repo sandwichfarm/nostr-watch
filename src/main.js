@@ -9,10 +9,12 @@ import directives from "./directives/"
 import {Tabs, Tab} from 'vue3-tabs-component';
 import { plugin as storePlugin } from './store'
 import { createMetaManager } from 'vue-meta'
+// import VueIdentifyNetwork from 'vue-identify-network';
 
 const app = createApp(App)
   .use(router)
   .use(storePlugin)
+  // .use(VueIdentifyNetwork)
   .use(createMetaManager())
   // .use(Vue3Storage, { namespace: "nostrwatch_" })
   .component('tabs', Tabs)

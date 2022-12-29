@@ -11,8 +11,6 @@
 
   <div id="wrapper">
 
-    <HeaderComponent :relays="relays" />
-
     <div id="relay-wrapper">
 
       <Row container :gutter="12">
@@ -126,7 +124,6 @@ import { defineComponent} from 'vue'
 import { useStorage } from "vue3-storage";
 
 import LeafletSingleComponent from '../components/LeafletSingleComponent.vue'
-import HeaderComponent from '../components/HeaderComponent.vue'
 // import NavComponent from '../components/NavComponent.vue'
 // import RefreshComponent from '../components/RefreshComponent.vue'
 
@@ -187,7 +184,6 @@ export default defineComponent({
     Column,
     LeafletSingleComponent,
     SafeMail,
-    HeaderComponent,
     // RefreshComponent,
   },
 

@@ -1,32 +1,21 @@
 <template>
-  <!-- <NavComponent /> -->
-  <LeafletComponent />
+  <metainfo>
+    <template v-slot:title="{ content }">{{ content }}</template>
+  </metainfo>
 
-  <div id="wrapper">
+  <RelayControl />
 
-    <metainfo>
-      <template v-slot:title="{ content }">{{ content }}</template>
-    </metainfo>
-    
-    <HeaderComponent />
-    
-    <Row container :gutter="12">
-      <Column :xs="12" :md="12" :lg="12" class="list">
-        <span>Group By:</span>
-        <tabs :options="{ useUrlFragment: false }" @clicked="tabClicked" @changed="tabChanged" nav-item-class="nav-item">
-            <tab name="Availability">
-              <GroupByAvailability />
-            </tab>
-            <tab name="None">
-              <GroupByNone />
-            </tab>
-        </tabs>
-      </Column>
-    </Row>
+  <LeafletComponent 
+    v-bind:relaysProp="filteredRelays" />
+
+  <h1 class="text-3xl capitalize mt-6 mb-3 align-left">{{ active }} Relays</h1>
+
+  <div id="wrapper">  
+    <ListClearnet
+    v-bind:relaysProp="filteredRelays" />
     
     <div id="footer">
-      <RefreshComponent />
-
+      
       <span class="credit">
         <!-- <a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>,  -->
         built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
@@ -38,22 +27,21 @@
 
 import { defineComponent } from 'vue'
 
-import { Row, Column } from 'vue-grid-responsive';
+// import { Row, Column } from 'vue-grid-responsive';
 
 import RelaysLib from '../shared/relays-lib.js'
 
-import HeaderComponent from '../components/HeaderComponent.vue'
-import LeafletComponent from '../components/LeafletComponent.vue'
-import RefreshComponent from '../components/RefreshComponent.vue'
-
+// import HeaderComponent from '../components/HeaderComponent.vue'
+import LeafletComponent from '@/components/maps/LeafletComponent.vue'
+import RelayControl from '@/components/relays/RelayControl.vue'
 
 import { relays } from '../../relays.yaml'
 import { geo } from '../../cache/geo.yaml'
 
 import { setupStore } from '@/store'
 
-import GroupByNone from '../components/GroupByNone.vue'
-import GroupByAvailability from '../components/GroupByAvailability.vue'
+import ListClearnet from '@/components/relays/ListClearnet.vue'
+// import GroupByAvailability from '../components/GroupByAvailability.vue'
 
 import { useMeta } from 'vue-meta'
 
@@ -61,13 +49,13 @@ export default defineComponent({
   name: 'HomePage',
 
   components: {
-    Row,
-    Column,
+    // Row,
+    // Column,
     LeafletComponent,
-    RefreshComponent,
-    GroupByAvailability,
-    GroupByNone,
-    HeaderComponent
+    RelayControl,
+    // GroupByAvailability,
+    ListClearnet
+    // HeaderComponent
   },
 
   setup(){
@@ -85,6 +73,7 @@ export default defineComponent({
     return {
       relays: [],
       result: {},
+      filteredRelays: [],
       messages: {},
       connections: {},
       alerts: {},
@@ -93,6 +82,7 @@ export default defineComponent({
       count: 0,
       storage: null,
       geo,
+      active: ''
     }
   },
 
@@ -107,12 +97,36 @@ export default defineComponent({
     this.lastUpdate = this.store.relays.lastUpdate
     this.preferences = this.store.prefs.get
 
+    this.loadPage(this.store.layout.getActive('relays'))
+
+    this.store.layout.$subscribe( (mutation) => {
+      if(mutation.events.key == 'relays')
+        this.loadPage(mutation.events.newValue)
+    })
+
     this.invalidate()
   },
 
   computed: {},
 
-  methods: RelaysLib
+  methods: Object.assign(RelaysLib, {
+    loadPage: function(section){
+      const active = this.active = section
+      console.log(`${active} is active`)
+      if( 'all' == active )
+        this.filteredRelays = this.store.relays.getAll
+      if( 'public' == active )
+        this.filteredRelays = this.store.relays.getByAggregate('public')
+      if( 'restricted' == active )
+        this.filteredRelays = this.store.relays.getByAggregate('restricted')
+      if( 'offline' == active )
+        this.filteredRelays = this.store.relays.getByAggregate('offline')
+      // if( 'onion' == active )
+        // this.filteredRelays = this.store.relays.getOnion
+      console.log('meow', this.active, this.filteredRelays.length)
+      this.store.relays.setStat(this.active, this.filteredRelays.length)
+    }
+  }),
 
 })
 </script>

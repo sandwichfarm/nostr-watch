@@ -48,46 +48,6 @@ export default {
     //   return this.storage.removeStorageSync(key)
     // },
 
-    sort(relays) {
-      let unsorted,
-          sorted
-
-      if(!relays && !this.relays)
-        return []
-
-      unsorted = relays || this.relays.map(x=>x)
-
-      if (unsorted.length) {
-        sorted = unsorted
-          .sort((relay1, relay2) => {
-            return this.store.relays.results?.[relay1]?.latency.final - this.store.relays.results?.[relay2]?.latency.final
-          })
-          .sort((relay1, relay2) => {
-            let a = this.store.relays.results?.[relay1]?.latency.final ,
-                b = this.store.relays.results?.[relay2]?.latency.final 
-            return (b != null) - (a != null) || a - b;
-          })
-          .sort((relay1, relay2) => {
-            let x = this.store.relays.results?.[relay1]?.check?.connect,
-                y = this.store.relays.results?.[relay2]?.check?.connect
-            return (x === y)? 0 : x? -1 : 1;
-          })
-          // .sort((relay1, relay2) => {
-          //   let x = this.store.relays.results?.[relay1]?.check?.read,
-          //       y = this.store.relays.results?.[relay2]?.check?.read
-          //   return (x === y)? 0 : x? -1 : 1;
-          // })
-          // .sort((relay1, relay2) => {
-          //   let x = this.store.relays.results?.[relay1]?.check?.write,
-          //       y = this.store.relays.results?.[relay2]?.check?.write
-          //   return (x === y)? 0 : x? -1 : 1;
-          // });
-        return sorted
-      }
-
-      return []
-    },
-
     cleanUrl: function(relay){
       return relay.replace('wss://', '')
     },

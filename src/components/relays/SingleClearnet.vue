@@ -1,4 +1,8 @@
 <template>
+  <!-- <td>
+    <div v-if="selectedRelays.includes(relay)" class="absolute inset-y-0 left-0 w-0.5 bg-indigo-600"></div>
+    <input type="checkbox" class="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 sm:left-6" :value="relay" v-model="selectedRelays" />
+  </td> -->
   <td class="status-indicator" :key="generateKey(relay, 'aggregate')">
     <span :class="result?.aggregate" class="aggregate indicator">
         <span></span>
@@ -49,7 +53,7 @@ import { defineComponent} from 'vue'
 // import { InspectorResult } from 'nostr-relay-inspector'
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
-import { store } from '../store'
+import { store } from '@/store'
 
 export default defineComponent({
   name: 'RelaySingleComponent',
@@ -60,6 +64,12 @@ export default defineComponent({
       type: String,
       default(){
         return ""
+      }
+    },
+    selectedRelays:{
+      type: Array,
+      default(){
+        return []
       }
     }
   },
@@ -233,4 +243,5 @@ td.verified span {
     padding-top:2px;
     padding-bottom:2px;
   }
+
 </style>

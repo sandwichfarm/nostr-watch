@@ -6,7 +6,7 @@ export const useRelaysStore = defineStore('relays', {
     results: new Object(),
     geo: new Object(),
     lastUpdate: null,
-    groups: {}
+    count: {}
   }),
   getters: {
     getAll: (state) => state.urls.map((x)=>x), //clone it
@@ -22,6 +22,9 @@ export const useRelaysStore = defineStore('relays', {
     getGeo: (state) => (relayUrl) => state.geo[relayUrl],
 
     getLastUpdate: (state) => state.lastUpdate,
+
+    getCount: (state) => (type) => state.count[type],
+    getCounts: (state) => state.count
   },
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
@@ -35,5 +38,9 @@ export const useRelaysStore = defineStore('relays', {
     setGeo(geo){ this.geo = geo },
 
     updateNow(){ this.lastUpdate = Date.now() },
+
+    setStat(type, value){ 
+      this.count[type] = value 
+    }
   },
 })

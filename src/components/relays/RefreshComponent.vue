@@ -1,13 +1,11 @@
 <template>
-<section id="refresh">
-  <span>
+  <span class="text-white text-sm mr-2 ml-2">
     Updated {{ sinceLast }} ago 
-    <button :disabled='disabled' @click="refreshNow()">Refresh{{ relay ? ` ${relay}` : "" }} Now</button>
   </span>
-  <span v-if="store.prefs.refresh"> 
-    Next refresh in: {{ untilNext }}
+  <span class="text-white text-sm mr-2" v-if="store.prefs.refresh"> 
+    - Next refresh in: {{ untilNext }}
   </span>
-</section>
+  <button class="mr-3 mt-1.5 text-xs rounded border-b-3 border-slate-700 bg-slate-500 py-0.5 px-3 font-bold text-white hover:border-slate-500 hover:bg-slate-400" :disabled='disabled' @click="refreshNow()">Refresh{{ relay ? ` ${relay}` : "" }} Now</button>
 </template>
 
 <style scoped>
@@ -16,9 +14,9 @@
 
 <script>
 import { defineComponent  } from 'vue'
-import RelaysLib from '../shared/relays-lib.js'
+import RelaysLib from '@/shared/relays-lib.js'
 // import { useStorage } from "vue3-storage";
-import { store } from '../store'
+import { store } from '@/store'
 
 const localMethods = {
     timeUntilRefresh(){

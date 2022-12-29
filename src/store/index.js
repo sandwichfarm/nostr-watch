@@ -3,6 +3,8 @@ import { createPersistedStatePlugin } from 'pinia-plugin-persistedstate-2'
 
 import { useRelaysStore } from './relays.js'
 import { usePrefsStore } from './prefs.js'
+import { useLayoutStore } from './layout.js'
+import { useUserStore } from './user.js'
 
 export const plugin = (app) => {
   const pinia = createPinia()
@@ -16,7 +18,9 @@ export const plugin = (app) => {
 export const setupStore = function(){
   return {
     relays: useRelaysStore(),
-    prefs: usePrefsStore()
+    prefs: usePrefsStore(),
+    layout: useLayoutStore(),
+    user: useUserStore()
   }
 }
 

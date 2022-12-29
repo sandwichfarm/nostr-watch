@@ -1,5 +1,5 @@
 <template>
-  <div :class="mapToggleClass()">
+  <div :class="mapToggleClass()" style="margin-bottom:-30px">
     <l-map
       ref="map"
       v-model:zoom="zoom"
@@ -7,6 +7,10 @@
       :minZoom="zoom"
       :maxZoom="zoom"
       :zoomControl="false"
+      :dragging="false"
+      :touchZoom="false"
+      :scrollWheelZoom="false"
+      :doubleClickZoom="false"
       >
 
       <l-tile-layer
@@ -23,8 +27,8 @@
       </l-marker> -->
 
       <l-circle-marker
-        v-for="([relay, entry]) in Object.entries(geo)"
-        :lat-lng="getLatLng(entry)"
+        v-for="relay in getRelaysWithGeo()"
+        :lat-lng="getLatLng(relay)"
         :key="relay"
         :radius="2"
         :weight="4"
@@ -40,7 +44,8 @@
     <button @click="toggleMap">
       <span class="expand">expand</span> 
       <span class="collapse">collapse</span>
-    map</button>
+      map
+    </button>
   </div>
   
 </template>
@@ -69,15 +74,30 @@ export default {
     }
   },
   mounted() {
+    this.relays = this.relaysProp
     this.result = this.store.relays.getResults  
     this.geo = this.store.relays.geo
+    console.log('relays from leaflet', this.relays.length)
+  },
+  updated(){
+    this.relays = this.relaysProp
+    console.log('relays from leaflet', this.relays.length)
+  },
+  props: {
+    relaysProp: {
+      type: Array,
+      default(){
+        return []
+      }
+    },
   },
   methods: {
     mapHeight(){
       return this.expanded ? "500px" : "250px"
     },
-    getLatLng(geo){
-      return [geo.lat, geo.lon]
+    getLatLng(relay){
+      // console.log('geo', relay, [this.geo.lat, this.geo.lon])
+      return [this.geo[relay].lat, this.geo[relay].lon]
     },
     getCircleColor(relay){
 
@@ -91,6 +111,9 @@ export default {
         return '#FF0000'
       }
       return 'transparent'
+    },
+    getRelaysWithGeo(){
+      return this.relaysProp.filter( relay => this.geo?.[relay] )
     },
     toggleMap(){
       this.expanded = !this.expanded
@@ -107,13 +130,27 @@ export default {
     }
   },
   
-  props: {},
+  
 };
 
 
 </script>
 
+<style>
+/* :root {
+    --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+    .leaflet-tile {
+        filter:var(--map-tiles-filter, none);
+	}
+} */
+</style>
+
 <style scoped>
+
+
 .leaflet-container {
   position:relative;
   z-index:900;

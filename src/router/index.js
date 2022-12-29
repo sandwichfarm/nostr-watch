@@ -3,22 +3,19 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../pages/HomePage.vue'
 // import ByStatus from '../pages/ByStatus.vue'
 import SingleRelay from '../pages/SingleRelay.vue'
+import TailwindTest from '../pages/TailwindTest.vue'
 
 const routes = [
     {
+        path: '/tw',
+        component: TailwindTest
+    },
+    {
         path: '/relay/:relayUrl(.*)',
-        // name: 'nostr.watch - :relayUrl',
         component: SingleRelay
     },
-    // {
-    //     path: '/availability',
-    //     // name: 'nostr.watch',
-    //     component: ByStatus
-    // },
-    //  Added our new route file named profile.vue
     {
         path: '/',
-        // name: 'nostr.watch',
         component: HomePage
     },
     

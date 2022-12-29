@@ -1,7 +1,7 @@
 @import "./components/tooltip.scss";
-// @tailwind base;
-// @tailwind components;
-// @tailwind utilities;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 td ul { padding:0; margin:0; list-style: none; }
 td ul li { list-style: none; }

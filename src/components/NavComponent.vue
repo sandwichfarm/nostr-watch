@@ -42,10 +42,14 @@ nav.menu a:hover {
 }
 
 </style>
+
 <script>
 import { defineComponent } from 'vue'
 import PreferencesComponent from '../components/PreferencesComponent.vue'
 import AuthComponent from '../components/AuthComponent.vue'
+
+
+
 
 export default defineComponent({
   title: "nostr.watch registry & network status",

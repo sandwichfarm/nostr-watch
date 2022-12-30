@@ -28,7 +28,7 @@
                     Browse Relays
                     </h3>
 
-                    <a v-for="(item, index) in sidebar.filter( x => x.group=='relays')"
+                    <a v-for="(item, index) in store.layout.getSidebarGroup('relays')"
                     :href="item.href" :key="index" class="flex items-center px-6 py-2.5 text-gray-500 hover:text-orange-600 group">
                     <component
                         :is="item.icon"
@@ -41,7 +41,7 @@
                     Tools
                     </h3>
 
-                    <a v-for="(item, index) in sidebar.filter( x => x.group=='tools')"
+                    <a v-for="(item, index) in store.layout.getSidebarGroup('tools')"
                     :href="item.href" :key="index" class="flex items-center px-6 py-2.5 text-gray-500 hover:text-orange-600 group">
                     <component
                         :is="item.icon"
@@ -68,10 +68,10 @@
     <div class="hidden w-64 bg-gray-50 border-slate-200 md:block items-start drop-shadow-lg">
         <h3 class="py-3 uppercase text-xs text-gray-100 bg-gray-800 bg-opacity-80  text-left pl-3">Browse Relays</h3>
         <nav class="space-y-1" aria-label="Sidebar">
-            <a v-for="item in sidebar.filter( x => x.group=='relays')" 
+            <a v-for="item in store.layout.getSidebarGroup('relays')" 
                 :key="item.name" 
                 href="#" 
-                @click="setActive('browse', item.slug)"
+                @click="setActive('relays', item.slug)"
                 :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium rounded-md']" 
                 :aria-current="isActive(item) ? 'page' : undefined">
             <span class="truncate">{{ item.name }}</span>
@@ -81,7 +81,7 @@
 
         <h3 class="py-3 uppercase text-xs text-gray-100 bg-gray-800 bg-opacity-80  text-left pl-3">Tools</h3>
         <nav class="space-y-1" aria-label="Sidebar">
-            <a v-for="item in sidebar.filter( x => x.group=='tools')" 
+            <a v-for="item in store.layout.getSidebarGroup('tools')" 
                 :key="item.name" 
                 href="#" 
                 @click="setActive('tools', item.slug)"
@@ -110,9 +110,9 @@ export default defineComponent({
   props: {},
   data(){
     return {
-        sidebar: items,
         active: null,
-        groups: new Set(items.map( item => item.slug ))
+        groups: new Set(items.map( item => item.slug )),
+        sidebar: []
     }
   },
   setup(){
@@ -121,44 +121,52 @@ export default defineComponent({
     }
   },
   updated(){
-    
+
   },
   mounted(){
-    console.log(this.store)
-    console.log(this.store.layout.getActive('relays'))
     this.active = this.store.layout.getActive('relays')
+    this.store.layout.setSidebarItems(items)
+    this.sidebar = this.store.layout.getSidebar
 
-    this.sidebar.map(item => {
+    this.sidebar['relays'].map(item => {
         item.count = this.store.relays.getCount(item.slug)
         console.log('mapping', item.slug, this.store.relays.getCount(item.slug))
         return item
     })
 
-    this.store.relays.$subscribe( (mutation) => {
-      console.log('relays mutation', mutation)
-      if(this.groups.has(mutation.events.key)) {
-        this.sidebar = this.sidebar.map( item => {
-            if(item.slug == mutation.events.key) {
-                item.count = mutation.events.newValue
-                console.log('ok', item.count)
-            }
-            return item
-        })  
-      }
-    })
+    // this.store.relays.$subscribe( (mutation) => {
+    // //   console.log('relays mutation', mutation)
+    //   if(this.groups.has(mutation.events.key)) {
+    //     this.sidebar = this.sidebar.map( item => {
+    //         if(item.slug == mutation.events.key) {
+    //             item.count = mutation.events.newValue
+    //             console.log('ok', item.count)
+    //         }
+    //         return item
+    //     })  
+    //   }
+    // })
   },
   methods: {
     setActive(section, slug){
-        this.store.layout.setActive('relays', slug)
         this.active = slug
+        this.store.layout.setActive(section, slug)
     },
     findActive(){
         const active = this.store.layout.getActive('relays')
         return Object.entries(this.sidebar).filter( item => item[1].slug == active)
     },
-    isActive(item){
-        return item.slug==this.active
+
+  },
+  computed: {
+    isActive(){
+        return (item) => item.slug==this.active
     }
-  }
+  },
+//   watch: {
+//     active(n){
+//         console.log('ok', n)
+//     }
+//   }
 });
 </script>

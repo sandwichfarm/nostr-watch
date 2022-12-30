@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-// import Vue3Storage from "vue3-storage";
+import Vue3Storage from "vue3-storage";
 
 import router from './router'
 import "./styles/main.scss"
@@ -16,7 +16,7 @@ const app = createApp(App)
   .use(storePlugin)
   // .use(VueIdentifyNetwork)
   .use(createMetaManager())
-  // .use(Vue3Storage, { namespace: "nostrwatch_" })
+  .use(Vue3Storage, { namespace: "nw_result_" })
   .component('tabs', Tabs)
   .component('tab', Tab)
 

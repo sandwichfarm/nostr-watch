@@ -1,4 +1,5 @@
 <template>
+  {{ relays }}
    <div class="pt-5 px-4 sm:px-6 lg:px-8">
       <div class="sm:flex sm:items-center">
       <div class="sm:flex-auto">
@@ -18,19 +19,19 @@
       <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
           <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
           <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <div v-if="selectedRelays.length > 0" class="absolute top-0 left-12 flex h-12 items-center space-x-3 bg-gray-50 sm:left-16">
+              <!-- <div v-if="selectedRelays.length > 0" class="absolute top-0 left-12 flex h-12 items-center space-x-3 bg-gray-50 sm:left-16">
               <button type="button" class="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-30">Make Yours</button>
-              </div>
+              </div> -->
               <table class="min-w-full table-auto divide-y divide-gray-300">
               <thead class="bg-gray-50">
                   <tr>
                     <th scope="col" class="status-indicator text-left">
-                      <input type="checkbox" 
+                      <!-- <input type="checkbox" 
                       class="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 sm:left-6" 
                       :checked="indeterminate || selectedRelays.length === relays.length" 
                       :indeterminate="indeterminate" 
                       @change="selectedRelays = $event.target.checked ? relays : []"
-                        />
+                        /> -->
                     </th>
                     <th scope="col" class="relay">
                       
@@ -61,7 +62,7 @@
                   </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white">
-                  <tr v-for="(relay, index) in sort()" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
+                  <tr v-for="(relay, index) in this.relays" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
                     <SingleClearnet 
                       :relay="relay"
                       v-bind:selectedRelays="selectedRelays" />
@@ -83,25 +84,23 @@
   import { setupStore } from '@/store'
   
   const localMethods = {
-      // getHeadingClass(){
-      //   return {
-      //     online: this.section != "offline",
-      //     public: this.section == "public",
-      //     offline: this.section == "offline",
-      //     restricted: this.section == "restricted"
-      //   }
-      // },
-      sort(relays) {
-        let unsorted,
-            sorted
-
-        if(!relays && !this.relays)
-          return []
-
-        unsorted = relays || this.relays.map(x=>x)
-
-        if (unsorted.length) {
-          sorted = unsorted
+      filterRelays: function(){
+        const active = this.activeNavItem
+        console.log(`${active} is active`)
+        if( 'public' == active )
+          this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'public')
+        if( 'restricted' == active )
+          this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted')
+        if( 'offline' == active )
+          this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'offline')
+        // if( 'onion' == active )
+          // this.filteredRelays = this.store.relays.getOnion
+        // console.log('meow', this.activeNavItem, this.filteredRelays.length)
+        // this.store.relays.setStat(this.activeNavItem, this.filteredRelays.length)
+      },
+      sortRelays: function() {
+        if (this.relays.length) {
+          this.relays
             .sort((relay1, relay2) => {
               return this.store.relays.results?.[relay1]?.latency.final - this.store.relays.results?.[relay2]?.latency.final
             })
@@ -125,14 +124,14 @@
             //       y = this.store.relays.results?.[relay2]?.check?.write
             //   return (x === y)? 0 : x? -1 : 1;
             // });
-          return sorted
+          // return this.relays
         }
 
         return []
       },
       getResultClass (relay, index) {
         return {
-          loaded: this.store.relays.getResult(relay)?.state == 'complete',
+          loaded: this.results[relay]?.state == 'complete',
           even: index % 2,
         }
       },
@@ -172,18 +171,22 @@
       SingleClearnet,
     },
     setup(props){
-      const {relaysProp: relays} = toRefs(props)
+      const {resultsProp: results} = toRefs(props)
       return { 
         store : setupStore(),
-        relays: relays
+        results: results
       }
     },
     mounted(){
       console.log('wahfdsfdsfdsjt?', this.relays)
+      this.filterRelays()
+      this.sortRelays()
       // this.relays = this.relaysProp
     },
     updated(){
       // this.relays = this.relaysProp
+      this.filterRelays()
+      this.sortRelays()
       console.log('from component', this.relays.length)
     },
     props: {
@@ -202,8 +205,8 @@
     },
     data() {
       return {
-        showModal: false,
         selectedRelays: [],
+        relays: []
       }
     },
     

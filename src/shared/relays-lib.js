@@ -9,27 +9,21 @@ export default {
     if(!this.isExpired() && !force) 
       return
 
-    this.store.relays.updateNow()
-
     // console.log('invalidate', 'total relays', this.relays.length)
     
     if(single) {
       await this.check(single) 
-      // this.relays[single] = this.getCache(single)
-      // this.messages[single] = this.getCache(`${single}_inbox`) 
+
     } 
     else {
-      // console.log('total relays', this.relays.length)
-      // console.log(this.relays.length)
       for(let index = 0; index < this.relays.length; index++) {
         let relay = this.relays[index]
-        // console.log('invalidating', relay)
         await this.delay(20).then( () => { 
           this.check(relay)
-            .then(() => {
-              // this.store.relays.setResult(relay)
-              // this.store.relays.results[relay] = this.getCache(relay)
-              // this.messages[relay] = this.getCache(`${relay}_inbox`) 
+            .then((result) => {
+              this.results[result.uri] = result
+              this.setCache(result)
+              this.store.relays.updateNow()
             }).catch( err => console.log(err))
         }).catch(err => console.log(err))
       }
@@ -40,13 +34,17 @@ export default {
               || Date.now() - this.store.relays.lastUpdate > this.store.prefs.duration
     },
 
-    // getCache: function(key){
-    //   return this.storage.getStorageSync(key)
-    // },
+    setCache: function(result){
+      this.$storage.setStorageSync(result.uri, result);      
+    },
 
-    // removeCache: function(key){
-    //   return this.storage.removeStorageSync(key)
-    // },
+    getCache: function(key){
+      return this.$storage.getStorageSync(key)
+    },
+
+    removeCache: function(key){
+      return this.$storage.removeStorageSync(key)
+    },
 
     cleanUrl: function(relay){
       return relay.replace('wss://', '')
@@ -70,12 +68,7 @@ export default {
         socket
           .on('complete', (instance) => {
             instance.result.aggregate = this.getAggregate(instance.result)
-            this.store.relays.setResult(instance.result)
-            // this.setCache('relay', relay)
-            // this.setCache('messages', relay,  instance.inbox)
-            this.store.relays.updateNow()
             instance.relay.close()
-            
             resolve(instance.result)
           })
           .on('notice', (notice) => {
@@ -96,58 +89,10 @@ export default {
             reject(this.store.relays.results[relay])
           })
           .run()
-
-        
       })
     },
 
-    // setCache: function(type, key, data){
-      
-    //   const now = Date.now()
-
-    //   let store, success, error, instance
-
-    //   switch(type){
-    //     case 'relay':
-    //       if(data)
-    //         data.aggregate = this.getAggregate(key)
-    //       store = {
-    //         key: key,
-    //         data: data || this.store.relays.results[key],
-    //         // expire: Date.now()+1000*60*60*24*180,
-    //       }
-    //       success = () => {
-    //         if(data)
-    //           this.store.relays.results[key] = data
-    //       }
-    //       break;
-    //     case 'messages':
-    //       store = {
-    //         key: `${key}_inbox`,
-    //         data: data || this.messages[key],
-    //         // expire: Date.now()+1000*60*60*24*180,
-    //       }
-    //       success = () => {
-    //         if(data)
-    //           this.messages[key] = data
-    //       }
-    //       break;
-    //     case 'lastUpdate':
-    //       store = {
-    //         key: "lastUpdate",
-    //         data: now
-    //       }
-    //       success = () => {
-    //         this.lastUpdate = now
-    //       }
-    //       break;
-    //     case 'preferences':
-    //       store = {
-    //         key: "preferences",
-    //         data: this.preferences
-    //       }
-    //       break;
-    //   }
+   
 
     //   if(store)
     //     instance = this.storage.setStorage(store)

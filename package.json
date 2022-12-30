@@ -50,6 +50,7 @@
     "vue3-storage": "0.1.11",
     "vue3-tabs-component": "1.1.2",
     "write-yaml-file": "4.2.0",
+    "xstate": "4.35.1",
     "yaml2json": "1.0.2"
   },
   "devDependencies": {

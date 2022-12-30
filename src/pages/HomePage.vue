@@ -6,16 +6,18 @@
   <RelayControl />
 
   <LeafletComponent 
-    v-bind:relaysProp="filteredRelays" />
+    :relaysProp="filteredRelays" />
 
   <h1 class="text-3xl capitalize mt-6 mb-3 align-left">{{ active }} Relays</h1>
 
   <div id="wrapper">  
+    
     <ListClearnet
-    v-bind:relaysProp="filteredRelays" />
+      :resultsProp="results"
+      :activeNavItemProp="activeNavItem" /> -->
+
     
     <div id="footer">
-      
       <span class="credit">
         <!-- <a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>,  -->
         built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
@@ -23,27 +25,19 @@
   </div>
 </template>
 <script>
-
-
+//vue
 import { defineComponent } from 'vue'
-
-// import { Row, Column } from 'vue-grid-responsive';
-
+import { useMeta } from 'vue-meta'
+import { setupStore } from '@/store'
+//shared methods
 import RelaysLib from '../shared/relays-lib.js'
-
-// import HeaderComponent from '../components/HeaderComponent.vue'
+//components
 import LeafletComponent from '@/components/maps/LeafletComponent.vue'
 import RelayControl from '@/components/relays/RelayControl.vue'
-
+import ListClearnet from '@/components/relays/ListClearnet.vue'
+//data
 import { relays } from '../../relays.yaml'
 import { geo } from '../../cache/geo.yaml'
-
-import { setupStore } from '@/store'
-
-import ListClearnet from '@/components/relays/ListClearnet.vue'
-// import GroupByAvailability from '../components/GroupByAvailability.vue'
-
-import { useMeta } from 'vue-meta'
 
 export default defineComponent({
   name: 'HomePage',
@@ -72,60 +66,67 @@ export default defineComponent({
   data() {
     return {
       relays: [],
-      result: {},
+      results: {},
       filteredRelays: [],
-      messages: {},
-      connections: {},
-      alerts: {},
       timeouts: {},
       intervals: {},
-      count: 0,
-      storage: null,
-      geo,
-      active: ''
+      activeNavItem: '',
+      sidebar:  this.store.layout.getSidebar
     }
   },
 
   updated(){},
 
   async mounted() {
+    
     this.store.relays.setRelays(relays)
     this.store.relays.setGeo(geo)
 
     this.relays = this.store.relays.getAll
-
     this.lastUpdate = this.store.relays.lastUpdate
     this.preferences = this.store.prefs.get
 
-    this.loadPage(this.store.layout.getActive('relays'))
+    this.relays.forEach(relay => {
+      this.results[relay] = this.getCache(relay)
+    })
+
+    this.activeNavItem = this.store.layout.getActive('relays')
 
     this.store.layout.$subscribe( (mutation) => {
       if(mutation.events.key == 'relays')
-        this.loadPage(mutation.events.newValue)
+        this.activeNavItem = mutation.events.newValue
     })
-
+    
     this.invalidate()
   },
 
-  computed: {},
+  computed: {
+    
+  },
 
   methods: Object.assign(RelaysLib, {
-    loadPage: function(section){
-      const active = this.active = section
-      console.log(`${active} is active`)
-      if( 'all' == active )
-        this.filteredRelays = this.store.relays.getAll
-      if( 'public' == active )
-        this.filteredRelays = this.store.relays.getByAggregate('public')
-      if( 'restricted' == active )
-        this.filteredRelays = this.store.relays.getByAggregate('restricted')
-      if( 'offline' == active )
-        this.filteredRelays = this.store.relays.getByAggregate('offline')
-      // if( 'onion' == active )
-        // this.filteredRelays = this.store.relays.getOnion
-      console.log('meow', this.active, this.filteredRelays.length)
-      this.store.relays.setStat(this.active, this.filteredRelays.length)
-    }
+    loadComponent: function(){
+
+    },
+    // relaysGrouped: function(){
+      
+    //   const relaysGrouped = {
+    //     all: this.store.relays.getAll,
+    //     public: this.store.relays.getByAggregate('public'),
+    //     restricted: this.store.relays.getByAggregate('restricted'),
+    //     offline: this.store.relays.getByAggregate('offline')
+    //   }
+
+    //   // this.store.relays.setStat('all', relaysGrouped['all'].length)
+    //   // this.store.relays.setStat('public', relaysGrouped['public'].length)
+    //   // this.store.relays.setStat('restricted', relaysGrouped['restricted'].length)
+    //   // this.store.relays.setStat('offline', relaysGrouped['offline'].length)
+
+    //   console.log('active nav item', this.activeNavItem)
+    //   this.filteredRelays = relaysGrouped[this.activeNavItem]
+
+    //   return this.filteredRelays
+    // }
   }),
 
 })

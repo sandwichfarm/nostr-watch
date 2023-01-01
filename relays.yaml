@@ -1,4 +1,5 @@
 relays:
+  - wss://relay.nostr.vision
   - wss://nostr-3.orba.ca
   - wss://satstacker.cloud
   - wss://freedom-relay.herokuapp.com/ws
@@ -167,3 +168,5 @@ relays:
   - wss://nostr.massmux.com
   - wss://no.contry.xyz
   - wss://relay.nostr.bg
+  - wss://nostr.uselessshit.co
+  - wss://brb.io

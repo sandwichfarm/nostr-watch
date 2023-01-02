@@ -172,3 +172,4 @@ relays:
   - wss://brb.io
   - wss://nostream.gromeul.eu
   - wss://relay.nostr.ro
+  - wss://nostr.developer.li

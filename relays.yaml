@@ -85,7 +85,6 @@ relays:
   - wss://nostr.jiashanlu.synology.me
   - wss://nostr.radixrat.com
   - wss://nostr.shawnyeager.net
-  - wss://nostr.pobblelabs.org
   - wss://relay.dev.kronkltd.net
   - wss://nostr2.namek.link
   - wss://nostr-dev.wellorder.net
@@ -174,3 +173,6 @@ relays:
   - wss://relay.nostr.ro
   - wss://nostr.developer.li
   - wss://nostr.screaminglife.io
+  - wss://deschooling.us
+  - wss://relay-pub.deschooling.us
+  

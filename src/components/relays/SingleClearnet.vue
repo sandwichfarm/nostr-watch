@@ -38,6 +38,15 @@
     <span :class="getResultClass(relay, 'write')"></span>
   </td>
 
+  <td class="fav" :key="generateKey(relay, 'check.write')">
+    <a
+      class=" hover:opacity-100 cursor-pointer" 
+      :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"
+      @click="store.relays.toggleFavorite(relay)">
+      ❤️
+    </a>
+  </td>
+
   <!-- <td class="info">
     <ul v-if="result?.observations && result?.observations.length">
       <li class="observation" v-for="(alert) in result?.observations" :key="generateKey(relay, alert.description)">
@@ -53,7 +62,7 @@ import { defineComponent, toRefs } from 'vue'
 // import { InspectorResult } from 'nostr-relay-inspector'
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
-import { store } from '@/store'
+import { setupStore } from '@/store'
 
 export default defineComponent({
   name: 'RelaySingleComponent',
@@ -82,21 +91,17 @@ export default defineComponent({
   data() {
     return {
       geo: {},
-      showModal: false,
-      
+      showModal: false
     }
   },
   mounted(){
-    // this.result = this.store.relays.results[this.relay]
     this.geo = this.store.relays.geo[this.relay]
+
   },
   setup(props){
     const {resultProp: result} = toRefs(props)
     return { 
-      store : {
-        relays: store.useRelaysStore(),
-        prefs: store.usePrefsStore(),
-      },
+      store : setupStore(),
       result: result
     }
   },

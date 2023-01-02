@@ -65,9 +65,9 @@
                       <th scope="col" class="write" v-tooltip:top.tooltip="'Relay write status'">
                         ✏️
                       </th>
-                    <!-- <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                        <span class="sr-only">Favorite</span>
-                    </th> -->
+                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
+                          <span class="text-xs"> &lt;3 </span>
+                      </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
@@ -154,9 +154,18 @@
     mounted(){
       setTimeout( () => this.relaysUpdate(), 1)
       this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
+      
+      this.store.relays.$subscribe( (mutation) => {
+        console.log('mutation key', mutation.events.key)
+        if(mutation.events.key == 'favorites'){
+          setTimeout( () => this.relaysUpdate(), 100 )
+          console.log('mutated!!')
+        }          
+      })
+      
       this.interval = setInterval( () => {
         if(this.store.relays.isProcessing)
-          this.relaysUpdate()
+        this.relaysUpdate()
       }, 1000 ) //Ugly, but better for reflow
     },
     updated(){

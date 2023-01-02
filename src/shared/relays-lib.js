@@ -157,6 +157,11 @@ export default {
               y = this.results?.[relay2]?.check?.connect
           return (x === y)? 0 : x? -1 : 1;
         })
+        .sort((relay1, relay2) => {
+          let x = this.store.relays.isFavorite(relay1),
+              y = this.store.relays.isFavorite(relay2)
+          return (x === y)? 0 : x? -1 : 1;
+        })
         // .sort((relay1, relay2) => {
         //   let x = this.results?.[relay1]?.check?.read,
         //       y = this.results?.[relay2]?.check?.read

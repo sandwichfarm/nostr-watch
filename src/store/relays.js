@@ -67,8 +67,22 @@ export const useRelaysStore = defineStore('relays', {
       this.finishProcessing()
     },
 
-    setFavorite: (relayUrl) => { 
+    setFavorite(relayUrl){ 
       this.favorites.push(relayUrl)
-    }
+      this.favorites = this.favorites.map( x => x )
+    },
+
+    unsetFavorite(relayUrl){ 
+      this.favorites = this.favorites.filter(item => item !== relayUrl)
+    },
+
+    toggleFavorite(relayUrl){
+      console.log('toggle favorite', relayUrl)
+      if( this.isFavorite(relayUrl) )
+        this.unsetFavorite(relayUrl)
+      else 
+        this.setFavorite(relayUrl)
+      return this.isFavorite(relayUrl)
+    },
   },
 })

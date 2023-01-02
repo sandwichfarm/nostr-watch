@@ -11,9 +11,12 @@
               <XMarkIcon v-else class="block h-6 w-6" aria-hidden="true" />
           </DisclosureButton>
           </div>
+          <span class="block text-center text-slate-50 text-xl">
+            nostr.watch
+            <sup class="relative -top-2" style="font-size: 0.6rem">{{ version }}</sup>
+          </span>
           <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
           <div class="w-32 flex flex-shrink-0 items-center">
-              <span class="block text-center text-slate-50 text-xl">nostr.watch</span>
           </div>
           <div class="hidden sm:ml-6 sm:block">
               <div class="flex space-x-4">
@@ -35,10 +38,10 @@
           <div class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
 
           <!-- Profile dropdown -->
-          <Menu as="div" class="relative ml-3" v-if="isLoggedIn()">
+          <Menu as="div" class="relative ml-3">
             <!-- <Menu as="div" class="relative ml-3"> -->
-              <div>
               <AuthComponent />
+              <div v-if="isLoggedIn()">
               <MenuButton class="flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                   <span class="sr-only">Open user menu</span>
                   <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="" />
@@ -46,12 +49,9 @@
               </div>
               <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
               <MenuItems style="z-index:9000 !important;" class="absolute right-0 z-9000 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <MenuItem v-slot="{ active }">
-                  <a href="#" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Your Profile</a>
-                  </MenuItem>
-                  <MenuItem v-slot="{ active }">
-                  <a href="#" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Settings</a>
-                  </MenuItem>
+                  <span class="block text-ellipsis text-xs tracking-width-full">
+                    <code>{{ store.user.getPublicKey.slice(0, 10) }}...</code>
+                  </span>  
                   <MenuItem v-slot="{ active }">
                   <a href="#" @click="signOut()" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Sign out</a>
                   </MenuItem>
@@ -68,6 +68,7 @@
     </div>
     </DisclosurePanel>
 </Disclosure>
+
 </template>
 <style scoped>
 nav.menu {
@@ -110,6 +111,8 @@ import UserLib from '@/shared/user-lib.js'
 // import PreferencesComponent from '@/components/PreferencesComponent.vue'
 import AuthComponent from '@/components/AuthComponent.vue'
 
+import {version} from '../../../package.json'
+
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'NavComponent',
@@ -118,6 +121,11 @@ export default defineComponent({
     AuthComponent,
     Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems,
     Bars3Icon, XMarkIcon
+  },
+  data: function(){
+    return {
+      version: version
+    }
   },
   props: {},
   setup(){

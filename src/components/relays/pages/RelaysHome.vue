@@ -80,6 +80,14 @@ export default defineComponent({
 
   async mounted() {
 
+    this.$pool
+      .on('open', function(relay){
+        console.log('global pool connected!', relay.url)
+      })
+      .on('error', function(relay){
+        console.log('global pool error!', relay.url)
+      })
+
     console.log('params', )
 
     console.log('active page item', this.activePageItem)

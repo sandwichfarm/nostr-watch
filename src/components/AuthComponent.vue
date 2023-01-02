@@ -1,5 +1,5 @@
 <template>
-  <a v-if="signer" @click="auth" href="#">Login</a>
+  <a class="text-sm text-white hover:text-white" v-if="signer && !isLoggedIn()" @click="auth" href="#">Login</a>
 </template>
 
 <script>
@@ -34,8 +34,11 @@ export default defineComponent({
   mounted(){
     console.log('store?', this.store.user)
     this.showAuth()
+    console.log('is logged in', this.isLoggedIn())
   },
-  updated(){},
+  updated(){
+    this.showAuth()
+  },
   computed: {},
   methods: Object.assign(UserLib, {
     showAuth: async function(){
@@ -44,11 +47,15 @@ export default defineComponent({
           if(window.nostr instanceof Object)
             if(!this.isLoggedIn())
               resolve(this.signer = true)
+            else 
+              resolve()
           else            
             resolve()  
         }, 1001)
       })
       console.log('signer enabled', this.signer)
+    },
+    watch: function(){
     },
     auth: async function(){
       // console.log('pukey', this.user.pubkey)

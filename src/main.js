@@ -9,6 +9,8 @@ import directives from "./directives/"
 import {Tabs, Tab} from 'vue3-tabs-component';
 import { plugin as storePlugin } from './store'
 import { createMetaManager } from 'vue-meta'
+import { RelayPool } from 'nostr'
+import { relays } from '../relays.yaml'
 // import VueIdentifyNetwork from 'vue-identify-network';
 
 const app = createApp(App)
@@ -21,6 +23,8 @@ const app = createApp(App)
   .component('tab', Tab)
 
 directives(app);
+
+app.config.globalProperties.$pool = new RelayPool(relays)
 
 await router.isReady()
 

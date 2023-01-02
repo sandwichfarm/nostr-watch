@@ -1,17 +1,19 @@
 <template>
    <div class="pt-5 px-1 sm:px-6 lg:px-8">
       <div class="sm:flex sm:items-center">
-      <div class="sm:flex-auto">
-          <h1 class="text-xl font-semibold text-gray-900">
-              <span class="inline-flex rounded bg-green-500 px-2 py-0.5 text-xs text-indigo-800">
+      <div class="sm:flex-auto text-left">
+          <h1 class="text-4xl capitalize font-semibold text-gray-900">
+              <span class="inline-flex rounded bg-green-800 text-sm px-2 py-1 text-white relative -top-2">
                   {{ relays.length }}
               </span>
               {{ activePageItem }} Relays
           </h1>
-          <p class="mt-2 text-sm text-gray-700">A list of all the users in your account including their name, title, email and role.</p>
+          <p class="mt-2 text-xl text-gray-700">
+            {{ activePageData.description }}
+          </p>
       </div>
       <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button type="button" class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">Add Relay</button>
+          <button type="button" class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-m font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">Add Relay</button>
       </div>
       </div>
       <div class="mt-8 flex flex-col">
@@ -203,6 +205,7 @@
     },
     mounted(){
       setTimeout( () => this.relaysUpdate(), 1)
+      this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
       this.interval = setInterval( () => {
         if(this.store.relays.isProcessing)
           this.relaysUpdate()
@@ -230,7 +233,9 @@
       return {
         selectedRelays: [],
         relays: [],
-        timeout: null
+        timeout: null,
+        navData: this.store.layout.getNavGroup('relays-find-pagenav'),
+        activePageData: {}
       }
     },
     
@@ -241,8 +246,8 @@
     },
     methods: Object.assign(localMethods, RelaysLib),
     watch: {
-      activePageItem: function(newVal, oldVal){
-        console.log('watcher updated', newVal, oldVal)
+      activePageItem: function(){
+        this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
         this.relaysUpdate()
       }
     }

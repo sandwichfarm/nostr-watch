@@ -8,8 +8,8 @@
               :key="`subnav-${item.slug}`"
               href="#" 
               @click="setActive(this.navSlug, item.slug)"
-              :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 text-sm font-medium']" 
-              class="inline-flex items-center mx-1 text-sm font-medium text-gray-900">
+              :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : ' hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 text-sm font-medium']" 
+              class="inline-flex items-center mx-1 text-sm font-medium text-white">
               {{ item.name }}
           </a>
         </div>

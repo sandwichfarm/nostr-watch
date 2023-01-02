@@ -10,7 +10,7 @@ items:
   - name: Restricted
     slug: restricted
     href: '#'
-    description: Restricted relays ordered by latency. Restricted relays are relays where there are read and/or write restrictions, but you are still able to connect to the relay.
+    description: Restricted relays ordered by latency. Restricted relays are relays where there are read and/or write restrictions
   - name: Offline
     slug: offline
     href: '#'

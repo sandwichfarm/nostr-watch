@@ -1,13 +1,12 @@
 <template>
-  {{ relays }}
-   <div class="pt-5 px-4 sm:px-6 lg:px-8">
+   <div class="pt-5 px-1 sm:px-6 lg:px-8">
       <div class="sm:flex sm:items-center">
       <div class="sm:flex-auto">
           <h1 class="text-xl font-semibold text-gray-900">
-              <span class="inline-flex items-center rounded bg-green-500 px-2 py-0.5 text-xs text-indigo-800">
-                  166
+              <span class="inline-flex rounded bg-green-500 px-2 py-0.5 text-xs text-indigo-800">
+                  {{ relays.length }}
               </span>
-              All Relays
+              {{ activePageItem }} Relays
           </h1>
           <p class="mt-2 text-sm text-gray-700">A list of all the users in your account including their name, title, email and role.</p>
       </div>
@@ -16,60 +15,68 @@
       </div>
       </div>
       <div class="mt-8 flex flex-col">
-      <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-          <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <!-- <div v-if="selectedRelays.length > 0" class="absolute top-0 left-12 flex h-12 items-center space-x-3 bg-gray-50 sm:left-16">
-              <button type="button" class="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-30">Make Yours</button>
-              </div> -->
-              <table class="min-w-full table-auto divide-y divide-gray-300">
-              <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="status-indicator text-left">
-                      <!-- <input type="checkbox" 
-                      class="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 sm:left-6" 
-                      :checked="indeterminate || selectedRelays.length === relays.length" 
-                      :indeterminate="indeterminate" 
-                      @change="selectedRelays = $event.target.checked ? relays : []"
-                        /> -->
-                    </th>
-                    <th scope="col" class="relay">
-                      
-                    </th>
-                    <th scope="col" class="verified">
-                      <span class="verified-shape-wrapper">
-                        <span class="shape verified"></span>
-                      </span>
-                    </th>
-                    <th scope="col" class="location" v-tooltip:top.tooltip="Ping">
-                      🌎
-                    </th>
-                    <th scope="col" class="latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
-                      ⌛️
-                    </th>
-                    <th scope="col" class="connect" v-tooltip:top.tooltip="'Relay connection status'">
-                      🔌
-                    </th>
-                    <th scope="col" class="read" v-tooltip:top.tooltip="'Relay read status'">
-                      👁️‍🗨️
-                    </th>
-                    <th scope="col" class="write" v-tooltip:top.tooltip="'Relay write status'">
-                      ✏️
-                    </th>
-                  <!-- <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                      <span class="sr-only">Favorite</span>
-                  </th> -->
-                  </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200 bg-white">
-                  <tr v-for="(relay, index) in this.relays" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
-                    <SingleClearnet 
-                      :relay="relay"
-                      v-bind:selectedRelays="selectedRelays" />
-                  </tr>
-              </tbody>
-              </table>
+
+      <FindRelaysSubnav />
+
+      <div class="-mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+          <div class="inline-block min-w-full align-middle" v-if="relays.length">
+            <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                <!-- <div v-if="selectedRelays.length > 0" class="absolute top-0 left-12 flex h-12 items-center space-x-3 bg-gray-50 sm:left-16">
+                <button type="button" class="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-30">Make Yours</button>
+                </div> -->
+                <table class="min-w-full table-auto divide-y divide-gray-300">
+                <thead>
+                    <tr>
+                      <th scope="col" class="status-indicator text-left">
+                        <!-- <input type="checkbox" 
+                        class="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 sm:left-6" 
+                        :checked="indeterminate || selectedRelays.length === relays.length" 
+                        :indeterminate="indeterminate" 
+                        @change="selectedRelays = $event.target.checked ? relays : []"
+                          /> -->
+                      </th>
+                      <th scope="col" class="relay">
+                        
+                      </th>
+                      <th scope="col" class="verified">
+                        <span class="verified-shape-wrapper">
+                          <span class="shape verified"></span>
+                        </span>
+                      </th>
+                      <th scope="col" class="location" v-tooltip:top.tooltip="Ping">
+                        🌎
+                      </th>
+                      <th scope="col" class="latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
+                        ⌛️
+                      </th>
+                      <th scope="col" class="connect" v-tooltip:top.tooltip="'Relay connection status'">
+                        🔌
+                      </th>
+                      <th scope="col" class="read" v-tooltip:top.tooltip="'Relay read status'">
+                        👁️‍🗨️
+                      </th>
+                      <th scope="col" class="write" v-tooltip:top.tooltip="'Relay write status'">
+                        ✏️
+                      </th>
+                    <!-- <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                        <span class="sr-only">Favorite</span>
+                    </th> -->
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white">
+                    <tr v-for="(relay, index) in this.relays" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
+                      <SingleClearnet 
+                        :relay="relay"
+                        v-bind:selectedRelays="selectedRelays"
+                        :resultProp="this.results[relay]" />
+                        
+                    </tr>
+                </tbody>
+                </table>
+            </div>
           </div>
+          <div class="inline-block min-w-full align-middle" v-if="!relays.length && activePageItem == 'favorite'">
+            You have not selected any favorites. To select a favorite, click the heart emoji next to any relay in a relays list.
           </div>
       </div>
       </div>
@@ -80,48 +87,62 @@
   import { defineComponent, toRefs } from 'vue'
 
   import SingleClearnet from '@/components/relays/SingleClearnet.vue'
+  import FindRelaysSubnav from '@/components/relays/FindRelaysSubnav.vue'
+  
   import RelaysLib from '@/shared/relays-lib.js'
   import { setupStore } from '@/store'
   
   const localMethods = {
+      relaysUpdate: function(){
+        this.relays = this.store.relays.getAll
+        this.filterRelays()
+        this.sortRelays()
+        // this.setRelayCount()
+        return this.relays
+      },
+      setRelayCount: function(){
+        this.store.layout.getNavGroup('relays').forEach( item => {
+          this.store.relays.setStat(item, this.relays.filter( (relay) => this.results?.[relay]?.aggregate == item))
+        })
+      },
       filterRelays: function(){
-        const active = this.activeNavItem
-        console.log(`${active} is active`)
-        if( 'public' == active )
+        if( 'favorite' == this.activePageItem )
+          this.relays = this.store.relays.getFavorites
+        if( 'public' == this.activePageItem )
           this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'public')
-        if( 'restricted' == active )
+        if( 'restricted' == this.activePageItem )
           this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted')
-        if( 'offline' == active )
+        if( 'offline' == this.activePageItem)
           this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'offline')
         // if( 'onion' == active )
           // this.filteredRelays = this.store.relays.getOnion
-        // console.log('meow', this.activeNavItem, this.filteredRelays.length)
-        // this.store.relays.setStat(this.activeNavItem, this.filteredRelays.length)
+        // console.log('meow', this.activePageItem, this.filteredRelays.length)
+        // this.store.relays.setStat(this.activePageItem, this.filteredRelays.length)
       },
       sortRelays: function() {
         if (this.relays.length) {
           this.relays
             .sort((relay1, relay2) => {
-              return this.store.relays.results?.[relay1]?.latency.final - this.store.relays.results?.[relay2]?.latency.final
+              return this.results?.[relay1]?.latency.final - this.results?.[relay2]?.latency.final
             })
             .sort((relay1, relay2) => {
-              let a = this.store.relays.results?.[relay1]?.latency.final ,
-                  b = this.store.relays.results?.[relay2]?.latency.final 
+              let a = this.results?.[relay1]?.latency.final ,
+                  b = this.results?.[relay2]?.latency.final 
               return (b != null) - (a != null) || a - b;
             })
             .sort((relay1, relay2) => {
-              let x = this.store.relays.results?.[relay1]?.check?.connect,
-                  y = this.store.relays.results?.[relay2]?.check?.connect
+              let x = this.results?.[relay1]?.check?.connect,
+                  y = this.results?.[relay2]?.check?.connect
               return (x === y)? 0 : x? -1 : 1;
             })
             // .sort((relay1, relay2) => {
-            //   let x = this.store.relays.results?.[relay1]?.check?.read,
-            //       y = this.store.relays.results?.[relay2]?.check?.read
+            //   let x = this.results?.[relay1]?.check?.read,
+            //       y = this.results?.[relay2]?.check?.read
             //   return (x === y)? 0 : x? -1 : 1;
             // })
             // .sort((relay1, relay2) => {
-            //   let x = this.store.relays.results?.[relay1]?.check?.write,
-            //       y = this.store.relays.results?.[relay2]?.check?.write
+            //   let x = this.results?.[relay1]?.check?.write,
+            //       y = this.results?.[relay2]?.check?.write
             //   return (x === y)? 0 : x? -1 : 1;
             // });
           // return this.relays
@@ -169,44 +190,47 @@
     name: 'RelaysClearnet',
     components: {
       SingleClearnet,
+      FindRelaysSubnav
     },
     setup(props){
+      const {activePageItemProp: activePageItem} = toRefs(props)
       const {resultsProp: results} = toRefs(props)
       return { 
         store : setupStore(),
-        results: results
+        results: results,
+        activePageItem: activePageItem
       }
     },
     mounted(){
-      console.log('wahfdsfdsfdsjt?', this.relays)
-      this.filterRelays()
-      this.sortRelays()
-      // this.relays = this.relaysProp
+      setTimeout( () => this.relaysUpdate(), 1)
+      this.interval = setInterval( () => {
+        if(this.store.relays.isProcessing)
+          this.relaysUpdate()
+      }, 1000 ) //Ugly, but better for reflow
     },
     updated(){
-      // this.relays = this.relaysProp
-      this.filterRelays()
-      this.sortRelays()
-      console.log('from component', this.relays.length)
+      console.log('state, updated')
+      
     },
     props: {
-      showJson: {
+      activePageItemProp: {
         type: Boolean,
         default(){
           return true
         }
       },
-      relaysProp: {
-        type: Array,
+      resultsProp: {
+        type: Object,
         default(){
-          return []
+          return {}
         }
       },
     },
     data() {
       return {
         selectedRelays: [],
-        relays: []
+        relays: [],
+        timeout: null
       }
     },
     
@@ -215,7 +239,13 @@
         return this.selectedRelays.length > 0 && this.selectedRelays.length < this.relays.length;
       }
     },
-    methods: Object.assign(localMethods, RelaysLib)
+    methods: Object.assign(localMethods, RelaysLib),
+    watch: {
+      activePageItem: function(newVal, oldVal){
+        console.log('watcher updated', newVal, oldVal)
+        this.relaysUpdate()
+      }
+    }
   })
   </script>
   

@@ -3,24 +3,18 @@ import { defineStore } from 'pinia'
 export const useLayoutStore = defineStore('layout', {
   state: () => ({ 
     active: {},
-    sidebar: {},
+    nav: {},
     mapExpanded: false,
-    mapVisible: true
+    mapVisible: true,
   }),
   getters: {
-    getActive: (state) => (page) => state.active[page],
-    getSidebar: (state) => state.sidebar,
-    getSidebarGroup: (state) => (group) => state.sidebar[group]
+    getActive: (state) => (section) => state.active[section],
+    getNav: (state) => state.nav,
+    getNavGroup: (state) => (group) => state.nav[group]
   },
   actions: {
-    setSidebarItems(items){ 
-      const groups = new Set(items.map( item => item.group ))
-      groups.forEach(group => this.sidebar[group] = [])
-      items.forEach( (item) => {
-        this.sidebar[item.group].push(item)
-      })
-    },
-    setActive(page, tab){ this.active[page] = tab },
+    setNavItems(section, items){ this.nav[section] = items },
+    setActive(section, slug){ this.active[section] = slug },
     toggleMapState(){ this.mapExpanded = !this.mapExpanded },
     toggleMapShow(){ this.mapVisible = !this.mapVisible }
   },

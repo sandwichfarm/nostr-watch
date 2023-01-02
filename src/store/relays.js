@@ -6,7 +6,10 @@ export const useRelaysStore = defineStore('relays', {
     // results: new Object(),
     geo: new Object(),
     lastUpdate: null,
-    count: {}
+    count: new Object(),
+    processing: false,
+    processedRelays: new Array(),
+    favorites: new Array(),
   }),
   getters: {
     getAll: (state) => state.urls, //clone it
@@ -23,7 +26,13 @@ export const useRelaysStore = defineStore('relays', {
     getLastUpdate: (state) => state.lastUpdate,
 
     getCount: (state) => (type) => state.count[type],
-    getCounts: (state) => state.count
+    getCounts: (state) => state.count,
+
+    getProcessedRelays: (state) => state.processedRelays,
+    isProcessing: (state) => state.processing,
+
+    getFavorites: (state) => state.favorites,
+    isFavorite: (state) => (relayUrl) => state.favorites.includes(relayUrl)
   },
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
@@ -43,6 +52,23 @@ export const useRelaysStore = defineStore('relays', {
 
     setStat(type, value){ 
       this.count[type] = value 
+    },
+    
+    addProcessedRelay(relay){
+      console.log(`this.processedRelays is set`, this.processedRelays instanceof Set)
+      this.processedRelays.push(relay) 
+    },
+
+    finishProcessing() { this.processing = false },
+    startProcessing() { this.processing = true },
+    completeProcessing() { 
+      console.log('setting as complete')
+      this.processedRelays = []
+      this.finishProcessing()
+    },
+
+    setFavorite: (relayUrl) => { 
+      this.favorites.push(relayUrl)
     }
   },
 })

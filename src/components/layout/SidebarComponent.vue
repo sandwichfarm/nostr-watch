@@ -25,7 +25,7 @@
             <div class="overflow-y-auto flex-1">
                 <div class="mb-10">
                     <h3 class="mx-6 mb-2 text-xs tracking-widest text-gray-400 uppercase">
-                    Browse Relays
+                    Find Relays
                     </h3>
 
                     <a v-for="(item, index) in store.layout.getSidebarGroup('relays')"
@@ -38,7 +38,7 @@
                 </div>
                 <div class="mb-10">
                     <h3 class="mx-6 mb-2 text-xs tracking-widest text-gray-400 uppercase">
-                    Tools
+                    Relay Tools
                     </h3>
 
                     <a v-for="(item, index) in store.layout.getSidebarGroup('tools')"

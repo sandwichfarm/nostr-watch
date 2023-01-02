@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import { defineComponent} from 'vue'
+import { defineComponent, toRefs } from 'vue'
 // import { InspectorResult } from 'nostr-relay-inspector'
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
@@ -71,26 +71,33 @@ export default defineComponent({
       default(){
         return []
       }
-    }
+    },
+    resultProp:{
+      type: Object,
+      default(){
+        return {}
+      }
+    },
   },
   data() {
     return {
-      result: {},
       geo: {},
       showModal: false,
       
     }
   },
   mounted(){
-    this.result = this.store.relays.results[this.relay]
+    // this.result = this.store.relays.results[this.relay]
     this.geo = this.store.relays.geo[this.relay]
   },
-  setup(){
+  setup(props){
+    const {resultProp: result} = toRefs(props)
     return { 
       store : {
         relays: store.useRelaysStore(),
-        prefs: store.usePrefsStore() 
-      }
+        prefs: store.usePrefsStore(),
+      },
+      result: result
     }
   },
   methods: {

@@ -1,7 +1,7 @@
 <template>
   <HeaderComponent />
   <div class="flex min-h-screen">
-    <SidebarComponent />
+    <!-- <SidebarComponent /> -->
     <div class="flex-1">
       <main>
         <router-view></router-view>
@@ -15,13 +15,13 @@
 <script>
 import { useMeta } from 'vue-meta'
 import HeaderComponent from '@/components/layout/HeaderComponent.vue'
-import SidebarComponent from '@/components/layout/SidebarComponent.vue'
+// import SidebarComponent from '@/components/layout/SidebarComponent.vue'
 
 export default {
   name: 'App',
   components: {
     HeaderComponent,
-    SidebarComponent
+    // SidebarComponent
   },
   setup () {
     useMeta({

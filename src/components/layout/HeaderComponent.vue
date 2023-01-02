@@ -1,6 +1,7 @@
 <template>
   <Disclosure as="nav" class="bg-gray-800" v-slot="{ open }">
-    <div class="mx-auto max-w-none">
+    <!-- <div class="mx-auto max-w-none"> -->
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="relative flex h-16 items-center mx-3 justify-between">
           <div class="absolute inset-y-0 left-0  flex items-center sm:hidden">
           <!-- Mobile menu button-->
@@ -11,18 +12,23 @@
           </DisclosureButton>
           </div>
           <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-          <div class="w-64 flex flex-shrink-0 items-center">
+          <div class="w-32 flex flex-shrink-0 items-center">
               <span class="block text-center text-slate-50 text-xl">nostr.watch</span>
           </div>
           <div class="hidden sm:ml-6 sm:block">
               <div class="flex space-x-4">
-              <a v-for="item in navigation" 
-                :key="item.name" 
-                :href="item.href" 
-                :class="[item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" 
+              <router-link 
+                to="/"
+                :class="[!isActive ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" >
+                Relays
+              </router-link>
+              <!-- <router-link to="/about">about</router-link>
+              <a
+                href="/" 
+                
                 :aria-current="item.current ? 'page' : undefined">
                   {{ item.name }}
-              </a>
+              </a> -->
               </div>
           </div>
           </div>
@@ -101,7 +107,7 @@ import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { defineComponent } from 'vue'
 import PreferencesComponent from '../PreferencesComponent.vue'
 import AuthComponent from '../AuthComponent.vue'
-import { items as navigation } from '@/data/nav-main.yaml'
+// import { items as navigation } from '@/data/nav-main.yaml'
 import { setupStore } from '@/store'
 
 export default defineComponent({

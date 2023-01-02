@@ -1,22 +1,17 @@
 // /router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from '../pages/HomePage.vue'
+import RelaysHome from '@/components/relays/pages/RelaysHome.vue'
 // import ByStatus from '../pages/ByStatus.vue'
-import SingleRelay from '../pages/SingleRelay.vue'
-import TailwindTest from '../pages/TailwindTest.vue'
+import RelaysSingle from '@/components/relays/pages/RelaysSingle.vue'
 
 const routes = [
     {
-        path: '/tw',
-        component: TailwindTest
-    },
-    {
         path: '/relay/:relayUrl(.*)',
-        component: SingleRelay
+        component: RelaysSingle
     },
     {
         path: '/',
-        component: HomePage
+        component: RelaysHome
     },
     
 ]

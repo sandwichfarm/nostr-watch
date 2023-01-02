@@ -95,7 +95,6 @@ import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { defineComponent } from 'vue'
 import PreferencesComponent from '../components/PreferencesComponent.vue'
 import AuthComponent from '../components/AuthComponent.vue'
-import { items as navigation } from '@/data/nav-main.yaml'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",

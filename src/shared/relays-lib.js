@@ -5,15 +5,15 @@ import crypto from "crypto"
 
 export default {
   invalidate: async function(force, single){
-      
-    if(!this.isExpired() && !force) 
+    if( (!this.isExpired() && !force)) 
       return
 
-    // console.log('invalidate', 'total relays', this.relays.length)
-    
+    this.store.relays.startProcessing()
+
+    let processed = 0
+
     if(single) {
       await this.check(single) 
-
     } 
     else {
       for(let index = 0; index < this.relays.length; index++) {
@@ -24,11 +24,63 @@ export default {
               this.results[result.uri] = result
               this.setCache(result)
               this.store.relays.updateNow()
-            }).catch( err => console.log(err))
+              processed++ 
+              // console.log('processing status', processed, '/', this.relays.length)
+              if(processed >= this.relays.length){
+                this.store.relays.finishProcessing()
+              }
+            })
+            .catch( err => { 
+              console.log(err)
+              processed++ 
+            })
         }).catch(err => console.log(err))
       }
     } 
   },
+
+  check: async function(relay){
+    return new Promise( (resolve, reject) => {
+      // if(!this.isExpired())
+      //   return reject(relay)
+
+      const opts = {
+          checkLatency: true,          
+          getInfo: true,
+          getIdentities: true,
+          // debug: true,
+          // data: { result: this.store.relays.results[relay] }
+        }
+
+      let socket = new Inspector(relay, opts)
+
+      socket
+        .on('complete', (instance) => {
+          instance.result.aggregate = this.getAggregate(instance.result)
+          instance.relay.close()
+          resolve(instance.result)
+        })
+        .on('notice', (notice) => {
+          const hash = this.sha1(notice)  
+          let   message_obj = RELAY_MESSAGES[hash]
+          
+          if(!message_obj || !Object.prototype.hasOwnProperty.call(message_obj, 'code'))
+            return
+
+          let code_obj = RELAY_CODES[message_obj.code]
+
+          let response_obj = {...message_obj, ...code_obj}
+
+          this.store.relays.results[relay].observations.push( new InspectorObservation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
+        })
+        .on('close', () => {})
+        .on('error', () => {
+          reject()
+        })
+        .run()
+    })
+  },
+
     isExpired: function(){
       return !this.store.relays.lastUpdate 
               || Date.now() - this.store.relays.lastUpdate > this.store.prefs.duration
@@ -48,48 +100,6 @@ export default {
 
     cleanUrl: function(relay){
       return relay.replace('wss://', '')
-    },
-
-    check: async function(relay){
-      return new Promise( (resolve, reject) => {
-        // if(!this.isExpired())
-        //   return reject(relay)
-
-        const opts = {
-            checkLatency: true,          
-            getInfo: true,
-            getIdentities: true,
-            debug: true,
-            // data: { result: this.store.relays.results[relay] }
-          }
-
-        let socket = new Inspector(relay, opts)
-
-        socket
-          .on('complete', (instance) => {
-            instance.result.aggregate = this.getAggregate(instance.result)
-            instance.relay.close()
-            resolve(instance.result)
-          })
-          .on('notice', (notice) => {
-            const hash = this.sha1(notice)  
-            let   message_obj = RELAY_MESSAGES[hash]
-            
-            if(!message_obj || !Object.prototype.hasOwnProperty.call(message_obj, 'code'))
-              return
-
-            let code_obj = RELAY_CODES[message_obj.code]
-
-            let response_obj = {...message_obj, ...code_obj}
-
-            this.store.relays.results[relay].observations.push( new InspectorObservation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
-          })
-          .on('close', () => {})
-          .on('error', () => {
-            reject(this.store.relays.results[relay])
-          })
-          .run()
-      })
     },
 
    

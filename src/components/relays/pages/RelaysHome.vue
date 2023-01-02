@@ -3,19 +3,18 @@
     <template v-slot:title="{ content }">{{ content }}</template>
   </metainfo>
 
-  <RelayControl />
+  <SubnavComponent 
+    v-bind:resultsProp="results" />
 
-  <LeafletComponent 
+  <MapSummary 
     :relaysProp="filteredRelays" />
 
-  <h1 class="text-3xl capitalize mt-6 mb-3 align-left">{{ active }} Relays</h1>
+  <!-- <h1 class="text-3xl capitalize mt-6 mb-3 align-left">{{ activeNavItem }} Relays</h1> -->
 
-  <div id="wrapper">  
-    
+  <div id="wrapper" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">  
     <ListClearnet
       :resultsProp="results"
-      :activeNavItemProp="activeNavItem" /> -->
-
+      :activePageItemProp="activePageItem" /> 
     
     <div id="footer">
       <span class="credit">
@@ -30,14 +29,14 @@ import { defineComponent } from 'vue'
 import { useMeta } from 'vue-meta'
 import { setupStore } from '@/store'
 //shared methods
-import RelaysLib from '../shared/relays-lib.js'
+import RelaysLib from '@/shared/relays-lib.js'
 //components
-import LeafletComponent from '@/components/maps/LeafletComponent.vue'
-import RelayControl from '@/components/relays/RelayControl.vue'
+import MapSummary from '@/components/relays/MapSummary.vue'
 import ListClearnet from '@/components/relays/ListClearnet.vue'
+import SubnavComponent from '@/components/relays/SubnavComponent.vue'
 //data
-import { relays } from '../../relays.yaml'
-import { geo } from '../../cache/geo.yaml'
+import { relays } from '../../../../relays.yaml'
+import { geo } from '../../../../cache/geo.yaml'
 
 export default defineComponent({
   name: 'HomePage',
@@ -45,10 +44,10 @@ export default defineComponent({
   components: {
     // Row,
     // Column,
-    LeafletComponent,
-    RelayControl,
+    MapSummary,
     // GroupByAvailability,
-    ListClearnet
+    ListClearnet,
+    SubnavComponent
     // HeaderComponent
   },
 
@@ -70,7 +69,8 @@ export default defineComponent({
       filteredRelays: [],
       timeouts: {},
       intervals: {},
-      activeNavItem: '',
+      activeNavItem: this.store.layout.getActive('relays-subnav'),
+      activePageItem: this.store.layout.getActive('relays-find-pagenav'),
       sidebar:  this.store.layout.getSidebar
     }
   },
@@ -78,6 +78,8 @@ export default defineComponent({
   updated(){},
 
   async mounted() {
+
+    console.log('active page item', this.activePageItem)
     
     this.store.relays.setRelays(relays)
     this.store.relays.setGeo(geo)
@@ -90,11 +92,9 @@ export default defineComponent({
       this.results[relay] = this.getCache(relay)
     })
 
-    this.activeNavItem = this.store.layout.getActive('relays')
-
     this.store.layout.$subscribe( (mutation) => {
-      if(mutation.events.key == 'relays')
-        this.activeNavItem = mutation.events.newValue
+      if(mutation.events.key == 'relays-find-pagenav')
+        this.activePageItem = mutation.events.newValue
     })
     
     this.invalidate()

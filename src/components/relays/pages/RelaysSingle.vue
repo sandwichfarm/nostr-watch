@@ -3,7 +3,7 @@
     <template v-slot:title="{ content }">{{ `${cleanUrl(this.relay)} | ${content}` }}</template>
   </metainfo>
 
-  <LeafletSingleComponent
+  <MapSingle
     :geo="geo"
     :relay="relay"
     :result="result"
@@ -16,7 +16,7 @@
       <Row container :gutter="12">
         <Column :xs="12" :md="12" :lg="12" class="title-card">
           <span v-tooltip:top.tooltip="'Click to copy'" style="display:block">
-            <h2 @click="copy(relayUrl())">{{ relayUrl() }}</h2>
+            <h2 @click="copy(relayFromUrl())">{{ relayFromUrl() }}</h2>
           </span>
         </Column>
       </Row>
@@ -121,20 +121,16 @@
 <script>
 
 import { defineComponent} from 'vue'
-import { useStorage } from "vue3-storage";
 
-import LeafletSingleComponent from '../components/LeafletSingleComponent.vue'
-// import NavComponent from '../components/NavComponent.vue'
-// import RefreshComponent from '../components/RefreshComponent.vue'
+import MapSingle from '@/components/relays/MapSingle.vue'
 
 import { Row, Column } from 'vue-grid-responsive';
 import SafeMail from "@2alheure/vue-safe-mail";
 
-import RelaysLib from '../shared/relays-lib.js'
+import RelaysLib from '@/shared/relays-lib.js'
 
-import { version } from '../../package.json'
-import { relays } from '../../relays.yaml'
-import { geo } from '../../cache/geo.yaml'
+// import { relays } from '../../relays.yaml'
+// import { geo } from '../../cache/geo.yaml'
 
 import { setupStore } from '@/store'
 
@@ -142,9 +138,9 @@ import { useMeta } from 'vue-meta'
 
 
 const localMethods = {
-    relayUrl() {
+    relayFromUrl() {
       // We will see what `params` is shortly
-      return `wss://${this.$route.params.relayUrl}`
+      return `wss://${this.$route.params.relayFromUrl}`
     },
 
     badgeLink(nip){
@@ -182,29 +178,15 @@ export default defineComponent({
   components: {
     Row,
     Column,
-    LeafletSingleComponent,
+    MapSingle,
     SafeMail,
     // RefreshComponent,
   },
 
   data() {
     return {
-      relays,
       result: {},
-      messages: {},
-      nips: {},
-      alerts: {},
-      timeouts: {},
-      intervals: {},
-      lastPing: Date.now(),
-      nextPing: Date.now() + (60*1000),
-      count: 0,
-      geo,
       relay: "",
-      version: version,
-      storage: null,
-      lastUpdate: null,
-      cacheExpiration: 10*60*1000 //10 minutes
     }
   },
 
@@ -220,13 +202,9 @@ export default defineComponent({
   },
 
   async mounted() {
-    this.relay = this.relayUrl()
-
-    this.storage = useStorage()
+    this.relay = this.relayFromUrl()
     this.lastUpdate = this.store.relays.getLastUpdate
-    // this.preferences = this.store.prefs.
-    this.result = this.store.relays.getResult(this.relay)
-    
+    this.result = this.getCache(this.relay)
     if(this.isExpired())
       this.check(this.relay)
   },

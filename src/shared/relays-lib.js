@@ -81,6 +81,64 @@ export default {
     })
   },
 
+  relaysUpdate: function(){
+    this.relays = this.store.relays.getAll
+    this.filterRelays()
+    this.sortRelays()
+    // this.setRelayCount()
+    return this.relays
+  },
+  setRelayCount: function(){
+    this.store.layout.getNavGroup('relays').forEach( item => {
+      this.store.relays.setStat(item, this.relays.filter( (relay) => this.results?.[relay]?.aggregate == item))
+    })
+  },
+  filterRelays: function(){
+    if( 'favorite' == this.activePageItem )
+      this.relays = this.store.relays.getFavorites
+    if( 'public' == this.activePageItem )
+      this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'public')
+    if( 'restricted' == this.activePageItem )
+      this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted')
+    if( 'offline' == this.activePageItem)
+      this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'offline')
+    // if( 'onion' == active )
+      // this.filteredRelays = this.store.relays.getOnion
+    // console.log('meow', this.activePageItem, this.filteredRelays.length)
+    // this.store.relays.setStat(this.activePageItem, this.filteredRelays.length)
+  },
+  sortRelays: function() {
+    if (this.relays.length) {
+      this.relays
+        .sort((relay1, relay2) => {
+          return this.results?.[relay1]?.latency.final - this.results?.[relay2]?.latency.final
+        })
+        .sort((relay1, relay2) => {
+          let a = this.results?.[relay1]?.latency.final ,
+              b = this.results?.[relay2]?.latency.final 
+          return (b != null) - (a != null) || a - b;
+        })
+        .sort((relay1, relay2) => {
+          let x = this.results?.[relay1]?.check?.connect,
+              y = this.results?.[relay2]?.check?.connect
+          return (x === y)? 0 : x? -1 : 1;
+        })
+        // .sort((relay1, relay2) => {
+        //   let x = this.results?.[relay1]?.check?.read,
+        //       y = this.results?.[relay2]?.check?.read
+        //   return (x === y)? 0 : x? -1 : 1;
+        // })
+        // .sort((relay1, relay2) => {
+        //   let x = this.results?.[relay1]?.check?.write,
+        //       y = this.results?.[relay2]?.check?.write
+        //   return (x === y)? 0 : x? -1 : 1;
+        // });
+      // return this.relays
+    }
+
+    return []
+  },
+
     isExpired: function(){
       return !this.store.relays.lastUpdate 
               || Date.now() - this.store.relays.lastUpdate > this.store.prefs.duration

@@ -51,11 +51,14 @@
 </template>
 
 <script>
+import { defineComponent, toRefs } from 'vue'
 import "leaflet/dist/leaflet.css"
 import { LMap, LTileLayer, LCircleMarker } from "@vue-leaflet/vue-leaflet"
 import { setupStore } from '@/store'
+import RelaysLib from '@/shared/relays-lib.js'
 
-export default {
+export default defineComponent({
+  name: "MapSummary",
   components: {
     LMap,
     LTileLayer,
@@ -66,32 +69,47 @@ export default {
       zoom: 2,
       center: [40.41322, -1.219482],
       expanded: false,
+      relays: []
     };
   },
-  setup(){
+  setup(props){
+    const {activePageItemProp: activePageItem} = toRefs(props)
+    const {resultsProp: results} = toRefs(props)
     return { 
-      store : setupStore()
+      store : setupStore(),
+      results: results,
+      activePageItem: activePageItem
     }
   },
   mounted() {
-    this.relays = this.relaysProp
-    this.result = this.store.relays.getResults  
+    console.log('results', this.results)
+    setTimeout( () => this.relaysUpdate(), 1)
+    this.interval = setInterval( () => {
+        if(this.store.relays.isProcessing)
+          this.relaysUpdate()
+      }, 1000 )
     this.geo = this.store.relays.geo
     console.log('relays from leaflet', this.relays.length)
   },
   updated(){
-    this.relays = this.relaysProp
-    console.log('relays from leaflet', this.relays.length)
+    // this.relays = this.relaysProp
+    // console.log('relays from leaflet', this.relays.length)
   },
   props: {
-    relaysProp: {
+    resultsProp: {
       type: Array,
       default(){
         return []
       }
     },
+    activePageItemProp: {
+      type: String,
+      default(){
+        return ""
+      }
+    },
   },
-  methods: {
+  methods: Object.assign(RelaysLib, {
     mapHeight(){
       return this.expanded ? "500px" : "250px"
     },
@@ -101,19 +119,19 @@ export default {
     },
     getCircleColor(relay){
 
-      if(this.result[relay]?.aggregate == 'public') {
+      if(this.results[relay]?.aggregate == 'public') {
         return '#00AA00'
       }
-      else if(this.result[relay]?.aggregate == 'restricted') {
+      else if(this.results[relay]?.aggregate == 'restricted') {
         return '#FFA500'
       }
-      else if(this.result[relay]?.aggregate == 'offline') {
+      else if(this.results[relay]?.aggregate == 'offline') {
         return '#FF0000'
       }
       return 'transparent'
     },
     getRelaysWithGeo(){
-      return this.relaysProp.filter( relay => this.geo?.[relay] )
+      return this.relays.filter( relay => this.geo?.[relay] )
     },
     toggleMap(){
       this.expanded = !this.expanded
@@ -128,10 +146,14 @@ export default {
       if (this.$refs.map.ready) 
         this.$refs.map.leafletObject.invalidateSize()
     }
-  },
+  }),
+  watch: {
+    activePageItem: function(){
+      this.relaysUpdate()
+    }
+    }
   
-  
-};
+});
 
 
 </script>

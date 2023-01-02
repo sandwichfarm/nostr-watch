@@ -7,7 +7,8 @@
     v-bind:resultsProp="results" />
 
   <MapSummary 
-    :relaysProp="filteredRelays" />
+    :resultsProp="results" 
+    :activePageItemProp="activePageItem" /> 
 
   <!-- <h1 class="text-3xl capitalize mt-6 mb-3 align-left">{{ activeNavItem }} Relays</h1> -->
 

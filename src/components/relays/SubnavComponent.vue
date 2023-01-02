@@ -1,8 +1,8 @@
 <template>
   <div class="bg-slate-700 px-2 sm:px-4 lg:px-8 ">
-    <div class="flex h-8 mx-auto max-w-7xl">
-      <div class="flex w-32 px-8 ml-8"></div>
-      <div class="flex lg:px-0">
+    <div class="lg:flex lg:h-8 mx-auto max-w-7xl h-16">
+      <div class="flex lg:w-32 lg:px-8 lg:ml-8 sm:px-0 sm:w-0 md:w-0"></div>
+      <div class="lg:flex lg:px-0">
         <div class="lg:ml-6 lg:flex lg:space-x-8">
           <a v-for="item in store.layout.getNavGroup(this.navSlug)"
               :key="`subnav-${item.slug}`"
@@ -14,7 +14,7 @@
           </a>
         </div>
       </div>
-      <div class="flex ml-auto">
+      <div class="width-max lg:flex lg:ml-auto ">
           <RefreshComponent
             v-bind:resultsProp="results" />
         </div>

@@ -45,6 +45,6 @@ body { margin: 0 !important; }
   position:absolute;
   top: 0px;
   right:0px;
-  z-index: 9999;
+  /* z-index: 9999; */
 }
 </style>

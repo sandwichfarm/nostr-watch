@@ -1,13 +1,13 @@
 items:
   - name: Find Relays
-    slug: find-relays
-    href: '#'
+    slug: find
+    href: '#/relays/find'
     group: tools
   - name: Statistics
-    slug: network
-    href: '#'
+    slug: statistics
+    href: '#/relays/statistics'
     group: tools
   - name: Interactive Map
     slug: map
-    href: '#'
+    href: '#/relays/map'
     group: tools

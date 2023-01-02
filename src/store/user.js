@@ -2,14 +2,13 @@ import { defineStore } from 'pinia'
 
 export const useUserStore = defineStore('user', {
   state: () => ({ 
-    favorites: [],
     pubKey: "",
     events: []
   }),
   getters: {
-    getFavorites: (state) => state.favorites,
+    getPublicKey: (state) => state.pubKey
   },
   actions: {
-    setFavorite: (relay) => !this.favorites.includes(relay) ? this.favorites.push(relay) : false
+    setPublicKey: function(pubKey){ this.pubKey = pubKey }
   },
 })

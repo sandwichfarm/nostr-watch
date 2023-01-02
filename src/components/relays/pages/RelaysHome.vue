@@ -80,6 +80,8 @@ export default defineComponent({
 
   async mounted() {
 
+    console.log('params', )
+
     console.log('active page item', this.activePageItem)
     
     this.store.relays.setRelays(relays)
@@ -98,6 +100,9 @@ export default defineComponent({
         this.activePageItem = mutation.events.newValue
     })
     
+    // this.psuedoRouter(this.store.layout.getNavGroup('relays-subnav'))
+    this.psuedoRouter()
+    
     this.invalidate()
   },
 
@@ -105,30 +110,7 @@ export default defineComponent({
     
   },
 
-  methods: Object.assign(RelaysLib, {
-    loadComponent: function(){
-
-    },
-    // relaysGrouped: function(){
-      
-    //   const relaysGrouped = {
-    //     all: this.store.relays.getAll,
-    //     public: this.store.relays.getByAggregate('public'),
-    //     restricted: this.store.relays.getByAggregate('restricted'),
-    //     offline: this.store.relays.getByAggregate('offline')
-    //   }
-
-    //   // this.store.relays.setStat('all', relaysGrouped['all'].length)
-    //   // this.store.relays.setStat('public', relaysGrouped['public'].length)
-    //   // this.store.relays.setStat('restricted', relaysGrouped['restricted'].length)
-    //   // this.store.relays.setStat('offline', relaysGrouped['offline'].length)
-
-    //   console.log('active nav item', this.activeNavItem)
-    //   this.filteredRelays = relaysGrouped[this.activeNavItem]
-
-    //   return this.filteredRelays
-    // }
-  }),
+  methods: RelaysLib, 
 
 })
 </script>

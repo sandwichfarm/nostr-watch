@@ -4,10 +4,10 @@
       <div class="flex h-16 justify-between">
         <div class="flex px-2 lg:px-0">
           <div class="hidden lg:flex lg:space-x-8">
-            <a v-for="item in store.layout.getNavGroup('relays-find-pagenav')"
+            <a v-for="item in store.layout.getNavGroup(this.navSlug)"
                 :key="`subnav-${item.slug}`"
-                href="#" 
-                @click="setActive('relays-find-pagenav', item.slug)"
+                :href="item.href" 
+                @click="setActive(this.navSlug, item.slug)"
                 :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']" 
                 class="inline-flex items-center pt-1 text-sm font-medium text-gray-900">
                 {{ item.name }}
@@ -39,12 +39,12 @@
     <div class="space-y-1 pt-2 pb-3">
         <!-- Current: "bg-indigo-50 border-indigo-500 text-indigo-700", Default: "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800" -->
         <DisclosureButton 
-            v-for="item in store.layout.getNavGroup('relays-find-pagenav')"
+            v-for="item in store.layout.getNavGroup(this.navSlug)"
             :key="`subnav-${item.slug}`"
-            @click="setActive('relays-find-pagenav', item.slug)"
+            @click="setActive(this.navSlug, item.slug)"
             :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']" 
             as="a" 
-            href="#" 
+            :href="item.href" 
             class="block border-l-4 border-indigo-500 bg-indigo-50 py-2 pl-3 pr-4 text-base font-medium text-indigo-700">
             {{  item.name  }}
         </DisclosureButton>
@@ -61,6 +61,9 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
 
+import RelaysLib from '@/shared/relays-lib.js'
+
+
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'NavComponent',
@@ -76,7 +79,8 @@ export default defineComponent({
     return {
         active: null,
         // groups: new Set(items.map( item => item.slug )),
-        sidebar: []
+        sidebar: [],
+        navSlug: 'relays-find-pagenav'
     }
   },
   setup(){
@@ -88,9 +92,10 @@ export default defineComponent({
 
   },
   mounted(){
-    this.active = this.store.layout.getActive('relays-find-pagenav')
-    this.store.layout.setNavItems('relays-find-pagenav', items)
-    this.sidebar = this.store.layout.getNavGroup('relays-find-pagenav')
+    this.active = this.store.layout.getActive(this.navSlug)
+    this.store.layout.setNavItems(this.navSlug, items)
+    this.sidebar = this.store.layout.getNavGroup(this.navSlug)
+    this.loadPageContent('subsection')
 
     // this.sidebar['relays'].map(item => {
     //     item.count = this.store.relays.getCount(item.slug)
@@ -111,12 +116,13 @@ export default defineComponent({
     //   }
     // })
   },
-  methods: {
+  methods: Object.assign(RelaysLib, {
     setActive(section, slug){
         this.active = slug
         this.store.layout.setActive(section, slug)
+        return true
     },
-  },
+  }),
   computed: {
     isActive(){
         return (item) => item.slug==this.active

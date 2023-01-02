@@ -1,15 +1,23 @@
 <template>
-  <button v-if="signer" @click="auth">Sign</button>
+  <a v-if="signer" @click="auth" href="#">Login</a>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
 import { useRoute } from 'vue-router'
+import UserLib from '@/shared/user-lib.js'
+import { setupStore } from '@/store'
 
-import { validateEvent, verifySignature, getEventHash } from 'nostr-tools'
+
+// import { validateEvent, verifySignature, getEventHash } from 'nostr-tools'
 export default defineComponent({
   name: 'AlbyComponent',
   components: {},
+  setup(){
+    return { 
+      store : setupStore()
+    }
+  },
   data() {
     return {
       authorizeEndpoint: "https://app.regtest.getalby.com/oauth",
@@ -24,58 +32,18 @@ export default defineComponent({
     }
   },
   mounted(){
-
+    console.log('store?', this.store.user)
     this.showAuth()
-
-    // const args = this.route.query
-
-    // if(!Object.prototype.hasOwnProperty.call(args, 'code'))
-    //   return
-    
-    // const code = args?.code;
-
-    // // console.log('args', args)
-
-    // if (code) {
-    //   let xhr = new XMLHttpRequest();
-
-    //   xhr.onload = function() {
-    //     let response = xhr.response;
-    //     let message;
-
-    //     if (xhr.status == 200) {
-    //         message = "Access Token: " + response.access_token;
-    //     }
-    //     else {
-    //         message = "Error: " + response.error_description + " (" + response.error + ")";
-    //     }
-    //     this.token = message
-    //     console.log('token', this.token)
-    //   };
-
-    //   xhr.responseType = 'json';
-      
-    //   xhr.open("POST", this.tokenEndpoint, true);
-
-    //   xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    //   xhr.setRequestHeader("Authorization", "Basic " + btoa(this.clientId + ":" + this.clientSecret));
-
-    //   xhr.send(new URLSearchParams({
-    //     code_verifier: window.sessionStorage.getItem("code_verifier"),
-    //     grant_type: "authorization_code",
-    //     redirect_uri: "http://localhost:8080/",
-    //     code: code
-    //   }));
-    // }
   },
   updated(){},
   computed: {},
-  methods: {
+  methods: Object.assign(UserLib, {
     showAuth: async function(){
       await new Promise( (resolve) => {
         setTimeout( () => {
           if(window.nostr instanceof Object)
-            resolve(this.signer = true)
+            if(!this.isLoggedIn())
+              resolve(this.signer = true)
           else            
             resolve()  
         }, 1001)
@@ -83,35 +51,35 @@ export default defineComponent({
       console.log('signer enabled', this.signer)
     },
     auth: async function(){
-      this.user.pubkey = await window.nostr.getPublicKey()
-      console.log('pukey', this.user.pubkey)
+      // console.log('pukey', this.user.pubkey)
+      this.store.user.setPublicKey(await window.nostr.getPublicKey())
       // console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
 
       // console.log(window.nostr)
 
-      const event = {
-        tags: [],
-        pubkey:this.user.pubkey,
-        kind: 3,
-        content: "hello world",
-        created_at: Math.round(Date.now()/1000)
-      }
+      // const event = {
+      //   tags: [],
+      //   pubkey:this.user.pubkey,
+      //   kind: 3,
+      //   content: "hello world",
+      //   created_at: Math.round(Date.now()/1000)
+      // }
 
-      event.id = getEventHash(event)
+      // event.id = getEventHash(event)
 
-      console.log('unsigned event', event)
+      // console.log('unsigned event', event)
 
-      const signedEvent = await window.nostr.signEvent(event)
-          .catch( function(error){
-            console.log('there was an error', error)
-          })
+      // const signedEvent = await window.nostr.signEvent(event)
+      //     .catch( function(error){
+      //       console.log('there was an error', error)
+      //     })
 
-      console.log('signed event', signedEvent)
+      // console.log('signed event', signedEvent)
 
-      let ok = validateEvent(signedEvent)
-      let veryOk = await verifySignature(signedEvent)
+      // let ok = validateEvent(signedEvent)
+      // let veryOk = await verifySignature(signedEvent)
 
-      console.log('valid event?', ok, veryOk)
+      // console.log('valid event?', ok, veryOk)
     },
     auth2: function(){
       var codeVerifier = this.generateRandomString(64);
@@ -158,7 +126,7 @@ export default defineComponent({
 
       return text;
     },
-  },
+  }),
 
   props: {
     // relay: {

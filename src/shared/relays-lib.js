@@ -81,6 +81,40 @@ export default {
     })
   },
 
+  psuedoRouter: function(){
+    console.log(this)
+    const route = this.parseRouterHash()
+    console.log('pseudo route', route)
+    if(route.section)
+      this.activeNavItem = route.section
+    if(route.subsection)
+      this.activePageItem = route.subsection
+  },
+
+  parseRouterHash: function(){
+    const hashParams = this.$route.hash.replace('#', '').replace(/^\/+/g, '').split('/')  
+    return {
+      page: hashParams[0],
+      section: hashParams[1],
+      subsection: hashParams[2]
+    }
+  },
+
+  writeRouterHashPath: function(page, section, subsection){
+    console.log('hash updated?', this.$route)
+    this.$route.hash = `#/${page}/${section}/${subsection}`
+    console.log('hash updated?', this.$route)
+  },
+
+  loadPageContent(which){
+    const route = this.parseRouterHash()
+    console.log(`route from ${which}`, route)
+    if(route[which])
+      this.setActive(this.navSlug, route[which])
+    else 
+      this.active = this.store.layout.getActive(this.navSlug)
+  },
+
   relaysUpdate: function(){
     this.relays = this.store.relays.getAll
     this.filterRelays()

@@ -1,89 +1,7 @@
-import { Inspector } from 'nostr-relay-inspector'
-
 import crypto from "crypto"
+import {sort} from 'array-timsort'
 
 export default {
-  invalidate: async function(force, single){
-    if( (!this.isExpired() && !force)) 
-      return
-
-    this.store.relays.startProcessing()
-
-    let processed = 0
-
-    if(single) {
-      await this.check(single) 
-    } 
-    else {
-      for(let index = 0; index < this.relays.length; index++) {
-        let relay = this.relays[index]
-        await this.delay(20).then( () => { 
-          this.check(relay)
-            .then((result) => {
-              this.results[result.uri] = result
-              this.setCache(result)
-              this.store.relays.updateNow()
-              processed++ 
-              // console.log('processing status', processed, '/', this.relays.length)
-              if(processed >= this.relays.length){
-                this.store.relays.finishProcessing()
-              }
-            })
-            .catch( err => { 
-              console.log(err)
-              processed++ 
-            })
-        }).catch(err => console.log(err))
-      }
-    } 
-  },
-
-  check: async function(relay){
-    return new Promise( (resolve, reject) => {
-      // if(!this.isExpired())
-      //   return reject(relay)
-
-      const opts = {
-          checkLatency: true,          
-          getInfo: true,
-          getIdentities: true,
-
-          // debug: true,
-          // data: { result: this.store.relays.results[relay] }
-        }
-      
-      if(this.store.user.testEvent)
-        opts.testEvent = this.store.user.testEvent
-
-      let socket = new Inspector(relay, opts)
-
-      socket
-        .on('complete', (instance) => {
-          instance.result.aggregate = this.getAggregate(instance.result)
-          instance.relay.close()
-          resolve(instance.result)
-        })
-        // .on('notice', (notice) => {
-        //   const hash = this.sha1(notice)  
-        //   let   message_obj = RELAY_MESSAGES[hash]
-          
-        //   if(!message_obj || !Object.prototype.hasOwnProperty.call(message_obj, 'code'))
-        //     return
-
-        //   // let code_obj = RELAY_CODES[message_obj.code]
-
-        //   // let response_obj = {...message_obj, ...code_obj}
-
-        //   // this.store.relays.results[relay].observations.push( new InspectorObservation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
-        // })
-        .on('close', () => {})
-        .on('error', () => {
-          reject()
-        })
-        .run()
-    })
-  },
-
   psuedoRouter: function(){
     console.log(this)
     const route = this.parseRouterHash()
@@ -119,10 +37,19 @@ export default {
   },
 
   relaysUpdate: function(){
-    this.relays = this.store.relays.getAll
-    this.filterRelays()
-    this.sortRelays()
-    // this.setRelayCount()
+    if(this.store.relays.isProcessing || !this.store.relays.areAggregatesSet ) {
+      console.log('filtering relays at runtime')
+      this.relays = this.store.relays.getAll
+      this.filterRelaysMutate()
+      this.sortRelaysMutate()
+    } else {
+      console.log('getting relays from cache')
+      if(this.activePageItem == 'favorite')
+        this.relays = this.sortRelays(this.store.relays.getFavorites)
+      else
+        this.relays = this.sortRelaysFavoritesOnTop(this.store.relays.getAggregate(this.activePageItem))
+    }
+
     return this.relays
   },
   setRelayCount: function(){
@@ -130,41 +57,75 @@ export default {
       this.store.relays.setStat(item, this.relays.filter( (relay) => this.results?.[relay]?.aggregate == item))
     })
   },
-  filterRelays: function(){
+  filterRelaysMutate: function(){
     if( 'favorite' == this.activePageItem )
-      this.relays = this.store.relays.getFavorites
+      this.relays = this.getFavoriteRelays()
     if( 'public' == this.activePageItem )
-      this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'public')
+      this.relays = this.getPublicRelays()
     if( 'restricted' == this.activePageItem )
-      this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted')
+      this.relays = this.getRestrictedRelays()
     if( 'offline' == this.activePageItem)
-      this.relays = this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'offline')
-    // if( 'onion' == active )
-      // this.filteredRelays = this.store.relays.getOnion
-    // console.log('meow', this.activePageItem, this.filteredRelays.length)
-    // this.store.relays.setStat(this.activePageItem, this.filteredRelays.length)
+      this.relays = this.getOfflineRelays()
   },
-  sortRelays: function() {
+  getAllRelays: function(){
+    return this.store.relays.getAll
+  },
+  getFavoriteRelays: function(){
+    return this.store.relays.getFavorites
+  },
+  getPublicRelays: function(){
+    return this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'public')
+  },
+  getRestrictedRelays: function(){
+    return this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted')
+  },
+  getOfflineRelays: function(){
+    return this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'offline')
+  },
+  getSortedAllRelays: function(){
+    return this.sortRelays(this.getAllRelays())
+  },
+  getSortedFavoriteRelays: function(){
+    return this.sortRelays(this.getFavoriteRelays())
+  },
+  getSortedPublicRelays: function(){
+    return this.sortRelays(this.getPublicRelays())
+  },
+  getSortedRestrictedRelays: function(){
+    return this.sortRelays(this.getRestrictedRelays())
+  },
+  getSortedOfflineRelays: function(){
+    return this.sortRelays(this.getOfflineRelays())
+  },
+  sortRelays(relays){
+    sort(relays, (relay1, relay2) => {
+      return this.results?.[relay1]?.latency.final - this.results?.[relay2]?.latency.final
+    })
+    sort(relays, (relay1, relay2) => {
+      let a = this.results?.[relay1]?.latency.final ,
+          b = this.results?.[relay2]?.latency.final 
+      return (b != null) - (a != null) || a - b;
+    })
+    sort(relays, (relay1, relay2) => {
+      let x = this.results?.[relay1]?.check?.connect,
+          y = this.results?.[relay2]?.check?.connect
+      return (x === y)? 0 : x? -1 : 1;
+    })
+    relays = this.sortRelaysFavoritesOnTop(relays)
+    return relays
+  },
+  sortRelaysFavoritesOnTop(relays){
+    sort(relays, (relay1, relay2) => {
+      let x = this.store.relays.isFavorite(relay1),
+          y = this.store.relays.isFavorite(relay2)
+      return (x === y)? 0 : x? -1 : 1;
+    })
+    return relays
+  },
+  sortRelaysMutate: function() {
     if (this.relays.length) {
-      this.relays
-        .sort((relay1, relay2) => {
-          return this.results?.[relay1]?.latency.final - this.results?.[relay2]?.latency.final
-        })
-        .sort((relay1, relay2) => {
-          let a = this.results?.[relay1]?.latency.final ,
-              b = this.results?.[relay2]?.latency.final 
-          return (b != null) - (a != null) || a - b;
-        })
-        .sort((relay1, relay2) => {
-          let x = this.results?.[relay1]?.check?.connect,
-              y = this.results?.[relay2]?.check?.connect
-          return (x === y)? 0 : x? -1 : 1;
-        })
-        .sort((relay1, relay2) => {
-          let x = this.store.relays.isFavorite(relay1),
-              y = this.store.relays.isFavorite(relay2)
-          return (x === y)? 0 : x? -1 : 1;
-        })
+      this.relays = this.sortRelays(this.relays)
+        
         // .sort((relay1, relay2) => {
         //   let x = this.results?.[relay1]?.check?.read,
         //       y = this.results?.[relay2]?.check?.read

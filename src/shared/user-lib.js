@@ -3,6 +3,6 @@ export default {
         return this.store.user.getPublicKey
     },
     signOut: function(){
-        this.store.user.setPublicKey('')
+        this.store.user.$reset()
     }
 }

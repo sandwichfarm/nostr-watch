@@ -248,7 +248,6 @@ td.verified span {
 
 .restricted.aggregate.indicator {
   position:relative;
-  left:-7px;
 }
 
  td {

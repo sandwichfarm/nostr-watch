@@ -35,7 +35,7 @@
 <script>
 //vue
 import { defineComponent } from 'vue'
-import { useMeta } from 'vue-meta'
+import { useHead } from '@vueuse/head'
 import { setupStore } from '@/store'
 //shared methods
 import RelaysLib from '@/shared/relays-lib.js'
@@ -61,10 +61,14 @@ export default defineComponent({
   },
 
   setup(){
-    useMeta({
+    useHead({
       title: 'nostr.watch',
-      description: 'A robust client-side nostr relay monitor. Find fast nostr relays, view them on a map and monitor the network status of nostr.',
-      htmlAttrs: { lang: 'en', amp: true }
+      meta: [
+        {
+          name: `description`,
+          content: 'A robust client-side nostr relay monitor. Find fast nostr relays, view them on a map and monitor the network status of nostr.',
+        },
+      ],
     })
     return { 
       store : setupStore()
@@ -108,11 +112,8 @@ export default defineComponent({
       if(mutation.events.key == 'relays-subnav')
         this.activeNavItem = mutation.events.newValue
     })
-    
     // this.psuedoRouter(this.store.layout.getNavGroup('relays-subnav'))
     this.psuedoRouter()
-    
-    this.invalidate()
   },
 
   computed: {

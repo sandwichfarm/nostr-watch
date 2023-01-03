@@ -8,8 +8,10 @@ export const useRelaysStore = defineStore('relays', {
     lastUpdate: null,
     count: new Object(),
     processing: false,
-    processedRelays: new Array(),
+    processedRelays: new Set(),
     favorites: new Array(),
+    aggregates: {},
+    aggregatesAreSet: false
   }),
   getters: {
     getAll: (state) => state.urls, //clone it
@@ -28,7 +30,10 @@ export const useRelaysStore = defineStore('relays', {
     getCount: (state) => (type) => state.count[type],
     getCounts: (state) => state.count,
 
-    getProcessedRelays: (state) => state.processedRelays,
+    getAggregate: (state) => (which) => state.aggregates[which],
+    areAggregatesSet: (state) => state.aggregatesAreSet,
+
+    getProcessedRelays: (state) => Array.from(state.processedRelays),
     isProcessing: (state) => state.processing,
 
     getFavorites: (state) => state.favorites,
@@ -53,12 +58,17 @@ export const useRelaysStore = defineStore('relays', {
     setStat(type, value){ 
       this.count[type] = value 
     },
+
+    setAggregate(aggregate, arr){ this.aggregates[aggregate] = arr },
+    setAggregates(obj){ 
+      this.aggregatesAreSet = true
+      this.aggregates = obj 
+    },
     
     addProcessedRelay(relay){
       console.log(`this.processedRelays is set`, this.processedRelays instanceof Set)
-      this.processedRelays.push(relay) 
+      this.processedRelays.add(relay) 
     },
-
     finishProcessing() { this.processing = false },
     startProcessing() { this.processing = true },
     completeProcessing() { 

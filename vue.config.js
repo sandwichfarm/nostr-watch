@@ -28,6 +28,9 @@ module.exports = defineConfig({
     },
   },
   chainWebpack: config => {
+    config.plugins.delete('prefetch')
+    config.plugins.delete('preload')
+    
     config.module
       .rule('yaml')
         .test(/\.ya?ml?$/)

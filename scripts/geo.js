@@ -1,6 +1,8 @@
 const fetch = require('cross-fetch'),
       fs = require('fs'),
-      YAML = require('yaml')
+      YAML = require('yaml'),
+
+      outFile = './cache/geo.yaml'
 
 let object,
     yaml,
@@ -67,20 +69,19 @@ const query = async function(){
       if(geo)
         geo = Object.assign(geo, getContinent(geo.countryCode))
 
-      if(geo && dns){
+      if(geo && dns)
         geo.dns = dns[dns.length-1]
-        delete geo.status
-      }
   
-      if(geo && geo.status == 'success')
+      if(geo && geo.status == 'success') {
+        delete geo.status
         result[relay] = geo
+      }
 
       if(!geo)
         console.warn('api was mean, no geo for', relay)
+        
     })
-    
   }
-
   return result
 }
 
@@ -90,7 +91,7 @@ const run = async function(){
   yaml = new YAML.Document()
   yaml.contents = object
   // console.log(object)
-  fs.writeFile('./cache/geo.yaml', yaml.toString(), (err) => {
+  fs.writeFile(outFile, yaml.toString(), (err) => {
     if (err) return console.error('./scripts/geo.js', err);
   });
 }

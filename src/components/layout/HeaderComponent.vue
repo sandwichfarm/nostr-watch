@@ -16,8 +16,8 @@
             <sup class="relative -top-2" style="font-size: 0.6rem">{{ version }}</sup>
           </span>
           <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-          <div class="w-32 flex flex-shrink-0 items-center">
-          </div>
+          <!-- <div class="w-32 flex flex-shrink-0 items-center">
+          </div> -->
           <div class="hidden sm:ml-6 sm:block">
               <div class="flex space-x-4">
               <router-link 
@@ -44,13 +44,22 @@
               <div v-if="isLoggedIn()">
               <MenuButton class="flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                   <span class="sr-only">Open user menu</span>
-                  <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="" />
+                  <span class="text-white mt-1.5 mr-3">{{ store.user.profile.nip05 || store.user.profile.name }}</span>
+                  <img v-if="store.user.isProfile" class="h-8 w-8 rounded-full" :src="store.user.profile?.picture" alt="store.user.profile?.name" />
               </MenuButton>
               </div>
               <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
-              <MenuItems style="z-index:9000 !important;" class="absolute right-0 z-9000 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <span class="block text-ellipsis text-xs tracking-width-full">
-                    <code>{{ store.user.getPublicKey.slice(0, 10) }}...</code>
+              <MenuItems 
+                style="z-index:9000 !important;" 
+                class="absolute right-0 z-9000 mt-2 w-64 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <span v-if="store.user.profile.name" class="block text-ellipsis text-sm w-full font-extrabold">
+                    {{ store.user.getName }}
+                  </span>  
+                  <span v-if="store.user.getNip05" class="block text-ellipsis text-sm w-full">
+                    {{ store.user.getNip05 }}
+                  </span>  
+                  <span class="block text-ellipsis text-xs">
+                    <code>{{ store.user.getPublicKey.slice(0, 16) }}...</code>
                   </span>  
                   <MenuItem v-slot="{ active }">
                   <a href="#" @click="signOut()" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Sign out</a>

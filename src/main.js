@@ -10,7 +10,7 @@ import {Tabs, Tab} from 'vue3-tabs-component';
 import { plugin as storePlugin } from './store'
 import { createMetaManager } from 'vue-meta'
 import { RelayPool } from 'nostr'
-import { relays } from '../relays.yaml'
+// import { relays } from '../relays.yaml'
 // import VueIdentifyNetwork from 'vue-identify-network';
 
 const app = createApp(App)
@@ -24,7 +24,7 @@ const app = createApp(App)
 
 directives(app);
 
-app.config.globalProperties.$pool = new RelayPool(relays)
+app.config.globalProperties.$pool = new RelayPool(['wss://relay.damus.io'])
 
 await router.isReady()
 

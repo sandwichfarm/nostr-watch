@@ -5,6 +5,7 @@ import { useRelaysStore } from './relays.js'
 import { usePrefsStore } from './prefs.js'
 import { useLayoutStore } from './layout.js'
 import { useUserStore } from './user.js'
+import { useStatStore } from './stats.js'
 
 export const plugin = (app) => {
   const pinia = createPinia()
@@ -20,7 +21,8 @@ export const setupStore = function(){
     relays: useRelaysStore(),
     prefs: usePrefsStore(),
     layout: useLayoutStore(),
-    user: useUserStore()
+    user: useUserStore(),
+    stats: useStatStore(),
   }
 }
 

@@ -25,7 +25,7 @@
 
       <FindRelaysSubnav />
 
-      <div class="-mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="overflow-x-auto">
           <div class="inline-block min-w-full align-middle" v-if="relays.length">
             <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
                 <!-- <div v-if="selectedRelays.length > 0" class="absolute top-0 left-12 flex h-12 items-center space-x-3 bg-gray-50 sm:left-16">
@@ -35,15 +35,10 @@
                 <thead>
                     <tr>
                       <th scope="col" class="status-indicator text-left">
-                        <!-- <input type="checkbox" 
-                        class="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 sm:left-6" 
-                        :checked="indeterminate || selectedRelays.length === relays.length" 
-                        :indeterminate="indeterminate" 
-                        @change="selectedRelays = $event.target.checked ? relays : []"
-                          /> -->
-                      </th>
-                      <th scope="col" class="relay">
                         
+                      </th>
+                      <th scope="col" class="relay text-left">
+                        <NostrSyncPopoverNag  v-if="activePageItem == 'favorite'"  />
                       </th>
                       <th scope="col" class="verified">
                         <span class="verified-shape-wrapper">
@@ -95,6 +90,7 @@
 
   import SingleClearnet from '@/components/relays/SingleClearnet.vue'
   import FindRelaysSubnav from '@/components/relays/FindRelaysSubnav.vue'
+  import NostrSyncPopoverNag from '@/components/relays/partials/NostrSyncPopoverNag.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
   import { setupStore } from '@/store'
@@ -140,7 +136,8 @@
     name: 'RelaysClearnet',
     components: {
       SingleClearnet,
-      FindRelaysSubnav
+      FindRelaysSubnav,
+      NostrSyncPopoverNag
     },
     setup(props){
       const {activePageItemProp: activePageItem} = toRefs(props)
@@ -156,7 +153,7 @@
       this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
       
       this.store.relays.$subscribe( (mutation) => {
-        console.log('mutation key', mutation.events.key)
+        console.log('mutation key', mutation.events)
         if(mutation.events.key == 'favorites'){
           setTimeout( () => this.relaysUpdate(), 100 )
           console.log('mutated!!')
@@ -165,7 +162,7 @@
       
       this.interval = setInterval( () => {
         if(this.store.relays.isProcessing)
-        this.relaysUpdate()
+          this.relaysUpdate()
       }, 1000 ) //Ugly, but better for reflow
     },
     updated(){

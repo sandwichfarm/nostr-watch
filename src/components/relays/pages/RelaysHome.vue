@@ -8,14 +8,22 @@
 
   <MapSummary 
     :resultsProp="results" 
-    :activePageItemProp="activePageItem" /> 
+    :activePageItemProp="activePageItem"
+    v-if="activeNavItem == 'find'" /> 
 
-  <!-- <h1 class="text-3xl capitalize mt-6 mb-3 align-left">{{ activeNavItem }} Relays</h1> -->
-
-  <div id="wrapper" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">  
+  <div id="wrapper" class="mx-auto max-w-7xl">  
     <ListClearnet
       :resultsProp="results"
-      :activePageItemProp="activePageItem" /> 
+      :activePageItemProp="activePageItem"
+      v-if="activeNavItem == 'find'" /> 
+
+    <RelayStatistics
+      :resultsProp="results"
+      v-if="activeNavItem == 'statistics'" /> 
+    
+    <RelayStatistics
+      :resultsProp="results"
+      v-if="activeNavItem == 'map'" /> 
     
     <div id="footer">
       <span class="credit">
@@ -79,15 +87,6 @@ export default defineComponent({
   updated(){},
 
   async mounted() {
-
-    this.$pool
-      .on('open', function(relay){
-        console.log('global pool connected!', relay.url)
-      })
-      .on('error', function(relay){
-        console.log('global pool error!', relay.url)
-      })
-
     console.log('params', )
 
     console.log('active page item', this.activePageItem)
@@ -106,6 +105,8 @@ export default defineComponent({
     this.store.layout.$subscribe( (mutation) => {
       if(mutation.events.key == 'relays-find-pagenav')
         this.activePageItem = mutation.events.newValue
+      if(mutation.events.key == 'relays-subnav')
+        this.activeNavItem = mutation.events.newValue
     })
     
     // this.psuedoRouter(this.store.layout.getNavGroup('relays-subnav'))

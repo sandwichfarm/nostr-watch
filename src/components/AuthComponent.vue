@@ -7,7 +7,7 @@ import { defineComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import UserLib from '@/shared/user-lib.js'
 import { setupStore } from '@/store'
-
+import crypto from 'crypto'
 
 // import { validateEvent, verifySignature, getEventHash } from 'nostr-tools'
 export default defineComponent({
@@ -54,12 +54,13 @@ export default defineComponent({
         }, 1001)
       })
       console.log('signer enabled', this.signer)
+      this.getData()
     },
     watch: function(){
     },
     auth: async function(){
-      // console.log('pukey', this.user.pubkey)
       this.store.user.setPublicKey(await window.nostr.getPublicKey())
+      // console.log('pukey', this.user.pubkey)
       // console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
 
       // console.log(window.nostr)
@@ -87,6 +88,31 @@ export default defineComponent({
       // let veryOk = await verifySignature(signedEvent)
 
       // console.log('valid event?', ok, veryOk)
+    },
+    getData: function(){
+      const subid = crypto.randomBytes(40).toString('hex')
+      const filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] }
+      const filterEvent = { limit: 1, kinds:[1], authors: [this.store.user.getPublicKey ] }
+      let foundProfile = false,
+          foundEvent = false 
+      this.$pool
+        .on('open', (relay) => {
+          relay.subscribe(`${subid}_profile`, filterProfile)
+          relay.subscribe(`${subid}_event`, filterEvent)
+        })
+        .on('event', (relay, sub_id, event) => {
+          if(`${subid}_profile` == sub_id && !foundProfile) {
+            this.store.user.setProfile(event.content)
+            this.$pool.unsubscribe(subid)
+            foundProfile = true
+          }
+          if(`${subid}_event` == sub_id && !foundEvent) {
+            this.store.user.setTestEvent(event)
+            console.log('user event', this.store.user.getTestEvent)
+            this.$pool.unsubscribe(subid)
+            foundEvent = true
+          }
+        })
     },
     auth2: function(){
       var codeVerifier = this.generateRandomString(64);

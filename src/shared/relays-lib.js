@@ -1,5 +1,4 @@
-import { Inspector, InspectorObservation } from 'nostr-relay-inspector'
-import { messages as RELAY_MESSAGES, codes as RELAY_CODES } from '../../codes.yaml'
+import { Inspector } from 'nostr-relay-inspector'
 
 import crypto from "crypto"
 
@@ -48,9 +47,13 @@ export default {
           checkLatency: true,          
           getInfo: true,
           getIdentities: true,
+
           // debug: true,
           // data: { result: this.store.relays.results[relay] }
         }
+      
+      if(this.store.user.testEvent)
+        opts.testEvent = this.store.user.testEvent
 
       let socket = new Inspector(relay, opts)
 
@@ -60,19 +63,19 @@ export default {
           instance.relay.close()
           resolve(instance.result)
         })
-        .on('notice', (notice) => {
-          const hash = this.sha1(notice)  
-          let   message_obj = RELAY_MESSAGES[hash]
+        // .on('notice', (notice) => {
+        //   const hash = this.sha1(notice)  
+        //   let   message_obj = RELAY_MESSAGES[hash]
           
-          if(!message_obj || !Object.prototype.hasOwnProperty.call(message_obj, 'code'))
-            return
+        //   if(!message_obj || !Object.prototype.hasOwnProperty.call(message_obj, 'code'))
+        //     return
 
-          let code_obj = RELAY_CODES[message_obj.code]
+        //   // let code_obj = RELAY_CODES[message_obj.code]
 
-          let response_obj = {...message_obj, ...code_obj}
+        //   // let response_obj = {...message_obj, ...code_obj}
 
-          this.store.relays.results[relay].observations.push( new InspectorObservation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
-        })
+        //   // this.store.relays.results[relay].observations.push( new InspectorObservation('notice', response_obj.code, response_obj.description, response_obj.relates_to) )
+        // })
         .on('close', () => {})
         .on('error', () => {
           reject()

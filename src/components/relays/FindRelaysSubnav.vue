@@ -1,15 +1,15 @@
 <template>
     <Disclosure as="nav" class="bg-white mb-5" v-slot="{ open }">
-    <div class="mx-auto max-w-7xl sm:px-4">
-      <div class="flex h-16 justify-between">
+    <div class="mx-auto max-w-7xl px-0">
+      <div class="flex h-12 justify-between">
         <div class="flex px-2 lg:px-0">
-          <div class="hidden lg:flex lg:space-x-8">
+          <div class="hidden lg:flex lg:space-x-2">
             <a v-for="item in store.layout.getNavGroup(this.navSlug)"
                 :key="`subnav-${item.slug}`"
                 :href="item.href" 
                 @click="setActive(this.navSlug, item.slug)"
-                :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']" 
-                class="inline-flex items-center pt-1 text-sm font-medium text-gray-900">
+                :class="[isActive(item) ? 'bg-slate-500 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']" 
+                class="inline-flex items-center pt-1.5 text-sm font-medium">
                 {{ item.name }}
             </a>
           </div>

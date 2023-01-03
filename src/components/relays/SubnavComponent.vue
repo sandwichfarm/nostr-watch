@@ -97,14 +97,6 @@ export default defineComponent({
         this.active = slug
         this.store.layout.setActive(section, slug)
     },
-    loadPageContent(which){
-      const route = this.parseRouterHash()
-      console.log(`route from ${which}`, route)
-      if(route[which])
-        this.setActive(this.navSlug, route[which])
-      else 
-        this.active = this.store.layout.getActive(this.navSlug)
-    }
   }),
   computed: {
     isActive(){

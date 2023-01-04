@@ -41,8 +41,8 @@ const localMethods = {
 
       this.untilNext = this.timeUntilRefresh() 
       this.sinceLast = this.timeSinceRefresh() 
-
-      this.invalidate()
+      if(!this.store.relays.isProcessing)
+        this.invalidate()
     }, 1000)
   },
   refreshNow(){

@@ -2,7 +2,8 @@ const { RelayPool, Relay } = require('nostr'),
       crypto = require('crypto'),
       writeYamlFile = require('write-yaml-file'),
       fs = require('fs'),
-      fetch = require('cross-fetch')
+      fetch = require('cross-fetch'),
+      yaml= require('js-yaml');
 
 const result = {},
       relays_endpoint = 'https://nostr.watch/relays.json'
@@ -47,9 +48,13 @@ const concatRelays = function(){
 }
 
 async function getRelays(){
-  return await fetch(relays_endpoint, { method: "Get" })
-    .then(res => res.json())
-    .then(json => relaysKnown = json.relays) 
+  // return await fetch(relays_endpoint, { method: "Get" })
+  //   .then(res => res.json())
+  //   .then(json => relaysKnown = json.relays) 
+  const relaysObj = yaml.load(fs.readFileSync('./relays.yaml', 'utf8'))
+  relaysKnown = relaysObj.relays
+  console.log(relaysKnown)
+  return 
 }
 
 async function discover(){

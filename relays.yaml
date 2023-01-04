@@ -177,4 +177,5 @@ relays:
   - wss://relay-pub.deschooling.us
   - wss://nostr-pub1.southflorida.ninja
   - wss://nostr.ncsa.illinois.edu
+  - wss://nostr.whoop.ph
   - wss://nostr.zoomout.chat

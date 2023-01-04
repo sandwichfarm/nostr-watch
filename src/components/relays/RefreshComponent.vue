@@ -1,18 +1,18 @@
 <template>
   <span class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="!store.relays.isProcessing">Refreshed {{ sinceLast }} ago</span>
-    <span v-if="store.relays.isProcessing" class="italic">Refreshing Now</span>
+    <span v-if="!store.relays.isProcessing">Checked {{ sinceLast }} ago</span>
+    <span v-if="store.relays.isProcessing" class="italic">Checking Now</span>
   </span>
   <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.relays.isProcessing">-</span>
   <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.relays.isProcessing"> 
-    Next refresh in: {{ untilNext }}
+    Next check in: {{ untilNext }}
   </span>
   <button 
     v-if="!store.relays.isProcessing"
     class="mr-8 my-1 py-0 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
-    :disabled='disabled' 
+    :disabled='store.relays.isProcessing' 
     @click="refreshNow()">
-      Refresh{{ relay ? ` ${relay}` : "" }} Now
+      Check{{ relay ? ` ${relay}` : "" }} Now
   </button>
 </template>
 
@@ -33,15 +33,6 @@ const localMethods = {
   timeSinceRefresh(){
     return this.timeSince(this.store.relays.lastUpdate)
   },
-  disableManualRefresh: function(){
-    //this is a hack.
-    const lastUpdate = this.store.relays.lastUpdate
-    if(Math.floor( ( Date.now()-lastUpdate )/1000 ) < 20)
-      this.disabled = true 
-    else
-      this.disabled = false
-    return this.disabled
-  },
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
@@ -52,8 +43,6 @@ const localMethods = {
       this.sinceLast = this.timeSinceRefresh() 
 
       this.invalidate()
-
-      this.disableManualRefresh()
     }, 1000)
   },
   refreshNow(){
@@ -121,7 +110,7 @@ const localMethods = {
           checkLatency: true,          
           getInfo: true,
           getIdentities: true,
-          debug: true,
+          // debug: true,
           connectTimeout: this.getDynamicTimeout(),
           readTimeout: this.getDynamicTimeout(),
           writeTimeout: this.getDynamicTimeout(),

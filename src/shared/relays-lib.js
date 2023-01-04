@@ -2,6 +2,28 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  sortRelays(relays){
+    sort(relays, (relay1, relay2) => {
+      return this.results?.[relay1]?.latency.final - this.results?.[relay2]?.latency.final
+    })
+    sort(relays, (relay1, relay2) => {
+      let a = this.results?.[relay1]?.latency.final ,
+          b = this.results?.[relay2]?.latency.final 
+      return (b != null) - (a != null) || a - b;
+    })
+    sort(relays, (relay1, relay2) => {
+      let x = this.results?.[relay1]?.check?.connect,
+          y = this.results?.[relay2]?.check?.connect
+      return (x === y)? 0 : x? -1 : 1;
+    })
+    sort(relays, (relay1, relay2) => {
+      let x = this.store.relays.isFavorite(relay1),
+          y = this.store.relays.isFavorite(relay2)
+      return (x === y)? 0 : x? -1 : 1;
+    })
+    // relays = this.sortRelaysFavoritesOnTop(relays)
+    return relays
+  },
   psuedoRouter: function(){
     console.log(this)
     const route = this.parseRouterHash()
@@ -34,112 +56,6 @@ export default {
       this.setActive(this.navSlug, route[which])
     else 
       this.active = this.store.layout.getActive(this.navSlug)
-  },
-
-  relaysUpdate: function(){
-    if(this.store.relays.isProcessing || !this.store.relays.areAggregatesSet ) {
-      console.log('filtering relays at runtime')
-      this.relays = this.store.relays.getAll
-      this.filterRelaysMutate()
-      this.sortRelaysMutate()
-    } else {
-      console.log('getting relays from cache')
-      if(this.activePageItem == 'favorite')
-        this.relays = this.sortRelays(this.store.relays.getFavorites)
-      else
-        this.relays = this.sortRelaysFavoritesOnTop(this.store.relays.getAggregate(this.activePageItem))
-    }
-
-    return this.relays
-  },
-  setRelayCount: function(){
-    this.store.layout.getNavGroup('relays').forEach( item => {
-      this.store.relays.setStat(item, this.relays.filter( (relay) => this.results?.[relay]?.aggregate == item))
-    })
-  },
-  filterRelaysMutate: function(){
-    if( 'favorite' == this.activePageItem )
-      this.relays = this.getFavoriteRelays()
-    if( 'public' == this.activePageItem )
-      this.relays = this.getPublicRelays()
-    if( 'restricted' == this.activePageItem )
-      this.relays = this.getRestrictedRelays()
-    if( 'offline' == this.activePageItem)
-      this.relays = this.getOfflineRelays()
-  },
-  getAllRelays: function(){
-    return this.store.relays.getAll
-  },
-  getFavoriteRelays: function(){
-    return this.store.relays.getFavorites
-  },
-  getPublicRelays: function(){
-    return this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'public')
-  },
-  getRestrictedRelays: function(){
-    return this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted')
-  },
-  getOfflineRelays: function(){
-    return this.relays.filter( (relay) => this.results?.[relay]?.aggregate == 'offline')
-  },
-  getSortedAllRelays: function(){
-    return this.sortRelays(this.getAllRelays())
-  },
-  getSortedFavoriteRelays: function(){
-    return this.sortRelays(this.getFavoriteRelays())
-  },
-  getSortedPublicRelays: function(){
-    return this.sortRelays(this.getPublicRelays())
-  },
-  getSortedRestrictedRelays: function(){
-    return this.sortRelays(this.getRestrictedRelays())
-  },
-  getSortedOfflineRelays: function(){
-    return this.sortRelays(this.getOfflineRelays())
-  },
-  sortRelays(relays){
-    sort(relays, (relay1, relay2) => {
-      return this.results?.[relay1]?.latency.final - this.results?.[relay2]?.latency.final
-    })
-    sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.final ,
-          b = this.results?.[relay2]?.latency.final 
-      return (b != null) - (a != null) || a - b;
-    })
-    sort(relays, (relay1, relay2) => {
-      let x = this.results?.[relay1]?.check?.connect,
-          y = this.results?.[relay2]?.check?.connect
-      return (x === y)? 0 : x? -1 : 1;
-    })
-    relays = this.sortRelaysFavoritesOnTop(relays)
-    return relays
-  },
-  sortRelaysFavoritesOnTop(relays){
-    sort(relays, (relay1, relay2) => {
-      let x = this.store.relays.isFavorite(relay1),
-          y = this.store.relays.isFavorite(relay2)
-      return (x === y)? 0 : x? -1 : 1;
-    })
-    return relays
-  },
-  sortRelaysMutate: function() {
-    if (this.relays.length) {
-      this.relays = this.sortRelays(this.relays)
-        
-        // .sort((relay1, relay2) => {
-        //   let x = this.results?.[relay1]?.check?.read,
-        //       y = this.results?.[relay2]?.check?.read
-        //   return (x === y)? 0 : x? -1 : 1;
-        // })
-        // .sort((relay1, relay2) => {
-        //   let x = this.results?.[relay1]?.check?.write,
-        //       y = this.results?.[relay2]?.check?.write
-        //   return (x === y)? 0 : x? -1 : 1;
-        // });
-      // return this.relays
-    }
-
-    return []
   },
 
     isExpired: function(){

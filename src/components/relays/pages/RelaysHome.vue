@@ -12,10 +12,50 @@
     v-if="activeNavItem == 'find'" /> 
 
   <div id="wrapper" class="mx-auto max-w-7xl">  
-    <ListClearnet
-      :resultsProp="results"
-      :activePageItemProp="activePageItem"
-      v-if="activeNavItem == 'find'" /> 
+    <div v-if="activeNavItem == 'find'">
+      <div class="pt-5 px-1 sm:px-6 lg:px-8">
+        <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto text-left">
+            <h1 class="text-4xl capitalize font-semibold text-gray-900">
+                <span class="inline-flex rounded bg-green-800 text-sm px-2 py-1 text-white relative -top-2">
+                    {{ this.relaysCount[activePageItem] }}
+                </span>
+                {{ activePageItem }} Relays
+            </h1>
+            <p class="mt-2 text-xl text-gray-700">
+              <!-- {{ store.layout.getActiveItem('relays-find-pagenav') }} -->
+              {{ store.layout.getActiveItem('relays-find-pagenav').description }}
+            </p>
+        </div>
+        <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <button 
+              @click="$router.push('/relays/add')" 
+              type="button" 
+              class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-m font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
+              Add Relay
+            </button>
+        </div>
+        </div>
+        <div class="mt-8 flex flex-col">
+
+        <FindRelaysSubnav />
+
+        </div>
+      </div>
+
+      <div 
+        v-for="section in navSubsection"
+        :key="section.slug"> 
+          <div v-if="section.slug == activePageItem">
+            <ListClearnet
+              :resultsProp="results"
+              :activePageItemProp="section.slug"
+              v-bind:relaysCountProp="relaysCount"
+              /> 
+          </div>
+      </div>
+    </div>
+
 
     <RelayStatistics
       :resultsProp="results"
@@ -43,6 +83,7 @@ import RelaysLib from '@/shared/relays-lib.js'
 import MapSummary from '@/components/relays/MapSummary.vue'
 import ListClearnet from '@/components/relays/ListClearnet.vue'
 import SubnavComponent from '@/components/relays/SubnavComponent.vue'
+import FindRelaysSubnav from '@/components/relays/FindRelaysSubnav.vue'
 //data
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
@@ -51,13 +92,10 @@ export default defineComponent({
   name: 'HomePage',
 
   components: {
-    // Row,
-    // Column,
     MapSummary,
-    // GroupByAvailability,
     ListClearnet,
-    SubnavComponent
-    // HeaderComponent
+    SubnavComponent,
+    FindRelaysSubnav
   },
 
   setup(){
@@ -84,15 +122,14 @@ export default defineComponent({
       intervals: {},
       activeNavItem: this.store.layout.getActive('relays-subnav'),
       activePageItem: this.store.layout.getActive('relays-find-pagenav'),
-      sidebar:  this.store.layout.getSidebar
+      navSubsection: this.store.layout.getNavGroup('relays-find-pagenav'),
+      relaysCount: {}
     }
   },
 
   updated(){},
 
   async mounted() {
-    console.log('params', )
-
     console.log('active page item', this.activePageItem)
     
     this.store.relays.setRelays(relays)
@@ -105,13 +142,14 @@ export default defineComponent({
     this.relays.forEach(relay => {
       this.results[relay] = this.getCache(relay)
     })
-
     this.store.layout.$subscribe( (mutation) => {
       if(mutation.events.key == 'relays-find-pagenav')
         this.activePageItem = mutation.events.newValue
       if(mutation.events.key == 'relays-subnav')
         this.activeNavItem = mutation.events.newValue
     })
+
+    this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 )
     // this.psuedoRouter(this.store.layout.getNavGroup('relays-subnav'))
     this.psuedoRouter()
   },

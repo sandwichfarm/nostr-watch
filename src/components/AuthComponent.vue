@@ -20,8 +20,6 @@ export default defineComponent({
   },
   data() {
     return {
-      authorizeEndpoint: "https://app.regtest.getalby.com/oauth",
-      tokenEndpoint: "https://api.regtest.getalby.com/oauth/token",
       route: useRoute(),
       clientId: "test_client",
       clientSecret: "test_secret",
@@ -34,7 +32,8 @@ export default defineComponent({
   mounted(){
     console.log('store?', this.store.user)
     this.showAuth()
-    console.log('is logged in', this.isLoggedIn())
+    if(this.isLoggedIn())
+      this.getData()
   },
   updated(){
     this.showAuth()
@@ -45,21 +44,94 @@ export default defineComponent({
       await new Promise( (resolve) => {
         setTimeout( () => {
           if(window.nostr instanceof Object)
-            if(!this.isLoggedIn())
-              resolve(this.signer = true)
-            else 
-              resolve()
-          else            
-            resolve()  
+            resolve(this.signer = true)
+          else 
+            resolve()
         }, 1001)
       })
       console.log('signer enabled', this.signer)
-      this.getData()
     },
-    watch: function(){
-    },
+    watch: function(){},
     auth: async function(){
       this.store.user.setPublicKey(await window.nostr.getPublicKey())
+      this.getData()
+    },
+    getData: function(){
+      const subid = crypto.randomBytes(40).toString('hex')
+      const filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] }
+      const filterEvent = { limit: 1, kinds:[1], authors: [this.store.user.getPublicKey ] }
+      let foundProfile = false,
+          foundEvent = false 
+      this.$pool
+        .on('open', (relay) => {
+          relay.subscribe(`${subid}_profile`, filterProfile)
+          relay.subscribe(`${subid}_event`, filterEvent)
+        })
+        .on('event', (relay, sub_id, event) => {
+          if(`${subid}_profile` == sub_id && !foundProfile) {
+            this.store.user.setProfile(event.content)
+            this.$pool.unsubscribe(subid)
+            foundProfile = true
+          }
+          if(`${subid}_event` == sub_id && !foundEvent) {
+            this.store.user.setTestEvent(event)
+            console.log('user event', this.store.user.getTestEvent)
+            this.$pool.unsubscribe(subid)
+            foundEvent = true
+          }
+        })
+    },
+
+    generateCodeChallenge: async function(codeVerifier) {
+      let digest = await crypto.subtle.digest("SHA-256",
+          new TextEncoder().encode(codeVerifier));
+
+      return btoa(String.fromCharCode(...new Uint8Array(digest)))
+          .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+    },
+
+    generateRandomString: function(length) {
+      let text = "";
+      let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+      for (let i = 0; i < length; i++) {
+          text += possible.charAt(Math.floor(Math.random() * possible.length));
+      }
+
+      return text;
+    },
+  }),
+  props: {},
+})
+
+    // auth2: function(){
+    //   var codeVerifier = this.generateRandomString(64);
+
+    //   const challengeMethod = crypto.subtle ? "S256" : "plain"
+
+    //   Promise.resolve()
+    //     .then(() => {
+    //       if (challengeMethod === 'S256')
+    //           return this.generateCodeChallenge(codeVerifier)
+    //       else
+    //           return codeVerifier
+    //     })
+    //     .then((codeChallenge) => {
+    //       window.sessionStorage.setItem("code_verifier", codeVerifier);
+    //       let redirectUri ="http://localhost:8080/";
+    //       let args = new URLSearchParams({
+    //           response_type: "code",
+    //           client_id: this.clientId,
+    //           scope: this.scopes,
+    //           code_challenge_method: challengeMethod,
+    //           code_challenge: codeChallenge,
+    //           redirect_uri: redirectUri
+    //         });
+    //     window.location = `${this.authorizeEndpoint}/?${args}`;
+    //   });
+    // },
+
+
       // console.log('pukey', this.user.pubkey)
       // console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
 
@@ -88,106 +160,6 @@ export default defineComponent({
       // let veryOk = await verifySignature(signedEvent)
 
       // console.log('valid event?', ok, veryOk)
-    },
-    getData: function(){
-      const subid = crypto.randomBytes(40).toString('hex')
-      const filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] }
-      const filterEvent = { limit: 1, kinds:[1], authors: [this.store.user.getPublicKey ] }
-      let foundProfile = false,
-          foundEvent = false 
-      this.$pool
-        .on('open', (relay) => {
-          relay.subscribe(`${subid}_profile`, filterProfile)
-          relay.subscribe(`${subid}_event`, filterEvent)
-        })
-        .on('event', (relay, sub_id, event) => {
-          if(`${subid}_profile` == sub_id && !foundProfile) {
-            this.store.user.setProfile(event.content)
-            this.$pool.unsubscribe(subid)
-            foundProfile = true
-          }
-          if(`${subid}_event` == sub_id && !foundEvent) {
-            this.store.user.setTestEvent(event)
-            console.log('user event', this.store.user.getTestEvent)
-            this.$pool.unsubscribe(subid)
-            foundEvent = true
-          }
-        })
-    },
-    auth2: function(){
-      var codeVerifier = this.generateRandomString(64);
-
-      const challengeMethod = crypto.subtle ? "S256" : "plain"
-
-      Promise.resolve()
-        .then(() => {
-          if (challengeMethod === 'S256')
-              return this.generateCodeChallenge(codeVerifier)
-          else
-              return codeVerifier
-        })
-        .then((codeChallenge) => {
-          window.sessionStorage.setItem("code_verifier", codeVerifier);
-          let redirectUri ="http://localhost:8080/";
-          let args = new URLSearchParams({
-              response_type: "code",
-              client_id: this.clientId,
-              scope: this.scopes,
-              code_challenge_method: challengeMethod,
-              code_challenge: codeChallenge,
-              redirect_uri: redirectUri
-            });
-        window.location = `${this.authorizeEndpoint}/?${args}`;
-      });
-    },
-
-    generateCodeChallenge: async function(codeVerifier) {
-      let digest = await crypto.subtle.digest("SHA-256",
-          new TextEncoder().encode(codeVerifier));
-
-      return btoa(String.fromCharCode(...new Uint8Array(digest)))
-          .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
-    },
-
-    generateRandomString: function(length) {
-      let text = "";
-      let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-      for (let i = 0; i < length; i++) {
-          text += possible.charAt(Math.floor(Math.random() * possible.length));
-      }
-
-      return text;
-    },
-  }),
-
-  props: {
-    // relay: {
-    //   type: String,
-    //   default(){
-    //     return ""
-    //   }
-    // },
-    // relaysProp:{
-    //   type: Array,
-    //   default(){
-    //     return []
-    //   }
-    // },
-    // messagesProp:{
-    //   type: Object,
-    //   default(){
-    //     return {}
-    //   }
-    // },
-    // resultProp: {
-    //   type: Object,
-    //   default(){
-    //     return {}
-    //   }
-    // },
-  },
-})
 </script>
 
 <style>

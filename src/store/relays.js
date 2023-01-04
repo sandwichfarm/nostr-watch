@@ -14,7 +14,15 @@ export const useRelaysStore = defineStore('relays', {
     aggregatesAreSet: false
   }),
   getters: {
-    getAll: (state) => state.urls, //clone it
+    getAll: (state) => state.urls,
+    getRelays: (state) => (aggregate, results) => {
+      if( 'all' == aggregate )
+        return state.urls.map(x=>x)
+      if( 'favorite' == aggregate )
+        return state.favorites
+      console.log('ok?', results, aggregate)
+      return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
+    },
     getByAggregate: (state) => (aggregate) => {
       return state.urls
               .filter( (relay) => state.results?.[relay]?.aggregate == aggregate)

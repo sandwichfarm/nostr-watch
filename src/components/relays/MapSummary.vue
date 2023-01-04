@@ -83,11 +83,6 @@ export default defineComponent({
   },
   mounted() {
     console.log('results', this.results)
-    setTimeout( () => this.relaysUpdate(), 1)
-    this.interval = setInterval( () => {
-        if(this.store.relays.isProcessing)
-          this.relaysUpdate()
-      }, 1000 )
     this.geo = this.store.relays.geo
     console.log('relays from leaflet', this.relays.length)
   },
@@ -108,6 +103,8 @@ export default defineComponent({
         return ""
       }
     },
+  },
+  computed: {
   },
   methods: Object.assign(RelaysLib, {
     mapHeight(){
@@ -131,7 +128,7 @@ export default defineComponent({
       return 'transparent'
     },
     getRelaysWithGeo(){
-      return this.relays.filter( relay => this.geo?.[relay] )
+      return this.store.relays.getRelays( this.activePageItem, this.results ).filter( relay => this.geo?.[relay] )
     },
     toggleMap(){
       this.expanded = !this.expanded
@@ -148,10 +145,10 @@ export default defineComponent({
     }
   }),
   watch: {
-    activePageItem: function(){
-      this.relaysUpdate()
-    }
-    }
+    // activePageItem: function(){
+    //   this.relays = this.subsectionRelays()
+    // }
+  }
   
 });
 

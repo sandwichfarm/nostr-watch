@@ -8,6 +8,7 @@ import directives from "./directives/"
 import {Tabs, Tab} from 'vue3-tabs-component';
 import { plugin as storePlugin } from './store'
 import { RelayPool } from 'nostr'
+// import { relays } from '../relays.yaml'
 
 const app = createApp(App)
   .use(router)
@@ -19,7 +20,8 @@ const app = createApp(App)
 
 directives(app);
 
-app.config.globalProperties.$pool = new RelayPool(['wss://relay.damus.io'])
+// app.config.globalProperties.$pool = new RelayPool([relays])
+app.config.globalProperties.$pool = new RelayPool(['wss://nostr.ch'])
 
 await router.isReady()
 

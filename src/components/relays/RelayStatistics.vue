@@ -87,7 +87,13 @@ export default defineComponent({
       return byCont;
     },
     async getRelayHistory(){
+      const uniqueRelays = new Set(),
+            relay
+
       //subscribe kind 3
+      this.$pool.subscribe()
+      //array of objects
+      //sort the array of objects by timestamps
     }
   }
 })

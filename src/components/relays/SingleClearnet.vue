@@ -1,8 +1,5 @@
 <template>
-  <!-- <td>
-    <div v-if="selectedRelays.includes(relay)" class="absolute inset-y-0 left-0 w-0.5 bg-indigo-600"></div>
-    <input type="checkbox" class="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 sm:left-6" :value="relay" v-model="selectedRelays" />
-  </td> -->
+
   <td class="status-indicator" :key="generateKey(relay, 'aggregate')">
     <span :class="result?.aggregate" class="aggregate indicator">
         <span></span>
@@ -14,31 +11,31 @@
     <router-link :to="`/relay/${relayClean(relay)}`" active-class="active">{{ relay }}</router-link>
   </td>
 
-  <td class="verified">
+  <td class="verified text-center">
     <span v-if="result?.identities">
       <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="Object.entries(result?.identities).length"><span class="shape verified"></span></span></span>
     </span>
   </td>
 
-  <td class="location">{{ getFlag() }}</td>
+  <td class="location text-center">{{ getFlag() }}</td>
 
-  <td class="latency">
+  <td class="latency text-center">
     <span>{{ result?.latency?.final }}<span v-if="result?.check?.latency">ms</span></span>
   </td>
 
-  <td class="connect" :key="generateKey(relay, 'check.connect')">
+  <td class="connect text-center" :key="generateKey(relay, 'check.connect')">
     <span :class="getResultClass(relay, 'connect')"></span>
   </td>
 
-  <td class="read" :key="generateKey(relay, 'check.read')">
+  <td class="read text-center" :key="generateKey(relay, 'check.read')">
     <span :class="getResultClass(relay, 'read')"></span>
   </td>
 
-  <td class="write" :key="generateKey(relay, 'check.write')">
+  <td class="write text-center" :key="generateKey(relay, 'check.write')">
     <span :class="getResultClass(relay, 'write')"></span>
   </td>
 
-  <td class="fav" :key="generateKey(relay, 'check.write')">
+  <td class="fav text-center" :key="generateKey(relay, 'check.write')">
     <a
       class=" hover:opacity-100 cursor-pointer" 
       :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"

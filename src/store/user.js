@@ -5,7 +5,7 @@ export const useUserStore = defineStore('user', {
     pubKey: "",
     events: [],
     profile: {},
-    testEvent: {}
+    testEvent: false
   }),
   getters: {
     getPublicKey: (state) => state.pubKey,

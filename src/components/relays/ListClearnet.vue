@@ -1,39 +1,13 @@
 <template>
    <div class="pt-5 px-1 sm:px-6 lg:px-8">
-      <div class="sm:flex sm:items-center">
-      <div class="sm:flex-auto text-left">
-          <h1 class="text-4xl capitalize font-semibold text-gray-900">
-              <span class="inline-flex rounded bg-green-800 text-sm px-2 py-1 text-white relative -top-2">
-                  {{ relays.length }}
-              </span>
-              {{ activePageItem }} Relays
-          </h1>
-          <p class="mt-2 text-xl text-gray-700">
-            {{ activePageData.description }}
-          </p>
-      </div>
-      <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button 
-            @click="$router.push('/relays/add')" 
-            type="button" 
-            class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-m font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
-            Add Relay
-          </button>
-      </div>
-      </div>
       <div class="mt-8 flex flex-col">
-
-      <FindRelaysSubnav />
-
       <div class="overflow-x-auto">
-          <div class="inline-block min-w-full align-middle" v-if="relays.length">
+          <div class="inline-block min-w-full align-middle" v-if="subsectionRelays.length">
             <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <!-- <div v-if="selectedRelays.length > 0" class="absolute top-0 left-12 flex h-12 items-center space-x-3 bg-gray-50 sm:left-16">
-                <button type="button" class="inline-flex items-center rounded border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-30">Make Yours</button>
-                </div> -->
                 <table class="min-w-full table-auto divide-y divide-gray-300">
                 <thead>
                     <tr>
+                      
                       <th scope="col" class="status-indicator text-left">
                         
                       </th>
@@ -62,16 +36,18 @@
                       </th>
                       <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
                           <span class="text-xs"> &lt;3 </span>
+                          
                       </th>
                     </tr>
+                    
                 </thead>
+                
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    <tr v-for="(relay, index) in this.relays" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
+                    <tr v-for="(relay, index) in subsectionRelays" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
                       <SingleClearnet 
                         :relay="relay"
                         v-bind:selectedRelays="selectedRelays"
                         :resultProp="this.results[relay]" />
-                        
                     </tr>
                 </tbody>
                 </table>
@@ -89,11 +65,12 @@
   import { defineComponent, toRefs } from 'vue'
 
   import SingleClearnet from '@/components/relays/SingleClearnet.vue'
-  import FindRelaysSubnav from '@/components/relays/FindRelaysSubnav.vue'
   import NostrSyncPopoverNag from '@/components/relays/partials/NostrSyncPopoverNag.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
   import { setupStore } from '@/store'
+  
+
   
   const localMethods = {
       getResultClass (relay, index) {
@@ -133,37 +110,24 @@
     }
   
   export default defineComponent({
-    name: 'RelaysClearnet',
+    name: 'ListClearnet',
     components: {
       SingleClearnet,
-      FindRelaysSubnav,
       NostrSyncPopoverNag
     },
     setup(props){
       const {activePageItemProp: activePageItem} = toRefs(props)
+      const {relaysCountProp: relaysCount} = toRefs(props)
       const {resultsProp: results} = toRefs(props)
       return { 
         store : setupStore(),
         results: results,
-        activePageItem: activePageItem
+        activePageItem: activePageItem,
+        relaysCount: relaysCount
       }
     },
     mounted(){
-      setTimeout( () => this.relaysUpdate(), 1)
       this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
-      
-      this.store.relays.$subscribe( (mutation) => {
-        console.log('mutation key', mutation.events)
-        if(mutation.events.key == 'favorites'){
-          setTimeout( () => this.relaysUpdate(), 100 )
-          console.log('mutated!!')
-        }          
-      })
-      
-      this.interval = setInterval( () => {
-        if(this.store.relays.isProcessing)
-          this.relaysUpdate()
-      }, 1000 ) //Ugly, but better for reflow
     },
     updated(){
       console.log('state, updated')
@@ -182,6 +146,12 @@
           return {}
         }
       },
+      relaysCountProp: {
+        type: Object,
+        default(){
+          return {}
+        }
+      },
     },
     data() {
       return {
@@ -194,17 +164,17 @@
     },
     
     computed: {
-      indeterminate: function(){
-        return this.selectedRelays.length > 0 && this.selectedRelays.length < this.relays.length;
+      subsectionRelays(){
+        return this.sortRelays( this.store.relays.getRelays(this.activePageItem, this.results ) )
       }
     },
-    methods: Object.assign(localMethods, RelaysLib),
-    watch: {
-      activePageItem: function(){
-        this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
-        this.relaysUpdate()
-      }
-    }
+    methods: Object.assign(RelaysLib, localMethods),
+    // watch: {
+    //   activePageItem: function(){
+    //     // this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
+    //     // this.relaysUpdate()
+    //   }
+    // }
   })
   </script>
   

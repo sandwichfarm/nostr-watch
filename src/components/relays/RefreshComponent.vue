@@ -75,7 +75,6 @@ const localMethods = {
             .then((result) => {
               this.results[result.uri] = result
               this.setCache(result)
-              this.store.relays.updateNow()
               processed.add(result.uri)
               // console.log('processing status', processed, '/', this.relays.length)
               console.log('complete?', result.uri, processed.size, this.relays.length)
@@ -90,13 +89,14 @@ const localMethods = {
 
   completeAll: function(){
     this.store.relays.finishProcessing()
+    this.store.relays.updateNow()
     console.log('all are complete?', this.store.relays.isProcessing)
-    const aggregates = new Object()
-    aggregates.all = this.getSortedAllRelays()
-    aggregates.public = this.getSortedPublicRelays()
-    aggregates.restricted = this.getSortedRestrictedRelays()
-    aggregates.offline = this.getOfflineRelays()
-    this.store.relays.setAggregates(aggregates)
+    // const aggregates = new Object()
+    // aggregates.all = this.getSortedAllRelays()
+    // aggregates.public = this.getSortedPublicRelays()
+    // aggregates.restricted = this.getSortedRestrictedRelays()
+    // aggregates.offline = this.getOfflineRelays()
+    // this.store.relays.setAggregates(aggregates)
     this.getAverageLatency()
   },
 

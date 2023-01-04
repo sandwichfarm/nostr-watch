@@ -20,7 +20,6 @@ export const useRelaysStore = defineStore('relays', {
         return state.urls.map(x=>x)
       if( 'favorite' == aggregate )
         return state.favorites
-      console.log('ok?', results, aggregate)
       return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
     },
     getByAggregate: (state) => (aggregate) => {

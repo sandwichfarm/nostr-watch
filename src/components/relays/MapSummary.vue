@@ -27,15 +27,13 @@
       </l-marker> -->
 
       <l-circle-marker
-        v-for="relay in getRelaysWithGeo()"
+        v-for="relay in getRelaysWithGeo"
         :lat-lng="getLatLng(relay)"
         :key="relay"
         :radius="2"
         :weight="4"
         :color="getCircleColor(relay)"
-        :fillOpacity="1"
-        :class="relay"
-        >
+        :fillOpacity="1" >
   <!--       <l-popup>
           {{ relay }}
         </l-popup> -->
@@ -84,12 +82,8 @@ export default defineComponent({
   mounted() {
     console.log('results', this.results)
     this.geo = this.store.relays.geo
-    console.log('relays from leaflet', this.relays.length)
   },
-  updated(){
-    // this.relays = this.relaysProp
-    // console.log('relays from leaflet', this.relays.length)
-  },
+  updated(){},
   props: {
     resultsProp: {
       type: Array,
@@ -105,6 +99,19 @@ export default defineComponent({
     },
   },
   computed: {
+    getCircleClass(relay){
+      console.log('the relay', relay)
+      return (relay) => {
+        return {
+          visible: this.isRelayInActiveSubsection(relay),
+          hidden: !this.isRelayInActiveSubsection(relay),
+          [relay]: true
+        }
+      }
+    },
+    getRelaysWithGeo(){
+      return this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object )
+    },
   },
   methods: Object.assign(RelaysLib, {
     mapHeight(){
@@ -115,20 +122,23 @@ export default defineComponent({
       return [this.geo[relay].lat, this.geo[relay].lon]
     },
     getCircleColor(relay){
+      if(!this.isRelayInActiveSubsection(relay))
+        return 'transparent'
 
-      if(this.results[relay]?.aggregate == 'public') {
+      if(this.results[relay]?.aggregate == 'public')
         return '#00AA00'
-      }
-      else if(this.results[relay]?.aggregate == 'restricted') {
+
+      if(this.results[relay]?.aggregate == 'restricted')
         return '#FFA500'
-      }
-      else if(this.results[relay]?.aggregate == 'offline') {
+
+      if(this.results[relay]?.aggregate == 'offline')
         return '#FF0000'
-      }
-      return 'transparent'
+      
     },
-    getRelaysWithGeo(){
-      return this.store.relays.getRelays( this.activePageItem, this.results ).filter( relay => this.geo?.[relay] )
+
+    isRelayInActiveSubsection(relay){
+      // console.log(this.store.relays.getRelays(this.activePageItem).length, this.activePageItem, relay, this.store.relays.getRelays(this.activePageItem).includes(relay))
+      return this.store.relays.getRelays(this.activePageItem, this.results).includes(relay)
     },
     toggleMap(){
       this.expanded = !this.expanded

@@ -46,7 +46,8 @@
       <div 
         v-for="section in navSubsection"
         :key="section.slug"> 
-          <div v-if="section.slug == activePageItem">
+          <!-- <div v-if="section.slug == activePageItem"> -->
+          <div :class="section.slug == activePageItem ? 'visible' : 'hidden'">
             <ListClearnet
               :resultsProp="results"
               :activePageItemProp="section.slug"
@@ -120,8 +121,8 @@ export default defineComponent({
       filteredRelays: [],
       timeouts: {},
       intervals: {},
-      activeNavItem: this.store.layout.getActive('relays-subnav'),
-      activePageItem: this.store.layout.getActive('relays-find-pagenav'),
+      activeNavItem: this.store.layout.getActive('relays-subnav') || 'relays',
+      activePageItem: this.store.layout.getActive('relays-find-pagenav') || 'find',
       navSubsection: this.store.layout.getNavGroup('relays-find-pagenav'),
       relaysCount: {}
     }
@@ -143,10 +144,23 @@ export default defineComponent({
       this.results[relay] = this.getCache(relay)
     })
     this.store.layout.$subscribe( (mutation) => {
+      console.log('layout', 'mutation detected')
       if(mutation.events.key == 'relays-find-pagenav')
         this.activePageItem = mutation.events.newValue
       if(mutation.events.key == 'relays-subnav')
         this.activeNavItem = mutation.events.newValue
+    })
+
+    this.store.relays.$subscribe( () => {
+      console.log('relays', 'mutation detected')
+    })
+
+    this.store.user.$subscribe( () => {
+      console.log('users', 'mutation detected')
+    })
+
+    this.store.relays.$subscribe( () => {
+      console.log('prefs', 'mutation detected')
     })
 
     this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 )

@@ -26,7 +26,7 @@ import { setupStore } from '@/store'
 
 export default defineComponent({
   name: 'RelayControlComponent',
-  components: {RefreshComponent},
+  components: {},
   setup(props){
     const {resultsProp: results} = toRefs(props)
     return { 
@@ -35,13 +35,14 @@ export default defineComponent({
     }
   },
   mounted(){
-  }
+
+  },
   data: function(){
     return {
       relays: this.store.relays.getAll,
       geo: this.store.relays.getGeo
     }
-  }
+  },
   props: {
     resultsProp: {
       type: Object,
@@ -55,7 +56,7 @@ export default defineComponent({
       const nips = new Object()
       Object.entries(this.results).forEach( (result) => {
         if(result?.info?.supported_nips)
-          supported_nips.forEach( nip => { 
+          result?.info?.supported_nips.forEach( nip => { 
             if( !(nips[nip] instanceof Array ))
               nips[nip] = new Set
             nips[nip].add(result.uri)
@@ -65,7 +66,7 @@ export default defineComponent({
       return nips
     },
     collateSoftware(){
-      const software = new Object()
+      // const software = new Object()
     },
     collateSoftwareVersion(){
 
@@ -87,8 +88,7 @@ export default defineComponent({
       return byCont;
     },
     async getRelayHistory(){
-      const uniqueRelays = new Set(),
-            relay
+      // const uniqueRelays = new Set()
 
       //subscribe kind 3
       this.$pool.subscribe()

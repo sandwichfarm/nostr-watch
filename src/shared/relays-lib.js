@@ -16,46 +16,14 @@ export default {
           y = this.results?.[relay2]?.check?.connect
       return (x === y)? 0 : x? -1 : 1;
     })
-    sort(relays, (relay1, relay2) => {
-      let x = this.store.relays.isFavorite(relay1),
-          y = this.store.relays.isFavorite(relay2)
-      return (x === y)? 0 : x? -1 : 1;
-    })
+    if(this.store.prefs.doPinFavorites)
+      sort(relays, (relay1, relay2) => {
+        let x = this.store.relays.isFavorite(relay1),
+            y = this.store.relays.isFavorite(relay2)
+        return (x === y)? 0 : x? -1 : 1;
+      })
     // relays = this.sortRelaysFavoritesOnTop(relays)
     return relays
-  },
-  psuedoRouter: function(){
-    console.log(this)
-    const route = this.parseRouterHash()
-    console.log('pseudo route', route)
-    if(route.section)
-      this.activeNavItem = route.section
-    if(route.subsection)
-      this.activePageItem = route.subsection
-  },
-
-  parseRouterHash: function(){
-    const hashParams = this.$route.hash.replace('#', '').replace(/^\/+/g, '').split('/')  
-    return {
-      page: hashParams[0],
-      section: hashParams[1],
-      subsection: hashParams[2]
-    }
-  },
-
-  writeRouterHashPath: function(page, section, subsection){
-    console.log('hash updated?', this.$route)
-    this.$route.hash = `#/${page}/${section}/${subsection}`
-    console.log('hash updated?', this.$route)
-  },
-
-  loadPageContent(which){
-    const route = this.parseRouterHash()
-    console.log(`route from ${which}`, route)
-    if(route[which])
-      this.setActive(this.navSlug, route[which])
-    else 
-      this.active = this.store.layout.getActive(this.navSlug)
   },
 
     isExpired: function(){

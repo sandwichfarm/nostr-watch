@@ -7,7 +7,7 @@
             <a v-for="item in store.layout.getNavGroup(this.navSlug)"
                 :key="`subnav-${item.slug}`"
                 :href="item.href" 
-                @click="setActive(this.navSlug, item.slug)"
+                @click="setActiveContent(item.slug)"
                 :class="[isActive(item) ? 'bg-slate-500 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']" 
                 class="inline-flex items-center pt-1.5 text-sm font-medium">
                 {{ item.name }}
@@ -41,7 +41,7 @@
         <DisclosureButton 
             v-for="item in store.layout.getNavGroup(this.navSlug)"
             :key="`subnav-${item.slug}`"
-            @click="setActive(this.navSlug, item.slug)"
+            @click="setActiveContent(item.slug)"
             :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']" 
             as="a" 
             :href="item.href" 
@@ -55,14 +55,15 @@
 
 <script>
 import { defineComponent } from 'vue'
-import { items } from './config/find-pagenav.yaml'
+
 import { setupStore } from '@/store'
+import { items } from './config/find-pagenav.yaml'
+import RelaysLib from '@/shared/relays-lib.js'
+import { setupNavData, mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
+
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
-
-import RelaysLib from '@/shared/relays-lib.js'
-
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
@@ -76,12 +77,7 @@ export default defineComponent({
   },
   props: {},
   data(){
-    return {
-        active: null,
-        // groups: new Set(items.map( item => item.slug )),
-        sidebar: [],
-        navSlug: 'relays-find-pagenav'
-    }
+    return setupNavData('relays/find')
   },
   setup(){
     return { 
@@ -91,41 +87,16 @@ export default defineComponent({
   updated(){
 
   },
-  mounted(){
-    this.active = this.store.layout.getActive(this.navSlug)
-    this.store.layout.setNavItems(this.navSlug, items)
-    this.sidebar = this.store.layout.getNavGroup(this.navSlug)
-    this.loadPageContent('subsection')
-
-    // this.sidebar['relays'].map(item => {
-    //     item.count = this.store.relays.getCount(item.slug)
-    //     // console.log('mapping', item.slug, this.store.relays.getCount(item.slug))
-    //     return item
-    // })
-
-    // this.store.relays.$subscribe( (mutation) => {
-    // //   console.log('relays mutation', mutation)
-    //   if(this.groups.has(mutation.events.key)) {
-    //     this.sidebar = this.sidebar.map( item => {
-    //         if(item.slug == mutation.events.key) {
-    //             item.count = mutation.events.newValue
-    //             console.log('ok', item.count)
-    //         }
-    //         return item
-    //     })  
-    //   }
-    // })
+  created(){
+    this.mountNav('subsection', items)
   },
-  methods: Object.assign(RelaysLib, {
-    setActive(section, slug){
-        this.active = slug
-        this.store.layout.setActive(section, slug)
-        return true
-    },
-  }),
+  mounted(){
+    
+  },
+  methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive }),
   computed: {
     isActive(){
-        return (item) => item.slug==this.active
+        return (item) => item.slug==this.navActiveContent
     }
   },
 //   watch: {

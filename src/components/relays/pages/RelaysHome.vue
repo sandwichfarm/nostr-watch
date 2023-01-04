@@ -8,23 +8,23 @@
 
   <MapSummary 
     :resultsProp="results" 
-    :activePageItemProp="activePageItem"
-    v-if="activeNavItem == 'find'" /> 
+    :activePageItemProp="activeSubsection"
+    v-if="activeSection == 'find'" /> 
 
   <div id="wrapper" class="mx-auto max-w-7xl">  
-    <div v-if="activeNavItem == 'find'">
+    <div v-if="activeSection == 'find'">
       <div class="pt-5 px-1 sm:px-6 lg:px-8">
         <div class="sm:flex sm:items-center">
         <div class="sm:flex-auto text-left">
             <h1 class="text-4xl capitalize font-semibold text-gray-900">
                 <span class="inline-flex rounded bg-green-800 text-sm px-2 py-1 text-white relative -top-2">
-                    {{ this.relaysCount[activePageItem] }}
+                    {{ relaysCount[activeSubsection] }}
                 </span>
-                {{ activePageItem }} Relays
+                {{ activeSubsection }} Relays
             </h1>
             <p class="mt-2 text-xl text-gray-700">
-              <!-- {{ store.layout.getActiveItem('relays-find-pagenav') }} -->
-              {{ store.layout.getActiveItem('relays-find-pagenav').description }}
+              <!-- {{ store.layout.getActiveItem('relays/find') }} -->
+              {{ store.layout.getActiveItem('relays/find')?.description }}
             </p>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
@@ -44,27 +44,27 @@
       </div>
 
       <div 
-        v-for="section in navSubsection"
-        :key="section.slug"> 
-          <!-- <div v-if="section.slug == activePageItem"> -->
-          <div :class="section.slug == activePageItem ? 'visible' : 'hidden'">
+        v-for="subsection in navSubsection"
+              :key="subsection.slug"> 
+
+          <!-- <div v-if="section.slug == activeSubsection"> -->
+          <div :class="subsection.slug == activeSubsection ? 'visible' : 'hidden'">
             <ListClearnet
               :resultsProp="results"
-              :activePageItemProp="section.slug"
+              :subsectionProp="subsection.slug"
               v-bind:relaysCountProp="relaysCount"
               /> 
           </div>
       </div>
     </div>
 
-
     <RelayStatistics
       :resultsProp="results"
-      v-if="activeNavItem == 'statistics'" /> 
+      v-if="activeSection == 'statistics'" /> 
     
-    <RelayStatistics
+    <MapInteractive
       :resultsProp="results"
-      v-if="activeNavItem == 'map'" /> 
+      v-if="activeSection == 'map'" /> 
     
     <div id="footer">
       <span class="credit">
@@ -80,14 +80,57 @@ import { useHead } from '@vueuse/head'
 import { setupStore } from '@/store'
 //shared methods
 import RelaysLib from '@/shared/relays-lib.js'
+import { parseHash } from '@/shared/hash-router.js'
+
 //components
 import MapSummary from '@/components/relays/MapSummary.vue'
-import ListClearnet from '@/components/relays/ListClearnet.vue'
 import SubnavComponent from '@/components/relays/SubnavComponent.vue'
 import FindRelaysSubnav from '@/components/relays/FindRelaysSubnav.vue'
+import ListClearnet from '@/components/relays/ListClearnet.vue'
+import RelayStatistics from '@/components/relays/RelayStatistics.vue'
+import MapInteractive from '@/components/relays/MapInteractive.vue'
 //data
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
+
+const localMethods = {
+  relaysLoadData(){
+    this.store.relays.setRelays(relays)
+    this.store.relays.setGeo(geo)
+
+    this.relays = this.store.relays.getAll
+    this.lastUpdate = this.store.relays.lastUpdate
+    this.preferences = this.store.prefs.get
+
+    this.relays.forEach(relay => {
+      this.results[relay] = this.getCache(relay)
+    })
+  },
+  relaysMountNav(){
+    this.store.layout.$subscribe( (mutation) => {
+      if(mutation.events.key === 'relays'){
+        this.activeSection = mutation.events.newValue
+      }
+      if(mutation.events.key === 'relays/find'){
+        this.activeSubsection = mutation.events.newValue
+      }
+    })
+
+    this.activeSection = this.routeSection || this.store.layout.getActiveItem('relays')?.slug
+    this.activeSubsection = this.routeSubsection || this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug
+
+    this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 )
+  }
+  // hashRouter: function(){
+  //   const route = this.parseRouterHash()
+  //   if(route.section)
+  //     this.activeSection = route.section
+  //   if(route.subsection)
+  //     this.activeSubsection = route.subsection
+  //   if(route.relay)
+  //     this.activeSubsection = route.relay
+  // },
+}
 
 export default defineComponent({
   name: 'HomePage',
@@ -96,18 +139,18 @@ export default defineComponent({
     MapSummary,
     ListClearnet,
     SubnavComponent,
-    FindRelaysSubnav
+    FindRelaysSubnav,
+    RelayStatistics,
+    MapInteractive
   },
 
   setup(){
     useHead({
       title: 'nostr.watch',
-      meta: [
-        {
+      meta: [{
           name: `description`,
           content: 'A robust client-side nostr relay monitor. Find fast nostr relays, view them on a map and monitor the network status of nostr.',
-        },
-      ],
+        }] 
     })
     return { 
       store : setupStore()
@@ -121,58 +164,29 @@ export default defineComponent({
       filteredRelays: [],
       timeouts: {},
       intervals: {},
-      activeNavItem: this.store.layout.getActive('relays-subnav') || 'relays',
-      activePageItem: this.store.layout.getActive('relays-find-pagenav') || 'find',
-      navSubsection: this.store.layout.getNavGroup('relays-find-pagenav'),
-      relaysCount: {}
+      relaysCount: {},
+      activeSection: this.routeSection || this.store.layout.getActiveItem('relays')?.slug,
+      activeSubsection: this.routeSubsection || this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug,
     }
   },
 
   updated(){},
 
+  beforeMount(){
+    this.routeSection = this.parseHash().section || false
+    this.routeSubsection = this.parseHash().subsection || false
+  },
+
   async mounted() {
-    console.log('active page item', this.activePageItem)
-    
-    this.store.relays.setRelays(relays)
-    this.store.relays.setGeo(geo)
-
-    this.relays = this.store.relays.getAll
-    this.lastUpdate = this.store.relays.lastUpdate
-    this.preferences = this.store.prefs.get
-
-    this.relays.forEach(relay => {
-      this.results[relay] = this.getCache(relay)
-    })
-    this.store.layout.$subscribe( (mutation) => {
-      console.log('layout', 'mutation detected')
-      if(mutation.events.key == 'relays-find-pagenav')
-        this.activePageItem = mutation.events.newValue
-      if(mutation.events.key == 'relays-subnav')
-        this.activeNavItem = mutation.events.newValue
-    })
-
-    this.store.relays.$subscribe( () => {
-      console.log('relays', 'mutation detected')
-    })
-
-    this.store.user.$subscribe( () => {
-      console.log('users', 'mutation detected')
-    })
-
-    this.store.relays.$subscribe( () => {
-      console.log('prefs', 'mutation detected')
-    })
-
-    this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 )
-    // this.psuedoRouter(this.store.layout.getNavGroup('relays-subnav'))
-    this.psuedoRouter()
+    this.relaysLoadData()
+    this.relaysMountNav()
   },
 
   computed: {
-    
+    navSubsection: function() { return this.store.layout.getNavGroup(`relays/${this.activeSection}`) || [] }
   },
 
-  methods: RelaysLib, 
+  methods: Object.assign(RelaysLib, localMethods, { parseHash }), 
 
 })
 </script>

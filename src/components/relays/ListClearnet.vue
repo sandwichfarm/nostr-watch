@@ -1,8 +1,8 @@
 <template>
-   <div class="pt-5 px-1 sm:px-6 lg:px-8">
+   <div class="-mt-10 pt-0 px-1 sm:px-6 lg:px-8">
       <div class="mt-8 flex flex-col">
       <div class="overflow-x-auto">
-          <div class="inline-block min-w-full align-middle" v-if="subsectionRelays.length">
+          <div class="inline-block min-w-full align-middle" v-if="subsectionRelays().length">
             <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
                 <table class="min-w-full table-auto divide-y divide-gray-300">
                 <thead>
@@ -12,7 +12,10 @@
                         
                       </th>
                       <th scope="col" class="relay text-left">
-                        <NostrSyncPopoverNag  v-if="activePageItem == 'favorite'"  />
+                        <NostrSyncPopoverNag  v-if="subsection == 'favorite'"  />
+                        <span v-if="subsection != 'favorite' && store.relays.getFavorites.length">
+                          <input type="checkbox" id="relays-pin-favorites" v-model="store.prefs.pinFavorites" /> <label class="font-thin text-sm" for="relays-pin-favorites">Pin Favorites</label>
+                        </span>
                       </th>
                       <th scope="col" class="verified">
                         <span class="verified-shape-wrapper">
@@ -43,7 +46,7 @@
                 </thead>
                 
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    <tr v-for="(relay, index) in subsectionRelays" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
+                    <tr v-for="(relay, index) in subsectionRelays()" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
                       <SingleClearnet 
                         :relay="relay"
                         v-bind:selectedRelays="selectedRelays"
@@ -53,7 +56,7 @@
                 </table>
             </div>
           </div>
-          <div class="inline-block min-w-full align-middle" v-if="!relays.length && activePageItem == 'favorite'">
+          <div class="inline-block min-w-full align-middle" v-if="!relays.length && subsection == 'favorite'">
             You have not selected any favorites. To select a favorite, click the heart emoji next to any relay in a relays list.
           </div>
       </div>
@@ -79,34 +82,14 @@
           even: index % 2,
         }
       },
-      queryJson(){
-        const result = { relays: this.relays }
-        return JSON.stringify(result,null,'\t')
-      },
-      relaysTotal () {
-        return this.relays.length //TODO: Figure out WHY?
-      },
-  
-      relaysConnected () {
-        return Object.entries(this.result).length
-      },
-  
-      relaysComplete () {
-        return this.relays.filter(relay => this.results?.[relay]?.state == 'complete').length
-      },
-  
-      sha1 (message) {
-        const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')
-        return hash
-      },
-  
-      isDone(){
-        return this.relaysTotal()-this.relaysComplete() <= 0
-      },
-  
       loadingComplete(){
         return this.isDone() ? 'loaded' : ''
       },
+      subsectionRelays(){
+        const relays = this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        this.relaysCount[this.subsection] = relays.length
+        return relays
+      }
     }
   
   export default defineComponent({
@@ -116,25 +99,26 @@
       NostrSyncPopoverNag
     },
     setup(props){
-      const {activePageItemProp: activePageItem} = toRefs(props)
+      const {subsectionProp: subsection} = toRefs(props)
       const {relaysCountProp: relaysCount} = toRefs(props)
       const {resultsProp: results} = toRefs(props)
       return { 
         store : setupStore(),
         results: results,
-        activePageItem: activePageItem,
+        subsection: subsection,
         relaysCount: relaysCount
       }
     },
     mounted(){
-      this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
+      this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
+      
     },
     updated(){
-      console.log('state, updated')
+      // console.log('state, updated')
       
     },
     props: {
-      activePageItemProp: {
+      subsectionProp: {
         type: String,
         default(){
           return ""
@@ -158,20 +142,17 @@
         selectedRelays: [],
         relays: [],
         timeout: null,
-        navData: this.store.layout.getNavGroup('relays-find-pagenav'),
+        navData: this.store.layout.getNavGroup('relays/find'),
         activePageData: {}
       }
     },
-    
     computed: {
-      subsectionRelays(){
-        return this.sortRelays( this.store.relays.getRelays(this.activePageItem, this.results ) )
-      }
+      
     },
     methods: Object.assign(RelaysLib, localMethods),
     // watch: {
-    //   activePageItem: function(){
-    //     // this.activePageData = this.navData.filter( item => item.slug == this.activePageItem )[0]
+    //   subsection: function(){
+    //     // this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
     //     // this.relaysUpdate()
     //   }
     // }

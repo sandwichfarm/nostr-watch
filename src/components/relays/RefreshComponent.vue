@@ -166,6 +166,9 @@ export default defineComponent({
   created(){
     document.addEventListener('visibilitychange', this.handleVisibility, false)
   },
+  unmounted(){
+    clearInterval(this.interval)
+  },
   mounted(){
     if(!this.windowActive)
       return 

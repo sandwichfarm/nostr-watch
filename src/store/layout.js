@@ -9,7 +9,7 @@ export const useLayoutStore = defineStore('layout', {
   }),
   getters: {
     getActive: (state) => (section) => state.active[section],
-    getActiveItem: (state) => (section) => state.nav[section].filter( item => item.slug == state.active[section])[0],
+    getActiveItem: (state) => (section) => state.nav[section]?.filter( item => item.slug == state.active[section])[0],
     getNav: (state) => state.nav,
     getNavGroup: (state) => (group) => state.nav[group]
   },

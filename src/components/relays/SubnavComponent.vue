@@ -7,7 +7,7 @@
           <a v-for="item in store.layout.getNavGroup(this.navSlug)"
               :key="`subnav-${item.slug}`"
               :href="item.href"
-              @click="setActive(this.navSlug, item.slug)"
+              @click="setActiveContent(item.slug)"
               :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : ' hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 text-sm font-medium']" 
               class="inline-flex items-center mx-1 text-sm font-medium text-white">
               {{ item.name }}
@@ -28,6 +28,7 @@ import { items } from './config/subnav.yaml'
 import { setupStore } from '@/store'
 
 import RelaysLib from '@/shared/relays-lib.js'
+import { setupNavData, mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
 import RefreshComponent from '@/components/relays/RefreshComponent.vue'
 
 export default defineComponent({
@@ -47,12 +48,7 @@ export default defineComponent({
     },
   },
   data(){
-    return {
-        active: null,
-        // groups: new Set(items.map( item => item.slug )),
-        sidebar: [],
-        navSlug: 'relays-subnav'
-    }
+    return setupNavData('relays')
   },
   setup(props){
     const {resultsProp: results} = toRefs(props)
@@ -64,43 +60,18 @@ export default defineComponent({
   updated(){
 
   },
-  mounted(){
-    this.store.layout.setNavItems(this.navSlug, items)
-    this.active = this.store.layout.getActive(this.navSlug)
-    console.log('active item', this.active)
-    console.log('state from subnav', this.active, this.store.layout.getActive(this.navSlug))
-    this.loadPageContent('section')
-    
-    // this.sidebar = this.store.layout.getNavGroup(this.navSlug)
 
-    // this.sidebar['relays'].map(item => {
-    //     item.count = this.store.relays.getCount(item.slug)
-    //     console.log('mapping', item.slug, this.store.relays.getCount(item.slug))
-    //     return item
-    // })
-
-    // this.store.relays.$subscribe( (mutation) => {
-    // //   console.log('relays mutation', mutation)
-    //   if(this.groups.has(mutation.events.key)) {
-    //     this.sidebar = this.sidebar.map( item => {
-    //         if(item.slug == mutation.events.key) {
-    //             item.count = mutation.events.newValue
-    //             console.log('ok', item.count)
-    //         }
-    //         return item
-    //     })  
-    //   }
-    // })
+  beforeMount(){
+    this.mountNav('section', items)
   },
-  methods: Object.assign(RelaysLib, {
-    setActive(section, slug){
-        this.active = slug
-        this.store.layout.setActive(section, slug)
-    },
-  }),
+  
+  mounted(){
+    
+  },
+  methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive }),
   computed: {
     isActive(){
-        return (item) => item.slug==this.active
+        return (item) => item.slug==this.navActiveContent
     }
   },
 //   watch: {

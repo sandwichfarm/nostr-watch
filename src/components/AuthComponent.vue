@@ -34,9 +34,14 @@ export default defineComponent({
     this.showAuth()
     if(this.isLoggedIn())
       this.getData()
+    // this.store.user.$subscribe( mutation => {
+    //   if(mutation.key != 'pubKey')
+    //     return
+    //   console.log('there was amutation!!!!')
+    //   this.getData()
+    // })
   },
   updated(){
-    this.showAuth()
   },
   computed: {},
   methods: Object.assign(UserLib, {
@@ -49,36 +54,41 @@ export default defineComponent({
             resolve()
         }, 1001)
       })
-      console.log('signer enabled', this.signer)
     },
     auth: async function(){
-      this.store.user.setPublicKey(await window.nostr.getPublicKey())
-      this.getData()
+      const pubkey = await window.nostr.getPublicKey()
+      this.store.user.setPublicKey(pubkey)
+      await this.getData()
     },
     getData: function(){
-      const subid = crypto.randomBytes(40).toString('hex')
-      const filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] }
-      const filterEvent = { limit: 1, kinds:[1], authors: [this.store.user.getPublicKey ] }
-      let foundProfile = false,
-          foundEvent = false 
-      this.$pool
-        .on('open', (relay) => {
-          relay.subscribe(`${subid}_profile`, filterProfile)
-          relay.subscribe(`${subid}_event`, filterEvent)
-        })
-        .on('event', (relay, sub_id, event) => {
-          if(`${subid}_profile` == sub_id && !foundProfile) {
-            this.store.user.setProfile(event.content)
-            this.$pool.unsubscribe(subid)
-            foundProfile = true
-          }
-          if(`${subid}_event` == sub_id && !foundEvent) {
-            this.store.user.setTestEvent(event)
-            console.log('user event', this.store.user.getTestEvent)
-            this.$pool.unsubscribe(subid)
-            foundEvent = true
-          }
-        })
+      return new Promise( resolve => {
+        const subid = crypto.randomBytes(40).toString('hex')
+        const filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] }
+        const filterEvent = { limit: 1, kinds:[1], authors: [this.store.user.getPublicKey ] }
+        let foundProfile = false,
+            foundEvent = false 
+        this.$pool
+          .subscribe(`${subid}_profile`, filterProfile)
+        this.$pool
+          .subscribe(`${subid}_event`, filterEvent)
+        this.$pool 
+          .on('event', (relay, sub_id, event) => {
+            if(`${subid}_profile` == sub_id && !foundProfile) {
+              this.store.user.setProfile(event.content)
+              this.$pool.unsubscribe(subid)
+              foundProfile = true
+              if(foundProfile && foundEvent)
+                resolve()
+            }
+            if(`${subid}_event` == sub_id && !foundEvent) {
+              this.store.user.setTestEvent(event)
+              this.$pool.unsubscribe(subid)
+              foundEvent = true
+              if(foundProfile && foundEvent)
+                resolve()
+            }
+          })
+      })
     },
 
     generateCodeChallenge: async function(codeVerifier) {

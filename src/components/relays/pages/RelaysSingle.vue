@@ -10,89 +10,133 @@
     v-if="(geo instanceof Object)"
   />
 
-  <div id="wrapper" class="mt-8 flex-container m-auto">
+  <div id="wrapper" class="mt-8 mx-auto max-w-7xl grid grid-cols-3 gap-8">
 
-    <div class="overflow-hidden bg-white shadow sm:rounded-lg">
-      <div class="px-4 py-5 sm:px-6">
-        <h1>{{geo?.countryCode ? getFlag : ''}}<span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
-        <p class="mt-1 max-w-2xl text-sm text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
+    
+      <div class="overflow-hidden bg-white shadow sm:rounded-lg col-span-3">
+        <div class="px-4 py-5 sm:px-6">
+          <h1>{{geo?.countryCode ? getFlag : ''}}<span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
+          <p class="mt-1 max-w-2xl text-sm text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
+        </div>
       </div>
-      <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
-        <dl class="sm:divide-y sm:divide-gray-200">
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.name">
-            <dt class="text-sm font-medium text-gray-500">Relay Name</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.name }}</dd>
+
+      <div class="py-5 col-span-2">
+        <div class="overflow-hidden bg-white shadow sm:rounded-lg col-span-2 relative">
+          <div class="px-4 py-5 sm:px-6">
+            <h3>Relay Info <code class="text-gray-300 text-xs absolute top-3 right-3">NIP-11</code></h3>
           </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.pubkey">
-            <dt class="text-sm font-medium text-gray-500">Public Key</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.pubkey }}</code></dd>
+          <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+            <dl class="sm:divide-y sm:divide-gray-200">
+              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
+                <dt class="text-sm font-medium text-gray-500">Connection Status</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <span><img :src="badgeCheck('connect')" class="inline mr-3" /></span>
+                  <span><img :src="badgeCheck('read')" class="inline mr-3"/></span>
+                  <span><img :src="badgeCheck('write')" class="inline" /></span>
+                </dd>
+              </div>
+              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result.info?.supported_nips">
+                <dt class="text-sm font-medium text-gray-500">Supported Nips</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`" class="inline-block mr-3 mt-1">
+                    <a :href="nipLink(nip)" target="_blank" ><img :src="badgeLink(nip)" /></a> 
+                  </span>
+                </dd>
+              </div>
+              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.name">
+                <dt class="text-sm font-medium text-gray-500">Relay Name</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.name }}</dd>
+              </div>
+              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.pubkey">
+                <dt class="text-sm font-medium text-gray-500">Public Key</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.pubkey }}</code></dd>
+              </div>
+              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.email">
+                <dt class="text-sm font-medium text-gray-500">Contact</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 "><SafeMail :email="result.info.email" /></dd>
+              </div>
+              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.software">
+                <dt class="text-sm font-medium text-gray-500">Software</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.software }}</dd>
+              </div>
+              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
+                <dt class="text-sm font-medium text-gray-500">Software Version</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.version }}</code></dd>
+              </div>
+              
+            </dl>
           </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.email">
-            <dt class="text-sm font-medium text-gray-500">Contact</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 "><SafeMail :email="result.info.email" /></dd>
-          </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.software">
-            <dt class="text-sm font-medium text-gray-500">Software</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.software }}</dd>
-          </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
-            <dt class="text-sm font-medium text-gray-500">Software Version</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.version }}</code></dd>
-          </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
-            <dt class="text-sm font-medium text-gray-500">Connection Status</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-              <span><img :src="badgeCheck('connect')" class="inline mr-3" /></span>
-              <span><img :src="badgeCheck('read')" class="inline mr-3"/></span>
-              <span><img :src="badgeCheck('write')" class="inline" /></span>
-            </dd>
-          </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result.info?.supported_nips">
-            <dt class="text-sm font-medium text-gray-500">Supported Nips</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-              <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`" class="inline-block mr-3 mt-1">
-                <a :href="nipLink(nip)" target="_blank" ><img :src="badgeLink(nip)" /></a> 
-              </span>
-            </dd>
-          </div>
-        </dl>
+        </div>
+      </div>
+      
+
+    <div class="col-span-1">
+      <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
+        <div class="px-4 py-5 sm:px-6">
+          <h3>DNS</h3>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+          <dl class="sm:divide-y sm:divide-gray-200">
+            <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo.dns)" :key="`${value}_${key}`">
+              <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8 col-span-1" v-if="geo">
+        <div class="px-4 py-5 sm:px-6">
+          <h3>Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+          <dl class="sm:divide-y sm:divide-gray-200">
+            <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo).filter(value => value[0] != 'dns')" :key="`${value}_${key}`">
+              <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
+            </div>
+          </dl>
+        </div>
       </div>
     </div>
 
-    <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
-      <div class="px-4 py-5 sm:px-6">
-        <h3>DNS</h3>
-        <p class="mt-1 max-w-2xl text-sm text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
-      </div>
-      <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
-        <dl class="sm:divide-y sm:divide-gray-200">
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo.dns)" :key="`${value}_${key}`">
-            <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
-          </div>
-        </dl>
+    
+
+            <!-- component -->
+  <div class="col-span-1">
+    <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
+        <div class="overflow-hidden">
+          <table class="min-w-full text-center">
+            <thead class="border-b">
+              <tr>
+                <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4">
+                  Log
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b" v-for="(log, index) in result.log" :key="`${log[0]}-${index}`">
+                <td class="text-sm text-gray-900 font-medium px-6 py-4 overflow-ellipsis" :class="getLogClass(log[0])">
+                  {{ log[0] }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
+  </div>
 
-    <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
-      <div class="px-4 py-5 sm:px-6">
-        <h3>Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
-        <p class="mt-1 max-w-2xl text-sm text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
-      </div>
-      <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
-        <dl class="sm:divide-y sm:divide-gray-200">
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo).filter(value => value[0] != 'dns')" :key="`${value}_${key}`">
-            <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
-          </div>
-        </dl>
-      </div>
-    </div>
-
-  
     <div class="max-w-sm p-6 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
       <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">This Relay Appears to be offline</h5>
     </div>
+
+    
+
+
+  
+    
   </div>
 </template>
 
@@ -113,11 +157,7 @@ import emoji from 'node-emoji';
 
 // import { relays } from '../../relays.yaml'
 // import { geo } from '../../cache/geo.yaml'
-
-
 import { setupStore } from '@/store'
-
-
 import { useHead } from '@vueuse/head'
 
 
@@ -211,6 +251,17 @@ export default defineComponent({
     getFlag () {
       return this.geo?.countryCode ? countryCodeEmoji(this.geo?.countryCode) : emoji.get('shrug');
     },
+    getLogClass(){
+      return (slug) => { 
+        return {
+          ['bg-indigo-100 border-indigo-200']: slug == 'eose',
+          ['bg-red-100 border-red-200']: slug == 'wserror',
+          ['bg-yellow-100 border-yellow-200']: slug == 'error',
+          ['bg-green-100 border-green-200']: slug == 'ok',
+          ['bg-gray-50 border-gray-200']: slug == 'event',
+        } 
+      }
+    }
   }),
 
   // updated() {
@@ -233,9 +284,9 @@ tr td:last-child { text-align:left }
 body, .grid-Column { padding:0; margin:0; }
 .badges { display:block; margin: 10px 0 11px}
 .badges > span {margin-right:5px} */
-#wrapper {max-width:800px}
+/* #wrapper {max-width:800px} */
 
 
-#relay-wrapper { margin: 50px 0 20px; padding: 20px 0}
+/* #relay-wrapper { margin: 50px 0 20px; padding: 20px 0} */
 h1 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
 </style>

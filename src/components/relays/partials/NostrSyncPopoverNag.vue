@@ -18,7 +18,7 @@
           </div>
           <div class="text-white p-3">
             This feature depends on the finalization of 
-            <a href="https://github.com/nostr-protocol/nips/pull/32" target="_blank">NIP-32 [link]</a>,
+            <a href="https://github.com/nostr-protocol/nips/pull/32" target="_blank">NIP-23 [link]</a>,
             if you actively develop a nostr client, please provide input on the NIP to help make the 
             implementation of user relay lists easier for everyone.
           </div>

@@ -10,8 +10,9 @@ export const useUserStore = defineStore('user', {
   getters: {
     getPublicKey: (state) => state.pubKey,
     getProfile: (state) => state.profile,
-    getName: (state) => state.profile.name ? state.profile.name : false,
-    getNip05: (state) => state.profile.nip05 ? state.profile.nip05 : false,
+    getName: (state) => state.profile.name,
+    getPicture: (state) => state.profile.picture,
+    getNip05: (state) => state.profile.nip05,
     isProfile: (state) => Object.keys(state.profile).length ? true : false,
     getTestEvent: (state) => state.testEvent
   },

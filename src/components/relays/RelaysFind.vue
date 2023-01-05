@@ -4,7 +4,7 @@
     <div class="sm:flex-auto text-left">
         <h1 class="text-4xl capitalize font-semibold text-gray-900">
             <span class="inline-flex rounded bg-green-800 text-sm px-2 py-1 text-white relative -top-2">
-                {{ relaysCount[activeSubsection] }}
+                {{ getRelaysCount(activeSubsection) }}
             </span>
             {{ activeSubsection }} Relays
         </h1>
@@ -105,6 +105,16 @@
         activeSection: function(){ return this.store.layout.getActiveItem('relays')?.slug },
         activeSubsection: function(){ return this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug },
         navSubsection: function() { return this.store.layout.getNavGroup(`relays/${this.activeSection}`) || [] },
+        getRelaysCount: function() { 
+          return (subsection) => {
+            if(subsection === 'all')
+              return this.store.relays.getAll.length 
+            if(subsection === 'favorite')
+              return this.store.relays.getFavorites.length 
+            return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == subsection).length 
+
+          }
+        },
         parseHash
       },
 

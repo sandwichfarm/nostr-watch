@@ -128,6 +128,7 @@ const localMethods = {
         .on('complete', (instance) => {
           instance.result.aggregate = this.getAggregate(instance.result)
           instance.relay.close()
+          instance.result.log = instance.log
           resolve(instance.result)
         })
         .on('close', (relay) => {

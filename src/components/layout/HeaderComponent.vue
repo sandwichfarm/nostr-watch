@@ -41,24 +41,25 @@
           <Menu as="div" class="relative ml-3">
             <!-- <Menu as="div" class="relative ml-3"> -->
               <AuthComponent />
-              <div v-if="isLoggedIn()">
+              <div v-if="store.user.getPublicKey">
               <MenuButton class="flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                   <span class="sr-only">Open user menu</span>
-                  <span class="text-white mt-1.5 mr-3">{{ store.user.profile.nip05 || store.user.profile.name }}</span>
-                  <img v-if="store.user.isProfile" class="h-8 w-8 rounded-full" :src="store.user.profile?.picture" alt="store.user.profile?.name" />
+                  <span class="text-white mt-1.5 mr-3">{{ store.user.getNip05 || store.user.getName }}</span>
+                  <span class="text-white mt-1.5 mr-3">{{  }}</span>
+                  <img v-if="store.user.getPicture" class="h-8 w-8 rounded-full" :src="store.user.getPicture" alt="store.user.profile?.name" />
               </MenuButton>
               </div>
               <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
               <MenuItems 
                 style="z-index:9000 !important;" 
                 class="absolute right-0 z-9000 mt-2 w-64 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <span v-if="store.user.profile.name" class="block text-ellipsis text-sm w-full font-extrabold">
-                    {{ store.user.getName }}
+                  <span v-if="store.user.getName" class="block text-ellipsis text-sm w-full font-extrabold mt-2">
+                    {{ store.user.getName  }}
                   </span>  
-                  <span v-if="store.user.getNip05" class="block text-ellipsis text-sm w-full">
-                    {{ store.user.getNip05 }}
+                  <span v-if="store.user.getNip05" class="block text-ellipsis text-sm w-full mt-2">
+                    {{ store.user.getNip05  }}
                   </span>  
-                  <span class="block text-ellipsis text-xs">
+                  <span class="block text-ellipsis text-xs mt-3 mb-2">
                     <code>{{ store.user.getPublicKey.slice(0, 16) }}...</code>
                   </span>  
                   <MenuItem v-slot="{ active }">
@@ -77,7 +78,6 @@
     </div>
     </DisclosurePanel>
 </Disclosure>
-
 </template>
 <style scoped>
 nav.menu {
@@ -143,7 +143,11 @@ export default defineComponent({
     }
   },
   mounted(){
-    console.log('user store ???', this.store)
+    this.store.user.$subscribe((mutation) => {
+      mutation
+    })
+  },
+  computed: {
   },
   methods: UserLib
 });

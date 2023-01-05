@@ -8,7 +8,7 @@ import directives from "./directives/"
 import { plugin as storePlugin } from './store'
 import { RelayPool } from 'nostr'
 import VueInputAutowidth from 'vue-input-autowidth'
-// import { relays } from '../relays.yaml'
+import { relays } from '../relays.yaml'
 
 const app = createApp(App)
   .use(router)
@@ -19,8 +19,8 @@ const app = createApp(App)
 
 directives(app);
 
-// app.config.globalProperties.$pool = new RelayPool([relays])
-app.config.globalProperties.$pool = new RelayPool(['wss://relay.nostr.ch'])
+app.config.globalProperties.$pool = new RelayPool(relays, {reconnect: false})
+// app.config.globalProperties.$pool = new RelayPool(['wss://relay.nostr.ch'])
 
 await router.isReady()
 

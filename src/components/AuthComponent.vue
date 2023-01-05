@@ -11,7 +11,7 @@ import crypto from 'crypto'
 
 // import { validateEvent, verifySignature, getEventHash } from 'nostr-tools'
 export default defineComponent({
-  name: 'AlbyComponent',
+  name: 'AuthComponent',
   components: {},
   setup(){
     return { 

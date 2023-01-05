@@ -54,6 +54,8 @@ export default {
       const ll = [this.geo[this.relay]?.lat, this.geo[this.relay]?.lon]
       this.center = ll
 
+      console.log('lat long', this.relay, ll)
+
       return ll
     },
     getCircleColor(){
@@ -79,11 +81,10 @@ export default {
       
     }
   },
-  async mounted() {
-    setTimeout(() => {
-      this.center = this.getLatLng()
-      this.markerColor = this.getCircleColor()
-    }, 1)
+  async beforeMount() {
+    console.log(this.geo)
+    this.center = this.getLatLng()
+    this.markerColor = this.getCircleColor()
   },
   props: {
     geo: {

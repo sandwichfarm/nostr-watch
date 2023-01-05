@@ -7,160 +7,92 @@
     :geo="geo"
     :relay="relay"
     :result="result"
+    v-if="(geo instanceof Object)"
   />
 
   <div id="wrapper" class="mt-8 flex-container m-auto">
 
     <div class="overflow-hidden bg-white shadow sm:rounded-lg">
       <div class="px-4 py-5 sm:px-6">
-        <h3 class="text-lg font-medium leading-6 text-gray-900">Applicant Information</h3>
-        <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application.</p>
+        <h1>{{geo?.countryCode ? getFlag : ''}}<span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
       </div>
       <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
         <dl class="sm:divide-y sm:divide-gray-200">
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
-            <dt class="text-sm font-medium text-gray-500">Full name</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">Margot Foster</dd>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.name">
+            <dt class="text-sm font-medium text-gray-500">Relay Name</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.name }}</dd>
           </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
-            <dt class="text-sm font-medium text-gray-500">Application for</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">Backend Developer</dd>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.pubkey">
+            <dt class="text-sm font-medium text-gray-500">Public Key</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.pubkey }}</code></dd>
           </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
-            <dt class="text-sm font-medium text-gray-500">Email address</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">margotfoster@example.com</dd>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.email">
+            <dt class="text-sm font-medium text-gray-500">Contact</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 "><SafeMail :email="result.info.email" /></dd>
           </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
-            <dt class="text-sm font-medium text-gray-500">Salary expectation</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">$120,000</dd>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.software">
+            <dt class="text-sm font-medium text-gray-500">Software</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.software }}</dd>
           </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
-            <dt class="text-sm font-medium text-gray-500">About</dt>
-            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">Fugiat ipsum ipsum deserunt culpa aute sint do nostrud anim incididunt cillum culpa consequat. Excepteur qui ipsum aliquip consequat sint. Sit id mollit nulla mollit nostrud in ea officia proident. Irure nostrud pariatur mollit ad adipisicing reprehenderit deserunt qui eu.</dd>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
+            <dt class="text-sm font-medium text-gray-500">Software Version</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.version }}</code></dd>
           </div>
-          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
-            <dt class="text-sm font-medium text-gray-500">Attachments</dt>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
+            <dt class="text-sm font-medium text-gray-500">Connection Status</dt>
             <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-              <ul role="list" class="divide-y divide-gray-200 rounded-md border border-gray-200">
-                <li class="flex items-center justify-between py-3 pl-3 pr-4 text-sm">
-                  <div class="flex w-0 flex-1 items-center">
-                    <PaperClipIcon class="h-5 w-5 flex-shrink-0 text-gray-400" aria-hidden="true" />
-                    <span class="ml-2 w-0 flex-1 truncate">resume_back_end_developer.pdf</span>
-                  </div>
-                  <div class="ml-4 flex-shrink-0">
-                    <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">Download</a>
-                  </div>
-                </li>
-                <li class="flex items-center justify-between py-3 pl-3 pr-4 text-sm">
-                  <div class="flex w-0 flex-1 items-center">
-                    <PaperClipIcon class="h-5 w-5 flex-shrink-0 text-gray-400" aria-hidden="true" />
-                    <span class="ml-2 w-0 flex-1 truncate">coverletter_back_end_developer.pdf</span>
-                  </div>
-                  <div class="ml-4 flex-shrink-0">
-                    <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">Download</a>
-                  </div>
-                </li>
-              </ul>
+              <span><img :src="badgeCheck('connect')" class="inline mr-3" /></span>
+              <span><img :src="badgeCheck('read')" class="inline mr-3"/></span>
+              <span><img :src="badgeCheck('write')" class="inline" /></span>
+            </dd>
+          </div>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result.info?.supported_nips">
+            <dt class="text-sm font-medium text-gray-500">Supported Nips</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`" class="inline-block mr-3 mt-1">
+                <a :href="nipLink(nip)" target="_blank" ><img :src="badgeLink(nip)" /></a> 
+              </span>
             </dd>
           </div>
         </dl>
       </div>
     </div>
 
-    <div id="relay-wrapper">
-
-      <h2 @click="copy(relayFromUrl)">{{ relayFromUrl }}</h2>
-
-      <span  class="badges">
-        <span><img :src="badgeCheck('connect')" /></span>
-        <span><img :src="badgeCheck('read')" /></span>
-        <span><img :src="badgeCheck('write')" /></span>
-      </span>
-
-      <span v-if="result.info?.supported_nips" class="badges">
-        <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`">
-            <a :href="nipLink(nip)" target="_blank"><img :src="badgeLink(nip)" /></a>
-        </span>
-      </span>
-
-
-      <Row container :gutter="12" v-if="!result?.check?.connect">
-        <Column :xs="12" :md="12" :lg="12" class="title-card">
-          This relay appears to be offline.
-        </Column>
-      </Row>
-
-      <Row container :gutter="12" v-if="result?.check?.connect">
-        <Column :xs="12" :md="12" :lg="12" class="title-card">
-            <table v-if="result.info">
-              <tr>
-                <th colspan="2"><h4>Info</h4></th>
-              </tr>
-              <tbody v-if="result.info">
-                <tr v-for="(value, key) in Object.entries(result.info).filter(value => value[0] != 'id' && value[0] != 'supported_nips')" :key="`${value}_${key}`">
-                    <td>{{ value[0] }}</td>
-                    <td v-if="value[0]!='contact' && value[0]!='pubkey' && value[0]!='software' && value[0]!='version'">{{ value[1] }} </td>
-                    <td v-if="value[0]=='contact'"><SafeMail :email="value[1]" /></td>
-                    <td v-if="value[0]=='pubkey' || value[0]=='version'"><code>{{ value[1] }}</code></td>
-                    <td v-if="value[0]=='software'"><a :href="value[1]">{{ value[1] }}</a></td>
-                </tr>
-              </tbody>
-              <tr v-if="Object.entries(result.info).length == 0 && result.check.connect">
-                Relay does not have NIP-11 support, or the administrator has not configured the relay to return information.
-              </tr>
-            </table>
-
-            <table v-if="result.identities">
-              <tr>
-                <th colspan="2"><h4>Identities</h4></th>
-              </tr>
-              <tbody v-if="result.identities">
-                <tr v-for="(value, key) in Object.entries(result?.identities)" :key="`${value}_${key}`">
-                  <td>{{ value[0] }}</td>
-                  <td><code>{{ value[1] }}</code></td>
-                </tr>
-                <tr v-if="Object.entries(result.identities).length==0">
-                  Relay does not provide NIP-05 support and has not registered an administrator key.
-                </tr>
-              </tbody>
-            </table>
-
-          </Column>
-          <Column :xs="12" :md="6" :lg="6" class="title-card">
-            <table v-if="geo">
-              <tr>
-                <th colspan="2"><h4>GEO {{geo?.countryCode ? getFlag : ''}}</h4></th>
-              </tr>
-              <tbody v-if="geo">
-                <tr v-for="(value, key) in Object.entries(geo)" :key="`${value}_${key}`">
-                  <td>{{ value[0] }}</td>
-                  <td>{{ value[1] }} </td>
-                </tr>
-              </tbody>
-            </table>
-          </Column>
-          <Column :xs="12" :md="6" :lg="6" class="title-card">
-            <table v-if="geo">
-              <tr>
-                <th colspan="2"><h4>DNS</h4></th>
-              </tr>
-              <tbody v-if="geo">
-                <tr v-for="(value, key) in Object.entries(geo.dns)" :key="`${value}_${key}`">
-                <td>{{ value[0] }}</td>
-                <td>{{ value[1] }} </td>
-              </tr>
-              </tbody>
-            </table>
-          </Column> 
-      </Row>
-      
-
-     <!--  <RefreshComponent 
-          :relay="relay"
-        /> -->
+    <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
+      <div class="px-4 py-5 sm:px-6">
+        <h3>DNS</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
+      </div>
+      <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+        <dl class="sm:divide-y sm:divide-gray-200">
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo.dns)" :key="`${value}_${key}`">
+            <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
+          </div>
+        </dl>
+      </div>
     </div>
-    
 
+    <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
+      <div class="px-4 py-5 sm:px-6">
+        <h3>Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
+      </div>
+      <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+        <dl class="sm:divide-y sm:divide-gray-200">
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo).filter(value => value[0] != 'dns')" :key="`${value}_${key}`">
+            <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+  
+    <div class="max-w-sm p-6 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
+      <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">This Relay Appears to be offline</h5>
+    </div>
   </div>
 </template>
 
@@ -170,7 +102,6 @@ import { defineComponent} from 'vue'
 
 import MapSingle from '@/components/relays/MapSingle.vue'
 
-import { Row, Column } from 'vue-grid-responsive';
 import SafeMail from "@2alheure/vue-safe-mail";
 
 import RelaysLib from '@/shared/relays-lib.js'
@@ -207,8 +138,6 @@ export default defineComponent({
   name: 'SingleRelay',
   
   components: {
-    Row,
-    Column,
     MapSingle,
     SafeMail,
     // RefreshComponent,
@@ -292,7 +221,7 @@ export default defineComponent({
 })
 </script>
 <style scoped>
-ul, ul li { padding:0; margin:0; list-style:none; }
+/* ul, ul li { padding:0; margin:0; list-style:none; }
 td { padding:5px 10px; }
 th h4 { text-align:center; padding:5px 10px; margin:0 0 6px; background:#f0f0f0; }
 table {margin:20px 10px 20px; border: 2px solid #f5f5f5; padding:20px}
@@ -301,10 +230,10 @@ tr td:last-child { text-align:left }
 .indicator { display: table-cell; width:33% ; font-weight:bold; text-align: center !important; color: white; text-transform: uppercase; font-size:0.8em}
 body, .grid-Column { padding:0; margin:0; }
 .badges { display:block; margin: 10px 0 11px}
-.badges > span {margin-right:5px}
+.badges > span {margin-right:5px} */
 #wrapper {max-width:800px}
 
 
 #relay-wrapper { margin: 50px 0 20px; padding: 20px 0}
-h2 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
+h1 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
 </style>

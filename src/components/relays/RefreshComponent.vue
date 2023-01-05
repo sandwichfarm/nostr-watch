@@ -158,6 +158,7 @@ export default defineComponent({
     }
   },
   created(){
+    clearInterval(this.interval)
     // document.addEventListener('visibilitychange', this.handleVisibility, false)
   },
   unmounted(){
@@ -170,9 +171,7 @@ export default defineComponent({
     this.relays = this.store.relays.getAll
     this.lastUpdate = this.store.relays.lastUpdate
 
-    //console.log('last update', this.lastUpdate)
-
-    clearInterval(this.interval)
+    
 
     //If user leaves page before processing completes, force invalidate cache
     //console.log('is processing?', this.store.relays.isProcessing)

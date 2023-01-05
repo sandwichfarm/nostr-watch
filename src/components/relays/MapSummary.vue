@@ -81,6 +81,7 @@ export default defineComponent({
   },
   unmounted(){
     console.log('unmounted', '$refs', this.$refs)
+    delete this.$refs.map
   },
   updated(){},
   props: {

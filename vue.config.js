@@ -13,9 +13,6 @@ module.exports = defineConfig({
         chunks: "all",
       },
     },
-    externals: {
-      vue: 'Vue'
-    }
     resolve: {
       fallback: {
         "fs": false,

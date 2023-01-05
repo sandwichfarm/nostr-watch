@@ -37,12 +37,6 @@ export default {
       return this.$storage.removeStorageSync(key)
     },
 
-    cleanUrl: function(relay){
-      return relay.replace('wss://', '')
-    },
-
-   
-
     //   if(store)
     //     instance = this.storage.setStorage(store)
 

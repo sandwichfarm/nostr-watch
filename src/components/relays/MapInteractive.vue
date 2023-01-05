@@ -84,6 +84,10 @@
       this.geo = this.store.relays.geo
     },
     updated(){},
+    unmounted(){
+      console.log('unmounted', '$refs', this.$refs)
+      delete this.$refs.map
+    },
     props: {
       resultsProp: {
         type: Object,

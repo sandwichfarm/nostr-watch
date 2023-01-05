@@ -1,7 +1,7 @@
 <template>
-  <metainfo>
-    <template v-slot:title="{ content }">{{ `${cleanUrl(this.relay)} | ${content}` }}</template>
-  </metainfo>
+  
+  <SubnavComponent 
+    v-bind:resultsProp="results" />
 
   <MapSingle
     :geo="geo"
@@ -100,6 +100,7 @@
 
 import { defineComponent} from 'vue'
 
+import SubnavComponent from '@/components/relays/SubnavComponent.vue'
 import MapSingle from '@/components/relays/MapSingle.vue'
 
 import SafeMail from "@2alheure/vue-safe-mail";
@@ -140,6 +141,7 @@ export default defineComponent({
   components: {
     MapSingle,
     SafeMail,
+    SubnavComponent
     // RefreshComponent,
   },
 

@@ -41,7 +41,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    <tr v-for="(relay, index) in subsectionRelays" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
+                    <tr v-for="(relay, index) in subsectionRelays" :key="relay" class="bg-gray-50 hover:bg-slate-200" :class="getResultClass(relay, index)">
                       <td class="status-indicator" :key="generateKey(relay, 'aggregate')">
                         <span :class="results[relay]?.aggregate" class="aggregate indicator">
                             <span></span>

@@ -14,7 +14,7 @@
           </a>
         </div>
       </div>
-      <div class="width-max lg:flex lg:ml-auto ">
+      <div class="width-max lg:flex lg:ml-auto">
           <RefreshComponent
             v-bind:resultsProp="results" />
         </div>
@@ -28,7 +28,7 @@ import { items } from './config/subnav.yaml'
 import { setupStore } from '@/store'
 
 import RelaysLib from '@/shared/relays-lib.js'
-import { setupNavData, mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
+import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
 import RefreshComponent from '@/components/relays/RefreshComponent.vue'
 
 export default defineComponent({
@@ -68,7 +68,7 @@ export default defineComponent({
   mounted(){
     
   },
-  methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive }),
+  methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive }),
   computed: {
     isActive(){
         return (item) => item.slug==this.navActiveContent

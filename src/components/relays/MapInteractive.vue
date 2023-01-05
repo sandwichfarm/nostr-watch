@@ -7,7 +7,9 @@
         :minZoom="minZoom"
         :maxZoom="maxZoom"
         >
-  
+        <!-- :maxBounds="[34.41322, -1.219482]"
+        :maxBoundsViscosity="1.0" -->
+        
         <l-tile-layer
           url="http://{s}.tile.osm.org/{z}/{x}/{y}.png"
           layer-type="base"
@@ -37,6 +39,9 @@
       </l-map>
     </div>
     
+
+
+
   </template>
   
   <script>
@@ -52,15 +57,15 @@
       LMap,
       LTileLayer,
       LMarker,
-      LPopup
+      LPopup,
     },
     data() {
       return {
-        minZoom: 3,
-        maxZoom: 10,
-        center: [40.41322, -1.219482],
+        minZoom: 4,
+        maxZoom: 7,
+        center: [70.41322, -1.219482],
         expanded: false,
-        relays: []
+        relays: [],
       };
     },
     setup(props){

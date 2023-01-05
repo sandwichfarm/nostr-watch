@@ -57,7 +57,7 @@ import { items } from './config/find-pagenav.yaml'
 //shared methods 
 import RelaysLib from '@/shared/relays-lib.js'
 //hash router
-import { setupNavData, mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
+import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
 //tailwind
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
@@ -90,7 +90,7 @@ export default defineComponent({
   mounted(){
     
   },
-  methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadContent}),
+  methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadNavContent}),
 
   computed: {
     isActive(){

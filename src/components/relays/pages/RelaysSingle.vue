@@ -9,34 +9,80 @@
     :result="result"
   />
 
-  <div id="wrapper">
+  <div id="wrapper" class="mt-8 flex-container m-auto">
+
+    <div class="overflow-hidden bg-white shadow sm:rounded-lg">
+      <div class="px-4 py-5 sm:px-6">
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Applicant Information</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application.</p>
+      </div>
+      <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
+        <dl class="sm:divide-y sm:divide-gray-200">
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Full name</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">Margot Foster</dd>
+          </div>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Application for</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">Backend Developer</dd>
+          </div>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Email address</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">margotfoster@example.com</dd>
+          </div>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Salary expectation</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">$120,000</dd>
+          </div>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">About</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">Fugiat ipsum ipsum deserunt culpa aute sint do nostrud anim incididunt cillum culpa consequat. Excepteur qui ipsum aliquip consequat sint. Sit id mollit nulla mollit nostrud in ea officia proident. Irure nostrud pariatur mollit ad adipisicing reprehenderit deserunt qui eu.</dd>
+          </div>
+          <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6">
+            <dt class="text-sm font-medium text-gray-500">Attachments</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <ul role="list" class="divide-y divide-gray-200 rounded-md border border-gray-200">
+                <li class="flex items-center justify-between py-3 pl-3 pr-4 text-sm">
+                  <div class="flex w-0 flex-1 items-center">
+                    <PaperClipIcon class="h-5 w-5 flex-shrink-0 text-gray-400" aria-hidden="true" />
+                    <span class="ml-2 w-0 flex-1 truncate">resume_back_end_developer.pdf</span>
+                  </div>
+                  <div class="ml-4 flex-shrink-0">
+                    <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">Download</a>
+                  </div>
+                </li>
+                <li class="flex items-center justify-between py-3 pl-3 pr-4 text-sm">
+                  <div class="flex w-0 flex-1 items-center">
+                    <PaperClipIcon class="h-5 w-5 flex-shrink-0 text-gray-400" aria-hidden="true" />
+                    <span class="ml-2 w-0 flex-1 truncate">coverletter_back_end_developer.pdf</span>
+                  </div>
+                  <div class="ml-4 flex-shrink-0">
+                    <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">Download</a>
+                  </div>
+                </li>
+              </ul>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
 
     <div id="relay-wrapper">
 
-      <Row container :gutter="12">
-        <Column :xs="12" :md="12" :lg="12" class="title-card">
-          <span v-tooltip:top.tooltip="'Click to copy'" style="display:block">
-            <h2 @click="copy(relayFromUrl())">{{ relayFromUrl() }}</h2>
-          </span>
-        </Column>
-      </Row>
-      
+      <h2 @click="copy(relayFromUrl)">{{ relayFromUrl }}</h2>
 
-      <Row container :gutter="12">
-        <Column :xs="12" :md="12" :lg="12" class="title-card">
-          <span  class="badges">
-            <span><img :src="badgeCheck('connect')" /></span>
-            <span><img :src="badgeCheck('read')" /></span>
-            <span><img :src="badgeCheck('write')" /></span>
-          </span>
+      <span  class="badges">
+        <span><img :src="badgeCheck('connect')" /></span>
+        <span><img :src="badgeCheck('read')" /></span>
+        <span><img :src="badgeCheck('write')" /></span>
+      </span>
 
-          <span v-if="result.info?.supported_nips" class="badges">
-              <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`">
-                  <a :href="nipLink(nip)" target="_blank"><img :src="badgeLink(nip)" /></a>
-              </span>
-            </span>
-        </Column>
-      </Row>
+      <span v-if="result.info?.supported_nips" class="badges">
+        <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`">
+            <a :href="nipLink(nip)" target="_blank"><img :src="badgeLink(nip)" /></a>
+        </span>
+      </span>
+
 
       <Row container :gutter="12" v-if="!result?.check?.connect">
         <Column :xs="12" :md="12" :lg="12" class="title-card">
@@ -81,12 +127,12 @@
 
           </Column>
           <Column :xs="12" :md="6" :lg="6" class="title-card">
-            <table v-if="geo[relay]">
+            <table v-if="geo">
               <tr>
-                <th colspan="2"><h4>GEO {{geo?.countryCode ? getFlag() : ''}}</h4></th>
+                <th colspan="2"><h4>GEO {{geo?.countryCode ? getFlag : ''}}</h4></th>
               </tr>
-              <tbody v-if="geo[relay]">
-                <tr v-for="(value, key) in Object.entries(geo[relay])" :key="`${value}_${key}`">
+              <tbody v-if="geo">
+                <tr v-for="(value, key) in Object.entries(geo)" :key="`${value}_${key}`">
                   <td>{{ value[0] }}</td>
                   <td>{{ value[1] }} </td>
                 </tr>
@@ -94,12 +140,12 @@
             </table>
           </Column>
           <Column :xs="12" :md="6" :lg="6" class="title-card">
-            <table v-if="geo[relay]">
+            <table v-if="geo">
               <tr>
                 <th colspan="2"><h4>DNS</h4></th>
               </tr>
-              <tbody v-if="geo[relay]">
-                <tr v-for="(value, key) in Object.entries(geo[relay].dns)" :key="`${value}_${key}`">
+              <tbody v-if="geo">
+                <tr v-for="(value, key) in Object.entries(geo.dns)" :key="`${value}_${key}`">
                 <td>{{ value[0] }}</td>
                 <td>{{ value[1] }} </td>
               </tr>
@@ -130,6 +176,9 @@ import SafeMail from "@2alheure/vue-safe-mail";
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
+import { countryCodeEmoji } from 'country-code-emoji';
+import emoji from 'node-emoji';
+
 // import { relays } from '../../relays.yaml'
 // import { geo } from '../../cache/geo.yaml'
 
@@ -142,31 +191,9 @@ import { useHead } from '@vueuse/head'
 
 
 const localMethods = {
-    relayFromUrl() {
-      // We will see what `params` is shortly
-      return `wss://${this.$route.params.relayFromUrl}`
-    },
-
-    badgeLink(nip){
-      return `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
-    },
-
     badgeCheck(which){
       return `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${which}&color=${this.result?.check?.[which] ? 'green' : 'red'}`
     },
-
-    nipSignature(key){
-      return key.toString().length == 1 ? `0${key}` : key
-    },
-
-    nipFormatted(key){
-      return `NIP-${this.nipSignature(key)}`
-    },
-
-    nipLink(key){
-      return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
-    },
-
     async copy(text) {
       try {
         await navigator.clipboard.writeText(text);
@@ -191,6 +218,7 @@ export default defineComponent({
     return {
       result: {},
       relay: "",
+      geo: {}
     }
   },
 
@@ -209,17 +237,48 @@ export default defineComponent({
     }
   },
 
-  async mounted() {
-    this.relay = this.relayFromUrl()
+  beforeMount(){
+    this.relay = this.relayFromUrl
     this.lastUpdate = this.store.relays.getLastUpdate
     this.result = this.getCache(this.relay)
-    if(this.isExpired)
-      this.check(this.relay)
+    //
+    console.log(this.$route.params)
+    
+    this.geo = this.store.relays.getGeo(this.relay)
+    console.log(this.relay, this.lastUpdate, this.result, this.geo)
+  },
+
+  async mounted() {
+    
   },
 
   computed: Object.assign(SharedComputed, {
-    cleanUrl: function(relay){
-      return relay.replace('wss://', '')
+    cleanUrl: function(){
+      return (relay) => relay.replace('wss://', '')
+    },
+    relayFromUrl() {
+      // We will see what `params` is shortly
+      return `wss://${this.$route.params.relayUrl}`
+    },
+
+    badgeLink(){
+      return (nip) => `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
+    },
+
+    nipSignature(){
+      return (key) => key.toString().length == 1 ? `0${key}` : key
+    },
+
+    nipFormatted(){
+      return (key) => `NIP-${this.nipSignature(key)}`
+    },
+
+    nipLink(){
+      return (key) => `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
+    },
+
+    getFlag () {
+      return this.geo?.countryCode ? countryCodeEmoji(this.geo?.countryCode) : emoji.get('shrug');
     },
   }),
 

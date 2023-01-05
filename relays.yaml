@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.lnprivate.network
   - wss://relay.nostr.vision
   - wss://nostr-3.orba.ca
   - wss://satstacker.cloud

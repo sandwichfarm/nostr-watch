@@ -185,7 +185,7 @@
         return (relay, index) => {
           return {
             loaded: this.results[relay]?.state == 'complete',
-            even: index % 2,
+            'bg-slate-100': index % 2,
           }
         }
       },

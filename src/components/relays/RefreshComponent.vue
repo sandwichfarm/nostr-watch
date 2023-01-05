@@ -1,6 +1,6 @@
 <template>
   <span class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="!store.tasks.isProcessing">Checked {{ timeSinceRefresh }} ago</span>
+    <span v-if="!store.tasks.isProcessing">Checked {{ sinceLast }} ago</span>
     <span v-if="store.tasks.isProcessing" class="italic lg:pr-9">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -11,7 +11,7 @@
   </span>
   <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.tasks.isProcessing">-</span>
   <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.tasks.isProcessing"> 
-    Next check in: {{ this.timeUntilRefresh  }}
+    Next check in: {{ untilNext  }}
   </span>
   <button 
     v-if="!store.tasks.isProcessing"
@@ -42,6 +42,9 @@ const localMethods = {
     this.interval = setInterval(() => {
       if(!this.store.prefs.refresh || !this.windowActive )
         return 
+
+      this.untilNext = this.timeUntilRefresh()
+      this.sinceLast = this.timeSinceRefresh()
 
       if(!this.store.tasks.isProcessing)
         this.invalidate()
@@ -153,7 +156,13 @@ const localMethods = {
     for (let i = 0;i<total;i++) 
       sum += arr[i];
     return Math.floor(parseFloat(sum/total));
-  }
+  },
+  timeUntilRefresh(){
+    return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
+  },
+  timeSinceRefresh(){
+    return this.timeSince(this.store.relays.getLastUpdate)
+  },
 }
 
 export default defineComponent({
@@ -173,6 +182,10 @@ export default defineComponent({
   unmounted(){
     clearInterval(this.interval)
   },
+  beforeMount(){
+    this.untilNext = this.timeUntilRefresh()
+    this.sinceLast = this.timeSinceRefresh()
+  },
   mounted(){
     if(!this.windowActive)
       return 
@@ -184,18 +197,12 @@ export default defineComponent({
       this.invalidate(true)
     else
       this.invalidate()
-      // setTimeout(this.invalidate(), 10)
 
     this.setRefreshInterval()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {
-    timeUntilRefresh(){
-      return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
-    },
-    timeSinceRefresh(){
-      return this.timeSince(this.store.relays.getLastUpdate)
-    },
+    
     getDynamicTimeout: function(){
       return this.averageLatency*this.relays.length
     },

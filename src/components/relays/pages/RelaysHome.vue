@@ -6,6 +6,10 @@
     :resultsProp="results" 
     :activePageItemProp="activeSubsection"
     v-if="activeSection == 'find'" /> 
+  
+  <MapInteractive
+    :resultsProp="results"
+    v-if="activeSection == 'map'" /> 
 
   <div id="wrapper" class="mx-auto max-w-7xl">  
 
@@ -17,9 +21,7 @@
       :resultsProp="results"
       v-if="activeSection == 'stats'" /> 
     
-    <MapInteractive
-      :resultsProp="results"
-      v-if="activeSection == 'map'" /> 
+
     
     <div id="footer">
       <span class="credit">
@@ -100,6 +102,17 @@ export default defineComponent({
     }
   },
 
+  beforeMount(){
+    this.routeSection = this.parseHash.section || false
+    this.routeSubsection = this.parseHash.subsection || false
+    this.relaysLoadData()
+  },
+
+  async mounted() {
+    this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
+    // this.relaysMountNav()
+  },
+
   updated(){},
 
   unmounted(){
@@ -107,16 +120,7 @@ export default defineComponent({
     delete this.results
   },
 
-  beforeMount(){
-    this.routeSection = this.parseHash.section || false
-    this.routeSubsection = this.parseHash.subsection || false
-  },
 
-  async mounted() {
-    this.relaysLoadData()
-    this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
-    // this.relaysMountNav()
-  },
 
   computed: {
     activeSection: function(){ return this.store.layout.getActiveItem('relays')?.slug },

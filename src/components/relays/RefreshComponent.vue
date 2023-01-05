@@ -1,16 +1,22 @@
 <template>
   <span class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="!store.relays.isProcessing">Checked {{ timeSinceRefresh }} ago</span>
-    <span v-if="store.relays.isProcessing" class="italic">Checking Now</span>
+    <span v-if="!store.tasks.isProcessing">Checked {{ timeSinceRefresh }} ago</span>
+    <span v-if="store.tasks.isProcessing" class="italic">
+      <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      {{ this.store.tasks.getProcessedRelays.length }}/{{ this.relays.length }} Relays Checked
+    </span>
   </span>
-  <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.relays.isProcessing">-</span>
-  <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.relays.isProcessing"> 
+  <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.tasks.isProcessing">-</span>
+  <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.tasks.isProcessing"> 
     Next check in: {{ this.timeUntilRefresh  }}
   </span>
   <button 
-    v-if="!store.relays.isProcessing"
+    v-if="!store.tasks.isProcessing"
     class="mr-8 my-1 py-0 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
-    :disabled='store.relays.isProcessing' 
+    :disabled='store.tasks.isProcessing' 
     @click="refreshNow()">
       Check{{ relay ? ` ${relay}` : "" }} Now
   </button>
@@ -37,7 +43,7 @@ const localMethods = {
       if(!this.store.prefs.refresh || !this.windowActive )
         return 
 
-      if(!this.store.relays.isProcessing)
+      if(!this.store.tasks.isProcessing)
         this.invalidate()
     }, 1000)
   },
@@ -55,26 +61,28 @@ const localMethods = {
     if( (!this.isExpired && !force) ) 
       return
 
-    this.store.relays.startProcessing()
+    this.store.tasks.startProcessing()
+    
+    const relays = this.relays.filter( relay => !this.store.tasks.isRelayProcessed(relay) )
 
     if(single) {
       await this.check(single) 
     } 
     else {
-      const processed = new Set()
-      for(let index = 0; index < this.relays.length; index++) {
-        const relay = this.relays[index]
+      // const processed = new Set()
+      for(let index = 0; index < relays.length; index++) {
+        const relay = relays[index]
         await this.delay(this.averageLatency).then( () => { 
           this.check(relay)
             .then((result) => {
-              if(processed.has(result.uri))
+              if(this.store.tasks.isRelayProcessed(result.uri))
                 return 
-              processed.add(result.uri)  
+              this.store.tasks.addProcessedRelay(result.uri)
               this.results[result.uri] = result
               this.setCache(result)
               // //console.log('processing status', processed, '/', this.relays.length)
-              console.log('complete?', result.uri, processed.size, this.relays.length)
-              if(processed.size >= this.relays.length)
+              console.log('complete?', result.uri, this.store.tasks.getProcessedRelays.length, this.relays.length)
+              if(this.store.tasks.getProcessedRelays.length >= this.relays.length)
                 this.completeAll()
             })
             .catch( err => console.error(err) )
@@ -84,9 +92,9 @@ const localMethods = {
   },
 
   completeAll: function(){
-    this.store.relays.finishProcessing()
+    this.store.tasks.finishProcessing()
     this.store.relays.updateNow()
-    //console.log('all are complete?', this.store.relays.isProcessing)
+    //console.log('all are complete?', this.store.tasks.isProcessing)
     // const aggregates = new Object()
     // aggregates.all = this.getSortedAllRelays()
     // aggregates.public = this.getSortedPublicRelays()
@@ -171,14 +179,11 @@ export default defineComponent({
     this.relays = this.store.relays.getAll
     this.lastUpdate = this.store.relays.lastUpdate
 
-    
-
-    //If user leaves page before processing completes, force invalidate cache
-    //console.log('is processing?', this.store.relays.isProcessing)
-    if(this.store.relays.isProcessing)
+    if(this.store.tasks.isProcessing)
       this.invalidate(true)
     else
       this.invalidate()
+      // setTimeout(this.invalidate(), 10)
 
     this.setRefreshInterval()
   },
@@ -188,7 +193,7 @@ export default defineComponent({
       return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
     },
     timeSinceRefresh(){
-      return this.timeSince(this.store.relays.lastUpdate)
+      return this.timeSince(this.store.relays.getLastUpdate)
     },
     getDynamicTimeout: function(){
       return this.averageLatency*this.relays.length

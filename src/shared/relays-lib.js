@@ -4,22 +4,24 @@ import {sort} from 'array-timsort'
 export default {
   sortRelays(relays){
     sort(relays, (relay1, relay2) => {
-      return this.results?.[relay1]?.latency.final - this.results?.[relay2]?.latency.final
+      let a = this.results?.[relay1]?.latency.final || 100000,
+          b = this.results?.[relay2]?.latency.final || 100000
+      return a-b
     })
     sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.final ,
-          b = this.results?.[relay2]?.latency.final 
-      return (b != null) - (a != null) || a - b;
-    })
-    sort(relays, (relay1, relay2) => {
-      let x = this.results?.[relay1]?.check?.connect,
-          y = this.results?.[relay2]?.check?.connect
+      let x = this.results?.[relay1]?.check?.connect || false,
+          y = this.results?.[relay2]?.check?.connect || false
       return (x === y)? 0 : x? -1 : 1;
+    })
+    sort(relays, (relay1, relay2) => {
+      let a = this.results?.[relay1]?.latency.final || null,
+          b = this.results?.[relay2]?.latency.final || null
+      return (b != null) - (a != null) || a - b;
     })
     if(this.store.prefs.doPinFavorites)
       sort(relays, (relay1, relay2) => {
-        let x = this.store.relays.isFavorite(relay1),
-            y = this.store.relays.isFavorite(relay2)
+        let x = this.store.relays.isFavorite(relay1) || false,
+            y = this.store.relays.isFavorite(relay2) || false
         return (x === y)? 0 : x? -1 : 1;
       })
     // relays = this.sortRelaysFavoritesOnTop(relays)

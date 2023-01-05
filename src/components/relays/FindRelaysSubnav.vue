@@ -15,15 +15,7 @@
           </div>
         </div>
         <div class="flex flex-1 items-center justify-center px-2 lg:ml-6 lg:justify-end">
-          <div class="w-full max-w-lg lg:max-w-xs">
-            <label for="relay-filter" class="sr-only">Filter Relays</label>
-            <div class="relative">
-              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
-              </div>
-              <input id="relay-filter" name="relay-filter" class="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 leading-5 placeholder-gray-500 focus:border-indigo-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm" placeholder="Filter Relays" type="search" />
-            </div>
-          </div>
+          <ToolFilter />
         </div>
         <div class="flex items-center lg:hidden">
           <!-- Mobile menu button -->
@@ -54,24 +46,29 @@
 </template>
 
 <script>
+//vue
 import { defineComponent } from 'vue'
-
+//pinia
 import { setupStore } from '@/store'
+//components 
+import ToolFilter from '@/components/relays/ToolFilter.vue'
+//nav conf
 import { items } from './config/find-pagenav.yaml'
+//shared methods 
 import RelaysLib from '@/shared/relays-lib.js'
+//hash router
 import { setupNavData, mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
-
+//tailwind
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
-import { MagnifyingGlassIcon } from '@heroicons/vue/20/solid'
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'FindRelaysSubnav',
   components: {
+    ToolFilter,
     Disclosure, DisclosureButton, DisclosurePanel,
-    MagnifyingGlassIcon,
-    Bars3Icon, XMarkIcon
+    Bars3Icon, XMarkIcon,
     // PreferencesComponent,
     // AuthComponent
   },
@@ -94,7 +91,7 @@ export default defineComponent({
     
   },
   methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadContent}),
-  
+
   computed: {
     isActive(){
         return (item) => item.slug==this.navActiveContent

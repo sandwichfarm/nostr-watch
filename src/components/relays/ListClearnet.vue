@@ -55,7 +55,7 @@
 
                       <td class="verified text-center">
                         <span v-if="this.results[relay]?.identities">
-                          <span v-tooltip:top.tooltip="identityList"> <span class="verified-shape-wrapper" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span>
+                          <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span>
                         </span>
                       </td>
 
@@ -176,7 +176,10 @@
     },
     computed: {
       subsectionRelays(){
-        return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        if(this.results)
+          return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        else 
+          return {}
       },
       getResultClass() {
         return (relay, index) => {

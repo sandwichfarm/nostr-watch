@@ -1,16 +1,11 @@
 <template>
-    <div :class="mapToggleClass()" style="margin-bottom:-30px">
+    <div :class="mapToggleClass()" class="relative  min-h-screen">
       <l-map
         ref="map"
         v-model:zoom="zoom"
         :center="[34.41322, -1.219482]"
-        :minZoom="zoom"
-        :maxZoom="zoom"
-        :zoomControl="false"
-        :dragging="false"
-        :touchZoom="false"
-        :scrollWheelZoom="false"
-        :doubleClickZoom="false"
+        :minZoom="minZoom"
+        :maxZoom="maxZoom"
         >
   
         <l-tile-layer
@@ -20,13 +15,14 @@
           attribution='<a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
   
+        
         <!-- <l-marker v-for="([relay, result]) in Object.entries(geo)" :lat-lng="getLatLng(result)" :key="relay">
           <l-popup>
             {{ relay }}
           </l-popup>
         </l-marker> -->
   
-        <l-circle-marker
+        <l-marker
           v-for="relay in getRelaysWithGeo"
           :lat-lng="getLatLng(relay)"
           :key="relay"
@@ -34,16 +30,11 @@
           :weight="4"
           :color="getCircleColor(relay)"
           :fillOpacity="1" >
-    <!--       <l-popup>
+          <l-popup>
             {{ relay }}
-          </l-popup> -->
-        </l-circle-marker>
+          </l-popup>
+        </l-marker>
       </l-map>
-      <button @click="toggleMap">
-        <span class="expand">expand</span> 
-        <span class="collapse">collapse</span>
-        map
-      </button>
     </div>
     
   </template>
@@ -51,7 +42,7 @@
   <script>
   import { defineComponent, toRefs } from 'vue'
   import "leaflet/dist/leaflet.css"
-  import { LMap, LTileLayer, LCircleMarker } from "@vue-leaflet/vue-leaflet"
+  import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet"
   import { setupStore } from '@/store'
   import RelaysLib from '@/shared/relays-lib.js'
   
@@ -60,11 +51,13 @@
     components: {
       LMap,
       LTileLayer,
-      LCircleMarker,
+      LMarker,
+      LPopup
     },
     data() {
       return {
-        zoom: 2,
+        minZoom: 3,
+        maxZoom: 10,
         center: [40.41322, -1.219482],
         expanded: false,
         relays: []
@@ -177,50 +170,15 @@
   </style>
   
   <style scoped>
-  
-  
   .leaflet-container {
-    position:relative;
+    position:absolute;
     z-index:900;
     margin:0;
     padding:0;
-    height:250px !important;
+    top:0;
+    bottom:0;
     width:100%;
-  /*  -webkit-transition:height 300ms ease-in-out;
-    -moz-transition:height 300ms ease-in-out;
-    -o-transition:height 300ms ease-in-out;
-    transition:height 300ms ease-in-out;*/
-  }
-  .expanded .leaflet-container {
-    height:555px !important;
-  }
-  .leaflet-control-zoom {
-    display: none !important;
-  }
-  
-  button {
-    position: relative;
-    z-index:901;
-    top: -30px;
-    background:rgba(255,255,255,0.5);
-    border:0;
-    padding:3px 6px;
-    color:#777;
-    cursor:pointer;
-  }
-  
-  button:hover {
-    color:#222;
-  }
-  
-  .expanded button .expand,
-  button .collapse {
-    display:none;
-  }
-  
-  button .expand,
-  .expanded button .collapse {
-    display:inline;
+    height:100% !important;
   }
   </style>
   

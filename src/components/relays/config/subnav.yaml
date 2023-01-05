@@ -8,6 +8,6 @@ items:
     href: '#/relays/map'
     group: tools
   - name: Relay Statistics
-    slug: statistics
+    slug: stats
     href: '#/relays/statistics'
     group: tools

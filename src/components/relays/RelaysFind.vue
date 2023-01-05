@@ -1,6 +1,6 @@
 <template>
 <div class="pt-5 px-1 sm:px-6 lg:px-8">
-    <div class="sm:flex sm:items-center">
+  <div class="sm:flex sm:items-center">
     <div class="sm:flex-auto text-left">
         <h1 class="text-4xl capitalize font-semibold text-gray-900">
             <span class="inline-flex rounded bg-green-800 text-sm px-2 py-1 text-white relative -top-2">
@@ -24,8 +24,8 @@
     </div>
     <div class="mt-8 flex flex-col">
     <FindRelaysSubnav />
-    </div>
-    </div>
+  </div>
+</div>
 
     <div 
     v-for="subsection in navSubsection"
@@ -44,11 +44,12 @@
 <script>
     //vue
     import { defineComponent, toRefs } from 'vue'
+    //pinia
     import { setupStore } from '@/store'
     //shared methods
     import RelaysLib from '@/shared/relays-lib.js'
     import { parseHash } from '@/shared/hash-router.js'
-
+    //components
     import FindRelaysSubnav from '@/components/relays/FindRelaysSubnav.vue'
     import ListClearnet from '@/components/relays/ListClearnet.vue'
 

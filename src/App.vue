@@ -1,8 +1,8 @@
 <template>
   <HeaderComponent />
   <div class="flex min-h-screen">
-    <div class="flex-1">
-      <main>
+    <div class="flex-1 min-h-screen">
+      <main class="min-h-screen">
         <router-view></router-view>
       </main>
     </div>

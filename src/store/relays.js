@@ -40,9 +40,6 @@ export const useRelaysStore = defineStore('relays', {
     getAggregate: (state) => (which) => state.aggregates[which],
     areAggregatesSet: (state) => state.aggregatesAreSet,
 
-    getProcessedRelays: (state) => Array.from(state.processedRelays),
-    isProcessing: (state) => state.processing,
-
     getFavorites: (state) => state.favorites,
     isFavorite: (state) => (relayUrl) => state.favorites.includes(relayUrl)
   },
@@ -71,19 +68,7 @@ export const useRelaysStore = defineStore('relays', {
       this.aggregatesAreSet = true
       this.aggregates = obj 
     },
-    
-    addProcessedRelay(relay){
-      //console.log(`this.processedRelays is set`, this.processedRelays instanceof Set)
-      this.processedRelays.add(relay) 
-    },
-    finishProcessing() { this.processing = false },
-    startProcessing() { this.processing = true },
-    completeProcessing() { 
-      //console.log('setting as complete')
-      this.processedRelays = []
-      this.finishProcessing()
-    },
-
+  
     setFavorite(relayUrl){ 
       this.favorites.push(relayUrl)
       this.favorites = this.favorites.map( x => x )

@@ -6,6 +6,7 @@ import { usePrefsStore } from './prefs.js'
 import { useLayoutStore } from './layout.js'
 import { useUserStore } from './user.js'
 import { useStatStore } from './stats.js'
+import { useTaskStore } from './tasks.js'
 
 export const plugin = (app) => {
   const pinia = createPinia()
@@ -23,6 +24,7 @@ export const setupStore = function(){
     layout: useLayoutStore(),
     user: useUserStore(),
     stats: useStatStore(),
+    tasks: useTaskStore(),
   }
 }
 

@@ -74,10 +74,5 @@ export default defineComponent({
         return (item) => item.slug==this.navActiveContent
     }
   },
-//   watch: {
-//     active(n){
-//         console.log('ok', n)
-//     }
-//   }
 });
 </script>

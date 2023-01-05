@@ -1,4 +1,5 @@
 <template>
+  <div>
     history 
         growth chart
     Basic:
@@ -17,15 +18,14 @@
     aggregate stats 
         oldest relay still online 
         newest relay
-    
-
+  </div>
 </template>
 <script>
 import { defineComponent, toRefs } from 'vue'
 import { setupStore } from '@/store'
 
 export default defineComponent({
-  name: 'RelayControlComponent',
+  name: 'RelayStatistics',
   components: {},
   setup(props){
     const {resultsProp: results} = toRefs(props)

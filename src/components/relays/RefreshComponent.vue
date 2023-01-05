@@ -1,11 +1,11 @@
 <template>
   <span class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="!store.relays.isProcessing">Checked {{ sinceLast }} ago</span>
+    <span v-if="!store.relays.isProcessing">Checked {{ timeSinceRefresh }} ago</span>
     <span v-if="store.relays.isProcessing" class="italic">Checking Now</span>
   </span>
   <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.relays.isProcessing">-</span>
   <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.relays.isProcessing"> 
-    Next check in: {{ untilNext }}
+    Next check in: {{ this.timeUntilRefresh  }}
   </span>
   <button 
     v-if="!store.relays.isProcessing"
@@ -22,25 +22,21 @@
 
 <script>
 import { defineComponent, toRefs } from 'vue'
-import RelaysLib from '@/shared/relays-lib.js'
+
 import { setupStore } from '@/store'
+import RelaysLib from '@/shared/relays-lib.js'
+import SharedComputed from '@/shared/computed.js'
+
 import { Inspector } from 'nostr-relay-inspector'
 
 const localMethods = {
-  timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
-  },
-  timeSinceRefresh(){
-    return this.timeSince(this.store.relays.lastUpdate)
-  },
+
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
       if(!this.store.prefs.refresh || !this.windowActive )
         return 
 
-      this.untilNext = this.timeUntilRefresh() 
-      this.sinceLast = this.timeSinceRefresh() 
       if(!this.store.relays.isProcessing)
         this.invalidate()
     }, 1000)
@@ -54,11 +50,9 @@ const localMethods = {
       this.windowActive = false 
     else 
       this.windowActive = true
-    console.log('window active?', this.windowActive)
   },
-
   invalidate: async function(force, single){
-    if( (!this.isExpired() && !force) ) 
+    if( (!this.isExpired && !force) ) 
       return
 
     this.store.relays.startProcessing()
@@ -73,10 +67,12 @@ const localMethods = {
         await this.delay(this.averageLatency).then( () => { 
           this.check(relay)
             .then((result) => {
+              if(processed.has(result.uri))
+                return 
+              processed.add(result.uri)  
               this.results[result.uri] = result
               this.setCache(result)
-              processed.add(result.uri)
-              // console.log('processing status', processed, '/', this.relays.length)
+              // //console.log('processing status', processed, '/', this.relays.length)
               console.log('complete?', result.uri, processed.size, this.relays.length)
               if(processed.size >= this.relays.length)
                 this.completeAll()
@@ -90,7 +86,7 @@ const localMethods = {
   completeAll: function(){
     this.store.relays.finishProcessing()
     this.store.relays.updateNow()
-    console.log('all are complete?', this.store.relays.isProcessing)
+    //console.log('all are complete?', this.store.relays.isProcessing)
     // const aggregates = new Object()
     // aggregates.all = this.getSortedAllRelays()
     // aggregates.public = this.getSortedPublicRelays()
@@ -100,9 +96,7 @@ const localMethods = {
     this.getAverageLatency()
   },
 
-  getDynamicTimeout: function(){
-    return this.averageLatency*this.relays.length
-  },
+  
 
   check: async function(relay){
     return new Promise( (resolve, reject) => {
@@ -111,9 +105,9 @@ const localMethods = {
           getInfo: true,
           getIdentities: true,
           // debug: true,
-          connectTimeout: this.getDynamicTimeout(),
-          readTimeout: this.getDynamicTimeout(),
-          writeTimeout: this.getDynamicTimeout(),
+          connectTimeout: this.getDynamicTimeout,
+          readTimeout: this.getDynamicTimeout,
+          writeTimeout: this.getDynamicTimeout,
           // data: { result: this.store.relays.results[relay] }
         }
       
@@ -164,7 +158,7 @@ export default defineComponent({
     }
   },
   created(){
-    document.addEventListener('visibilitychange', this.handleVisibility, false)
+    // document.addEventListener('visibilitychange', this.handleVisibility, false)
   },
   unmounted(){
     clearInterval(this.interval)
@@ -176,15 +170,12 @@ export default defineComponent({
     this.relays = this.store.relays.getAll
     this.lastUpdate = this.store.relays.lastUpdate
 
-    console.log('last update', this.lastUpdate)
+    //console.log('last update', this.lastUpdate)
 
     clearInterval(this.interval)
 
-    this.untilNext = this.timeUntilRefresh() 
-    this.sinceLast = this.timeSinceRefresh() 
-
     //If user leaves page before processing completes, force invalidate cache
-    console.log('is processing?', this.store.relays.isProcessing)
+    //console.log('is processing?', this.store.relays.isProcessing)
     if(this.store.relays.isProcessing)
       this.invalidate(true)
     else
@@ -192,11 +183,18 @@ export default defineComponent({
 
     this.setRefreshInterval()
   },
-  updated(){
-    this.untilNext = this.timeUntilRefresh() 
-    this.sinceLast = this.timeSinceRefresh() 
-  },
-  computed: {},
+  updated(){},
+  computed: Object.assign(SharedComputed, {
+    timeUntilRefresh(){
+      return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
+    },
+    timeSinceRefresh(){
+      return this.timeSince(this.store.relays.lastUpdate)
+    },
+    getDynamicTimeout: function(){
+      return this.averageLatency*this.relays.length
+    },
+  }),
   methods: Object.assign(localMethods, RelaysLib),
   props: {
     resultsProp: {

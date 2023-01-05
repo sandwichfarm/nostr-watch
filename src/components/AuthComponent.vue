@@ -51,7 +51,6 @@ export default defineComponent({
       })
       console.log('signer enabled', this.signer)
     },
-    watch: function(){},
     auth: async function(){
       this.store.user.setPublicKey(await window.nostr.getPublicKey())
       this.getData()

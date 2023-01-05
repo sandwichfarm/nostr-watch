@@ -7,13 +7,15 @@ module.exports = defineConfig({
     port: 8080
   },
   configureWebpack: {
-    // watch: true,
     plugins: [new NodePolyfillPlugin()],
     optimization: {
       splitChunks: {
         chunks: "all",
       },
     },
+    externals: {
+      vue: 'Vue'
+    }
     resolve: {
       fallback: {
         "fs": false,

@@ -1,4 +1,4 @@
-
+//Shared Methods
 const setupNavData = function(navSlug){
     return {
         navActiveContent: "",
@@ -30,7 +30,7 @@ const setActiveContent = function(slug){
 const loadContent = function(){
     console.log('route', 'loadContent', this.navType, this.navSlug, this.navActiveContent, this.navItems, this.navSlug)
 
-    const route = this.parseHash()
+    const route = this.parseHash
 
     if(!this.routeValid(route[this.navType]))
         return 
@@ -43,12 +43,21 @@ const loadContent = function(){
         this.navActiveContent = this.store.layout.getActive(this.navSlug) || this.navItems[0].slug
 }
 
-const routeValid = function(slug){
-    console.log('route', 'routeValid', this.navType, this.navSlug, this.navActiveContent, this.navItems, this.navSlug)
 
-    if( !(this.navItems instanceof Array) )
-        return false
-    return this.navItems.map(item => item.slug).includes(slug)
+//Computed
+const routeValid = function(){
+    return (slug) => {
+        console.log('route', 'routeValid', this.navType, this.navSlug, this.navActiveContent, this.navItems, this.navSlug)
+
+        if( !(this.navItems instanceof Array) )
+            return false
+        return this.navItems.map(item => item.slug).includes(slug)
+    }
+    
+}
+
+const contentIsActive = function(){
+    return (slug) => slug == this.navActiveContent
 }
 
 const parseHash = function(){
@@ -59,10 +68,5 @@ const parseHash = function(){
     result.subsection = hashParams[2]
     return result
 }
-
-const contentIsActive = function(slug){
-    return slug == this.navActiveContent
-}
-
 
 export { setupNavData, mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive }

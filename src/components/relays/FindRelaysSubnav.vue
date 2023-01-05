@@ -67,7 +67,7 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
-  name: 'NavComponent',
+  name: 'FindRelaysSubnav',
   components: {
     Disclosure, DisclosureButton, DisclosurePanel,
     MagnifyingGlassIcon,
@@ -93,16 +93,15 @@ export default defineComponent({
   mounted(){
     
   },
-  methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadContent, routeValid, parseHash, contentIsActive }),
+  methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadContent}),
+  
   computed: {
     isActive(){
         return (item) => item.slug==this.navActiveContent
-    }
+    },
+    contentIsActive,
+    routeValid,
+    parseHash
   },
-//   watch: {
-//     active(n){
-//         console.log('ok', n)
-//     }
-//   }
 });
 </script>

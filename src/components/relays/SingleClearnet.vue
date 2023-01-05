@@ -13,26 +13,26 @@
 
   <td class="verified text-center">
     <span v-if="result?.identities">
-      <span v-tooltip:top.tooltip="identityList()"> <span class="verified-shape-wrapper" v-if="Object.entries(result?.identities).length"><span class="shape verified"></span></span></span>
+      <span v-tooltip:top.tooltip="identityList"> <span class="verified-shape-wrapper" v-if="Object.entries(result?.identities).length"><span class="shape verified"></span></span></span>
     </span>
   </td>
 
-  <td class="location text-center">{{ getFlag() }}</td>
+  <td class="location text-center">{{ getFlag(relay) }}</td>
 
   <td class="latency text-center">
     <span>{{ result?.latency?.final }}<span v-if="result?.check?.latency">ms</span></span>
   </td>
 
   <td class="connect text-center" :key="generateKey(relay, 'check.connect')">
-    <span :class="getResultClass(relay, 'connect')"></span>
+    <span :class="getIndicatorClass(relay, 'connect')"></span>
   </td>
 
   <td class="read text-center" :key="generateKey(relay, 'check.read')">
-    <span :class="getResultClass(relay, 'read')"></span>
+    <span :class="getIndicatorClass(relay, 'read')"></span>
   </td>
 
   <td class="write text-center" :key="generateKey(relay, 'check.write')">
-    <span :class="getResultClass(relay, 'write')"></span>
+    <span :class="getIndicatorClass(relay, 'write')"></span>
   </td>
 
   <td class="fav text-center" :key="generateKey(relay, 'check.write')">
@@ -60,6 +60,7 @@ import { defineComponent, toRefs } from 'vue'
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
 import { setupStore } from '@/store'
+import crypto from 'crypto'
 
 export default defineComponent({
   name: 'RelaySingleComponent',
@@ -92,7 +93,7 @@ export default defineComponent({
     }
   },
   mounted(){
-    this.geo = this.store.relays.geo[this.relay]
+    this.geo = this.store.relays.getGeo(this.relay)
 
   },
   setup(props){
@@ -102,38 +103,27 @@ export default defineComponent({
       result: result
     }
   },
-  methods: {
-     getResultClass (url, key) {
-       let cl = this.result?.check?.[key] === true
-       ? 'success'
-       : this.result?.check?.[key] === false
-         ? 'failure'
-         : 'pending'
-       return `indicator ${cl}`
-     },
-     getLoadingClass () {
-      console
-       return this.result?.state == 'complete' ? "relay loaded" : "relay"
-     },
-     generateKey (url, key) {
-       return `${url}_${key}`
-     },
-
-     getFlag () {
-       return this.geo?.countryCode ? countryCodeEmoji(this.geo.countryCode) : emoji.get('shrug');
-     },
-
-     setCheck (bool) {
-       return bool ? '✅ ' : ''
-     },
-
-     setCross (bool) {
-       return !bool ? '❌' : ''
-     },
-     setCaution (bool) {
-       return !bool ? '⚠️' : ''
-     },
-     identityList () {
+  computed: {
+    relayGeo(){
+      return (relay) => this.store.relays.getGeo(relay)
+    },
+    getIndicatorClass(){
+      return (url, key) => {
+        let cl = this.result?.check?.[key] === true
+            ? 'success'
+            : this.result?.check?.[key] === false
+              ? 'failure'
+              : 'pending'
+        return `indicator ${cl}`
+      }  
+    },
+    generateKey(){
+       return (url, key) => crypto.createHash('md5').update(`${url}_${key}`).digest('hex')
+    },
+    getFlag () {
+      return (relay) => this.relayGeo(relay)?.countryCode ? countryCodeEmoji(this.relayGeo(relay)?.countryCode) : emoji.get('shrug');
+    },
+    identityList () {
        let string = '',
            extraString = '',
            users = Object.entries(this.result?.identities),
@@ -159,18 +149,29 @@ export default defineComponent({
        }
        return string
      },
-     relayClean(relay) {
-       return relay.replace('wss://', '')
+     relayClean() {
+       return (relay) => relay.replace('wss://', '')
      },
-     nipSignature(key){
-       return key.toString().length == 1 ? `0${key}` : key
-     },
-     nipFormatted(key){
-       return `NIP-${this.nipSignature(key)}`
-     },
-     nipLink(key){
-       return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
-     },
+  },
+  methods: {
+    //  setCheck (bool) {
+    //    return bool ? '✅ ' : ''
+    //  },
+    //  setCross (bool) {
+    //    return !bool ? '❌' : ''
+    //  },
+    //  setCaution (bool) {
+    //    return !bool ? '⚠️' : ''
+    //  },     
+    //  nipSignature(key){
+    //    return key.toString().length == 1 ? `0${key}` : key
+    //  },
+    //  nipFormatted(key){
+    //    return `NIP-${this.nipSignature(key)}`
+    //  },
+    //  nipLink(key){
+    //    return `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
+    //  },
      async copy(text) {
        try {
          await navigator.clipboard.writeText(text);

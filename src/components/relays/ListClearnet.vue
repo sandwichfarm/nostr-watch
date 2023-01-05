@@ -2,14 +2,12 @@
    <div class="-mt-10 pt-0 px-1 sm:px-6 lg:px-8">
       <div class="mt-8 flex flex-col">
       <div class="overflow-x-auto">
-          <div class="inline-block min-w-full align-middle" v-if="subsectionRelays().length">
+          <div class="inline-block min-w-full align-middle" v-if="subsectionRelays.length">
             <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
                 <table class="min-w-full table-auto divide-y divide-gray-300">
                 <thead>
                     <tr>
-                      
                       <th scope="col" class="status-indicator text-left">
-                        
                       </th>
                       <th scope="col" class="relay text-left">
                         <NostrSyncPopoverNag  v-if="subsection == 'favorite'"  />
@@ -22,7 +20,7 @@
                           <span class="shape verified"></span>
                         </span>
                       </th>
-                      <th scope="col" class="location" v-tooltip:top.tooltip="Ping">
+                      <th scope="col" class="location" v-tooltip:top.tooltip="'Detected location of Relay'">
                         🌎
                       </th>
                       <th scope="col" class="latency" v-tooltip:top.tooltip="'Relay Latency on Read'">
@@ -39,18 +37,54 @@
                       </th>
                       <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
                           <span class="text-xs"> &lt;3 </span>
-                          
                       </th>
                     </tr>
-                    
                 </thead>
-                
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    <tr v-for="(relay, index) in subsectionRelays()" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
-                      <SingleClearnet 
-                        :relay="relay"
-                        v-bind:selectedRelays="selectedRelays"
-                        :resultProp="this.results[relay]" />
+                    <tr v-for="(relay, index) in subsectionRelays" :key="relay" class="bg-gray-50" :class="getResultClass(relay, index)">
+                      <td class="status-indicator" :key="generateKey(relay, 'aggregate')">
+                        <span :class="results[relay]?.aggregate" class="aggregate indicator">
+                            <span></span>
+                            <span></span>
+                        </span>
+                      </td>
+
+                      <td class="relay left-align relay-url">
+                        <a :href="`/relay/${relayClean(relay)}`">{{ relay }}</a>
+                      </td>
+
+                      <td class="verified text-center">
+                        <span v-if="this.results[relay]?.identities">
+                          <span v-tooltip:top.tooltip="identityList"> <span class="verified-shape-wrapper" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span>
+                        </span>
+                      </td>
+
+                      <td class="location text-center">{{ getFlag(relay) }}</td>
+
+                      <td class="latency text-center">
+                        <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>
+                      </td>
+
+                      <td class="connect text-center" :key="generateKey(relay, 'check.connect')">
+                        <span :class="getIndicatorClass(relay, 'connect')"></span>
+                      </td>
+
+                      <td class="read text-center" :key="generateKey(relay, 'check.read')">
+                        <span :class="getIndicatorClass(relay, 'read')"></span>
+                      </td>
+
+                      <td class="write text-center" :key="generateKey(relay, 'check.write')">
+                        <span :class="getIndicatorClass(relay, 'write')"></span>
+                      </td>
+
+                      <td class="fav text-center" :key="generateKey(relay, 'check.write')">
+                        <a
+                          class=" hover:opacity-100 cursor-pointer" 
+                          :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"
+                          @click="store.relays.toggleFavorite(relay)">
+                          ❤️
+                        </a>
+                      </td>
                     </tr>
                 </tbody>
                 </table>
@@ -66,36 +100,22 @@
   
   <script>
   import { defineComponent, toRefs } from 'vue'
+  import { countryCodeEmoji } from 'country-code-emoji';
+  import emoji from 'node-emoji';
+  import crypto from 'crypto'
 
-  import SingleClearnet from '@/components/relays/SingleClearnet.vue'
+  // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
   import NostrSyncPopoverNag from '@/components/relays/partials/NostrSyncPopoverNag.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
   import { setupStore } from '@/store'
   
-
-  
-  const localMethods = {
-      getResultClass (relay, index) {
-        return {
-          loaded: this.results[relay]?.state == 'complete',
-          even: index % 2,
-        }
-      },
-      loadingComplete(){
-        return this.isDone() ? 'loaded' : ''
-      },
-      subsectionRelays(){
-        const relays = this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
-        this.relaysCount[this.subsection] = relays.length
-        return relays
-      }
-    }
+  const localMethods = {}
   
   export default defineComponent({
     name: 'ListClearnet',
     components: {
-      SingleClearnet,
+      // SingleClearnet,
       NostrSyncPopoverNag
     },
     setup(props){
@@ -109,6 +129,7 @@
         relaysCount: relaysCount
       }
     },
+    
     mounted(){
       this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
       
@@ -116,6 +137,13 @@
     updated(){
       // console.log('state, updated')
       
+    },
+    beforeUnmount(){
+      console.log('relays list', 'beforeUnmount()', this.subsection)
+    },
+    unmounted(){
+      console.log('relays list unmounted', this.subsection)
+      delete this.results
     },
     props: {
       subsectionProp: {
@@ -147,15 +175,69 @@
       }
     },
     computed: {
-      
+      subsectionRelays(){
+        return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+      },
+      getResultClass() {
+        return (relay, index) => {
+          return {
+            loaded: this.results[relay]?.state == 'complete',
+            even: index % 2,
+          }
+        }
+      },
+      relayGeo(){
+        return (relay) => this.store.relays.getGeo(relay)
+      },
+      getIndicatorClass(){
+        return (relay, key) => {
+          let cl = this.results[relay]?.check?.[key] === true
+              ? 'success'
+              : this.results[relay]?.check?.[key] === false
+                ? 'failure'
+                : 'pending'
+          return `indicator ${cl}`
+        }  
+      },
+      generateKey(){
+        return (url, key) => crypto.createHash('md5').update(`${url}_${key}`).digest('hex')
+      },
+      getFlag () {
+        return (relay) => this.relayGeo(relay)?.countryCode ? countryCodeEmoji(this.relayGeo(relay)?.countryCode) : emoji.get('shrug');
+      },
+      identityList () {
+        return (relay) => {
+          let string = '',
+              extraString = '',
+              users = Object.entries(this.results[relay]?.identities),
+              count = 0
+
+          if(this.results[relay]?.identities) {
+            if(this.results[relay]?.identities.serverAdmin) {
+              string = `Relay has registered an administrator pubkey: ${this.results[relay]?.identities.serverAdmin}. `
+              extraString = "Additionally, "
+            }
+
+            const total = users.filter(([key]) => key!='serverAdmin').length,
+                  isOne = total==1
+
+            if(total) {
+              string = `${string}${extraString}Relay domain contains NIP-05 verification data for:`
+              users.forEach( ([key]) => {
+                if(key == "serverAdmin") return
+                count++
+                string = `${string} ${(count==total && !isOne) ? 'and' : ''}  @${key}${(count!=total && !isOne) ? ', ' : ''}`
+              })
+            }
+          }
+          return string
+        }
+      },
+      relayClean() {
+        return (relay) => relay.replace('wss://', '')
+      },
     },
     methods: Object.assign(RelaysLib, localMethods),
-    // watch: {
-    //   subsection: function(){
-    //     // this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
-    //     // this.relaysUpdate()
-    //   }
-    // }
   })
   </script>
   

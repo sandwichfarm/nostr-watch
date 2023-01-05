@@ -86,9 +86,9 @@
     updated(){},
     props: {
       resultsProp: {
-        type: Array,
+        type: Object,
         default(){
-          return []
+          return {}
         }
       },
       activePageItemProp: {
@@ -154,11 +154,6 @@
           this.$refs.map.leafletObject.invalidateSize()
       }
     }),
-    watch: {
-      // activePageItem: function(){
-      //   this.relays = this.subsectionRelays()
-      // }
-    }
     
   });
   

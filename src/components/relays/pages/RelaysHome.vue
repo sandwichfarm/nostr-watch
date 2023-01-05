@@ -1,8 +1,4 @@
 <template>
-  <metainfo>
-    <template v-slot:title="{ content }">{{ content }}</template>
-  </metainfo>
-
   <SubnavComponent 
     v-bind:resultsProp="results" />
 
@@ -12,7 +8,7 @@
     v-if="activeSection == 'find'" /> 
 
   <div id="wrapper" class="mx-auto max-w-7xl">  
-    <div v-if="activeSection == 'find'">
+    <div v-show="activeSection == 'find'">
       <div class="pt-5 px-1 sm:px-6 lg:px-8">
         <div class="sm:flex sm:items-center">
         <div class="sm:flex-auto text-left">
@@ -37,9 +33,7 @@
         </div>
         </div>
         <div class="mt-8 flex flex-col">
-
         <FindRelaysSubnav />
-
         </div>
       </div>
 
@@ -48,7 +42,7 @@
               :key="subsection.slug"> 
 
           <!-- <div v-if="section.slug == activeSubsection"> -->
-          <div :class="subsection.slug == activeSubsection ? 'visible' : 'hidden'">
+          <div v-show="subsection.slug == activeSubsection">
             <ListClearnet
               :resultsProp="results"
               :subsectionProp="subsection.slug"
@@ -60,11 +54,11 @@
 
     <RelayStatistics
       :resultsProp="results"
-      v-if="activeSection == 'statistics'" /> 
+      v-show="activeSection == 'stats'" /> 
     
     <MapInteractive
       :resultsProp="results"
-      v-if="activeSection == 'map'" /> 
+      v-show="activeSection == 'map'" /> 
     
     <div id="footer">
       <span class="credit">
@@ -106,30 +100,6 @@ const localMethods = {
       this.results[relay] = this.getCache(relay)
     })
   },
-  relaysMountNav(){
-    this.store.layout.$subscribe( (mutation) => {
-      if(mutation.events.key === 'relays'){
-        this.activeSection = mutation.events.newValue
-      }
-      if(mutation.events.key === 'relays/find'){
-        this.activeSubsection = mutation.events.newValue
-      }
-    })
-
-    this.activeSection = this.routeSection || this.store.layout.getActiveItem('relays')?.slug
-    this.activeSubsection = this.routeSubsection || this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug
-
-    this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 )
-  }
-  // hashRouter: function(){
-  //   const route = this.parseRouterHash()
-  //   if(route.section)
-  //     this.activeSection = route.section
-  //   if(route.subsection)
-  //     this.activeSubsection = route.subsection
-  //   if(route.relay)
-  //     this.activeSubsection = route.relay
-  // },
 }
 
 export default defineComponent({
@@ -165,28 +135,32 @@ export default defineComponent({
       timeouts: {},
       intervals: {},
       relaysCount: {},
-      activeSection: this.routeSection || this.store.layout.getActiveItem('relays')?.slug,
-      activeSubsection: this.routeSubsection || this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug,
+      // activeSection: this.routeSection || this.store.layout.getActiveItem('relays')?.slug,
+      // activeSubsection: this.routeSubsection || this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug,
     }
   },
 
   updated(){},
 
   beforeMount(){
-    this.routeSection = this.parseHash().section || false
-    this.routeSubsection = this.parseHash().subsection || false
+    this.routeSection = this.parseHash.section || false
+    this.routeSubsection = this.parseHash.subsection || false
   },
 
   async mounted() {
     this.relaysLoadData()
-    this.relaysMountNav()
+    this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
+    // this.relaysMountNav()
   },
 
   computed: {
-    navSubsection: function() { return this.store.layout.getNavGroup(`relays/${this.activeSection}`) || [] }
+    activeSection: function(){ return this.store.layout.getActiveItem('relays')?.slug },
+    activeSubsection: function(){ return this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug },
+    navSubsection: function() { return this.store.layout.getNavGroup(`relays/${this.activeSection}`) || [] },
+    parseHash
   },
 
-  methods: Object.assign(RelaysLib, localMethods, { parseHash }), 
+  methods: Object.assign(RelaysLib, localMethods), 
 
 })
 </script>

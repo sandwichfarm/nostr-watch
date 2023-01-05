@@ -1,5 +1,6 @@
 <template>
-  <div :class="mapToggleClass()" style="margin-bottom:-30px">
+  <div :class="mapToggleClass">
+    
     <l-map
       ref="map"
       v-model:zoom="zoom"
@@ -20,12 +21,6 @@
         attribution='<a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
 
-      <!-- <l-marker v-for="([relay, result]) in Object.entries(geo)" :lat-lng="getLatLng(result)" :key="relay">
-        <l-popup>
-          {{ relay }}
-        </l-popup>
-      </l-marker> -->
-
       <l-circle-marker
         v-for="relay in getRelaysWithGeo"
         :lat-lng="getLatLng(relay)"
@@ -34,11 +29,9 @@
         :weight="4"
         :color="getCircleColor(relay)"
         :fillOpacity="1" >
-  <!--       <l-popup>
-          {{ relay }}
-        </l-popup> -->
       </l-circle-marker>
     </l-map>
+
     <button @click="toggleMap">
       <span class="expand">expand</span> 
       <span class="collapse">collapse</span>
@@ -53,6 +46,7 @@ import { defineComponent, toRefs } from 'vue'
 import "leaflet/dist/leaflet.css"
 import { LMap, LTileLayer, LCircleMarker } from "@vue-leaflet/vue-leaflet"
 import { setupStore } from '@/store'
+
 import RelaysLib from '@/shared/relays-lib.js'
 
 export default defineComponent({
@@ -80,15 +74,20 @@ export default defineComponent({
     }
   },
   mounted() {
-    console.log('results', this.results)
     this.geo = this.store.relays.geo
+  },
+  beforeUnmount(){
+    console.log('beforeUnmount', '$refs', this.$refs)
+  },
+  unmounted(){
+    console.log('unmounted', '$refs', this.$refs)
   },
   updated(){},
   props: {
     resultsProp: {
-      type: Array,
+      type: Object,
       default(){
-        return []
+        return {}
       }
     },
     activePageItemProp: {
@@ -112,53 +111,51 @@ export default defineComponent({
     getRelaysWithGeo(){
       return this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object )
     },
-  },
-  methods: Object.assign(RelaysLib, {
-    mapHeight(){
-      return this.expanded ? "500px" : "250px"
+    isRelayInActiveSubsection(){
+      return (relay) => this.store.relays.getRelays(this.activePageItem, this.results).includes(relay)
     },
-    getLatLng(relay){
-      // console.log('geo', relay, [this.geo.lat, this.geo.lon])
-      return [this.geo[relay].lat, this.geo[relay].lon]
-    },
-    getCircleColor(relay){
-      if(!this.isRelayInActiveSubsection(relay))
+    getCircleColor(){
+      return (relay) => {
+        if(!this.isRelayInActiveSubsection(relay))
+          return 'transparent'
+
+        if(this.results[relay]?.aggregate == 'public')
+          return '#00AA00'
+
+        if(this.results[relay]?.aggregate == 'restricted')
+          return '#FFA500'
+
+        if(this.results[relay]?.aggregate == 'offline')
+          return '#FF0000'
+        
         return 'transparent'
-
-      if(this.results[relay]?.aggregate == 'public')
-        return '#00AA00'
-
-      if(this.results[relay]?.aggregate == 'restricted')
-        return '#FFA500'
-
-      if(this.results[relay]?.aggregate == 'offline')
-        return '#FF0000'
-      
+      }
     },
-
-    isRelayInActiveSubsection(relay){
-      // console.log(this.store.relays.getRelays(this.activePageItem).length, this.activePageItem, relay, this.store.relays.getRelays(this.activePageItem).includes(relay))
-      return this.store.relays.getRelays(this.activePageItem, this.results).includes(relay)
+    getLat(){
+      return (relay) => this.geo[relay].lat
     },
-    toggleMap(){
-      this.expanded = !this.expanded
-      setTimeout(() => { this.resetMapSize() }, 1)
+    getLon(){
+      return (relay) => this.geo[relay].lon
     },
     mapToggleClass(){
       return {
         expanded: this.expanded
       }
     },
+  },
+  methods: Object.assign(RelaysLib, {
+    getLatLng(relay){
+      return [this.getLat(relay), this.getLon(relay)]
+    },
+    toggleMap(){
+      this.expanded = !this.expanded
+      setTimeout(() => { this.resetMapSize() }, 1)
+    },
     resetMapSize(){
       if (this.$refs.map.ready) 
         this.$refs.map.leafletObject.invalidateSize()
     }
   }),
-  watch: {
-    // activePageItem: function(){
-    //   this.relays = this.subsectionRelays()
-    // }
-  }
   
 });
 

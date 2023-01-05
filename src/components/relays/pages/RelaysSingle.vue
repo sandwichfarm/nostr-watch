@@ -128,11 +128,14 @@ import { Row, Column } from 'vue-grid-responsive';
 import SafeMail from "@2alheure/vue-safe-mail";
 
 import RelaysLib from '@/shared/relays-lib.js'
+import SharedComputed from '@/shared/computed.js'
 
 // import { relays } from '../../relays.yaml'
 // import { geo } from '../../cache/geo.yaml'
 
+
 import { setupStore } from '@/store'
+
 
 import { useHead } from '@vueuse/head'
 
@@ -210,11 +213,15 @@ export default defineComponent({
     this.relay = this.relayFromUrl()
     this.lastUpdate = this.store.relays.getLastUpdate
     this.result = this.getCache(this.relay)
-    if(this.isExpired())
+    if(this.isExpired)
       this.check(this.relay)
   },
 
-  computed: {},
+  computed: Object.assign(SharedComputed, {
+    cleanUrl: function(relay){
+      return relay.replace('wss://', '')
+    },
+  }),
 
   // updated() {
   //    Object.keys(this.timeouts).forEach(timeout => clearTimeout(this.timeouts[timeout]))

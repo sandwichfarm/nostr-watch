@@ -73,13 +73,13 @@ export const useRelaysStore = defineStore('relays', {
     },
     
     addProcessedRelay(relay){
-      console.log(`this.processedRelays is set`, this.processedRelays instanceof Set)
+      //console.log(`this.processedRelays is set`, this.processedRelays instanceof Set)
       this.processedRelays.add(relay) 
     },
     finishProcessing() { this.processing = false },
     startProcessing() { this.processing = true },
     completeProcessing() { 
-      console.log('setting as complete')
+      //console.log('setting as complete')
       this.processedRelays = []
       this.finishProcessing()
     },
@@ -94,7 +94,7 @@ export const useRelaysStore = defineStore('relays', {
     },
 
     toggleFavorite(relayUrl){
-      console.log('toggle favorite', relayUrl)
+      //console.log('toggle favorite', relayUrl)
       if( this.isFavorite(relayUrl) )
         this.unsetFavorite(relayUrl)
       else 

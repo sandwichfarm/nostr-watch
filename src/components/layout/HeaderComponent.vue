@@ -22,7 +22,7 @@
               <div class="flex space-x-4">
               <router-link 
                 to="/"
-                :class="[!isActive ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" >
+                :class="[false ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" >
                 Relays
               </router-link>
               <!-- <router-link to="/about">about</router-link>

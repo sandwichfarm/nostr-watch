@@ -40,7 +40,7 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      if(!this.store.prefs.refresh || !this.windowActive )
+      if(!this.store.prefs.refresh )
         return 
 
       this.untilNext = this.timeUntilRefresh()
@@ -51,7 +51,6 @@ const localMethods = {
     }, 1000)
   },
   refreshNow(){
-    this.disabled = true
     this.invalidate(true)
   },
   handleVisibility(){
@@ -181,15 +180,13 @@ export default defineComponent({
   },
   unmounted(){
     clearInterval(this.interval)
+    // document.removeEventListener("visibilitychange", this.handleVisibility, false);
   },
   beforeMount(){
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    if(!this.windowActive)
-      return 
-
     this.relays = this.store.relays.getAll
     this.lastUpdate = this.store.relays.lastUpdate
 
@@ -202,7 +199,6 @@ export default defineComponent({
   },
   updated(){},
   computed: Object.assign(SharedComputed, {
-    
     getDynamicTimeout: function(){
       return this.averageLatency*this.relays.length
     },
@@ -225,7 +221,6 @@ export default defineComponent({
       lastUpdate: null,
       sinceLast: null,
       interval: null,
-      disabled: true,
       windowActive: true,
       averageLatency: 200
     }

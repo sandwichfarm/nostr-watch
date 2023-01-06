@@ -24,15 +24,15 @@
   </td>
 
   <td class="connect text-center" :key="generateKey(relay, 'check.connect')">
-    <span :class="getIndicatorClass(relay, 'connect')"></span>
+    <span :class="getIndicatorClass(relay, 'connect')">Connect</span>
   </td>
 
   <td class="read text-center" :key="generateKey(relay, 'check.read')">
-    <span :class="getIndicatorClass(relay, 'read')"></span>
+    <span :class="getIndicatorClass(relay, 'read')">Read</span>
   </td>
 
   <td class="write text-center" :key="generateKey(relay, 'check.write')">
-    <span :class="getIndicatorClass(relay, 'write')"></span>
+    <span :class="getIndicatorClass(relay, 'write')">write</span>
   </td>
 
   <td class="fav text-center" :key="generateKey(relay, 'check.write')">

@@ -41,7 +41,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
-                    <tr v-for="(relay, index) in subsectionRelays" :key="relay" class="bg-gray-50 hover:bg-slate-200" :class="getResultClass(relay, index)">
+                    <tr v-for="(relay, index) in subsectionRelays" :key="relay" :class="getResultClass(relay, index)">
                       <td class="status-indicator" :key="generateKey(relay, 'aggregate')">
                         <span :class="results[relay]?.aggregate" class="aggregate indicator">
                             <span></span>
@@ -64,17 +64,26 @@
                       <td class="latency text-center">
                         <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>
                       </td>
+                      
+<!--                  .indicator {
+                        display:block;
+                        margin: 0 auto;
+                        height: 14px;
+                        width: 14px;
+                        border-radius: 7px;
+                        border-width:0px;
+                      } -->
 
                       <td class="connect text-center" :key="generateKey(relay, 'check.connect')">
-                        <span :class="getIndicatorClass(relay, 'connect')"></span>
+                        <span :class="getIndicatorClass(relay, 'connect')" class="indicator"></span>
                       </td>
 
                       <td class="read text-center" :key="generateKey(relay, 'check.read')">
-                        <span :class="getIndicatorClass(relay, 'read')"></span>
+                        <span :class="getIndicatorClass(relay, 'read')" class="indicator"></span>
                       </td>
 
                       <td class="write text-center" :key="generateKey(relay, 'check.write')">
-                        <span :class="getIndicatorClass(relay, 'write')"></span>
+                        <span :class="getIndicatorClass(relay, 'write')" class="indicator"></span>
                       </td>
 
                       <td class="fav text-center" :key="generateKey(relay, 'check.write')">
@@ -186,6 +195,8 @@
           return {
             loaded: this.results[relay]?.state == 'complete',
             'bg-slate-100': index % 2,
+            'bg-red-50 hover:bg-red-100': this.store.relays.isFavorite(relay),
+            'bg-gray-50 hover:bg-slate-200': !this.store.relays.isFavorite(relay),
           }
         }
       },
@@ -194,13 +205,15 @@
       },
       getIndicatorClass(){
         return (relay, key) => {
-          let cl = this.results[relay]?.check?.[key] === true
-              ? 'success'
-              : this.results[relay]?.check?.[key] === false
-                ? 'failure'
-                : 'pending'
-          return `indicator ${cl}`
-        }  
+          return { 
+            // 'bg-green-500': this.results[relay]?.check?.[key] !== false,
+            // 'bg-red-500': this.results[relay]?.check?.[key] === false,
+            // 'bg-gray-500': 'undefined' === typeof this.results[relay]?.check?.[key] 
+            'success': this.results[relay]?.check?.[key] !== false,
+            'failure': this.results[relay]?.check?.[key] === false,
+            'pending': 'undefined' === typeof this.results[relay]?.check?.[key] 
+            }
+        } 
       },
       generateKey(){
         return (url, key) => crypto.createHash('md5').update(`${url}_${key}`).digest('hex')
@@ -243,8 +256,16 @@
     methods: Object.assign(RelaysLib, localMethods),
   })
   </script>
+
+<style lang=“postcss”>
+.indicator {
+  @apply h-4 w-4 block rounded-lg
+}
+</style>
   
   <style lang='css' scoped>
+    
+
     table {
       border-collapse: collapse !important;
     }

@@ -6,7 +6,7 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      {{ this.store.tasks.getProcessedRelays.length }}/{{ this.relays.length }} Relays Checked
+      {{ this.store.tasks.getProcessed('relays').length }}/{{ this.relays.length }} Relays Checked
     </span>
   </span>
   <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.tasks.isProcessing">-</span>
@@ -37,6 +37,13 @@ import { Inspector } from 'nostr-relay-inspector'
 
 const localMethods = {
 
+  addToQueue: function(id, fn){
+    this.store.tasks.addJob({
+      id: id,
+      handler: fn.bind(this)
+    })
+  },
+
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
@@ -59,42 +66,39 @@ const localMethods = {
     else 
       this.windowActive = true
   },
+  // handleRelaysFind(){
+  //   this.addToQueue('relays/find', () => this.invalidate())  
+  // },
+  // handleRelaysSingle(relayURL){
+  //   this.addToQueue('relays/single', () => this.invalidate(false, relayUrl))  
+  // },
   invalidate: async function(force, single){
     if( (!this.isExpired && !force) ) 
       return
 
-    this.store.tasks.startProcessing()
+    this.store.tasks.startProcessing('relays')
     
     const relays = this.relays.filter( relay => !this.store.tasks.isRelayProcessed(relay) )
 
+    // if(this.store.tasks.isActive)
+    //   this.store.tasks.setRate('relays/find', 0)
+    // else 
+    //   this.store.tasks.setRate('relays/find', 2000)
+
     if(single) {
-      await this.check(single) 
+      await this.check(single)
     } 
     else {
       // const processed = new Set()
       for(let index = 0; index < relays.length; index++) {
         const relay = relays[index]
-        await this.delay(this.averageLatency).then( () => { 
-          this.check(relay)
-            .then((result) => {
-              if(this.store.tasks.isRelayProcessed(result.uri))
-                return 
-              this.store.tasks.addProcessedRelay(result.uri)
-              this.results[result.uri] = result
-              this.setCache(result)
-              // //console.log('processing status', processed, '/', this.relays.length)
-              console.log('complete?', result.uri, this.store.tasks.getProcessedRelays.length, this.relays.length)
-              if(this.store.tasks.getProcessedRelays.length >= this.relays.length)
-                this.completeAll()
-            })
-            .catch( err => console.error(err) )
-        }).catch(err => console.error(err))
+        await this.check(relay)
       }
     } 
   },
 
   completeAll: function(){
-    this.store.tasks.finishProcessing()
+    this.store.tasks.finishProcessing('relays')
     this.store.relays.updateNow()
     //console.log('all are complete?', this.store.tasks.isProcessing)
     // const aggregates = new Object()
@@ -109,6 +113,8 @@ const localMethods = {
   
 
   check: async function(relay){
+    await this.delay(this.averageLatency)
+        
     return new Promise( (resolve, reject) => {
       const opts = {
           checkLatency: true,          
@@ -132,6 +138,7 @@ const localMethods = {
           instance.relay.close()
           instance.result.log = instance.log
           resolve(instance.result)
+          // console.log('complete?', instance.result.uri, this.store.tasks.getProcessed('relays', relays.length), this.relays.length)
         })
         .on('close', (relay) => {
           console.log(`${relay.url} has closed`)
@@ -141,6 +148,20 @@ const localMethods = {
         })
         .run()
     })
+    .then((result) => {
+      if(this.store.tasks.isRelayProcessed(result.uri))
+        return 
+      this.store.tasks.addProcessed('relays', result.uri)
+
+      this.results[result.uri] = result
+      this.setCache(result)
+
+      if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
+        this.completeAll()
+    })
+    .catch( err => console.error(err) )
+
+    
   },
   getAverageLatency: function(){
     const latencies = new Array()

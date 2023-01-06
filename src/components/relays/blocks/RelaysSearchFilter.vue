@@ -35,7 +35,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'ToolFilter',
+  name: 'RelaysSearchFilter',
   components: {
     MagnifyingGlassIcon
   },

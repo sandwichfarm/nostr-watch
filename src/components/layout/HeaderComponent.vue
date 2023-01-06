@@ -117,8 +117,7 @@ import { defineComponent } from 'vue'
 import { setupStore } from '@/store'
 import UserLib from '@/shared/user-lib.js'
 
-// import PreferencesComponent from '@/components/PreferencesComponent.vue'
-import AuthComponent from '@/components/AuthComponent.vue'
+import AuthComponent from '@/components/user/AuthComponent.vue'
 
 import {version} from '../../../package.json'
 

@@ -27,7 +27,7 @@
     <pre>
       {{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'offline').length }} 
     </pre>
-
+<!-- 
     <pre>
       {{ store.stats.get('history')  }}
     </pre>
@@ -46,7 +46,7 @@
 
     <pre>
       {{   }}
-    </pre>
+    </pre> -->
 
     <!-- <pre>
       {{ this.collateSupportedNips  }}
@@ -103,7 +103,11 @@ export default defineComponent({
     this.store.stats.set('nips', this.collateSupportedNips)
     this.store.stats.set('continents', this.collateContinents)
     this.store.stats.set('countries', this.collateCountries)
-    this.store.stats.setHistory(await this.historicalData())
+    this.remoteTask = await this.historicalData()
+    this.store.stats.setHistory(this.remoteTask)
+  },
+  unmounted(){
+    delete this.remoteTask
   },
   data: function(){
     return {
@@ -112,7 +116,8 @@ export default defineComponent({
       bySupportedNips: null,
       byCountry: null,
       byContinent: null, 
-      history: null
+      history: null,
+      remoteTask: null
     }
   },
   props: {

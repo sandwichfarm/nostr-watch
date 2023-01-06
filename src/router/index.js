@@ -1,9 +1,13 @@
 // /router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
+
 import RelaysHome from '@/components/relays/pages/RelaysHome.vue'
-// import ByStatus from '../pages/ByStatus.vue'
+import RelaysFind from '@/components/relays/pages/RelaysFind.vue'
 import RelaysSingle from '@/components/relays/pages/RelaysSingle.vue'
-import RedirectComponent from '@/components/RedirectComponent.vue'
+import RelaysMap from '@/components/relays/pages/RelaysMap.vue'
+import RelaysStatistics from '@/components/relays/pages/RelaysStatistics.vue'
+
+import RedirectComponent from '@/components/relays/redirects/RedirectComponent.vue'
 
 const routes = [
     {
@@ -14,12 +18,35 @@ const routes = [
         component: RedirectComponent
     },
     {
+        path: '/relays',
+        component: RelaysHome,
+        children: [
+            {
+                path: 'map',
+                component: RelaysMap,
+                },
+            {
+            path: 'find',
+            component: RelaysFind,
+            },
+            {
+            path: 'find/(*.)',
+            component: RelaysFind,
+            },
+            
+            {
+            path: 'statistics',
+            component: RelaysStatistics,
+            },
+        ]
+    },
+    {
         path: '/relay/:relayUrl(.*)',
         component: RelaysSingle
     },
     {
         path: '/',
-        component: RelaysHome
+        component: RelaysFind
     },
     
     

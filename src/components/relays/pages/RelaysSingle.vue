@@ -1,7 +1,6 @@
 <template>
   
-  <SubnavComponent 
-    v-bind:resultsProp="results" />
+  <RelaysNav/>
 
   <MapSingle
     :geo="geo"
@@ -144,8 +143,8 @@
 
 import { defineComponent} from 'vue'
 
-import SubnavComponent from '@/components/relays/SubnavComponent.vue'
-import MapSingle from '@/components/relays/MapSingle.vue'
+import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
+import MapSingle from '@/components/relays/blocks/MapSingle.vue'
 
 import SafeMail from "@2alheure/vue-safe-mail";
 
@@ -181,8 +180,7 @@ export default defineComponent({
   components: {
     MapSingle,
     SafeMail,
-    SubnavComponent
-    // RefreshComponent,
+    RelaysNav    // RefreshComponent,
   },
 
   data() {

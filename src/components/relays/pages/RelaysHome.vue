@@ -1,38 +1,30 @@
 <template>
-  <SubnavComponent 
+  <RelaysNav 
     v-bind:resultsProp="results" />
 
-  <MapSummary 
-    :resultsProp="results" 
-    :activePageItemProp="activeSubsection"
-    v-if="activeSection == 'find'" /> 
+  <RelaysFind
+    :resultsProp="results"
+    v-if="this.path == '/relays/find' || this.path == '/relays' || this.path == '/'" /> 
   
   <MapInteractive
     :resultsProp="results"
-    v-if="activeSection == 'map'" /> 
-
-  <div id="wrapper" class="mx-auto max-w-7xl">  
-
-    <RelaysFind
-      :resultsProp="results"
-      v-if="activeSection == 'find'" /> 
-
-    <RelayStatistics
-      :resultsProp="results"
-      v-if="activeSection == 'stats'" /> 
-    
-
-    
-    <div id="footer">
-      <span class="credit">
-        <!-- <a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>,  -->
-        built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
-      </div>
+      v-if="this.path == '/relays/map'" /> 
+  
+  <RelayStatistics
+    :resultsProp="results"
+    v-if="this.path == '/relays/statistics'" /> 
+  
+  <div id="footer">
+    <span class="credit">
+      <!-- <a href="http://sandwich.farm">Another 🥪 by sandwich.farm</a>,  -->
+      built with <a href="https://github.com/jb55/nostr-js">nostr-js</a> and <a href="https://github.com/dskvr/nostr-relay-inspector">nostr-relay-inspector</a>, inspired by <a href="https://github.com/fiatjaf/nostr-relay-registry">nostr-relay-registry</a></span>
   </div>
 </template>
 <script>
 //vue
+
 import { defineComponent } from 'vue'
+import {useRoute} from 'vue-router'
 import { useHead } from '@vueuse/head'
 import { setupStore } from '@/store'
 //shared methods
@@ -40,12 +32,11 @@ import RelaysLib from '@/shared/relays-lib.js'
 import { parseHash } from '@/shared/hash-router.js'
 
 //components
-import MapSummary from '@/components/relays/MapSummary.vue'
-import SubnavComponent from '@/components/relays/SubnavComponent.vue'
+import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
 
-import RelaysFind from '@/components/relays/RelaysFind.vue'
-import RelayStatistics from '@/components/relays/RelayStatistics.vue'
-import MapInteractive from '@/components/relays/MapInteractive.vue'
+import RelaysFind from '@/components/relays/pages/RelaysFind.vue'
+import RelayStatistics from '@/components/relays/pages/RelaysStatistics.vue'
+import MapInteractive from '@/components/relays/pages/RelaysMap.vue'
 //data
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
@@ -69,8 +60,7 @@ export default defineComponent({
   name: 'HomePage',
 
   components: {
-    SubnavComponent,
-    MapSummary,
+    RelaysNav,
     RelaysFind,
     RelayStatistics,
     MapInteractive
@@ -97,13 +87,10 @@ export default defineComponent({
       timeouts: {},
       intervals: {},
       relaysCount: {},
-      // activeSection: this.routeSection || this.store.layout.getActiveItem('relays')?.slug,
-      // activeSubsection: this.routeSubsection || this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug,
     }
   },
 
   beforeMount(){
-    this.routeSection = this.parseHash.section || false
     this.routeSubsection = this.parseHash.subsection || false
     this.relaysLoadData()
   },
@@ -123,8 +110,9 @@ export default defineComponent({
 
 
   computed: {
-    activeSection: function(){ return this.store.layout.getActiveItem('relays')?.slug },
-    activeSubsection: function(){ return this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug },
+    // activeSection: function(){ return this.store.layout.getActiveItem('relays')?.slug },
+    path: function() { return useRoute().path },
+    activeSubsection: function(){ return this.navSubsection?.slug },
     navSubsection: function() { return this.store.layout.getNavGroup(`relays/${this.activeSection}`) || [] },
     parseHash
   },

@@ -8,24 +8,32 @@ export const useTaskStore = defineStore('tasks', {
     active: new Object(),
 
     //legacy
-    processing: false,
-    processedRelays: new Array(),
-    currentTask: null
+    processing: new Object(),
+    processed: new Object(),
+    currentTask: new Object(),
   }),
   getters: {
     //legacy 
-    getProcessedRelays: (state) => Array.from(state.processedRelays),
+    getProcessed: (state) => (key) => {
+      if( !(state.processed[key] instanceof Array) )
+        state.processed[key] = new Array()
+      return state.processed[key]
+    },
     isProcessing: (state) => state.processing,
-    isRelayProcessed: (state) => (relay) => state.processedRelays.includes(relay),
+
+    isRelayProcessed: (state) => (relay) => state.getProcessed('relay').includes(relay),
 
     //queue/lists
     getPending: (state) => state.pending,
     getActive: (state) => state.active,
+    getActiveSlug: (state) => state.active.id,
     getCompleted: (state) => state.completed,
     //queue/states
     isActive: (state) => Object.keys( state.active ).length > 0,
     isIdle: (state) => Object.keys( state.active ).length == 0,
     arePending: (state) => state.pending.length > 0,
+    //
+    // getRate: (state) => (key) => state.rate[key],
   },
   actions: {
     //queue
@@ -45,7 +53,6 @@ export const useTaskStore = defineStore('tasks', {
         this.active = {}
       }
     },
-    
     clearJobs(type){
       this[type] = new Array()
     },
@@ -57,18 +64,21 @@ export const useTaskStore = defineStore('tasks', {
       this.pending.splice( index, 1 )
     },
     //legacy
-    addProcessedRelay(relay){
-      if(!this.processedRelays.includes(relay))
-        this.processedRelays.push(relay)
+    startProcessing(key) { 
+      this.processing[key] = true 
+      this.currentTask[key] = key
     },
-    finishProcessing() { 
-      this.processing = false 
-      this.processedRelays = new Array()
-      this.currentTask = null
+    finishProcessing(key) { 
+      this.processed[key] = new Array()
+      this.processing[key] = false 
+      this.currentTask[key] = null
     },
-    startProcessing() { 
-      this.processing = true 
-      this.currentTask = "relays/check" //need to figure this out.
+    addProcessed(key, relay){
+      if( !(this.processed[key] instanceof Array) )
+        this.processed[key] = new Array()
+      if(!this.processed[key].includes(relay))
+        this.processed[key].push(relay)
     },
+    
   },
 })

@@ -257,11 +257,11 @@
   })
   </script>
 
-<style lang=“postcss”>
+<!-- <style lang=“postcss”>
 .indicator {
   @apply h-4 w-4 block rounded-lg
 }
-</style>
+</style> -->
   
   <style lang='css' scoped>
     

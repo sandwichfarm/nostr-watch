@@ -19,7 +19,11 @@
         </div>
       </div>
 
-      <div class="py-5" :class="getInfoClass">
+      <div class="col-span-3 h-64 p-6 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
+        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">This Relay Appears to be offline</h5>
+      </div>
+
+      <div class="py-5" :class="getInfoClass" v-if="Object.keys(result?.info).length">
         <div class="overflow-hidden bg-white shadow sm:rounded-lg relative">
           <div class="px-4 py-5 sm:px-6">
             <h3>Relay Info <code class="text-gray-300 text-xs absolute top-3 right-3">NIP-11</code></h3>
@@ -56,7 +60,23 @@
               </div>
               <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.software">
                 <dt class="text-sm font-medium text-gray-500">Software</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.software }}</dd>
+                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  {{ getSoftware }} 
+<br />
+{{result.info.software}}<br />
+                  
+                  <a 
+                    v-if="result.info.software.includes('+http')" 
+                    :href="result.info.software.replace('git+', '')"
+                    target="_blank">
+                      {{ result.info.software.includes('+https') ? 'https' : ' http' }}
+                    </a>
+                  <a 
+                    v-if="result.info.software.includes('git+')" 
+                    :href="result.info.software.replace('+http', '').replace('+https', '')">
+                    git
+                  </a>
+                </dd>
               </div>
               <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
                 <dt class="text-sm font-medium text-gray-500">Software Version</dt>
@@ -69,8 +89,8 @@
       </div>
       
 
-    <div class="col-span-1" :class="getDnsClass">
-      <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
+    <div :class="getGeoWrapperClass">
+      <div  :class="getDnsClass" class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
         <div class="px-4 py-5 sm:px-6">
           <h3>DNS</h3>
         </div>
@@ -84,7 +104,7 @@
         </div>
       </div>
 
-      <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8 col-span-1"  :class="getGeoClass" v-if="geo">
+      <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8"  :class="getGeoClass" v-if="geo">
         <div class="px-4 py-5 sm:px-6">
           <h3>Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
         </div>
@@ -102,7 +122,7 @@
     
 
             <!-- component -->
-  <div class="col-span-1" :class="getLogsClass">
+  <div class="col-span-1" :class="getLogsClass" v-if="result?.log">
     <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
       <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
         <div class="overflow-hidden">
@@ -127,9 +147,159 @@
     </div>
   </div>
 
-    <div class="max-w-sm p-6 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
-      <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">This Relay Appears to be offline</h5>
-    </div>
+  
+
+  <div class="flow-root">
+    <ul role="list" class="-mb-8">
+      <li v-for="event in this.events" :key="event.id">
+        <div class="relative pb-8" v-if="event.kind === '1'">
+          <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+          <div class="relative flex items-start space-x-3">
+            <div class="relative">
+              <img class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400 ring-8 ring-white" src="https://images.unsplash.com/photo-1520785643438-5bf77931f493?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=256&h=256&q=80" alt="">
+
+              <span class="absolute -bottom-0.5 -right-1 rounded-tl bg-white px-0.5 py-px">
+                <!-- Heroicon name: mini/chat-bubble-left-ellipsis -->
+                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902.848.137 1.705.248 2.57.331v3.443a.75.75 0 001.28.53l3.58-3.579a.78.78 0 01.527-.224 41.202 41.202 0 005.183-.5c1.437-.232 2.43-1.49 2.43-2.903V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zm0 7a1 1 0 100-2 1 1 0 000 2zM8 8a1 1 0 11-2 0 1 1 0 012 0zm5 1a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div>
+                <div class="text-sm">
+                  <a href="#" class="font-medium text-gray-900">Eduardo Benz</a>
+                </div>
+                <p class="mt-0.5 text-sm text-gray-500">Posted {{ timeSince(event.created_at) }}</p>
+              </div>
+              <div class="mt-2 text-sm text-gray-700">
+                <p>{{ event.content }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+
+        <!-- <div class="relative pb-8" v-if="event.kind === '7'">
+          <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+          <div class="relative flex items-start space-x-3">
+            <div class="relative">
+              <img class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400 ring-8 ring-white" src="https://images.unsplash.com/photo-1520785643438-5bf77931f493?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=256&h=256&q=80" alt="">
+              <span class="absolute -bottom-0.5 -right-1 rounded-tl bg-white px-0.5 py-px">
+                
+                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902.848.137 1.705.248 2.57.331v3.443a.75.75 0 001.28.53l3.58-3.579a.78.78 0 01.527-.224 41.202 41.202 0 005.183-.5c1.437-.232 2.43-1.49 2.43-2.903V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zm0 7a1 1 0 100-2 1 1 0 000 2zM8 8a1 1 0 11-2 0 1 1 0 012 0zm5 1a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div>
+                <div class="text-sm">
+                  <a href="#" class="font-medium text-gray-900">Eduardo Benz</a>
+                </div>
+                <p class="mt-0.5 text-sm text-gray-500">Posted {{ timeSince(event.created_at) }}</p>
+              </div>
+              <div class="mt-2 text-sm text-gray-700">
+                <p>{{ event.content }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li> -->
+
+      <!-- <li>
+        <div class="relative pb-8">
+          <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+          <div class="relative flex items-start space-x-3">
+            <div>
+              <div class="relative px-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
+                  <svg class="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-5.5-2.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0zM10 12a5.99 5.99 0 00-4.793 2.39A6.483 6.483 0 0010 16.5a6.483 6.483 0 004.793-2.11A5.99 5.99 0 0010 12z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="min-w-0 flex-1 py-1.5">
+              <div class="text-sm text-gray-500">
+                <a href="#" class="font-medium text-gray-900">Hilary Mahy</a>
+                assigned
+                <a href="#" class="font-medium text-gray-900">Kristin Watson</a>
+                <span class="whitespace-nowrap">2d ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <div class="relative pb-8">
+          <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+          <div class="relative flex items-start space-x-3">
+            <div>
+              <div class="relative px-1">
+                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-8 ring-white">
+                  <svg class="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5.5 3A2.5 2.5 0 003 5.5v2.879a2.5 2.5 0 00.732 1.767l6.5 6.5a2.5 2.5 0 003.536 0l2.878-2.878a2.5 2.5 0 000-3.536l-6.5-6.5A2.5 2.5 0 008.38 3H5.5zM6 7a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="min-w-0 flex-1 py-0">
+              <div class="text-sm leading-8 text-gray-500">
+                <span class="mr-0.5">
+                  <a href="#" class="font-medium text-gray-900">Hilary Mahy</a>
+                  added tags
+                </span>
+                <span class="mr-0.5">
+                  <a href="#" class="relative inline-flex items-center rounded-full border border-gray-300 px-3 py-0.5 text-sm">
+                    <span class="absolute flex flex-shrink-0 items-center justify-center">
+                      <span class="h-1.5 w-1.5 rounded-full bg-rose-500" aria-hidden="true"></span>
+                    </span>
+                    <span class="ml-3.5 font-medium text-gray-900">Bug</span>
+                  </a>
+                  <a href="#" class="relative inline-flex items-center rounded-full border border-gray-300 px-3 py-0.5 text-sm">
+                    <span class="absolute flex flex-shrink-0 items-center justify-center">
+                      <span class="h-1.5 w-1.5 rounded-full bg-indigo-500" aria-hidden="true"></span>
+                    </span>
+                    <span class="ml-3.5 font-medium text-gray-900">Accessibility</span>
+                  </a>
+                </span>
+                <span class="whitespace-nowrap">6h ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <div class="relative pb-8">
+          <div class="relative flex items-start space-x-3">
+            <div class="relative">
+              <img class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400 ring-8 ring-white" src="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=256&h=256&q=80" alt="">
+
+              <span class="absolute -bottom-0.5 -right-1 rounded-tl bg-white px-0.5 py-px">
+                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902.848.137 1.705.248 2.57.331v3.443a.75.75 0 001.28.53l3.58-3.579a.78.78 0 01.527-.224 41.202 41.202 0 005.183-.5c1.437-.232 2.43-1.49 2.43-2.903V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zm0 7a1 1 0 100-2 1 1 0 000 2zM8 8a1 1 0 11-2 0 1 1 0 012 0zm5 1a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div>
+                <div class="text-sm">
+                  <a href="#" class="font-medium text-gray-900">Jason Meyers</a>
+                </div>
+                <p class="mt-0.5 text-sm text-gray-500">Commented 2h ago</p>
+              </div>
+              <div class="mt-2 text-sm text-gray-700">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Tincidunt nunc ipsum tempor purus vitae id. Morbi in vestibulum nec varius. Et diam cursus quis sed purus nam. Scelerisque amet elit non sit ut tincidunt condimentum. Nisl ultrices eu venenatis diam.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </li> -->
+    </ul>
+  </div>
 
     
 
@@ -153,6 +323,8 @@ import SharedComputed from '@/shared/computed.js'
 
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
+
+import pathSegments from 'path-segments'
 
 // import { relays } from '../../relays.yaml'
 // import { geo } from '../../cache/geo.yaml'
@@ -183,13 +355,48 @@ const localMethods = {
       const subid = crypto.randomBytes(40).toString('hex')
       pool
         .on('open', relay => {
-          relay.subscribe(subid, { authors:[this.result.info.pubkey], limit:10 })
+          relay.subscribe(subid, { kinds:[0,1,7], authors:[this.result.info.pubkey], limit:10 })
         })
         .on('event', (relay, sub_id, event) => {
-          console.log(event.content)
           if(sub_id === subid)
             this.events[event.id] = event
         })
+        .on('eose', relay => {
+          relay.close()
+        })
+    },
+    setEventType(event){
+      if( (event.content === '+' || event.content === '-') && event.kind === 7 )
+        return 'reaction'
+      if( event.kind === 1 )
+        return 'note'
+      // if( event.kind === 0 )
+      //   return 'user meta'
+    },
+    eventToFeed(event){
+      let picture,
+          person,
+          content
+
+      if(event.kind === 0){
+        let profile = JSON.parse(event.content)
+        person =  { name: profile.name, href: "#" }
+        picture = profile.picture
+      }
+
+      if(event.kind === 1){
+        content = event.content
+      }
+  
+      console.log('all about the event')
+       return {
+          id: event,
+          type: this.setEventType(event),
+          person: person,
+          imageUrl: picture,
+          comment: content ? content  : '',
+          date: '2h ago',
+        }
     }
 }
 
@@ -199,7 +406,7 @@ export default defineComponent({
   components: {
     MapSingle,
     SafeMail,
-    RelaysNav    // RefreshComponent,
+    RelaysNav,
   },
 
   data() {
@@ -226,6 +433,8 @@ export default defineComponent({
     }
   },
 
+  
+
   beforeMount(){
     this.relay = this.relayFromUrl
     this.relays = this.store.relays.getAggregateCache('public')
@@ -243,6 +452,9 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
+    getSoftware: function(){
+      return pathSegments(this.result?.info?.software, { last: 2 })
+    },
     cleanUrl: function(){
       return (relay) => relay.replace('wss://', '')
     },
@@ -286,7 +498,27 @@ export default defineComponent({
         'col-span-2': this.result?.info && this.geo,
         'col-span-3': this.result?.info && !this.geo
       }
+    },
+    getDnsClass(){
+      return {
+        'col-span-1': true,
+        // 'col-span-1': !this.result?.info && !this.log,
+      }
+    },
+    getGeoClass(){
+      console.log('ok', !this.result?.info && !this.log)
+      return {
+        'col-span-2': !this.result?.info && !this.log,
+      }
+    },
+
+    getGeoWrapperClass(){
+      return {
+        'col-span-3': !this.result?.info && !this.log,
+        'col-span-1': !this.result?.info,
+      }
     }
+
     
     
   }),
@@ -296,7 +528,9 @@ export default defineComponent({
   //    Object.keys(this.intervals).forEach(interval => clearInterval(this.intervals[interval]))
   // },
 
-  methods: Object.assign(localMethods, RelaysLib),
+  methods: Object.assign(localMethods, RelaysLib, {
+    
+  }),
 
 })
 </script>

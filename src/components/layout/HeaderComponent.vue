@@ -142,9 +142,9 @@ export default defineComponent({
     }
   },
   mounted(){
-    this.store.user.$subscribe((mutation) => {
-      mutation
-    })
+    // this.store.user.$subscribe((mutation) => {
+    //   mutation
+    // })
   },
   computed: {
   },

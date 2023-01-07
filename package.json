@@ -36,6 +36,7 @@
     "nostr-relay-inspector": "0.0.18",
     "nostr-tools": "1.0.1",
     "onion-regex": "2.0.8",
+    "path-segments": "0.1.1",
     "pinia": "2.0.28",
     "pinia-plugin-persistedstate-2": "2.0.8",
     "pinia-shared-state": "0.2.10",

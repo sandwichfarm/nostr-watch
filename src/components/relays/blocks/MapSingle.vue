@@ -21,12 +21,12 @@
         {{ relay }}
       </l-popup>
     </l-marker> -->
-
+    
     <l-circle-marker
       :lat-lng="center"
       :radius="2"
       :weight="4"
-      :color="markerColor"
+      :color="getCircleColor()"
       :fillOpacity="1"
       :class="relay"
       >

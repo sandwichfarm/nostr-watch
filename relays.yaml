@@ -188,3 +188,4 @@ relays:
   - wss://relay.taxi
   - wss://relay.nostrprotocol.net
   - wss://nostr.easydns.ca
+  - wss://nostr.bostonbtc.com

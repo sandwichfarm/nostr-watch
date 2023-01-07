@@ -108,7 +108,7 @@ export default {
   },
   data() {
     return {
-      zoom: 2,
+      zoom: 5,
       center: [40.41322, -1.219482],
       markerColor: 'transparent'
     };

@@ -9,61 +9,133 @@
     v-if="(geo instanceof Object)"
   />
 
-  <div id="wrapper" class="mt-8 mx-auto max-w-7xl grid grid-cols-3 gap-8">
-
-    
-      <div class="overflow-hidden bg-white shadow sm:rounded-lg col-span-3">
+  <div id="wrapper" class="mt-8 mx-auto max-w-7xl">
+      <div class="overflow-hidden bg-slate-100 shadow sm:rounded-lg">
         <div class="px-4 py-5 sm:px-6">
           <h1>{{geo?.countryCode ? getFlag : ''}}<span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
-          <p class="mt-1 max-w-2xl text-sm text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
+          <p class="mt-1 w-full text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
         </div>
       </div>
 
-      <div class="col-span-3 h-64 p-6 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
+      <div class="h-64 p-6 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
         <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">This Relay Appears to be offline</h5>
       </div>
+      
+      <!-- this.result?.check?.[which] ? 'green' : 'red' -->
 
-      <div class="py-5" :class="getInfoClass" v-if="Object.keys(result?.info).length">
+      <div class="flex">
+        <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-3xl flex-1 block py-6" :class="check(key)">
+          <span>{{key}}</span>
+        </div>
+      </div>
+
+      <div class="mb-10 overflow-hidden bg-slate-400 shadow sm:rounded-lg" v-if="result?.info?.supported_nips.length > 0">
+        <div class="px-1 py-2 sm:px-6">
+          
+          <div class="flex">
+            <div class="flex-none">
+              <h3 class="text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
+            </div>
+            <a target="_blank" :href="nipLink(key)" v-for="key in result?.info?.supported_nips" :key="`nip-${key}`" 
+            class="hover:bg-slate-300 hover:shadow pointer-cursor flex-initial gap-4  text-slate-800 text-1xl w-1/5 inline-block py-6 ">
+              <code>NIP-{{key}}</code>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex bg-slate-200 mb-10" v-if="this.result?.info?.software">
+        <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+          <span>
+            The IP of <span>{{ geo.dns.name }}</span> is <span>{{ geo.dns.data }}</span> 
+            and appears to be in {{ geo.city }} {{ geo.country }}.
+            Hosting is provided by {{  geo.as  }}.
+            <span v-if="true">
+               
+            </span>
+            <span>
+              The current time in <strong>{{ geo.city }}</strong> is <strong>{{ getLocalTime }}</strong>
+            </span>
+          </span>
+        </div>
+      </div>
+
+      
+
+      <div class="flex bg-slate-200 shadow" v-if="this.result?.info?.software">
+        <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+          <span>It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong></span>
+          <span class="text-sm block">
+            Some links...
+            <a 
+              v-if="result.info.software.includes('+http')" 
+              :href="result.info.software.replace('git+', '')"
+              target="_blank">
+                {{ result.info.software.includes('+https') ? 'https' : ' http' }}
+              </a>
+            <a 
+              v-if="result.info.software.includes('git+')" 
+              :href="result.info.software.replace('+http', '').replace('+https', '')">
+              git
+            </a>
+          </span>
+        </div>
+      </div>
+
+      <div class="flex bg-slate-100 mt-12 shadow" v-if="this.result?.info?.pubkey">
+        <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+          <code class="block">{{ this.result?.info.pubkey }}</code>
+          <span class="block lg:text-lg">was  recieved via {{ relayFromUrl }}/.well-known/nostr.json</span>
+        </div>
+      </div>
+
+      <div class="flex bg-slate-50 shadow mt-12" v-if="this.result?.info?.pubkey">
+        <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+          Here's the details...
+        </div>
+      </div>
+
+      
+
+      <div class="py-5 col-span-3" v-if="Object.keys(result?.info).length">
         <div class="overflow-hidden bg-white shadow sm:rounded-lg relative">
           <div class="px-4 py-5 sm:px-6">
-            <h3>Relay Info <code class="text-gray-300 text-xs absolute top-3 right-3">NIP-11</code></h3>
+            <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Relay Info <code class="text-gray-300 text-xs absolute top-3 right-3">NIP-11</code></h3>
           </div>
           <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
             <dl class="sm:divide-y sm:divide-gray-200">
-              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
-                <dt class="text-sm font-medium text-gray-500">Connection Status</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
-                  <span><img :src="badgeCheck('connect')" class="inline mr-3" /></span>
-                  <span><img :src="badgeCheck('read')" class="inline mr-3"/></span>
-                  <span><img :src="badgeCheck('write')" class="inline" /></span>
+              <!-- <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
+                <dt class="text-lg font-medium text-gray-500">Connection Status</dt>
+                <dd class="mt-1 text-lg text-gray-900 sm:col-span-2 sm:mt-0">
+                  
                 </dd>
-              </div>
-              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result.info?.supported_nips">
-                <dt class="text-sm font-medium text-gray-500">Supported Nips</dt>
+              </div> -->
+              <!-- <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result.info?.supported_nips">
+                <dt class="text-lg font-medium text-gray-500">Supported Nips</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`" class="inline-block mr-3 mt-1">
                     <a :href="nipLink(nip)" target="_blank" ><img :src="badgeLink(nip)" /></a> 
                   </span>
                 </dd>
-              </div>
+              </div> -->
               <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.name">
-                <dt class="text-sm font-medium text-gray-500">Relay Name</dt>
+                <dt class="text-lg font-medium text-gray-500">Relay Name</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.name }}</dd>
               </div>
               <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.pubkey">
-                <dt class="text-sm font-medium text-gray-500">Public Key</dt>
+                <dt class="text-lg font-medium text-gray-500">Public Key</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.pubkey }}</code></dd>
               </div>
               <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.email">
-                <dt class="text-sm font-medium text-gray-500">Contact</dt>
+                <dt class="text-lg font-medium text-gray-500">Contact</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 "><SafeMail :email="result.info.email" /></dd>
               </div>
               <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.software">
-                <dt class="text-sm font-medium text-gray-500">Software</dt>
+                <dt class="text-lg font-medium text-gray-500">Software</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                   {{ getSoftware }} 
-<br />
-{{result.info.software}}<br />
+                  <br />
+                  {{result.info.software}}<br />
                   
                   <a 
                     v-if="result.info.software.includes('+http')" 
@@ -79,7 +151,7 @@
                 </dd>
               </div>
               <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
-                <dt class="text-sm font-medium text-gray-500">Software Version</dt>
+                <dt class="text-lg font-medium text-gray-500">Software Version</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.version }}</code></dd>
               </div>
               
@@ -92,7 +164,7 @@
     <div :class="getGeoWrapperClass">
       <div  :class="getDnsClass" class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
         <div class="px-4 py-5 sm:px-6">
-          <h3>DNS</h3>
+          <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">DNS</h3>
         </div>
         <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
           <dl class="sm:divide-y sm:divide-gray-200">
@@ -106,7 +178,7 @@
 
       <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8"  :class="getGeoClass" v-if="geo">
         <div class="px-4 py-5 sm:px-6">
-          <h3>Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
+          <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
         </div>
         <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
           <dl class="sm:divide-y sm:divide-gray-200">
@@ -335,9 +407,7 @@ import { RelayPool } from 'nostr'
 import crypto from 'crypto'
 
 const localMethods = {
-    badgeCheck(which){
-      return `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${which}&color=${this.result?.check?.[which] ? 'green' : 'red'}`
-    },
+   
     async copy(text) {
       try {
         await navigator.clipboard.writeText(text);
@@ -452,6 +522,19 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
+    getLocalTime: function(){
+      let options = {
+        timeZone: this.geo.timezone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+      }
+      const formatter = new Intl.DateTimeFormat([], options);
+      return formatter.format(new Date())
+    },
     getSoftware: function(){
       return pathSegments(this.result?.info?.software, { last: 2 })
     },
@@ -529,7 +612,12 @@ export default defineComponent({
   // },
 
   methods: Object.assign(localMethods, RelaysLib, {
-    
+    check(key){
+      return { 
+        'bg-green-800': this.result?.check?.[key],
+        'bg-red-800': !this.result?.check?.[key]
+      }
+    },
   }),
 
 })

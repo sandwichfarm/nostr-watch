@@ -186,3 +186,4 @@ relays:
   - wss://nostr.relayer.se
   - wss://relay.nostr.nu
   - wss://relay.taxi
+  - wss://relay.nostrprotocol.net

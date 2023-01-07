@@ -48,10 +48,10 @@ export default {
   },
   methods: {
     getLatLng(){
-      if(!this.geo[this.relay]?.lat || !this.geo[this.relay]?.lon)
+      if(!this.geo?.lat || !this.geo?.lon)
         return
 
-      const ll = [this.geo[this.relay]?.lat, this.geo[this.relay]?.lon]
+      const ll = [this.geo?.lat, this.geo?.lon]
       this.center = ll
 
       console.log('lat long', this.relay, ll)
@@ -62,9 +62,9 @@ export default {
 
       const relay = this.relay
 
-      //console.log(this.geo[this.relay]?.lat, this.geo[this.relay]?.lon)
+      //console.log(this.geo?.lat, this.geo?.lon)
 
-      if(!this.geo[this.relay]?.lat || !this.geo[this.relay]?.lon)
+      if(!this.geo?.lat || !this.geo?.lon)
         return 'transparent'
 
       if(this.result[relay]?.aggregate == 'public') {

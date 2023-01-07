@@ -8,8 +8,8 @@
               :key="`subnav-${item.slug}`"
               :href="item.href" 
               @click="setActiveContent(item.slug)"
-              :class="[isActive(item) ? 'bg-slate-500 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']" 
-              class="inline-flex items-center pt-1.5 text-sm font-medium">
+              class="inline-flex items-center"
+              :class="getNavButtonClass(item.slug)">
               {{ item.name }}
           </a>
         </div>
@@ -34,12 +34,13 @@
           v-for="item in store.layout.getNavGroup(this.navSlug)"
           :key="`subnav-${item.slug}`"
           @click="setActiveContent(item.slug)"
-          :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']" 
+          :class="getNavButtonClass(item.slug)"
           as="a" 
           :href="item.href" 
           class="block border-l-4 border-indigo-500 bg-indigo-50 py-2 pl-3 pr-4 text-base font-medium text-indigo-700">
           {{  item.name  }}
       </DisclosureButton>
+      <!-- :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']"  -->
   </div>
   </DisclosurePanel>
 </Disclosure>
@@ -93,12 +94,23 @@ mounted(){
 methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadNavContent}),
 
 computed: {
-  isActive(){
-      return (item) => item.slug==this.navActiveContent
-  },
+  
   contentIsActive,
+  // isActive: () => (slug) => this.contentIsActive(slug),
   routeValid,
-  parseHash
+  parseHash,
+  getNavButtonClass(){
+    return (slug) => {
+      // console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)
+      return { 
+        'py-1 px-2': this.store.prefs.getTheme === 'compact',
+        'text-lg py-2 px-3': this.store.prefs.getTheme === 'comfortable',
+        'text-xl py-3 px-4': this.store.prefs.getTheme === 'large',
+        'bg-slate-800 text-white hover:text-white hover:bg-slate-800': this.contentIsActive(slug),
+        'text-gray-600 hover:bg-gray-50 hover:text-gray-900': !this.contentIsActive(slug),
+      }
+    }
+  }
 },
 });
 </script>

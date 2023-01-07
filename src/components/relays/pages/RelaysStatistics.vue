@@ -83,12 +83,15 @@
 <script>
 import { defineComponent, toRefs } from 'vue'
 import { setupStore } from '@/store'
-// import { RelayPool } from 'nostr'
-// import crypto from 'crypto'
+// import { UserLib } from '@/shared/user-lib.js'
+// import { History } from '@/shared/history.js'
 
 export default defineComponent({
+
   name: 'RelayStatistics',
+
   components: {},
+
   setup(props){
     const {resultsProp: results} = toRefs(props)
     return { 
@@ -96,18 +99,23 @@ export default defineComponent({
       results: results
     }
   },
+
   beforeMount(){
     
   },
+
   async mounted(){
     this.store.stats.set('nips', this.collateSupportedNips)
     this.store.stats.set('continents', this.collateContinents)
     this.store.stats.set('countries', this.collateCountries)
+    this.remoteTask = await this.historicalData()
     this.store.stats.setHistory(this.remoteTask)
   },
+
   unmounted(){
     delete this.remoteTask
   },
+
   data: function(){
     return {
       relays: this.store.relays.getAll,
@@ -119,6 +127,7 @@ export default defineComponent({
       remoteTask: null
     }
   },
+
   props: {
     resultsProp: {
       type: Object,
@@ -127,6 +136,7 @@ export default defineComponent({
       }
     },
   },
+
   computed: {
     collateSupportedNips(){
       const nips = new Object()
@@ -176,15 +186,17 @@ export default defineComponent({
       console.log('countries', byCountry)
       return byCountry;
     },
-    
   },
-  methods: {
+
+  methods: Object.assign({
     collateSoftware(){
       // const software = new Object()
     },
+
     collateSoftwareVersion(){
 
     },
-  }
+  })
+
 })
 </script>

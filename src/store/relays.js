@@ -11,7 +11,8 @@ export const useRelaysStore = defineStore('relays', {
     processedRelays: new Set(),
     favorites: new Array(),
     aggregates: {},
-    aggregatesAreSet: false
+    aggregatesAreSet: false,
+    cached: new Object()
   }),
   getters: {
     getAll: (state) => state.urls,
@@ -41,7 +42,9 @@ export const useRelaysStore = defineStore('relays', {
     areAggregatesSet: (state) => state.aggregatesAreSet,
 
     getFavorites: (state) => state.favorites,
-    isFavorite: (state) => (relayUrl) => state.favorites.includes(relayUrl)
+    isFavorite: (state) => (relayUrl) => state.favorites.includes(relayUrl),
+
+    getAggregateCache: (state) => (aggregate) => state.cached[aggregate] instanceof Array ? state.cached[aggregate] : [],
   },
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
@@ -86,5 +89,11 @@ export const useRelaysStore = defineStore('relays', {
         this.setFavorite(relayUrl)
       return this.isFavorite(relayUrl)
     },
+
+    setAggregateCache(aggregate, array){
+      if( !(this.cached[aggregate] instanceof Array) )
+        this.cached[aggregate] = new Array()
+      this.cached[aggregate] = array
+    }
   },
 })

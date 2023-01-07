@@ -63,7 +63,10 @@ const contentIsActive = function(){
 const parseHash = function(){
     const hashParams = this.$route.hash.replace('#', '').replace(/^\/+/g, '').split('/')
     const result = {}
-    result.section = hashParams[0] || null
+    result.page = hashParams[0] || null
+    result.section = hashParams[1] || null
+    result.subsection = hashParams[2] || null
+    result.relay = hashParams[1] && hashParams[1].includes('.') ? hashParams[1] : null
     return result
 }
 

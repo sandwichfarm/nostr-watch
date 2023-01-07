@@ -19,8 +19,8 @@
         </div>
       </div>
 
-      <div class="py-5 col-span-2">
-        <div class="overflow-hidden bg-white shadow sm:rounded-lg col-span-2 relative">
+      <div class="py-5" :class="getInfoClass">
+        <div class="overflow-hidden bg-white shadow sm:rounded-lg relative">
           <div class="px-4 py-5 sm:px-6">
             <h3>Relay Info <code class="text-gray-300 text-xs absolute top-3 right-3">NIP-11</code></h3>
           </div>
@@ -69,7 +69,7 @@
       </div>
       
 
-    <div class="col-span-1">
+    <div class="col-span-1" :class="getDnsClass">
       <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
         <div class="px-4 py-5 sm:px-6">
           <h3>DNS</h3>
@@ -84,7 +84,7 @@
         </div>
       </div>
 
-      <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8 col-span-1" v-if="geo">
+      <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8 col-span-1"  :class="getGeoClass" v-if="geo">
         <div class="px-4 py-5 sm:px-6">
           <h3>Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
         </div>
@@ -102,7 +102,7 @@
     
 
             <!-- component -->
-  <div class="col-span-1">
+  <div class="col-span-1" :class="getLogsClass">
     <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
       <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
         <div class="overflow-hidden">
@@ -159,7 +159,8 @@ import emoji from 'node-emoji';
 import { setupStore } from '@/store'
 import { useHead } from '@vueuse/head'
 
-
+import { RelayPool } from 'nostr'
+import crypto from 'crypto'
 
 const localMethods = {
     badgeCheck(which){
@@ -172,6 +173,24 @@ const localMethods = {
         //console.log('Cannot copy');
       }
     },
+    getAdminNotes(){
+      if(!this.result?.info)
+        return 
+
+      console.log('public relays', this.relays.length)
+
+      const pool = new RelayPool(this.relays)
+      const subid = crypto.randomBytes(40).toString('hex')
+      pool
+        .on('open', relay => {
+          relay.subscribe(subid, { authors:[this.result.info.pubkey], limit:10 })
+        })
+        .on('event', (relay, sub_id, event) => {
+          console.log(event.content)
+          if(sub_id === subid)
+            this.events[event.id] = event
+        })
+    }
 }
 
 export default defineComponent({
@@ -187,7 +206,8 @@ export default defineComponent({
     return {
       result: {},
       relay: "",
-      geo: {}
+      geo: {},
+      events: {}
     }
   },
 
@@ -208,6 +228,7 @@ export default defineComponent({
 
   beforeMount(){
     this.relay = this.relayFromUrl
+    this.relays = this.store.relays.getAggregateCache('public')
     this.lastUpdate = this.store.relays.getLastUpdate
     this.result = this.getCache(this.relay)
     //
@@ -218,7 +239,7 @@ export default defineComponent({
   },
 
   async mounted() {
-    
+    this.getAdminNotes()
   },
 
   computed: Object.assign(SharedComputed, {
@@ -259,7 +280,15 @@ export default defineComponent({
           ['bg-gray-50 border-gray-200']: slug == 'event',
         } 
       }
+    },
+    getInfoClass(){
+      return {
+        'col-span-2': this.result?.info && this.geo,
+        'col-span-3': this.result?.info && !this.geo
+      }
     }
+    
+    
   }),
 
   // updated() {

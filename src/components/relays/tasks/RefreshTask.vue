@@ -121,6 +121,9 @@ const localMethods = {
   completeAll: function(){
     this.store.tasks.finishProcessing('relays')
     this.store.relays.updateNow()
+    this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
+    this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
+    this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
     //console.log('all are complete?', this.store.tasks.isProcessing)
     // const aggregates = new Object()
     // aggregates.all = this.getSortedAllRelays()

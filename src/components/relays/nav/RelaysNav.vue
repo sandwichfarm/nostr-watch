@@ -24,19 +24,17 @@
         </div>
       </div>
   </div>
-
-  {{ isActive }}
 </template>
 
 <script>
 import { defineComponent, toRefs } from 'vue'
 import {useRoute} from 'vue-router'
-// import { items } from './config/nav.yaml'
 import { setupStore } from '@/store'
 
 import RelaysLib from '@/shared/relays-lib.js'
 import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
 import RefreshComponent from '@/components/relays/tasks/RefreshTask.vue'
+
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
@@ -72,7 +70,7 @@ export default defineComponent({
   },
   
   mounted(){
-    
+    console.log('mounted in relays find nav')
   },
   methods: Object.assign(RelaysLib, setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive),
   computed: {

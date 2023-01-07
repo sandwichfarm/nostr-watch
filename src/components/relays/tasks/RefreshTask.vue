@@ -35,6 +35,10 @@ import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
 import { Inspector } from 'nostr-relay-inspector'
+// import sizeof from 'object-sizeof'
+
+import { relays } from '../../../../relays.yaml'
+import { geo } from '../../../../cache/geo.yaml'
 
 const localMethods = {
 
@@ -75,6 +79,7 @@ const localMethods = {
   //   this.addToQueue('relays/single', () => this.invalidate(false, relayUrl))  
   // },
   invalidate: async function(force, single){
+    console.log('invalidate()', this.relays.length, force || this.isExpired )
     if( (!this.isExpired && !force) ) 
       return
 
@@ -90,24 +95,33 @@ const localMethods = {
     //   this.store.tasks.setRate('relays/find', 2000)
 
     if(single) {
+      console.log('single relay', single)
       await this.check(single)
     } 
     else {
+      console.log('multiple relays',  single)
       // const processed = new Set()
       for(let index = 0; index < relays.length; index++) {
         const relay = relays[index]
         console.log('checking relay', relay)
         this.check(relay)
           .then((result) => {
+            console.log('check completed', relay)
             if(this.store.tasks.isProcessed('relays', relay))
               return 
+            
+            console.log('unique check', relay)
+            
             this.store.tasks.addProcessed('relays', result.uri)
 
             this.results[result.uri] = result
             this.setCache(result)
 
+            console.log('cache set', result.uri, result)
+
             if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
               this.completeAll()
+
             return this.results
           })
           .then( async () => {
@@ -119,19 +133,14 @@ const localMethods = {
   },
 
   completeAll: function(){
+    console.log('completed')
     this.store.tasks.finishProcessing('relays')
     this.store.relays.updateNow()
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
-    //console.log('all are complete?', this.store.tasks.isProcessing)
-    // const aggregates = new Object()
-    // aggregates.all = this.getSortedAllRelays()
-    // aggregates.public = this.getSortedPublicRelays()
-    // aggregates.restricted = this.getSortedRestrictedRelays()
-    // aggregates.offline = this.getOfflineRelays()
-    // this.store.relays.setAggregates(aggregates)
-    this.getAverageLatency()
+    console.log('all are complete?', !this.store.tasks.isProcessing)
+    this.setAverageLatency()
   },
 
   check: async function(relay){
@@ -147,7 +156,6 @@ const localMethods = {
           connectTimeout: this.getDynamicTimeout,
           readTimeout: this.getDynamicTimeout,
           writeTimeout: this.getDynamicTimeout,
-          // data: { result: this.store.relays.results[relay] }
         }
       
       if(this.store.user.testEvent)
@@ -161,7 +169,6 @@ const localMethods = {
           instance.relay.close()
           instance.result.log = instance.log
           resolve(instance.result)
-          // console.log('complete?', instance.result.uri, this.store.tasks.getProcessed('relays', relays.length), this.relays.length)
         })
         .on('close', (relay) => {
           console.log(`${relay.url} has closed`)
@@ -172,13 +179,15 @@ const localMethods = {
         .run()
     })
   },
-  getAverageLatency: function(){
+  
+  setAverageLatency: function(){
     const latencies = new Array()
     this.relays.forEach( relay => {
       latencies.push(this.results[relay]?.latency?.final)
     })
     this.averageLatency =  this.average(latencies)
   },
+
   average(arr){
     let sum = 0,
         total = arr.length;
@@ -190,7 +199,7 @@ const localMethods = {
     return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.relays.getLastUpdate)
+    return this.timeSince(this.store.relays.getLastUpdate) || Date.now()
   },
 }
 
@@ -215,11 +224,22 @@ export default defineComponent({
   beforeMount(){
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
-  },
-  mounted(){
-    this.relays = this.store.relays.getAll
+
+    this.store.relays.setRelays(relays)
+    this.store.relays.setGeo(geo)
+
+    this.relays = relays
     this.lastUpdate = this.store.relays.lastUpdate
 
+    console.log('total relays', this.relays, this.relays.length)
+    for(let ri=0;ri-this.relays.length;ri++){
+      const relay = this.relays[ri],
+            cache = this.getCache(relay)
+      this.results[relay] = cache
+      // console.log('result', 'from result', this.results[relay], 'from cache', cache) 
+    }
+  },
+  mounted(){
     if(this.store.tasks.isProcessing(`relays`))
       this.invalidate(true)
     else

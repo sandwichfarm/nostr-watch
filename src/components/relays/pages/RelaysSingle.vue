@@ -54,9 +54,9 @@
       <div class="flex bg-slate-200 mb-10" v-if="this.result?.info?.software">
         <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
           <span>
-            The IP of <span>{{ geo.dns.name }}</span> is <span>{{ geo.dns.data }}</span> 
-            and appears to be in {{ geo.city }} {{ geo.country }}.
-            Hosting is provided by {{  geo.as  }}.
+            The IP of <strong>{{ geo.dns.name }}</strong> is <strong>{{ geo.dns.data }}</strong> <br />
+            <em>{{ geo.dns.data }}</em> appears to be in <strong>{{ geo.city }} {{ geo.country }}.</strong> <br />
+            The hosting provider is <strong>{{  geo.as  }}</strong>.
             <span v-if="true">
                
             </span>

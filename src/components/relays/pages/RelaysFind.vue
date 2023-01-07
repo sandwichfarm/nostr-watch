@@ -1,4 +1,10 @@
 <template>
+
+    
+
+  <RelaysNav 
+    v-bind:resultsProp="results" />
+
   <MapSummary 
     :resultsProp="results" 
     :activePageItemProp="activeSubsection" /> 
@@ -31,15 +37,13 @@
         <RelaysFindNav />
       </div>
     </div>
-    
     <div 
         v-for="subsection in navSubsection"
         :key="subsection.slug" > 
         <div v-if="subsection.slug == activeSubsection">
-        <RelaysResultTable
+          <RelaysResultTable
             :resultsProp="results"
-            :subsectionProp="subsection.slug"
-            v-bind:relaysCountProp="relaysCount" /> 
+            :subsectionProp="subsection.slug" /> 
         </div>
     </div>
   </div>
@@ -47,7 +51,7 @@
 
 <script>
 //vue
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 import {useRoute} from 'vue-router'
 //pinia
 import { setupStore } from '@/store'
@@ -55,9 +59,12 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import { parseHash } from '@/shared/hash-router.js'
 //components
+import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
 import RelaysFindNav from '@/components/relays/nav/RelaysFindNav.vue'
 import RelaysResultTable from '@/components/relays/blocks/RelaysResultTable.vue'
 import MapSummary from '@/components/relays/blocks/MapSummary.vue'
+import { relays } from '../../../../relays.yaml'
+import { geo } from '../../../../cache/geo.yaml'
 
 const localMethods = {}
 
@@ -65,32 +72,31 @@ export default defineComponent({
   name: 'HomePage',
 
   components: {
-    RelaysResultTable,
+    RelaysNav,
     RelaysFindNav,
-    MapSummary
+    MapSummary,
+    RelaysResultTable,
   },
 
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
+    // const {resultsProp: results} = toRefs(props)
     return { 
       store : setupStore(),
-      results: results
+      // results: results
     }
   },
 
   props: {
-    resultsProp: {
-      type: Object,
-      default: () => {}
-    }
   },
 
   data() {
     return {
-      relays: [],
+      relays: relays,
+      geo: geo,
       timeouts: {},
       intervals: {},
       relaysCount: {},
+      results: {}
       // activeSection: this.routeSection || this.store.layout.getActiveItem('relays')?.slug,
       // activeSubsection: this.routeSubsection || this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug,
     }
@@ -98,24 +104,43 @@ export default defineComponent({
 
   updated(){},
 
-  beforeMount(){
-    this.routeSection = this.parseHash.section || false
-    this.routeSubsection = this.parseHash.subsection || false
+  watch: {
+    results: function(){
+      console.log('results changed.')
+    }
+  },
 
+  beforeMount(){
     if(this.path !== 'relays/find')
       this.$router.push('/relays/find')
+
+    // this.routeSection = this.parseHash.section || false
+    this.routeSubsection = this.parseHash.subsection || false
+
+    this.store.relays.setRelays(relays)
+    this.store.relays.setGeo(geo)
+    
+    this.relays = this.store.relays.getAll
+    this.lastUpdate = this.store.relays.lastUpdate
+    this.preferences = this.store.prefs.get
   },
 
   async mounted() {
+    console.log("findrelays mounted", this.results)
     this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
+
+    // this.relays.forEach(relay => {
+    //   this.results[relay] = this.getCache(relay)
+    // })
+    console.log('RESULTS!', this.navSubsection, this.relays, this.results)
     // this.relaysMountNav()
   },
 
   computed: {
     path: function() { return useRoute().path },
     activeSection: function(){ return this.store.layout.getActiveItem('relays')?.slug },
-    activeSubsection: function(){ return this.store.layout.getActiveItem(`relays/${this.activeSection}`)?.slug },
-    navSubsection: function() { return this.store.layout.getNavGroup(`relays/${this.activeSection}`) || [] },
+    activeSubsection: function(){ return this.store.layout.getActiveItem(`relays/find`)?.slug },
+    navSubsection: function() { return this.store.layout.getNavGroup(`relays/find`) || [] },
     getRelaysCount: function() { 
       return (subsection) => {
         if(subsection === 'all')
@@ -123,7 +148,6 @@ export default defineComponent({
         if(subsection === 'favorite')
           return this.store.relays.getFavorites.length 
         return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == subsection).length 
-
       }
     },
     parseHash

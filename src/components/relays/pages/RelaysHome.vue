@@ -4,15 +4,15 @@
 
   <RelaysFind
     :resultsProp="results"
-    v-if="this.path == '/relays/find' || this.path == '/relays' || this.path == '/'" /> 
+    v-if="this.path.startsWith('/relays/find') || this.path == '/relays' || this.path == '/'" /> 
   
   <MapInteractive
     :resultsProp="results"
-      v-if="this.path == '/relays/map'" /> 
+    v-if="this.path.startsWith('/relays/map')" /> 
   
   <RelayStatistics
     :resultsProp="results"
-    v-if="this.path == '/relays/statistics'" /> 
+    v-if="this.path.startsWith('/relays/statistics') /> 
   
   <div id="footer">
     <span class="credit">
@@ -50,9 +50,9 @@ const localMethods = {
     this.lastUpdate = this.store.relays.lastUpdate
     this.preferences = this.store.prefs.get
 
-    this.relays.forEach(relay => {
-      this.results[relay] = this.getCache(relay)
-    })
+    // this.relays.forEach(relay => {
+    //   this.results[relay] = this.getCache(relay)
+    // })
   },
 }
 

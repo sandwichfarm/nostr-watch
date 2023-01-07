@@ -94,7 +94,6 @@ mounted(){
 methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadNavContent}),
 
 computed: {
-  
   contentIsActive,
   // isActive: () => (slug) => this.contentIsActive(slug),
   routeValid,

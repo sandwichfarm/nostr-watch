@@ -162,8 +162,8 @@
     },
     
     mounted(){
+      console.log('navdata', this.navData, this.navData.filter( item => item.slug == this.subsection )[0], this.navData.filter( item => item.slug == this.subsection ))
       this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
-      
     },
     updated(){
       // console.log('state, updated')
@@ -207,10 +207,12 @@
     },
     computed: {
       subsectionRelays(){
-        if(this.results)
-          return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
-        else 
-          return {}
+        console.log('results!', this.relays.length, this.results)
+        return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        // if(this.results)
+        //   return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        // else 
+        //   return {}
       },
       relayGeo(){
         return (relay) => this.store.relays.getGeo(relay)

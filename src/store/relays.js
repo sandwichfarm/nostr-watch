@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia'
+// import { relays } from '../../relays.yaml'
+// import { geo } from '../../relays.yaml'
 
 export const useRelaysStore = defineStore('relays', {
   state: () => ({ 

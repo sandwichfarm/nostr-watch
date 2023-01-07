@@ -1,7 +1,7 @@
 <template>
   <span class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="!store.tasks.isProcessing">Checked {{ sinceLast }} ago</span>
-    <span v-if="store.tasks.isProcessing" class="italic lg:pr-9">
+    <span v-if="!store.tasks.isProcessing(`relays`)">Checked {{ sinceLast }} ago</span>
+    <span v-if="store.tasks.isProcessing(`relays`)" class="italic lg:pr-9">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -9,14 +9,14 @@
       {{ this.store.tasks.getProcessed('relays').length }}/{{ this.relays.length }} Relays Checked
     </span>
   </span>
-  <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.tasks.isProcessing">-</span>
-  <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.tasks.isProcessing"> 
+  <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.tasks.isProcessing(`relays`)">-</span>
+  <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.tasks.isProcessing(`relays`)"> 
     Next check in: {{ untilNext  }}
   </span>
   <button 
-    v-if="!store.tasks.isProcessing"
+    v-if="!store.tasks.isProcessing(`relays`)"
     class="mr-8 my-1 py-0 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
-    :disabled='store.tasks.isProcessing' 
+    :disabled='store.tasks.isProcessing(`relays`)' 
     @click="refreshNow()">
       Check{{ relay ? ` ${relay}` : "" }} Now
   </button>
@@ -31,6 +31,7 @@ import { defineComponent, toRefs } from 'vue'
 
 import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
+// import History from '@/shared/history.js'
 import SharedComputed from '@/shared/computed.js'
 
 import { Inspector } from 'nostr-relay-inspector'
@@ -47,6 +48,7 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
+      this.pageOpen += 1000
       if(!this.store.prefs.refresh )
         return 
 
@@ -78,9 +80,11 @@ const localMethods = {
 
     this.store.tasks.startProcessing('relays')
     
-    const relays = this.relays.filter( relay => !this.store.tasks.isRelayProcessed(relay) )
+    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
 
-    // if(this.store.tasks.isActive)
+    console.log('filtered relays', relays)
+
+    // if(this.pageOpen > 4*60*1000)
     //   this.store.tasks.setRate('relays/find', 0)
     // else 
     //   this.store.tasks.setRate('relays/find', 2000)
@@ -92,7 +96,24 @@ const localMethods = {
       // const processed = new Set()
       for(let index = 0; index < relays.length; index++) {
         const relay = relays[index]
-        await this.check(relay)
+        console.log('checking relay', relay)
+        this.check(relay)
+          .then((result) => {
+            if(this.store.tasks.isProcessed('relays', relay))
+              return 
+            this.store.tasks.addProcessed('relays', result.uri)
+
+            this.results[result.uri] = result
+            this.setCache(result)
+
+            if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
+              this.completeAll()
+            return this.results
+          })
+          .then( async () => {
+            // this.history = await History()
+          })
+          .catch( err => console.error(err) )
       }
     } 
   },
@@ -110,9 +131,8 @@ const localMethods = {
     this.getAverageLatency()
   },
 
-  
-
   check: async function(relay){
+    console.log('this.averageLatency', this.averageLatency)
     await this.delay(this.averageLatency)
         
     return new Promise( (resolve, reject) => {
@@ -148,20 +168,6 @@ const localMethods = {
         })
         .run()
     })
-    .then((result) => {
-      if(this.store.tasks.isRelayProcessed(result.uri))
-        return 
-      this.store.tasks.addProcessed('relays', result.uri)
-
-      this.results[result.uri] = result
-      this.setCache(result)
-
-      if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
-        this.completeAll()
-    })
-    .catch( err => console.error(err) )
-
-    
   },
   getAverageLatency: function(){
     const latencies = new Array()
@@ -211,7 +217,7 @@ export default defineComponent({
     this.relays = this.store.relays.getAll
     this.lastUpdate = this.store.relays.lastUpdate
 
-    if(this.store.tasks.isProcessing)
+    if(this.store.tasks.isProcessing(`relays`))
       this.invalidate(true)
     else
       this.invalidate()
@@ -243,7 +249,9 @@ export default defineComponent({
       sinceLast: null,
       interval: null,
       windowActive: true,
-      averageLatency: 200
+      averageLatency: 200,
+      pageOpen: 0,
+      // history: null
     }
   },
 })

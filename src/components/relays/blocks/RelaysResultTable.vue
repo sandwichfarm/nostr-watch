@@ -117,6 +117,7 @@
   import NostrSyncPopoverNag from '@/components/relays/partials/NostrSyncPopoverNag.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
+  
   import { setupStore } from '@/store'
   
   const localMethods = {}

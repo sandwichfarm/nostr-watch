@@ -36,7 +36,7 @@ import { setupStore } from '@/store'
 
 import RelaysLib from '@/shared/relays-lib.js'
 import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
-import RefreshComponent from '@/components/relays/blocks/RefreshComponent.vue'
+import RefreshComponent from '@/components/relays/tasks/RefreshTask.vue'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",

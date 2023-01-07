@@ -19,9 +19,9 @@ export const useTaskStore = defineStore('tasks', {
         state.processed[key] = new Array()
       return state.processed[key]
     },
-    isProcessing: (state) => state.processing,
+    isProcessing: (state) => (key) => state.processing[key],
 
-    isRelayProcessed: (state) => (relay) => state.getProcessed('relay').includes(relay),
+    isProcessed: (state) => (key, relay) => state.getProcessed(key).includes(relay),
 
     //queue/lists
     getPending: (state) => state.pending,

@@ -36,19 +36,25 @@
         :radius="2"
         :weight="4"
         :fillOpacity="1" >
-        <l-popup>
-          <div class="bg-slate-200 mb-10">
-            <div class="text-slate-800 text-3xl w-64 block py-1 text-center">
+
+        <l-popup :maxWidth="auto">
+          <div class="mb-10 w-min">
+            <div class="text-slate-800 text-3xl  block py-1 text-center">
               <span @click="copy" class="py-1px-2">{{ relay }}</span>
+              <a href="#" @click="$router.push(`/relay/${cleanUrl}`)" class="block text-sm mb-3">Status Page</a>
+              <img class="inline-block mr-1" :src="badgeCheck(relay, 'connect')" />
+              <img class="inline-block mr-1" :src="badgeCheck(relay, 'read')" />
+              <img class="inline-block mr-1" :src="badgeCheck(relay, 'write')" />
             </div>
           </div>
         </l-popup>
       </l-marker>
 
     </l-map>
-    <button @click="this.handleToggleMap()">
-      Open Map
-    </button>
+    <span @click="this.handleToggleMap()">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="!store.layout.mapIsExpanded">full map</button>
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="store.layout.mapIsExpanded">mini map</button>
+    </span>
   </div>
   
 </template>
@@ -154,6 +160,25 @@ export default defineComponent({
     subsectionRelays(){
       return this.sortRelays( this.store.relays.getRelays(this.activeSubsection, this.results ) )
     },
+    relayUrl() {
+      // We will see what `params` is shortly
+      return `wss://${this.$route.params.relayUrl}`
+    },
+    badgeNip(){
+      return (nip) => `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
+    },
+    badgeCheck(){
+      return (relay, which) => `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${which}&color=${this.results?.[relay].check?.[which] ? 'green' : 'red'}`
+    },
+    nipSignature(){
+      return (key) => key.toString().length == 1 ? `0${key}` : key
+    },
+    nipFormatted(){
+      return (key) => `NIP-${this.nipSignature(key)}`
+    },
+    nipLink(){
+      return (key) => `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
+    },
     getCircleClass(relay){
       console.log('the relay', relay)
       return (relay) => {
@@ -209,6 +234,13 @@ export default defineComponent({
     },
   },
   methods: Object.assign(RelaysLib, {
+    async copy(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch($e) {
+        //console.log('Cannot copy');
+      }
+    },
     getLatLng(relay){
       return [this.getLat(relay), this.getLon(relay)]
     },
@@ -282,8 +314,14 @@ export default defineComponent({
 } */
 </style>
 
-<style scoped>
+<style>
 
+.leaflet-popup-content {
+  width: auto !important;
+}
+</style>
+
+<style scoped>
 
 
 .leaflet-container {
@@ -315,8 +353,10 @@ export default defineComponent({
   height:555px !important;
 } */
 .leaflet-control-zoom {
-  display: none !important;
+  display: none;
 }
+
+
 
 .expanded .leaflet-control-zoom {
   display: block !important;
@@ -326,11 +366,11 @@ button {
   position: relative;
   z-index:901;
   top: -30px;
-  background:rgba(255,255,255,0.5);
-  border:0;
-  padding:3px 6px;
-  color:#777;
   cursor:pointer;
+}
+
+.expanded button {
+  top:-22px
 }
 
 button:hover {

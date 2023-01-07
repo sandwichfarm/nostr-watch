@@ -187,3 +187,4 @@ relays:
   - wss://relay.nostr.nu
   - wss://relay.taxi
   - wss://relay.nostrprotocol.net
+  - wss://nostr.easydns.ca

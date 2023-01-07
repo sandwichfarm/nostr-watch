@@ -61,16 +61,12 @@
           </div>
         </div>
 
-        <div class="flex bg-slate-200 mb-10" v-if="this.result?.info?.software">
+        <div class="flex bg-slate-200 mb-10" v-if="geo?.dns">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>
-              The IP of <strong>{{ geo.dns.name }}</strong> is <strong>{{ geo.dns.data }}</strong> <br />
-              <em>{{ geo.dns.data }}</em> appears to be in <strong>{{ geo.city }} {{ geo.country }}.</strong> <br />
-              The hosting provider is <strong>{{  geo.as  }}</strong>.
-              <span v-if="true">
-                
-              </span>
-              
+              The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong> <br />
+              <em>{{ geo?.dns.data }}</em> appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong> <br />
+              The hosting provider is <strong>{{  geo?.as  }}</strong>.
             </span>
           </div>
         </div>
@@ -78,7 +74,7 @@
         <div class="flex bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>
-                The current time in <strong>{{ geo.city }}</strong> is <strong>{{ getLocalTime }}</strong>
+                The current time in <strong>{{ geo?.city }}</strong> is <strong>{{ getLocalTime }}</strong>
               </span>
           </div>
         </div>
@@ -191,7 +187,7 @@
           </div>
           <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
             <dl class="sm:divide-y sm:divide-gray-200">
-              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo.dns)" :key="`${value}_${key}`">
+              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo?.dns)" :key="`${value}_${key}`">
                 <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
                 <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
               </div>
@@ -422,7 +418,7 @@ import emoji from 'node-emoji';
 import pathSegments from 'path-segments'
 
 // import { relays } from '../../relays.yaml'
-// import { geo } from '../../cache/geo.yaml'
+// import { geo } from '../../cache/geo?.yaml'
 import { setupStore } from '@/store'
 import { useHead } from '@vueuse/head'
 
@@ -453,6 +449,7 @@ const localMethods = {
         .on('event', (relay, sub_id, event) => {
           if(sub_id === subid)
             this.events[event.id] = event
+          console.log('event!',event)
         })
         .on('eose', relay => {
           relay.close()
@@ -551,7 +548,7 @@ export default defineComponent({
   computed: Object.assign(SharedComputed, {
     getLocalTime: function(){
       let options = {
-        timeZone: this.geo.timezone,
+        timeZone: this.geo?.timezone,
         year: 'numeric',
         month: 'numeric',
         day: 'numeric',

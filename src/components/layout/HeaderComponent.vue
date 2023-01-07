@@ -21,7 +21,7 @@
           <div class="hidden sm:ml-6 sm:block">
               <div class="flex space-x-4">
               <router-link 
-                to="/"
+                to="/relays/find"
                 :class="[false ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" >
                 Relays
               </router-link>
@@ -117,6 +117,7 @@ import { defineComponent } from 'vue'
 import { setupStore } from '@/store'
 import UserLib from '@/shared/user-lib.js'
 
+// import PreferencesComponent from '@/components/PreferencesComponent.vue'
 import AuthComponent from '@/components/user/AuthComponent.vue'
 
 import {version} from '../../../package.json'
@@ -142,9 +143,9 @@ export default defineComponent({
     }
   },
   mounted(){
-    // this.store.user.$subscribe((mutation) => {
-    //   mutation
-    // })
+    this.store.user.$subscribe((mutation) => {
+      mutation
+    })
   },
   computed: {
   },

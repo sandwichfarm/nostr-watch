@@ -168,7 +168,7 @@ export default defineComponent({
       return (nip) => `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
     },
     badgeCheck(){
-      return (relay, which) => `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${which}&color=${this.results?.[relay].check?.[which] ? 'green' : 'red'}`
+      return (relay, key) => `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${key}&color=${this.results?.[relay]?.check?.[key] ? 'green' : 'red'}`
     },
     nipSignature(){
       return (key) => key.toString().length == 1 ? `0${key}` : key

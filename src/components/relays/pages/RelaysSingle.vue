@@ -17,9 +17,6 @@
         </div>
       </div>
 
-      <div class="h-64 p-6 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
-        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">This Relay Appears to be offline</h5>
-      </div>
       
       <!-- this.result?.check?.[which] ? 'green' : 'red' -->
 
@@ -29,10 +26,20 @@
         </div>
       </div>
 
-      <div class="mb-10 overflow-hidden bg-slate-400 shadow sm:rounded-lg" v-if="result?.info?.supported_nips.length > 0">
+      <div v-if="!result?.check.connect">
+        <div class="block mt-1 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
+          <h5 class="mb-2 text-2xl font-bold tracking-tight text-red-600 dark:text-red-300">This Relay Appears to be offline</h5>
+        </div>
+        <div class="flex bg-slate-50 shadow mt-12" v-if="Object.keys(this.result?.geo).length">
+          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+            I did find this...
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-10 overflow-hidden bg-slate-400 shadow sm:rounded-lg">
         <div class="px-1 py-2 sm:px-6">
-          
-          <div class="flex">
+          <div class="flex" v-if="result?.info?.supported_nips">
             <div class="flex-none">
               <h3 class="text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
             </div>
@@ -53,10 +60,16 @@
             <span v-if="true">
                
             </span>
-            <span>
+            
+          </span>
+        </div>
+      </div>
+
+      <div class="flex bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
+        <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+          <span>
               The current time in <strong>{{ geo.city }}</strong> is <strong>{{ getLocalTime }}</strong>
             </span>
-          </span>
         </div>
       </div>
 

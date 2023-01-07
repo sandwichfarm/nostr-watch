@@ -20,7 +20,7 @@
       <div class="width-max lg:flex lg:ml-auto">
           <RefreshComponent
             v-bind:resultsProp="results"
-            v-if="path == '/relays/find'"/>
+            v-if="path == '/relays/find' || path.includes(`/relay/`)"/>
         </div>
       </div>
   </div>

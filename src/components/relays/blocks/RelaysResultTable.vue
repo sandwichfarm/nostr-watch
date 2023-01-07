@@ -27,7 +27,7 @@
                           </label>
                         </span>
                       </th>
-                      <th scope="col" class="hidden md:visible lg:visible xl:visibleverified">
+                      <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
                         </span> -->
@@ -41,15 +41,15 @@
                         <code class="text-xs block">Latency</code>
                         <!-- ⌛️ -->
                       </th>
-                      <th scope="col" class="hidden md:visible lg:visible xl:visibleconnect text-center" v-tooltip:top.tooltip="'Relay connection status'">
+                      <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
                         <code class="text-xs block">Connect</code>
                         <!-- 🔌 -->
                       </th>
-                      <th scope="col" class="hidden md:visible lg:visible xl:visibleread text-center" v-tooltip:top.tooltip="'Relay read status'">
+                      <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
                         <code class="text-xs block">Read</code>
                         <!-- 👁️‍🗨️ -->
                       </th>
-                      <th scope="col" class="hidden md:visible lg:visible xl:visiblewrite text-center" v-tooltip:top.tooltip="'Relay write status'">
+                      <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
                         <!-- ✏️ -->
                       </th>
@@ -74,7 +74,7 @@
                         <a :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
                       </td>
 
-                      <td class="w-12 verified text-center hidden md:visible lg:visible xl:visible">
+                      <td class="w-12 verified text-center md:table-cell lg:table-cell xl:table-cell">
                         <span v-if="this.results[relay]?.identities">
                           <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span>
                         </span>
@@ -95,15 +95,15 @@
                         border-width:0px;
                       } -->
 
-                      <td class="w-16 content-center text-center hidden md:visible lg:visible xl:visible" :key="generateKey(relay, 'check.connect')">
+                      <td class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'connect')">&nbsp;</span>
                       </td>
 
-                      <td class="w-16 content-center text-center hidden md:visible lg:visible xl:visible" :key="generateKey(relay, 'check.read')">
+                      <td class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'read')">&nbsp;</span>
                       </td>
 
-                      <td class="w-16 content-center text-center hidden md:visible lg:visible xl:visible" :key="generateKey(relay, 'check.write')">
+                      <td class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'write')">&nbsp;</span>
                       </td>
 

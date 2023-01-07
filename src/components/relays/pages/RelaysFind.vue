@@ -1,16 +1,16 @@
 <template>
-
-    
-
   <RelaysNav 
     v-bind:resultsProp="results" />
 
   <MapSummary 
     :resultsProp="results" 
-    :activePageItemProp="activeSubsection" /> 
+    :activeSubsectionProp="activeSubsection" /> 
 
   <div id="wrapper" class="mx-auto max-w-7xl">  
-    <div class="pt-5 px-1 sm:px-6 lg:px-8">
+    <div class="pt-5 px-1 sm:px-6 lg:px-8" :class="{
+      'absolute z-900 w-1/2 top-32 bg-white/50': this.store.layout.mapIsExpanded
+    }"
+      style="z-index:9999">
       <div class="sm:flex sm:items-center">
         <div class="sm:flex-auto text-left">
             <h1 class="text-4xl capitalize font-semibold text-gray-900">
@@ -37,14 +37,16 @@
         <RelaysFindNav />
       </div>
     </div>
-    <div 
-        v-for="subsection in navSubsection"
-        :key="subsection.slug" > 
-        <div v-if="subsection.slug == activeSubsection">
-          <RelaysResultTable
-            :resultsProp="results"
-            :subsectionProp="subsection.slug" /> 
-        </div>
+    <div v-if="!this.store.layout.mapIsExpanded">
+      <div 
+          v-for="subsection in navSubsection"
+          :key="subsection.slug" > 
+          <div v-if="subsection.slug == activeSubsection">
+            <RelaysResultTable
+              :resultsProp="results"
+              :subsectionProp="subsection.slug" /> 
+          </div>
+      </div>
     </div>
   </div>
 </template>

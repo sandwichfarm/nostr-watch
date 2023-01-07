@@ -13,34 +13,35 @@
       :scrollWheelZoom="false"
       :doubleClickZoom="false"
       >
-
       <l-tile-layer
         url="http://{s}.tile.osm.org/{z}/{x}/{y}.png"
         layer-type="base"
         name="OpenStreetMap"
         attribution='<a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
       />
-
       <l-circle-marker
         v-for="relay in getRelaysWithGeo.filter( () => this.showCircles )"
         :lat-lng="getLatLng(relay)"
         :key="relay"
         :radius="2"
         :weight="4"
-        :color="getCircleColor(relay)"
+        :color="getColorViz(relay)"
         :fillOpacity="1" >
       </l-circle-marker>
-
+      
       <l-marker
         v-for="relay in getRelaysWithGeo.filter( () => this.showMarkers )"
         :lat-lng="getLatLng(relay)"
         :key="relay"
         :radius="2"
         :weight="4"
-        :color="getCircleColor(relay)"
         :fillOpacity="1" >
         <l-popup>
-          {{ relay }}
+          <div class="bg-slate-200 mb-10">
+            <div class="text-slate-800 text-3xl w-64 block py-1 text-center">
+              <span @click="copy" class="py-1px-2">{{ relay }}</span>
+            </div>
+          </div>
         </l-popup>
       </l-marker>
 
@@ -72,12 +73,12 @@ export default defineComponent({
   },
   
   setup(props){
-    const {activePageItemProp: activePageItem} = toRefs(props)
+    const {activeSubsectionProp: activeSubsection} = toRefs(props)
     const {resultsProp: results} = toRefs(props)
     return { 
       store : setupStore(),
       results: results,
-      activePageItem: activePageItem
+      activeSubsection: activeSubsection
     }
   },
 
@@ -111,8 +112,6 @@ export default defineComponent({
         // this.refreshMap()
     })
 
-    
-
     setTimeout(async () => {
     await this.$refs.map.leafletObject
             .flyTo(
@@ -121,7 +120,6 @@ export default defineComponent({
             )
     }, 500)
     console.log(this.$refs.map.leafletObject)
-
     // this.$refs.map.leafletObject.setView(
     //   this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482],
     //   4
@@ -145,7 +143,7 @@ export default defineComponent({
         return {}
       }
     },
-    activePageItemProp: {
+    activeSubsectionProp: {
       type: String,
       default(){
         return ""
@@ -153,6 +151,9 @@ export default defineComponent({
     },
   },
   computed: {
+    subsectionRelays(){
+      return this.sortRelays( this.store.relays.getRelays(this.activeSubsection, this.results ) )
+    },
     getCircleClass(relay){
       console.log('the relay', relay)
       return (relay) => {
@@ -164,12 +165,13 @@ export default defineComponent({
       }
     },
     getRelaysWithGeo(){
-      return this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object )
+      
+      return this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object && this.subsectionRelays.includes(relay) )
     },
     isRelayInActiveSubsection(){
-      return (relay) => this.store.relays.getRelays(this.activePageItem, this.results).includes(relay)
+      return (relay) => this.store.relays.getRelays(this.activeSubsection, this.results).includes(relay)
     },
-    getCircleColor(){
+    getColorViz(){
       return (relay) => {
         if(!this.isRelayInActiveSubsection(relay))
           return 'transparent'
@@ -432,12 +434,12 @@ export default defineComponent({
     };
   },
   setup(props){
-    const {activePageItemProp: activePageItem} = toRefs(props)
+    const {activeSubsectionProp: activeSubsection} = toRefs(props)
     const {resultsProp: results} = toRefs(props)
     return { 
       store : setupStore(),
       results: results,
-      activePageItem: activePageItem
+      activeSubsection: activeSubsection
     }
   },
   mounted() {
@@ -458,7 +460,7 @@ export default defineComponent({
         return {}
       }
     },
-    activePageItemProp: {
+    activeSubsectionProp: {
       type: String,
       default(){
         return ""
@@ -490,7 +492,7 @@ export default defineComponent({
       return this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object )
     },
     isRelayInActiveSubsection(){
-      return (relay) => this.store.relays.getRelays(this.activePageItem, this.results).includes(relay)
+      return (relay) => this.store.relays.getRelays(this.activeSubsection, this.results).includes(relay)
     },
     getCircleColor(){
       return (relay) => {

@@ -207,12 +207,7 @@
     },
     computed: {
       subsectionRelays(){
-        console.log('results!', this.relays.length, this.results)
         return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
-        // if(this.results)
-        //   return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
-        // else 
-        //   return {}
       },
       relayGeo(){
         return (relay) => this.store.relays.getGeo(relay)

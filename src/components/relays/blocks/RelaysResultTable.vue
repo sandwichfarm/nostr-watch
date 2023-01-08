@@ -120,7 +120,7 @@
                 </table>
             </div>
           </div>
-          <div class="inline-block min-w-full align-middle" v-if="!relays.length && subsection == 'favorite'">
+          <div class="text-xl block min-w-full align-middle py-8 bg-slate-100 rounded-lg" v-if="!store.relays.getFavorites.length && subsection == 'favorite'">
             You have not selected any favorites. To select a favorite, click the heart emoji next to any relay in a relays list.
           </div>
       </div>

@@ -149,7 +149,7 @@ export default defineComponent({
             nips[nip].add(result.uri)
           })
       })
-      console.log('supported nips', nips)
+      //console.log('supported nips', nips)
       return nips
     },
     collateContinents(){
@@ -166,7 +166,7 @@ export default defineComponent({
           byCont[cont] = new Set() 
         byCont[cont].add(relay)
       })
-      console.log('continents', byCont)
+      //console.log('continents', byCont)
       return byCont;
     },
     collateCountries(){
@@ -183,7 +183,7 @@ export default defineComponent({
         byCountry[cont] = new Set() 
         byCountry[cont].add(relay)
       })
-      console.log('countries', byCountry)
+      //console.log('countries', byCountry)
       return byCountry;
     },
   },

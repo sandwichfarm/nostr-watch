@@ -30,14 +30,14 @@ export default defineComponent({
     }
   },
   mounted(){
-    console.log('store?', this.store.user)
+    //console.log('store?', this.store.user)
     this.showAuth()
     if(this.isLoggedIn())
       this.getData()
     // this.store.user.$subscribe( mutation => {
     //   if(mutation.key != 'pubKey')
     //     return
-    //   console.log('there was amutation!!!!')
+    //   //console.log('there was amutation!!!!')
     //   this.getData()
     // })
   },
@@ -141,10 +141,10 @@ export default defineComponent({
     // },
 
 
-      // console.log('pukey', this.user.pubkey)
-      // console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
+      // //console.log('pukey', this.user.pubkey)
+      // //console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
 
-      // console.log(window.nostr)
+      // //console.log(window.nostr)
 
       // const event = {
       //   tags: [],
@@ -156,19 +156,19 @@ export default defineComponent({
 
       // event.id = getEventHash(event)
 
-      // console.log('unsigned event', event)
+      // //console.log('unsigned event', event)
 
       // const signedEvent = await window.nostr.signEvent(event)
       //     .catch( function(error){
-      //       console.log('there was an error', error)
+      //       //console.log('there was an error', error)
       //     })
 
-      // console.log('signed event', signedEvent)
+      // //console.log('signed event', signedEvent)
 
       // let ok = validateEvent(signedEvent)
       // let veryOk = await verifySignature(signedEvent)
 
-      // console.log('valid event?', ok, veryOk)
+      // //console.log('valid event?', ok, veryOk)
 </script>
 
 <style>

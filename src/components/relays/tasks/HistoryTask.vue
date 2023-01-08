@@ -64,7 +64,7 @@ export default defineComponent({
             nips[nip].add(result.uri)
           })
       })
-      console.log('supported nips', nips)
+      //console.log('supported nips', nips)
       return nips
     },
     collateContinents(){
@@ -81,7 +81,7 @@ export default defineComponent({
           byCont[cont] = new Set() 
         byCont[cont].add(relay)
       })
-      console.log('continents', byCont)
+      //console.log('continents', byCont)
       return byCont;
     },
     collateCountries(){
@@ -98,7 +98,7 @@ export default defineComponent({
         byCountry[cont] = new Set() 
         byCountry[cont].add(relay)
       })
-      console.log('countries', byCountry)
+      //console.log('countries', byCountry)
       return byCountry;
     },
     import { RelayPool } from 'nostr'
@@ -133,7 +133,7 @@ export default defineComponent({
         //set uniques
         uniques = new Set(relays)
 
-        console.log(uniques, uniques.size)
+        //console.log(uniques, uniques.size)
 
         const final = []
 
@@ -144,11 +144,11 @@ export default defineComponent({
           final.push( [relay, relayTimeCodes[relay][0] ] )
         })
 
-        console.log('before sort', final[0])
+        //console.log('before sort', final[0])
 
         final.sort( (a, b) => a[1]-b[1] )
 
-        console.log('afdter sort', final[0])
+        //console.log('afdter sort', final[0])
 
         return final 
       }
@@ -166,19 +166,19 @@ export default defineComponent({
           const pool = RelayPool(this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').filter( relay => this.results?.[relay]?.info?.supported_nips.includes(15)))
           pool
             .on('open', relay => {
-              // console.log('open')
+              // //console.log('open')
               relay.subscribe(subid, {since: 1609829, limit: 10000, kinds:[3]})
             })
             .on('eose', (relay) => {
-              console.log('closing', relay.url)
+              //console.log('closing', relay.url)
               relay.close()
               resolve(true)
             })
             .on('event', (relay, _subid, event) => {
               if(subid == _subid) {
-                console.log(total++)
+                //console.log(total++)
                 try { 
-                  // console.log(event)
+                  // //console.log(event)
                   const parsed = JSON.parse(event.content)
                   relaysRemote = Object.assign(relaysRemote, parsed)
                   Object.keys(parsed).forEach( key => {
@@ -231,11 +231,11 @@ export default defineComponent({
 
       // const checkRemoteRelays = async function(){
       //   for(let i=0;i<relaysRemote.length;i++) {
-      //     // console.log('check for connect', remoteMerged[i])
+      //     // //console.log('check for connect', remoteMerged[i])
       //     await checkRelay(relaysRemote[i])
       //             .catch( () => {
       //               remove.push(relaysRemote[i])
-      //               console.log('removals:', remove.length, relaysRemote[i])
+      //               //console.log('removals:', remove.length, relaysRemote[i])
       //             })
       //   }
       // }

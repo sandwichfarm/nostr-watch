@@ -54,7 +54,7 @@ export default {
       const ll = [this.geo?.lat, this.geo?.lon]
       this.center = ll
 
-      console.log('lat long', this.relay, ll)
+      //console.log('lat long', this.relay, ll)
 
       return ll
     },
@@ -62,7 +62,7 @@ export default {
 
       const relay = this.relay
 
-      //console.log(this.geo?.lat, this.geo?.lon)
+      ////console.log(this.geo?.lat, this.geo?.lon)
 
       if(!this.geo?.lat || !this.geo?.lon)
         return 'transparent'
@@ -82,7 +82,7 @@ export default {
     }
   },
   async beforeMount() {
-    console.log(this.geo)
+    //console.log(this.geo)
     this.center = this.getLatLng()
     this.markerColor = this.getCircleColor()
   },

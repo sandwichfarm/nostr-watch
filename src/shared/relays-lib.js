@@ -65,7 +65,7 @@ export default {
       aggregateTally += result?.check.read ? 1 : 0
       aggregateTally += result?.check.write ? 1 : 0
 
-      // console.log(result.uri, result?.check.connect, result?.check.read, result?.check.write, aggregateTally)
+      // //console.log(result.uri, result?.check.connect, result?.check.read, result?.check.write, aggregateTally)
 
       if (aggregateTally == 3) {
         return 'public'

@@ -78,12 +78,12 @@ export default defineComponent({
     }
   },
   mounted() {
-    console.log('results', this.results)
+    //console.log('results', this.results)
     this.geo = this.store.relays.geo
   },
   updated(){},
   unmounted(){
-    console.log('unmounted', '$refs', this.$refs)
+    //console.log('unmounted', '$refs', this.$refs)
     delete this.$refs.map
   },
   props: {
@@ -101,8 +101,8 @@ export default defineComponent({
     },
   },
   computed: {
-    getCircleClass(relay){
-      console.log('the relay', relay)
+    getCircleClass(){
+      //console.log('the relay', relay)
       return (relay) => {
         return {
           visible: this.isRelayInActiveSubsection(relay),
@@ -120,7 +120,7 @@ export default defineComponent({
       return this.expanded ? "500px" : "250px"
     },
     getLatLng(relay){
-      // console.log('geo', relay, [this.geo.lat, this.geo.lon])
+      // //console.log('geo', relay, [this.geo.lat, this.geo.lon])
       return [this.geo[relay].lat, this.geo[relay].lon]
     },
     getCircleColor(relay){
@@ -139,7 +139,7 @@ export default defineComponent({
     },
 
     isRelayInActiveSubsection(relay){
-      // console.log(this.store.relays.getRelays(this.activePageItem).length, this.activePageItem, relay, this.store.relays.getRelays(this.activePageItem).includes(relay))
+      // //console.log(this.store.relays.getRelays(this.activePageItem).length, this.activePageItem, relay, this.store.relays.getRelays(this.activePageItem).includes(relay))
       return this.store.relays.getRelays(this.activePageItem, this.results).includes(relay)
     },
     toggleMap(){

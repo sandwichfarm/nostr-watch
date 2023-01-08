@@ -100,7 +100,7 @@ computed: {
   parseHash,
   getNavButtonClass(){
     return (slug) => {
-      // console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)
+      // //console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)
       return { 
         'py-1 px-2': this.store.prefs.getTheme === 'compact',
         'text-lg py-2 px-3': this.store.prefs.getTheme === 'comfortable',

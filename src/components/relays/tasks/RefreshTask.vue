@@ -42,6 +42,26 @@ import { geo } from '../../../../cache/geo.yaml'
 
 const localMethods = {
 
+  migrateLegacy(){
+    let hit = false 
+    for(let i=0;i<relays.length;i++) {
+      const cache = localStorage.getItem(`nostrwatch_${relays[i]}`)
+      if(!cache) 
+        continue
+      hit = true 
+      break;
+    }
+    if(hit){
+      relays.forEach( relay => {
+        const oldKey = `nostrwatch_${relay}`
+        const oldCache = localStorage.getItem(oldKey)
+        if(oldCache instanceof Object)
+          this.setCache(oldCache)
+        localStorage.removeItem(oldKey)
+      })
+    }
+  },
+
   addToQueue: function(id, fn){
     this.store.tasks.addJob({
       id: id,
@@ -82,7 +102,7 @@ const localMethods = {
   //   this.addToQueue('relays/single', () => this.invalidate(false, relayUrl))  
   // },
   invalidate: async function(force, single){
-    console.log('invalidate()', this.relays.length, force || this.isExpired )
+    //console.log('invalidate()', this.relays.length, force || this.isExpired )
     if( (!this.isExpired && !force) ) 
       return
 
@@ -93,7 +113,7 @@ const localMethods = {
     
     const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
 
-    console.log('filtered relays', relays)
+    //console.log('filtered relays', relays)
 
     // if(this.pageOpen > 4*60*1000)
     //   this.store.tasks.setRate('relays/find', 0)
@@ -101,29 +121,29 @@ const localMethods = {
     //   this.store.tasks.setRate('relays/find', 2000)
 
     if(single) {
-      console.log('single relay', single)
+      //console.log('single relay', single)
       await this.check(single)
     } 
     else {
-      console.log('multiple relays',  single)
+      //console.log('multiple relays',  single)
       // const processed = new Set()
       for(let index = 0; index < relays.length; index++) {
         const relay = relays[index]
-        console.log('checking relay', relay)
+        //console.log('checking relay', relay)
         this.check(relay)
           .then((result) => {
-            console.log('check completed', relay)
+            //console.log('check completed', relay)
             if(this.store.tasks.isProcessed('relays', relay))
               return 
             
-            console.log('unique check', relay)
+            //console.log('unique check', relay)
             
             this.store.tasks.addProcessed('relays', result.uri)
 
             this.results[result.uri] = result
             this.setCache(result)
 
-            console.log('cache set', result.uri, result)
+            //console.log('cache set', result.uri, result)
 
             if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
               this.completeAll()
@@ -139,18 +159,18 @@ const localMethods = {
   },
 
   completeAll: function(){
-    console.log('completed')
+    //console.log('completed')
     this.store.tasks.finishProcessing('relays')
     this.store.relays.updateNow()
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
-    console.log('all are complete?', !this.store.tasks.isProcessing)
+    //console.log('all are complete?', !this.store.tasks.isProcessing)
     this.setAverageLatency()
   },
 
   check: async function(relay){
-    console.log('this.averageLatency', this.averageLatency)
+    //console.log('this.averageLatency', this.averageLatency)
     await this.delay(this.averageLatency)
         
     return new Promise( (resolve, reject) => {
@@ -176,8 +196,8 @@ const localMethods = {
           instance.result.log = instance.log
           resolve(instance.result)
         })
-        .on('close', (relay) => {
-          console.log(`${relay.url} has closed`)
+        .on('close', () => {
+          //console.log(`${relay.url} has closed`)
         })
         .on('error', () => {
           reject()
@@ -230,7 +250,7 @@ export default defineComponent({
     // });
     document.body.onfocus = () => {
       // alert('tab focused')
-      console.log(`tab #${this.$tabId} is active`)
+      //console.log(`tab #${this.$tabId} is active`)
       
     }
     document.addEventListener('visibilitychange', this.handleVisibility, false)
@@ -249,15 +269,16 @@ export default defineComponent({
     this.relays = relays
     this.lastUpdate = this.store.relays.lastUpdate
 
-    console.log('total relays', this.relays, this.relays.length)
+    //console.log('total relays', this.relays, this.relays.length)
     for(let ri=0;ri-this.relays.length;ri++){
       const relay = this.relays[ri],
             cache = this.getCache(relay)
       this.results[relay] = cache
-      // console.log('result', 'from result', this.results[relay], 'from cache', cache) 
+      // //console.log('result', 'from result', this.results[relay], 'from cache', cache) 
     }
   },
   mounted(){
+    this.migrateLegacy()
     if(this.store.tasks.isProcessing(`relays`))
       this.invalidate(true)
     else

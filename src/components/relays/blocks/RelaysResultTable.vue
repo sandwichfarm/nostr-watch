@@ -162,18 +162,18 @@
     },
     
     mounted(){
-      console.log('navdata', this.navData, this.navData.filter( item => item.slug == this.subsection )[0], this.navData.filter( item => item.slug == this.subsection ))
+      //console.log('navdata', this.navData, this.navData.filter( item => item.slug == this.subsection )[0], this.navData.filter( item => item.slug == this.subsection ))
       this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
     },
     updated(){
-      // console.log('state, updated')
+      // //console.log('state, updated')
       
     },
     beforeUnmount(){
-      console.log('relays list', 'beforeUnmount()', this.subsection)
+      //console.log('relays list', 'beforeUnmount()', this.subsection)
     },
     unmounted(){
-      console.log('relays list unmounted', this.subsection)
+      //console.log('relays list unmounted', this.subsection)
       delete this.results
     },
     props: {
@@ -223,7 +223,7 @@
       },
       getResultClass() {
         return (relay, index) => {
-          console.log(this.store.prefs.getTheme)
+          //console.log(this.store.prefs.getTheme)
           return {
             loaded: this.results[relay]?.state == 'complete',
             'bg-slate-100': index % 2,

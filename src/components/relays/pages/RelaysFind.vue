@@ -108,7 +108,7 @@ export default defineComponent({
 
   watch: {
     results: function(){
-      console.log('results changed.')
+      //console.log('results changed.')
     }
   },
 
@@ -128,13 +128,13 @@ export default defineComponent({
   },
 
   async mounted() {
-    console.log("findrelays mounted", this.results)
+    //console.log("findrelays mounted", this.results)
     this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
 
     // this.relays.forEach(relay => {
     //   this.results[relay] = this.getCache(relay)
     // })
-    console.log('RESULTS!', this.navSubsection, this.relays, this.results)
+    //console.log('RESULTS!', this.navSubsection, this.relays, this.results)
     // this.relaysMountNav()
   },
 

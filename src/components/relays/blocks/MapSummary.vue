@@ -89,14 +89,14 @@ export default defineComponent({
   },
 
   data() {
-    console.log(this.store.layout.mapIsExpanded, {
-      zoom: this.store.layout.mapIsExpanded ? 4 : 2,
-      minZoom: this.store.layout.mapIsExpanded ? 4 : 2,
-      maxZoom: this.store.layout.mapIsExpanded ? 7 : 2,
-      // center: this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [70.41322, -1.219482],
-      expanded: false,
-      relays: []
-    })
+    // console.log(this.store.layout.mapIsExpanded, {
+    //   zoom: this.store.layout.mapIsExpanded ? 4 : 2,
+    //   minZoom: this.store.layout.mapIsExpanded ? 4 : 2,
+    //   maxZoom: this.store.layout.mapIsExpanded ? 7 : 2,
+    //   // center: this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [70.41322, -1.219482],
+    //   expanded: false,
+    //   relays: []
+    // })
     return {
       zoom: this.store.layout.mapIsExpanded ? 4 : 2,
       minZoom: 2,
@@ -112,11 +112,11 @@ export default defineComponent({
 
  async mounted() {
     this.geo = this.store.relays.geo
-    this.store.layout.$subscribe( mutation => {
-      console.log('mutation.key', mutation.events.key)
-      // if(mutation.events.key == "mapExpanded") 
-        // this.refreshMap()
-    })
+    // this.store.layout.$subscribe( mutation => {
+    //   //console.log('mutation.key', mutation.events.key)
+    //   // if(mutation.events.key == "mapExpanded") 
+    //     // this.refreshMap()
+    // })
 
     setTimeout(async () => {
     await this.$refs.map.leafletObject
@@ -125,7 +125,7 @@ export default defineComponent({
               this.store.layout.mapIsExpanded ? 4 : 2
             )
     }, 500)
-    console.log(this.$refs.map.leafletObject)
+    //console.log(this.$refs.map.leafletObject)
     // this.$refs.map.leafletObject.setView(
     //   this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482],
     //   4
@@ -135,10 +135,10 @@ export default defineComponent({
     // this.refreshMap()    
   },
   beforeUnmount(){
-    console.log('beforeUnmount', '$refs', this.$refs)
+    //console.log('beforeUnmount', '$refs', this.$refs)
   },
   unmounted(){
-    console.log('unmounted', '$refs', this.$refs)
+    //console.log('unmounted', '$refs', this.$refs)
     delete this.$refs.map
   },
   updated(){},
@@ -179,8 +179,8 @@ export default defineComponent({
     nipLink(){
       return (key) => `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
     },
-    getCircleClass(relay){
-      console.log('the relay', relay)
+    getCircleClass(){
+      //console.log('the relay', relay)
       return (relay) => {
         return {
           visible: this.isRelayInActiveSubsection(relay),
@@ -214,11 +214,11 @@ export default defineComponent({
       }
     },
     showCircles(){
-      console.log('map is collapsed', !this.store.layout.mapIsExpanded)
+      //console.log('map is collapsed', !this.store.layout.mapIsExpanded)
       return !this.store.layout.mapIsExpanded
     },
     showMarkers(){
-      console.log('map is expanded', this.store.layout.mapIsExpanded)
+      //console.log('map is expanded', this.store.layout.mapIsExpanded)
       return this.store.layout.mapIsExpanded
     },
     getLat(){
@@ -238,14 +238,14 @@ export default defineComponent({
       try {
         await navigator.clipboard.writeText(text);
       } catch($e) {
-        //console.log('Cannot copy');
+        ////console.log('Cannot copy');
       }
     },
     getLatLng(relay){
       return [this.getLat(relay), this.getLon(relay)]
     },
     async handleToggleMap(){
-      console.log('toggle state', this.store.layout.mapIsExpanded, this.$refs.map.leafletObject)
+      //console.log('toggle state', this.store.layout.mapIsExpanded, this.$refs.map.leafletObject)
       this.store.layout.toggleMap()
 
       if(this.store.layout.mapIsExpanded)
@@ -272,7 +272,7 @@ export default defineComponent({
       this.refreshMap()
         // .panTo(this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [70.41322, -1.219482])
       // this.shiftMap()
-      console.log('toggle state', this.store.layout.mapIsExpanded)
+      //console.log('toggle state', this.store.layout.mapIsExpanded)
     },
     resetMapSize(){
       console.dir('reset map size?', this.$refs.map.leafletObject)
@@ -486,10 +486,10 @@ export default defineComponent({
     this.geo = this.store.relays.geo
   },
   beforeUnmount(){
-    console.log('beforeUnmount', '$refs', this.$refs)
+    //console.log('beforeUnmount', '$refs', this.$refs)
   },
   unmounted(){
-    console.log('unmounted', '$refs', this.$refs)
+    //console.log('unmounted', '$refs', this.$refs)
     delete this.$refs.map
   },
   updated(){},
@@ -509,7 +509,7 @@ export default defineComponent({
   },
   computed: {
     getCircleClass(relay){
-      console.log('the relay', relay)
+      //console.log('the relay', relay)
       return (relay) => {
         return {
           visible: this.isRelayInActiveSubsection(relay),
@@ -519,7 +519,7 @@ export default defineComponent({
       }
     },
     getMarkerClass(relay){
-      console.log('the relay', relay)
+      //console.log('the relay', relay)
       return (relay) => {
         return {
           visible: this.isRelayInActiveSubsection(relay),

@@ -65,12 +65,12 @@ export default defineComponent({
   },
 
   beforeMount(){
-    console.log('rightt now', this.store.layout)
+    //console.log('rightt now', this.store.layout)
     // this.mountNav('section', this.store.layout.getNavGroup('relays'))
   },
   
   mounted(){
-    console.log('mounted in relays find nav')
+    //console.log('mounted in relays find nav')
   },
   methods: Object.assign(RelaysLib, setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive),
   computed: {

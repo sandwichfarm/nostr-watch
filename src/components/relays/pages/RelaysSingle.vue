@@ -446,7 +446,7 @@ const localMethods = {
       try {
         await navigator.clipboard.writeText(text);
       } catch($e) {
-        //console.log('Cannot copy');
+        ////console.log('Cannot copy');
       }
     },
     getAdminNotes(){
@@ -455,7 +455,7 @@ const localMethods = {
 
       const relays = this.store.relays.getAggregateCache('public')
 
-      console.log('public relays', this.store.relays.getAggregateCache('public').length)
+      //console.log('public relays', this.store.relays.getAggregateCache('public').length)
 
       const pool = new RelayPool(relays)
       const subid = crypto.randomBytes(40).toString('hex')
@@ -494,8 +494,8 @@ const localMethods = {
           u.add(event.id)
           if(parseInt(event.kind) === 0)
             this.store.profile.set(JSON.parse(event.content))
-          console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
-          console.log( 'event!', event.content )
+          //console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
+          //console.log( 'event!', event.content )
         })
         .on('eose', relay => {
           relay.close()
@@ -525,7 +525,7 @@ const localMethods = {
         content = event.content
       }
   
-      console.log('all about the event')
+      //console.log('all about the event')
        return {
           id: event,
           type: this.setEventType(event),
@@ -657,7 +657,7 @@ export default defineComponent({
       }
     },
     getGeoClass(){
-      console.log('ok', !this.result?.info && !this.log)
+      //console.log('ok', !this.result?.info && !this.log)
       return {
         'col-span-2': !this.result?.info && !this.log,
       }
@@ -692,10 +692,10 @@ export default defineComponent({
       this.lastUpdate = this.store.relays.getLastUpdate
       this.result = this.getCache(this.relay) || false
       //
-      console.log('single result', this.relayFromUrl, this.result, this.getCache(this.relay))
+      //console.log('single result', this.relayFromUrl, this.result, this.getCache(this.relay))
       
       this.geo = this.store.relays.getGeo(this.relay)
-      console.log(this.relay, this.lastUpdate, this.result, this.geo)
+      //console.log(this.relay, this.lastUpdate, this.result, this.geo)
     }
   }),
 

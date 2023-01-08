@@ -20,11 +20,21 @@
           </div> -->
           <div class="hidden sm:ml-6 sm:block">
               <div class="flex space-x-4">
+                
               <router-link 
                 to="/relays/find"
-                :class="[false ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'px-3 py-2 rounded-md text-sm font-medium']" >
+                :active-class="`bg-white/25`"
+                class="text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+                >
                 Relays
               </router-link>
+              <a 
+                href="https://github.com/dskvr/nostr-watch"
+                target="_blank"
+                class="text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Source
+              </a>
               <!-- <router-link to="/about">about</router-link>
               <a
                 href="/" 

@@ -16,7 +16,7 @@ const getDns = async function(relay){
   await fetch(`https://1.1.1.1/dns-query?name=${relay.replace('wss://', '')}`, { headers: { 'accept': 'application/dns-json' } })
     .then(response => response.json())
     .then((data) => { dns = data.Answer ? data.Answer : false })
-    .catch(err => console.log('./scripts/geo.js', err))
+    .catch(err => //console.log('./scripts/geo.js', err))
   return dns
 }
 
@@ -58,7 +58,7 @@ const query = async function(){
 
   for (const relay of relays) {
     await delay(1000).then(async () => {
-      console.log('getting relay geo', relay)
+      //console.log('getting relay geo', relay)
 
       let dns, ip, geo
 
@@ -90,7 +90,7 @@ const run = async function(){
   object = { geo: result }
   yaml = new YAML.Document()
   yaml.contents = object
-  // console.log(object)
+  // //console.log(object)
   fs.writeFile(outFile, yaml.toString(), (err) => {
     if (err) return console.error('./scripts/geo.js', err);
   });

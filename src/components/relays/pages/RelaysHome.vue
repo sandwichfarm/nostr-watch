@@ -103,7 +103,7 @@ export default defineComponent({
   updated(){},
 
   unmounted(){
-    console.log('findrelays', 'unmounted()')
+    //console.log('findrelays', 'unmounted()')
     delete this.results
   },
 

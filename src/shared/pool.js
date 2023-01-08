@@ -40,7 +40,7 @@ Pool.prototype.addHandler = function(which, key, fn){
         this.handlers[which] = new Object()
 
     if( typeof this.handlers[which][key] !== 'undefined') {
-        console.log(`${which}:${key} is already defined. Cannot set.`)
+        //console.log(`${which}:${key} is already defined. Cannot set.`)
         return 
     }
     this.handlers[which][key] = fn

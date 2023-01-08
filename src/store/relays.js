@@ -84,7 +84,7 @@ export const useRelaysStore = defineStore('relays', {
     },
 
     toggleFavorite(relayUrl){
-      //console.log('toggle favorite', relayUrl)
+      ////console.log('toggle favorite', relayUrl)
       if( this.isFavorite(relayUrl) )
         this.unsetFavorite(relayUrl)
       else 

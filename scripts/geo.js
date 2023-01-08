@@ -16,7 +16,7 @@ const getDns = async function(relay){
   await fetch(`https://1.1.1.1/dns-query?name=${relay.replace('wss://', '')}`, { headers: { 'accept': 'application/dns-json' } })
     .then(response => response.json())
     .then((data) => { dns = data.Answer ? data.Answer : false })
-    .catch(err => //console.log('./scripts/geo.js', err))
+    .catch(err => console.error('./scripts/geo.js', err))
   return dns
 }
 

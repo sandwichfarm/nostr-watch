@@ -79,7 +79,7 @@ const localMethods = {
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
 
-      if( !this.store.tasks.isProcessing('relays') )
+      if(!this.store.tasks.isProcessing)
         this.invalidate()
     }, 1000)
   },
@@ -102,6 +102,7 @@ const localMethods = {
   //   this.addToQueue('relays/single', () => this.invalidate(false, relayUrl))  
   // },
   invalidate: async function(force, single){
+    //console.log('invalidate()', this.relays.length, force || this.isExpired )
     if( (!this.isExpired && !force) ) 
       return
 
@@ -109,9 +110,9 @@ const localMethods = {
       return
 
     this.store.tasks.startProcessing('relays')
-
-    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
     
+    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
+
     //console.log('filtered relays', relays)
 
     // if(this.pageOpen > 4*60*1000)
@@ -124,7 +125,8 @@ const localMethods = {
       await this.check(single)
     } 
     else {
-      console.log('multiple relays',  relays)
+      //console.log('multiple relays',  single)
+      // const processed = new Set()
       for(let index = 0; index < relays.length; index++) {
         const relay = relays[index]
         //console.log('checking relay', relay)
@@ -132,17 +134,16 @@ const localMethods = {
           .then((result) => {
             //console.log('check completed', relay)
             if(this.store.tasks.isProcessed('relays', relay))
-              return
+              return 
             
-            console.log('unique check', relay, result.url)
+            //console.log('unique check', relay)
             
             this.store.tasks.addProcessed('relays', result.url)
 
             this.results[result.url] = result
-            
             this.setCache(result)
 
-            console.log('cache set', result.url, result)
+            //console.log('cache set', result.url, result)
 
             if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
               this.completeAll()
@@ -160,7 +161,7 @@ const localMethods = {
   completeAll: function(){
     //console.log('completed')
     this.store.tasks.finishProcessing('relays')
-    // this.store.relays.updateNow()
+    this.store.relays.updateNow()
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
@@ -170,7 +171,6 @@ const localMethods = {
 
   check: async function(relay){
     //console.log('this.averageLatency', this.averageLatency)
-    
     await this.delay(this.averageLatency)
         
     return new Promise( (resolve, reject) => {
@@ -178,7 +178,7 @@ const localMethods = {
           checkLatency: true,          
           getInfo: true,
           getIdentities: true,
-          // debug: true,
+          debug: true,
           connectTimeout: this.getDynamicTimeout,
           readTimeout: this.getDynamicTimeout,
           writeTimeout: this.getDynamicTimeout,
@@ -241,13 +241,23 @@ export default defineComponent({
   },
   created(){
     clearInterval(this.interval)
+    // document.addEventListener("visibilitychange", () => {
+    //   if(document.visibilityState == 'visible')
+    //     this.store.layout.setActiveTab(this.$tabid)
+    //   // if 
+      
+    //   //   document.title = document.hidden ? "I'm away" : "I'm here";
+    // });
     document.body.onfocus = () => {
-
+      // alert('tab focused')
+      //console.log(`tab #${this.$tabId} is active`)
+      
     }
     document.addEventListener('visibilitychange', this.handleVisibility, false)
   },
   unmounted(){
     clearInterval(this.interval)
+    // document.removeEventListener("visibilitychange", this.handleVisibility, false);
   },
   beforeMount(){
     this.untilNext = this.timeUntilRefresh()

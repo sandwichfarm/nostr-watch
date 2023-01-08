@@ -189,4 +189,4 @@ relays:
   - wss://relay.nostrprotocol.net
   - wss://nostr.easydns.ca
   - wss://nostr.bostonbtc.com
-  - wss://knostr.neutrine.com:8880
+  - "wss://knostr.neutrine.com:8880"

@@ -8,6 +8,7 @@ import { useLayoutStore } from './layout.js'
 import { useUserStore } from './user.js'
 import { useStatStore } from './stats.js'
 import { useTaskStore } from './tasks.js'
+import { useProfileStore } from './profiles.js'
 
 export const plugin = (app) => {
   const pinia = createPinia()
@@ -38,6 +39,7 @@ export const setupStore = function(){
     user: useUserStore(),
     stats: useStatStore(),
     tasks: useTaskStore(),
+    profile: useProfileStore(),
   }
 }
 

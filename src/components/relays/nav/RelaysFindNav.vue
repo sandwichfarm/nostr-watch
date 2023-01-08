@@ -104,7 +104,7 @@ computed: {
       return { 
         'py-1 px-2': this.store.prefs.getTheme === 'compact',
         'text-lg py-2 px-3': this.store.prefs.getTheme === 'comfortable',
-        'text-xl py-3 px-4': this.store.prefs.getTheme === 'large',
+        'text-xl py-3 px-4': this.store.prefs.getTheme === 'spacious',
         'bg-slate-800 text-white hover:text-white hover:bg-slate-800': this.contentIsActive(slug),
         'text-gray-600 hover:bg-gray-50 hover:text-gray-900': !this.contentIsActive(slug),
       }

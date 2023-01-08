@@ -47,7 +47,7 @@
           </div>
         </div>
 
-        <div class="mb-10 overflow-hidden bg-slate-400 shadow sm:rounded-lg">
+        <div class="mb-10 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg">
           <div class="px-1 py-2 sm:px-6">
             <div class="flex" v-if="result?.info?.supported_nips">
               <div class="flex-none">
@@ -61,7 +61,7 @@
           </div>
         </div>
 
-        <div class="flex bg-slate-200 mb-10" v-if="geo?.dns">
+        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 mb-10" v-if="geo?.dns">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>
               The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong> <br />
@@ -71,17 +71,15 @@
           </div>
         </div>
 
-        <div class="flex bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
+        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>
-                The current time in <strong>{{ geo?.city }}</strong> is <strong>{{ getLocalTime }}</strong>
+                The current date/me in <strong>{{ geo?.city }}</strong> is <strong>{{ getLocalTime }}</strong>
               </span>
           </div>
         </div>
 
-        
-
-        <div class="flex bg-slate-200 shadow" v-if="this.result?.info?.software">
+        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 shadow" v-if="this.result?.info?.software">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong></span>
             <span class="text-sm block">
@@ -101,14 +99,21 @@
           </div>
         </div>
 
-        <div class="flex bg-slate-100 mt-12 shadow" v-if="this.result?.info?.pubkey">
+        <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="true">
+          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+            <h3>{}</h3>
+            <span class="block lg:text-lg">was  recieved via {{ relayFromUrl }}/.well-known/nostr.json</span>
+          </div>
+        </div>
+
+        <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <code class="block">{{ this.result?.info.pubkey }}</code>
             <span class="block lg:text-lg">was  recieved via {{ relayFromUrl }}/.well-known/nostr.json</span>
           </div>
         </div>
 
-        <div class="flex bg-slate-50 shadow mt-12" v-if="this.result?.info?.pubkey">
+        <div class="flex bg-slate-50 border-slate-200 shadow mt-12" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             Here's the details...
           </div>
@@ -212,6 +217,50 @@
 
       
 
+    <span v-if="this.events?.['0']">
+     <h1>OK</h1>
+    </span>
+
+    <div class="flow-root" v-if="this.events?.['1']">
+      <ul role="list" class="-mb-8">
+        
+        <li v-for="(event, key) in this.events?.['1']" :key="key">
+          <div class="relative pb-8" v-if="Object.keys(event).length">
+            <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+            <div class="relative flex items-start space-x-3">
+              <div class="relative">
+                <img class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400 ring-8 ring-white" src="https://images.unsplash.com/photo-1520785643438-5bf77931f493?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=256&h=256&q=80" alt="">
+                <span class="absolute -bottom-0.5 -right-1 rounded-tl bg-white px-0.5 py-px">
+                  <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902.848.137 1.705.248 2.57.331v3.443a.75.75 0 001.28.53l3.58-3.579a.78.78 0 01.527-.224 41.202 41.202 0 005.183-.5c1.437-.232 2.43-1.49 2.43-2.903V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zm0 7a1 1 0 100-2 1 1 0 000 2zM8 8a1 1 0 11-2 0 1 1 0 012 0zm5 1a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div>
+                  <a href="#" class="font-medium text-gray-900">
+                    <!-- {{ Object.entries(this.events['0']).map( event => event[1])[0] }} -->
+                    {{ Object.entries(this.events['0']).map( event => event[1])[0]?.lud06 }} <br/>
+                    {{ Object.entries(this.events['0']).map( event => event[1])[0]?.name }}<br/>
+                    {{ Object.entries(this.events['0']).map( event => event[1])[0]?.picture }}<br/>
+                    
+                    {{ Object.entries(this.events['0']).map( event => event[1])[0]?.created_at }}<br/>
+                  </a>
+                  <div class="text-sm">
+                  </div>
+                  <p class="mt-0.5 text-sm text-gray-500">Posted {{ timeSince(event.created_at) }}</p>
+                </div>
+                <div class="mt-2 text-sm text-gray-700">
+                  <p>{{ event.content }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+
+
+
               <!-- component -->
     <!-- <div class="col-span-1" :class="getLogsClass" v-if="result?.log">
       <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -238,38 +287,6 @@
       </div>
     </div> -->
 
-    
-
-    <div class="flow-root">
-      <ul role="list" class="-mb-8">
-        <li v-for="event in this.events" :key="event.id">
-          <div class="relative pb-8" v-if="event.kind === '1'">
-            <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
-            <div class="relative flex items-start space-x-3">
-              <div class="relative">
-                <img class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-400 ring-8 ring-white" src="https://images.unsplash.com/photo-1520785643438-5bf77931f493?ixlib=rb-=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=8&w=256&h=256&q=80" alt="">
-
-                <span class="absolute -bottom-0.5 -right-1 rounded-tl bg-white px-0.5 py-px">
-                  <!-- Heroicon name: mini/chat-bubble-left-ellipsis -->
-                  <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902.848.137 1.705.248 2.57.331v3.443a.75.75 0 001.28.53l3.58-3.579a.78.78 0 01.527-.224 41.202 41.202 0 005.183-.5c1.437-.232 2.43-1.49 2.43-2.903V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zm0 7a1 1 0 100-2 1 1 0 000 2zM8 8a1 1 0 11-2 0 1 1 0 012 0zm5 1a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div>
-                  <div class="text-sm">
-                    <a href="#" class="font-medium text-gray-900">Eduardo Benz</a>
-                  </div>
-                  <p class="mt-0.5 text-sm text-gray-500">Posted {{ timeSince(event.created_at) }}</p>
-                </div>
-                <div class="mt-2 text-sm text-gray-700">
-                  <p>{{ event.content }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </li>
 
           <!-- <div class="relative pb-8" v-if="event.kind === '7'">
             <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
@@ -417,8 +434,6 @@ import emoji from 'node-emoji';
 
 import pathSegments from 'path-segments'
 
-// import { relays } from '../../relays.yaml'
-// import { geo } from '../../cache/geo?.yaml'
 import { setupStore } from '@/store'
 import { useHead } from '@vueuse/head'
 
@@ -435,25 +450,57 @@ const localMethods = {
       }
     },
     getAdminNotes(){
-      if(!this.result?.info)
+      if(!this.result?.info?.pubkey)
         return 
 
-      console.log('public relays', this.relays.length)
+      const relays = this.store.relays.getAggregateCache('public')
 
-      const pool = new RelayPool(this.relays)
+      console.log('public relays', this.store.relays.getAggregateCache('public').length)
+
+      const pool = new RelayPool(relays)
       const subid = crypto.randomBytes(40).toString('hex')
+      const uniques = {
+        0: new Set(),
+        1: new Set(),
+        7: new Set(),
+      }
+
+      const limits = {
+        0: 1,
+        1: 20,
+        7: 100
+      } 
+
+      const kinds = [0,1,7]
       pool
         .on('open', relay => {
-          relay.subscribe(subid, { kinds:[0,1,7], authors:[this.result.info.pubkey], limit:10 })
+          relay.subscribe(subid, { limit:10, kinds:kinds, authors:[this.result.info.pubkey] })
         })
         .on('event', (relay, sub_id, event) => {
-          if(sub_id === subid)
-            this.events[event.id] = event
-          console.log('event!',event)
+          if(!kinds.includes(event.kind))
+            return
+          if(sub_id !== subid)
+            return
+          const u = uniques[event.kind],
+                l = limits[event.kind]
+          if( u.has(event.id) || u.size > l )
+            return
+          if( !(event instanceof Object) )
+            return
+          
+          if( !( this.events[event.kind] instanceof Object ))
+            this.events[event.kind] = new Object()
+          this.events[event.kind][event.id] = event
+          u.add(event.id)
+          if(parseInt(event.kind) === 0)
+            this.store.profile.set(JSON.parse(event.content))
+          console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
+          console.log( 'event!', event.content )
         })
         .on('eose', relay => {
           relay.close()
         })
+        
     },
     setEventType(event){
       if( (event.content === '+' || event.content === '-') && event.kind === 7 )
@@ -524,15 +571,12 @@ export default defineComponent({
     }
   },
 
-  
-
   beforeMount(){
     this.setData()
   },
 
   async mounted() {
-    this.getAdminNotes()
-
+    // this.getAdminNotes()
     this.interval = setInterval(() => {
       if(this.result)
         clearInterval(this.interval)

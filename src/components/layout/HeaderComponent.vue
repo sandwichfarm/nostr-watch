@@ -125,7 +125,7 @@ import {version} from '../../../package.json'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
-  name: 'NavComponent',
+  name: 'HeaderComponent',
   components: {
     // PreferencesComponent,
     AuthComponent,

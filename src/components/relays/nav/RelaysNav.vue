@@ -38,7 +38,7 @@ import RefreshComponent from '@/components/relays/tasks/RefreshTask.vue'
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
-  name: 'NavComponent',
+  name: 'RelaysNav',
   components: {
     RefreshComponent,
   },

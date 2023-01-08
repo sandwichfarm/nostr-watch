@@ -16,8 +16,8 @@
                             :class="getThemeBtnClass('comfortable')" 
                             @click="store.prefs.changeTheme('comfortable')">comfortable</span>
                           <span 
-                            :class="getThemeBtnClass('large')" 
-                            @click="store.prefs.changeTheme('large')">large</span>
+                            :class="getThemeBtnClass('spacious')" 
+                            @click="store.prefs.changeTheme('spacious')">spacious</span>
                         </span>
                         <NostrSyncPopoverNag  v-if="subsection == 'favorite'"  />
                         <span v-if="subsection != 'favorite' && store.relays.getFavorites.length" class="ml-6 text-slate-600">
@@ -229,7 +229,7 @@
             'bg-slate-100': index % 2,
             'bg-red-50 hover:bg-red-100': this.store.relays.isFavorite(relay),
             'bg-gray-50 hover:bg-slate-200': !this.store.relays.isFavorite(relay),
-            'text-2xl h-16': this.store.prefs.getTheme === 'large',
+            'text-2xl h-16': this.store.prefs.getTheme === 'spacious',
             'text-xl h-9': this.store.prefs.getTheme === 'comfortable',
             // '': this.store.prefs.getTheme === 'compact',
           }
@@ -241,9 +241,9 @@
             'bg-green-500': this.results[relay]?.check?.[key] !== false,
             'bg-red-500': this.results[relay]?.check?.[key] === false,
             'bg-gray-500': 'undefined' === typeof this.results[relay]?.check?.[key],
-            // '': this.store.prefs.getTheme === 'large',
+            // '': this.store.prefs.getTheme === 'spacious',
             // '': this.store.prefs.getTheme === 'comfortable',
-            'text-2xl h-16 block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'large',
+            'text-2xl h-16 block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
             'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
             'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
             // 'success': this.results[relay]?.check?.[key] !== false,
@@ -258,12 +258,12 @@
             'w-4 h-4 bg-green-500': this.results[relay]?.aggregate === 'public',
             'w-4 h-4 bg-orange-500': this.results[relay]?.aggregate === 'restricted',
             'w-4 h-4 bg-red-500': this.results[relay]?.aggregate === 'offline',
-            'ml-4': this.store.prefs.getTheme === 'large',
+            'ml-4': this.store.prefs.getTheme === 'spacious',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',
-            // '': this.store.prefs.getTheme === 'large',
+            // '': this.store.prefs.getTheme === 'spacious',
             // '': this.store.prefs.getTheme === 'comfortable',
-            // 'text-2xl h-16 block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'large',
+            // 'text-2xl h-16 block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
             // 'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
             // 'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
             // 'success': this.results[relay]?.check?.[key] !== false,
@@ -326,11 +326,6 @@
     /* table {
       border-collapse: collapse !important;
     } */
-    .nip span {
-      text-transform: uppercase;
-      letter-spacing:-1px;
-      font-size:12px;
-    }
   
     .section-json {
       font-size:13px;

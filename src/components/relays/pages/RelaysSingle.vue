@@ -419,10 +419,10 @@
 
 <script>
 
-import { defineComponent} from 'vue'
+import { defineComponent, defineAsyncComponent } from 'vue'
 
-import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
-import MapSingle from '@/components/relays/blocks/MapSingle.vue'
+// import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
+// import MapSingle from '@/components/relays/blocks/MapSingle.vue'
 
 import SafeMail from "@2alheure/vue-safe-mail";
 
@@ -439,6 +439,14 @@ import { useHead } from '@vueuse/head'
 
 import { RelayPool } from 'nostr'
 import crypto from 'crypto'
+
+const RelaysNav = defineAsyncComponent(() =>
+    import("@/components/relays/nav/RelaysNav.vue" /* webpackChunkName: "RelaysNav" */)
+);
+
+const MapSingle = defineAsyncComponent(() =>
+    import("@/components/relays/blocks/MapSingle.vue" /* webpackChunkName: "MapSingle" */)
+);
 
 const localMethods = {
    

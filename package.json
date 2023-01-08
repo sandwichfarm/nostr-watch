@@ -32,7 +32,7 @@
     "node-emoji": "1.11.0",
     "node-fetch": "3.3.0",
     "nostr": "0.2.5",
-    "nostr-relay-inspector": "0.0.18",
+    "nostr-relay-inspector": "0.0.19",
     "nostr-tools": "1.0.1",
     "object-sizeof": "1.6.3",
     "onion-regex": "2.0.8",

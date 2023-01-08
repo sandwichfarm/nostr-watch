@@ -41,7 +41,7 @@
           <div class="mb-10 w-min">
             <div class="text-slate-800 text-3xl  block py-1 text-center">
               <span @click="copy" class="py-1px-2">{{ relay }}</span>
-              <a href="#" @click="$router.push(`/relay/${cleanUrl}`)" class="block text-sm mb-3">Status Page</a>
+              <a href="#" @click="$router.push(`/relay/${cleanUrl(relay)}`)" class="block text-sm mb-3">Status Page</a>
               <img class="inline-block mr-1" :src="badgeCheck(relay, 'connect')" />
               <img class="inline-block mr-1" :src="badgeCheck(relay, 'read')" />
               <img class="inline-block mr-1" :src="badgeCheck(relay, 'write')" />

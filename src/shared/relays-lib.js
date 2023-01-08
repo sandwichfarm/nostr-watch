@@ -35,8 +35,8 @@ export default {
       return this.$storage.getStorageSync(key)
     },
 
-    cleanUrl: function(){
-      return (relay) => relay.replace('wss://', '')
+    cleanUrl: function(relay){
+      return relay.replace('wss://', '')
     },
 
     removeCache: function(key){

@@ -74,7 +74,7 @@
         <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>
-                The current date/me in <strong>{{ geo?.city }}</strong> is <strong>{{ getLocalTime }}</strong>
+                The current date/time in <strong>{{ geo?.city }}</strong> is <strong>{{ getLocalTime }}</strong>
               </span>
           </div>
         </div>

@@ -99,12 +99,12 @@
           </div>
         </div>
 
-        <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="true">
+        <!-- <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="true">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <h3>{}</h3>
             <span class="block lg:text-lg">was  recieved via {{ relayFromUrl }}/.well-known/nostr.json</span>
           </div>
-        </div>
+        </div> -->
 
         <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">

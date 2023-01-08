@@ -184,10 +184,11 @@ relays:
   - wss://relay.nostr.lu.ke
   - wss://relay.nostrgraph.net
   - wss://private-nostr.v0l.io
-  - "wss://relay.nvote.co:443"
+  - wss://relay.nvote.co:443
   - wss://relay.nostrprotocol.net
   - wss://nostr.itssilvestre.com
   - wss://nostr.whoop.ph
   - wss://nostr.zoomout.chat
   - wss://nostr.chaker.net
   - wss://nostr-1.nbo.angani.co
+  - wss://nostr3.actn.io

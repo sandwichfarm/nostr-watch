@@ -53,7 +53,7 @@
 
 <script>
 //vue
-import { defineComponent } from 'vue'
+import { defineComponent, defineAsyncComponent } from 'vue'
 import {useRoute} from 'vue-router'
 //pinia
 import { setupStore } from '@/store'
@@ -61,14 +61,31 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import { parseHash } from '@/shared/hash-router.js'
 //components
-import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
-import RelaysFindNav from '@/components/relays/nav/RelaysFindNav.vue'
-import RelaysResultTable from '@/components/relays/blocks/RelaysResultTable.vue'
-import MapSummary from '@/components/relays/blocks/MapSummary.vue'
+// import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
+// import RelaysFindNav from '@/components/relays/nav/RelaysFindNav.vue'
+// import RelaysResultTable from '@/components/relays/blocks/RelaysResultTable.vue'
+// import MapSummary from '@/components/relays/blocks/MapSummary.vue'
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
 
+
 const localMethods = {}
+
+const MapSummary = defineAsyncComponent(() =>
+    import("@/components/relays/blocks/MapSummary.vue" /* webpackChunkName: "MapSummary" */)
+);
+
+const RelaysNav = defineAsyncComponent(() =>
+    import("@/components/relays/nav/RelaysNav.vue" /* webpackChunkName: "RelaysNav" */)
+);
+
+const RelaysFindNav = defineAsyncComponent(() =>
+    import("@/components/relays/nav/RelaysFindNav.vue" /* webpackChunkName: "RelaysFindNav" */)
+);
+
+const RelaysResultTable = defineAsyncComponent(() =>
+    import("@/components/relays/blocks/RelaysResultTable.vue" /* webpackChunkName: "RelaysResultTable" */)
+);
 
 export default defineComponent({
   name: 'HomePage',

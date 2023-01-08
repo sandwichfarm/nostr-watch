@@ -27,13 +27,17 @@
 </template>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent, defineAsyncComponent, toRefs } from 'vue'
 import {useRoute} from 'vue-router'
 import { setupStore } from '@/store'
 
 import RelaysLib from '@/shared/relays-lib.js'
 import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
-import RefreshComponent from '@/components/relays/tasks/RefreshTask.vue'
+// import RefreshComponent from '@/components/relays/tasks/RefreshTask.vue'
+
+const RefreshComponent = defineAsyncComponent(() =>
+    import("@/components/relays/tasks/RefreshTask.vue" /* webpackChunkName: "RefreshComponent" */)
+);
 
 
 export default defineComponent({

@@ -8,6 +8,9 @@ module.exports = defineConfig({
   },
   configureWebpack: {
     // watch: true,
+    experiments: {
+      topLevelAwait: true
+    },
     plugins: [new NodePolyfillPlugin()],
     optimization: {
       splitChunks: {

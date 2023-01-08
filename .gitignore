@@ -4,3 +4,4 @@ node_modules
 public/main.js
 lib/nostr-relay-inspector
 dist
+yarn-error.log

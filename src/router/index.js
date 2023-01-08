@@ -1,26 +1,54 @@
 // /router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from '../pages/HomePage.vue'
-// import ByStatus from '../pages/ByStatus.vue'
-import SingleRelay from '../pages/SingleRelay.vue'
+
+// import RelaysHome from '@/components/relays/pages/RelaysHome.vue'
+import RelaysFind from '@/components/relays/pages/RelaysFind.vue'
+import RelaysSingle from '@/components/relays/pages/RelaysSingle.vue'
+import RelaysMap from '@/components/relays/pages/RelaysMap.vue'
+import RelaysStatistics from '@/components/relays/pages/RelaysStatistics.vue'
+
+import RedirectComponent from '@/components/relays/redirects/RedirectComponent.vue'
 
 const routes = [
     {
-        path: '/relay/:relayUrl(.*)',
-        // name: 'nostr.watch - :relayUrl',
-        component: SingleRelay
+        path: '/relays/add',
+        beforeEnter() {
+            window.location.href = 'https://github.com/dskvr/nostr-watch/edit/main/relays.yaml'
+        },
+        component: RedirectComponent
     },
-    // {
-    //     path: '/availability',
-    //     // name: 'nostr.watch',
-    //     component: ByStatus
-    // },
-    //  Added our new route file named profile.vue
+    {
+        path: '/relays',
+        component: RelaysFind,
+        children: [
+            {
+                path: 'map',
+                component: RelaysMap,
+                },
+            {
+            path: 'find',
+            component: RelaysFind,
+            },
+            {
+            path: 'find/(*.)',
+            component: RelaysFind,
+            },
+            
+            {
+            path: 'statistics',
+            component: RelaysStatistics,
+            },
+        ]
+    },
+    {
+        path: '/relay/:relayUrl(.*)',
+        component: RelaysSingle
+    },
     {
         path: '/',
-        // name: 'nostr.watch',
-        component: HomePage
+        component: RelaysFind
     },
+    
     
 ]
 

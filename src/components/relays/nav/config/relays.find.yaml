@@ -1,0 +1,33 @@
+items:
+  - name: All
+    slug: all
+    href: '#all'
+    description: All relays ordered by latency
+  - name: Public
+    slug: public
+    href: '#public'
+    description: All public relays ordered by latency. Public relays are relays where anyone can read or write. 
+  - name: Restricted
+    slug: restricted
+    href: '#restricted'
+    description: Restricted relays ordered by latency. Restricted relays are relays where there are read and/or write restrictions
+  - name: Offline
+    slug: offline
+    href: '#offline'
+    group: relays
+    description: Relays where a connection cannot currently be established
+  - name: Favorites
+    slug: favorite
+    href: '#favorite'
+    condition: auth
+    description: Relays you have favorited
+  # - name: Invalid
+  #   slug: invalid
+  #   href: '#'
+  #   count: 0
+  #   group: relays
+  # - name: Onion
+  #   slug: onion
+  #   href: '#'
+  #   count: 0
+  #   group: relays

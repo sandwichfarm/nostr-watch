@@ -21,12 +21,12 @@
         {{ relay }}
       </l-popup>
     </l-marker> -->
-
+    
     <l-circle-marker
       :lat-lng="center"
       :radius="2"
       :weight="4"
-      :color="markerColor"
+      :color="getCircleColor()"
       :fillOpacity="1"
       :class="relay"
       >
@@ -48,11 +48,13 @@ export default {
   },
   methods: {
     getLatLng(){
-      if(!this.geo[this.relay]?.lat || !this.geo[this.relay]?.lon)
+      if(!this.geo?.lat || !this.geo?.lon)
         return
 
-      const ll = [this.geo[this.relay]?.lat, this.geo[this.relay]?.lon]
+      const ll = [this.geo?.lat, this.geo?.lon]
       this.center = ll
+
+      //console.log('lat long', this.relay, ll)
 
       return ll
     },
@@ -60,9 +62,9 @@ export default {
 
       const relay = this.relay
 
-      //console.log(this.geo[this.relay]?.lat, this.geo[this.relay]?.lon)
+      ////console.log(this.geo?.lat, this.geo?.lon)
 
-      if(!this.geo[this.relay]?.lat || !this.geo[this.relay]?.lon)
+      if(!this.geo?.lat || !this.geo?.lon)
         return 'transparent'
 
       if(this.result[relay]?.aggregate == 'public') {
@@ -79,11 +81,10 @@ export default {
       
     }
   },
-  async mounted() {
-    setTimeout(() => {
-      this.center = this.getLatLng()
-      this.markerColor = this.getCircleColor()
-    }, 1)
+  async beforeMount() {
+    //console.log(this.geo)
+    this.center = this.getLatLng()
+    this.markerColor = this.getCircleColor()
   },
   props: {
     geo: {
@@ -107,7 +108,7 @@ export default {
   },
   data() {
     return {
-      zoom: 2,
+      zoom: 5,
       center: [40.41322, -1.219482],
       markerColor: 'transparent'
     };

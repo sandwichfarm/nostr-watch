@@ -53,7 +53,7 @@ async function getRelays(){
   //   .then(json => relaysKnown = json.relays) 
   const relaysObj = yaml.load(fs.readFileSync('./relays.yaml', 'utf8'))
   relaysKnown = relaysObj.relays
-  console.log(relaysKnown)
+  //console.log(relaysKnown)
   return 
 }
 
@@ -65,11 +65,11 @@ async function discover(){
     const pool = RelayPool(['wss://nostr.sandwich.farm'])
     pool
       .on('open', relay => {
-        // console.log('open')
+        // //console.log('open')
         relay.subscribe(subid, {limit: 1000, kinds:[3]})
       })
       .on('close', () => {
-        // console.log('close')
+        // //console.log('close')
       })
       .on('event', (relay, _subid, event) => {
         if(subid == _subid) {
@@ -112,17 +112,18 @@ const sanitizeRelay = function(relay) {
           .toLowerCase()
           .trim()
           .replace(/\s\t/g, '')
+          .replace(/\r?\n|\r/g, "")
           .replace(/\/+$/, '')
           .replace(/^[^a-z\d]*|[^a-z\d]*$/gi, '');
 }
 
 const checkRemoteRelays = async function(){
   for(let i=0;i<relaysRemote.length;i++) {
-    // console.log('check for connect', remoteMerged[i])
+    // //console.log('check for connect', remoteMerged[i])
     await checkRelay(relaysRemote[i])
             .catch( () => {
               remove.push(relaysRemote[i])
-              console.log('removals:', remove.length, relaysRemote[i])
+              //console.log('removals:', remove.length, relaysRemote[i])
             })
   }
 }

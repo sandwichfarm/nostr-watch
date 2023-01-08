@@ -1,5 +1,6 @@
 const { defineConfig } = require('@vue/cli-service')
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
+const CompressionPlugin = require("compression-webpack-plugin")
 
 module.exports = defineConfig({
   transpileDependencies: true,
@@ -11,7 +12,12 @@ module.exports = defineConfig({
     experiments: {
       topLevelAwait: true
     },
-    plugins: [new NodePolyfillPlugin()],
+    plugins: [
+      new NodePolyfillPlugin(),
+      new CompressionPlugin({
+        test: /\.js(\?.*)?$/i,
+      })
+    ],
     optimization: {
       splitChunks: {
         chunks: "all",

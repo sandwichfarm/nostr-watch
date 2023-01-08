@@ -7,7 +7,7 @@ import "./styles/main.scss"
 import directives from "./directives/"
 import { plugin as storePlugin } from './store'
 import { RelayPool } from 'nostr'
-import VueInputAutowidth from 'vue-input-autowidth'
+// import VueInputAutowidth from 'vue-input-autowidth'
 
 // import { relays } from '../relays.yaml'
 
@@ -20,7 +20,7 @@ const app = createApp(App)
   .use(storePlugin)
   .use(createHead())
   .use(Vue3Storage, { namespace: "nw_result_" })
-  .use(VueInputAutowidth)
+  // .use(VueInputAutowidth)
 
 directives(app);
 

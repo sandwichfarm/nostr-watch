@@ -1,4 +1,5 @@
 <template>
+  
   <span class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span v-if="!store.tasks.isProcessing(`relays`)">Checked {{ sinceLast }} ago</span>
     <span v-if="store.tasks.isProcessing(`relays`)" class="italic lg:pr-9">
@@ -20,7 +21,10 @@
     @click="refreshNow()">
       Check{{ relay ? ` ${relay}` : "" }} Now
   </button>
+  
 </template>
+
+
 
 <style scoped>
 

@@ -110,8 +110,12 @@ const localMethods = {
       return
 
     this.store.tasks.startProcessing('relays')
-    
-    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
+
+    let relays
+    if(this.store.relays.isProcessing('relays'))
+      relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
+    else 
+      relays = [...this.relays]
 
     //console.log('filtered relays', relays)
 
@@ -125,8 +129,7 @@ const localMethods = {
       await this.check(single)
     } 
     else {
-      //console.log('multiple relays',  single)
-      // const processed = new Set()
+      console.log('multiple relays',  relays)
       for(let index = 0; index < relays.length; index++) {
         const relay = relays[index]
         //console.log('checking relay', relay)
@@ -134,16 +137,16 @@ const localMethods = {
           .then((result) => {
             //console.log('check completed', relay)
             if(this.store.tasks.isProcessed('relays', relay))
-              return 
+              return
             
-            //console.log('unique check', relay)
+            console.log('unique check', relay)
             
             this.store.tasks.addProcessed('relays', result.uri)
 
             this.results[result.uri] = result
             this.setCache(result)
 
-            //console.log('cache set', result.uri, result)
+            console.log('cache set', result.uri, result)
 
             if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
               this.completeAll()
@@ -171,6 +174,7 @@ const localMethods = {
 
   check: async function(relay){
     //console.log('this.averageLatency', this.averageLatency)
+    
     await this.delay(this.averageLatency)
         
     return new Promise( (resolve, reject) => {
@@ -241,23 +245,13 @@ export default defineComponent({
   },
   created(){
     clearInterval(this.interval)
-    // document.addEventListener("visibilitychange", () => {
-    //   if(document.visibilityState == 'visible')
-    //     this.store.layout.setActiveTab(this.$tabid)
-    //   // if 
-      
-    //   //   document.title = document.hidden ? "I'm away" : "I'm here";
-    // });
     document.body.onfocus = () => {
-      // alert('tab focused')
-      //console.log(`tab #${this.$tabId} is active`)
       
     }
     document.addEventListener('visibilitychange', this.handleVisibility, false)
   },
   unmounted(){
     clearInterval(this.interval)
-    // document.removeEventListener("visibilitychange", this.handleVisibility, false);
   },
   beforeMount(){
     this.untilNext = this.timeUntilRefresh()

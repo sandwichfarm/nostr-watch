@@ -122,6 +122,7 @@ import AuthComponent from '@/components/user/AuthComponent.vue'
 
 import {version} from '../../../package.json'
 
+
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'NavComponent',
@@ -142,10 +143,14 @@ export default defineComponent({
       store : setupStore()
     }
   },
-  mounted(){
-    this.store.user.$subscribe((mutation) => {
-      mutation
-    })
+  created(){
+  },
+  mounted(){    
+    this.store.layout.setActiveTab(this.$tabId)
+  },
+  unmounted(){
+    // const activeId = this.store.layout.getActiveTab
+    this.store.layout.deactivateTab(this.$tabId)
   },
   computed: {
   },

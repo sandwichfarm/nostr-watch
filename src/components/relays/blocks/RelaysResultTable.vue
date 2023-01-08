@@ -255,9 +255,9 @@
       getAggregateIndicator(){
         return (relay) => {
           return { 
-            'w-4 h-4 bg-green-500': this.results[relay]?.aggregate !== 'public',
-            'w-4 h-4 bg-orange-500': this.results[relay]?.aggregate !== 'restricted',
-            'w-4 h-4 bg-red-500': this.results[relay]?.aggregate !== 'offline',
+            'w-4 h-4 bg-green-500': this.results[relay]?.aggregate === 'public',
+            'w-4 h-4 bg-orange-500': this.results[relay]?.aggregate === 'restricted',
+            'w-4 h-4 bg-red-500': this.results[relay]?.aggregate === 'offline',
             'ml-4': this.store.prefs.getTheme === 'large',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',

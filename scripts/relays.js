@@ -112,6 +112,7 @@ const sanitizeRelay = function(relay) {
           .toLowerCase()
           .trim()
           .replace(/\s\t/g, '')
+          .replace(/\r?\n|\r/g, "")
           .replace(/\/+$/, '')
           .replace(/^[^a-z\d]*|[^a-z\d]*$/gi, '');
 }

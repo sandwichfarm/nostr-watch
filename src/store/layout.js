@@ -5,9 +5,10 @@ export const useLayoutStore = defineStore('layout', {
     mapExpanded: false,
     active: {},
     nav: {},
-    
+    activeTab: null,
   }),
   getters: {
+    getActiveTab: (state) => state.activeTab,
     getActive: (state) => (section) => state.active[section],
     getActiveItem: (state) => (section) => state.nav[section]?.filter( item => item.slug == state.active[section])[0],
     getNav: (state) => state.nav,
@@ -15,6 +16,11 @@ export const useLayoutStore = defineStore('layout', {
     mapIsExpanded: (state) => state.mapExpanded,
   },
   actions: {
+    deactivateTab(tabId){
+      if(this.activeTab === tabId) 
+        this.activeTab = null
+    },
+    setActiveTab(tabId){ this.activeTab = tabId },
     setNavItems(section, items){ this.nav[section] = items },
     setActive(section, slug){ this.active[section] = slug },
     toggleMap(){ this.mapExpanded = !this.mapExpanded },

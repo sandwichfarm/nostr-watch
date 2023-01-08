@@ -71,6 +71,9 @@ const localMethods = {
       this.windowActive = false 
     else 
       this.windowActive = true
+
+    if(this.windowActive) 
+      this.store.layout.setActiveTab(this.$tabId)
   },
   // handleRelaysFind(){
   //   this.addToQueue('relays/find', () => this.invalidate())  
@@ -81,6 +84,9 @@ const localMethods = {
   invalidate: async function(force, single){
     console.log('invalidate()', this.relays.length, force || this.isExpired )
     if( (!this.isExpired && !force) ) 
+      return
+
+    if(!this.windowActive)
       return
 
     this.store.tasks.startProcessing('relays')
@@ -215,7 +221,19 @@ export default defineComponent({
   },
   created(){
     clearInterval(this.interval)
-    // document.addEventListener('visibilitychange', this.handleVisibility, false)
+    // document.addEventListener("visibilitychange", () => {
+    //   if(document.visibilityState == 'visible')
+    //     this.store.layout.setActiveTab(this.$tabid)
+    //   // if 
+      
+    //   //   document.title = document.hidden ? "I'm away" : "I'm here";
+    // });
+    document.body.onfocus = () => {
+      // alert('tab focused')
+      console.log(`tab #${this.$tabId} is active`)
+      
+    }
+    document.addEventListener('visibilitychange', this.handleVisibility, false)
   },
   unmounted(){
     clearInterval(this.interval)

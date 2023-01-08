@@ -178,7 +178,7 @@ const localMethods = {
           checkLatency: true,          
           getInfo: true,
           getIdentities: true,
-          debug: true,
+          // debug: true,
           connectTimeout: this.getDynamicTimeout,
           readTimeout: this.getDynamicTimeout,
           writeTimeout: this.getDynamicTimeout,

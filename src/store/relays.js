@@ -55,7 +55,7 @@ export const useRelaysStore = defineStore('relays', {
 
     // setResult(result){ 
     //   // this.setStat('relays', this.)
-    //   this.results[result.uri] = result 
+    //   this.results[result.url] = result 
     // },
     // setResults(results){ this.results = results },
     // clearResults(){ this.results = {} },

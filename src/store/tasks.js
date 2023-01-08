@@ -20,8 +20,8 @@ export const useTaskStore = defineStore('tasks', {
       return state.processed[key]
     },
     isProcessing: (state) => (key) => state.processing[key],
-    isAnyProcessing: (state) => Object.keys(state.processing).filter( key => state.processing[key] ),
     isProcessed: (state) => (key, relay) => state.getProcessed(key).includes(relay),
+    isAnyProcessing: (state) => Object.keys(state.processing).filter( key => state.processing[key] ),
 
     //queue/lists
     getPending: (state) => state.pending,

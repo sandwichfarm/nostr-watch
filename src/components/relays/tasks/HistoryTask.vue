@@ -61,7 +61,7 @@ export default defineComponent({
           result?.info?.supported_nips.forEach( nip => { 
             if( !(nips[nip] instanceof Set ))
               nips[nip] = new Set()
-            nips[nip].add(result.uri)
+            nips[nip].add(result.url)
           })
       })
       //console.log('supported nips', nips)

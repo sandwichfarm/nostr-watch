@@ -79,7 +79,7 @@ const localMethods = {
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
 
-      if(!this.store.tasks.isProcessing)
+      if( !this.store.tasks.isProcessing('relays') )
         this.invalidate()
     }, 1000)
   },
@@ -102,7 +102,6 @@ const localMethods = {
   //   this.addToQueue('relays/single', () => this.invalidate(false, relayUrl))  
   // },
   invalidate: async function(force, single){
-    //console.log('invalidate()', this.relays.length, force || this.isExpired )
     if( (!this.isExpired && !force) ) 
       return
 
@@ -111,12 +110,8 @@ const localMethods = {
 
     this.store.tasks.startProcessing('relays')
 
-    let relays
-    if(this.store.relays.isProcessing('relays'))
-      relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
-    else 
-      relays = [...this.relays]
-
+    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
+    
     //console.log('filtered relays', relays)
 
     // if(this.pageOpen > 4*60*1000)
@@ -139,14 +134,15 @@ const localMethods = {
             if(this.store.tasks.isProcessed('relays', relay))
               return
             
-            console.log('unique check', relay)
+            console.log('unique check', relay, result.url)
             
-            this.store.tasks.addProcessed('relays', result.uri)
+            this.store.tasks.addProcessed('relays', result.url)
 
-            this.results[result.uri] = result
+            this.results[result.url] = result
+            
             this.setCache(result)
 
-            console.log('cache set', result.uri, result)
+            console.log('cache set', result.url, result)
 
             if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
               this.completeAll()
@@ -164,7 +160,7 @@ const localMethods = {
   completeAll: function(){
     //console.log('completed')
     this.store.tasks.finishProcessing('relays')
-    this.store.relays.updateNow()
+    // this.store.relays.updateNow()
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
@@ -246,7 +242,7 @@ export default defineComponent({
   created(){
     clearInterval(this.interval)
     document.body.onfocus = () => {
-      
+
     }
     document.addEventListener('visibilitychange', this.handleVisibility, false)
   },

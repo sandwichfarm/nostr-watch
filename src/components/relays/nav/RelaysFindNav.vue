@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="flex flex-1 items-center justify-center px-2 lg:ml-6 lg:justify-end">
-        <RelaysSearchFilter />
+        <!-- <RelaysSearchFilter /> -->
       </div>
       <div class="flex items-center lg:hidden">
         <!-- Mobile menu button -->
@@ -52,7 +52,7 @@ import { defineComponent } from 'vue'
 //pinia
 import { setupStore } from '@/store'
 //components 
-import RelaysSearchFilter from '@/components/relays/blocks/RelaysSearchFilter.vue'
+// import RelaysSearchFilter from '@/components/relays/blocks/RelaysSearchFilter.vue'
 //nav conf
 import { items } from './config/relays.find.yaml'
 //shared methods 
@@ -67,7 +67,7 @@ export default defineComponent({
 title: "nostr.watch registry & network status",
 name: 'RelaysFindNav',
 components: {
-  RelaysSearchFilter,
+  // RelaysSearchFilter,
   Disclosure, DisclosureButton, DisclosurePanel,
   Bars3Icon, XMarkIcon,
   // PreferencesComponent,

@@ -1302,7 +1302,7 @@
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.6.tgz#cee20bd55e68a1720bdab363ecf0c821ded4cd45"
   integrity sha512-50/17A98tWUfQ176raKiOGXuYpLyyVMkxxG6oylzL3BPOlA6ADGdK7EYunSa4I064xerltq9TGXs8HmOk5E+vw==
 
-"@scure/base@~1.1.0":
+"@scure/base@^1.1.1", "@scure/base@~1.1.0":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@scure/base/-/base-1.1.1.tgz#ebb651ee52ff84f420097055f4bf46cfba403938"
   integrity sha512-ZxOhsSyxYwLJj3pLZCefNitxsj093tb2vq90mp2txoYeBqbcjDjqFhyM8eUjq/uFm6zJ+mUuqxlS2FkuSY1MTA==
@@ -2503,11 +2503,6 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-base64-arraybuffer@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/base64-arraybuffer/-/base64-arraybuffer-1.0.2.tgz#1c37589a7c4b0746e34bd1feb951da2df01c1bdc"
-  integrity sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==
-
 base64-js@^1.3.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
@@ -2524,11 +2519,6 @@ batch@0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/batch/-/batch-0.6.1.tgz#dc34314f4e679318093fc760272525f94bf25c16"
   integrity sha512-x+VAiMRL6UPkx+kudNvxTl6hB2XNNCG2r+7wixVfIYwu/2HKRXimwQyaumLjMveWvT2Hkd/cAJw+QBMfJ/EKVw==
-
-bech32@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/bech32/-/bech32-2.0.0.tgz#078d3686535075c8c79709f054b1b226a133b355"
-  integrity sha512-LcknSilhIGatDAsY1ak2I8VtGaHNhgMSYVxFrGLXv+xLHytaKZKcaUJJUE7qmBr7h33o5YQwP55pMI0xmkpJwg==
 
 big.js@^5.2.2:
   version "5.2.2"
@@ -3731,6 +3721,11 @@ dotenv-expand@^5.1.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/dotenv-expand/-/dotenv-expand-5.1.0.tgz#3fbaf020bfd794884072ea26b1e9791d45a629f0"
   integrity sha512-YXQl1DSa4/PQyRfgrv6aoNjhasp/p4qs9FjJ4q4cQk+8m4r6k4ZSiEyytKG8f8W9gi8WsQtIObNmKd+tMzNTmA==
+
+dotenv@16.0.3:
+  version "16.0.3"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.0.3.tgz#115aec42bac5053db3c456db30cc243a5a836a07"
+  integrity sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==
 
 dotenv@^10.0.0:
   version "10.0.0"
@@ -6410,17 +6405,16 @@ nostr-relay-inspector@0.0.23:
     tape "5.6.1"
     yaml-loader "0.8.0"
 
-nostr-tools@1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/nostr-tools/-/nostr-tools-1.0.1.tgz#acf21758fc745674ed047e7dc219b30baf489005"
-  integrity sha512-URBNadrVq4qSmndzd4clZqubze4y/LB8cdzzen9mNwlFh3ICDdWp7TCShTbLEZQYPPSVoOe2n13l77jzcVvH/w==
+nostr-tools@1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/nostr-tools/-/nostr-tools-1.1.1.tgz#2be4cd650bc0a4d20650b6cf46fee451c9f565b8"
+  integrity sha512-mxgjbHR6nx2ACBNa2tBpeM/glsPWqxHPT1Kszx/XfzL+kUdi1Gm3Xz1UcaODQ2F84IFtCKNLO+aF31ZfTAhSYQ==
   dependencies:
     "@noble/hashes" "^0.5.7"
     "@noble/secp256k1" "^1.7.0"
+    "@scure/base" "^1.1.1"
     "@scure/bip32" "^1.1.1"
     "@scure/bip39" "^1.1.0"
-    base64-arraybuffer "^1.0.2"
-    bech32 "^2.0.0"
 
 nostr@0.2.5:
   version "0.2.5"

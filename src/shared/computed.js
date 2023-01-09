@@ -1,5 +1,5 @@
 export default {
     isExpired: function(){
-        return !this.store.tasks.getLastUpdate('relays') || Date.now() - this.store.tasks.getLastUpdate('relays') > this.store.prefs.expireAfter
+        return (slug) => !this.store.tasks.getLastUpdate(slug) || Date.now() - this.store.tasks.getLastUpdate(slug) > this.store.prefs.expireAfter
     },
 }

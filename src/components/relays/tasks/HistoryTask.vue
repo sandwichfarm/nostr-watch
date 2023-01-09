@@ -265,18 +265,18 @@ export default defineComponent({
 
   methods: Object.assign(RelaysLib, {
     invalidate: async function(){
-      if( !this.store.tasks.isAnyProcessing && this.isExpired() ) {
-        this.store.tasks.startProcessing('history')
+      if( !this.store.tasks.isAnyProcessing && this.isExpired('relays/history') ) {
+        this.store.tasks.startProcessing('relays/history')
         this.store.stats.set( 'nips', this.collateSupportedNips )
-        this.store.tasks.addProcessed('history', 'nips')
+        this.store.tasks.addProcessed('relays/history', 'nips')
         this.store.stats.set( 'continents', this.collateContinents )
-        this.store.tasks.addProcessed('history', 'continents')
+        this.store.tasks.addProcessed('relays/history', 'continents')
         this.store.stats.set( 'countries', this.collateCountries )
-        this.store.tasks.addProcessed( 'history', 'countries' )
+        this.store.tasks.addProcessed( 'relays/history', 'countries' )
         this.remoteTask = await this.historicalData()
-        this.store.tasks.addProcessed( 'history', 'firstSeen' )
+        this.store.tasks.addProcessed( 'relays/history', 'firstSeen' )
         // this.store.stats.setHistory(remoteTask)
-        this.store.tasks.finishProcessing( 'history' )
+        this.store.tasks.finishProcessing( 'relays/history' )
       }
     },
     collateSoftware(){ 

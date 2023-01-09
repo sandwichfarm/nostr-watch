@@ -63,10 +63,11 @@ const localMethods = {
     }
   },
 
-  addToQueue: function(id, fn){
+  addToQueue: function(id, fn, unique){
     this.store.tasks.addJob({
       id: id,
-      handler: fn.bind(this)
+      handler: fn,
+      unique: unique
     })
   },
 
@@ -102,54 +103,60 @@ const localMethods = {
   },
 
   invalidate: async function(force, single){
-    console.log('expired', !this.store.tasks.getLastUpdate('relays'), Date.now() - this.store.tasks.getLastUpdate('relays') > this.store.prefs.expireAfter)
-    if( (!this.isExpired && !force) ) 
+    // console.log('expired', !this.store.tasks.getLastUpdate('relays'), Date.now() - this.store.tasks.getLastUpdate('relays') > this.store.prefs.expireAfter)
+    if( (!this.isExpired('relays') && !force) ) 
       return
 
-    console.log('windowActive', this.windowActive)
+    // console.log('windowActive', this.windowActive)
     if(!this.windowActive)
       return
 
-    this.store.tasks.startProcessing('relays')
+    this.addToQueue('relays', async () => {
+      const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
+
+      console.log('unprocessed relays', 
+        this.relays.filter( relay => !this.store.tasks.getProcessed('relays').includes(relay)))
+
+      if(single) {
+        await this.check(single)
+      } 
+      else {
+        for(let index = 0; index < relays.length; index++) {
+          await this.delay(this.averageLatency)
+          const relay = relays[index]
+          this.check(relay)
+            .then((result) => this.completeRelay(relay, result) )
+            // .then( async () => {
+            //   // this.history = await History()
+            // })
+            .catch( () => this.completeRelay(relay) )
+        }
+      } 
+    }, true)
+
+    console.log('queue', this.store.tasks.getActive)
     
-    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
+  },
 
-    console.log('unprocessed relays', 
-      this.relays.filter( relay => !this.store.tasks.getProcessed('relays').includes(relay)))
+  completeRelay: function(relay, result){
+    if(this.store.tasks.isProcessed('relays', relay))
+      return 
 
-    if(single) {
-      await this.check(single)
-    } 
-    else {
-      for(let index = 0; index < relays.length; index++) {
-        await this.delay(this.averageLatency)
-        const relay = relays[index]
-        this.check(relay)
-          .then((result) => {
-            if(this.store.tasks.isProcessed('relays', relay))
-              return 
-            
-            this.store.tasks.addProcessed('relays', result.url)
-
-            this.results[result.url] = result
-            this.setCache(result)
-
-            if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
-              this.completeAll()
-
-            return this.results
-          })
-          .then( async () => {
-            // this.history = await History()
-          })
-          .catch( err => console.error(err) )
-      }
-    } 
+    this.store.tasks.addProcessed('relays', relay)
+    
+    if(result)  {
+      this.results[relay] = result
+      this.setCache(result)
+    }
+      
+    if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
+      this.completeAll()
   },
 
   completeAll: function(){
     //console.log('completed')
-    this.store.tasks.finishProcessing('relays')
+    this.store.tasks.completeJob()
+    // this.store.tasks.finishProcessing('relays')
     this.store.tasks.updateNow('relays')
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
@@ -164,7 +171,7 @@ const localMethods = {
           checkLatency: true,          
           getInfo: true,
           getIdentities: true,
-          // debug: true,
+          debug: true,
           connectTimeout: this.getDynamicTimeout,
           readTimeout: this.getDynamicTimeout,
           writeTimeout: this.getDynamicTimeout,
@@ -184,6 +191,7 @@ const localMethods = {
         })
         .on('close', () => {
           //console.log(`${relay.url} has closed`)
+          reject()
         })
         .on('error', () => {
           reject()
@@ -265,6 +273,9 @@ export default defineComponent({
   },
   mounted(){
     this.migrateLegacy()
+
+    console.log('is processing', this.store.tasks.isProcessing(`relays`))
+
     if(this.store.tasks.isProcessing(`relays`))
       this.invalidate(true)
     else

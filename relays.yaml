@@ -192,3 +192,11 @@ relays:
   - wss://nostr.chaker.net
   - wss://nostr-1.nbo.angani.co
   - wss://nostr3.actn.io
+  - wss://nostr.relayer.se
+  - wss://relay.nostr.nu
+  - wss://relay.taxi
+  - wss://relay.nostrprotocol.net
+  - wss://nostr.easydns.ca
+  - wss://nostr.bostonbtc.com
+  - "wss://knostr.neutrine.com:8880"
+  - wss://no-str.org

@@ -25,7 +25,7 @@ export default {
         return (x === y)? 0 : x? -1 : 1;
       })
     // relays = this.sortRelaysFavoritesOnTop(relays)
-    return relays
+    return Array.from(new Set(relays))
   },
     setCache: function(result){
       this.$storage.setStorageSync(result.url, result);      
@@ -129,7 +129,7 @@ export default {
     },
 
     delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+      return new Promise(resolve => setTimeout( () => resolve(), ms));
     },
     sort_by_latency(ascending) {
       const self = this

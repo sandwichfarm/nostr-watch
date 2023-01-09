@@ -27,9 +27,7 @@
                           </label>
                         </span>
                       </th>
-                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
-                        <code class="text-xs block">Favorite</code>
-                      </th>
+                      
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()">
                         <code class="text-xs block">Upvote</code>
                       </th> -->
@@ -59,6 +57,9 @@
                         <code class="text-xs block">Write</code>
                         <!-- ✏️ -->
                       </th>
+                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
+                        <code class="text-xs block">Favorite</code>
+                      </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
@@ -75,15 +76,6 @@
 
                       <td class="w-62 relay left-align relay-url">
                         <a :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
-                      </td>
-
-                      <td class="w-16 fav text-center">
-                        <a
-                          class="hover:opacity-100 cursor-pointer" 
-                          :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"
-                          @click="store.relays.toggleFavorite(relay)">
-                          ❤️
-                        </a>
                       </td>
 
                       <!-- <td class="w-16 fav text-center" v-if="isLoggedIn()">
@@ -127,6 +119,14 @@
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'write')">&nbsp;</span>
                       </td>
 
+                      <td class="w-16 fav text-center">
+                        <a
+                          class="hover:opacity-100 cursor-pointer" 
+                          :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"
+                          @click="store.relays.toggleFavorite(relay)">
+                          ❤️
+                        </a>
+                      </td>
                       
                     </tr>
                 </tbody>

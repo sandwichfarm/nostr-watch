@@ -41,7 +41,6 @@ export default defineComponent({
   },
   mounted(){
     this.store.tasks.$subscribe( (mutation) => {
-      console.log('mutation', mutation.events)
       if(mutation.events.key === 'currentTask')
         this.processJob()
     })
@@ -55,10 +54,10 @@ export default defineComponent({
   },
   methods: {
     processJob(){
-      console.log('trying processJob()')
+      // console.log('trying processJob()')
       if(!this.store.tasks.active?.handler)
         return 
-      console.log('processJob()', this.store.tasks.active.id)
+      // console.log('processJob()', this.store.tasks.active.id)
       this.store.tasks.active.handler()
     }
   },

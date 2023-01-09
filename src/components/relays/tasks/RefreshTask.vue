@@ -137,7 +137,7 @@ const localMethods = {
       } 
     }, true)
 
-    console.log('queue', this.store.tasks.getActive)
+    // console.log('queue', this.store.tasks.getActive)
     
   },
 
@@ -169,7 +169,7 @@ const localMethods = {
   },
 
   check: async function(relay){
-    return new Promise( (resolve, reject) => {
+    return new Promise( (resolve) => {
       const opts = {
           checkLatency: true,          
           getInfo: true,
@@ -187,6 +187,7 @@ const localMethods = {
 
       socket
         .on('complete', (instance) => {
+          // console.log('completed?', instance.result)
           instance.result.aggregate = this.getAggregate(instance.result)
           instance.relay.close()
           instance.result.log = instance.log
@@ -194,10 +195,11 @@ const localMethods = {
         })
         .on('close', () => {
           //console.log(`${relay.url} has closed`)
-          reject()
+          // reject()
         })
-        .on('error', () => {
-          reject()
+        .on('error', (result) => {
+          console.log(result)
+          // reject()
         })
         .run()
     })
@@ -293,7 +295,7 @@ export default defineComponent({
   mounted(){
     this.migrateLegacy()
 
-    console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
 
     if(this.store.tasks.isProcessing(this.taskSlug))
       this.invalidate(true)
@@ -305,7 +307,8 @@ export default defineComponent({
   updated(){},
   computed: Object.assign(SharedComputed, {
     getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
+      const calculated = this.averageLatency*this.relays.length
+      return calculated > 10000 ? calculated : 10000
     },
   }),
   methods: Object.assign(localMethods, RelaysLib),

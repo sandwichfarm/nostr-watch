@@ -55,20 +55,18 @@ export const useTaskStore = defineStore('tasks', {
         this.startNextJob()
     },
     startNextJob(){
-      console.log('task, isactive?', this.isActive)
       if( this.arePending ) {
         this.active = this.pending[0]
         this.pending.shift()
         this.startProcessing(this.active)
       }
       else {
-        console.log('completing active...')
         this.active = {}
       }
     },
     completeJob(){
-      console.log('compelteJob', this.active.id, this.active)
       this.updateNow(this.active.id)
+      //there's a NaN flash, might need a delay.
       this.finishProcessing(this.active.id)
       this.completed.push(this.active)
       this.startNextJob()

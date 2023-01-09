@@ -193,15 +193,16 @@ const localMethods = {
           instance.result.log = instance.log
           resolve(instance.result)
         })
-        .on('close', () => {
-          //console.log(`${relay.url} has closed`)
-          // reject()
-        })
-        .on('error', (result) => {
-          console.log(result)
-          // reject()
-        })
         .run()
+        // .on('close', () => {
+        //   //console.log(`${relay.url} has closed`)
+        //   // reject()
+        // })
+        // .on('error', () => {
+        //   // console.log(result)
+        //   // reject()
+        // })
+        
     })
   },
   

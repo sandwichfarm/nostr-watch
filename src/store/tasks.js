@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 
 export const useTaskStore = defineStore('tasks', {
   state: () => ({ 
+    lastUpdate: new Object(),
+
     //queue
     pending: new Array(),
     completed: new Array(),
@@ -13,6 +15,8 @@ export const useTaskStore = defineStore('tasks', {
     currentTask: new Object(),
   }),
   getters: {
+    getLastUpdate: (state) => (key) => state.lastUpdate[key],
+
     //legacy 
     getProcessed: (state) => (key) => {
       if( !(state.processed[key] instanceof Array) )
@@ -36,6 +40,7 @@ export const useTaskStore = defineStore('tasks', {
     // getRate: (state) => (key) => state.rate[key],
   },
   actions: {
+    updateNow(key){ this.lastUpdate[key] = Date.now() },
     //queue
     addJob(job){
       this.pending.push(job)

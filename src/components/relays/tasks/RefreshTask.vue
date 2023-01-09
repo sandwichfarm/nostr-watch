@@ -23,8 +23,6 @@
   </button>
 </template>
 
-
-
 <style scoped>
 
 </style>
@@ -82,11 +80,11 @@ const localMethods = {
       this.sinceLast = this.timeSinceRefresh()
 
       if(this.store.tasks.getProcessed('relays').length >= this.relays.length){
-        this.store.relays.updateNow()
+        this.store.relays.updateNow('relays')
         this.store.tasks.finishProcessing('relays')
       }
 
-      if(!this.store.tasks.isProcessing)
+      if(!this.store.tasks.isProcessing('relays'))
         this.invalidate()
     }, 1000)
   },
@@ -102,17 +100,12 @@ const localMethods = {
     if(this.windowActive) 
       this.store.layout.setActiveTab(this.$tabId)
   },
-  // handleRelaysFind(){
-  //   this.addToQueue('relays/find', () => this.invalidate())  
-  // },
-  // handleRelaysSingle(relayURL){
-  //   this.addToQueue('relays/single', () => this.invalidate(false, relayUrl))  
-  // },
+
   invalidate: async function(force, single){
-    //console.log('invalidate()', this.relays.length, force || this.isExpired )
     if( (!this.isExpired && !force) ) 
       return
 
+    console.log('windowActive', this.windowActive)
     if(!this.windowActive)
       return
 
@@ -127,15 +120,11 @@ const localMethods = {
       await this.check(single)
     } 
     else {
-      //console.log('multiple relays',  single)
-      // const processed = new Set()
       for(let index = 0; index < relays.length; index++) {
-        const relay = relays[index]
-        //console.log('checking relay', relay)
         await this.delay(this.averageLatency)
+        const relay = relays[index]
         this.check(relay)
           .then((result) => {
-            //console.log('check completed', relay)
             if(this.store.tasks.isProcessed('relays', relay))
               return 
             
@@ -160,7 +149,7 @@ const localMethods = {
   completeAll: function(){
     //console.log('completed')
     this.store.tasks.finishProcessing('relays')
-    this.store.relays.updateNow()
+    this.store.relays.updateNow('relays')
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
@@ -169,8 +158,6 @@ const localMethods = {
   },
 
   check: async function(relay){
-    console.log('this should only appear once per second')
-        
     return new Promise( (resolve, reject) => {
       const opts = {
           checkLatency: true,          
@@ -220,10 +207,10 @@ const localMethods = {
     return Math.floor(parseFloat(sum/total));
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate('relays')+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.relays.getLastUpdate) || Date.now()
+    return this.timeSince(this.store.tasks.getLastUpdate('relays')) || Date.now()
   },
 }
 
@@ -258,7 +245,7 @@ export default defineComponent({
     // document.removeEventListener("visibilitychange", this.handleVisibility, false);
   },
   beforeMount(){
-    this.lastUpdate = this.store.relays.lastUpdate
+    this.lastUpdate = this.store.tasks.getLastUpdate('relays')
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     

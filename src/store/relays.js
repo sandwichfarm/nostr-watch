@@ -7,7 +7,7 @@ export const useRelaysStore = defineStore('relays', {
     urls: new Array(),
     // results: new Object(),
     geo: new Object(),
-    lastUpdate: null,
+    lastUpdate: {},
     count: new Object(),
     processing: false,
     processedRelays: new Set(),
@@ -62,7 +62,7 @@ export const useRelaysStore = defineStore('relays', {
 
     setGeo(geo){ this.geo = geo },
 
-    updateNow(){ this.lastUpdate = Date.now() },
+    updateNow(key){ this.lastUpdate[key] = Date.now() },
 
     setStat(type, value){ 
       this.count[type] = value 

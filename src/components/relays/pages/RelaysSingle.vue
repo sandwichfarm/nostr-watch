@@ -697,7 +697,7 @@ export default defineComponent({
     setData(){
       this.relay = this.relayFromUrl
       this.relays = this.store.relays.getAggregateCache('public')
-      this.lastUpdate = this.store.relays.getLastUpdate
+      this.lastUpdate = this.store.tasks.getLastUpdate('relays')
       this.result = this.getCache(this.relay) || false
       //
       //console.log('single result', this.relayFromUrl, this.result, this.getCache(this.relay))

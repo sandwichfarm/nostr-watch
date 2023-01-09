@@ -207,7 +207,7 @@
     },
     computed: {
       subsectionRelays(){
-        return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
       },
       relayGeo(){
         return (relay) => this.store.relays.getGeo(relay)

@@ -80,7 +80,7 @@ const localMethods = {
       this.sinceLast = this.timeSinceRefresh()
 
       if(this.store.tasks.getProcessed('relays').length >= this.relays.length){
-        this.store.relays.updateNow('relays')
+        this.store.tasks.updateNow('relays')
         this.store.tasks.finishProcessing('relays')
       }
 
@@ -102,6 +102,7 @@ const localMethods = {
   },
 
   invalidate: async function(force, single){
+    console.log('expired', !this.store.tasks.getLastUpdate('relays'), Date.now() - this.store.tasks.getLastUpdate('relays') > this.store.prefs.expireAfter)
     if( (!this.isExpired && !force) ) 
       return
 
@@ -149,7 +150,7 @@ const localMethods = {
   completeAll: function(){
     //console.log('completed')
     this.store.tasks.finishProcessing('relays')
-    this.store.relays.updateNow('relays')
+    this.store.tasks.updateNow('relays')
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))

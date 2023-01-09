@@ -1,10 +1,10 @@
 <template>
   <RefreshTask
-    v-if="showRefreshRelays"
     v-bind:resultsProp="results" />
-  <RelayCanonicalsTask
-    v-else-if="showGetRelayCanonicals"
-    v-bind:resultsProp="results" />
+  <!-- <RelayCanonicalsTask
+    :resultsProp="results" />
+  <RelayOperatorTask
+    :resultsProp="results" /> -->
 </template>
 
 <script>
@@ -16,11 +16,15 @@ import { setupStore } from '@/store'
 import SharedComputed from '@/shared/computed.js'
 
 import RefreshTask from './RefreshTask.vue'
+// import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
+// import RelayOperatorTask from './RelayOperatorTask.vue'
 
 export default defineComponent({
   name: "TasksManager",
   components: {
-    RefreshTask
+    RefreshTask,
+    // RelayCanonicalsTask,
+    // RelayOperatorTask
   },
   setup(props){
     const {resultsProp: results} = toRefs(props)
@@ -60,37 +64,6 @@ export default defineComponent({
   },
   computed: Object.assign(SharedComputed, {
     path: function() { return useRoute().path },
-    showRefreshRelays: function(){
-      return ( 
-                this.path.includes('/relays/find')
-                || this.path.includes(`/relay/`)
-              ) 
-              && 
-              (
-                ( 
-                  this.store.tasks.isProcessing('relays') 
-                  && this.store.tasks.currentTask == 'relays'
-                )
-                || 
-                (
-                  !this.store.tasks.isAnyProcessing
-                )
-              )
-    },
-    showGetRelayCanonicals: function(){
-      return (
-              ( 
-                this.store.tasks.isProcessing('relays/canonicals') 
-                && this.store.tasks.currentTask == 'relays/canonicals'
-              )
-              || 
-              (
-                !this.store.tasks.isAnyProcessing
-              )
-            )
-            &&
-            this.isExpired('relays/canonicals')
-    }
   })
 });
 </script>

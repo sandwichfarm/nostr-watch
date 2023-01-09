@@ -39,13 +39,7 @@ async function run(){
   // console.log(`wtf`, relays.length)
   // console.log(`hashes`, Object.keys(hashes).length)
   await sieve()
-
-  setInterval( ()=> {
-    console.log('status', '\ntotal sent:', totalSent, '\noks:', oks, '\nnotices:', notices, '\n\n')
-  }, 60000)
   await broadcast()
-
-  
   process.exit()
     
 }
@@ -131,6 +125,10 @@ function checkMissing(){
 }
 
 async function broadcast(){
+  setInterval( ()=> {
+    console.log('status', '\ntotal sent:', totalSent, '\noks:', oks, '\nnotices:', notices, '\n\n')
+  }, 60000)
+  
   for(let i=0;i<missing.length;i++){
     const relay = missing[i]
     const event = {
@@ -152,7 +150,7 @@ async function broadcast(){
     pool.send(['EVENT', signedEvent])
     totalSent++
     console.log('total sent, backlog', totalSent)
-    await delay(60*1000)
+    await delay(10*1000)
   }
   console.log('finished.')
 }

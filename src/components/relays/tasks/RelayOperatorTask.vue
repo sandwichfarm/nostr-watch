@@ -1,9 +1,8 @@
 <template>
-  
-  <span  
+  <span 
       v-if="this.store.tasks.getActiveSlug === taskSlug"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Getting canonicals...</span>
+    <span>Retrieving operator profiles...</span>
   </span>
 </template>
 
@@ -12,12 +11,13 @@
 </style>
 
 <script>
-import crypto from 'crypto'
-import { RelayPool } from 'nostr'
-
 import { defineComponent, toRefs } from 'vue'
 
+import crypto from 'crypto'
+
 import { setupStore } from '@/store'
+
+import { RelayPool } from 'nostr'
 
 import SharedMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
@@ -33,54 +33,65 @@ const localMethods = {
     })
   },
   invalidate(force){
-    if( (!this.isExpired(this.taskSlug) && !force) ) 
+    if( !this.isExpired(this.taskSlug) && !force ) 
       return
-    
-    const subid = crypto.randomBytes(40).toString('hex')
 
     this.queueJob(
-      this.taskSlug, 
-      async () => {
-        const instance = new RelayPool(['wss://nostr.sandwich.farm', 'wss://relay.nostr.ch'])
+      this.taskSlug,
+      () => {
+        const relays = this.store.relays.getAggregateCache('public')
 
-        instance
-          .on('open', r => {
-            r.subscribe(subid, {
-              limit: 1000,
-              kinds: [1],
-              "#t": ['canonical'],
-              authors:[ 'b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6' ]
-            })
+        console.log('public relays', this.store.relays.getAggregateCache('public').length)
+
+        const pool = new RelayPool(relays)
+        const subid = crypto.randomBytes(40).toString('hex')
+        const uniques = {
+          0: new Set(),
+          1: new Set(),
+          7: new Set(),
+        }
+
+        const limits = {
+          0: 1,
+          1: 20,
+          7: 100
+        } 
+
+        const kinds = [0,1,7]
+        //remove kind 1 for non-single page tasks
+        pool
+          .on('open', relay => {
+            relay.subscribe(subid, { limit:10, kinds:kinds, authors:[this.result.info.pubkey] })
           })
-          .on('event', (relay, _subid, event) => {
-            if(_subid.includes(subid)){
-              console.log('canonical event', event.id)
-              const hash = event.tags.filter( tag => tag[0] === 'h')[0][1]
-              this.hashes[hash] = event.id
-            }
+          .on('event', (relay, sub_id, event) => {
+            console.log(event)
+            if(!kinds.includes(event.kind))
+              return
+            if(sub_id !== subid)
+              return
+            const u = uniques[event.kind],
+                  l = limits[event.kind]
+            if( u.has(event.id) || u.size > l )
+              return
+            if( !(event instanceof Object) )
+              return
+            
+            if( !( this.events[event.kind] instanceof Object ))
+              this.events[event.kind] = new Object()
+            this.events[event.kind][event.id] = event
+            u.add(event.id)
+            if(event.kind === 0)
+              this.store.profile.setProfile(JSON.parse(event.content)).catch()
+            console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
+            console.log( 'event!', event.content )
           })
-
-        await this.delay(5000)
-
-        instance.unsubscribe()
-        instance.close()
-
-        relays.forEach( relay => {
-          const hash = this.hash(relay)
-          if( typeof this.hashes[hash] === "undefined" )
-            return 
-          this.canonicals[relay] = this.hashes[hash] //event.id
-        })
-
-        console.log('hashes found', Object.keys(this.hashes).length)
-        console.log('canonicals found', Object.keys(this.canonicals).length, this.canonicals)
-        console.log('from store', this.store.relays.getCanonicals)
-
-        this.store.relays.setCanonicals(this.canonicals)
 
         this.store.tasks.completeJob()
-      }, 
-      true
+          // .on('eose', relay => {
+          //   relay.close()
+          // })
+      },
+      true 
     )
   },
   timeUntilRefresh(){
@@ -89,9 +100,6 @@ const localMethods = {
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.taskSlug)) || Date.now()
   },
-  hash(relay){
-    return crypto.createHash('md5').update(relay).digest('hex');
-  }
 }
 
 export default defineComponent({
@@ -99,9 +107,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'relays/canonicals',
-      canonicals: new Object(),
-      hashes: new Object()
+      taskSlug: 'relays/operatorprofiles'
     }
   },
   setup(props){

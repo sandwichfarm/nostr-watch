@@ -37,7 +37,6 @@ export const useTaskStore = defineStore('tasks', {
     isActive: (state) => Object.keys( state.active ).length > 0,
     isIdle: (state) => Object.keys( state.active ).length == 0,
     arePending: (state) => state.pending.length > 0,
-
   },
   actions: {
     updateNow(key){ this.lastUpdate[key] = Date.now() },
@@ -69,6 +68,7 @@ export const useTaskStore = defineStore('tasks', {
     },
     completeJob(){
       console.log('compelteJob', this.active.id, this.active)
+      this.updateNow(this.active.id)
       this.finishProcessing(this.active.id)
       this.completed.push(this.active)
       this.startNextJob()

@@ -49,7 +49,8 @@ export const useRelaysStore = defineStore('relays', {
 
     getAggregateCache: state => aggregate => state.cached[aggregate] instanceof Array ? state.cached[aggregate] : [],
 
-    getCanonical: state => relay => state.canonicals[relay]
+    getCanonicals: state => state.canonicals,
+    getCanonical: state => relay => state.canonicals[relay],
   },
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
@@ -99,6 +100,10 @@ export const useRelaysStore = defineStore('relays', {
       if( !(this.cached[aggregate] instanceof Array) )
         this.cached[aggregate] = new Array()
       this.cached[aggregate] = array
+    },
+
+    setCanonicals(c){
+      this.canonicals = c
     }
   },
 })

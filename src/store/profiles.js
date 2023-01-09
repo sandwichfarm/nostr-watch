@@ -10,7 +10,7 @@ export const useProfileStore = defineStore('profiles', {
   }),
   getters: {},
   actions: {
-    set(profile){ 
+    setProfile(profile){ 
       Object.keys(profile).forEach( key => {
         if( !(profile[key] instanceof String) )
           return 

@@ -41,7 +41,7 @@ export default defineComponent({
   },
   mounted(){
     this.store.tasks.$subscribe( (mutation) => {
-      if(mutation.events.key === 'currentTask')
+      if(mutation.events?.key === 'currentTask')
         this.processJob()
     })
     this.processJob()

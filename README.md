@@ -1,8 +1,14 @@
 > this project is alpha! changes are fast and hard. branching model and tests will come with beta. 
 
-# nostr-watch
+# nostr-watch 0.1.0
 
-A client-side nostr network status built with Vue3, [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). Goal is to produce a client-side app that collects detailed information about nostr relays and the network in general to assist users, developers and relay operators alike
+Production [![production: nostrwatch](https://github.com/dskvr/nostr-watch/actions/workflows/deploy.yml/badge.svg)](https://github.com/dskvr/nostr-watch/actions/workflows/deploy.yml)
+
+Staging [![Netlify Status](https://api.netlify.com/api/v1/badges/d99dd01e-2d30-48df-8fad-2969edaf04fa/deploy-status)](https://app.netlify.com/sites/nostrwatch/deploys)
+
+A client-side nostr network status built with Vue3, Pinia, [nostr-tools](https://github.com/fiatjaf/nostr-tools), [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). 
+
+nostr.watch aggregates various datapoints nostr relays and the network in general to assist users, developers and relay operators. 
 
 ## Features
 - [x] Real-time relay status 
@@ -13,25 +19,35 @@ A client-side nostr network status built with Vue3, [nostr-js](https://github.co
 - [x] Relay Behavior Analysis
 - [x] NIP Checks
 - [x] Geo Checks (build-time)
-- [ ] Optional Companion Backend for historical data and relay relief, front-end gracefully degrades if inaccessible. 
-- [ ] "Best Relays for a User" and "Best Relays for a Developer" dynamic aggregate, the former based largely on a balance of Latency and NIP support, the latter based largely on NIP support. Unique results for each visitor
+- [x] Favorite Relays 
+- [x] Extension Support 
+- [x] Nostr signing, individualized relay testing 
+- [ ] Lighting Tips to Relay Operators
+- [ ] Relay Statistics 
+- [ ] Relay Historical Data
+- [ ] Discover relays at runtime (currently buildtime, ready to move to runtime with 0.1) 
+- [ ] Discover geo at runtime
 
-## Todo [Road to Beta] 
-- [ ] Expose all features in frontend 
-- [ ] Clean codebase 
-- [ ] Tests
 
 ## Project setup
 ```
 yarn install
 ```
 
+## Pre-build
+
+
 ### Compiles and hot-reloads for development
+Run once or whenever you want to update geo/discover relays 
+```
+yarn prebuild
+```
 ```
 yarn serve
 ```
 
 ### Compiles and minifies for production
+_This runs prebuild every time_
 ```
 yarn build
 ```

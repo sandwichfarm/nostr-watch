@@ -26,6 +26,11 @@ export default defineComponent({
     // RelayCanonicalsTask,
     // RelayOperatorTask
   },
+  data(){
+    return {
+      interval: null
+    }
+  },
   setup(props){
     const {resultsProp: results} = toRefs(props)
     return { 
@@ -40,11 +45,14 @@ export default defineComponent({
     this.store.tasks.completed = new Array()
   },
   mounted(){
-    this.store.tasks.$subscribe( (mutation) => {
-      if(mutation.events?.key === 'currentTask')
-        this.processJob()
-    })
+    this.interval = setInterval( () => {
+      if(this.store.tasks.currentTask)
+      this.processJob()
+    }, 1000)
     this.processJob()
+  },
+  unmounted(){
+    clearInterval(this.interval)
   },
   props: {
     resultsProp: {

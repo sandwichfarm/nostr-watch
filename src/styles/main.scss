@@ -1,4 +1,8 @@
 @import "./components/tooltip.scss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 
 td ul { padding:0; margin:0; list-style: none; }
 td ul li { list-style: none; }
@@ -66,59 +70,58 @@ tr.relay.loaded td {
 tr.online .indicator.failure {
   background-color:orange !important;
 }
+// .aggregate.indicator {
+//     background-color: transparent;
+//     border-radius: 0px;
+//     border-style: solid;
+// }
 
-.aggregate.indicator {
-    background-color: transparent;
-    border-radius: 0px;
-    border-style: solid;
-}
+// .indicator.pending {
+//   background-color: #c0c0c0;
+//   border-color: rgba(55,55,55,0.5);
+// }
 
-.indicator.pending {
-  background-color: #c0c0c0;
-  border-color: rgba(55,55,55,0.5);
-}
+// .indicator.success {
+//   background-color: green;
+//   border-color: rgba(0,255,0,0.5);
+// }
 
-.indicator.success {
-  background-color: green;
-  border-color: rgba(0,255,0,0.5);
-}
+// .indicator.failure {
+//   background-color: red;
+// border-color: rgba(255,0,0,0.5);
+// }
 
-.indicator.failure {
-  background-color: red;
-border-color: rgba(255,0,0,0.5);
-}
+// .indicator.caution {
+//   background-color: orange;
+//   border-color: rgba(255, 191, 0,0.5);
+// }
 
-.indicator.caution {
-  background-color: orange;
-  border-color: rgba(255, 191, 0,0.5);
-}
+// .indicator.public {
+//   background-color: green;
+//   border-color: rgba(0,255,0,0.5);
+// }
 
-.indicator.public {
-  background-color: green;
-  border-color: rgba(0,255,0,0.5);
-}
+// .indicator.restricted {
+//   position:relative;
+//   border-color: transparent;
+//   background-color: transparent
+// }
 
-.indicator.restricted {
-  position:relative;
-  border-color: transparent;
-  background-color: transparent
-}
+// .indicator.restricted span:first-child {
+//   position:absolute;
+//   width: 0;
+//   height: 0;
+//   border-top: 14px solid green;
+//   border-right: 14px solid transparent;
+// }
 
-.indicator.restricted span:first-child {
-  position:absolute;
-  width: 0;
-  height: 0;
-  border-top: 14px solid green;
-  border-right: 14px solid transparent;
-}
-
-.indicator.restricted span:last-child {
-  position:absolute;
-  width: 0;
-  height: 0;
-  border-bottom: 14px solid orange;
-  border-left: 14px solid transparent;
-}
+// .indicator.restricted span:last-child {
+//   position:absolute;
+//   width: 0;
+//   height: 0;
+//   border-bottom: 14px solid orange;
+//   border-left: 14px solid transparent;
+// }
 
 //
 // .indicator.restricted {
@@ -143,17 +146,14 @@ border-color: rgba(255,0,0,0.5);
 //   border-right: 14px solid transparent;
 // }
 
-.indicator.offline {
-  background-color: red;
-  border-color: rgba(255,0,0,0.5);
-}
+// .indicator.offline {
+//   background-color: red;
+//   border-color: rgba(255,0,0,0.5);
+// }
 
 tr.online .relay-url {
   cursor: pointer;
 }
-
-
-
 
 .verified-shape-wrapper {
   display:inline-block;
@@ -205,10 +205,10 @@ th .shape.verified:after {
   text-decoration:none;
 }
 
-#wrapper {
-  max-width:1400px;
-  margin:0 auto;
-}
+// #wrapper {
+//   max-width:1400px;
+//   margin:0 auto;
+// }
 
 div.block {
   display:block;
@@ -328,3 +328,4 @@ tr.offline .location {
  }
 
 }
+

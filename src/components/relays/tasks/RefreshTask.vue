@@ -86,7 +86,7 @@ const localMethods = {
         this.store.tasks.finishProcessing('relays')
       }
 
-      if(!this.store.tasks.isProcessing)
+      if(!this.store.tasks.isProcessing('relays'))
         this.invalidate()
     }, 1000)
   },

@@ -18,10 +18,9 @@
         </div>
       </div>
       <div class="width-max lg:flex lg:ml-auto">
-          <RefreshTask
-            v-bind:resultsProp="results"
-            v-if="path == '/relays/find' || path.includes(`/relay/`)"/>
-        </div>
+        <TasksManager
+          :resultsProp="results" />
+      </div>
       </div>
   </div>
 </template>
@@ -35,8 +34,8 @@ import RelaysLib from '@/shared/relays-lib.js'
 import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
 // import RefreshTask from '@/components/relays/tasks/RefreshTask.vue'
 
-const RefreshTask = defineAsyncComponent(() =>
-    import("@/components/relays/tasks/RefreshTask.vue" /* webpackChunkName: "RefreshTask" */)
+const TasksManager = defineAsyncComponent(() =>
+    import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
 );
 
 
@@ -44,7 +43,7 @@ export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'RelaysNav',
   components: {
-    RefreshTask,
+    TasksManager,
   },
   props: {
     resultsProp: {

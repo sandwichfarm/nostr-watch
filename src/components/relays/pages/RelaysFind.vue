@@ -140,7 +140,7 @@ export default defineComponent({
     this.store.relays.setGeo(geo)
     
     this.relays = this.store.relays.getAll
-    this.lastUpdate = this.store.relays.lastUpdate
+    this.lastUpdate = this.store.tasks.getLastUpdate('relays')
     this.preferences = this.store.prefs.get
   },
 

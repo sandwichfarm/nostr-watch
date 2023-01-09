@@ -14,9 +14,9 @@
           </a>
         </div>
       </div>
-      <!-- <div class="flex flex-1 items-center justify-center px-2 lg:ml-6 lg:justify-end">
-        <RelaysSearchFilter />
-      </div> -->
+      <div class="flex flex-1 items-center justify-center px-2 lg:ml-6 lg:justify-end">
+        <!-- <RelaysSearchFilter /> -->
+      </div>
       <div class="flex items-center lg:hidden">
         <!-- Mobile menu button -->
         <DisclosureButton class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">

@@ -90,6 +90,7 @@ const localMethods = {
 
       if(!this.store.tasks.isProcessing(this.taskSlug))
         this.invalidate()
+        
     }, 1000)
   },
   refreshNow(){

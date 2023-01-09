@@ -4,7 +4,7 @@
 
 A client-side nostr network status built with Vue3, Pinia, [nostr-tools](https://github.com/fiatjaf/nostr-tools), [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). 
 
-nostr.watch aggregates various datapoints nostr relays and the network in general to assist users, developers and relay operators. 
+nostr.watch aggregates data on nostr relays and the network in general to assist users, developers and relay operators. 
 
 Develop branch is deployed to https://next.nostr.watch
 

@@ -2,13 +2,11 @@
 
 # nostr-watch 0.1.0
 
-Production [![production: nostrwatch](https://github.com/dskvr/nostr-watch/actions/workflows/deploy.yml/badge.svg)](https://nostr.watch)
-
-Staging [![Netlify Status](https://api.netlify.com/api/v1/badges/d99dd01e-2d30-48df-8fad-2969edaf04fa/deploy-status)](https://next.nostr.watch)
-
 A client-side nostr network status built with Vue3, Pinia, [nostr-tools](https://github.com/fiatjaf/nostr-tools), [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). 
 
 nostr.watch aggregates various datapoints nostr relays and the network in general to assist users, developers and relay operators. 
+
+Develop branch is deployed to https://next.nostr.watch
 
 ## Features
 - [x] Real-time relay status 

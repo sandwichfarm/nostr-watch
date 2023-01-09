@@ -28,7 +28,8 @@ export default defineComponent({
   },
   data(){
     return {
-      interval: null
+      interval: null,
+      currentTask: null
     }
   },
   setup(props){
@@ -45,9 +46,12 @@ export default defineComponent({
     this.store.tasks.completed = new Array()
   },
   mounted(){
+    this.currentTask = this.store.tasks.currentTask
     this.interval = setInterval( () => {
-      if(this.store.tasks.currentTask)
+      if(this.currentTask === this.store.tasks.currentTask)
+        return 
       this.processJob()
+      this.currentTask = this.store.tasks.currentTask
     }, 1000)
     this.processJob()
   },
@@ -56,8 +60,10 @@ export default defineComponent({
   },
   props: {
     resultsProp: {
-      type: String,
-      default: "Tooltip text",
+      type: Object,
+      default(){
+        return {}
+      }
     },
   },
   methods: {
@@ -65,7 +71,6 @@ export default defineComponent({
       // console.log('trying processJob()')
       if(!this.store.tasks.active?.handler)
         return 
-      // console.log('processJob()', this.store.tasks.active.id)
       this.store.tasks.active.handler()
     }
   },

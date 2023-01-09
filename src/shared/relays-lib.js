@@ -2,6 +2,19 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  getRelays(relays){
+    relays = this.filterRelays(relays)
+    relays = this.sortRelays(relays)
+    return relays
+  },
+  filterRelays(relays){
+    const fns = this.store.prefs.getFilters
+    fns.forEach( fn => {
+      if(fn instanceof Function)
+        relays = fn(relays)
+    })
+    return relays
+  },
   sortRelays(relays){
     sort(relays, (relay1, relay2) => {
       let a = this.results?.[relay1]?.latency.final || 100000,

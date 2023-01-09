@@ -5,13 +5,16 @@ export const usePrefsStore = defineStore('prefs', {
     refresh: true,
     duration: 30*60*1000,
     pinFavorites: true,
-    rowTheme: 'comfortable'
+    rowTheme: 'comfortable',
+    filters: [],
+    filterFn: [],
   }),
   getters: {
     doRefresh: (state) => state.refresh,
     expireAfter: (state) => state.duration,
     doPinFavorites: (state) => state.pinFavorites,
     getTheme: (state) => state.rowTheme,
+    getFilters: (state) => state.filterFn,
   },
   actions: {
     enable(){ this.refresh = true },
@@ -20,5 +23,19 @@ export const usePrefsStore = defineStore('prefs', {
     updateExpiration(dur) { this.duration = dur },
     togglePinFavorites(){ this.pinFavorites = !this.pinFavorites },
     changeTheme(theme){ this.rowTheme = theme },
+    addFilter(key, fn){ 
+      if(this.filters.includes(key))
+        return 
+      this.filters.push(key)
+      this.filterFn.push(fn) 
+      console.log('functions:', this.filterFn)
+    }
+  },
+},
+{
+  persistedState: {
+    // excludePathts: ['activeFilters']
+    includePaths: ['refresh', 'duration', 'pinFavorites', 'rowTheme', 'filters']
+    // store options goes here
   },
 })

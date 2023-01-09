@@ -6,6 +6,7 @@
       <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
     </div>
     <input 
+      ref="relay_filter"
       id="relay-filter" 
       name="relay-filter" 
       placeholder="Filter Relays" type="search"
@@ -13,6 +14,7 @@
       />
   </div>
 </div>
+{{ store.prefs.getFilters }}
 </template>
 
 <script>
@@ -31,7 +33,65 @@ const localMethods = {
   },
   clearData(){
     this.store.relays.clearResults()
-  }
+  },
+  handleKeyUp(){
+
+  },
+  handleFilter(event){
+    this.parseFilter(event.target.value)
+  },
+  parseFilter(string){
+    console.log('parsing', string)
+    const segments = string.split(' ')
+    segments.forEach(segment => {
+      if(segment.includes('nip:'))
+        this.parseNip(segment)
+      else {
+        this.parseRelay(segment)
+      }
+    })
+    console.log(this.store.prefs.getFilters)
+  },
+  parseRelay(maybeRelay){
+    const fn = (relays) => {
+      return relays.filter( relay => relay.includes(maybeRelay))
+    }
+    this.store.prefs.addFilter( 'relay', fn )
+  },
+  parseNip(nip){
+    const data = nip.split(':')
+
+    if(data.length != 2)
+      return 
+
+    const key = data[0],
+          value = data[1]
+
+    key
+    
+    let not = false
+    
+    if(data[1].startsWith('!'))
+      not = true
+
+    const fn = (relays) => {
+       return relays.filter( relay => {
+        const exists = this.result?.[relay]?.info?.supported_nips.includes(value)
+        return not ? !exists : exists 
+      })
+    }
+    
+    this.store.prefs.addFilter( 'relay', fn )
+  },
+  filterNip(){
+    
+  },
+  filterCountry(){
+
+  },
+  filterContinent(){
+
+  } 
 }
 
 export default defineComponent({
@@ -44,7 +104,12 @@ export default defineComponent({
       store : setupStore()
     }
   },
+  created(){
+  },
   mounted(){
+    console.log('relay_filter ref', this.$refs.relay_filter)
+    this.$refs.relay_filter.addEventListener('change', event => this.handleFilter(event))
+
     // this.preferences = this
   },
   updated(){
@@ -55,13 +120,7 @@ export default defineComponent({
   props: {},
   data() {
     return {
-      storage: null,
-      refresh: true,
-      preferences: {
-        refresh: true,
-        cacheExpiration: 30*60*1000
-      },
-      isActive: false,
+      activeFilters: {}
     }
   },
 })

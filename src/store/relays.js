@@ -14,7 +14,8 @@ export const useRelaysStore = defineStore('relays', {
     favorites: new Array(),
     aggregates: {},
     aggregatesAreSet: false,
-    cached: new Object()
+    cached: new Object(),
+    canonicals: new Object()
   }),
   getters: {
     getAll: (state) => state.urls,
@@ -25,7 +26,7 @@ export const useRelaysStore = defineStore('relays', {
         return state.favorites
       return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
     },
-    getByAggregate: (state) => (aggregate) => {
+    getByAggregate: state => aggregate => {
       return state.urls
               .filter( (relay) => state.results?.[relay]?.aggregate == aggregate)
     },
@@ -33,20 +34,23 @@ export const useRelaysStore = defineStore('relays', {
     // getResults: (state) => state.results,
     // getResult: (state) => (relayUrl) => state.results?.[relayUrl],
     
-    getGeo: (state) => (relayUrl) => state.geo[relayUrl],
+    getGeo: state => relayUrl => state.geo[relayUrl],
 
-    getLastUpdate: (state) => state.lastUpdate,
+    getLastUpdate: state => state.lastUpdate,
 
-    getCount: (state) => (type) => state.count[type],
-    getCounts: (state) => state.count,
+    getCount: state => type => state.count[type],
+    getCounts: state => state.count,
 
-    getAggregate: (state) => (which) => state.aggregates[which],
-    areAggregatesSet: (state) => state.aggregatesAreSet,
+    getAggregate: state => which => state.aggregates[which],
+    areAggregatesSet: state => state.aggregatesAreSet,
 
-    getFavorites: (state) => state.favorites,
-    isFavorite: (state) => (relayUrl) => state.favorites.includes(relayUrl),
+    getFavorites: state => state.favorites,
+    isFavorite: state => relayUrl => state.favorites.includes(relayUrl),
 
-    getAggregateCache: (state) => (aggregate) => state.cached[aggregate] instanceof Array ? state.cached[aggregate] : [],
+    getAggregateCache: state => aggregate => state.cached[aggregate] instanceof Array ? state.cached[aggregate] : [],
+
+    getCanonicals: state => state.canonicals,
+    getCanonical: state => relay => state.canonicals[relay],
   },
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
@@ -62,7 +66,7 @@ export const useRelaysStore = defineStore('relays', {
 
     setGeo(geo){ this.geo = geo },
 
-    updateNow(){ this.lastUpdate = Date.now() },
+
 
     setStat(type, value){ 
       this.count[type] = value 
@@ -96,6 +100,10 @@ export const useRelaysStore = defineStore('relays', {
       if( !(this.cached[aggregate] instanceof Array) )
         this.cached[aggregate] = new Array()
       this.cached[aggregate] = array
+    },
+
+    setCanonicals(c){
+      this.canonicals = c
     }
   },
 })

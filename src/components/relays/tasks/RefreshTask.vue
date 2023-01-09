@@ -1,29 +1,30 @@
 <template>
   
-  <span class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="!store.tasks.isProcessing(`relays`)">Checked {{ sinceLast }} ago</span>
-    <span v-if="store.tasks.isProcessing(`relays`)" class="italic lg:pr-9">
+  <span 
+    v-if="!store.tasks.isActive || store.tasks.getActiveSlug === this.taskSlug"
+    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
+
+    <span v-if="!store.tasks.isProcessing(this.taskSlug)">Checked {{ sinceLast }} ago</span>
+    <span v-if="store.tasks.isProcessing(this.taskSlug)" class="italic lg:pr-9">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      {{ this.store.tasks.getProcessed('relays').length }}/{{ this.relays.length }} Relays Checked
+      {{ this.store.tasks.getProcessed(this.taskSlug).length }}/{{ this.relays.length }} Relays Checked
     </span>
   </span>
-  <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.tasks.isProcessing(`relays`)">-</span>
-  <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.tasks.isProcessing(`relays`)"> 
+  <span class="text-white text-sm mr-2 mt-1.5" v-if="!store.tasks.isProcessing(this.taskSlug)">-</span>
+  <span class="text-white text-sm mr-2 mt-1.5" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.taskSlug)"> 
     Next check in: {{ untilNext  }}
   </span>
   <button 
-    v-if="!store.tasks.isProcessing(`relays`)"
+    v-if="!store.tasks.isProcessing(this.taskSlug)"
     class="mr-8 my-1 py-0 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
-    :disabled='store.tasks.isProcessing(`relays`)' 
+    :disabled='store.tasks.isProcessing(this.taskSlug)' 
     @click="refreshNow()">
       Check{{ relay ? ` ${relay}` : "" }} Now
   </button>
 </template>
-
-
 
 <style scoped>
 
@@ -65,10 +66,11 @@ const localMethods = {
     }
   },
 
-  addToQueue: function(id, fn){
+  queueJob: function(id, fn, unique){
     this.store.tasks.addJob({
       id: id,
-      handler: fn.bind(this)
+      handler: fn,
+      unique: unique
     })
   },
 
@@ -81,12 +83,12 @@ const localMethods = {
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
 
-      if(this.store.tasks.getProcessed('relays').length >= this.relays.length){
-        this.store.relays.updateNow()
-        this.store.tasks.finishProcessing('relays')
+      if(this.store.tasks.getProcessed(this.taskSlug).length >= this.relays.length){
+        this.store.tasks.updateNow(this.taskSlug)
+        this.store.tasks.finishProcessing(this.taskSlug)
       }
 
-      if(!this.store.tasks.isProcessing)
+      if(!this.store.tasks.isProcessing(this.taskSlug))
         this.invalidate()
     }, 1000)
   },
@@ -102,65 +104,63 @@ const localMethods = {
     if(this.windowActive) 
       this.store.layout.setActiveTab(this.$tabId)
   },
-  // handleRelaysFind(){
-  //   this.addToQueue('relays/find', () => this.invalidate())  
-  // },
-  // handleRelaysSingle(relayURL){
-  //   this.addToQueue('relays/single', () => this.invalidate(false, relayUrl))  
-  // },
+
   invalidate: async function(force, single){
-    //console.log('invalidate()', this.relays.length, force || this.isExpired )
-    if( (!this.isExpired && !force) ) 
+    // console.log('expired', !this.store.tasks.getLastUpdate(this.taskSlug), Date.now() - this.store.tasks.getLastUpdate(this.taskSlug) > this.store.prefs.expireAfter)
+    if( (!this.isExpired(this.taskSlug) && !force) ) 
       return
 
+    // console.log('windowActive', this.windowActive)
     if(!this.windowActive)
       return
 
-    this.store.tasks.startProcessing('relays')
+    this.queueJob(this.taskSlug, async () => {
+      const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.taskSlug, relay) )
+
+      console.log('unprocessed relays', 
+        this.relays.filter( relay => !this.store.tasks.getProcessed(this.taskSlug).includes(relay)))
+
+      if(single) {
+        await this.check(single)
+      } 
+      else {
+        for(let index = 0; index < relays.length; index++) {
+          await this.delay(this.averageLatency)
+          const relay = relays[index]
+          this.check(relay)
+            .then((result) => this.completeRelay(relay, result) )
+            // .then( async () => {
+            //   // this.history = await History()
+            // })
+            .catch( () => this.completeRelay(relay) )
+        }
+      } 
+    }, true)
+
+    // console.log('queue', this.store.tasks.getActive)
     
-    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed('relays', relay) )
+  },
 
-    console.log('unprocessed relays', 
-      this.relays.filter( relay => !this.store.tasks.getProcessed('relays').includes(relay)))
+  completeRelay: function(relay, result){
+    if(this.store.tasks.isProcessed(this.taskSlug, relay))
+      return 
 
-    if(single) {
-      await this.check(single)
-    } 
-    else {
-      //console.log('multiple relays',  single)
-      // const processed = new Set()
-      for(let index = 0; index < relays.length; index++) {
-        const relay = relays[index]
-        //console.log('checking relay', relay)
-        await this.delay(this.averageLatency)
-        this.check(relay)
-          .then((result) => {
-            //console.log('check completed', relay)
-            if(this.store.tasks.isProcessed('relays', relay))
-              return 
-            
-            this.store.tasks.addProcessed('relays', result.url)
-
-            this.results[result.url] = result
-            this.setCache(result)
-
-            if(this.store.tasks.getProcessed('relays').length >= this.relays.length)
-              this.completeAll()
-
-            return this.results
-          })
-          .then( async () => {
-            // this.history = await History()
-          })
-          .catch( err => console.error(err) )
-      }
-    } 
+    this.store.tasks.addProcessed(this.taskSlug, relay)
+    
+    if(result)  {
+      this.results[relay] = result
+      this.setCache(result)
+    }
+      
+    if(this.store.tasks.getProcessed(this.taskSlug).length >= this.relays.length)
+      this.completeAll()
   },
 
   completeAll: function(){
     //console.log('completed')
-    this.store.tasks.finishProcessing('relays')
-    this.store.relays.updateNow()
+    this.store.tasks.completeJob()
+    // this.store.tasks.finishProcessing(this.taskSlug)
+    this.store.tasks.updateNow(this.taskSlug)
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
@@ -169,9 +169,7 @@ const localMethods = {
   },
 
   check: async function(relay){
-    console.log('this should only appear once per second')
-        
-    return new Promise( (resolve, reject) => {
+    return new Promise( (resolve) => {
       const opts = {
           checkLatency: true,          
           getInfo: true,
@@ -189,18 +187,22 @@ const localMethods = {
 
       socket
         .on('complete', (instance) => {
+          // console.log('completed?', instance.result)
           instance.result.aggregate = this.getAggregate(instance.result)
           instance.relay.close()
           instance.result.log = instance.log
           resolve(instance.result)
         })
-        .on('close', () => {
-          //console.log(`${relay.url} has closed`)
-        })
-        .on('error', () => {
-          reject()
-        })
         .run()
+        // .on('close', () => {
+        //   //console.log(`${relay.url} has closed`)
+        //   // reject()
+        // })
+        // .on('error', () => {
+        //   // console.log(result)
+        //   // reject()
+        // })
+        
     })
   },
   
@@ -220,10 +222,10 @@ const localMethods = {
     return Math.floor(parseFloat(sum/total));
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.relays.lastUpdate+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.relays.getLastUpdate) || Date.now()
+    return this.timeSince(this.store.tasks.getLastUpdate(this.taskSlug)) || Date.now()
   },
 }
 
@@ -235,6 +237,22 @@ export default defineComponent({
     return { 
       store : setupStore(),
       results: results
+    }
+  },
+  data() {
+    return {
+      relay: "",
+      relays: [],
+      refresh: {},
+      untilNext: null,
+      lastUpdate: null,
+      sinceLast: null,
+      interval: null,
+      windowActive: true,
+      averageLatency: 200,
+      pageOpen: 0,
+      taskSlug: 'relays/check'
+      // history: null
     }
   },
   created(){
@@ -258,7 +276,7 @@ export default defineComponent({
     // document.removeEventListener("visibilitychange", this.handleVisibility, false);
   },
   beforeMount(){
-    this.lastUpdate = this.store.relays.lastUpdate
+    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
@@ -277,7 +295,10 @@ export default defineComponent({
   },
   mounted(){
     this.migrateLegacy()
-    if(this.store.tasks.isProcessing(`relays`))
+
+    // console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+
+    if(this.store.tasks.isProcessing(this.taskSlug))
       this.invalidate(true)
     else
       this.invalidate()
@@ -287,7 +308,8 @@ export default defineComponent({
   updated(){},
   computed: Object.assign(SharedComputed, {
     getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
+      const calculated = this.averageLatency*this.relays.length
+      return calculated > 10000 ? calculated : 10000
     },
   }),
   methods: Object.assign(localMethods, RelaysLib),
@@ -298,21 +320,6 @@ export default defineComponent({
         return {}
       }
     },
-  },
-  data() {
-    return {
-      relay: "",
-      relays: [],
-      refresh: {},
-      untilNext: null,
-      lastUpdate: null,
-      sinceLast: null,
-      interval: null,
-      windowActive: true,
-      averageLatency: 200,
-      pageOpen: 0,
-      // history: null
-    }
   },
 })
 </script>

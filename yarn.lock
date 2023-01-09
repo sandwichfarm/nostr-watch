@@ -2271,17 +2271,6 @@ ajv@^8.0.0, ajv@^8.0.1, ajv@^8.8.0:
     require-from-string "^2.0.2"
     uri-js "^4.2.2"
 
-alby@1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/alby/-/alby-1.0.1.tgz#45478313a8c6b11c0a803b0a1cafbea9558a5731"
-  integrity sha512-pXi2mcjpW7C5bniwZDRxiwxim19mMPg5m/0SbMILw9v+EVXJ+UP40gU+ektd7jcE/N39WGja2igVGZTyhXp1vQ==
-  dependencies:
-    jsonschema "^1.2.4"
-    lodash.clonedeep "^4.5.0"
-    lodash.get "^4.4.2"
-    lodash.merge "^4.6.1"
-    lodash.set "^4.3.2"
-
 ansi-colors@^4.1.1:
   version "4.1.3"
   resolved "https://registry.yarnpkg.com/ansi-colors/-/ansi-colors-4.1.3.tgz#37611340eb2243e70cc604cad35d63270d48781b"
@@ -5571,11 +5560,6 @@ jsonfile@^6.0.1:
   optionalDependencies:
     graceful-fs "^4.1.6"
 
-jsonschema@^1.2.4:
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/jsonschema/-/jsonschema-1.4.1.tgz#cc4c3f0077fb4542982973d8a083b6b34f482dab"
-  integrity sha512-S6cATIPVv1z0IlxdN+zUk5EPjkGCdnhN4wVSBlvoUO1tOLJootbo9CquNJmbIh4yikWHiUedhRYrNPn1arpEmQ==
-
 kind-of@^6.0.2, kind-of@^6.0.3:
   version "6.0.3"
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-6.0.3.tgz#07c05034a6c349fa06e24fa35aa76db4580ce4dd"
@@ -5719,7 +5703,7 @@ lodash.memoize@^4.1.2:
   resolved "https://registry.yarnpkg.com/lodash.memoize/-/lodash.memoize-4.1.2.tgz#bcc6c49a42a2840ed997f323eada5ecd182e0bfe"
   integrity sha512-t7j+NzmgnQzTAYXcsHYLgimltOV1MXHtlOWf6GjL9Kj8GK5FInw5JotxvbOs+IvV1/Dzo04/fCGfLVs7aXb4Ag==
 
-lodash.merge@^4.6.1, lodash.merge@^4.6.2:
+lodash.merge@^4.6.2:
   version "4.6.2"
   resolved "https://registry.yarnpkg.com/lodash.merge/-/lodash.merge-4.6.2.tgz#558aa53b43b661e1925a0afdfa36a9a1085fe57a"
   integrity sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==
@@ -5733,11 +5717,6 @@ lodash.range@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/lodash.range/-/lodash.range-3.2.0.tgz#f461e588f66683f7eadeade513e38a69a565a15d"
   integrity sha512-Fgkb7SinmuzqgIhNhAElo0BL/R1rHCnhwSZf78omqSwvWqD0kD2ssOAutQonDKH/ldS8BxA72ORYI09qAY9CYg==
-
-lodash.set@^4.3.2:
-  version "4.3.2"
-  resolved "https://registry.yarnpkg.com/lodash.set/-/lodash.set-4.3.2.tgz#d8757b1da807dde24816b0d6a84bea1a76230b23"
-  integrity sha512-4hNPN5jlm/N/HLMCO43v8BXKq9Z7QdAGc/VGrRD61w8gN9g/6jF9A4L1pbUgBLCffi0w9VsXfTOij5x8iTyFvg==
 
 lodash.truncate@^4.4.2:
   version "4.4.2"
@@ -6419,39 +6398,15 @@ normalize-url@^6.0.1:
   resolved "https://registry.yarnpkg.com/normalize-url/-/normalize-url-6.1.0.tgz#40d0885b535deffe3f3147bec877d05fe4c5668a"
   integrity sha512-DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==
 
-nostr-relay-inspector@0.0.19:
-  version "0.0.19"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.19.tgz#f55dd25644e43e9a0158e653f4eee8c325fa4662"
-  integrity sha512-tmr+fQ96m72TgOQFXejn7HNsoUPhWrXW85n1yD/lLTlkZevX0FusSJ+jWa9u54Ht1EsvdV8+Qb26qeM+eVws7g==
-  dependencies:
-    alby "1.0.1"
-    cross-fetch "3.1.5"
-    js-yaml "4.1.0"
-    node-fetch "3.3.0"
-    nostr "0.2.5"
-    nostr-relay-inspector "0.0.3"
-    tape "5.6.1"
-    yaml-loader "0.8.0"
-
-nostr-relay-inspector@0.0.21:
-  version "0.0.21"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.21.tgz#126fad278e96eaf536197877a59cc5fb6be28bc1"
-  integrity sha512-autA6wraUjerS8NGU65anyM5ZXxPrJlZehSjQpQkAo72ivoNwJ2VjIl8IkUGiLUPLhtDox0ziY9XprJFkii4eQ==
+nostr-relay-inspector@0.0.23:
+  version "0.0.23"
+  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.23.tgz#86f3ea8a23ea1beccd18ec93db1339434679a798"
+  integrity sha512-G1xVvUM+PajNaZb8bAn7MGcDQL81YhKDEky1Lv2oGl0STWfrSb9KnJpSMrS8Rx/YRmGtqiNWIMfRokDCIyrKNw==
   dependencies:
     cross-fetch "3.1.5"
     js-yaml "4.1.0"
     node-fetch "3.3.0"
-    nostr "0.2.5"
-    nostr-relay-inspector "0.0.19"
-    tape "5.6.1"
-    yaml-loader "0.8.0"
-
-nostr-relay-inspector@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.3.tgz#a5bda69877535db719dd80bbcd0e41faec69a958"
-  integrity sha512-Lk4mSf+FFWauEk3P7R/xe2eUFytlEYQUzCsnHV7bmk8Y9vMa7xeDK3qnJ+uul1UHCfhDWL+aiN9WMYpscnruYA==
-  dependencies:
-    nostr "0.2.5"
+    nostr "0.2.7"
     tape "5.6.1"
     yaml-loader "0.8.0"
 
@@ -6471,6 +6426,14 @@ nostr@0.2.5:
   version "0.2.5"
   resolved "https://registry.yarnpkg.com/nostr/-/nostr-0.2.5.tgz#0315ec5ffd51225e667c79bfaca1a52907b529a3"
   integrity sha512-0U4UURBhoN+/QtJPEiuJ/0mrfKp9NcO/cEaAAVsAa0Ge1cG89K7h0LT3ou6i+0SClZBrmp57TWga9tXDJcCzvQ==
+  dependencies:
+    noble-secp256k1 "^1.2.14"
+    ws "^8.8.1"
+
+nostr@0.2.7:
+  version "0.2.7"
+  resolved "https://registry.yarnpkg.com/nostr/-/nostr-0.2.7.tgz#14bf238b00a37b1ef02c9b854d3462fbe918a213"
+  integrity sha512-Yq5tkiCTJtohs7H7Fx+Ki83bR8b3xapdwYi17HunhW5EQfZ9rI0cIXFyihj2ZRkv/0YYvVBiCp/KIaLYt5LyfQ==
   dependencies:
     noble-secp256k1 "^1.2.14"
     ws "^8.8.1"

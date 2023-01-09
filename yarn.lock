@@ -6393,10 +6393,10 @@ normalize-url@^6.0.1:
   resolved "https://registry.yarnpkg.com/normalize-url/-/normalize-url-6.1.0.tgz#40d0885b535deffe3f3147bec877d05fe4c5668a"
   integrity sha512-DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==
 
-nostr-relay-inspector@0.0.23:
-  version "0.0.23"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.23.tgz#86f3ea8a23ea1beccd18ec93db1339434679a798"
-  integrity sha512-G1xVvUM+PajNaZb8bAn7MGcDQL81YhKDEky1Lv2oGl0STWfrSb9KnJpSMrS8Rx/YRmGtqiNWIMfRokDCIyrKNw==
+nostr-relay-inspector@0.0.25:
+  version "0.0.25"
+  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.25.tgz#8ddd0872d4529d4376b2254f32e3da2d9278963f"
+  integrity sha512-Xq1Y4coTC/Qd/axdGIZm6bejs6mF3A9UoHqQI8eDTGUOOvcyCIZcmowFUBkIBIVkCGCD/0DfD3vLG78Xi8oH+Q==
   dependencies:
     cross-fetch "3.1.5"
     js-yaml "4.1.0"

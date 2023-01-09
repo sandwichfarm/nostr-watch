@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "build": "vue-cli-service build",
+    "prebuild": "yarn get:relays && yarn get:geo",
     "get:relays": "node ./scripts/relays.js",
     "get:geo": "node ./scripts/geo.js",
     "serve": "vue-cli-service serve --host localhost",
-    "watch": "yarn prebuild && vue-cli-service build --watch",
     "lint": "vue-cli-service lint",
     "docker": "yarn docker:build && yarn docker:tag && yarn docker:push",
     "docker:up": "docker-compose up",

@@ -46,7 +46,8 @@ export default {
   },
   data() {
     return {
-      popoverShow: false
+      popoverShow: false,
+      interval: null
     }
   },
   async mounted(){
@@ -56,7 +57,11 @@ export default {
     this.store.relays.$subscribe( mutation => {
       console.log(mutation.events)
     })
-  },  
+    this.interval = setInterval( () => this.getNip23, 10000 )
+  },
+  unmounted(){
+    clearInterval(this.interval)
+  }, 
   methods: {
     setFavoritesAsNip23: function(){
       // const nip23 = {}
@@ -77,22 +82,46 @@ export default {
           .subscribe(subid, filters)
         this.$pool
           .on('event', (relay, sub_id, event) => {
-            console.log(event)
             if(sub_id !== subid)
               return 
+            if(event.kind !== 10001)
+              return 
+
             this.$pool.unsubscribe(subid)
             const parsed = this.parseNip23(event)
             // this.updateFavorites(parsed)
+            Object.keys(parsed).forEach( relay => {
+              parsed[relay].read = parsed[relay].read == 'true' ? true : false
+              parsed[relay].write = parsed[relay].write ? true : false
+            })
             this.persistNip23(parsed)
+            this.setSyncStatus(parsed)
             console.log(event)
             resolve()
           })
+        this.$pool
+          .on('ok', () => console.log('event saved'))
         setTimeout( () => resolve(), 2000 ) 
       })
     },
+    setSyncStatus: function(nip23){
+      
+      const obj = {}
+      console.log('setSyncStatus')
+      Object.keys(nip23).forEach( relay => {
+        obj[relay] = true 
+      })
+      console.log('sync object', obj)
+      this.store.relays.setNip23Status(obj)
+      console.log('synced?', this.store.relays.nip23Synced)
+    },  
     updateNip23: async function(){
       await this.getNip32
       const currentNip23 = this.store.relays.getNip23
+      Object.keys(currentNip23).forEach( relay => {
+        currentNip23[relay].read = currentNip23[relay].read ? "true" : 'false'
+        currentNip23[relay].write = currentNip23[relay].write ? "true" : 'false'
+      })
       const event = {
         kind: 10001,
         created_at: Math.floor(Date.now()/1000),

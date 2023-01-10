@@ -269,10 +269,9 @@
     computed: Object.assign(SharedComputed, {
       ifSyncedWithNostr(){
         return (relay) => {
-          const nip23 = this.store.relays.getNip23
-          if(typeof nip23?.[relay] === 'undefined')
-            return 
-          return true
+          relay
+          if(this.store.relays.nip23Synced?.[relay])
+            return true
         }
       },
       subsectionRelays(){

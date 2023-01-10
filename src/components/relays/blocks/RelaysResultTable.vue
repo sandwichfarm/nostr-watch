@@ -19,7 +19,7 @@
                             :class="getThemeBtnClass('spacious')" 
                             @click="store.prefs.changeTheme('spacious')">spacious</span>
                         </span>
-                        <NostrSyncPopoverNag  v-if="subsection == 'favorite'"  />
+                        <NostrSyncPopoverNag  v-if="subsection == 'favorite' && isLoggedIn"  />
                         <span v-if="subsection != 'favorite' && store.relays.getFavorites.length" class="ml-6 text-slate-600">
                           <input type="checkbox" class=" cursor-pointer relative top-0.5 mr-1" id="relays-pin-favorites" v-model="store.prefs.pinFavorites" /> 
                           <label class="cursor-pointer font-thin text-xs" for="relays-pin-favorites">
@@ -31,6 +31,15 @@
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()">
                         <code class="text-xs block">Upvote</code>
                       </th> -->
+                      <th v-if="subsection == 'favorite'"  class="synced">
+                        Synced
+                      </th>
+                      <th v-if="subsection == 'favorite'"  class="synced">
+                        Read
+                      </th>
+                      <th v-if="subsection == 'favorite'"  class="synced">
+                        Write
+                      </th>
                       <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
@@ -85,6 +94,18 @@
                           👍
                         </a>
                       </td> -->
+
+                      <th v-if="subsection == 'favorite'"  class="synced">
+                        {{ ifSyncedWithNostr(relay) ? "yes" : "no" }}
+                      </th>
+
+                      <th v-if="subsection == 'favorite'"  class="do-read">
+                        <input v-if="typeof store.relays.nip23?.[relay]?.read !== 'undefined'" type="checkbox" v-model="store.relays.nip23[relay].read" />
+                      </th>
+
+                      <th v-if="subsection == 'favorite'"  class="do-write">
+                        <input v-if="typeof store.relays.nip23?.[relay]?.write !== 'undefined'" type="checkbox" v-model="store.relays.nip23[relay].write" />
+                      </th>
 
                       <td class="w-12 verified text-center md:table-cell lg:table-cell xl:table-cell">
                         <span v-if="this.results[relay]?.identities">
@@ -152,6 +173,7 @@
   
   import RelaysLib from '@/shared/relays-lib.js'
   import UserLib from '@/shared/user-lib.js'
+  import SharedComputed from '@/shared/computed.js'
 
   import {validateEvent, getEventHash, verifySignature} from 'nostr-tools'
   
@@ -244,7 +266,15 @@
         activePageData: {}
       }
     },
-    computed: {
+    computed: Object.assign(SharedComputed, {
+      ifSyncedWithNostr(){
+        return (relay) => {
+          const nip23 = this.store.relays.getNip23
+          if(typeof nip23?.[relay] === 'undefined')
+            return 
+          return true
+        }
+      },
       subsectionRelays(){
         return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
       },
@@ -348,7 +378,7 @@
       relayClean() {
         return (relay) => relay.replace('wss://', '')
       },
-    },
+    }),
     methods: Object.assign(RelaysLib, UserLib, localMethods),
   })
   </script>

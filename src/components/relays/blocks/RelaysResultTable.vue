@@ -27,6 +27,10 @@
                           </label>
                         </span>
                       </th>
+                      
+                      <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()">
+                        <code class="text-xs block">Upvote</code>
+                      </th> -->
                       <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
@@ -74,6 +78,14 @@
                         <a :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
                       </td>
 
+                      <!-- <td class="w-16 fav text-center" v-if="isLoggedIn()">
+                        <a
+                          class=" hover:opacity-100 cursor-pointer opacity-20" 
+                          @click="likeRelay(relay)">
+                          👍
+                        </a>
+                      </td> -->
+
                       <td class="w-12 verified text-center md:table-cell lg:table-cell xl:table-cell">
                         <span v-if="this.results[relay]?.identities">
                           <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span>
@@ -107,14 +119,15 @@
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'write')">&nbsp;</span>
                       </td>
 
-                      <td class="w-16 fav text-center" :key="generateKey(relay, 'check.write')">
+                      <td class="w-16 fav text-center">
                         <a
-                          class=" hover:opacity-100 cursor-pointer" 
+                          class="hover:opacity-100 cursor-pointer" 
                           :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"
                           @click="store.relays.toggleFavorite(relay)">
                           ❤️
                         </a>
                       </td>
+                      
                     </tr>
                 </tbody>
                 </table>
@@ -138,10 +151,36 @@
   import NostrSyncPopoverNag from '@/components/relays/partials/NostrSyncPopoverNag.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
+  import UserLib from '@/shared/user-lib.js'
+
+  import {validateEvent, getEventHash, verifySignature} from 'nostr-tools'
   
   import { setupStore } from '@/store'
   
-  const localMethods = {}
+  const localMethods = {
+    async likeRelay(relay){
+      const id = this.store.relays.getCanonical(relay)
+      const event = {
+        created_at: Math.floor(Date.now()/1000),
+        kind: 7,
+        content: '+',
+        tags: [
+          ['e', id],
+          ['p', this.store.user.getPublicKey]
+        ],
+        pubkey: this.store.user.getPublicKey
+      }
+      event.id = getEventHash(event)
+
+      console.log('like event', event)
+      const signedEvent = await window.nostr.signEvent(event)
+
+      let ok = validateEvent(signedEvent)
+      let veryOk = await verifySignature(signedEvent)
+
+      console.log('valid event?', ok, veryOk)
+    },
+  }
   
   export default defineComponent({
     name: 'ListClearnet',
@@ -207,7 +246,7 @@
     },
     computed: {
       subsectionRelays(){
-        return this.sortRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
       },
       relayGeo(){
         return (relay) => this.store.relays.getGeo(relay)
@@ -310,7 +349,7 @@
         return (relay) => relay.replace('wss://', '')
       },
     },
-    methods: Object.assign(RelaysLib, localMethods),
+    methods: Object.assign(RelaysLib, UserLib, localMethods),
   })
   </script>
 

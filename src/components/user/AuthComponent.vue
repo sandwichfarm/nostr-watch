@@ -91,24 +91,24 @@ export default defineComponent({
       })
     },
 
-    generateCodeChallenge: async function(codeVerifier) {
-      let digest = await crypto.subtle.digest("SHA-256",
-          new TextEncoder().encode(codeVerifier));
+    // generateCodeChallenge: async function(codeVerifier) {
+    //   let digest = await crypto.subtle.digest("SHA-256",
+    //       new TextEncoder().encode(codeVerifier));
 
-      return btoa(String.fromCharCode(...new Uint8Array(digest)))
-          .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
-    },
+    //   return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    //       .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+    // },
 
-    generateRandomString: function(length) {
-      let text = "";
-      let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    // generateRandomString: function(length) {
+    //   let text = "";
+    //   let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-      for (let i = 0; i < length; i++) {
-          text += possible.charAt(Math.floor(Math.random() * possible.length));
-      }
+    //   for (let i = 0; i < length; i++) {
+    //       text += possible.charAt(Math.floor(Math.random() * possible.length));
+    //   }
 
-      return text;
-    },
+    //   return text;
+    // },
   }),
   props: {},
 })

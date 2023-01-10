@@ -41,7 +41,12 @@ const localMethods = {
       () => {
         const relays = this.store.relays.getAggregateCache('public')
 
-        console.log('public relays', this.store.relays.getAggregateCache('public').length)
+        if( !relays.length ){
+          this.store.tasks.completeJob()
+          return
+        }
+        
+        // console.log('public relays', this.store.relays.getAggregateCache('public').length)
 
         const pool = new RelayPool(relays)
         const subid = crypto.randomBytes(40).toString('hex')
@@ -51,42 +56,60 @@ const localMethods = {
           7: new Set(),
         }
 
-        const limits = {
-          0: 1,
-          1: 20,
-          7: 100
-        } 
+        // const limits = {
+        //   0: 1,
+        //   1: 20,
+        //   7: 100
+        // } 
 
-        const kinds = [0,1,7]
+        // const kinds = [0,1,7]
+        const kinds = [0]
+
+        const pubkeys = new Set()
+
+        Object.keys(this.results).forEach( relayKey => {
+          const result = this.results[relayKey]
+          const pubkey = result?.info?.pubkey
+          if(!pubkey)
+            return 
+          pubkeys.add(pubkey)
+        })
+
         //remove kind 1 for non-single page tasks
         pool
           .on('open', relay => {
-            relay.subscribe(subid, { limit:10, kinds:kinds, authors:[this.result.info.pubkey] })
+            console.log('subscribing', Array.from(pubkeys) )
+            relay.subscribe(subid, { limit:pubkeys.size, kinds:kinds, authors: Array.from(pubkeys) })
           })
           .on('event', (relay, sub_id, event) => {
-            console.log(event)
+            
             if(!kinds.includes(event.kind))
               return
             if(sub_id !== subid)
               return
-            const u = uniques[event.kind],
-                  l = limits[event.kind]
-            if( u.has(event.id) || u.size > l )
+
+            const u = uniques[event.kind]
+                  // l = limits[event.kind]
+
+            if( u.has(event.id) )
               return
+
             if( !(event instanceof Object) )
               return
             
             if( !( this.events[event.kind] instanceof Object ))
               this.events[event.kind] = new Object()
             this.events[event.kind][event.id] = event
+            this.store.profile.setProfile(event.pubkey, JSON.parse(event.content))
             u.add(event.id)
-            if(event.kind === 0)
-              this.store.profile.setProfile(JSON.parse(event.content)).catch()
-            console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
-            console.log( 'event!', event.content )
           })
 
-        this.store.tasks.completeJob()
+          setTimeout( () => { 
+            pool.unsubscribe()
+            pool.close()
+            this.store.tasks.completeJob()
+          }, 10000 )
+        
           // .on('eose', relay => {
           //   relay.close()
           // })
@@ -107,7 +130,8 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'relays/operatorprofiles'
+      taskSlug: 'relays/operatorprofiles',
+      events: {}
     }
   },
   setup(props){

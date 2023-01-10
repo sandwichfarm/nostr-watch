@@ -29,7 +29,8 @@ app.config.globalProperties.$tabId = crypto.randomBytes(40).toString('hex')
 app.config.globalProperties.$filters = []
 
 // app.config.globalProperties.$pool = new RelayPool(relays, {reconnect: false})
-app.config.globalProperties.$pool = new RelayPool(['wss://relay.nostr.ch'])
+app.config.globalProperties.$pool = new RelayPool(['wss://nostr.sandwich.farm'])
+app.config.globalProperties.$pool.on('ok', () => console.log('ok') )
 
 await router.isReady()
 

@@ -51,6 +51,7 @@ export const useRelaysStore = defineStore('relays', {
 
     getCanonicals: state => state.canonicals,
     getCanonical: state => relay => state.canonicals[relay],
+    hasCanonical: state => relay => typeof state.canonicals[relay] !== 'undefined',
   },
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },

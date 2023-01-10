@@ -1,10 +1,10 @@
 <template>
   <RefreshTask
     v-bind:resultsProp="results" />
-  <!-- <RelayCanonicalsTask
+  <RelayCanonicalsTask
     :resultsProp="results" />
   <RelayOperatorTask
-    :resultsProp="results" /> -->
+    :resultsProp="results" />
 </template>
 
 <script>
@@ -16,15 +16,15 @@ import { setupStore } from '@/store'
 import SharedComputed from '@/shared/computed.js'
 
 import RefreshTask from './RefreshTask.vue'
-// import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
-// import RelayOperatorTask from './RelayOperatorTask.vue'
+import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
+import RelayOperatorTask from './RelayOperatorTask.vue'
 
 export default defineComponent({
   name: "TasksManager",
   components: {
     RefreshTask,
-    // RelayCanonicalsTask,
-    // RelayOperatorTask
+    RelayCanonicalsTask,
+    RelayOperatorTask
   },
   data(){
     return {

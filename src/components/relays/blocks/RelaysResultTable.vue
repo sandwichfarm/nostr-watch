@@ -27,10 +27,15 @@
                           </label>
                         </span>
                       </th>
-                      
-                      <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()">
+                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
+                        <code class="text-xs block">Favorite</code>
+                      </th>
+                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()">
                         <code class="text-xs block">Upvote</code>
-                      </th> -->
+                      </th>
+                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()">
+                        <code class="text-xs block">LN</code>
+                      </th>
                       <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
@@ -57,9 +62,6 @@
                         <code class="text-xs block">Write</code>
                         <!-- ✏️ -->
                       </th>
-                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
-                        <code class="text-xs block">Favorite</code>
-                      </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 bg-white">
@@ -78,13 +80,40 @@
                         <a :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
                       </td>
 
-                      <!-- <td class="w-16 fav text-center" v-if="isLoggedIn()">
+                      <td class="w-16 fav text-center">
                         <a
-                          class=" hover:opacity-100 cursor-pointer opacity-20" 
+                          class="hover:opacity-100 cursor-pointer" 
+                          :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"
+                          @click="store.relays.toggleFavorite(relay)">
+                          ❤️
+                        </a>
+                      </td>
+
+                      <td class="w-16 fav text-center" v-if="isLoggedIn()">
+                        <a
+                          v-if="store.relays.hasCanonical(relay)"
+                          class="hover:opacity-100 cursor-pointer " 
+                          :class="{
+                            'opacity-20': !store.user.isLiked(relay),
+                            'opacity-100': store.user.isLiked(relay)
+                          }"
                           @click="likeRelay(relay)">
                           👍
                         </a>
-                      </td> -->
+                      </td>
+
+                      <td class="w-16 fav text-center" v-if="isLoggedIn()">
+                        <a
+                          v-if="results[relay]?.info?.pubkey && store.profile.hasProfile(results[relay]?.info?.pubkey) && store.profile.hasLud06(results[relay]?.info?.pubkey)"
+                          class="block hover:opacity-100 cursor-pointer opacity-20" 
+                          :href="`lightning:${store.profile.getLud06(results[relay]?.info?.pubkey)}`">
+                          <center> <!--when a deprecated element is the only thing that works, the internet is broken.-->
+                            <svg className="h-6 w-6 block w-auto" preserveAspectRatio="xMidYMin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                              <path d="M11.983 1.907a.75.75 0 00-1.292-.657l-8.5 9.5A.75.75 0 002.75 12h6.572l-1.305 6.093a.75.75 0 001.292.657l8.5-9.5A.75.75 0 0017.25 8h-6.572l1.305-6.093z" />
+                            </svg>
+                          </center>
+                        </a>
+                      </td>
 
                       <td class="w-12 verified text-center md:table-cell lg:table-cell xl:table-cell">
                         <span v-if="this.results[relay]?.identities">
@@ -119,14 +148,6 @@
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'write')">&nbsp;</span>
                       </td>
 
-                      <td class="w-16 fav text-center">
-                        <a
-                          class="hover:opacity-100 cursor-pointer" 
-                          :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"
-                          @click="store.relays.toggleFavorite(relay)">
-                          ❤️
-                        </a>
-                      </td>
                       
                     </tr>
                 </tbody>
@@ -159,17 +180,18 @@
   
   const localMethods = {
     async likeRelay(relay){
+      const like = !this.store.user.isLiked(relay)
       const id = this.store.relays.getCanonical(relay)
       const event = {
         created_at: Math.floor(Date.now()/1000),
         kind: 7,
-        content: '+',
         tags: [
           ['e', id],
           ['p', this.store.user.getPublicKey]
         ],
         pubkey: this.store.user.getPublicKey
       }
+      event.content = like ? '+' : '-'
       event.id = getEventHash(event)
 
       console.log('like event', event)
@@ -178,7 +200,15 @@
       let ok = validateEvent(signedEvent)
       let veryOk = await verifySignature(signedEvent)
 
-      console.log('valid event?', ok, veryOk)
+      if(!ok || !veryOk)
+        return 
+
+      this.$pool.send(['EVENT', signedEvent])
+
+      if(like)
+        this.store.user.like(relay)
+      else
+        this.store.user.unlike(relay)
     },
   }
   

@@ -1,10 +1,10 @@
 <template>
-  <span
+  <div
       v-if="(!store.tasks.isActive || store.tasks.getActiveSlug === this.taskSlug) && !this.isSingle"
-      class="mt-0.5 inline">
+      class="inline">
     <span class="text-white lg:text-sm mr-2 ml-2 mt-1 text-xs">
       <span v-if="!store.tasks.isProcessing(this.taskSlug)">Checked {{ sinceLast }} ago</span>
-      <span v-if="store.tasks.isProcessing(this.taskSlug)" class="italic lg:pr-9">
+      <span v-if="store.tasks.isProcessing(this.taskSlug)" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block mt-1.5 text-xs">
         <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -18,16 +18,15 @@
     </span>
     <button 
       v-if="!store.tasks.isProcessing(this.taskSlug)"
-      class="mr-8 my-1 py-0 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
+      class="mr-8 my-1 py-1 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
       :disabled='store.tasks.isProcessing(this.taskSlug)' 
       @click="refreshNow()">
         Check{{ relay ? ` ${relay}` : "" }} Now
     </button>
-  </span>
-
+  </div>
   <span
     v-if="(store.tasks.getActiveSlug === this.taskSlug) && this.isSingle"
-      class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
+      class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs mr-11">
       Loading {{ relayFromUrl }}
   </span>
   

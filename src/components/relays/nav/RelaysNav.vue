@@ -27,10 +27,11 @@
 
 <script>
 import { defineComponent, defineAsyncComponent, toRefs } from 'vue'
-import {useRoute} from 'vue-router'
 import { setupStore } from '@/store'
 
 import RelaysLib from '@/shared/relays-lib.js'
+import SharedComputed from '@/shared/computed.js'
+
 import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
 // import RefreshTask from '@/components/relays/tasks/RefreshTask.vue'
 
@@ -76,12 +77,6 @@ export default defineComponent({
     //console.log('mounted in relays find nav')
   },
   methods: Object.assign(RelaysLib, setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive),
-  computed: {
-    path: function() { return useRoute().path },
-
-    // isActive(){
-    //     return (item) => item.slug==this.navActiveContent
-    // }
-  },
+  computed: SharedComputed,
 });
 </script>

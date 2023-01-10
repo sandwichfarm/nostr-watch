@@ -96,12 +96,18 @@ export default {
             })
             this.persistNip23(parsed)
             this.setSyncStatus(parsed)
+            // this.makeFavorites(parsed)
             console.log(event)
             resolve()
           })
         this.$pool
           .on('ok', () => console.log('event saved'))
         setTimeout( () => resolve(), 2000 ) 
+      })
+    },
+    makeFavorites: function(nip23){
+      Object.keys(nip23).forEach( relay => {
+        this.store.relays.setFavorite(relay)
       })
     },
     setSyncStatus: function(nip23){

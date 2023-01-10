@@ -121,7 +121,7 @@
 
         
 
-        <div class="py-5 col-span-3" v-if="Object.keys(result?.info).length">
+        <div class="py-5 col-span-3" v-if="typeof result?.info !== 'undefined'">
           <div class="overflow-hidden bg-white shadow sm:rounded-lg relative">
             <div class="px-4 py-5 sm:px-6">
               <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Relay Info <code class="text-gray-300 text-xs absolute top-3 right-3">NIP-11</code></h3>

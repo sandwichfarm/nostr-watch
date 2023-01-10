@@ -617,10 +617,6 @@ export default defineComponent({
     cleanUrl: function(){
       return (relay) => relay.replace('wss://', '')
     },
-    relayFromUrl() {
-      // We will see what `params` is shortly
-      return `wss://${this.$route.params.relayUrl}`
-    },
 
     badgeLink(){
       return (nip) => `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`

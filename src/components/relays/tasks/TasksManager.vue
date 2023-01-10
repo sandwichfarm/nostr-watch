@@ -9,13 +9,14 @@
 
 <script>
 import { defineComponent, toRefs } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { setupStore } from '@/store'
 
 import SharedComputed from '@/shared/computed.js'
 
 import RefreshTask from './RefreshTask.vue'
+
+
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
 // import RelayOperatorTask from './RelayOperatorTask.vue'
 
@@ -74,8 +75,6 @@ export default defineComponent({
       this.store.tasks.active.handler()
     }
   },
-  computed: Object.assign(SharedComputed, {
-    path: function() { return useRoute().path },
-  })
+  computed: Object.assign(SharedComputed, {})
 });
 </script>

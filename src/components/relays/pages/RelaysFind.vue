@@ -54,11 +54,11 @@
 <script>
 //vue
 import { defineComponent, defineAsyncComponent } from 'vue'
-import {useRoute} from 'vue-router'
 //pinia
 import { setupStore } from '@/store'
 //shared methods
 import RelaysLib from '@/shared/relays-lib.js'
+import SharedComputed from '@/shared/computed.js'
 import { parseHash } from '@/shared/hash-router.js'
 //components
 // import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
@@ -155,8 +155,7 @@ export default defineComponent({
     // this.relaysMountNav()
   },
 
-  computed: {
-    path: function() { return useRoute().path },
+  computed: Object.assign(SharedComputed, {
     activeSection: function(){ return this.store.layout.getActiveItem('relays')?.slug },
     activeSubsection: function(){ return this.store.layout.getActiveItem(`relays/find`)?.slug },
     navSubsection: function() { return this.store.layout.getNavGroup(`relays/find`) || [] },
@@ -170,7 +169,7 @@ export default defineComponent({
       }
     },
     parseHash
-  },
+  }),
 
   methods: Object.assign(RelaysLib, localMethods), 
 

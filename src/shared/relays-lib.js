@@ -2,6 +2,13 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  queueJob: function(id, fn, unique){
+    this.store.tasks.addJob({
+      id: id,
+      handler: fn,
+      unique: unique
+    })
+  },
   getRelays(relays){
     relays = this.filterRelays(relays)
     relays = this.sortRelays(relays)

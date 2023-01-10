@@ -27,6 +27,19 @@
           </div>
         </div>
 
+       <div class="mt-3 overflow-hidden bg-slate-100 shadow sm:rounded-lg">
+          <div class="px-4 py-5 sm:px-6 flex">
+            <span 
+              v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
+              :key="heartbeat[0]"
+              class=" mr-1 flex-1"
+              :class="{
+                'bg-red-300 h-16 mt-16': !heartbeat.latency,
+                'bg-green-400 h-32': heartbeat.latency
+              }">
+              </span>
+          </div>
+        </div>
         
         <!-- this.result?.check?.[which] ? 'green' : 'red' -->
 
@@ -502,8 +515,6 @@ const localMethods = {
           u.add(event.id)
           if(parseInt(event.kind) === 0)
             this.store.profile.set(JSON.parse(event.content))
-          //console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
-          //console.log( 'event!', event.content )
         })
         .on('eose', relay => {
           relay.close()

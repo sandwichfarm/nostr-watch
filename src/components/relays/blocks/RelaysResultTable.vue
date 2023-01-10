@@ -206,7 +206,6 @@
     },
     updated(){
       // //console.log('state, updated')
-      
     },
     beforeUnmount(){
       //console.log('relays list', 'beforeUnmount()', this.subsection)

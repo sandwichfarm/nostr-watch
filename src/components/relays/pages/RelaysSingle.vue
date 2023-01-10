@@ -12,7 +12,7 @@
   <div id="wrapper" class="mt-8 mx-auto max-w-7xl">
     
 
-      <div v-if="store.tasks.isProcessing('relays') && !result" class="flex bg-slate-100 mt-12 shadow">
+      <div v-if="store.tasks.isProcessing('relays/check') && !result" class="flex bg-slate-100 mt-12 shadow">
         <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
           <span class="block lg:text-lg"><strong>Data has not yet populated and is currently being processed.</strong> Depending on the availability of of the <strong>{{ relay  }}</strong>, this may or may not be populated shortly.</span>
         </div>

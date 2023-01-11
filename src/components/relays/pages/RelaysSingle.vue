@@ -82,7 +82,7 @@
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong></span>
             <span class="text-sm block">
-              Some links...
+              <!-- Some links...
               <a 
                 v-if="result?.info?.software.includes('+http')" 
                 :href="result?.info?.software.replace('git+', '')"
@@ -93,7 +93,7 @@
                 v-if="result?.info?.software.includes('git+')" 
                 :href="result?.info?.software.replace('+http', '').replace('+https', '')">
                 git
-              </a>
+              </a> -->
             </span>
           </div>
         </div>

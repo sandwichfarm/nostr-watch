@@ -1,5 +1,4 @@
 <template>
-  
   <RelaysNav/>
 
   <MapSingle

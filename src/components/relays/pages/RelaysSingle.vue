@@ -431,8 +431,6 @@ import SharedComputed from '@/shared/computed.js'
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
 
-import pathSegments from 'path-segments'
-
 import { setupStore } from '@/store'
 import { useHead } from '@vueuse/head'
 
@@ -611,7 +609,7 @@ export default defineComponent({
       return formatter.format(new Date())
     },
     getSoftware: function(){
-      return pathSegments(this.result?.info?.software, { last: 2 })
+      return this.result?.info?.software
     },
     cleanUrl: function(){
       return (relay) => relay.replace('wss://', '')

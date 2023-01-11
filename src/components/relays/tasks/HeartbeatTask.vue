@@ -39,6 +39,8 @@ const localMethods = {
       this.taskSlug, 
       async () => {
         const heartbeatsByEvent = new Object()
+        let total = 48,
+            count = 0
         await new Promise( resolve => {
           const pool = new RelayPool( relays )
           const uniques = new Set()
@@ -46,7 +48,7 @@ const localMethods = {
           pool
             .subscribe(subid, {
               kinds:    [1010],
-              limit:    48, //12 hours 
+              limit:    total, //12 hours 
               authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
               since:    Math.floor(this.store.tasks.getLastUpdate(this.taskSlug)/1000)
             })
@@ -64,13 +66,21 @@ const localMethods = {
               console.log('heartbeat found', event.id)
             
               heartbeatsByEvent[event.created_at] = decodeJson(event.content).online
+
+              count++
+
+              if(count !== total)
+                return 
               
+              resolve()
+              pool.unsubscribe(subid)
+              pool.close()
             })
           setTimeout( () => { 
             resolve()
             pool.unsubscribe(subid)
             pool.close()
-          }, 10000 )
+          }, 30000 )
         })
         
         this.parseHeartbeats(heartbeatsByEvent)

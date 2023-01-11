@@ -26,6 +26,15 @@
           </div>
         </div>
 
+        <vue-gauge 
+          :refid="'relay-latency'"
+          :options="{
+            'needleValue':result?.latency?.final,
+            'arcDelimiters':[33,66],
+            'rangeLabel': false,
+            'arcColors': ['green', 'orange', 'red'] }">
+        </vue-gauge>
+
        <div class="mt-3 overflow-hidden bg-slate-100 shadow sm:rounded-lg">
           <div class="px-4 py-5 sm:px-6 flex">
             <span 
@@ -450,6 +459,8 @@ import { useHead } from '@vueuse/head'
 import { RelayPool } from 'nostr'
 import crypto from 'crypto'
 
+import VueGauge from 'vue-gauge';
+
 const RelaysNav = defineAsyncComponent(() =>
     import("@/components/relays/nav/RelaysNav.vue" /* webpackChunkName: "RelaysNav" */)
 );
@@ -560,6 +571,7 @@ export default defineComponent({
     MapSingle,
     SafeMail,
     RelaysNav,
+    VueGauge,
   },
 
   data() {
@@ -586,6 +598,8 @@ export default defineComponent({
       store : setupStore()
     }
   },
+
+  created(){},
 
   beforeMount(){
     this.setData()

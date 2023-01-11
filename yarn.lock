@@ -8933,6 +8933,11 @@ vue-eslint-parser@^8.0.1:
     lodash "^4.17.21"
     semver "^7.3.5"
 
+vue-gauge@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/vue-gauge/-/vue-gauge-1.0.3.tgz#383109b9c6181d1b7df065cd295ef54b9591df04"
+  integrity sha512-hIjjDxAjJ5NRKeEVUpwZQ7IA+LONfNE7C51Z5TeEvIEl3jqu2aLE5RnIGQaLdLBYzbK807AiCvYt1nM0m4D6Cw==
+
 vue-grid-responsive@1.3.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/vue-grid-responsive/-/vue-grid-responsive-1.3.0.tgz#34ace2977645695d918f99a5c8f355ecd715edcf"

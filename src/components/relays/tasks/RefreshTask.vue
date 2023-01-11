@@ -1,4 +1,5 @@
 <template>
+  <div>{{ getRefreshInterval }}</div>
   <div
       v-if="(!store.tasks.isActive || store.tasks.getActiveSlug === this.taskSlug) && !this.isSingle"
       class="inline">
@@ -27,7 +28,7 @@
   <span
     v-if="(store.tasks.getActiveSlug === this.taskSlug) && this.isSingle"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs mr-11">
-      Loading {{ relayFromUrl }}
+      Loading {{ relayFromUrl }} {{ getRefreshInterval }}
   </span>
   
 </template>
@@ -111,11 +112,13 @@ const localMethods = {
   },
 
   invalidate: async function(force, single){
-    if( (!this.isExpired(this.taskSlug) && !force) ) 
+    if( (!this.isExpired(this.taskSlug, this.getRefreshInterval) && !force) ) 
       return
 
     if(!this.windowActive)
       return
+
+    console.log('expired!')
 
     this.queueJob(this.taskSlug, async () => {
       const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.taskSlug, relay) )
@@ -295,6 +298,16 @@ export default defineComponent({
       const calculated = this.averageLatency*this.relays.length
       return calculated > 10000 ? calculated : 10000
     },
+    getRefreshInterval: function(){
+      const relay = this.$route.params.relayUrl
+      if(!relay)
+        return this.store.prefs.duration
+      if(this.results[relay]?.check?.connect && this.result?.check?.read && this.result?.check?.write && this.result?.latency?.final )
+        return this.result.latency.final * 5 
+      if(this.result?.check?.connect && this.result?.check?.read && this.result?.check?.write)
+        return 30*1000
+      return 60*1000
+    }
   }),
 
   methods: Object.assign(localMethods, RelaysLib),

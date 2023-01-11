@@ -2,7 +2,7 @@
   <span 
     v-if="this.store.tasks.getActiveSlug === taskSlug"
     class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Task Status here</span>
+    <span>Retrieving uptime data...</span>
   </span>
 </template>
 
@@ -31,6 +31,8 @@ const localMethods = {
       return
 
     const subid = crypto.randomBytes(40).toString('hex')
+
+    // const pool = new RelayPool( relays )
     
     //This should always be alive and not exist in a job, for now, it's fine. 
     this.queueJob(
@@ -46,7 +48,7 @@ const localMethods = {
               kinds:    [1010],
               limit:    48, //12 hours 
               authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
-              // since:    this.store.tasks.getLastUpdate(this.taskSlug)
+              since:    Math.floor(this.store.tasks.getLastUpdate(this.taskSlug)/1000)
             })
           
           pool
@@ -111,6 +113,8 @@ const localMethods = {
     console.log(heartbeats)
 
     this.store.stats.setHeartbeats(heartbeats)
+
+    this.store.tasks.completeJob(this.taskSlug)
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 

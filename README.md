@@ -26,7 +26,6 @@ Develop branch is deployed to https://next.nostr.watch
 - [ ] Discover relays at runtime (currently buildtime, ready to move to runtime with 0.1) 
 - [ ] Discover geo at runtime
 
-
 ## Project setup
 ```
 yarn install

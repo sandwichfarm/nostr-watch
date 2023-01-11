@@ -6,7 +6,8 @@ export default {
     },
     path: function() { return useRoute().path },
     relayFromUrl() {
-        return `wss://${this.$route.params.relayUrl}`
+        const protocol = this.$route.params.protocol ? this.$route.params.protocol : 'wss'
+        return `${protocol}://${this.$route.params.relayUrl}`
     },
     isSingle(){
         return typeof this.$route.params.relayUrl !== 'undefined'

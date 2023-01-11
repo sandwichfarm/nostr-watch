@@ -1,5 +1,4 @@
 <template>
-  
   <RelaysNav/>
 
   <MapSingle
@@ -96,7 +95,7 @@
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong></span>
             <span class="text-sm block">
-              Some links...
+              <!-- Some links...
               <a 
                 v-if="result?.info?.software.includes('+http')" 
                 :href="result?.info?.software.replace('git+', '')"
@@ -107,7 +106,7 @@
                 v-if="result?.info?.software.includes('git+')" 
                 :href="result?.info?.software.replace('+http', '').replace('+https', '')">
                 git
-              </a>
+              </a> -->
             </span>
           </div>
         </div>
@@ -445,8 +444,6 @@ import SharedComputed from '@/shared/computed.js'
 import { countryCodeEmoji } from 'country-code-emoji';
 import emoji from 'node-emoji';
 
-import pathSegments from 'path-segments'
-
 import { setupStore } from '@/store'
 import { useHead } from '@vueuse/head'
 
@@ -623,7 +620,7 @@ export default defineComponent({
       return formatter.format(new Date())
     },
     getSoftware: function(){
-      return pathSegments(this.result?.info?.software, { last: 2 })
+      return this.result?.info?.software
     },
     cleanUrl: function(){
       return (relay) => relay.replace('wss://', '')

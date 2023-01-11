@@ -60,6 +60,8 @@ const localMethods = {
                 return 
               
               uniques.add(event.created_at)
+
+              console.log('heartbeat found', event.id)
             
               heartbeatsByEvent[event.created_at] = decodeJson(event.content).online
               
@@ -68,7 +70,7 @@ const localMethods = {
             resolve()
             pool.unsubscribe(subid)
             pool.close()
-          }, 2000 )
+          }, 10000 )
         })
         
         this.parseHeartbeats(heartbeatsByEvent)

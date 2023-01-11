@@ -15,7 +15,7 @@ import { setupStore } from '@/store'
 
 import SharedComputed from '@/shared/computed.js'
 
-// import RefreshTask from './RefreshTask.vue'
+import RefreshTask from './RefreshTask.vue'
 import HeartbeatTask from './HeartbeatTask.vue'
 
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
@@ -24,7 +24,7 @@ import HeartbeatTask from './HeartbeatTask.vue'
 export default defineComponent({
   name: "TasksManager",
   components: {
-    // RefreshTask,
+    RefreshTask,
     HeartbeatTask,
     // RelayCanonicalsTask,
     // RelayOperatorTask

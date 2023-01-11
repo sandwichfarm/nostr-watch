@@ -86,7 +86,7 @@ const localMethods = {
             console.log( 'event!', event.content )
           })
 
-        this.store.tasks.completeJob()
+        this.store.tasks.completeJob(this.taskSlug)
           // .on('eose', relay => {
           //   relay.close()
           // })

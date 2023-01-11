@@ -158,8 +158,7 @@ const localMethods = {
   },
 
   completeAll: function(){
-    this.store.tasks.completeJob()
-    this.store.tasks.updateNow(this.taskSlug)
+    this.store.tasks.completeJob(this.taskSlug)
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))

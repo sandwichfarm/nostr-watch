@@ -41,6 +41,9 @@
                         <code class="text-xs block">Location</code>
                         <!-- 🌎 -->
                       </th>
+                      <th>
+                        Uptime
+                      </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
                         <code class="text-xs block">Latency</code>
                         <!-- ⌛️ -->
@@ -93,6 +96,20 @@
                       </td>
 
                       <td class="w-24 location text-center">{{ getFlag(relay) }}</td>
+
+                      <td class="w-24 latency text-center">
+                        <div class="px-4 py-5 sm:px-6 flex">
+                          <span 
+                            v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
+                            :key="heartbeat[0]"
+                            class="mr-0 w-0.5 h-5 flex-1"
+                            :class="{
+                              'bg-red-700': !heartbeat.latency,
+                              'bg-green-500': heartbeat.latency
+                            }">
+                            </span>
+                        </div>
+                      </td>
 
                       <td class="w-24 latency text-center">
                         <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>

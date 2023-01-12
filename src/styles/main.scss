@@ -7,15 +7,22 @@
     --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 
+.toggle-dark-mode {
+  width:32px;
+  height:32px;
+}
+
 body[theme=dark] {
   background: #16171d;
   color: #fff;
+
+  
 
   #relays_list_wrapper {
     @apply bg-black/20 rounded-lg
   }
 
-  #headlessui-menu-items-3 {
+  div[role=menu] {
     background: #16171d;
     color: #fff;
     a:hover {

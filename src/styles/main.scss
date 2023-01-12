@@ -12,11 +12,17 @@
   height:32px;
 }
 
+#subsection_header {
+  background-color: rgba(255,255,255, .5)
+}
+
 body[theme=dark] {
   background: #16171d;
   color: #fff;
 
-  
+  #subsection_header {
+    background-color: rgba(22, 23, 29, .5)
+  }
 
   #relays_list_wrapper {
     @apply bg-black/20 rounded-lg

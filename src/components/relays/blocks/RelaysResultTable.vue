@@ -8,16 +8,16 @@
                 <thead>
                     <tr>
                       <th scope="col" class="text-left" colspan="2">
-                        <span class="mr-3">
+                        <span class="mr-3 hidden lg:inline-block">
                           <span 
                             :class="getThemeBtnClass('compact')" 
-                            @click="store.prefs.changeTheme('compact')">compact</span>
+                            @click="store.prefs.setRowTheme('compact')">compact</span>
                           <span 
                             :class="getThemeBtnClass('comfortable')" 
-                            @click="store.prefs.changeTheme('comfortable')">comfortable</span>
+                            @click="store.prefs.setRowTheme('comfortable')">comfortable</span>
                           <span 
                             :class="getThemeBtnClass('spacious')" 
-                            @click="store.prefs.changeTheme('spacious')">spacious</span>
+                            @click="store.prefs.setRowTheme('spacious')">spacious</span>
                         </span>
                         <NostrSyncPopoverNag  v-if="subsection == 'favorite'"  />
                         <span v-if="subsection != 'favorite' && store.relays.getFavorites.length" class="ml-6 text-slate-600">
@@ -152,6 +152,7 @@
   
   import RelaysLib from '@/shared/relays-lib.js'
   import UserLib from '@/shared/user-lib.js'
+  // import { screenIs } from '@/shared/layout.js'
 
   import {validateEvent, getEventHash, verifySignature} from 'nostr-tools'
   
@@ -203,6 +204,14 @@
     mounted(){
       //console.log('navdata', this.navData, this.navData.filter( item => item.slug == this.subsection )[0], this.navData.filter( item => item.slug == this.subsection ))
       this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
+    
+      // if(screenIs('sm')){
+      //   this.user.prefs.setRowTheme('compact')
+      // }
+
+      // if(screenIs('md')){
+      //   this.user.prefs.setRowTheme('comfortable')
+      // }
     },
     updated(){
       // //console.log('state, updated')
@@ -268,8 +277,8 @@
             'bg-slate-100': index % 2,
             'bg-red-50 hover:bg-red-100': this.store.relays.isFavorite(relay),
             'bg-gray-50 hover:bg-slate-200': !this.store.relays.isFavorite(relay),
-            'text-2xl h-16': this.store.prefs.getTheme === 'spacious',
-            'text-xl h-9': this.store.prefs.getTheme === 'comfortable',
+            'lg:text-2xl lg:h-16': this.store.prefs.getTheme === 'spacious',
+            'lg:text-xl lg:h-9': this.store.prefs.getTheme === 'comfortable',
             // '': this.store.prefs.getTheme === 'compact',
           }
         }

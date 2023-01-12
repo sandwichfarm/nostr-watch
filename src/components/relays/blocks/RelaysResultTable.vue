@@ -1,5 +1,5 @@
 <template>
-   <div class="-mt-10 pt-0 px-1 sm:px-6 lg:px-8">
+   <div class="pt-0 px-1 sm:px-6 lg:px-8">
       <div class="mt-8 flex flex-col">
       <div class="overflow-x-auto">
           <div class="inline-block min-w-full align-middle" v-if="subsectionRelays.length">

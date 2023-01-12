@@ -7,8 +7,10 @@
     :activeSubsectionProp="activeSubsection" /> 
 
   <div id="wrapper" class="mx-auto max-w-7xl">  
-    <div class="pt-5 px-1 sm:px-6 lg:px-8" :class="{
-      'absolute z-900 w-1/2 top-32 bg-white/50': this.store.layout.mapIsExpanded
+    <div id="subsection_header" class="pt-5 px-1 sm:px-6 lg:px-8" :class="{
+      'absolute z-900 w-1/2 top-32': this.store.layout.mapIsExpanded,
+      // 'bg-white/50': !this.isMapDark,
+      // 'bg-black/50': this.isMapDark
     }"
       style="z-index:9999">
       <div class="sm:flex sm:items-center">
@@ -37,7 +39,7 @@
         <RelaysFindNav />
       </div>
     </div>
-    <div v-if="!this.store.layout.mapIsExpanded">
+    <div id="relays_list_wrapper" v-if="!this.store.layout.mapIsExpanded">
       <div 
           v-for="subsection in navSubsection"
           :key="subsection.slug" > 
@@ -145,6 +147,7 @@ export default defineComponent({
   },
 
   async mounted() {
+    console.log('map expanded', this.store.layout.mapIsExpanded, 'is dark', localStorage.getItem('isDark'))
     //console.log("findrelays mounted", this.results)
     this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
 
@@ -167,6 +170,9 @@ export default defineComponent({
           return this.store.relays.getFavorites.length 
         return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == subsection).length 
       }
+    },
+    isMapDark: function(){
+      // return this.store.layout.mapIsExpanded && this.$storage.('isDark') == true
     },
     parseHash
   }),

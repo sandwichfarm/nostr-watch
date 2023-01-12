@@ -10,7 +10,7 @@
 
   <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl">
     
-      <div v-if="store.tasks.isProcessing('relays/check') && !result" class="flex bg-slate-100 mt-12 shadow">
+      <div v-if="store.tasks.isProcessing('relays/check') && !result" class="data-card flex bg-slate-100 mt-12 shadow">
         <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
           <span class="block lg:text-lg"><strong>Data has not yet populated and is currently being processed.</strong> Depending on the availability of of the <strong>{{ relay  }}</strong>, this may or may not be populated shortly.</span>
         </div>
@@ -18,7 +18,7 @@
 
       <section v-if="result">
 
-        <div class="overflow-hidden bg-slate-100 shadow sm:rounded-lg">
+        <div class="data-card overflow-hidden bg-slate-100 shadow sm:rounded-lg">
           <div class="px-4 py-5 sm:px-6">
             <h1>{{geo?.countryCode ? getFlag : ''}}<span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
             <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
@@ -35,7 +35,7 @@
         </div>
 
         <div v-if="!result?.check?.connect">
-          <div class="block mt-1 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
+          <div class="data-card block mt-1 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-red-600 dark:text-red-300">This Relay Appears to be offline</h5>
           </div>
           <div class="flex bg-slate-50 shadow mt-12" v-if="Object.keys(this.result?.geo).length">
@@ -45,9 +45,9 @@
           </div>
         </div>
 
-        <div class="mb-10 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg">
+        <div v-if="result?.info?.supported_nips" class="mb-10 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg">
           <div class="px-1 py-2 sm:px-6">
-            <div class="flex" v-if="result?.info?.supported_nips">
+            <div class="flex">
               <div class="flex-none">
                 <h3 class="text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
               </div>
@@ -59,7 +59,7 @@
           </div>
         </div>
 
-        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 mb-10" v-if="geo?.dns">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 mb-10" v-if="geo?.dns">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>
               The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong> <br />
@@ -69,7 +69,7 @@
           </div>
         </div>
 
-        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <span>
                 The current date/time in <strong>{{ geo?.city }}</strong> is <strong>{{ getLocalTime }}</strong>
@@ -77,7 +77,7 @@
           </div>
         </div>
 
-        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 shadow" v-if="this.result?.info?.software">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 shadow" v-if="this.result?.info?.software">
           <div class="text-clip overflow-ellipsis text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong>
           </div>
@@ -90,13 +90,13 @@
           </div>
         </div> -->
 
-        <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="this.result?.info?.pubkey">
+        <div class="data-card flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 w-full text-sm md:text-lg lg:text-3xl overflow-ellipsis flex-none block py-1 text-center">
             <code class="block">{{ this.result?.info.pubkey }}</code>
           </div>
         </div>
 
-        <div class="flex bg-slate-50 border-slate-200 shadow mt-12" v-if="this.result?.info?.pubkey">
+        <div class="data-card flex bg-slate-50 border-slate-200 shadow mt-12" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 w-full flex-none block py-1 text-center">
             Here's the details...
           </div>
@@ -104,10 +104,10 @@
 
         
 
-        <div class="py-5" v-if="typeof result?.info !== 'undefined'">
-          <div class="overflow-hidden bg-white shadow sm:rounded-lg relative">
+        <div class="py-5" v-if="typeof result?.info !== 'undefined' && Object.keys(result?.info).length">
+          <div class="data-card overflow-hidden bg-white shadow sm:rounded-lg relative">
             <div class="px-4 py-5 sm:px-6">
-              <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Relay Info <code class="text-gray-300 text-xs absolute top-3 right-3">NIP-11</code></h3>
+              <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Relay Info</h3>
             </div>
             <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
               <dl class="sm:divide-y sm:divide-gray-200">
@@ -169,7 +169,7 @@
         
 
       <div :class="getGeoWrapperClass">
-        <div  :class="getDnsClass" class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
+        <div  :class="getDnsClass" class="data-card overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">DNS</h3>
           </div>
@@ -183,7 +183,7 @@
           </div>
         </div>
 
-        <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8"  :class="getGeoClass" v-if="geo">
+        <div class="data-card overflow-hidden bg-white shadow sm:rounded-lg mt-8"  :class="getGeoClass" v-if="geo">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
           </div>

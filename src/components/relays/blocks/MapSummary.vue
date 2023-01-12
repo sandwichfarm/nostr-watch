@@ -306,7 +306,7 @@ export default defineComponent({
 </script>
 
 <style>
-:root {
+/* :root {
     --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 
@@ -314,7 +314,7 @@ export default defineComponent({
     .leaflet-tile {
         filter:var(--map-tiles-filter, none);
 	}
-}
+} */
 </style>
 
 <style>

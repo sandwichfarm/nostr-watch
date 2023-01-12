@@ -3,10 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-    --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-}
-
 .toggle-dark-mode {
   width:32px;
   height:32px;
@@ -16,7 +12,13 @@
   background-color: rgba(255,255,255, .5)
 }
 
-body[theme=dark] {
+:root {
+  --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+//TODO: When building out the stylesheet, convert these to WS dark: conditional.
+
+html[theme=dark] {
   background: #16171d;
   color: #fff;
 

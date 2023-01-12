@@ -1,4 +1,5 @@
 relays:
+  - wss://nos.lol
   - wss://nostr.p2sh.co
   - wss://nostr.lnprivate.network
   - wss://relay.nostr.vision

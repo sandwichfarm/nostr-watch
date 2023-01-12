@@ -41,6 +41,10 @@ const routes = [
         ]
     },
     {
+        path: '/relay/:protocol(ws?s)/:relayUrl(.*)',
+        component: RelaysSingle
+    },
+    {
         path: '/relay/:relayUrl(.*)',
         component: RelaysSingle
     },

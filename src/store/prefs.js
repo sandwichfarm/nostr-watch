@@ -22,7 +22,7 @@ export const usePrefsStore = defineStore('prefs', {
     toggleRefresh(){ this.refresh = !this.refresh },
     updateExpiration(dur) { this.duration = dur },
     togglePinFavorites(){ this.pinFavorites = !this.pinFavorites },
-    changeTheme(theme){ this.rowTheme = theme },
+    setRowTheme(theme){ this.rowTheme = theme },
     addFilter(key, fn){ 
       if(this.filters.includes(key))
         return 

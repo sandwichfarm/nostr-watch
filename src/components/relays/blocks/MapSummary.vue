@@ -51,7 +51,7 @@
       </l-marker>
 
     </l-map>
-    <span @click="this.handleToggleMap()">
+    <span @click="this.handleToggleMap()" id="map_control">
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="!store.layout.mapIsExpanded">full map</button>
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="store.layout.mapIsExpanded">relay list</button>
     </span>
@@ -585,17 +585,7 @@ export default defineComponent({
 
 </script>
 
-<style>
-/* :root {
-    --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-}
 
-@media (prefers-color-scheme: dark) {
-    .leaflet-tile {
-        filter:var(--map-tiles-filter, none);
-	}
-} */
-</style>
 
 <style scoped>
 

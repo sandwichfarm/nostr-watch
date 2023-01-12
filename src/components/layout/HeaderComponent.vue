@@ -2,7 +2,7 @@
   <Disclosure as="nav" class="bg-gray-800" v-slot="{ open }">
     <!-- <div class="mx-auto max-w-none"> -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="relative flex h-16 items-center mx-3 justify-between">
+      <div class="relative h-16 flex-none md:flex lg:flex items-center mx-3 justify-between">
           <div class="absolute inset-y-0 left-0  flex items-center sm:hidden">
           <!-- Mobile menu button-->
           <DisclosureButton class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
@@ -11,14 +11,14 @@
               <XMarkIcon v-else class="block h-6 w-6" aria-hidden="true" />
           </DisclosureButton>
           </div>
-          <span class="block text-center text-slate-50 text-xl">
+          <span class="inline-block text-center text-slate-50 text-xl mt-4 md:mt-0">
             nostr.watch
             <sup class="relative -top-2" style="font-size: 0.6rem">{{ version }}</sup>
           </span>
           <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
           <!-- <div class="w-32 flex flex-shrink-0 items-center">
           </div> -->
-          <div class="hidden sm:ml-6 sm:block">
+          <div class="hidden sm:ml-6 md:block">
               <div class="flex space-x-4">
                 
               <router-link 
@@ -61,8 +61,7 @@
               <div v-if="store.user.getPublicKey">
               <MenuButton class="flex rounded-full bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
                   <span class="sr-only">Open user menu</span>
-                  <span class="text-white mt-1.5 mr-3">{{ store.user.getNip05 || store.user.getName }}</span>
-                  <span class="text-white mt-1.5 mr-3">{{  }}</span>
+                  <span class="text-white mt-1.5 mr-3 hidden md:block">{{ store.user.getNip05 || store.user.getName }}</span>
                   <img v-if="store.user.getPicture" class="h-8 w-8 rounded-full" :src="store.user.getPicture" alt="store.user.profile?.name" />
               </MenuButton>
               </div>
@@ -91,7 +90,39 @@
 
     <DisclosurePanel class="sm:hidden">
     <div class="space-y-1 px-2 pt-2 pb-3">
-        <DisclosureButton v-for="item in navigation" :key="item.name" as="a" :href="item.href" :class="[item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white', 'block px-3 py-2 rounded-md text-base font-medium']" :aria-current="item.current ? 'page' : undefined">{{ item.name }}</DisclosureButton>
+      <!-- <div class="block sm:ml-6 md:hidden">
+              <div class="flex space-x-4"> -->
+                
+              <router-link 
+                to="/relays/find"
+                :active-class="`bg-white/25`"
+                class="block text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                Relays
+              </router-link>
+              <a 
+                href="https://github.com/dskvr/nostr-watch/issues/new/choose"
+                target="_blank"
+                class="block text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Feedback
+              </a>
+              <a 
+                href="https://github.com/dskvr/nostr-watch"
+                target="_blank"
+                class="block text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Git
+              </a>
+              <!-- <router-link to="/about">about</router-link>
+              <a
+                href="/" 
+                
+                :aria-current="item.current ? 'page' : undefined">
+                  {{ item.name }}
+              </a> -->
+              <!-- </div>
+          </div> -->
     </div>
     </DisclosurePanel>
 </Disclosure>
@@ -101,10 +132,10 @@ nav.menu {
   position:relative;
   z-index:10;
 }
-nav span,
+/* nav span,
 nav.menu a {
   display: inline-block;
-}
+} */
 
 nav.menu a { 
   text-decoration: none;

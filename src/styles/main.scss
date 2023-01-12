@@ -307,25 +307,25 @@ tr.offline .location {
 }
 
 
-@media only screen and (min-device-width: 640px)
-                   and (max-device-width: 480px)
-                   and (orientation: portrait) {
+// @media only screen and (min-device-width: 640px)
+//                    and (max-device-width: 480px)
+//                    and (orientation: portrait) {
 
- table .latency,
- table .verified,
- table .nip {
-   display: none;
- }
+//  table .latency,
+//  table .verified,
+//  table .nip {
+//    display: none;
+//  }
 
-}
+// }
 
-@media only screen and (min-device-width: 640px)
-                   and (max-device-width: 480px)
-                   and (orientation: landscape) {
+// @media only screen and (min-device-width: 640px)
+//                    and (max-device-width: 480px)
+//                    and (orientation: landscape) {
 
- table .nip {
-   display: none;
- }
+//  table .nip {
+//    display: none;
+//  }
 
-}
+// }
 

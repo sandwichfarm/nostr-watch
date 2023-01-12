@@ -277,8 +277,8 @@
             'bg-slate-100': index % 2,
             'bg-red-50 hover:bg-red-100': this.store.relays.isFavorite(relay),
             'bg-gray-50 hover:bg-slate-200': !this.store.relays.isFavorite(relay),
-            'lg:text-2xl lg:h-16': this.store.prefs.getTheme === 'spacious',
-            'lg:text-xl lg:h-9': this.store.prefs.getTheme === 'comfortable',
+            'xl:text-2xl xl:h-16': this.store.prefs.getTheme === 'spacious',
+            'xl:text-xl xl:h-9': this.store.prefs.getTheme === 'comfortable',
             // '': this.store.prefs.getTheme === 'compact',
           }
         }

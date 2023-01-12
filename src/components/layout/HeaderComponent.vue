@@ -53,6 +53,8 @@
           </div>
           </div>
           <div class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+          
+          <DarkMode />
 
           <!-- Profile dropdown -->
           <Menu as="div" class="relative ml-3">
@@ -167,6 +169,7 @@ import UserLib from '@/shared/user-lib.js'
 
 // import PreferencesComponent from '@/components/PreferencesComponent.vue'
 import AuthComponent from '@/components/user/AuthComponent.vue'
+import DarkMode from '@/components/partials/DarkMode.vue'
 
 import {version} from '../../../package.json'
 
@@ -177,6 +180,7 @@ export default defineComponent({
   components: {
     // PreferencesComponent,
     AuthComponent,
+    DarkMode,
     Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems,
     Bars3Icon, XMarkIcon
   },

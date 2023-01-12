@@ -37,7 +37,7 @@
         <RelaysFindNav />
       </div>
     </div>
-    <div v-if="!this.store.layout.mapIsExpanded">
+    <div id="relays_list_wrapper" v-if="!this.store.layout.mapIsExpanded">
       <div 
           v-for="subsection in navSubsection"
           :key="subsection.slug" > 

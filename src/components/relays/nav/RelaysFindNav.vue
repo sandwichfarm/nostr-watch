@@ -1,5 +1,5 @@
 <template>
-  <Disclosure as="nav" class="bg-white mb-5" v-slot="{ open }">
+  <Disclosure as="nav" id="subsection_nav" class="bg-white mb-5" v-slot="{ open }">
   <div class="mx-auto max-w-7xl px-0">
     <div class="flex h-12 justify-center md:justify-between">
       <div class="flex px-2 lg:px-0">

@@ -3,6 +3,88 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+body[theme=dark] {
+ 
+}
+
+
+body[theme=dark] {
+  background: #16171d;
+  color: #fff;
+
+  #relays_list_wrapper {
+    @apply bg-black/20 rounded-lg
+  }
+
+  #headlessui-menu-items-3 {
+    background: #16171d;
+    color: #fff;
+    a:hover {
+      @apply bg-white/10
+    }
+  }
+
+  #subsection_nav {
+    @apply bg-transparent
+  }
+
+  #map_control button {
+    background: #16171d;
+    color: #fff;
+
+  }
+
+  table tbody {
+    border-top:1px solid #333 !important;
+  }
+
+  table tbody tr:hover {
+    @apply bg-slate-50/10
+  }
+
+  * {
+    color: #f0f0f0
+  }
+
+  tr, tbody {
+    @apply bg-transparent
+  }
+
+  main {
+    .data-card {
+      * {
+        @apply border-slate-100/10
+      }
+
+      dl > div {
+        @apply border-none
+      }
+
+      @apply bg-slate-50/10 border-none
+    }
+  }
+
+  .leaflet-tile {
+    filter:var(--map-tiles-filter, none);
+  }
+
+  .leaflet-control-attribution {
+    background:#000
+  }
+}
+
+
+
+
+
+
+
+
+
 
 td ul { padding:0; margin:0; list-style: none; }
 td ul li { list-style: none; }

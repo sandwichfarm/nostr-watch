@@ -122,7 +122,7 @@ export default {
       console.log('synced?', this.store.relays.nip23Synced)
     },  
     updateNip23: async function(){
-      await this.getNip32
+      await this.getNip23
       const currentNip23 = this.store.relays.getNip23
       Object.keys(currentNip23).forEach( relay => {
         currentNip23[relay].read = currentNip23[relay].read ? "true" : 'false'

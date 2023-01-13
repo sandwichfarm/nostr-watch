@@ -51,8 +51,9 @@ export default {
     }
   },
   async mounted(){
-    this.setFavoritesAsNip23()
-    await this.getNip23()
+    this.store.relays.persistNip23( 'local', this.setFavoritesAsNip23() )
+    this.persistNip23( 'remote', await this.getNip23() )
+    this.mergeLocalAndRemote()
     console.log('nip23', this.store.relays.getNip23)
     this.store.relays.$subscribe( mutation => {
       console.log(mutation.events)
@@ -63,20 +64,27 @@ export default {
     clearInterval(this.interval)
   }, 
   methods: {
+    mergeLocalAndRemote: function(){
+      
+    },
     setFavoritesAsNip23: function(){
-      // const nip23 = {}
-      // this.store.relays.getFavorites.forEach( relay => {
-      //   nip23[relay] = {}
-      //   nip23[relay].read = true
-      //   nip23[relay].write = true
-      // })
-      // this.store.relays.setNip23(nip23)
+      const nip23 = []
+      this.store.relays.getFavorites.forEach( relay => {
+        const tag = []
+        tag[0] = relay
+        tag[1].read = ""
+        tag[2].write = ""
+        nip23.push(tag)
+      })
+      
       return true
     },  
     getNip23: async function(){
       return new Promise( resolve => {
         const subid = `kind1001-${this.store.user.getPublicKey}`
         const filters = { limit:1, kinds:[10001], authors: [this.store.user.getPublicKey] }
+
+        let invalid = false
         console.log(filters) 
         this.$pool
           .subscribe(subid, filters)
@@ -86,25 +94,25 @@ export default {
               return 
             if(event.kind !== 10001)
               return 
+            if(!event.tags.length)
+              return 
+            if(!this.validNip23(event.tags))
+              invalid = true
 
             this.$pool.unsubscribe(subid)
-            const parsed = this.parseNip23(event)
-            // this.updateFavorites(parsed)
-            Object.keys(parsed).forEach( relay => {
-              parsed[relay].read = parsed[relay].read == 'true' ? true : false
-              parsed[relay].write = parsed[relay].write ? true : false
-            })
-            this.persistNip23(parsed)
-            this.setSyncStatus(parsed)
-            // this.makeFavorites(parsed)
-            console.log(event)
-            resolve()
+
+            resolve(event.tags)
           })
         this.$pool
           .on('ok', () => console.log('event saved'))
         setTimeout( () => resolve(), 2000 ) 
       })
     },
+    validNip23: function(tags){
+      const filtered = tags.filter( tag => tag.length === 3 )
+      if(tags.length === filtered.length)
+        return true
+    },  
     makeFavorites: function(nip23){
       Object.keys(nip23).forEach( relay => {
         this.store.relays.setFavorite(relay)
@@ -156,16 +164,14 @@ export default {
 
       this.$pool.send(['EVENT', signedEvent])
     },
-    parseNip23: function(event){
-      return JSON.parse(event.content)
-    },
     updateFavorites: function(relays){
       Object.keys(relays).forEach( relayUrl => {
         this.store.relays.setFavorite(relayUrl)
       })
     }, 
-    persistNip23: function(relays){
-      this.store.relays.setNip23(relays)
+    persistNip23: function(type, tags){
+      const key = `nip23${type.charAt(0).toUpperCase()}`
+      this.store.relays[key] = tags
     },
     togglePopover: function(){
       if(this.popoverShow){

@@ -100,11 +100,13 @@
                       </th>
 
                       <th v-if="subsection == 'favorite'"  class="do-read">
-                        <input v-if="typeof store.relays.nip23?.[relay]?.read !== 'undefined'" type="checkbox" v-model="store.relays.nip23[relay].read" />
+                        <button>Read</button>
+                        {{ store.relays.nip23Local }}
                       </th>
 
                       <th v-if="subsection == 'favorite'"  class="do-write">
-                        <input v-if="typeof store.relays.nip23?.[relay]?.write !== 'undefined'" type="checkbox" v-model="store.relays.nip23[relay].write" />
+                        <button>Write</button>
+                        {{ store.relays.nip23Local }}
                       </th>
 
                       <td class="w-12 verified text-center md:table-cell lg:table-cell xl:table-cell">
@@ -268,11 +270,37 @@
     },
     computed: Object.assign(SharedComputed, {
       ifSyncedWithNostr(){
-        return (relay) => {
-          relay
-          if(this.store.relays.nip23Synced?.[relay])
-            return true
-        }
+        this.store.relays.nip23Local.forEach( nip23Local => {
+          const relayLocal = new URL(nip23Local[0]),
+                readLocal = nip23Local[1],
+                writeLocal = nip23Local[2]
+
+          const exists = this.store.nip23Remote.filter( nip23Remote => {
+            const relayRemote = new URL(nip23Remote[0])
+
+            if(relayRemote === relayLocal)
+              return true 
+          })
+
+          if(!exists.length)
+            return false
+
+          const rulesMatch = this.store.nip23Remote.filter( nip23Remote => {
+            const relayRemote = new URL(nip23Remote[0]),
+                  readRemote = nip23Remote[1],
+                  writeRemote = nip23Remote[2]
+
+            if(readRemote === readLocal && writeRemote === writeLocal)
+              return true
+          })
+
+          if(!rulesMatch.length)
+            return false 
+          
+          return true
+        })
+        //iterate through tags
+        //check if the local nip23 === remote nip23
       },
       subsectionRelays(){
         return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )

@@ -16,8 +16,8 @@ export const useRelaysStore = defineStore('relays', {
     aggregatesAreSet: false,
     cached: new Object(),
     canonicals: new Object(),
-    nip23: new Object(),
-    nip23Synced: new Object(),
+    nip23Local: new Object(),
+    nip23Remote: new Object(),
   }),
   getters: {
     getAll: (state) => state.urls,

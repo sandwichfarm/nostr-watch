@@ -125,8 +125,16 @@ export default {
       await this.getNip23
       const currentNip23 = this.store.relays.getNip23
       Object.keys(currentNip23).forEach( relay => {
-        currentNip23[relay].read = currentNip23[relay].read ? "true" : 'false'
-        currentNip23[relay].write = currentNip23[relay].write ? "true" : 'false'
+        const read = currentNip23[relay].read,
+              write = currentNip23[relay].write
+        
+        if(!read && !write) {
+          delete currentNip23[relay] 
+          return 
+        }
+
+        currentNip23[relay].read = read ? "true" : 'false'
+        currentNip23[relay].write = write ? "true" : 'false'
       })
       const event = {
         kind: 10001,

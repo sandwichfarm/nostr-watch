@@ -169,4 +169,11 @@ export default {
         return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
       };
     },
+    async copy(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch($e) {
+        ////console.log('Cannot copy');
+      }
+    },
 }

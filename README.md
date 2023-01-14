@@ -1,6 +1,7 @@
 > this project is alpha! changes are fast and hard. branching model and tests will come with beta. 
 
 Follow me: npub1uac67zc9er54ln0kl6e4qp2y6ta3enfcg7ywnayshvlw9r5w6ehsqq99rx
+
 LN: bread@sandwich.farm 
 
 # nostr-watch 0.1.0

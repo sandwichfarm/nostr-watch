@@ -1,5 +1,5 @@
 <template>
-  <Popover class="relative mr-2">
+  <Popover class="relative mr-2 sm:hidden md:hidden">
     <PopoverButton>🤍</PopoverButton>
     <PopoverPanel class="absolute border border-slate-600 rounded-md -left-48 mt-3 z-9000 bg-white dark:bg-slate-900">
       <div class="w-96 px-3 py-5">
@@ -25,7 +25,6 @@
                 </svg>
               </span>
             </span>
-            
             <a class="inline-block" href="lightning:bread@sandwich.farm">bread@sandwich.farm</a> 
           </span>
         </div>

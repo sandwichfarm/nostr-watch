@@ -1,15 +1,15 @@
 <template>
   <Popover class="relative mr-2 invisible md:invisible lg:visible">
     <PopoverButton>🤍</PopoverButton>
-    <PopoverPanel class="absolute border border-slate-600 rounded-md -left-48 mt-3 z-9000 bg-white dark:bg-slate-900">
+    <PopoverPanel class="absolute border text-black dark:text-white border-black/10 dark:border-slate-600 rounded-md -left-48 mt-3 z-9000 bg-white dark:bg-slate-900">
       <div class="w-96 px-3 py-5">
         <div class="font-bold text-md pb-3">
           I launched nostr.watch as a prototype for fun
           and a few weeks later nostr took off. Built 
           with Vue3/Pinia, Tailwind and nostr-relay-inspector.
-          <span class="italic text-black">Thank you for giving me something positive to focus on.</span>
+          <span class="italic text-black/50 dark:text-white/50">Thank you for giving me something positive to focus on.</span>
         </div>
-        <div class="border-t text-md pt-3 border-slate-700">
+        <div class="border-t text-md pt-3 border-black/10 dark:border-slate-700 ">
           <img alt="sandwich" src="https://cloudflare-ipfs.com/ipfs/QmeCYiohwh8mKgYTaBNXHQ8etRJpVYpiBSqhdkVx5dWP4a" class="block m-auto h-14 w-14 rounded-full mb-2" />
           <span>Follow me for updates and bad sandwich jokes</span>
           <span class="block relative cursor-pointer py-1 px-1" @click="RelaysLib.copy('npub1uac67zc9er54ln0kl6e4qp2y6ta3enfcg7ywnayshvlw9r5w6ehsqq99rx')">

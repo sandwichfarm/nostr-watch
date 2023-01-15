@@ -213,3 +213,4 @@ relays:
   - wss://rsslay.nostr.moe
   - wss://relay.nostr.scot
   - wss://relay.nostrich.de
+  - wss://nostr.mouton.dev

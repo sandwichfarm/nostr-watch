@@ -63,13 +63,11 @@ import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 import { parseHash } from '@/shared/hash-router.js'
 //components
-// import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
 // import RelaysFindNav from '@/components/relays/nav/RelaysFindNav.vue'
 // import RelaysResultTable from '@/components/relays/blocks/RelaysResultTable.vue'
 // import MapSummary from '@/components/relays/blocks/MapSummary.vue'
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
-
 
 const localMethods = {}
 

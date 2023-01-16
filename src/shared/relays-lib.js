@@ -48,7 +48,7 @@ export default {
       return this.$storage.getStorageSync(key)
     },
 
-    cleanUrl: function(relay){
+    getHostname: function(relay){
       return relay.replace('wss://', '')
     },
 

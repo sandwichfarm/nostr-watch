@@ -8,6 +8,7 @@ export const usePrefsStore = defineStore('prefs', {
     rowTheme: 'comfortable',
     filters: [],
     filterFn: [],
+    useKind3: true
   }),
   getters: {
     doRefresh: (state) => state.refresh,
@@ -21,7 +22,9 @@ export const usePrefsStore = defineStore('prefs', {
     disable(){ this.refresh = false },
     toggleRefresh(){ this.refresh = !this.refresh },
     updateExpiration(dur) { this.duration = dur },
-    togglePinFavorites(){ this.pinFavorites = !this.pinFavorites },
+    togglePinFavorites(){ 
+      this.pinFavorites = !this.pinFavorites 
+    },
     setRowTheme(theme){ this.rowTheme = theme },
     addFilter(key, fn){ 
       if(this.filters.includes(key))

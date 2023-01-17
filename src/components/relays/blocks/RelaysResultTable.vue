@@ -217,7 +217,8 @@
             </div>
           </div>
           <div class="text-xl block min-w-full align-middle py-8 light:bg-slate-100 rounded-lg" v-if="!store.relays.getFavorites.length && subsection == 'favorite'">
-            You have not selected any favorites. To select a favorite, click the heart emoji next to any relay in a relays list.
+            You have not selected any favorites. To select a favorite, click the heart emoji next to any relay in a relays list. 
+            Alternatively, sign-in to sync your relays list. If you do not see a sign-in, download a NIP-04 compatible extension like nos2x or Alby
           </div>
       </div>
       </div>

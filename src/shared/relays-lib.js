@@ -8,6 +8,11 @@ export default {
       async () => {
         await this.store.user.setKind3()
           .then( () => {
+            this.store.relays.getFavorites.forEach( relay => {
+              if(this.store.user?.kind3?.[relay])
+                return 
+              this.store.user.kind3[relay] = { read: false, write: false }
+            })
             Object.keys(this.store.user.kind3).forEach( key => {
               this.store.relays.setFavorite(key)
             })

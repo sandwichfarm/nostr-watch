@@ -27,7 +27,9 @@
             </p>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+          <NostrSync />
           <button 
+            v-if="!store.layout.editorExpanded"
             @click="$router.push('/relays/add')" 
             type="button" 
             class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-m font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
@@ -62,14 +64,15 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 import { parseHash } from '@/shared/hash-router.js'
+
+import NostrSync from '@/components/relays/partials/NostrSync.vue'
+
 //components
-// import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
 // import RelaysFindNav from '@/components/relays/nav/RelaysFindNav.vue'
 // import RelaysResultTable from '@/components/relays/blocks/RelaysResultTable.vue'
 // import MapSummary from '@/components/relays/blocks/MapSummary.vue'
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
-
 
 const localMethods = {}
 
@@ -97,6 +100,7 @@ export default defineComponent({
     RelaysFindNav,
     MapSummary,
     RelaysResultTable,
+    NostrSync,
   },
 
   setup(){

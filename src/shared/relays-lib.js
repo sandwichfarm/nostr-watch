@@ -2,6 +2,32 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  queueKind3: async function(slug){
+    this.queueJob(
+      slug,
+      async () => {
+        await this.store.user.setKind3()
+          .then( () => {
+            Object.keys(this.store.user.kind3).forEach( key => {
+              this.store.relays.setFavorite(key)
+            })
+            this.store.tasks.completeJob()
+          })
+          .catch( err => {
+            console.error('error!', err)
+            this.store.tasks.completeJob()
+          })
+      },
+      true
+    )
+  },
+  queueJob: function(id, fn, unique){
+    this.store.tasks.addJob({
+      id: id,
+      handler: fn,
+      unique: unique
+    })
+  },
   getRelays(relays){
     relays = this.filterRelays(relays)
     relays = this.sortRelays(relays)
@@ -48,7 +74,7 @@ export default {
       return this.$storage.getStorageSync(key)
     },
 
-    cleanUrl: function(relay){
+    getHostname: function(relay){
       return relay.replace('wss://', '')
     },
 

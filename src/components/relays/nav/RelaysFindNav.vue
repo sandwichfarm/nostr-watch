@@ -1,4 +1,5 @@
 <template>
+  <div>
   <Disclosure as="nav" id="subsection_nav" class="bg-white mb-5" v-slot="{ open }">
   <div class="mx-auto max-w-7xl px-0">
     <div class="flex h-12 justify-center md:justify-between">
@@ -44,6 +45,7 @@
   </div>
   </DisclosurePanel>
 </Disclosure>
+</div>
 </template>
 
 <script>
@@ -102,6 +104,7 @@ computed: {
     return (slug) => {
       // //console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)
       return { 
+        // 'opacity-10' : this.store.layout.editorExpanded,
         'py-1 px-2': this.store.prefs.getTheme === 'compact',
         'text-lg py-2 px-3': this.store.prefs.getTheme === 'comfortable',
         'text-xl py-3 px-4': this.store.prefs.getTheme === 'spacious',

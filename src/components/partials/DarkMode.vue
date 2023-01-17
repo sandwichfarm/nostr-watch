@@ -14,7 +14,7 @@ import { useDark, useToggle } from "@vueuse/core";
 
 const isDark = useDark({
         selector: "html", //element to add attribute to
-        attribute: "theme", // attribute name
+        // attribute: "theme", // attribute name
         valueDark: "dark", // attribute value for dark mode
         valueLight: "light", // attribute value for light mode
       })

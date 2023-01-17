@@ -1,6 +1,7 @@
 <template>
   <RefreshTask
     v-bind:resultsProp="results" />
+  <UserRelayList />
   <!-- <RelayCanonicalsTask
     :resultsProp="results" />
   <RelayOperatorTask
@@ -15,6 +16,7 @@ import { setupStore } from '@/store'
 import SharedComputed from '@/shared/computed.js'
 
 import RefreshTask from './RefreshTask.vue'
+import UserRelayList from './UserRelayList.vue'
 
 
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
@@ -24,6 +26,7 @@ export default defineComponent({
   name: "TasksManager",
   components: {
     RefreshTask,
+    UserRelayList,
     // RelayCanonicalsTask,
     // RelayOperatorTask
   },

@@ -4,14 +4,13 @@
   "private": true,
   "scripts": {
     "build": "vue-cli-service build",
-    "prebuild": "yarn get:relays && yarn get:geo",
     "get:relays": "node ./scripts/relays.js",
     "get:geo": "node ./scripts/geo.js",
     "serve": "vue-cli-service serve --host localhost",
     "lint": "vue-cli-service lint",
     "docker": "yarn docker:build && yarn docker:tag && yarn docker:push",
     "docker:up": "docker-compose up",
-    "docker:build": "docker build . -t nostr-relay-status",
+    "docker:build": "docker build . -t nostr-relay-status --progress=plain",
     "docker:tag": "docker tag nostr-relay-status:latest registry.digitalocean.com/sandwich-farm/nostr-relay-status",
     "docker:push": "docker push registry.digitalocean.com/sandwich-farm/nostr-relay-status"
   },
@@ -35,6 +34,7 @@
     "nostr": "0.2.5",
     "nostr-relay-inspector": "0.0.25",
     "nostr-tools": "1.1.1",
+    "object-hash": "3.0.0",
     "object-sizeof": "1.6.3",
     "onion-regex": "2.0.8",
     "pinia": "2.0.28",

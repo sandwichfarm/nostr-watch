@@ -5,33 +5,13 @@
         ref="btnRef" 
         type="button" 
         v-on:click="toggleEditor()" 
-        class="
-          ml-8
-          cursor-pointer
-          inline-flex 
-          items-center 
-          rounded 
-        bg-white 
-          dark:bg-black/20
-          px-2.5 
-          py-1.5 
-          text-xs 
-          font-medium 
-          text-gray-700 
-          shadow-sm 
-          hover:bg-gray-50 
-          dark:hover:bg-black/90
-          focus:outline-none 
-          focus:ring-2 
-          focus:ring-indigo-500 
-          dark:focus:ring-white/10
-          focus:ring-offset-2">
+        class="mr-3 inline-flex items-center justify-center rounded-md border border-transparent bg-white/20 px-4 py-2 text-m font-medium text-white shadow-sm hover:bg-white/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
             <span v-if="this.store.layout.editorExpanded">
               Cancel
             </span>
             
             <span v-if="!this.store.layout.editorExpanded">
-              Edit Relay List <sup><code class="text-cs text-white/20 ml-1">kind3</code></sup>
+              Edit Relay List
             </span>
         </button>
 
@@ -40,27 +20,7 @@
         type="button" 
         v-on:click="persistChanges()" 
         v-if="this.store.layout.editorExpanded && store.tasks.getActiveSlug !== 'user/relay/list'"
-        class="
-          ml-2
-          cursor-pointer
-          inline-flex 
-          items-center 
-          rounded 
-        bg-white 
-          dark:bg-black/20
-          px-2.5 
-          py-1.5 
-          text-xs 
-          font-medium 
-          text-gray-700 
-          shadow-sm 
-          hover:bg-gray-50 
-          dark:hover:bg-black/90
-          focus:outline-none 
-          focus:ring-2 
-          focus:ring-indigo-500 
-          dark:focus:ring-white/10
-          focus:ring-offset-2">
+        class="mr-3 inline-flex items-center justify-center rounded-md border border-transparent bg-white/20 px-4 py-2 text-m font-medium text-white shadow-sm hover:bg-white/40  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
             Save
         </button>
     </div>

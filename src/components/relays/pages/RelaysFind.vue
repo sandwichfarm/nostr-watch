@@ -27,6 +27,7 @@
             </p>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+          <NostrSync />
           <button 
             @click="$router.push('/relays/add')" 
             type="button" 
@@ -62,6 +63,9 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 import { parseHash } from '@/shared/hash-router.js'
+
+import NostrSync from '@/components/relays/partials/NostrSync.vue'
+
 //components
 // import RelaysFindNav from '@/components/relays/nav/RelaysFindNav.vue'
 // import RelaysResultTable from '@/components/relays/blocks/RelaysResultTable.vue'
@@ -95,6 +99,7 @@ export default defineComponent({
     RelaysFindNav,
     MapSummary,
     RelaysResultTable,
+    NostrSync,
   },
 
   setup(){

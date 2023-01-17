@@ -27,7 +27,6 @@
                              random relay
                             </a>
                         </span>
-                        <NostrSyncPopoverNag />
                         <span v-if="subsection != 'favorite' && store.relays.getFavorites.length" class="ml-6 text-slate-600">
                           <input type="checkbox" class=" cursor-pointer relative top-0.5 mr-1" id="relays-pin-favorites" v-model="store.prefs.pinFavorites" /> 
                           <label class="cursor-pointer font-thin text-xs" for="relays-pin-favorites">
@@ -130,12 +129,10 @@
                       </td>
 
                       <!-- editor -->
-                      <td 
-                        v-if="store.tasks.getActiveSlug != 'user/relay/list' 
-                              && store.layout.editorIsExpanded 
-                              && typeof store.user.kind3?.[relay]?.read !== `undefined`" 
-                              
-                        class="text-center md:table-cell lg:table-cell xl:table-cell">
+                      <td v-if="store.tasks.getActiveSlug != 'user/relay/list' 
+                                && store.layout.editorIsExpanded 
+                                && typeof store.user.kind3?.[relay]?.read !== `undefined`"
+                          class="text-center md:table-cell lg:table-cell xl:table-cell">
                         <Switch
                           v-model="store.user.kind3[relay].read" 
                           class="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
@@ -151,6 +148,7 @@
                                 && typeof store.user.kind3?.[relay]?.write !== `undefined`" 
                         class="text-center md:table-cell lg:table-cell xl:table-cell">
                         <Switch
+                         
                           v-model="store.user.kind3[relay].write" 
                           class="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full 
                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
@@ -201,7 +199,6 @@
   import { Switch } from '@headlessui/vue'
 
   // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
-  import NostrSyncPopoverNag from '@/components/relays/partials/NostrSyncPopoverNag.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
   import UserLib from '@/shared/user-lib.js'
@@ -244,7 +241,6 @@
     components: {
       // SingleClearnet,
       Switch,
-      NostrSyncPopoverNag
     },
     setup(props){
       const {subsectionProp: subsection} = toRefs(props)

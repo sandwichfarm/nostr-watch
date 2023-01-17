@@ -8,7 +8,7 @@
           <a v-for="item in store.layout.getNavGroup(this.navSlug)"
               :key="`subnav-${item.slug}`"
               :href="item.href" 
-              @click="!store.layout.editorExpanded ? setActiveContent(item.slug) : false"
+              @click="setActiveContent(item.slug)"
               class="inline-flex items-center"
               :class="getNavButtonClass(item.slug)">
               {{ item.name }}

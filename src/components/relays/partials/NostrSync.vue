@@ -171,6 +171,10 @@ export default defineComponent({
       pool.on('ok', relay => {
         this.savedTo.push(relay.url)
       })
+
+      this.hashOG = objHash(JSON.parse(event.content))
+      this.hashCache = this.hashOG
+      this.changed = false
     },
     togglePopover: function(){
       // if(this.popoverShow){

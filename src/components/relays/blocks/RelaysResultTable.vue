@@ -33,21 +33,16 @@
                             pin favorites
                           </label>
                         </span>
+
+                        <!-- <span v-if="isLoggedIn && store.user.kind3" class="ml-6 text-slate-600">
+                          <input type="checkbox" @click="handleMine()" class=" cursor-pointer relative top-0.5 mr-1" id="relays-pin-favorites" v-model="store.prefs.mine" /> 
+                          <label class="cursor-pointer font-thin text-xs" for="relays-pin-favorites">
+                            only mine
+                          </label>
+                        </span> -->
                       </th>
 
-                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <!-- <span class="verified-shape-wrapper">
-                          <span class="shape verified"></span>
-                        </span> -->
-                        <code class="text-xs block">Read</code>
-                      </th>
-
-                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <!-- <span class="verified-shape-wrapper">
-                          <span class="shape verified"></span>
-                        </span> -->
-                        <code class="text-xs block">Write</code>
-                      </th>
+                     
                       
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()">
                         <code class="text-xs block">Upvote</code>
@@ -58,10 +53,10 @@
                         </span> -->
                         <code class="text-xs block">NIP-11</code>
                       </th>
-                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                      <th scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Location</code>
                       </th>
-                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn" scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
+                      <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
                         <code class="text-xs block">Latency</code>
                       </th>
                       <th v-if="!store.layout.editorIsExpanded || !isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
@@ -73,6 +68,21 @@
                       <th v-if="!store.layout.editorIsExpanded && isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
                       </th>
+
+                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        <!-- <span class="verified-shape-wrapper">
+                          <span class="shape verified"></span>
+                        </span> -->
+                        <code class="text-xs block">Read</code>
+                      </th>
+
+                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        <!-- <span class="verified-shape-wrapper">
+                          <span class="shape verified"></span>
+                        </span> -->
+                        <code class="text-xs block">Write</code>
+                      </th>
+
                       <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
                         <code class="text-xs block">Favorite</code>
                       </th>
@@ -108,11 +118,11 @@
                         </span>
                       </td>
 
-                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-24 location text-center">
+                      <td class="w-24 location text-center">
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-24 latency text-center">
+                      <td class="w-24 latency text-center">
                         <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>
                       </td>
 
@@ -206,7 +216,7 @@
                 </table>
             </div>
           </div>
-          <div class="text-xl block min-w-full align-middle py-8 bg-slate-100 rounded-lg" v-if="!store.relays.getFavorites.length && subsection == 'favorite'">
+          <div class="text-xl block min-w-full align-middle py-8 light:bg-slate-100 rounded-lg" v-if="!store.relays.getFavorites.length && subsection == 'favorite'">
             You have not selected any favorites. To select a favorite, click the heart emoji next to any relay in a relays list.
           </div>
       </div>
@@ -234,6 +244,12 @@
   const localMethods = {
     setRandomRelay(){
       this.randomRelay = this.store.relays.getShuffledPublic[0]
+    },
+    handleMine(){
+      setTimeout( () => {
+        if(this.store.prefs.mine)
+          this.store.layout.setActive('relays/find', 'favorite')
+      },1)
     },
     async likeRelay(relay){
       const id = this.store.relays.getCanonical(relay)

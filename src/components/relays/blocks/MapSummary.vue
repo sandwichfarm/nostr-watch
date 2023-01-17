@@ -59,6 +59,12 @@
   
 </template>
 
+<style>
+.leaflet-popup-content-wrapper {
+  @apply dark:bg-black/80
+}
+</style>
+
 <script>
 import { defineComponent, toRefs } from 'vue'
 import "leaflet/dist/leaflet.css"

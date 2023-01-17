@@ -15,6 +15,10 @@
             </span>
         </button>
 
+        <span v-for="url in savedTo" :key="`savedto-${url}`"> 
+          saved to {{  url  }}
+        </span>
+
         <button 
         ref="btnRef" 
         type="button" 
@@ -23,6 +27,7 @@
         class="mr-3 inline-flex items-center justify-center rounded-md border border-transparent bg-white/20 px-4 py-2 text-m font-medium text-white shadow-sm hover:bg-white/40  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
             Save
         </button>
+        <span ></span>
     </div>
   </div>
 </template>
@@ -46,7 +51,8 @@ export default defineComponent({
   },
   data() {
     return {
-      changed: false
+      changed: false,
+      savedTo: []
       // editor: false,
       // popoverShow: false
     }
@@ -107,6 +113,9 @@ export default defineComponent({
 
       pool.on('open', relay=>{
         relay.send(['EVENT', signedEvent])
+      })
+      pool.on('ok', relay => {
+        this.savedTo.push(relay.url)
       })
     },
     togglePopover: function(){

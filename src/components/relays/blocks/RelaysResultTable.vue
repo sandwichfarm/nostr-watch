@@ -143,7 +143,6 @@
                           <span aria-hidden="true" :class="[store.user.kind3[relay].read ? 'translate-x-5' : 'translate-x-0', 'pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out']" />
                         </Switch>
                       </td>
-                      <td v-else></td>
 
                       <td v-if="store.tasks.getActiveSlug != 'user/relay/list' 
                                 && store.layout.editorIsExpanded 
@@ -151,7 +150,6 @@
                                 && isLoggedIn"
                         class="text-center md:table-cell lg:table-cell xl:table-cell">
                         <Switch
-                         
                           v-model="store.user.kind3[relay].write" 
                           class="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full 
                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
@@ -161,11 +159,10 @@
                           <span aria-hidden="true" :class="[store.user.kind3[relay].write ? 'translate-x-5' : 'translate-x-0', 'pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out']" />
                         </Switch>
                       </td>
-                      <td v-else></td>
-
+                      
                       <td 
                         colspan="2" 
-                        v-if="store.layout.editorIsExpanded && store.tasks.getActiveSlug == 'user/relay/list'" 
+                        v-if="store.layout.editorExpanded && store.tasks.getActiveSlug == 'user/relay/list'" 
                         class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
                         <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

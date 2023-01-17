@@ -1,5 +1,5 @@
 <template>
-  
+  {{ isExpired('user/relay/list') }} {{  this.force }}
   <span  
       v-if="this.store.tasks.getActiveSlug === taskSlug && isLoggedIn"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
@@ -25,51 +25,50 @@ import SharedComputed from '@/shared/computed.js'
 
 import { relays } from '../../../../relays.yaml'
 
-const localMethods = {
-  queueJob: function(id, fn, unique){
-    this.store.tasks.addJob({
-      id: id,
-      handler: fn,
-      unique: unique
-    })
-  },
-  invalidate(force){
-    if( (!this.isExpired(this.taskSlug) && !force) ) 
-      return
-    
-    if( !this.isLoggedIn )
-      return 
-    
-    if( !this.store.prefs.useKind3 )
-      return
+const localMethods = new Object()
 
-    this.queueJob(
-      this.taskSlug,
-      async () => {
-        await this.store.user.setKind3()
-          .then( () => {
-            Object.keys(this.store.user.kind3).forEach( key => {
-              this.store.relays.setFavorite(key)
-            })
-            this.store.tasks.completeJob()
-          })
-          .catch( err => {
-            console.error('error!', err)
-            this.store.tasks.completeJob()
-          })
-      },
-      true
-    )
-  },
-  timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 
-  },
-  timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.taskSlug)) || Date.now()
-  },
-  hash(relay){
-    return crypto.createHash('md5').update(relay).digest('hex');
-  }
+localMethods.invalidate = function(force){
+  if( !this.isExpired(this.taskSlug) && !force ) 
+    return
+  
+  if( !this.isLoggedIn ) 
+    return 
+  
+  if( !this.store.prefs.useKind3 )
+    return
+  
+  console.log('wtf?', this.taskSlug, !this.isExpired(this.taskSlug) && !force)
+
+  // this.queueJob(
+  //   this.taskSlug,
+  //   async () => {
+  //     await this.store.user.setKind3()
+  //       .then( () => {
+  //         Object.keys(this.store.user.kind3).forEach( key => {
+  //           this.store.relays.setFavorite(key)
+  //         })
+  //         this.store.tasks.completeJob()
+  //       })
+  //       .catch( err => {
+  //         console.error('error!', err)
+  //         this.store.tasks.completeJob()
+  //       })
+  //   },
+  //   true
+  // )
+  this.queueKind3(this.taskSlug)
+}
+
+localMethods.timeUntilRefresh = function(){
+  return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 
+}
+
+localMethods.timeSinceRefresh = function(){
+  return this.timeSince(this.store.tasks.getLastUpdate(this.taskSlug)) || Date.now()      
+}
+
+localMethods.hash = function(relay){
+  return crypto.createHash('md5').update(relay).digest('hex');
 }
 
 export default defineComponent({
@@ -84,9 +83,11 @@ export default defineComponent({
   },
   setup(props){
     const {resultsProp: results} = toRefs(props)
+    const {forceProp: force} = toRefs(props)
     return { 
       store : setupStore(),
-      results: results
+      results: results,
+      force: force
     }
   },
   created(){
@@ -107,7 +108,7 @@ export default defineComponent({
     if(this.store.tasks.isProcessing(this.taskSlug))
       this.invalidate(true)
     else
-      this.invalidate()
+      this.invalidate(this.force)
   },
   updated(){},
   computed: Object.assign(SharedComputed, {
@@ -121,6 +122,12 @@ export default defineComponent({
       type: Object,
       default(){
         return {}
+      }
+    },
+    forceProp: {
+      type: Boolean,
+      default(){
+        return false
       }
     },
   },

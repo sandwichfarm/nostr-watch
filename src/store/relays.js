@@ -102,7 +102,9 @@ export const useRelaysStore = defineStore('relays', {
       this.favorites = this.favorites.filter(item => item !== relayUrl)
       
       const store = useUserStore()
+      console.log('before delete', typeof store.kind3[relayUrl])
       delete store.kind3[relayUrl]
+      console.log('deleted?', typeof store.kind3[relayUrl])
     },
 
     toggleFavorite(relayUrl){

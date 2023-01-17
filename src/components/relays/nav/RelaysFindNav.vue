@@ -7,7 +7,7 @@
         <div class="hidden md:flex md:space-x-2 lg:flex lg:space-x-2">
           <a v-for="item in store.layout.getNavGroup(this.navSlug)"
               :key="`subnav-${item.slug}`"
-              :href="!store.layout.editorExpanded ? item.href : '#'" 
+              :href="item.href" 
               @click="!store.layout.editorExpanded ? setActiveContent(item.slug) : false"
               class="inline-flex items-center"
               :class="getNavButtonClass(item.slug)">
@@ -104,7 +104,7 @@ computed: {
     return (slug) => {
       // //console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)
       return { 
-        'opacity-10' : this.store.layout.editorExpanded,
+        // 'opacity-10' : this.store.layout.editorExpanded,
         'py-1 px-2': this.store.prefs.getTheme === 'compact',
         'text-lg py-2 px-3': this.store.prefs.getTheme === 'comfortable',
         'text-xl py-3 px-4': this.store.prefs.getTheme === 'spacious',

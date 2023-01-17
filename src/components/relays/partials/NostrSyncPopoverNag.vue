@@ -39,7 +39,7 @@
         ref="btnRef" 
         type="button" 
         v-on:click="persistChanges()" 
-        v-if="this.store.layout.editorExpanded"
+        v-if="this.store.layout.editorExpanded && store.tasks.getActiveSlug !== 'user/relay/list'"
         class="
           ml-2
           cursor-pointer
@@ -70,6 +70,10 @@
 // import { createPopper } from "@popperjs/core";
 import { defineComponent, toRefs } from 'vue'
 import { setupStore } from '@/store/'
+import safeStringify from 'fast-safe-stringify'
+import { getEventHash, validateEvent, verifySignature } from 'nostr-tools'
+import RelaysLib from '@/shared/relays-lib'
+import { RelayPool } from 'nostr'
 
 export default defineComponent({
   name: "NostrSyncPopoverNag",
@@ -93,18 +97,57 @@ export default defineComponent({
   unmounted(){
     this.store.layout.editorOff()
   },
-  methods: {
-    toggleEditor: function(){
+  methods: Object.assign(RelaysLib, {
+    toggleEditor: async function(){
       this.store.layout.toggleEditor()
+      if(this.store.layout.editorExpanded)
+        this.queueJob(
+          'user/relay/list',
+          async () => {
+            await this.store.user.setKind3()
+              .then( () => {
+                Object.keys(this.store.user.kind3).forEach( key => {
+                  this.store.relays.setFavorite(key)
+                })
+                this.store.tasks.completeJob()
+              })
+              .catch( err => {
+                console.error('error!', err)
+                this.store.tasks.completeJob()
+              })
+          },
+          true
+        )
     },  
-    persistChanges: function(){
+    persistChanges: async function(){
       const event = {
-        created_at: Date.now(),
-        tags: [],
-        kind: [3]
+        created_at: Math.floor(Date.now()/1000),
+        kind: 3,
+        content: safeStringify(this.store.user.kind3),
+        tags: [...this.store.user.kind3Event.tags],
+        pubkey: this.store.user.getPublicKey,
       }
+      event.id = getEventHash(event)
 
-      
+      console.log('kind3 event', event)
+
+      console.log(window.nostr, typeof window.nostr.signEvent)
+
+      const signedEvent = await window.nostr.signEvent(structuredClone(event))
+
+      let ok = validateEvent(signedEvent)
+      let veryOk = verifySignature(signedEvent)
+
+      if(!ok || !veryOk)
+        return 
+
+      console.log('valid event?', ok, veryOk)
+
+      const pool = new RelayPool( Object.keys(this.store.user.kind3) )
+
+      pool.on('open', relay=>{
+        relay.send(['EVENT', signedEvent])
+      })
     },
     togglePopover: function(){
       // if(this.popoverShow){
@@ -116,6 +159,6 @@ export default defineComponent({
       //   });
       // }
     },
-  }
+  })
 })
 </script>

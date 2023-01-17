@@ -27,8 +27,7 @@
                              random relay
                             </a>
                         </span>
-                        <NostrSyncPopoverNag 
-                          v-if="subsection == 'favorite'"  />
+                        <NostrSyncPopoverNag />
                         <span v-if="subsection != 'favorite' && store.relays.getFavorites.length" class="ml-6 text-slate-600">
                           <input type="checkbox" class=" cursor-pointer relative top-0.5 mr-1" id="relays-pin-favorites" v-model="store.prefs.pinFavorites" /> 
                           <label class="cursor-pointer font-thin text-xs" for="relays-pin-favorites">
@@ -75,7 +74,7 @@
                       <th v-if="!store.layout.editorIsExpanded" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
                       </th>
-                      <th v-if="!store.layout.editorIsExpanded" scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
+                      <th v-if="store.tasks.getActiveSlug !== 'user/relay/list'" scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
                         <code class="text-xs block">Favorite</code>
                       </th>
                     </tr>
@@ -129,11 +128,16 @@
                       <td v-if="!store.layout.editorIsExpanded" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'write')">&nbsp;</span>
                       </td>
-                      
+
+                      <!-- editor -->
+                      {{ typeof store.user?.kind3?.[relay]?.read !== `undefined` }}
                       <td 
-                        v-if="store.layout.editorIsExpanded && typeof store.user.kind3[relay].read !== `undefined`" 
-                        class="w-12 text-center md:table-cell lg:table-cell xl:table-cell">
-                        <Switch 
+                        v-if="store.tasks.getActiveSlug != 'user/relay/list' 
+                              && store.layout.editorIsExpanded 
+                              && typeof store.user.kind3?.[relay]?.read !== `undefined`" 
+                              
+                        class="text-center md:table-cell lg:table-cell xl:table-cell">
+                        <Switch
                           v-model="store.user.kind3[relay].read" 
                           class="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                           <span class="sr-only">Use setting</span>
@@ -141,11 +145,13 @@
                           <span aria-hidden="true" :class="[store.user.kind3[relay].read ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-black', 'pointer-events-none absolute mx-auto h-4 w-9 rounded-full transition-colors duration-200 ease-in-out']" />
                           <span aria-hidden="true" :class="[store.user.kind3[relay].read ? 'translate-x-5' : 'translate-x-0', 'pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out']" />
                         </Switch>
-                       
                       </td>
 
-                      <td v-if="store.layout.editorIsExpanded && typeof store.user.kind3[relay].write !== `undefined`" class="w-12 text-center md:table-cell lg:table-cell xl:table-cell">
-                        <Switch 
+                      <td v-if="store.tasks.getActiveSlug != 'user/relay/list' 
+                                && store.layout.editorIsExpanded 
+                                && typeof store.user.kind3?.[relay]?.write !== `undefined`" 
+                        class="text-center md:table-cell lg:table-cell xl:table-cell">
+                        <Switch
                           v-model="store.user.kind3[relay].write" 
                           class="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full 
                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
@@ -156,7 +162,17 @@
                         </Switch>
                       </td>
 
-                      <td v-if="!store.layout.editorIsExpanded" class="w-16 fav text-center">
+                      <td 
+                        colspan="2" 
+                        v-if="store.layout.editorIsExpanded && store.tasks.getActiveSlug == 'user/relay/list'" 
+                        class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
+                        <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </td>
+
+                      <td v-if="store.tasks.getActiveSlug !== 'user/relay/list'"  class="w-16 fav text-center">
                         <a
                           class="hover:opacity-100 cursor-pointer" 
                           :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"

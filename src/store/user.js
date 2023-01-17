@@ -11,6 +11,7 @@ export const useUserStore = defineStore('user', {
     profile: {},
     testEvent: false,
     kind3: new Object(),
+    kind3Event: new Object(),
   }),
   getters: {
     getPublicKey: (state) => state.pubKey,
@@ -21,14 +22,15 @@ export const useUserStore = defineStore('user', {
     isProfile: (state) => Object.keys(state.profile).length ? true : false,
     getTestEvent: (state) => state.testEvent,
     getKind3: (state) => state.kind3,
+    getKind3Event: (state) => state.kind3Event,
   },
   actions: {
     retrieveKind3: async function() {
       return new Promise( (resolve) => {
-        console.log('retrieveKind3 promise()', useRelaysStore())
+        // console.log('retrieveKind3 promise()', useRelaysStore())
         const subid = crypto.randomBytes(40).toString('hex')
         const store = useRelaysStore()
-        const relays = store.getAggregateCache('public').length ? store.getAggregateCache('public') : ['wss://nostr.sandwich.farm']
+        const relays = store.getFavorites.length ? store.getFavorites : ['wss://nostr.sandwich.farm']
         const pool = new RelayPool(relays)
         const ordered = []
         pool
@@ -42,7 +44,6 @@ export const useUserStore = defineStore('user', {
           })
           .on('event', (relay, _subid, ev) => {
             if(_subid == subid){
-
               if(!ev.content.length)
                 return
               console.log('the content', ev.content)
@@ -62,19 +63,23 @@ export const useUserStore = defineStore('user', {
             // reject(err)
           })
         setTimeout( () => {
-          ordered.sort( (a, b) => a.created_at - b.created_at )
-          const result = ordered.length? ordered[0].content: false
+          ordered.sort( (a, b) => b.created_at - a.created_at )
+          if(!ordered.length)
+            return 
+          this.kind3Event = ordered[0]
+          const result = this.kind3Event.content
           console.log('final', result)
-          resolve(result)
+          pool.unsubscribe(subid)
           pool.close()
-        },5000)
+          resolve(result)
+        },10000)
       })
     },
     setKind3: async function(obj) { 
       if(obj instanceof Object && Object.keys(obj).length)
         this.kind3 = obj
       else 
-        this.kind3 = await this.retrieveKind3()
+        this.kind3 = Object.assign(this.kind3, await this.retrieveKind3())
     },
     setPublicKey: function(pubKey){ this.pubKey = pubKey },
     setProfile: function(stringifiedEvContent){ 

@@ -20,7 +20,7 @@
       </div>
       <div class="flex justify-center md:hidden lg:hidden">
         <!-- Mobile menu button -->
-        <DisclosureButton class="inline-flex items-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+        <DisclosureButton class="inline-flex items-center rounded-md p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-black/50 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
           <span>Menu</span>
           <Bars3Icon v-if="!open" class="block h-6 w-6" aria-hidden="true" />
           <XMarkIcon v-else class="block h-6 w-6" aria-hidden="true" />
@@ -41,7 +41,7 @@
           class="block border-l-4 border-indigo-500 bg-indigo-50 py-2 pl-3 pr-4 text-base font-medium text-indigo-700">
           {{  item.name  }}
       </DisclosureButton>
-      <!-- :class="[isActive(item) ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']"  -->
+      <!-- :class="[isActive(item) ? 'bg-gray-100 text-gray-900 dark:bg-black/50' : 'text-gray-600 hover:bg-gray-50 hover:bg-black/50 hover:text-gray-900', 'group flex items-center px-3 py-2 text-sm font-medium']"  -->
   </div>
   </DisclosurePanel>
 </Disclosure>
@@ -105,10 +105,11 @@ computed: {
       // //console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)
       return { 
         // 'opacity-10' : this.store.layout.editorExpanded,
+        'dark:hover:bg-black/80 dark:text-white/80': true,
         'py-1 px-2': this.store.prefs.getTheme === 'compact',
         'text-lg py-2 px-3': this.store.prefs.getTheme === 'comfortable',
         'text-xl py-3 px-4': this.store.prefs.getTheme === 'spacious',
-        'bg-slate-800 text-white hover:text-white hover:bg-slate-800': this.contentIsActive(slug),
+        'bg-slate-800 text-white hover:text-white dark:hover:bg-black/80 dark:bg-black/50': this.contentIsActive(slug),
         'text-gray-600 hover:bg-gray-50 hover:text-gray-900': !this.contentIsActive(slug),
       }
     }

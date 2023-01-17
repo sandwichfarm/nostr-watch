@@ -1,5 +1,5 @@
 <template>
-<div class="inline">
+<div class="inline" v-if="store.user.getPublicKey.length">
     <div class="inline text-left">
       <button 
         ref="btnRef" 

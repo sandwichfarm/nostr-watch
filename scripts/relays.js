@@ -118,12 +118,14 @@ const sanitizeRelay = function(relay) {
 }
 
 const checkRemoteRelays = async function(){
-  for(let i=0;i<relaysRemote.length;i++) {
+  const randomlyOrderedRelays = relaysRemote.sort(() => Math.random() - 0.5)
+
+  for(let i=0;i<randomlyOrderedRelays.length;i++) {
     // //console.log('check for connect', remoteMerged[i])
-    await checkRelay(relaysRemote[i])
+    await checkRelay(randomlyOrderedRelays[i])
             .catch( () => {
-              remove.push(relaysRemote[i])
-              //console.log('removals:', remove.length, relaysRemote[i])
+              remove.push(randomlyOrderedRelays[i])
+              //console.log('removals:', remove.length, randomlyOrderedRelays[i])
             })
   }
 }

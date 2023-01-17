@@ -63,7 +63,7 @@ export const useUserStore = defineStore('user', {
             // reject(err)
           })
         setTimeout( () => {
-          ordered.sort( (a, b) => a.created_at - b.created_at )
+          ordered.sort( (a, b) => b.created_at - a.created_at )
           if(!ordered.length)
             return 
           this.kind3Event = ordered[0]
@@ -79,7 +79,7 @@ export const useUserStore = defineStore('user', {
       if(obj instanceof Object && Object.keys(obj).length)
         this.kind3 = obj
       else 
-        this.kind3 = Object.assign(this.kind3, await this.retrieveKind3())
+        this.kind3 = Object.assign(await this.retrieveKind3(), this.kind3)
     },
     setPublicKey: function(pubKey){ this.pubKey = pubKey },
     setProfile: function(stringifiedEvContent){ 

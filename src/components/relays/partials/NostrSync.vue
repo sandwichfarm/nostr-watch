@@ -162,8 +162,10 @@ export default defineComponent({
         return 
 
       console.log('valid event?', ok, veryOk)
+      
+      const relaysWrite = Object.keys(this.store.user.kind3).filter( key => this.store.user.kind3[key].write)
 
-      const pool = new RelayPool( Object.keys(this.store.user.kind3) )
+      const pool = new RelayPool( relaysWrite )
 
       pool.on('open', relay=>{
         relay.send(['EVENT', signedEvent])

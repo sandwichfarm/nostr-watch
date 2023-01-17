@@ -79,7 +79,7 @@ export const useUserStore = defineStore('user', {
       if(obj instanceof Object && Object.keys(obj).length)
         this.kind3 = obj
       else 
-        this.kind3 = Object.assign(await this.retrieveKind3(), this.kind3)
+        this.kind3 = Object.assign(this.kind3, await this.retrieveKind3())
     },
     setPublicKey: function(pubKey){ this.pubKey = pubKey },
     setProfile: function(stringifiedEvContent){ 

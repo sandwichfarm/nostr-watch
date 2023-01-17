@@ -18,38 +18,42 @@
 
       <section v-if="result">
 
-        <div class="data-card overflow-hidden bg-slate-100 shadow sm:rounded-lg">
+        <div id="title_card" class="data-card overflow-hidden sm:rounded-lg mb-8 pt-5" style="background:transparent">
           <div class="px-4 py-5 sm:px-6">
-            <h1>{{geo?.countryCode ? getFlag : ''}}<span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
+            <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
             <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
           </div>
+          <a 
+          target="_blank" 
+          :href="`https://www.ssllabs.com/ssltest/analyze.html?d=${ getHostname(relay) }`"
+          class="inline-block py-2 px-3 bg-black/10 first-line:font-bold text-black dark:bg-white/50  dark:text-white ">
+            Check SSL
+          </a>
         </div>
 
         
-        <!-- this.result?.check?.[which] ? 'green' : 'red' -->
-
-        <div class="flex">
+        <div id="status" class="flex mb-2 py-5"> <!--something is weird here with margin-->
           <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6" :class="check(key)">
-            <span>{{key}}</span>
+            <span>{{key}}</span>  
           </div>
         </div>
 
-        <div v-if="!result?.check?.connect">
-          <div class="data-card block mt-1 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
+        <div id="did_not_connect" v-if="!result?.check?.connect" class="mb-8 py-8">
+          <div class="data-card block mt-8 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-red-600 dark:text-red-300">This Relay Appears to be offline</h5>
           </div>
-          <div class="flex bg-slate-50 shadow mt-12" v-if="Object.keys(this.result?.geo).length">
+          <div class="flex bg-slate-50 shadow mt-8" v-if="Object.keys(this.result?.geo).length">
             <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
               I did find this...
             </div>
           </div>
         </div>
 
-        <div v-if="result?.info?.supported_nips" class="mb-10 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg">
+        <div id="nips" v-if="result?.info?.supported_nips" class="mb-8 py-1 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg dark:bg-slate-800">
           <div class="px-1 py-2 sm:px-6">
-            <div class="flex">
-              <div class="flex-none">
-                <h3 class="text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
+            <div class="lg:flex">
+              <div class="flex-none lg:flex-initial">
+                <h3 class="inline-block lg:block text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
               </div>
               <a target="_blank" :href="nipLink(key)" v-for="key in result?.info?.supported_nips" :key="`nip-${key}`" 
               class="hover:bg-slate-300 hover:shadow pointer-cursor flex-initial gap-4  text-slate-800 text-1xl w-1/5 inline-block py-6 ">
@@ -59,8 +63,8 @@
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 mb-10" v-if="geo?.dns">
-          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 mb-8 py-8" v-if="geo?.dns">
+          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
               The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong> <br />
               <em>{{ geo?.dns.data }}</em> appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong> <br />
@@ -69,15 +73,15 @@
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
-          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-8  py-8" v-if="this.result?.info?.software">
+          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
-                The current date/time in <strong>{{ geo?.city }}</strong> is <strong>{{ getLocalTime }}</strong>
+              It's <strong>{{ getLocalTime }}</strong> in <strong>{{ geo?.city }}</strong>
               </span>
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 shadow" v-if="this.result?.info?.software">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 shadow mb-8 py-8" v-if="this.result?.info?.software">
           <div class="text-clip overflow-ellipsis text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong>
           </div>
@@ -90,13 +94,13 @@
           </div>
         </div> -->
 
-        <div class="data-card flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="this.result?.info?.pubkey">
+        <div class="data-card flex bg-slate-50 border-slate-200 shadow mb-8 py-5" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 w-full text-sm md:text-lg lg:text-3xl overflow-ellipsis flex-none block py-1 text-center">
             <code class="block">{{ this.result?.info.pubkey }}</code>
           </div>
         </div>
 
-        <div class="data-card flex bg-slate-50 border-slate-200 shadow mt-12" v-if="this.result?.info?.pubkey">
+        <div class="data-card flex bg-slate-50 border-slate-200 shadow mt-12 mb-8 py-5" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 w-full flex-none block py-1 text-center">
             Here's the details...
           </div>
@@ -582,9 +586,9 @@ export default defineComponent({
     getLocalTime: function(){
       let options = {
         timeZone: this.geo?.timezone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
+        // year: 'numeric',
+        // month: 'numeric',
+        // day: 'numeric',
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
@@ -595,7 +599,8 @@ export default defineComponent({
     getSoftware: function(){
       return this.result?.info?.software
     },
-    cleanUrl: function(){
+
+    getHostname: function(){
       return (relay) => relay.replace('wss://', '')
     },
 
@@ -701,5 +706,5 @@ body, .grid-Column { padding:0; margin:0; }
 
 
 /* #relay-wrapper { margin: 50px 0 20px; padding: 20px 0} */
-h1 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
+/* h1 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9} */
 </style>

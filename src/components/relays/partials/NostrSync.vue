@@ -1,6 +1,13 @@
 <template>
 <div class="inline" v-if="store.user.getPublicKey.length">
     <div class="inline text-left">
+      <span v-if="savedSuccess" class="inline-block mr-3"> 
+          <svg class="h-4 w-4 inline-block" fill="none" stroke="#32CD32" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Saved to <span>{{ savedSuccess }}</span>
+      </span>
+
       <button 
         ref="btnRef" 
         type="button" 
@@ -15,9 +22,6 @@
             </span>
         </button>
 
-        <span v-for="url in savedTo" :key="`savedto-${url}`"> 
-          saved to {{  url  }}
-        </span>
 
         <button 
         ref="btnRef" 
@@ -27,7 +31,7 @@
         class="mr-3 inline-flex items-center justify-center rounded-md border border-transparent bg-white/20 px-4 py-2 text-m font-medium text-white shadow-sm hover:bg-white/40  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
             Save
         </button>
-        <span ></span>
+      
     </div>
   </div>
 </template>
@@ -52,13 +56,21 @@ export default defineComponent({
   data() {
     return {
       changed: false,
-      savedTo: []
+      savedTo: [],
+      savedSuccess: null,
+      interval: null,
       // editor: false,
       // popoverShow: false
     }
   },
   mounted(){
     this.store.layout.editorOff()
+    this.interval = setInterval( () => {
+      if(this.savedTo.length)
+        this.savedSuccess = this.savedTo.shift()
+      else 
+        this.savedSuccess = null
+    }, 1000)
   },
   unmounted(){
     this.store.layout.editorOff()

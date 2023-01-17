@@ -1,8 +1,8 @@
 <template>
   <span  
       v-if="this.store.tasks.getActiveSlug === taskSlug && isLoggedIn"
-      class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Getting user kind 3...</span>
+      class="text-white lg:text-sm mr-10 ml-2 mt-1.5 text-xs">
+    <span>Retrieving Relays List...</span>
   </span>
 </template>
 
@@ -38,23 +38,6 @@ localMethods.invalidate = function(force){
   
   console.log('wtf?', this.taskSlug, !this.isExpired(this.taskSlug) && !force)
 
-  // this.queueJob(
-  //   this.taskSlug,
-  //   async () => {
-  //     await this.store.user.setKind3()
-  //       .then( () => {
-  //         Object.keys(this.store.user.kind3).forEach( key => {
-  //           this.store.relays.setFavorite(key)
-  //         })
-  //         this.store.tasks.completeJob()
-  //       })
-  //       .catch( err => {
-  //         console.error('error!', err)
-  //         this.store.tasks.completeJob()
-  //       })
-  //   },
-  //   true
-  // )
   this.queueKind3(this.taskSlug)
 }
 

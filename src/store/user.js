@@ -72,7 +72,7 @@ export const useUserStore = defineStore('user', {
           pool.unsubscribe(subid)
           pool.close()
           resolve(result)
-        },10000)
+        },5000)
       })
     },
     setKind3: async function(obj) { 

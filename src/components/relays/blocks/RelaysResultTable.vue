@@ -170,6 +170,12 @@
                         </svg>
                       </td>
 
+                      <td 
+                        colspan="2" 
+                        v-if="store.layout.editorExpanded && !store.relays.isFavorite(relay) && store.tasks.getActiveSlug != 'user/relay/list'" 
+                        class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
+                      </td>
+
                       <td  class="w-16 fav text-center">
                         <a
                           class="hover:opacity-100 cursor-pointer" 

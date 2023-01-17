@@ -130,7 +130,6 @@
                       </td>
 
                       <!-- editor -->
-                      {{ typeof store.user?.kind3?.[relay]?.read !== `undefined` }}
                       <td 
                         v-if="store.tasks.getActiveSlug != 'user/relay/list' 
                               && store.layout.editorIsExpanded 

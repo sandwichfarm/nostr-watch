@@ -34,6 +34,7 @@
     "nostr": "0.2.5",
     "nostr-relay-inspector": "0.0.25",
     "nostr-tools": "1.1.1",
+    "object-hash": "3.0.0",
     "object-sizeof": "1.6.3",
     "onion-regex": "2.0.8",
     "pinia": "2.0.28",

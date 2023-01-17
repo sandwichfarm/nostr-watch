@@ -35,14 +35,14 @@
                         </span>
                       </th>
 
-                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
                         </span> -->
                         <code class="text-xs block">Read</code>
                       </th>
 
-                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
                         </span> -->
@@ -86,7 +86,7 @@
                       class="">
 
                       <td class="w-6 status-indicator w-2 text-left pr-2">
-                        <span :class="getAggregateIndicator(relay)" class="block">
+                        <span :class="getAggregateIndicator(relay)" class="block relative">
                         </span>
                       </td>
 
@@ -117,15 +117,31 @@
                       </td>
 
                       <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
-                        <span class="m-auto block" :class="getCheckIndicator(relay, 'connect')">&nbsp;</span>
+                        <span class="m-auto block" :class="getCheckIndicator(relay, 'connect')">
+                          &nbsp;
+                        </span>
                       </td>
 
                       <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
-                        <span class="m-auto block" :class="getCheckIndicator(relay, 'read')">&nbsp;</span>
+                        <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'read')">
+                          <span class="align-middle h-max" v-if="isLoggedIn && store.user.kind3?.[relay]?.read">
+                            <svg class="h-5 w-5 inline-block mt-0.5" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                          </span>
+                          <span v-else>&nbsp;</span>
+                        </span>
                       </td>
 
                       <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
-                        <span class="m-auto block" :class="getCheckIndicator(relay, 'write')">&nbsp;</span>
+                        <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'write')">
+                          <span class="align-middle" v-if="isLoggedIn && store.user.kind3?.[relay]?.write">
+                            <svg class="h-5 w-5 inline-block mt-0.5" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                          </span>
+                          <span v-else>&nbsp;</span>
+                        </span>
                       </td>
 
                       <!-- editor -->

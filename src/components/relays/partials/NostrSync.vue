@@ -175,6 +175,9 @@ export default defineComponent({
       this.hashOG = objHash(JSON.parse(event.content))
       this.hashCache = this.hashOG
       this.changed = false
+
+      pool.close()
+      this.toggleEditor()
     },
     togglePopover: function(){
       // if(this.popoverShow){

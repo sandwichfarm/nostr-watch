@@ -1,5 +1,4 @@
 <template>
-  {{ isExpired('user/relay/list') }} {{  this.force }}
   <span  
       v-if="this.store.tasks.getActiveSlug === taskSlug && isLoggedIn"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">

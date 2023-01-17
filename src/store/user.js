@@ -63,7 +63,7 @@ export const useUserStore = defineStore('user', {
             // reject(err)
           })
         setTimeout( () => {
-          ordered.sort( (a, b) => a.created_at - b.created_at )
+          ordered.sort( (a, b) => b.created_at - a.created_at )
           if(!ordered.length)
             return 
           this.kind3Event = ordered[0]

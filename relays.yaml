@@ -218,4 +218,5 @@ relays:
   - wss://nostr.handyjunky.com
   - wss://student.chadpolytechnic.com
   - wss://e.nos.lol
+  - wss://relay.nostr.moe
   - wss://relay.current.fyi

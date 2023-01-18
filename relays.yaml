@@ -220,3 +220,4 @@ relays:
   - wss://e.nos.lol
   - wss://relay.nostr.moe
   - wss://relay.current.fyi
+  - wss://nostr-bg01.ciph.rs

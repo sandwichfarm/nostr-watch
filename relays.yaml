@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.lnorb.com
   - wss://nos.lol
   - wss://nostr.p2sh.co
   - wss://nostr.lnprivate.network
@@ -218,3 +219,4 @@ relays:
   - wss://student.chadpolytechnic.com
   - wss://e.nos.lol
   - wss://relay.nostr.moe
+  - wss://relay.current.fyi

@@ -221,4 +221,5 @@ relays:
   - wss://relay.nostr.moe
   - wss://relay.current.fyi
   - wss://nostr-bg01.ciph.rs
+  - wss://nostr-zu01.ciph.rs
   - wss://relay.nostr-latam.link

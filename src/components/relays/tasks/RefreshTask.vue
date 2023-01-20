@@ -1,6 +1,4 @@
 <template>
-  <!-- <div>{{ getRefreshInterval }} {{ store.tasks.getActiveSlug }}</div> -->
-  {{  getRefreshInterval }}
   <div
       v-if="(!store.tasks.isActive || store.tasks.getActiveSlug === this.slug) && !this.isSingle"
       class="inline">

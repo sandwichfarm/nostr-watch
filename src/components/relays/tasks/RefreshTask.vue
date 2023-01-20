@@ -206,7 +206,6 @@ const localMethods = {
 
       socket
         .on('open', () => {
-          console.log('OIPNEING!')
           if(!this.isSingle)
             return
           this.results[this.relayFromUrl].latency.average = null

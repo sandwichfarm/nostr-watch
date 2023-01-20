@@ -48,8 +48,8 @@ export default {
   },
   sortRelays(relays){
     sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.final || 100000,
-          b = this.results?.[relay2]?.latency.final || 100000
+      let a = this.results?.[relay1]?.latency.average || 100000,
+          b = this.results?.[relay2]?.latency.average || 100000
       return a-b
     })
     sort(relays, (relay1, relay2) => {
@@ -58,8 +58,8 @@ export default {
       return (x === y)? 0 : x? -1 : 1;
     })
     sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.final || null,
-          b = this.results?.[relay2]?.latency.final || null
+      let a = this.results?.[relay1]?.latency.average || null,
+          b = this.results?.[relay2]?.latency.average || null
       return (b != null) - (a != null) || a - b;
     })
     if(this.store.prefs.doPinFavorites)

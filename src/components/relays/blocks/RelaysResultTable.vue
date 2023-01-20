@@ -137,8 +137,12 @@
                         </div>
                       </td>
 
-                      <td class="w-24 latency text-center">
+                      <!-- <td class="w-24 latency text-center">
                         <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>
+                      </td> -->
+
+                      <td class="w-24 latency text-center">
+                        <span>{{ results[relay]?.latency?.average }}<span v-if="results[relay]?.latency.average">ms</span></span>
                       </td>
 
                       <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">

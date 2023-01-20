@@ -31,11 +31,34 @@
           </a>
         </div>
 
-        <div id="status" class="flex mb-2 py-5" v-if="showLatency"> <!--something is weird here with margin-->
-          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
+        <div id="status" class="flex mb-2 py-5"> <!--something is weird here with margin-->
+          <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6" :class="check(key)">
+            <span>{{key}}</span>  
+          </div>
+        </div>
+
+
+        <div class="mt-3 overflow-hidden bg-slate-100 dark:bg-white/10 shadow sm:rounded-lg mb-8">
+          <div class="px-4 py-5 sm:px-6 flex">
+            <span 
+              v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
+              :key="heartbeat[0]"
+              class=" mr-1 flex-1"
+              :class="{
+                'bg-red-300/50 h-16 mt-16': !heartbeat.latency,
+                'bg-green-400/50 h-32': heartbeat.latency
+              }">
+                <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
+                <span v-if="!heartbeat.latency">&nbsp;</span>
+              </span>
+          </div>
+        </div>
+
+        <div id="status" class="flex mb-2 py-5 bg-white/5" v-if="showLatency"> <!--something is weird here with margin-->
+          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 
               v-if="result.latency.average"
-              class="relative -top-6"
+              class="relative -top-6  -mb-12"
               :refid="'relay-latency'"
               :options="{
                 'needleValue':normalizeLatency(result?.latency?.average || result?.latency?.final),
@@ -44,12 +67,12 @@
                 'arcColors': ['green', 'orange', 'red'] }">
             </vue-gauge>
           </div>
-          
+
           <!-- <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3>Latency (1x)</h3>
             <span>{{ result.latency.final }}</span>
           </div> -->
-          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 -mb-8">
+          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3>Avg Latency (10x)</h3>
             <svg v-if="!result.latency.average" class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -77,30 +100,6 @@
             <h3>Avg Latency (12h)</h3>
             <span>{{ result.latency.final }}</span>
           </div> -->
-        </div>
-
-       <div class="mt-3 overflow-hidden bg-slate-100 dark:bg-white/10 shadow sm:rounded-lg">
-          <div class="px-4 py-5 sm:px-6 flex">
-            <span 
-              v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
-              :key="heartbeat[0]"
-              class=" mr-1 flex-1"
-              :class="{
-                'bg-red-300/50 h-16 mt-16': !heartbeat.latency,
-                'bg-green-400/50 h-32': heartbeat.latency
-              }">
-                <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
-                <span v-if="!heartbeat.latency">a</span>
-              </span>
-          </div>
-        </div>
-
-        
-        
-        <div id="status" class="flex mb-2 py-5"> <!--something is weird here with margin-->
-          <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6" :class="check(key)">
-            <span>{{key}}</span>  
-          </div>
         </div>
 
         <div id="did_not_connect" v-if="!result?.check?.connect" class="mb-8 py-8">
@@ -641,13 +640,13 @@ export default defineComponent({
     // this.getAdminNotes()
     setTimeout( () => {
       this.showLatency = true
-    }, 1001)
-    this.interval = setInterval(() => {
-      if(!this.result)
-        this.setData()
-      
-      this.result = this.getCache(this.relayFromUrl)
-    },1000)
+    
+      this.interval = setInterval(() => {
+        if(!this.result)
+          this.setData()
+        this.result = this.getCache(this.relayFromUrl)
+      },1000)
+    }, 2001)
   },
 
   unmounted(){

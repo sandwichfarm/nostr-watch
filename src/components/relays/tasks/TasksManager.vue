@@ -2,6 +2,7 @@
   <RefreshTask
     v-bind:resultsProp="results" />
   <HeartbeatTask />
+  <UserRelayList />
   <!-- <RelayCanonicalsTask
     :resultsProp="results" />
   <RelayOperatorTask
@@ -17,6 +18,8 @@ import SharedComputed from '@/shared/computed.js'
 
 import RefreshTask from './RefreshTask.vue'
 import HeartbeatTask from './HeartbeatTask.vue'
+import UserRelayList from './UserRelayList.vue'
+
 
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
 // import RelayOperatorTask from './RelayOperatorTask.vue'
@@ -26,6 +29,7 @@ export default defineComponent({
   components: {
     RefreshTask,
     HeartbeatTask,
+    UserRelayList,
     // RelayCanonicalsTask,
     // RelayOperatorTask
   },

@@ -2,6 +2,30 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  queueKind3: async function(slug){
+    this.queueJob(
+      slug,
+      async () => {
+        await this.store.user.setKind3()
+          .then( () => {
+            this.store.relays.getFavorites.forEach( relay => {
+              if(this.store.user?.kind3?.[relay])
+                return 
+              this.store.user.kind3[relay] = { read: false, write: false }
+            })
+            Object.keys(this.store.user.kind3).forEach( key => {
+              this.store.relays.setFavorite(key)
+            })
+            this.store.tasks.completeJob()
+          })
+          .catch( err => {
+            console.error('error!', err)
+            this.store.tasks.completeJob()
+          })
+      },
+      true
+    )
+  },
   queueJob: function(id, fn, unique){
     this.store.tasks.addJob({
       id: id,
@@ -55,7 +79,7 @@ export default {
       return this.$storage.getStorageSync(key)
     },
 
-    cleanUrl: function(relay){
+    getHostname: function(relay){
       return relay.replace('wss://', '')
     },
 
@@ -175,5 +199,12 @@ export default {
         // if descending, highest sorts first
         return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
       };
+    },
+    async copy(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch($e) {
+        ////console.log('Cannot copy');
+      }
     },
 }

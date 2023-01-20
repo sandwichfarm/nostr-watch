@@ -8,10 +8,9 @@
     v-if="(geo instanceof Object)"
   />
 
-  <div id="wrapper" class="mt-8 mx-auto max-w-7xl">
+  <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl">
     
-
-      <div v-if="store.tasks.isProcessing('relays/check') && !result" class="flex bg-slate-100 mt-12 shadow">
+      <div v-if="store.tasks.isProcessing('relays/check') && !result" class="data-card flex bg-slate-100 mt-12 shadow">
         <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
           <span class="block lg:text-lg"><strong>Data has not yet populated and is currently being processed.</strong> Depending on the availability of of the <strong>{{ relay  }}</strong>, this may or may not be populated shortly.</span>
         </div>
@@ -19,11 +18,17 @@
 
       <section v-if="result">
 
-        <div class="overflow-hidden bg-slate-100 shadow sm:rounded-lg">
+        <div id="title_card" class="data-card overflow-hidden sm:rounded-lg mb-8 pt-5" style="background:transparent">
           <div class="px-4 py-5 sm:px-6">
-            <h1>{{geo?.countryCode ? getFlag : ''}}<span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
-            <p class="mt-1 w-full text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
+            <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
+            <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
           </div>
+          <a 
+          target="_blank" 
+          :href="`https://www.ssllabs.com/ssltest/analyze.html?d=${ getHostname(relay) }`"
+          class="inline-block py-2 px-3 bg-black/10 first-line:font-bold text-black dark:bg-white/50  dark:text-white ">
+            Check SSL
+          </a>
         </div>
 
         <vue-gauge 
@@ -49,30 +54,28 @@
           </div>
         </div>
         
-        <!-- this.result?.check?.[which] ? 'green' : 'red' -->
-
-        <div class="flex">
-          <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-3xl flex-1 block py-6" :class="check(key)">
-            <span>{{key}}</span>
+        <div id="status" class="flex mb-2 py-5"> <!--something is weird here with margin-->
+          <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6" :class="check(key)">
+            <span>{{key}}</span>  
           </div>
         </div>
 
-        <div v-if="!result?.check?.connect">
-          <div class="block mt-1 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
+        <div id="did_not_connect" v-if="!result?.check?.connect" class="mb-8 py-8">
+          <div class="data-card block mt-8 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-red-600 dark:text-red-300">This Relay Appears to be offline</h5>
           </div>
-          <div class="flex bg-slate-50 shadow mt-12" v-if="Object.keys(this.result?.geo).length">
+          <div class="flex bg-slate-50 shadow mt-8" v-if="Object.keys(this.result?.geo).length">
             <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
               I did find this...
             </div>
           </div>
         </div>
 
-        <div class="mb-10 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg">
+        <div id="nips" v-if="result?.info?.supported_nips" class="mb-8 py-1 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg dark:bg-slate-800">
           <div class="px-1 py-2 sm:px-6">
-            <div class="flex" v-if="result?.info?.supported_nips">
-              <div class="flex-none">
-                <h3 class="text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
+            <div class="lg:flex">
+              <div class="flex-none lg:flex-initial">
+                <h3 class="inline-block lg:block text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
               </div>
               <a target="_blank" :href="nipLink(key)" v-for="key in result?.info?.supported_nips" :key="`nip-${key}`" 
               class="hover:bg-slate-300 hover:shadow pointer-cursor flex-initial gap-4  text-slate-800 text-1xl w-1/5 inline-block py-6 ">
@@ -82,8 +85,8 @@
           </div>
         </div>
 
-        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 mb-10" v-if="geo?.dns">
-          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 mb-8 py-8" v-if="geo?.dns">
+          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
               The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong> <br />
               <em>{{ geo?.dns.data }}</em> appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong> <br />
@@ -92,31 +95,17 @@
           </div>
         </div>
 
-        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-10" v-if="this.result?.info?.software">
-          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-8  py-8" v-if="this.result?.info?.software">
+          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
-                The current date/time in <strong>{{ geo?.city }}</strong> is <strong>{{ getLocalTime }}</strong>
+              It's <strong>{{ getLocalTime }}</strong> in <strong>{{ geo?.city }}</strong>
               </span>
           </div>
         </div>
 
-        <div class="flex sm:rounded-lg bg-slate-50 border-slate-200 shadow" v-if="this.result?.info?.software">
-          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
-            <span>It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong></span>
-            <span class="text-sm block">
-              <!-- Some links...
-              <a 
-                v-if="result?.info?.software.includes('+http')" 
-                :href="result?.info?.software.replace('git+', '')"
-                target="_blank">
-                  {{ result?.info?.software.includes('+https') ? 'https' : ' http' }}
-                </a>
-              <a 
-                v-if="result?.info?.software.includes('git+')" 
-                :href="result?.info?.software.replace('+http', '').replace('+https', '')">
-                git
-              </a> -->
-            </span>
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 shadow mb-8 py-8" v-if="this.result?.info?.software">
+          <div class="text-clip overflow-ellipsis text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
+            It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong>
           </div>
         </div>
 
@@ -127,57 +116,56 @@
           </div>
         </div> -->
 
-        <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="this.result?.info?.pubkey">
-          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+        <div class="data-card flex bg-slate-50 border-slate-200 shadow mb-8 py-5" v-if="this.result?.info?.pubkey">
+          <div class="text-slate-800 w-full text-sm md:text-lg lg:text-3xl overflow-ellipsis flex-none block py-1 text-center">
             <code class="block">{{ this.result?.info.pubkey }}</code>
-            <span class="block lg:text-lg">was  recieved via {{ relayFromUrl }}/.well-known/nostr.json</span>
           </div>
         </div>
 
-        <div class="flex bg-slate-50 border-slate-200 shadow mt-12" v-if="this.result?.info?.pubkey">
-          <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
+        <div class="data-card flex bg-slate-50 border-slate-200 shadow mt-12 mb-8 py-5" v-if="this.result?.info?.pubkey">
+          <div class="text-slate-800 w-full flex-none block py-1 text-center">
             Here's the details...
           </div>
         </div>
 
         
 
-        <div class="py-5 col-span-3" v-if="typeof result?.info !== 'undefined'">
-          <div class="overflow-hidden bg-white shadow sm:rounded-lg relative">
+        <div class="py-5" v-if="typeof result?.info !== 'undefined' && Object.keys(result?.info).length">
+          <div class="data-card overflow-hidden bg-white shadow sm:rounded-lg relative">
             <div class="px-4 py-5 sm:px-6">
-              <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Relay Info <code class="text-gray-300 text-xs absolute top-3 right-3">NIP-11</code></h3>
+              <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Relay Info</h3>
             </div>
             <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
               <dl class="sm:divide-y sm:divide-gray-200">
-                <!-- <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
+                <!-- <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
                   <dt class="text-lg font-medium text-gray-500">Connection Status</dt>
-                  <dd class="mt-1 text-lg text-gray-900 sm:col-span-2 sm:mt-0">
+                  <dd class="mt-1 text-lg text-gray-900 sm:mt-0">
                     
                   </dd>
                 </div> -->
-                <!-- <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result.info?.supported_nips">
+                <!-- <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result.info?.supported_nips">
                   <dt class="text-lg font-medium text-gray-500">Supported Nips</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0">
                     <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`" class="inline-block mr-3 mt-1">
                       <a :href="nipLink(nip)" target="_blank" ><img :src="badgeLink(nip)" /></a> 
                     </span>
                   </dd>
                 </div> -->
-                <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.name">
+                <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.name">
                   <dt class="text-lg font-medium text-gray-500">Relay Name</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ result.info.name }}</dd>
+                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0">{{ result.info.name }}</dd>
                 </div>
-                <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.pubkey">
+                <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.pubkey">
                   <dt class="text-lg font-medium text-gray-500">Public Key</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.pubkey }}</code></dd>
+                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0"><code class="text-xs">{{ result.info.pubkey }}</code></dd>
                 </div>
-                <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.email">
+                <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.email">
                   <dt class="text-lg font-medium text-gray-500">Contact</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 "><SafeMail :email="result.info.email" /></dd>
+                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0 "><SafeMail :email="result.info.email" /></dd>
                 </div>
-                <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.software">
+                <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.software">
                   <dt class="text-lg font-medium text-gray-500">Software</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0">
                     {{ getSoftware }} 
                     <br />
                     {{result.info.software}}<br />
@@ -195,9 +183,9 @@
                     </a>
                   </dd>
                 </div>
-                <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
+                <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
                   <dt class="text-lg font-medium text-gray-500">Software Version</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><code class="text-xs">{{ result.info.version }}</code></dd>
+                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0"><code class="text-xs">{{ result.info.version }}</code></dd>
                 </div>
                 
               </dl>
@@ -207,29 +195,29 @@
         
 
       <div :class="getGeoWrapperClass">
-        <div  :class="getDnsClass" class="overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
+        <div  :class="getDnsClass" class="data-card overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">DNS</h3>
           </div>
           <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
             <dl class="sm:divide-y sm:divide-gray-200">
-              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo?.dns)" :key="`${value}_${key}`">
+              <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo?.dns)" :key="`${value}_${key}`">
                 <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0">{{ value[1] }}</dd>
               </div>
             </dl>
           </div>
         </div>
 
-        <div class="overflow-hidden bg-white shadow sm:rounded-lg mt-8"  :class="getGeoClass" v-if="geo">
+        <div class="data-card overflow-hidden bg-white shadow sm:rounded-lg mt-8"  :class="getGeoClass" v-if="geo">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
           </div>
           <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
             <dl class="sm:divide-y sm:divide-gray-200">
-              <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo).filter(value => value[0] != 'dns')" :key="`${value}_${key}`">
+              <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo).filter(value => value[0] != 'dns')" :key="`${value}_${key}`">
                 <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">{{ value[1] }}</dd>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0">{{ value[1] }}</dd>
               </div>
             </dl>
           </div>
@@ -238,14 +226,14 @@
 
       
 
-    <span v-if="this.events?.['0']">
+    <!-- <span v-if="this.events?.['0']">
      <h1>OK</h1>
-    </span>
+    </span> -->
 
     <div class="flow-root" v-if="this.events?.['1']">
       <ul role="list" class="-mb-8">
         
-        <li v-for="(event, key) in this.events?.['1']" :key="key">
+        <!-- <li v-for="(event, key) in this.events?.['1']" :key="key">
           <div class="relative pb-8" v-if="Object.keys(event).length">
             <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
             <div class="relative flex items-start space-x-3">
@@ -260,7 +248,7 @@
               <div class="min-w-0 flex-1">
                 <div>
                   <a href="#" class="font-medium text-gray-900">
-                    <!-- {{ Object.entries(this.events['0']).map( event => event[1])[0] }} -->
+                    
                     {{ Object.entries(this.events['0']).map( event => event[1])[0]?.lud06 }} <br/>
                     {{ Object.entries(this.events['0']).map( event => event[1])[0]?.name }}<br/>
                     {{ Object.entries(this.events['0']).map( event => event[1])[0]?.picture }}<br/>
@@ -277,7 +265,7 @@
               </div>
             </div>
           </div>
-        </li>
+        </li> -->
 
 
 
@@ -623,9 +611,9 @@ export default defineComponent({
     getLocalTime: function(){
       let options = {
         timeZone: this.geo?.timezone,
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
+        // year: 'numeric',
+        // month: 'numeric',
+        // day: 'numeric',
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
@@ -636,7 +624,8 @@ export default defineComponent({
     getSoftware: function(){
       return this.result?.info?.software
     },
-    cleanUrl: function(){
+
+    getHostname: function(){
       return (relay) => relay.replace('wss://', '')
     },
 
@@ -742,5 +731,5 @@ body, .grid-Column { padding:0; margin:0; }
 
 
 /* #relay-wrapper { margin: 50px 0 20px; padding: 20px 0} */
-h1 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9}
+/* h1 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9} */
 </style>

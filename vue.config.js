@@ -5,11 +5,16 @@ const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 
 module.exports = defineConfig({
   transpileDependencies: true,
+  
   devServer: {
-    port: 8080
+    port: 8080,
+    https: true
   },
   configureWebpack: {
     // watch: true,
+    output: {
+      filename: '[name].[hash].bundle.js'
+    },
     experiments: {
       topLevelAwait: true
     },
@@ -31,7 +36,7 @@ module.exports = defineConfig({
         "tls": false,
         "net": false,
         "utf-8-validate": false,
-        "bufferutil": false
+        "bufferutil": false,
       }
     },
   },

@@ -1,5 +1,5 @@
 <template>
-   <div class="-mt-10 pt-0 px-1 sm:px-6 lg:px-8">
+   <div class="pt-0 px-1 sm:px-6 lg:px-8 dark:bg-black/20 rounded-lg">
       <div class="mt-8 flex flex-col">
       <div class="overflow-x-auto">
           <div class="inline-block min-w-full align-middle" v-if="subsectionRelays.length">
@@ -8,30 +8,46 @@
                 <thead>
                     <tr>
                       <th scope="col" class="text-left" colspan="2">
-                        <span class="mr-3">
+                        <span class="mr-3 hidden lg:inline-block">
                           <span 
                             :class="getThemeBtnClass('compact')" 
-                            @click="store.prefs.changeTheme('compact')">compact</span>
+                            @click="store.prefs.setRowTheme('compact')">compact</span>
                           <span 
                             :class="getThemeBtnClass('comfortable')" 
-                            @click="store.prefs.changeTheme('comfortable')">comfortable</span>
+                            @click="store.prefs.setRowTheme('comfortable')">comfortable</span>
                           <span 
                             :class="getThemeBtnClass('spacious')" 
-                            @click="store.prefs.changeTheme('spacious')">spacious</span>
+                            @click="store.prefs.setRowTheme('spacious')">spacious</span>
+                          <a
+                            v-if="!store.layout.editorExpanded"
+                            class="text-left inline-block underline text-xs ml-10" 
+                            @click="this.setRandomRelay" 
+                            target="_blank"
+                            :href="`/relay/${relayClean(randomRelay)}`">
+                             random relay
+                            </a>
                         </span>
-                        <NostrSyncPopoverNag  v-if="subsection == 'favorite'"  />
                         <span v-if="subsection != 'favorite' && store.relays.getFavorites.length" class="ml-6 text-slate-600">
                           <input type="checkbox" class=" cursor-pointer relative top-0.5 mr-1" id="relays-pin-favorites" v-model="store.prefs.pinFavorites" /> 
                           <label class="cursor-pointer font-thin text-xs" for="relays-pin-favorites">
                             pin favorites
                           </label>
                         </span>
+
+                        <!-- <span v-if="isLoggedIn && store.user.kind3" class="ml-6 text-slate-600">
+                          <input type="checkbox" @click="handleMine()" class=" cursor-pointer relative top-0.5 mr-1" id="relays-pin-favorites" v-model="store.prefs.mine" /> 
+                          <label class="cursor-pointer font-thin text-xs" for="relays-pin-favorites">
+                            only mine
+                          </label>
+                        </span> -->
                       </th>
+
+                     
                       
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()">
                         <code class="text-xs block">Upvote</code>
                       </th> -->
-                      <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
                         </span> -->
@@ -39,27 +55,37 @@
                       </th>
                       <th scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Location</code>
-                        <!-- 🌎 -->
                       </th>
                       <th>
                         Uptime
                       </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
                         <code class="text-xs block">Latency</code>
-                        <!-- ⌛️ -->
                       </th>
-                      <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
+                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
                         <code class="text-xs block">Connect</code>
-                        <!-- 🔌 -->
                       </th>
-                      <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
+                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
                         <code class="text-xs block">Read</code>
-                        <!-- 👁️‍🗨️ -->
                       </th>
-                      <th scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
+                      <th v-if="!store.layout.editorIsExpanded && isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
-                        <!-- ✏️ -->
                       </th>
+
+                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        <!-- <span class="verified-shape-wrapper">
+                          <span class="shape verified"></span>
+                        </span> -->
+                        <code class="text-xs block">Read</code>
+                      </th>
+
+                      <th v-if="store.layout.editorIsExpanded && isLoggedIn" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        <!-- <span class="verified-shape-wrapper">
+                          <span class="shape verified"></span>
+                        </span> -->
+                        <code class="text-xs block">Write</code>
+                      </th>
+
                       <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
                         <code class="text-xs block">Favorite</code>
                       </th>
@@ -73,7 +99,7 @@
                       class="">
 
                       <td class="w-6 status-indicator w-2 text-left pr-2">
-                        <span :class="getAggregateIndicator(relay)" class="block">
+                        <span :class="getAggregateIndicator(relay)" class="block relative">
                         </span>
                       </td>
 
@@ -89,7 +115,7 @@
                         </a>
                       </td> -->
 
-                      <td class="w-12 verified text-center md:table-cell lg:table-cell xl:table-cell">
+                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-12 verified text-center md:table-cell lg:table-cell xl:table-cell">
                         <span v-if="this.results[relay]?.identities">
                           <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span>
                         </span>
@@ -114,29 +140,84 @@
                       <td class="w-24 latency text-center">
                         <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>
                       </td>
+
+                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
+                        <span class="m-auto block" :class="getCheckIndicator(relay, 'connect')">
+                          &nbsp;
+                        </span>
+                      </td>
+
+                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
+                        <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'read')">
+                          <span class="align-middle h-max" v-if="isLoggedIn && store.user.kind3?.[relay]?.read">
+                            <svg class="h-5 w-5 inline-block mt-0.5" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                          </span>
+                          <span v-else>&nbsp;</span>
+                        </span>
+                      </td>
+
+                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
+                        <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'write')">
+                          <span class="align-middle" v-if="isLoggedIn && store.user.kind3?.[relay]?.write">
+                            <svg class="h-5 w-5 inline-block mt-0.5" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                          </span>
+                          <span v-else>&nbsp;</span>
+                        </span>
+                      </td>
+
+                      <!-- editor -->
+                      <td v-if="store.tasks.getActiveSlug != 'user/relay/list' 
+                                && store.layout.editorIsExpanded 
+                                && typeof store.user.kind3?.[relay]?.read !== `undefined`
+                                && isLoggedIn"
+                          class="text-center md:table-cell lg:table-cell xl:table-cell">
+                        <Switch
+                          v-model="store.user.kind3[relay].read" 
+                          class="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                          <span class="sr-only">Use setting</span>
+                          <span aria-hidden="true" class="pointer-events-none absolute h-full w-full rounded-md bg-white dark:bg-black/10" />
+                          <span aria-hidden="true" :class="[store.user.kind3[relay].read ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-black', 'pointer-events-none absolute mx-auto h-4 w-9 rounded-full transition-colors duration-200 ease-in-out']" />
+                          <span aria-hidden="true" :class="[store.user.kind3[relay].read ? 'translate-x-5' : 'translate-x-0', 'pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out']" />
+                        </Switch>
+                      </td>
+
+                      <td v-if="store.tasks.getActiveSlug != 'user/relay/list' 
+                                && store.layout.editorIsExpanded 
+                                && typeof store.user.kind3?.[relay]?.write !== `undefined` 
+                                && isLoggedIn"
+                        class="text-center md:table-cell lg:table-cell xl:table-cell">
+                        <Switch
+                          v-model="store.user.kind3[relay].write" 
+                          class="group relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full 
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                          <span class="sr-only">Use setting</span>
+                          <span aria-hidden="true" class="pointer-events-none absolute h-full w-full rounded-md bg-white dark:bg-black/10" />
+                          <span aria-hidden="true" :class="[store.user.kind3[relay].write ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-black', 'pointer-events-none absolute mx-auto h-4 w-9 rounded-full transition-colors duration-200 ease-in-out']" />
+                          <span aria-hidden="true" :class="[store.user.kind3[relay].write ? 'translate-x-5' : 'translate-x-0', 'pointer-events-none absolute left-0 inline-block h-5 w-5 transform rounded-full border border-gray-200 bg-white shadow ring-0 transition-transform duration-200 ease-in-out']" />
+                        </Switch>
+                      </td>
                       
-<!--                  .indicator {
-                        display:block;
-                        margin: 0 auto;
-                        height: 14px;
-                        width: 14px;
-                        border-radius: 7px;
-                        border-width:0px;
-                      } -->
-
-                      <td class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
-                        <span class="m-auto block" :class="getCheckIndicator(relay, 'connect')">&nbsp;</span>
+                      <td 
+                        colspan="2" 
+                        v-if="store.layout.editorExpanded && store.tasks.getActiveSlug == 'user/relay/list'" 
+                        class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
+                        <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
                       </td>
 
-                      <td class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
-                        <span class="m-auto block" :class="getCheckIndicator(relay, 'read')">&nbsp;</span>
+                      <td 
+                        colspan="2" 
+                        v-if="store.layout.editorExpanded && !store.relays.isFavorite(relay) && store.tasks.getActiveSlug != 'user/relay/list'" 
+                        class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
                       </td>
 
-                      <td class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
-                        <span class="m-auto block" :class="getCheckIndicator(relay, 'write')">&nbsp;</span>
-                      </td>
-
-                      <td class="w-16 fav text-center">
+                      <td  class="w-16 fav text-center">
                         <a
                           class="hover:opacity-100 cursor-pointer" 
                           :class="store.relays.isFavorite(relay) ? 'opacity-100' : 'opacity-10'"
@@ -150,8 +231,9 @@
                 </table>
             </div>
           </div>
-          <div class="text-xl block min-w-full align-middle py-8 bg-slate-100 rounded-lg" v-if="!store.relays.getFavorites.length && subsection == 'favorite'">
-            You have not selected any favorites. To select a favorite, click the heart emoji next to any relay in a relays list.
+          <div class="text-xl block min-w-full align-middle py-8 light:bg-slate-100 rounded-lg" v-if="!store.relays.getFavorites.length && subsection == 'favorite'">
+            You have not selected any favorites. To select a favorite, click the heart emoji next to any relay in a relays list. 
+            Alternatively, sign-in to sync your relays list. If you do not see a sign-in, download a NIP-04 compatible extension like nos2x or Alby
           </div>
       </div>
       </div>
@@ -163,18 +245,28 @@
   import { countryCodeEmoji } from 'country-code-emoji';
   import emoji from 'node-emoji';
   import crypto from 'crypto'
+  import { Switch } from '@headlessui/vue'
 
   // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
-  import NostrSyncPopoverNag from '@/components/relays/partials/NostrSyncPopoverNag.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
   import UserLib from '@/shared/user-lib.js'
+  // import { screenIs } from '@/shared/layout.js'
 
   import {validateEvent, getEventHash, verifySignature} from 'nostr-tools'
   
   import { setupStore } from '@/store'
   
   const localMethods = {
+    setRandomRelay(){
+      this.randomRelay = this.store.relays.getShuffledPublic[0]
+    },
+    handleMine(){
+      setTimeout( () => {
+        if(this.store.prefs.mine)
+          this.store.layout.setActive('relays/find', 'favorite')
+      },1)
+    },
     async likeRelay(relay){
       const id = this.store.relays.getCanonical(relay)
       const event = {
@@ -203,7 +295,7 @@
     name: 'ListClearnet',
     components: {
       // SingleClearnet,
-      NostrSyncPopoverNag
+      Switch,
     },
     setup(props){
       const {subsectionProp: subsection} = toRefs(props)
@@ -220,15 +312,15 @@
     mounted(){
       //console.log('navdata', this.navData, this.navData.filter( item => item.slug == this.subsection )[0], this.navData.filter( item => item.slug == this.subsection ))
       this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
+      this.setRandomRelay()
     },
     updated(){
-      // //console.log('state, updated')
+
+      
     },
     beforeUnmount(){
-      //console.log('relays list', 'beforeUnmount()', this.subsection)
     },
     unmounted(){
-      //console.log('relays list unmounted', this.subsection)
       delete this.results
     },
     props: {
@@ -257,7 +349,9 @@
         relays: [],
         timeout: null,
         navData: this.store.layout.getNavGroup('relays/find'),
-        activePageData: {}
+        activePageData: {},
+        randomRelay: "",
+        inputDetected: false,
       }
     },
     computed: {
@@ -284,8 +378,8 @@
             'bg-slate-100': index % 2,
             'bg-red-50 hover:bg-red-100': this.store.relays.isFavorite(relay),
             'bg-gray-50 hover:bg-slate-200': !this.store.relays.isFavorite(relay),
-            'text-2xl h-16': this.store.prefs.getTheme === 'spacious',
-            'text-xl h-9': this.store.prefs.getTheme === 'comfortable',
+            'xl:text-2xl xl:h-16': this.store.prefs.getTheme === 'spacious',
+            'xl:text-xl xl:h-9': this.store.prefs.getTheme === 'comfortable',
             // '': this.store.prefs.getTheme === 'compact',
           }
         }

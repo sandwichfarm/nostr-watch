@@ -6,9 +6,13 @@ COPY . /app/
 
 RUN yarn && yarn build
 
-#RUN yarn global add yaml2json
+# RUN yarn global add yaml2json yaml-doctor 
 
-#RUN yaml2json relays.yaml > dist/relays.json
+# RUN yaml-doctor relays.yaml --fix
+
+# RUN echo $(cat relays.yaml)
+
+# RUN yaml2json relays.yaml > dist/relays.json
 
 FROM nginx:stable-alpine as nginx-nostr-relay-registry
 

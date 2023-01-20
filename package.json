@@ -1,9 +1,10 @@
 {
   "name": "nostr-watch",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "scripts": {
     "build": "vue-cli-service build",
+    "prebuild": "yarn get:relays && yarn get:geo",
     "get:relays": "node ./scripts/relays.js",
     "get:geo": "node ./scripts/geo.js",
     "serve": "vue-cli-service serve --host localhost",

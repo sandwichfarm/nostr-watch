@@ -60,7 +60,7 @@
                         Uptime
                       </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
-                        <code class="text-xs block">Latency</code>
+                        <code class="text-xs block">Avg. Latency</code>
                       </th>
                       <th v-if="!store.layout.editorIsExpanded || !isLoggedIn" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
                         <code class="text-xs block">Connect</code>

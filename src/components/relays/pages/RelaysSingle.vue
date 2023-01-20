@@ -53,8 +53,6 @@
           </div>
         </div>
 
-        {{ typeof result.check.averageLatency }}
-
         <div id="status" class="flex mb-2 py-5 bg-white/5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
           <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 

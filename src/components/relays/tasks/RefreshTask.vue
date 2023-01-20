@@ -1,5 +1,6 @@
 <template>
-  <div>{{ getRefreshInterval }}</div>
+  <!-- <div>{{ getRefreshInterval }} {{ store.tasks.getActiveSlug }}</div> -->
+  {{  getRefreshInterval }}
   <div
       v-if="(!store.tasks.isActive || store.tasks.getActiveSlug === this.slug) && !this.isSingle"
       class="inline">
@@ -26,9 +27,9 @@
     </button>
   </div>
   <span
-    v-if="(store.tasks.getActiveSlug === this.slug) && this.isSingle"
+    v-if="store.tasks.getActiveSlug === this.slug && this.isSingle"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs mr-11">
-      Loading {{ relayFromUrl }} {{ getRefreshInterval }}
+      Loading {{ relayFromUrl }}
   </span>
   
 </template>
@@ -87,19 +88,26 @@ const localMethods = {
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
 
-      if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length){
+      if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length && !this.isSingle){
         this.store.tasks.updateNow(this.slug)
         this.store.tasks.finishProcessing(this.slug)
       }
 
-      if(!this.store.tasks.isProcessing(this.slug))
+      if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
         this.invalidate()
         
     }, 1000)
   },
+  setLatencyInterval: function(){
+    this.setLatencyInterval = setInterval( () => {
+
+    })
+  },
+
   refreshNow(){
     this.invalidate(true)
   },
+
   handleVisibility(){
     if(document.visibilityState === 'hidden')
       this.windowActive = false 
@@ -110,7 +118,10 @@ const localMethods = {
       this.store.layout.setActiveTab(this.$tabId)
   },
 
+
   invalidate: async function(force, single){
+    console.log('invalidate?', !(!this.isExpired(this.taskSlug, this.getRefreshInterval)))
+
     if( (!this.isExpired(this.taskSlug, this.getRefreshInterval) && !force) ) 
       return
 
@@ -148,22 +159,26 @@ const localMethods = {
     this.store.tasks.addProcessed(this.slug, relay)
     
     if(result)  {
-      console.log('whoops', result)
+      // console.log('whoops', result)
       this.results[relay] = result
       this.setCache(result)
     }
+
     if(this.isSingle)
-      this.completeAll()
+      this.completeAll(true)
     else if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length)
       this.completeAll()
   },
 
-  completeAll: function(){
+  completeAll: function(single){
     this.store.tasks.completeJob(this.slug)
+    // this.setAverageLatency()
+    if(single)
+      return 
+
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
-    this.setAverageLatency()
   },
 
   check: async function(relay){
@@ -171,15 +186,18 @@ const localMethods = {
       const opts = {
           checkRead: true, 
           checkWrite: true,   
-          checkLatency: true,          
+          checkLatency: true,
           getInfo: true,
           getIdentities: true,
           run: true,
-          // debug: true,
+          debug: true,
           connectTimeout: this.getDynamicTimeout,
           readTimeout: this.getDynamicTimeout,
           writeTimeout: this.getDynamicTimeout,
         }
+      
+      // if(this.isSingle)
+        opts.checkAverageLatency = true
       
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
@@ -187,6 +205,15 @@ const localMethods = {
       let socket = new Inspector(relay, opts)
 
       socket
+        .on('open', () => {
+          console.log('OIPNEING!')
+          if(!this.isSingle)
+            return
+          this.results[this.relayFromUrl].latency.average = null
+          this.results[this.relayFromUrl].latency.min = null
+          this.results[this.relayFromUrl].latency.max = null
+          this.setCache(this.results[this.relayFromUrl])
+        })
         .on('complete', (instance) => {
           // console.log('completed?', instance.result)
           instance.result.aggregate = this.getAggregate(instance.result)
@@ -196,7 +223,7 @@ const localMethods = {
         })
     })
   },
-  
+
   setAverageLatency: function(){
     const latencies = new Array()
     this.relays.forEach( relay => {
@@ -212,6 +239,7 @@ const localMethods = {
       sum += arr[i];
     return Math.floor(parseFloat(sum/total));
   },
+
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
@@ -246,7 +274,8 @@ export default defineComponent({
       windowActive: true,
       averageLatency: 200,
       pageOpen: 0,
-      slug: 'relays/check'
+      slug: 'relays/check',
+      latencies: []
       // history: null
     }
   },
@@ -281,6 +310,7 @@ export default defineComponent({
     if( this.isSingle ){
       this.slug = 'relays/single'
       this.invalidate(true, this.relayFromUrl)
+      // this.runLatencyCheck()
     } else {
       if(this.store.tasks.isProcessing(this.slug))
         this.invalidate(true)
@@ -298,14 +328,15 @@ export default defineComponent({
       return calculated > 10000 ? calculated : 10000
     },
     getRefreshInterval: function(){
-      const relay = this.$route.params.relayUrl
-      if(!relay)
+      const relay = this.relayFromUrl
+      console.log('wtf', relay, this.results[relay], this.results[relay]?.check?.connect, this.results[relay]?.check?.read, this.results[relay]?.check?.write, this.results[relay]?.latency?.final )
+      if( !relay )
         return this.store.prefs.duration
-      if(this.results[relay]?.check?.connect && this.result?.check?.read && this.result?.check?.write && this.result?.latency?.final )
-        return this.result.latency.final * 5 
-      if(this.result?.check?.connect && this.result?.check?.read && this.result?.check?.write)
+      if( this.results[relay]?.check?.connect && this.results[relay]?.check?.read && this.results[relay]?.check?.write && typeof this.results[relay]?.latency?.final !== 'undefined' )
+        return this.results[relay].latency.final * 5 
+      if(this.results[relay]?.check?.connect && this.results[relay]?.check?.read && this.results[relay]?.check?.write)
         return 30*1000
-      return 60*1000
+      return this.store.prefs.duration
     }
   }),
 

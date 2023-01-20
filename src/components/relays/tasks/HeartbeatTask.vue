@@ -42,7 +42,7 @@ const localMethods = {
         let total = 48,
             count = 0
         await new Promise( resolve => {
-          const pool = new RelayPool( relays )
+          const pool = new RelayPool( ['wss://nostr.sandwich.farm'] )
           const uniques = new Set()
 
           pool
@@ -50,7 +50,7 @@ const localMethods = {
               kinds:    [1010],
               limit:    total, //12 hours 
               authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
-              since:    Math.floor(this.store.tasks.getLastUpdate(this.taskSlug)/1000)
+              // since:    Math.floor(this.store.tasks.getLastUpdate(this.taskSlug)/1000)
             })
           
           pool
@@ -171,7 +171,7 @@ export default defineComponent({
     if(this.store.tasks.isProcessing(this.taskSlug))
       this.invalidate(true)
     else
-      this.invalidate()
+      this.invalidate(true)
   },
   updated(){
     

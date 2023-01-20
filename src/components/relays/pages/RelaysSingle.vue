@@ -638,15 +638,19 @@ export default defineComponent({
 
   async mounted() {
     // this.getAdminNotes()
-    setTimeout( () => {
-      this.showLatency = true
-    
-      this.interval = setInterval(() => {
-        if(!this.result)
-          this.setData()
-        this.result = this.getCache(this.relayFromUrl)
-      },1000)
-    }, 2001)
+    this.result = this.getCache(this.relayFromUrl)
+    this.result.latency.average = null
+    this.result.latency.min = null
+    this.result.latency.max = null
+    this.showLatency = true    
+    // setTimeout( () => {
+    //   this.showLatency = true      
+    // }, 2001)
+
+    this.interval = setInterval(() => {
+     
+      this.setData()
+    },1000)
   },
 
   unmounted(){

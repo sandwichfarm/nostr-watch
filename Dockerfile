@@ -6,7 +6,7 @@ COPY . /app/
 
 RUN yarn && yarn build
 
-RUN yarn global add yaml-convert yaml-doctor 
+RUN yarn global add yaml-convert
 
 RUN yaml-convert relays.yaml > dist/relays.json
 

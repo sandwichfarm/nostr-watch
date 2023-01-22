@@ -62,7 +62,7 @@ async function discover(){
 
   return new Promise(resolve => {
     const subid = crypto.randomBytes(40).toString('hex')
-    const pool = RelayPool(['wss://nostr.sandwich.farm'])
+    const pool = RelayPool(relaysKnown)
     pool
       .on('open', relay => {
         // //console.log('open')

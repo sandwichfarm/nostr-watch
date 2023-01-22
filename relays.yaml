@@ -221,4 +221,5 @@ relays:
   - wss://relay.nostr.moe
   - wss://relay.current.fyi
   - wss://relay.nostr-latam.link
+  - wss://nostr.klabo.blog
   - wss://nostr.localhost.re

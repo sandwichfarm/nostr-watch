@@ -115,13 +115,15 @@
                         </a>
                       </td> -->
 
-                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-12 verified text-center md:table-cell lg:table-cell xl:table-cell">
+                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <span v-if="this.results[relay]?.identities">
                           <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span>
                         </span>
                       </td>
 
-                      <td class="w-24 location text-center">{{ getFlag(relay) }}</td>
+                      <td class="w-24 location text-center">
+                        {{ getFlag(relay) }}
+                      </td>
 
                       <td class="w-24 latency text-center">
                         <div class="sm:px-6 text-sm font-bold h-full">

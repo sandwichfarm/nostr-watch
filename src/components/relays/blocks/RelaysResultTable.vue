@@ -4,7 +4,7 @@
       <div class="overflow-x-auto">
           <div class="inline-block min-w-full align-middle" v-if="subsectionRelays.length">
             <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <table class="min-w-full table-auto divide-y divide-gray-300">
+                <table class="min-w-full table-auto">
                 <thead>
                     <tr>
                       <th scope="col" class="text-left" colspan="2">
@@ -91,14 +91,14 @@
                       </th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
+                <tbody class="divide-y">
                     <tr 
                       v-for="(relay, index) in subsectionRelays"  
                       :key="generateKey(relay, 'aggregate')" 
                       :class="getResultClass(relay, index)" 
                       class="">
 
-                      <td class="w-6 status-indicator w-2 text-left pr-2">
+                      <td class="status-indicator w-2 text-left pr-2">
                         <span :class="getAggregateIndicator(relay)" class="block relative">
                         </span>
                       </td>
@@ -125,7 +125,9 @@
 
                       <td class="w-24 latency text-center">
                         <div class="px-4 py-5 sm:px-6 flex text-sm font-bold">
-                          {{ this.results[relay]?.uptime }}
+                          <span :class="getUptimeColor(relay)" v-if="this.results[relay]?.uptime">
+                            {{ this.results[relay]?.uptime }}%
+                          </span>
                           <!-- <span 
                             v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
                             :key="heartbeat[0]"
@@ -142,7 +144,7 @@
                         <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>
                       </td> -->
 
-                      <td class="w-24 latency text-center">
+                      <td class="w-24 latency text-center text-sm font-bold">
                         <span>{{ results[relay]?.latency?.average }}<span v-if="results[relay]?.latency.average">ms</span></span>
                       </td>
 
@@ -360,6 +362,17 @@
       }
     },
     computed: {
+      getUptimeColor(){
+        return relay => {
+          return {
+            'text-green-600/100 dark:text-green-600/80': this.results[relay]?.uptime >= 98,
+            'text-green-600/80 dark:text-green-400/50': this.results[relay]?.uptime >= 95 && this.results[relay]?.uptime < 98,
+            'text-yellow-600 dark:text-yellow-400': this.results[relay]?.uptime >= 90 && this.results[relay]?.uptime < 95,
+            'text-range-400': this.results[relay]?.uptime >= 80 && this.results[relay]?.uptime < 90,
+            'text-red-400': this.results[relay]?.uptime < 80,
+          }
+        }
+      },
       // getUptimePerc(){
       //   return (relay) => {
       //     const heartbeats = this.store.stats.getHeartbeat(relay)
@@ -383,7 +396,7 @@
       getThemeBtnClass(){
         return (key) => {
           return {
-            'border-1 border-bottom text-black': this.store.prefs.getTheme === key,
+            'border-1 border-bottom text-black bg-black/5 dark:text-white dark:bg-black/50 rounded-sm py-1': this.store.prefs.getTheme === key,
             'text-slate-400': this.store.prefs.getTheme !== key,
             'text-xs px-3 mr-1 cursor-pointer': true,
           }
@@ -395,8 +408,8 @@
           return {
             loaded: this.results[relay]?.state == 'complete',
             'bg-slate-100': index % 2,
-            'bg-red-50 hover:bg-red-100': this.store.relays.isFavorite(relay),
-            'bg-gray-50 hover:bg-slate-200': !this.store.relays.isFavorite(relay),
+            'bg-red-50 hover:bg-red-100 dark:bg-red-800/10 dark:hover:bg-red-100/5': this.store.relays.isFavorite(relay),
+            'bg-gray-50 hover:bg-slate-200 dark:bg-transparent': !this.store.relays.isFavorite(relay),
             'xl:text-2xl xl:h-16': this.store.prefs.getTheme === 'spacious',
             'xl:text-xl xl:h-9': this.store.prefs.getTheme === 'comfortable',
             // '': this.store.prefs.getTheme === 'compact',

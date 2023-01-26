@@ -138,7 +138,7 @@
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 mb-8 py-8" v-if="geo?.dns">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 mb-8 py-8" v-if="geo?.dns">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
               The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong> <br />
@@ -148,7 +148,7 @@
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-8  py-8" v-if="geo">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="geo">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
               It's <strong>{{ getLocalTime }}</strong> in <strong>{{ geo?.city }}</strong>
@@ -156,8 +156,8 @@
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 shadow mb-8 py-8" v-if="this.result?.info?.software">
-          <div class="text-clip overflow-ellipsis text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 shadow mb-8 py-8" v-if="this.result?.info?.software">
+          <div class="text-clip overflow-ellipsis text-slate-800 dark:text-white/50 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong>
           </div>
         </div>
@@ -169,14 +169,14 @@
           </div>
         </div> -->
 
-        <div class="data-card flex bg-slate-50 border-slate-200 shadow mb-8 py-5" v-if="this.result?.info?.pubkey">
+        <div class="data-card flex bg-slate-50 dark:bg-black/20 border-slate-200 shadow mb-8 py-5" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 w-full text-sm md:text-lg lg:text-3xl overflow-ellipsis flex-none block py-1 text-center">
             <code class="block">{{ this.result?.info.pubkey }}</code>
           </div>
         </div>
 
-        <div class="data-card flex bg-slate-50 border-slate-200 shadow mt-12 mb-8 py-5" v-if="this.result?.info?.pubkey">
-          <div class="text-slate-800 w-full flex-none block py-1 text-center">
+        <div class="data-card flex bg-transparent border-slate-200 shadow mt-12 mb-8 py-5" v-if="this.result?.info?.pubkey">
+          <div class="text-slate-800 dark:text-white/50 w-full flex-none block py-1 text-center text-xl">
             Here's the details...
           </div>
         </div>
@@ -184,7 +184,7 @@
         
 
         <div class="py-5" v-if="typeof result?.info !== 'undefined' && Object.keys(result?.info).length">
-          <div class="data-card overflow-hidden bg-white shadow sm:rounded-lg relative">
+          <div class="data-card overflow-hidden bg-white dark:bg-black/20 shadow sm:rounded-lg relative">
             <div class="px-4 py-5 sm:px-6">
               <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Relay Info</h3>
             </div>
@@ -205,20 +205,20 @@
                   </dd>
                 </div> -->
                 <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.name">
-                  <dt class="text-lg font-medium text-gray-500">Relay Name</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0">{{ result.info.name }}</dd>
+                  <dt class="text-lg font-medium text-gray-500 dark:text-white/50">Relay Name</dt>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white/80 sm:mt-0">{{ result.info.name }}</dd>
                 </div>
                 <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.pubkey">
-                  <dt class="text-lg font-medium text-gray-500">Public Key</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0"><code class="text-xs">{{ result.info.pubkey }}</code></dd>
+                  <dt class="text-lg font-medium text-gray-500 dark:text-white/50">Public Key</dt>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white/80 sm:mt-0"><code class="text-xs">{{ result.info.pubkey }}</code></dd>
                 </div>
                 <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.email">
-                  <dt class="text-lg font-medium text-gray-500">Contact</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0 "><SafeMail :email="result.info.email" /></dd>
+                  <dt class="text-lg font-medium text-gray-500 dark:text-white/50">Contact</dt>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white/80 sm:mt-0 "><SafeMail :email="result.info.email" /></dd>
                 </div>
                 <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.software">
-                  <dt class="text-lg font-medium text-gray-500">Software</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0">
+                  <dt class="text-lg font-medium text-gray-500 dark:text-white/50">Software</dt>
+                  <dd class="mt-1 text-sm text-gray-900 dark:text-white/80 sm:mt-0">
                     {{ getSoftware }} 
                     <br />
                     {{result.info.software}}<br />
@@ -248,29 +248,29 @@
         
 
       <div :class="getGeoWrapperClass">
-        <div  :class="getDnsClass" class="data-card overflow-hidden bg-white shadow sm:rounded-lg mt-8" v-if="geo">
+        <div  :class="getDnsClass" class="data-card overflow-hidden  dark:bg-black/20 shadow sm:rounded-lg mt-8" v-if="geo">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">DNS</h3>
           </div>
           <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
             <dl class="sm:divide-y sm:divide-gray-200">
               <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo?.dns)" :key="`${value}_${key}`">
-                <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0">{{ value[1] }}</dd>
+                <dt class="text-sm font-medium text-gray-500 dark:text-white/50">{{ value[0] }}</dt>
+                <dd class="mt-1 text-sm text-gray-900 dark:text-white/80 sm:mt-0">{{ value[1] }}</dd>
               </div>
             </dl>
           </div>
         </div>
 
-        <div class="data-card overflow-hidden bg-white shadow sm:rounded-lg mt-8"  :class="getGeoClass" v-if="geo">
+        <div class="data-card overflow-hidden bg-white dark:bg-black/20 dark:text-white/80 shadow sm:rounded-lg mt-8"  :class="getGeoClass" v-if="geo">
           <div class="px-4 py-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">Geo Data {{geo?.countryCode ? getFlag : ''}}</h3>
           </div>
           <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
             <dl class="sm:divide-y sm:divide-gray-200">
               <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold"  v-for="(value, key) in Object.entries(geo).filter(value => value[0] != 'dns')" :key="`${value}_${key}`">
-                <dt class="text-sm font-medium text-gray-500">{{ value[0] }}</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0">{{ value[1] }}</dd>
+                <dt class="text-sm font-medium text-gray-500  dark:text-white/50">{{ value[0] }}</dt>
+                <dd class="mt-1 text-sm text-gray-900  dark:text-white/80 sm:mt-0">{{ value[1] }}</dd>
               </div>
             </dl>
           </div>

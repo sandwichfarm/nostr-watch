@@ -35,64 +35,66 @@ const localMethods = {
   invalidate(force){
     if( (!this.isExpired(this.slug) && !force) ) 
       return
-
-    const subid = crypto.randomBytes(40).toString('hex')
-
     // const pool = new RelayPool( relays )
-    
-    //This should always be alive and not exist in a job, for now, it's fine. 
-    this.queueJob(
-      this.slug, 
-      async () => {
-        const heartbeatsByEvent = new Object()
-        let total = 48,
-            count = 0
-        await new Promise( resolve => {
-          const pool = new RelayPool( ['wss://history.nostr.watch'] )
-          const uniques = new Set()
 
-          pool
-            .subscribe(subid, {
-              kinds:    [1010],
-              limit:    total, //12 hours 
-              authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
-              // since:    Math.floor(this.store.tasks.getLastUpdate(this.slug)/1000)
-            })
-          
-          pool
-            .on('event', (relay, sub_id, event) => {
-              if(sub_id !== subid)
-                return
-              
-              if(uniques.has(event.created_at))
-                return 
-              
-              uniques.add(event.created_at)
+    if(this.isSingle)
+      this.jobHeartbeats()
+    else
+      this.queueJob(
+        this.slug, 
+        this.jobHeartbeats,
+        true
+      )
+  },
+  async jobHeartbeats(){
+    const subid = crypto.randomBytes(40).toString('hex')
+    const heartbeatsByEvent = new Object()
+    let total = 48,
+        count = 0
+    await new Promise( resolve => {
+      const pool = new RelayPool( ['wss://history.nostr.watch'] )
+      const uniques = new Set()
 
-              // console.log('heartbeat found', count, event.id)
-            
-              heartbeatsByEvent[event.created_at] = decodeJson(event.content).online
-
-              count++
-
-              if(count !== total)
-                return 
-              
-              resolve()
-              pool.unsubscribe(subid)
-              pool.close()
-            })
-          setTimeout( () => { 
-            resolve()
-            pool.unsubscribe(subid)
-            pool.close()
-          }, 2000 )
+      pool
+        .subscribe(subid, {
+          kinds:    [1010],
+          limit:    total, //12 hours 
+          authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
+          // since:    Math.floor(this.store.tasks.getLastUpdate(this.slug)/1000)
         })
+      
+      pool
+        .on('event', (relay, sub_id, event) => {
+          if(sub_id !== subid)
+            return
+          
+          if(uniques.has(event.created_at))
+            return 
+          
+          uniques.add(event.created_at)
+
+          // console.log('heartbeat found', count, event.id)
         
-        this.parseHeartbeats(heartbeatsByEvent)
-      },
-      true
-    )
+          heartbeatsByEvent[event.created_at] = decodeJson(event.content).online
+
+          count++
+
+          if(count !== total)
+            return 
+          
+          resolve()
+          pool.unsubscribe(subid)
+          pool.close()
+        })
+      setTimeout( () => { 
+        resolve()
+        pool.unsubscribe(subid)
+        pool.close()
+      }, 2000 )
+    })
+    
+    this.parseHeartbeats(heartbeatsByEvent)
+
   },
   parseHeartbeats(data){
     const allTimestamps = Object.keys(data),

@@ -63,7 +63,7 @@
               <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
               <MenuItems 
                 style="z-index:9000 !important;" 
-                class="absolute right-0 z-9000 mt-2 w-64 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                class="absolute right-0 z-9000 mt-2 w-64 origin-top-right rounded-md bg-white dark:bg-slate-800 dark:border dark:border-slate-600 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                   <span v-if="store.user.getName" class="block text-ellipsis text-sm w-full font-extrabold mt-2">
                     {{ store.user.getName  }}
                   </span>  

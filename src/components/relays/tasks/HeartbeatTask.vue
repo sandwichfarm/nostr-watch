@@ -42,7 +42,7 @@ const localMethods = {
         let total = 48,
             count = 0
         await new Promise( resolve => {
-          const pool = new RelayPool( ['wss://nostr.sandwich.farm'] )
+          const pool = new RelayPool( ['wss://history.nostr.watch'] )
           const uniques = new Set()
 
           pool
@@ -63,7 +63,7 @@ const localMethods = {
               
               uniques.add(event.created_at)
 
-              console.log('heartbeat found', event.id)
+              // console.log('heartbeat found', count, event.id)
             
               heartbeatsByEvent[event.created_at] = decodeJson(event.content).online
 
@@ -80,7 +80,7 @@ const localMethods = {
             resolve()
             pool.unsubscribe(subid)
             pool.close()
-          }, 30000 )
+          }, 2000 )
         })
         
         this.parseHeartbeats(heartbeatsByEvent)
@@ -124,7 +124,7 @@ const localMethods = {
 
     console.log(heartbeats)
 
-    this.store.stats.setHeartbeats(heartbeats)
+    this.store.stats.addHeartbeats(heartbeats)
 
     this.store.tasks.completeJob(this.taskSlug)
   },

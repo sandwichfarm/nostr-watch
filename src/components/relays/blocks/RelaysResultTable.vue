@@ -124,8 +124,9 @@
                       <td class="w-24 location text-center">{{ getFlag(relay) }}</td>
 
                       <td class="w-24 latency text-center">
-                        <div class="px-4 py-5 sm:px-6 flex">
-                          <span 
+                        <div class="px-4 py-5 sm:px-6 flex text-sm font-bold">
+                          {{ getUptimePerc(relay) }}
+                          <!-- <span 
                             v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
                             :key="heartbeat[0]"
                             class="mr-0 w-0.5 h-5 flex-1"
@@ -133,7 +134,7 @@
                               'bg-red-700': !heartbeat.latency,
                               'bg-green-500': heartbeat.latency
                             }">
-                            </span>
+                            </span> -->
                         </div>
                       </td>
 
@@ -359,6 +360,20 @@
       }
     },
     computed: {
+      getUptimePerc(){
+        return (relay) => {
+          const heartbeats = this.store.stats.getHeartbeat(relay)
+          if(!heartbeats || !Object.keys(heartbeats).length )
+            return ""
+          const totalHeartbeats = Object.keys(heartbeats).length 
+          const totalOnline = Object.entries(heartbeats).reduce(
+              (acc, value) => value[1].latency ? acc+1 : acc,
+              0
+          );
+          const perc = Math.floor((totalOnline/totalHeartbeats)*100)
+          return `${perc}%`
+        }
+      },
       subsectionRelays(){
         return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
       },

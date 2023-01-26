@@ -32,6 +32,36 @@ export const useStatStore = defineStore(
       setHeartbeats(payload){
         this.heartbeats = payload
       },
+      addHeartbeats(payload){
+        
+
+        const relaysNow = Object.keys(payload) 
+
+        // if(relaysThen.length !== relaysNow.length) {
+        //   if(relaysNow.length > relaysThen.length ) {
+        //     relaysNow.forEach(relay => {
+        //       if(this.heartbeats[relay] instanceof Array)
+        //         return 
+        //       this.heartbeats[relay] = new Array()
+        //     })
+        //   }
+        // }
+        console.log(this.heartbeats)
+
+        relaysNow.forEach(relay => {
+          if( !(this.heartbeats[relay] instanceof Array) )
+            this.heartbeats[relay] = new Array()
+          this.heartbeats[relay] = this.heartbeats[relay].concat(payload[relay])
+          this.heartbeats[relay].sort((h1, h2) => h1.date - h2.date )
+          if(this.heartbeats[relay].length <= 48) 
+            return 
+          const delta = this.heartbeats.length - 48
+          this.heartbeats = this.heartbeats.splice(0, delta);
+        })
+
+        console.log('new heartbeats', this.heartbeats)
+      }
+        
     },
   },
   // {

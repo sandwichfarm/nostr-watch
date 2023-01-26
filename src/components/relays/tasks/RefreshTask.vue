@@ -118,36 +118,38 @@ const localMethods = {
 
 
   invalidate: async function(force, single){
-    console.log('invalidate?', !(!this.isExpired(this.taskSlug, this.getRefreshInterval)))
-
-    if( (!this.isExpired(this.taskSlug, this.getRefreshInterval) && !force) ) 
+    console.log('invalidate?', !(!this.isExpired(this.slug, this.getRefreshInterval)))
+    if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) ) 
       return
 
     if(!this.windowActive)
       return
 
-    this.queueJob(this.slug, async () => {
-      const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
+    this.queueJob(
+      this.slug, 
+      async () => {
+        const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
 
-      console.log('unprocessed relays', 
-        this.relays.filter( relay => !this.store.tasks.getProcessed(this.slug).includes(relay)))
+        console.log('unprocessed relays', 
+          this.relays.filter( relay => !this.store.tasks.getProcessed(this.slug).includes(relay)))
 
-      if(single) {
-        await this.check(single)
-          .then((result) => this.completeRelay(single, result) )
-          .catch( () => this.completeRelay(single) )
-      } 
-      else {
-        for(let index = 0; index < relays.length; index++) {
-          await this.delay(this.averageLatency)
-          const relay = relays[index]
-          this.check(relay)
-            .then((result) => this.completeRelay(relay, result) )
-            .catch( () => this.completeRelay(relay) ) //wait, what? TODO: fix
-        }
-      } 
-    }, true)
-    
+        if(single) {
+          await this.check(single)
+            .then((result) => this.completeRelay(single, result) )
+            .catch( () => this.completeRelay(single) )
+        } 
+        else {
+          for(let index = 0; index < relays.length; index++) {
+            await this.delay(this.averageLatency)
+            const relay = relays[index]
+            this.check(relay)
+              .then((result) => this.completeRelay(relay, result) )
+              .catch( () => this.completeRelay(relay) ) //wait, what? TODO: fix
+          }
+        } 
+      }, 
+      true
+    )
   },
 
   completeRelay: function(relay, result){

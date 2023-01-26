@@ -3,6 +3,7 @@
     v-bind:resultsProp="results" />
 
   <div id="wrapper" class="mx-auto max-w-7xl">  
+    <h2>Relay Access</h2>
     <div class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
       <div class="sm:flex sm:space-x-4">
         <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
@@ -38,8 +39,56 @@
     </div>
   </div>
 
+  <h2>Most Popular</h2>
+    <div class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
+      <div class="sm:flex sm:space-x-4">
+        <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+          <div class="bg-white  dark:bg-black/30 p-5">
+            <div class="sm:flex sm:items-start">
+              <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+                <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">
+                  Software
+                </h3>
+                <p class="text-3xl font-bold text-black  dark:text-white">
+                  {{ getMostPopularSoftare }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+        <div class="bg-white dark:bg-black/30 p-5">
+          <div class="sm:flex sm:items-start">
+            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+              <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">
+                Country
+              </h3>
+              <p class="text-3xl font-bold text-black  dark:text-white">
+                {{ byCountry?.[0]?.key }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+        <div class="bg-white dark:bg-black/30  p-5">
+          <div class="sm:flex sm:items-start">
+            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+              <h3 class="text-sm leading-6 font-medium text-gray-400">
+                Continent
+              </h3>
+              <p class="text-3xl font-bold text-black  dark:text-white">
+                {{ byContinent?.[0]?.key }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <table class="table-auto w-128">
+
+  <table class="table-auto w-128" v-if="bySupportedNips">
   <thead>
     <tr>
       <th class="text-right w-12 py-1 px-1"><code>Nip</code></th>
@@ -47,9 +96,9 @@
     </tr>
   </thead>
   <tbody>
-    <tr v-for="nipKey in Object.keys(this.bySupportedNips)" :key="`nip-${nipKey}`">
-      <td class="text-right py-2 px-1">{{ nipKey }}</td>
-      <td class="text-left py-2 px-1"> {{ this.bySupportedNips[nipKey].size }} </td>
+    <tr v-for="nip in bySupportedNips" :key="`nip-${nip.key}`">
+      <td class="text-right py-2 px-1">{{ nip.key }}</td>
+      <td class="text-left py-2 px-1"> {{ nip.count }} </td>
     </tr>
   </tbody>
 </table>
@@ -64,9 +113,9 @@
     </tr>
   </thead>
   <tbody>
-    <tr v-for="contKey in Object.keys(this.byContinent)" :key="`nip-${contKey}`">
-      <td class="text-right py-2 px-1">{{ contKey }}</td>
-      <td class="text-left py-2 px-1"> {{ this.byContinent[contKey].size }} </td>
+    <tr v-for="cont in this.byContinent" :key="`nip-${cont.key}`">
+      <td class="text-right py-2 px-1">{{ cont.key }}</td>
+      <td class="text-left py-2 px-1"> {{ cont.count }} </td>
     </tr>
   </tbody>
 </table>
@@ -79,15 +128,31 @@
     </tr>
   </thead>
   <tbody>
-    <tr v-for="countryKey in Object.keys(this.byCountry)" :key="`nip-${countryKey}`">
-      <td class="text-right py-2 px-1">{{ countryKey }}</td>
-      <td class="text-left py-2 px-1"> {{ this.byCountry[countryKey].size }} </td>
+    <tr v-for="country in this.byCountry" :key="`nip-${country.key}`">
+      <td class="text-right py-2 px-1">{{ country.key }}</td>
+      <td class="text-left py-2 px-1"> {{ country.count }} </td>
+    </tr>
+  </tbody>
+</table>
+
+
+<table class="table-auto w-128">
+  <thead>
+    <tr>
+      <th class="text-right w-12 py-1 px-1"><code>Software</code></th>
+      <th class="text-left py-1 px-1"><code>Relays</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="sw in this.bySoftware" :key="`nip-${sw.key}`">
+      <td class="text-right py-2 px-1">{{ sw.key }}</td>
+      <td class="text-left py-2 px-1"> {{ sw.count }} </td>
     </tr>
   </tbody>
 </table>
 
     <pre>
-      {{  }}
+
     </pre>
   
 
@@ -193,9 +258,11 @@ export default defineComponent({
     this.bySupportedNips = this.collateSupportedNips
     this.byContinent = this.collateContinents
     this.byCountry = this.collateCountries
+    this.bySoftware = this.collateSoftware
     this.store.stats.set('nips', this.bySupportedNips)
     this.store.stats.set('continents', this.byContinent)
     this.store.stats.set('countries', this.byCountry)
+    this.store.stats.set('software', this.bySoftware)
   },
 
   async mounted(){
@@ -231,19 +298,27 @@ export default defineComponent({
   },
 
   computed: {
+    //PUT OUT TO DRY!
     collateSupportedNips(){
-      const nips = new Object()
+      const dict = new Object()
       Object.entries(this.results).forEach( (result) => {
         result = result[1]
         if(result?.info?.supported_nips)
           result?.info?.supported_nips.forEach( nip => { 
-            if( !(nips[nip] instanceof Set ))
-              nips[nip] = new Set()
-            nips[nip].add(result.url)
+            if( !(dict[nip] instanceof Set ))
+            dict[nip] = new Set()
+            dict[nip].add(result.url)
           })
       })
-      console.log('supported nips', nips)
-      return nips
+      const result = new Array() 
+      Object.keys(dict).forEach( key => {
+        result.push({
+          key: key, 
+          count: dict[key].size 
+        })
+      })
+      // result.sort( (a,b) => b.count-a.count )
+      return result
     },
     collateContinents(){
       const byCont = new Object()
@@ -259,8 +334,16 @@ export default defineComponent({
           byCont[cont] = new Set() 
         byCont[cont].add(relay)
       })
+      const result = new Array() 
+      Object.keys(byCont).forEach( cont => {
+        result.push({
+          key: cont, 
+          count: byCont[cont].size 
+        })
+      })
+      result.sort( (a,b) => b.count-a.count )
       //console.log('continents', byCont)
-      return byCont;
+      return result;
     },
     collateCountries(){
       const byCountry = new Object()
@@ -276,16 +359,64 @@ export default defineComponent({
         byCountry[cont] = new Set() 
         byCountry[cont].add(relay)
       })
-      //console.log('countries', byCountry)
-      return byCountry;
+      const result = new Array()
+      Object.keys(byCountry).forEach( country => {
+        result.push({
+          key: country, 
+          count: byCountry[country].size 
+        })
+      })
+      result
+        .sort( (a,b) => b.count-a.count )
+      //console.log('continents', byCont)
+      return result;
     },
+    collateSoftware(){
+      const bySoftware = new Object()
+      this.relays.forEach( relay => {
+        if( !this.results?.[relay]?.info?.software ) {
+          if( !(bySoftware.unknown instanceof Set) )
+            bySoftware.unknown = new Set()
+          bySoftware.unknown.add(relay)
+          return
+        }
+        const software = this.results[relay].info.software
+        if( !(bySoftware[software] instanceof Set) )
+          bySoftware[software] = new Set() 
+        bySoftware[software].add(relay)
+      })
+      let result = new Array()
+      Object.keys(bySoftware).forEach( sw => {
+        let segments, repo, org
+        if(sw != 'unknown'){
+          segments = new URL(sw).pathname.split('/')
+          repo = segments.pop()
+          org = segments.pop()
+        }
+        result.push({
+          key: segments ? `${org}/${repo}` : sw,
+          count: bySoftware[sw].size 
+        })
+      })
+      
+      result.sort( (a,b) => b.count-a.count )
+
+      return result;
+    },
+    getMostPopularSoftare(){
+      let result
+      for(let i=0;i<this.bySoftware.length;i++){
+        if(this.bySoftware[i].key === 'unknown') 
+          continue
+        result = this.bySoftware[i].key
+        break
+      }
+      return result
+    }
   },
 
   methods: Object.assign(RelaysLib, {
-    collateSoftware(){
-      // const software = new Object()
-    },
-
+    
     collateSoftwareVersion(){
 
     },

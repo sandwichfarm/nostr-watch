@@ -160,8 +160,8 @@ const localMethods = {
     
     if(result)  {
       // console.log('whoops', result)
-      this.results[relay] = result
-      this.setCache(result)
+      this.results[relay] = Object.assign(this.results[relay], result)
+      this.setCache(this.results[relay])
     }
 
     if(this.isSingle)

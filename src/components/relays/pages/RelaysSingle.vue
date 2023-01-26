@@ -21,6 +21,7 @@
           <div class="px-4 py-5 sm:px-6">
             <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
             <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
+            <span class="mt-1 w-auto text-xl text-gray-500 bg-black/20" v-if="result?.info?.email"><SafeMail :email="result.info.email" /></span>
           </div>
           <a 
           target="_blank" 
@@ -30,8 +31,8 @@
           </a>
         </div>
 
-        <div id="status" class="flex mb-2 py-5"> <!--something is weird here with margin-->
-          <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6" :class="check(key)">
+        <div id="status" class="flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
+          <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-2xl flex-1 block py-3" :class="check(key)">
             <span>{{key}}</span>  
           </div>
         </div>
@@ -186,7 +187,7 @@
               </div> -->
             </div>
           </div>
-          <div class="flex-1 justify-center">
+          <div class="flex-1 justify-center" v-if="result?.info">
             <div class="inline-block rounded-lg shadow-lg h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <!-- <div class="py-3 px-6 border-b border-gray-300">
                 Featured
@@ -205,7 +206,7 @@
               </div> -->
             </div>
           </div>
-          <div class="flex-1 justify-center">
+          <div class="flex-1 justify-center" v-if="this.result?.info?.pubkey">
             <div class="inline-block rounded-lg shadow-lg h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <!-- <div class="py-3 px-6 border-b border-gray-300">
                 Featured
@@ -241,7 +242,7 @@
           </div>
         </div> -->
 
-        <div class="data-card flex bg-transparent border-slate-200 shadow mt-12 mb-8 py-5" v-if="this.result?.info?.pubkey">
+        <!-- <div class="data-card flex bg-transparent border-slate-200 shadow mt-12 mb-8 py-5" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 dark:text-white/50 w-full flex-none block py-1 text-center text-xl">
             Here's the details...
           </div>
@@ -254,20 +255,6 @@
             </div>
             <div class="border-t border-gray-200 px-4 py-5 sm:p-0">
               <dl class="sm:divide-y sm:divide-gray-200">
-                <!-- <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.version">
-                  <dt class="text-lg font-medium text-gray-500">Connection Status</dt>
-                  <dd class="mt-1 text-lg text-gray-900 sm:mt-0">
-                    
-                  </dd>
-                </div> -->
-                <!-- <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result.info?.supported_nips">
-                  <dt class="text-lg font-medium text-gray-500">Supported Nips</dt>
-                  <dd class="mt-1 text-sm text-gray-900 sm:mt-0">
-                    <span v-for="(nip) in result.info.supported_nips" :key="`${relay}_${nip}`" class="inline-block mr-3 mt-1">
-                      <a :href="nipLink(nip)" target="_blank" ><img :src="badgeLink(nip)" /></a> 
-                    </span>
-                  </dd>
-                </div> -->
                 <div class="py-4 sm:gap-4 sm:py-5 sm:px-6 font-extrabold" v-if="result?.info?.name">
                   <dt class="text-lg font-medium text-gray-500 dark:text-white/50">Relay Name</dt>
                   <dd class="mt-1 text-sm text-gray-900 dark:text-white/80 sm:mt-0">{{ result.info.name }}</dd>
@@ -339,7 +326,7 @@
             </dl>
           </div>
         </div>
-      </div>
+      </div> -->
 
       
 
@@ -763,7 +750,7 @@ export default defineComponent({
     },
     normalizeUptimeTick: function(){
       return heartbeat => { 
-        if(!heartbeat.latency || !this.result.latency.min || !this.result.latency.max)
+        if(!heartbeat.latency)
           return
         const val = heartbeat.latency,
               minVal = this.hbMin,
@@ -868,12 +855,14 @@ export default defineComponent({
     check(key){
       return { 
         'bg-green-800': this.result?.check?.[key],
-        'bg-red-800': !this.result?.check?.[key]
+        'bg-red-800': !this.result?.check?.[key],
+        'rounded-tl-lg rounded-bl-lg': key == 'connect',
+        'rounded-tr-lg rounded-br-lg': key == 'write',
       }
     },
     setData(){
       this.relay = this.relayFromUrl
-      this.relays = this.store.relays.getAggregateCache('public')
+      // this.relays = this.store.relays.getAggregateCache('public')
       this.lastUpdate = this.store.tasks.getLastUpdate('relays')
       this.result = this.getCache(this.relay) || false
       //

@@ -7,7 +7,7 @@
 <template>
   <div class="bg-slate-700 px-2 sm:px-4 lg:px-8 ">
     <div class="lg:flex lg:h-8 mx-auto max-w-7xl h-8">
-      <div class="flex lg:w-32 lg:px-8 lg:ml-8 sm:hidden sm:w-0 md:w-0"></div>
+      <div class="flex md:w-0 lg:w-32 lg:px-8 lg:ml-8 sm:hidden sm:w-0 ">&nbsp;</div>
       <div class="lg:flex lg:px-0">
         <div class="lg:ml-48 lg:flex lg:space-x-2">
           <router-link 

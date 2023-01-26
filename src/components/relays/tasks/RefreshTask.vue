@@ -18,7 +18,7 @@
     </span>
     <button 
       v-if="!store.tasks.isProcessing(this.slug)"
-      class="absolute right-0 lg:relative mr-8 my-1 py-1 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
+      class="mr-8 my-1 py-1 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
       :disabled='store.tasks.isProcessing(this.slug)' 
       @click="refreshNow()">
         Check{{ relay ? ` ${relay}` : "" }} Now

@@ -12,7 +12,7 @@
   
   <RelayStatistics
     :resultsProp="results"
-    v-if="this.path.startsWith('/relays/statistics') /> 
+    v-if="this.path.startsWith('/relays/statistics')" /> 
   
   <div id="footer">
     <span class="credit">

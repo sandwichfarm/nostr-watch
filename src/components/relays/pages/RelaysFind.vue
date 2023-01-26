@@ -15,13 +15,13 @@
       style="z-index:9999">
       <div class="sm:flex sm:items-center">
         <div class="sm:flex-auto text-left">
-            <h1 class="text-4xl capitalize font-semibold text-gray-900">
+            <h1 class="text-4xl capitalize font-semibold text-gray-900 dark:text-white/90">
                 <span class="inline-flex rounded bg-green-800 text-sm px-2 py-1 text-white relative -top-2">
                     {{ getRelaysCount(activeSubsection) }}
                 </span>
                 {{ activeSubsection }} Relays
             </h1>
-            <p class="mt-2 text-xl text-gray-700">
+            <p class="mt-2 text-xl text-gray-700 dark:text-white/60">
                 <!-- {{ store.layout.getActiveItem('relays/find') }} -->
                 {{ store.layout.getActiveItem('relays/find')?.description }}
             </p>

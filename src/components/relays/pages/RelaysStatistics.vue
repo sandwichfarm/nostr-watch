@@ -1,5 +1,90 @@
 <template>
-  <div>
+  <RelaysNav 
+    v-bind:resultsProp="results" />
+
+  <div id="wrapper" class="mx-auto max-w-7xl">  
+    <div class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
+      <div class="sm:flex sm:space-x-4">
+        <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+          <div class="bg-white  dark:bg-black/30 p-5">
+            <div class="sm:flex sm:items-start">
+              <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+                <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Public</h3>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').length }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+        <div class="bg-white dark:bg-black/30 p-5">
+          <div class="sm:flex sm:items-start">
+            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+              <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Restricted</h3>
+              <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted').length }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+        <div class="bg-white dark:bg-black/30  p-5">
+          <div class="sm:flex sm:items-start">
+            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+              <h3 class="text-sm leading-6 font-medium text-gray-400">Offline</h3>
+              <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'offline').length }} </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <table class="table-auto w-128">
+  <thead>
+    <tr>
+      <th class="text-right w-12 py-1 px-1"><code>Nip</code></th>
+      <th class="text-left py-1 px-1"><code>Relays Supported</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="nipKey in Object.keys(this.bySupportedNips)" :key="`nip-${nipKey}`">
+      <td class="text-right py-2 px-1">{{ nipKey }}</td>
+      <td class="text-left py-2 px-1"> {{ this.bySupportedNips[nipKey].size }} </td>
+    </tr>
+  </tbody>
+</table>
+
+
+
+<table class="table-auto w-128">
+  <thead>
+    <tr>
+      <th class="text-right w-12 py-1 px-1"><code>Continent</code></th>
+      <th class="text-left py-1 px-1"><code>Relays</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="contKey in Object.keys(this.byContinent)" :key="`nip-${contKey}`">
+      <td class="text-right py-2 px-1">{{ contKey }}</td>
+      <td class="text-left py-2 px-1"> {{ this.byContinent[contKey].size }} </td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="table-auto w-128">
+  <thead>
+    <tr>
+      <th class="text-right w-12 py-1 px-1"><code>Country</code></th>
+      <th class="text-left py-1 px-1"><code>Relays</code></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr v-for="countryKey in Object.keys(this.byCountry)" :key="`nip-${countryKey}`">
+      <td class="text-right py-2 px-1">{{ countryKey }}</td>
+      <td class="text-left py-2 px-1"> {{ this.byCountry[countryKey].size }} </td>
+    </tr>
+  </tbody>
+</table>
 
     <pre>
       {{  }}
@@ -15,17 +100,16 @@
       {{ this.store.relays.getAll.length }} 
     </pre> -->
 
-
     <pre>
-      {{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').length }} 
+       
     </pre>
 
     <pre>
-      {{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted').length }} 
+       
     </pre>
     
     <pre>
-      {{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'offline').length }} 
+      
     </pre>
 <!-- 
     <pre>
@@ -48,68 +132,76 @@
       {{   }}
     </pre> -->
 
-    <!-- <pre>
+    <pre>
       {{ this.collateSupportedNips  }}
     </pre>
 
-    <pre>
+    <!-- <pre>
       {{ this.collateContinents  }}
     </pre>
    
     <pre>
       {{ collateCountries }}
-    </pre> -->
-    
-    history 
+    </pre>
+     -->
+    <!-- history 
         growth chart
     Basic:
-        <!-- total
-        online
-        restricted -->
         tor 
-        <!-- offline -->
     Software:
         software/versiono    
     nips: 
-        <!-- OK support by nips  -->
+
     geo 
-        <!-- by country  -->
-        <!-- continent  -->
+
     aggregate stats 
         oldest relay still online 
-        newest relay
+        newest relay -->
   </div>
 </template>
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent, defineAsyncComponent } from 'vue'
 import { setupStore } from '@/store'
 // import { UserLib } from '@/shared/user-lib.js'
 // import { History } from '@/shared/history.js'
+import RelaysLib from '@/shared/relays-lib'
+
+const RelaysNav = defineAsyncComponent(() =>
+    import("@/components/relays/nav/RelaysNav.vue" /* webpackChunkName: "RelaysNav" */)
+);
 
 export default defineComponent({
 
   name: 'RelayStatistics',
 
-  components: {},
+  components: {
+    RelaysNav
+  },
 
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
+    // const {resultsProp: results} = toRefs(props)
     return { 
       store : setupStore(),
-      results: results
+      // results: results
     }
   },
 
   beforeMount(){
-    
+    this.relays.forEach(relay => {
+      this.results[relay] = this.getCache(relay)
+    })
+    this.bySupportedNips = this.collateSupportedNips
+    this.byContinent = this.collateContinents
+    this.byCountry = this.collateCountries
+    this.store.stats.set('nips', this.bySupportedNips)
+    this.store.stats.set('continents', this.byContinent)
+    this.store.stats.set('countries', this.byCountry)
   },
 
   async mounted(){
-    this.store.stats.set('nips', this.collateSupportedNips)
-    this.store.stats.set('continents', this.collateContinents)
-    this.store.stats.set('countries', this.collateCountries)
-    this.remoteTask = await this.historicalData()
-    this.store.stats.setHistory(this.remoteTask)
+
+    // this.remoteTask = await this.historicalData()
+    // this.store.stats.setHistory(this.remoteTask)
   },
 
   unmounted(){
@@ -124,17 +216,18 @@ export default defineComponent({
       byCountry: null,
       byContinent: null, 
       history: null,
-      remoteTask: null
+      remoteTask: null,
+      results: {},
     }
   },
 
   props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
+    // resultsProp: {
+    //   type: Object,
+    //   default(){
+    //     return {}
+    //   }
+    // },
   },
 
   computed: {
@@ -149,7 +242,7 @@ export default defineComponent({
             nips[nip].add(result.url)
           })
       })
-      //console.log('supported nips', nips)
+      console.log('supported nips', nips)
       return nips
     },
     collateContinents(){
@@ -188,7 +281,7 @@ export default defineComponent({
     },
   },
 
-  methods: Object.assign({
+  methods: Object.assign(RelaysLib, {
     collateSoftware(){
       // const software = new Object()
     },

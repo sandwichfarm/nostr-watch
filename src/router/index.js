@@ -4,7 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 // import RelaysHome from '@/components/relays/pages/RelaysHome.vue'
 import RelaysFind from '@/components/relays/pages/RelaysFind.vue'
 import RelaysSingle from '@/components/relays/pages/RelaysSingle.vue'
-import RelaysMap from '@/components/relays/pages/RelaysMap.vue'
+// import RelaysMap from '@/components/relays/pages/RelaysMap.vue'
 import RelaysStatistics from '@/components/relays/pages/RelaysStatistics.vue'
 
 import RedirectComponent from '@/components/relays/redirects/RedirectComponent.vue'
@@ -17,14 +17,21 @@ const routes = [
         },
         component: RedirectComponent
     },
+    // {
+    //     path: '/relays/statistics',
+    //     component: RelaysStatistics
+    // },
     {
         path: '/relays',
-        component: RelaysFind,
         children: [
             {
-                path: 'map',
-                component: RelaysMap,
-                },
+                path: 'statistics',
+                component: RelaysStatistics,
+            },
+            // {
+            //     path: 'map',
+            //     component: RelaysMap,
+            // },
             {
             path: 'find',
             component: RelaysFind,
@@ -34,10 +41,7 @@ const routes = [
             component: RelaysFind,
             },
             
-            {
-            path: 'statistics',
-            component: RelaysStatistics,
-            },
+            
         ]
     },
     {

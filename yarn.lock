@@ -6465,6 +6465,19 @@ nostr-relay-inspector@0.0.26:
     tape "5.6.1"
     yaml-loader "0.8.0"
 
+nostr-relay-inspector@0.0.27:
+  version "0.0.27"
+  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.27.tgz#9b650c671fb4def2f29bf769f071e3abfea75a0d"
+  integrity sha512-tTdBh788gvKzys/pRDUuhpW1EnKZdLR4nEM+FTzfsyneQZ+GYSNMyH5zn7Uy4qqj9xXe9pI2XHo6MLbKT2ZIyw==
+  dependencies:
+    cross-fetch "3.1.5"
+    js-yaml "4.1.0"
+    node-fetch "3.3.0"
+    nostr "0.2.7"
+    nostr-relay-inspector "0.0.26"
+    tape "5.6.1"
+    yaml-loader "0.8.0"
+
 nostr-tools@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/nostr-tools/-/nostr-tools-1.1.1.tgz#2be4cd650bc0a4d20650b6cf46fee451c9f565b8"

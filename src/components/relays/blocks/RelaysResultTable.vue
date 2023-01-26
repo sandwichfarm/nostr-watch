@@ -56,7 +56,7 @@
                       <th scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Location</code>
                       </th>
-                      <th>
+                      <th scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Uptime(12h)</code>
                       </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
@@ -96,7 +96,7 @@
                       v-for="(relay, index) in subsectionRelays"  
                       :key="generateKey(relay, 'aggregate')" 
                       :class="getResultClass(relay, index)" 
-                      class="">
+                      class="h-1">
 
                       <td class="status-indicator w-2 text-left pr-2">
                         <span :class="getAggregateIndicator(relay)" class="block relative">
@@ -124,11 +124,16 @@
                       <td class="w-24 location text-center">{{ getFlag(relay) }}</td>
 
                       <td class="w-24 latency text-center">
-                        <div class="px-4 py-5 sm:px-6 flex text-sm font-bold">
+                        <div class="sm:px-6 text-sm font-bold h-full">
                           <span :class="getUptimeColor(relay)" v-if="this.results[relay]?.uptime">
                             {{ this.results[relay]?.uptime }}%
                           </span>
-                          <!-- <span 
+                        </div>
+                      </td>
+
+                      <!-- <td class="w-24 latency text-center">
+                        <div class="px-4 py-5 sm:px-6 flex text-sm font-bold">
+                          <span 
                             v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
                             :key="heartbeat[0]"
                             class="mr-0 w-0.5 h-5 flex-1"
@@ -136,9 +141,9 @@
                               'bg-red-700': !heartbeat.latency,
                               'bg-green-500': heartbeat.latency
                             }">
-                            </span> -->
+                            </span>
                         </div>
-                      </td>
+                      </td> -->
 
                       <!-- <td class="w-24 latency text-center">
                         <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>
@@ -148,6 +153,7 @@
                         <span>{{ results[relay]?.latency?.average }}<span v-if="results[relay]?.latency.average">ms</span></span>
                       </td>
 
+                      <!-- no editor -->
                       <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'connect')">
                           &nbsp;
@@ -157,7 +163,7 @@
                       <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
                         <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'read')">
                           <span class="align-middle h-max" v-if="isLoggedIn && store.user.kind3?.[relay]?.read">
-                            <svg class="h-5 w-5 inline-block mt-0.5" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <svg class="inline-block " :class="getCheckIndicatorPolicy" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                           </span>
@@ -168,7 +174,7 @@
                       <td v-if="!store.layout.editorIsExpanded || !isLoggedIn" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
                         <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'write')">
                           <span class="align-middle" v-if="isLoggedIn && store.user.kind3?.[relay]?.write">
-                            <svg class="h-5 w-5 inline-block mt-0.5" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <svg class="inline-block" :class="getCheckIndicatorPolicy" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                           </span>
@@ -409,7 +415,7 @@
             loaded: this.results[relay]?.state == 'complete',
             'bg-slate-100': index % 2,
             'bg-red-50 hover:bg-red-100 dark:bg-red-800/10 dark:hover:bg-red-100/5': this.store.relays.isFavorite(relay),
-            'bg-gray-50 hover:bg-slate-200 dark:bg-transparent': !this.store.relays.isFavorite(relay),
+            'bg-gray-50 hover:bg-slate-200 dark:bg-transparent dark:hover:bg-slate-200/5': !this.store.relays.isFavorite(relay),
             'xl:text-2xl xl:h-16': this.store.prefs.getTheme === 'spacious',
             'xl:text-xl xl:h-9': this.store.prefs.getTheme === 'comfortable',
             // '': this.store.prefs.getTheme === 'compact',
@@ -432,6 +438,13 @@
             // 'pending': 'undefined' === typeof this.results[relay]?.check?.[key] 
             }
         } 
+      },
+      getCheckIndicatorPolicy(){
+        return {
+          "h-5 w-5 mt-0.5": this.store.prefs.getTheme === 'spacious',
+          "h-4 w-4 mt-0.5": this.store.prefs.getTheme === 'comfortable',
+          "h-4 w-4": this.store.prefs.getTheme === 'compact',
+        }
       },
       getAggregateIndicator(){
         return (relay) => {

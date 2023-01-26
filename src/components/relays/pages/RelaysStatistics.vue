@@ -2,44 +2,44 @@
   <RelaysNav 
     v-bind:resultsProp="results" />
 
-  <div id="wrapper" class="mx-auto max-w-7xl">  
-    <h2>Relay Access</h2>
+  <div id="wrapper" class="mx-auto max-w-7xl pt-8">  
+    <h2 class="text-xl">Overview</h2>
     <div class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
       <div class="sm:flex sm:space-x-4">
         <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
           <div class="bg-white  dark:bg-black/30 p-5">
             <div class="sm:flex sm:items-start">
               <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
-                <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Public</h3>
+                <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Public Relays</h3>
                 <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').length }}</p>
               </div>
             </div>
           </div>
         </div>
-      <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
-        <div class="bg-white dark:bg-black/30 p-5">
-          <div class="sm:flex sm:items-start">
-            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
-              <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Restricted</h3>
-              <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted').length }}</p>
+        <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+          <div class="bg-white dark:bg-black/30 p-5">
+            <div class="sm:flex sm:items-start">
+              <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+                <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Restricted Relays</h3>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted').length }}</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
-        <div class="bg-white dark:bg-black/30  p-5">
-          <div class="sm:flex sm:items-start">
-            <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
-              <h3 class="text-sm leading-6 font-medium text-gray-400">Offline</h3>
-              <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'offline').length }} </p>
+        <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
+          <div class="bg-white dark:bg-black/30  p-5">
+            <div class="sm:flex sm:items-start">
+              <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
+                <h3 class="text-sm leading-6 font-medium text-gray-400">Offline Relays</h3>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'offline').length }} </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <h2>Most Popular</h2>
+    <h2 class="text-xl">Most Popular</h2>
     <div class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
       <div class="sm:flex sm:space-x-4">
         <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">

@@ -136,33 +136,15 @@ const localMethods = {
 
     // this.store.stats.addHeartbeats(heartbeats)
 
-    this.store.tasks.completeJob(this.slug)
+    this.store.tasks.completeJob()
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
-  },
-  setUptimePercentage(relay){
-    const heartbeats = this.store.stats.getHeartbeat(relay)
-    if(!heartbeats || !Object.keys(heartbeats).length )
-      return
-    const totalHeartbeats = Object.keys(heartbeats).length 
-    const totalOnline = Object.entries(heartbeats).reduce(
-        (acc, value) => value[1].latency ? acc+1 : acc,
-        0
-    );
-    const perc = Math.floor((totalOnline/totalHeartbeats)*100)
-
-    const result = this.getCache(relay)
-    if(!result)
-      return
-    result.uptime = perc 
-    this.setCache(result)
   }
 }
-
 export default defineComponent({
   name: 'TemplateTask',
   components: {},
@@ -195,7 +177,7 @@ export default defineComponent({
   mounted(){
     console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
-    if(this.store.tasks.isProcessing(this.slug) || this.isSingle)
+    if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else
       this.invalidate()

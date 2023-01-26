@@ -1,7 +1,8 @@
 <template>
+  <HeartbeatTask 
+    v-bind:resultsProp="results" />
   <RefreshTask
     v-bind:resultsProp="results" />
-  <HeartbeatTask />
   <UserRelayList />
   <!-- <RelayCanonicalsTask
     :resultsProp="results" />

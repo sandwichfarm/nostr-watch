@@ -153,6 +153,25 @@ export default {
       return this.isDone() ? 'loaded' : ''
     },
 
+    setUptimePercentage(relay){
+      const heartbeats = this.store.stats.getHeartbeat(relay)
+      if(!heartbeats || !Object.keys(heartbeats).length )
+        return
+      const totalHeartbeats = Object.keys(heartbeats).length 
+      const totalOnline = Object.entries(heartbeats).reduce(
+          (acc, value) => value[1].latency ? acc+1 : acc,
+          0
+      );
+      const perc = Math.floor((totalOnline/totalHeartbeats)*100)
+  
+      const result = this.getCache(relay)
+      if(!result)
+        return
+      result.uptime = perc 
+      this.setCache(result)
+      return result
+    },
+
     timeSince: function(date) {
       let seconds = Math.floor((new Date() - date) / 1000);
       let interval = seconds / 31536000;

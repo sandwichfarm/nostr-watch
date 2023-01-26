@@ -86,10 +86,10 @@ const localMethods = {
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
 
-      if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length && !this.isSingle){
-        this.store.tasks.updateNow(this.slug)
-        this.store.tasks.finishProcessing(this.slug)
-      }
+      // if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length && !this.isSingle){
+      //   this.store.tasks.updateNow(this.slug)
+      //   this.store.tasks.finishProcessing(this.slug)
+      // }
 
       if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
         this.invalidate()
@@ -160,8 +160,9 @@ const localMethods = {
     
     if(result)  {
       // console.log('whoops', result)
-      this.results[relay] = Object.assign({}, this.results[relay], result)
-      this.setCache(this.results[relay])
+      this.setCache(Object.assign({}, this.results[relay], result))
+      this.setUptimePercentage(relay)
+      this.results[relay] = this.getCache(relay)
     }
 
     if(this.isSingle)
@@ -171,7 +172,7 @@ const localMethods = {
   },
 
   completeAll: function(single){
-    this.store.tasks.completeJob(this.slug)
+    this.store.tasks.completeJob()
     // this.setAverageLatency()
     if(single)
       return 

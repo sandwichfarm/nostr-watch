@@ -30,9 +30,9 @@ localMethods.invalidate = function(force){
   if( !this.isExpired(this.taskSlug) && !force ) 
     return
   
-  if( !this.isLoggedIn ) 
+  if( !this.isLoggedIn() ) 
     return
-  
+
   if( !this.store.prefs.useKind3 )
     return
   

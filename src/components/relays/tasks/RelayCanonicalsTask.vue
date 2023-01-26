@@ -78,7 +78,7 @@ const localMethods = {
 
         this.store.relays.setCanonicals(this.canonicals)
 
-        this.store.tasks.completeJob(this.taskSlug)
+        this.store.tasks.completeJob()
       }, 
       true
     )

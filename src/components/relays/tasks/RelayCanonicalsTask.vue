@@ -47,8 +47,8 @@ const localMethods = {
           .on('open', r => {
             r.subscribe(subid, {
               limit: 1000,
-              kinds: [1],
-              "#t": ['canonical'],
+              kinds: [ 1 ],
+              "#t": [ 'canonical' ],
               authors:[ 'b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6' ]
             })
           })

@@ -3,8 +3,8 @@
     v-bind:resultsProp="results" />
 
   <div id="wrapper" class="mx-auto max-w-7xl pt-8">  
-    <h2 class="text-xl">Overview</h2>
-    <div class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
+    <h2 class="text-2xl text-white/50">Overview</h2>
+    <div class="max-w-full mx-4 py-2 sm:mx-auto sm:px-6 lg:px-8">
       <div class="sm:flex sm:space-x-4">
         <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
           <div class="bg-white  dark:bg-black/30 p-5">
@@ -39,8 +39,8 @@
       </div>
     </div>
 
-    <h2 class="text-xl">Most Popular</h2>
-    <div class="max-w-full mx-4 py-6 sm:mx-auto sm:px-6 lg:px-8">
+    <h2 class="text-2xl text-white/50">Most Popular</h2>
+    <div class="max-w-full mx-4 py-2 sm:mx-auto sm:px-6 lg:px-8">
       <div class="sm:flex sm:space-x-4">
         <div class="inline-block align-bottom rounded-lg text-left overflow-hidden shadow transform transition-all mb-4 w-full sm:w-1/3 sm:my-8">
           <div class="bg-white  dark:bg-black/30 p-5">
@@ -49,8 +49,9 @@
                 <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">
                   Software
                 </h3>
-                <p class="text-3xl font-bold text-black  dark:text-white">
-                  {{ getMostPopularSoftare }}
+                <p class="font-bold text-black  dark:text-white">
+                  <span class="text-3xl">{{ getMostPopularSoftware.split('/')[1] }}</span>
+                  <span class="text-lg block text-white/50">{{ getMostPopularSoftware.split('/')[0] }}</span>
                 </p>
               </div>
             </div>
@@ -87,128 +88,98 @@
     </div>
   </div>
 
+  <h2 class="text-2xl text-white/50 mb-8 mt-8 lg:mt-16">Tech Breakdown</h2>
 
-  <table class="table-auto w-128" v-if="bySupportedNips">
-  <thead>
-    <tr>
-      <th class="text-right w-12 py-1 px-1"><code>Nip</code></th>
-      <th class="text-left py-1 px-1"><code>Relays Supported</code></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="nip in bySupportedNips" :key="`nip-${nip.key}`">
-      <td class="text-right py-2 px-1">{{ nip.key }}</td>
-      <td class="text-left py-2 px-1"> {{ nip.count }} </td>
-    </tr>
-  </tbody>
-</table>
+  <div class="flex-none px-8 space-x-1 md:flex md:space-x-4 ">
+    <div class="flex-none md:flex-1">
+      <table class="table-auto w-full m-auto" v-if="bySupportedNips">
+        <thead>
+          <tr>
+            <th colspan="2" class="bg-black/40 pt-2 rounded-t-lg">
+              <h3 class="text-lg mb-3 text-white/50 font-normal">NIP Support</h3>
+            </th>
+            <!-- <th class="text-right w-64 py-3 px-1 bg-black/20"><code>Nip</code></th> -->
+            <!-- <th class="text-left py-1 px-3 bg-black/40"><code>Relays Supported</code></th> -->
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="nip in bySupportedNips" :key="`nip-${nip.key}`">
+            <td class="text-right w-1/2  py-2 px-3 text-white/70 bg-black/20">{{ nipFormatted(nip.key) }}</td>
+            <td class="text-left py-2 px-3 bg-black/20 text-2xl"> 
+              {{ nip.count }} 
+              <span class="italic text-white/25 text-sm">relays</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="flex-1">
+      <table class="table-auto w-full m-auto">
+        <thead>
+          <tr>
+            <th colspan="2" class="bg-black/40 pt-2 rounded-t-lg">
+              <h3 class="text-lg mb-3 text-white/50 font-normal">Software Deployed</h3>
+            </th>
+            <!-- <th class="text-right w-64 py-3 px-1 bg-black/20"><code>Software</code></th>
+            <th class="text-left py-1 px-3 bg-black/40"><code>Relays</code></th> -->
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="sw in this.bySoftware" :key="`nip-${sw.key}`">
+            <td class="text-right w-1/2 py-2 px-3 text-white/70 bg-black/20">{{ sw.key }}</td>
+            <td class="text-left py-2 px-3 bg-black/20 text-2xl"> {{ sw.count }} <span class="italic text-white/25 text-sm">relays</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
+  <h2 class="text-2xl text-white/50 mb-8 mt-8 lg:mt-16">Geo Breakdown</h2>
 
+  <div class="flex-none px-8 space-x-1 md:flex md:space-x-4 ">
+    <div class="flex-none md:flex-1">
+      <table class="table-auto w-full m-auto" v-if="bySupportedNips">
+        <thead>
+          <tr>
+            <th colspan="2" class="bg-black/40 pt-2 rounded-t-lg">
+              <h3 class="text-lg mb-3 text-white/50 font-normal">Relays by Country</h3>
+            </th>
+            <!-- <th class="text-right w-64 py-3 px-1 bg-black/20"><code>Nip</code></th> -->
+            <!-- <th class="text-left py-1 px-3 bg-black/40"><code>Relays Supported</code></th> -->
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in byCountry" :key="`country-${item.key}`">
+            <td class="text-right w-1/2  py-2 px-3 text-white/70 bg-black/20">{{ item.key }}</td>
+            <td class="text-left py-2 px-3 bg-black/20 text-2xl"> 
+              {{ item.count }} 
+              <span class="italic text-white/25 text-sm">relays</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="flex-1">
+      <table class="table-auto w-full m-auto">
+        <thead>
+          <tr>
+            <th colspan="2" class="bg-black/40 pt-2 rounded-t-lg">
+              <h3 class="text-lg mb-3 text-white/50 font-normal">Relays by Continent</h3>
+            </th>
+            <!-- <th class="text-right w-64 py-3 px-1 bg-black/20"><code>Software</code></th>
+            <th class="text-left py-1 px-3 bg-black/40"><code>Relays</code></th> -->
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in this.byContinent" :key="`continent-${item.key}`">
+            <td class="text-right w-1/2 py-2 px-3 text-white/70 bg-black/20">{{ item.key }}</td>
+            <td class="text-left py-2 px-3 bg-black/20 text-2xl"> {{ item.count }} <span class="italic text-white/25 text-sm">relays</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-<table class="table-auto w-128">
-  <thead>
-    <tr>
-      <th class="text-right w-12 py-1 px-1"><code>Continent</code></th>
-      <th class="text-left py-1 px-1"><code>Relays</code></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="cont in this.byContinent" :key="`nip-${cont.key}`">
-      <td class="text-right py-2 px-1">{{ cont.key }}</td>
-      <td class="text-left py-2 px-1"> {{ cont.count }} </td>
-    </tr>
-  </tbody>
-</table>
-
-<table class="table-auto w-128">
-  <thead>
-    <tr>
-      <th class="text-right w-12 py-1 px-1"><code>Country</code></th>
-      <th class="text-left py-1 px-1"><code>Relays</code></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="country in this.byCountry" :key="`nip-${country.key}`">
-      <td class="text-right py-2 px-1">{{ country.key }}</td>
-      <td class="text-left py-2 px-1"> {{ country.count }} </td>
-    </tr>
-  </tbody>
-</table>
-
-
-<table class="table-auto w-128">
-  <thead>
-    <tr>
-      <th class="text-right w-12 py-1 px-1"><code>Software</code></th>
-      <th class="text-left py-1 px-1"><code>Relays</code></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="sw in this.bySoftware" :key="`nip-${sw.key}`">
-      <td class="text-right py-2 px-1">{{ sw.key }}</td>
-      <td class="text-left py-2 px-1"> {{ sw.count }} </td>
-    </tr>
-  </tbody>
-</table>
-
-    <pre>
-
-    </pre>
-  
-
-    <!-- NIP-15
-    <pre>
-      {{this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').filter( relay => this.results?.[relay]?.info?.supported_nips.includes(15)).length }}
-    </pre>
-
-    <pre>
-      {{ this.store.relays.getAll.length }} 
-    </pre> -->
-
-    <pre>
-       
-    </pre>
-
-    <pre>
-       
-    </pre>
-    
-    <pre>
-      
-    </pre>
-<!-- 
-    <pre>
-      {{ store.stats.get('history')  }}
-    </pre>
-
-    <pre>
-      {{ store.stats.get('countries')  }}
-    </pre>
-
-    <pre>
-      {{ store.stats.get('nips')  }}
-    </pre>
-
-    <pre>
-      {{ store.stats.get('continents')  }}
-    </pre>
-
-    <pre>
-      {{   }}
-    </pre> -->
-
-    <pre>
-      {{ this.collateSupportedNips  }}
-    </pre>
-
-    <!-- <pre>
-      {{ this.collateContinents  }}
-    </pre>
-   
-    <pre>
-      {{ collateCountries }}
-    </pre>
-     -->
     <!-- history 
         growth chart
     Basic:
@@ -390,9 +361,13 @@ export default defineComponent({
         let segments, repo, org
         if(sw != 'unknown'){
           segments = new URL(sw).pathname.split('/')
+          console.log(sw, segments.length)
           repo = segments.pop()
           org = segments.pop()
+          if(repo == '' || org == '')
+            segments = false
         }
+        
         result.push({
           key: segments ? `${org}/${repo}` : sw,
           count: bySoftware[sw].size 
@@ -403,7 +378,7 @@ export default defineComponent({
 
       return result;
     },
-    getMostPopularSoftare(){
+    getMostPopularSoftware(){
       let result
       for(let i=0;i<this.bySoftware.length;i++){
         if(this.bySoftware[i].key === 'unknown') 
@@ -412,7 +387,14 @@ export default defineComponent({
         break
       }
       return result
-    }
+    },
+    nipSignature(){
+      return (key) => key.toString().length == 1 ? `0${key}` : key
+    },
+
+    nipFormatted(){
+      return (key) => `NIP-${this.nipSignature(key)}`
+    },
   },
 
   methods: Object.assign(RelaysLib, {

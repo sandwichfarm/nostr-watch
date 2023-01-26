@@ -158,7 +158,7 @@
               </div>
               <a target="_blank" :href="nipLink(key)" v-for="key in result?.info?.supported_nips" :key="`nip-${key}`" 
               class="hover:bg-slate-300 dark:hover:bg-black/20 hover:shadow pointer-cursor flex-initial gap-4  text-slate-800 text-1xl w-1/5 inline-block py-6 ">
-                <code>NIP-{{key}}</code>
+                <code>{{nipFormatted(key)}}</code>
               </a>
             </div>
           </div>

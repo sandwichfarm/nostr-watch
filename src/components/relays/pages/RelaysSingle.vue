@@ -59,18 +59,18 @@
               :key="heartbeat.date"
               class="mr-1 flex-1">
                 <span class="block" :class="getUptimeTickClass(heartbeat)">
-                  <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
+                  <span class="hidden lg:block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
                   <span v-if="!heartbeat.latency">&nbsp;</span>
                 </span>
               </span>
           </div>
         </div>
 
-        <div id="status" class="flex mb-2 py-5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
+        <div id="status" class="flex-none w-full md:w-auto md:flex mb-2 py-5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
           <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 
               v-if="result.latency.average"
-              class="relative -top-6  -mb-12"
+              class="relative -top-6 -mb-12 m-auto inline-block"
               :refid="'relay-latency'"
               :options="{
                 'needleValue':normalizeLatency(result?.latency?.average || result?.latency?.final),
@@ -165,9 +165,9 @@
         </div>
 
 
-        <div class="flex mb-8">
-          <div class="flex-1 justify-center">
-            <div class="inline-block rounded-lg shadow-lg bg-white dark:bg-black/30 max-w-sm text-center">
+        <div class="flex-none lg:flex mb-8">
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0">
+            <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <!-- <div class="py-3 px-6 border-b border-gray-300">
                 Featured
               </div> -->
@@ -187,8 +187,8 @@
               </div> -->
             </div>
           </div>
-          <div class="flex-1 justify-center" v-if="result?.info">
-            <div class="inline-block rounded-lg shadow-lg h-full bg-white dark:bg-black/30 max-w-sm text-center">
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info">
+            <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <!-- <div class="py-3 px-6 border-b border-gray-300">
                 Featured
               </div> -->
@@ -206,8 +206,8 @@
               </div> -->
             </div>
           </div>
-          <div class="flex-1 justify-center" v-if="this.result?.info?.pubkey">
-            <div class="inline-block rounded-lg shadow-lg h-full bg-white dark:bg-black/30 max-w-sm text-center">
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="this.result?.info?.pubkey">
+            <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <!-- <div class="py-3 px-6 border-b border-gray-300">
                 Featured
               </div> -->

@@ -47,9 +47,10 @@ export default {
     return relays
   },
   sortRelays(relays){
+    
     sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.final || 100000,
-          b = this.results?.[relay2]?.latency.final || 100000
+      let a = this.results?.[relay1]?.latency.average || 100000,
+          b = this.results?.[relay2]?.latency.average || 100000
       return a-b
     })
     sort(relays, (relay1, relay2) => {
@@ -58,9 +59,14 @@ export default {
       return (x === y)? 0 : x? -1 : 1;
     })
     sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.final || null,
-          b = this.results?.[relay2]?.latency.final || null
+      let a = this.results?.[relay1]?.latency.average || null,
+          b = this.results?.[relay2]?.latency.average || null
       return (b != null) - (a != null) || a - b;
+    })
+    sort(relays, (relay1, relay2) => {
+      let a = this.results?.[relay1]?.uptime || 0,
+          b = this.results?.[relay2]?.uptime || 0
+      return b-a
     })
     if(this.store.prefs.doPinFavorites)
       sort(relays, (relay1, relay2) => {
@@ -145,6 +151,25 @@ export default {
 
     loadingComplete: function(){
       return this.isDone() ? 'loaded' : ''
+    },
+
+    setUptimePercentage(relay){
+      const heartbeats = this.store.stats.getHeartbeat(relay)
+      if(!heartbeats || !Object.keys(heartbeats).length )
+        return
+      const totalHeartbeats = Object.keys(heartbeats).length 
+      const totalOnline = Object.entries(heartbeats).reduce(
+          (acc, value) => value[1].latency ? acc+1 : acc,
+          0
+      );
+      const perc = Math.floor((totalOnline/totalHeartbeats)*100)
+  
+      const result = this.getCache(relay)
+      if(!result)
+        return
+      result.uptime = perc 
+      this.setCache(result)
+      return result
     },
 
     timeSince: function(date) {

@@ -8,8 +8,7 @@ relays:
   - wss://satstacker.cloud
   - wss://freedom-relay.herokuapp.com/ws
   - wss://nostr-relay.freeberty.net
-  - wss://nostr-relay.wlvs.space
-  - wss://nostr-relay-dev.wlvs.space
+  - wss://eden.nostr.land
   - wss://nostr.onsats.org
   - wss://nostr-relay.untethr.me
   - wss://nostr-relay.lnmarkets.com
@@ -95,7 +94,6 @@ relays:
   - wss://relay.21spirits.io
   - wss://nostr-relay.freedomnode.com
   - wss://relay.minds.io/nostr/v1/ws
-  - wss://wlvs.space
   - wss://nostr.einundzwanzig.space
   - wss://nostr.d11n.net
   - wss://nostr1.tunnelsats.com

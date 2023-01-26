@@ -32,9 +32,12 @@ export const useStatStore = defineStore(
       setHeartbeats(payload){
         this.heartbeats = payload
       },
+      addHeartbeat(relay, payload){
+        if( !(this.heartbeats[relay] instanceof Array) )
+          this.heartbeats[relay] = new Array()
+        this.heartbeats[relay] = payload
+      },
       addHeartbeats(payload){
-        
-
         const relaysNow = Object.keys(payload) 
 
         // if(relaysThen.length !== relaysNow.length) {

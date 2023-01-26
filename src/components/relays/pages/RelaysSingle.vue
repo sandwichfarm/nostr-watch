@@ -37,18 +37,30 @@
         </div>
 
 
-        <div class="mt-3 overflow-hidden bg-slate-100 dark:bg-white/10 shadow sm:rounded-lg mb-8">
-          <div class="px-4 py-5 sm:px-6 flex">
-            <span 
-              v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
-              :key="heartbeat[0]"
-              class=" mr-1 flex-1"
-              :class="{
-                'bg-red-300/50 h-16 mt-16': !heartbeat.latency,
-                'bg-green-400/50 h-32': heartbeat.latency
-              }">
+        <div class="mt-3 overflow-hidden mb-8">
+          <div class="px-0 pt-5 sm:px-6">
+            <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
+              Uptime
+            </h3>
+          </div>
+          <div class="px-0 py-5 sm:px-0 flex">
+            <!-- <span 
+              v-for="heartbeat in this.heartbeats"
+              :key="heartbeat.date"
+              class=" mr-1 flex-1 relative"
+              :class="getUptimeTickClass(heartbeat)">
                 <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
                 <span v-if="!heartbeat.latency">&nbsp;</span>
+              </span> -->
+
+            <span 
+              v-for="heartbeat in this.heartbeats"
+              :key="heartbeat.date"
+              class="mr-1 flex-1">
+                <span class="block" :class="getUptimeTickClass(heartbeat)">
+                  <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
+                  <span v-if="!heartbeat.latency">&nbsp;</span>
+                </span>
               </span>
           </div>
         </div>
@@ -71,25 +83,25 @@
             <h3>Latency (1x)</h3>
             <span>{{ result.latency.final }}</span>
           </div> -->
-          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
+          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3>Avg Latency (10x)</h3>
-            <svg v-if="!result.latency.average" class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg v-if="!result.latency.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <span>{{ result.latency.average }}</span>
           </div>
-          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
+          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3>Min Latency</h3>
-            <svg v-if="!result.latency.min" class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg v-if="!result.latency.min" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             <span>{{ result.latency.min }}</span>
           </div>
-          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
+          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3>Max Latency</h3>
-            <svg v-if="!result.latency.max" class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg v-if="!result.latency.max" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -610,7 +622,10 @@ export default defineComponent({
       geo: {},
       events: {},
       interval: null,
-      showLatency: false
+      showLatency: false,
+      heartbeats : {},
+      hbMin: 0,
+      hbMax: 0
     }
   },
 
@@ -671,6 +686,45 @@ export default defineComponent({
     normalizeLatency: function(){
       return value =>  { 
         return (value-0) / (1000-0) * 100
+      }
+    },
+    getUptimeTickClass: function(){
+      return heartbeat => {
+        return {
+          'bg-red-700/80 h-32': !heartbeat.latency,
+          // 'bg-green-400/50': heartbeat.latency,
+          [this.normalizeUptimeTick(heartbeat)]: heartbeat.latency,
+        }
+      }
+    },
+    normalizeUptimeTick: function(){
+      return heartbeat => { 
+        if(!heartbeat.latency || !this.result.latency.min || !this.result.latency.max)
+          return
+        const val = heartbeat.latency,
+              minVal = this.hbMin,
+              maxVal = this.hbMax, 
+              newMin = 10,
+              newMax = 30
+        const h = Math.round( newMin + (val - minVal) * (newMax - newMin) / (maxVal - minVal))
+        const m = 32 - h 
+
+        let color 
+        
+        if(heartbeat.latency<200) {
+          color = 'bg-green-400/60'
+        } 
+        else if(heartbeat.latency<500) {
+          color = 'bg-yellow-400/50'
+        }
+        else if(heartbeat.latency<1000) {
+          color = 'bg-orange-400/50'
+        }
+        else {
+          color = 'bg-red-400/50'
+        }
+
+        return `h-${h} mt-${m} ${color}`
       }
     },
     getSoftware: function(){
@@ -762,6 +816,10 @@ export default defineComponent({
       //console.log('single result', this.relayFromUrl, this.result, this.getCache(this.relay))
       
       this.geo = this.store.relays.getGeo(this.relay)
+
+      this.heartbeats = this.store.stats.getHeartbeat(this.relay)
+      this.hbMin = Math.min.apply(Math, this.heartbeats?.map( hb => hb.latency ))
+      this.hbMax = Math.max.apply(Math, this.heartbeats?.map( hb => hb.latency ) )
       //console.log(this.relay, this.lastUpdate, this.result, this.geo)
     }
   }),

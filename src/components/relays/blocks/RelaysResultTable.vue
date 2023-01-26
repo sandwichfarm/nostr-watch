@@ -125,7 +125,7 @@
 
                       <td class="w-24 latency text-center">
                         <div class="px-4 py-5 sm:px-6 flex text-sm font-bold">
-                          {{ getUptimePerc(relay) }}
+                          {{ this.results[relay]?.uptime }}
                           <!-- <span 
                             v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
                             :key="heartbeat[0]"
@@ -360,20 +360,20 @@
       }
     },
     computed: {
-      getUptimePerc(){
-        return (relay) => {
-          const heartbeats = this.store.stats.getHeartbeat(relay)
-          if(!heartbeats || !Object.keys(heartbeats).length )
-            return ""
-          const totalHeartbeats = Object.keys(heartbeats).length 
-          const totalOnline = Object.entries(heartbeats).reduce(
-              (acc, value) => value[1].latency ? acc+1 : acc,
-              0
-          );
-          const perc = Math.floor((totalOnline/totalHeartbeats)*100)
-          return `${perc}%`
-        }
-      },
+      // getUptimePerc(){
+      //   return (relay) => {
+      //     const heartbeats = this.store.stats.getHeartbeat(relay)
+      //     if(!heartbeats || !Object.keys(heartbeats).length )
+      //       return ""
+      //     const totalHeartbeats = Object.keys(heartbeats).length 
+      //     const totalOnline = Object.entries(heartbeats).reduce(
+      //         (acc, value) => value[1].latency ? acc+1 : acc,
+      //         0
+      //     );
+      //     const perc = Math.floor((totalOnline/totalHeartbeats)*100)
+      //     return `${perc}%`
+      //   }
+      // },
       subsectionRelays(){
         return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
       },
@@ -411,7 +411,7 @@
             'bg-gray-500': 'undefined' === typeof this.results[relay]?.check?.[key],
             // '': this.store.prefs.getTheme === 'spacious',
             // '': this.store.prefs.getTheme === 'comfortable',
-            'text-2xl h-16 block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
+            'text-2xl block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
             'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
             'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
             // 'success': this.results[relay]?.check?.[key] !== false,

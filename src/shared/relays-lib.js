@@ -47,6 +47,7 @@ export default {
     return relays
   },
   sortRelays(relays){
+    
     sort(relays, (relay1, relay2) => {
       let a = this.results?.[relay1]?.latency.average || 100000,
           b = this.results?.[relay2]?.latency.average || 100000
@@ -61,6 +62,11 @@ export default {
       let a = this.results?.[relay1]?.latency.average || null,
           b = this.results?.[relay2]?.latency.average || null
       return (b != null) - (a != null) || a - b;
+    })
+    sort(relays, (relay1, relay2) => {
+      let a = this.results?.[relay1]?.uptime || 0,
+          b = this.results?.[relay2]?.uptime || 0
+      return b-a
     })
     if(this.store.prefs.doPinFavorites)
       sort(relays, (relay1, relay2) => {

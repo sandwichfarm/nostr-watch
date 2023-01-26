@@ -37,7 +37,7 @@
         </div>
 
 
-        <div class="mt-3 overflow-hidden mb-8">
+        <div class="mt-3 overflow-hidden mb-8" v-if="this.heartbeats && Object.keys(this.heartbeats).length > 24">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
               Uptime
@@ -65,7 +65,7 @@
           </div>
         </div>
 
-        <div id="status" class="flex mb-2 py-5 bg-white/5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
+        <div id="status" class="flex mb-2 py-5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
           <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 
               v-if="result.latency.average"
@@ -84,7 +84,7 @@
             <span>{{ result.latency.final }}</span>
           </div> -->
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3>Avg Latency (10x)</h3>
+            <h3 class="text-white/50 text-lg">Avg. Latency</h3>
             <svg v-if="!result.latency.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -92,7 +92,7 @@
             <span>{{ result.latency.average }}</span>
           </div>
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3>Min Latency</h3>
+            <h3 class="text-white/50 text-lg">Min Latency</h3>
             <svg v-if="!result.latency.min" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -100,7 +100,7 @@
             <span>{{ result.latency.min }}</span>
           </div>
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3>Max Latency</h3>
+            <h3 class="text-white/50 text-lg">Max Latency</h3>
             <svg v-if="!result.latency.max" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -113,7 +113,32 @@
           </div> -->
         </div>
 
-        <div id="did_not_connect" v-if="!result?.check?.connect" class="mb-8 py-8">
+        <!-- <div class="flex justify-center">
+          <div class="block rounded-lg shadow-lg bg-white max-w-sm text-center">
+            <div class="py-3 px-6 border-b border-gray-300">
+              Featured
+            </div>
+            <div class="p-6">
+              <h5 class="text-gray-900 text-xl font-medium mb-2">Special title treatment</h5>
+              <p class="text-gray-700 text-base mb-4">
+                With supporting text below as a natural lead-in to additional content.
+              </p>
+              <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button>
+            </div>
+            <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
+              2 days ago
+            </div>
+          </div>
+        </div> -->
+
+
+       
+
+        
+        
+        
+
+        <!-- <div id="did_not_connect" v-if="!result?.check?.connect" class="mb-8 py-8">
           <div class="data-card block mt-8 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-red-600 dark:text-red-300">This Relay Appears to be offline</h5>
           </div>
@@ -122,7 +147,7 @@
               I did find this...
             </div>
           </div>
-        </div>
+        </div> -->
 
         <div id="nips" v-if="result?.info?.supported_nips" class="mb-8 py-1 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg dark:bg-slate-800">
           <div class="px-1 py-2 sm:px-6">
@@ -131,20 +156,73 @@
                 <h3 class="inline-block lg:block text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
               </div>
               <a target="_blank" :href="nipLink(key)" v-for="key in result?.info?.supported_nips" :key="`nip-${key}`" 
-              class="hover:bg-slate-300 hover:shadow pointer-cursor flex-initial gap-4  text-slate-800 text-1xl w-1/5 inline-block py-6 ">
+              class="hover:bg-slate-300 dark:hover:bg-black/20 hover:shadow pointer-cursor flex-initial gap-4  text-slate-800 text-1xl w-1/5 inline-block py-6 ">
                 <code>NIP-{{key}}</code>
               </a>
             </div>
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 mb-8 py-8" v-if="geo?.dns">
-          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
-            <span>
-              The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong> <br />
-              <em>{{ geo?.dns.data }}</em> appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong> <br />
-              The hosting provider is <strong>{{  geo?.as  }}</strong>.
-            </span>
+
+        <div class="flex mb-8">
+          <div class="flex-1 justify-center">
+            <div class="inline-block rounded-lg shadow-lg bg-white dark:bg-black/30 max-w-sm text-center">
+              <!-- <div class="py-3 px-6 border-b border-gray-300">
+                Featured
+              </div> -->
+              <div class="py-6 px-4">
+                <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
+                  Network Summary
+                </h5>
+                <p class="text-gray-700 text-base mb-4 dark:text-white/60">
+                  The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong>
+                  <em>{{ geo?.dns.data }}</em> appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong>
+                  The hosting provider is <strong>{{  geo?.as  }}</strong>.
+                </p>
+                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
+              </div>
+              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
+                2 days ago
+              </div> -->
+            </div>
+          </div>
+          <div class="flex-1 justify-center">
+            <div class="inline-block rounded-lg shadow-lg h-full bg-white dark:bg-black/30 max-w-sm text-center">
+              <!-- <div class="py-3 px-6 border-b border-gray-300">
+                Featured
+              </div> -->
+              <div class="py-6 px-4">
+                <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
+                  Software
+                </h5>
+                <p class="text-gray-700 text-base mb-4 dark:text-white/60">
+                  <strong>{{relay}}</strong> is running <strong>{{ getSoftware }}</strong> version <strong>{{ result.info.version }}</strong>
+                </p>
+                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
+              </div>
+              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
+                2 days ago
+              </div> -->
+            </div>
+          </div>
+          <div class="flex-1 justify-center">
+            <div class="inline-block rounded-lg shadow-lg h-full bg-white dark:bg-black/30 max-w-sm text-center">
+              <!-- <div class="py-3 px-6 border-b border-gray-300">
+                Featured
+              </div> -->
+              <div class="py-6 px-4">
+                <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
+                  PubKey
+                </h5>
+                <p class="text-gray-700 text-base mb-4 dark:text-white/60 text-ellipsis overflow-hidden">
+                  The relay's pubkey is <code class="block text-ellipsis w-full">{{ this.result?.info.pubkey }}</code>
+                </p>
+                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
+              </div>
+              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
+                2 days ago
+              </div> -->
+            </div>
           </div>
         </div>
 
@@ -156,12 +234,6 @@
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 shadow mb-8 py-8" v-if="this.result?.info?.software">
-          <div class="text-clip overflow-ellipsis text-slate-800 dark:text-white/50 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
-            It's running <strong>{{ getSoftware }}:{{ result.info.version }}</strong>
-          </div>
-        </div>
-
         <!-- <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="true">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
             <h3>{}</h3>
@@ -169,19 +241,11 @@
           </div>
         </div> -->
 
-        <div class="data-card flex bg-slate-50 dark:bg-black/20 border-slate-200 shadow mb-8 py-5" v-if="this.result?.info?.pubkey">
-          <div class="text-slate-800 w-full text-sm md:text-lg lg:text-3xl overflow-ellipsis flex-none block py-1 text-center">
-            <code class="block">{{ this.result?.info.pubkey }}</code>
-          </div>
-        </div>
-
         <div class="data-card flex bg-transparent border-slate-200 shadow mt-12 mb-8 py-5" v-if="this.result?.info?.pubkey">
           <div class="text-slate-800 dark:text-white/50 w-full flex-none block py-1 text-center text-xl">
             Here's the details...
           </div>
         </div>
-
-        
 
         <div class="py-5" v-if="typeof result?.info !== 'undefined' && Object.keys(result?.info).length">
           <div class="data-card overflow-hidden bg-white dark:bg-black/20 shadow sm:rounded-lg relative">

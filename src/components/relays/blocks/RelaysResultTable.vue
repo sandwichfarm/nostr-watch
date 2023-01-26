@@ -57,7 +57,7 @@
                         <code class="text-xs block">Location</code>
                       </th>
                       <th>
-                        Uptime
+                        <code class="text-xs block">Uptime(12h)</code>
                       </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
                         <code class="text-xs block">Avg. Latency</code>

@@ -136,7 +136,7 @@
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-8  py-8" v-if="this.result?.info?.software">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 border-slate-200 border mb-8  py-8" v-if="geo">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
               It's <strong>{{ getLocalTime }}</strong> in <strong>{{ geo?.city }}</strong>

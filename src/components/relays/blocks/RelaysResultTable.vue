@@ -375,9 +375,9 @@
           return {
             'text-green-600/100 dark:text-green-600/80': this.results[relay]?.uptime >= 98,
             'text-green-600/80 dark:text-green-400/50': this.results[relay]?.uptime >= 95 && this.results[relay]?.uptime < 98,
-            'text-yellow-600 dark:text-yellow-400': this.results[relay]?.uptime >= 90 && this.results[relay]?.uptime < 95,
-            'text-range-400': this.results[relay]?.uptime >= 80 && this.results[relay]?.uptime < 90,
-            'text-red-400': this.results[relay]?.uptime < 80,
+            'text-yellow-600 dark:text-yellow-400/90': this.results[relay]?.uptime >= 90 && this.results[relay]?.uptime < 95,
+            'text-orange-500': this.results[relay]?.uptime >= 80 && this.results[relay]?.uptime < 90,
+            'text-red-400 dark:text-red-600': this.results[relay]?.uptime < 80,
           }
         }
       },

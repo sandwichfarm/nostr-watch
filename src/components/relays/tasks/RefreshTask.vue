@@ -1,9 +1,9 @@
 <template>
   <div
       v-if="(!store.tasks.isActive || store.tasks.getActiveSlug === this.slug) && !this.isSingle"
-      class="inline">
+      class="inline relative">
     <span class="text-white lg:text-sm mr-2 ml-2 mt-1 text-xs">
-      <span v-if="!store.tasks.isProcessing(this.slug)">Checked {{ sinceLast }} ago</span>
+      <span v-if="!store.tasks.isProcessing(this.slug)" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
       <span v-if="store.tasks.isProcessing(this.slug)" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block mt-1.5 md:pt-1.5 md:mt-0 text-xs">
         <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -12,13 +12,13 @@
         {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Checked
       </span>
     </span>
-    <span class="text-white lg:text-sm mr-2 ml-2 text-xs" v-if="!store.tasks.isProcessing(this.slug)">-</span>
+    <span class="text-white lg:text-sm mr-2 ml-2 text-xs hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
     <span class="text-white lg:text-sm mr-2 ml-2 text-xs" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
       Next check in: {{ untilNext  }}
     </span>
     <button 
       v-if="!store.tasks.isProcessing(this.slug)"
-      class="mr-8 my-1 py-1 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
+      class="absolute right-0 lg:relative mr-8 my-1 py-1 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
       :disabled='store.tasks.isProcessing(this.slug)' 
       @click="refreshNow()">
         Check{{ relay ? ` ${relay}` : "" }} Now
@@ -160,7 +160,6 @@ const localMethods = {
     
     if(result)  {
       // console.log('whoops', result)
-
       this.results[relay] = Object.assign({}, this.results[relay], result)
       this.setCache(this.results[relay])
     }

@@ -1,12 +1,26 @@
+<style scoped>
+.router-link-active {
+  @apply bg-black/30 rounded-t-md mt-2 font-bold
+}
+</style>
+
 <template>
   <div class="bg-slate-700 px-2 sm:px-4 lg:px-8 ">
     <div class="lg:flex lg:h-8 mx-auto max-w-7xl h-8">
       <div class="flex lg:w-32 lg:px-8 lg:ml-8 sm:hidden sm:w-0 md:w-0"></div>
       <div class="lg:flex lg:px-0">
-        <div class="lg:ml-6 lg:flex lg:space-x-8">
-          <router-link to="/relays/find" :class="isActive ? 'bg-color-white-100 text-white' : inactiveClass" class="inline-flex items-center mx-1 text-sm font-medium text-white">Find Relays</router-link>
+        <div class="lg:ml-48 lg:flex lg:space-x-2">
+          <router-link 
+            :to="{name: 'relaysFind'}" 
+            class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
+            Browse
+          </router-link>
           <!-- <router-link to="/relays/map" class="inline-flex items-center mx-1 text-sm font-medium text-white">Map</router-link> -->
-          <router-link to="/relays/statistics" class="inline-flex items-center mx-1 text-sm font-medium text-white">Relay Stats</router-link>
+          <router-link 
+            :to="{name: 'relaysStats'}" 
+            class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
+            Statistics
+          </router-link>
           <!-- <a v-for="item in store.layout.getNavGroup(this.navSlug)"
               :key="`subnav-${item.slug}`"
               :href="item.href"
@@ -80,3 +94,4 @@ export default defineComponent({
   computed: SharedComputed,
 });
 </script>
+

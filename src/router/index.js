@@ -11,6 +11,7 @@ import RedirectComponent from '@/components/relays/redirects/RedirectComponent.v
 
 const routes = [
     {
+        name: 'relaysAdd',
         path: '/relays/add',
         beforeEnter() {
             window.location.href = 'https://github.com/dskvr/nostr-watch/edit/main/relays.yaml'
@@ -22,23 +23,35 @@ const routes = [
     //     component: RelaysStatistics
     // },
     {
+        name: 'relays',
         path: '/relays',
+        redirect: '/relays/find',
+        linkActiveClass: 'router-link-active',
+        linkExactActiveClass: 'router-link-exact-active',
         children: [
             {
+                name: 'relaysStats',
                 path: 'statistics',
                 component: RelaysStatistics,
+                linkActiveClass: 'router-link-active',
+                linkExactActiveClass: 'router-link-exact-active',
             },
             // {
             //     path: 'map',
             //     component: RelaysMap,
             // },
             {
-            path: 'find',
-            component: RelaysFind,
+                name: 'relaysFind',
+                path: 'find',
+                component: RelaysFind,
+                linkActiveClass: 'router-link-active',
+                linkExactActiveClass: 'router-link-exact-active',
             },
             {
-            path: 'find/(*.)',
-            component: RelaysFind,
+                path: 'find/(*.)',
+                component: RelaysFind,
+                linkActiveClass: 'router-link-active',
+                linkExactActiveClass: 'router-link-exact-active',
             },
             
             

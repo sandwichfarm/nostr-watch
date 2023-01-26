@@ -1,9 +1,9 @@
 <template>
   <div
       v-if="(!store.tasks.isActive || store.tasks.getActiveSlug === this.slug) && !this.isSingle"
-      class="inline">
+      class="inline relative">
     <span class="text-white lg:text-sm mr-2 ml-2 mt-1 text-xs">
-      <span v-if="!store.tasks.isProcessing(this.slug)">Checked {{ sinceLast }} ago</span>
+      <span v-if="!store.tasks.isProcessing(this.slug)" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
       <span v-if="store.tasks.isProcessing(this.slug)" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block mt-1.5 md:pt-1.5 md:mt-0 text-xs">
         <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -12,7 +12,7 @@
         {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Checked
       </span>
     </span>
-    <span class="text-white lg:text-sm mr-2 ml-2 text-xs" v-if="!store.tasks.isProcessing(this.slug)">-</span>
+    <span class="text-white lg:text-sm mr-2 ml-2 text-xs hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
     <span class="text-white lg:text-sm mr-2 ml-2 text-xs" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
       Next check in: {{ untilNext  }}
     </span>
@@ -25,7 +25,7 @@
     </button>
   </div>
   <span
-    v-if="(store.tasks.getActiveSlug === this.slug) && this.isSingle"
+    v-if="store.tasks.getActiveSlug === this.slug && this.isSingle"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs mr-11">
       Loading {{ relayFromUrl }}
   </span>
@@ -86,19 +86,26 @@ const localMethods = {
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
 
-      if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length){
-        this.store.tasks.updateNow(this.slug)
-        this.store.tasks.finishProcessing(this.slug)
-      }
+      // if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length && !this.isSingle){
+      //   this.store.tasks.updateNow(this.slug)
+      //   this.store.tasks.finishProcessing(this.slug)
+      // }
 
-      if(!this.store.tasks.isProcessing(this.slug))
+      if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
         this.invalidate()
         
     }, 1000)
   },
+  setLatencyInterval: function(){
+    this.setLatencyInterval = setInterval( () => {
+
+    })
+  },
+
   refreshNow(){
     this.invalidate(true)
   },
+
   handleVisibility(){
     if(document.visibilityState === 'hidden')
       this.windowActive = false 
@@ -109,35 +116,40 @@ const localMethods = {
       this.store.layout.setActiveTab(this.$tabId)
   },
 
+
   invalidate: async function(force, single){
-    if( (!this.isExpired(this.slug) && !force) ) 
+    // console.log('invalidate?', !(!this.isExpired(this.slug, this.getRefreshInterval)))
+    if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) ) 
       return
 
     if(!this.windowActive)
       return
 
-    this.queueJob(this.slug, async () => {
-      const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
+    this.queueJob(
+      this.slug, 
+      async () => {
+        const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
 
-      console.log('unprocessed relays', 
-        this.relays.filter( relay => !this.store.tasks.getProcessed(this.slug).includes(relay)))
+        console.log('unprocessed relays', 
+          this.relays.filter( relay => !this.store.tasks.getProcessed(this.slug).includes(relay)))
 
-      if(single) {
-        await this.check(single)
-          .then((result) => this.completeRelay(single, result) )
-          .catch( () => this.completeRelay(single) )
-      } 
-      else {
-        for(let index = 0; index < relays.length; index++) {
-          await this.delay(this.averageLatency)
-          const relay = relays[index]
-          this.check(relay)
-            .then((result) => this.completeRelay(relay, result) )
-            .catch( () => this.completeRelay(relay) ) //wait, what? TODO: fix
-        }
-      } 
-    }, true)
-    
+        if(single) {
+          await this.check(single)
+            .then((result) => this.completeRelay(single, result) )
+            .catch( () => this.completeRelay(single) )
+        } 
+        else {
+          for(let index = 0; index < relays.length; index++) {
+            await this.delay(this.averageLatency)
+            const relay = relays[index]
+            this.check(relay)
+              .then((result) => this.completeRelay(relay, result) )
+              .catch( () => this.completeRelay(relay) ) //wait, what? TODO: fix
+          }
+        } 
+      }, 
+      true
+    )
   },
 
   completeRelay: function(relay, result){
@@ -147,22 +159,27 @@ const localMethods = {
     this.store.tasks.addProcessed(this.slug, relay)
     
     if(result)  {
-      console.log('whoops', result)
-      this.results[relay] = result
-      this.setCache(result)
+      // console.log('whoops', result)
+      this.setCache(Object.assign({}, this.results[relay], result))
+      this.setUptimePercentage(relay)
+      this.results[relay] = this.getCache(relay)
     }
+
     if(this.isSingle)
-      this.completeAll()
+      this.completeAll(true)
     else if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length)
       this.completeAll()
   },
 
-  completeAll: function(){
-    this.store.tasks.completeJob(this.slug)
+  completeAll: function(single){
+    this.store.tasks.completeJob()
+    // this.setAverageLatency()
+    if(single)
+      return 
+
     this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
     this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
     this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
-    this.setAverageLatency()
   },
 
   check: async function(relay){
@@ -170,7 +187,7 @@ const localMethods = {
       const opts = {
           checkRead: true, 
           checkWrite: true,   
-          checkLatency: true,          
+          checkLatency: true,
           getInfo: true,
           getIdentities: true,
           run: true,
@@ -180,12 +197,23 @@ const localMethods = {
           writeTimeout: this.getDynamicTimeout,
         }
       
+      // if(this.isSingle)
+        opts.checkAverageLatency = true
+      
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
 
       let socket = new Inspector(relay, opts)
 
       socket
+        .on('open', () => {
+          if(!this.isSingle)
+            return
+          this.results[this.relayFromUrl].latency.average = null
+          this.results[this.relayFromUrl].latency.min = null
+          this.results[this.relayFromUrl].latency.max = null
+          this.setCache(this.results[this.relayFromUrl])
+        })
         .on('complete', (instance) => {
           // console.log('completed?', instance.result)
           instance.result.aggregate = this.getAggregate(instance.result)
@@ -195,7 +223,7 @@ const localMethods = {
         })
     })
   },
-  
+
   setAverageLatency: function(){
     const latencies = new Array()
     this.relays.forEach( relay => {
@@ -211,6 +239,7 @@ const localMethods = {
       sum += arr[i];
     return Math.floor(parseFloat(sum/total));
   },
+
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
@@ -245,7 +274,8 @@ export default defineComponent({
       windowActive: true,
       averageLatency: 200,
       pageOpen: 0,
-      slug: 'relays/check'
+      slug: 'relays/check',
+      latencies: []
       // history: null
     }
   },
@@ -280,6 +310,7 @@ export default defineComponent({
     if( this.isSingle ){
       this.slug = 'relays/single'
       this.invalidate(true, this.relayFromUrl)
+      // this.runLatencyCheck()
     } else {
       if(this.store.tasks.isProcessing(this.slug))
         this.invalidate(true)
@@ -296,6 +327,17 @@ export default defineComponent({
       const calculated = this.averageLatency*this.relays.length
       return calculated > 10000 ? calculated : 10000
     },
+    getRefreshInterval: function(){
+      const relay = this.relayFromUrl
+      console.log('wtf', relay, this.results[relay], this.results[relay]?.check?.connect, this.results[relay]?.check?.read, this.results[relay]?.check?.write, this.results[relay]?.latency?.final )
+      if( !relay )
+        return this.store.prefs.duration
+      if( this.results[relay]?.check?.connect && this.results[relay]?.check?.read && this.results[relay]?.check?.write && typeof this.results[relay]?.latency?.final !== 'undefined' )
+        return this.results[relay].latency.final * 5 
+      if(this.results[relay]?.check?.connect && this.results[relay]?.check?.read && this.results[relay]?.check?.write)
+        return 30*1000
+      return this.store.prefs.duration
+    }
   }),
 
   methods: Object.assign(localMethods, RelaysLib),

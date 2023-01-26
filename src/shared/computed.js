@@ -2,7 +2,11 @@ import {useRoute} from 'vue-router'
 
 export default {
     isExpired: function(){
-        return (slug) => !this.store.tasks.getLastUpdate(slug) || Date.now() - this.store.tasks.getLastUpdate(slug) > this.store.prefs.expireAfter
+        return (slug, expireAfter) => {
+            if(!expireAfter)
+                expireAfter = this.store.prefs.expireAfter
+            return !this.store.tasks.getLastUpdate(slug) || Date.now() - this.store.tasks.getLastUpdate(slug) > expireAfter
+        }
     },
     path: function() { return useRoute().path },
     relayFromUrl() {

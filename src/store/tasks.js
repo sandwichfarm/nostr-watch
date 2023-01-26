@@ -39,7 +39,13 @@ export const useTaskStore = defineStore('tasks', {
     arePending: (state) => state.pending.length > 0,
   },
   actions: {
-    updateNow(key){ this.lastUpdate[key] = Date.now() },
+    updateNow(key){ 
+      if(typeof key === 'undefined'){
+        console.log('stuff', this)
+      }
+        
+      this.lastUpdate[key] = Date.now() 
+    },
     //queue
     addJob(job){
       if(job?.unique){
@@ -66,7 +72,6 @@ export const useTaskStore = defineStore('tasks', {
     },
     completeJob(){
       this.updateNow(this.active.id)
-      //there's a NaN flash, might need a delay.
       this.finishProcessing(this.active.id)
       this.completed.push(this.active)
       this.startNextJob()
@@ -83,11 +88,17 @@ export const useTaskStore = defineStore('tasks', {
     },
     //legacy
     startProcessing(job) { 
+      if(typeof key === 'undefined'){
+        console.log('stuff', this)
+      }
       this.addJob(job)
       this.processing[job.id] = true 
       this.currentTask = job.id
     },
     finishProcessing(key) { 
+      if(typeof key === 'undefined'){
+        console.log('stuff', this)
+      }
       this.processed[key] = new Array()
       this.processing[key] = false 
       this.currentTask = null

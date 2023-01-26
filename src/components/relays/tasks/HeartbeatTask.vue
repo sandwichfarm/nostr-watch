@@ -33,7 +33,7 @@ import { RelayPool } from 'nostr'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.slug) && !force) ) 
+    if( (!this.isExpired(this.slug, 1000*60) && !force) ) 
       return
     // const pool = new RelayPool( relays )
 

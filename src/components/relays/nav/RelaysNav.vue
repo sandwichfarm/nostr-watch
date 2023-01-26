@@ -4,9 +4,9 @@
       <div class="flex lg:w-32 lg:px-8 lg:ml-8 sm:hidden sm:w-0 md:w-0"></div>
       <div class="lg:flex lg:px-0">
         <div class="lg:ml-6 lg:flex lg:space-x-8">
-          <router-link to="/relays/find" :class="isActive ? 'bg-color-white-100 text-white' : inactiveClass" class="inline-flex items-center mx-1 text-sm font-medium text-white">Relays</router-link>
+          <router-link to="/relays/find" :class="isActive ? 'bg-color-white-100 text-white' : inactiveClass" class="inline-flex items-center mx-1 text-sm font-medium text-white">Find Relays</router-link>
           <!-- <router-link to="/relays/map" class="inline-flex items-center mx-1 text-sm font-medium text-white">Map</router-link> -->
-          <router-link to="/relays/statistics" class="inline-flex items-center mx-1 text-sm font-medium text-white">Statistics</router-link>
+          <router-link to="/relays/statistics" class="inline-flex items-center mx-1 text-sm font-medium text-white">Relay Stats</router-link>
           <!-- <a v-for="item in store.layout.getNavGroup(this.navSlug)"
               :key="`subnav-${item.slug}`"
               :href="item.href"

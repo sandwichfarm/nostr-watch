@@ -2,7 +2,12 @@
   <RelaysNav 
     v-bind:resultsProp="results" />
 
-  <div id="wrapper" class="mx-auto max-w-7xl pt-8">  
+  <div id="wrapper" class="mx-auto max-w-7xl p-8 lg:p-32 mt-8 bg-black/5 dark:bg-black/20 rounded-lg" v-if="store.tasks.isProcessing('relays/check') && !store.tasks.getLastUpdate('relays/check')">
+    <span class="text-3xl">
+      Still compiling data, this can take 3-10 minutes if this is your first visit to nostr.watch
+    </span>
+  </div>  
+  <div id="wrapper" class="mx-auto max-w-7xl pt-8" v-if="store.tasks.getLastUpdate('relays/check')">  
     <h2 class="text-2xl text-white/50">Overview</h2>
     <div class="max-w-full mx-4 py-2 sm:mx-auto sm:px-6 lg:px-8">
       <div class="sm:flex sm:space-x-4">
@@ -50,8 +55,8 @@
                   Software
                 </h3>
                 <p class="font-bold text-black  dark:text-white">
-                  <span class="text-3xl">{{ getMostPopularSoftware.split('/')[1] }}</span>
-                  <span class="text-lg block text-white/50">{{ getMostPopularSoftware.split('/')[0] }}</span>
+                  <span class="text-3xl">{{ getMostPopularSoftware?.split('/')[1] }}</span>
+                  <span class="text-lg block text-white/50">{{ getMostPopularSoftware?.split('/')[0] }}</span>
                 </p>
               </div>
             </div>
@@ -200,6 +205,7 @@ import { defineComponent, defineAsyncComponent } from 'vue'
 import { setupStore } from '@/store'
 // import { UserLib } from '@/shared/user-lib.js'
 // import { History } from '@/shared/history.js'
+import { relays } from '../../../../relays.yaml'
 import RelaysLib from '@/shared/relays-lib'
 
 const RelaysNav = defineAsyncComponent(() =>
@@ -223,6 +229,7 @@ export default defineComponent({
   },
 
   beforeMount(){
+    this.relays = this.store.relays.getAll?.length ? this.store.relays.getAll : relays
     this.relays.forEach(relay => {
       this.results[relay] = this.getCache(relay)
     })
@@ -248,7 +255,7 @@ export default defineComponent({
 
   data: function(){
     return {
-      relays: this.store.relays.getAll,
+      relays: null,
       geo: this.store.relays.geo,
       bySupportedNips: null,
       byCountry: null,
@@ -359,7 +366,7 @@ export default defineComponent({
       let result = new Array()
       Object.keys(bySoftware).forEach( sw => {
         let segments, repo, org
-        if(sw != 'unknown'){
+        try {
           segments = new URL(sw).pathname.split('/')
           console.log(sw, segments.length)
           repo = segments.pop()
@@ -367,11 +374,14 @@ export default defineComponent({
           if(repo == '' || org == '')
             segments = false
         }
-        
+        catch(e){ e}
+
         result.push({
           key: segments ? `${org}/${repo}` : sw,
           count: bySoftware[sw].size 
         })
+        
+        
       })
       
       result.sort( (a,b) => b.count-a.count )

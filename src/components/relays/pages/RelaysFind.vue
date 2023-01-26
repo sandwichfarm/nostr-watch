@@ -145,7 +145,7 @@ export default defineComponent({
     this.store.relays.setRelays(relays)
     this.store.relays.setGeo(geo)
     
-    this.relays = this.store.relays.getAll
+    this.relays = this.store.relays.getAll?.length ? this.store.relays.getAll : relays
     this.lastUpdate = this.store.tasks.getLastUpdate('relays')
     this.preferences = this.store.prefs.get
   },

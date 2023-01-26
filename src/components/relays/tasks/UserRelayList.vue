@@ -31,12 +31,12 @@ localMethods.invalidate = function(force){
     return
   
   if( !this.isLoggedIn ) 
-    return 
+    return
   
   if( !this.store.prefs.useKind3 )
     return
   
-  console.log('wtf?', this.taskSlug, !this.isExpired(this.taskSlug) && !force)
+  // console.log('wtf?', this.taskSlug, !this.isExpired(this.taskSlug) && !force)
 
   this.queueKind3(this.taskSlug)
 }

@@ -118,7 +118,7 @@ const localMethods = {
 
 
   invalidate: async function(force, single){
-    console.log('invalidate?', !(!this.isExpired(this.slug, this.getRefreshInterval)))
+    // console.log('invalidate?', !(!this.isExpired(this.slug, this.getRefreshInterval)))
     if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) ) 
       return
 
@@ -160,7 +160,8 @@ const localMethods = {
     
     if(result)  {
       // console.log('whoops', result)
-      this.results[relay] = Object.assign(this.results[relay], result)
+
+      this.results[relay] = Object.assign({}, this.results[relay], result)
       this.setCache(this.results[relay])
     }
 

@@ -225,3 +225,22 @@ relays:
   - wss://nostr.localhost.re
   - wss://nostr.coinsamba.com.br
   - wss://deconomy-netser.ddns.net:2121
+  - wss://relay.nostr.band/restricted
+  - wss://tmp-relay.cesc.trade
+  - wss://foolay.nostr.moe
+  - wss://nostr.21m.fr
+  - wss://zur.nostr.sx
+  - wss://nostr-relay.texashedge.xyz
+  - wss://eden.nostr.land
+  - wss://spleenrider.herokuapp.com
+  - wss://nostr.bitcoin.sex
+  - wss://relay.nostrzoo.com
+  - wss://blg.nostr.sx
+  - wss://nostr.1f52b.xyz
+  - wss://nostr.blockchaincaffe.it
+  - wss://freespeech.casa
+  - wss://nostr-bg01.ciph.rs
+  - wss://relay.plebstr.com
+  - wss://knostr.neutrine.com:8880
+  - wss://nostr.ahaspharos.de
+  - wss://nostr.argdx.net

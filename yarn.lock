@@ -6465,10 +6465,10 @@ nostr-relay-inspector@0.0.26:
     tape "5.6.1"
     yaml-loader "0.8.0"
 
-nostr-relay-inspector@0.0.27:
-  version "0.0.27"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.27.tgz#9b650c671fb4def2f29bf769f071e3abfea75a0d"
-  integrity sha512-tTdBh788gvKzys/pRDUuhpW1EnKZdLR4nEM+FTzfsyneQZ+GYSNMyH5zn7Uy4qqj9xXe9pI2XHo6MLbKT2ZIyw==
+nostr-relay-inspector@0.0.28:
+  version "0.0.28"
+  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.28.tgz#34c3a89c0d983f0994ad65baedd885b486e274d4"
+  integrity sha512-eYkWkteAuuEHfKRUKSnqbKHDx3WfONYkds4WvDfZLBxr/7t5Y+QfocvmAbt86tDXfgq6JH5RW5hjEde7tuJoQg==
   dependencies:
     cross-fetch "3.1.5"
     js-yaml "4.1.0"

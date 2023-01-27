@@ -21,7 +21,7 @@
           <div class="px-4 py-5 sm:px-6">
             <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
             <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
-            <span class="mt-1 w-auto text-xl text-gray-500 bg-black/20" v-if="result?.info?.email"><SafeMail :email="result.info.email" /></span>
+            <span class="mt-1 w-auto text-xl text-gray-400" v-if="result?.info?.contact">Contact: <SafeMail :email="result.info.contact" /></span>
           </div>
           <a 
           target="_blank" 
@@ -36,12 +36,51 @@
             <span>{{key}}</span>  
           </div>
         </div>
-
+        <div id="status" class="flex-none w-full md:w-auto md:flex mb-2 py-5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
+          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
+            <vue-gauge 
+              v-if="result.latency.average"
+              class="relative -top-6 -mb-12 m-auto inline-block"
+              :refid="'relay-latency'"
+              :options="{
+                'needleValue':normalizeLatency(result?.latency?.average || result?.latency?.final),
+                'arcDelimiters':[33,66],
+                'rangeLabel': false,
+                'arcColors': ['green', 'orange', 'red'] }">
+            </vue-gauge>
+          </div>
+          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
+            <h3 class="text-black/70 dark:text-white/50 text-lg">Avg. Latency</h3>
+            <svg v-if="!result.latency.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>{{ result.latency.average }}</span>
+          </div>
+          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
+            <h3 class="text-black/70 dark:text-white/50 text-lg">Min Latency</h3>
+            <svg v-if="!result.latency.min" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>{{ result.latency.min }}</span>
+          </div>
+          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
+            <h3 class="text-black/70 dark:text-white/50 text-lg">Max Latency</h3>
+            <svg v-if="!result.latency.max" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>{{ result.latency.max }}</span>
+          </div>
+        </div>
 
         <div class="mt-3 overflow-hidden mb-8" v-if="this.heartbeats && Object.keys(this.heartbeats).length > 24">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
-              Uptime
+              Uptime for the last
+              <span class=" text-gray-500 dark:text-gray-400">12hrs: </span> 
+              <span :class="getUptimeColor(result)" v-if="result?.uptime">{{ result.uptime }}%</span>
             </h3>
           </div>
           <div class="px-0 py-5 sm:px-0 flex">
@@ -66,53 +105,7 @@
           </div>
         </div>
 
-        <div id="status" class="flex-none w-full md:w-auto md:flex mb-2 py-5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
-          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
-            <vue-gauge 
-              v-if="result.latency.average"
-              class="relative -top-6 -mb-12 m-auto inline-block"
-              :refid="'relay-latency'"
-              :options="{
-                'needleValue':normalizeLatency(result?.latency?.average || result?.latency?.final),
-                'arcDelimiters':[33,66],
-                'rangeLabel': false,
-                'arcColors': ['green', 'orange', 'red'] }">
-            </vue-gauge>
-          </div>
-
-          <!-- <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3>Latency (1x)</h3>
-            <span>{{ result.latency.final }}</span>
-          </div> -->
-          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3 class="text-white/50 text-lg">Avg. Latency</h3>
-            <svg v-if="!result.latency.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>{{ result.latency.average }}</span>
-          </div>
-          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3 class="text-white/50 text-lg">Min Latency</h3>
-            <svg v-if="!result.latency.min" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>{{ result.latency.min }}</span>
-          </div>
-          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3 class="text-white/50 text-lg">Max Latency</h3>
-            <svg v-if="!result.latency.max" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>{{ result.latency.max }}</span>
-          </div>
-          <!-- <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3>Avg Latency (12h)</h3>
-            <span>{{ result.latency.final }}</span>
-          </div> -->
-        </div>
+        
 
         <!-- <div class="flex justify-center">
           <div class="block rounded-lg shadow-lg bg-white max-w-sm text-center">

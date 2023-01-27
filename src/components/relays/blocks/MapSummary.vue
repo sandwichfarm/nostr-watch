@@ -52,7 +52,7 @@
 
     </l-map>
     <span @click="this.handleToggleMap()" id="map_control">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="!store.layout.mapIsExpanded">full map</button>
+      <button class="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-900 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 border border-gray-400 dark:border-white/10 rounded shadow" v-if="!store.layout.mapIsExpanded">full map</button>
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="store.layout.mapIsExpanded">relay list</button>
     </span>
   </div>

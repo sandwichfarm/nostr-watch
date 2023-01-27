@@ -34,7 +34,7 @@ export default {
     })
   },
   getRelays(relays){
-    relays = this.filterRelays(relays)
+    // relays = this.filterRelays(relays)
     relays = this.sortRelays(relays)
     return relays
   },

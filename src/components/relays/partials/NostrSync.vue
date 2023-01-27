@@ -57,7 +57,7 @@ import { RelayPool } from 'nostr'
 import objHash from 'object-hash'
 
 export default defineComponent({
-  name: "NostrSyncPopoverNag",
+  name: "NostrSync",
   setup(props){
     const {editorProp: editor} = toRefs(props)
     return { 

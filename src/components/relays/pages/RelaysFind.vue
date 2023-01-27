@@ -64,17 +64,13 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 import { parseHash } from '@/shared/hash-router.js'
-
-import NostrSync from '@/components/relays/partials/NostrSync.vue'
-
-//components
-// import RelaysFindNav from '@/components/relays/nav/RelaysFindNav.vue'
-// import RelaysResultTable from '@/components/relays/blocks/RelaysResultTable.vue'
-// import MapSummary from '@/components/relays/blocks/MapSummary.vue'
+//data
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
-
-const localMethods = {}
+//async components
+const NostrSync = defineAsyncComponent(() =>
+    import("@/components/relays/partials/NostrSync.vue" /* webpackChunkName: "NostrSync" */)
+);
 
 const MapSummary = defineAsyncComponent(() =>
     import("@/components/relays/blocks/MapSummary.vue" /* webpackChunkName: "MapSummary" */)
@@ -91,6 +87,8 @@ const RelaysFindNav = defineAsyncComponent(() =>
 const RelaysResultTable = defineAsyncComponent(() =>
     import("@/components/relays/blocks/RelaysResultTable.vue" /* webpackChunkName: "RelaysResultTable" */)
 );
+
+const localMethods = {}
 
 export default defineComponent({
   name: 'HomePage',

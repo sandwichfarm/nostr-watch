@@ -238,10 +238,10 @@ export default defineComponent({
     this.byContinent = this.collateContinents
     this.byCountry = this.collateCountries
     this.bySoftware = this.collateSoftware
-    this.store.stats.set('nips', this.bySupportedNips)
-    this.store.stats.set('continents', this.byContinent)
-    this.store.stats.set('countries', this.byCountry)
-    this.store.stats.set('software', this.bySoftware)
+    // this.store.stats.set('nips', this.bySupportedNips)
+    // this.store.stats.set('continents', this.byContinent)
+    // this.store.stats.set('countries', this.byCountry)
+    // this.store.stats.set('software', this.bySoftware)
   },
 
   async mounted(){

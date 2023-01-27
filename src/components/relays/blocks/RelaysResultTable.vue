@@ -56,7 +56,7 @@
                       <th scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Location</code>
                       </th>
-                      <th scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                      <th v-if="subsection != 'favorite'" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Uptime(12h)</code>
                       </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
@@ -125,7 +125,7 @@
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td class="w-24 latency text-center">
+                      <td v-if="subsection != 'favorite'" class="w-24 latency text-center">
                         <div class="sm:px-6 text-sm font-bold h-full">
                           <span :class="getUptimeColor(relay)" v-if="this.results[relay]?.uptime">
                             {{ this.results[relay]?.uptime }}%
@@ -256,11 +256,11 @@
   </template>
   
   <script>
-  import { defineComponent, toRefs } from 'vue'
+  import { defineComponent, defineAsyncComponent, toRefs } from 'vue'
   import { countryCodeEmoji } from 'country-code-emoji';
   import emoji from 'node-emoji';
   import crypto from 'crypto'
-  import { Switch } from '@headlessui/vue'
+  // import { Switch } from '@headlessui/vue'
 
   // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
   
@@ -268,9 +268,13 @@
   import UserLib from '@/shared/user-lib.js'
   // import { screenIs } from '@/shared/layout.js'
 
-  import {validateEvent, getEventHash, verifySignature} from 'nostr-tools'
+  import { validateEvent, getEventHash, verifySignature } from 'nostr-tools'
   
   import { setupStore } from '@/store'
+
+  const Switch = defineAsyncComponent(() =>
+    import("@headlessui/vue" /* webpackChunkName: "Switch" */)
+);
   
   const localMethods = {
     setRandomRelay(){
@@ -307,9 +311,8 @@
   }
   
   export default defineComponent({
-    name: 'ListClearnet',
+    name: 'RelaysResultTable',
     components: {
-      // SingleClearnet,
       Switch,
     },
     setup(props){

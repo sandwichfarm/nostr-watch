@@ -22,7 +22,7 @@
     "@popperjs/core": "2.11.6",
     "@vue-leaflet/vue-leaflet": "0.6.1",
     "@vueuse/core": "9.10.0",
-    "@vueuse/head": "1.0.22",
+    "@vueuse/head": "1.0.23",
     "array-timsort": "1.0.3",
     "country-code-emoji": "2.3.0",
     "cross-fetch": "3.1.5",

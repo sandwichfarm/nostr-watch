@@ -156,14 +156,23 @@ nav.menu a:hover {
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import { Bars3Icon, XMarkIcon } from '@heroicons/vue/24/outline'
 
-import { defineComponent } from 'vue'
+import { defineComponent, defineAsyncComponent } from 'vue'
 import { setupStore } from '@/store'
 import UserLib from '@/shared/user-lib.js'
 
 // import PreferencesComponent from '@/components/PreferencesComponent.vue'
-import AuthComponent from '@/components/user/AuthComponent.vue'
-import DarkMode from '@/components/partials/DarkMode.vue'
-import About from '@/components/partials/AboutNostrWatch.vue'
+
+const About = defineAsyncComponent(() =>
+    import("@/components/partials/AboutNostrWatch.vue" /* webpackChunkName: "About" */)
+);
+
+const DarkMode = defineAsyncComponent(() =>
+    import("@/components/partials/DarkMode.vue" /* webpackChunkName: "DarkMode" */)
+);
+
+const AuthComponent = defineAsyncComponent(() =>
+    import("@/components/user/AuthComponent.vue" /* webpackChunkName: "AuthComponent" */)
+);
 
 import {version} from '../../../package.json'
 

@@ -6,9 +6,9 @@
         <div class="font-bold text-md pb-3">
           I launched nostr.watch as a prototype for fun
           and a few weeks later nostr took off. Built 
-          with Vue3/Pinia, Tailwind and nostr-tools, 
-          nostr-js and nostr-relay-inspector. Fork of 
-          nostr-relay-registry; rewrite.
+          with Vue3/Pinia, Tailwind, nostr-tools, 
+          nostr-js and nostr-relay-inspector. A fork of 
+          fiatjaf/nostr-relay-registry rewriten.
         </div>
         <div class="border-t text-md pt-3 border-slate-700 ">
           <img alt="sandwich" src="https://cloudflare-ipfs.com/ipfs/QmeCYiohwh8mKgYTaBNXHQ8etRJpVYpiBSqhdkVx5dWP4a" class="block m-auto h-14 w-14 rounded-full mb-2" />

@@ -16,11 +16,11 @@ items:
     href: '#offline'
     group: relays
     description: Relays where a connection cannot currently be established
-  - name: Favorites
-    slug: favorite
-    href: '#favorite'
-    condition: auth
-    description: Relays you have favorited
+  # - name: Favorites
+  #   slug: favorite
+  #   href: '#favorite'
+  #   condition: auth
+  #   description: Relays you have favorited
   # - name: Invalid
   #   slug: invalid
   #   href: '#'

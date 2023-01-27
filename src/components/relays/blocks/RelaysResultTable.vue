@@ -256,11 +256,11 @@
   </template>
   
   <script>
-  import { defineComponent, defineAsyncComponent, toRefs } from 'vue'
+  import { defineComponent, toRefs } from 'vue'
   import { countryCodeEmoji } from 'country-code-emoji';
   import emoji from 'node-emoji';
   import crypto from 'crypto'
-  // import { Switch } from '@headlessui/vue'
+  import { Switch } from '@headlessui/vue'
 
   // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
   
@@ -271,10 +271,6 @@
   import { validateEvent, getEventHash, verifySignature } from 'nostr-tools'
   
   import { setupStore } from '@/store'
-
-  const Switch = defineAsyncComponent(() =>
-    import("@headlessui/vue" /* webpackChunkName: "Switch" */)
-);
   
   const localMethods = {
     setRandomRelay(){

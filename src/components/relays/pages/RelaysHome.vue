@@ -12,7 +12,7 @@
   
   <RelayStatistics
     :resultsProp="results"
-    v-if="this.path.startsWith('/relays/statistics') /> 
+    v-if="this.path.startsWith('/relays/statistics')" /> 
   
   <div id="footer">
     <span class="credit">
@@ -24,7 +24,6 @@
 //vue
 
 import { defineComponent } from 'vue'
-import {useRoute} from 'vue-router'
 import { useHead } from '@vueuse/head'
 import { setupStore } from '@/store'
 //shared methods
@@ -111,7 +110,6 @@ export default defineComponent({
 
   computed: {
     // activeSection: function(){ return this.store.layout.getActiveItem('relays')?.slug },
-    path: function() { return useRoute().path },
     activeSubsection: function(){ return this.navSubsection?.slug },
     navSubsection: function() { return this.store.layout.getNavGroup(`relays/${this.activeSection}`) || [] },
     parseHash

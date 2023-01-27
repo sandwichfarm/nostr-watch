@@ -1,12 +1,26 @@
+<style scoped>
+.router-link-active {
+  @apply bg-black/30 rounded-t-md mt-2 font-bold
+}
+</style>
+
 <template>
   <div class="bg-slate-700 px-2 sm:px-4 lg:px-8 ">
-    <div class="lg:flex lg:h-8 mx-auto max-w-7xl h-16">
-      <div class="flex lg:w-32 lg:px-8 lg:ml-8 sm:px-0 sm:w-0 md:w-0"></div>
+    <div class="lg:flex lg:h-8 mx-auto max-w-7xl h-8">
+      <div class="flex md:w-0 lg:w-32 lg:px-8 lg:ml-8 sm:hidden sm:w-0 ">&nbsp;</div>
       <div class="lg:flex lg:px-0">
-        <div class="lg:ml-6 lg:flex lg:space-x-8">
-          <!-- <router-link to="/relays/find" :class="isActive ? 'bg-color-white-100 text-white' : inactiveClass" class="inline-flex items-center mx-1 text-sm font-medium text-white">Relays</router-link> -->
+        <div class="lg:ml-48 lg:flex lg:space-x-2">
+          <router-link 
+            :to="{name: 'relaysFind'}" 
+            class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
+            Browse
+          </router-link>
           <!-- <router-link to="/relays/map" class="inline-flex items-center mx-1 text-sm font-medium text-white">Map</router-link> -->
-          <!-- <router-link to="/relays/statistics" class="inline-flex items-center mx-1 text-sm font-medium text-white">Go to Foo</router-link> -->
+          <router-link 
+            :to="{name: 'relaysStats'}" 
+            class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
+            Statistics
+          </router-link>
           <!-- <a v-for="item in store.layout.getNavGroup(this.navSlug)"
               :key="`subnav-${item.slug}`"
               :href="item.href"
@@ -27,10 +41,11 @@
 
 <script>
 import { defineComponent, defineAsyncComponent, toRefs } from 'vue'
-import {useRoute} from 'vue-router'
 import { setupStore } from '@/store'
 
 import RelaysLib from '@/shared/relays-lib.js'
+import SharedComputed from '@/shared/computed.js'
+
 import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
 // import RefreshTask from '@/components/relays/tasks/RefreshTask.vue'
 
@@ -76,12 +91,7 @@ export default defineComponent({
     //console.log('mounted in relays find nav')
   },
   methods: Object.assign(RelaysLib, setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive),
-  computed: {
-    path: function() { return useRoute().path },
-
-    // isActive(){
-    //     return (item) => item.slug==this.navActiveContent
-    // }
-  },
+  computed: SharedComputed,
 });
 </script>
+

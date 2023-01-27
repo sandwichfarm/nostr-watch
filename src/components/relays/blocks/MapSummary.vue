@@ -41,7 +41,7 @@
           <div class="mb-10 w-min">
             <div class="text-slate-800 text-3xl  block py-1 text-center">
               <span @click="copy" class="py-1px-2">{{ relay }}</span>
-              <a href="#" @click="$router.push(`/relay/${cleanUrl(relay)}`)" class="block text-sm mb-3">Status Page</a>
+              <a href="#" @click="$router.push(`/relay/${getHostname(relay)}`)" class="block text-sm mb-3">Status Page</a>
               <img class="inline-block mr-1" :src="badgeCheck(relay, 'connect')" />
               <img class="inline-block mr-1" :src="badgeCheck(relay, 'read')" />
               <img class="inline-block mr-1" :src="badgeCheck(relay, 'write')" />
@@ -51,13 +51,19 @@
       </l-marker>
 
     </l-map>
-    <span @click="this.handleToggleMap()">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="!store.layout.mapIsExpanded">full map</button>
+    <span @click="this.handleToggleMap()" id="map_control">
+      <button class="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-900 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 border border-gray-400 dark:border-white/10 rounded shadow" v-if="!store.layout.mapIsExpanded">full map</button>
       <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="store.layout.mapIsExpanded">relay list</button>
     </span>
   </div>
   
 </template>
+
+<style>
+.leaflet-popup-content-wrapper {
+  @apply dark:bg-black/80
+}
+</style>
 
 <script>
 import { defineComponent, toRefs } from 'vue'
@@ -585,17 +591,7 @@ export default defineComponent({
 
 </script>
 
-<style>
-/* :root {
-    --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-}
 
-@media (prefers-color-scheme: dark) {
-    .leaflet-tile {
-        filter:var(--map-tiles-filter, none);
-	}
-} */
-</style>
 
 <style scoped>
 

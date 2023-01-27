@@ -1,7 +1,8 @@
 <template>
-  
-  <span class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span">Task Status here</span>
+  <span 
+    v-if="this.store.tasks.getActiveSlug === taskSlug"
+    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
+    <span>Task Status here</span>
   </span>
 </template>
 
@@ -14,22 +15,24 @@ import { defineComponent, toRefs } from 'vue'
 
 import { setupStore } from '@/store'
 
-import SharedMethods from '@/shared/relays-lib.js'
+import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
 import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
-  queueJob: function(id, fn, unique){
-    this.store.tasks.addJob({
-      id: id,
-      handler: fn,
-      unique: unique
-    })
-  },
   invalidate(force){
     if( (!this.isExpired(this.taskSlug) && !force) ) 
       return
+    
+    this.queueJob(
+      this.taskSlug, 
+      () => {
+        this.$pool
+          .subscribe()
+      },
+      true
+    )
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 
@@ -44,7 +47,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'relays/*'
+      taskSlug: 'relays/*' //REMEMBER TO CHANGE!!!
     }
   },
   setup(props){
@@ -68,8 +71,6 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    this.migrateLegacy()
-
     console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
 
     if(this.store.tasks.isProcessing(this.taskSlug))
@@ -85,7 +86,7 @@ export default defineComponent({
       return this.averageLatency*this.relays.length
     },
   }),
-  methods: Object.assign(localMethods, SharedMethods),
+  methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {
       type: Object,

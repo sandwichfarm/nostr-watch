@@ -3,6 +3,117 @@
 @tailwind components;
 @tailwind utilities;
 
+.toggle-dark-mode {
+  width:32px;
+  height:32px;
+}
+
+#subsection_header {
+  background-color: rgba(255,255,255, .5)
+}
+
+:root {
+  --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+//TODO: When building out the stylesheet, convert these to WS dark: conditional.
+
+html {
+  main {
+    .data-card {
+      * {
+        @apply border-white/10
+      }
+
+      dl > div {
+        @apply border-none
+      }
+      &:first-child { 
+        @apply bg-none
+      }
+
+      @apply bg-white/10 border-none
+    }
+    .data-card {
+      @apply bg-none
+    }
+  }
+}
+
+
+html.dark {
+  background: #16171d;
+  // color: #fff;
+
+  #subsection_header {
+    background-color: rgba(22, 23, 29, .5)
+  }
+
+  // #relays_list_wrapper {
+  //   @apply bg-black/20 rounded-lg
+  // }
+
+  div[role=menu] {
+    background: #16171d;
+    color: #fff;
+    a:hover {
+      @apply bg-white/10
+    }
+  }
+
+  #subsection_nav {
+    @apply bg-transparent
+  }
+
+  #map_control button {
+    background: #16171d;
+    color: #fff;
+  }
+
+  table tbody {
+    // border-top:1px solid #333 !important;
+  }
+
+  table tbody tr:hover {
+    @apply bg-slate-50/10
+  }
+
+  * {
+    color: #f0f0f0
+  }
+
+  tr, tbody {
+    @apply bg-transparent
+  }
+
+  main {
+    .data-card {
+      * {
+        @apply border-slate-100/10
+      }
+
+      dl > div {
+        @apply border-none
+      }
+      &:first-child { 
+        @apply bg-none
+      }
+
+      @apply bg-slate-50/10 border-none
+    }
+    .data-card {
+      @apply bg-none
+    }
+  }
+
+  .leaflet-tile {
+    filter:var(--map-tiles-filter, none);
+  }
+
+  .leaflet-control-attribution {
+    background:#000
+  }
+}
 
 td ul { padding:0; margin:0; list-style: none; }
 td ul li { list-style: none; }
@@ -210,10 +321,11 @@ th .shape.verified:after {
 //   margin:0 auto;
 // }
 
-div.block {
-  display:block;
-  margin:40px 0;
-}
+// #wrapper section > {
+//   & > div {
+//     @apply block my-8
+//   }
+// }
 
 h1 {
   position:relative;
@@ -307,25 +419,81 @@ tr.offline .location {
 }
 
 
-@media only screen and (min-device-width: 640px)
-                   and (max-device-width: 480px)
-                   and (orientation: portrait) {
+// @media only screen and (min-device-width: 640px)
+//                    and (max-device-width: 480px)
+//                    and (orientation: portrait) {
 
- table .latency,
- table .verified,
- table .nip {
-   display: none;
- }
+//  table .latency,
+//  table .verified,
+//  table .nip {
+//    display: none;
+//  }
 
-}
+// }
 
-@media only screen and (min-device-width: 640px)
-                   and (max-device-width: 480px)
-                   and (orientation: landscape) {
+// @media only screen and (min-device-width: 640px)
+//                    and (max-device-width: 480px)
+//                    and (orientation: landscape) {
 
- table .nip {
-   display: none;
- }
+//  table .nip {
+//    display: none;
+//  }
 
-}
+// }
 
+/*TODO: Apply fix? https://github.com/tailwindlabs/tailwindcss/issues/10418*/
+.mt-4  { margin-top: 1rem }
+.mt-5  { margin-top: 1.25rem }
+.mt-6  { margin-top: 1.5rem }
+.mt-7  { margin-top: 1.75rem }
+.mt-8  { margin-top: 2rem }
+.mt-9  { margin-top: 2.25rem }
+.mt-10 { margin-top: 2.5rem }
+.mt-11 { margin-top: 2.75rem }
+.mt-13 { margin-top: 3.25rem }
+.mt-14 { margin-top: 3.5rem }
+.mt-15 { margin-top: 3.75rem }
+.mt-16 { margin-top: 4rem }
+.mt-17 { margin-top: 4.25rem }
+.mt-18 { margin-top: 4.5rem }
+.mt-19 { margin-top: 4.75rem }
+.mt-20 { margin-top: 5rem }
+.mt-21 { margin-top: 5.25rem }
+.mt-22 { margin-top: 5.5rem }
+.mt-23 { margin-top: 5.75rem }
+.mt-24 { margin-top: 6rem }
+.mt-25 { margin-top: 6.25rem }
+.mt-26 { margin-top: 6.5rem }
+.mt-27 { margin-top: 6.75rem }
+.mt-28 { margin-top: 7rem }
+.mt-29 { margin-top: 7.25rem }
+.mt-30 { margin-top: 7.5rem }
+.mt-31 { margin-top: 7.75rem }
+
+.h-4  { height: 1rem }
+.h-5  { height: 1.25rem }
+.h-6  { height: 1.5rem }
+.h-7  { height: 1.75rem }
+.h-8  { height: 2rem }
+.h-9  { height: 2.25rem }
+.h-10 { height: 2.5rem }
+.h-11 { height: 2.75rem }
+.h-13 { height: 3.25rem }
+.h-14 { height: 3.5rem }
+.h-15 { height: 3.75rem }
+.h-16 { height: 4rem }
+.h-17 { height: 4.25rem }
+.h-18 { height: 4.5rem }
+.h-19 { height: 4.75rem }
+.h-20 { height: 5rem }
+.h-21 { height: 5.25rem }
+.h-22 { height: 5.5rem }
+.h-23 { height: 5.75rem }
+.h-24 { height: 6rem }
+.h-25 { height: 6.25rem }
+.h-26 { height: 6.5rem }
+.h-27 { height: 6.75rem }
+.h-28 { height: 7rem }
+.h-29 { height: 7.25rem }
+.h-30 { height: 7.5rem }
+.h-31 { height: 7.75rem }

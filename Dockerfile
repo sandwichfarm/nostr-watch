@@ -6,9 +6,9 @@ COPY . /app/
 
 RUN yarn && yarn build
 
-#RUN yarn global add yaml2json
+RUN yarn global add yaml-convert
 
-#RUN yaml2json relays.yaml > dist/relays.json
+RUN yaml-convert relays.yaml > dist/relays.json
 
 FROM nginx:stable-alpine as nginx-nostr-relay-registry
 

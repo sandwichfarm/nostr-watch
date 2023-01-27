@@ -1,6 +1,9 @@
 <template>
+  <HeartbeatTask 
+    v-bind:resultsProp="results" />
   <RefreshTask
     v-bind:resultsProp="results" />
+  <UserRelayList />
   <RelayCanonicalsTask
     :resultsProp="results" />
   <RelayOperatorTask
@@ -9,22 +12,27 @@
 
 <script>
 import { defineComponent, toRefs } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { setupStore } from '@/store'
 
 import SharedComputed from '@/shared/computed.js'
 
 import RefreshTask from './RefreshTask.vue'
+
+import HeartbeatTask from './HeartbeatTask.vue'
+import UserRelayList from './UserRelayList.vue'
+
 import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
-import RelayOperatorTask from './RelayOperatorTask.vue'
+// import RelayOperatorTask from './RelayOperatorTask.vue'
 
 export default defineComponent({
   name: "TasksManager",
   components: {
     RefreshTask,
-    RelayCanonicalsTask,
-    RelayOperatorTask
+    HeartbeatTask,
+    UserRelayList,
+    // RelayCanonicalsTask,
+    // RelayOperatorTask
   },
   data(){
     return {
@@ -74,8 +82,6 @@ export default defineComponent({
       this.store.tasks.active.handler()
     }
   },
-  computed: Object.assign(SharedComputed, {
-    path: function() { return useRoute().path },
-  })
+  computed: Object.assign(SharedComputed, {})
 });
 </script>

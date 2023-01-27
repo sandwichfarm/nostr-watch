@@ -2,8 +2,39 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  queueKind3: async function(slug){
+    this.queueJob(
+      slug,
+      async () => {
+        await this.store.user.setKind3()
+          .then( () => {
+            this.store.relays.getFavorites.forEach( relay => {
+              if(this.store.user?.kind3?.[relay])
+                return 
+              this.store.user.kind3[relay] = { read: false, write: false }
+            })
+            Object.keys(this.store.user.kind3).forEach( key => {
+              this.store.relays.setFavorite(key)
+            })
+            this.store.tasks.completeJob()
+          })
+          .catch( err => {
+            console.error('error!', err)
+            this.store.tasks.completeJob()
+          })
+      },
+      true
+    )
+  },
+  queueJob: function(id, fn, unique){
+    this.store.tasks.addJob({
+      id: id,
+      handler: fn,
+      unique: unique
+    })
+  },
   getRelays(relays){
-    relays = this.filterRelays(relays)
+    // relays = this.filterRelays(relays)
     relays = this.sortRelays(relays)
     return relays
   },
@@ -16,9 +47,10 @@ export default {
     return relays
   },
   sortRelays(relays){
+    
     sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.final || 100000,
-          b = this.results?.[relay2]?.latency.final || 100000
+      let a = this.results?.[relay1]?.latency.average || 100000,
+          b = this.results?.[relay2]?.latency.average || 100000
       return a-b
     })
     sort(relays, (relay1, relay2) => {
@@ -27,9 +59,14 @@ export default {
       return (x === y)? 0 : x? -1 : 1;
     })
     sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.final || null,
-          b = this.results?.[relay2]?.latency.final || null
+      let a = this.results?.[relay1]?.latency.average || null,
+          b = this.results?.[relay2]?.latency.average || null
       return (b != null) - (a != null) || a - b;
+    })
+    sort(relays, (relay1, relay2) => {
+      let a = this.results?.[relay1]?.uptime || 0,
+          b = this.results?.[relay2]?.uptime || 0
+      return b-a
     })
     if(this.store.prefs.doPinFavorites)
       sort(relays, (relay1, relay2) => {
@@ -48,7 +85,7 @@ export default {
       return this.$storage.getStorageSync(key)
     },
 
-    cleanUrl: function(relay){
+    getHostname: function(relay){
       return relay.replace('wss://', '')
     },
 
@@ -116,6 +153,25 @@ export default {
       return this.isDone() ? 'loaded' : ''
     },
 
+    setUptimePercentage(relay){
+      const heartbeats = this.store.stats.getHeartbeat(relay)
+      if(!heartbeats || !Object.keys(heartbeats).length )
+        return
+      const totalHeartbeats = Object.keys(heartbeats).length 
+      const totalOnline = Object.entries(heartbeats).reduce(
+          (acc, value) => value[1].latency ? acc+1 : acc,
+          0
+      );
+      const perc = Math.floor((totalOnline/totalHeartbeats)*100)
+  
+      const result = this.getCache(relay)
+      if(!result)
+        return
+      result.uptime = perc 
+      this.setCache(result)
+      return result
+    },
+
     timeSince: function(date) {
       let seconds = Math.floor((new Date() - date) / 1000);
       let interval = seconds / 31536000;
@@ -168,5 +224,12 @@ export default {
         // if descending, highest sorts first
         return self.result?.[b]?.latency.final-self.result?.[a]?.latency.final;
       };
+    },
+    async copy(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch($e) {
+        ////console.log('Cannot copy');
+      }
     },
 }

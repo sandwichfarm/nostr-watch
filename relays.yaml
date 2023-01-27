@@ -240,3 +240,4 @@ relays:
   - wss://nostr.ahaspharos.de
   - wss://nostr.argdx.net
   - wss://global.relay.red
+  - wss://relay.nostrgraph.net

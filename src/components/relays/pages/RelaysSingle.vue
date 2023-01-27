@@ -21,7 +21,7 @@
           <div class="px-4 py-5 sm:px-6">
             <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
             <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
-            <span class="mt-1 w-auto text-xl text-gray-500 bg-black/20" v-if="result?.info?.email"><SafeMail :email="result.info.email" /></span>
+            <span class="mt-1 w-auto text-xl text-gray-400" v-if="result?.info?.contact">Contact: <SafeMail :email="result.info.contact" /></span>
           </div>
           <a 
           target="_blank" 

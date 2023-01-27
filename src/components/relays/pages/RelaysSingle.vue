@@ -41,7 +41,8 @@
         <div class="mt-3 overflow-hidden mb-8" v-if="this.heartbeats && Object.keys(this.heartbeats).length > 24">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
-              Uptime
+              Uptime (12hr) 
+              <span :class="getUptimeColor(result)" v-if="result?.uptime">{{ result.uptime }}%</span>
             </h3>
           </div>
           <div class="px-0 py-5 sm:px-0 flex">

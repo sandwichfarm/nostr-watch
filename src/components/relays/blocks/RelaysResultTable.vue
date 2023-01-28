@@ -68,7 +68,9 @@
                       <th v-if="!store.layout.editorIsExpanded || !isLoggedIn()" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
                         <code class="text-xs block">Read</code>
                       </th>
-                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn()" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
+
+              
+                      <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn())" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
                       </th>
 
@@ -79,7 +81,7 @@
                         <code class="text-xs block">Read</code>
                       </th>
 
-                      <th v-if="store.layout.editorIsExpanded && isLoggedIn()" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="(store.layout.editorIsExpanded && isLoggedIn())" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
                         </span> -->
@@ -152,7 +154,7 @@
                       </td> -->
 
                       <td class="w-24 latency text-center text-sm font-bold">
-                        <span>{{ results[relay]?.latency?.average }}<span v-if="results[relay]?.latency.average">ms</span></span>
+                        <span>{{ results[relay]?.latency?.average }}<span v-if="results[relay]?.latency?.average">ms</span></span>
                       </td>
 
                       <!-- no editor -->
@@ -173,7 +175,7 @@
                         </span>
                       </td>
 
-                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn()" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
+                      <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn())" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
                         <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'write')">
                           <span class="align-middle" v-if="isLoggedIn() && store.user.kind3?.[relay]?.write">
                             <svg class="inline-block" :class="getCheckIndicatorPolicy" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

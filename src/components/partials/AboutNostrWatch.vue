@@ -2,7 +2,7 @@
   <Popover class="relative mr-2 invisible md:invisible lg:visible">
     <PopoverButton>🤍</PopoverButton>
     <PopoverPanel class="absolute border text-white border-slate-600 rounded-md -left-48 mt-3 z-9000 bg-slate-900">
-      <div class="w-96 px-3 py-5">
+      <div class="w-96 px-3 py-5 text-center">
         <div class="font-bold text-md pb-3">
           I launched nostr.watch as a prototype for fun
           and a few weeks later nostr took off. Built 

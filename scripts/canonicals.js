@@ -164,11 +164,6 @@ async function sign(event, relay){
   let ok = validateEvent(event)
   let veryOk = await verifySignature(event)
 
-  // if(relay)
-  //   console.log('sign valid', relay, ':', ok, veryOk)
-  // else 
-  //   console.log('sign valid', ':', ok, veryOk)
-  
   if( ok && veryOk )
     return event
   else 

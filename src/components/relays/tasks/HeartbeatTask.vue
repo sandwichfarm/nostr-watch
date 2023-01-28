@@ -17,7 +17,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import crypto from 'crypto'
 import decodeJson from 'unescape-json'
@@ -27,13 +27,12 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-
 import { relays } from '../../../../relays.yaml'
 import { RelayPool } from 'nostr'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.slug, 1000*60) && !force) ) 
+    if( (!this.isExpired(this.slug, 1000) && !force) ) 
       return
     // const pool = new RelayPool( relays )
 
@@ -54,12 +53,17 @@ const localMethods = {
     await new Promise( resolve => {
       const pool = new RelayPool( ['wss://history.nostr.watch'] )
       const uniques = new Set()
-
+      let timeout = setTimeout( () => { 
+        resolve()
+        pool.unsubscribe(subid)
+        pool.close()
+      }, 10000 )
       pool
         .subscribe(subid, {
           kinds:    [1010],
           limit:    total, //12 hours 
           authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
+          '#e':     [this.store.prefs.region],
           // since:    Math.floor(this.store.tasks.getLastUpdate(this.slug)/1000)
         })
       
@@ -86,11 +90,13 @@ const localMethods = {
           pool.unsubscribe(subid)
           pool.close()
         })
-      setTimeout( () => { 
-        resolve()
-        pool.unsubscribe(subid)
-        pool.close()
-      }, 2000 )
+        .on('eose', () => {
+          resolve()
+          pool.unsubscribe(subid)
+          pool.close()
+          clearTimeout(timeout)
+        })
+      
     })
     
     this.parseHeartbeats(heartbeatsByEvent)
@@ -120,7 +126,7 @@ const localMethods = {
 
     allRelaysInHeartbeats.forEach( relay => {
       heartbeats[relay] = new Array()
-      console.log(relay, heartbeatsByRelayObj[relay])
+      // console.log(relay, heartbeatsByRelayObj[relay])
       Object.keys(heartbeatsByRelayObj[relay]).forEach( (timestamp_) => {
         heartbeats[relay].push({
           date: timestamp_,
@@ -132,7 +138,7 @@ const localMethods = {
       this.setUptimePercentage(relay)
     })
 
-    console.log(heartbeats)
+    // console.log(heartbeats)
 
     // this.store.stats.addHeartbeats(heartbeats)
 
@@ -154,11 +160,9 @@ export default defineComponent({
       heartbeats: {},
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
   created(){
@@ -175,7 +179,7 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
     if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
@@ -191,14 +195,7 @@ export default defineComponent({
     },
   }),
   methods: Object.assign(localMethods, RelayMethods),
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  props: {},
 })
 </script>
 

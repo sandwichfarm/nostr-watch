@@ -1,9 +1,11 @@
 const { defineConfig } = require('@vue/cli-service')
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
-// const CompressionPlugin = require("compression-webpack-plugin")
-// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const CompressionPlugin = require("compression-webpack-plugin")
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-module.exports = defineConfig({
+console.log('NODE_ENV', process.env.NODE_ENV)
+
+const config = {
   transpileDependencies: true,
   
   devServer: {
@@ -18,14 +20,19 @@ module.exports = defineConfig({
     experiments: {
       topLevelAwait: true
     },
+    mode: process.env.NODE_ENV,
+    // mode: 'production',
+
+    // entry: {
+    //   relaysFind: ['@/components/relays/pages/RelaysFind.vue'],
+    //   relaysStatistics: ['@/components/relays/pages/RelaysStatistics.vue'],
+    //   relaysSingle: ['@/components/relays/pages/RelaysSingle.vue'],
+    // },
     plugins: [
       new NodePolyfillPlugin(),
-        // new CompressionPlugin({
-        //   test: /\.js(\?.*)?$/i,
-        // }),
-      // new BundleAnalyzerPlugin()
     ],
     optimization: {
+      usedExports: true,
       splitChunks: {
         chunks: "all",
       },
@@ -47,4 +54,13 @@ module.exports = defineConfig({
         .use('yaml-loader')
           .loader('yaml-loader')
   }
-})
+}
+
+if(process.env.NODE_ENV == 'production') {
+  config.configureWebpack.plugins.push(new CompressionPlugin)
+}
+else {
+  config.configureWebpack.plugins.push(new BundleAnalyzerPlugin())
+}
+
+module.exports = defineConfig(config)

@@ -3,10 +3,11 @@
     v-bind:resultsProp="results" />
 
   <MapSummary 
+    v-if="store.prefs.showMaps"
     :resultsProp="results" 
     :activeSubsectionProp="activeSubsection" /> 
 
-  <div id="wrapper" class="mx-auto max-w-7xl">  
+  <div id="wrapper" class="mx-auto max-w-7xl mt-2">  
     <div id="subsection_header" class="pt-5 px-1 sm:px-6 lg:px-8" :class="{
       'absolute z-900 w-1/2 top-32': this.store.layout.mapIsExpanded,
       // 'bg-white/50': !this.isMapDark,

@@ -5,11 +5,11 @@
     :geo="geo"
     :relay="relay"
     :result="result"
-    v-if="(geo instanceof Object)"
+    v-if="(geo instanceof Object) && store.prefs.showMaps"
   />
 
-  <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl">
-      <div v-if="store.tasks.isProcessing('relays/single') && !result" class="data-card flex bg-slate-100 mt-12 shadow py-8 px-3">
+  <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl text-center content-center">
+      <div v-if="store.tasks.isProcessing('relays/single') && !result" class="data-card flex bg-slate-100 dark:bg-black/20 dark:text-white/50 mt-12 shadow py-8 px-3">
         <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
           <span class="block lg:text-lg"><strong>Data has not yet populated and is currently being processed.</strong> Depending on the availability of of the <strong>{{ relay }}</strong>, this may or may not be populated shortly.</span>
         </div>
@@ -31,12 +31,27 @@
           </a>
         </div>
 
+
+        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="result?.topics && result?.topics.length">
+          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
+            <span v-for="topic in getTopics" :class="normalizeTopic(topic)" :key="`${result.url}-${topic[0]}`">
+              #{{ topic[0] }}  
+            </span>
+          </div>
+        </div>
+
         <div id="status" class="flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
           <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-2xl flex-1 block py-3" :class="check(key)">
             <span>{{key}}</span>  
           </div>
         </div>
-        <div id="status" class="flex-none w-full md:w-auto md:flex mb-2 py-5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
+
+        <div 
+          id="status" 
+          class="flex-none w-full md:w-auto md:flex mb-2 py-5" 
+          v-if="
+            showLatency && 
+            (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
           <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 
               v-if="result.latency.average"
@@ -105,8 +120,6 @@
           </div>
         </div>
 
-        
-
         <!-- <div class="flex justify-center">
           <div class="block rounded-lg shadow-lg bg-white max-w-sm text-center">
             <div class="py-3 px-6 border-b border-gray-300">
@@ -159,7 +172,7 @@
 
 
         <div class="flex-none lg:flex mb-8">
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0">
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0"  v-if="geo">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <!-- <div class="py-3 px-6 border-b border-gray-300">
                 Featured
@@ -180,7 +193,7 @@
               </div> -->
             </div>
           </div>
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info">
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="Object.keys(result?.info).length">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <!-- <div class="py-3 px-6 border-b border-gray-300">
                 Featured
@@ -544,10 +557,12 @@ import { useHead } from '@vueuse/head'
 import { RelayPool } from 'nostr'
 import crypto from 'crypto'
 
-import VueGauge from 'vue-gauge';
-
 const RelaysNav = defineAsyncComponent(() =>
     import("@/components/relays/nav/RelaysNav.vue" /* webpackChunkName: "RelaysNav" */)
+);
+
+const VueGauge = defineAsyncComponent(() =>
+    import('vue-gauge' /* webpackChunkName: "VueGauge" */)
 );
 
 const MapSingle = defineAsyncComponent(() =>
@@ -698,12 +713,15 @@ export default defineComponent({
     // this.getAdminNotes()
     this.result = this.getCache(this.relayFromUrl)
     if(this.result){
-      this.result.latency.average = null
-      this.result.latency.min = null
-      this.result.latency.max = null
-      this.showLatency = true 
+      if(this.result?.latency?.average)
+        this.result.latency.average = null
+      if(this.result?.latency?.min)
+        this.result.latency.min = null
+      if(this.result?.latency?.max)
+        this.result.latency.max = null
+      if(this.result?.latency?.average)
+        this.showLatency = true 
     }
-
     this.interval = setInterval(() => {
       this.setData()
     },1000)
@@ -714,6 +732,33 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
+    getTopics: function(){
+      // return this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
+      return this.result.topics
+    },
+    normalizeTopic: function(){
+      return topic => {
+
+        const val = topic[1],
+              minVal = this.result.topics[this.result.topics.length-1][1], 
+              maxVal = this.result.topics[0][1],
+              newMin = 1,
+              newMax = 5
+
+        const size = Math.round( newMin + (val - minVal) * (newMax - newMin) / (maxVal - minVal))
+
+        if(size === 1)
+          return 'text-lg'
+        if(size === 2)
+          return 'text-1xl'
+        if(size === 3)
+          return 'text-2xl'
+        if(size === 4)
+          return 'text-3xl'
+        if(size === 5)
+          return 'text-4xl'
+      }
+    },
     getLocalTime: function(){
       let options = {
         timeZone: this.geo?.timezone,
@@ -729,7 +774,9 @@ export default defineComponent({
     },
     normalizeLatency: function(){
       return value =>  { 
-        return (value-0) / (1000-0) * 100
+        const fast = this.store.prefs.latencyFast,
+              slow = this.store.prefs.latencySlow
+        return (value-fast) / (slow-fast) * 100
       }
     },
     getUptimeTickClass: function(){
@@ -755,13 +802,13 @@ export default defineComponent({
 
         let color 
         
-        if(heartbeat.latency<200) {
+        if(heartbeat.latency<this.store.prefs.latencyFast) {
           color = 'bg-green-400/60'
         } 
-        else if(heartbeat.latency<500) {
+        else if(heartbeat.latency<(this.store.prefs.latencySlow/2)) {
           color = 'bg-yellow-400/50'
         }
-        else if(heartbeat.latency<1000) {
+        else if(heartbeat.latency<this.store.prefs.latencySlow) {
           color = 'bg-orange-400/50'
         }
         else {
@@ -866,6 +913,8 @@ export default defineComponent({
       this.heartbeats = this.store.stats.getHeartbeat(this.relay)
       this.hbMin = Math.min.apply(Math, this.heartbeats?.map( hb => hb.latency ))
       this.hbMax = Math.max.apply(Math, this.heartbeats?.map( hb => hb.latency ) )
+      if(this.result?.topics)
+        this.result.topics = this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
       //console.log(this.relay, this.lastUpdate, this.result, this.geo)
     }
   }),

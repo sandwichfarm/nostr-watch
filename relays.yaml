@@ -241,3 +241,4 @@ relays:
   - wss://nostr.argdx.net
   - wss://global.relay.red
   - wss://relay.nostrgraph.net
+  - wss://nostr.app.runonflux.io

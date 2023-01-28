@@ -47,27 +47,29 @@ export default {
     return relays
   },
   sortRelays(relays){
-    
-    sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.average || 100000,
-          b = this.results?.[relay2]?.latency.average || 100000
-      return a-b
-    })
+    if(this.store.prefs.sortLatency)
+      sort(relays, (relay1, relay2) => {
+        let a = this.results?.[relay1]?.latency?.average || 100000,
+            b = this.results?.[relay2]?.latency?.average || 100000
+        return a-b
+      })
     sort(relays, (relay1, relay2) => {
       let x = this.results?.[relay1]?.check?.connect || false,
           y = this.results?.[relay2]?.check?.connect || false
       return (x === y)? 0 : x? -1 : 1;
     })
-    sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.latency.average || null,
-          b = this.results?.[relay2]?.latency.average || null
-      return (b != null) - (a != null) || a - b;
-    })
-    sort(relays, (relay1, relay2) => {
-      let a = this.results?.[relay1]?.uptime || 0,
-          b = this.results?.[relay2]?.uptime || 0
-      return b-a
-    })
+    if(this.store.prefs.sortLatency)
+      sort(relays, (relay1, relay2) => {
+        let a = this.results?.[relay1]?.latency?.average || null,
+            b = this.results?.[relay2]?.latency?.average || null
+        return (b != null) - (a != null) || a - b;
+      })
+    if(this.store.prefs.sortUptime)
+      sort(relays, (relay1, relay2) => {
+        let a = this.results?.[relay1]?.uptime || 0,
+            b = this.results?.[relay2]?.uptime || 0
+        return b-a
+      })
     if(this.store.prefs.doPinFavorites)
       sort(relays, (relay1, relay2) => {
         let x = this.store.relays.isFavorite(relay1) || false,
@@ -153,7 +155,7 @@ export default {
       return this.isDone() ? 'loaded' : ''
     },
 
-    setUptimePercentage(relay){
+    getUptimePercentage(relay){
       const heartbeats = this.store.stats.getHeartbeat(relay)
       if(!heartbeats || !Object.keys(heartbeats).length )
         return
@@ -162,7 +164,11 @@ export default {
           (acc, value) => value[1].latency ? acc+1 : acc,
           0
       );
-      const perc = Math.floor((totalOnline/totalHeartbeats)*100)
+      return Math.floor((totalOnline/totalHeartbeats)*100)
+    },
+
+    setUptimePercentage(relay){
+      const perc = this.getUptimePercentage(relay)
   
       const result = this.getCache(relay)
       if(!result)

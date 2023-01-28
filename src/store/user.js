@@ -12,6 +12,7 @@ export const useUserStore = defineStore('user', {
     testEvent: false,
     kind3: new Object(),
     kind3Event: new Object(),
+    ip: null
   }),
   getters: {
     getPublicKey: (state) => state.pubKey,

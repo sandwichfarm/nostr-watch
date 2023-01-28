@@ -6,6 +6,7 @@ relays:
   - was://nostr.pleb.network
   - wss://nostr.inosta.cc
   - wss://nostr.pleb.network
+  - wss://nostr.wine
   - wss://nostr.up.railway.app
   - wss://nostr.lnorb.com
   - wss://nos.lol
@@ -252,7 +253,7 @@ relays:
   - wss://nostr.arguflow.gg
   - wss://nostr.milou.lol
   - wss://relay.nostr.africa
-  - wss://nostr.bitcoin-21.org
+  - wss://nostr.arguflow.gg
   - wss://nostr.snblago.com
   - wss://nostr.com.de
   - wss://relay.nostrview.com
@@ -334,3 +335,4 @@ relays:
   - wss://nostream.denizenid.com
   - wss://relay1.gems.xyz
   - wss://nostr.yuv.al
+  - wss://nostr01.opencult.com

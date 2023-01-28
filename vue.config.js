@@ -18,6 +18,7 @@ module.exports = defineConfig({
     experiments: {
       topLevelAwait: true
     },
+    mode: 'development',
     plugins: [
       new NodePolyfillPlugin(),
         new CompressionPlugin({
@@ -26,6 +27,7 @@ module.exports = defineConfig({
       new BundleAnalyzerPlugin()
     ],
     optimization: {
+      usedExports: true,
       splitChunks: {
         chunks: "all",
       },

@@ -544,10 +544,12 @@ import { useHead } from '@vueuse/head'
 import { RelayPool } from 'nostr'
 import crypto from 'crypto'
 
-import VueGauge from 'vue-gauge';
-
 const RelaysNav = defineAsyncComponent(() =>
     import("@/components/relays/nav/RelaysNav.vue" /* webpackChunkName: "RelaysNav" */)
+);
+
+const VueGauge = defineAsyncComponent(() =>
+    import('vue-gauge' /* webpackChunkName: "VueGauge" */)
 );
 
 const MapSingle = defineAsyncComponent(() =>

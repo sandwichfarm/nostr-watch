@@ -1,5 +1,5 @@
 <template>
-<div class="inline" v-if="store.user.getPublicKey.length">
+<div class="inline" v-if="store.user.getPublicKey.length && false">
     <div class="inline text-left">
 
       <span v-if="savedSuccess" class="inline-block mr-3"> 

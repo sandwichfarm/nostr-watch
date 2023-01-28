@@ -1,7 +1,7 @@
 const { defineConfig } = require('@vue/cli-service')
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin")
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 module.exports = defineConfig({
   transpileDependencies: true,
@@ -27,7 +27,7 @@ module.exports = defineConfig({
     plugins: [
       new NodePolyfillPlugin(),
       new CompressionPlugin,
-      new BundleAnalyzerPlugin()
+      // new BundleAnalyzerPlugin()
     ],
     optimization: {
       usedExports: true,

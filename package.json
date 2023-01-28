@@ -13,6 +13,7 @@
     "docker": "yarn docker:build && yarn docker:tag && yarn docker:push",
     "docker:up": "docker-compose up",
     "docker:build": "docker build . -t nostr-relay-status --progress=plain",
+    "docker:build:quick": "docker build . -t nostr-relay-status --progress=plain -f Dockerfile.dev",
     "docker:tag": "docker tag nostr-relay-status:latest registry.digitalocean.com/sandwich-farm/nostr-relay-status",
     "docker:push": "docker push registry.digitalocean.com/sandwich-farm/nostr-relay-status"
   },

@@ -1,6 +1,8 @@
 <template>
   <HeartbeatTask 
     v-bind:resultsProp="results" />
+  <LoadSeed 
+    v-bind:resultsProp="results" />
   <RefreshTask
     v-bind:resultsProp="results" />
   <UserRelayList />
@@ -17,6 +19,7 @@ import { setupStore } from '@/store'
 
 import SharedComputed from '@/shared/computed.js'
 
+import LoadSeed from './LoadSeed.vue'
 import RefreshTask from './RefreshTask.vue'
 import HeartbeatTask from './HeartbeatTask.vue'
 import UserRelayList from './UserRelayList.vue'
@@ -27,6 +30,7 @@ import UserRelayList from './UserRelayList.vue'
 export default defineComponent({
   name: "TasksManager",
   components: {
+    LoadSeed,
     RefreshTask,
     HeartbeatTask,
     UserRelayList,

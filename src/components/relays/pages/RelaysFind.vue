@@ -6,6 +6,8 @@
     :resultsProp="results" 
     :activeSubsectionProp="activeSubsection" /> 
 
+    {{ this.store.tasks.getActiveSlug }}
+
   <div id="wrapper" class="mx-auto max-w-7xl">  
     <div id="subsection_header" class="pt-5 px-1 sm:px-6 lg:px-8" :class="{
       'absolute z-900 w-1/2 top-32': this.store.layout.mapIsExpanded,

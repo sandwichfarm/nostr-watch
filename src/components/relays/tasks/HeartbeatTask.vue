@@ -27,7 +27,6 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-
 import { relays } from '../../../../relays.yaml'
 import { RelayPool } from 'nostr'
 

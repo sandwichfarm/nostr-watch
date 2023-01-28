@@ -17,7 +17,7 @@ export const useTaskStore = defineStore(
     active: new Object(),
   }),
   getters: {
-    getLastUpdate: (state) => (key) => state.lastUpdate[key],
+    getLastUpdate: (state) => (key) => state.lastUpdate?.[key] ? state.lastUpdate?.[key] : false,
 
     //legacy 
     getProcessed: (state) => (key) => {

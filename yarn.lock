@@ -6440,43 +6440,16 @@ normalize-url@^6.0.1:
   resolved "https://registry.yarnpkg.com/normalize-url/-/normalize-url-6.1.0.tgz#40d0885b535deffe3f3147bec877d05fe4c5668a"
   integrity sha512-DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==
 
-nostr-relay-inspector@0.0.25:
-  version "0.0.25"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.25.tgz#8ddd0872d4529d4376b2254f32e3da2d9278963f"
-  integrity sha512-Xq1Y4coTC/Qd/axdGIZm6bejs6mF3A9UoHqQI8eDTGUOOvcyCIZcmowFUBkIBIVkCGCD/0DfD3vLG78Xi8oH+Q==
+nostr-relay-inspector@0.0.29:
+  version "0.0.29"
+  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.29.tgz#820dbbc340a03e6aafc778aad7f986863443113e"
+  integrity sha512-Ug5QMGZJfP0xJqGYUTZUSBoM6cExcZUuxHLhSXaRk8eJFKuK8G5NyjirivKrV3OZHv7R2tDnBj0/7hyFpQ3UEA==
   dependencies:
     cross-fetch "3.1.5"
     js-yaml "4.1.0"
     node-fetch "3.3.0"
     nostr "0.2.7"
     tape "5.6.1"
-    yaml-loader "0.8.0"
-
-nostr-relay-inspector@0.0.26:
-  version "0.0.26"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.26.tgz#528abf7d96e39322559269061f366862bca63155"
-  integrity sha512-xvz65TYnH7fdiQeSvwAIOsnN9AoJduDh9F426w4eeprjlJO1yuwg8dfRjnhlOZ7pRX7gCS/wse26h2GaPOO30Q==
-  dependencies:
-    cross-fetch "3.1.5"
-    js-yaml "4.1.0"
-    node-fetch "3.3.0"
-    nostr "0.2.7"
-    nostr-relay-inspector "0.0.25"
-    tape "5.6.1"
-    yaml-loader "0.8.0"
-
-nostr-relay-inspector@0.0.28:
-  version "0.0.28"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.28.tgz#34c3a89c0d983f0994ad65baedd885b486e274d4"
-  integrity sha512-eYkWkteAuuEHfKRUKSnqbKHDx3WfONYkds4WvDfZLBxr/7t5Y+QfocvmAbt86tDXfgq6JH5RW5hjEde7tuJoQg==
-  dependencies:
-    cross-fetch "3.1.5"
-    js-yaml "4.1.0"
-    node-fetch "3.3.0"
-    nostr "0.2.7"
-    nostr-relay-inspector "0.0.26"
-    tape "5.6.1"
-    yaml-loader "0.8.0"
 
 nostr-tools@1.1.1:
   version "1.1.1"
@@ -9505,15 +9478,6 @@ yallist@^4.0.0:
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
   integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
 
-yaml-loader@0.8.0:
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/yaml-loader/-/yaml-loader-0.8.0.tgz#c839325e3fdee082b3768b2a21fe34fde5d96f61"
-  integrity sha512-LjeKnTzVBKWiQBeE2L9ssl6WprqaUIxCSNs5tle8PaDydgu3wVFXTbMfsvF2MSErpy9TDVa092n4q6adYwJaWg==
-  dependencies:
-    javascript-stringify "^2.0.1"
-    loader-utils "^2.0.0"
-    yaml "^2.0.0"
-
 yaml-loader@^0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/yaml-loader/-/yaml-loader-0.6.0.tgz#fe1c48b9f4803dace55a59a1474e790ba6ab1b48"
@@ -9526,11 +9490,6 @@ yaml@^1.10.0, yaml@^1.10.2, yaml@^1.8.3:
   version "1.10.2"
   resolved "https://registry.yarnpkg.com/yaml/-/yaml-1.10.2.tgz#2301c5ffbf12b467de8da2333a459e29e7920e4b"
   integrity sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==
-
-yaml@^2.0.0:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.2.1.tgz#3014bf0482dcd15147aa8e56109ce8632cd60ce4"
-  integrity sha512-e0WHiYql7+9wr4cWMx3TVQrNwejKaEe7/rHNmQmqRjazfOP5W8PB6Jpebb5o6fIapbz9o9+2ipcaTM2ZwDI6lw==
 
 yargs-parser@^20.2.2, yargs-parser@^20.2.3:
   version "20.2.9"

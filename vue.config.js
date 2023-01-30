@@ -19,11 +19,11 @@ module.exports = defineConfig({
       topLevelAwait: true
     },
     mode: 'production',
-    entry: {
-      relaysFind: ['@/components/relays/pages/RelaysFind.vue'],
-      relaysStatistics: ['@/components/relays/pages/RelaysStatistics.vue'],
-      relaysSingle: ['@/components/relays/pages/RelaysSingle.vue'],
-    },
+    // entry: {
+    //   relaysFind: ['@/components/relays/pages/RelaysFind.vue'],
+    //   relaysStatistics: ['@/components/relays/pages/RelaysStatistics.vue'],
+    //   relaysSingle: ['@/components/relays/pages/RelaysSingle.vue'],
+    // },
     plugins: [
       new NodePolyfillPlugin(),
       new CompressionPlugin,

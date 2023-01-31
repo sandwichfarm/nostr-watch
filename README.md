@@ -25,9 +25,9 @@ Develop branch is deployed to https://next.nostr.watch
 - [x] Extension Support 
 - [x] Nostr signing, individualized relay testing 
 - [ ] Lighting Tips to Relay Operators
-- [ ] Relay Statistics 
-- [ ] Relay Historical Data
-- [ ] Discover relays at runtime (currently buildtime, ready to move to runtime with 0.1) 
+- [x] Relay Statistics 
+- [ ] Relay Historical Data (partially implemented)
+- [ ] Discover relays at runtime (currently buildtime, ready to move to runtime at 0.3) 
 - [ ] Discover geo at runtime
 
 ## Project setup

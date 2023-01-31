@@ -120,7 +120,7 @@ const localMethods = {
 
     allRelaysInHeartbeats.forEach( relay => {
       heartbeats[relay] = new Array()
-      console.log(relay, heartbeatsByRelayObj[relay])
+      // console.log(relay, heartbeatsByRelayObj[relay])
       Object.keys(heartbeatsByRelayObj[relay]).forEach( (timestamp_) => {
         heartbeats[relay].push({
           date: timestamp_,
@@ -132,7 +132,7 @@ const localMethods = {
       this.setUptimePercentage(relay)
     })
 
-    console.log(heartbeats)
+    // console.log(heartbeats)
 
     // this.store.stats.addHeartbeats(heartbeats)
 
@@ -175,7 +175,7 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
     if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)

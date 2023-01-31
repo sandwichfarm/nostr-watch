@@ -86,7 +86,7 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('task', this.taskSlug, 'is processing:', this.store.tasks.isProcessing(this.taskSlug))
+    // console.log('task', this.taskSlug, 'is processing:', this.store.tasks.isProcessing(this.taskSlug))
     if(this.store.tasks.isProcessing(this.taskSlug))
       this.invalidate(true)
     else

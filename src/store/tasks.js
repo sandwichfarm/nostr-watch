@@ -42,10 +42,6 @@ export const useTaskStore = defineStore(
   },
   actions: {
     updateNow(key){ 
-      if(typeof key === 'undefined'){
-        console.log('stuff', this)
-      }
-        
       this.lastUpdate[key] = Date.now() 
     },
     //queue

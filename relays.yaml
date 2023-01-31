@@ -242,3 +242,4 @@ relays:
   - wss://global.relay.red
   - wss://relay.nostrgraph.net
   - wss://nostr.app.runonflux.io
+  - wss://nostr.bitcoin-21.org

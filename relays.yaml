@@ -245,3 +245,6 @@ relays:
   - wss://nostr.app.runonflux.io
   - wss://nostr.milou.lol
   - wss://relay.nostr.africa
+  - wss://raz.software
+  - wss://razd.ai
+  - wss://feather.flights

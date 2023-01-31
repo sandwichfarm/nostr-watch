@@ -245,3 +245,4 @@ relays:
   - wss://nostr.app.runonflux.io
   - wss://nostr.milou.lol
   - wss://relay.nostr.africa
+  - wss://nostr.bitcoin-21.org

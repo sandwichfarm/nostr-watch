@@ -209,9 +209,9 @@ const localMethods = {
         .on('open', () => {
           if(!this.isSingle)
             return
-          this.results[this.relayFromUrl].latency.average = null
-          this.results[this.relayFromUrl].latency.min = null
-          this.results[this.relayFromUrl].latency.max = null
+          // this.results[this.relayFromUrl].latency.average = null
+          // this.results[this.relayFromUrl].latency.min = null
+          // this.results[this.relayFromUrl].latency.max = null
           this.setCache(this.results[this.relayFromUrl])
         })
         .on('complete', (instance) => {

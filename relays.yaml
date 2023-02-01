@@ -246,4 +246,7 @@ relays:
   - wss://nostr.milou.lol
   - wss://relay.nostr.africa
   - wss://nostr.bitcoin-21.org
+  - wss://nostr.snblago.com
+  - wss://nostr.com.de
   - wss://relay.nostrview.com
+

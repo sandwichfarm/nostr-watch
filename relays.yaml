@@ -2,6 +2,7 @@ relays:
   - wss://nostr.up.railway.app
   - wss://nostr.lnorb.com
   - wss://nos.lol
+  - wss://nostr.lordkno.ws
   - wss://nostr.p2sh.co
   - wss://nostr.lnprivate.network
   - wss://relay.nostr.vision

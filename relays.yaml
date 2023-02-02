@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.wine
   - wss://nostr.up.railway.app
   - wss://nostr.lnorb.com
   - wss://nos.lol

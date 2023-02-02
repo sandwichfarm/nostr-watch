@@ -130,8 +130,8 @@ const localMethods = {
       async () => {
         const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
 
-        console.log('unprocessed relays', 
-          this.relays.filter( relay => !this.store.tasks.getProcessed(this.slug).includes(relay)))
+        // console.log('unprocessed relays', 
+          // this.relays.filter( relay => !this.store.tasks.getProcessed(this.slug).includes(relay)))
 
         if(single) {
           await this.check(single)
@@ -329,7 +329,6 @@ export default defineComponent({
     },
     getRefreshInterval: function(){
       const relay = this.relayFromUrl
-      console.log('wtf', relay, this.results[relay], this.results[relay]?.check?.connect, this.results[relay]?.check?.read, this.results[relay]?.check?.write, this.results[relay]?.latency?.final )
       if( !relay )
         return this.store.prefs.duration
       if( this.results[relay]?.check?.connect && this.results[relay]?.check?.read && this.results[relay]?.check?.write && typeof this.results[relay]?.latency?.final !== 'undefined' )

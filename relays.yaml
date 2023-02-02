@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.up.railway.app
   - wss://nostr.lnorb.com
   - wss://nos.lol
   - wss://nostr.p2sh.co
@@ -244,3 +245,11 @@ relays:
   - wss://nostr.app.runonflux.io
   - wss://nostr.bitcoin-21.org
   - wss://nostr.arguflow.gg
+  - wss://nostr.milou.lol
+  - wss://relay.nostr.africa
+  - wss://nostr.bitcoin-21.org
+  - wss://nostr.snblago.com
+  - wss://nostr.com.de
+  - wss://relay.nostrview.com
+  - wss://Merrcurr.up.railway.app
+  - wss://nostr.bingtech.tk

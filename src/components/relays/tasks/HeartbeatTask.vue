@@ -54,12 +54,17 @@ const localMethods = {
     await new Promise( resolve => {
       const pool = new RelayPool( ['wss://history.nostr.watch'] )
       const uniques = new Set()
-
+      let timeout = setTimeout( () => { 
+        resolve()
+        pool.unsubscribe(subid)
+        pool.close()
+      }, 10000 )
       pool
         .subscribe(subid, {
           kinds:    [1010],
           limit:    total, //12 hours 
           authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
+          // '#e':     this.store.prefs.region
           // since:    Math.floor(this.store.tasks.getLastUpdate(this.slug)/1000)
         })
       
@@ -86,11 +91,13 @@ const localMethods = {
           pool.unsubscribe(subid)
           pool.close()
         })
-      setTimeout( () => { 
-        resolve()
-        pool.unsubscribe(subid)
-        pool.close()
-      }, 2000 )
+        .on('eose', () => {
+          resolve()
+          pool.unsubscribe(subid)
+          pool.close()
+          clearTimeout(timeout)
+        })
+      
     })
     
     this.parseHeartbeats(heartbeatsByEvent)
@@ -120,7 +127,7 @@ const localMethods = {
 
     allRelaysInHeartbeats.forEach( relay => {
       heartbeats[relay] = new Array()
-      console.log(relay, heartbeatsByRelayObj[relay])
+      // console.log(relay, heartbeatsByRelayObj[relay])
       Object.keys(heartbeatsByRelayObj[relay]).forEach( (timestamp_) => {
         heartbeats[relay].push({
           date: timestamp_,
@@ -132,7 +139,7 @@ const localMethods = {
       this.setUptimePercentage(relay)
     })
 
-    console.log(heartbeats)
+    // console.log(heartbeats)
 
     // this.store.stats.addHeartbeats(heartbeats)
 
@@ -175,7 +182,7 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
     if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)

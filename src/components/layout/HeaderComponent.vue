@@ -27,19 +27,26 @@
               Relays
             </router-link>
             <a 
-              href="https://github.com/dskvr/nostr-watch/issues/new/choose"
-              target="_blank"
-              class="text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Feedback
-            </a>
-            <a 
-              href="https://github.com/dskvr/nostr-watch"
-              target="_blank"
-              class="text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Git
-            </a>
+                href="https://api.nostr.watch"
+                target="_blank"
+                class="block text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                API
+              </a>
+              <a 
+                href="https://github.com/dskvr/nostr-watch/issues/new/choose"
+                target="_blank"
+                class="block text-white/50 hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Feedback
+              </a>
+              <a 
+                href="https://github.com/dskvr/nostr-watch"
+                target="_blank"
+                class="block text-white/50 hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Git
+              </a>
             </div>
           </div>
         </div>
@@ -90,22 +97,28 @@
                 
               <router-link 
                 to="/relays"
-           
                 class="block text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
                 >
                 Relays
               </router-link>
               <a 
-                href="https://github.com/dskvr/nostr-watch/issues/new/choose"
+                href="https://api.nostr.watch"
                 target="_blank"
                 class="block text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                API
+              </a>
+              <a 
+                href="https://github.com/dskvr/nostr-watch/issues/new/choose"
+                target="_blank"
+                class="block text-white/50 hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Feedback
               </a>
               <a 
                 href="https://github.com/dskvr/nostr-watch"
                 target="_blank"
-                class="block text-white hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
+                class="block text-white/50 hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Git
               </a>

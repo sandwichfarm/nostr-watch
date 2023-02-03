@@ -1,4 +1,5 @@
 relays:
+  - was://nostr.pleb.network
   - wss://nostr.up.railway.app
   - wss://nostr.lnorb.com
   - wss://nos.lol

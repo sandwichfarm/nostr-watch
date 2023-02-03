@@ -258,3 +258,4 @@ relays:
   - wss://relay.nostr.wf
   - wss://nostr.cro.social
   - wss://nostr.sg
+  - wss://relay.koreus.social

@@ -259,6 +259,7 @@ relays:
   - wss://relay.nostr.wf
   - wss://nostr.cro.social
   - wss://nostr.sg
+  - wss://nostr.globals.fans
   - wss://nostr.blockpower.capital
   - wss://nostr.cheeserobot.org
   - wss://nostream.nostrly.io

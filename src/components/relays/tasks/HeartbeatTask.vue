@@ -58,6 +58,7 @@ const localMethods = {
         pool.unsubscribe(subid)
         pool.close()
       }, 10000 )
+      
       pool
         .subscribe(subid, {
           kinds:    [1010],

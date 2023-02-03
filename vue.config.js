@@ -22,7 +22,6 @@ const config = {
     },
     mode: process.env.NODE_ENV,
     // mode: 'production',
-
     // entry: {
     //   relaysFind: ['@/components/relays/pages/RelaysFind.vue'],
     //   relaysStatistics: ['@/components/relays/pages/RelaysStatistics.vue'],

@@ -1,4 +1,5 @@
 relays:
+  - was://nostr.pleb.network
   - wss://nostr.up.railway.app
   - wss://nostr.lnorb.com
   - wss://nos.lol
@@ -259,3 +260,5 @@ relays:
   - wss://nostr.cro.social
   - wss://nostr.sg
   - wss://nostr.blockpower.capital
+  - wss://nostr.cheeserobot.org
+  - wss://nostream.nostrly.io

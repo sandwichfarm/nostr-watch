@@ -7,13 +7,9 @@ import "./styles/main.scss"
 import directives from "./directives/"
 import { plugin as storePlugin } from './store'
 import { RelayPool } from 'nostr'
-// import VueInputAutowidth from 'vue-input-autowidth'
-
-// import { relays } from '../relays.yaml'
-
 import crypto from 'crypto'
-
-
+import dotenv from 'dotenv'
+dotenv.config()
 
 const app = createApp(App)
   .use(router)

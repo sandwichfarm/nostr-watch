@@ -17,7 +17,7 @@ export const useTaskStore = defineStore(
     active: new Object(),
   }),
   getters: {
-    getLastUpdate: (state) => (key) => state.lastUpdate[key],
+    getLastUpdate: (state) => (key) => state.lastUpdate?.[key] ? state.lastUpdate?.[key] : false,
 
     //legacy 
     getProcessed: (state) => (key) => {
@@ -86,17 +86,11 @@ export const useTaskStore = defineStore(
     },
     //legacy
     startProcessing(job) { 
-      if(typeof key === 'undefined'){
-        console.log('stuff', this)
-      }
       this.addJob(job)
       this.processing[job.id] = true 
       this.currentTask = job.id
     },
     finishProcessing(key) { 
-      if(typeof key === 'undefined'){
-        console.log('stuff', this)
-      }
       this.processed[key] = new Array()
       this.processing[key] = false 
       this.currentTask = null

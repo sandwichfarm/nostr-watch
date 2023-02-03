@@ -1,8 +1,14 @@
 <template>
-  <HeartbeatTask 
-    v-bind:resultsProp="results" />
+  <DetectRegion 
+    v-if="store.prefs.autoDetectRegion" />
+  <StatusCheckHistoryNode />
+  <HeartbeatTask />
+  <LoadSeed 
+    v-bind:resultsProp="results"
+    v-if="!store.prefs.clientSideProcessing || isSingle" />
   <RefreshTask
-    v-bind:resultsProp="results" />
+    v-bind:resultsProp="results"
+    v-if="store.prefs.clientSideProcessing || isSingle" />
   <UserRelayList />
   <!-- <RelayCanonicalsTask
     :resultsProp="results" />
@@ -17,9 +23,12 @@ import { setupStore } from '@/store'
 
 import SharedComputed from '@/shared/computed.js'
 
+import DetectRegion from './DetectRegion.vue'
+import LoadSeed from './LoadSeed.vue'
 import RefreshTask from './RefreshTask.vue'
 import HeartbeatTask from './HeartbeatTask.vue'
 import UserRelayList from './UserRelayList.vue'
+import StatusCheckHistoryNode from './StatusCheckHistoryNode.vue'
 
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
 // import RelayOperatorTask from './RelayOperatorTask.vue'
@@ -27,9 +36,12 @@ import UserRelayList from './UserRelayList.vue'
 export default defineComponent({
   name: "TasksManager",
   components: {
+    DetectRegion,
+    LoadSeed,
     RefreshTask,
     HeartbeatTask,
     UserRelayList,
+    StatusCheckHistoryNode,
     // RelayCanonicalsTask,
     // RelayOperatorTask
   },

@@ -6,10 +6,17 @@ import RelaysFind from '@/components/relays/pages/RelaysFind.vue'
 import RelaysSingle from '@/components/relays/pages/RelaysSingle.vue'
 // import RelaysMap from '@/components/relays/pages/RelaysMap.vue'
 import RelaysStatistics from '@/components/relays/pages/RelaysStatistics.vue'
+import UserPreferences from '@/components/relays/pages/UserPreferences.vue'
 
 import RedirectComponent from '@/components/relays/redirects/RedirectComponent.vue'
 
 const routes = [
+    {
+        name: 'preferences',
+        path: '/preferences',
+        component: UserPreferences
+    },
+
     {
         name: 'relaysAdd',
         path: '/relays/add',

@@ -17,7 +17,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import crypto from 'crypto'
 import decodeJson from 'unescape-json'
@@ -27,13 +27,12 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-
 import { relays } from '../../../../relays.yaml'
 import { RelayPool } from 'nostr'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.slug, 1000*60) && !force) ) 
+    if( (!this.isExpired(this.slug, 1000) && !force) ) 
       return
     // const pool = new RelayPool( relays )
 
@@ -59,12 +58,13 @@ const localMethods = {
         pool.unsubscribe(subid)
         pool.close()
       }, 10000 )
+      
       pool
         .subscribe(subid, {
           kinds:    [1010],
           limit:    total, //12 hours 
           authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
-          // '#e':     this.store.prefs.region
+          '#e':     [this.store.prefs.region],
           // since:    Math.floor(this.store.tasks.getLastUpdate(this.slug)/1000)
         })
       
@@ -161,11 +161,9 @@ export default defineComponent({
       heartbeats: {},
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
   created(){
@@ -198,14 +196,7 @@ export default defineComponent({
     },
   }),
   methods: Object.assign(localMethods, RelayMethods),
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  props: {},
 })
 </script>
 

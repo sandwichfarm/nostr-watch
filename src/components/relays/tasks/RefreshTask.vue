@@ -27,7 +27,11 @@
   <span
     v-if="store.tasks.getActiveSlug === this.slug && this.isSingle"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs mr-11">
-      Loading {{ relayFromUrl }}
+      <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Checking {{ relayFromUrl }}
   </span>
   
 </template>
@@ -80,8 +84,8 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      if(!this.store.prefs.refresh )
-        return 
+      if(!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing)
+        return
       
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
@@ -160,8 +164,26 @@ const localMethods = {
     
     if(result)  {
       // console.log('whoops', result)
+      result = {
+                url: relay,
+                check: {
+                  connect: result.check.connect,
+                  read: result.check.read,
+                  write: result.check.write,
+                  latency: result.check.latency,
+                  averageLatency: result.check.averageLatency
+                },
+                latency: result?.latency,
+                info: result.info,
+                uptime: this.getUptimePercentage(relay),
+                identities: []
+              }
+              
+      if(result.info?.pubkey)
+        result.identities.push(result.info.pubkey)
+
       this.setCache(Object.assign({}, this.results[relay], result))
-      this.setUptimePercentage(relay)
+      // this.setUptimePercentage(relay)
       this.results[relay] = this.getCache(relay)
     }
 
@@ -198,7 +220,7 @@ const localMethods = {
         }
       
       // if(this.isSingle)
-        opts.checkAverageLatency = true
+      opts.checkAverageLatency = true
       
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
@@ -206,13 +228,7 @@ const localMethods = {
       let socket = new Inspector(relay, opts)
 
       socket
-        .on('open', () => {
-          if(!this.isSingle)
-            return
-          // this.results[this.relayFromUrl].latency.average = null
-          // this.results[this.relayFromUrl].latency.min = null
-          // this.results[this.relayFromUrl].latency.max = null
-          this.setCache(this.results[this.relayFromUrl])
+        .on('open', () => {          
         })
         .on('complete', (instance) => {
           // console.log('completed?', instance.result)
@@ -317,7 +333,8 @@ export default defineComponent({
       else
         this.invalidate()
     }
-    this.setRefreshInterval()
+    if(this.store.prefs.clientSideProcessing && !this.isSingle)
+      this.setRefreshInterval()
   },
 
   updated(){},

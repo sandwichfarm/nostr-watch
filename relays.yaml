@@ -268,5 +268,6 @@ relays:
   - wss://nostr.cheeserobot.org
   - wss://nostream.nostrly.io
   - wss://nostr.sidnlabs.nl
+  - wss://nostr.randomdevelopment.biz
   - wss://nostr21.com
   - wss://relay.bleskop.com

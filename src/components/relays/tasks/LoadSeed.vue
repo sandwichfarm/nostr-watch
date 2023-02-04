@@ -5,6 +5,12 @@
     <span v-if="isSingle">Loading {{ relay }} from history node...</span>
     <span v-if="!isSingle">Loading data from history relay</span>
   </span>
+  <span 
+    v-if="!store.tasks.isActive || this.store.tasks.getActiveSlug === slug">
+    <span class="text-white lg:text-sm mr-2 ml-2 text-xs mt-1.5 inline-block mr-10" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+      Next check in: {{ untilNext }}
+    </span>
+  </span>
 </template>
 
 <style scoped>
@@ -139,10 +145,10 @@ const localMethods = {
     this.interval = setInterval(() => {
       if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
         this.invalidate()
-    }, 60*1000)
+    }, 15*60*1000)
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now())) 
   },
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
@@ -171,7 +177,9 @@ export default defineComponent({
   data() {
     return {
       slug: 'relays/seed', //REMEMBER TO CHANGE!!!
-      pool: null
+      pool: null,
+      untilNext: null,
+      refreshEvery: 15*60*1000
     }
   },
   setup(props){

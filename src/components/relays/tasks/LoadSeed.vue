@@ -84,8 +84,8 @@ const localMethods = {
                           write = event.tags.filter( tag => tag[0] == 'w')
                     result.check = {
                       connect: connect.length && connect[0][1] === 'true' ? true : false,
-                      read: read.length && read[0][1] ? true : false,
-                      write: write.length && write[0][1] ? true : false,
+                      read: read.length && read[0][1] === 'true' ? true : false,
+                      write: write.length && write[0][1] === 'true' ? true : false,
                     }
                   }
                     
@@ -143,6 +143,9 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
+      this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+      this.untilNext = this.timeUntilRefresh()
+      this.sinceLast = this.timeSinceRefresh()
       if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
         this.invalidate()
     }, 15*60*1000)

@@ -14,13 +14,13 @@
     </span>
     <span class="text-white lg:text-sm mr-2 ml-2 text-xs hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
     <span class="text-white lg:text-sm mr-2 ml-2 text-xs" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
-      Next check in: {{ untilNext  }}
+      Next check in: {{ untilNext }}
     </span>
     <button 
       v-if="!store.tasks.isProcessing(this.slug)"
       class="mr-8 my-1 py-1 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
       :disabled='store.tasks.isProcessing(this.slug)' 
-      @click="refreshNow()">
+      @click="refreshNow()">  
         Check{{ relay ? ` ${relay}` : "" }} Now
     </button>
   </div>
@@ -164,7 +164,7 @@ const localMethods = {
     
     if(result)  {
       // console.log('whoops', result)
-      result = {
+      const resultPruned = {
                 url: relay,
                 check: {
                   connect: result.check.connect,
@@ -176,13 +176,17 @@ const localMethods = {
                 latency: result?.latency,
                 info: result.info,
                 uptime: this.getUptimePercentage(relay),
-                identities: []
+                identities: result.identities,
+                pubkeyValid: result.pubkeyValid,
+                pubkeyError: result.pubkeyError,
               }
-              
-      if(result.info?.pubkey)
-        result.identities.push(result.info.pubkey)
+      
+      
+      console.log(result.url, 'pubkey info', result.info?.pubkey, result.pubkeyValid, result.pubkeyError)
+      // if(result.info?.pubkey)
+      //   resultPruned.identities.push(result.info.pubkey)
 
-      this.setCache(Object.assign({}, this.results[relay], result))
+      this.setCache(Object.assign({}, this.results[relay], resultPruned))
       // this.setUptimePercentage(relay)
       this.results[relay] = this.getCache(relay)
     }

@@ -3196,6 +3196,11 @@ convert-source-map@^1.7.0:
   resolved "https://registry.yarnpkg.com/convert-source-map/-/convert-source-map-1.9.0.tgz#7faae62353fb4213366d0ca98358d22e8368b05f"
   integrity sha512-ASFBup0Mz1uyiIjANan1jzLQami9z1PoYSZCiiYW2FczPbenXc45FZdBZLzOT+r6+iciuEModtmCti+hjaAk0A==
 
+convert-vapid-public-key@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/convert-vapid-public-key/-/convert-vapid-public-key-1.1.0.tgz#87ec8394342bd53eef6ebd3bc16bd12f4fdae4be"
+  integrity sha512-CWkkLObzbwDD4Ehcs1oSMrnS1qfpbHjJg/oS6VLppk2wHMONZ7U9GmFNVeCNtEa2K4UfxReoDHNpQ8A9NEHBGA==
+
 cookie-signature@1.0.6:
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/cookie-signature/-/cookie-signature-1.0.6.tgz#e303a882b342cc3ee8ca513a79999734dab3ae2c"
@@ -6445,11 +6450,12 @@ normalize-url@^6.0.1:
   resolved "https://registry.yarnpkg.com/normalize-url/-/normalize-url-6.1.0.tgz#40d0885b535deffe3f3147bec877d05fe4c5668a"
   integrity sha512-DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==
 
-nostr-relay-inspector@0.0.29:
-  version "0.0.29"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.29.tgz#820dbbc340a03e6aafc778aad7f986863443113e"
-  integrity sha512-Ug5QMGZJfP0xJqGYUTZUSBoM6cExcZUuxHLhSXaRk8eJFKuK8G5NyjirivKrV3OZHv7R2tDnBj0/7hyFpQ3UEA==
+nostr-relay-inspector@0.0.30:
+  version "0.0.30"
+  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.30.tgz#dadd17f8dc863da6bff1fd1df36c2f42745ad5bc"
+  integrity sha512-0bHKewYBJyyMfzpp+kNVzE/5lXNrwV9s7fyIGlgWpLfa5UBhMIsyiuEzpSBJXV82N1l3Ok00jQvgUbCsxGsyug==
   dependencies:
+    convert-vapid-public-key "1.1.0"
     cross-fetch "3.1.5"
     js-yaml "4.1.0"
     node-fetch "3.3.0"

@@ -267,6 +267,16 @@
                 <p class="mt-2 text-sm text-gray-500">Comma separated list, defaults are there because they are OP</p>
               </div>
             </div>
+
+            <h2 class="text-gray-500 dark:text-white/50 mt-4">Local Storage</h2>
+            <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+              <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
+                Clear Data
+              </label>
+              <div class="mt-1 sm:col-span-2 sm:mt-0">
+                <button @click="localStorage.clear() && false">Clear All Local Storage</button>
+              </div>
+            </div>
           </div>
         </div>
     </form>

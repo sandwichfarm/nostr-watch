@@ -50,7 +50,7 @@
           id="status" 
           class="flex-none w-full md:w-auto md:flex mb-2 py-5" 
           v-if="
-            showLatency && 
+            showLatency ||
             (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
           <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 
@@ -712,16 +712,7 @@ export default defineComponent({
   async mounted() {
     // this.getAdminNotes()
     this.result = this.getCache(this.relayFromUrl)
-    if(this.result){
-      if(this.result?.latency?.average)
-        this.result.latency.average = null
-      if(this.result?.latency?.min)
-        this.result.latency.min = null
-      if(this.result?.latency?.max)
-        this.result.latency.max = null
-      if(this.result?.latency?.average)
-        this.showLatency = true 
-    }
+    this.setData()
     this.interval = setInterval(() => {
       this.setData()
     },1000)
@@ -915,6 +906,17 @@ export default defineComponent({
       this.hbMax = Math.max.apply(Math, this.heartbeats?.map( hb => hb.latency ) )
       if(this.result?.topics)
         this.result.topics = this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
+      
+      // if(this.result){
+      //   if(this.result?.latency?.average)
+      //     this.result.latency.average = null
+      //   if(this.result?.latency?.min)
+      //     this.result.latency.min = null
+      //   if(this.result?.latency?.max)
+      //     this.result.latency.max = null
+      //   if(this.result?.latency?.average)
+      //     this.showLatency = true 
+      // }
       //console.log(this.relay, this.lastUpdate, this.result, this.geo)
     }
   }),

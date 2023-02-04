@@ -73,7 +73,9 @@ const localMethods = {
                     check: {
                       connect: false,
                       read: false,
-                      write: false
+                      write: false,
+                      latency: data?.latency[this.store.prefs.region]?.final ? true : false,
+                      averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
                     },
                     identities: []
                   }

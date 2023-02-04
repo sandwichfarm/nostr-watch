@@ -164,7 +164,8 @@
                       </td> -->
 
                       <td class="w-24 latency text-center text-sm font-bold">
-                        <span>{{ results[relay]?.latency?.average }}<span v-if="results[relay]?.latency?.average">ms</span></span>
+                        <span v-if="results[relay]?.latency?.average">{{ results[relay].latency.average }}<span v-if="results[relay].latency.average">ms</span></span>
+                        <span v-if="!results[relay]?.latency?.average" class="font-normal italic text-black/30 dark:text-white/30">timeout</span>
                       </td>
 
                       <!-- no editor -->

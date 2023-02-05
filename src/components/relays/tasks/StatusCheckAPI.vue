@@ -2,7 +2,7 @@
   <span 
     v-if="this.store.tasks.getActiveSlug === taskSlug"
     class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Connecting to API...</span>
+    <span>Connecting to API</span>
   </span>
 </template>
 
@@ -31,7 +31,7 @@ const localMethods = {
         }, 5000)
         fetch(`https://api.nostr.watch/v1/online`)
           .then((response) => {
-            this.store.status.api = response.ok
+            this.store.status.api = response.ok ? true : false
             this.finish(true)
           })
           .catch( () => { 
@@ -43,9 +43,9 @@ const localMethods = {
     )
   },
   finish(clear){
+    this.store.tasks.completeJob()
     if(clear)
       clearTimeout(this.timeout)
-    this.store.tasks.completeJob()
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 

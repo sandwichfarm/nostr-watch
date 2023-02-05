@@ -391,6 +391,7 @@ export default defineComponent({
         this.autoDetectRegion = this.store.prefs.autoDetectRegion
       }
       if(this.store.prefs.discoverRelays !== this.discoverRelays){
+        delete this.store.tasks.lastUpdate['relays/get']
         delete this.store.tasks.lastUpdate['relays/seed']
         delete this.store.tasks.lastUpdate['relays/check']
         this.discoverRelays = this.store.prefs.discoverRelays

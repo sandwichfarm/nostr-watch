@@ -112,6 +112,8 @@ export default defineComponent({
 
     if(!this.store.prefs.autoDetectRegion)
       this.setRefreshInterval()
+    
+    setTimeout( ()=>{}, 1)
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),

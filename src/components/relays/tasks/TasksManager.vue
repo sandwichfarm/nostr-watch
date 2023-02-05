@@ -1,5 +1,5 @@
 <template>
-  <StatusCheckAPI />
+  <!-- <StatusCheckAPI /> -->
   <GetRelays />
   <DetectRegion 
     v-if="store.prefs.autoDetectRegion" />
@@ -36,7 +36,7 @@ import RefreshTask from './RefreshTask.vue'
 import HeartbeatTask from './HeartbeatTask.vue'
 import UserRelayList from './UserRelayList.vue'
 import StatusCheckHistoryNode from './StatusCheckHistoryNode.vue'
-import StatusCheckAPI from './StatusCheckAPI.vue'
+// import StatusCheckAPI from './StatusCheckAPI.vue'
 import GetRelays from './GetRelays.vue'
 import CheckNip11 from './CheckNip11.vue'
 
@@ -52,7 +52,7 @@ export default defineComponent({
     HeartbeatTask,
     UserRelayList,
     StatusCheckHistoryNode,
-    StatusCheckAPI,
+    // StatusCheckAPI,
     GetRelays,
     CheckNip11
     // RelayCanonicalsTask,
@@ -73,16 +73,18 @@ export default defineComponent({
   },
   beforeMount(){},
   mounted(){
-    this.currentTask = this.store.tasks.currentTask
-    this.processJob()
-    
-    this.interval = setInterval( () => {
-      if(this.currentTask === this.store.tasks.currentTask)
-        return 
-      this.processJob()
+    setTimeout( () => {
       this.currentTask = this.store.tasks.currentTask
-    }, 1000)
-    
+      this.processJob()
+      
+      this.interval = setInterval( () => {
+        if(this.currentTask === this.store.tasks.currentTask)
+          return 
+        this.processJob()
+        this.currentTask = this.store.tasks.currentTask
+      }, 1000)
+    }, 500)
+    setTimeout( ()=>{}, 1)
   },
   unmounted(){
     clearInterval(this.interval)

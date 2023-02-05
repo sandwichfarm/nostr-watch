@@ -58,6 +58,7 @@ export const useTaskStore = defineStore(
         console.log('got here', 'does not exist')
       }
       this.pending.push(job)
+      console.log('got here', 'is idle?', this.isIdle, this.getActiveSlug)
       if( this.isIdle )
         this.startNextJob() && console.log('got here', 'past expired')
     },

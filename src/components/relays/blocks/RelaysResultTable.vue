@@ -103,7 +103,7 @@
                       </td>
 
                       <td class="w-62 relay left-align relay-url text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50">
-                          <a :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
+                          <a class="text-black dark:text-white" :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
                           <span class="text-inherit flex-1 align-middle hidden lg:inline-block pl-3 m1-3 text-sm whitespace-nowrap truncate" v-if="results[relay]?.topics">
                             {{ getTopics(relay) }}
                           </span>

@@ -15,6 +15,7 @@
     v-bind:resultsProp="results"
     v-if="store.prefs.clientSideProcessing || isSingle" />
   <GetTopics
+    v-bind:resultsProp="results"
     v-if="store.prefs.clientSideProcessing && !isSingle" />
   <UserRelayList />
   <!-- <RelayCanonicalsTask

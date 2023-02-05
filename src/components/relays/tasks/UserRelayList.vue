@@ -83,7 +83,7 @@ export default defineComponent({
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
-    this.relays = Array.from(new Set(relays))
+    this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
     // console.log('task', this.taskSlug, 'is processing:', this.store.tasks.isProcessing(this.taskSlug))

@@ -625,7 +625,8 @@ const localMethods = {
             this.store.profile.set(JSON.parse(event.content))
         })
         .on('eose', relay => {
-          relay.close()
+          if(this.wsIsOpen(relay.ws))
+            this.closeRelay(relay)
         })
         
     },

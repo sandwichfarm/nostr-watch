@@ -48,6 +48,7 @@
     "postcss-import": "15.1.0",
     "requests": "0.3.0",
     "stream-browserify": "3.0.0",
+    "swearfilter": "2.0.4",
     "unescape-json": "1.0.3",
     "vue": "^3.2.45",
     "vue-gauge": "1.0.3",

@@ -30,9 +30,13 @@ const localMethods = {
     if( !this.isExpired(this.slug, 6*60*60*1000) && !force ) 
       return
     
+    console.log('got here', 'past expired')
+
     this.queueJob(
       this.slug, 
       async () => {
+        console.log('got here', 'inside job')
+        console.log('got here')
         const visitorGeo = await getVisitorGeo()
         this.store.user.ip = visitorGeo.query
         this.store.prefs.region = this.getClosest(visitorGeo)
@@ -122,4 +126,3 @@ export default defineComponent({
  #refresh button:hover {color:#000;}
  #refresh button[disabled] {color:#999 !important; border-color:#e0e0e0}
 </style>
-

@@ -88,7 +88,7 @@ const localMethods = {
 
         this.store.tasks.completeJob()
           // .on('eose', relay => {
-          //   relay.close()
+          //   this.closeRelay(relay)
           // })
       },
       true 

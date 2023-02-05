@@ -1,4 +1,6 @@
 <template>
+  <StatusCheckAPI />
+  <GetRelays />
   <DetectRegion 
     v-if="store.prefs.autoDetectRegion" />
   <StatusCheckHistoryNode />
@@ -6,11 +8,14 @@
   <LoadSeed 
     v-bind:resultsProp="results"
     v-if="!store.prefs.clientSideProcessing || isSingle" />
+  <CheckNip11
+    v-bind:resultsProp="results"
+    v-if="(!store.prefs.clientSideProcessing || isSingle) && store.prefs.checkNip11" />
   <RefreshTask
     v-bind:resultsProp="results"
     v-if="store.prefs.clientSideProcessing || isSingle" />
   <GetTopics
-    v-if="store.prefs.clientSideProcessing || !isSingle" /> /> 
+    v-if="store.prefs.clientSideProcessing && !isSingle" />
   <UserRelayList />
   <!-- <RelayCanonicalsTask
     :resultsProp="results" />
@@ -31,6 +36,9 @@ import RefreshTask from './RefreshTask.vue'
 import HeartbeatTask from './HeartbeatTask.vue'
 import UserRelayList from './UserRelayList.vue'
 import StatusCheckHistoryNode from './StatusCheckHistoryNode.vue'
+import StatusCheckAPI from './StatusCheckAPI.vue'
+import GetRelays from './GetRelays.vue'
+import CheckNip11 from './CheckNip11.vue'
 
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
 // import RelayOperatorTask from './RelayOperatorTask.vue'
@@ -44,6 +52,9 @@ export default defineComponent({
     HeartbeatTask,
     UserRelayList,
     StatusCheckHistoryNode,
+    StatusCheckAPI,
+    GetRelays,
+    CheckNip11
     // RelayCanonicalsTask,
     // RelayOperatorTask
   },
@@ -63,13 +74,15 @@ export default defineComponent({
   beforeMount(){},
   mounted(){
     this.currentTask = this.store.tasks.currentTask
+    this.processJob()
+    
     this.interval = setInterval( () => {
       if(this.currentTask === this.store.tasks.currentTask)
         return 
       this.processJob()
       this.currentTask = this.store.tasks.currentTask
     }, 1000)
-    this.processJob()
+    
   },
   unmounted(){
     clearInterval(this.interval)

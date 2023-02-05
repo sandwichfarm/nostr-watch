@@ -7,7 +7,7 @@
     :resultsProp="results" 
     :activeSubsectionProp="activeSubsection" /> 
 
-  {{  store.tasks.getActiveSlug }}
+  <!-- {{  store.relays.getOnline }} -->
 
   <div id="wrapper" class="mx-auto max-w-7xl mt-2">  
     <div id="subsection_header" class="pt-5 px-1 sm:px-6 lg:px-8" :class="{
@@ -146,7 +146,7 @@ export default defineComponent({
     this.store.relays.setRelays(relays)
     this.store.relays.setGeo(geo)
     
-    this.relays = this.store.relays.getAll?.length ? this.store.relays.getAll : relays
+    // this.relays = this.store.relays.getAll?.length ? this.store.relays.getAll : relays
     this.lastUpdate = this.store.tasks.getLastUpdate('relays')
     this.preferences = this.store.prefs.get
   },

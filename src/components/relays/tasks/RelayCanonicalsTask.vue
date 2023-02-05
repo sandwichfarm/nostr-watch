@@ -41,9 +41,9 @@ const localMethods = {
     this.queueJob(
       this.taskSlug, 
       async () => {
-        const instance = new RelayPool(['wss://nostr.sandwich.farm', 'wss://relay.nostr.ch'])
+        const $pool = new RelayPool(['wss://nostr.sandwich.farm', 'wss://relay.nostr.ch'])
 
-        instance
+        $pool
           .on('open', r => {
             r.subscribe(subid, {
               limit: 1000,
@@ -62,8 +62,10 @@ const localMethods = {
 
         await this.delay(5000)
 
-        instance.unsubscribe()
-        instance.close()
+        try{
+          // $pool.unsubscribe(subid)
+          this.closePool($pool)
+        } catch(e){""}
 
         relays.forEach( relay => {
           const hash = this.hash(relay)

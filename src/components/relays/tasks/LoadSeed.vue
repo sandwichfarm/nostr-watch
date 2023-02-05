@@ -6,7 +6,7 @@
     <span v-if="!isSingle">Loading data from history relay</span>
   </span>
   <span 
-    v-if="!store.tasks.isActive || this.store.tasks.getActiveSlug === slug">
+    v-if="(!store.tasks.isActive || this.store.tasks.getActiveSlug === slug) && !isSingle">
     <span class="text-white lg:text-sm mr-2 ml-2 text-xs mt-1.5 inline-block mr-10" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
       Next check in: {{ untilNext }}
     </span>
@@ -26,12 +26,10 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { relays } from '../../../../relays.yaml'
-
 import { RelayPool } from 'nostr'
 import { geo } from '../../../../cache/geo.yaml'
 
-import { Inspector } from 'nostr-relay-inspector'
+// import { Inspector } from 'nostr-relay-inspector'
 
 const localMethods = {
   invalidate(force, single){
@@ -43,8 +41,13 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        const relayChunks = this.chunk(100, [...relays])
-        console.log(relayChunks)
+        let relays
+        const onlineRelays = this.store.relays.getOnline
+        if(onlineRelays)
+          relays = [...onlineRelays, ...this.store.relays.getOffline]
+        else 
+          relays = this.store.relays.getAll
+        const relayChunks = this.chunk(100, relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
@@ -53,7 +56,6 @@ const localMethods = {
             const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
             pool
               .on('open', relay => {
-                console.log('subscribing', relayChunk)
                 relay.subscribe(subid, {
                   kinds:    [30303],
                   "#d":     single ? [ single ] : relayChunk,
@@ -62,7 +64,6 @@ const localMethods = {
               })
               .on('event', async (relay, sub_id, event) => {
                 if(subid === sub_id){
-                  console.log('event', event.tags)
                   const relay = event.tags[0][1]
                   const data = JSON.parse(event.content)
                   const result = {
@@ -77,7 +78,6 @@ const localMethods = {
                       latency: data?.latency[this.store.prefs.region]?.final ? true : false,
                       averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
                     },
-                    identities: []
                   }
 
                   if(event?.tags){
@@ -90,31 +90,9 @@ const localMethods = {
                       write: write.length && write[0][1] === 'true' ? true : false,
                     }
                   }
-                  
-                  console.log('result', result)
 
-                  if(result?.check?.connect) {
-                    console.log('inspecting', result.url)
-                    const inspector = new Inspector(relay, {
-                      checkRead: false,
-                      checkWrite: false,
-                      checkLatency: false,
-                      checkAverageLatency: false,
-                      passiveNipTests: false,
-                      getInfo: true,
-                      run: true
-                    })
-
-                    inspector.on('complete', inspect => {
-                      const res = inspect.result 
-                      result.pubkeyValid = res.pubkeyValid 
-                      result.pubkeyError = res.pubkeyError 
-                      result.identities = res.identities
-                      console.log('post history node data', result.pubkeyValid, result.pubkeyError, result.identities)
-                      this.results[relay] = result
-                      this.setCache(result)
-                    })
-                  } 
+                  if(!this.results[relay]?.indentities)
+                    result.identities = []
                 
                   if(data.info?.pubkey)
                     result.identities.push(data.info?.pubkey)
@@ -123,13 +101,12 @@ const localMethods = {
                     result.topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
                     
                   result.aggregate = this.getAggregate(result)
-                  this.results[relay] = result
+                  this.results[relay] = Object.assign(this.results[relay] || {}, result)
                   this.setCache(result)
                 }
               })
               .on('eose', () => {
-                pool.unsubscribe(subid)
-                pool.close()
+                this.closePool(pool)
                 resolve()
               })
           })
@@ -206,7 +183,7 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
     
     this.store.relays.setGeo(geo)
-    this.relays = Array.from(new Set(relays))
+    this.relays = this.store.relays.getAll
 
     for(let ri=0;ri-this.relays.length;ri++){
       const relay = this.relays[ri],
@@ -215,9 +192,8 @@ export default defineComponent({
     }
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.slug))
-
     if(this.isSingle) {
+      this.slug = 'relays/${this.relayFromUrl}'
       this.invalidate(true, this.relayFromUrl)
     }  
     else {

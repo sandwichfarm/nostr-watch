@@ -55,8 +55,8 @@ const localMethods = {
       const uniques = new Set()
       let timeout = setTimeout( () => { 
         resolve()
-        pool.unsubscribe(subid)
-        pool.close()
+        // pool.unsubscribe(subid)
+        this.closePool(pool)
       }, 10000 )
       
       pool
@@ -88,13 +88,11 @@ const localMethods = {
             return 
           
           resolve()
-          pool.unsubscribe(subid)
-          pool.close()
+          this.closePool(pool)
         })
         .on('eose', () => {
           resolve()
-          pool.unsubscribe(subid)
-          pool.close()
+          this.closePool(pool)
           clearTimeout(timeout)
         })
       

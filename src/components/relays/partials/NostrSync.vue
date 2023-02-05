@@ -179,7 +179,10 @@ export default defineComponent({
       this.hashCache = this.hashOG
       this.changed = false
 
-      pool.close()
+      pool.relays.forEach( relay => {
+        if(this.wsIsOpen(relay.ws))
+          this.closeRelay(relay)
+      })
       this.toggleEditor()
     },
     togglePopover: function(){

@@ -47,10 +47,7 @@
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()()">
                         <code class="text-xs block">Upvote</code>
                       </th> -->
-                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn()" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <!-- <span class="verified-shape-wrapper">
-                          <span class="shape verified"></span>
-                        </span> -->
+                      <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">NIP-11</code>
                       </th>
                       <th scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
@@ -105,13 +102,11 @@
                         </span>
                       </td>
 
-                      <td class="w-62 relay left-align relay-url ">
-                        <div class="flex">
+                      <td class="w-62 relay left-align relay-url text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50">
                           <a :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
-                          <span class="flex-1 align-middle hidden lg:inline-block pl-3 mt-1 m1-3 text-sm whitespace-nowrap truncate text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50" v-if="results[relay]?.topics">
+                          <span class="text-inherit flex-1 align-middle hidden lg:inline-block pl-3 m1-3 text-sm whitespace-nowrap truncate" v-if="results[relay]?.topics">
                             {{ getTopics(relay) }}
                           </span>
-                        </div>
                       </td>
 
                       <!-- <td class="w-16 fav text-center" v-if="isLoggedIn()()">
@@ -122,19 +117,19 @@
                         </a>
                       </td> -->
 
-                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn()" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
+                      <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <!-- {{ this.results[relay]?.pubkeyValid }}
                         {{ this.results[relay]?.info?.pubkey }} -->
-                        <span v-if="this.results[relay]?.pubkeyValid">
-                          <span v-tooltip:bottom.tooltip="identityList(relay)" class="cursor-pointer">
-                            <svg class="svg-icon fill-green-500" style="width: 1em; height: 1em;vertical-align: middle;;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
-                          </span> 
+                        <span 
+                          v-if="this.results[relay]?.pubkeyValid" 
+                          v-tooltip:bottom.tooltip="`Valid pubkey was registered by relay: ${this.results[relay].info.pubkey}`" class="cursor-pointer">
+                          <svg class="svg-icon fill-green-500" style="width: 1em; height: 1em;vertical-align: middle;;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
+                        </span> 
                           <!-- <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span> -->
-                        </span>
-                        <span v-if="!this.results[relay]?.pubkeyValid && this.results[relay]?.info?.pubkey" class="cursor-pointer">
-                          <span v-tooltip:bottom.tooltip="`Provided pubkey ${this.results[relay].info.pubkey} is invalid, error: ${this.results[relay].pubkeyError}. Please review NIP-11 specification to fix.`">
-                            <svg class="svg-icon fill-red-500/20" style="width: 1em; height: 1em;vertical-align: middle;;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
-                          </span>
+                        <span 
+                          v-if="!this.results[relay]?.pubkeyValid && this.results[relay]?.info?.pubkey" class="cursor-pointer" 
+                          v-tooltip:bottom.tooltip="`Provided pubkey ${this.results[relay].info.pubkey} is invalid, error: ${this.results[relay].pubkeyError}. Please review NIP-11 specification to fix.`">
+                          <svg class="svg-icon fill-red-500/20" style="width: 1em; height: 1em;vertical-align: middle;;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
                         </span>
                       </td>
 
@@ -143,11 +138,9 @@
                       </td>
 
                       <td v-if="subsection != 'favorite'" class="w-24 latency text-center">
-                        <div class="sm:px-6 text-sm font-bold h-full">
-                          <span :class="getUptimeColor(relay)" v-if="this.results[relay]?.uptime">
-                            {{ this.results[relay]?.uptime }}%
-                          </span>
-                        </div>
+                        <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.results[relay]?.uptime">
+                          {{ this.results[relay]?.uptime }}%
+                        </span>
                       </td>
 
                       <!-- <td class="w-24 latency text-center">
@@ -347,7 +340,6 @@
       this.setRandomRelay()
     },
     updated(){
-
       
     },
     beforeUnmount(){
@@ -384,6 +376,7 @@
         activePageData: {},
         randomRelay: "",
         inputDetected: false,
+        swearFilter: null
       }
     },
     computed: {
@@ -392,7 +385,7 @@
           let topics = ""
           // let topicsArr = this.results[relay].topics.slice(0, 3).filter( topic => topic[0].length <= 32)
           let topicsArr = this.results[relay].topics.filter( topic => {
-            console.log(topic[0], topic[0].length, topic[0].length <= 32)
+            // console.log(topic[0], topic[0].length, topic[0].length <= 32)
             return topic[0].length <= 32
           }).slice(0, 3)
           for(let topic in topicsArr){

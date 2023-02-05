@@ -30,7 +30,6 @@ const localMethods = {
       this.slug, 
       async () => {
         const relayChunks = this.chunk(100, [...relays])
-        console.log(relayChunks)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
@@ -47,7 +46,6 @@ const localMethods = {
               })
               .on('event', async (relay, sub_id, event) => {
                 if(subid === sub_id){
-                  console.log('event', event.tags)
                   const relay = event.tags[0][1]
                   const data = JSON.parse(event.content)
                   
@@ -58,8 +56,11 @@ const localMethods = {
                 }
               })
               .on('eose', () => {
-                pool.unsubscribe(subid)
-                pool.close()
+                try{
+                  // pool.unsubscribe(subid)
+                  this.closePool(pool)
+                } catch(e){""}
+                
                 resolve()
               })
           })
@@ -107,7 +108,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      slug: 'relays/seed', //REMEMBER TO CHANGE!!!
+      slug: 'relays/topics', //REMEMBER TO CHANGE!!!
       pool: null,
       untilNext: null,
       refreshEvery: 15*60*1000
@@ -131,8 +132,6 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.slug))
-
     if(this.isSingle) {
       this.invalidate(true, this.relayFromUrl)
     }  

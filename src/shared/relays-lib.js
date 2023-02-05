@@ -2,6 +2,13 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  closePool: function( $pool ) {
+    $pool.relays.forEach( $relay => this.closeRelay( $relay ) )
+  },
+  closeRelay: function( $relay ){
+    if($relay.ws.readyState === $relay.ws.OPEN )
+      $relay.close()
+  },
   queueKind3: async function(slug){
     this.queueJob(
       slug,

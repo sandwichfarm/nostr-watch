@@ -368,6 +368,7 @@ export default defineComponent({
       currentRegion: this.store.prefs.region,
       autoDetectRegion: this.store.prefs.autoDetectRegion,
       discoverRelays: this.store.prefs.discoverRelays,
+      checkNip11: this.store.prefs.checkNip11,
     }
   },
 
@@ -395,6 +396,11 @@ export default defineComponent({
         delete this.store.tasks.lastUpdate['relays/seed']
         delete this.store.tasks.lastUpdate['relays/check']
         this.discoverRelays = this.store.prefs.discoverRelays
+      }
+
+      if(this.store.prefs.checkNip11 !== this.checkNip11){
+        delete this.store.tasks.lastUpdate['relays/nip11']
+        this.checkNip11 = this.store.prefs.checkNip11
       }
     },100)
   },

@@ -97,16 +97,16 @@ export default defineComponent({
       if(hashOG === hashCurrent )
         return this.changed = false
 
-      console.log('input cache did not match', hashCache)
+      // console.log('input cache did not match', hashCache)
 
-      console.log(
-        'changed?', 
-        this.changed,
-        'ok..',
-        hashCache, 
-        objHash(this.store.user.getKind3), 
-        hashCache == objHash(this.store.user.getKind3)
-      )
+      // console.log(
+      //   'changed?', 
+      //   this.changed,
+      //   'ok..',
+      //   hashCache, 
+      //   objHash(this.store.user.getKind3), 
+      //   hashCache == objHash(this.store.user.getKind3)
+      // )
 
       this.hashCache = objHash(structuredClone(this.store.user.getKind3))
       this.changed = true
@@ -150,9 +150,9 @@ export default defineComponent({
       }
       event.id = getEventHash(event)
 
-      console.log('kind3 event', event)
+      // console.log('kind3 event', event)
 
-      console.log(window.nostr, typeof window.nostr.signEvent)
+      // console.log(window.nostr, typeof window.nostr.signEvent)
 
       const signedEvent = await window.nostr.signEvent(structuredClone(event))
 
@@ -162,7 +162,7 @@ export default defineComponent({
       if(!ok || !veryOk)
         return 
 
-      console.log('valid event?', ok, veryOk)
+      // console.log('valid event?', ok, veryOk)
       
       const relaysWrite = Object.keys(this.store.user.kind3).filter( key => this.store.user.kind3[key].write)
 

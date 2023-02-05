@@ -2,6 +2,21 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  chunk(chunkSize, array) {
+    return array.reduce(function(previous, current) {
+        var chunk;
+        if (previous.length === 0 || 
+                previous[previous.length -1].length === chunkSize) {
+            chunk = [];
+            previous.push(chunk);
+        }
+        else {
+            chunk = previous[previous.length -1];
+        }
+        chunk.push(current);
+        return previous;
+    }, []); 
+  },
   closePool: function( $pool ) {
     $pool.relays.forEach( $relay => this.closeRelay( $relay ) )
   },

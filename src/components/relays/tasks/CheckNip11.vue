@@ -3,7 +3,7 @@
     v-if="this.store.tasks.getActiveSlug === slug"
     class="text-white lg:text-sm mx-2 mt-1.5 text-xs">
   <span class="text-white lg:text-sm mr-2 ml-2 text-xs">
-    <span v-if="store.tasks.isProcessing(this.slug)" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block md:pt-1.5 md:mt-0 text-xs">
+    <span class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block md:pt-1.5 md:mt-0 text-xs">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -30,60 +30,70 @@ import { Inspector } from 'nostr-relay-inspector'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.taskSlug, 24*60*60*1000) && !force) ) 
+    if( (!this.isExpired(this.slug, 24*60*60*1000) && !force) ) 
       return
     this.queueJob(
-      this.taskSlug, 
+      this.slug, 
       async () => {
-        const relaysOnline = Object.keys(this.results).filter( relay => {
+        const chunkSize = 20
+        this.relays = Object.keys(this.results).filter( relay => {
           return this.results[relay]?.check?.connect
-        })
-        const promises = []
-        relaysOnline.forEach(relay => {
-          const promise = new Promise( resolve => {
-            const result = this.results[relay]
-            if(result?.check?.connect) {
-              const $inspector = new Inspector(relay, {
+        }).filter( relay => !this.store.tasks.processed[this.slug].includes(relay) )
+        const relayChunks = this.chunk(chunkSize, this.relays)
+        for (let i = 0; i < relayChunks.length; i++) {
+          await new Promise( resolveChunk => {
+            const relayChunk = relayChunks[i]
+            let total = relayChunk.length,
+                completed = 0
+            relayChunk.forEach( async (relay) => {  
+              new Inspector(relay, {
                 checkRead: false,
                 checkWrite: false,
                 checkLatency: false,
                 checkAverageLatency: false,
                 passiveNipTests: false,
                 getInfo: true,
-                getIdentities: false,
-                run: true
+                getIdentities: true,
+                run: true,
+                debug: true,
+                connectTimeout: 2*1000
               })
-              $inspector
-                .on('complete', inspect => {
-                  if(!inspect?.result)
-                    return
-                  const res = inspect.result 
-                  result.pubkeyValid = res.pubkeyValid 
-                  result.pubkeyError = res.pubkeyError 
-                  result.identities = res.identities
-                  this.results[relay] = Object.assign(this.results[relay], result)
-                  this.setCache(this.results[relay])
-                  this.store.tasks.addProcessed(this.slug, relay)
-                  this.inspectors.push($inspector)
-                  resolve()
-                })
-                .on('error', ()=>{
-                  resolve()
-                })
-            }
-          }) 
-          promises.push(promise)
-        })
-        await Promise.all(promises)
+              .on('complete', inspect => {
+                const result = this.results[relay]
+                if(!inspect?.result)
+                  return
+                const res = inspect.result 
+                result.pubkeyValid = res.pubkeyValid 
+                result.pubkeyError = res.pubkeyError 
+                result.identities = res.identities
+                this.results[relay] = Object.assign(this.results[relay], result)
+                this.setCache(this.results[relay])
+                this.store.tasks.addProcessed(this.slug, relay)
+                completed++
+                console.log(`chunk ${i}`, 'completed', completed === total, completed, total )
+                if(completed === total)
+                  resolveChunk()
+                inspect.close()
+              })
+              .on('error', ()=>{
+                completed++
+                console.log(`chunk ${i}`, 'completed', completed === total, completed, total )
+                this.store.tasks.addProcessed(this.slug, relay)
+                if(completed === total)
+                  resolveChunk()
+              })
+            }) 
+          })
+        }
         this.store.tasks.completeJob()
+        this.closeAll()
       },
       true
     )
   },
-  finish(clear){
-    if(clear)
-      clearTimeout(this.timeout)
-    this.store.tasks.completeJob()
+  closeAll(){
+    if(this.inspectors.length)
+      this.inspectors.forEach( $inspector => $inspector.close() ) 
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration)) 
@@ -98,9 +108,10 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'relays/nip11', //REMEMBER TO CHANGE!!!\
+      slug: 'relays/nip11', //REMEMBER TO CHANGE!!!\
       relays: [],
       inspectors: [],
+      interval: null
     }
   },
   setup(props){
@@ -111,28 +122,28 @@ export default defineComponent({
     }
   },
   created(){
-    clearInterval(this.interval)
   },
   unmounted(){
-    clearInterval(this.interval)
-    this.inspectors.forEach( $inspector => $inspector.close() )  
+    this.closeAll()
   },
   beforeMount(){
     this.relays = this.store.relays.getAll
 
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
+    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
   },
-  mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+  async mounted(){
+    await new Promise( delay => setTimeout( delay, 1) )
 
-    if(this.store.tasks.isProcessing(this.taskSlug))
+    console.log('is processing', this.store.tasks.isProcessing(this.slug))
+
+    if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else
       this.invalidate()
 
-    setTimeout( ()=>{}, 1)
+    
   },
   updated(){},
   computed: Object.assign(SharedComputed, {

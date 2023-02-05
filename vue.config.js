@@ -3,8 +3,6 @@ const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin")
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
-console.log('NODE_ENV', process.env.NODE_ENV)
-
 const config = {
   transpileDependencies: true,
   

@@ -85,7 +85,7 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
 
     if(this.store.tasks.isProcessing(this.taskSlug))
       this.invalidate(true)

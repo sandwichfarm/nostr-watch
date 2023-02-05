@@ -25,15 +25,12 @@ export const useRelaysStore = defineStore('relays', {
     getOffline: (state) => state.urls.filter( relay => !state.urlsOnline.includes(relay)),
     getShuffled: state => shuffle(state.urls),
     getShuffledPublic: state => {
-      console.log('aggregates are set',state.aggregatesAreSet )
       return state.aggregatesAreSet ? shuffle(state.aggregates.public) : shuffle(state.urls)
     },
     getRelays: (state) => (aggregate, results) => {
-      console.log('aggregate', aggregate)
       if( 'all' == aggregate )
         return state.urls.map(x=>x)
       if( 'online' == aggregate ){
-        console.log('gettonline', state.urls.filter( (relay) => results?.[relay]?.check?.connect ).length)
         return state.urls.filter( (relay) => results?.[relay]?.check?.connect )
       }
         
@@ -111,11 +108,8 @@ export const useRelaysStore = defineStore('relays', {
 
     unsetFavorite(relayUrl){ 
       this.favorites = this.favorites.filter(item => item !== relayUrl)
-      
       const store = useUserStore()
-      console.log('before delete', typeof store.kind3[relayUrl])
       delete store.kind3[relayUrl]
-      console.log('deleted?', typeof store.kind3[relayUrl])
     },
 
     toggleFavorite(relayUrl){

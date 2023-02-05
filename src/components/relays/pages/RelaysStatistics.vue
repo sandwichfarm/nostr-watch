@@ -377,7 +377,7 @@ export default defineComponent({
         let segments, repo, org
         try {
           segments = new URL(sw).pathname.split('/')
-          console.log(sw, segments.length)
+          // console.log(sw, segments.length)
           repo = segments.pop()
           org = segments.pop()
           if(repo == '' || org == '')

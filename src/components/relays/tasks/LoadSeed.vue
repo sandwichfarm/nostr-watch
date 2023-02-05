@@ -3,8 +3,8 @@
     v-if="this.store.tasks.getActiveSlug === slug"
     class="text-white lg:text-sm mx-2 text-xs">
   <span class="text-white lg:text-sm mr-2 ml-2 text-xs">
-    <span v-if="!store.tasks.isProcessing(this.slug)" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
-    <span v-if="store.tasks.isProcessing(this.slug)" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block md:pt-1.5 md:mt-0 text-xs">
+    <span v-if="!store.tasks.isProcessing(this.slug) && !isSingle" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
+    <span v-if="store.tasks.isProcessing(this.slug) && !isSingle" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block md:pt-1.5 md:mt-0 text-xs">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -43,7 +43,6 @@ import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
 import { RelayPool } from 'nostr'
-import { geo } from '../../../../cache/geo.yaml'
 
 // import { Inspector } from 'nostr-relay-inspector'
 
@@ -58,7 +57,7 @@ const localMethods = {
       this.slug, 
       async () => {
         this.relays = [...this.store.relays.getAll]
-        const relayChunks = this.chunk(30, this.relays)
+        const relayChunks = this.chunk(50, this.relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
@@ -126,10 +125,10 @@ const localMethods = {
               })
           })
           promises.push(promise)
-          await new Promise( resolveDelay => setTimeout( resolveDelay, 100 ) ) 
+          await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
         }
         await Promise.all(promises)
-        this.store.tasks.lastUpdate['relays/nip11'] = null
+        // this.store.tasks.lastUpdate['relays/nip11'] = null
         this.store.tasks.completeJob()
       },
       true
@@ -163,23 +162,7 @@ const localMethods = {
   },
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
-  },
-  chunk(chunkSize, array) {
-    return array.reduce(function(previous, current) {
-        var chunk;
-        if (previous.length === 0 || 
-                previous[previous.length -1].length === chunkSize) {
-            chunk = [];
-            previous.push(chunk);
-        }
-        else {
-            chunk = previous[previous.length -1];
-        }
-        chunk.push(current);
-        return previous;
-    }, []); 
   }
-
 }
 
 export default defineComponent({
@@ -212,8 +195,6 @@ export default defineComponent({
     this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
-    
-    this.store.relays.setGeo(geo)
     
     this.relays = [...this.store.relays.getAll]
 

@@ -109,8 +109,6 @@ export const useTaskStore = defineStore(
     // Override global config for this store.
     enable: true,
   },
-},
-{
   persistedState: {
     // includePaths: ['lastUpdate', 'processed', 'processing', 'currentTask']
     excludePaths: ['pending', 'completed', 'active'],

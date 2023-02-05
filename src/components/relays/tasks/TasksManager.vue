@@ -9,6 +9,8 @@
   <RefreshTask
     v-bind:resultsProp="results"
     v-if="store.prefs.clientSideProcessing || isSingle" />
+  <GetTopics
+    v-if="store.prefs.clientSideProcessing || !isSingle" /> /> 
   <UserRelayList />
   <!-- <RelayCanonicalsTask
     :resultsProp="results" />
@@ -58,12 +60,7 @@ export default defineComponent({
       results: results
     }
   },
-  beforeMount(){
-    //https://github.com/iendeavor/pinia-plugin-persistedstate-2/issues/136
-    this.store.tasks.active = new Array()
-    this.store.tasks.pending = new Array()
-    this.store.tasks.completed = new Array()
-  },
+  beforeMount(){},
   mounted(){
     this.currentTask = this.store.tasks.currentTask
     this.interval = setInterval( () => {
@@ -87,7 +84,6 @@ export default defineComponent({
   },
   methods: {
     processJob(){
-      // console.log('trying processJob()')
       if(!this.store.tasks.active?.handler)
         return 
       this.store.tasks.active.handler()

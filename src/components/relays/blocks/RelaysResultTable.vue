@@ -105,8 +105,13 @@
                         </span>
                       </td>
 
-                      <td class="w-62 relay left-align relay-url">
-                        <a :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
+                      <td class="w-62 relay left-align relay-url ">
+                        <div class="flex">
+                          <a :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
+                          <span class="flex-1 align-middle hidden lg:inline-block pl-3 mt-1 m1-3 text-sm whitespace-nowrap truncate text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50" v-if="results[relay]?.topics">
+                            {{ getTopics(relay) }}
+                          </span>
+                        </div>
                       </td>
 
                       <!-- <td class="w-16 fav text-center" v-if="isLoggedIn()()">
@@ -382,6 +387,20 @@
       }
     },
     computed: {
+      getTopics(){
+        return relay => {
+          let topics = ""
+          // let topicsArr = this.results[relay].topics.slice(0, 3).filter( topic => topic[0].length <= 32)
+          let topicsArr = this.results[relay].topics.filter( topic => {
+            console.log(topic[0], topic[0].length, topic[0].length <= 32)
+            return topic[0].length <= 32
+          }).slice(0, 3)
+          for(let topic in topicsArr){
+            topics = `${topics}  #${topicsArr[topic][0]}`
+          }
+          return topics
+        }
+      },
       getUptimeColor(){
         return relay => {
           return {

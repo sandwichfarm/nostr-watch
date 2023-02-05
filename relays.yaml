@@ -275,3 +275,8 @@ relays:
   - wss://spore.ws
   - wss://bitcoiner.social
   - wss://nostr.plebchain.org
+  - wss://relay.nostr.hu
+  - wss://relay.nostr.lu
+  - wss://relay.nostr.ae
+  - wss://middling.myddns.me
+  - wss://middling.sytes.net

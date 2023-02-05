@@ -8576,6 +8576,11 @@ svgo@^2.7.0:
     picocolors "^1.0.0"
     stable "^0.1.8"
 
+swearfilter@2.0.4:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/swearfilter/-/swearfilter-2.0.4.tgz#3dcb5e3f95d7e103422bd66268d07def3eea16d3"
+  integrity sha512-E2bA+Sf62uB73zFOcTOPUbhXQ37SSmQWSxumFnmRwSqSS+KrgczYelsU2H0xx6rY7W4xSaJIPX2GDcpnuuB1Og==
+
 table@^6.0.9:
   version "6.8.1"
   resolved "https://registry.yarnpkg.com/table/-/table-6.8.1.tgz#ea2b71359fe03b017a5fbc296204471158080bdf"

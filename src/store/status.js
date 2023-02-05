@@ -4,7 +4,8 @@ export const useStatusStore = defineStore(
   'status', 
   {
     state: () => ({ 
-      historyNode: null
+      historyNode: null,
+      api: null
     }),
     getters: {
     },

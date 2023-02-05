@@ -75,7 +75,7 @@ async function discover(){
         if(subid == _subid) {
           try { 
             relaysRemote = Object.assign(relaysRemote, JSON.parse(event.content))
-            relay.close()
+            this.closeRelay(relay)
           } catch(e) {""}
         }
       })

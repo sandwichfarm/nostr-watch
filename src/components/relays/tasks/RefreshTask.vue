@@ -182,7 +182,7 @@ const localMethods = {
               }
       
       
-      console.log(result.url, 'pubkey info', result.info?.pubkey, result.pubkeyValid, result.pubkeyError)
+      // console.log(result.url, 'pubkey info', result.info?.pubkey, result.pubkeyValid, result.pubkeyError)
       // if(result.info?.pubkey)
       //   resultPruned.identities.push(result.info.pubkey)
 
@@ -214,8 +214,8 @@ const localMethods = {
           checkRead: true, 
           checkWrite: true,   
           checkLatency: true,
-          getInfo: true,
-          getIdentities: true,
+          getInfo: this.store.prefs.checkNip11 || this.isSingle,
+          getIdentities: false,
           run: true,
           // debug: true,
           connectTimeout: this.getDynamicTimeout,
@@ -236,7 +236,7 @@ const localMethods = {
         .on('complete', (instance) => {
           // console.log('completed?', instance.result)
           instance.result.aggregate = this.getAggregate(instance.result)
-          instance.relay.close()
+          this.closeRelay(instance.relay)
           instance.result.log = instance.log
           resolve(instance.result)
         })
@@ -313,8 +313,7 @@ export default defineComponent({
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
-    this.relays = Array.from(new Set(this.store.relays.getShuffled))
-    this.store.relays.setRelays(this.relays)
+    this.relays = Array.from(new Set([...this.store.relays.getOnline, ...this.store.relays.getOffline]))
     this.store.relays.setGeo(geo)
 
     for(let ri=0;ri-this.relays.length;ri++){

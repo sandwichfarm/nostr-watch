@@ -6,6 +6,7 @@ import { useUserStore } from '@/store/user'
 export const useRelaysStore = defineStore('relays', {
   state: () => ({ 
     urls: new Array(),
+    urlsOnline: new Array(),
     // results: new Object(),
     geo: new Object(),
     lastUpdate: null,
@@ -20,6 +21,8 @@ export const useRelaysStore = defineStore('relays', {
   }),
   getters: {
     getAll: (state) => state.urls,
+    getOnline: (state) => state.urlsOnline,
+    getOffline: (state) => state.urls.filter( relay => !state.urlsOnline.includes(relay)),
     getShuffled: state => shuffle(state.urls),
     getShuffledPublic: state => {
       console.log('aggregates are set',state.aggregatesAreSet )
@@ -60,7 +63,9 @@ export const useRelaysStore = defineStore('relays', {
   },
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
-    addRelays(relayUrls){ this.urls = Array.from(new Set(this.urls.concat(this.urls, relayUrls))) },
+    addRelays(relayUrls){ 
+      this.urls = removeDuplicateHostnames(this.urls.concat(this.urls, relayUrls)) 
+    },
     setRelays(relayUrls){ this.urls = relayUrls },
 
     // setResult(result){ 
@@ -144,4 +149,20 @@ function shuffle(array) {
   }
 
   return array;
+}
+
+
+const removeDuplicateHostnames = function(array) {
+  const hostnameMap = new Map();
+  const result = [];
+  
+  for (const url of array) {
+    const hostname = new URL(url).hostname;
+    if (!hostnameMap.has(hostname)) {
+      hostnameMap.set(hostname, true);
+      result.push(url);
+    }
+  }
+  
+  return result;
 }

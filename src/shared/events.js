@@ -21,12 +21,12 @@ events.discoverRelays = async function(){
         if(subid == _subid) {
           try { 
             relaysRemote = Object.assign(relaysRemote, JSON.parse(event.content))
-            relay.close()
+            this.closeRelay(relay)
           } catch(e) {""}
         }
       })
     setTimeout( () => {
-      pool.close()
+      this.closePool(pool)
       resolve(true) 
     }, 10*1000 )
   })
@@ -65,7 +65,7 @@ events.get = async function (){
     })
 
   setTimeout( () => {
-    pool.close()
+    this.closePool(pool)
     resolve(true) 
   }, 10*1000 )
 }

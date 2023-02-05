@@ -70,7 +70,7 @@ const History = async function(){
         })
         .on('eose', (relay) => {
           //console.log('closing', relay.url)
-          relay.close()
+          this.closeRelay(relay)
           resolve(true)
         })
         .on('event', (relay, _subid, event) => {
@@ -85,7 +85,7 @@ const History = async function(){
                   relayTimeCodes[key] = new Array()
                 relayTimeCodes[key].push(event.created_at)
               })
-              relay.close()
+              this.closeRelay(relay)
             } catch(e) {
               console.error(e)
             }
@@ -93,7 +93,7 @@ const History = async function(){
         })
 
       setTimeout( () => {
-        pool.close()
+        this.closePool(pool)
         resolve(true) 
       }, 10*1000 )
     })

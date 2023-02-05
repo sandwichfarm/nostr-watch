@@ -18,7 +18,9 @@ export const usePrefsStore = defineStore('prefs', {
     autoDetectRegion: true,
     region: 'eu-west',
     ignoreTopics: 'canonical,nostr',
-    showMaps: true
+    showMaps: true,
+    discoverRelays: false,
+    checkNip11: false
   }),
   getters: {
     doRefresh: (state) => state.refresh,

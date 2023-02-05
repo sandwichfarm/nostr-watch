@@ -36,7 +36,6 @@ export const useUserStore = defineStore('user', {
         const ordered = []
         pool
           .on('open', r => {
-            console.log('subscribing', subid)
             r.subscribe(subid, {
               limit: 1,
               kinds: [3],
@@ -69,9 +68,10 @@ export const useUserStore = defineStore('user', {
             return 
           this.kind3Event = ordered[0]
           const result = this.kind3Event.content
-          console.log('final', result)
-          pool.unsubscribe(subid)
-          pool.close()
+          try{
+            pool.unsubscribe(subid)
+            this.closePool(pool)
+          } catch(e){""}
           resolve(result)
         },5000)
       })

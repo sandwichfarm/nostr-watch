@@ -171,7 +171,7 @@ export default defineComponent({
             })
             .on('eose', (relay) => {
               //console.log('closing', relay.url)
-              relay.close()
+              this.closeRelay(relay)
               resolve(true)
             })
             .on('event', (relay, _subid, event) => {
@@ -186,7 +186,7 @@ export default defineComponent({
                       relayTimeCodes[key] = new Array()
                     relayTimeCodes[key].push(event.created_at)
                   })
-                  relay.close()
+                  this.closeRelay(relay)
                 } catch(e) {
                   console.error(e)
                 }
@@ -194,7 +194,7 @@ export default defineComponent({
             })
 
           setTimeout( () => {
-            pool.close()
+            this.closePool(pool)
             resolve(true) 
           }, 10*1000 )
         })

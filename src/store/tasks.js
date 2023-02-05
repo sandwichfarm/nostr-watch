@@ -46,17 +46,20 @@ export const useTaskStore = defineStore(
     },
     //queue
     addJob(job){
+      console.log('got here', 'addJob()')
       if(job?.unique){
+        console.log('got here', 'isUnique()')
         let exists
         exists = this.active.id === job.id
         if(!exists)
           exists = this.pending.filter( j => j.id === job.id).length ? true : false
         if(exists)
           return
+        console.log('got here', 'does not exist')
       }
       this.pending.push(job)
       if( this.isIdle )
-        this.startNextJob()
+        this.startNextJob() && console.log('got here', 'past expired')
     },
     startNextJob(){
       if( this.arePending ) {

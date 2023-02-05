@@ -170,7 +170,9 @@ export default defineComponent({
     getRelaysCount: function() { 
       return (subsection) => {
         if(subsection === 'all')
-          return this.store.relays.getAll.length 
+          return this.store.relays.getAll.length
+        if(subsection === 'online')
+          return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.check?.connect).length  
         if(subsection === 'favorite')
           return this.store.relays.getFavorites.length 
         return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == subsection).length 

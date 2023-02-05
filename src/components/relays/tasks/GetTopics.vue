@@ -15,7 +15,7 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { relays } from '../../../../relays.yaml'
+// import { relays } from '../../../../relays.yaml'
 
 import { RelayPool } from 'nostr'
 
@@ -29,15 +29,18 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        const relayChunks = this.chunk(100, [...relays])
+        const relaysOnline = Object.keys(this.results).filter( relay => {
+          return this.results[relay]?.check?.connect
+        })
+        const relayChunks = this.chunk(100, [...relaysOnline])
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
             const timeout = setTimeout(resolve, 10*1000)
             const relayChunk = relayChunks[i]
-            const pool = new RelayPool(['wss://history.nostr.watch'])
+            this.pool = new RelayPool(['wss://history.nostr.watch'])
             const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
-            pool
+            this.pool
               .on('open', relay => {
                 relay.subscribe(subid, {
                   kinds:    [30303],
@@ -130,7 +133,7 @@ export default defineComponent({
   },
   unmounted(){
     clearInterval(this.interval)
-    this.pool = null
+    this.closePool(this.pool)
   },
   beforeMount(){
     this.relays = Array.from(new Set(relays))

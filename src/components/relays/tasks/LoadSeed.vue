@@ -1,7 +1,7 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mx-2 mt-1.5 text-xs">
+    class="text-white lg:text-sm mx-2 text-xs">
   <span class="text-white lg:text-sm mr-2 ml-2 text-xs">
     <span v-if="!store.tasks.isProcessing(this.slug)" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
     <span v-if="store.tasks.isProcessing(this.slug)" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block md:pt-1.5 md:mt-0 text-xs">
@@ -9,7 +9,7 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Checked
+      {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Results Pulled
     </span>
   </span>
   <span class="text-white lg:text-sm mr-2 ml-2 text-xs hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
@@ -57,22 +57,15 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        let relays
-        let onlineRelays
-        onlineRelays = this.store.relays.getOnline
-                        .filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
-        if(onlineRelays)
-          relays = [...onlineRelays, ...this.store.relays.getOffline]
-        else 
-          relays = this.store.relays.getAll
-        const relayChunks = this.chunk(30, relays)
+        this.relays = [...this.store.relays.getAll]
+        const relayChunks = this.chunk(30, this.relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
             const relayChunk = relayChunks[i]
-            const pool = new RelayPool(['wss://history.nostr.watch'])
+            this.pool = new RelayPool(['wss://history.nostr.watch'])
             const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
-            pool
+            this.pool
               .on('open', relay => {
                 relay.subscribe(subid, {
                   kinds:    [30303],
@@ -128,7 +121,7 @@ const localMethods = {
                 }
               })
               .on('eose', () => {
-                this.closePool(pool)
+                this.closePool(this.pool)
                 resolve()
               })
           })
@@ -197,7 +190,7 @@ export default defineComponent({
       slug: 'relays/seed', //REMEMBER TO CHANGE!!!
       pool: null,
       untilNext: null,
-      refreshEvery: 15*60*1000
+      refreshEvery: 15*60*1000,
     }
   },
   setup(props){
@@ -212,7 +205,8 @@ export default defineComponent({
   },
   unmounted(){
     clearInterval(this.interval)
-    this.pool = null
+    if(this.pool)
+      this.closePool(this.pool)
   },
   beforeMount(){
     this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
@@ -220,7 +214,8 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
     
     this.store.relays.setGeo(geo)
-    this.relays = this.store.relays.getAll
+    
+    this.relays = [...this.store.relays.getAll]
 
     for(let ri=0;ri-this.relays.length;ri++){
       const relay = this.relays[ri],

@@ -132,7 +132,7 @@ relays:
   - wss://nostr.walletofsatoshi.com
   - wss://nostr.shmueli.org
   - wss://wizards.wormrobot.org
-  - wss://nostr.orangepill.dev
+  - wss://relay.orangepill.dev
   - wss://paid.no.str.cr
   - wss://nostr.sovbit.com
   - wss://nostr.datamagik.com
@@ -274,3 +274,5 @@ relays:
   - wss://nostr.pcdkd.fyi
   - wss://spore.ws
   - wss://bitcoiner.social
+  - wss://nostr.plebchain.org
+  

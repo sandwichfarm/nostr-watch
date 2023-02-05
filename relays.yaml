@@ -280,5 +280,6 @@ relays:
   - wss://relay.nostr.ae
   - wss://middling.myddns.me
   - wss://middling.sytes.net
+  - wss://nostr.island.network
   - wss://nostr.nikolaj.online
   - wss://relay.nostrich.land

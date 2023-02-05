@@ -143,7 +143,6 @@ export default defineComponent({
     // this.routeSection = this.parseHash.section || false
     this.routeSubsection = this.parseHash.subsection || false
 
-    this.store.relays.setRelays(relays)
     this.store.relays.setGeo(geo)
     
     // this.relays = this.store.relays.getAll?.length ? this.store.relays.getAll : relays

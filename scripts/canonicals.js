@@ -109,9 +109,7 @@ async function discover(){
 }
 
 async function sieve(){
-  console.log('filtering relays', relays.length)
   checkMissing()
-  console.log('missing', missing.length)
   return
 }
 

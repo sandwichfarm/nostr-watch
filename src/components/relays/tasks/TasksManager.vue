@@ -10,7 +10,7 @@
     v-if="!store.prefs.clientSideProcessing || isSingle" />
   <CheckNip11
     v-bind:resultsProp="results"
-    v-if="(!store.prefs.clientSideProcessing || isSingle) && store.prefs.checkNip11" />
+    v-if="(!store.prefs.clientSideProcessing || ( !store.prefs.clientSideProcessing && isSingle ) ) && store.prefs.checkNip11" />
   <RefreshTask
     v-bind:resultsProp="results"
     v-if="store.prefs.clientSideProcessing || isSingle" />

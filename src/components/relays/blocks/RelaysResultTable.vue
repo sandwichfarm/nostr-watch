@@ -527,7 +527,7 @@
         }
       },
       relayClean() {
-        return (relay) => relay.replace('wss://', '')
+        return (relay) => relay?.replace('wss://', '')
       },
     },
     methods: Object.assign(RelaysLib, UserLib, localMethods),

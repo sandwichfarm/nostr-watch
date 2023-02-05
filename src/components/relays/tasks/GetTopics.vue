@@ -33,6 +33,7 @@ const localMethods = {
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
+            const timeout = setTimeout(resolve, 10*1000)
             const relayChunk = relayChunks[i]
             const pool = new RelayPool(['wss://history.nostr.watch'])
             const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
@@ -44,7 +45,7 @@ const localMethods = {
                   authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
                 })
               })
-              .on('event', async (relay, sub_id, event) => {
+              .on('event', async (r, sub_id, event) => {
                 if(subid === sub_id){
                   const relay = event.tags[0][1]
                   const data = JSON.parse(event.content)
@@ -52,6 +53,7 @@ const localMethods = {
                   if(data?.topics)
                     this.results[relay].topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
 
+                  this.results = Object.assign(this.results[relay] || {}, result)
                   this.setCache(result)
                 }
               })
@@ -62,9 +64,11 @@ const localMethods = {
                 } catch(e){""}
                 
                 resolve()
+                clearTimeout(timeout)
               })
+            promises.push(promise)
           })
-          promises.push(promise)
+         
         }
         await Promise.all(promises)
         this.store.tasks.completeJob()

@@ -108,6 +108,8 @@ export default defineComponent({
       this.invalidate(true)
     else
       this.invalidate()
+
+    setTimeout( ()=>{}, 1)
   },
   updated(){},
   computed: Object.assign(SharedComputed, {

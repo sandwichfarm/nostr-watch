@@ -8,12 +8,12 @@ daemons:
    'eu-west':
       lat: '74.0060'
       lon: '4.9041'
-   'in':
+   'asia-south':
       lat: '20.5937'
       lon: '78.9629'
    'au':
       lat: '25.2744'
       lon: '133.7751'
-   'sg':
+   'asia-southeast':
       lat: '1.3521'
       lon: '103.8198'

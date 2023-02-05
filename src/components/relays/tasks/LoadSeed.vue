@@ -1,16 +1,32 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="isSingle">Loading {{ relay }} from history node...</span>
+    class="text-white lg:text-sm mx-2 mt-1.5 text-xs">
+  <span class="text-white lg:text-sm mr-2 ml-2 text-xs">
+    <span v-if="!store.tasks.isProcessing(this.slug)" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
+    <span v-if="store.tasks.isProcessing(this.slug)" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block md:pt-1.5 md:mt-0 text-xs">
+      <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Checked
+    </span>
+  </span>
+  <span class="text-white lg:text-sm mr-2 ml-2 text-xs hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
+  <span class="text-white lg:text-sm mr-2 ml-2 text-xs" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+    Next check in: {{ untilNext }}
+  </span>
+  <!--<span v-if="isSingle">Loading {{ relay }} from history node...</span>
     <span v-if="!isSingle">Loading data from history relay</span>
   </span>
   <span 
     v-if="(!store.tasks.isActive || this.store.tasks.getActiveSlug === slug) && !isSingle">
-    <span class="text-white lg:text-sm mr-2 ml-2 text-xs mt-1.5 inline-block mr-10" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+    <span 
+      v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)" 
+      class="text-white lg:text-sm ml-2 text-xs mt-1.5 inline-block mr-10" >
       Next check in: {{ untilNext }}
-    </span>
-  </span>
+    </span> -->
+  </span> 
 </template>
 
 <style scoped>
@@ -42,12 +58,14 @@ const localMethods = {
       this.slug, 
       async () => {
         let relays
-        const onlineRelays = this.store.relays.getOnline
+        let onlineRelays
+        onlineRelays = this.store.relays.getOnline
+                        .filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
         if(onlineRelays)
           relays = [...onlineRelays, ...this.store.relays.getOffline]
         else 
           relays = this.store.relays.getAll
-        const relayChunks = this.chunk(100, relays)
+        const relayChunks = this.chunk(30, relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
@@ -101,8 +119,12 @@ const localMethods = {
                     result.topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
                     
                   result.aggregate = this.getAggregate(result)
-                  this.results[relay] = Object.assign(this.results[relay] || {}, result)
-                  this.setCache(result)
+                  const mergedResult = Object.assign(this.results[relay] || {}, result)
+                  this.results[relay] = mergedResult
+                  this.setCache(mergedResult)
+                  if(this.store.tasks.isProcessed(this.slug, relay))
+                    return 
+                  this.store.tasks.addProcessed(this.slug, relay)
                 }
               })
               .on('eose', () => {
@@ -111,8 +133,10 @@ const localMethods = {
               })
           })
           promises.push(promise)
+          await new Promise( resolveDelay => setTimeout( resolveDelay, 100 ) ) 
         }
         await Promise.all(promises)
+        this.store.tasks.lastUpdate['relays/nip11'] = null
         this.store.tasks.completeJob()
       },
       true
@@ -129,7 +153,20 @@ const localMethods = {
     }, 15*60*1000)
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now())) 
+    console.log(
+      'timeuntil', 
+      Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery), 
+      this.store.tasks.getLastUpdate(this.slug),
+
+      this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now()))
+    )
+    return this.timeSince(
+            Date.now()
+            -(
+              this.store.tasks.getLastUpdate(this.slug)
+              +this.refreshEvery-Date.now()
+            )
+    ) 
   },
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()

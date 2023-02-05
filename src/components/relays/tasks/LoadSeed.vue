@@ -173,7 +173,7 @@ export default defineComponent({
       slug: 'relays/seed', //REMEMBER TO CHANGE!!!
       pool: null,
       untilNext: null,
-      refreshEvery: 15*60*1000,
+      refreshEvery: 5*60*1000,
     }
   },
   setup(props){

@@ -36,7 +36,7 @@
     "node-emoji": "1.11.0",
     "node-fetch": "3.3.0",
     "nostr": "0.2.5",
-    "nostr-relay-inspector": "0.0.30",
+    "nostr-relay-inspector": "0.0.31",
     "nostr-tools": "1.1.1",
     "object-hash": "3.0.0",
     "object-sizeof": "1.6.3",

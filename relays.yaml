@@ -49,7 +49,6 @@ relays:
   - wss://nostr.sandwich.farm
   - wss://nostr.zebedee.cloud
   - wss://nostr-2.zebedee.cloud
-  - wss://nostr.shadownode.org
   - wss://nostr.nymsrelay.com
   - wss://expensive-relay.fiatjaf.com
   - wss://relay.kronkltd.net
@@ -337,3 +336,5 @@ relays:
   - wss://nostr01.opencult.com
   - wss://nostream.denizenid.com
   - wss://puravida.nostr.land
+  - wss://1.noztr.com
+  

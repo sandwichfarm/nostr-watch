@@ -180,7 +180,7 @@ relays:
   - wss://nostr.screaminglife.io
   - wss://deschooling.us
   - wss://relay-pub.deschooling.us
-  - wss://nostr.bitcoiner.social
+  - wss://offchain.pub
   - wss://nostr-pub1.southflorida.ninja
   - wss://nostr.ncsa.illinois.edu
   - wss://nostr.relayer.se

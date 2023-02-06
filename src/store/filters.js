@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 export const useFilterStore = defineStore('filters', {
   state: () => ({ 
     enabled: false,
-    show: {},
+    hide: {},
     isValid: new Object(),
     rules: new Object(),
     meta: new Object()

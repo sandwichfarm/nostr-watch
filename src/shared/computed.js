@@ -36,7 +36,7 @@ export default {
         // return this.isFirstVisit 
     },
     pendingFirstCompletion(){
-        return this.store.tasks.lastUpdate['relays/seed']
+        return !this.store.tasks.lastUpdate['relays/seed'] && !this.store.tasks.lastUpdate['relays/check']
         // return this.isFirstVisit 
     }
 }

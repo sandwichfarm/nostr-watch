@@ -62,6 +62,8 @@ export default {
     return relays
   },
   filterRelays(relays){
+    if(!this.store.filters.enabled)
+      return relays
     // await new Promise( resolve => setTimeout(resolve, 300))
     const haystacks = ['nips', 'valid/nip11', 'software', 'countries','continents']
     let filtered = [...relays]

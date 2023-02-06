@@ -9,7 +9,7 @@
     :activeSubsectionProp="activeSubsection" /> 
 
   <!-- {{  store.relays.getOnline }} -->
-  <div v-if="showBasicData" id="wrapper" class="mx-auto max-w-7xl mt-2">
+  <!-- <div v-if="showBasicData" id="wrapper" class="mx-auto max-w-7xl mt-2">
     <div class="bg-black/5 dark:bg-black/30 text-2xl align-middle h-24">
       welcome to nostr.watch. loading
       <div class="block text-7xl">
@@ -19,9 +19,9 @@
       </div>
     </div>
     
-  </div>
+  </div> -->
 
-  <div v-if="!showBasicData" id="wrapper" class="mx-auto max-w-7xl mt-2">  
+  <div id="wrapper" class="mx-auto max-w-7xl mt-2">  
     <div
       id="subsection_header" class="pt-5 px-1 sm:px-6 lg:px-8" 
           :class="{

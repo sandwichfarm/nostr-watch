@@ -16,10 +16,10 @@ items:
     slug: offline
     href: '#offline'
     description: Relays where a connection cannot currently be established
-  - name: Nips
-    slug: nips
-    href: '#nips'
-    description: Relays with reported nip support, optionally filtered
+  # - name: Nips
+  #   slug: nips
+  #   href: '#nips'
+  #   description: Relays with reported nip support, optionally filtered
   - name: All
     slug: all
     href: '#all'

@@ -86,9 +86,9 @@ import { parseHash } from '@/shared/hash-router.js'
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
 //async components
-const TasksManager = defineAsyncComponent(() =>
-    import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
-);
+// const TasksManager = defineAsyncComponent(() =>
+//     import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
+// );
 
 const NostrSync = defineAsyncComponent(() =>
     import("@/components/relays/partials/NostrSync.vue" /* webpackChunkName: "NostrSync" */)
@@ -123,7 +123,7 @@ export default defineComponent({
     MapSummary,
     RelaysResultTable,
     NostrSync,
-    TasksManager
+    // TasksManager
   },
 
   setup(){

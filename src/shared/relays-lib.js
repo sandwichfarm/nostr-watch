@@ -2,6 +2,17 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
+  isPopulated(){
+    return (
+      this.store.prefs.clientSideProcessing
+      && this.store.tasks.lastUpdate['relays/check']
+    )
+    ||
+    (
+      !this.store.prefs.clientSideProcessing
+      && this.store.tasks.lastUpdate['relays/seed']
+    )
+  },
   chunk(chunkSize, array) {
     return array.reduce(function(previous, current) {
         var chunk;

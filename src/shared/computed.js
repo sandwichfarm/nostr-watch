@@ -27,4 +27,16 @@ export default {
             }
         }
     },
+    isFirstVisit(){
+        return      (!this.store.tasks.lastUpdate['relays/seed'] && !this.store.prefs.clientSideProcessing)
+                ||  ( !this.store.tasks.lastUpdate['relays/check'] && this.store.prefs.clientSideProcessing)
+    },
+    showBasicData(){
+        return this.isFirstVisit && this.store.tasks.getActiveSlug !== 'relays/seed' && !this.pendingFirstCompletion
+        // return this.isFirstVisit 
+    },
+    pendingFirstCompletion(){
+        return this.store.tasks.lastUpdate['relays/seed']
+        // return this.isFirstVisit 
+    }
 }

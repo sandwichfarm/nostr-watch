@@ -1,4 +1,6 @@
 <template>
+  <FiltersPartial
+    :resultsProp="results" />
    <div class="pt-0 px-1 sm:px-6 lg:px-8 dark:bg-black/20 rounded-lg">
       <div class="mt-8 flex flex-col">
       <div class="overflow-x-auto">
@@ -47,7 +49,7 @@
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()()">
                         <code class="text-xs block">Upvote</code>
                       </th> -->
-                      <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">NIP-11</code>
                       </th>
                       <th scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
@@ -117,7 +119,7 @@
                         </a>
                       </td> -->
 
-                      <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
+                      <td v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <!-- {{ this.results[relay]?.pubkeyValid }}
                         {{ this.results[relay]?.info?.pubkey }} -->
                         <span 
@@ -273,6 +275,8 @@
   import crypto from 'crypto'
   import { Switch } from '@headlessui/vue'
 
+  import FiltersPartial from '@/components/partials/FiltersPartial.vue'
+
   // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
@@ -315,12 +319,14 @@
 
       console.log('valid event?', ok, veryOk)
     },
+      
   }
   
   export default defineComponent({
     name: 'RelaysResultTable',
     components: {
       Switch,
+      FiltersPartial
     },
     setup(props){
       const {subsectionProp: subsection} = toRefs(props)
@@ -333,7 +339,9 @@
         relaysCount: relaysCount
       }
     },
-    
+    beforeMount(){
+      // this.foundNips = this.collateSupportedNips()
+    },
     mounted(){
       //console.log('navdata', this.navData, this.navData.filter( item => item.slug == this.subsection )[0], this.navData.filter( item => item.slug == this.subsection ))
       this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
@@ -376,7 +384,8 @@
         activePageData: {},
         randomRelay: "",
         inputDetected: false,
-        swearFilter: null
+        swearFilter: null,
+        foundNips: null
       }
     },
     computed: {
@@ -407,11 +416,11 @@
       },
       // getUptimePerc(){
       //   return (relay) => {
-      //     const heartbeats = this.store.stats.getHeartbeat(relay)
-      //     if(!heartbeats || !Object.keys(heartbeats).length )
+      //     const pulses = this.store.stats.getHeartbeat(relay)
+      //     if(!pulses || !Object.keys(pulses).length )
       //       return ""
-      //     const totalHeartbeats = Object.keys(heartbeats).length 
-      //     const totalOnline = Object.entries(heartbeats).reduce(
+      //     const totalHeartbeats = Object.keys(pulses).length 
+      //     const totalOnline = Object.entries(pulses).reduce(
       //         (acc, value) => value[1].latency ? acc+1 : acc,
       //         0
       //     );

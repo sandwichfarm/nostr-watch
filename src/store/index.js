@@ -10,6 +10,7 @@ import { useStatStore } from './stats.js'
 import { useTaskStore } from './tasks.js'
 import { useProfileStore } from './profiles.js'
 import { useStatusStore } from './status.js'
+import { useFilterStore } from './filters.js'
 
 export const plugin = (app) => {
   const pinia = createPinia()
@@ -42,5 +43,6 @@ export const setupStore = function(){
     tasks: useTaskStore(),
     profile: useProfileStore(),
     status: useStatusStore(),
+    filters: useFilterStore(),
   }
 }

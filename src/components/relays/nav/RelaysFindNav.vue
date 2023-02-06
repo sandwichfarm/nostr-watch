@@ -5,7 +5,7 @@
     <div class="flex h-12 justify-center md:justify-between">
       <div class="flex px-2 lg:px-0">
         <div class="hidden md:flex md:space-x-2 lg:flex lg:space-x-2">
-          <a v-for="item in store.layout.getNavGroup(this.navSlug)"
+          <a v-for="item in getFilteredNav"
               :key="`subnav-${item.slug}`"
               :href="item.href" 
               @click="setActiveContent(item.slug)"
@@ -100,6 +100,12 @@ computed: {
   // isActive: () => (slug) => this.contentIsActive(slug),
   routeValid,
   parseHash,
+  getFilteredNav(){
+    if(this.store.prefs.checkNip11)
+      return this.store.layout.getNavGroup(this.navSlug)
+    else
+      return this.store.layout.getNavGroup(this.navSlug).filter( item => item.slug !== 'nips' )
+  },
   getNavButtonClass(){
     return (slug) => {
       // //console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)

@@ -32,26 +32,26 @@ import { RelayPool } from 'nostr'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.slug, 1000) && !force) ) 
+    if( (!this.isExpired(this.slug, 5*60*1000) && !force) ) 
       return
     // const pool = new RelayPool( relays )
 
     if(this.isSingle)
-      this.jobHeartbeats()
+      this.jobPulses()
     else
       this.queueJob(
         this.slug, 
-        this.jobHeartbeats,
+        this.jobPulses,
         true
       )
   },
-  async jobHeartbeats(){
+  async jobPulses(){
     const subid = crypto.randomBytes(40).toString('hex')
-    const heartbeatsByEvent = new Object()
+    const pulsesByEvent = new Object()
     let total = 48,
         count = 0
     await new Promise( resolve => {
-      const pool = new RelayPool( ['wss://history.nostr.watch'] )
+      const pool = new RelayPool( ['wss://history.nostr.watch'], { reconnect: false } )
       const uniques = new Set()
       let timeout = setTimeout( () => { 
         resolve()
@@ -78,9 +78,9 @@ const localMethods = {
           
           uniques.add(event.created_at)
 
-          // console.log('heartbeat found', count, event.id)
+          // console.log('pulse found', count, event.id)
         
-          heartbeatsByEvent[event.created_at] = decodeJson(event.content).online
+          pulsesByEvent[event.created_at] = decodeJson(event.content).online
 
           count++
 
@@ -98,48 +98,48 @@ const localMethods = {
       
     })
     
-    this.parseHeartbeats(heartbeatsByEvent)
+    this.parsePulses(pulsesByEvent)
 
   },
-  parseHeartbeats(data){
+  parsePulses(data){
     const allTimestamps = Object.keys(data),
-          heartbeatsByRelayObj = new Object()
+          pulsesByRelayObj = new Object()
 
     allTimestamps.forEach( timestamp => {
       data[timestamp].forEach( relayData => {
         const relay = relayData[0],
               latency = relayData[1]
 
-        if( !(heartbeatsByRelayObj[relay] instanceof Object) )
-          heartbeatsByRelayObj[relay] = allTimestamps.reduce( (acc, _timestamp) => {
+        if( !(pulsesByRelayObj[relay] instanceof Object) )
+          pulsesByRelayObj[relay] = allTimestamps.reduce( (acc, _timestamp) => {
             acc[_timestamp] = false
             return acc
           }, new Object())
-        heartbeatsByRelayObj[relay][timestamp] = latency
+        pulsesByRelayObj[relay][timestamp] = latency
       })
     })
 
-    const allRelaysInHeartbeats = Object.keys(heartbeatsByRelayObj)
+    const allRelaysInPulses = Object.keys(pulsesByRelayObj)
 
-    const heartbeats = new Object()
+    const pulses = new Object()
 
-    allRelaysInHeartbeats.forEach( relay => {
-      heartbeats[relay] = new Array()
-      // console.log(relay, heartbeatsByRelayObj[relay])
-      Object.keys(heartbeatsByRelayObj[relay]).forEach( (timestamp_) => {
-        heartbeats[relay].push({
+    allRelaysInPulses.forEach( relay => {
+      pulses[relay] = new Array()
+      // console.log(relay, pulsesByRelayObj[relay])
+      Object.keys(pulsesByRelayObj[relay]).forEach( (timestamp_) => {
+        pulses[relay].push({
           date: timestamp_,
-          latency: heartbeatsByRelayObj[relay][timestamp_]
+          latency: pulsesByRelayObj[relay][timestamp_]
         })
       })
-      heartbeats[relay].sort( (h1, h2) => h1.date - h2.date )
-      this.store.stats.addHeartbeat(relay, heartbeats[relay])
+      pulses[relay].sort( (h1, h2) => h1.date - h2.date )
+      this.store.stats.addHeartbeat(relay, pulses[relay])
       this.setUptimePercentage(relay)
     })
 
-    // console.log(heartbeats)
+    // console.log(pulses)
 
-    // this.store.stats.addHeartbeats(heartbeats)
+    // this.store.stats.addPulses(pulses)
 
     this.store.tasks.completeJob()
   },
@@ -151,12 +151,12 @@ const localMethods = {
   }
 }
 export default defineComponent({
-  name: 'TemplateTask',
+  name: 'GetPulse',
   components: {},
   data() {
     return {
-      slug: 'relays/heartbeat',
-      heartbeats: {},
+      slug: 'relays/pulse',
+      pulses: {},
     }
   },
   setup(){

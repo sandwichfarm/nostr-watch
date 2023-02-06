@@ -1,6 +1,5 @@
 <template>
   <RelaysNav 
-    v-if="!showBasicData"
     v-bind:resultsProp="results" />
 
   <MapSummary 
@@ -185,7 +184,7 @@ export default defineComponent({
       if(this.store.prefs.checkNip11)
         return navGroup
       else
-        return navGroup.filter( slug => slug !== 'nips' ) || [] 
+        return navGroup?.filter( slug => slug !== 'nips' ) || [] 
     },
     getRelaysCount: function() { 
       return (subsection) => {

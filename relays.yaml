@@ -279,8 +279,7 @@ relays:
   - wss://relay.nostr.hu
   - wss://relay.nostr.lu
   - wss://relay.nostr.ae
-  - wss://middling.myddns.me
-  - wss://middling.sytes.net
+  - wss://middling.myddns.me:8080
   - wss://private.red.gb.net
   - wss://nostr.island.network
   - wss://nostr.nikolaj.online

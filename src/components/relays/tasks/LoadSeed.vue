@@ -1,8 +1,8 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mx-2 text-xs">
-  <span class="text-white lg:text-sm mr-2 ml-2 text-xs">
+    class="">
+  <span class="lg:text-sm mr-2 ml-2">
     <span v-if="!store.tasks.isProcessing(this.slug) && !isSingle" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
     <span v-if="store.tasks.isProcessing(this.slug) && !isSingle" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block md:pt-1.5 md:mt-0 text-xs">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -12,8 +12,8 @@
       {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Loaded
     </span>
   </span>
-  <span class="text-white lg:text-sm mr-2 ml-2 text-xs hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
-  <span class="text-white lg:text-sm mr-2 ml-2 text-xs" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+  <span class="lg:text-sm mr-2 ml-2 hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
+  <span class="lg:text-sm mr-2 ml-2" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
     Next check in: {{ untilNext }}
   </span>
   <!--<span v-if="isSingle">Loading {{ relay }} from history node...</span>

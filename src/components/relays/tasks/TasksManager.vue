@@ -1,44 +1,46 @@
 <template>
   <!-- <StatusCheckAPI /> -->
-  <GetRelays />
-  <DetectRegion 
-    v-if="store.prefs.autoDetectRegion" />
-  <StatusCheckHistoryNode />
-  <GetPulse />
-  <LoadSeed 
-    v-bind:resultsProp="results"
-    v-if="!store.prefs.clientSideProcessing || isSingle" />
-  <HistoryTask
-    :resultsProp="results"
-    v-if="!store.prefs.clientSideProcessing" />
-  <CheckNip11
-    v-bind:resultsProp="results"
-    v-if="
-    store.layout.getActive('relays/find') === 'nips'
-    ||(
-        (
-          !store.prefs.clientSideProcessing 
-          ||( !store.prefs.clientSideProcessing 
-              && isSingle 
-            ) 
-        ) 
-        && store.prefs.checkNip11
-      )
-    " />
-  <RefreshTask
-    v-bind:resultsProp="results"
-    v-if="store.prefs.clientSideProcessing || isSingle" />
-  <HistoryTask
-    :resultsProp="results"
-    v-if="store.prefs.clientSideProcessing" />
-  <GetTopics
-    v-bind:resultsProp="results"
-    v-if="store.prefs.clientSideProcessing && !isSingle" />
-  <UserRelayList />
-  <!-- <RelayCanonicalsTask
-    :resultsProp="results" />
-  <RelayOperatorTask
-    :resultsProp="results" /> -->
+  <span class="text-white lg:text-sm mx-2 text-xs">
+    <GetRelays />
+    <DetectRegion 
+      v-if="store.prefs.autoDetectRegion" />
+    <StatusCheckHistoryNode />
+    <GetPulse />
+    <LoadSeed 
+      v-bind:resultsProp="results"
+      v-if="!store.prefs.clientSideProcessing || isSingle" />
+    <HistoryTask
+      :resultsProp="results"
+      v-if="!store.prefs.clientSideProcessing" />
+    <CheckNip11
+      v-bind:resultsProp="results"
+      v-if="
+      store.layout.getActive('relays/find') === 'nips'
+      ||(
+          (
+            !store.prefs.clientSideProcessing 
+            ||( !store.prefs.clientSideProcessing 
+                && isSingle 
+              ) 
+          ) 
+          && store.prefs.checkNip11
+        )
+      " />
+    <RefreshTask
+      v-bind:resultsProp="results"
+      v-if="store.prefs.clientSideProcessing || isSingle" />
+    <HistoryTask
+      :resultsProp="results"
+      v-if="store.prefs.clientSideProcessing" />
+    <GetTopics
+      v-bind:resultsProp="results"
+      v-if="store.prefs.clientSideProcessing && !isSingle" />
+    <UserRelayList />
+    <!-- <RelayCanonicalsTask
+      :resultsProp="results" />
+    <RelayOperatorTask
+      :resultsProp="results" /> -->
+  </span>
 </template>
 
 <script>

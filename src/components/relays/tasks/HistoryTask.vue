@@ -1,5 +1,7 @@
 <template>
-  {{ this.store.tasks.getActiveSlug === slug }}
+  <span class="text-inherit" v-if="this.store.tasks.getActiveSlug === slug">
+    Analyzing Data
+  </span>
 </template>
 <script>
 import { defineComponent, toRefs } from 'vue'
@@ -11,7 +13,7 @@ import SharedComputed from '@/shared/computed.js'
 
 export default defineComponent({
 
-  name: 'RelayStatistics',
+  name: 'HistoryTask',
 
   components: {},
 
@@ -38,6 +40,7 @@ export default defineComponent({
     return {
       relays: this.store.relays.getAll,
       geo: this.store.relays.geo,
+      slug: 'relays/stats'
     }
   },
 
@@ -52,16 +55,16 @@ export default defineComponent({
 
   methods: Object.assign(RelaysLib, {
     invalidate: async function(){
+      if(!this.isExpired(''))
       console.log('stats invalidate()')
       this.queueJob(
-        'relays/stats',
+        this.slug,
         () => {
           console.log('stats run()')
           this.store.stats.nips = this.collateSupportedNips
           this.store.stats.continents = this.collateContinents 
           this.store.stats.countries = this.collateCountries 
           this.store.stats.software = this.collateSoftware 
-          console.log('stats, nips:', this.collateSupportedNips, this.store.stats.nips)
           this.store.tasks.completeJob()
         },
         true
@@ -107,13 +110,13 @@ export default defineComponent({
     collateContinents(){
       const byCont = new Object()
       this.relays.forEach( relay => {
-        if( !(this.geo[relay] instanceof Object) || typeof this.geo[relay].continentName === 'undefined' ) {
+        if( !(this.geo?.[relay] instanceof Object) || typeof this.geo?.[relay].continentName === 'undefined' ) {
           if( !(byCont.unknown instanceof Set) )
             byCont.unknown = new Set()
           byCont.unknown.add(relay)
           return
         }
-        const cont = this.geo[relay].continentName
+        const cont = this.geo?.[relay].continentName
         if( !(byCont[cont] instanceof Set) )
           byCont[cont] = new Set() 
         byCont[cont].add(relay)
@@ -132,13 +135,13 @@ export default defineComponent({
     collateCountries(){
       const byCountry = new Object()
       this.relays.forEach( relay => {
-        if( !(this.geo[relay] instanceof Object) || typeof this.geo[relay].country === 'undefined' ) {
+        if( !(this.geo?.[relay] instanceof Object) || typeof this.geo?.[relay].country === 'undefined' ) {
           if( !(byCountry.unknown instanceof Set) )
           byCountry.unknown = new Set()
             byCountry.unknown.add(relay)
           return
         }
-        const cont = this.geo[relay].country
+        const cont = this.geo?.[relay].country
         if( !(byCountry[cont] instanceof Set) )
         byCountry[cont] = new Set() 
         byCountry[cont].add(relay)

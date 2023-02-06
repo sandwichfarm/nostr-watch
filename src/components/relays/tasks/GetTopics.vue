@@ -38,7 +38,7 @@ const localMethods = {
           const promise = await new Promise( resolve => {
             const timeout = setTimeout(resolve, 10*1000)
             const relayChunk = relayChunks[i]
-            this.pool = new RelayPool(['wss://history.nostr.watch'])
+            this.pool = new RelayPool(['wss://history.nostr.watch'], { reconnect: false })
             const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
             this.pool
               .on('open', relay => {

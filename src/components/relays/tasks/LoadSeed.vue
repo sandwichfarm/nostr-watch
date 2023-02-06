@@ -9,7 +9,7 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Results Pulled
+      {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Loaded
     </span>
   </span>
   <span class="text-white lg:text-sm mr-2 ml-2 text-xs hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
@@ -62,11 +62,13 @@ const localMethods = {
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
             const relayChunk = relayChunks[i]
-            this.pool = new RelayPool(['wss://history.nostr.watch'])
             const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
+            let $relay
+            this.pool = new RelayPool(['wss://history.nostr.watch'])
             this.pool
               .on('open', relay => {
-                relay.subscribe(subid, {
+                $relay = relay
+                $relay.subscribe(subid, {
                   kinds:    [30303],
                   "#d":     single ? [ single ] : relayChunk,
                   authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
@@ -119,16 +121,18 @@ const localMethods = {
                   this.store.tasks.addProcessed(this.slug, relay)
                 }
               })
-              .on('eose', () => {
+              .on('eose', async () => {
+                // this.pool.unsubscribe(subid)
                 this.closePool(this.pool)
+                await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
                 resolve()
               })
           })
           promises.push(promise)
           await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
+          
         }
         await Promise.all(promises)
-        // this.store.tasks.lastUpdate['relays/nip11'] = null
         this.store.tasks.completeJob()
       },
       true
@@ -159,6 +163,28 @@ const localMethods = {
               +this.refreshEvery-Date.now()
             )
     ) 
+  },
+  collateSupportedNips(){
+    const dict = new Object()
+    Object.entries(this.results).forEach( (result) => {
+      result = result[1]
+      if(result?.info?.supported_nips)
+        result?.info?.supported_nips.forEach( nip => { 
+          if( !(dict[nip] instanceof Set ))
+          dict[nip] = new Set()
+          dict[nip].add(result.url)
+        })
+    })
+    const result = new Array() 
+    Object.keys(dict).forEach( key => {
+      result.push({
+        key: key, 
+        count: dict[key].size,
+        // relays: Array.from(dict[key]),
+      })
+    })
+    result.sort( (a,b) => b.count-a.count )
+    return result
   },
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()

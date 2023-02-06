@@ -57,16 +57,36 @@ export default {
   },
   getRelays(relays){
     // relays = this.filterRelays(relays)
+    relays = this.filterRelays(relays)
     relays = this.sortRelays(relays)
     return relays
   },
   filterRelays(relays){
-    const fns = this.store.prefs.getFilters
-    fns.forEach( fn => {
-      if(fn instanceof Function)
-        relays = fn(relays)
+    // await new Promise( resolve => setTimeout(resolve, 300))
+    const haystacks = ['nips', 'valid/nip11', 'software', 'countries','continents']
+    let filtered = [...relays]
+    haystacks.forEach( haystack => {
+      const needles = this.store.filters.getRules(haystack)
+      needles?.forEach( needle => {
+        if(haystack === 'nips'){
+          needle = parseInt(needle)
+          filtered = filtered.filter( relay => this.results[relay]?.info?.supported_nips?.includes(needle) )
+        }
+        if(haystack === 'valid/nip11'){
+          filtered = filtered.filter( relay => this.results[relay]?.pubkeyValid )
+        }
+        if(haystack === 'software'){
+          filtered = filtered.filter( relay => this.results[relay]?.info?.software?.includes(needle) )
+        }
+        if(haystack === 'countries'){
+          filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.country?.includes(needle) )
+        }
+        if(haystack === 'continents'){
+          filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) )
+        }
+      })
     })
-    return relays
+    return filtered
   },
   sortRelays(relays){
     if(this.store.prefs.sortLatency)
@@ -178,11 +198,11 @@ export default {
     },
 
     getUptimePercentage(relay){
-      const heartbeats = this.store.stats.getHeartbeat(relay)
-      if(!heartbeats || !Object.keys(heartbeats).length )
+      const pulses = this.store.stats.getHeartbeat(relay)
+      if(!pulses || !Object.keys(pulses).length )
         return
-      const totalHeartbeats = Object.keys(heartbeats).length 
-      const totalOnline = Object.entries(heartbeats).reduce(
+      const totalHeartbeats = Object.keys(pulses).length 
+      const totalOnline = Object.entries(pulses).reduce(
           (acc, value) => value[1].latency ? acc+1 : acc,
           0
       );

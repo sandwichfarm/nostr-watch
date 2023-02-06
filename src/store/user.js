@@ -32,7 +32,7 @@ export const useUserStore = defineStore('user', {
         const subid = crypto.randomBytes(40).toString('hex')
         const store = useRelaysStore()
         const relays = store.getFavorites.length ? store.getFavorites : ['wss://nostr.sandwich.farm']
-        const pool = new RelayPool(relays)
+        const pool = new RelayPool(relays, { reconnect: false })
         const ordered = []
         pool
           .on('open', r => {

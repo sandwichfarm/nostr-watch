@@ -11,7 +11,7 @@ export const useStatStore = defineStore(
       continents: {},
       oldestRelayStillOnline: null,
       newestRelayOnline: null,
-      heartbeats: {},
+      pulses: {},
     }),
     getters: {
       getHistory: (state) => state.history,
@@ -19,7 +19,7 @@ export const useStatStore = defineStore(
       getByNip: (state) => state.nips,
       getByCountry: (state) => state.countries,
       getByContinent: (state) => state.continents,
-      getHeartbeat: state => relay => state.heartbeats[relay],
+      getHeartbeat: state => relay => state.pulses[relay],
       get: (state) => (which) => state[which],
     },
     actions: {
@@ -30,12 +30,12 @@ export const useStatStore = defineStore(
         Object.keys(payload).forEach( key => this[type][key] = Array.from(payload[key] ) )
       },
       setHeartbeats(payload){
-        this.heartbeats = payload
+        this.pulses = payload
       },
       addHeartbeat(relay, payload){
-        if( !(this.heartbeats[relay] instanceof Array) )
-          this.heartbeats[relay] = new Array()
-        this.heartbeats[relay] = payload
+        if( !(this.pulses[relay] instanceof Array) )
+          this.pulses[relay] = new Array()
+        this.pulses[relay] = payload
       },
       addHeartbeats(payload){
         const relaysNow = Object.keys(payload) 
@@ -43,33 +43,33 @@ export const useStatStore = defineStore(
         // if(relaysThen.length !== relaysNow.length) {
         //   if(relaysNow.length > relaysThen.length ) {
         //     relaysNow.forEach(relay => {
-        //       if(this.heartbeats[relay] instanceof Array)
+        //       if(this.pulses[relay] instanceof Array)
         //         return 
-        //       this.heartbeats[relay] = new Array()
+        //       this.pulses[relay] = new Array()
         //     })
         //   }
         // }
-        console.log(this.heartbeats)
+        console.log(this.pulses)
 
         relaysNow.forEach(relay => {
-          if( !(this.heartbeats[relay] instanceof Array) )
-            this.heartbeats[relay] = new Array()
-          this.heartbeats[relay] = this.heartbeats[relay].concat(payload[relay])
-          this.heartbeats[relay].sort((h1, h2) => h1.date - h2.date )
-          if(this.heartbeats[relay].length <= 48) 
+          if( !(this.pulses[relay] instanceof Array) )
+            this.pulses[relay] = new Array()
+          this.pulses[relay] = this.pulses[relay].concat(payload[relay])
+          this.pulses[relay].sort((h1, h2) => h1.date - h2.date )
+          if(this.pulses[relay].length <= 48) 
             return 
-          const delta = this.heartbeats.length - 48
-          this.heartbeats = this.heartbeats.splice(0, delta);
+          const delta = this.pulses.length - 48
+          this.pulses = this.pulses.splice(0, delta);
         })
 
-        console.log('new heartbeats', this.heartbeats)
+        console.log('new pulses', this.pulses)
       }
         
     },
   },
   // {
   //   persistedState: {
-  //     excludePaths: ['heartbeats']
+  //     excludePaths: ['pulses']
   //   }
   // }
 )

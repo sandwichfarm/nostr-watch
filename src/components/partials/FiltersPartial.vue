@@ -6,7 +6,7 @@
       <span v-if="!store.filters.enabled">Apply Filters</span>
       <span v-if="store.filters.enabled">Disable Filters</span>
     </div>
-    <div v-if="store.filters.enabled" class="dark:bg-black/10 py-2 px-4 grid grid-cols-4 gap-4">
+    <div v-if="store.filters.enabled" class="dark:bg-black/10 flex">
       <!-- valid -->
       <div class="mb-4" v-if="this.store.tasks.lastUpdate?.['relays/nip11']">
         <span 
@@ -23,12 +23,12 @@
       <!-- By nip -->
       <div class="mb-4">
         <span  
-          class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20"
-          @click="store.filters.show['nips']=!store.filters.show['nips']">
+          class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32"
+          @click="store.filters.hide['nips']=!store.filters.hide['nips']">
           NIPs
-          <!-- <span class="dark:text-white/40"> {{ store.filters.show['nips'] ? 'hide' : 'show'  }}</span> -->
+          <span class="dark:text-white/40"> {{ store.filters.hide['nips'] ? 'show' : 'hide'  }}</span>
         </span>
-        <span v-if="store.filters.show['nips']">
+        <span v-if="!store.filters.hide['nips']">
           <span
             v-for="nip in Object.keys(store.stats?.nips || {})" 
             :key="`filter-nip-${nip.key}`" 
@@ -49,13 +49,13 @@
       <!-- By software -->
       <div class="mb-4">
         <span  
-          class="text-black/50 dark:text-white/70  block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20" >
-          <!-- @click="store.filters.show['software']=!store.filters.show['software']"> -->
+          class="text-black/50 dark:text-white/70  block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32"
+          @click="store.filters.hide['software']=!store.filters.hide['software']">
           Software
-          <!-- <span class="dark:text-white/40"> {{ store.filters.show['software'] ? 'hide' : 'show'  }}</span> -->
+          <span class="dark:text-white/40"> {{ store.filters.hide['software'] ? 'show' : 'hide'  }}</span>
 
         </span>
-        <span v-if="store.filters.show['software']">
+        <span v-if="!store.filters.hide['software']">
           <span 
             v-for="sw in Object.keys(store.stats?.software || {})" 
             :key="`filter-software-${store.stats?.software[sw].key}`" 
@@ -76,12 +76,12 @@
       <!-- By country -->
       <div class="mb-4">
         <span  
-          class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20"
-          @click="store.filters.show['countries']=!store.filters.show['countries']">
+          class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32"
+          @click="store.filters.hide['countries']=!store.filters.hide['countries']">
           Countries
-          <!-- <span class="dark:text-white/40"> {{ store.filters.show['countries'] ? 'hide' : 'show'  }}</span> -->
+          <span class="dark:text-white/40"> {{ store.filters.hide['countries'] ? 'show' : 'hide'  }}</span>
         </span>
-        <span v-if="store.filters.show['countries']">
+        <span v-if="!store.filters.hide['countries']">
           <span 
             v-for="country in Object.keys(store.stats?.countries || {})" 
             :key="`filter-countries-${store.stats?.countries[country].key}`" 
@@ -101,12 +101,12 @@
       <!-- By continent -->
       <div class="mb-4">
         <span  
-          class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20">
-          <!-- @click="store.filters.show['continents']=!store.filters.show['continents']"> -->
+          class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32"
+          @click="store.filters.hide['continents']=!store.filters.hide['continents']">
             Continents 
-            <!-- <span class="dark:text-white/40"> {{ store.filters.show['continents'] ? 'hide' : 'show'  }}</span> -->
+            <span class="dark:text-white/40"> {{ store.filters.hide['continents'] ? 'show' : 'hide'  }}</span>
         </span>
-        <span v-if="store.filters.show['continents']">
+        <span v-if="!store.filters.hide['continents']">
           <span 
             v-for="continent in Object.keys(store.stats?.continents || {})" 
             :key="`filter-continents-${store.stats?.continents[continent].key}`" 

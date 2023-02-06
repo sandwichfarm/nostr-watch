@@ -1,17 +1,17 @@
 <template>
-  <div class="ml-1 lg:ml-6">
-    <span 
-      class="py-1 px-2 my-4 inline-block cursor-pointer"
+  <div class="w-full ml-1 lg:ml-6">
+    <div 
+      class="py-1 px-2 my-4 cursor-pointer"
       @click="store.filters.enabled=!store.filters.enabled">
       <span v-if="!store.filters.enabled">Apply Filters</span>
       <span v-if="store.filters.enabled">Disable Filters</span>
-    </span>
-    <div v-if="store.filters.enabled" class="bg-black/10 py-3 px-4">
+    </div>
+    <div v-if="store.filters.enabled" class="dark:bg-black/10 py-2 px-4 grid grid-cols-4 gap-4">
       <!-- valid -->
       <div class="mb-4" v-if="this.store.tasks.lastUpdate?.['relays/nip11']">
         <span 
           @click="toggleFilter('valid/nip11', true, true)"
-          class="text-black/50 dark:text-white/30 cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block"
+          class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block"
           :class="{
               'bg-white/20': store?.filters?.getRule('valid/nip11', true)?.length
           }">
@@ -26,7 +26,7 @@
           class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20"
           @click="store.filters.show['nips']=!store.filters.show['nips']">
           NIPs
-          <span class="dark:text-white/40"> {{ store.filters.show['nips'] ? 'hide' : 'show'  }}</span>
+          <!-- <span class="dark:text-white/40"> {{ store.filters.show['nips'] ? 'hide' : 'show'  }}</span> -->
         </span>
         <span v-if="store.filters.show['nips']">
           <span
@@ -49,10 +49,10 @@
       <!-- By software -->
       <div class="mb-4">
         <span  
-          class="text-black/50 dark:text-white/70  block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20"
-          @click="store.filters.show['software']=!store.filters.show['software']">
+          class="text-black/50 dark:text-white/70  block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20" >
+          <!-- @click="store.filters.show['software']=!store.filters.show['software']"> -->
           Software
-          <span class="dark:text-white/40"> {{ store.filters.show['software'] ? 'hide' : 'show'  }}</span>
+          <!-- <span class="dark:text-white/40"> {{ store.filters.show['software'] ? 'hide' : 'show'  }}</span> -->
 
         </span>
         <span v-if="store.filters.show['software']">
@@ -79,7 +79,7 @@
           class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20"
           @click="store.filters.show['countries']=!store.filters.show['countries']">
           Countries
-          <span class="dark:text-white/40"> {{ store.filters.show['countries'] ? 'hide' : 'show'  }}</span>
+          <!-- <span class="dark:text-white/40"> {{ store.filters.show['countries'] ? 'hide' : 'show'  }}</span> -->
         </span>
         <span v-if="store.filters.show['countries']">
           <span 
@@ -101,10 +101,10 @@
       <!-- By continent -->
       <div class="mb-4">
         <span  
-          class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20"
-          @click="store.filters.show['continents']=!store.filters.show['continents']">
+          class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20">
+          <!-- @click="store.filters.show['continents']=!store.filters.show['continents']"> -->
             Continents 
-            <span class="dark:text-white/40"> {{ store.filters.show['continents'] ? 'hide' : 'show'  }}</span>
+            <!-- <span class="dark:text-white/40"> {{ store.filters.show['continents'] ? 'hide' : 'show'  }}</span> -->
         </span>
         <span v-if="store.filters.show['continents']">
           <span 

@@ -37,8 +37,8 @@ const localMethods = {
       async () => {
         const chunkSize = 10
         this.relays = this.getRelays( this.store.relays.getAll )
-        this.relays = this.relays.filter( relay => !this.store.tasks.processed[this.slug].includes(relay) )
-        const relayChunks = this.chunk(chunkSize, this.relays)
+        let processRelays =  this.relays.filter( relay => !this.store.tasks.processed[this.slug].includes(relay) )
+        const relayChunks = this.chunk(chunkSize, processRelays)
         for (let i = 0; i < relayChunks.length; i++) {
           await new Promise( resolveChunk => {
             const relayChunk = relayChunks[i]
@@ -57,14 +57,14 @@ const localMethods = {
                 connectTimeout: 2*1000
               })
               .on('complete', async (inspect) => {
-                const cache = this.getCache(relay)
-                console.log(inspect?.result, cache)
-                if(!inspect?.result && !cache)
+                let result = {}
+                if(!inspect?.result)
                   return
-                const result = Object.assign(cache || {}, inspect?.result)
-                // result.pubkeyValid = res.pubkeyValid 
-                // result.pubkeyError = res.pubkeyError 
-                // result.identities = res.identities
+                const res = {}
+                result.pubkeyValid = res?.pubkeyValid 
+                result.pubkeyError = res?.pubkeyError 
+                result.identities = res?.identities
+                result = Object.assign(result, this.results[relay])
                 this.results[relay] = result
                 this.setCache(this.results[relay])
                 this.store.tasks.addProcessed(this.slug, relay)

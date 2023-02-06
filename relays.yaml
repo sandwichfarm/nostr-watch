@@ -2,6 +2,7 @@ relays:
   - wss://nostr.1729.cloud
   - wss://lightningrelay.com
   - wss://relay.nostriches.org
+  - wss://private.red.gb.net
   - wss://nostr.wine
   - was://nostr.pleb.network
   - wss://nostr.inosta.cc

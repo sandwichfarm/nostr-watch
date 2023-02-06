@@ -15,7 +15,7 @@
           nostr.watch
           <sup class="relative -top-2" style="font-size: 0.6rem">{{ version }}</sup>
         </span>
-        <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start" v-if="!showBasicData">
+        <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
           <div class="hidden sm:ml-6 md:block">
             <div class="flex space-x-4">
               

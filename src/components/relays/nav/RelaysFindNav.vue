@@ -8,7 +8,7 @@
           <a v-for="item in getFilteredNav"
               :key="`subnav-${item.slug}`"
               :href="item.href" 
-              @click="setActiveContent(item.slug)"
+              @click="toggleActiveContent(item.slug)"
               class="inline-flex items-center"
               :class="getNavButtonClass(item.slug)">
               {{ item.name }}
@@ -34,7 +34,7 @@
       <DisclosureButton 
           v-for="item in store.layout.getNavGroup(this.navSlug)"
           :key="`subnav-${item.slug}`"
-          @click="setActiveContent(item.slug)"
+          @click="toggleActiveContent(item.slug)"
           :class="getNavButtonClass(item.slug)"
           as="a" 
           :href="item.href" 
@@ -50,7 +50,7 @@
 
 <script>
 //vue
-import { defineComponent } from 'vue'
+import { defineComponent, toRefs } from 'vue'
 //pinia
 import { setupStore } from '@/store'
 //components 
@@ -79,9 +79,12 @@ props: {},
 data(){
   return setupNavData('relays/find')
 },
-setup(){
+setup(props){
+  const {resultsProp: results, relaysProp: relays} = toRefs(props)
   return { 
-    store : setupStore()
+    store : setupStore(),
+    results: results,
+    relays: relays
   }
 },
 updated(){
@@ -93,7 +96,20 @@ created(){
 mounted(){
   
 },
-methods: Object.assign(RelaysLib, { mountNav, setActiveContent, loadNavContent}),
+methods: Object.assign(RelaysLib, { 
+  mountNav, setActiveContent, loadNavContent,
+  toggleActiveContent(slug){
+    if(this.store.layout.getActiveItem('relays/find').slug === slug)
+      return
+    console.log(this.store.filters.getRule('aggregate', slug))
+
+    console.log('debug', "toggleFIlter",'aggregate', slug, true)
+    this.setActiveContent( slug ) //deprecate this!
+    
+    this.toggleFilter('aggregate', slug, true, false, true )
+
+  },
+}),
 
 computed: {
   contentIsActive,

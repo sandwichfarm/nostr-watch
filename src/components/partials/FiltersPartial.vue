@@ -1,15 +1,45 @@
 <template>
-  <div class="ml-1 lg:ml-6 ">
+  <div class="ml-1 ">
     <div class="mb-4 block">
       <div 
-        class="py-1 px-2 my-4 cursor-pointer"
+        class="mr-3  my-4 cursor-pointer inline-block"
         @click="store.filters.enabled=!store.filters.enabled">
-        <span v-if="!store.filters.enabled">Apply Filters</span>
-        <span v-if="store.filters.enabled">Disable Filters</span>
+        <span class="py-1 px-2 bg-black/30 block" v-if="!store.filters.enabled">Enable Filters</span>
+        <span class="py-1 px-2 bg-white/30 block" v-if="store.filters.enabled" >Disable Filters</span>
+      </div>
+
+      <span class="mr-3 py-1 px-2 bg-black/20 inline-block cursor-pointer" 
+        @click="store.filters.reset()">
+        Clear Filters
+      </span>
+
+      <div class="inline-block" :class="{'opacity-20':!store.filters.enabled}">
+        <div class="inline-block">
+          <span v-if="store.filters.rules?.nips && Object.keys(store.filters.rules?.nips)?.length" class="ml-3 mr-1">nips</span>
+          <span v-for="nip in store.filters.rules?.nips" :key="`filter-summary-nip-${nip}`" class="inline-block py-1 px-3 bg-black/5 dark:bg-white/5">
+            {{ nip }}
+          </span>
+        </div>
+        <div class="inline-block">
+          <span v-if="store.filters.rules?.software && Object.keys(store.filters.rules?.software)?.length" class="ml-3 mr-1">software</span>
+          <span v-for="software in store.filters.rules.software" :key="`filter-summary-nip-${software}`" class="inline-block py-1 px-3 bg-black/5 dark:bg-white/5">
+            {{ software }}
+          </span>
+        </div>
+        <div class="inline-block">
+          <span v-if="store.filters.rules?.countries && Object.keys(store.filters.rules?.countries)?.length" class="ml-3 mr-1">country</span>
+          <span v-for="country in store.filters.rules?.countries" :key="`filter-summary-nip-${country}`" class="inline-block py-1 px-3 bg-black/5 dark:bg-white/5">
+            {{ country }}
+          </span>
+        </div>
+        <div class="inline-block">
+          <span v-if="store.filters.rules?.continents && Object.keys(store.filters.rules?.continents)?.length" class="ml-3 mr-1">continent</span>
+          <span v-for="continent in store.filters.rules?.continents" :key="`filter-summary-nip-${continent}`" class="inline-block py-1 px-3 bg-black/5 dark:bg-white/5">
+            {{ continent }}
+          </span>
+        </div>                
       </div>
     </div>
-
-    
 
     <div v-if="store.filters.enabled" class="dark:bg-black/10">
       <!-- valid -->
@@ -28,9 +58,8 @@
         </span>
       </div>
 
+      
       <div class="flex">
-
-
       <!-- By nip -->
       <div class="mb-4">
         <span  
@@ -61,7 +90,6 @@
             </span>
           </span>
         </span>
-        
       </div>
 
       <!-- By software -->
@@ -156,25 +184,23 @@
   import { defineComponent, toRefs } from 'vue'
   import SharedComputed from '@/shared/computed.js'
   import { setupStore } from '@/store'
-  import { relays } from '../../../relays.yaml'
-  import { geo } from '../../../cache/geo.yaml'
 
   export default defineComponent(
   {
     name: 'FiltersPartial',
     components: {},
     setup(props){
-      const {resultsProp: results} = toRefs(props)
+      const {resultsProp: results, relaysProp: relays} = toRefs(props)
       return { 
         store : setupStore(),
-        results: results
+        results: results,
+        relays: relays
       }
     },
     beforeMount(){
       // this.foundNips = this.collateSupportedNips()
     },
     mounted(){
-      this.relays = this.getRelays( relays ) 
       setTimeout( this.refreshCounts, 100)
       setInterval( this.refreshCounts, 1000 )
     },
@@ -193,75 +219,19 @@
           return {}
         }
       },
+      // relaysProp: {
+      //   type: Array,
+      //   default(){
+      //     return []
+      //   }
+      // },
     },
     data() {
       return {
-        relays: this.getRelays( relays ),
         count: { nips: {}, software: {}, countries: {}, continents: {} }
       }
     },
-    methods: Object.assign(RelayMethods, {
-
-      refreshCounts(){
-        this.relays = this.getRelays( relays ) 
-        if(Object.keys(this.store.stats?.nips).length) 
-          this?.store?.stats?.nips?.forEach( nip => {
-            this.store.filters.set(
-              this?.relays?.filter( relay => this.results[relay]?.info?.supported_nips?.includes( parseInt( nip.key ) ))?.length || 0,
-              'count',
-              'nips',
-              nip.key,
-            )
-          })
-        if(Object.keys(this.store.stats?.software).length)
-          this.store.stats?.software?.forEach( software => {
-            console.log('software', this?.relays?.filter( relay => this.results[relay]?.info?.software?.includes( software.key ))?.length || 0,)
-            this.store.filters.set(
-              this?.relays?.filter( relay => this.results[relay]?.info?.software?.includes( software.key ))?.length || 0,
-              'count',
-              'software',
-              software.key,
-            )
-          })
-        if(Object.keys(this.store.stats?.countries).length)
-          this.store.stats?.countries?.forEach( country => {
-            console.log('countries', this?.relays?.filter( relay => this.store.relays.geo?.[relay]?.country?.includes( country.key ))?.length || 0,)
-            this.store.filters.set(
-              this?.relays?.filter( relay => geo?.[relay]?.country?.includes( country.key ))?.length || 0,
-              'count',
-              'countries',
-              country.key,
-            )
-          })
-        if(Object.keys(this.store.stats?.continents).length)
-          this.store.stats?.continents?.forEach( continent => {
-            this.store.filters.set(
-              this?.relays?.filter( relay => geo?.[relay]?.continentName?.includes( continent.key ))?.length || 0,
-              'count', 
-              'continents', 
-              continent.key
-            )
-          })
-      },
-      toggleFilter(ref, key, unique, reset){
-        if(parseInt(this.store.filters?.count?.[ref]?.[key]) === 0)
-          return
-
-        const rule = this.store.filters.getRule(ref, key)
-        console.log('rule', rule)
-        if(rule?.length) {
-          console.log('filters: removing', rule)
-          this.store.filters.removeRule(ref, key, unique, reset)
-          console.log('filters: effect', this.store.filters.rules)
-          
-        } else {
-          console.log('filters: adding', rule)
-          this.store.filters.addRule(ref, key, unique, reset)
-          console.log('filters: effect', this.store.filters.rules)
-        }
-        this.refreshCounts()
-      }
-    }),
+    methods: Object.assign(RelayMethods, {}),
     computed: Object.assign(SharedComputed, {
       get(){
         return this.relays

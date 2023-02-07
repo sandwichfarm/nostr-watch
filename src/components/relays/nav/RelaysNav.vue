@@ -66,6 +66,12 @@ export default defineComponent({
         return {}
       }
     },
+    relaysProp: {
+        type: Array,
+        default(){
+          return []
+        }
+      },
   },
   data(){
     // return setupNavData('relays')

@@ -1,5 +1,6 @@
 <template>
-  <RelaysNav 
+  <RelaysNav
+    v-bind:relaysProp="relays"
     v-bind:resultsProp="results" />
 
   <MapSummary 
@@ -31,9 +32,10 @@
         <div class="sm:flex-auto text-left">
             <h1 class="text-4xl capitalize font-semibold text-gray-900 dark:text-white/90">
                 <span class="inline-flex rounded bg-green-800 text-sm px-2 py-1 text-white relative -top-2">
-                    {{ getRelaysCount(activeSubsection) }}
+                    <!-- {{ getRelaysCount(activeSubsection) }} -->
+                    {{ getRelaysCount }}
                 </span>
-                {{ activeSubsection }} Relays
+                {{ store.filters.enabled ? 'Filtered' : activeSubsection }} Relays
             </h1>
             <p class="mt-2 text-xl text-gray-700 dark:text-white/60">
                 <!-- {{ store.layout.getActiveItem('relays/find') }} -->
@@ -52,11 +54,14 @@
         </div>
       </div>
       <div class="mt-8 flex flex-col">
-        <RelaysFindNav />
+        <RelaysFindNav 
+          v-bind:relaysProp="relays"
+          :resultsProp="results" />
       </div>
-      <div v-if="activeSubsection === 'nips'" class="mt-6">
-        
-      </div>
+      <FiltersPartial
+        v-if="store.tasks.lastUpdate['relays/stats']"
+        :resultsProp="results"
+        v-bind:relaysProp="relays" />
     </div>
     <div id="relays_list_wrapper" v-if="!this.store.layout.mapIsExpanded">
       <div 
@@ -64,6 +69,7 @@
           :key="subsection.slug" > 
           <div v-if="subsection.slug == activeSubsection">
             <RelaysResultTable
+              :relaysProp="relays"
               :resultsProp="results"
               :subsectionProp="subsection.slug" /> 
           </div>
@@ -88,6 +94,9 @@ import { geo } from '../../../../cache/geo.yaml'
 // const TasksManager = defineAsyncComponent(() =>
 //     import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
 // );
+const FiltersPartial = defineAsyncComponent(() =>
+    import("@/components/partials/FiltersPartial.vue" /* webpackChunkName: "FiltersPartial" */)
+);
 
 const NostrSync = defineAsyncComponent(() =>
     import("@/components/relays/partials/NostrSync.vue" /* webpackChunkName: "NostrSync" */)
@@ -109,8 +118,6 @@ const RelaysResultTable = defineAsyncComponent(() =>
     import("@/components/relays/blocks/RelaysResultTable.vue" /* webpackChunkName: "RelaysResultTable" */)
 );
 
-
-
 const localMethods = {}
 
 export default defineComponent({
@@ -122,6 +129,7 @@ export default defineComponent({
     MapSummary,
     RelaysResultTable,
     NostrSync,
+    FiltersPartial,
     // TasksManager
   },
 
@@ -166,12 +174,14 @@ export default defineComponent({
 
     this.store.relays.setGeo(geo)
     
-    // this.relays = this.store.relays.getAll?.length ? this.store.relays.getAll : relays
+    
+
     this.lastUpdate = this.store.tasks.getLastUpdate('relays')
     this.preferences = this.store.prefs.get
   },
 
   async mounted() {
+    this.relays = relays
     console.log('map expanded', this.store.layout.mapIsExpanded, 'is dark', localStorage.getItem('isDark'))
     this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
   },
@@ -187,17 +197,18 @@ export default defineComponent({
         return navGroup?.filter( slug => slug !== 'nips' ) || [] 
     },
     getRelaysCount: function() { 
-      return (subsection) => {
-        if(subsection === 'all')
-          return this.store.relays.getAll.length
-        if(subsection === 'nips')
-        return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.info?.supported_nips).length
-        if(subsection === 'online')
-          return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.check?.connect).length  
-        if(subsection === 'favorite')
-          return this.store.relays.getFavorites.length 
-        return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == subsection).length 
-      }
+      return this.getRelays(this.store.relays.getRelays(this.activeSubsection, this.results ) ).length
+      // return (subsection) => {
+      //   if(subsection === 'all')
+      //     return this.store.relays.getAll.length
+      //   if(subsection === 'nips')
+      //   return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.info?.supported_nips).length
+      //   if(subsection === 'online')
+      //     return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.check?.connect).length  
+      //   if(subsection === 'favorite')
+      //     return this.store.relays.getFavorites.length 
+      //   return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == subsection).length 
+      // }
     },
     isMapDark: function(){
       // return this.store.layout.mapIsExpanded && this.$storage.('isDark') == true

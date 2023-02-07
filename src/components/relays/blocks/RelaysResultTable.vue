@@ -1,6 +1,5 @@
 <template>
-  <FiltersPartial
-    :resultsProp="results" />
+
    <div class="pt-0 px-1 sm:px-6 lg:px-8 dark:bg-black/20 rounded-lg">
       <div class="mt-8 flex flex-col">
       <div class="overflow-x-auto">
@@ -275,8 +274,6 @@
   import crypto from 'crypto'
   import { Switch } from '@headlessui/vue'
 
-  import FiltersPartial from '@/components/partials/FiltersPartial.vue'
-
   // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
@@ -318,25 +315,22 @@
       let veryOk = await verifySignature(signedEvent)
 
       console.log('valid event?', ok, veryOk)
-    },
-      
+    },   
   }
-  
   export default defineComponent({
     name: 'RelaysResultTable',
     components: {
       Switch,
-      FiltersPartial
     },
     setup(props){
       const {subsectionProp: subsection} = toRefs(props)
-      const {relaysCountProp: relaysCount} = toRefs(props)
       const {resultsProp: results} = toRefs(props)
+      const {relaysProp: relays} = toRefs(props)
       return { 
         store : setupStore(),
         results: results,
         subsection: subsection,
-        relaysCount: relaysCount
+        relays: relays,
       }
     },
     beforeMount(){
@@ -368,6 +362,12 @@
           return {}
         }
       },
+      relaysProp: {
+        type: Array,
+        default(){
+          return []
+        }
+      },
       relaysCountProp: {
         type: Object,
         default(){
@@ -378,7 +378,6 @@
     data() {
       return {
         selectedRelays: [],
-        relays: [],
         timeout: null,
         navData: this.store.layout.getNavGroup('relays/find'),
         activePageData: {},
@@ -429,7 +428,8 @@
       //   }
       // },
       subsectionRelays(){
-        return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        // return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
+        return this.getRelays( this.relays )
       },
       relayGeo(){
         return (relay) => this.store.relays.getGeo(relay)

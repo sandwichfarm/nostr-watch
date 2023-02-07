@@ -1,7 +1,64 @@
 import crypto from "crypto"
 import {sort} from 'array-timsort'
+import { relays } from '../../relays.yaml'
+import { geo } from '../../cache/geo.yaml'
 
 export default {
+  toggleFilter(ref, key, unique, reset, always){
+    if(parseInt(this.store.filters?.count?.[ref]?.[key]) === 0)
+      return
+    const rule = this.store.filters.getRule(ref, key)
+    console.log('rule', rule)
+    if(rule?.length) {
+      console.log('filters: removing', rule)
+      this.store.filters.removeRule(ref, key, unique, reset, always)
+      console.log('filters: effect', this.store.filters.rules)
+    } else {
+      console.log('filters: adding', rule)
+      this.store.filters.addRule(ref, key, unique, reset, always)
+      console.log('filters: effect', this.store.filters.rules)
+    }
+    this.refreshCounts()
+  },
+  refreshCounts(){
+    this.relays = this.getRelays( relays ) 
+    if(Object.keys(this.store.stats?.nips).length) 
+      this?.store?.stats?.nips?.forEach( nip => {
+        this.store.filters.set(
+          this?.relays?.filter( relay => this.results[relay]?.info?.supported_nips?.includes( parseInt( nip.key ) ))?.length || 0,
+          'count',
+          'nips',
+          nip.key,
+        )
+      })
+    if(Object.keys(this.store.stats?.software).length)
+      this.store.stats?.software?.forEach( software => {
+        this.store.filters.set(
+          this?.relays?.filter( relay => this.results[relay]?.info?.software?.includes( software.key ))?.length || 0,
+          'count',
+          'software',
+          software.key,
+        )
+      })
+    if(Object.keys(this.store.stats?.countries).length)
+      this.store.stats?.countries?.forEach( country => {
+        this.store.filters.set(
+          this?.relays?.filter( relay => geo?.[relay]?.country?.includes( country.key ))?.length || 0,
+          'count',
+          'countries',
+          country.key,
+        )
+      })
+    if(Object.keys(this.store.stats?.continents).length)
+      this.store.stats?.continents?.forEach( continent => {
+        this.store.filters.set(
+          this?.relays?.filter( relay => geo?.[relay]?.continentName?.includes( continent.key ))?.length || 0,
+          'count', 
+          'continents', 
+          continent.key
+        )
+      })
+  },
   isPopulated(){
     return (
       this.store.prefs.clientSideProcessing
@@ -73,14 +130,14 @@ export default {
     return relays
   },
   filterRelays(relays){
-    if(!this.store.filters.enabled)
-      return relays
     // await new Promise( resolve => setTimeout(resolve, 300))
-    const haystacks = ['nips', 'valid/nip11', 'software', 'countries','continents']
+    const haystacks = ['nips','valid/nip11','software','countries','continents','aggregate']
     let filtered = [...relays]
     haystacks.forEach( haystack => {
       const needles = this.store.filters.getRules(haystack)
       needles?.forEach( needle => {
+        if(!this.store.filters.enabled && !this.store.filters.alwaysEnabled?.[haystack])
+          return 
         if(haystack === 'nips'){
           needle = parseInt(needle)
           filtered = filtered.filter( relay => this.results[relay]?.info?.supported_nips?.includes(needle) )
@@ -96,6 +153,10 @@ export default {
         }
         if(haystack === 'continents'){
           filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) )
+        }
+        if(haystack === 'aggregate'){
+          const aggregate = this.store.relays.getRelays(needle, this.results)
+          filtered = filtered.filter( relay => aggregate.includes(relay) )
         }
       })
     })

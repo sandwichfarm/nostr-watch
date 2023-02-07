@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 export const useFilterStore = defineStore('filters', {
   state: () => ({ 
     enabled: false,
+    alwaysEnabled: {},
     hide: {},
     isValid: new Object(),
     rules: new Object(),
@@ -26,8 +27,21 @@ export const useFilterStore = defineStore('filters', {
     },
   },  
   actions: {
+    reset(ref){
+      if(!ref){
+        Object.keys(this.rules).forEach( haystackKey => {
+          this.rules[haystackKey].forEach( needleKey => {
+            this.removeRule(haystackKey, needleKey)
+          })
+        })
+      } else if(this.rules?.[ref]) {
+        this.rules[ref].forEach( needleKey => {
+          this.removeRule(ref, needleKey)
+        })
+      }
+    },
     set(value, key1, key2, key3){
-      console.log('setting!', value, key1, key2, key3)
+      // console.log('setting!', value, key1, key2, key3)
       if(typeof value === 'undefined')
         return
 
@@ -37,9 +51,9 @@ export const useFilterStore = defineStore('filters', {
         this[key1][key2] = new Object()
 
       this[key1][key2][key3] = value
-      console.log('set!', this?.[key1], this?.[key1]?.[key2], this?.[key1]?.[key2]?.[key3], value, key1, key2, key3)
+      // console.log('set!', this?.[key1], this?.[key1]?.[key2], this?.[key1]?.[key2]?.[key3], value, key1, key2, key3)
     },
-    addRule(haystackRef, needle, unique, reset){
+    addRule(haystackRef, needle, unique, reset, alwaysEnabled){
       if(unique)
         this.rules[haystackRef] = new Array()
 
@@ -53,6 +67,9 @@ export const useFilterStore = defineStore('filters', {
 
       if(needleMatch?.length)
         return
+      
+      if(alwaysEnabled)
+        this.alwaysEnabled[haystackRef] = true
       
       this.rules[haystackRef].push(needle)
     },

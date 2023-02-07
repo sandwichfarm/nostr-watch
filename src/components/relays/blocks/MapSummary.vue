@@ -199,8 +199,7 @@ export default defineComponent({
       }
     },
     getRelaysWithGeo(){
-      
-      return this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object && this.subsectionRelays.includes(relay) )
+      return this.getRelays( this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object) ) 
     },
     isRelayInActiveSubsection(){
       return (relay) => this.store.relays.getRelays(this.activeSubsection, this.results).includes(relay)

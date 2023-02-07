@@ -21,7 +21,7 @@
     
   </div> -->
 
-  <div id="wrapper" class="mx-auto max-w-7xl mt-2">  
+  <div id="wrapper" class="mx-auto max-w-7xl mt-2 mb-8 pb-8">  
     <div
       id="subsection_header" class="pt-5 px-1 sm:px-6 lg:px-8" 
           :class="{
@@ -64,16 +64,10 @@
         v-bind:relaysProp="relays" />
     </div>
     <div id="relays_list_wrapper" v-if="!this.store.layout.mapIsExpanded">
-      <div 
-          v-for="subsection in navSubsection"
-          :key="subsection.slug" > 
-          <div v-if="subsection.slug == activeSubsection">
-            <RelaysResultTable
-              :relaysProp="relays"
-              :resultsProp="results"
-              :subsectionProp="subsection.slug" /> 
-          </div>
-      </div>
+      <RelaysResultTable
+        :relaysProp="relays"
+        :resultsProp="results"
+        :subsectionProp="activeSubsection" /> 
     </div>
   </div>
 </template>

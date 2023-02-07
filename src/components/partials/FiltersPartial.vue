@@ -175,7 +175,7 @@
     },
     mounted(){
       this.relays = this.getRelays( relays ) 
-      this.refreshCounts()
+      setTimeout( this.refreshCounts, 100)
     },
     updated(){
       

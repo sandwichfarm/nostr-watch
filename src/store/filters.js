@@ -74,6 +74,8 @@ export const useFilterStore = defineStore('filters', {
       this.rules[haystackRef].push(needle)
     },
     removeRule(haystackRef, needle){
+      if(this.alwaysEnabled?.[haystackRef])
+        return
       this.rules[haystackRef] = this.rules[haystackRef].filter( rule => rule !== needle )
     },
   },

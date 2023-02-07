@@ -49,7 +49,7 @@
                         <code class="text-xs block">Upvote</code>
                       </th> -->
                       <th v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <code class="text-xs block">NIP-11</code>
+                        <code class="text-xs block">Pubkey</code>
                       </th>
                       <th scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Location</code>

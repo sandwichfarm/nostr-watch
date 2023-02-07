@@ -276,7 +276,7 @@
           <h2 class="text-2xl pt-8 text-pink-700 dark:text-pink-300 mt-4 font-extrabold">Data</h2>
           <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
-              Check NIP-11
+              Check Pubkey (NIP-11)
             </label>
             <div class="mt-1 sm:col-span-2 sm:mt-0 align-left">
               <Switch

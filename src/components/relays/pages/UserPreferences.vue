@@ -399,7 +399,7 @@ export default defineComponent({
       }
 
       if(this.store.prefs.checkNip11 !== this.checkNip11){
-        // delete this.store.tasks.lastUpdate['relays/nip11']
+        delete this.store.tasks.lastUpdate['relays/nip11']
         this.checkNip11 = this.store.prefs.checkNip11
       }
     },100)

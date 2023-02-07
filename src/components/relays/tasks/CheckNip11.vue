@@ -35,7 +35,7 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        const chunkSize = 10
+        const chunkSize = 25
         this.relays = this.getRelays( this.store.relays.getAll )
         let processRelays =  this.relays.filter( relay => !this.store.tasks.processed[this.slug].includes(relay) )
         const relayChunks = this.chunk(chunkSize, processRelays)
@@ -60,10 +60,9 @@ const localMethods = {
                 let result = {}
                 if(!inspect?.result)
                   return
-                const res = {}
-                result.pubkeyValid = res?.pubkeyValid 
-                result.pubkeyError = res?.pubkeyError 
-                result.identities = res?.identities
+                result.pubkeyValid = inspect.result?.pubkeyValid 
+                result.pubkeyError = inspect.result?.pubkeyError 
+                result.identities = inspect.result?.identities
                 result = Object.assign(result, this.results[relay])
                 this.results[relay] = result
                 this.setCache(this.results[relay])
@@ -84,7 +83,7 @@ const localMethods = {
               this.inspectors.push(inspector)
             })
           })
-          await new Promise( resolveDelay => setTimeout( resolveDelay, 555 ))
+          await new Promise( resolveDelay => setTimeout( resolveDelay, 100 ))
         }
         this.store.tasks.completeJob()
         this.closeAll()

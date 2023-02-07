@@ -80,8 +80,8 @@
             @click="toggleFilter('software', store.stats?.software[sw].key, true)"
             :class="{
               'bg-white/20': store.filters.getRule('software', store.stats?.software[sw].key)?.length,
-              'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.nips[`${store.stats?.software[sw].key}`]) === 0,
-              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) > 0 && !store.filters.getRule('software', store.stats?.software[sw].key)?.length
+              'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) === 0,
+              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) > 0 
             }"
             
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">

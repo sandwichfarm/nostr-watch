@@ -26,7 +26,7 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { Inspector } from 'nostr-relay-inspector'
+// import { Inspector } from 'nostr-relay-inspector'
 
 const localMethods = {
   invalidate(force){ 
@@ -35,61 +35,37 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        const chunkSize = 25
-        this.relays = this.getRelays( this.store.relays.getAll )
-        let processRelays =  this.relays.filter( relay => !this.store.tasks.processed[this.slug].includes(relay) )
-        const relayChunks = this.chunk(chunkSize, processRelays)
-        for (let i = 0; i < relayChunks.length; i++) {
-          await new Promise( resolveChunk => {
-            const relayChunk = relayChunks[i]
-            let total = relayChunk.length, 
-                completed = 0
-            relayChunk.forEach( async (relay) => {  
-              const inspector = new Inspector(relay, {
-                checkRead: false,
-                checkWrite: false,
-                checkLatency: false,
-                checkAverageLatency: false,
-                passiveNipTests: false,
-                getInfo: true,
-                getIdentities: false,
-                run: true,
-                connectTimeout: 2*1000
-              })
-              .on('complete', async (inspect) => {
-                let result = {}
-                if(!inspect?.result)
-                  return
-                result.pubkeyValid = inspect.result?.pubkeyValid 
-                result.pubkeyError = inspect.result?.pubkeyError 
-                // result.identities = inspect.result?.identities
-                result = Object.assign(result, this.results[relay])
-                this.results[relay] = result
-                this.setCache(this.results[relay])
-                this.store.tasks.addProcessed(this.slug, relay)
-                completed++
-                // console.log(`chunk ${i}`, 'completed', completed === total, completed, total )
-                if(completed === total)
-                  resolveChunk()
-                inspect.close()
-              })
-              .on('error', ()=>{
-                completed++
-                // console.log(`chunk ${i}`, 'completed', completed === total, completed, total )
-                this.store.tasks.addProcessed(this.slug, relay)
-                if(completed === total)
-                  resolveChunk()
-              })
-              this.inspectors.push(inspector)
-            })
-          })
-          await new Promise( resolveDelay => setTimeout( resolveDelay, 100 ))
-        }
+        this.relays = this.store.relays.getAll
+        this.relays.forEach( relay => {
+          console.log('pubkey check', relay)
+          this.validatePubkey(relay)
+          this.store.tasks.addProcessed(relay)
+        })
         this.store.tasks.completeJob()
-        this.closeAll()
       },
       true
     )
+  },
+  validatePubkey(relay){
+    if(!this.results?.[relay]?.info?.pubkey)
+      return 
+
+    this.results[relay].pubkeyValid = false
+    
+    if(this.results[relay].info.pubkey.startsWith('npub')) {
+      this.results[relay].pubkeyError = "pubkey is in npub format, should be hex"
+      return
+    }
+    if(!this.results[relay].info.pubkey.match(/[0-9A-Fa-f]{6}/g)) {
+      this.results[relay].pubkeyError = "pubkey is not hex"
+      return
+    }
+    const pubkey = Uint8Array.from(Buffer.from(this.results[relay].info.pubkey, 'hex'));
+    if(pubkey.length !== 32){
+      this.results[relay].pubkeyError = 'pubkey is expected to be 32'
+      return
+    }
+    this.results[relay].pubkeyValid = true
   },
   closeAll(){
     if(this.inspectors.length)

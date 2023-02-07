@@ -81,7 +81,7 @@
             :class="{
               'bg-white/20': store.filters.getRule('software', store.stats?.software[sw].key)?.length,
               'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) === 0,
-              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) > 0 
+              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) > 0 && !parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) === 0
             }"
             
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
@@ -176,6 +176,7 @@
     mounted(){
       this.relays = this.getRelays( relays ) 
       setTimeout( this.refreshCounts, 100)
+      setInterval( this.refreshCounts, 1000 )
     },
     updated(){
       
@@ -243,6 +244,9 @@
           })
       },
       toggleFilter(ref, key, unique, reset){
+        if(parseInt(this.store.filters?.count?.[ref]?.[key]) === 0)
+          return
+
         const rule = this.store.filters.getRule(ref, key)
         console.log('rule', rule)
         if(rule?.length) {

@@ -62,7 +62,7 @@ const localMethods = {
                   return
                 result.pubkeyValid = inspect.result?.pubkeyValid 
                 result.pubkeyError = inspect.result?.pubkeyError 
-                result.identities = inspect.result?.identities
+                // result.identities = inspect.result?.identities
                 result = Object.assign(result, this.results[relay])
                 this.results[relay] = result
                 this.setCache(this.results[relay])

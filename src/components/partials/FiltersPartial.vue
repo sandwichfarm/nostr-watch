@@ -48,9 +48,14 @@
               'bg-white/20': store.filters.getRule('nips', store.stats?.nips[nip].key)?.length
             }"
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
-            NIP-{{ store.stats?.nips[nip].key}} 
+            NIP-{{ store.stats?.nips[nip].key }} 
             <span class="text-xs text-white/50">
-              {{ store.stats?.nips[nip].count }}
+              <!-- {{ store.stats?.nips[nip].count }} -->
+              <!-- {{ store.stats?.nips?.[nip].key }}  -->
+              {{ store.filters?.count?.nips[`${store.stats?.nips[nip].key}`] }}
+              <!-- {{store.filters?.count?.nips}} -->
+              <!-- {{ store.filters?.count?.nips?.[store.stats?.nips[nip].key] }} -->
+              <!-- {{ this?.relays?.filter( relay => { results[relay]?.info?.supported_nips?.includes(parseInt(store.stats?.nips?.[nip].key)) } )?.length }} -->
             </span>
           </span>
         </span>
@@ -78,7 +83,7 @@
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
             {{ store.stats?.software[sw].key}} 
             <span class="text-xs text-white/50">
-              {{ store.stats?.software[sw].count }}
+              {{ store.filters?.count?.software[`${store.stats?.software[sw].key}`] }}
             </span>
           </span>
         </span>
@@ -103,8 +108,8 @@
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
             {{ store.stats?.countries[country].key}} 
             <span class="text-xs text-white/50">
-              {{ store.stats?.countries[country].count }}
-            </span>
+              {{ store.filters?.count?.countries[`${store.stats?.countries[country].key}`] }}
+            </span> 
           </span>
         </span> 
       </div>
@@ -125,11 +130,10 @@
             :class="{
               'bg-white/20': store.filters.getRule('continents', store.stats?.continents[continent].key)?.length
             }"
-            
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
             {{ store.stats?.continents[continent].key}} 
             <span class="text-xs text-white/50">
-              {{ store.stats?.continents[continent].count }}
+              {{ store.filters?.count?.continents[`${store.stats?.continents[continent].key}`] }}
             </span>
           </span>
         </span> 
@@ -140,10 +144,12 @@
 
 </template>
 <script>
-  import RelaysLib from '@/shared/relays-lib.js'
+  import RelayMethods from '@/shared/relays-lib.js'
   import { defineComponent, toRefs } from 'vue'
   import SharedComputed from '@/shared/computed.js'
   import { setupStore } from '@/store'
+  import { relays } from '../../../relays.yaml'
+  import { geo } from '../../../cache/geo.yaml'
 
   export default defineComponent(
   {
@@ -153,13 +159,15 @@
       const {resultsProp: results} = toRefs(props)
       return { 
         store : setupStore(),
-        results: results,
+        results: results
       }
     },
     beforeMount(){
       // this.foundNips = this.collateSupportedNips()
     },
     mounted(){
+      this.relays = this.getRelays( relays ) 
+      this.refreshCounts()
     },
     updated(){
       
@@ -179,10 +187,53 @@
     },
     data() {
       return {
-
+        relays: this.getRelays( relays ),
+        count: { nips: {}, software: {}, countries: {}, continents: {} }
       }
     },
-    methods: Object.assign(RelaysLib, {
+    methods: Object.assign(RelayMethods, {
+
+      refreshCounts(){
+        this.relays = this.getRelays( relays ) 
+        if(Object.keys(this.store.stats?.nips).length) 
+          this?.store?.stats?.nips?.forEach( nip => {
+            this.store.filters.set(
+              this?.relays?.filter( relay => this.results[relay]?.info?.supported_nips?.includes( parseInt( nip.key ) ))?.length || 0,
+              'count',
+              'nips',
+              nip.key,
+            )
+          })
+        if(Object.keys(this.store.stats?.software).length)
+          this.store.stats?.software?.forEach( software => {
+            console.log('software', this?.relays?.filter( relay => this.results[relay]?.info?.software?.includes( software.key ))?.length || 0,)
+            this.store.filters.set(
+              this?.relays?.filter( relay => this.results[relay]?.info?.software?.includes( software.key ))?.length || 0,
+              'count',
+              'software',
+              software.key,
+            )
+          })
+        if(Object.keys(this.store.stats?.countries).length)
+          this.store.stats?.countries?.forEach( country => {
+            console.log('countries', this?.relays?.filter( relay => this.store.relays.geo?.[relay]?.country?.includes( country.key ))?.length || 0,)
+            this.store.filters.set(
+              this?.relays?.filter( relay => geo?.[relay]?.country?.includes( country.key ))?.length || 0,
+              'count',
+              'countries',
+              country.key,
+            )
+          })
+        if(Object.keys(this.store.stats?.continents).length)
+          this.store.stats?.continents?.forEach( continent => {
+            this.store.filters.set(
+              this?.relays?.filter( relay => geo?.[relay]?.continentName?.includes( continent.key ))?.length || 0,
+              'count', 
+              'continents', 
+              continent.key
+            )
+          })
+      },
       toggleFilter(ref, key, unique, reset){
         const rule = this.store.filters.getRule(ref, key)
         console.log('rule', rule)
@@ -196,10 +247,13 @@
           this.store.filters.addRule(ref, key, unique, reset)
           console.log('filters: effect', this.store.filters.rules)
         }
+        this.refreshCounts()
       }
     }),
     computed: Object.assign(SharedComputed, {
-
+      get(){
+        return this.relays
+      }
     })
   })
 </script>

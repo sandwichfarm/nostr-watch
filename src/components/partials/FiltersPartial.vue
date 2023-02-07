@@ -45,9 +45,11 @@
             :key="`filter-nip-${nip.key}`" 
             @click="toggleFilter('nips', store.stats?.nips[nip].key, false)"
             :class="{
-              'bg-white/20': store.filters.getRule('nips', store.stats?.nips[nip].key)?.length
+              'bg-white/20': store.filters.getRule('nips', store.stats?.nips[nip].key)?.length,
+              'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.nips[`${store.stats?.nips[nip].key}`]) === 0,
+              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.nips[`${store.stats?.nips[nip].key}`]) > 0 && !store.filters.getRule('nips', store.stats?.nips[nip].key)?.length
             }"
-            class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
+            class="cursor-pointer mr-2 mb-2 py1 px-3  inline-block">
             NIP-{{ store.stats?.nips[nip].key }} 
             <span class="text-xs text-white/50">
               <!-- {{ store.stats?.nips[nip].count }} -->
@@ -77,7 +79,9 @@
             :key="`filter-software-${store.stats?.software[sw].key}`" 
             @click="toggleFilter('software', store.stats?.software[sw].key, true)"
             :class="{
-              'bg-white/20': store.filters.getRule('software', store.stats?.software[sw].key)?.length
+              'bg-white/20': store.filters.getRule('software', store.stats?.software[sw].key)?.length,
+              'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.nips[`${store.stats?.software[sw].key}`]) === 0,
+              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) > 0 && !store.filters.getRule('software', store.stats?.software[sw].key)?.length
             }"
             
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
@@ -103,7 +107,9 @@
             :key="`filter-countries-${store.stats?.countries[country].key}`" 
             @click="toggleFilter('countries', store.stats?.countries[country].key, true, 'continents')"
             :class="{
-              'bg-white/20': store.filters.getRule('countries', store.stats?.countries[country].key)?.length
+              'bg-white/20': store.filters.getRule('countries', store.stats?.countries[country].key)?.length,
+              'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.countries[`${store.stats?.countries[country].key}`]) === 0,
+              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.countries[`${store.stats?.countries[country].key}`]) > 0 && !store.filters.getRule('countries', store.stats?.countries[country].key)?.length
             }"
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
             {{ store.stats?.countries[country].key}} 
@@ -128,7 +134,9 @@
             :key="`filter-continents-${store.stats?.continents[continent].key}`" 
             @click="toggleFilter('continents', store.stats?.continents[continent].key, true, 'countries')"
             :class="{
-              'bg-white/20': store.filters.getRule('continents', store.stats?.continents[continent].key)?.length
+              'bg-white/20': store.filters.getRule('continents', store.stats?.continents[continent].key)?.length,
+              'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.continents[`${store.stats?.continents[continent].key}`]) === 0,
+              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.continents[`${store.stats?.continents[continent].key}`]) > 0 && store.filters.getRule('continents', store.stats?.continents[continent].key)?.length
             }"
             class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
             {{ store.stats?.continents[continent].key}} 

@@ -53,7 +53,6 @@ const TasksManager = defineAsyncComponent(() =>
     import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
 );
 
-
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'RelaysNav',
@@ -67,6 +66,12 @@ export default defineComponent({
         return {}
       }
     },
+    relaysProp: {
+        type: Array,
+        default(){
+          return []
+        }
+      },
   },
   data(){
     // return setupNavData('relays')

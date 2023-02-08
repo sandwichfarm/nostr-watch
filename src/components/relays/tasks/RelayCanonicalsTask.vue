@@ -41,7 +41,7 @@ const localMethods = {
     this.queueJob(
       this.taskSlug, 
       async () => {
-        const $pool = new RelayPool(['wss://nostr.sandwich.farm', 'wss://relay.nostr.ch'])
+        const $pool = new RelayPool(['wss://history.nostr.watch'], { reconnect: false })
 
         $pool
           .on('open', r => {

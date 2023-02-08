@@ -214,7 +214,7 @@ import { defineComponent, defineAsyncComponent } from 'vue'
 import { setupStore } from '@/store'
 // import { UserLib } from '@/shared/user-lib.js'
 // import { History } from '@/shared/history.js'
-import { relays } from '../../../../relays.yaml'
+// import { relays } from '../../../../relays.yaml'
 import RelaysLib from '@/shared/relays-lib'
 
 const RelaysNav = defineAsyncComponent(() =>
@@ -238,7 +238,7 @@ export default defineComponent({
   },
 
   beforeMount(){
-    this.relays = this.store.relays.getAll?.length ? this.store.relays.getAll : relays
+    this.relays = this.store.relays.getAll
     this.relays.forEach(relay => {
       this.results[relay] = this.getCache(relay)
     })

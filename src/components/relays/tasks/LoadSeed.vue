@@ -1,16 +1,32 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="isSingle">Loading {{ relay }} from history node...</span>
+    class="">
+  <span class="lg:text-sm mr-2 ml-2">
+    <span v-if="!store.tasks.isProcessing(this.slug) && !isSingle" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
+    <span v-if="store.tasks.isProcessing(this.slug) && !isSingle" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block md:pt-1.5 md:mt-0 text-xs">
+      <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Loaded
+    </span>
+  </span>
+  <span class="lg:text-sm mr-2 ml-2 hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
+  <span class="lg:text-sm mr-2 ml-2" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+    Next check in: {{ untilNext }}
+  </span>
+  <!--<span v-if="isSingle">Loading {{ relay }} from history node...</span>
     <span v-if="!isSingle">Loading data from history relay</span>
   </span>
   <span 
     v-if="(!store.tasks.isActive || this.store.tasks.getActiveSlug === slug) && !isSingle">
-    <span class="text-white lg:text-sm mr-2 ml-2 text-xs mt-1.5 inline-block mr-10" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+    <span 
+      v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)" 
+      class="text-white lg:text-sm ml-2 text-xs mt-1.5 inline-block mr-10" >
       Next check in: {{ untilNext }}
-    </span>
-  </span>
+    </span> -->
+  </span> 
 </template>
 
 <style scoped>
@@ -27,7 +43,6 @@ import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
 import { RelayPool } from 'nostr'
-import { geo } from '../../../../cache/geo.yaml'
 
 // import { Inspector } from 'nostr-relay-inspector'
 
@@ -41,22 +56,19 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        let relays
-        const onlineRelays = this.store.relays.getOnline
-        if(onlineRelays)
-          relays = [...onlineRelays, ...this.store.relays.getOffline]
-        else 
-          relays = this.store.relays.getAll
-        const relayChunks = this.chunk(100, relays)
+        this.relays = [...this.store.relays.getAll]
+        const relayChunks = this.chunk(50, this.relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
             const relayChunk = relayChunks[i]
-            const pool = new RelayPool(['wss://history.nostr.watch'])
             const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
-            pool
+            let $relay
+            this.pool = new RelayPool(['wss://history.nostr.watch'])
+            this.pool
               .on('open', relay => {
-                relay.subscribe(subid, {
+                $relay = relay
+                $relay.subscribe(subid, {
                   kinds:    [30303],
                   "#d":     single ? [ single ] : relayChunk,
                   authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
@@ -101,16 +113,24 @@ const localMethods = {
                     result.topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
                     
                   result.aggregate = this.getAggregate(result)
-                  this.results[relay] = Object.assign(this.results[relay] || {}, result)
-                  this.setCache(result)
+                  const mergedResult = Object.assign(this.results[relay] || {}, result)
+                  this.results[relay] = mergedResult
+                  this.setCache(mergedResult)
+                  if(this.store.tasks.isProcessed(this.slug, relay))
+                    return 
+                  this.store.tasks.addProcessed(this.slug, relay)
                 }
               })
-              .on('eose', () => {
-                this.closePool(pool)
+              .on('eose', async () => {
+                // this.pool.unsubscribe(subid)
+                this.closePool(this.pool)
+                await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
                 resolve()
               })
           })
           promises.push(promise)
+          await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
+          
         }
         await Promise.all(promises)
         this.store.tasks.completeJob()
@@ -129,27 +149,46 @@ const localMethods = {
     }, 15*60*1000)
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now())) 
+    console.log(
+      'timeuntil', 
+      Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery), 
+      this.store.tasks.getLastUpdate(this.slug),
+
+      this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now()))
+    )
+    return this.timeSince(
+            Date.now()
+            -(
+              this.store.tasks.getLastUpdate(this.slug)
+              +this.refreshEvery-Date.now()
+            )
+    ) 
+  },
+  collateSupportedNips(){
+    const dict = new Object()
+    Object.entries(this.results).forEach( (result) => {
+      result = result[1]
+      if(result?.info?.supported_nips)
+        result?.info?.supported_nips.forEach( nip => { 
+          if( !(dict[nip] instanceof Set ))
+          dict[nip] = new Set()
+          dict[nip].add(result.url)
+        })
+    })
+    const result = new Array() 
+    Object.keys(dict).forEach( key => {
+      result.push({
+        key: key, 
+        count: dict[key].size,
+        // relays: Array.from(dict[key]),
+      })
+    })
+    result.sort( (a,b) => b.count-a.count )
+    return result
   },
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
-  },
-  chunk(chunkSize, array) {
-    return array.reduce(function(previous, current) {
-        var chunk;
-        if (previous.length === 0 || 
-                previous[previous.length -1].length === chunkSize) {
-            chunk = [];
-            previous.push(chunk);
-        }
-        else {
-            chunk = previous[previous.length -1];
-        }
-        chunk.push(current);
-        return previous;
-    }, []); 
   }
-
 }
 
 export default defineComponent({
@@ -160,7 +199,7 @@ export default defineComponent({
       slug: 'relays/seed', //REMEMBER TO CHANGE!!!
       pool: null,
       untilNext: null,
-      refreshEvery: 15*60*1000
+      refreshEvery: 5*60*1000,
     }
   },
   setup(props){
@@ -175,15 +214,15 @@ export default defineComponent({
   },
   unmounted(){
     clearInterval(this.interval)
-    this.pool = null
+    if(this.pool)
+      this.closePool(this.pool)
   },
   beforeMount(){
     this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
-    this.store.relays.setGeo(geo)
-    this.relays = this.store.relays.getAll
+    this.relays = [...this.store.relays.getAll]
 
     for(let ri=0;ri-this.relays.length;ri++){
       const relay = this.relays[ri],

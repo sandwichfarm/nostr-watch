@@ -1,5 +1,5 @@
 <template>
-  <a class="text-sm text-white hover:text-white" v-if="signer && !isLoggedIn()" @click="auth" href="#">Login</a>
+  <a class="text-sm text-white hover:text-white" v-if="signer && !isLoggedIn() && this.store.relays.getFavorites.length && this.store.tasks.isIdle" @click="auth" href="#">Login</a>
 </template>
 
 <script>
@@ -8,6 +8,7 @@ import { useRoute } from 'vue-router'
 import UserLib from '@/shared/user-lib.js'
 import { setupStore } from '@/store'
 import crypto from 'crypto'
+import { RelayPool } from 'nostr'
 
 // import { validateEvent, verifySignature, getEventHash } from 'nostr-tools'
 export default defineComponent({
@@ -21,25 +22,16 @@ export default defineComponent({
   data() {
     return {
       route: useRoute(),
-      clientId: "test_client",
-      clientSecret: "test_secret",
-      scopes: "account:read",
       token : null,
       user: {},
       signer: false,
+      pool: null
     }
   },
-  mounted(){
-    //console.log('store?', this.store.user)
+  async mounted(){
     this.showAuth()
     if(this.isLoggedIn())
-      this.getData()
-    // this.store.user.$subscribe( mutation => {
-    //   if(mutation.key != 'pubKey')
-    //     return
-    //   //console.log('there was amutation!!!!')
-    //   this.getData()
-    // })
+      await this.getData()
   },
   updated(){
   },
@@ -59,116 +51,42 @@ export default defineComponent({
       const pubkey = await window.nostr.getPublicKey()
       this.store.user.setPublicKey(pubkey)
       await this.getData()
+      this.queueKind3('user/relay/list')
     },
     getData: function(){
+      const pool = new RelayPool([...this.store.relays.getFavorites], { reconnect: false })
       return new Promise( resolve => {
         const subid = crypto.randomBytes(40).toString('hex')
         const filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] }
         const filterEvent = { limit: 1, kinds:[1], authors: [this.store.user.getPublicKey ] }
         let foundProfile = false,
             foundEvent = false 
-        this.$pool
-          .subscribe(`${subid}_profile`, filterProfile)
-        this.$pool
-          .subscribe(`${subid}_event`, filterEvent)
-        this.$pool 
+        pool
+          .on('open', Relay => {
+            Relay.subscribe(`${subid}_profile`, filterProfile)
+            Relay.subscribe(`${subid}_event`, filterEvent)
+          })
+        pool 
           .on('event', (relay, sub_id, event) => {
             if(`${subid}_profile` == sub_id && !foundProfile) {
               this.store.user.setProfile(event.content)
-              this.$pool.unsubscribe(subid)
+              pool.unsubscribe(sub_id)
               foundProfile = true
-              if(foundProfile && foundEvent)
-                resolve()
             }
             if(`${subid}_event` == sub_id && !foundEvent) {
               this.store.user.setTestEvent(event)
-              this.$pool.unsubscribe(subid)
+              pool.unsubscribe(sub_id)
               foundEvent = true
-              if(foundProfile && foundEvent)
-                resolve()
             }
+            if(!foundProfile || !foundEvent)
+              return 
+            resolve()
           })
       })
     },
-
-    // generateCodeChallenge: async function(codeVerifier) {
-    //   let digest = await crypto.subtle.digest("SHA-256",
-    //       new TextEncoder().encode(codeVerifier));
-
-    //   return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    //       .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
-    // },
-
-    // generateRandomString: function(length) {
-    //   let text = "";
-    //   let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    //   for (let i = 0; i < length; i++) {
-    //       text += possible.charAt(Math.floor(Math.random() * possible.length));
-    //   }
-
-    //   return text;
-    // },
   }),
   props: {},
 })
-
-    // auth2: function(){
-    //   var codeVerifier = this.generateRandomString(64);
-
-    //   const challengeMethod = crypto.subtle ? "S256" : "plain"
-
-    //   Promise.resolve()
-    //     .then(() => {
-    //       if (challengeMethod === 'S256')
-    //           return this.generateCodeChallenge(codeVerifier)
-    //       else
-    //           return codeVerifier
-    //     })
-    //     .then((codeChallenge) => {
-    //       window.sessionStorage.setItem("code_verifier", codeVerifier);
-    //       let redirectUri ="http://localhost:8080/";
-    //       let args = new URLSearchParams({
-    //           response_type: "code",
-    //           client_id: this.clientId,
-    //           scope: this.scopes,
-    //           code_challenge_method: challengeMethod,
-    //           code_challenge: codeChallenge,
-    //           redirect_uri: redirectUri
-    //         });
-    //     window.location = `${this.authorizeEndpoint}/?${args}`;
-    //   });
-    // },
-
-
-      // //console.log('pukey', this.user.pubkey)
-      // //console.log('relays', await window.nostr.getRelays().catch(err => console.warn(err)))
-
-      // //console.log(window.nostr)
-
-      // const event = {
-      //   tags: [],
-      //   pubkey:this.user.pubkey,
-      //   kind: 3,
-      //   content: "hello world",
-      //   created_at: Math.round(Date.now()/1000)
-      // }
-
-      // event.id = getEventHash(event)
-
-      // //console.log('unsigned event', event)
-
-      // const signedEvent = await window.nostr.signEvent(event)
-      //     .catch( function(error){
-      //       //console.log('there was an error', error)
-      //     })
-
-      // //console.log('signed event', signedEvent)
-
-      // let ok = validateEvent(signedEvent)
-      // let veryOk = await verifySignature(signedEvent)
-
-      // //console.log('valid event?', ok, veryOk)
 </script>
 
 <style>

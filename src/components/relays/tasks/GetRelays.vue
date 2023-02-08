@@ -28,8 +28,7 @@ const localMethods = {
       this.taskSlug, 
       () => {
         if(!this.store.prefs.discoverRelays) {
-          this.store.relays.addRelays(relays)
-          this.finish()
+          this.finish(relays)
         } 
         else {
           // const currentRelaysCount = this.store.relays.getAll.lengtth
@@ -40,28 +39,29 @@ const localMethods = {
           fetch(`https://api.nostr.watch/v1/online`)
             .then((response) => {
               if (!response.ok) {
-                this.finish(true)
+                this.finish(relays, true)
                 return
               }
               response.json()
                 .then( json => {
                   this.store.relays.urlsOnline = json
                   this.store.relays.addRelays(json)
-                  this.finish(true)
+                  this.finish(json, true)
                 })
                 .catch( () => {
-                  this.finish(true)
+                  this.finish(relays, true)
                 })
             })
             .catch( () => { 
-              this.finish(true)
+              this.finish(relays, true)
             })
         }
       },
       true
     )
   },
-  finish(clear){
+  finish(relays, clear){
+    this.store.relays.addRelays(relays)
     if(clear)
       clearTimeout(this.timeout)
     this.store.tasks.completeJob()
@@ -108,6 +108,8 @@ export default defineComponent({
       this.invalidate(true)
     else
       this.invalidate()
+
+    setTimeout( ()=>{}, 1)
   },
   updated(){},
   computed: Object.assign(SharedComputed, {

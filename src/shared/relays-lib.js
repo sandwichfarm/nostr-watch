@@ -1,7 +1,90 @@
 import crypto from "crypto"
 import {sort} from 'array-timsort'
+import { relays } from '../../relays.yaml'
+// import { geo } from '../../cache/geo.yaml'
 
 export default {
+  toggleFilter(ref, key, unique, reset, always){
+    if(parseInt(this.store.filters?.count?.[ref]?.[key]) === 0)
+      return
+    const rule = this.store.filters.getRule(ref, key)
+    console.log('rule', rule)
+    if(rule?.length) {
+      console.log('filters: removing', rule)
+      this.store.filters.removeRule(ref, key, unique, reset, always)
+      console.log('filters: effect', this.store.filters.rules)
+    } else {
+      console.log('filters: adding', rule)
+      this.store.filters.addRule(ref, key, unique, reset, always)
+      console.log('filters: effect', this.store.filters.rules)
+    }
+    this.refreshCounts()
+  },
+  refreshCounts(){
+    this.relays = this.getRelays( relays ) 
+    if(Object.keys(this.store.stats?.nips).length) 
+      this?.store?.stats?.nips?.forEach( nip => {
+        this.store.filters.set(
+          this?.relays?.filter( relay => this.results[relay]?.info?.supported_nips?.includes( parseInt( nip.key ) ))?.length || 0,
+          'count',
+          'nips',
+          nip.key,
+        )
+      })
+    if(Object.keys(this.store.stats?.software).length)
+      this.store.stats?.software?.forEach( software => {
+        this.store.filters.set(
+          this?.relays?.filter( relay => this.results[relay]?.info?.software?.includes( software.key ))?.length || 0,
+          'count',
+          'software',
+          software.key,
+        )
+      })
+    if(Object.keys(this.store.stats?.countries).length)
+      this.store.stats?.countries?.forEach( country => {
+        this.store.filters.set(
+          this?.relays?.filter( relay => this.store.relays.geo?.[relay]?.country?.includes( country.key ))?.length || 0,
+          'count',
+          'countries',
+          country.key,
+        )
+      })
+    if(Object.keys(this.store.stats?.continents).length)
+      this.store.stats?.continents?.forEach( continent => {
+        this.store.filters.set(
+          this?.relays?.filter( relay => this.store.relays.geo?.[relay]?.continentName?.includes( continent.key ))?.length || 0,
+          'count', 
+          'continents', 
+          continent.key
+        )
+      })
+  },
+  isPopulated(){
+    return (
+      this.store.prefs.clientSideProcessing
+      && this.store.tasks.lastUpdate['relays/check']
+    )
+    ||
+    (
+      !this.store.prefs.clientSideProcessing
+      && this.store.tasks.lastUpdate['relays/seed']
+    )
+  },
+  chunk(chunkSize, array) {
+    return array.reduce(function(previous, current) {
+        var chunk;
+        if (previous.length === 0 || 
+                previous[previous.length -1].length === chunkSize) {
+            chunk = [];
+            previous.push(chunk);
+        }
+        else {
+            chunk = previous[previous.length -1];
+        }
+        chunk.push(current);
+        return previous;
+    }, []); 
+  },
   closePool: function( $pool ) {
     $pool.relays.forEach( $relay => this.closeRelay( $relay ) )
   },
@@ -42,16 +125,51 @@ export default {
   },
   getRelays(relays){
     // relays = this.filterRelays(relays)
+    relays = this.filterRelays(relays)
     relays = this.sortRelays(relays)
     return relays
   },
   filterRelays(relays){
-    const fns = this.store.prefs.getFilters
-    fns.forEach( fn => {
-      if(fn instanceof Function)
-        relays = fn(relays)
+    // await new Promise( resolve => setTimeout(resolve, 300))
+    const haystacks = ['nips','valid/nip11','software','countries','continents','aggregate']
+    let filtered = [...relays]
+    haystacks.forEach( haystack => {
+      const needles = this.store.filters.getRules(haystack)
+      needles?.forEach( needle => {
+        if(!this.store.filters.enabled && !this.store.filters.alwaysEnabled?.[haystack])
+          return 
+        if(haystack === 'nips'){
+          needle = parseInt(needle)
+          filtered = filtered.filter( relay => this.results?.[relay]?.info?.supported_nips?.includes(needle) )
+        }
+        if(haystack === 'valid/nip11'){
+          filtered = filtered.filter( relay => this.results?.[relay]?.pubkeyValid )
+        }
+        if(haystack === 'software'){
+          if(needle === 'unknown')
+            filtered = filtered.filter( relay => !this.results?.[relay]?.info?.software )
+          else
+            filtered = filtered.filter( relay => this.results?.[relay]?.info?.software?.includes(needle) )
+        }
+        if(haystack === 'countries'){
+          if(needle === 'unknown')
+            filtered = filtered.filter( relay => !this.store.relays.getGeo(relay)?.country )
+          else
+            filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.country?.includes(needle) )
+        }
+        if(haystack === 'continents'){
+          if(needle === 'unknown')
+            filtered = filtered.filter( relay => !this.store.relays.getGeo(relay)?.continentName )
+          else
+            filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) )
+        }
+        if(haystack === 'aggregate'){
+          const aggregate = this.store.relays.getRelays(needle, this.results)
+          filtered = filtered.filter( relay => aggregate.includes(relay) )
+        }
+      })
     })
-    return relays
+    return filtered
   },
   sortRelays(relays){
     if(this.store.prefs.sortLatency)
@@ -163,11 +281,11 @@ export default {
     },
 
     getUptimePercentage(relay){
-      const heartbeats = this.store.stats.getHeartbeat(relay)
-      if(!heartbeats || !Object.keys(heartbeats).length )
+      const pulses = this.store.stats.getHeartbeat(relay)
+      if(!pulses || !Object.keys(pulses).length )
         return
-      const totalHeartbeats = Object.keys(heartbeats).length 
-      const totalOnline = Object.entries(heartbeats).reduce(
+      const totalHeartbeats = Object.keys(pulses).length 
+      const totalOnline = Object.entries(pulses).reduce(
           (acc, value) => value[1].latency ? acc+1 : acc,
           0
       );

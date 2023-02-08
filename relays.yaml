@@ -1,4 +1,5 @@
 relays:
+  - wss://private.red.gb.net
   - wss://nostr.wine
   - wss://nostr.up.railway.app
   - wss://nostr.lnorb.com
@@ -257,4 +258,4 @@ relays:
   - wss://nostream.denizenid.com
   - wss://puravida.nostr.land
   - wss://1.noztr.com
-  
+  - wss://nostr.soscary.net

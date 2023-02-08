@@ -90,7 +90,7 @@
           </div>
         </div>
 
-        <div class="mt-3 overflow-hidden mb-8" v-if="this.heartbeats && Object.keys(this.heartbeats).length > 24">
+        <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length > 24">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
               Uptime for the last
@@ -100,7 +100,7 @@
           </div>
           <div class="px-0 py-5 sm:px-0 flex">
             <!-- <span 
-              v-for="heartbeat in this.heartbeats"
+              v-for="heartbeat in this.pulses"
               :key="heartbeat.date"
               class=" mr-1 flex-1 relative"
               :class="getUptimeTickClass(heartbeat)">
@@ -109,7 +109,7 @@
               </span> -->
 
             <span 
-              v-for="heartbeat in this.heartbeats"
+              v-for="heartbeat in this.pulses"
               :key="heartbeat.date"
               class="mr-1 flex-1">
                 <span class="block" :class="getUptimeTickClass(heartbeat)">
@@ -683,7 +683,7 @@ export default defineComponent({
       events: {},
       interval: null,
       showLatency: false,
-      heartbeats : {},
+      pulses : {},
       hbMin: 0,
       hbMax: 0
     }
@@ -902,9 +902,9 @@ export default defineComponent({
       
       this.geo = this.store.relays.getGeo(this.relay)
 
-      this.heartbeats = this.store.stats.getHeartbeat(this.relay)
-      this.hbMin = Math.min.apply(Math, this.heartbeats?.map( hb => hb.latency ))
-      this.hbMax = Math.max.apply(Math, this.heartbeats?.map( hb => hb.latency ) )
+      this.pulses = this.store.stats.getHeartbeat(this.relay)
+      this.hbMin = Math.min.apply(Math, this.pulses?.map( hb => hb.latency ))
+      this.hbMax = Math.max.apply(Math, this.pulses?.map( hb => hb.latency ) )
       if(this.result?.topics)
         this.result.topics = this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
       

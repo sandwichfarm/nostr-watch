@@ -50,7 +50,6 @@ import SharedComputed from '@/shared/computed.js'
 import { Inspector } from 'nostr-relay-inspector'
 
 // import { relays } from '../../../../relays.yaml'
-import { geo } from '../../../../cache/geo.yaml'
 
 const localMethods = {
   migrateLegacy(){
@@ -315,7 +314,6 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
     
     this.relays = Array.from(new Set([...this.store.relays.getOnline, ...this.store.relays.getOffline]))
-    this.store.relays.setGeo(geo)
 
     for(let ri=0;ri-this.relays.length;ri++){
       const relay = this.relays[ri],

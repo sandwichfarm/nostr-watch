@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 
 export const usePrefsStore = defineStore('prefs', {
   state: () => ({ 
+    firstVisit: true,
     refresh: true,
     duration: 30*60*1000,
     pinFavorites: true,
@@ -20,7 +21,8 @@ export const usePrefsStore = defineStore('prefs', {
     ignoreTopics: 'canonical,nostr',
     showMaps: true,
     discoverRelays: false,
-    checkNip11: false
+    checkNip11: false,
+    CheckNip11Frequency: 24*60*60*1000
   }),
   getters: {
     doRefresh: (state) => state.refresh,
@@ -53,8 +55,8 @@ export const usePrefsStore = defineStore('prefs', {
 },
 {
   persistedState: {
-    // excludePathts: ['activeFilters']
-    includePaths: ['refresh', 'duration', 'pinFavorites', 'rowTheme', 'filters']
+    excludePaths: ['activeFilters']
+    // includePaths: ['refresh', 'duration', 'pinFavorites', 'rowTheme', 'filters', 'firstVisit', '']
     // store options goes here
   },
 })

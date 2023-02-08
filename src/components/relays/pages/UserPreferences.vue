@@ -276,7 +276,7 @@
           <h2 class="text-2xl pt-8 text-pink-700 dark:text-pink-300 mt-4 font-extrabold">Data</h2>
           <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
-              Check NIP-11
+              Check Pubkey (NIP-11)
             </label>
             <div class="mt-1 sm:col-span-2 sm:mt-0 align-left">
               <Switch
@@ -368,6 +368,7 @@ export default defineComponent({
       currentRegion: this.store.prefs.region,
       autoDetectRegion: this.store.prefs.autoDetectRegion,
       discoverRelays: this.store.prefs.discoverRelays,
+      checkNip11: this.store.prefs.checkNip11,
     }
   },
 
@@ -391,9 +392,15 @@ export default defineComponent({
         this.autoDetectRegion = this.store.prefs.autoDetectRegion
       }
       if(this.store.prefs.discoverRelays !== this.discoverRelays){
+        delete this.store.tasks.lastUpdate['relays/get']
         delete this.store.tasks.lastUpdate['relays/seed']
         delete this.store.tasks.lastUpdate['relays/check']
         this.discoverRelays = this.store.prefs.discoverRelays
+      }
+
+      if(this.store.prefs.checkNip11 !== this.checkNip11){
+        delete this.store.tasks.lastUpdate['relays/nip11']
+        this.checkNip11 = this.store.prefs.checkNip11
       }
     },100)
   },

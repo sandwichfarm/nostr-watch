@@ -18,10 +18,7 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { daemons } from '@/config/nwd-geo.yaml'
-
-import { getDistance } from 'geolib';
-import { getVisitorGeo } from '@/utils'
+import { getVisitorGeo, getClosest } from '@/utils'
 
 const localMethods = {
   invalidate(force){
@@ -29,37 +26,19 @@ const localMethods = {
     //   return
     if( !this.isExpired(this.slug, 6*60*60*1000) && !force ) 
       return
-    
-    console.log('got here', 'past expired')
 
     this.queueJob(
       this.slug, 
       async () => {
-        console.log('got here', 'inside job')
-        console.log('got here')
         const visitorGeo = await getVisitorGeo()
         this.store.user.ip = visitorGeo.query
-        this.store.prefs.region = this.getClosest(visitorGeo)
+        this.store.prefs.region = getClosest(visitorGeo)
         this.store.tasks.completeJob()
       },
       true
     )
   },
-  getClosest(visitorGeo){
-    const distances = []
-    Object.keys(daemons).forEach( region => {
-      console.log('type', region, daemons, typeof daemons[region].lon, daemons[region].lon)
-      const distance = getDistance(
-        { latitude: visitorGeo.lat, longitude: visitorGeo.lon },
-        { latitude: daemons[region].lat, longitude: daemons[region].lon }
-      )
-      distances.push({ region: region, distance: distance })
-    })
-    distances.sort( (a, b) => {
-      return a.distance - b.distance
-    })
-    return distances[0].region
-  },
+
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
@@ -103,7 +82,7 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
     if(this.store.tasks.isProcessing(this.slug))
         this.invalidate(true)
@@ -112,6 +91,8 @@ export default defineComponent({
 
     if(!this.store.prefs.autoDetectRegion)
       this.setRefreshInterval()
+    
+    setTimeout( ()=>{}, 1)
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),

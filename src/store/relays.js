@@ -17,7 +17,8 @@ export const useRelaysStore = defineStore('relays', {
     aggregates: {},
     aggregatesAreSet: false,
     cached: new Object(),
-    canonicals: new Object()
+    canonicals: new Object(),
+    filters: new Object()
   }),
   getters: {
     getAll: (state) => state.urls,
@@ -25,15 +26,29 @@ export const useRelaysStore = defineStore('relays', {
     getOffline: (state) => state.urls.filter( relay => !state.urlsOnline.includes(relay)),
     getShuffled: state => shuffle(state.urls),
     getShuffledPublic: state => {
-      console.log('aggregates are set',state.aggregatesAreSet )
       return state.aggregatesAreSet ? shuffle(state.aggregates.public) : shuffle(state.urls)
     },
     getRelays: (state) => (aggregate, results) => {
       if( 'all' == aggregate )
         return state.urls.map(x=>x)
+      if( 'online' == aggregate ){
+        return state.urls.filter( (relay) => results?.[relay]?.check?.connect )
+      }
+      if( 'nips' === aggregate){
+        return state.urls.filter( (relay) => { 
+          return  results?.[relay]?.info?.supported_nips  
+                  && Object.keys(results[relay].info.supported_nips).length 
+                  && results?.[relay]?.pubkeyValid
+        })
+      }
       if( 'favorite' == aggregate )
         return state.favorites
+
       return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
+    },
+    
+    getByNip: (state) => (nip, results) => {
+      return state.urls.filter( relay => results?.[relay]?.info?.supported_nips?.includes(nip) )
     },
 
     getByAggregate: state => aggregate => {
@@ -67,7 +82,6 @@ export const useRelaysStore = defineStore('relays', {
       this.urls = removeDuplicateHostnames(this.urls.concat(this.urls, relayUrls)) 
     },
     setRelays(relayUrls){ this.urls = relayUrls },
-
     // setResult(result){ 
     //   // this.setStat('relays', this.)
     //   this.results[result.url] = result 
@@ -105,11 +119,8 @@ export const useRelaysStore = defineStore('relays', {
 
     unsetFavorite(relayUrl){ 
       this.favorites = this.favorites.filter(item => item !== relayUrl)
-      
       const store = useUserStore()
-      console.log('before delete', typeof store.kind3[relayUrl])
       delete store.kind3[relayUrl]
-      console.log('deleted?', typeof store.kind3[relayUrl])
     },
 
     toggleFavorite(relayUrl){

@@ -1,13 +1,19 @@
+<template>
+  <span class="text-inherit" v-if="this.store.tasks.getActiveSlug === slug">
+    Analyzing Data
+  </span>
+</template>
 <script>
 import { defineComponent, toRefs } from 'vue'
 import { setupStore } from '@/store'
-import { SharedComputed } from '@/shared/computed.js'
-// import { UserLib } from '@/shared/user-lib.js'
+import RelaysLib from '@/shared/relays-lib.js'
+import SharedComputed from '@/shared/computed.js'
+
 // import { History } from '@/shared/history.js'
 
 export default defineComponent({
 
-  name: 'RelayStatistics',
+  name: 'HistoryTask',
 
   components: {},
 
@@ -28,18 +34,13 @@ export default defineComponent({
   },
 
   unmounted(){
-    delete this.remoteTask
   },
 
   data: function(){
     return {
       relays: this.store.relays.getAll,
       geo: this.store.relays.geo,
-      bySupportedNips: null,
-      byCountry: null,
-      byContinent: null, 
-      history: null,
-      remoteTask: null
+      slug: 'relays/stats'
     }
   },
 
@@ -52,239 +53,160 @@ export default defineComponent({
     },
   },
 
+  methods: Object.assign(RelaysLib, {
+    invalidate: async function(){
+      if(!this.isExpired(''))
+      console.log('stats invalidate()')
+      this.queueJob(
+        this.slug,
+        () => {
+          console.log('stats run()')
+          this.store.stats.nips = this.collateSupportedNips
+          this.store.stats.continents = this.collateContinents 
+          this.store.stats.countries = this.collateCountries 
+          this.store.stats.software = this.collateSoftware 
+          this.store.tasks.completeJob()
+        },
+        true
+      )
+      // if( !this.isExpired('relays/seed', 5*1000) || !this.isExpired('relays/check', 5*1000) )
+      // {
+      //   this.queueJob(
+      //     'relays/stats',
+      //     () => {
+      //       this.store.stats.set( 'nips', this.collateSupportedNips )
+      //       this.store.stats.set( 'continents', this.collateContinents )
+      //       this.store.stats.set( 'countries', this.collateCountries )
+      //       this.store.stats.set( 'countries', this.collateSoftware )
+      //       this.store.tasks.completeJob()
+      //     },
+      //     true
+      //   )
+      // }
+    },
+  }),
+
   computed: Object.assign(SharedComputed, {
     collateSupportedNips(){
-      const nips = new Object()
+      const dict = new Object()
       Object.entries(this.results).forEach( (result) => {
         result = result[1]
         if(result?.info?.supported_nips)
           result?.info?.supported_nips.forEach( nip => { 
-            if( !(nips[nip] instanceof Set ))
-              nips[nip] = new Set()
-            nips[nip].add(result.url)
+            if( !(dict[nip] instanceof Set ))
+            dict[nip] = new Set()
+            dict[nip].add(result.url)
           })
       })
-      //console.log('supported nips', nips)
-      return nips
+      const result = new Array() 
+      Object.keys(dict).forEach( key => {
+        result.push({
+          key: key, 
+          count: dict[key].size 
+        })
+      })
+      return result
     },
     collateContinents(){
       const byCont = new Object()
       this.relays.forEach( relay => {
-        if( !(this.geo[relay] instanceof Object) || typeof this.geo[relay].continentName === 'undefined' ) {
+        if( !(this.geo?.[relay] instanceof Object) || typeof this.geo?.[relay].continentName === 'undefined' ) {
           if( !(byCont.unknown instanceof Set) )
             byCont.unknown = new Set()
           byCont.unknown.add(relay)
           return
         }
-        const cont = this.geo[relay].continentName
+        const cont = this.geo?.[relay].continentName
         if( !(byCont[cont] instanceof Set) )
           byCont[cont] = new Set() 
         byCont[cont].add(relay)
       })
+      const result = new Array() 
+      Object.keys(byCont).forEach( cont => {
+        result.push({
+          key: cont, 
+          count: byCont[cont].size 
+        })
+      })
+      result.sort( (a,b) => b.count-a.count )
       //console.log('continents', byCont)
-      return byCont;
+      return result;
     },
     collateCountries(){
       const byCountry = new Object()
       this.relays.forEach( relay => {
-        if( !(this.geo[relay] instanceof Object) || typeof this.geo[relay].country === 'undefined' ) {
+        if( !(this.geo?.[relay] instanceof Object) || typeof this.geo?.[relay].country === 'undefined' ) {
           if( !(byCountry.unknown instanceof Set) )
           byCountry.unknown = new Set()
             byCountry.unknown.add(relay)
           return
         }
-        const cont = this.geo[relay].country
+        const cont = this.geo?.[relay].country
         if( !(byCountry[cont] instanceof Set) )
         byCountry[cont] = new Set() 
         byCountry[cont].add(relay)
       })
-      //console.log('countries', byCountry)
-      return byCountry;
+      const result = new Array()
+      Object.keys(byCountry).forEach( country => {
+        result.push({
+          key: country, 
+          count: byCountry[country].size 
+        })
+      })
+      result
+        .sort( (a,b) => b.count-a.count )
+      //console.log('continents', byCont)
+      return result;
     },
-    import { RelayPool } from 'nostr'
+    collateSoftware(){
+      const bySoftware = new Object()
+      this.relays.forEach( relay => {
+        if( !this.results?.[relay]?.info?.software ) {
+          if( !(bySoftware.unknown instanceof Set) )
+            bySoftware.unknown = new Set()
+          bySoftware.unknown.add(relay)
+          return
+        }
+        const software = this.results[relay].info.software
+        if( !(bySoftware[software] instanceof Set) )
+          bySoftware[software] = new Set() 
+        bySoftware[software].add(relay)
+      })
+      let result = new Array()
+      Object.keys(bySoftware).forEach( sw => {
+        let segments, repo, org
+        try {
+          segments = new URL(sw).pathname.split('/')
+          console.log(sw, segments.length)
+          repo = segments.pop()
+          org = segments.pop()
+          if(repo == '' || org == '')
+            segments = false
+        }
+        catch(e){ e}
 
-    setHistory(){
-      let   relays = [],
-            relaysKnown = [],
-            relaysRemote = {},
-            // remove = [],
-            uniques = null,
-            relayTimeCodes = {}
-
-      const run = async function(){
-        //discover relays [kind:3], "remoteRelays"
-        await discover().catch( err => console.warn(err) )
-
-        //Sanitize knownRelays to prevent dupes in uniques
-        sanitizeKnownRelays()
-
-        //sanitize remoteRelays
-        sanitizeRemoteRelays()
-
-        //check remoteRelays
-        // await checkRemoteRelays()
-
-        //Remove offline remoteRelays
-        // removeOfflineRelays()
-
-        //Combine knownRelays and remoteRelays
-        concatRelays()
-
-        //set uniques
-        uniques = new Set(relays)
-
-        //console.log(uniques, uniques.size)
-
-        const final = []
-
-        uniques.forEach( relay => {
-          if( !(relayTimeCodes[relay] instanceof Array) ) 
-            return 
-          relayTimeCodes[relay].sort( (a, b) => a - b )
-          final.push( [relay, relayTimeCodes[relay][0] ] )
+        result.push({
+          key: segments ? `${org}/${repo}` : sw,
+          count: bySoftware[sw].size 
         })
+      })
+      
+      result.sort( (a,b) => b.count-a.count )
 
-        //console.log('before sort', final[0])
-
-        final.sort( (a, b) => a[1]-b[1] )
-
-        //console.log('afdter sort', final[0])
-
-        return final 
+      return result;
+    },
+    getMostPopularSoftware(){
+      let result
+      for(let i=0;i<this.bySoftware.length;i++){
+        if(this.bySoftware[i].key === 'unknown') 
+          continue
+        result = this.bySoftware[i].key
+        break
       }
-
-      const concatRelays = function(){
-        relays = relaysKnown.concat(relaysRemote)
-      }
-
-      const discover = async () => {
-        relaysKnown = this.store.relays.getAll
-        
-        return new Promise(resolve => {
-          let total = 0
-          const subid = crypto.randomBytes(40).toString('hex')
-          const pool = RelayPool(this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').filter( relay => this.results?.[relay]?.info?.supported_nips.includes(15)))
-          pool
-            .on('open', relay => {
-              // //console.log('open')
-              relay.subscribe(subid, {since: 1609829, limit: 10000, kinds:[3]})
-            })
-            .on('eose', (relay) => {
-              //console.log('closing', relay.url)
-              this.closeRelay(relay)
-              resolve(true)
-            })
-            .on('event', (relay, _subid, event) => {
-              if(subid == _subid) {
-                //console.log(total++)
-                try { 
-                  // //console.log(event)
-                  const parsed = JSON.parse(event.content)
-                  relaysRemote = Object.assign(relaysRemote, parsed)
-                  Object.keys(parsed).forEach( key => {
-                    if( !(relayTimeCodes[key] instanceof Array) )
-                      relayTimeCodes[key] = new Array()
-                    relayTimeCodes[key].push(event.created_at)
-                  })
-                  this.closeRelay(relay)
-                } catch(e) {
-                  console.error(e)
-                }
-              }
-            })
-
-          setTimeout( () => {
-            this.closePool(pool)
-            resolve(true) 
-          }, 10*1000 )
-        })
-      }
-
-      const sanitizeRemoteRelays = function(){
-        const remote1 = Object.entries(relaysRemote)
-                    .filter( relay => Array.isArray(relay) )
-                    .map( relay => sanitizeRelay(relay[0]) )
-                    .filter( relay => relay.startsWith('wss://') )
-                    .filter( relay => !relay.includes('localhost') )
-
-        const remote2 = Object.entries(relaysRemote)
-                    .filter( relay => relay instanceof String )
-                    .map( relay => sanitizeRelay(relay) )
-                    .filter( relay => relay.startsWith('wss://') )
-                    .filter( relay => !relay.includes('localhost') )
-
-        relaysRemote = remote1.concat(remote2)
-      }
-
-      const sanitizeKnownRelays = function(){
-        relaysKnown = relaysKnown.map( relay => sanitizeRelay(relay) ) //Known relays may have trailing slash
-      }
-
-      const sanitizeRelay = function(relay) {
-        return relay
-                .toLowerCase()
-                .trim()
-                .replace(/\s\t/g, '')
-                .replace(/\/+$/, '')
-                .replace(/^[^a-z\d]*|[^a-z\d]*$/gi, '');
-      }
-
-      // const checkRemoteRelays = async function(){
-      //   for(let i=0;i<relaysRemote.length;i++) {
-      //     // //console.log('check for connect', remoteMerged[i])
-      //     await checkRelay(relaysRemote[i])
-      //             .catch( () => {
-      //               remove.push(relaysRemote[i])
-      //               //console.log('removals:', remove.length, relaysRemote[i])
-      //             })
-      //   }
-      // }
-
-      // const checkRelay = async function(relay){
-      //   return new Promise( (resolve, reject) => {
-      //     let socket = new Relay(relay)
-      //         socket
-      //           .on('open', relay => {
-      //             relay
-      //             socket.close()
-      //             resolve()
-      //           })
-      //           .on('error', reject )
-      //     setTimeout( reject, 500 )
-      //   })
-      // }
-
-      // const removeOfflineRelays = function(){
-      //   relaysRemote = relaysRemote.filter( relay => !remove.includes(relay) )
-      // }
-
-      return run()
-    }
-    }
+      return result
+    },
   }),
 
-  methods: Object.assign(RelaysLib, {
-    invalidate: async function(){
-      if( !this.store.tasks.isAnyProcessing && this.isExpired('relays/history') ) {
-        this.store.tasks.startProcessing('relays/history')
-        this.store.stats.set( 'nips', this.collateSupportedNips )
-        this.store.tasks.addProcessed('relays/history', 'nips')
-        this.store.stats.set( 'continents', this.collateContinents )
-        this.store.tasks.addProcessed('relays/history', 'continents')
-        this.store.stats.set( 'countries', this.collateCountries )
-        this.store.tasks.addProcessed( 'relays/history', 'countries' )
-        this.remoteTask = await this.historicalData()
-        this.store.tasks.addProcessed( 'relays/history', 'firstSeen' )
-        // this.store.stats.setHistory(remoteTask)
-        this.store.tasks.finishProcessing( 'relays/history' )
-      }
-    },
-    collateSoftware(){ 
-      // const software = new Object()
-    },
-    collateSoftwareVersion(){
-
-    },
-  })
+  
 })
 </script>

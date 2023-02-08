@@ -1,24 +1,24 @@
 <template>
   <div
       v-if="(!store.tasks.isActive || store.tasks.getActiveSlug === this.slug) && !this.isSingle"
-      class="inline relative">
-    <span class="text-white lg:text-sm mr-2 ml-2 mt-1 text-xs">
-      <span v-if="!store.tasks.isProcessing(this.slug)" class="hidden lg:inline">Checked {{ sinceLast }} ago</span>
-      <span v-if="store.tasks.isProcessing(this.slug)" class="italic lg:pr-9 text-white lg:text-sm mr-2 ml-2 block mt-1.5 md:pt-1.5 md:mt-0 text-xs">
-        <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      class="text-inherit">
+    <span class="text-inherit">
+      <span v-if="!store.tasks.isProcessing(this.slug)" class="hidden lg:inline mr-2">Checked {{ sinceLast }} ago</span>
+      <span v-if="store.tasks.isProcessing(this.slug)" class="italic text-inherit ml-2 inline-block">
+        <svg class="-mt-1.5 animate-spin mr-1 h-4 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
         {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Checked
       </span>
     </span>
-    <span class="text-white lg:text-sm mr-2 ml-2 text-xs hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
-    <span class="text-white lg:text-sm mr-2 ml-2 text-xs" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+    <span class="text-inherit hidden lg:inline mr-1" v-if="!store.tasks.isProcessing(this.slug)">-</span>
+    <span class="text-inherit mr-2" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
       Next check in: {{ untilNext }}
     </span>
     <button 
       v-if="!store.tasks.isProcessing(this.slug)"
-      class="mr-8 my-1 py-1 px-3 text-xs rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
+      class=" text-xs -mt-1.5 my-1 py-1 px-3 rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
       :disabled='store.tasks.isProcessing(this.slug)' 
       @click="refreshNow()">  
         Check{{ relay ? ` ${relay}` : "" }} Now
@@ -26,8 +26,8 @@
   </div>
   <span
     v-if="store.tasks.getActiveSlug === this.slug && this.isSingle"
-      class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs mr-11">
-      <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      class="text-inherit ml-2">
+      <svg class="animate-spin mr-2 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>

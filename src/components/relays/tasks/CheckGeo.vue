@@ -1,14 +1,14 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white text-sm lg:text-sm mx-2 mt-1.5">
-  <span class="text-white mr-2 ml-2">
-    <span class="italic lg:pr-9 text-white  mr-2 ml-2 block md:pt-1.5 md:mt-0">
+    class="text-inherit">
+  <span class="text-inherit">
+    <span class="text-inherit">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      Getting Geo {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }}
+      getting geo {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }}
     </span>
   </span>
   </span> 
@@ -35,7 +35,6 @@ const localMethods = {
     
     if( !process.env.VUE_APP_IP_API_KEY )
       return 
-
     if( !this.isExpired(this.slug, 24*60*60*1000) && !force )
       return
       
@@ -43,13 +42,12 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        this.relays = this.store.relays.getAll.filter( relay => !this.store.tasks.processed[this.slug].includes(relay))
+        this.relays = this.store.relays.getAll.filter( relay => !this.store.tasks.processed[this.slug]?.includes(relay))
         const relayChunks = this.chunk(100, this.relays)
         console.log('chunks', )
         let promises = [],
             geoAcc = {}
         for(let c=0;c<relayChunks.length;c++) {
-          
           const relays = relayChunks[c]
           relays.forEach( async (relay) => {
             const promise = new Promise( resolve => {

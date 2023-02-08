@@ -1,8 +1,8 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Detecting region</span>
+    class="text-inherit">
+    <span class="text-inherit">detecting region</span>
   </span>
 </template>
 

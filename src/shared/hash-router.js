@@ -24,7 +24,7 @@ const setActiveContent = function(slug){
     this.navActiveContent = slug
     this.store.layout.setActive(this.navSlug, slug)
     //console.log('set active content', this.navActiveContent)
-    // //console.log('route', 'setActiveContent', this.navType, this.navSlug, this.navActiveContent, this.navItems, this.navSlug)
+    //console.log('route', 'setActiveContent', this.navType, this.navSlug, this.navActiveContent, this.navItems, this.navSlug)
 }
 
 const loadNavContent = function(){

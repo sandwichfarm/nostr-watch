@@ -34,7 +34,7 @@ export const timeSince = function(date) {
 export const getClosest = function(visitorGeo){
   const distances = []
   Object.keys(daemons).forEach( region => {
-    // console.log('type', region, daemons, typeof daemons[region].lon, daemons[region].lon)
+    //console.log('type', region, daemons, typeof daemons[region].lon, daemons[region].lon)
     const distance = getDistance(
       { latitude: visitorGeo.lat, longitude: visitorGeo.lon },
       { latitude: daemons[region].lat, longitude: daemons[region].lon }
@@ -49,7 +49,7 @@ export const getClosest = function(visitorGeo){
 
 export const getGeo = async function(relay){
   let dns, ip, geo
-  console.log('ip-api key', process.env.VUE_APP_IP_API_KEY)
+  //console.log('ip-api key', process.env.VUE_APP_IP_API_KEY)
   dns = await getDnsFromRelay(relay).catch()
   ip = await getIPFromDNS(dns).catch()
   geo = await getGeoFromIP(ip).catch()
@@ -68,7 +68,7 @@ export const getGeo = async function(relay){
 }
 
 export const getVisitorGeo = async function() {
-  console.log('ip-api key', process.env.VUE_APP_IP_API_KEY)
+  //console.log('ip-api key', process.env.VUE_APP_IP_API_KEY)
   let geo
   const url = process.env.VUE_APP_IP_API_KEY ? `https://pro.ip-api.com/json/?fields=ip,lat,lon&key=${process.env.VUE_APP_IP_API_KEY}` : `http://ip-api.com/json/?fields=ip,lat,lon`
   await fetch(url, { headers: { 'accept': 'application/dns-json' } })

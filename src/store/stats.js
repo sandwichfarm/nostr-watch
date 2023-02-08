@@ -49,7 +49,7 @@ export const useStatStore = defineStore(
         //     })
         //   }
         // }
-        console.log(this.pulses)
+        //console.log(this.pulses)
 
         relaysNow.forEach(relay => {
           if( !(this.pulses[relay] instanceof Array) )
@@ -62,7 +62,7 @@ export const useStatStore = defineStore(
           this.pulses = this.pulses.splice(0, delta);
         })
 
-        console.log('new pulses', this.pulses)
+        //console.log('new pulses', this.pulses)
       }
         
     },

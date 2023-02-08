@@ -153,13 +153,13 @@ const localMethods = {
     }, 15*60*1000)
   },
   timeUntilRefresh(){
-    console.log(
-      'timeuntil', 
-      Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery), 
-      this.store.tasks.getLastUpdate(this.slug),
+    //console.log(
+    //   'timeuntil', 
+    //   Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery), 
+    //   this.store.tasks.getLastUpdate(this.slug),
 
-      this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now()))
-    )
+    //   this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now()))
+    // )
     return this.timeSince(
             Date.now()
             -(

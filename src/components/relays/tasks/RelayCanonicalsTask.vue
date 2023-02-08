@@ -54,7 +54,7 @@ const localMethods = {
           })
           .on('event', (relay, _subid, event) => {
             if(_subid.includes(subid)){
-              console.log('canonical event', event.id)
+              //console.log('canonical event', event.id)
               const hash = event.tags.filter( tag => tag[0] === 'h')[0][1]
               this.hashes[hash] = event.id
             }
@@ -74,9 +74,9 @@ const localMethods = {
           this.canonicals[relay] = this.hashes[hash] //event.id
         })
 
-        console.log('hashes found', Object.keys(this.hashes).length)
-        console.log('canonicals found', Object.keys(this.canonicals).length, this.canonicals)
-        console.log('from store', this.store.relays.getCanonicals)
+        //console.log('hashes found', Object.keys(this.hashes).length)
+        //console.log('canonicals found', Object.keys(this.canonicals).length, this.canonicals)
+        //console.log('from store', this.store.relays.getCanonicals)
 
         this.store.relays.setCanonicals(this.canonicals)
 
@@ -127,7 +127,7 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('task', this.slug, 'is processing:', this.store.tasks.isProcessing(this.slug))
+    //console.log('task', this.slug, 'is processing:', this.store.tasks.isProcessing(this.slug))
     if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else

@@ -36,7 +36,7 @@ localMethods.invalidate = function(force){
   if( !this.store.prefs.useKind3 )
     return
   
-  // console.log('wtf?', this.slug, !this.isExpired(this.slug) && !force)
+  //console.log('wtf?', this.slug, !this.isExpired(this.slug) && !force)
 
   this.queueKind3(this.slug)
 }
@@ -86,7 +86,7 @@ export default defineComponent({
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
-    // console.log('task', this.slug, 'is processing:', this.store.tasks.isProcessing(this.slug))
+    //console.log('task', this.slug, 'is processing:', this.store.tasks.isProcessing(this.slug))
     if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else

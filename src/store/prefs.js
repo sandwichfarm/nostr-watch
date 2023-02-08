@@ -10,7 +10,7 @@ export const usePrefsStore = defineStore('prefs', {
     filters: [],
     filterFn: [],
     useKind3: true,
-    clientSideProcessing: false,
+    clientSideProcessing: true,
     clientSideProcessingUpgrade: false,
     latencyFast: 200,
     latencySlow: 1000,
@@ -49,7 +49,7 @@ export const usePrefsStore = defineStore('prefs', {
         return 
       this.filters.push(key)
       this.filterFn.push(fn) 
-      console.log('functions:', this.filterFn)
+      //console.log('functions:', this.filterFn)
     }
   },
 },

@@ -50,12 +50,12 @@ export const useTaskStore = defineStore(
   },
   actions: {
     updateNow(key){ 
-      console.log('update timestamp', key)
+      //console.log('update timestamp', key)
       this.lastUpdate[key] = Date.now() 
     },
     //queue
     addJob(job){
-      console.log('add job', job.id, 'is pending:', this.isTaskPending(job.id), 'active:', this?.active?.id)
+      //console.log('add job', job.id, 'is pending:', this.isTaskPending(job.id), 'active:', this?.active?.id)
       if(job?.unique && this.isTaskPending(job.id))
         return
       this.pending.push(job)
@@ -63,22 +63,22 @@ export const useTaskStore = defineStore(
         this.startNextJob()
     },
     startNextJob(){
-      console.log('starting next job')
+      //console.log('starting next job')
       if( this.arePending ) {
         this.active = this.pending[0]
         this.pending.shift()
         this.startProcessing(this.active)
-        console.log('start next job', this.active)
+        //console.log('start next job', this.active)
       }
       else {
-        console.log('jobs idle')
+        //console.log('jobs idle')
         this.active = {}
       }
     },
     completeJob(slug){
-      console.log('complete job', slug, this.active.id !== slug)
+      //console.log('complete job', slug, this.active.id !== slug)
       if(this.active.id !== slug) {
-        console.log(slug, 'is not active!', this.active.id, '')
+        //console.log(slug, 'is not active!', this.active.id, '')
         return
       }
       this.updateNow(this.active.id)
@@ -87,16 +87,16 @@ export const useTaskStore = defineStore(
       setTimeout( this.startNextJob, 50)
     },
     clearJobs(type){
-      console.log('clear jobs', type)
+      //console.log('clear jobs', type)
       this[type] = new Array()
     },
     cancelJob( id ){
-      console.log('cancel jobs', id)
+      //console.log('cancel jobs', id)
       const index = this.pending.findIndex( job => job.id === id )
       this.removeJob( index )
     },
     removeJob( index ){
-      console.log('remove job', index)
+      //console.log('remove job', index)
       this.pending.splice( index, 1 )
     },
 

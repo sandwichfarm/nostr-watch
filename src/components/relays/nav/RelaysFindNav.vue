@@ -101,9 +101,9 @@ methods: Object.assign(RelaysLib, {
   toggleActiveContent(slug){
     if(this.store.layout.getActiveItem('relays/find').slug === slug)
       return
-    console.log(this.store.filters.getRule('aggregate', slug))
+    //console.log(this.store.filters.getRule('aggregate', slug))
 
-    console.log('debug', "toggleFIlter",'aggregate', slug, true)
+    //console.log('debug', "toggleFIlter",'aggregate', slug, true)
     this.setActiveContent( slug ) //deprecate this!
     
     this.toggleFilter('aggregate', slug, true, false, true )
@@ -124,7 +124,7 @@ computed: {
   },
   getNavButtonClass(){
     return (slug) => {
-      // //console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)
+      //console.log('active?', this.contentIsActive(slug), this.isActive(slug), this.store.layout.getActive('relays/find'), this.store.layout.getActiveItem == slug)
       return { 
         // 'opacity-10' : this.store.layout.editorExpanded,
         'dark:hover:bg-black/80 dark:text-white/80': true,

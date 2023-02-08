@@ -84,7 +84,7 @@ const LocalMethods = {
     clearInterval(this.interval)
     this.interval = setInterval(() => {
       if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle){
-        console.log('ok?')
+        //console.log('ok?')
         this.invalidate()
       }
         

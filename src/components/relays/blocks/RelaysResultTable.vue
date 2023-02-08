@@ -308,13 +308,17 @@
       }
       event.id = getEventHash(event)
 
-      console.log('like event', event)
+      //console.log('like event', event)
       const signedEvent = await window.nostr.signEvent(event)
 
       let ok = validateEvent(signedEvent)
       let veryOk = await verifySignature(signedEvent)
 
-      console.log('valid event?', ok, veryOk)
+      if(!ok || !veryOk)
+        return
+      
+      return true
+      //console.log('valid event?', ok, veryOk)
     },   
   }
   export default defineComponent({
@@ -393,7 +397,7 @@
           let topics = ""
           // let topicsArr = this.results[relay].topics.slice(0, 3).filter( topic => topic[0].length <= 32)
           let topicsArr = this.results[relay].topics.filter( topic => {
-            // console.log(topic[0], topic[0].length, topic[0].length <= 32)
+            //console.log(topic[0], topic[0].length, topic[0].length <= 32)
             return topic[0].length <= 32
           }).slice(0, 3)
           for(let topic in topicsArr){

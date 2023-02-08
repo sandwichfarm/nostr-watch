@@ -15,16 +15,16 @@ const LocalMethods = {
   invalidate: async function(){
     if(!this.isExpired(this.slug, 1000))
       return 
-    console.log('processing')
+    //console.log('processing')
     this.queueJob(
       this.slug,
       () => {
-        console.log('stats run()')
+        //console.log('stats run()')
         this.store.stats.nips = this.collateSupportedNips
         this.store.stats.continents = this.collateContinents 
         this.store.stats.countries = this.collateCountries 
         this.store.stats.software = this.collateSoftware 
-        this.store.tasks.completeJob(this.slug)
+        setTimeout(() => this.store.tasks.completeJob(this.slug), 100)
       },
       true
     )
@@ -166,7 +166,7 @@ export default defineComponent({
         let segments, repo, org
         try {
           segments = new URL(sw).pathname.split('/')
-          // console.log(sw, segments.length)
+          //console.log(sw, segments.length)
           repo = segments.pop()
           org = segments.pop()
           if(repo == '' || org == '')

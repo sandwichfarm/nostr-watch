@@ -121,7 +121,7 @@ const localMethods = {
 
 
   invalidate: async function(force, single){
-    // console.log('invalidate?', !(!this.isExpired(this.slug, this.getRefreshInterval)))
+    //console.log('invalidate?', !(!this.isExpired(this.slug, this.getRefreshInterval)))
     if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) ) 
       return
 
@@ -142,14 +142,14 @@ const localMethods = {
           
           for(let c=0;c<relayChunks.length;c++){
             let promises = [],
-                results = {}
+                resultsChunk = {}
             const chunk = relayChunks[c]
             for(let index = 0; index < chunk.length; index++) {
               const promise = new Promise( resolve => {
               const relay = chunk[index] 
               this.check(relay)
                 .then((result) => {
-                  results[relay] = this.pruneResult(relay, result)
+                  resultsChunk[relay] = this.pruneResult(relay, result)
                   resolve()
                 })
                 .catch( () => { 
@@ -159,8 +159,8 @@ const localMethods = {
               promises.push(promise)
             }
             await Promise.all(promises)
-            this.results = Object.assign({}, this.results, results)
-            Object.keys(results).forEach( relay => this.setCache(this.results[relay]))
+            this.results = Object.assign({}, resultsChunk, this.results)
+            Object.keys(resultsChunk).forEach( relay => this.setCache(resultsChunk[relay]))
           }
           this.completeAll()
         } 
@@ -177,7 +177,7 @@ const localMethods = {
     this.store.tasks.addProcessed(this.slug, relay)
 
     if(result)  {
-      // console.log('whoops', result)
+      //console.log('whoops', result)
       resultPruned = {
         url: relay,
         aggregate: result.aggregate,
@@ -240,7 +240,7 @@ const localMethods = {
       socket
         .on('open', () => {})
         .on('complete', (instance) => {
-          // console.log('completed?', instance.result)
+          //console.log('completed?', instance.result)
           instance.result.aggregate = this.getAggregate(instance.result)
           this.closeRelay(instance.relay)
           instance.result.log = instance.log
@@ -290,7 +290,7 @@ export default defineComponent({
   data() {
     return {
       relay: "",
-      relays: [],
+      relays: this.store.relays.getAll,
       refresh: {},
       untilNext: null,
       lastUpdate: null,
@@ -318,8 +318,6 @@ export default defineComponent({
     this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
-    
-    this.relays = this.store.relays.getAll
 
     for(let ri=0;ri-this.relays.length;ri++){
       const relay = this.relays[ri],

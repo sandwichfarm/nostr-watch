@@ -41,7 +41,7 @@ export const useFilterStore = defineStore('filters', {
       }
     },
     set(value, key1, key2, key3){
-      // console.log('setting!', value, key1, key2, key3)
+      //console.log('setting!', value, key1, key2, key3)
       if(typeof value === 'undefined')
         return
 
@@ -51,7 +51,7 @@ export const useFilterStore = defineStore('filters', {
         this[key1][key2] = new Object()
 
       this[key1][key2][key3] = value
-      // console.log('set!', this?.[key1], this?.[key1]?.[key2], this?.[key1]?.[key2]?.[key3], value, key1, key2, key3)
+      //console.log('set!', this?.[key1], this?.[key1]?.[key2], this?.[key1]?.[key2]?.[key3], value, key1, key2, key3)
     },
     addRule(haystackRef, needle, unique, reset, alwaysEnabled){
       if(unique)

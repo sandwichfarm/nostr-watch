@@ -27,7 +27,7 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       () => {
-        console.log('checking history node')
+        //console.log('checking history node')
         const $pool = new RelayPool(['wss://history.nostr.watch'])
         const begin = Date.now()
         const timeout = setTimeout( () => {
@@ -86,7 +86,7 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    //console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
     if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)

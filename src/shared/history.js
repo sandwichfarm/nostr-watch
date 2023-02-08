@@ -65,7 +65,7 @@ const History = async function(){
       const pool = RelayPool(this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').filter( relay => this.results?.[relay]?.info?.supported_nips.includes(15)))
       pool
         .on('open', relay => {
-          // //console.log('open')
+          //console.log('open')
           relay.subscribe(subid, {since: 1609829, limit: 10000, kinds:[3]})
         })
         .on('eose', (relay) => {
@@ -77,7 +77,7 @@ const History = async function(){
           if(subid == _subid) {
             //console.log(total++)
             try { 
-              // //console.log(event)
+              //console.log(event)
               const parsed = JSON.parse(event.content)
               relaysRemote = Object.assign(relaysRemote, parsed)
               Object.keys(parsed).forEach( key => {
@@ -130,7 +130,7 @@ const History = async function(){
 
   // const checkRemoteRelays = async function(){
   //   for(let i=0;i<relaysRemote.length;i++) {
-  //     // //console.log('check for connect', remoteMerged[i])
+  //     //console.log('check for connect', remoteMerged[i])
   //     await checkRelay(relaysRemote[i])
   //             .catch( () => {
   //               remove.push(relaysRemote[i])

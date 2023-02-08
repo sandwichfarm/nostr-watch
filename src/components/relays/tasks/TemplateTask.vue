@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === taskSlug"
+    v-if="this.store.tasks.getActiveSlug === slug"
     class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span>Task Status here</span>
   </span>
@@ -22,11 +22,11 @@ import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.taskSlug) && !force) ) 
+    if( (!this.isExpired(this.slug) && !force) ) 
       return
     
     this.queueJob(
-      this.taskSlug, 
+      this.slug, 
       () => {
         this.$pool
           .subscribe()
@@ -35,10 +35,10 @@ const localMethods = {
     )
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.taskSlug)) || Date.now()
+    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
   },
 }
 
@@ -47,7 +47,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'relays/*' //REMEMBER TO CHANGE!!!
+      slug: 'relays/*' //REMEMBER TO CHANGE!!!
     }
   },
   setup(props){
@@ -64,16 +64,16 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
+    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+    console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
-    if(this.store.tasks.isProcessing(this.taskSlug))
+    if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else
       this.invalidate()

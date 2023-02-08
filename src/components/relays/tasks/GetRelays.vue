@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === taskSlug"
+    v-if="this.store.tasks.getActiveSlug === slug"
     class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span v-if="this.store.prefs.discoverRelays">Disovering new relays...</span>
   </span>
@@ -22,10 +22,10 @@ import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.taskSlug, 60*1000) && !force) ) 
+    if( (!this.isExpired(this.slug, 60*1000) && !force) ) 
       return
     this.queueJob(
-      this.taskSlug, 
+      this.slug, 
       () => {
         if(!this.store.prefs.discoverRelays) {
           this.finish(relays)
@@ -34,7 +34,7 @@ const localMethods = {
           // const currentRelaysCount = this.store.relays.getAll.lengtth
           this.timeout = setTimeout( () => {
             this.store.status.api = false
-            this.finish()
+            this.finish(relays)
           }, 5000)
           fetch(`https://api.nostr.watch/v1/online`)
             .then((response) => {
@@ -64,7 +64,8 @@ const localMethods = {
     this.store.relays.addRelays(relays)
     if(clear)
       clearTimeout(this.timeout)
-    this.store.tasks.completeJob()
+    
+    this.store.tasks.completeJob(this.slug)
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
@@ -79,7 +80,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'relays/get' //REMEMBER TO CHANGE!!!
+      slug: 'relays/get' //REMEMBER TO CHANGE!!!
     }
   },
   setup(props){
@@ -97,14 +98,14 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
+    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+    console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
-    if(this.store.tasks.isProcessing(this.taskSlug))
+    if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else
       this.invalidate()

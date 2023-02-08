@@ -4,7 +4,7 @@ dotenv.config()
 //geo
 import { daemons } from '@/config/nwd-geo.yaml'
 import { getDistance } from 'geolib';
-import { continents } from '../../cache/continents.json'
+import { continents } from '../../cache/continents.js'
 
 export const timeSince = function(date) {
   var seconds = Math.floor((new Date() - date) / 1000);
@@ -49,9 +49,11 @@ export const getClosest = function(visitorGeo){
 
 export const getGeo = async function(relay){
   let dns, ip, geo
+  console.log('ip-api key', process.env.VUE_APP_IP_API_KEY)
   dns = await getDnsFromRelay(relay).catch()
   ip = await getIPFromDNS(dns).catch()
   geo = await getGeoFromIP(ip).catch()
+
   if(geo)
     geo = Object.assign(geo, getContinentFromCountryCode(geo.countryCode))
   if(geo && dns)
@@ -61,12 +63,13 @@ export const getGeo = async function(relay){
   }
   if(!geo)
     console.warn(`no geo result for: ${relay}`)
+
   return geo
 }
 
 export const getVisitorGeo = async function() {
-  let geo
   console.log('ip-api key', process.env.VUE_APP_IP_API_KEY)
+  let geo
   const url = process.env.VUE_APP_IP_API_KEY ? `https://pro.ip-api.com/json/?fields=ip,lat,lon&key=${process.env.VUE_APP_IP_API_KEY}` : `http://ip-api.com/json/?fields=ip,lat,lon`
   await fetch(url, { headers: { 'accept': 'application/dns-json' } })
           .then(response => response.json())
@@ -83,7 +86,7 @@ export const getIPFromDNS = async function(dns){
 }
 
 export const getContinentFromCountryCode = function(countryCode) {
-  return JSON.parse(continents)
+  return continents
     .filter( c => c.country_code == countryCode )
     .map( cont => {
       return {
@@ -94,9 +97,8 @@ export const getContinentFromCountryCode = function(countryCode) {
 }
 
 export const getGeoFromIP = async function(ip){
-  const query = new URL(ip).hostname
+  const query = ip
   let geo
-  // console.log('ip-api key', process.env.VUE_APP_IP_API_KEY)
   const url = process.env.VUE_APP_IP_API_KEY ? `https://pro.ip-api.com/json/${query}?key=${process.env.VUE_APP_IP_API_KEY}` : `http://ip-api.com/json/`
   await fetch(url, { headers: { 'accept': 'application/dns-json' } })
           .then(response => response.json())

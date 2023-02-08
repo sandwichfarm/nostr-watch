@@ -33,7 +33,7 @@ const localMethods = {
         const visitorGeo = await getVisitorGeo()
         this.store.user.ip = visitorGeo.query
         this.store.prefs.region = getClosest(visitorGeo)
-        this.store.tasks.completeJob()
+        this.store.tasks.completeJob(this.slug)
       },
       true
     )

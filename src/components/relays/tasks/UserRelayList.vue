@@ -1,6 +1,6 @@
 <template>
   <span  
-      v-if="this.store.tasks.getActiveSlug === taskSlug && isLoggedIn"
+      v-if="this.store.tasks.getActiveSlug === slug && isLoggedIn"
       class="text-white lg:text-sm mr-10 ml-2 mt-1.5 text-xs">
     <span>Retrieving Relays List...</span>
   </span>
@@ -27,7 +27,7 @@ import { relays } from '../../../../relays.yaml'
 const localMethods = new Object()
 
 localMethods.invalidate = function(force){
-  if( !this.isExpired(this.taskSlug) && !force ) 
+  if( !this.isExpired(this.slug) && !force ) 
     return
   
   if( !this.isLoggedIn() ) 
@@ -36,17 +36,17 @@ localMethods.invalidate = function(force){
   if( !this.store.prefs.useKind3 )
     return
   
-  // console.log('wtf?', this.taskSlug, !this.isExpired(this.taskSlug) && !force)
+  // console.log('wtf?', this.slug, !this.isExpired(this.slug) && !force)
 
-  this.queueKind3(this.taskSlug)
+  this.queueKind3(this.slug)
 }
 
 localMethods.timeUntilRefresh = function(){
-  return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 
+  return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
 }
 
 localMethods.timeSinceRefresh = function(){
-  return this.timeSince(this.store.tasks.getLastUpdate(this.taskSlug)) || Date.now()      
+  return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()      
 }
 
 localMethods.hash = function(relay){
@@ -58,7 +58,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'user/relay/list',
+      slug: 'user/relay/list',
       kind3Remote: new Object(),
       kind3Local: {}
     }
@@ -79,15 +79,15 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
+    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
-    // console.log('task', this.taskSlug, 'is processing:', this.store.tasks.isProcessing(this.taskSlug))
-    if(this.store.tasks.isProcessing(this.taskSlug))
+    // console.log('task', this.slug, 'is processing:', this.store.tasks.isProcessing(this.slug))
+    if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else
       this.invalidate(this.force)

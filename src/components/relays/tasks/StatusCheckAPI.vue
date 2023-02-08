@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === taskSlug"
+    v-if="this.store.tasks.getActiveSlug === slug"
     class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span>Connecting to API</span>
   </span>
@@ -20,10 +20,10 @@ import SharedComputed from '@/shared/computed.js'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.taskSlug, 60*1000) && !force) ) 
+    if( (!this.isExpired(this.slug, 60*1000) && !force) ) 
       return
     this.queueJob(
-      this.taskSlug, 
+      this.slug, 
       () => {
         this.timeout = setTimeout( () => {
           this.store.status.api = false
@@ -43,7 +43,7 @@ const localMethods = {
     )
   },
   finish(clear){
-    this.store.tasks.completeJob()
+    this.store.tasks.completeJob(this.slug)
     if(clear)
       clearTimeout(this.timeout)
   },
@@ -60,7 +60,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'status/api' //REMEMBER TO CHANGE!!!
+      slug: 'status/api' //REMEMBER TO CHANGE!!!
     }
   },
   setup(props){
@@ -77,14 +77,14 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
+    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    // console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
-    if(this.store.tasks.isProcessing(this.taskSlug))
+    if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else
       this.invalidate()

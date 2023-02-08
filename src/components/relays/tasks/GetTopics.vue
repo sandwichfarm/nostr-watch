@@ -73,7 +73,7 @@ const localMethods = {
          
         }
         await Promise.all(promises)
-        this.store.tasks.completeJob()
+        this.store.tasks.completeJob(this.slug)
       },
       true
     )

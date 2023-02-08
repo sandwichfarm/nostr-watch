@@ -4,6 +4,12 @@ import { relays } from '../../relays.yaml'
 // import { geo } from '../../cache/geo.yaml'
 
 export default {
+  invalidateTask(){
+    if(this.store.tasks.isProcessing(this.slug))
+      this.invalidate(true)
+    else
+      this.invalidate()
+  },
   toggleFilter(ref, key, unique, reset, always){
     if(parseInt(this.store.filters?.count?.[ref]?.[key]) === 0)
       return
@@ -106,11 +112,11 @@ export default {
             Object.keys(this.store.user.kind3).forEach( key => {
               this.store.relays.setFavorite(key)
             })
-            this.store.tasks.completeJob()
+            this.store.tasks.completeJob(this.slug)
           })
           .catch( err => {
             console.error('error!', err)
-            this.store.tasks.completeJob()
+            this.store.tasks.completeJob(this.slug)
           })
       },
       true

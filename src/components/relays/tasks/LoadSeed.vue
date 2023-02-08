@@ -137,7 +137,7 @@ const localMethods = {
           
         }
         await Promise.all(promises)
-        this.store.tasks.completeJob()
+        this.store.tasks.completeJob(this.slug)
       },
       true
     )
@@ -167,28 +167,6 @@ const localMethods = {
               +this.refreshEvery-Date.now()
             )
     ) 
-  },
-  collateSupportedNips(){
-    const dict = new Object()
-    Object.entries(this.results).forEach( (result) => {
-      result = result[1]
-      if(result?.info?.supported_nips)
-        result?.info?.supported_nips.forEach( nip => { 
-          if( !(dict[nip] instanceof Set ))
-          dict[nip] = new Set()
-          dict[nip].add(result.url)
-        })
-    })
-    const result = new Array() 
-    Object.keys(dict).forEach( key => {
-      result.push({
-        key: key, 
-        count: dict[key].size,
-        // relays: Array.from(dict[key]),
-      })
-    })
-    result.sort( (a,b) => b.count-a.count )
-    return result
   },
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()

@@ -2,13 +2,18 @@
   <!-- <StatusCheckAPI /> -->
   <span class="text-white lg:text-sm mx-2 text-xs">
     <GetRelays />
+
     <DetectRegion 
       v-if="store.prefs.autoDetectRegion" />
+
     <StatusCheckHistoryNode />
+
     <GetPulse />
+
     <LoadSeed 
       v-bind:resultsProp="results"
       v-if="!store.prefs.clientSideProcessing || isSingle" />
+
     <CheckNip11
       v-bind:resultsProp="results"
       v-if="
@@ -23,20 +28,21 @@
           && store.prefs.checkNip11
         )
       " />
+
     <RefreshTask
       v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing || isSingle" />
+
     <CheckGeo />
+
     <HistoryTask
       :resultsProp="results" />
+
     <GetTopics
       v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing && !isSingle" />
+
     <UserRelayList />
-    <!-- <RelayCanonicalsTask
-      :resultsProp="results" />
-    <RelayOperatorTask
-      :resultsProp="results" /> -->
   </span>
 </template>
 
@@ -97,18 +103,17 @@ export default defineComponent({
     // this.store.prefs.clientSideProcessing = false
   },
   mounted(){
-    setTimeout( () => {
-      this.currentTask = this.store.tasks.currentTask
-      this.processJob()
-      this.interval = setInterval( () => {
-        if(this.currentTask === this.store.tasks.currentTask)
-          return 
-        this.processJob()
-        this.currentTask = this.store.tasks.currentTask
-      }, 1000)
-    }, 500)
-    setTimeout( ()=>{}, 1)
+    
+    this.currentTask = this.store.tasks.currentTask
+    this.processJob()
 
+    this.interval = setInterval( () => {
+      if(this.currentTask === this.store.tasks.currentTask)
+        return 
+      this.processJob()
+      this.currentTask = this.store.tasks.currentTask
+    }, 1000)
+    
   },
   unmounted(){
     clearInterval(this.interval)

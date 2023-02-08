@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === taskSlug"
+    v-if="this.store.tasks.getActiveSlug === slug"
     class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span>Connecting to History Relay...</span>
   </span>
@@ -22,29 +22,30 @@ import { RelayPool } from 'nostr'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.taskSlug, 1000) && !force) ) 
+    if( (!this.isExpired(this.slug, 1000) && !force) ) 
       return
     this.queueJob(
-      this.taskSlug, 
+      this.slug, 
       () => {
+        console.log('checking history node')
         const $pool = new RelayPool(['wss://history.nostr.watch'])
         const begin = Date.now()
         const timeout = setTimeout( () => {
           this.store.status.historyNode = 0
           this.store.prefs.clientSideProcessingUpgrade = this.store.prefs.clientSideProcessing
           this.store.prefs.clientSideProcessing = true 
-          this.store.tasks.completeJob()
+          this.store.tasks.completeJob(this.slug)
           this.closePool($pool)
         }, 5000)
         $pool
           .on('open', () => {
+            clearTimeout(timeout)
             const delta = Date.now()-begin 
             if(delta < 1000)
               this.store.status.historyNode = 1
             else 
               this.store.status.historyNode = 2           
-            clearTimeout(timeout)
-            this.store.tasks.completeJob()
+            this.store.tasks.completeJob(this.slug)
           })
       },
       true
@@ -63,7 +64,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      taskSlug: 'status/history' //REMEMBER TO CHANGE!!!
+      slug: 'status/history' //REMEMBER TO CHANGE!!!
     }
   },
   setup(props){
@@ -80,14 +81,14 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
+    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    // console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
-    if(this.store.tasks.isProcessing(this.taskSlug))
+    if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else
       this.invalidate()

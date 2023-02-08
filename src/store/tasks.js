@@ -47,14 +47,17 @@ export const useTaskStore = defineStore(
     },
     //queue
     addJob(job){
+      
       if(job?.unique){
         let exists
         exists = this.active.id === job.id
         if(!exists)
-          exists = this.pending.filter( j => j.id === job.id).length ? true : false
+          exists = this.pending.filter( j => j.id === job.id).length
         if(exists)
           return
       }
+      console.log('adding job', job)
+
       this.pending.push(job)
       if( this.isIdle )
         this.startNextJob()
@@ -69,7 +72,12 @@ export const useTaskStore = defineStore(
         this.active = {}
       }
     },
-    completeJob(){
+    completeJob(slug){
+      if(this.active.id !== slug) {
+        console.log(slug, 'is not active!', this.active.id, '')
+        return
+      }
+      console.log('completed!', this.active.id)
       this.updateNow(this.active.id)
       this.finishProcessing(this.active.id)
       this.completed.push(this.active)

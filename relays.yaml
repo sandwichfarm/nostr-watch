@@ -54,7 +54,6 @@ relays:
   - wss://relay.r3d.red
   - wss://relay.valireum.net
   - wss://nostr.fmt.wiz.biz
-  - wss://nostr.v0l.io
   - wss://relay.cryptocculture.com
   - wss://nostr.fly.dev
   - wss://nostr.nordlysln.net
@@ -180,7 +179,7 @@ relays:
   - wss://nostr.screaminglife.io
   - wss://deschooling.us
   - wss://relay-pub.deschooling.us
-  - wss://nostr.bitcoiner.social
+  - wss://offchain.pub
   - wss://nostr-pub1.southflorida.ninja
   - wss://nostr.ncsa.illinois.edu
   - wss://nostr.relayer.se
@@ -272,17 +271,17 @@ relays:
   - wss://nostr.randomdevelopment.biz
   - wss://nostr21.com
   - wss://relay.bleskop.com
-  - wss://nostr.pcdkd.fyi
+  - wss://nostr-relay.pcdkd.fyi
   - wss://spore.ws
   - wss://bitcoiner.social
   - wss://nostr.plebchain.org
   - wss://relay.nostr.hu
   - wss://relay.nostr.lu
   - wss://relay.nostr.ae
-  - wss://middling.myddns.me
-  - wss://middling.sytes.net
+  - wss://middling.myddns.me:8080
   - wss://private.red.gb.net
   - wss://nostr.island.network
   - wss://nostr.nikolaj.online
   - wss://relay.nostrich.land
   - wss://relay.nostrology.org
+  - wss://relay.nostr.wirednet.jp

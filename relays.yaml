@@ -54,7 +54,6 @@ relays:
   - wss://relay.r3d.red
   - wss://relay.valireum.net
   - wss://nostr.fmt.wiz.biz
-  - wss://nostr.v0l.io
   - wss://relay.cryptocculture.com
   - wss://nostr.fly.dev
   - wss://nostr.nordlysln.net
@@ -286,3 +285,4 @@ relays:
   - wss://relay.nostrich.land
   - wss://relay.nostr.wirednet.jp
   - wss://nostr.fractalized.ovh
+  - wss://nostr.21crypto.ch

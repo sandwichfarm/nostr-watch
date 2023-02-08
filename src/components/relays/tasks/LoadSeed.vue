@@ -57,7 +57,7 @@ const localMethods = {
       this.slug, 
       async () => {
         this.relays = [...this.store.relays.getAll]
-        const relayChunks = this.chunk(50, this.relays)
+        const relayChunks = this.chunk(500, this.relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const resultsChunk = {}

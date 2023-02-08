@@ -57,7 +57,7 @@ const localMethods = {
       this.slug, 
       async () => {
         this.relays = [...this.store.relays.getAll]
-        const relayChunks = this.chunk(250, this.relays)
+        let relayChunks = this.chunk(250, this.relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const resultsChunk = {}
@@ -115,9 +115,7 @@ const localMethods = {
                     
                   result.aggregate = this.getAggregate(result)
                   resultsChunk[relay] = Object.assign(this.results[relay] || {}, result)
-                  // const mergedResult = Object.assign(this.results[relay] || {}, result)
-                  // this.results[relay] = mergedResult
-                  // this.setCache(mergedResult)
+
                   if(this.store.tasks.isProcessed(this.slug, relay))
                     return 
                   this.store.tasks.addProcessed(this.slug, relay)
@@ -134,10 +132,10 @@ const localMethods = {
           Object.keys(resultsChunk).forEach( result => this.setCache(resultsChunk[result]) )
           this.results = Object.assign(this.results, resultsChunk)
           await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
-          
         }
         await Promise.all(promises)
         this.store.tasks.completeJob(this.slug)
+        relayChunks = null
       },
       true
     )

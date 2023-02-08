@@ -297,3 +297,4 @@ relays:
   - wss://nostr.bitcoinplebs.de
   - wss://nostr.21crypto.ch
   - wss://relay.thes.ai
+  - wss://rsr.uyky.net:30443

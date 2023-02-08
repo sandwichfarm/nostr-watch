@@ -1,7 +1,6 @@
 // /router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 
-// import RelaysHome from '@/components/relays/pages/RelaysHome.vue'
 import RelaysFind from '@/components/relays/pages/RelaysFind.vue'
 import RelaysSingle from '@/components/relays/pages/RelaysSingle.vue'
 // import RelaysMap from '@/components/relays/pages/RelaysMap.vue'

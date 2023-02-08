@@ -1,7 +1,7 @@
 import crypto from "crypto"
 import {sort} from 'array-timsort'
 import { relays } from '../../relays.yaml'
-import { geo } from '../../cache/geo.yaml'
+// import { geo } from '../../cache/geo.yaml'
 
 export default {
   toggleFilter(ref, key, unique, reset, always){
@@ -43,7 +43,7 @@ export default {
     if(Object.keys(this.store.stats?.countries).length)
       this.store.stats?.countries?.forEach( country => {
         this.store.filters.set(
-          this?.relays?.filter( relay => geo?.[relay]?.country?.includes( country.key ))?.length || 0,
+          this?.relays?.filter( relay => this.store.relays.geo?.[relay]?.country?.includes( country.key ))?.length || 0,
           'count',
           'countries',
           country.key,
@@ -52,7 +52,7 @@ export default {
     if(Object.keys(this.store.stats?.continents).length)
       this.store.stats?.continents?.forEach( continent => {
         this.store.filters.set(
-          this?.relays?.filter( relay => geo?.[relay]?.continentName?.includes( continent.key ))?.length || 0,
+          this?.relays?.filter( relay => this.store.relays.geo?.[relay]?.continentName?.includes( continent.key ))?.length || 0,
           'count', 
           'continents', 
           continent.key
@@ -140,19 +140,28 @@ export default {
           return 
         if(haystack === 'nips'){
           needle = parseInt(needle)
-          filtered = filtered.filter( relay => this.results[relay]?.info?.supported_nips?.includes(needle) )
+          filtered = filtered.filter( relay => this.results?.[relay]?.info?.supported_nips?.includes(needle) )
         }
         if(haystack === 'valid/nip11'){
-          filtered = filtered.filter( relay => this.results[relay]?.pubkeyValid )
+          filtered = filtered.filter( relay => this.results?.[relay]?.pubkeyValid )
         }
         if(haystack === 'software'){
-          filtered = filtered.filter( relay => this.results[relay]?.info?.software?.includes(needle) )
+          if(needle === 'unknown')
+            filtered = filtered.filter( relay => !this.results?.[relay]?.info?.software )
+          else
+            filtered = filtered.filter( relay => this.results?.[relay]?.info?.software?.includes(needle) )
         }
         if(haystack === 'countries'){
-          filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.country?.includes(needle) )
+          if(needle === 'unknown')
+            filtered = filtered.filter( relay => !this.store.relays.getGeo(relay)?.country )
+          else
+            filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.country?.includes(needle) )
         }
         if(haystack === 'continents'){
-          filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) )
+          if(needle === 'unknown')
+            filtered = filtered.filter( relay => !this.store.relays.getGeo(relay)?.continentName )
+          else
+            filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) )
         }
         if(haystack === 'aggregate'){
           const aggregate = this.store.relays.getRelays(needle, this.results)

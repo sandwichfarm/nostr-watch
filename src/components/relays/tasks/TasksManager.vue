@@ -5,6 +5,7 @@
     <DetectRegion 
       v-if="store.prefs.autoDetectRegion" />
     <StatusCheckHistoryNode />
+    <CheckGeo />
     <GetPulse />
     <LoadSeed 
       v-bind:resultsProp="results"
@@ -60,6 +61,7 @@ import StatusCheckHistoryNode from './StatusCheckHistoryNode.vue'
 import GetRelays from './GetRelays.vue'
 import CheckNip11 from './CheckNip11.vue'
 import HistoryTask from './HistoryTask.vue'
+import CheckGeo from './CheckGeo.vue'
 
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
 // import RelayOperatorTask from './RelayOperatorTask.vue'
@@ -76,7 +78,8 @@ export default defineComponent({
     // StatusCheckAPI,
     GetRelays,
     CheckNip11,
-    HistoryTask
+    HistoryTask,
+    CheckGeo
     // RelayCanonicalsTask,
     // RelayOperatorTask
   },

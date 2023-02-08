@@ -50,7 +50,7 @@
       </span>
         <span 
           @click="toggleFilter('valid/nip11', true, true)"
-          class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block"
+          class="cursor-pointer mr-2 mb-2 py-1 px-2 bg-black/20 inline-block"
           :class="{
               'bg-white/20': store?.filters?.getRule('valid/nip11', true)?.length
           }">
@@ -61,7 +61,7 @@
       
       <div class="flex">
       <!-- By nip -->
-      <div class="mb-4">
+      <div class="mb-4 flex-initial">
         <span  
           class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32"
           @click="store.filters.hide['nips']=!store.filters.hide['nips']">
@@ -78,7 +78,7 @@
               'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.nips[`${store.stats?.nips[nip].key}`]) === 0,
               'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.nips[`${store.stats?.nips[nip].key}`]) > 0 && !store.filters.getRule('nips', store.stats?.nips[nip].key)?.length
             }"
-            class="cursor-pointer mr-2 mb-2 py1 px-3  inline-block">
+            class="cursor-pointer mr-2 mb-2 py-1 px-2  inline-block">
             NIP-{{ store.stats?.nips[nip].key }} 
             <span class="text-xs text-white/50">
               <!-- {{ store.stats?.nips[nip].count }} -->
@@ -93,7 +93,7 @@
       </div>
 
       <!-- By software -->
-      <div class="mb-4">
+      <div class="mb-4 flex-initial">
         <span  
           class="text-black/50 dark:text-white/70  block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32"
           @click="store.filters.hide['software']=!store.filters.hide['software']">
@@ -112,7 +112,7 @@
               'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) > 0 && !parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) === 0
             }"
             
-            class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
+            class="cursor-pointer mr-2 mb-2 py-1 px-2 bg-black/20 inline-block">
             {{ store.stats?.software[sw].key}} 
             <span class="text-xs text-white/50">
               {{ store.filters?.count?.software[`${store.stats?.software[sw].key}`] }}
@@ -122,7 +122,7 @@
       </div>
 
       <!-- By country -->
-      <div class="mb-4">
+      <div class="mb-4 flex-initial">
         <span  
           class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32"
           @click="store.filters.hide['countries']=!store.filters.hide['countries']">
@@ -139,7 +139,7 @@
               'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.countries[`${store.stats?.countries[country].key}`]) === 0,
               'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.countries[`${store.stats?.countries[country].key}`]) > 0 && !store.filters.getRule('countries', store.stats?.countries[country].key)?.length
             }"
-            class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
+            class="cursor-pointer mr-2 mb-2 py-1 px-2 bg-black/20 inline-block">
             {{ store.stats?.countries[country].key}} 
             <span class="text-xs text-white/50">
               {{ store.filters?.count?.countries[`${store.stats?.countries[country].key}`] }}
@@ -149,7 +149,7 @@
       </div>
 
       <!-- By continent -->
-      <div class="mb-4">
+      <div class="mb-4 flex-initial">
         <span  
           class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32"
           @click="store.filters.hide['continents']=!store.filters.hide['continents']">
@@ -166,7 +166,7 @@
               'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.continents[`${store.stats?.continents[continent].key}`]) === 0,
               'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.continents[`${store.stats?.continents[continent].key}`]) > 0 && store.filters.getRule('continents', store.stats?.continents[continent].key)?.length
             }"
-            class="cursor-pointer mr-2 mb-2 py1 px-3 bg-black/20 inline-block">
+            class="cursor-pointer mr-2 mb-2 py-1 px-2 bg-black/20 inline-block">
             {{ store.stats?.continents[continent].key}} 
             <span class="text-xs text-white/50">
               {{ store.filters?.count?.continents[`${store.stats?.continents[continent].key}`] }}

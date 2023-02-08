@@ -84,6 +84,7 @@ import { parseHash } from '@/shared/hash-router.js'
 //data
 import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
+
 //async components
 // const TasksManager = defineAsyncComponent(() =>
 //     import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
@@ -141,7 +142,7 @@ export default defineComponent({
   data() {
     return {
       relays: relays,
-      geo: geo,
+      geo: this.store.relays.geo,
       timeouts: {},
       intervals: {},
       relaysCount: {},
@@ -165,10 +166,9 @@ export default defineComponent({
 
     // this.routeSection = this.parseHash.section || false
     this.routeSubsection = this.parseHash.subsection || false
-
-    this.store.relays.setGeo(geo)
     
-    
+    if(!process.env.VUE_APP_IP_API_KEY)
+      this.store.relays.setGeo(geo)
 
     this.lastUpdate = this.store.tasks.getLastUpdate('relays')
     this.preferences = this.store.prefs.get

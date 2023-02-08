@@ -1,6 +1,10 @@
 <template>
-  <!-- <StatusCheckAPI /> -->
-  <span class="text-white lg:text-sm mx-2 text-xs">
+<span class="inline-block mr-12 pt-1.5">
+  <span class="text-white/40 lg:text-sm mx-2 text-xs font-bold">
+
+    <!-- <TemplateTask /> -->
+    <!-- <StatusCheckAPI /> -->
+
     <GetRelays />
 
     <DetectRegion 
@@ -44,6 +48,7 @@
 
     <UserRelayList />
   </span>
+</span>
 </template>
 
 <script>
@@ -65,6 +70,8 @@ import CheckNip11 from './CheckNip11.vue'
 import HistoryTask from './HistoryTask.vue'
 import CheckGeo from './CheckGeo.vue'
 import GetTopics from './GetTopics.vue'
+// import TemplateTask from './TemplateTask.vue'
+
 
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
 // import RelayOperatorTask from './RelayOperatorTask.vue'
@@ -83,6 +90,7 @@ export default defineComponent({
     HistoryTask,
     CheckGeo,
     GetTopics,
+    // TemplateTask,
     // RelayCanonicalsTask,
     // RelayOperatorTask
   },

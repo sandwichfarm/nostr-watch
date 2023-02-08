@@ -1,8 +1,8 @@
 <template>
-  <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Task Status here</span>
+  <span class="text-inherit">
+    <span class="text-inherit">
+      TESTING
+    </span>
   </span>
 </template>
 
@@ -71,14 +71,12 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
 
-    if(this.store.tasks.isProcessing(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
-
-    this.setRefreshInterval()
+    // if(this.store.tasks.isProcessing(this.slug))
+    //   this.invalidate(true)
+    // else
+    //   this.invalidate()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {

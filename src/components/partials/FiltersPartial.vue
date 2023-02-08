@@ -81,12 +81,7 @@
             class="cursor-pointer mr-2 mb-2 py-1 px-2  inline-block">
             NIP-{{ store.stats?.nips[nip].key }} 
             <span class="text-xs text-white/50">
-              <!-- {{ store.stats?.nips[nip].count }} -->
-              <!-- {{ store.stats?.nips?.[nip].key }}  -->
               {{ store.filters?.count?.nips[`${store.stats?.nips[nip].key}`] }}
-              <!-- {{store.filters?.count?.nips}} -->
-              <!-- {{ store.filters?.count?.nips?.[store.stats?.nips[nip].key] }} -->
-              <!-- {{ this?.relays?.filter( relay => { results[relay]?.info?.supported_nips?.includes(parseInt(store.stats?.nips?.[nip].key)) } )?.length }} -->
             </span>
           </span>
         </span>

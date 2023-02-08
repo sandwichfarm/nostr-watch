@@ -1,8 +1,8 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Task Status here</span>
+    class="text-inherit">
+    <span class="text-inherit">Task Status here</span>
   </span>
 </template>
 

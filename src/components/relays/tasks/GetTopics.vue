@@ -1,8 +1,8 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="!isSingle">loading relay topics</span>
+    class="text-inherit">
+    <span class="text-inherit" v-if="!isSingle">loading relay topics</span>
   </span>
 </template>
 

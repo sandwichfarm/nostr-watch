@@ -74,6 +74,7 @@ export default defineComponent({
       },
   },
   data(){
+    return {}
     // return setupNavData('relays')
   },
   setup(props){

@@ -22,7 +22,7 @@ import { RelayPool } from 'nostr'
 
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.taskSlug, 60*1000) && !force) ) 
+    if( (!this.isExpired(this.taskSlug, 1000) && !force) ) 
       return
     this.queueJob(
       this.taskSlug, 
@@ -32,7 +32,7 @@ const localMethods = {
         const timeout = setTimeout( () => {
           this.store.status.historyNode = 0
           this.store.prefs.clientSideProcessingUpgrade = this.store.prefs.clientSideProcessing
-          this.store.prefs.clientSideProcessing = false 
+          this.store.prefs.clientSideProcessing = true 
           this.store.tasks.completeJob()
           this.closePool($pool)
         }, 5000)

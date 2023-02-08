@@ -36,6 +36,7 @@ export const useTaskStore = defineStore(
     getCompleted: (state) => state.completed,
 
     //queue/states
+    isTaskActive: state => slug => state.getActiveSlug === slug,
     isActive: (state) => Object.keys( state.active ).length > 0,
     isIdle: (state) => Object.keys( state.active ).length == 0,
     arePending: (state) => state.pending.length > 0,

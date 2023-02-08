@@ -1,6 +1,6 @@
 <template>
   <span class="text-inherit" v-if="this.store.tasks.getActiveSlug === slug">
-    Analyzing Data
+    Processing Data
   </span>
 </template>
 <script>
@@ -55,39 +55,27 @@ export default defineComponent({
 
   methods: Object.assign(RelaysLib, {
     invalidate: async function(){
-      if(!this.isExpired(''))
-      console.log('stats invalidate()')
+      if(!this.isExpired(this.slug, 100))
+        return 
+      
+      console.log('processing')
       this.queueJob(
         this.slug,
-        () => {
+        async () => {
           console.log('stats run()')
-          this.store.stats.nips = this.collateSupportedNips
-          this.store.stats.continents = this.collateContinents 
-          this.store.stats.countries = this.collateCountries 
-          this.store.stats.software = this.collateSoftware 
+          this.store.stats.nips = await this.collateSupportedNips
+          this.store.stats.continents = await this.collateContinents 
+          this.store.stats.countries = await this.collateCountries 
+          this.store.stats.software = await this.collateSoftware 
           this.store.tasks.completeJob()
         },
         true
       )
-      // if( !this.isExpired('relays/seed', 5*1000) || !this.isExpired('relays/check', 5*1000) )
-      // {
-      //   this.queueJob(
-      //     'relays/stats',
-      //     () => {
-      //       this.store.stats.set( 'nips', this.collateSupportedNips )
-      //       this.store.stats.set( 'continents', this.collateContinents )
-      //       this.store.stats.set( 'countries', this.collateCountries )
-      //       this.store.stats.set( 'countries', this.collateSoftware )
-      //       this.store.tasks.completeJob()
-      //     },
-      //     true
-      //   )
-      // }
     },
   }),
 
   computed: Object.assign(SharedComputed, {
-    collateSupportedNips(){
+    async collateSupportedNips(){
       const dict = new Object()
       Object.entries(this.results).forEach( (result) => {
         result = result[1]
@@ -107,7 +95,7 @@ export default defineComponent({
       })
       return result
     },
-    collateContinents(){
+    async collateContinents(){
       const byCont = new Object()
       this.relays.forEach( relay => {
         if( !(this.geo?.[relay] instanceof Object) || typeof this.geo?.[relay].continentName === 'undefined' ) {
@@ -132,7 +120,7 @@ export default defineComponent({
       //console.log('continents', byCont)
       return result;
     },
-    collateCountries(){
+    async collateCountries(){
       const byCountry = new Object()
       this.relays.forEach( relay => {
         if( !(this.geo?.[relay] instanceof Object) || typeof this.geo?.[relay].country === 'undefined' ) {
@@ -158,7 +146,7 @@ export default defineComponent({
       //console.log('continents', byCont)
       return result;
     },
-    collateSoftware(){
+    async collateSoftware(){
       const bySoftware = new Object()
       this.relays.forEach( relay => {
         if( !this.results?.[relay]?.info?.software ) {

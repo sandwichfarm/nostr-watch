@@ -21,8 +21,8 @@ import { RelayPool } from 'nostr'
 
 const localMethods = {
   invalidate(force, single){
-    // if( ( this.store.tasks.getLastUpdate('relays/check') || ( this.store.tasks.processed?.['relays/check'] && this.store.tasks.processed?.['relays/check'].length ) ) && !force ) 
-    //   return
+    if( !this.store.prefs.clientSideProcessing ) 
+      return
     if( !this.isExpired(this.slug, 15*60*1000) && !force ) 
       return
     
@@ -56,14 +56,13 @@ const localMethods = {
                   if(data?.topics)
                     this.results[relay].topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
 
-                  this.results = Object.assign(this.results[relay] || {}, result)
-                  this.setCache(result)
+                  this.setCache(this.results[relay])
                 }
               })
               .on('eose', () => {
                 try{
                   // pool.unsubscribe(subid)
-                  this.closePool(pool)
+                  this.closePool(this.pool)
                 } catch(e){""}
                 
                 resolve()
@@ -136,20 +135,20 @@ export default defineComponent({
     this.closePool(this.pool)
   },
   beforeMount(){
-    this.relays = Array.from(new Set(relays))
+    this.relays = this.store.relays.getAll
   },
   mounted(){
     if(this.isSingle) {
       this.invalidate(true, this.relayFromUrl)
     }  
     else {
-      if(this.store.tasks.isProcessing(this.slug))
+      if(this.store.tasks.isTaskActive(this.slug))
         this.invalidate(true)
       else
         this.invalidate()
     }
 
-    if(!this.store.prefs.clientSideProcessing)
+    if(this.store.prefs.clientSideProcessing)
       this.setRefreshInterval()
   },
   updated(){},

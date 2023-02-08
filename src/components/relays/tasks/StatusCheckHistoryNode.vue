@@ -2,7 +2,7 @@
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
     class="text-inherit">
-    <span class="text-inherit">Connecting to History Relay...</span>
+    <span class="text-inherit">connecting to history relay</span>
   </span>
 </template>
 

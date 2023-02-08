@@ -2,7 +2,7 @@
   <span  
       v-if="this.store.tasks.getActiveSlug === slug && isLoggedIn"
       class="text-inherit">
-    <span class="text-inherit">Retrieving Relays List...</span>
+    <span class="text-inherit">looking for your contact list</span>
   </span>
 </template>
 

@@ -1,6 +1,6 @@
 <template>
   <span class="text-inherit" v-if="this.store.tasks.getActiveSlug === slug">
-    Processing Data
+    analyzing relays
   </span>
 </template>
 <script>

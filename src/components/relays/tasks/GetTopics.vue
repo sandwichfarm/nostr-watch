@@ -2,7 +2,7 @@
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
     class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span v-if="!isSingle">Loading trending topics...</span>
+    <span v-if="!isSingle">loading relay topics</span>
   </span>
 </template>
 
@@ -19,13 +19,15 @@ import SharedComputed from '@/shared/computed.js'
 
 import { RelayPool } from 'nostr'
 
-const localMethods = {
+const LocalMethods = {
   invalidate(force, single){
+
     if( !this.store.prefs.clientSideProcessing ) 
       return
+
     if( !this.isExpired(this.slug, 15*60*1000) && !force ) 
       return
-    
+      
     this.queueJob(
       this.slug, 
       async () => {
@@ -33,7 +35,8 @@ const localMethods = {
           return this.results[relay]?.check?.connect
         })
         const relayChunks = this.chunk(100, [...relaysOnline])
-        const promises = []
+        const promises = [],
+              chunkResults = {}
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
             const timeout = setTimeout(resolve, 10*1000)
@@ -54,9 +57,7 @@ const localMethods = {
                   const data = JSON.parse(event.content)
                   
                   if(data?.topics)
-                    this.results[relay].topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
-
-                  this.setCache(this.results[relay])
+                    chunkResults[relay].topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
                 }
               })
               .on('eose', () => {
@@ -68,9 +69,10 @@ const localMethods = {
                 resolve()
                 clearTimeout(timeout)
               })
-            promises.push(promise)
+            promises.push(promise) 
           })
-         
+          this.results = Object.assign({}, this.results, chunkResults)
+          Object.keys(this.results).forEach( relay => this.setCache(this.results[relay]) )
         }
         await Promise.all(promises)
         this.store.tasks.completeJob(this.slug)
@@ -81,9 +83,12 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
+      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle){
+        console.log('ok?')
         this.invalidate()
-    }, 60*60*1000)
+      }
+        
+    }, 1000)
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now())) 
@@ -110,7 +115,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'LoadSeed',
+  name: 'GetTopics',
   components: {},
   data() {
     return {
@@ -157,7 +162,7 @@ export default defineComponent({
       return this.averageLatency*this.relays.length
     },
   }),
-  methods: Object.assign(localMethods, RelayMethods),
+  methods: Object.assign(LocalMethods, RelayMethods),
   props: {
     resultsProp: {
       type: Object,

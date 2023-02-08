@@ -88,8 +88,9 @@ export default defineComponent({
   },
   data(){
     return {
-      interval: null,
-      currentTask: null
+      timeout: null,
+      currentTask: null,
+      AsyncFunction: (async () => {}).constructor
     }
   },
   setup(props){
@@ -107,16 +108,10 @@ export default defineComponent({
     this.currentTask = this.store.tasks.currentTask
     this.processJob()
 
-    this.interval = setInterval( () => {
-      if(this.currentTask === this.store.tasks.currentTask)
-        return 
-      this.processJob()
-      this.currentTask = this.store.tasks.currentTask
-    }, 1000)
-    
+    this.timeout = setTimeout(this.tick, 2000)
   },
   unmounted(){
-    clearInterval(this.interval)
+    clearTimeout(this.timeout)
   },
   props: {
     resultsProp: {
@@ -127,10 +122,20 @@ export default defineComponent({
     },
   },
   methods: {
-    processJob(){
+    async tick(){
+      if(this.currentTask === this.store.tasks.currentTask)
+        return 
+      this.currentTask = this.store.tasks.currentTask
+      await this.processJob()
+      this.timeout = setTimeout(this.tick, 1000)
+    },
+    async processJob(){
       if(!this.store.tasks.active?.handler)
         return 
-      this.store.tasks.active.handler()
+      if(this.store.tasks.active.handler instanceof this.AsyncFunction)
+        await this.store.tasks.active.handler()
+      else 
+        this.store.tasks.active.handler()
     }
   },
   computed: Object.assign(SharedComputed, {})

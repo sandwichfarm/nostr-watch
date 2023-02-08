@@ -286,5 +286,10 @@ relays:
   - wss://relay.nostrich.land
   - wss://relay.nostr.wirednet.jp
   - wss://nostr.chainofimmortals.net
+  - wss://nostream.kinchie.snowinning.com
+  - wss://nostr.thibautrey.fr
+  - wss://nostr.cizmar.net
+  - wss://relay.zeh.app
+  - wss://nostr.lapalomilla.mx
   - wss://nostr.bitcoinplebs.de
   - wss://nostr.21crypto.ch

@@ -197,7 +197,7 @@ const localMethods = {
   },
 
   completeAll: function(single){
-    this.store.tasks.completeJob()
+    this.store.tasks.completeJob(this.slug)
     // this.setAverageLatency()
     if(single)
       return 

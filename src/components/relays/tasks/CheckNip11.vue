@@ -43,7 +43,7 @@ const localMethods = {
           this.validatePubkey(relay)
           this.setCache(this.results[relay])
         })
-        this.store.tasks.completeJob()
+        this.store.tasks.completeJob(this.slug)
       },
       true
     )

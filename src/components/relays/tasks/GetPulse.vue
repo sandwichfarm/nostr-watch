@@ -35,7 +35,6 @@ const localMethods = {
     if( (!this.isExpired(this.slug, 5*60*1000) && !force) ) 
       return
     // const pool = new RelayPool( relays )
-
     if(this.isSingle)
       this.jobPulses()
     else
@@ -139,7 +138,7 @@ const localMethods = {
 
     // this.store.stats.addPulses(pulses)
 
-    this.store.tasks.completeJob()
+    this.store.tasks.completeJob(this.slug)
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
@@ -155,6 +154,7 @@ export default defineComponent({
     return {
       slug: 'relays/pulse',
       pulses: {},
+      interval: null,
     }
   },
   setup(){
@@ -176,12 +176,8 @@ export default defineComponent({
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
-    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
-
-    if(this.store.tasks.isProcessing(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
+    this.invalidateTask()
+    // this.interval = setInterval( this.invalidateTask, 1000 )
   },
   updated(){
     

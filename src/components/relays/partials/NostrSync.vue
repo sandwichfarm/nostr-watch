@@ -130,11 +130,11 @@ export default defineComponent({
       //           Object.keys(this.store.user.kind3).forEach( key => {
       //             this.store.relays.setFavorite(key)
       //           })
-      //           this.store.tasks.completeJob()
+      //           this.store.tasks.completeJob(this.slug)
       //         })
       //         .catch( err => {
       //           console.error('error!', err)
-      //           this.store.tasks.completeJob()
+      //           this.store.tasks.completeJob(this.slug)
       //         })
       //     },
       //     true

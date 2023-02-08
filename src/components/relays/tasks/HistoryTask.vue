@@ -11,6 +11,26 @@ import SharedComputed from '@/shared/computed.js'
 
 // import { History } from '@/shared/history.js'
 
+const LocalMethods = {
+  invalidate: async function(){
+    if(!this.isExpired(this.slug, 1000))
+      return 
+    console.log('processing')
+    this.queueJob(
+      this.slug,
+      () => {
+        console.log('stats run()')
+        this.store.stats.nips = this.collateSupportedNips
+        this.store.stats.continents = this.collateContinents 
+        this.store.stats.countries = this.collateCountries 
+        this.store.stats.software = this.collateSoftware 
+        this.store.tasks.completeJob(this.slug)
+      },
+      true
+    )
+  },
+}
+
 export default defineComponent({
 
   name: 'HistoryTask',
@@ -53,29 +73,10 @@ export default defineComponent({
     },
   },
 
-  methods: Object.assign(RelaysLib, {
-    invalidate: async function(){
-      if(!this.isExpired(this.slug, 100))
-        return 
-      
-      console.log('processing')
-      this.queueJob(
-        this.slug,
-        async () => {
-          console.log('stats run()')
-          this.store.stats.nips = await this.collateSupportedNips
-          this.store.stats.continents = await this.collateContinents 
-          this.store.stats.countries = await this.collateCountries 
-          this.store.stats.software = await this.collateSoftware 
-          this.store.tasks.completeJob()
-        },
-        true
-      )
-    },
-  }),
+  methods: Object.assign(LocalMethods, RelaysLib),
 
   computed: Object.assign(SharedComputed, {
-    async collateSupportedNips(){
+    collateSupportedNips(){
       const dict = new Object()
       Object.entries(this.results).forEach( (result) => {
         result = result[1]
@@ -95,7 +96,7 @@ export default defineComponent({
       })
       return result
     },
-    async collateContinents(){
+    collateContinents(){
       const byCont = new Object()
       this.relays.forEach( relay => {
         if( !(this.geo?.[relay] instanceof Object) || typeof this.geo?.[relay].continentName === 'undefined' ) {
@@ -120,7 +121,7 @@ export default defineComponent({
       //console.log('continents', byCont)
       return result;
     },
-    async collateCountries(){
+    collateCountries(){
       const byCountry = new Object()
       this.relays.forEach( relay => {
         if( !(this.geo?.[relay] instanceof Object) || typeof this.geo?.[relay].country === 'undefined' ) {
@@ -146,7 +147,7 @@ export default defineComponent({
       //console.log('continents', byCont)
       return result;
     },
-    async collateSoftware(){
+    collateSoftware(){
       const bySoftware = new Object()
       this.relays.forEach( relay => {
         if( !this.results?.[relay]?.info?.software ) {
@@ -165,7 +166,7 @@ export default defineComponent({
         let segments, repo, org
         try {
           segments = new URL(sw).pathname.split('/')
-          console.log(sw, segments.length)
+          // console.log(sw, segments.length)
           repo = segments.pop()
           org = segments.pop()
           if(repo == '' || org == '')

@@ -1,8 +1,8 @@
 <template>
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Connecting to API</span>
+    class="text-inherit">
+    <span class="text-inherit">connecting to api</span>
   </span>
 </template>
 

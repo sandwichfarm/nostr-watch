@@ -13,7 +13,8 @@ let object,
 
 const getDns = async function(relay){
   let dns
-  await fetch(`https://1.1.1.1/dns-query?name=${relay.replace('wss://', '')}`, { headers: { 'accept': 'application/dns-json' } })
+  const domain = relay.replace('wss://', '').split('/')[0].split(':')[0]
+  await fetch(`https://1.1.1.1/dns-query?name=${domain}`, { headers: { 'accept': 'application/dns-json' } })
     .then(response => response.json())
     .then((data) => { dns = data.Answer ? data.Answer : false })
     .catch(err => console.error('./scripts/geo.js', err))

@@ -10,7 +10,7 @@ export const usePrefsStore = defineStore('prefs', {
     filters: [],
     filterFn: [],
     useKind3: true,
-    clientSideProcessing: true,
+    clientSideProcessing: false,
     clientSideProcessingUpgrade: false,
     latencyFast: 200,
     latencySlow: 1000,
@@ -20,7 +20,7 @@ export const usePrefsStore = defineStore('prefs', {
     region: 'eu-west',
     ignoreTopics: 'canonical,nostr',
     showMaps: true,
-    discoverRelays: false,
+    discoverRelays: true,
     checkNip11: false,
     CheckNip11Frequency: 24*60*60*1000
   }),

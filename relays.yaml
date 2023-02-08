@@ -1,4 +1,5 @@
 relays:
+  - wss://relay.nostriches.org
   - wss://nostr.wine
   - was://nostr.pleb.network
   - wss://nostr.inosta.cc
@@ -285,3 +286,5 @@ relays:
   - wss://relay.nostrich.land
   - wss://relay.nostr.wirednet.jp
   - wss://nostr.lapalomilla.mx
+  - wss://nostr.bitcoinplebs.de
+  - wss://nostr.21crypto.ch

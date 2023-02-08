@@ -55,7 +55,6 @@ const localMethods = {
       const uniques = new Set()
       let timeout = setTimeout( () => { 
         resolve()
-        // pool.unsubscribe(subid)
         this.closePool(pool)
       }, 10000 )
       

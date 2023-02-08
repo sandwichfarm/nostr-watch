@@ -60,6 +60,7 @@ const localMethods = {
         const relayChunks = this.chunk(50, this.relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
+          const resultsChunk = {}
           const promise = await new Promise( resolve => {
             const relayChunk = relayChunks[i]
             const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
@@ -113,9 +114,10 @@ const localMethods = {
                     result.topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
                     
                   result.aggregate = this.getAggregate(result)
-                  const mergedResult = Object.assign(this.results[relay] || {}, result)
-                  this.results[relay] = mergedResult
-                  this.setCache(mergedResult)
+                  resultsChunk[relay] = Object.assign(this.results[relay] || {}, result)
+                  // const mergedResult = Object.assign(this.results[relay] || {}, result)
+                  // this.results[relay] = mergedResult
+                  // this.setCache(mergedResult)
                   if(this.store.tasks.isProcessed(this.slug, relay))
                     return 
                   this.store.tasks.addProcessed(this.slug, relay)
@@ -129,6 +131,8 @@ const localMethods = {
               })
           })
           promises.push(promise)
+          Object.keys(resultsChunk).forEach( result => this.setCache(resultsChunk[result]) )
+          this.results = Object.assign(this.results, resultsChunk)
           await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
           
         }

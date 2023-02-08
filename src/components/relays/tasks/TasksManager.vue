@@ -5,14 +5,10 @@
     <DetectRegion 
       v-if="store.prefs.autoDetectRegion" />
     <StatusCheckHistoryNode />
-    <CheckGeo />
     <GetPulse />
     <LoadSeed 
       v-bind:resultsProp="results"
       v-if="!store.prefs.clientSideProcessing || isSingle" />
-    <HistoryTask
-      :resultsProp="results"
-      v-if="!store.prefs.clientSideProcessing" />
     <CheckNip11
       v-bind:resultsProp="results"
       v-if="
@@ -30,9 +26,9 @@
     <RefreshTask
       v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing || isSingle" />
+    <CheckGeo />
     <HistoryTask
-      :resultsProp="results"
-      v-if="store.prefs.clientSideProcessing" />
+      :resultsProp="results" />
     <GetTopics
       v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing && !isSingle" />
@@ -62,6 +58,7 @@ import GetRelays from './GetRelays.vue'
 import CheckNip11 from './CheckNip11.vue'
 import HistoryTask from './HistoryTask.vue'
 import CheckGeo from './CheckGeo.vue'
+import GetTopics from './GetTopics.vue'
 
 // import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
 // import RelayOperatorTask from './RelayOperatorTask.vue'
@@ -75,11 +72,11 @@ export default defineComponent({
     GetPulse,
     UserRelayList,
     StatusCheckHistoryNode,
-    // StatusCheckAPI,
     GetRelays,
     CheckNip11,
     HistoryTask,
-    CheckGeo
+    CheckGeo,
+    GetTopics,
     // RelayCanonicalsTask,
     // RelayOperatorTask
   },

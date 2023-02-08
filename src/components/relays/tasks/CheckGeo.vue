@@ -42,36 +42,12 @@ const localMethods = {
         this.relays = this.store.relays.getAll()
         for(let relay in this.relays){
           this.store.relays.geo[relay] = await getGeo(relay)
+          console.log(this.store.relays.geo[relay])
         }
         this.store.tasks.completeJob()
       },
       true
     )
-  },
-  validatePubkey(relay){
-    if(!this.results?.[relay]?.info?.pubkey)
-      return 
-
-    this.results[relay].pubkeyValid = false
-    
-    if(this.results[relay].info.pubkey.startsWith('npub')) {
-      this.results[relay].pubkeyError = "pubkey is in npub format, should be hex"
-      return
-    }
-    if(!this.results[relay].info.pubkey.match(/[0-9A-Fa-f]{6}/g)) {
-      this.results[relay].pubkeyError = "pubkey is not hex"
-      return
-    }
-    const pubkey = Uint8Array.from(Buffer.from(this.results[relay].info.pubkey, 'hex'));
-    if(pubkey.length !== 32){
-      this.results[relay].pubkeyError = 'pubkey is expected to be 32'
-      return
-    }
-    this.results[relay].pubkeyValid = true
-  },
-  closeAll(){
-    if(this.inspectors.length)
-      this.inspectors.forEach( $inspector => $inspector.close() ) 
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration)) 
@@ -87,9 +63,6 @@ export default defineComponent({
   data() {
     return {
       slug: 'relays/geo', //REMEMBER TO CHANGE!!!\
-      relays: [],
-      inspectors: [],
-      interval: null
     }
   },
   setup(props){
@@ -101,15 +74,9 @@ export default defineComponent({
   },
   created(){
   },
-  unmounted(){
-    this.closeAll()
-  },
+  unmounted(){},
   beforeMount(){
     this.relays = this.store.relays.getAll
-
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
-    this.untilNext = this.timeUntilRefresh()
-    this.sinceLast = this.timeSinceRefresh()
   },
   async mounted(){
     if(this.store.tasks.isProcessing(this.slug))
@@ -118,12 +85,12 @@ export default defineComponent({
       this.invalidate()
   },
   updated(){},
+  methods: Object.assign(localMethods, RelayMethods),
   computed: Object.assign(SharedComputed, {
     getDynamicTimeout: function(){
       return this.averageLatency*this.relays.length
     },
   }),
-  methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {
       type: Object,

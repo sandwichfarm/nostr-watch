@@ -285,6 +285,7 @@ relays:
   - wss://nostr.nikolaj.online
   - wss://relay.nostrich.land
   - wss://relay.nostr.wirednet.jp
+  - wss://nostr.thibautrey.fr
   - wss://nostr.cizmar.net
   - wss://relay.zeh.app
   - wss://nostr.lapalomilla.mx

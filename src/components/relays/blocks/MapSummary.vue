@@ -95,7 +95,7 @@ export default defineComponent({
   },
 
   data() {
-    // console.log(this.store.layout.mapIsExpanded, {
+    //console.log(this.store.layout.mapIsExpanded, {
     //   zoom: this.store.layout.mapIsExpanded ? 4 : 2,
     //   minZoom: this.store.layout.mapIsExpanded ? 4 : 2,
     //   maxZoom: this.store.layout.mapIsExpanded ? 7 : 2,

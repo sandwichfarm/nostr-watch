@@ -65,11 +65,11 @@ async function discover(){
     const pool = RelayPool(relaysKnown)
     pool
       .on('open', relay => {
-        // //console.log('open')
+        //console.log('open')
         relay.subscribe(subid, {limit: 1000, kinds:[3]})
       })
       .on('close', () => {
-        // //console.log('close')
+        //console.log('close')
       })
       .on('event', (relay, _subid, event) => {
         if(subid == _subid) {
@@ -121,7 +121,7 @@ const checkRemoteRelays = async function(){
   const randomlyOrderedRelays = relaysRemote.sort(() => Math.random() - 0.5)
 
   for(let i=0;i<randomlyOrderedRelays.length;i++) {
-    // //console.log('check for connect', remoteMerged[i])
+    //console.log('check for connect', remoteMerged[i])
     await checkRelay(randomlyOrderedRelays[i])
             .catch( () => {
               remove.push(randomlyOrderedRelays[i])

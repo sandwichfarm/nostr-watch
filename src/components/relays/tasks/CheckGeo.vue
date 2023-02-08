@@ -44,7 +44,7 @@ const localMethods = {
       async () => {
         this.relays = this.store.relays.getAll.filter( relay => !this.store.tasks.processed[this.slug]?.includes(relay))
         const relayChunks = this.chunk(100, this.relays)
-        console.log('chunks', )
+        //console.log('chunks', )
         let promises = [],
             geoAcc = {}
         for(let c=0;c<relayChunks.length;c++) {

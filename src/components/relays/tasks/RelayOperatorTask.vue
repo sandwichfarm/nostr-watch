@@ -41,7 +41,7 @@ const localMethods = {
       () => {
         const relays = this.store.relays.getAggregateCache('public')
 
-        console.log('public relays', this.store.relays.getAggregateCache('public').length)
+        //console.log('public relays', this.store.relays.getAggregateCache('public').length)
 
         const pool = new RelayPool(relays)
         const subid = crypto.randomBytes(40).toString('hex')
@@ -64,7 +64,7 @@ const localMethods = {
             relay.subscribe(subid, { limit:10, kinds:kinds, authors:[this.result.info.pubkey] })
           })
           .on('event', (relay, sub_id, event) => {
-            console.log(event)
+            //console.log(event)
             if(!kinds.includes(event.kind))
               return
             if(sub_id !== subid)
@@ -82,8 +82,8 @@ const localMethods = {
             u.add(event.id)
             if(event.kind === 0)
               this.store.profile.setProfile(JSON.parse(event.content)).catch()
-            console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
-            console.log( 'event!', event.content )
+            //console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
+            //console.log( 'event!', event.content )
           })
 
         this.store.tasks.completeJob(this.slug)
@@ -131,7 +131,7 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('task', this.slug, 'is processing:', this.store.tasks.isProcessing(this.slug))
+    //console.log('task', this.slug, 'is processing:', this.store.tasks.isProcessing(this.slug))
     if(this.store.tasks.isProcessing(this.slug))
       this.invalidate(true)
     else

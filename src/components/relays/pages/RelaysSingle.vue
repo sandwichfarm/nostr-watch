@@ -813,6 +813,7 @@ export default defineComponent({
     getSoftware: function(){
       return this.result?.info?.software
     },
+
     badgeLink(){
       return (nip) => `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
     },

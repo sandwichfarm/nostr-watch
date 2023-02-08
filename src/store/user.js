@@ -28,7 +28,7 @@ export const useUserStore = defineStore('user', {
   actions: {
     retrieveKind3: async function() {
       return new Promise( (resolve) => {
-        // console.log('retrieveKind3 promise()', useRelaysStore())
+        //console.log('retrieveKind3 promise()', useRelaysStore())
         const subid = crypto.randomBytes(40).toString('hex')
         const store = useRelaysStore()
         const relays = store.getFavorites.length ? store.getFavorites : ['wss://nostr.sandwich.farm']
@@ -46,7 +46,7 @@ export const useUserStore = defineStore('user', {
             if(_subid == subid){
               if(!ev.content.length)
                 return
-              console.log('the content', ev.content)
+              //console.log('the content', ev.content)
               try {
                 ev.content = JSON.parse(ev.content)
               }
@@ -57,9 +57,9 @@ export const useUserStore = defineStore('user', {
             }
             ordered.push(ev)
           })
-          .on('error', (relay, err) => { 
+          .on('error', (relay) => { 
             relay
-            console.log('there was an error', err)
+            //console.log('there was an error', err)
             // reject(err)
           })
         setTimeout( () => {

@@ -14,15 +14,15 @@ export default {
     if(parseInt(this.store.filters?.count?.[ref]?.[key]) === 0)
       return
     const rule = this.store.filters.getRule(ref, key)
-    console.log('rule', rule)
+    //console.log('rule', rule)
     if(rule?.length) {
-      console.log('filters: removing', rule)
+      //console.log('filters: removing', rule)
       this.store.filters.removeRule(ref, key, unique, reset, always)
-      console.log('filters: effect', this.store.filters.rules)
+      //console.log('filters: effect', this.store.filters.rules)
     } else {
-      console.log('filters: adding', rule)
+      //console.log('filters: adding', rule)
       this.store.filters.addRule(ref, key, unique, reset, always)
-      console.log('filters: effect', this.store.filters.rules)
+      //console.log('filters: effect', this.store.filters.rules)
     }
     this.refreshCounts()
   },
@@ -248,7 +248,7 @@ export default {
       aggregateTally += result?.check.read ? 1 : 0
       aggregateTally += result?.check.write ? 1 : 0
 
-      // //console.log(result.url, result?.check.connect, result?.check.read, result?.check.write, aggregateTally)
+      //console.log(result.url, result?.check.connect, result?.check.read, result?.check.write, aggregateTally)
 
       if (aggregateTally == 3) {
         return 'public'

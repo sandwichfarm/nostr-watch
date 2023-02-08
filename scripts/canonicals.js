@@ -23,11 +23,11 @@ const pool = RelayPool(relays, {reconnect: false})
 pool
   .on('ok', (Relay) => {
     oks++
-    // console.log('OK', Relay.url)
+    //console.log('OK', Relay.url)
   })
   .on('notice', (Relay, notice) => {
     notices++
-    // console.log('NOTICE', Relay.url, notice)
+    //console.log('NOTICE', Relay.url, notice)
   })
 
 async function run(){
@@ -36,8 +36,8 @@ async function run(){
   // await process.exit()
   await discover()
   // process.exit()
-  // console.log(`wtf`, relays.length)
-  // console.log(`hashes`, Object.keys(hashes).length)
+  //console.log(`wtf`, relays.length)
+  //console.log(`hashes`, Object.keys(hashes).length)
   await sieve()
   await broadcast()
   process.exit()
@@ -61,14 +61,14 @@ function setup(){
 async function discover(){
   
 
-  console.log('relays', relays.length)
+  //console.log('relays', relays.length)
 
   return new Promise(resolve => {
     const subid = crypto.randomBytes(40).toString('hex')
     
     pool
       .on('open', Relay => {
-        console.log('open', Relay.url)
+        //console.log('open', Relay.url)
         Relay.subscribe(subid, {limit: relays.length, kinds:[1], "#t": ['canonical'], authors:[ getPublicKey(process.env.PRIVATE_KEY) ] }, )
         relays.forEach( relay => {
           hashes[hash(relay)] = relay
@@ -78,10 +78,10 @@ async function discover(){
       })
       .on('event', (Relay, _subid, event) => {
         if(!discovered){
-          // console.log('published event found', event.id)
+          //console.log('published event found', event.id)
         }
         if(_subid.includes(subid) && discovered) {   
-          // console.log('event', event.content, event.id)     
+          //console.log('event', event.content, event.id)     
 
           if(uniques.has(event.id))
             return 
@@ -91,7 +91,7 @@ async function discover(){
           if(!relayHash)
             return
 
-          // console.log('relay hash', Relay.url, relayHash)
+          //console.log('relay hash', Relay.url, relayHash)
 
           const relay = hashes?.[relayHash]
 
@@ -116,7 +116,7 @@ async function sieve(){
 function checkMissing(){
   missing = new Array()
   relays.forEach( relay => {
-    // console.log('check missing', relay, (canonicals?.[relay] instanceof Object) )
+    //console.log('check missing', relay, (canonicals?.[relay] instanceof Object) )
     if( !(canonicals?.[relay] instanceof Object) )
       missing.push(relay)
   })
@@ -124,7 +124,7 @@ function checkMissing(){
 
 async function broadcast(){
   setInterval( ()=> {
-    console.log('status', '\ntotal sent:', totalSent, '\noks:', oks, '\nnotices:', notices, '\n\n')
+    //console.log('status', '\ntotal sent:', totalSent, '\noks:', oks, '\nnotices:', notices, '\n\n')
   }, 60000)
   
   for(let i=0;i<missing.length;i++){
@@ -144,17 +144,17 @@ async function broadcast(){
     if(!signedEvent)
       return 
 
-    // console.log("sending to pool", signedEvent)
+    //console.log("sending to pool", signedEvent)
     pool.send(['EVENT', signedEvent])
     totalSent++
-    console.log('total sent, backlog', totalSent)
+    //console.log('total sent, backlog', totalSent)
     await delay(10*1000)
   }
-  console.log('finished.')
+  //console.log('finished.')
 }
 
 async function sign(event, relay){
-  // console.log('event to sign', event)
+  //console.log('event to sign', event)
   event.pubkey = getPublicKey(process.env.PRIVATE_KEY)
   event.id = getEventHash(event)
   event.sig = await signEvent(event, process.env.PRIVATE_KEY)
@@ -186,7 +186,7 @@ async function deletions(){
   if(!signedEvent)
     return 
 
-  console.log("sending to pool", signedEvent)
+  //console.log("sending to pool", signedEvent)
 
   pool.send(['EVENT', signedEvent])
 

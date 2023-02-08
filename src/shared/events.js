@@ -11,11 +11,11 @@ events.discoverRelays = async function(){
     const pool = RelayPool(['wss://nostr.sandwich.farm'])
     pool
       .on('open', relay => {
-        // //console.log('open')
+        //console.log('open')
         relay.subscribe(subid, {limit: 1000, kinds:[3]})
       })
       .on('close', () => {
-        // //console.log('close')
+        //console.log('close')
       })
       .on('event', (relay, _subid, event) => {
         if(subid == _subid) {

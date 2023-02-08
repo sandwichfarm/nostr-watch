@@ -76,7 +76,7 @@ const localMethods = {
           
           uniques.add(event.created_at)
 
-          // console.log('pulse found', count, event.id)
+          //console.log('pulse found', count, event.id)
         
           pulsesByEvent[event.created_at] = decodeJson(event.content).online
 
@@ -123,7 +123,7 @@ const localMethods = {
 
     allRelaysInPulses.forEach( relay => {
       pulses[relay] = new Array()
-      // console.log(relay, pulsesByRelayObj[relay])
+      //console.log(relay, pulsesByRelayObj[relay])
       Object.keys(pulsesByRelayObj[relay]).forEach( (timestamp_) => {
         pulses[relay].push({
           date: timestamp_,
@@ -135,7 +135,7 @@ const localMethods = {
       this.setUptimePercentage(relay)
     })
 
-    // console.log(pulses)
+    //console.log(pulses)
 
     // this.store.stats.addPulses(pulses)
 

@@ -90,7 +90,7 @@ const run = async function(){
   object = { geo: result }
   yaml = new YAML.Document()
   yaml.contents = object
-  // //console.log(object)
+  //console.log(object)
   fs.writeFile(outFile, yaml.toString(), (err) => {
     if (err) return console.error('./scripts/geo.js', err);
   });

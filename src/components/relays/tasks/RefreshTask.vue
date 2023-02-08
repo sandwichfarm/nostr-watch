@@ -131,74 +131,77 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
-
-        // console.log('unprocessed relays', 
-          // this.relays.filter( relay => !this.store.tasks.getProcessed(this.slug).includes(relay)))
-
         if(single) {
           await this.check(single)
             .then((result) => this.completeRelay(single, result) )
             .catch( () => this.completeRelay(single) )
         } 
         else {
-          for(let index = 0; index < relays.length; index++) {
-            await this.delay(this.averageLatency)
-            const relay = relays[index]
-            this.check(relay)
-              .then((result) => this.completeRelay(relay, result) )
-              .catch( () => this.completeRelay(relay) ) //wait, what? TODO: fix
+          const relays = this.store.relays.getAll.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
+          let relayChunks = this.chunk(100, relays)
+          
+          for(let c=0;c<relayChunks.length;c++){
+            let promises = [],
+                results = {}
+            const chunk = relayChunks[c]
+            for(let index = 0; index < chunk.length; index++) {
+              const promise = new Promise( resolve => {
+              const relay = chunk[index] 
+              this.check(relay)
+                .then((result) => {
+                  results[relay] = this.pruneResult(relay, result)
+                  resolve()
+                })
+                .catch( () => { 
+                  resolve()
+                }) //wait, what? TODO: fix
+              })
+              promises.push(promise)
+            }
+            await Promise.all(promises)
+            this.results = Object.assign({}, this.results, results)
+            Object.keys(results).forEach( relay => this.setCache(this.results[relay]))
           }
+          this.completeAll()
         } 
       }, 
       true
     )
   },
 
-  completeRelay: function(relay, result){
+  pruneResult: function(relay, result){
+    let resultPruned
+
     if(this.store.tasks.isProcessed(this.slug, relay))
       return 
-
     this.store.tasks.addProcessed(this.slug, relay)
-    
+
     if(result)  {
       // console.log('whoops', result)
-      const resultPruned = {
-                url: relay,
-                check: {
-                  connect: result.check.connect,
-                  read: result.check.read,
-                  write: result.check.write,
-                  latency: result.check.latency,
-                  averageLatency: result.check.averageLatency
-                },
-                latency: result?.latency,
-                info: result.info,
-                uptime: this.getUptimePercentage(relay),
-                identities: result.identities,
-                pubkeyValid: result.pubkeyValid,
-                pubkeyError: result.pubkeyError,
-              }
-      
-      
-      // console.log(result.url, 'pubkey info', result.info?.pubkey, result.pubkeyValid, result.pubkeyError)
-      // if(result.info?.pubkey)
-      //   resultPruned.identities.push(result.info.pubkey)
-
-      this.setCache(Object.assign({}, this.results[relay], resultPruned))
-      // this.setUptimePercentage(relay)
-      this.results[relay] = this.getCache(relay)
+      resultPruned = {
+        url: relay,
+        aggregate: result.aggregate,
+        check: {
+          connect: result.check.connect,
+          read: result.check.read,
+          write: result.check.write,
+          latency: result.check.latency,
+          averageLatency: result.check.averageLatency
+        },
+        latency: result?.latency,
+        info: result.info,
+        uptime: this.getUptimePercentage(relay),
+        identities: result.identities,
+        pubkeyValid: result.pubkeyValid,
+        pubkeyError: result.pubkeyError,
+      }
     }
-
-    if(this.isSingle)
-      this.completeAll(true)
-    else if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length)
-      this.completeAll()
+    return resultPruned
   },
 
   completeAll: function(single){
     this.store.tasks.completeJob(this.slug)
-    // this.setAverageLatency()
+    
     if(single)
       return 
 
@@ -217,9 +220,13 @@ const localMethods = {
           getIdentities: false,
           run: true,
           // debug: true,
-          connectTimeout: this.getDynamicTimeout,
-          readTimeout: this.getDynamicTimeout,
-          writeTimeout: this.getDynamicTimeout,
+          // connectTimeout: this.getDynamicTimeout,
+          // readTimeout: this.getDynamicTimeout,
+          // writeTimeout: this.getDynamicTimeout,
+
+          connectTimeout: 5*1000,
+          readTimeout: 5*1000,
+          writeTimeout: 5*1000,
         }
       
       // if(this.isSingle)
@@ -313,7 +320,7 @@ export default defineComponent({
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
-    this.relays = Array.from(new Set([...this.store.relays.getOnline, ...this.store.relays.getOffline]))
+    this.relays = this.store.relays.getAll
 
     for(let ri=0;ri-this.relays.length;ri++){
       const relay = this.relays[ri],

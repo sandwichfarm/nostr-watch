@@ -37,65 +37,72 @@ export const useTaskStore = defineStore(
 
     //queue/states
     isTaskActive: state => slug => state.getActiveSlug === slug,
+    isTaskPending: state => slug => {
+      if(this?.active?.id === slug)
+        return true
+      if(state.pending?.filter( job => job.id === slug )?.length) 
+        return true
+    },
     isActive: (state) => Object.keys( state.active ).length > 0,
     isIdle: (state) => Object.keys( state.active ).length == 0,
     arePending: (state) => state.pending.length > 0,
+  
   },
   actions: {
     updateNow(key){ 
+      console.log('update timestamp', key)
       this.lastUpdate[key] = Date.now() 
     },
     //queue
     addJob(job){
-      
-      if(job?.unique){
-        let exists
-        exists = this.active.id === job.id
-        if(!exists)
-          exists = this.pending.filter( j => j.id === job.id).length
-        if(exists)
-          return
-      }
-      console.log('adding job', job)
-
+      console.log('add job', job.id, 'is pending:', this.isTaskPending(job.id), 'active:', this?.active?.id)
+      if(job?.unique && this.isTaskPending(job.id))
+        return
       this.pending.push(job)
       if( this.isIdle )
         this.startNextJob()
     },
     startNextJob(){
+      console.log('starting next job')
       if( this.arePending ) {
         this.active = this.pending[0]
         this.pending.shift()
         this.startProcessing(this.active)
+        console.log('start next job', this.active)
       }
       else {
+        console.log('jobs idle')
         this.active = {}
       }
     },
     completeJob(slug){
+      console.log('complete job', slug, this.active.id !== slug)
       if(this.active.id !== slug) {
         console.log(slug, 'is not active!', this.active.id, '')
         return
       }
-      console.log('completed!', this.active.id)
       this.updateNow(this.active.id)
       this.finishProcessing(this.active.id)
       this.completed.push(this.active)
-      this.startNextJob()
+      setTimeout( this.startNextJob, 50)
     },
     clearJobs(type){
+      console.log('clear jobs', type)
       this[type] = new Array()
     },
     cancelJob( id ){
+      console.log('cancel jobs', id)
       const index = this.pending.findIndex( job => job.id === id )
       this.removeJob( index )
     },
     removeJob( index ){
+      console.log('remove job', index)
       this.pending.splice( index, 1 )
     },
+
     //legacy
     startProcessing(job) { 
-      this.addJob(job)
+      // this.addJob(job)
       this.processing[job.id] = true 
       this.currentTask = job.id
     },

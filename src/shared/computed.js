@@ -36,7 +36,7 @@ export default {
         // return this.isFirstVisit 
     },
     pendingFirstCompletion(){
-        return !this.store.tasks.lastUpdate['relays/seed'] && !this.store.tasks.lastUpdate['relays/check']
+        return !this.store.tasks.lastUpdate['relays/seed'] && !this.store.tasks.lastUpdate['relays/check'] && this.$route.path === '/find/relays'
         // return this.isFirstVisit 
     }
 }

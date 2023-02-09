@@ -299,4 +299,6 @@ relays:
   - wss://rsr.uyky.net:30443
   - wss://nostrafrica.pcdkd.fyi
   - wss://paid.spore.ws
+  - wss://nostr-01.dorafactory.org
   - wss://relay.honk.pw
+  

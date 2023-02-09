@@ -164,8 +164,9 @@ const localMethods = {
   checkJob: async function(single){
     if(single) {
       await this.check(single)
-        .then((result) => this.completeRelay(single, result) )
-        .catch( () => this.completeRelay(single) )
+        .then((result) => this.completeRelay(result) )
+        .catch( () => console.log('there was an error') )
+      this.completeAll()
     } 
     else {
       this.relays = this.store.relays.getAll
@@ -180,12 +181,7 @@ const localMethods = {
           const relay = chunk[index] 
           this.check(relay)
             .then((result) => {
-              this.store.tasks.addProcessed(this.slug, relay)
-              result = this.pruneResult(relay, result)
-              result = Object.assign(this.results[relay] || {}, result)
-              this.setCache(result)
-              this.results[relay] = result
-              resolve()
+              this.completeRelay(result, resolve)
             })
             .catch( () => { 
               resolve()
@@ -201,6 +197,16 @@ const localMethods = {
       }
       this.completeAll()
     } 
+  },
+
+  completeRelay: function(result, resolve){
+    this.store.tasks.addProcessed(this.slug, result.url)
+    result = this.pruneResult(result.url, result)
+    result = Object.assign(this.results[result.url] || {}, result)
+    this.setCache(result)
+    this.results[result.url] = result
+    if(resolve instanceof Function)
+      resolve()
   },
 
   completeAll: function(single){

@@ -285,15 +285,15 @@ export default {
     },
 
     getUptimePercentage(relay){
-      const pulses = this.store.stats.getHeartbeat(relay)
+      const pulses = this.store.stats.getPulse(relay)
       if(!pulses || !Object.keys(pulses).length )
         return
-      const totalHeartbeats = Object.keys(pulses).length 
+      const totalPulses = Object.keys(pulses).length 
       const totalOnline = Object.entries(pulses).reduce(
           (acc, value) => value[1].latency ? acc+1 : acc,
           0
       );
-      return Math.floor((totalOnline/totalHeartbeats)*100)
+      return Math.floor((totalOnline/totalPulses)*100)
     },
 
     setUptimePercentage(relay){

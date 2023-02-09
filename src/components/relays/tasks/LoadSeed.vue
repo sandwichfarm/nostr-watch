@@ -59,7 +59,7 @@ const localMethods = {
       this.slug, 
       async () => {
         this.relays = [...this.store.relays.getAll]
-        let relayChunks = this.chunk(250, this.relays)
+        let relayChunks = this.chunk(100, this.relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
           const resultsChunk = {}
@@ -153,13 +153,6 @@ const localMethods = {
     }, 15*60*1000)
   },
   timeUntilRefresh(){
-    //console.log(
-    //   'timeuntil', 
-    //   Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery), 
-    //   this.store.tasks.getLastUpdate(this.slug),
-
-    //   this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now()))
-    // )
     return this.timeSince(
             Date.now()
             -(

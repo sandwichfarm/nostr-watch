@@ -1,5 +1,5 @@
 <template>
-  <div class="ml-1 ">
+  <div class="ml-1 hidden lg:block">
     <div class="mb-4 block">
       <div 
         class="mr-3  my-4 cursor-pointer inline-block"

@@ -108,10 +108,9 @@
             :class="{
               'bg-white/20': store.filters.getRule('software', store.stats?.software[sw].key)?.length,
               'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) === 0,
-              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) > 0 && !parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) === 0
+              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.software[`${store.stats?.software[sw].key}`]) > 0 && !store.filters.getRule('software', store.stats?.software[sw].key)?.length
             }"
-            
-            class="cursor-pointer mr-2 mb-2 py-1 px-2 bg-black/20 inline-block">
+            class="cursor-pointer mr-2 mb-2 py-1 px-2  inline-block">
             {{ store.stats?.software[sw].key}} 
             <span class="text-xs text-white/50">
               {{ store.filters?.count?.software[`${store.stats?.software[sw].key}`] }}
@@ -138,7 +137,7 @@
               'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.countries[`${store.stats?.countries[country].key}`]) === 0,
               'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.countries[`${store.stats?.countries[country].key}`]) > 0 && !store.filters.getRule('countries', store.stats?.countries[country].key)?.length
             }"
-            class="cursor-pointer mr-2 mb-2 py-1 px-2 bg-black/20 inline-block">
+            class="cursor-pointer mr-2 mb-2 py-1 px-2  inline-block">
             {{ store.stats?.countries[country].key}} 
             <span class="text-xs text-white/50">
               {{ store.filters?.count?.countries[`${store.stats?.countries[country].key}`] }}
@@ -163,9 +162,9 @@
             :class="{
               'bg-white/20': store.filters.getRule('continents', store.stats?.continents[continent].key)?.length,
               'text-black/20 dark:text-white/20 bg-none italic': parseInt(store.filters?.count?.continents[`${store.stats?.continents[continent].key}`]) === 0,
-              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.continents[`${store.stats?.continents[continent].key}`]) > 0 && store.filters.getRule('continents', store.stats?.continents[continent].key)?.length
+              'bg-black/5 dark:bg-black/20': parseInt(store.filters?.count?.continents[`${store.stats?.continents[continent].key}`]) > 0 && !store.filters.getRule('continents', store.stats?.continents[continent].key)?.length
             }"
-            class="cursor-pointer mr-2 mb-2 py-1 px-2 bg-black/20 inline-block">
+            class="cursor-pointer mr-2 mb-2 py-1 px-2  inline-block">
             {{ store.stats?.continents[continent].key}} 
             <span class="text-xs text-white/50">
               {{ store.filters?.count?.continents[`${store.stats?.continents[continent].key}`] }}
@@ -201,7 +200,7 @@
     },
     mounted(){
       this.refreshCounts()
-      // setInterval( this.refreshCounts, 2000 )
+      setInterval( this.refreshCounts, 1000 )
     },
     updated(){
       

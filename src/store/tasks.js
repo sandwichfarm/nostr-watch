@@ -35,7 +35,7 @@ export const useTaskStore = defineStore(
     //queue/states
     isTaskActive: state => slug => state.getActiveSlug === slug,
     isTaskPending: state => slug => {
-      console.log('is pending?', slug, 'is active?', this?.active?.id === slug, 'is pending?', state.pending?.filter( job => job.id === slug )?.length)
+      // //console.log('is pending?', slug, 'is active?', this?.active?.id === slug, 'is pending?', state.pending?.filter( job => job.id === slug )?.length)
       if(this?.active?.id === slug)
         return true
       if(state.pending?.filter( job => job.id === slug )?.length) 
@@ -53,28 +53,36 @@ export const useTaskStore = defineStore(
   },
   actions: {
     updateNow(key){ 
-      //console.log('update timestamp', key)
+      ////console.log('update timestamp', key)
       this.lastUpdate[key] = Date.now() 
     },
     //queue
     addJob(job){
-      console.log('add job', job.id, 'is pending:', this.isTaskPending(job.id), 'active:', this?.active?.id)
+      
       if(job?.unique && this.isTaskPending(job.id))
         return
+      console.log('add job', job.id, 'is pending:', this.isTaskPending(job.id), 'active:', this?.active?.id)
       this.pending.push(job)
       if( this.isIdle )
         this.startNextJob()
     },
-    startNextJob(){
-      console.log('starting next job', this.pending?.[0]?.id)
+    async startNextJob(){
+      console.log('starting next job', this.pending?.[0]?.id, this.pending?.[0]?.handler)
       if( this.arePending ) {
         this.active = this.pending[0]
-        console.log('started', this.active.id)
+        //console.log('started', this.active.id)
         this.pending.shift()
+        await this.runJob()
       }
       else {
         this.active = {}
       }
+    },
+    async runJob(){
+      if(this.active.handler instanceof AsyncFunction)
+        await this.active.handler()
+      else 
+        this.active.handler()
     },
     completeJob(slug){
       console.log('complete job', slug, this.active.id !== slug)
@@ -86,16 +94,16 @@ export const useTaskStore = defineStore(
       setTimeout( this.startNextJob, 50)
     },
     clearJobs(type){
-      //console.log('clear jobs', type)
+      ////console.log('clear jobs', type)
       this[type] = new Array()
     },
     cancelJob( id ){
-      //console.log('cancel jobs', id)
+      ////console.log('cancel jobs', id)
       const index = this.pending.findIndex( job => job.id === id )
       this.removeJob( index )
     },
     removeJob( index ){
-      //console.log('remove job', index)
+      ////console.log('remove job', index)
       this.pending.splice( index, 1 )
     },
 
@@ -118,3 +126,5 @@ export const useTaskStore = defineStore(
     excludePaths: ['pending', 'completed', 'active'],
   }
 })
+
+const AsyncFunction = (async () => {}).constructor

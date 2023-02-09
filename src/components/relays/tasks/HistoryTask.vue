@@ -20,11 +20,11 @@ const LocalMethods = {
       this.slug,
       () => {
         //console.log('stats run()')
-        this.store.stats.nips = this.collateSupportedNips
-        this.store.stats.continents = this.collateContinents 
-        this.store.stats.countries = this.collateCountries 
-        this.store.stats.software = this.collateSoftware 
-        setTimeout(() => this.store.tasks.completeJob(this.slug), 100)
+        this.store.stats.set('nips', this.collateSupportedNips)
+        this.store.stats.set('continents', this.collateContinents)
+        this.store.stats.set('countries', this.collateCountries)
+        this.store.stats.set('software', this.collateSoftware)
+        setTimeout(() => this.store.tasks.completeJob(this.slug), 2000)
       },
       true
     )

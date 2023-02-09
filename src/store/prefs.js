@@ -20,8 +20,8 @@ export const usePrefsStore = defineStore('prefs', {
     region: 'eu-west',
     ignoreTopics: 'canonical,nostr',
     showMaps: true,
-    discoverRelays: true,
-    checkNip11: false,
+    discoverRelays: false,
+    checkNip11: true,
     CheckNip11Frequency: 24*60*60*1000
   }),
   getters: {
@@ -52,8 +52,6 @@ export const usePrefsStore = defineStore('prefs', {
       //console.log('functions:', this.filterFn)
     }
   },
-},
-{
   persistedState: {
     excludePaths: ['activeFilters']
     // includePaths: ['refresh', 'duration', 'pinFavorites', 'rowTheme', 'filters', 'firstVisit', '']

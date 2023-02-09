@@ -51,10 +51,10 @@
                       <th v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">Pubkey</code>
                       </th>
-                      <th scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                      <th v-if="store.tasks.lastUpdate['relays/geo']" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Location</code>
                       </th>
-                      <th v-if="subsection != 'favorite'" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                      <th v-if="subsection != 'favorite' && store.tasks.lastUpdate['relays/pulse']" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Uptime(12h)</code>
                       </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
@@ -134,11 +134,11 @@
                         </span>
                       </td>
 
-                      <td class="w-24 location text-center">
+                      <td v-if="store.tasks.lastUpdate['relays/geo']" class="w-24 location text-center">
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td v-if="subsection != 'favorite'" class="w-24 latency text-center">
+                      <td v-if="subsection != 'favorite' && store.tasks.lastUpdate['relays/pulse']" class="w-24 latency text-center">
                         <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.results[relay]?.uptime">
                           {{ this.results[relay]?.uptime }}%
                         </span>

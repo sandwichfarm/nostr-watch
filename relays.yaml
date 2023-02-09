@@ -8,7 +8,6 @@ relays:
   - wss://nostr.lnorb.com
   - wss://nos.lol
   - wss://nostr.lordkno.ws
-  - wss://nostr.p2sh.co
   - wss://nostr.lnprivate.network
   - wss://relay.nostr.vision
   - wss://nostr-3.orba.ca
@@ -301,3 +300,5 @@ relays:
   - wss://nostrafrica.pcdkd.fyi
   - wss://paid.spore.ws
   - wss://nostr-01.dorafactory.org
+  - wss://relay.honk.pw
+  

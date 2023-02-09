@@ -15,11 +15,14 @@ export const useStatStore = defineStore(
     }),
     getters: {
       getHistory: (state) => state.history,
-      getBySoftware: (state) => state.software,
-      getByNip: (state) => state.nips,
-      getByCountry: (state) => state.countries,
-      getByContinent: (state) => state.continents,
+      getSoftwares: (state) => state.software,
+      getNips: (state) => state.nips,
+      getCountries: (state) => state.countries,
+      getByContinents: (state) => state.continents,
       getHeartbeat: state => relay => state.pulses[relay],
+
+      getItem: state => (key1, key2) => state[key1][key2],
+
       get: (state) => (which) => state[which],
     },
     actions: {

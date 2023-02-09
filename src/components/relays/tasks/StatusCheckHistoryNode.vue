@@ -32,10 +32,13 @@ const localMethods = {
         const begin = Date.now()
         const timeout = setTimeout( () => {
           this.store.status.historyNode = 0
+          const currentMode = this.store.prefs.clientSideProcessing
           this.store.prefs.clientSideProcessingUpgrade = this.store.prefs.clientSideProcessing
-          this.store.prefs.clientSideProcessing = true 
-          this.store.tasks.completeJob(this.slug)
+          this.store.prefs.clientSideProcessing = true
+          if(!currentMode)
+            location.reload()
           this.closePool($pool)
+          setTimeout(()=>this.store.tasks.completeJob(this.slug), 500)
         }, 5000)
         $pool
           .on('open', () => {

@@ -20,7 +20,7 @@ import SharedComputed from '@/shared/computed.js'
 import { RelayPool } from 'nostr'
 
 const LocalMethods = {
-  invalidate(force, single){
+  invalidateTopics(force, single){
 
     if( !this.store.prefs.clientSideProcessing ) 
       return
@@ -35,7 +35,7 @@ const LocalMethods = {
           return this.results[relay]?.check?.connect
         })
         const relayChunks = this.chunk(100, [...relaysOnline])
-        const promises = [],
+        let   promises = [],
               chunkResults = {}
         for (let i = 0; i < relayChunks.length; i++) {
           const promise = await new Promise( resolve => {
@@ -55,7 +55,8 @@ const LocalMethods = {
                 if(subid === sub_id){
                   const relay = event.tags[0][1]
                   const data = JSON.parse(event.content)
-                  
+                  console.log(relay, data)
+                  chunkResults[relay] = {}
                   if(data?.topics)
                     chunkResults[relay].topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
                 }
@@ -63,18 +64,25 @@ const LocalMethods = {
               .on('eose', () => {
                 try{
                   // pool.unsubscribe(subid)
-                  this.closePool(this.pool)
+                  if(this.pool)
+                    this.closePool(this.pool)
                 } catch(e){""}
                 
                 resolve()
                 clearTimeout(timeout)
               })
-            promises.push(promise) 
+            
           })
+          promises.push(promise) 
+          console.log('results', Object.keys(this.results).length, 'chunk results', Object.keys(chunkResults).length)
+          await Promise.all(promises)
           this.results = Object.assign({}, this.results, chunkResults)
-          Object.keys(this.results).forEach( relay => this.setCache(this.results[relay]) )
+          promises = []
+          Object.keys(this.results).forEach( relay => { 
+            if(this.results?.[relay])
+              this.setCache(this.results[relay]) 
+          })
         }
-        await Promise.all(promises)
         this.store.tasks.completeJob(this.slug)
       },
       true
@@ -137,17 +145,18 @@ export default defineComponent({
   },
   unmounted(){
     clearInterval(this.interval)
-    this.closePool(this.pool)
+    if(this.pool)
+      this.closePool(this.pool)
   },
   beforeMount(){
     this.relays = this.store.relays.getAll
   },
   mounted(){
     if(this.isSingle) {
-      this.invalidate(true, this.relayFromUrl)
+      this.invalidateTopics(true, this.relayFromUrl)
     }  
     else {
-      this.invalidateTask()
+      this.invalidateTopics()
     }
 
     if(this.store.prefs.clientSideProcessing)

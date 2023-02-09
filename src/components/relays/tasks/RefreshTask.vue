@@ -130,51 +130,13 @@ const localMethods = {
 
     this.queueJob(
       this.slug, 
-      async () => {
-        if(single) {
-          await this.check(single)
-            .then((result) => this.completeRelay(single, result) )
-            .catch( () => this.completeRelay(single) )
-        } 
-        else {
-          const relays = this.store.relays.getAll.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
-          let relayChunks = this.chunk(100, relays)
-          
-          for(let c=0;c<relayChunks.length;c++){
-            let promises = [],
-                resultsChunk = {}
-            const chunk = relayChunks[c]
-            for(let index = 0; index < chunk.length; index++) {
-              const promise = new Promise( resolve => {
-              const relay = chunk[index] 
-              this.check(relay)
-                .then((result) => {
-                  resultsChunk[relay] = this.pruneResult(relay, result)
-                  resolve()
-                })
-                .catch( () => { 
-                  resolve()
-                }) //wait, what? TODO: fix
-              })
-              promises.push(promise)
-            }
-            await Promise.all(promises)
-            this.results = Object.assign({}, resultsChunk, this.results)
-            Object.keys(resultsChunk).forEach( relay => this.setCache(resultsChunk[relay]))
-          }
-          this.completeAll()
-        } 
-      }, 
+      () => this.checkJob(single), 
       true
     )
   },
 
   pruneResult: function(relay, result){
     let resultPruned
-
-    if(this.store.tasks.isProcessed(this.slug, relay))
-      return 
-    this.store.tasks.addProcessed(this.slug, relay)
 
     if(result)  {
       //console.log('whoops', result)
@@ -197,6 +159,47 @@ const localMethods = {
       }
     }
     return resultPruned
+  },
+
+  checkJob: async function(single){
+    if(single) {
+      await this.check(single)
+        .then((result) => this.completeRelay(single, result) )
+        .catch( () => this.completeRelay(single) )
+    } 
+    else {
+      this.relays = this.store.relays.getAll
+      const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
+      let relayChunks = this.chunk(100, relays)
+      for(let c=0;c<relayChunks.length;c++){
+        let promises = [],
+            resultsChunk = {}
+        const chunk = relayChunks[c]
+        for(let index = 0; index < chunk.length; index++) {
+          const promise = new Promise( resolve => {
+          const relay = chunk[index] 
+          this.check(relay)
+            .then((result) => {
+              this.store.tasks.addProcessed(this.slug, relay)
+              result = this.pruneResult(relay, result)
+              this.setCache(this.results[relay] || {}, result)
+              this.results[relay] = result
+              resolve()
+            })
+            .catch( () => { 
+              resolve()
+            }) //wait, what? TODO: fix
+          })
+          promises.push(promise)
+        }
+        await Promise.all(promises)
+        this.results = Object.assign({}, resultsChunk, this.results)
+        Object.keys(resultsChunk).forEach( relay => { 
+          this.setCache(resultsChunk[relay])
+        })
+      }
+      this.completeAll()
+    } 
   },
 
   completeAll: function(single){
@@ -225,9 +228,9 @@ const localMethods = {
           // connectTimeout: this.getDynamicTimeout,
           // readTimeout: this.getDynamicTimeout,
           // writeTimeout: this.getDynamicTimeout,
-          connectTimeout: 5*1000,
-          readTimeout: 5*1000,
-          writeTimeout: 5*1000,
+          connectTimeout: 15*1000,
+          readTimeout: 15*1000,
+          writeTimeout: 15*1000,
         }
       
       // if(this.isSingle)
@@ -249,9 +252,12 @@ const localMethods = {
         .on('complete', (instance) => {
           //console.log('completed?', instance.result)
           instance.result.aggregate = this.getAggregate(instance.result)
-          this.closeRelay(instance.relay)
           instance.result.log = instance.log
+          this.closeRelay(instance.relay)
           resolve(instance.result)
+        })
+        .on('error', () => {
+          resolve()
         })
       
       this.inspectors.push($inspector)

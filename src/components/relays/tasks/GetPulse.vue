@@ -31,9 +31,11 @@ import { relays } from '../../../../relays.yaml'
 import { RelayPool } from 'nostr'
 
 const localMethods = {
-  invalidate(force){
+  invalidatePulse(force){
+    console.log('invalidate pulse')
     if( (!this.isExpired(this.slug, 5*60*1000) && !force) ) 
       return
+    
     // const pool = new RelayPool( relays )
     if(this.isSingle)
       this.jobPulses()
@@ -45,6 +47,8 @@ const localMethods = {
       )
   },
   async jobPulses(){
+    if(!this.store.status.historyNode)
+      return this.store.tasks.completeJob(this.slug)
     const subid = crypto.randomBytes(40).toString('hex')
     const pulsesByEvent = new Object()
     let total = 48,
@@ -176,7 +180,8 @@ export default defineComponent({
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
-    this.invalidateTask()
+    this.invalidatePulse()
+    // this.invalidateTask()
     // this.interval = setInterval( this.invalidateTask, 1000 )
   },
   updated(){

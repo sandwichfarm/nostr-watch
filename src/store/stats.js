@@ -27,7 +27,10 @@ export const useStatStore = defineStore(
         this.history = payload 
       },
       set(type, payload){ 
-        Object.keys(payload).forEach( key => this[type][key] = Array.from(payload[key] ) )
+        if( !this?.[type] )
+          return console.warn(type, 'does not exist')
+        // Object.keys(payload).forEach( key => this[type][key] = Array.from(payload[key] ) )
+        this[type] = payload
       },
       setHeartbeats(payload){
         this.pulses = payload

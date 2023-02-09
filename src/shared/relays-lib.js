@@ -16,15 +16,10 @@ export default {
     if(parseInt(this.store.filters?.count?.[ref]?.[key]) === 0)
       return
     const rule = this.store.filters.getRule(ref, key)
-    //console.log('rule', rule)
     if(rule?.length) {
-      //console.log('filters: removing', rule)
       this.store.filters.removeRule(ref, key, unique, reset, always)
-      //console.log('filters: effect', this.store.filters.rules)
     } else {
-      //console.log('filters: adding', rule)
       this.store.filters.addRule(ref, key, unique, reset, always)
-      //console.log('filters: effect', this.store.filters.rules)
     }
     this.refreshCounts()
   },
@@ -125,7 +120,7 @@ export default {
     )
   },
   queueJob: function(id, fn, unique){
-    console.log('queuing job', id, fn, unique)
+    // console.log('queuing job', id, fn, unique)
     this.store.tasks.addJob({
       id: id,
       handler: fn,

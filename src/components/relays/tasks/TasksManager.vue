@@ -22,8 +22,7 @@
     <CheckNip11
       v-bind:resultsProp="results"
       v-if="
-      store.layout.getActive('relays/find') === 'nips'
-      ||(
+        (
           (
             !store.prefs.clientSideProcessing 
             ||( !store.prefs.clientSideProcessing 
@@ -143,13 +142,13 @@ export default defineComponent({
       this.timeout = setTimeout(this.tick, 1000)
     },
     async processJob(){
-      if(!(this.store.tasks.active?.handler instanceof Function))
-        return 
-      console.log('processJob()', this.store.tasks.active.id, 'type', typeof this.store.tasks.active.handler, 'is async', this.store.tasks.active.handler instanceof this.AsyncFunction)
-      if(this.store.tasks.active.handler instanceof this.AsyncFunction)
-        await this.store.tasks.active.handler()
-      else 
-        this.store.tasks.active.handler()
+      // if(!(this.store.tasks.active?.handler instanceof Function))
+      //   return 
+      // console.log('processJob()', this.store.tasks.active.id, 'type', typeof this.store.tasks.active.handler, 'is async', this.store.tasks.active.handler instanceof this.AsyncFunction)
+      // if(this.store.tasks.active.handler instanceof this.AsyncFunction)
+      //   await this.store.tasks.active.handler()
+      // else 
+      //   this.store.tasks.active.handler()
     }
   },
   computed: Object.assign(SharedComputed, {})

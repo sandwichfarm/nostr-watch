@@ -22,18 +22,23 @@ import { getVisitorGeo, getClosest } from '@/utils'
 
 const localMethods = {
   invalidate(force){
-    // if( ( this.store.tasks.getLastUpdate('relays/check') || ( this.store.tasks.processed?.['relays/check'] && this.store.tasks.processed?.['relays/check'].length ) ) && !force ) 
-    //   return
     if( !this.isExpired(this.slug, 6*60*60*1000) && !force ) 
       return
 
     this.queueJob(
       this.slug, 
       async () => {
-        const visitorGeo = await getVisitorGeo()
-        this.store.user.ip = visitorGeo.query
-        this.store.prefs.region = getClosest(visitorGeo)
-        this.store.tasks.completeJob(this.slug)
+        try {
+          const visitorGeo = await getVisitorGeo()
+          this.store.user.ip = visitorGeo.query
+          this.store.prefs.region = getClosest(visitorGeo)
+          this.store.tasks.completeJob(this.slug)
+        }
+        catch(e) { //brave 
+          this.store.prefs.clientSideProcessing = true
+          this.store.prefs.disableGeoDetection = true
+          location.reload() 
+        }
       },
       true
     )

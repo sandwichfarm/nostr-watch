@@ -22,7 +22,8 @@ export const usePrefsStore = defineStore('prefs', {
     showMaps: true,
     discoverRelays: true,
     checkNip11: true,
-    CheckNip11Frequency: 24*60*60*1000
+    CheckNip11Frequency: 24*60*60*1000,
+    disableGeoDetection: false
   }),
   getters: {
     doRefresh: (state) => state.refresh,

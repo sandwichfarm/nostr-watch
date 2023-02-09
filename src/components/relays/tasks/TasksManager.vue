@@ -9,7 +9,7 @@
     <GetRelays />
 
     <DetectRegion 
-      v-if="store.prefs.autoDetectRegion" />
+      v-if="store.prefs.autoDetectRegion && !store.prefs.disableGeoDetection" />
 
     <StatusCheckHistoryNode />
 

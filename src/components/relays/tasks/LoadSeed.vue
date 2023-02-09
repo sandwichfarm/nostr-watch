@@ -3,10 +3,10 @@
     v-if="this.store.tasks.getActiveSlug === slug"
     class="text-inherit">
   <span class="text-inherit">
-    <span v-if="!store.tasks.isProcessing(this.slug) && !isSingle" class="hidden text-inherit">
+    <span v-if="!store.tasks.isTaskActive(this.slug) && !isSingle" class="hidden text-inherit">
       checked {{ sinceLast }} ago
     </span>
-    <span v-if="store.tasks.isProcessing(this.slug) && !isSingle" class="italic text-inherit ml-2 inline-block">
+    <span v-if="store.tasks.isTaskActive(this.slug) && !isSingle" class="italic text-inherit ml-2 inline-block">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -14,8 +14,8 @@
       {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} loaded
     </span>
   </span>
-  <span class="text-inherit mr-2 ml-2 hidden lg:inline" v-if="!store.tasks.isProcessing(this.slug)">-</span>
-  <span class="text-inherit mr-2 ml-2" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+  <span class="text-inherit mr-2 ml-2 hidden lg:inline" v-if="!store.tasks.isTaskActive(this.slug)">-</span>
+  <span class="text-inherit mr-2 ml-2" v-if="store.prefs.refresh && !store.tasks.isTaskActive(this.slug)"> 
     next check in {{ untilNext }}
   </span>
   <!--<span v-if="isSingle">Loading {{ relay }} from history node...</span>
@@ -24,7 +24,7 @@
   <span 
     v-if="(!store.tasks.isActive || this.store.tasks.getActiveSlug === slug) && !isSingle">
     <span 
-      v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)" 
+      v-if="store.prefs.refresh && !store.tasks.isTaskActive(this.slug)" 
       class="text-white lg:text-sm ml-2 text-xs mt-1.5 inline-block mr-10" >
       Next check in: {{ untilNext }}
     </span> -->
@@ -148,7 +148,7 @@ const localMethods = {
       this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
-      if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
+      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
         this.invalidate()
     }, 15*60*1000)
   },
@@ -218,7 +218,7 @@ export default defineComponent({
       this.invalidate(true, this.relayFromUrl)
     }  
     else {
-      if(this.store.tasks.isProcessing(this.slug))
+      if(this.store.tasks.isTaskActive(this.slug))
         this.invalidate(true)
       else
         this.invalidate()

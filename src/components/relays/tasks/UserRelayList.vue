@@ -86,11 +86,8 @@ export default defineComponent({
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
-    //console.log('task', this.slug, 'is processing:', this.store.tasks.isProcessing(this.slug))
-    if(this.store.tasks.isProcessing(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate(this.force)
+    //console.log('task', this.slug, 'is processing:', this.store.tasks.isTaskActive(this.slug))
+    this.invalidateTask()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {

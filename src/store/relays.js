@@ -18,7 +18,8 @@ export const useRelaysStore = defineStore('relays', {
     aggregatesAreSet: false,
     cached: new Object(),
     canonicals: new Object(),
-    filters: new Object()
+    filters: new Object(),
+    dns: new Object()
   }),
   getters: {
     getAll: (state) => state.urls,

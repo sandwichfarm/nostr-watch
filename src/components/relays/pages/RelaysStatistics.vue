@@ -5,9 +5,9 @@
   <div id="wrapper" 
     class="mx-auto max-w-7xl p-8 lg:p-32 mt-8 bg-black/5 dark:bg-black/20 rounded-lg" 
     v-if="
-      (store.tasks.isProcessing('relays/check') && !store.tasks.getLastUpdate('relays/check'))
+      (store.tasks.isTaskActive('relays/check') && !store.tasks.getLastUpdate('relays/check'))
       ||
-      (store.tasks.isProcessing('relays/seed') && !store.tasks.getLastUpdate('relays/seed'))
+      (store.tasks.isTaskActive('relays/seed') && !store.tasks.getLastUpdate('relays/seed'))
     ">
     <span class="text-3xl">
       Still compiling data, this can take 3-10 minutes if this is your first visit to nostr.watch

@@ -9,7 +9,7 @@
   />
 
   <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl text-center content-center">
-      <div v-if="store.tasks.isProcessing('relays/single') && !result" class="data-card flex bg-slate-100 dark:bg-black/20 dark:text-white/50 mt-12 shadow py-8 px-3">
+      <div v-if="store.tasks.isTaskActive('relays/single') && !result" class="data-card flex bg-slate-100 dark:bg-black/20 dark:text-white/50 mt-12 shadow py-8 px-3">
         <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
           <span class="block lg:text-lg"><strong>Data has not yet populated and is currently being processed.</strong> Depending on the availability of of the <strong>{{ relay }}</strong>, this may or may not be populated shortly.</span>
         </div>
@@ -666,7 +666,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'SingleRelay',
+  name: 'RelaySingle',
   
   components: {
     MapSingle,

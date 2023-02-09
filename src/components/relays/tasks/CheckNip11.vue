@@ -83,7 +83,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'StatusCheckHistoryNode',
+  name: 'CheckNip11',
   components: {},
   data() {
     return {
@@ -113,10 +113,11 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   async mounted(){
-    if(this.store.tasks.isProcessing(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
+    // if(this.store.tasks.isTaskActive(this.slug))
+    //   this.invalidate(true)
+    // else
+    //   this.invalidate()
+    this.invalidateTask()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {

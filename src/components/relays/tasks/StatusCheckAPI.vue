@@ -82,12 +82,9 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    //console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    //console.log('is processing', this.store.tasks.isTaskActive(this.slug))
 
-    if(this.store.tasks.isProcessing(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
+    this.invalidateTask()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {

@@ -45,8 +45,7 @@ const localMethods = {
               response.json()
                 .then( json => {
                   this.store.relays.urlsOnline = json
-                  this.store.relays.addRelays(json)
-                  this.finish(json, true)
+                  this.finish([...json, ...relays], true)
                 })
                 .catch( () => {
                   this.finish(relays, true)
@@ -76,7 +75,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'StatusCheckHistoryNode',
+  name: 'GetRelays',
   components: {},
   data() {
     return {
@@ -103,14 +102,13 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    //console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    //console.log('is processing', this.store.tasks.isTaskActive(this.slug))
 
-    if(this.store.tasks.isProcessing(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
-
-    setTimeout( ()=>{}, 1)
+    // if(this.store.tasks.isTaskActive(this.slug))
+    //   this.invalidate(true)
+    // else
+    //   this.invalidate()
+    this.invalidate()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {

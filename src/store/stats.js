@@ -63,13 +63,17 @@ export const useStatStore = defineStore(
         })
 
         //console.log('new pulses', this.pulses)
-      }
-        
-    },
+      },
+      persistedState: {
+        excludePaths: ['nips', 'software', 'countries', 'continents']
+      },
+      share: {
+        // An array of fields that the plugin will ignore.
+        omit: ['nips', 'software', 'countries', 'continents'],
+        // Override global config for this store.
+        enable: true,
+      },
+    }
   },
-  // {
-  //   persistedState: {
-  //     excludePaths: ['pulses']
-  //   }
-  // }
+  
 )

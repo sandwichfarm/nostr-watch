@@ -147,10 +147,7 @@ export default defineComponent({
       this.invalidate(true, this.relayFromUrl)
     }  
     else {
-      if(this.store.tasks.isTaskActive(this.slug))
-        this.invalidate(true)
-      else
-        this.invalidate()
+      this.invalidateTask()
     }
 
     if(this.store.prefs.clientSideProcessing)

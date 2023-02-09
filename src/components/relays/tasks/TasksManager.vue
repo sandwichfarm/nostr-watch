@@ -5,6 +5,7 @@
     <!-- <TemplateTask /> -->
     <!-- <StatusCheckAPI /> -->
 
+
     <GetRelays />
 
     <DetectRegion 
@@ -37,7 +38,9 @@
       v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing || isSingle" />
 
-    <CheckGeo />
+    <CheckDNS></CheckDNS>
+    
+    <CheckGeo></CheckGeo>
 
     <HistoryTask
       :resultsProp="results" />
@@ -68,6 +71,7 @@ import StatusCheckHistoryNode from './StatusCheckHistoryNode.vue'
 import GetRelays from './GetRelays.vue'
 import CheckNip11 from './CheckNip11.vue'
 import HistoryTask from './HistoryTask.vue'
+import CheckDNS from './CheckDNS.vue'
 import CheckGeo from './CheckGeo.vue'
 import GetTopics from './GetTopics.vue'
 // import TemplateTask from './TemplateTask.vue'
@@ -88,6 +92,7 @@ export default defineComponent({
     GetRelays,
     CheckNip11,
     HistoryTask,
+    CheckDNS,
     CheckGeo,
     GetTopics,
     // TemplateTask,
@@ -112,8 +117,7 @@ export default defineComponent({
     // this.store.prefs.clientSideProcessing = false
   },
   mounted(){
-    
-    this.currentTask = this.store.tasks.currentTask
+    this.currentTask = this.store.tasks.getActiveSlug
     this.processJob()
 
     this.timeout = setTimeout(this.tick, 2000)
@@ -131,15 +135,17 @@ export default defineComponent({
   },
   methods: {
     async tick(){
-      if(this.currentTask === this.store.tasks.currentTask)
+      console.log('pending', this.store.tasks.pending)
+      if(this.currentTask === this.store.tasks.getActiveSlug)
         return 
-      this.currentTask = this.store.tasks.currentTask
+      this.currentTask = this.store.tasks.getActiveSlug
       await this.processJob()
       this.timeout = setTimeout(this.tick, 1000)
     },
     async processJob(){
-      if(!this.store.tasks.active?.handler)
+      if(!(this.store.tasks.active?.handler instanceof Function))
         return 
+      console.log('processJob()', this.store.tasks.active.id, 'type', typeof this.store.tasks.active.handler, 'is async', this.store.tasks.active.handler instanceof this.AsyncFunction)
       if(this.store.tasks.active.handler instanceof this.AsyncFunction)
         await this.store.tasks.active.handler()
       else 

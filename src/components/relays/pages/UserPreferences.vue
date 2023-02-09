@@ -346,7 +346,7 @@ import { Switch } from '@headlessui/vue'
 const localMethods = {}
 
 export default defineComponent({
-  name: 'HomePage',
+  name: 'UserPreferences',
 
   components: {
     Switch

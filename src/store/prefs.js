@@ -20,7 +20,7 @@ export const usePrefsStore = defineStore('prefs', {
     region: 'eu-west',
     ignoreTopics: 'canonical,nostr',
     showMaps: true,
-    discoverRelays: false,
+    discoverRelays: true,
     checkNip11: true,
     CheckNip11Frequency: 24*60*60*1000
   }),

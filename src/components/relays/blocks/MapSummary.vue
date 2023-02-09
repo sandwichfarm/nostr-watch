@@ -127,7 +127,7 @@ export default defineComponent({
     setTimeout( () => {
       this.$refs.map.leafletObject.whenReady(async () => {
         await this.$refs.map.leafletObject
-          .flyTo(
+          .setView(
             this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482], 
             this.store.layout.mapIsExpanded ? 4 : 2
           )
@@ -261,10 +261,11 @@ export default defineComponent({
         
 
       // // this.$refs.map.leafletObject.setZoom();
-      // this.$refs.map.leafletObject.setView(
-      //   this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482],
-      //   this.store.layout.mapIsExpanded ? 4 : 2
-      // )
+      // this.$refs.map.leafletObject
+      //       .setView(
+      //         this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482],
+      //         this.store.layout.mapIsExpanded ? 4 : 2
+      //       )
 
       await this.$refs.map.leafletObject
             .flyTo(

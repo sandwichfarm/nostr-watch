@@ -72,11 +72,11 @@ export const useStatStore = defineStore(
       },
     },
     persistedState: {
-      excludePaths: ['nips', 'software', 'countries', 'continents']
+      excludePaths: ['nips', 'software', 'countries', 'continents', 'pulses']
     },
     share: {
       // An array of fields that the plugin will ignore.
-      omit: ['nips', 'software', 'countries', 'continents'],
+      omit: ['nips', 'software', 'countries', 'continents', 'pulses'],
       // Override global config for this store.
       enable: true,
     },

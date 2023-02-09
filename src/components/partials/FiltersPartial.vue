@@ -41,8 +41,8 @@
       </div>
     </div>
 
-    <div v-if="store.tasks.isTaskActive('relays/check') || store.tasks.isTaskActive('relays/seed')" class="italic bg-black/5 text-black/80 dark:bg-white/5 dark:text-white/50 py-2 px-3">
-      <em>filters are disabled during updates</em>
+    <div v-if="store.filters.enabled && (store.tasks.isTaskActive('relays/check') || store.tasks.isTaskActive('relays/seed'))" class="italic bg-black/5 text-black/80 dark:bg-white/5 dark:text-white/50 py-2 px-3">
+      <em>filters are hidden during updates</em>
     </div>
 
     <div v-if="store.filters.enabled && (!store.tasks.isTaskActive('relays/check') && !store.tasks.isTaskActive('relays/seed'))" class="py-2 px-3 dark:bg-black/10">

@@ -59,8 +59,8 @@ const localMethods = {
       true
     )
   },
-  finish(relays, clear){
-    this.store.relays.addRelays(relays)
+  finish(_relays, clear){
+    this.store.relays.addRelays(_relays)
     if(clear)
       clearTimeout(this.timeout)
     

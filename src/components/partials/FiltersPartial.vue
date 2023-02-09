@@ -45,7 +45,7 @@
       <em>filters are disabled during updates</em>
     </div>
 
-    <div v-if="store.filters.enabled && (!store.tasks.isTaskActive('relays/check') && !store.tasks.isTaskActive('relays/seed'))" class="dark:bg-black/10">
+    <div v-if="store.filters.enabled && (!store.tasks.isTaskActive('relays/check') && !store.tasks.isTaskActive('relays/seed'))" class="py-2 px-3 dark:bg-black/10">
       <!-- valid -->
       <div class="mb-4 block flex-none" v-if="this.store.tasks.lastUpdate?.['relays/nip11']">
         <span  

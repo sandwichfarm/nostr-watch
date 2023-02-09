@@ -301,4 +301,4 @@ relays:
   - wss://paid.spore.ws
   - wss://nostr-01.dorafactory.org
   - wss://relay.honk.pw
-  
+  ws://127.0.0.1:6969

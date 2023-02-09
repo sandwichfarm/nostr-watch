@@ -3,8 +3,8 @@
       v-if="(!store.tasks.isActive || store.tasks.getActiveSlug === this.slug) && !this.isSingle"
       class="text-inherit">
     <span class="text-inherit">
-      <span v-if="!store.tasks.isProcessing(this.slug)" class="hidden lg:inline mr-2">Checked {{ sinceLast }} ago</span>
-      <span v-if="store.tasks.isProcessing(this.slug)" class="italic text-inherit ml-2 inline-block">
+      <span v-if="!store.tasks.isTaskActive(this.slug)" class="hidden lg:inline mr-2">Checked {{ sinceLast }} ago</span>
+      <span v-if="store.tasks.isTaskActive(this.slug)" class="italic text-inherit ml-2 inline-block">
         <svg class="-mt-1.5 animate-spin mr-1 h-4 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -12,14 +12,14 @@
         {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Checked
       </span>
     </span>
-    <span class="text-inherit hidden lg:inline mr-1" v-if="!store.tasks.isProcessing(this.slug)">-</span>
-    <span class="text-inherit mr-2" v-if="store.prefs.refresh && !store.tasks.isProcessing(this.slug)"> 
+    <span class="text-inherit hidden lg:inline mr-1" v-if="!store.tasks.isTaskActive(this.slug)">-</span>
+    <span class="text-inherit mr-2" v-if="store.prefs.refresh && !store.tasks.isTaskActive(this.slug)"> 
       next check in: {{ untilNext }}
     </span>
     <button 
-      v-if="!store.tasks.isProcessing(this.slug)"
+      v-if="!store.tasks.isTaskActive(this.slug)"
       class=" text-xs -mt-1.5 my-1 py-1 px-3 rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
-      :disabled='store.tasks.isProcessing(this.slug)' 
+      :disabled='store.tasks.isTaskActive(this.slug)' 
       @click="refreshNow()">  
         check{{ relay ? ` ${relay}` : "" }} Now
     </button>
@@ -94,7 +94,7 @@ const localMethods = {
       //   this.store.tasks.finishProcessing(this.slug)
       // }
 
-      if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
+      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
         this.invalidate()
         
     }, 1000)
@@ -211,6 +211,8 @@ const localMethods = {
   },
 
   check: async function(relay){
+    if(this.stop)
+      return
     return new Promise( (resolve) => {
       const opts = {
           checkRead: true, 
@@ -223,7 +225,6 @@ const localMethods = {
           // connectTimeout: this.getDynamicTimeout,
           // readTimeout: this.getDynamicTimeout,
           // writeTimeout: this.getDynamicTimeout,
-
           connectTimeout: 5*1000,
           readTimeout: 5*1000,
           writeTimeout: 5*1000,
@@ -235,9 +236,9 @@ const localMethods = {
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
 
-      let socket = new Inspector(relay, opts)
+      const $inspector = new Inspector(relay, opts)
 
-      socket
+      $inspector
         .on('open', () => {          
         })
         .on('complete', (instance) => {
@@ -247,6 +248,8 @@ const localMethods = {
           instance.result.log = instance.log
           resolve(instance.result)
         })
+      
+      this.inspectors.push($inspector)
     })
   },
 
@@ -301,7 +304,9 @@ export default defineComponent({
       averageLatency: 200,
       pageOpen: 0,
       slug: 'relays/check',
-      latencies: []
+      latencies: [],
+      inspectors: [],
+      stop: false
       // history: null
     }
   },
@@ -313,6 +318,8 @@ export default defineComponent({
 
   unmounted(){
     clearInterval(this.interval)
+    this.inspectors.forEach( $inspector => $inspector.close())
+    this.stop = true
   },
 
   beforeMount(){
@@ -334,10 +341,7 @@ export default defineComponent({
       this.invalidate(true, this.relayFromUrl)
       // this.runLatencyCheck()
     } else {
-      if(this.store.tasks.isProcessing(this.slug))
-        this.invalidate(true)
-      else
-        this.invalidate()
+      this.invalidateTask()
     }
     if(this.store.prefs.clientSideProcessing && !this.isSingle)
       this.setRefreshInterval()

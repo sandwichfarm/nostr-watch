@@ -45,7 +45,7 @@ const localMethods = {
       if(!this.store.prefs.autoDetectRegion )
         return 
 
-      if(!this.store.tasks.isProcessing(this.slug) && !this.isSingle)
+      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
         this.invalidate()
     }, 1000)
   },
@@ -82,17 +82,16 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    //console.log('is processing', this.store.tasks.isProcessing(this.slug))
+    //console.log('is processing', this.store.tasks.isTaskActive(this.slug))
 
-    if(this.store.tasks.isProcessing(this.slug))
-        this.invalidate(true)
-      else
-        this.invalidate()
+    // if(this.store.tasks.isTaskActive(this.slug))
+    //     this.invalidate(true)
+    //   else
+    //     this.invalidate()
+    this.invalidateTask()
 
     if(!this.store.prefs.autoDetectRegion)
       this.setRefreshInterval()
-    
-    setTimeout( ()=>{}, 1)
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),

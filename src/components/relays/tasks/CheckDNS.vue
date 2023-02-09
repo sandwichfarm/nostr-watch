@@ -8,15 +8,11 @@
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      getting geo {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }}
+      checking dns {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }}
     </span>
   </span>
   </span> 
 </template>
-
-<style scoped>
-
-</style>
 
 <script>
 import { defineComponent, toRefs } from 'vue'
@@ -26,55 +22,63 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { getGeo } from '@/utils'
+import doh from 'dohjs'
 
-import { geo } from '../../../../cache/geo.yaml'
-
-// import { Inspector } from 'nostr-relay-inspector'
-
-const LocalMethods = {
-  invalidate(force){ 
+const localMethods = {
+  invalidateDNS(force){  
+    console.log('invalidating', this.slug)
 
     if( !this.isExpired(this.slug, 24*60*60*1000) && !force )
       return
     
+    console.log('invalidating DNS', 'expired', this.slug, this.jobDNS)
+
     this.queueJob(
       this.slug, 
-      this.jobGeo,
+      this.jobDNS,
       true
     )
-
   },
-  async jobGeo(){
-    if( !process.env.VUE_APP_IP_API_KEY )
-      return this.store.relays.geo = geo
-    console.log('geo', 'inside job')
+  async checkDNS(relay){
+    const result = {}
+    result.ipv4 = []
+    result.ipv6 = []
+    const ipv4 = await this.resolver.query(new URL(relay).hostname, 'A')
+    const ipv6 = await this.resolver.query(new URL(relay).hostname, 'AAAA')
+    if(ipv4?.answers?.length)
+      ipv4.answers.forEach(ans => result.ipv4.push(ans.data)) //change to map
+    if(ipv6?.answers?.length)
+      ipv6.answers.forEach(ans => result.ipv6.push(ans.data))
+    return result
+  },
+  async jobDNS(){
+    // alert('dns')
     this.relays = this.store.relays.getAll
     const relays = this.relays.filter( relay => !this.store.tasks.processed[this.slug]?.includes(relay))
     const relayChunks = this.chunk(100, relays)
     //console.log('chunks', )
     let promises = [],
-        geoAcc = {}
+        dnsAcc = {}
     for(let c=0;c<relayChunks.length;c++) {
-      console.log('geo', 'inside chunk loopp', c)
       const relays = relayChunks[c]
       relays.forEach( async (relay) => {
         const promise = new Promise( resolve => {
-          getGeo(relay).then( geo => {
-            if(!geo?.lat)
-              return resolve()
-            geoAcc[relay] = geo
-            // console.log('geo for', relay)
-            this.store.tasks.addProcessed(this.slug, relay)
-            resolve()
-          })
+          dnsAcc[relay] = {}
+          this.checkDNS(relay)
+            .then( (dns) => {
+              dnsAcc[relay] = dns
+              // console.log('dns', dnsAcc)
+              this.store.tasks.addProcessed(this.slug, relay)
+              resolve()
+            })
+            .catch( err => console.error(err) )
         })
         promises.push(promise)
       })
       await Promise.all(promises)
-      this.store.relays.geo = Object.assign(this.store.relays.geo, geoAcc)
+      this.store.relays.dns = Object.assign(this.store.relays.dns, dnsAcc)
       promises = []
-      geoAcc = {}
+      dnsAcc = {} 
     }
     this.store.tasks.completeJob(this.slug)
   },
@@ -87,13 +91,14 @@ const LocalMethods = {
 }
 
 export default defineComponent({
-  name: 'CheckGeo',
+  name: 'CheckDNS',
   components: {},
   data() {
     return {
-      slug: 'relays/geo',
+      slug: 'relays/dns',
       relays: this.store.relays.getAll,
-      interval: null
+      interval: null,
+      resolver: null
     }
   },
   setup(props){
@@ -110,15 +115,16 @@ export default defineComponent({
   },
   beforeMount(){},
   mounted(){  
-    // if(this.store.tasks.isTaskActive(this.slug))
-    //   this.invalidate(true)
-    // else
-    //   this.invalidate()
-    this.invalidateTask()
+    this.resolver = new doh.DohResolver('https://1.1.1.1/dns-query')
+    if(this.store.tasks.isTaskActive(this.slug))
+      this.invalidateDNS(true)
+    else
+      this.invalidateDNS()
+    // this.invalidateTask()
     // this.interval = setInterval( this.invalidateTask, 1000 )
   },
   updated(){},
-  methods: Object.assign(RelayMethods, LocalMethods),
+  methods: Object.assign(RelayMethods, localMethods),
   computed: Object.assign(SharedComputed, {
     getDynamicTimeout: function(){
       return this.averageLatency*this.relays.length

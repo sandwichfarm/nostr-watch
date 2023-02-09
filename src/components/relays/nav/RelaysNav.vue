@@ -9,14 +9,16 @@
     <div class="lg:flex lg:h-8 mx-auto max-w-7xl h-8">
       <div class="flex md:w-0 lg:w-32 lg:px-8 lg:ml-8 sm:hidden sm:w-0 ">&nbsp;</div>
       <div class="lg:flex lg:px-0">
-        <div class="lg:ml-48 lg:flex lg:space-x-2">
+        <div class="lg:ml-48 lg:flex lg:space-x-2" v-if="!pendingFirstCompletion">
           <router-link 
             :to="{name: 'relaysFind'}" 
             class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
             Browse
           </router-link>
           <!-- <router-link to="/relays/map" class="inline-flex items-center mx-1 text-sm font-medium text-white">Map</router-link> -->
+
           <router-link 
+            
             :to="{name: 'relaysStats'}" 
             class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
             Statistics

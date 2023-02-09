@@ -5,7 +5,9 @@ import { relays } from '../../relays.yaml'
 
 export default {
   invalidateTask(){
-    if(this.store.tasks.isProcessing(this.slug))
+    if(!this.slug)
+      console.warn('job slug is:', this.slug)
+    if(this.store.tasks.isTaskActive(this.slug))
       this.invalidate(true)
     else
       this.invalidate()
@@ -123,6 +125,7 @@ export default {
     )
   },
   queueJob: function(id, fn, unique){
+    console.log('queuing job', id, fn, unique)
     this.store.tasks.addJob({
       id: id,
       handler: fn,

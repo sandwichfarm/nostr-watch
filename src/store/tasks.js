@@ -7,9 +7,7 @@ export const useTaskStore = defineStore(
     lastUpdate: new Object(),
 
     //processing cache
-    processing: new Object(),
     processed: new Object(),
-    currentTask: new String(),
 
     //queue
     pending: new Array(),
@@ -25,9 +23,8 @@ export const useTaskStore = defineStore(
         state.processed[key] = new Array()
       return Array.from(new Set(state.processed[key]))
     },
-    isProcessing: (state) => (key) => state.processing[key],
-    isProcessed: (state) => (key, relay) => state.getProcessed(key).includes(relay),
-    isAnyProcessing: (state) => Object.keys(state.processing).filter( key => state.processing[key] ).length ? true : false,
+
+    isProcessed: (state) => (slug, key) => state.getProcessed(slug).includes(key),
 
     //queue/lists
     getPending: (state) => state.pending,
@@ -38,9 +35,15 @@ export const useTaskStore = defineStore(
     //queue/states
     isTaskActive: state => slug => state.getActiveSlug === slug,
     isTaskPending: state => slug => {
+      console.log('is pending?', slug, 'is active?', this?.active?.id === slug, 'is pending?', state.pending?.filter( job => job.id === slug )?.length)
       if(this?.active?.id === slug)
         return true
       if(state.pending?.filter( job => job.id === slug )?.length) 
+        return true
+      return false
+    },
+    isTaskCompleted: state => slug => {
+      if(state.completed?.filter( job => job.id === slug )?.length )
         return true
     },
     isActive: (state) => Object.keys( state.active ).length > 0,
@@ -55,7 +58,7 @@ export const useTaskStore = defineStore(
     },
     //queue
     addJob(job){
-      //console.log('add job', job.id, 'is pending:', this.isTaskPending(job.id), 'active:', this?.active?.id)
+      console.log('add job', job.id, 'is pending:', this.isTaskPending(job.id), 'active:', this?.active?.id)
       if(job?.unique && this.isTaskPending(job.id))
         return
       this.pending.push(job)
@@ -63,26 +66,22 @@ export const useTaskStore = defineStore(
         this.startNextJob()
     },
     startNextJob(){
-      //console.log('starting next job')
+      console.log('starting next job', this.pending?.[0]?.id)
       if( this.arePending ) {
         this.active = this.pending[0]
+        console.log('started', this.active.id)
         this.pending.shift()
-        this.startProcessing(this.active)
-        //console.log('start next job', this.active)
       }
       else {
-        //console.log('jobs idle')
         this.active = {}
       }
     },
     completeJob(slug){
-      //console.log('complete job', slug, this.active.id !== slug)
-      if(this.active.id !== slug) {
-        //console.log(slug, 'is not active!', this.active.id, '')
+      console.log('complete job', slug, this.active.id !== slug)
+      if(this.active.id !== slug)
         return
-      }
       this.updateNow(this.active.id)
-      this.finishProcessing(this.active.id)
+      this.processed[slug] = new Array()
       this.completed.push(this.active)
       setTimeout( this.startNextJob, 50)
     },
@@ -100,22 +99,11 @@ export const useTaskStore = defineStore(
       this.pending.splice( index, 1 )
     },
 
-    //legacy
-    startProcessing(job) { 
-      // this.addJob(job)
-      this.processing[job.id] = true 
-      this.currentTask = job.id
-    },
-    finishProcessing(key) { 
-      this.processed[key] = new Array()
-      this.processing[key] = false 
-      this.currentTask = null
-    },
-    addProcessed(key, relay){
-      if( !(this.processed[key] instanceof Array) )
-        this.processed[key] = new Array()
-      if(!this.processed[key].includes(relay))
-        this.processed[key].push(relay)
+    addProcessed(slug, key){
+      if( !(this.processed[slug] instanceof Array) )
+        this.processed[slug] = new Array()
+      if(!this.processed[slug].includes(key))
+        this.processed[slug].push(key)
     },
     
   },

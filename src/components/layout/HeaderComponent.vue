@@ -17,7 +17,7 @@
         </span>
         <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
           <div class="hidden sm:ml-6 md:block">
-            <div class="flex space-x-4">
+            <div class="flex space-x-4" v-if="!pendingFirstCompletion">
               
             <router-link 
               to="/relays"
@@ -177,6 +177,8 @@ import { defineComponent, defineAsyncComponent } from 'vue'
 import { setupStore } from '@/store'
 import UserLib from '@/shared/user-lib.js'
 
+import SharedComputed from '@/shared/computed.js'
+
 const StatusHistoryNode = defineAsyncComponent(() =>
     import("@/components/partials/StatusHistoryNode.vue" /* webpackChunkName: "StatusHistoryNode" */)
 );
@@ -231,8 +233,7 @@ export default defineComponent({
     // const activeId = this.store.layout.getActiveTab
     this.store.layout.deactivateTab(this.$tabId)
   },
-  computed: {
-  },
+  computed: SharedComputed,
   methods: UserLib
 });
 </script>

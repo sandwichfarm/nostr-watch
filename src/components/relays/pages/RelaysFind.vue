@@ -116,7 +116,7 @@ const RelaysResultTable = defineAsyncComponent(() =>
 const localMethods = {}
 
 export default defineComponent({
-  name: 'HomePage',
+  name: 'RelaysFind',
 
   components: {
     RelaysNav,

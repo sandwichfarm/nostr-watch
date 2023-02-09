@@ -50,7 +50,7 @@ export default defineComponent({
   },
 
   async mounted(){
-    this.invalidate()
+    this.invalidateTask()
   },
 
   unmounted(){

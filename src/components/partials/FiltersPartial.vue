@@ -201,7 +201,7 @@
     },
     mounted(){
       this.refreshCounts()
-      setInterval( this.refreshCounts, 1000 )
+      // setInterval( this.refreshCounts, 2000 )
     },
     updated(){
       

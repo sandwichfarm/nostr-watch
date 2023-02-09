@@ -147,12 +147,12 @@
                       <!-- <td class="w-24 latency text-center">
                         <div class="px-4 py-5 sm:px-6 flex text-sm font-bold">
                           <span 
-                            v-for="heartbeat in this.store.stats.getHeartbeat(relay)"
-                            :key="heartbeat[0]"
+                            v-for="pulse in this.store.stats.getPulse(relay)"
+                            :key="pulse[0]"
                             class="mr-0 w-0.5 h-5 flex-1"
                             :class="{
-                              'bg-red-700': !heartbeat.latency,
-                              'bg-green-500': heartbeat.latency
+                              'bg-red-700': !pulse.latency,
+                              'bg-green-500': pulse.latency
                             }">
                             </span>
                         </div>
@@ -419,15 +419,15 @@
       },
       // getUptimePerc(){
       //   return (relay) => {
-      //     const pulses = this.store.stats.getHeartbeat(relay)
+      //     const pulses = this.store.stats.getPulse(relay)
       //     if(!pulses || !Object.keys(pulses).length )
       //       return ""
-      //     const totalHeartbeats = Object.keys(pulses).length 
+      //     const totalPulses = Object.keys(pulses).length 
       //     const totalOnline = Object.entries(pulses).reduce(
       //         (acc, value) => value[1].latency ? acc+1 : acc,
       //         0
       //     );
-      //     const perc = Math.floor((totalOnline/totalHeartbeats)*100)
+      //     const perc = Math.floor((totalOnline/totalPulses)*100)
       //     return `${perc}%`
       //   }
       // },

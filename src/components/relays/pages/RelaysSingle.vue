@@ -100,21 +100,21 @@
           </div>
           <div class="px-0 py-5 sm:px-0 flex">
             <!-- <span 
-              v-for="heartbeat in this.pulses"
-              :key="heartbeat.date"
+              v-for="pulse in this.pulses"
+              :key="pulse.date"
               class=" mr-1 flex-1 relative"
-              :class="getUptimeTickClass(heartbeat)">
-                <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
-                <span v-if="!heartbeat.latency">&nbsp;</span>
+              :class="getUptimeTickClass(pulse)">
+                <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="pulse.latency">{{ pulse.latency }}ms</span>
+                <span v-if="!pulse.latency">&nbsp;</span>
               </span> -->
 
             <span 
-              v-for="heartbeat in this.pulses"
-              :key="heartbeat.date"
+              v-for="pulse in this.pulses"
+              :key="pulse.date"
               class="mr-1 flex-1">
-                <span class="block" :class="getUptimeTickClass(heartbeat)">
-                  <span class="hidden lg:block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
-                  <span v-if="!heartbeat.latency">&nbsp;</span>
+                <span class="block" :class="getUptimeTickClass(pulse)">
+                  <span class="hidden lg:block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="pulse.latency">{{ pulse.latency }}ms</span>
+                  <span v-if="!pulse.latency">&nbsp;</span>
                 </span>
               </span>
           </div>
@@ -772,19 +772,19 @@ export default defineComponent({
       }
     },
     getUptimeTickClass: function(){
-      return heartbeat => {
+      return pulse => {
         return {
-          'bg-red-700/80 h-32': !heartbeat.latency,
-          // 'bg-green-400/50': heartbeat.latency,
-          [this.normalizeUptimeTick(heartbeat)]: heartbeat.latency,
+          'bg-red-700/80 h-32': !pulse.latency,
+          // 'bg-green-400/50': pulse.latency,
+          [this.normalizeUptimeTick(pulse)]: pulse.latency,
         }
       }
     },
     normalizeUptimeTick: function(){
-      return heartbeat => { 
-        if(!heartbeat.latency)
+      return pulse => { 
+        if(!pulse.latency)
           return
-        const val = heartbeat.latency,
+        const val = pulse.latency,
               minVal = this.hbMin,
               maxVal = this.hbMax, 
               newMin = 10,
@@ -794,13 +794,13 @@ export default defineComponent({
 
         let color 
         
-        if(heartbeat.latency<this.store.prefs.latencyFast) {
+        if(pulse.latency<this.store.prefs.latencyFast) {
           color = 'bg-green-400/60'
         } 
-        else if(heartbeat.latency<(this.store.prefs.latencySlow/2)) {
+        else if(pulse.latency<(this.store.prefs.latencySlow/2)) {
           color = 'bg-yellow-400/50'
         }
-        else if(heartbeat.latency<this.store.prefs.latencySlow) {
+        else if(pulse.latency<this.store.prefs.latencySlow) {
           color = 'bg-orange-400/50'
         }
         else {
@@ -898,7 +898,7 @@ export default defineComponent({
       
       this.geo = this.store.relays.getGeo(this.relay)
 
-      this.pulses = this.store.stats.getHeartbeat(this.relay)
+      this.pulses = this.store.stats.getPulse(this.relay)
       this.hbMin = Math.min.apply(Math, this.pulses?.map( hb => hb.latency ))
       this.hbMax = Math.max.apply(Math, this.pulses?.map( hb => hb.latency ) )
       if(this.result?.topics)

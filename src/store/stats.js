@@ -19,7 +19,7 @@ export const useStatStore = defineStore(
       getNips: (state) => state.nips,
       getCountries: (state) => state.countries,
       getByContinents: (state) => state.continents,
-      getHeartbeat: state => relay => state.pulses[relay],
+      getPulse: state => relay => state.pulses[relay],
 
       getItem: state => (key1, key2) => state[key1][key2],
 
@@ -35,15 +35,15 @@ export const useStatStore = defineStore(
         // Object.keys(payload).forEach( key => this[type][key] = Array.from(payload[key] ) )
         this[type] = payload
       },
-      setHeartbeats(payload){
+      setPulses(payload){
         this.pulses = payload
       },
-      addHeartbeat(relay, payload){
+      addPulse(relay, payload){
         if( !(this.pulses[relay] instanceof Array) )
           this.pulses[relay] = new Array()
         this.pulses[relay] = payload
       },
-      addHeartbeats(payload){
+      addPulses(payload){
         const relaysNow = Object.keys(payload) 
 
         // if(relaysThen.length !== relaysNow.length) {
@@ -70,16 +70,16 @@ export const useStatStore = defineStore(
 
         //console.log('new pulses', this.pulses)
       },
-      persistedState: {
-        excludePaths: ['nips', 'software', 'countries', 'continents']
-      },
-      share: {
-        // An array of fields that the plugin will ignore.
-        omit: ['nips', 'software', 'countries', 'continents'],
-        // Override global config for this store.
-        enable: true,
-      },
-    }
+    },
+    persistedState: {
+      excludePaths: ['nips', 'software', 'countries', 'continents']
+    },
+    share: {
+      // An array of fields that the plugin will ignore.
+      omit: ['nips', 'software', 'countries', 'continents'],
+      // Override global config for this store.
+      enable: true,
+    },
   },
   
 )

@@ -59,7 +59,7 @@ const localMethods = {
       let timeout = setTimeout( () => { 
         resolve()
         this.closePool(pool)
-      }, 10000 )
+      }, 5000 )
       pool
         .subscribe(subid, {
           kinds:    [1010],
@@ -134,14 +134,9 @@ const localMethods = {
         })
       })
       pulses[relay].sort( (h1, h2) => h1.date - h2.date )
-      this.store.stats.addHeartbeat(relay, pulses[relay])
+      this.store.stats.addPulse(relay, pulses[relay])
       this.setUptimePercentage(relay)
     })
-
-    //console.log(pulses)
-
-    // this.store.stats.addPulses(pulses)
-
     this.store.tasks.completeJob(this.slug)
   },
   timeUntilRefresh(){

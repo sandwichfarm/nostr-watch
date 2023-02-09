@@ -177,7 +177,7 @@ export default defineComponent({
   async mounted() {
     this.relays = relays
     //console.log('map expanded', this.store.layout.mapIsExpanded, 'is dark', localStorage.getItem('isDark'))
-    this.navSubsection.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
+    this.navSubsection?.forEach( item => this.relaysCount[item.slug] = 0 ) //move this
   },
 
   computed: Object.assign(SharedComputed, {

@@ -342,7 +342,7 @@
     },
     mounted(){
       //console.log('navdata', this.navData, this.navData.filter( item => item.slug == this.subsection )[0], this.navData.filter( item => item.slug == this.subsection ))
-      this.activePageData = this.navData.filter( item => item.slug == this.subsection )[0]
+      this.activePageData = this.navData?.filter( item => item.slug == this.subsection )[0]
       this.setRandomRelay()
     },
     updated(){

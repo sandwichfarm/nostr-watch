@@ -200,7 +200,7 @@
       // this.foundNips = this.collateSupportedNips()
     },
     mounted(){
-      setTimeout( this.refreshCounts, 100)
+      this.refreshCounts()
       setInterval( this.refreshCounts, 1000 )
     },
     updated(){

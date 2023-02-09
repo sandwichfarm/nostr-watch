@@ -182,7 +182,8 @@ const localMethods = {
             .then((result) => {
               this.store.tasks.addProcessed(this.slug, relay)
               result = this.pruneResult(relay, result)
-              this.setCache(this.results[relay] || {}, result)
+              result = Object.assign(this.results[relay] || {}, result)
+              this.setCache(result)
               this.results[relay] = result
               resolve()
             })

@@ -54,14 +54,18 @@ const localMethods = {
     //   return
     if( !this.isExpired(this.slug, 15*60*1000) && !force ) 
       return
+
+    
     
     this.queueJob(
       this.slug, 
       async () => {
         this.relays = [...this.store.relays.getAll]
-        let relayChunks = this.chunk(100, this.relays)
+        const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
+        let relayChunks = this.chunk(100, relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
+          
           const resultsChunk = {}
           const promise = await new Promise( resolve => {
             const relayChunk = relayChunks[i]

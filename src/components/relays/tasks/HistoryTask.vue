@@ -13,7 +13,7 @@ import SharedComputed from '@/shared/computed.js'
 
 const LocalMethods = {
   invalidate: async function(){
-    if(!this.isExpired(this.slug, 1000))
+    if(!this.isExpired(this.slug, 1))
       return 
     //console.log('processing')
     this.queueJob(

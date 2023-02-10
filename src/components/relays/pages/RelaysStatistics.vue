@@ -79,7 +79,7 @@
                 Country
               </h3>
               <p class="text-3xl font-bold text-black  dark:text-white">
-                {{ byCountry?.[0]?.key }}
+                {{ collateCountries?.[0]?.key }}
               </p>
             </div>
           </div>
@@ -93,7 +93,7 @@
                 Continent
               </h3>
               <p class="text-3xl font-bold text-black  dark:text-white">
-                {{ byContinent?.[0]?.key }}
+                {{ collateContinents?.[0]?.key }}
               </p>
             </div>
           </div>
@@ -106,7 +106,7 @@
 
   <div class="flex-none px-8 space-x-1 md:flex md:space-x-4 ">
     <div class="flex-none md:flex-1">
-      <table class="table-auto w-full m-auto" v-if="bySupportedNips">
+      <table class="table-auto w-full m-auto" v-if="collateSupportedNips">
         <thead>
           <tr>
             <th colspan="2" class="bg-slate-200/60 dark:bg-black/40 pt-2 rounded-t-lg">
@@ -117,7 +117,7 @@
           </tr>
         </thead>
         <tbody class="rounded-b-lg bg-slate-50 dark:bg-black/20">
-          <tr v-for="nip in bySupportedNips" :key="`nip-${nip.key}`">
+          <tr v-for="nip in collateSupportedNips" :key="`nip-${nip.key}`">
             <td class="text-right w-1/2  py-2 px-3 dark:text-white/70">{{ nipFormatted(nip.key) }}</td>
             <td class="text-left py-2 px-3 text-2xl"> 
               {{ nip.count }} 
@@ -128,7 +128,7 @@
       </table>
     </div>
     <div class="flex-1">
-      <table class="table-auto w-full m-auto">
+      <table class="table-auto w-full m-auto" v-if="collateSoftware">
         <thead>
           <tr>
             <th colspan="2" class="bg-slate-200/60 dark:bg-black/40 pt-2 rounded-t-lg">
@@ -139,7 +139,7 @@
           </tr>
         </thead>
         <tbody class="rounded-b-lg bg-slate-50 dark:bg-black/20">
-          <tr v-for="sw in this.bySoftware" :key="`nip-${sw.key}`">
+          <tr v-for="sw in collateSoftware" :key="`nip-${sw.key}`">
             <td class="text-right w-1/2 py-2 px-3 dark:text-white/70">{{ sw.key }}</td>
             <td class="text-left py-2 px-3 text-2xl"> {{ sw.count }} <span class="italic text-white/25 text-sm">relays</span></td>
           </tr>
@@ -152,7 +152,7 @@
 
   <div class="flex-none px-8 space-x-1 md:flex md:space-x-4 ">
     <div class="flex-none md:flex-1">
-      <table class="table-auto w-full m-auto" v-if="bySupportedNips">
+      <table class="table-auto w-full m-auto" v-if="collateCountries">
         <thead>
           <tr>
             <th colspan="2" class="bg-slate-200/60 dark:bg-black/40 pt-2 rounded-t-lg">
@@ -163,7 +163,7 @@
           </tr>
         </thead>
         <tbody class="rounded-b-lg bg-slate-50 dark:bg-black/20">
-          <tr v-for="item in byCountry" :key="`country-${item.key}`">
+          <tr v-for="item in collateCountries" :key="`country-${item.key}`">
             <td class="text-right w-1/2  py-2 px-3 dark:text-white/70">{{ item.key }}</td>
             <td class="text-left py-2 px-3 text-2xl"> 
               {{ item.count }} 
@@ -185,7 +185,7 @@
           </tr>
         </thead>
         <tbody class="rounded-b-lg bg-slate-50 dark:bg-black/20">
-          <tr v-for="item in this.byContinent" :key="`continent-${item.key}`">
+          <tr v-for="item in this.collateContinents" :key="`continent-${item.key}`">
             <td class="text-right w-1/2 py-2 px-3 dark:text-white/70">{{ item.key }}</td>
             <td class="text-left py-2 px-3text-2xl"> {{ item.count }} <span class="italic text-white/25 text-sm">relays</span></td>
           </tr>
@@ -242,10 +242,10 @@ export default defineComponent({
     this.relays.forEach(relay => {
       this.results[relay] = this.getCache(relay)
     })
-    this.bySupportedNips = this.collateSupportedNips
-    this.byContinent = this.collateContinents
-    this.byCountry = this.collateCountries
-    this.bySoftware = this.collateSoftware
+    // this.bySupportedNips = this.collateSupportedNips
+    // this.byContinent = this.collateContinents
+    // this.byCountry = this.collateCountries
+    // this.bySoftware = this.collateSoftware
     // this.store.stats.set('nips', this.bySupportedNips)
     // this.store.stats.set('continents', this.byContinent)
     // this.store.stats.set('countries', this.byCountry)
@@ -399,10 +399,10 @@ export default defineComponent({
     },
     getMostPopularSoftware(){
       let result
-      for(let i=0;i<this.bySoftware.length;i++){
-        if(this.bySoftware[i].key === 'unknown') 
+      for(let i=0;i<this.collateSoftware.length;i++){
+        if(this.collateSoftware[i].key === 'unknown') 
           continue
-        result = this.bySoftware[i].key
+        result = this.collateSoftware[i].key
         break
       }
       return result

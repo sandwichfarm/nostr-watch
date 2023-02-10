@@ -129,7 +129,8 @@ export default {
   },
   getRelays(relays){
     // relays = this.filterRelays(relays)
-    relays = this.filterRelays(relays)
+    if(this.store.filters.enabled)
+      relays = this.filterRelays(relays)
     relays = this.sortRelays(relays)
     return relays
   },

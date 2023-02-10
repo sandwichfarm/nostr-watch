@@ -21,7 +21,11 @@
           <div class="px-4 py-5 sm:px-6">
             <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
             <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
-            <span class="mt-1 w-auto text-xl text-gray-400" v-if="result?.info?.contact">Contact: <SafeMail :email="result.info.contact" /></span>
+            <span class="mt-1 w-auto text-xl text-gray-400" v-if="result?.info?.contact">
+              <span v-if="isContactType(result.info.contact, 'email')">Contact: <SafeMail :email="result.info.contact" /></span>
+              <span v-else>{{ result.info.contact }}</span>
+              
+            </span>
           </div>
           <a 
           target="_blank" 
@@ -724,6 +728,26 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
+    sanitizeAndDetectEmail() {
+      return str => {
+        if( !(str instanceof String) )
+          return
+        // Sanitize the input string by removing any unwanted characters
+        const sanitizedString = str.replace(/[^\w\s@]+/g, '');
+
+        // Use a regular expression to find the email in the sanitized string
+        const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+        const email = sanitizedString.match(emailRegex);
+
+        return email ? email[0] : null;
+      }
+    },
+    isContactType: function(){
+      return (str, match) => {
+        if(this.sanitizeAndDetectEmail(str) && match === 'email')
+          return true
+      }
+    },
     getTopics: function(){
       // return this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
       return this.result.topics

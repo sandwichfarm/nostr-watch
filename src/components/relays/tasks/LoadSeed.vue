@@ -87,9 +87,7 @@ const localMethods = {
                   const data = JSON.parse(event.content)
                   const result = {
                     url: relay,
-                    latency: data?.latency[this.store.prefs.region],
-                    info: data.info,
-                    uptime: this.getUptimePercentage(relay),
+                    
                     check: {
                       connect: false,
                       read: false,
@@ -98,6 +96,16 @@ const localMethods = {
                       averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
                     },
                   }
+
+                  const uptimeLatency = this.getUptimePercentage(relay)
+                  if(uptimeLatency)
+                    result.uptime = uptimeLatency
+                  
+                  if(data?.info)
+                    result.info = data.info
+                  
+                  if(data?.latency[this.store.prefs.region]) //this one will create the illusion that everything is ok, TODO: Fix daemons and remove.
+                    result.latency = data?.latency[this.store.prefs.region] 
 
                   if(event?.tags){
                     const connect = event.tags.filter( tag => tag[0] == 'c'),

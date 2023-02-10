@@ -48,6 +48,9 @@
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()()">
                         <code class="text-xs block">Upvote</code>
                       </th> -->
+                      <th v-if="!store.layout.editorIsExpanded" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        <code class="text-xs block">P2R</code>
+                      </th>
                       <th v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">Pubkey</code>
                       </th>
@@ -117,6 +120,10 @@
                           👍
                         </a>
                       </td> -->
+
+                      <td v-if="!store.layout.editorIsExpanded" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
+                        {{ isPayToRelay(relay) }}
+                      </td>
 
                       <td v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <!-- {{ this.results[relay]?.pubkeyValid }}
@@ -392,6 +399,13 @@
       }
     },
     computed: {
+      isPayToRelay(){
+        return relay => {
+          if(this.results?.[relay]?.info?.payments_url)
+            return "$"
+        }
+        
+      },
       getTopics(){
         return relay => {
           let topics = ""

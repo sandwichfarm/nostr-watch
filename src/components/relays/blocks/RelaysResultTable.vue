@@ -123,7 +123,16 @@
 
                       <td v-if="!store.layout.editorIsExpanded" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <a v-if="isPayToRelay(relay)" :href="this.results[relay].info.payments_url" class="block align-center" target="_blank">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" class="inline-block align-center w-6 h-6 stroke-green-600/90 dark:stroke-green-400/60"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></a>
+                          <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" class="inline-block align-center w-6 h-6 stroke-green-600/90 dark:stroke-green-400/60"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> -->
+                          <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360">
+                            <circle style="fill:#f8991d" class="cls-1" cx="180" cy="180" r="179"/>
+                            <rect class="fill-white dark:fill-black" x="201.48" y="37.16" width="23.49" height="40.14" transform="translate(21.82 -52.79) rotate(14.87)"/>
+                            <rect class="fill-white dark:fill-black" x="135.03" y="287.5" width="23.49" height="40.14" transform="translate(83.82 -27.36) rotate(14.87)"/>
+                            <rect class="fill-white dark:fill-black" x="184.27" y="38.29" width="23.49" height="167.49" transform="translate(364.26 -36.11) rotate(104.87)"/>
+                            <rect class="fill-white dark:fill-black" x="168.36" y="98.26" width="23.49" height="167.49" transform="translate(402.22 54.61) rotate(104.87)"/>
+                            <rect class="fill-white dark:fill-black" x="152.89" y="156.52" width="23.49" height="167.49" transform="translate(439.1 142.78) rotate(104.87)"/>
+                          </svg>
+                        </a>
                       </td>
 
                       <td v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">

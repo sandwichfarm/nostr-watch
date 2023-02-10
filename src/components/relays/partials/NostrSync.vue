@@ -121,6 +121,7 @@ export default defineComponent({
     toggleEditor: async function(){
       this.store.layout.toggleEditor()
       this.queueKind3('user/relay/list')
+      // this.queueKind10002('user/relay/list')
     },
     persistChanges: async function(){
       const event = {

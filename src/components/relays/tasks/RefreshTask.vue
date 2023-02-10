@@ -83,7 +83,7 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      if((!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle())
+      if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )
         return
       
       this.untilNext = this.timeUntilRefresh()
@@ -122,7 +122,7 @@ const localMethods = {
 
   invalidate: async function(force, single){
     //console.log('invalidate?', !(!this.isExpired(this.slug, this.getRefreshInterval)))
-    if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) ) 
+    if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle ) 
       return
 
     if(!this.windowActive)
@@ -355,7 +355,7 @@ export default defineComponent({
   mounted(){
     this.migrateLegacy()
     if( this.isSingle ){
-      this.slug = 'relays/single'
+      this.slug = `relays/${this.relayFromUrl}`
       this.invalidate(true, this.relayFromUrl)
       // this.runLatencyCheck()
     } else {

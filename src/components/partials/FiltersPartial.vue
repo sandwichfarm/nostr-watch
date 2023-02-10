@@ -199,8 +199,9 @@
       // this.foundNips = this.collateSupportedNips()
     },
     mounted(){
+      this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
       this.refreshCounts()
-      setInterval( this.refreshCounts, 1000 )
+      setInterval( this.doRefreshCounts, 1000 )
     },
     updated(){
       
@@ -225,10 +226,20 @@
     },
     data() {
       return {
-        count: { nips: {}, software: {}, countries: {}, continents: {} }
+        count: { nips: {}, software: {}, countries: {}, continents: {} },
+        activeNavItem: null
       }
     },
-    methods: Object.assign(RelayMethods, {}),
+    methods: Object.assign(RelayMethods, {
+      doRefreshCounts(){
+        console.log('active item', this.store.layout.getActiveItem('relays/find').slug, this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)
+        if(this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)
+          return 
+        this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
+        this.refreshCounts()
+        console.log('refresh!')
+      }
+    }),
     computed: Object.assign(SharedComputed, {})
   })
 </script>

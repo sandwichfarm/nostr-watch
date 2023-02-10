@@ -307,4 +307,4 @@ relays:
   - wss://nostr-sg.com
   - wss://nostr.bitcoin-basel.ch
   - wss://relay.21baiwan.com
-wss://nostr.howtobitcoin.shop
+  - wss://nostr.howtobitcoin.shop

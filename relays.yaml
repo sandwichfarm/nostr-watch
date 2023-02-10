@@ -1,4 +1,5 @@
 relays:
+  - wss://lightningrelay.com
   - wss://relay.nostriches.org
   - wss://nostr.wine
   - was://nostr.pleb.network
@@ -302,4 +303,3 @@ relays:
   - wss://nostr-01.dorafactory.org
   - wss://relay.honk.pw
   - wss://relay.nostr.or.jp
-  

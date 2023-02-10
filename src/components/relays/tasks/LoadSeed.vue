@@ -110,11 +110,11 @@ const localMethods = {
                     }
                   }
 
-                  if(!this.results[relay]?.indentities)
-                    result.identities = []
+                  // if(!this.results[relay]?.indentities)
+                  //   result.identities = []
                 
-                  if(data.info?.pubkey)
-                    result.identities.push(data.info?.pubkey)
+                  // if(data.info?.pubkey)
+                  //   result.identities.push(data.info?.pubkey)
 
                   if(data?.topics)
                     result.topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
@@ -211,7 +211,7 @@ export default defineComponent({
   },
   mounted(){
     if(this.isSingle) {
-      this.slug = 'relays/${this.relayFromUrl}'
+      this.slug = `relays/${this.relayFromUrl}`
       this.invalidate(true, this.relayFromUrl)
     }  
     else {

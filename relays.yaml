@@ -302,4 +302,5 @@ relays:
   - wss://paid.spore.ws
   - wss://nostr-01.dorafactory.org
   - wss://relay.honk.pw
+  - wss://nostr-sg.com
   - wss://relay.nostr.or.jp

@@ -121,24 +121,6 @@ export default defineComponent({
     toggleEditor: async function(){
       this.store.layout.toggleEditor()
       this.queueKind3('user/relay/list')
-      // if(this.store.layout.editorExpanded)
-      //   this.queueJob(
-      //     'user/relay/list',
-      //     async () => {
-      //       await this.store.user.setKind3()
-      //         .then( () => {
-      //           Object.keys(this.store.user.kind3).forEach( key => {
-      //             this.store.relays.setFavorite(key)
-      //           })
-      //           this.store.tasks.completeJob(this.slug)
-      //         })
-      //         .catch( err => {
-      //           console.error('error!', err)
-      //           this.store.tasks.completeJob(this.slug)
-      //         })
-      //     },
-      //     true
-      //   )
     },
     persistChanges: async function(){
       const event = {

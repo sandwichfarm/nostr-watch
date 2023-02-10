@@ -83,7 +83,7 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      if(!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing)
+      if((!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle())
         return
       
       this.untilNext = this.timeUntilRefresh()

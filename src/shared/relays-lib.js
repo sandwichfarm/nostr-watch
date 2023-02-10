@@ -225,22 +225,6 @@ export default {
       return this.$storage.removeStorageSync(key)
     },
 
-    //   if(store)
-    //     instance = this.storage.setStorage(store)
-
-    //   if(success && store)
-    //     instance.then(success)
-
-    //   if(error && store)
-    //     instance.catch(error)
-    // },
-
-    // resetState: function(){
-    //   this.relays.forEach(relay=>{
-    //     this.storage.removeStorage(relay)
-    //   })
-    // },
-
     getAggregate: function(result) {
       let aggregateTally = 0
       aggregateTally += result?.check.connect ? 1 : 0

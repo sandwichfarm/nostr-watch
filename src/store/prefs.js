@@ -19,7 +19,7 @@ export const usePrefsStore = defineStore('prefs', {
     autoDetectRegion: true,
     region: 'eu-west',
     ignoreTopics: 'canonical,nostr',
-    showMaps: true,
+    showMaps: false,
     discoverRelays: true,
     checkNip11: true,
     CheckNip11Frequency: 24*60*60*1000,

@@ -191,18 +191,7 @@ export default defineComponent({
         return navGroup?.filter( slug => slug !== 'nips' ) || [] 
     },
     getRelaysCount: function() { 
-      return this.getRelays(this.store.relays.getRelays(this.activeSubsection, this.results ) ).length
-      // return (subsection) => {
-      //   if(subsection === 'all')
-      //     return this.store.relays.getAll.length
-      //   if(subsection === 'nips')
-      //   return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.info?.supported_nips).length
-      //   if(subsection === 'online')
-      //     return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.check?.connect).length  
-      //   if(subsection === 'favorite')
-      //     return this.store.relays.getFavorites.length 
-      //   return this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == subsection).length 
-      // }
+      return this.getRelays( this.store.relays.getRelays(this.activeSubsection, this.results ) ).length
     },
     isMapDark: function(){
       // return this.store.layout.mapIsExpanded && this.$storage.('isDark') == true

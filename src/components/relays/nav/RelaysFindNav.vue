@@ -75,7 +75,14 @@ components: {
   // PreferencesComponent,
   // AuthComponent
 },
-props: {},
+props: {
+  resultsProp: {
+    type: Object,
+    default(){
+      return {}
+    }
+  },
+},
 data(){
   return setupNavData('relays/find')
 },
@@ -105,9 +112,8 @@ methods: Object.assign(RelaysLib, {
 
     //console.log('debug', "toggleFIlter",'aggregate', slug, true)
     this.setActiveContent( slug ) //deprecate this!
-    
-    this.toggleFilter('aggregate', slug, true, false, true )
 
+    this.toggleFilter('aggregate', slug, true, false, true )
   },
 }),
 

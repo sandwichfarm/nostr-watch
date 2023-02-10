@@ -30,6 +30,11 @@ export const useRelaysStore = defineStore('relays', {
       return state.aggregatesAreSet ? shuffle(state.aggregates.public) : shuffle(state.urls)
     },
     getRelays: (state) => (aggregate, results) => {
+      if( 'paid' == aggregate ){
+        console.log('paid!', state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )?.length, state.urls.length )
+        return state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )
+      }
+        
       if( 'all' == aggregate )
         return state.urls.map(x=>x)
       if( 'online' == aggregate ){

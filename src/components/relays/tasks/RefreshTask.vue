@@ -138,8 +138,7 @@ const localMethods = {
   pruneResult: function(relay, result){
     let resultPruned
 
-    if(result)  {
-      //console.log('whoops', result)
+    if(result) {
       resultPruned = {
         url: relay,
         aggregate: result.aggregate,
@@ -150,14 +149,25 @@ const localMethods = {
           latency: result.check.latency,
           averageLatency: result.check.averageLatency
         },
-        latency: result?.latency,
-        info: result.info,
-        uptime: this.getUptimePercentage(relay),
-        identities: result.identities,
-        pubkeyValid: result.pubkeyValid,
-        pubkeyError: result.pubkeyError,
       }
+
+      if(Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostr-relay-inspector
+        resultPruned.info = result.info
+
+      if(result.latency) 
+        resultPruned.latency = result.latency
+
+      if(result?.pubkeyValid)
+        resultPruned.pubkeyValid = result.pubkeyValid
+
+      if(result?.pubkeyError)
+        resultPruned.pubkeyError = result.pubkeyError
+
+      const uptime = this.getUptimePercentage(relay)
+      if(uptime)
+        resultPruned.uptime = uptime
     }
+
     return resultPruned
   },
 
@@ -200,10 +210,11 @@ const localMethods = {
   },
 
   completeRelay: function(result, resolve){
-    this.store.tasks.addProcessed(this.slug, result.url)
+    console.log('completeRelay()', result.url, result)
     result = this.pruneResult(result.url, result)
     result = Object.assign(this.results[result.url] || {}, result)
     this.setCache(result)
+    this.store.tasks.addProcessed(this.slug, result.url)
     this.results[result.url] = result
     if(resolve instanceof Function)
       resolve()

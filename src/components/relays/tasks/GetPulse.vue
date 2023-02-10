@@ -38,7 +38,7 @@ const localMethods = {
     
     // const pool = new RelayPool( relays )
     if(this.isSingle)
-      this.jobPulses()
+      this.jobPulses() //don't run in a job, just run in the background. 
     else
       this.queueJob(
         this.slug, 
@@ -59,14 +59,13 @@ const localMethods = {
       let timeout = setTimeout( () => { 
         resolve()
         this.closePool(pool)
-      }, 5000 )
+      }, 20000 )
       pool
         .subscribe(subid, {
           kinds:    [1010],
           limit:    total, //12 hours 
           authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
           '#e':     [this.store.prefs.region],
-          // since:    Math.floor(this.store.tasks.getLastUpdate(this.slug)/1000)
         })
       
       pool

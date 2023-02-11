@@ -317,3 +317,4 @@ relays:
   - wss://nostr-1.afarazit.eu
   - wss://nostr-2.afarazit.eu
   - wss://nostr.herci.one
+  - wss://nostr.lightning.contact

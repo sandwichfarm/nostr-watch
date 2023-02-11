@@ -308,5 +308,6 @@ relays:
   - wss://nostr.bitcoin-basel.ch
   - wss://relay.21baiwan.com
   - wss://nostr.howtobitcoin.shop
+  - wss://nostr.lukeacl.com
   - wss://nostr.ddns.net
   - wss://nostr.rocket-tech.net

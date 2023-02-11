@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.1729.cloud
   - wss://lightningrelay.com
   - wss://relay.nostriches.org
   - wss://nostr.wine

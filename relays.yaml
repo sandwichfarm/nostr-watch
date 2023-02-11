@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.1729.cloud
   - wss://lightningrelay.com
   - wss://relay.nostriches.org
   - wss://nostr.wine
@@ -309,3 +310,9 @@ relays:
   - wss://relay.21baiwan.com
   - wss://nostr.howtobitcoin.shop
   - wss://nostr.ddns.net:8008
+  - wss://free-relay.nostrich.land
+  - wss://nostr.lukeacl.com
+  - wss://nostr.ddns.net
+  - wss://nostr.rocket-tech.net
+  - wss://nostr-1.afarazit.eu
+  - wss://nostr-2.afarazit.eu

@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.1729.cloud
   - wss://lightningrelay.com
   - wss://relay.nostriches.org
   - wss://nostr.wine
@@ -309,4 +310,7 @@ relays:
   - wss://relay.21baiwan.com
   - wss://nostr.howtobitcoin.shop
   - wss://free-relay.nostrich.land
+  - wss://nostr.lukeacl.com
+  - wss://nostr.ddns.net
+  - wss://nostr.rocket-tech.net
   

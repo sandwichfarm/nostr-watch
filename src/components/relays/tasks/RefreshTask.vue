@@ -121,16 +121,18 @@ const localMethods = {
 
 
   invalidate: async function(force, single){
-    //console.log('invalidate?', !(!this.isExpired(this.slug, this.getRefreshInterval)))
+    console.log('invalidate?', !((!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle), this.windowActive)
     if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle ) 
       return
 
     if(!this.windowActive)
       return
 
+    console.log('queue job', single, this.slug)
+    
     this.queueJob(
       this.slug, 
-      () => this.checkJob(single), 
+      async () => await this.checkJob(single), 
       true
     )
   },
@@ -172,13 +174,16 @@ const localMethods = {
   },
 
   checkJob: async function(single){
+    console.log('wtf run job', single, this.slug)
     if(single) {
+      console.log('wtf checking single', single)
       await this.check(single)
         .then((result) => this.completeRelay(result) )
         .catch( () => console.log('there was an error') )
       this.completeAll()
     } 
     else {
+      console.log('wtf checking all', single)
       this.relays = this.store.relays.getAll
       const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
       let relayChunks = this.chunk(100, relays)
@@ -205,7 +210,7 @@ const localMethods = {
           this.setCache(resultsChunk[relay])
         })
       }
-      this.completeAll()
+      this.completeAll(single)
     } 
   },
 
@@ -232,6 +237,7 @@ const localMethods = {
   },
 
   check: async function(relay){
+    console.log('checking', relay)
     if(this.stop)
       return
     return new Promise( (resolve) => {
@@ -361,7 +367,8 @@ export default defineComponent({
   mounted(){
     this.migrateLegacy()
     if( this.isSingle ){
-      this.slug = `relays/${this.relayFromUrl}`
+      console.log('is single')
+      this.slug = `relays/check/${this.relayFromUrl}`
       this.invalidate(true, this.relayFromUrl)
       // this.runLatencyCheck()
     } else {

@@ -51,7 +51,7 @@
                       <th v-if="!store.layout.editorIsExpanded" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">P2R</code>
                       </th>
-                      <th v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.tasks.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">Pubkey</code>
                       </th>
                       <th v-if="store.tasks.lastUpdate['relays/geo']" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
@@ -135,11 +135,11 @@
                         </a>
                       </td>
 
-                      <td v-if="!store.layout.editorIsExpanded && (store.prefs.checkNip11 || subsection === 'nips')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
+                      <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.tasks.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <!-- {{ this.results[relay]?.pubkeyValid }}
                         {{ this.results[relay]?.info?.pubkey }} -->
                         <span 
-                          v-if="this.results[relay]?.pubkeyValid" 
+                          v-if="this.results[relay]?.pubkeyValid && this.results[relay]?.info?.pubkey" 
                           v-tooltip:bottom.tooltip="`Valid pubkey was registered by relay: ${this.results[relay].info.pubkey}`" class="cursor-pointer">
                           <svg class="svg-icon fill-green-500" style="width: 1em; height: 1em;vertical-align: middle;;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
                         </span> 
@@ -147,7 +147,7 @@
                         <span 
                           v-if="!this.results[relay]?.pubkeyValid && this.results[relay]?.info?.pubkey" class="cursor-pointer" 
                           v-tooltip:bottom.tooltip="`Provided pubkey ${this.results[relay].info.pubkey} is invalid, error: ${this.results[relay].pubkeyError}. Please review NIP-11 specification to fix.`">
-                          <svg class="svg-icon fill-red-500/20" style="width: 1em; height: 1em;vertical-align: middle;;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
+                          <svg class="svg-icon fill-red-500/20" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
                         </span>
                       </td>
 
@@ -425,7 +425,7 @@
             return topic[0].length <= 32
           }).slice(0, 3)
           for(let topic in topicsArr){
-            topics = `${topics}  #${topicsArr[topic][0]}`
+            topics = `${topics}  #${topicsArr[topic]}`
           }
           return topics
         }

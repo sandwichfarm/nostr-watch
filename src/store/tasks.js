@@ -66,13 +66,13 @@ export const useTaskStore = defineStore(
       if( this.isIdle )
         this.startNextJob()
     },
-    async startNextJob(){
+    startNextJob(){
       console.log('starting next job', this.pending?.[0]?.id, this.pending?.[0]?.handler)
       if( this.arePending ) {
         this.active = this.pending[0]
         //console.log('started', this.active.id)
         this.pending.shift()
-        await this.runJob()
+        this.runJob()
       }
       else {
         this.active = {}

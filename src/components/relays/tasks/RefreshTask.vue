@@ -180,7 +180,7 @@ const localMethods = {
       await this.check(single)
         .then((result) => this.completeRelay(result) )
         .catch( () => console.log('there was an error') )
-      this.completeAll()
+      this.completeAll(single)
     } 
     else {
       console.log('wtf checking all', single)

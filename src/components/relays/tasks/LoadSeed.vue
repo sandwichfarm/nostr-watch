@@ -52,7 +52,7 @@ const localMethods = {
   invalidate(force, single){
     // if( ( this.store.tasks.getLastUpdate('relays/check') || ( this.store.tasks.processed?.['relays/check'] && this.store.tasks.processed?.['relays/check'].length ) ) && !force ) 
     //   return
-    if( !this.isExpired(this.slug, 15*60*1000) && !force ) 
+    if( (!this.isExpired(this.slug, 15*60*1000) && !force) && !this.isSingle ) 
       return
     
     this.queueJob(

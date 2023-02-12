@@ -102,7 +102,8 @@
                       class="h-1">
 
                       <td class="status-indicator w-2 text-left pr-2">
-                        <span :class="getAggregateIndicator(relay)" class="block relative">
+                        <span :class="getAggregateIndicator(relay)" class="block relative text-xs text-black">
+                          {{ index }}
                         </span>
                       </td>
 
@@ -457,7 +458,7 @@
       // },
       subsectionRelays(){
         // return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
-        return this.getRelays( this.relays )
+        return this.getRelays( this.store.relays.getAll )
       },
       relayGeo(){
         return (relay) => this.store.relays.getGeo(relay)

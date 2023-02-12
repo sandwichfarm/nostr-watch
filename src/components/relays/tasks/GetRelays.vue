@@ -60,7 +60,11 @@ const localMethods = {
     )
   },
   finish(_relays, clear){
+    
     this.store.relays.addRelays(_relays)
+
+    this.relays = this.store.relays.getAll
+
     if(clear)
       clearTimeout(this.timeout)
     
@@ -79,15 +83,17 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      slug: 'relays/get' //REMEMBER TO CHANGE!!!
+      slug: 'relays/get', //REMEMBER TO CHANGE!!!
+      timeout: null
     }
   },
   setup(props){
     const {resultsProp: results} = toRefs(props)
+    const {relaysProp: relays} = toRefs(props)
     return { 
       store : setupStore(),
       results: results,
-      timeout: null
+      relays: relays
     }
   },
   created(){
@@ -122,6 +128,12 @@ export default defineComponent({
       type: Object,
       default(){
         return {}
+      }
+    },
+    relaysProp: {
+      type: Array,
+      default(){
+        return []
       }
     },
   },

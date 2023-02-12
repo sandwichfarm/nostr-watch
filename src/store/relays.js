@@ -12,7 +12,6 @@ export const useRelaysStore = defineStore('relays', {
     lastUpdate: null,
     count: new Object(),
     processing: false,
-    processedRelays: new Set(),
     favorites: new Array(),
     aggregates: {},
     aggregatesAreSet: false,
@@ -34,7 +33,6 @@ export const useRelaysStore = defineStore('relays', {
         console.log('paid!', state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )?.length, state.urls.length )
         return state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )
       }
-        
       if( 'all' == aggregate )
         return state.urls.map(x=>x)
       if( 'online' == aggregate ){
@@ -85,7 +83,7 @@ export const useRelaysStore = defineStore('relays', {
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
     addRelays(relayUrls){ 
-      this.urls = Array.from(new Set( removeDuplicateHostnames(this.urls.concat(this.urls, relayUrls) ) ))
+      this.urls = Array.from(new Set( removeDuplicateHostnames( [...this.urls, ...relayUrls] ) ) )
     },
     setRelays(relayUrls){ this.urls = relayUrls },
     // setResult(result){ 

@@ -1,7 +1,8 @@
 <template>
 <span class="inline-block mr-12 pt-1.5">
   <span class="text-white/40 lg:text-sm mx-2 text-xs font-bold">
-    <GetRelays />
+    <GetRelays
+      v-bind:relaysProp="relays" />
 
     <DetectRegion 
       v-if="store.prefs.autoDetectRegion && !store.prefs.disableGeoDetection" />
@@ -102,9 +103,11 @@ export default defineComponent({
   },
   setup(props){
     const {resultsProp: results} = toRefs(props)
+    const {relaysProp: relays} = toRefs(props)
     return { 
       store : setupStore(),
-      results: results
+      results: results,
+      relays: relays 
     }
   },
   beforeMount(){
@@ -124,6 +127,12 @@ export default defineComponent({
       type: Object,
       default(){
         return {}
+      }
+    },
+    relaysProp: {
+      type: Array,
+      default(){
+        return []
       }
     },
   },

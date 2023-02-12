@@ -35,7 +35,9 @@
       </div>
       <div class="width-max lg:flex lg:ml-auto">
         <TasksManager
-          :resultsProp="results" />
+          :resultsProp="results" 
+          v-bind:relaysProp="relays" 
+          />
       </div>
       </div>
   </div>

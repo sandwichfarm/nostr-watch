@@ -103,7 +103,6 @@
 
                       <td class="status-indicator w-2 text-left pr-2">
                         <span :class="getAggregateIndicator(relay)" class="block relative text-xs text-black">
-                          {{ index }}
                         </span>
                       </td>
 

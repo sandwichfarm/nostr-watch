@@ -57,7 +57,7 @@ export const useTaskStore = defineStore(
       this.lastUpdate[key] = Date.now() 
     },
     //queue
-    addJob(job){
+    async addJob(job){
       
       if(job?.unique && this.isTaskPending(job.id))
         return
@@ -66,13 +66,13 @@ export const useTaskStore = defineStore(
       if( this.isIdle )
         this.startNextJob()
     },
-    startNextJob(){
+    async startNextJob(){
       console.log('starting next job', this.pending?.[0]?.id, this.pending?.[0]?.handler)
       if( this.arePending ) {
         this.active = this.pending[0]
         //console.log('started', this.active.id)
         this.pending.shift()
-        this.runJob()
+        await this.runJob()
       }
       else {
         this.active = {}

@@ -106,7 +106,7 @@ const localMethods = {
                     result.latency = data?.latency[this.store.prefs.region] 
 
                   if(event?.tags){
-                    const connect = event.tags.filter( tag => tag[0] == 'connect'),
+                    const connect = event.tags.filter( tag => tag[0] == 'online'),
                           read = event.tags.filter( tag => tag[0] == 'read'),
                           write = event.tags.filter( tag => tag[0] == 'write')
                     result.check = {

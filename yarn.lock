@@ -6727,10 +6727,10 @@ normalize-url@^6.0.1:
   resolved "https://registry.yarnpkg.com/normalize-url/-/normalize-url-6.1.0.tgz#40d0885b535deffe3f3147bec877d05fe4c5668a"
   integrity sha512-DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==
 
-nostr-relay-inspector@0.0.31:
-  version "0.0.31"
-  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.31.tgz#a4967346bceb86b384a4f9eae65fe24a8e8f0a14"
-  integrity sha512-ZuBe/01VdBS/bnV9Hln2dB/bQZEU7+CABXUOyg8hfl6FuqWdi6iGK8O8hf/KldCx30DjW5BRKkw1pn9+q3BZ5w==
+nostr-relay-inspector@0.0.32:
+  version "0.0.32"
+  resolved "https://registry.yarnpkg.com/nostr-relay-inspector/-/nostr-relay-inspector-0.0.32.tgz#f1a1512c010653c6b6ff4e06e970598d52931431"
+  integrity sha512-F/yNykbCQElDHYII8wSnNYbuEkfBsAptPhhQqq6FoLn3tULLd+M5Ms4TLZnIXRaJOxhPsJojGZC7NdrK8iqpWg==
   dependencies:
     convert-vapid-public-key "1.1.0"
     cross-fetch "3.1.5"

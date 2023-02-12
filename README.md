@@ -12,6 +12,13 @@ nostr.watch aggregates data on nostr relays and the network in general to assist
 
 Develop branch is deployed to https://next.nostr.watch
 
+## Relay Additions 
+Relay additions via Github as the primary method of adding relays will be phased out for a number of reasons, expect this change by `0.2`.
+
+If you are adding a relay, you need to use `main` as your base and submit your pr into `main`. Submissions to `develop` will still be approved, but your relay will not go online until a release. Whereas a PR into `main` will go live within 10 minutes of being merged. 
+
+PRs into develop will not recieve any notification about this requirement. 
+
 ## Features
 - [x] Real-time relay status 
 - [x] Real-time, client-centric latency tests 

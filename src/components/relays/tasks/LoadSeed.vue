@@ -54,8 +54,6 @@ const localMethods = {
     //   return
     if( !this.isExpired(this.slug, 15*60*1000) && !force ) 
       return
-
-    
     
     this.queueJob(
       this.slug, 
@@ -108,9 +106,9 @@ const localMethods = {
                     result.latency = data?.latency[this.store.prefs.region] 
 
                   if(event?.tags){
-                    const connect = event.tags.filter( tag => tag[0] == 'c'),
-                          read = event.tags.filter( tag => tag[0] == 'r'),
-                          write = event.tags.filter( tag => tag[0] == 'w')
+                    const connect = event.tags.filter( tag => tag[0] == 'connect'),
+                          read = event.tags.filter( tag => tag[0] == 'read'),
+                          write = event.tags.filter( tag => tag[0] == 'write')
                     result.check = {
                       connect: connect.length && connect[0][1] === 'true' ? true : false,
                       read: read.length && read[0][1] === 'true' ? true : false,

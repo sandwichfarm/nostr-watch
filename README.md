@@ -17,7 +17,7 @@ Relay additions via Github as the primary method of adding relays will be phased
 
 If you are adding a relay, you need to use `main` as your base and submit your pr into `main`. Submissions to `develop` will still be approved, but your relay will not go online until a release. Whereas a PR into `main` will go live within 10 minutes of being merged. 
 
-PRs into develop will not recieve any notification about this requirement. 
+PRs into `develop` will not recieve any notification about this requirement. 
 
 ## Features
 - [x] Real-time relay status 

@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.h4x0r.host
   - wss://nostr.1729.cloud
   - wss://private.red.gb.net
   - wss://nostr.wine

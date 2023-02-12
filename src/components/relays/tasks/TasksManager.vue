@@ -27,15 +27,16 @@
           ) 
           && store.prefs.checkNip11
         )
+        && !isSingle
       " />
 
     <RefreshTask
       v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing || isSingle" />
 
-    <CheckDNS></CheckDNS>
+    <CheckDNS v-if="!isSingle" />
     
-    <CheckGeo></CheckGeo>
+    <CheckGeo v-if="!isSingle" />
 
     <HistoryTask
       :resultsProp="results" />
@@ -115,9 +116,8 @@ export default defineComponent({
   },
   mounted(){
     this.currentTask = this.store.tasks.getActiveSlug
-    this.processJob()
-
-    this.timeout = setTimeout(this.tick, 2000)
+    // this.processJob()
+    // this.timeout = setTimeout(this.tick, 500)
   },
   unmounted(){
     clearTimeout(this.timeout)

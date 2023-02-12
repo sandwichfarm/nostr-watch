@@ -83,6 +83,7 @@ const localMethods = {
                 if(subid === sub_id){
                   const relay = event.tags[0][1]
                   const data = JSON.parse(event.content)
+                  const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
                   const result = {
                     url: relay,
                     
@@ -109,21 +110,24 @@ const localMethods = {
                     const connect = event.tags.filter( tag => tag[0] == 'online'),
                           read = event.tags.filter( tag => tag[0] == 'read'),
                           write = event.tags.filter( tag => tag[0] == 'write')
+                  
+
                     result.check = {
                       connect: connect.length && connect[0][1] === 'true' ? true : false,
                       read: read.length && read[0][1] === 'true' ? true : false,
                       write: write.length && write[0][1] === 'true' ? true : false,
                     }
                   }
+                  
+                  if(topics.length)
+                    console.log(result.url, this.timeSince(event.created_at*1000), topics.length)
 
-                  // if(!this.results[relay]?.indentities)
-                  //   result.identities = []
-                
-                  // if(data.info?.pubkey)
-                  //   result.identities.push(data.info?.pubkey)
+                  
 
-                  if(data?.topics)
-                    result.topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
+                  if(topics.length)
+                    result.topics = topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic) )
+                  
+                  console.log(result.url, topics)
                     
                   result.aggregate = this.getAggregate(result)
                   resultsChunk[relay] = Object.assign(this.results[relay] || {}, result)
@@ -217,7 +221,7 @@ export default defineComponent({
   },
   mounted(){
     if(this.isSingle) {
-      this.slug = `relays/${this.relayFromUrl}`
+      this.slug = `relays/seed/${this.relayFromUrl}`
       this.invalidate(true, this.relayFromUrl)
     }  
     else {

@@ -323,7 +323,7 @@
               Clear Data
             </label>
             <div class="mt-1 sm:col-span-2 sm:mt-0">
-              <button @click="localStorage.clear() && false">Clear All Local Storage</button>
+              <button @click="storageClearAll()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 border border-red-700 rounded">Clear All Local Storage</button>
             </div>
           </div>
           </div>
@@ -343,7 +343,15 @@ import SharedComputed from '@/shared/computed.js'
 
 import { Switch } from '@headlessui/vue'
 
-const localMethods = {}
+const localMethods = {
+  storageClearAll(){
+    Object.keys(this.store).forEach( store => {
+      this.store[store].$reset
+    })
+    localStorage.clear()
+    this.$forceUpdate
+  }
+}
 
 export default defineComponent({
   name: 'UserPreferences',
@@ -381,6 +389,7 @@ export default defineComponent({
   },
 
   beforeMount(){
+    
   },
 
   async mounted() {

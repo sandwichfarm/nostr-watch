@@ -60,10 +60,9 @@ const localMethods = {
       async () => {
         this.relays = [...this.store.relays.getAll]
         const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
-        let relayChunks = this.chunk(100, relays)
+        let relayChunks = this.chunk(50, relays)
         const promises = []
         for (let i = 0; i < relayChunks.length; i++) {
-          
           const resultsChunk = {}
           const promise = await new Promise( resolve => {
             const relayChunk = relayChunks[i]
@@ -97,40 +96,36 @@ const localMethods = {
                   }
 
                   const uptimeLatency = this.getUptimePercentage(relay)
-                  if(uptimeLatency)
-                    result.uptime = uptimeLatency
+                  // if(uptimeLatency)
+                  result.uptime = uptimeLatency
                   
                   if(data?.info)
                     result.info = data.info
                   
-                  if(data?.latency[this.store.prefs.region]) //this one will create the illusion that everything is ok, TODO: Fix daemons and remove.
-                    result.latency = data?.latency[this.store.prefs.region] 
+                  // if(data?.latency[this.store.prefs.region]) //this one will create the illusion that everything is ok, TODO: Fix daemons and remove.
+                  result.latency = data?.latency[this.store.prefs.region] 
 
                   if(event?.tags){
                     const connect = event.tags.filter( tag => tag[0] == 'online'),
                           read = event.tags.filter( tag => tag[0] == 'read'),
                           write = event.tags.filter( tag => tag[0] == 'write')
-                  
+                    
+                    // if( connect[0][1] === 'true' && read[0][1] === 'true' && write[0][1] === 'false')
+                    //   console.log(result.url, 'is restricted')
 
                     result.check = {
                       connect: connect.length && connect[0][1] === 'true' ? true : false,
                       read: read.length && read[0][1] === 'true' ? true : false,
                       write: write.length && write[0][1] === 'true' ? true : false,
                     }
-                  }
-                  
-                  if(topics.length)
-                    console.log(result.url, this.timeSince(event.created_at*1000), topics.length)
-
-                  
+                  }                  
 
                   if(topics.length)
                     result.topics = topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic) )
-                  
-                  console.log(result.url, topics)
                     
                   result.aggregate = this.getAggregate(result)
-                  resultsChunk[relay] = Object.assign(this.results[relay] || {}, result)
+
+                  resultsChunk[relay] = Object.assign(this.results?.[relay] || {}, result)
 
                   if(this.store.tasks.isProcessed(this.slug, relay))
                     return 

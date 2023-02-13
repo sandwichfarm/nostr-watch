@@ -33,7 +33,7 @@ import { RelayPool } from 'nostr'
 const localMethods = {
   invalidatePulse(force){
     console.log('invalidate pulse')
-    if( (!this.isExpired(this.slug, 60*1000) && !force) && !this.isSingle ) 
+    if( (!this.isExpired(this.slug, 1) && !force) && !this.isSingle ) 
       return
     
     // const pool = new RelayPool( relays )

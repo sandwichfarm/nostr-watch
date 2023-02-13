@@ -201,6 +201,9 @@
     mounted(){
       this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
       this.refreshCounts()
+      this.$forceUpdate
+      // setInterval( () => console.log('filters partial', Object.keys(this.results).length, 'results'), 1000 )
+      
       setInterval( this.doRefreshCounts, 1000 )
     },
     updated(){
@@ -232,11 +235,11 @@
     },
     methods: Object.assign(RelayMethods, {
       doRefreshCounts(){
-        console.log('active item', this.store.layout.getActiveItem('relays/find').slug, this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)
+        // console.log('active item', this.store.layout.getActiveItem('relays/find').slug, this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)
         if(this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)
           return 
         this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
-        this.refreshCounts()
+        this.refreshCounts( this.getRelays(this.store.relays.getAll) )
         console.log('refresh!')
       }
     }),

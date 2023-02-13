@@ -1,7 +1,5 @@
 import crypto from "crypto"
 import {sort} from 'array-timsort'
-import { relays } from '../../relays.yaml'
-// import { geo } from '../../cache/geo.yaml'
 
 export default {
   invalidateTask(){
@@ -21,14 +19,14 @@ export default {
     } else {
       this.store.filters.addRule(ref, key, unique, reset, always)
     }
-    this.refreshCounts()
+    this.refreshCounts(this.getRelays(this.store.relays.getAll))
   },
-  refreshCounts(){
-    this.relays = this.getRelays( relays ) 
+  refreshCounts(relays){
+    //begging to be DRY
     if(Object.keys(this.store.stats?.nips).length) 
       this?.store?.stats?.nips?.forEach( nip => {
-        this.store.filters.set(
-          this?.relays?.filter( relay => this.results[relay]?.info?.supported_nips?.includes( parseInt( nip.key ) ))?.length || 0,
+        this.store.filters.set(    
+          this.getRelaysByNip(relays, parseInt( nip.key )).length,
           'count',
           'nips',
           nip.key,
@@ -37,7 +35,7 @@ export default {
     if(Object.keys(this.store.stats?.software).length)
       this.store.stats?.software?.forEach( software => {
         this.store.filters.set(
-          this?.relays?.filter( relay => this.results[relay]?.info?.software?.includes( software.key ))?.length || 0,
+          this.getRelaysBySoftware(relays, software.key).length,
           'count',
           'software',
           software.key,
@@ -46,7 +44,7 @@ export default {
     if(Object.keys(this.store.stats?.countries).length)
       this.store.stats?.countries?.forEach( country => {
         this.store.filters.set(
-          this?.relays?.filter( relay => this.store.relays.geo?.[relay]?.country?.includes( country.key ))?.length || 0,
+          this.getRelaysByCountry(relays, country.key).length,
           'count',
           'countries',
           country.key,
@@ -55,7 +53,7 @@ export default {
     if(Object.keys(this.store.stats?.continents).length)
       this.store.stats?.continents?.forEach( continent => {
         this.store.filters.set(
-          this?.relays?.filter( relay => this.store.relays.geo?.[relay]?.continentName?.includes( continent.key ))?.length || 0,
+          this.getRelaysByContinent(relays, continent.key).length,
           'count', 
           'continents', 
           continent.key
@@ -128,12 +126,41 @@ export default {
     })
   },
   getRelays(relays){
-    // relays = this.filterRelays(relays)
-    // if(this.store.filters.enabled)
+    if(!relays)
+      relays = this.store.relays.getAll
     relays = this.filterRelays(relays)
     relays = this.sortRelays(relays)
     return relays
   },
+
+  //CONVERT THESE TO COMPUTED!!!!
+  getRelaysByNip(arr, needle){
+    return arr.filter( relay => this.results?.[relay]?.info?.supported_nips?.includes(needle) )
+  },
+  getRelaysByValidPubKey(arr){
+    return arr.filter( relay => this.results?.[relay]?.pubkeyValid )
+  },
+  getRelaysBySoftware(arr, needle){
+    if(needle === 'unknown')
+      return arr.filter( relay => !this.results?.[relay]?.info?.software )
+    else
+      return arr.filter( relay => this.results?.[relay]?.info?.software?.includes(needle) )
+  },
+  getRelaysByCountry(arr, needle){
+    if(needle === 'unknown')
+      return arr.filter( relay => !this.store.relays.getGeo(relay)?.country )
+    else
+      return arr.filter( relay => this.store.relays.getGeo(relay)?.country?.includes(needle) )
+  },
+  getRelaysByContinent(arr, needle){
+    if(needle === 'unknown')
+    return arr.filter( relay => !this.store.relays.getGeo(relay)?.continentName )
+    else
+    return arr.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) )
+  },
+  //end computed.
+
+
   filterRelays(relays){
     // await new Promise( resolve => setTimeout(resolve, 300))
     const haystacks = ['nips','valid/nip11','software','countries','continents','aggregate']
@@ -143,31 +170,21 @@ export default {
       needles?.forEach( needle => {
         if(!this.store.filters.enabled && !this.store.filters.alwaysEnabled?.[haystack])
           return 
-        if(haystack === 'nips'){
-          needle = parseInt(needle)
-          filtered = filtered.filter( relay => this.results?.[relay]?.info?.supported_nips?.includes(needle) )
-        }
-        if(haystack === 'valid/nip11'){
-          filtered = filtered.filter( relay => this.results?.[relay]?.pubkeyValid )
-        }
-        if(haystack === 'software'){
-          if(needle === 'unknown')
-            filtered = filtered.filter( relay => !this.results?.[relay]?.info?.software )
-          else
-            filtered = filtered.filter( relay => this.results?.[relay]?.info?.software?.includes(needle) )
-        }
-        if(haystack === 'countries'){
-          if(needle === 'unknown')
-            filtered = filtered.filter( relay => !this.store.relays.getGeo(relay)?.country )
-          else
-            filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.country?.includes(needle) )
-        }
-        if(haystack === 'continents'){
-          if(needle === 'unknown')
-            filtered = filtered.filter( relay => !this.store.relays.getGeo(relay)?.continentName )
-          else
-            filtered = filtered.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) )
-        }
+        if(haystack === 'nips')
+          filtered = this.getRelaysByNip(filtered, parseInt(needle))
+
+        if(haystack === 'valid/nip11')
+          filtered = this.getRelaysByValidPubKey(filtered)
+
+        if(haystack === 'software')
+          filtered = this.getRelaysBySoftware(filtered, needle)
+
+        if(haystack === 'countries')
+          filtered = this.getRelaysByCountry(filtered, needle)
+
+        if(haystack === 'continents')
+          filtered = this.getRelaysByContinent(filtered, needle)
+
         if(haystack === 'aggregate'){
           const aggregate = this.store.relays.getRelays(needle, this.results)
           filtered = filtered.filter( relay => aggregate.includes(relay) )
@@ -176,6 +193,8 @@ export default {
     })
     return filtered
   },
+
+  
   sortRelays(relays){
     if(this.store.prefs.sortLatency)
       sort(relays, (relay1, relay2) => {
@@ -283,7 +302,6 @@ export default {
 
     setUptimePercentage(relay){
       const perc = this.getUptimePercentage(relay)
-  
       const result = this.getCache(relay)
       if(!result)
         return

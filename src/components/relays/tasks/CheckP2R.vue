@@ -14,8 +14,6 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { resolve } from 'path'
-
 const localMethods = {
   invalidateP2R(force){
     const self = this
@@ -26,36 +24,20 @@ const localMethods = {
       async () => {
         const relays = self.store.relays.getRelays('paid', self.results)
         for(let i=0;i<relays.length;i++){
-          self.timeout = setTimeout( () => {
-            self.results[relay].validP2R = false
-            resolve()
-          }, 2000)
           const relay = relays[i]
-          await new Promise( resolve => {
-            console.log(self.results[relay].info.payments_url, 'begin check')           
-            fetch(self.results[relay].info.payments_url)
-              .then((response) => {
-                console.log(self.results[relay].info.payments_url, response.ok, response)
-                if (!response.ok) {
-                  console.log('not ok', response)
-                  self.results[relay].validP2R = false
-                  return resolve()
-                }
-                if (response.ok) {
-                  self.results[relay].validP2R = true
-                  return resolve()
-                }
-              })
-              .catch( (err) => {
-                console.log('err', err)
-                console.warn(self.results[relay].info.payments_url, err)
-                self.results[relay].validP2R = false
-                resolve()
-              })
-          })
-          clearTimeout(self.timeout)
-          self.store.tasks.addProcessed(self.slug, relay)
+          try {
+            const hostname = new URL(this.results[relay].info.payments_url).hostname 
+            if(hostname.includes('your-domain.com'))
+              this.results[relay].validP2R = false 
+            else 
+            this.results[relay].validP2R = true 
+          }
+          catch(e){
+            this.results[relay].validP2R = false 
+          }
+          this.setCache(this.results[relay])
         }
+        
         this.store.tasks.completeJob(self.slug)
       },
       true

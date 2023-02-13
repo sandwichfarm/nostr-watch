@@ -321,3 +321,4 @@ relays:
   - wss://nostr.lightning.contact
   - wss://at.nostrworks.com
   - wss://nostr.600.wtf
+  - wss://relay.nostr.net.in

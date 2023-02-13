@@ -9,7 +9,8 @@
       </div>
 
       <span class="mr-3 py-1 px-2 bg-black/20 inline-block cursor-pointer" 
-        @click="store.filters.reset()">
+        @click="resetFilters()"
+        v-if="areClearableFilters">
         Clear Filters
       </span>
 
@@ -203,8 +204,7 @@
       this.refreshCounts()
       this.$forceUpdate
       // setInterval( () => console.log('filters partial', Object.keys(this.results).length, 'results'), 1000 )
-      
-      setInterval( this.doRefreshCounts, 1000 )
+      // setInterval( this.doRefreshCounts, 1000 )
     },
     updated(){
       
@@ -241,8 +241,17 @@
         this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
         this.refreshCounts( this.getRelays(this.store.relays.getAll) )
         console.log('refresh!')
+      },
+      resetFilters(){
+        this.store.filters.reset()
+        this.refreshCounts( this.getRelays(this.store.relays.getAll) )
       }
     }),
-    computed: Object.assign(SharedComputed, {})
+    computed: Object.assign(SharedComputed, {
+      areClearableFilters(){
+        return true
+        // this.store.filters.getRuleGroups.forEach( haystackRef => haystackRef.filter( rule => !this.store.filters.alwaysEnabled[haystackRef].includes(rule)) ).length
+      }
+    })
   })
 </script>

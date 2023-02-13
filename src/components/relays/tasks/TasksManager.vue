@@ -34,7 +34,7 @@
       v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing || isSingle" />
     
-    <!-- <CheckP2R v-if="!isSingle" v-bind:resultsProp="results" /> -->
+    <CheckP2R v-if="!isSingle" v-bind:resultsProp="results" />
 
     <CheckDNS v-if="!isSingle" />
     
@@ -74,7 +74,7 @@ import HistoryTask from './HistoryTask.vue'
 import CheckDNS from './CheckDNS.vue'
 import CheckGeo from './CheckGeo.vue'
 import GetTopics from './GetTopics.vue'
-// import CheckP2R from './CheckP2R.vue'
+import CheckP2R from './CheckP2R.vue'
 // import TemplateTask from './TemplateTask.vue'
 
 
@@ -96,7 +96,7 @@ export default defineComponent({
     CheckDNS,
     CheckGeo,
     GetTopics,
-    // CheckP2R
+    CheckP2R
     // TemplateTask,
     // RelayCanonicalsTask,
     // RelayOperatorTask

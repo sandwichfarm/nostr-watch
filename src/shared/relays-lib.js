@@ -170,6 +170,7 @@ export default {
       needles?.forEach( needle => {
         if(!this.store.filters.enabled && !this.store.filters.alwaysEnabled?.[haystack])
           return 
+
         if(haystack === 'nips')
           filtered = this.getRelaysByNip(filtered, parseInt(needle))
 
@@ -189,6 +190,7 @@ export default {
           const aggregate = this.store.relays.getRelays(needle, this.results)
           filtered = filtered.filter( relay => aggregate.includes(relay) )
         }
+        
       })
     })
     return filtered

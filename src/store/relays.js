@@ -34,7 +34,7 @@ export const useRelaysStore = defineStore('relays', {
 
       if( 'paid' == aggregate ){
         // console.log('paid!', state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )?.length, state.urls.length )
-        return state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )
+        return state.urls.filter( (relay) => results?.[relay]?.info?.limitation?.payment_required )
       }
 
       if( 'online' == aggregate )

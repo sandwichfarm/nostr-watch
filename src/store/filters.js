@@ -2,15 +2,16 @@ import { defineStore } from 'pinia'
 
 export const useFilterStore = defineStore('filters', {
   state: () => ({ 
-    enabled: false,
-    alwaysEnabled: {},
-    hide: {},
-    isValid: new Object(),
-    rules: new Object(),
-    meta: new Object(),
-    count: { nips: {}, software: {}, countries: {}, continents: {} },
+    enabled:          false,
+    alwaysEnabled:    new Object(),
+    hide:             new Object(),
+    isValid:          new Object(),
+    rules:            new Object(),
+    meta:             new Object(),
+    count:            { nips: {}, software: {}, countries: {}, continents: {} }, //fix this or remove.
   }),
   getters: {
+    getRuleGroups: state => Object.keys(state.rules) || [],
     getRules: state => haystackRef => {
       return state.rules?.[haystackRef]
     },

@@ -29,26 +29,31 @@ export const useRelaysStore = defineStore('relays', {
       return state.aggregatesAreSet ? shuffle(state.aggregates.public) : shuffle(state.urls)
     },
     getRelays: (state) => (aggregate, results) => {
-      if( 'paid' == aggregate ){
-        console.log('paid!', state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )?.length, state.urls.length )
-        return state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )
-      }
       if( 'all' == aggregate )
         return state.urls.map(x=>x)
-      if( 'online' == aggregate ){
-        return state.urls.filter( (relay) => results?.[relay]?.check?.connect )
+
+      if( 'paid' == aggregate ){
+        // console.log('paid!', state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )?.length, state.urls.length )
+        return state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )
       }
-      if( 'nips' === aggregate){
+
+      if( 'online' == aggregate )
+        return state.urls.filter( (relay) => results?.[relay]?.check?.connect )
+      
+      if( 'nips' === aggregate)
         return state.urls.filter( (relay) => { 
           return  results?.[relay]?.info?.supported_nips  
                   && Object.keys(results[relay].info.supported_nips).length 
                   && results?.[relay]?.pubkeyValid
         })
-      }
+
       if( 'favorite' == aggregate )
         return state.favorites
 
-      return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
+      if(aggregate === 'public')
+        return state.urls.filter( (relay) => results?.[relay]?.aggregate == 'public' && !results?.[relay]?.info?.payments_url )
+      else 
+        return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
     },
     
     getByNip: (state) => (nip, results) => {
@@ -56,7 +61,12 @@ export const useRelaysStore = defineStore('relays', {
     },
 
     getByAggregate: state => aggregate => {
-      const results = state.urls.filter( (relay) => state.results?.[relay]?.aggregate == aggregate)
+      let results
+      if(aggregate === 'public')
+        results = state.urls.filter( (relay) => state.results?.[relay]?.aggregate == 'public' && !(state.results?.[relay]?.info?.payments_url instanceof String) )
+      else 
+        results = state.urls.filter( (relay) => state.results?.[relay]?.aggregate == aggregate)
+
       this.setAggregate(aggregate, results)
       return results
     },

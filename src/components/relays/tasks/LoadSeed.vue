@@ -49,7 +49,7 @@ import { RelayPool } from 'nostr'
 // import { Inspector } from 'nostr-relay-inspector'
 
 const localMethods = {
-  invalidate(force, single){
+  LoadSeed(force, single){
     // if( ( this.store.tasks.getLastUpdate('relays/check') || ( this.store.tasks.processed?.['relays/check'] && this.store.tasks.processed?.['relays/check'].length ) ) && !force ) 
     //   return
     if( (!this.isExpired(this.slug, 15*60*1000) && !force) && !this.isSingle ) 
@@ -58,95 +58,7 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        this.relays = [...this.store.relays.getAll]
-        const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
-        let relayChunks = this.chunk(50, relays)
-        const promises = []
-        for (let i = 0; i < relayChunks.length; i++) {
-          const resultsChunk = {}
-          const promise = await new Promise( resolve => {
-            const relayChunk = relayChunks[i]
-            const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
-            let $relay
-            this.pool = new RelayPool(['wss://history.nostr.watch'])
-            this.pool
-              .on('open', relay => {
-                $relay = relay
-                $relay.subscribe(subid, {
-                  kinds:    [30303],
-                  "#d":     single ? [ single ] : relayChunk,
-                  authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
-                })
-              })
-              .on('event', async (relay, sub_id, event) => {
-                if(subid === sub_id){
-                  const relay = event.tags[0][1]
-                  const data = JSON.parse(event.content)
-                  const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
-                  const result = {
-                    url: relay,
-                    
-                    check: {
-                      connect: false,
-                      read: false,
-                      write: false,
-                      latency: data?.latency[this.store.prefs.region]?.final ? true : false,
-                      averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
-                    },
-                  }
-
-                  const uptimeLatency = this.getUptimePercentage(relay)
-                  // if(uptimeLatency)
-                  result.uptime = uptimeLatency
-                  
-                  if(data?.info)
-                    result.info = data.info
-                  
-                  // if(data?.latency[this.store.prefs.region]) //this one will create the illusion that everything is ok, TODO: Fix daemons and remove.
-                  result.latency = data?.latency[this.store.prefs.region] 
-
-                  if(event?.tags){
-                    const connect = event.tags.filter( tag => tag[0] == 'online'),
-                          read = event.tags.filter( tag => tag[0] == 'read'),
-                          write = event.tags.filter( tag => tag[0] == 'write')
-                    
-                    // if( connect[0][1] === 'true' && read[0][1] === 'true' && write[0][1] === 'false')
-                    //   console.log(result.url, 'is restricted')
-
-                    result.check = {
-                      connect: connect.length && connect[0][1] === 'true' ? true : false,
-                      read: read.length && read[0][1] === 'true' ? true : false,
-                      write: write.length && write[0][1] === 'true' ? true : false,
-                    }
-                  }                  
-
-                  if(topics.length)
-                    result.topics = topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic) )
-                    
-                  result.aggregate = this.getAggregate(result)
-
-                  resultsChunk[relay] = Object.assign(this.results?.[relay] || {}, result)
-
-                  if(this.store.tasks.isProcessed(this.slug, relay))
-                    return 
-                  this.store.tasks.addProcessed(this.slug, relay)
-                }
-              })
-              .on('eose', async () => {
-                // this.pool.unsubscribe(subid)
-                this.closePool(this.pool)
-                await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
-                resolve()
-              })
-          })
-          promises.push(promise)
-          Object.keys(resultsChunk).forEach( result => this.setCache(resultsChunk[result]) )
-          this.results = Object.assign(this.results, resultsChunk)
-          await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
-        }
-        await Promise.all(promises)
-        this.store.tasks.completeJob(this.slug)
-        relayChunks = null
+        this.getFromHistory(single)
       },
       true
     )
@@ -158,7 +70,7 @@ const localMethods = {
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
       if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
-        this.invalidate()
+        this.LoadSeed()
     }, 15*60*1000)
   },
   timeUntilRefresh(){
@@ -169,6 +81,102 @@ const localMethods = {
               +this.refreshEvery-Date.now()
             )
     ) 
+  },
+  async getFromHistory(single){
+    this.relays = [...this.store.relays.getAll]
+    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
+    let relayChunks = this.chunk(250, relays),
+        resultsChunk = {}
+    const promises = []
+    for (let i = 0; i < relayChunks.length; i++) {
+      
+      const promise = await new Promise( resolve => {
+        const relayChunk = relayChunks[i]
+        const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
+        let $relay
+        this.pool = new RelayPool(['wss://history.nostr.watch'])
+        this.pool
+          .on('open', relay => {
+            $relay = relay
+            $relay.subscribe(subid, {
+              kinds:    [30303],
+              "#d":     single ? [ single ] : relayChunk,
+              authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
+            })
+          })
+          .on('event', async (relay, sub_id, event) => {
+            if(subid === sub_id){
+              const relay = event.tags[0][1]
+              const data = JSON.parse(event.content)
+              // const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
+              const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online')
+              const result = {
+                url: relay,
+                
+                check: {
+                  connect: false,
+                  read: false,
+                  write: false,
+                  latency: data?.latency[this.store.prefs.region]?.final ? true : false,
+                  averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
+                },
+              }
+
+              // if(uptimeLatency)
+              result.uptime = this.getUptimePercentage(relay)
+              
+              if(data?.info)
+                result.info = data.info
+              
+              // if(data?.latency[this.store.prefs.region]) //this one will create the illusion that everything is ok, TODO: Fix daemons and remove.
+              result.latency = data?.latency[this.store.prefs.region] 
+
+              if(event?.tags){
+                const connect = event.tags.filter( tag => tag[0] == 'online'),
+                      read = event.tags.filter( tag => tag[0] == 'read'),
+                      write = event.tags.filter( tag => tag[0] == 'write')
+                
+                // if( connect[0][1] === 'true' && read[0][1] === 'true' && write[0][1] === 'false')
+                //   console.log(result.url, 'is restricted')
+
+                result.check = {
+                  connect: connect.length && connect[0][1] === 'true' ? true : false,
+                  read: read.length && read[0][1] === 'true' ? true : false,
+                  write: write.length && write[0][1] === 'true' ? true : false,
+                }
+              }                  
+
+              if(topics.length)
+                result.topics = this.cleanTopics(topics)
+                
+              result.aggregate = this.getAggregate(result)
+
+              resultsChunk[relay] = result
+
+              if(this.store.tasks.isProcessed(this.slug, relay))
+                return 
+              this.store.tasks.addProcessed(this.slug, relay)
+            }
+          })
+          .on('eose', async () => {
+            // this.pool.unsubscribe(subid)
+            this.closePool(this.pool)
+            await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
+            resolve()
+          })
+      })
+      console.log('results chunk', Object.keys(resultsChunk).length)
+      promises.push(promise)
+      this.store.results.mergeLeft(resultsChunk)
+      await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
+    }
+    await Promise.all(promises)
+    
+    this.store.tasks.completeJob(this.slug)
+    relayChunks = null
+  },
+  async checkOffline(){
+
   },
   timeSinceRefresh(){
     return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
@@ -208,33 +216,29 @@ export default defineComponent({
     
     this.relays = [...this.store.relays.getAll]
 
-    for(let ri=0;ri-this.relays.length;ri++){
-      const relay = this.relays[ri],
-            cache = this.getCache(relay)
-      this.results[relay] = cache
-    }
+    // for(let ri=0;ri-this.relays.length;ri++){
+    //   const relay = this.relays[ri],
+    //         cache = this.getCache(relay)
+    //   this.store.results.get(relay) = cache
+    // }
   },
   mounted(){
     if(this.isSingle) {
       this.slug = `relays/seed/${this.relayFromUrl}`
-      this.invalidate(true, this.relayFromUrl)
+      this.LoadSeed(true, this.relayFromUrl)
     }  
     else {
       if(this.store.tasks.isTaskActive(this.slug))
-        this.invalidate(true)
+        this.LoadSeed(true)
       else
-        this.invalidate()
+        this.LoadSeed()
     }
 
     if(!this.store.prefs.clientSideProcessing)
       this.setRefreshInterval()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {

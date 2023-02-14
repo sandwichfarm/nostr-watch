@@ -1,6 +1,5 @@
 <template>
-  <RelaysNav 
-    v-bind:resultsProp="results" />
+  <RelaysNav />
 
   <div id="wrapper" 
     class="mx-auto max-w-7xl p-8 lg:p-32 mt-8 bg-black/5 dark:bg-black/20 rounded-lg" 
@@ -25,7 +24,7 @@
             <div class="sm:flex sm:items-start">
               <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                 <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Public Relays</h3>
-                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').length }}</p>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'public').length }}</p>
               </div>
             </div>
           </div>
@@ -35,7 +34,7 @@
             <div class="sm:flex sm:items-start">
               <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                 <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Restricted Relays</h3>
-                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted').length }}</p>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'restricted').length }}</p>
               </div>
             </div>
           </div>
@@ -45,7 +44,7 @@
             <div class="sm:flex sm:items-start">
               <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                 <h3 class="text-sm leading-6 font-medium text-gray-400">Offline Relays</h3>
-                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'offline').length }} </p>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'offline').length }} </p>
               </div>
             </div>
           </div>
@@ -239,9 +238,6 @@ export default defineComponent({
 
   beforeMount(){
     this.relays = this.store.relays.getAll
-    this.relays.forEach(relay => {
-      this.results[relay] = this.getCache(relay)
-    })
     // this.bySupportedNips = this.collateSupportedNips
     // this.byContinent = this.collateContinents
     // this.byCountry = this.collateCountries
@@ -288,7 +284,7 @@ export default defineComponent({
     //PUT OUT TO DRY!
     collateSupportedNips(){
       const dict = new Object()
-      Object.entries(this.results).forEach( (result) => {
+      Object.entries(this.store.results.all).forEach( (result) => {
         result = result[1]
         if(result?.info?.supported_nips)
           result?.info?.supported_nips.forEach( nip => { 
@@ -361,13 +357,13 @@ export default defineComponent({
     collateSoftware(){
       const bySoftware = new Object()
       this.relays.forEach( relay => {
-        if( !this.results?.[relay]?.info?.software ) {
+        if( !this.store.results.get(relay)?.info?.software ) {
           if( !(bySoftware.unknown instanceof Set) )
             bySoftware.unknown = new Set()
           bySoftware.unknown.add(relay)
           return
         }
-        const software = this.results[relay].info.software
+        const software = this.store.results.get(relay).info.software
         if( !(bySoftware[software] instanceof Set) )
           bySoftware[software] = new Set() 
         bySoftware[software].add(relay)

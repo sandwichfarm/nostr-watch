@@ -11,12 +11,10 @@
 
     <GetPulse />
 
-    <LoadSeed 
-      v-bind:resultsProp="results"
+    <LoadSeed
       v-if="!store.prefs.clientSideProcessing || isSingle" />
 
     <CheckNip11
-      v-bind:resultsProp="results"
       v-if="
         (
           (
@@ -29,27 +27,28 @@
         )
         && !isSingle
       " />
-
-    <RefreshTask
-      v-bind:resultsProp="results"
-      v-if="store.prefs.clientSideProcessing || isSingle" />
-    
-    <CheckP2R v-if="!isSingle" v-bind:resultsProp="results" />
-
-    <CheckDNS v-if="!isSingle" />
-    
+      
     <CheckGeo v-if="!isSingle" />
 
+    <RefreshTask 
+      v-if="store.prefs.clientSideProcessing || isSingle || this.store.prefs.isFirstVisit" />
     
+    <CheckP2R v-if="!isSingle" />
 
-    <HistoryTask
-      :resultsProp="results" />
+    <CheckDNS v-if="!isSingle" />
+
+    <HistoryTask />
 
     <GetTopics
-      v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing && !isSingle" />
 
     <UserRelayList />
+
+    <FirstVisit 
+      v-if="this.store.prefs.isFirstVisit
+            && this.store.tasks.getLastUpdate('relays/check') 
+            && this.store.tasks.getLastUpdate('relays/seed')
+            && !isSingle"/>
   </span>
 </span>
 </template>
@@ -75,6 +74,7 @@ import CheckDNS from './CheckDNS.vue'
 import CheckGeo from './CheckGeo.vue'
 import GetTopics from './GetTopics.vue'
 import CheckP2R from './CheckP2R.vue'
+import FirstVisit from './FirstVisit.vue'
 // import TemplateTask from './TemplateTask.vue'
 
 
@@ -96,7 +96,8 @@ export default defineComponent({
     CheckDNS,
     CheckGeo,
     GetTopics,
-    CheckP2R
+    CheckP2R,
+    FirstVisit
     // TemplateTask,
     // RelayCanonicalsTask,
     // RelayOperatorTask

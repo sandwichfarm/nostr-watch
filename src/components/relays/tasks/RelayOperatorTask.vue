@@ -128,18 +128,14 @@ export default defineComponent({
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
-    this.relays = Array.from(new Set(relays))
+    this.relays = this.store.relays.getAll()
   },
   mounted(){
     //console.log('task', this.slug, 'is processing:', this.store.tasks.isTaskActive(this.slug))
     this.invalidateTask()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, SharedMethods),
   props: {
     resultsProp: {

@@ -19,7 +19,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import { setupStore } from '@/store'
 
@@ -30,10 +30,8 @@ import { getGeo } from '@/utils'
 
 import { geo } from '../../../../cache/geo.yaml'
 
-// import { Inspector } from 'nostr-relay-inspector'
-
 const LocalMethods = {
-  invalidate(force){ 
+  GeoJob(force){ 
 
     if( !this.isExpired(this.slug, 24*60*60*1000) && !force )
       return
@@ -96,11 +94,9 @@ export default defineComponent({
       interval: null
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
   created(){
@@ -109,28 +105,16 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){},
-  mounted(){  
-    // if(this.store.tasks.isTaskActive(this.slug))
-    //   this.invalidate(true)
-    // else
-    //   this.invalidate()
-    this.invalidateTask()
+  mounted(){ 
+    if(this.store.tasks.isTaskActive(this.slug))
+      this.GeoJob(true)
+    else
+      this.GeoJob() 
     // this.interval = setInterval( this.invalidateTask, 1000 )
   },
   updated(){},
   methods: Object.assign(RelayMethods, LocalMethods),
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  computed: Object.assign(SharedComputed, {}),
+  props: {},
 })
 </script>

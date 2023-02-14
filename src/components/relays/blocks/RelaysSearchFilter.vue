@@ -76,7 +76,7 @@ const localMethods = {
 
     const fn = (relays) => {
        return relays.filter( relay => {
-        const exists = this.result?.[relay]?.info?.supported_nips.includes(value)
+        const exists = this.store.results.get(relay)?.info?.supported_nips.includes(value)
         return not ? !exists : exists 
       })
     }

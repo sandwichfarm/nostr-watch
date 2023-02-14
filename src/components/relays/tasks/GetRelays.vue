@@ -21,7 +21,7 @@ import SharedComputed from '@/shared/computed.js'
 import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
-  invalidate(force){
+  GetRelays(force){
     if( (!this.isExpired(this.slug, 60*1000) && !force) ) 
       return
     this.queueJob(
@@ -88,11 +88,9 @@ export default defineComponent({
     }
   },
   setup(props){
-    const {resultsProp: results} = toRefs(props)
     const {relaysProp: relays} = toRefs(props)
     return { 
       store : setupStore(),
-      results: results,
       relays: relays
     }
   },
@@ -108,28 +106,15 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    //console.log('is processing', this.store.tasks.isTaskActive(this.slug))
-
-    // if(this.store.tasks.isTaskActive(this.slug))
-    //   this.invalidate(true)
-    // else
-    //   this.invalidate()
-    this.invalidate()
+    if(this.store.tasks.isTaskActive(this.slug))
+      this.GetRelays(true)
+    else
+      this.GetRelays()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
     relaysProp: {
       type: Array,
       default(){

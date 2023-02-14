@@ -52,76 +52,8 @@ import { Inspector } from 'nostr-relay-inspector'
 // import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
-  migrateLegacy(){
-    let hit = false 
-    for(let i=0;i<this.relays.length;i++) {
-      const cache = localStorage.getItem(`nostrwatch_${this.relays[i]}`)
-      if(!cache) 
-        continue
-      hit = true 
-      break;
-    }
-    if(hit){
-      this.relays.forEach( relay => {
-        const oldKey = `nostrwatch_${relay}`
-        const oldCache = localStorage.getItem(oldKey)
-        if(oldCache instanceof Object)
-          this.setCache(oldCache)
-        localStorage.removeItem(oldKey)
-      })
-    }
-  },
-
-  queueJob: function(id, fn, unique){
-    this.store.tasks.addJob({
-      id: id,
-      handler: fn,
-      unique: unique
-    })
-  },
-
-  setRefreshInterval: function(){
-    clearInterval(this.interval)
-    this.interval = setInterval(() => {
-      if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )
-        return
-      
-      this.untilNext = this.timeUntilRefresh()
-      this.sinceLast = this.timeSinceRefresh()
-
-      // if(this.store.tasks.getProcessed(this.slug).length >= this.relays.length && !this.isSingle){
-      //   this.store.tasks.updateNow(this.slug)
-      //   this.store.tasks.finishProcessing(this.slug)
-      // }
-
-      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
-        this.invalidate()
-        
-    }, 1000)
-  },
-  setLatencyInterval: function(){
-    this.setLatencyInterval = setInterval( () => {
-
-    })
-  },
-
-  refreshNow(){
-    this.invalidate(true)
-  },
-
-  handleVisibility(){
-    if(document.visibilityState === 'hidden')
-      this.windowActive = false 
-    else 
-      this.windowActive = true
-
-    if(this.windowActive) 
-      this.store.layout.setActiveTab(this.$tabId)
-  },
-
-
-  invalidate: async function(force, single){
-    console.log('invalidate?', !((!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle), this.windowActive)
+  async CheckRelaysJob(force, single){
+    // console.log('invalidate?', !((!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle), this.windowActive)
     if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle ) 
       return
 
@@ -151,7 +83,7 @@ const localMethods = {
           latency: result.check.latency,
           averageLatency: result.check.averageLatency
         },
-      }
+      } 
 
       if(Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostr-relay-inspector
         resultPruned.info = result.info
@@ -193,34 +125,31 @@ const localMethods = {
         const chunk = relayChunks[c]
         for(let index = 0; index < chunk.length; index++) {
           const promise = new Promise( resolve => {
-          const relay = chunk[index] 
-          this.check(relay)
-            .then((result) => {
-              this.completeRelay(result, resolve)
-            })
-            .catch( () => { 
-              resolve()
-            }) //wait, what? TODO: fix
+            const relay = chunk[index] 
+            this.check(relay)
+              .then((result) => {
+                resultsChunk[result.url] = result 
+                this.completeRelay(result, resolve)
+              })
+              .catch( () => { 
+                resolve()
+              })
           })
           promises.push(promise)
         }
         await Promise.all(promises)
-        this.results = Object.assign({}, resultsChunk, this.results)
-        Object.keys(resultsChunk).forEach( relay => { 
-          this.setCache(resultsChunk[relay])
-        })
+        this.store.results.mergeDeep(resultsChunk)
+        console.log('merging', Object.keys(resultsChunk).length, 'into', Object.keys(this.store.results.all))
       }
       this.completeAll(single)
     } 
   },
 
   completeRelay: function(result, resolve){
-    console.log('completeRelay()', result.url, result)
-    result = this.pruneResult(result.url, result)
-    result = Object.assign(this.results[result.url] || {}, result)
-    this.setCache(result)
-    this.store.tasks.addProcessed(this.slug, result.url)
-    this.results[result.url] = result
+    const relay = result.url
+    result = this.pruneResult(relay, result)
+    console.log(result.url, result)
+    this.store.tasks.addProcessed(this.slug, relay)
     if(resolve instanceof Function)
       resolve()
   },
@@ -231,9 +160,13 @@ const localMethods = {
     if(single)
       return 
 
-    this.store.relays.setAggregateCache('public', Object.keys(this.results).filter( result => this.results[result].aggregate === 'public' ))
-    this.store.relays.setAggregateCache('restricted', Object.keys(this.results).filter( result => this.results[result].aggregate === 'restricted' ))
-    this.store.relays.setAggregateCache('offline', Object.keys(this.results).filter( result => this.results[result].aggregate === 'offline' ))
+    ['public', 'restricted', 'offline'].forEach( aggregate => {
+      this.store.relays
+        .setAggregateCache(
+          aggregate,
+          this.store.relays.getAll
+            .filter(  relay => this.store.results.get(relay).aggregate === aggregate ))
+    })
   },
 
   check: async function(relay){
@@ -248,13 +181,9 @@ const localMethods = {
           getInfo: this.store.prefs.checkNip11 || this.isSingle,
           getIdentities: false,
           run: true,
-          // debug: true,
-          // connectTimeout: this.getDynamicTimeout,
-          // readTimeout: this.getDynamicTimeout,
-          // writeTimeout: this.getDynamicTimeout,
-          connectTimeout: 15*1000,
-          readTimeout: 15*1000,
-          writeTimeout: 15*1000,
+          connectTimeout: 5*1000,
+          readTimeout: 5*1000,
+          writeTimeout: 5*1000,
         }
       
       // if(this.isSingle)
@@ -266,8 +195,7 @@ const localMethods = {
       const $inspector = new Inspector(relay, opts)
 
       $inspector
-        .on('open', () => {          
-        })
+        .on('open', () => {})
         .on('complete', (instance) => {
           //console.log('completed?', instance.result)
           instance.result.aggregate = this.getAggregate(instance.result)
@@ -286,7 +214,7 @@ const localMethods = {
   setAverageLatency: function(){
     const latencies = new Array()
     this.relays.forEach( relay => {
-      latencies.push(this.results[relay]?.latency?.final)
+      latencies.push(this.store.results.get(relay)?.latency?.final)
     })
     this.averageLatency =  this.average(latencies)
   },
@@ -298,6 +226,48 @@ const localMethods = {
       sum += arr[i];
     return Math.floor(parseFloat(sum/total));
   },
+  queueJob: function(id, fn, unique){
+    this.store.tasks.addJob({
+      id: id,
+      handler: fn,
+      unique: unique
+    })
+  },
+
+  setRefreshInterval: function(){
+    clearInterval(this.interval)
+    this.interval = setInterval(() => {
+      if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )
+        return
+      
+      this.untilNext = this.timeUntilRefresh()
+      this.sinceLast = this.timeSinceRefresh()
+
+      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
+        this.CheckRelaysJob()
+        
+    }, 1000)
+  },
+  setLatencyInterval: function(){
+    this.setLatencyInterval = setInterval( () => {
+
+    })
+  },
+
+  refreshNow(){
+    this.CheckRelaysJob(true)
+  },
+
+  handleVisibility(){
+    if(document.visibilityState === 'hidden')
+      this.windowActive = false 
+    else 
+      this.windowActive = true
+
+    if(this.windowActive) 
+      this.store.layout.setActiveTab(this.$tabId)
+  },
+
 
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
@@ -309,7 +279,7 @@ const localMethods = {
 
 export default defineComponent({
 
-  name: 'RefreshComponent',
+  name: 'CheckRelaysJob',
 
   components: {},
 
@@ -357,22 +327,21 @@ export default defineComponent({
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
 
-    for(let ri=0;ri-this.relays.length;ri++){
-      const relay = this.relays[ri],
-            cache = this.getCache(relay)
-      this.results[relay] = cache
-    }
+    // for(let ri=0;ri-this.relays.length;ri++){
+    //   const relay = this.relays[ri],
+    //         cache = this.getCache(relay)
+    //   this.store.results.get(relay) = cache
+    // }
   },
 
   mounted(){
-    this.migrateLegacy()
     if( this.isSingle ){
       console.log('is single')
       this.slug = `relays/check/${this.relayFromUrl}`
-      this.invalidate(true, this.relayFromUrl)
+      this.CheckRelaysJob(true)
       // this.runLatencyCheck()
     } else {
-      this.invalidateTask()
+      this.CheckRelaysJob()
     }
     if(this.store.prefs.clientSideProcessing && !this.isSingle)
       this.setRefreshInterval()
@@ -389,9 +358,9 @@ export default defineComponent({
       const relay = this.relayFromUrl
       if( !relay )
         return this.store.prefs.duration
-      if( this.results[relay]?.check?.connect && this.results[relay]?.check?.read && this.results[relay]?.check?.write && typeof this.results[relay]?.latency?.final !== 'undefined' )
-        return this.results[relay].latency.final * 5 
-      if(this.results[relay]?.check?.connect && this.results[relay]?.check?.read && this.results[relay]?.check?.write)
+      if( this.store.results.get(relay)?.check?.connect && this.store.results.get(relay)?.check?.read && this.store.results.get(relay)?.check?.write && typeof this.store.results.get(relay)?.latency?.final !== 'undefined' )
+        return this.store.results.get(relay).latency.final * 5 
+      if(this.store.results.get(relay)?.check?.connect && this.store.results.get(relay)?.check?.read && this.store.results.get(relay)?.check?.write)
         return 30*1000
       return this.store.prefs.duration
     }

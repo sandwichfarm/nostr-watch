@@ -51,7 +51,7 @@ export const useRelaysStore = defineStore('relays', {
         return state.favorites
 
       if(aggregate === 'public')
-        return state.urls.filter( (relay) => results?.[relay]?.aggregate == 'public' && !results?.[relay]?.info?.payments_url )
+        return state.urls.filter( (relay) => results?.[relay]?.aggregate == 'public' && !results?.[relay]?.info?.limitation?.payment_required )
       else 
         return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
     },

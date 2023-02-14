@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import { setupStore } from '@/store'
 
@@ -25,7 +25,7 @@ import SharedComputed from '@/shared/computed.js'
 import doh from 'dohjs'
 
 const localMethods = {
-  invalidateDNS(force){  
+  CheckDNS(force){  
     console.log('invalidating', this.slug)
 
     if( !this.isExpired(this.slug, 24*60*60*1000) && !force )
@@ -38,18 +38,6 @@ const localMethods = {
       this.jobDNS,
       true
     )
-  },
-  async checkDNS(relay){
-    const result = {}
-    result.ipv4 = []
-    result.ipv6 = []
-    const ipv4 = await this.resolver.query(new URL(relay).hostname, 'A')
-    const ipv6 = await this.resolver.query(new URL(relay).hostname, 'AAAA')
-    if(ipv4?.answers?.length)
-      ipv4.answers.forEach(ans => result.ipv4.push(ans.data)) //change to map
-    if(ipv6?.answers?.length)
-      ipv6.answers.forEach(ans => result.ipv6.push(ans.data))
-    return result
   },
   async jobDNS(){
     // alert('dns')
@@ -64,7 +52,7 @@ const localMethods = {
       relays.forEach( async (relay) => {
         const promise = new Promise( resolve => {
           dnsAcc[relay] = {}
-          this.checkDNS(relay)
+          this.getDNS(relay)
             .then( (dns) => {
               dnsAcc[relay] = dns
               // console.log('dns', dnsAcc)
@@ -81,6 +69,18 @@ const localMethods = {
       dnsAcc = {} 
     }
     this.store.tasks.completeJob(this.slug)
+  },
+  async getDNS(relay){
+    const result = {}
+    result.ipv4 = []
+    result.ipv6 = []
+    const ipv4 = await this.resolver.query(new URL(relay).hostname, 'A')
+    const ipv6 = await this.resolver.query(new URL(relay).hostname, 'AAAA')
+    if(ipv4?.answers?.length)
+      ipv4.answers.forEach(ans => result.ipv4.push(ans.data)) //change to map
+    if(ipv6?.answers?.length)
+      ipv6.answers.forEach(ans => result.ipv6.push(ans.data))
+    return result
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration)) 
@@ -101,11 +101,9 @@ export default defineComponent({
       resolver: null
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
   created(){
@@ -116,27 +114,15 @@ export default defineComponent({
   beforeMount(){},
   mounted(){  
     this.resolver = new doh.DohResolver('https://1.1.1.1/dns-query')
+    console.log('resolver', this.resolver)
     if(this.store.tasks.isTaskActive(this.slug))
-      this.invalidateDNS(true)
+      this.CheckDNS(true)
     else
-      this.invalidateDNS()
-    // this.invalidateTask()
-    // this.interval = setInterval( this.invalidateTask, 1000 )
+      this.CheckDNS()
   },
   updated(){},
   methods: Object.assign(RelayMethods, localMethods),
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  computed: Object.assign(SharedComputed, {}),
+  props: {},
 })
 </script>

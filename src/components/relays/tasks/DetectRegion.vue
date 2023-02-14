@@ -20,48 +20,6 @@ import SharedComputed from '@/shared/computed.js'
 
 import { getVisitorGeo, getClosest } from '@/utils'
 
-const localMethods = {
-  invalidate(force){
-    if( !this.isExpired(this.slug, 6*60*60*1000) && !force ) 
-      return
-
-    this.queueJob(
-      this.slug, 
-      async () => {
-        try {
-          const visitorGeo = await getVisitorGeo()
-          this.store.user.ip = visitorGeo.query
-          this.store.prefs.region = getClosest(visitorGeo)
-          this.store.tasks.completeJob(this.slug)
-        }
-        catch(e) { //brave 
-          this.store.prefs.clientSideProcessing = true
-          this.store.prefs.disableGeoDetection = true
-          location.reload() 
-        }
-      },
-      true
-    )
-  },
-
-  setRefreshInterval: function(){
-    clearInterval(this.interval)
-    this.interval = setInterval(() => {
-      if(!this.store.prefs.autoDetectRegion )
-        return 
-
-      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
-        this.invalidate()
-    }, 1000)
-  },
-  timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
-  },
-  timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
-  },
-}
-
 export default defineComponent({
   name: 'LoadSeed',
   components: {},
@@ -89,18 +47,57 @@ export default defineComponent({
   mounted(){
     //console.log('is processing', this.store.tasks.isTaskActive(this.slug))
 
-    // if(this.store.tasks.isTaskActive(this.slug))
-    //     this.invalidate(true)
-    //   else
-    //     this.invalidate()
-    this.invalidateTask()
+    if(this.store.tasks.isTaskActive(this.slug))
+        this.CheckRegion(true)
+      else
+        this.CheckRegion()
 
     if(!this.store.prefs.autoDetectRegion)
       this.setRefreshInterval()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),
-  methods: Object.assign(localMethods, RelayMethods),
+  methods: Object.assign({
+    CheckRegion(force){
+      if( !this.isExpired(this.slug, 6*60*60*1000) && !force ) 
+        return
+
+      this.queueJob(
+        this.slug, 
+        async () => {
+          try {
+            const visitorGeo = await getVisitorGeo()
+            this.store.user.ip = visitorGeo.query
+            this.store.prefs.region = getClosest(visitorGeo)
+            this.store.tasks.completeJob(this.slug)
+          }
+          catch(e) { //brave 
+            this.store.prefs.clientSideProcessing = true
+            this.store.prefs.disableGeoDetection = true
+            location.reload() 
+          }
+        },
+        true
+      )
+    },
+
+  setRefreshInterval: function(){
+    clearInterval(this.interval)
+    this.interval = setInterval(() => {
+      if(!this.store.prefs.autoDetectRegion )
+        return 
+
+      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
+        this.CheckRegion()
+    }, 1000)
+  },
+  timeUntilRefresh(){
+    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+  },
+  timeSinceRefresh(){
+    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+  },
+}, RelayMethods),
   props: {},
 })
 </script>

@@ -62,7 +62,7 @@ const History = async function(){
     return new Promise(resolve => {
       let total = 0
       const subid = crypto.randomBytes(40).toString('hex')
-      const pool = RelayPool(this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').filter( relay => this.results?.[relay]?.info?.supported_nips.includes(15)))
+      const pool = RelayPool(this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'public').filter( relay => this.store.results.get(relay)?.info?.supported_nips.includes(15)))
       pool
         .on('open', relay => {
           //console.log('open')

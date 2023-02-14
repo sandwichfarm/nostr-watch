@@ -2,7 +2,7 @@
   <span 
     v-if="this.store.tasks.getActiveSlug === slug"
     class="text-inherit">
-    <span class="text-inherit">Task Status here</span>
+    <span class="text-inherit">Welcome</span>
   </span>
 </template>
 
@@ -11,49 +11,25 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import { setupStore } from '@/store'
 
 import RelayMethods from '@/shared/relays-lib.js'
+
 import SharedComputed from '@/shared/computed.js'
-
-import { relays } from '../../../../relays.yaml'
-
-const localMethods = {
-  invalidate(force){
-    if( !this.store.prefs.isFirstVisit && !force ) 
-      return
-    
-    this.queueJob(
-      this.slug, 
-      () => {
-        this.store.prefs.isFirstVisit = false
-      },
-      true
-    )
-  },
-  timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
-  },
-  timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
-  },
-}
 
 export default defineComponent({
   name: 'FirstVisit',
   components: {},
   data() {
     return {
-      slug: 'relays/*' //REMEMBER TO CHANGE!!!
+      slug: 'initiated' //REMEMBER TO CHANGE!!!
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
-      store : setupStore(),
-      results: results
+      store : setupStore()
     }
   },
   created(){
@@ -62,38 +38,37 @@ export default defineComponent({
   unmounted(){
     clearInterval(this.interval)
   },
-  beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
-    this.untilNext = this.timeUntilRefresh()
-    this.sinceLast = this.timeSinceRefresh()
-    
-    this.relays = Array.from(new Set(relays))
-  },
+  beforeMount(){},
   mounted(){
-    //console.log('is processing', this.store.tasks.isTaskActive(this.slug))
-
-    if(this.store.tasks.isTaskActive(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
-
-    this.setRefreshInterval()
+    this.FirstVisit(this.name)
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
+  computed: Object.assign(SharedComputed, {}),
+  methods: Object.assign({
+    FirstVisit(force){
+      if( !this.store.prefs.isFirstVisit && !force ) 
+        return
+      
+      this.queueJob(
+        this.slug, 
+        () => {
+          this.store.prefs.firstVisit = false
+          this.store.prefs.clientSideProcessing = true
+          this.$forceUpdate()
+          setTimeout(() => this.completeJob(this.slug), 3000)
+        },
+        true
+      )
     },
-  }),
-  methods: Object.assign(localMethods, RelayMethods),
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
+    timeUntilRefresh(){
+      return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
     },
-  },
+    timeSinceRefresh(){
+      return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    },
+  }, RelayMethods),
+  props: {},
+  
 })
 </script>
 

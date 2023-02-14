@@ -26,6 +26,8 @@ export const usePrefsStore = defineStore('prefs', {
     disableGeoDetection: false
   }),
   getters: {
+    get: state => key => state?.[key],
+    isFirstVisit: state => state.firstVisit,
     doRefresh: (state) => state.refresh,
     expireAfter: (state) => state.duration,
     doPinFavorites: (state) => state.pinFavorites,
@@ -53,9 +55,5 @@ export const usePrefsStore = defineStore('prefs', {
       //console.log('functions:', this.filterFn)
     }
   },
-  persistedState: {
-    excludePaths: ['activeFilters']
-    // includePaths: ['refresh', 'duration', 'pinFavorites', 'rowTheme', 'filters', 'firstVisit', '']
-    // store options goes here
-  },
+  persistedState: {},
 })

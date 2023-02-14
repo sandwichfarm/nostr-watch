@@ -34,8 +34,7 @@
         </div>
       </div>
       <div class="width-max lg:flex lg:ml-auto">
-        <TasksManager
-          :resultsProp="results" 
+        <JobQueue
           v-bind:relaysProp="relays" 
           />
       </div>
@@ -51,17 +50,17 @@ import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
 import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
-// import RefreshTask from '@/components/relays/tasks/RefreshTask.vue'
+// import RefreshJob from '@/components/relays/jobs/RefreshJob.vue'
 
-const TasksManager = defineAsyncComponent(() =>
-    import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
+const JobQueue = defineAsyncComponent(() =>
+    import("@/components/relays/jobs/JobQueue.vue" /* webpackChunkName: "JobQueue" */)
 );
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'RelaysNav',
   components: {
-    TasksManager,
+    JobQueue,
   },
   props: {
     resultsProp: {

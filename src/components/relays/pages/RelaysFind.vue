@@ -44,7 +44,7 @@
           :resultsProp="results" />
       </div>
       <FiltersPartial
-        v-if="store.tasks.getLastUpdate('relays/stats')"
+        v-if="store.jobs.getLastUpdate('relays/stats')"
         :resultsProp="results"
         v-bind:relaysProp="relays" />
     </div>
@@ -71,8 +71,8 @@ import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
 
 //async components
-// const TasksManager = defineAsyncComponent(() =>
-//     import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
+// const JobQueue = defineAsyncComponent(() =>
+//     import("@/components/relays/jobs/JobQueue.vue" /* webpackChunkName: "JobQueue" */)
 // );
 const FiltersPartial = defineAsyncComponent(() =>
     import("@/components/partials/FiltersPartial.vue" /* webpackChunkName: "FiltersPartial" */)
@@ -110,7 +110,7 @@ export default defineComponent({
     RelaysResultTable,
     NostrSync,
     FiltersPartial,
-    // TasksManager
+    // JobQueue
   },
 
   setup(){
@@ -155,7 +155,7 @@ export default defineComponent({
     if(!process.env.VUE_APP_IP_API_KEY)
       this.store.relays.setGeo(geo)
 
-    this.lastUpdate = this.store.tasks.getLastUpdate('relays')
+    this.lastUpdate = this.store.jobs.getLastUpdate('relays')
     this.preferences = this.store.prefs.get
   },
 

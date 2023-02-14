@@ -4,16 +4,16 @@
   <div id="wrapper" 
     class="mx-auto max-w-7xl p-8 lg:p-32 mt-8 bg-black/5 dark:bg-black/20 rounded-lg" 
     v-if="
-      (store.tasks.isTaskActive('relays/check') && !store.tasks.getLastUpdate('relays/check'))
+      (store.jobs.isJobActive('relays/check') && !store.jobs.getLastUpdate('relays/check'))
       ||
-      (store.tasks.isTaskActive('relays/seed') && !store.tasks.getLastUpdate('relays/seed'))
+      (store.jobs.isJobActive('relays/seed') && !store.jobs.getLastUpdate('relays/seed'))
     ">
     <span class="text-3xl">
       Still compiling data, this can take 3-10 minutes if this is your first visit to nostr.watch
     </span>
   </div>  
   <div id="wrapper" class="mx-auto max-w-7xl pt-8" v-if="
-    store.tasks.getLastUpdate('relays/check') || store.tasks.getLastUpdate('relays/seed')
+    store.jobs.getLastUpdate('relays/check') || store.jobs.getLastUpdate('relays/seed')
   ">  
     
     <h2 class="text-2xl dark:text-white/50">Overview</h2>
@@ -250,12 +250,12 @@ export default defineComponent({
 
   async mounted(){
 
-    // this.remoteTask = await this.historicalData()
-    // this.store.stats.setHistory(this.remoteTask)
+    // this.remoteJob = await this.historicalData()
+    // this.store.stats.setHistory(this.remoteJob)
   },
 
   unmounted(){
-    delete this.remoteTask
+    delete this.remoteJob
   },
 
   data: function(){
@@ -266,7 +266,7 @@ export default defineComponent({
       byCountry: null,
       byContinent: null, 
       history: null,
-      remoteTask: null,
+      remoteJob: null,
       results: {},
     }
   },

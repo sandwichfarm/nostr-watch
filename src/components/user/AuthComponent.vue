@@ -1,5 +1,5 @@
 <template>
-  <a class="text-sm text-white hover:text-white" v-if="signer && !isLoggedIn() && this.store.relays.getFavorites.length && this.store.tasks.isIdle" @click="auth" href="#">Login</a>
+  <a class="text-sm text-white hover:text-white" v-if="signer && !isLoggedIn() && this.store.relays.getFavorites.length && this.store.jobs.isIdle" @click="auth" href="#">Login</a>
 </template>
 
 <script>

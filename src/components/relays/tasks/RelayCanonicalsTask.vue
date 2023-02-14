@@ -1,7 +1,7 @@
 <template>
   
   <span  
-      v-if="this.store.tasks.getActiveSlug === slug"
+      v-if="this.store.jobs.getActiveSlug === slug"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span>Getting canonicals...</span>
   </span>
@@ -26,7 +26,7 @@ import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
   queueJob: function(id, fn, unique){
-    this.store.tasks.addJob({
+    this.store.jobs.addJob({
       id: id,
       handler: fn,
       unique: unique
@@ -74,16 +74,16 @@ const localMethods = {
 
         this.store.relays.setCanonicals(this.canonicals)
 
-        this.store.tasks.completeJob(this.slug)
+        this.store.jobs.completeJob(this.slug)
       }, 
       true
     )
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
   hash(relay){
     return crypto.createHash('md5').update(relay).digest('hex');
@@ -114,14 +114,14 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    if(this.store.tasks.isTaskActive(this.slug))
+    if(this.store.jobs.isJobActive(this.slug))
       this.Canonicals(true)
     else
       this.Canonicals() 

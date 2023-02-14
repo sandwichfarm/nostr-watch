@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
+    v-if="this.store.jobs.getActiveSlug === slug"
     class="text-inherit">
     <span class="text-inherit">connecting to history relay</span>
   </span>
@@ -38,7 +38,7 @@ const localMethods = {
           if(!currentMode)
             location.reload()
           this.closePool($pool)
-          setTimeout(()=>this.store.tasks.completeJob(this.slug), 500)
+          setTimeout(()=>this.store.jobs.completeJob(this.slug), 500)
         }, 5000)
         $pool
           .on('open', () => {
@@ -48,17 +48,17 @@ const localMethods = {
               this.store.status.historyNode = 1
             else 
               this.store.status.historyNode = 2           
-            this.store.tasks.completeJob(this.slug)
+            this.store.jobs.completeJob(this.slug)
           })
       },
       true
     )
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
 }
 
@@ -84,14 +84,14 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    //console.log('is processing', this.store.tasks.isTaskActive(this.slug))
+    //console.log('is processing', this.store.jobs.isJobActive(this.slug))
 
-    if(this.store.tasks.isTaskActive(this.slug))
+    if(this.store.jobs.isJobActive(this.slug))
       this.invalidate(true)
     else
       this.invalidate()

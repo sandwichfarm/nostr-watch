@@ -1,5 +1,5 @@
 <template>
-  <span class="text-inherit" v-if="this.store.tasks.getActiveSlug === slug">
+  <span class="text-inherit" v-if="this.store.jobs.getActiveSlug === slug">
     analyzing relays
   </span>
 </template>
@@ -12,7 +12,7 @@ import SharedComputed from '@/shared/computed.js'
 // import { History } from '@/shared/history.js'
 
 const LocalMethods = {
-  HistoryTask: async function(){
+  HistoryJob: async function(){
     if(!this.isExpired(this.slug, 1))
       return 
     //console.log('processing')
@@ -24,7 +24,7 @@ const LocalMethods = {
         this.store.stats.set('continents', this.collateContinents)
         this.store.stats.set('countries', this.collateCountries)
         this.store.stats.set('software', this.collateSoftware)
-        setTimeout(() => this.store.tasks.completeJob(this.slug), 2000)
+        setTimeout(() => this.store.jobs.completeJob(this.slug), 2000)
       },
       true
     )
@@ -33,7 +33,7 @@ const LocalMethods = {
 
 export default defineComponent({
 
-  name: 'HistoryTask',
+  name: 'HistoryJob',
 
   components: {},
 
@@ -48,7 +48,7 @@ export default defineComponent({
   },
 
   async mounted(){
-    this.invalidateTask(this.name)
+    this.HistoryJob()
   },
 
   unmounted(){},

@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
+    v-if="this.store.jobs.getActiveSlug === slug"
     class="text-inherit">
     <span class="text-inherit">Welcome</span>
   </span>
@@ -61,10 +61,10 @@ export default defineComponent({
       )
     },
     timeUntilRefresh(){
-      return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+      return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
     },
     timeSinceRefresh(){
-      return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+      return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
     },
   }, RelayMethods),
   props: {},

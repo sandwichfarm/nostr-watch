@@ -11,12 +11,10 @@
 
     <GetPulse />
 
-    <LoadSeed 
-      v-bind:resultsProp="results"
+    <LoadSeed
       v-if="!store.prefs.clientSideProcessing || isSingle" />
 
     <CheckNip11
-      v-bind:resultsProp="results"
       v-if="
         (
           (
@@ -29,27 +27,28 @@
         )
         && !isSingle
       " />
-
-    <RefreshTask
-      v-bind:resultsProp="results"
-      v-if="store.prefs.clientSideProcessing || isSingle" />
-    
-    <CheckP2R v-if="!isSingle" v-bind:resultsProp="results" />
-
-    <CheckDNS v-if="!isSingle" />
-    
+      
     <CheckGeo v-if="!isSingle" />
 
+    <RefreshJob 
+      v-if="store.prefs.clientSideProcessing || isSingle || this.store.prefs.isFirstVisit" />
     
+    <CheckP2R v-if="!isSingle" />
 
-    <HistoryTask
-      :resultsProp="results" />
+    <CheckDNS v-if="!isSingle" />
+
+    <HistoryJob />
 
     <GetTopics
-      v-bind:resultsProp="results"
       v-if="store.prefs.clientSideProcessing && !isSingle" />
 
     <UserRelayList />
+
+    <FirstVisit 
+      v-if="this.store.prefs.isFirstVisit
+            && this.store.jobs.getLastUpdate('relays/check') 
+            && this.store.jobs.getLastUpdate('relays/seed')
+            && !isSingle"/>
   </span>
 </span>
 </template>
@@ -63,48 +62,50 @@ import SharedComputed from '@/shared/computed.js'
 
 import DetectRegion from './DetectRegion.vue'
 import LoadSeed from './LoadSeed.vue'
-import RefreshTask from './RefreshTask.vue'
+import RefreshJob from './RefreshJob.vue'
 import GetPulse from './GetPulse.vue'
 import UserRelayList from './UserRelayList.vue'
 import StatusCheckHistoryNode from './StatusCheckHistoryNode.vue'
 // import StatusCheckAPI from './StatusCheckAPI.vue'
 import GetRelays from './GetRelays.vue'
 import CheckNip11 from './CheckNip11.vue'
-import HistoryTask from './HistoryTask.vue'
+import HistoryJob from './HistoryJob.vue'
 import CheckDNS from './CheckDNS.vue'
 import CheckGeo from './CheckGeo.vue'
 import GetTopics from './GetTopics.vue'
 import CheckP2R from './CheckP2R.vue'
-// import TemplateTask from './TemplateTask.vue'
+import FirstVisit from './FirstVisit.vue'
+// import TemplateJob from './TemplateJob.vue'
 
 
-// import RelayCanonicalsTask from './RelayCanonicalsTask.vue'
-// import RelayOperatorTask from './RelayOperatorTask.vue'
+// import RelayCanonicalsJob from './RelayCanonicalsJob.vue'
+// import RelayOperatorJob from './RelayOperatorJob.vue'
 
 export default defineComponent({
-  name: "TasksManager",
+  name: "JobQueue",
   components: {
     DetectRegion,
     LoadSeed,
-    RefreshTask,
+    RefreshJob,
     GetPulse,
     UserRelayList,
     StatusCheckHistoryNode,
     GetRelays,
     CheckNip11,
-    HistoryTask,
+    HistoryJob,
     CheckDNS,
     CheckGeo,
     GetTopics,
-    CheckP2R
-    // TemplateTask,
-    // RelayCanonicalsTask,
-    // RelayOperatorTask
+    CheckP2R,
+    FirstVisit
+    // TemplateJob,
+    // RelayCanonicalsJob,
+    // RelayOperatorJob
   },
   data(){
     return {
       timeout: null,
-      currentTask: null,
+      currentJob: null,
       AsyncFunction: (async () => {}).constructor
     }
   },
@@ -121,7 +122,7 @@ export default defineComponent({
     // this.store.prefs.clientSideProcessing = false
   },
   mounted(){
-    // this.currentTask = this.store.tasks.getActiveSlug
+    // this.currentJob = this.store.jobs.getActiveSlug
     // this.processJob()
     // this.timeout = setTimeout(this.tick, 500)
   },
@@ -144,21 +145,21 @@ export default defineComponent({
   },
   methods: {
     async tick(){
-      console.log('pending', this.store.tasks.pending)
-      if(this.currentTask === this.store.tasks.getActiveSlug)
+      console.log('pending', this.store.jobs.pending)
+      if(this.currentJob === this.store.jobs.getActiveSlug)
         return 
-      this.currentTask = this.store.tasks.getActiveSlug
+      this.currentJob = this.store.jobs.getActiveSlug
       // await this.processJob()
       this.timeout = setTimeout(this.tick, 1000)
     },
     async processJob(){
-      if(!(this.store.tasks.active?.handler instanceof Function))
+      if(!(this.store.jobs.active?.handler instanceof Function))
         return 
-      console.log('processJob()', this.store.tasks.active.id, 'type', typeof this.store.tasks.active.handler, 'is async', this.store.tasks.active.handler instanceof this.AsyncFunction)
-      if(this.store.tasks.active.handler instanceof this.AsyncFunction)
-        await this.store.tasks.active.handler()
+      console.log('processJob()', this.store.jobs.active.id, 'type', typeof this.store.jobs.active.handler, 'is async', this.store.jobs.active.handler instanceof this.AsyncFunction)
+      if(this.store.jobs.active.handler instanceof this.AsyncFunction)
+        await this.store.jobs.active.handler()
       else 
-        this.store.tasks.active.handler()
+        this.store.jobs.active.handler()
     }
   },
   computed: Object.assign(SharedComputed, {})

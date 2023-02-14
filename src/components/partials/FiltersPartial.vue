@@ -3,7 +3,7 @@
     <div class="mb-4 block">
       <div 
         class="mr-3  my-4 cursor-pointer inline-block"
-        @click="store.filters.enabled=!store.filters.enabled">
+        @click="toggleFilterEnabled">
         <span class="py-1 px-2 bg-black/30 block" v-if="!store.filters.enabled">Enable Filters</span>
         <span class="py-1 px-2 bg-white/30 block" v-if="store.filters.enabled" >Disable Filters</span>
       </div>
@@ -42,16 +42,16 @@
       </div>
     </div>
 
-    <div v-if="store.filters.enabled && (store.tasks.isTaskActive('relays/check') || store.tasks.isTaskActive('relays/seed'))" class="italic bg-black/5 text-black/80 dark:bg-white/5 dark:text-white/50 py-2 px-3">
+    <div v-if="store.filters.enabled && (store.jobs.isJobActive('relays/check') || store.jobs.isJobActive('relays/seed'))" class="italic bg-black/5 text-black/80 dark:bg-white/5 dark:text-white/50 py-2 px-3">
       <em>filters are hidden during updates</em>
     </div>
 
-    <div v-if="store.filters.enabled && (!store.tasks.isTaskActive('relays/check') && !store.tasks.isTaskActive('relays/seed'))" class="py-2 px-3 dark:bg-black/10">
+    <div v-if="store.filters.enabled && (!store.jobs.isJobActive('relays/check') && !store.jobs.isJobActive('relays/seed'))" class="py-2 px-3 dark:bg-black/10">
       <!-- valid -->
-      <div class="mb-4 block flex-none" v-if="this.store.tasks.lastUpdate?.['relays/nip11']">
+      <div class="mb-4 block flex-none" v-if="this.store.jobs.lastUpdate?.['relays/nip11']">
         <span  
           class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32 block">
-          Validations
+          Meta Checks
       </span>
         <span 
           @click="toggleFilter('valid/nip11', true, true)"
@@ -189,10 +189,9 @@
     name: 'FiltersPartial',
     components: {},
     setup(props){
-      const {resultsProp: results, relaysProp: relays} = toRefs(props)
+      const {relaysProp: relays} = toRefs(props)
       return { 
         store : setupStore(),
-        results: results,
         relays: relays
       }
     },
@@ -200,11 +199,10 @@
       // this.foundNips = this.collateSupportedNips()
     },
     mounted(){
+      // this.$forceUpdate
       this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
       this.refreshCounts()
-      this.$forceUpdate
-      // setInterval( () => console.log('filters partial', Object.keys(this.results).length, 'results'), 1000 )
-      // setInterval( this.doRefreshCounts, 1000 )
+      
     },
     updated(){
       
@@ -214,12 +212,6 @@
     unmounted(){
     },
     props: {
-      resultsProp: {
-        type: Object,
-        default(){
-          return {}
-        }
-      },
       // relaysProp: {
       //   type: Array,
       //   default(){
@@ -232,7 +224,7 @@
         count: { nips: {}, software: {}, countries: {}, continents: {} },
         activeNavItem: null
       }
-    },
+    },  
     methods: Object.assign(RelayMethods, {
       doRefreshCounts(){
         // console.log('active item', this.store.layout.getActiveItem('relays/find').slug, this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)
@@ -245,7 +237,12 @@
       resetFilters(){
         this.store.filters.reset()
         this.refreshCounts( this.getRelays(this.store.relays.getAll) )
-      }
+      },
+      toggleFilterEnabled(){
+        this.store.filters.enabled = !this.store.filters.enabled
+        this.refreshCounts( this.getRelays(this.store.relays.getAll) )
+      },
+
     }),
     computed: Object.assign(SharedComputed, {
       areClearableFilters(){

@@ -227,11 +227,8 @@ export default defineComponent({
   created(){
   },
   mounted(){    
-    this.store.layout.setActiveTab(this.$tabId)
   },
   unmounted(){
-    // const activeId = this.store.layout.getActiveTab
-    this.store.layout.deactivateTab(this.$tabId)
   },
   computed: SharedComputed,
   methods: UserLib

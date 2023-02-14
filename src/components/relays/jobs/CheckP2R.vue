@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
+    v-if="this.store.jobs.getActiveSlug === slug"
     class="text-inherit">
     <span class="text-inherit" v-if="this.store.prefs.discoverRelays">checking pay-to-relay</span>
   </span>
@@ -15,39 +15,39 @@ import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
 const localMethods = {
-  invalidateP2R(force){
-    const self = this
-    if( (!this.isExpired(self.slug, 1) && !force) || self.isSingle ) 
+  CheckP2R(force){
+    if( (!this.isExpired(this.slug, 1) && !force) || this.isSingle ) 
       return
     this.queueJob(
-      self.slug, 
+      this.slug, 
       async () => {
-        const relays = self.store.relays.getRelays('paid', self.results)
+        const relays = this.store.relays.getRelays('paid', this.store.results.all)
         for(let i=0;i<relays.length;i++){
-          const relay = relays[i]
+          const relay = relays[i],
+                result = {}
           try {
-            const hostname = new URL(this.results[relay].info.payments_url).hostname 
+            const hostname = new URL(this.store.results.get(relay).info.payments_url).hostname 
             if(hostname.includes('your-domain.com'))
-              this.results[relay].validP2R = false 
+              result.validP2R = false 
             else 
-            this.results[relay].validP2R = true 
+            result.validP2R = true 
           }
           catch(e){
-            this.results[relay].validP2R = false 
+            result.validP2R = false
           }
-          this.setCache(this.results[relay])
+          this.store.results.mergeRight({[relay]: result})
+          this.store.jobs.addProcessed(this.slug, relay)
         }
-        
-        this.store.tasks.completeJob(self.slug)
+        this.store.jobs.completeJob(this.slug)
       },
       true
     )
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
 }
 
@@ -74,19 +74,15 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){    
-    this.invalidateP2R()
+    this.CheckP2R()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {

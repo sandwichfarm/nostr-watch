@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
+    v-if="this.store.jobs.getActiveSlug === slug"
     class="text-inherit">
     <span class="text-inherit">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -48,7 +48,7 @@ const localMethods = {
   },
   async jobPulses(){
     if(!this.store.status.historyNode)
-      return this.store.tasks.completeJob(this.slug)
+      return this.store.jobs.completeJob(this.slug)
     const subid = crypto.randomBytes(40).toString('hex')
     const pulsesByEvent = new Object()
     let total = 48,
@@ -78,8 +78,6 @@ const localMethods = {
           
           uniques.add(event.created_at)
 
-          //console.log('pulse found', count, event.id)
-        
           pulsesByEvent[event.created_at] = decodeJson(event.content).online
 
           count++
@@ -136,13 +134,13 @@ const localMethods = {
       this.store.stats.addPulse(relay, pulses[relay])
       this.setUptimePercentage(relay)
     })
-    this.store.tasks.completeJob(this.slug)
+    this.store.jobs.completeJob(this.slug)
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   }
 }
 export default defineComponent({
@@ -167,7 +165,7 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
@@ -175,17 +173,13 @@ export default defineComponent({
   },
   mounted(){
     this.invalidatePulse()
-    // this.invalidateTask()
-    // this.interval = setInterval( this.invalidateTask, 1000 )
+    // this.invalidateJob()
+    // this.interval = setInterval( this.invalidateJob, 1000 )
   },
   updated(){
     
   },
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {},
 })

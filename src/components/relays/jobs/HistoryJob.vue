@@ -1,10 +1,10 @@
 <template>
-  <span class="text-inherit" v-if="this.store.tasks.getActiveSlug === slug">
+  <span class="text-inherit" v-if="this.store.jobs.getActiveSlug === slug">
     analyzing relays
   </span>
 </template>
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
@@ -12,7 +12,7 @@ import SharedComputed from '@/shared/computed.js'
 // import { History } from '@/shared/history.js'
 
 const LocalMethods = {
-  invalidate: async function(){
+  HistoryJob: async function(){
     if(!this.isExpired(this.slug, 1))
       return 
     //console.log('processing')
@@ -24,7 +24,7 @@ const LocalMethods = {
         this.store.stats.set('continents', this.collateContinents)
         this.store.stats.set('countries', this.collateCountries)
         this.store.stats.set('software', this.collateSoftware)
-        setTimeout(() => this.store.tasks.completeJob(this.slug), 2000)
+        setTimeout(() => this.store.jobs.completeJob(this.slug), 2000)
       },
       true
     )
@@ -33,15 +33,13 @@ const LocalMethods = {
 
 export default defineComponent({
 
-  name: 'HistoryTask',
+  name: 'HistoryJob',
 
   components: {},
 
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
 
@@ -50,11 +48,10 @@ export default defineComponent({
   },
 
   async mounted(){
-    this.invalidateTask()
+    this.HistoryJob()
   },
 
-  unmounted(){
-  },
+  unmounted(){},
 
   data: function(){
     return {
@@ -64,21 +61,14 @@ export default defineComponent({
     }
   },
 
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  props: {},
 
   methods: Object.assign(LocalMethods, RelaysLib),
 
   computed: Object.assign(SharedComputed, {
     collateSupportedNips(){
       const dict = new Object()
-      Object.entries(this.results).forEach( (result) => {
+      Object.entries(this.store.results.all).forEach( (result) => {
         result = result[1]
         if(result?.info?.supported_nips)
           result?.info?.supported_nips.forEach( nip => { 
@@ -150,13 +140,13 @@ export default defineComponent({
     collateSoftware(){
       const bySoftware = new Object()
       this.relays.forEach( relay => {
-        if( !this.results?.[relay]?.info?.software ) {
+        if( !this.store.results.get(relay)?.info?.software ) {
           if( !(bySoftware.unknown instanceof Set) )
             bySoftware.unknown = new Set()
           bySoftware.unknown.add(relay)
           return
         }
-        const software = this.results[relay].info.software
+        const software = this.store.results.get(relay).info.software
         if( !(bySoftware[software] instanceof Set) )
           bySoftware[software] = new Set() 
         bySoftware[software].add(relay)

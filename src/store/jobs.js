@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
-export const useTaskStore = defineStore(
-  'tasks', 
+export const useJobStore = defineStore(
+  'jobs', 
   {
   state: () => ({ 
     lastUpdate: new Object(),
@@ -32,20 +32,21 @@ export const useTaskStore = defineStore(
     getActiveSlug: (state) => state.active.id,
     getCompleted: (state) => state.completed,
 
-    //queue/states
-    isTaskActive: state => slug => state.getActiveSlug === slug,
-    isTaskPending: state => slug => {
-      // //console.log('is pending?', slug, 'is active?', this?.active?.id === slug, 'is pending?', state.pending?.filter( job => job.id === slug )?.length)
+    //queue/slug/states
+    isJobActive: state => slug => state.getActiveSlug === slug,
+    isJobPending: state => slug => {
       if(this?.active?.id === slug)
         return true
       if(state.pending?.filter( job => job.id === slug )?.length) 
         return true
       return false
     },
-    isTaskCompleted: state => slug => {
+    isJobCompleted: state => slug => {
       if(state.completed?.filter( job => job.id === slug )?.length )
         return true
     },
+
+    //queue/global/states
     isActive: (state) => Object.keys( state.active ).length > 0,
     isIdle: (state) => Object.keys( state.active ).length == 0,
     arePending: (state) => state.pending.length > 0,
@@ -59,9 +60,9 @@ export const useTaskStore = defineStore(
     //queue
     async addJob(job){
       
-      if(job?.unique && this.isTaskPending(job.id))
+      if(job?.unique && this.isJobPending(job.id))
         return
-      console.log('add job', job.id, 'is pending:', this.isTaskPending(job.id), 'active:', this?.active?.id)
+      console.log('add job', job.id, 'is pending:', this.isJobPending(job.id), 'active:', this?.active?.id)
       this.pending.push(job)
       if( this.isIdle )
         this.startNextJob()
@@ -122,7 +123,7 @@ export const useTaskStore = defineStore(
     enable: true,
   },
   persistedState: {
-    // includePaths: ['lastUpdate', 'processed', 'processing', 'currentTask']
+    // includePaths: ['lastUpdate', 'processed', 'processing', 'currentJob']
     excludePaths: ['pending', 'completed', 'active'],
   }
 })

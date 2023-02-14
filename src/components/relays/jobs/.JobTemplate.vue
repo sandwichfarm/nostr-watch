@@ -1,8 +1,8 @@
 <template>
-  <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-inherit">
-    <span class="text-inherit">Task Status here</span>
+  <span class="text-inherit">
+    <span class="text-inherit">
+      TESTING
+    </span>
   </span>
 </template>
 
@@ -22,27 +22,28 @@ import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
   invalidate(force){
-    if( !this.store.prefs.isFirstVisit && !force ) 
+    if( (!this.isExpired(this.slug) && !force) ) 
       return
     
     this.queueJob(
       this.slug, 
       () => {
-        this.store.prefs.isFirstVisit = false
+        this.$pool
+          .subscribe()
       },
       true
     )
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
 }
 
 export default defineComponent({
-  name: 'FirstVisit',
+  name: 'TemplateJob',
   components: {},
   data() {
     return {
@@ -63,28 +64,22 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    //console.log('is processing', this.store.tasks.isTaskActive(this.slug))
+    //console.log('is processing', this.store.jobs.isJobActive(this.slug))
 
-    if(this.store.tasks.isTaskActive(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
-
-    this.setRefreshInterval()
+    // if(this.store.jobs.isJobActive(this.slug))
+    //   this.invalidate(true)
+    // else
+    //   this.invalidate()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {

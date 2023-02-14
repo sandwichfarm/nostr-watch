@@ -1,6 +1,6 @@
 <template>
   <span
-    v-if="this.store.tasks.getLastUpdate('status/history')">
+    v-if="this.store.jobs.getLastUpdate('status/history')">
     <span class="text-white inline-block lg:text-sm ml-2 mr-3 text-xs">
       <span 
       class="rounded-md h-2 w-2 inline-block"

@@ -1,6 +1,5 @@
 <template>
-  <RelaysNav 
-    v-bind:resultsProp="results" />
+  <RelaysNav />
 
   <div id="wrapper" class="px-8 mx-auto max-w-7xl">  
     <form class="px-2 space-y-8 divide-y divide-gray-200">
@@ -395,21 +394,24 @@ export default defineComponent({
   async mounted() {
     this.interval = setInterval(() => {
       if(this.store.prefs.region !== this.currentRegion || this.store.prefs.autoDetectRegion !== this.autoDetectRegion){
-        delete this.store.tasks.lastUpdate['relays/seed']
-        delete this.store.tasks.lastUpdate['user/region']
+        delete this.store.jobs.getLastUpdate('relays/seed')
+        delete this.store.jobs.getLastUpdate('user/region')
         this.currentRegion = this.store.prefs.region
         this.autoDetectRegion = this.store.prefs.autoDetectRegion
+        this.$forceUpdate()
       }
       if(this.store.prefs.discoverRelays !== this.discoverRelays){
-        delete this.store.tasks.lastUpdate['relays/get']
-        delete this.store.tasks.lastUpdate['relays/seed']
-        delete this.store.tasks.lastUpdate['relays/check']
+        delete this.store.jobs.getLastUpdate('relays/get')
+        delete this.store.jobs.getLastUpdate('relays/seed')
+        delete this.store.jobs.getLastUpdate('relays/check')
         this.discoverRelays = this.store.prefs.discoverRelays
+        this.$forceUpdate()
       }
 
       if(this.store.prefs.checkNip11 !== this.checkNip11){
-        delete this.store.tasks.lastUpdate['relays/nip11']
+        delete this.store.jobs.getLastUpdate('relays/nip11')
         this.checkNip11 = this.store.prefs.checkNip11
+        this.$forceUpdate()
       }
     },100)
   },

@@ -4,7 +4,7 @@ export const usePrefsStore = defineStore('prefs', {
   state: () => ({ 
     firstVisit: true,
     refresh: true,
-    duration: 30*60*1000,
+    duration: 6*60*60*1000,
     pinFavorites: true,
     rowTheme: 'comfortable',
     filters: [],
@@ -19,13 +19,15 @@ export const usePrefsStore = defineStore('prefs', {
     autoDetectRegion: true,
     region: 'eu-west',
     ignoreTopics: 'canonical,nostr',
-    showMaps: false,
+    showMaps: true,
     discoverRelays: true,
     checkNip11: true,
     CheckNip11Frequency: 24*60*60*1000,
     disableGeoDetection: false
   }),
   getters: {
+    get: state => key => state?.[key],
+    isFirstVisit: state => state.firstVisit,
     doRefresh: (state) => state.refresh,
     expireAfter: (state) => state.duration,
     doPinFavorites: (state) => state.pinFavorites,
@@ -53,9 +55,5 @@ export const usePrefsStore = defineStore('prefs', {
       //console.log('functions:', this.filterFn)
     }
   },
-  persistedState: {
-    excludePaths: ['activeFilters']
-    // includePaths: ['refresh', 'duration', 'pinFavorites', 'rowTheme', 'filters', 'firstVisit', '']
-    // store options goes here
-  },
+  persistedState: {},
 })

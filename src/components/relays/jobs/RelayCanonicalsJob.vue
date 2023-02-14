@@ -1,7 +1,7 @@
 <template>
   
   <span  
-      v-if="this.store.tasks.getActiveSlug === slug"
+      v-if="this.store.jobs.getActiveSlug === slug"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span>Getting canonicals...</span>
   </span>
@@ -26,13 +26,13 @@ import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
   queueJob: function(id, fn, unique){
-    this.store.tasks.addJob({
+    this.store.jobs.addJob({
       id: id,
       handler: fn,
       unique: unique
     })
   },
-  invalidate(force){
+  Canonicals(force){
     if( (!this.isExpired(this.slug) && !force) ) 
       return
     
@@ -54,7 +54,6 @@ const localMethods = {
           })
           .on('event', (relay, _subid, event) => {
             if(_subid.includes(subid)){
-              //console.log('canonical event', event.id)
               const hash = event.tags.filter( tag => tag[0] === 'h')[0][1]
               this.hashes[hash] = event.id
             }
@@ -63,7 +62,6 @@ const localMethods = {
         await this.delay(5000)
 
         try{
-          // $pool.unsubscribe(subid)
           this.closePool($pool)
         } catch(e){""}
 
@@ -74,22 +72,18 @@ const localMethods = {
           this.canonicals[relay] = this.hashes[hash] //event.id
         })
 
-        //console.log('hashes found', Object.keys(this.hashes).length)
-        //console.log('canonicals found', Object.keys(this.canonicals).length, this.canonicals)
-        //console.log('from store', this.store.relays.getCanonicals)
-
         this.store.relays.setCanonicals(this.canonicals)
 
-        this.store.tasks.completeJob(this.slug)
+        this.store.jobs.completeJob(this.slug)
       }, 
       true
     )
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
   hash(relay){
     return crypto.createHash('md5').update(relay).digest('hex');
@@ -97,7 +91,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'TemplateTask',
+  name: 'Canonicals',
   components: {},
   data() {
     return {
@@ -120,22 +114,20 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    //console.log('task', this.slug, 'is processing:', this.store.tasks.isTaskActive(this.slug))
-    this.invalidateTask()
+    if(this.store.jobs.isJobActive(this.slug))
+      this.Canonicals(true)
+    else
+      this.Canonicals() 
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, SharedMethods),
   props: {
     resultsProp: {

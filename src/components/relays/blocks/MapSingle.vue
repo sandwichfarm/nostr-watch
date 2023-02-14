@@ -67,13 +67,13 @@ export default {
       if(!this.geo?.lat || !this.geo?.lon)
         return 'transparent'
 
-      if(this.result[relay]?.aggregate == 'public') {
+      if(this.store.results.get(relay)?.aggregate == 'public') {
         return '#00AA00'
       }
-      else if(this.result[relay]?.aggregate == 'restricted') {
+      else if(this.store.results.get(relay)?.aggregate == 'restricted') {
         return '#FFA500'
       }
-      else if(this.result[relay]?.aggregate == 'offline') {
+      else if(this.store.results.get(relay)?.aggregate == 'offline') {
         return '#FF0000'
       }
 

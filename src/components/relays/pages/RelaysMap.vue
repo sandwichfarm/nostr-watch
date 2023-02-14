@@ -78,7 +78,6 @@ export default defineComponent({
     }
   },
   mounted() {
-    //console.log('results', this.results)
     this.geo = this.store.relays.geo
   },
   updated(){},
@@ -127,20 +126,19 @@ export default defineComponent({
       if(!this.isRelayInActiveSubsection(relay))
         return 'transparent'
 
-      if(this.results[relay]?.aggregate == 'public')
+      if(this.store.results.get(relay)?.aggregate == 'public')
         return '#00AA00'
 
-      if(this.results[relay]?.aggregate == 'restricted')
+      if(this.store.results.get(relay)?.aggregate == 'restricted')
         return '#FFA500'
 
-      if(this.results[relay]?.aggregate == 'offline')
+      if(this.store.results.get(relay)?.aggregate == 'offline')
         return '#FF0000'
       
     },
 
     isRelayInActiveSubsection(relay){
-      //console.log(this.store.relays.getRelays(this.activePageItem).length, this.activePageItem, relay, this.store.relays.getRelays(this.activePageItem).includes(relay))
-      return this.store.relays.getRelays(this.activePageItem, this.results).includes(relay)
+      return this.store.relays.getRelays(this.activePageItem, this.store.results.all).includes(relay)
     },
     toggleMap(){
       this.expanded = !this.expanded

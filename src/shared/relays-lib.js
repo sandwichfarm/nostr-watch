@@ -2,13 +2,35 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
-  invalidateTask(){
+  cleanTopics(topics){
+    console.log(topics.map( topic => [ topic[1], topic?.[2] ] ))
+    return topics
+      .filter( topic => 
+        !this.store.prefs.ignoreTopics
+          .split(',')
+          .map( ignoreTopic => ignoreTopic.trim() )
+          .includes(topic)
+      )
+      .map( topic => [ topic[1], topic?.[2] ? new String(topic[2]).valueOf() : "1" ] )
+    
+  },
+
+  invalidateTask(name, force){
+    let fn = () => {}
+
     if(!this.slug)
       console.warn('job slug is:', this.slug)
+
     if(this.store.tasks.isTaskActive(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
+      force = true
+
+    fn =  (this?.[name] instanceof Function)? 
+            this[name]:
+            (this.invalidate instanceof Function)? 
+              this.invalidate: 
+              fn
+    
+    fn(force)
   },
   toggleFilter(ref, key, unique, reset, always){
     if(parseInt(this.store.filters?.count?.[ref]?.[key]) === 0)
@@ -22,7 +44,6 @@ export default {
     this.refreshCounts(this.getRelays(this.store.relays.getAll))
   },
   refreshCounts(relays){
-    //begging to be DRY
     if(Object.keys(this.store.stats?.nips).length) 
       this?.store?.stats?.nips?.forEach( nip => {
         this.store.filters.set(    
@@ -135,28 +156,28 @@ export default {
 
   //CONVERT THESE TO COMPUTED!!!!
   getRelaysByNip(arr, needle){
-    return arr.filter( relay => this.results?.[relay]?.info?.supported_nips?.includes(needle) )
+    return arr?.filter( relay => this.store.results.get(relay)?.info?.supported_nips?.includes(needle) ) || []
   },
   getRelaysByValidPubKey(arr){
-    return arr.filter( relay => this.results?.[relay]?.pubkeyValid )
+    return arr?.filter( relay => this.store.results.get(relay)?.pubkeyValid )  || []
   },
   getRelaysBySoftware(arr, needle){
     if(needle === 'unknown')
-      return arr.filter( relay => !this.results?.[relay]?.info?.software )
+      return arr?.filter( relay => !this.store.results.get(relay)?.info?.software )  || []
     else
-      return arr.filter( relay => this.results?.[relay]?.info?.software?.includes(needle) )
+      return arr?.filter( relay => this.store.results.get(relay)?.info?.software?.includes(needle) )  || []
   },
   getRelaysByCountry(arr, needle){
     if(needle === 'unknown')
-      return arr.filter( relay => !this.store.relays.getGeo(relay)?.country )
+      return arr?.filter( relay => !this.store.relays.getGeo(relay)?.country )  || []
     else
-      return arr.filter( relay => this.store.relays.getGeo(relay)?.country?.includes(needle) )
+      return arr?.filter( relay => this.store.relays.getGeo(relay)?.country?.includes(needle) )  || []
   },
   getRelaysByContinent(arr, needle){
     if(needle === 'unknown')
-    return arr.filter( relay => !this.store.relays.getGeo(relay)?.continentName )
+    return arr?.filter( relay => !this.store.relays.getGeo(relay)?.continentName ) || []
     else
-    return arr.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) )
+    return arr?.filter( relay => this.store.relays.getGeo(relay)?.continentName?.includes(needle) ) || []
   },
   //end computed.
 
@@ -187,7 +208,7 @@ export default {
           filtered = this.getRelaysByContinent(filtered, needle)
 
         if(haystack === 'aggregate'){
-          const aggregate = this.store.relays.getRelays(needle, this.results)
+          const aggregate = this.store.relays.getRelays(needle, this.store.results.all)
           filtered = filtered.filter( relay => aggregate.includes(relay) )
         }
         
@@ -198,27 +219,31 @@ export default {
 
   
   sortRelays(relays){
+    console.log('first visit', this.store.prefs.isFirstVisit)
+    // if(this.store.prefs.isFirstVisit)
+    //   return this.store.relays.getShuffled
+
     if(this.store.prefs.sortLatency)
       sort(relays, (relay1, relay2) => {
-        let a = this.results?.[relay1]?.latency?.average || 100000,
-            b = this.results?.[relay2]?.latency?.average || 100000
+        let a = this.store.results.all?.[relay1]?.latency?.average || 100000,
+            b = this.store.results.all?.[relay2]?.latency?.average || 100000
         return a-b
       })
     sort(relays, (relay1, relay2) => {
-      let x = this.results?.[relay1]?.check?.connect || false,
-          y = this.results?.[relay2]?.check?.connect || false
+      let x = this.store.results.all?.[relay1]?.check?.connect || false,
+          y = this.store.results.all?.[relay2]?.check?.connect || false
       return (x === y)? 0 : x? -1 : 1;
     })
     if(this.store.prefs.sortLatency)
       sort(relays, (relay1, relay2) => {
-        let a = this.results?.[relay1]?.latency?.average || null,
-            b = this.results?.[relay2]?.latency?.average || null
+        let a = this.store.results.all?.[relay1]?.latency?.average || null,
+            b = this.store.results.all?.[relay2]?.latency?.average || null
         return (b != null) - (a != null) || a - b;
       })
     if(this.store.prefs.sortUptime)
       sort(relays, (relay1, relay2) => {
-        let a = this.results?.[relay1]?.uptime || 0,
-            b = this.results?.[relay2]?.uptime || 0
+        let a = this.store.results.all?.[relay1]?.uptime || 0,
+            b = this.store.results.all?.[relay2]?.uptime || 0
         return b-a
       })
     if(this.store.prefs.doPinFavorites)
@@ -251,10 +276,13 @@ export default {
       aggregateTally += result?.check.connect ? 1 : 0
       aggregateTally += result?.check.read ? 1 : 0
       aggregateTally += result?.check.write ? 1 : 0
+      
+      if(aggregateTally > 1)
+        aggregateTally += result?.info?.limitation?.payment_required ? -1 : 0
 
       //console.log(result.url, result?.check.connect, result?.check.read, result?.check.write, aggregateTally)
 
-      if (aggregateTally == 3) {
+      if (aggregateTally >= 3) {
         return 'public'
       }
       else if (aggregateTally == 0) {
@@ -304,11 +332,9 @@ export default {
 
     setUptimePercentage(relay){
       const perc = this.getUptimePercentage(relay)
-      const result = this.getCache(relay)
-      if(!result)
-        return
+      const result = {}
       result.uptime = perc 
-      this.setCache(result)
+      this.store.results.mergeRight( { [relay]: result  } )
       return result
     },
 

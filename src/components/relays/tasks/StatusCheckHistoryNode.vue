@@ -99,11 +99,7 @@ export default defineComponent({
     // this.setRefreshInterval()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {

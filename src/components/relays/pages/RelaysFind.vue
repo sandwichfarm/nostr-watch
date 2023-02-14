@@ -1,27 +1,12 @@
 <template>
-  <RelaysNav
-    v-bind:relaysProp="relays"
-    v-bind:resultsProp="results" />
+  <RelaysNav />
 
   <MapSummary 
     v-if="store.prefs.showMaps"
     :resultsProp="results" 
     :activeSubsectionProp="activeSubsection" /> 
 
-  <!-- {{  store.relays.getOnline }} -->
-  <!-- <div v-if="showBasicData" id="wrapper" class="mx-auto max-w-7xl mt-2">
-    <div class="bg-black/5 dark:bg-black/30 text-2xl align-middle h-24">
-      welcome to nostr.watch. loading
-      <div class="block text-7xl">
-      <TasksManager
-        v-if="showBasicData"
-        v-bind:resultsProp="results" />
-      </div>
-    </div>
-    
-  </div> -->
-
-  <div id="wrapper" class="mx-auto max-w-7xl mt-2 mb-8 pb-8">  
+  <div id="wrapper" class="mx-auto max-w-7xl mt-8 mb-8 pb-8">  
     <div
       id="subsection_header" class="pt-5 px-1 sm:px-6 lg:px-8" 
           :class="{
@@ -59,7 +44,7 @@
           :resultsProp="results" />
       </div>
       <FiltersPartial
-        v-if="store.tasks.lastUpdate['relays/stats']"
+        v-if="store.tasks.getLastUpdate('relays/stats')"
         :resultsProp="results"
         v-bind:relaysProp="relays" />
     </div>
@@ -190,7 +175,7 @@ export default defineComponent({
         return navGroup?.filter( slug => slug !== 'nips' ) || [] 
     },
     getRelaysCount: function() { 
-      return this.getRelays( this.store.relays.getRelays(this.activeSubsection, this.results ) ).length
+      return this.getRelays( this.store.relays.getRelays(this.activeSubsection, this.store.results.all ) ).length
     },
     isMapDark: function(){
       // return this.store.layout.mapIsExpanded && this.$storage.('isDark') == true

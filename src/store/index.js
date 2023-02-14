@@ -3,6 +3,7 @@ import { createPersistedStatePlugin } from 'pinia-plugin-persistedstate-2'
 import { PiniaSharedState } from 'pinia-shared-state';
 
 import { useRelaysStore } from './relays.js'
+import { useResultsStore } from './results.js'
 import { usePrefsStore } from './prefs.js'
 import { useLayoutStore } from './layout.js'
 import { useUserStore } from './user.js'
@@ -11,6 +12,7 @@ import { useTaskStore } from './tasks.js'
 import { useProfileStore } from './profiles.js'
 import { useStatusStore } from './status.js'
 import { useFilterStore } from './filters.js'
+
 
 export const plugin = (app) => {
   const pinia = createPinia()
@@ -44,5 +46,6 @@ export const setupStore = function(){
     profile: useProfileStore(),
     status: useStatusStore(),
     filters: useFilterStore(),
+    results: useResultsStore(),
   }
 }

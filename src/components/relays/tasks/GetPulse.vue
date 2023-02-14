@@ -78,8 +78,6 @@ const localMethods = {
           
           uniques.add(event.created_at)
 
-          //console.log('pulse found', count, event.id)
-        
           pulsesByEvent[event.created_at] = decodeJson(event.content).online
 
           count++
@@ -181,11 +179,7 @@ export default defineComponent({
   updated(){
     
   },
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {},
 })

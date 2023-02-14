@@ -87,11 +87,7 @@ export default defineComponent({
     this.invalidateTask()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {

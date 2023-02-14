@@ -86,10 +86,8 @@ export default defineComponent({
   
   setup(props){
     const {activeSubsectionProp: activeSubsection} = toRefs(props)
-    const {resultsProp: results} = toRefs(props)
     return { 
       store : setupStore(),
-      results: results,
       activeSubsection: activeSubsection
     }
   },
@@ -152,12 +150,6 @@ export default defineComponent({
   },
   updated(){},
   props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
     activeSubsectionProp: {
       type: String,
       default(){
@@ -167,7 +159,7 @@ export default defineComponent({
   },
   computed: {
     subsectionRelays(){
-      return this.sortRelays( this.store.relays.getRelays(this.activeSubsection, this.results ) )
+      return this.getRelays( this.store.relays.getRelays(this.activeSubsection, this.store.results.all ) )
     },
     relayUrl() {
       // We will see what `params` is shortly
@@ -177,7 +169,7 @@ export default defineComponent({
       return (nip) => `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
     },
     badgeCheck(){
-      return (relay, key) => `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${key}&color=${this.results?.[relay]?.check?.[key] ? 'green' : 'red'}`
+      return (relay, key) => `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${key}&color=${this.store.results.get(relay)?.check?.[key] ? 'green' : 'red'}`
     },
     nipSignature(){
       return (key) => key.toString().length == 1 ? `0${key}` : key
@@ -202,20 +194,20 @@ export default defineComponent({
       return this.getRelays( this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object) ) 
     },
     isRelayInActiveSubsection(){
-      return (relay) => this.store.relays.getRelays(this.activeSubsection, this.results).includes(relay)
+      return (relay) => this.store.relays.getRelays(this.activeSubsection, this.store.results.all).includes(relay)
     },
     getColorViz(){
       return (relay) => {
         if(!this.isRelayInActiveSubsection(relay))
           return 'transparent'
 
-        if(this.results[relay]?.aggregate == 'public')
+        if(this.store.results.get(relay)?.aggregate == 'public')
           return '#00AA00'
 
-        if(this.results[relay]?.aggregate == 'restricted')
+        if(this.store.results.get(relay)?.aggregate == 'restricted')
           return '#FFA500'
 
-        if(this.results[relay]?.aggregate == 'offline')
+        if(this.store.results.get(relay)?.aggregate == 'offline')
           return '#FF0000'
         
         return 'transparent'

@@ -51,7 +51,7 @@
       <div class="mb-4 block flex-none" v-if="this.store.tasks.lastUpdate?.['relays/nip11']">
         <span  
           class="text-black/50 dark:text-white/70 block py-1 mb-1 cursor-pointer :hover:dark:bg-black/20 w-32 block">
-          Validations
+          Meta Checks
       </span>
         <span 
           @click="toggleFilter('valid/nip11', true, true)"
@@ -189,10 +189,9 @@
     name: 'FiltersPartial',
     components: {},
     setup(props){
-      const {resultsProp: results, relaysProp: relays} = toRefs(props)
+      const {relaysProp: relays} = toRefs(props)
       return { 
         store : setupStore(),
-        results: results,
         relays: relays
       }
     },
@@ -200,11 +199,10 @@
       // this.foundNips = this.collateSupportedNips()
     },
     mounted(){
+      // this.$forceUpdate
       this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
       this.refreshCounts()
-      this.$forceUpdate
-      // setInterval( () => console.log('filters partial', Object.keys(this.results).length, 'results'), 1000 )
-      // setInterval( this.doRefreshCounts, 1000 )
+      
     },
     updated(){
       
@@ -214,12 +212,6 @@
     unmounted(){
     },
     props: {
-      resultsProp: {
-        type: Object,
-        default(){
-          return {}
-        }
-      },
       // relaysProp: {
       //   type: Array,
       //   default(){
@@ -232,7 +224,7 @@
         count: { nips: {}, software: {}, countries: {}, continents: {} },
         activeNavItem: null
       }
-    },
+    },  
     methods: Object.assign(RelayMethods, {
       doRefreshCounts(){
         // console.log('active item', this.store.layout.getActiveItem('relays/find').slug, this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)

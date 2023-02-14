@@ -20,7 +20,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import { setupStore } from '@/store'
 
@@ -30,19 +30,17 @@ import SharedComputed from '@/shared/computed.js'
 // import { Inspector } from 'nostr-relay-inspector'
 
 const localMethods = {
-  invalidate(force){ 
+  CheckNip11(force){ 
     if( !this.isExpired(this.slug, 24*60*60*1000) && !force )
       return
     this.queueJob(
       this.slug, 
       async () => {
-        
         this.relays = this.store.relays.getAll
         this.relays.forEach( relay => {
-          if(!this.results?.[relay])
+          if(!this.store.results.get(relay))
             return
-          this.validatePubkey(relay)
-          this.setCache(this.results[relay])
+          this.store.results.mergeRight( { [relay]: this.validatePubkey(relay) } )
         })
         this.store.tasks.completeJob(this.slug)
       },
@@ -50,25 +48,31 @@ const localMethods = {
     )
   },
   validatePubkey(relay){
-    if(!this.results?.[relay]?.info?.pubkey)
+    const result = this.store.results.get(relay)
+
+    if(!result?.info?.pubkey)
       return 
 
-    this.results[relay].pubkeyValid = false
+    result.pubkeyValid = false
     
-    if(this.results[relay].info.pubkey.startsWith('npub')) {
-      this.results[relay].pubkeyError = "pubkey is in npub format, should be hex"
-      return
+    if(result.info.pubkey.startsWith('npub')) {
+      result.pubkeyError = "pubkey is in npub format, should be hex"
+      return result
     }
-    if(!this.results[relay].info.pubkey.match(/[0-9A-Fa-f]{6}/g)) {
-      this.results[relay].pubkeyError = "pubkey is not hex"
-      return
+    if(!result.info.pubkey.match(/[0-9A-Fa-f]{6}/g)) {
+      result.pubkeyError = "pubkey is not hex"
+      return result
     }
-    const pubkey = Uint8Array.from(Buffer.from(this.results[relay].info.pubkey, 'hex'));
+
+    const pubkey = Uint8Array.from(Buffer.from(result.info.pubkey, 'hex'));
     if(pubkey.length !== 32){
-      this.results[relay].pubkeyError = 'pubkey is expected to be 32'
-      return
+      result.pubkeyError = 'pubkey is expected to be 32'
+      return result
     }
-    this.results[relay].pubkeyValid = true
+
+    result.pubkeyValid = true
+
+    return result
   },
   closeAll(){
     if(this.inspectors.length)
@@ -90,14 +94,12 @@ export default defineComponent({
       slug: 'relays/nip11', //REMEMBER TO CHANGE!!!\
       relays: [],
       inspectors: [],
-      interval: null
+      interval: null,
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
   created(){
@@ -113,27 +115,15 @@ export default defineComponent({
     this.sinceLast = this.timeSinceRefresh()
   },
   async mounted(){
-    // if(this.store.tasks.isTaskActive(this.slug))
-    //   this.invalidate(true)
-    // else
-    //   this.invalidate()
-    this.invalidateTask()
+    if(this.store.tasks.isTaskActive(this.slug))
+      this.CheckNip11(true)
+    else
+      this.CheckNip11()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  props: {},
 })
 </script>
 

@@ -20,7 +20,7 @@ import SharedComputed from '@/shared/computed.js'
 import { RelayPool } from 'nostr'
 
 const LocalMethods = {
-  invalidateTopics(force, single){
+  GetTopics(force, single){
 
     if( !this.store.prefs.clientSideProcessing ) 
       return
@@ -31,8 +31,8 @@ const LocalMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        const relaysOnline = Object.keys(this.results).filter( relay => {
-          return this.results[relay]?.check?.connect
+        const relaysOnline = Object.keys(this.store.results.all).filter( relay => {
+          return this.store.results.get(relay)?.check?.connect
         })
         const relayChunks = this.chunk(100, [...relaysOnline])
         let   promises = [],
@@ -53,12 +53,13 @@ const LocalMethods = {
               })
               .on('event', async (r, sub_id, event) => {
                 if(subid === sub_id){
-                  const relay = event.tags[0][1]
+                  const relay = event.tags.filter( tag => 'd' === tag[0])?.[0]
                   const data = JSON.parse(event.content)
+                  const topics = event.tags.filter( tag => 't' === tag[0])
                   console.log(relay, data)
                   chunkResults[relay] = {}
-                  if(data?.topics)
-                    chunkResults[relay].topics = data.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
+                  if(topics)
+                    chunkResults[relay].topics = this.cleanTopics(topics)
                 }
               })
               .on('eose', () => {
@@ -74,14 +75,15 @@ const LocalMethods = {
             
           })
           promises.push(promise) 
-          console.log('results', Object.keys(this.results).length, 'chunk results', Object.keys(chunkResults).length)
+          console.log('results', Object.keys(this.store.results.all).length, 'chunk results', Object.keys(chunkResults).length)
           await Promise.all(promises)
-          this.results = Object.assign({}, this.results, chunkResults)
+          this.store.results.merge(chunkResults)
           promises = []
-          Object.keys(this.results).forEach( relay => { 
-            if(this.results?.[relay])
-              this.setCache(this.results[relay]) 
-          })
+          // Object.keys(this.store.results.all).forEach( relay => { 
+          //   if(this.store.results.get(relay))
+          //     // this.setCache(this.store.results.get(relay)) 
+          //     this.store.results.merge( { [relay]:  } )
+          // })
         }
         this.store.tasks.completeJob(this.slug)
       },
@@ -93,9 +95,8 @@ const LocalMethods = {
     this.interval = setInterval(() => {
       if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle){
         //console.log('ok?')
-        this.invalidate()
+        this.GetTopics()
       }
-        
     }, 1000)
   },
   timeUntilRefresh(){
@@ -153,21 +154,20 @@ export default defineComponent({
   },
   mounted(){
     if(this.isSingle) {
-      this.invalidateTopics(true, this.relayFromUrl)
+      this.GetTopics(true, this.relayFromUrl)
     }  
     else {
-      this.invalidateTopics()
+      if(this.store.tasks.isTaskActive(this.slug))
+        this.GetTopics(true)
+      else
+        this.GetTopics()
     }
 
     if(this.store.prefs.clientSideProcessing)
       this.setRefreshInterval()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(LocalMethods, RelayMethods),
   props: {
     resultsProp: {

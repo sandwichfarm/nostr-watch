@@ -34,6 +34,7 @@
     "geolib": "3.3.3",
     "js-yaml": "4.1.0",
     "leaflet": "1.9.3",
+    "mount-vue-component": "0.10.2",
     "node-emoji": "1.11.0",
     "node-fetch": "3.3.0",
     "nostr": "0.2.5",

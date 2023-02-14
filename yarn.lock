@@ -6490,6 +6490,11 @@ morgan@^1.10.0:
     on-finished "~2.3.0"
     on-headers "~1.0.2"
 
+mount-vue-component@0.10.2:
+  version "0.10.2"
+  resolved "https://registry.yarnpkg.com/mount-vue-component/-/mount-vue-component-0.10.2.tgz#de4f2ccb50a42c13824830349d2510787c44dd6e"
+  integrity sha512-oighx0My03ArLOoTV/kLTJnrBwKdQMvn8uRP+u02rGkgkLiX1LycaHzFGib7mUwkyjp3q3uzVgwHjLZqM6rxyA==
+
 mrmime@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/mrmime/-/mrmime-1.0.1.tgz#5f90c825fad4bdd41dc914eff5d1a8cfdaf24f27"

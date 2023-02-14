@@ -54,35 +54,35 @@
                       <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.tasks.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">Pubkey</code>
                       </th>
-                      <th v-if="store.tasks.lastUpdate['relays/geo']" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                      <th v-if="store.tasks.getLastUpdate('relays/geo')" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Location</code>
                       </th>
-                      <th v-if="subsection != 'favorite' && store.tasks.lastUpdate['relays/pulse']" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                      <th v-if="subsection != 'favorite' && store.tasks.getLastUpdate('relays/pulse')" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Uptime(12h)</code>
                       </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
                         <code class="text-xs block">Avg. Latency</code>
                       </th>
-                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn()" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
+                      <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
                         <code class="text-xs block">Connect</code>
                       </th>
-                      <th v-if="!store.layout.editorIsExpanded || !isLoggedIn()" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
+                      <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
                         <code class="text-xs block">Read</code>
                       </th>
 
               
-                      <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn())" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
+                      <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
                       </th>
 
-                      <th v-if="store.layout.editorIsExpanded && isLoggedIn()" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="store.layout.editorIsExpanded && isLoggedIn() && !store.prefs.isFirstVisit" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
                         </span> -->
                         <code class="text-xs block">Read</code>
                       </th>
 
-                      <th v-if="(store.layout.editorIsExpanded && isLoggedIn())" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="store.layout.editorIsExpanded && isLoggedIn() && !store.prefs.isFirstVisit" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <!-- <span class="verified-shape-wrapper">
                           <span class="shape verified"></span>
                         </span> -->
@@ -108,7 +108,7 @@
 
                       <td class="w-62 relay left-align relay-url text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50">
                           <a class="text-black dark:text-white" :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
-                          <span class="text-inherit flex-1 align-middle hidden lg:inline-block pl-3 m1-3 text-sm whitespace-nowrap truncate" v-if="results[relay]?.topics">
+                          <span class="text-inherit flex-1 align-middle hidden lg:inline-block pl-3 m1-3 text-sm whitespace-nowrap truncate" v-if="store.results.get(relay)?.topics">
                             {{ getTopics(relay) }}
                           </span>
                       </td>
@@ -122,10 +122,10 @@
                       </td> -->
 
                       <td v-if="!store.layout.editorIsExpanded" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
-                        <a v-if="isPayToRelay(relay)" :href="this.results[relay].validP2R ? this.results[relay].info.payments_url : null" class="block align-center" target="_blank">
+                        <a v-if="isPayToRelay(relay)" :href="this.store.results.get(relay)?.validP2R ? this.store.results.get(relay).info.payments_url : null" class="block align-center" target="_blank">
                           <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" class="inline-block align-center w-6 h-6 stroke-green-600/90 dark:stroke-green-400/60"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> -->
                           <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360">
-                            <circle :style="this.results[relay].validP2R ? 'fill:#f8991d' : 'fill:red'" class="cls-1" cx="180" cy="180" r="179"/>
+                            <circle :style="this.store.results.get(relay).validP2R ? 'fill:#f8991d' : 'fill:red'" class="cls-1" cx="180" cy="180" r="179"/>
                             <rect class="fill-white dark:fill-black" x="201.48" y="37.16" width="23.49" height="40.14" transform="translate(21.82 -52.79) rotate(14.87)"/>
                             <rect class="fill-white dark:fill-black" x="135.03" y="287.5" width="23.49" height="40.14" transform="translate(83.82 -27.36) rotate(14.87)"/>
                             <rect class="fill-white dark:fill-black" x="184.27" y="38.29" width="23.49" height="167.49" transform="translate(364.26 -36.11) rotate(104.87)"/>
@@ -136,28 +136,28 @@
                       </td>
 
                       <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.tasks.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
-                        <!-- {{ this.results[relay]?.pubkeyValid }}
-                        {{ this.results[relay]?.info?.pubkey }} -->
+                        <!-- {{ this.store.results.get(relay)?.pubkeyValid }}
+                        {{ this.store.results.get(relay)?.info?.pubkey }} -->
                         <span 
-                          v-if="this.results[relay]?.pubkeyValid && this.results[relay]?.info?.pubkey" 
-                          v-tooltip:bottom.tooltip="`Valid pubkey was registered by relay: ${this.results[relay].info.pubkey}`" class="cursor-pointer">
-                          <svg class="svg-icon fill-green-500" style="width: 1em; height: 1em;vertical-align: middle;;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
+                          v-if="this.store.results.get(relay)?.pubkeyValid && this.store.results.get(relay)?.info?.pubkey" 
+                          v-tooltip:bottom.tooltip="`Valid pubkey was registered by relay: ${this.store.results.get(relay).info.pubkey}`" class="cursor-pointer">
+                          <svg class="svg-icon fill-green-500" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
                         </span> 
-                          <!-- <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(results[relay]?.identities).length"><span class="shape verified"></span></span></span> -->
+                          <!-- <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(store.results.get(relay)?.identities).length"><span class="shape verified"></span></span></span> -->
                         <span 
-                          v-if="!this.results[relay]?.pubkeyValid && this.results[relay]?.info?.pubkey" class="cursor-pointer" 
-                          v-tooltip:bottom.tooltip="`Provided pubkey ${this.results[relay].info.pubkey} is invalid, error: ${this.results[relay].pubkeyError}. Please review NIP-11 specification to fix.`">
+                          v-if="!this.store.results.get(relay)?.pubkeyValid && this.store.results.get(relay)?.info?.pubkey" class="cursor-pointer" 
+                          v-tooltip:bottom.tooltip="`Provided pubkey ${this.store.results.get(relay).info.pubkey} is invalid, error: ${this.store.results.get(relay).pubkeyError}. Please review NIP-11 specification to fix.`">
                           <svg class="svg-icon fill-red-500/20" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
                         </span>
                       </td>
 
-                      <td v-if="store.tasks.lastUpdate['relays/geo']" class="w-24 location text-center">
+                      <td v-if="store.tasks.getLastUpdate('relays/geo')" class="w-24 location text-center">
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td v-if="subsection != 'favorite' && store.tasks.lastUpdate['relays/pulse']" class="w-24 latency text-center">
-                        <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.results[relay]?.uptime">
-                          {{ this.results[relay]?.uptime }}%
+                      <td v-if="subsection != 'favorite' && store.tasks.getLastUpdate('relays/pulse')" class="w-24 latency text-center">
+                        <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime">
+                          {{ this.store.results.get(relay)?.uptime }}%
                         </span>
                       </td>
 
@@ -176,22 +176,24 @@
                       </td> -->
 
                       <!-- <td class="w-24 latency text-center">
-                        <span>{{ results[relay]?.latency?.final }}<span v-if="results[relay]?.check?.latency">ms</span></span>
+                        <span>{{ store.results.get(relay)?.latency?.final }}<span v-if="store.results.get(relay)?.check?.latency">ms</span></span>
                       </td> -->
 
-                      <td class="w-24 latency text-center text-sm font-bold">
-                        <span v-if="results[relay]?.latency?.average">{{ results[relay].latency.average }}<span v-if="results[relay].latency.average">ms</span></span>
-                        <span v-if="!results[relay]?.latency?.average" class="font-normal italic text-black/30 dark:text-white/30">timeout</span>
+                      <td v-if=" store.tasks.getLastUpdate('relays/seed')" class="w-24 latency text-center text-sm font-bold">
+                        <span v-if="store.results.get(relay)?.latency?.average">
+                          {{ store.results.get(relay).latency.average }}ms
+                        </span>
+                        <span v-if="!store.results.get(relay)?.latency?.average && (store.tasks.isProcessed('relays/check', relay))" class="font-normal italic text-black/30 dark:text-white/30">timeout</span>
                       </td>
 
                       <!-- no editor -->
-                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn()" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
+                      <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'connect')">
                           &nbsp;
                         </span>
                       </td>
 
-                      <td v-if="!store.layout.editorIsExpanded || !isLoggedIn()" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
+                      <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
                         <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'read')">
                           <span class="align-middle h-max" v-if="isLoggedIn() && store.user.kind3?.[relay]?.read">
                             <svg class="inline-block " :class="getCheckIndicatorPolicy" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -202,7 +204,7 @@
                         </span>
                       </td>
 
-                      <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn())" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
+                      <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
                         <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'write')">
                           <span class="align-middle" v-if="isLoggedIn() && store.user.kind3?.[relay]?.write">
                             <svg class="inline-block" :class="getCheckIndicatorPolicy" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -368,7 +370,6 @@
     beforeUnmount(){
     },
     unmounted(){
-      delete this.results
     },
     props: {
       subsectionProp: {
@@ -411,7 +412,7 @@
     computed: {
       isPayToRelay(){
         return relay => {
-          if(this.results?.[relay]?.info?.limitation?.payment_required)
+          if(this.store.results.get(relay)?.info?.limitation?.payment_required)
             return true
         }
         
@@ -419,13 +420,11 @@
       getTopics(){
         return relay => {
           let topics = ""
-          // let topicsArr = this.results[relay].topics.slice(0, 3).filter( topic => topic[0].length <= 32)
-          let topicsArr = this.results[relay].topics.filter( topic => {
-            //console.log(topic[0], topic[0].length, topic[0].length <= 32)
+          let topicsArr = this.store.results.get(relay)?.topics.filter( topic => {
             return topic[0].length <= 32
           }).slice(0, 3)
           for(let topic in topicsArr){
-            topics = `${topics}  #${topicsArr[topic]}`
+            topics = `${topics}  #${topicsArr[topic][0]}`
           }
           return topics
         }
@@ -433,11 +432,11 @@
       getUptimeColor(){
         return relay => {
           return {
-            'text-green-600/100 dark:text-green-600/80': this.results[relay]?.uptime >= 98,
-            'text-green-600/80 dark:text-green-400/50': this.results[relay]?.uptime >= 95 && this.results[relay]?.uptime < 98,
-            'text-yellow-600 dark:text-yellow-400/90': this.results[relay]?.uptime >= 90 && this.results[relay]?.uptime < 95,
-            'text-orange-500': this.results[relay]?.uptime >= 80 && this.results[relay]?.uptime < 90,
-            'text-red-400 dark:text-red-600': this.results[relay]?.uptime < 80,
+            'text-green-600/100 dark:text-green-600/80': this.store.results.get(relay)?.uptime >= 98,
+            'text-green-600/80 dark:text-green-400/50': this.store.results.get(relay)?.uptime >= 95 && this.store.results.get(relay)?.uptime < 98,
+            'text-yellow-600 dark:text-yellow-400/90': this.store.results.get(relay)?.uptime >= 90 && this.store.results.get(relay)?.uptime < 95,
+            'text-orange-500': this.store.results.get(relay)?.uptime >= 80 && this.store.results.get(relay)?.uptime < 90,
+            'text-red-400 dark:text-red-600': this.store.results.get(relay)?.uptime < 80,
           }
         }
       },
@@ -456,7 +455,6 @@
       //   }
       // },
       subsectionRelays(){
-        // return this.getRelays( this.store.relays.getRelays(this.subsection, this.results ) )
         return this.getRelays( this.store.relays.getAll )
       },
       relayGeo(){
@@ -475,7 +473,7 @@
         return (relay, index) => {
           //console.log(this.store.prefs.getTheme)
           return {
-            loaded: this.results[relay]?.state == 'complete',
+            loaded: this.store.results.get(relay)?.state == 'complete',
             'bg-slate-100': index % 2,
             'bg-red-50 hover:bg-red-100 dark:bg-red-800/10 dark:hover:bg-red-100/5': this.store.relays.isFavorite(relay),
             'bg-gray-50 hover:bg-slate-200 dark:bg-transparent dark:hover:bg-slate-200/5': !this.store.relays.isFavorite(relay),
@@ -488,17 +486,17 @@
       getCheckIndicator(){
         return (relay, key) => {
           return { 
-            'bg-green-500': this.results[relay]?.check?.[key] !== false,
-            'bg-red-500': this.results[relay]?.check?.[key] === false,
-            'bg-gray-500': 'undefined' === typeof this.results[relay]?.check?.[key],
+            'bg-green-500': this.store.results.get(relay)?.check?.[key] !== false,
+            'bg-red-500': this.store.results.get(relay)?.check?.[key] === false,
+            'bg-gray-500': 'undefined' === typeof this.store.results.get(relay)?.check?.[key],
             // '': this.store.prefs.getTheme === 'spacious',
             // '': this.store.prefs.getTheme === 'comfortable',
             'text-2xl block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
             'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
             'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
-            // 'success': this.results[relay]?.check?.[key] !== false,
-            // 'failure': this.results[relay]?.check?.[key] === false,
-            // 'pending': 'undefined' === typeof this.results[relay]?.check?.[key] 
+            // 'success': this.store.results.get(relay)?.check?.[key] !== false,
+            // 'failure': this.store.results.get(relay)?.check?.[key] === false,
+            // 'pending': 'undefined' === typeof this.store.results.get(relay)?.check?.[key] 
             }
         } 
       },
@@ -512,9 +510,9 @@
       getAggregateIndicator(){
         return (relay) => {
           return { 
-            'w-4 h-4 bg-green-500': this.results[relay]?.aggregate === 'public',
-            'w-4 h-4 bg-orange-500': this.results[relay]?.aggregate === 'restricted',
-            'w-4 h-4 bg-red-500': this.results[relay]?.aggregate === 'offline',
+            'w-4 h-4 bg-green-500': this.store.results.get(relay)?.aggregate === 'public',
+            'w-4 h-4 bg-orange-500': this.store.results.get(relay)?.aggregate === 'restricted',
+            'w-4 h-4 bg-red-500': this.store.results.get(relay)?.aggregate === 'offline',
             'ml-4': this.store.prefs.getTheme === 'spacious',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',
@@ -523,9 +521,9 @@
             // 'text-2xl h-16 block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
             // 'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
             // 'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
-            // 'success': this.results[relay]?.check?.[key] !== false,
-            // 'failure': this.results[relay]?.check?.[key] === false,
-            // 'pending': 'undefined' === typeof this.results[relay]?.check?.[key] 
+            // 'success': this.store.results.get(relay)?.check?.[key] !== false,
+            // 'failure': this.store.results.get(relay)?.check?.[key] === false,
+            // 'pending': 'undefined' === typeof this.store.results.get(relay)?.check?.[key] 
             }
         } 
       },
@@ -539,12 +537,12 @@
         return (relay) => {
           let string = '',
               extraString = '',
-              users = Object.entries(this.results[relay]?.identities),
+              users = Object.entries(this.store.results.get(relay)?.identities),
               count = 0
 
-          if(this.results[relay]?.identities) {
-            if(this.results[relay]?.identities.serverAdmin) {
-              string = `Relay has registered an administrator pubkey: ${this.results[relay]?.identities.serverAdmin}. `
+          if(this.store.results.get(relay)?.identities) {
+            if(this.store.results.get(relay)?.identities.serverAdmin) {
+              string = `Relay has registered an administrator pubkey: ${this.store.results.get(relay)?.identities.serverAdmin}. `
               extraString = "Additionally, "
             }
 

@@ -4,7 +4,6 @@
   <MapSingle
     :geo="geo"
     :relay="relay"
-    :result="result"
     v-if="(geo instanceof Object) && store.prefs.showMaps"
   />
 
@@ -23,9 +22,8 @@
             <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
             <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
             <span class="mt-1 w-auto text-xl text-gray-400" v-if="result?.info?.contact">
-              <span v-if="isContactType(result.info.contact, 'email')">Contact: <SafeMail :email="result.info.contact" /></span>
-              <span v-else>{{ result.info.contact }}</span>
-              
+              <span v-if="isContactType(result?.info?.contact, 'email')">Contact: <SafeMail :email="result.info.contact" /></span>
+              <span v-else>{{ result?.info?.contact }}</span>
             </span>
           </div>
           <a 
@@ -39,7 +37,7 @@
 
         <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="result?.topics && result?.topics.length">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
-            <span v-for="topic in getTopics" :class="normalizeTopic(topic)" :key="`${result.url}-${topic[0]}`">
+            <span v-for="topic in getTopics" :class="normalizeTopic(topic)" :key="`${result?.url}-${topic[0]}`">
               #{{ topic[0] }}  
             </span>
           </div>
@@ -56,10 +54,10 @@
           class="flex-none w-full md:w-auto md:flex mb-2 py-5" 
           v-if="
             showLatency ||
-            (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
+            (result.check?.averageLatency === null || result.check?.averageLatency === true)"> <!--something is weird here with margin-->
           <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 
-              v-if="result.latency.average"
+              v-if="result.latency?.average"
               class="relative -top-6 -mb-12 m-auto inline-block"
               :refid="'relay-latency'"
               :options="{
@@ -71,11 +69,11 @@
           </div>
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3 class="text-black/70 dark:text-white/50 text-lg">Avg. Latency</h3>
-            <svg v-if="!result.latency.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg v-if="!result.latency?.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span>{{ result.latency.average }}</span>
+            <span>{{ result.latency?.average }}</span>
           </div>
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3 class="text-black/70 dark:text-white/50 text-lg">Min Latency</h3>
@@ -83,7 +81,7 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span>{{ result.latency.min }}</span>
+            <span>{{ result.latency?.min }}</span>
           </div>
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3 class="text-black/70 dark:text-white/50 text-lg">Max Latency</h3>
@@ -91,7 +89,7 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span>{{ result.latency.max }}</span>
+            <span>{{ result.latency?.max }}</span>
           </div>
         </div>
 
@@ -187,22 +185,16 @@
                   Network Summary
                 </h5>
                 <p class="text-gray-700 text-base mb-4 dark:text-white/60">
-                  The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong>
-                  <em>{{ geo?.dns.data }}</em> appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong>
+                  The IP of <strong>https://{{ geo?.dns?.name }}</strong> is <strong>{{ geo?.dns?.data }}</strong>
+                  and appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong>
                   The hosting provider is <strong>{{  geo?.as  }}</strong>.
                 </p>
-                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
               </div>
-              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
-                2 days ago
-              </div> -->
             </div>
           </div>
+
           <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="Object.keys(result?.info).length">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <!-- <div class="py-3 px-6 border-b border-gray-300">
-                Featured
-              </div> -->
               <div class="py-6 px-4">
                 <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
                   Software
@@ -210,14 +202,11 @@
                 <p class="text-gray-700 text-base mb-4 dark:text-white/60">
                   <strong>{{relay}}</strong> is running <strong>{{ getSoftware }}</strong> version <strong>{{ result.info.version }}</strong>
                 </p>
-                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
               </div>
-              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
-                2 days ago
-              </div> -->
             </div>
           </div>
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="this.result?.info?.pubkey">
+
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info?.pubkey">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <!-- <div class="py-3 px-6 border-b border-gray-300">
                 Featured
@@ -227,7 +216,7 @@
                   PubKey
                 </h5>
                 <p class="text-gray-700 text-base mb-4 dark:text-white/60 text-ellipsis overflow-hidden">
-                  The relay's pubkey is <code class="block text-ellipsis w-full">{{ this.result?.info.pubkey }}</code>
+                  The relay's pubkey is <code class="block text-ellipsis w-full">{{ result?.info?.pubkey }}</code>
                 </p>
                 <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
               </div>
@@ -682,7 +671,6 @@ export default defineComponent({
 
   data() {
     return {
-      result: {},
       relay: "",
       geo: {},
       events: {},
@@ -717,8 +705,6 @@ export default defineComponent({
 
   async mounted() {
     // this.getAdminNotes()
-    this.result = this.getCache(this.relayFromUrl)
-    this.setData()
     this.interval = setInterval(() => {
       this.setData()
     },1000)
@@ -729,6 +715,9 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
+    result(){
+      return this.store.results.get(this.relay)
+    },
     sanitizeAndDetectEmail() {
       return str => {
         if( !(str instanceof String) )
@@ -756,9 +745,13 @@ export default defineComponent({
     normalizeTopic: function(){
       return topic => {
 
+        console.log(topic)
+
+        const result = this.result
+
         const val = topic[1],
-              minVal = this.result.topics[this.result.topics.length-1][1], 
-              maxVal = this.result.topics[0][1],
+              minVal = result?.topics[result?.topics?.length-1][1], 
+              maxVal = result?.topics[0][1],
               newMin = 1,
               newMax = 5
 
@@ -894,9 +887,6 @@ export default defineComponent({
         'col-span-1': !this.result?.info,
       }
     }
-
-    
-    
   }),
 
   // updated() {
@@ -914,32 +904,21 @@ export default defineComponent({
       }
     },
     setData(){
-      this.relay = this.relayFromUrl
-      // this.relays = this.store.relays.getAggregateCache('public')
+      const result = {}
+
+      result.topics = this.result?.topics
+
       this.lastUpdate = this.store.tasks.getLastUpdate('relays')
-      this.result = this.getCache(this.relay) || false
-      //
-      //console.log('single result', this.relayFromUrl, this.result, this.getCache(this.relay))
-      
+      this.relay = this.relayFromUrl
+
       this.geo = this.store.relays.getGeo(this.relay)
 
       this.pulses = this.store.stats.getPulse(this.relay)
       this.hbMin = Math.min.apply(Math, this.pulses?.map( hb => hb.latency ))
       this.hbMax = Math.max.apply(Math, this.pulses?.map( hb => hb.latency ) )
-      if(this.result?.topics)
-        this.result.topics = this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
-      
-      // if(this.result){
-      //   if(this.result?.latency?.average)
-      //     this.result.latency.average = null
-      //   if(this.result?.latency?.min)
-      //     this.result.latency.min = null
-      //   if(this.result?.latency?.max)
-      //     this.result.latency.max = null
-      //   if(this.result?.latency?.average)
-      //     this.showLatency = true 
-      // }
-      //console.log(this.relay, this.lastUpdate, this.result, this.geo)
+    
+      if(result.topics)
+        result.topics = result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
     }
   }),
 

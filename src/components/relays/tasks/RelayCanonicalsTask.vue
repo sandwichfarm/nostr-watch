@@ -32,7 +32,7 @@ const localMethods = {
       unique: unique
     })
   },
-  invalidate(force){
+  Canonicals(force){
     if( (!this.isExpired(this.slug) && !force) ) 
       return
     
@@ -54,7 +54,6 @@ const localMethods = {
           })
           .on('event', (relay, _subid, event) => {
             if(_subid.includes(subid)){
-              //console.log('canonical event', event.id)
               const hash = event.tags.filter( tag => tag[0] === 'h')[0][1]
               this.hashes[hash] = event.id
             }
@@ -63,7 +62,6 @@ const localMethods = {
         await this.delay(5000)
 
         try{
-          // $pool.unsubscribe(subid)
           this.closePool($pool)
         } catch(e){""}
 
@@ -73,10 +71,6 @@ const localMethods = {
             return 
           this.canonicals[relay] = this.hashes[hash] //event.id
         })
-
-        //console.log('hashes found', Object.keys(this.hashes).length)
-        //console.log('canonicals found', Object.keys(this.canonicals).length, this.canonicals)
-        //console.log('from store', this.store.relays.getCanonicals)
 
         this.store.relays.setCanonicals(this.canonicals)
 
@@ -97,7 +91,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'TemplateTask',
+  name: 'Canonicals',
   components: {},
   data() {
     return {
@@ -127,15 +121,13 @@ export default defineComponent({
     this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    //console.log('task', this.slug, 'is processing:', this.store.tasks.isTaskActive(this.slug))
-    this.invalidateTask()
+    if(this.store.tasks.isTaskActive(this.slug))
+      this.Canonicals(true)
+    else
+      this.Canonicals() 
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, SharedMethods),
   props: {
     resultsProp: {

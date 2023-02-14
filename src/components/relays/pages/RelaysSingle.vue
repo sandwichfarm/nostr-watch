@@ -908,7 +908,7 @@ export default defineComponent({
 
       result.topics = this.result?.topics
 
-      this.lastUpdate = this.store.tasks.getLastUpdate('relays')
+      this.lastUpdate = this.store.jobs.getLastUpdate('relays')
       this.relay = this.relayFromUrl
 
       this.geo = this.store.relays.getGeo(this.relay)

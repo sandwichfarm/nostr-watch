@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
+    v-if="this.store.jobs.getActiveSlug === slug"
     class="text-inherit">
     <span class="text-inherit" v-if="this.store.prefs.discoverRelays">finding new relays</span>
   </span>
@@ -68,13 +68,13 @@ const localMethods = {
     if(clear)
       clearTimeout(this.timeout)
     
-    this.store.tasks.completeJob(this.slug)
+    this.store.jobs.completeJob(this.slug)
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
 }
 
@@ -101,12 +101,12 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
-    if(this.store.tasks.isTaskActive(this.slug))
+    if(this.store.jobs.isJobActive(this.slug))
       this.GetRelays(true)
     else
       this.GetRelays()

@@ -1,6 +1,6 @@
 <template>
   <span 
-      v-if="this.store.tasks.getActiveSlug === slug"
+      v-if="this.store.jobs.getActiveSlug === slug"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span>Retrieving operator profiles...</span>
   </span>
@@ -26,7 +26,7 @@ import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
   queueJob: function(id, fn, unique){
-    this.store.tasks.addJob({
+    this.store.jobs.addJob({
       id: id,
       handler: fn,
       unique: unique
@@ -58,7 +58,7 @@ const localMethods = {
         } 
 
         const kinds = [0,1,7]
-        //remove kind 1 for non-single page tasks
+        //remove kind 1 for non-single page jobs
         pool
           .on('open', relay => {
             relay.subscribe(subid, { limit:10, kinds:kinds, authors:[this.result.info.pubkey] })
@@ -86,7 +86,7 @@ const localMethods = {
             //console.log( 'event!', event.content )
           })
 
-        this.store.tasks.completeJob(this.slug)
+        this.store.jobs.completeJob(this.slug)
           // .on('eose', relay => {
           //   this.closeRelay(relay)
           // })
@@ -95,15 +95,15 @@ const localMethods = {
     )
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
 }
 
 export default defineComponent({
-  name: 'TemplateTask',
+  name: 'TemplateJob',
   components: {},
   data() {
     return {
@@ -124,15 +124,15 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
     this.relays = this.store.relays.getAll()
   },
   mounted(){
-    //console.log('task', this.slug, 'is processing:', this.store.tasks.isTaskActive(this.slug))
-    this.invalidateTask()
+    //console.log('job', this.slug, 'is processing:', this.store.jobs.isJobActive(this.slug))
+    this.invalidateJob()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),

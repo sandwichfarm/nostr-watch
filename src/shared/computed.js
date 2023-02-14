@@ -5,7 +5,7 @@ export default {
         return (slug, expireAfter) => {
             if(!expireAfter)
                 expireAfter = this.store.prefs.expireAfter
-            return !this.store.tasks.getLastUpdate(slug) || Date.now() - this.store.tasks.getLastUpdate(slug) > expireAfter
+            return !this.store.jobs.getLastUpdate(slug) || Date.now() - this.store.jobs.getLastUpdate(slug) > expireAfter
         }
     },
     path: function() { return useRoute().path },
@@ -28,15 +28,15 @@ export default {
         }
     },
     isFirstVisit(){
-        return      (!this.store.tasks.lastUpdate['relays/seed'] && !this.store.prefs.clientSideProcessing)
-                ||  ( !this.store.tasks.lastUpdate['relays/check'] && this.store.prefs.clientSideProcessing)
+        return      (!this.store.jobs.lastUpdate['relays/seed'] && !this.store.prefs.clientSideProcessing)
+                ||  ( !this.store.jobs.lastUpdate['relays/check'] && this.store.prefs.clientSideProcessing)
     },
     showBasicData(){
-        return this.isFirstVisit && this.store.tasks.getActiveSlug !== 'relays/seed' && !this.pendingFirstCompletion
+        return this.isFirstVisit && this.store.jobs.getActiveSlug !== 'relays/seed' && !this.pendingFirstCompletion
         // return this.isFirstVisit 
     },
     pendingFirstCompletion(){
-        return !this.store.tasks.lastUpdate['relays/seed'] && !this.store.tasks.lastUpdate['relays/check'] && this.$route.path === '/find/relays'
+        return !this.store.jobs.lastUpdate['relays/seed'] && !this.store.jobs.lastUpdate['relays/check'] && this.$route.path === '/find/relays'
         // return this.isFirstVisit 
     }
 }

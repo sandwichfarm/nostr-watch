@@ -8,7 +8,7 @@ import { usePrefsStore } from './prefs.js'
 import { useLayoutStore } from './layout.js'
 import { useUserStore } from './user.js'
 import { useStatStore } from './stats.js'
-import { useTaskStore } from './tasks.js'
+import { useJobStore } from './jobs.js'
 import { useProfileStore } from './profiles.js'
 import { useStatusStore } from './status.js'
 import { useFilterStore } from './filters.js'
@@ -42,7 +42,7 @@ export const setupStore = function(){
     layout: useLayoutStore(),
     user: useUserStore(),
     stats: useStatStore(),
-    tasks: useTaskStore(),
+    jobs: useJobStore(),
     profile: useProfileStore(),
     status: useStatusStore(),
     filters: useFilterStore(),

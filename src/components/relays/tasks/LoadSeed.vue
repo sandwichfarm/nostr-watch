@@ -1,30 +1,30 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
+    v-if="this.store.jobs.getActiveSlug === slug"
     class="text-inherit">
   <span class="text-inherit">
-    <span v-if="!store.tasks.isTaskActive(this.slug) && !isSingle" class="hidden text-inherit">
+    <span v-if="!store.jobs.isJobActive(this.slug) && !isSingle" class="hidden text-inherit">
       checked {{ sinceLast }} ago
     </span>
-    <span v-if="store.tasks.isTaskActive(this.slug) && !isSingle" class="italic text-inherit ml-2 inline-block">
+    <span v-if="store.jobs.isJobActive(this.slug) && !isSingle" class="italic text-inherit ml-2 inline-block">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      {{ this.store.tasks.getProcessed(this.slug).length }}/{{ this.relays.length }} loaded
+      {{ this.store.jobs.getProcessed(this.slug).length }}/{{ this.relays.length }} loaded
     </span>
   </span>
-  <span class="text-inherit mr-2 ml-2 hidden lg:inline" v-if="!store.tasks.isTaskActive(this.slug)">-</span>
-  <span class="text-inherit mr-2 ml-2" v-if="store.prefs.refresh && !store.tasks.isTaskActive(this.slug)"> 
+  <span class="text-inherit mr-2 ml-2 hidden lg:inline" v-if="!store.jobs.isJobActive(this.slug)">-</span>
+  <span class="text-inherit mr-2 ml-2" v-if="store.prefs.refresh && !store.jobs.isJobActive(this.slug)"> 
     next check in {{ untilNext }}
   </span>
   <!--<span v-if="isSingle">Loading {{ relay }} from history node...</span>
     <span v-if="!isSingle">Loading data from history relay</span>
   </span>
   <span 
-    v-if="(!store.tasks.isActive || this.store.tasks.getActiveSlug === slug) && !isSingle">
+    v-if="(!store.jobs.isActive || this.store.jobs.getActiveSlug === slug) && !isSingle">
     <span 
-      v-if="store.prefs.refresh && !store.tasks.isTaskActive(this.slug)" 
+      v-if="store.prefs.refresh && !store.jobs.isJobActive(this.slug)" 
       class="text-white lg:text-sm ml-2 text-xs mt-1.5 inline-block mr-10" >
       Next check in: {{ untilNext }}
     </span> -->
@@ -50,7 +50,7 @@ import { RelayPool } from 'nostr'
 
 const localMethods = {
   LoadSeed(force, single){
-    // if( ( this.store.tasks.getLastUpdate('relays/check') || ( this.store.tasks.processed?.['relays/check'] && this.store.tasks.processed?.['relays/check'].length ) ) && !force ) 
+    // if( ( this.store.jobs.getLastUpdate('relays/check') || ( this.store.jobs.processed?.['relays/check'] && this.store.jobs.processed?.['relays/check'].length ) ) && !force ) 
     //   return
     if( (!this.isExpired(this.slug, 15*60*1000) && !force) && !this.isSingle ) 
       return
@@ -66,10 +66,10 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+      this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
       this.untilNext = this.timeUntilRefresh()
       this.sinceLast = this.timeSinceRefresh()
-      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle)
+      if(!this.store.jobs.isJobActive(this.slug) && !this.isSingle)
         this.LoadSeed()
     }, 15*60*1000)
   },
@@ -77,14 +77,14 @@ const localMethods = {
     return this.timeSince(
             Date.now()
             -(
-              this.store.tasks.getLastUpdate(this.slug)
+              this.store.jobs.getLastUpdate(this.slug)
               +this.refreshEvery-Date.now()
             )
     ) 
   },
   async getFromHistory(single){
     this.relays = [...this.store.relays.getAll]
-    const relays = this.relays.filter( relay => !this.store.tasks.isProcessed(this.slug, relay) )
+    const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
     let relayChunks = this.chunk(250, relays),
         resultsChunk = {}
     const promises = []
@@ -153,9 +153,9 @@ const localMethods = {
 
               resultsChunk[relay] = result
 
-              if(this.store.tasks.isProcessed(this.slug, relay))
+              if(this.store.jobs.isProcessed(this.slug, relay))
                 return 
-              this.store.tasks.addProcessed(this.slug, relay)
+              this.store.jobs.addProcessed(this.slug, relay)
             }
           })
           .on('eose', async () => {
@@ -172,14 +172,14 @@ const localMethods = {
     }
     await Promise.all(promises)
     
-    this.store.tasks.completeJob(this.slug)
+    this.store.jobs.completeJob(this.slug)
     relayChunks = null
   },
   async checkOffline(){
 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   }
 }
 
@@ -210,7 +210,7 @@ export default defineComponent({
       this.closePool(this.pool)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
@@ -228,7 +228,7 @@ export default defineComponent({
       this.LoadSeed(true, this.relayFromUrl)
     }  
     else {
-      if(this.store.tasks.isTaskActive(this.slug))
+      if(this.store.jobs.isJobActive(this.slug))
         this.LoadSeed(true)
       else
         this.LoadSeed()

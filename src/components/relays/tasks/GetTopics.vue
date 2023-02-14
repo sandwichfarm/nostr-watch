@@ -1,6 +1,6 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
+    v-if="this.store.jobs.getActiveSlug === slug"
     class="text-inherit">
     <span class="text-inherit" v-if="!isSingle">loading relay topics</span>
   </span>
@@ -85,7 +85,7 @@ const LocalMethods = {
           //     this.store.results.merge( { [relay]:  } )
           // })
         }
-        this.store.tasks.completeJob(this.slug)
+        this.store.jobs.completeJob(this.slug)
       },
       true
     )
@@ -93,17 +93,17 @@ const LocalMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      if(!this.store.tasks.isTaskActive(this.slug) && !this.isSingle){
+      if(!this.store.jobs.isJobActive(this.slug) && !this.isSingle){
         //console.log('ok?')
         this.GetTopics()
       }
     }, 1000)
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.refreshEvery-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.refreshEvery-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
   chunk(chunkSize, array) {
     return array.reduce(function(previous, current) {
@@ -157,7 +157,7 @@ export default defineComponent({
       this.GetTopics(true, this.relayFromUrl)
     }  
     else {
-      if(this.store.tasks.isTaskActive(this.slug))
+      if(this.store.jobs.isJobActive(this.slug))
         this.GetTopics(true)
       else
         this.GetTopics()

@@ -1,6 +1,6 @@
 <template>
   <span  
-      v-if="this.store.tasks.getActiveSlug === slug && isLoggedIn"
+      v-if="this.store.jobs.getActiveSlug === slug && isLoggedIn"
       class="text-inherit">
     <span class="text-inherit">looking for your contact list</span>
   </span>
@@ -42,11 +42,11 @@ localMethods.invalidate = function(force){
 }
 
 localMethods.timeUntilRefresh = function(){
-  return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+  return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
 }
 
 localMethods.timeSinceRefresh = function(){
-  return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()      
+  return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()      
 }
 
 localMethods.hash = function(relay){
@@ -54,7 +54,7 @@ localMethods.hash = function(relay){
 }
 
 export default defineComponent({
-  name: 'TemplateTask',
+  name: 'TemplateJob',
   components: {},
   data() {
     return {
@@ -79,15 +79,15 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
-    //console.log('task', this.slug, 'is processing:', this.store.tasks.isTaskActive(this.slug))
-    this.invalidateTask()
+    //console.log('job', this.slug, 'is processing:', this.store.jobs.isJobActive(this.slug))
+    this.invalidateJob()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),

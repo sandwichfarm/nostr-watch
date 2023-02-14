@@ -15,13 +15,13 @@ export default {
     
   },
 
-  invalidateTask(name, force){
+  invalidateJob(name, force){
     let fn = () => {}
 
     if(!this.slug)
       console.warn('job slug is:', this.slug)
 
-    if(this.store.tasks.isTaskActive(this.slug))
+    if(this.store.jobs.isJobActive(this.slug))
       force = true
 
     fn =  (this?.[name] instanceof Function)? 
@@ -84,12 +84,12 @@ export default {
   isPopulated(){
     return (
       this.store.prefs.clientSideProcessing
-      && this.store.tasks.lastUpdate['relays/check']
+      && this.store.jobs.lastUpdate['relays/check']
     )
     ||
     (
       !this.store.prefs.clientSideProcessing
-      && this.store.tasks.lastUpdate['relays/seed']
+      && this.store.jobs.lastUpdate['relays/seed']
     )
   },
   chunk(chunkSize, array) {
@@ -128,11 +128,11 @@ export default {
             Object.keys(this.store.user.kind3).forEach( key => {
               this.store.relays.setFavorite(key)
             })
-            this.store.tasks.completeJob(this.slug)
+            this.store.jobs.completeJob(this.slug)
           })
           .catch( err => {
             console.error('error!', err)
-            this.store.tasks.completeJob(this.slug)
+            this.store.jobs.completeJob(this.slug)
           })
       },
       true
@@ -140,7 +140,7 @@ export default {
   },
   queueJob: function(id, fn, unique){
     // console.log('queuing job', id, fn, unique)
-    this.store.tasks.addJob({
+    this.store.jobs.addJob({
       id: id,
       handler: fn,
       unique: unique

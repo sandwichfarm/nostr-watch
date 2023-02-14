@@ -51,13 +51,13 @@
                       <th v-if="!store.layout.editorIsExpanded" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">P2R</code>
                       </th>
-                      <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.tasks.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">Pubkey</code>
                       </th>
-                      <th v-if="store.tasks.getLastUpdate('relays/geo')" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                      <th v-if="store.jobs.getLastUpdate('relays/geo')" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Location</code>
                       </th>
-                      <th v-if="subsection != 'favorite' && store.tasks.getLastUpdate('relays/pulse')" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                      <th v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Uptime(12h)</code>
                       </th>
                       <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
@@ -135,7 +135,7 @@
                         </a>
                       </td>
 
-                      <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.tasks.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
+                      <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <!-- {{ this.store.results.get(relay)?.pubkeyValid }}
                         {{ this.store.results.get(relay)?.info?.pubkey }} -->
                         <span 
@@ -151,11 +151,11 @@
                         </span>
                       </td>
 
-                      <td v-if="store.tasks.getLastUpdate('relays/geo')" class="w-24 location text-center">
+                      <td v-if="store.jobs.getLastUpdate('relays/geo')" class="w-24 location text-center">
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td v-if="subsection != 'favorite' && store.tasks.getLastUpdate('relays/pulse')" class="w-24 latency text-center">
+                      <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" class="w-24 latency text-center">
                         <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime">
                           {{ this.store.results.get(relay)?.uptime }}%
                         </span>
@@ -179,11 +179,11 @@
                         <span>{{ store.results.get(relay)?.latency?.final }}<span v-if="store.results.get(relay)?.check?.latency">ms</span></span>
                       </td> -->
 
-                      <td v-if=" store.tasks.getLastUpdate('relays/seed')" class="w-24 latency text-center text-sm font-bold">
+                      <td v-if=" store.jobs.getLastUpdate('relays/seed')" class="w-24 latency text-center text-sm font-bold">
                         <span v-if="store.results.get(relay)?.latency?.average">
                           {{ store.results.get(relay).latency.average }}ms
                         </span>
-                        <span v-if="!store.results.get(relay)?.latency?.average && (store.tasks.isProcessed('relays/check', relay))" class="font-normal italic text-black/30 dark:text-white/30">timeout</span>
+                        <span v-if="!store.results.get(relay)?.latency?.average && (store.jobs.isProcessed('relays/check', relay))" class="font-normal italic text-black/30 dark:text-white/30">timeout</span>
                       </td>
 
                       <!-- no editor -->
@@ -216,7 +216,7 @@
                       </td>
 
                       <!-- editor -->
-                      <td v-if="store.tasks.getActiveSlug != 'user/relay/list' 
+                      <td v-if="store.jobs.getActiveSlug != 'user/relay/list' 
                                 && store.layout.editorIsExpanded 
                                 && typeof store.user.kind3?.[relay]?.read !== `undefined`
                                 && isLoggedIn()"
@@ -231,7 +231,7 @@
                         </Switch>
                       </td>
 
-                      <td v-if="store.tasks.getActiveSlug != 'user/relay/list' 
+                      <td v-if="store.jobs.getActiveSlug != 'user/relay/list' 
                                 && store.layout.editorIsExpanded 
                                 && typeof store.user.kind3?.[relay]?.write !== `undefined` 
                                 && isLoggedIn()"
@@ -249,7 +249,7 @@
                       
                       <td 
                         colspan="2" 
-                        v-if="store.layout.editorExpanded && store.tasks.getActiveSlug == 'user/relay/list'" 
+                        v-if="store.layout.editorExpanded && store.jobs.getActiveSlug == 'user/relay/list'" 
                         class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
                         <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -259,7 +259,7 @@
 
                       <td 
                         colspan="2" 
-                        v-if="store.layout.editorExpanded && !store.relays.isFavorite(relay) && store.tasks.getActiveSlug != 'user/relay/list'" 
+                        v-if="store.layout.editorExpanded && !store.relays.isFavorite(relay) && store.jobs.getActiveSlug != 'user/relay/list'" 
                         class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
                       </td>
 

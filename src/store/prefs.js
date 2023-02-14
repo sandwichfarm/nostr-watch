@@ -4,7 +4,7 @@ export const usePrefsStore = defineStore('prefs', {
   state: () => ({ 
     firstVisit: true,
     refresh: true,
-    duration: 30*60*1000,
+    duration: 6*60*60*1000,
     pinFavorites: true,
     rowTheme: 'comfortable',
     filters: [],
@@ -19,7 +19,7 @@ export const usePrefsStore = defineStore('prefs', {
     autoDetectRegion: true,
     region: 'eu-west',
     ignoreTopics: 'canonical,nostr',
-    showMaps: false,
+    showMaps: true,
     discoverRelays: true,
     checkNip11: true,
     CheckNip11Frequency: 24*60*60*1000,

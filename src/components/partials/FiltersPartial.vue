@@ -46,7 +46,7 @@
       <em>filters are hidden during updates</em>
     </div>
 
-    <div v-if="store.filters.enabled && (!store.jobs.isJobActive('relays/check') && !store.jobs.isJobActive('relays/seed'))" class="py-2 px-3 dark:bg-black/10">
+    <div v-if="store.filters.enabled && (!store.jobs.isJobActive('relays/check') && !store.jobs.isJobActive('relays/seed') )" class="py-2 px-3 dark:bg-black/10">
       <!-- valid -->
       <div class="mb-4 block flex-none" v-if="this.store.jobs.lastUpdate?.['relays/nip11']">
         <span  
@@ -199,10 +199,12 @@
       // this.foundNips = this.collateSupportedNips()
     },
     mounted(){
-      // this.$forceUpdate
       this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
-      this.refreshCounts()
-      
+      // this.refreshCounts()
+      // setInterval( () => {
+      //   console.log('refreshing counts')
+      //   this.refreshCounts()
+      // }, 1000)
     },
     updated(){
       

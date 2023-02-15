@@ -22,7 +22,6 @@ export const useStatStore = defineStore(
       getPulse: state => relay => state.pulses[relay],
 
       getItem: state => (key1, key2) => state[key1][key2],
-
       get: (state) => (which) => state[which],
     },
     actions: {

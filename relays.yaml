@@ -322,6 +322,7 @@ relays:
   - wss://nostr.600.wtf
   - wss://relay.nostr.net.in
   - wss://nostr-mv.ashiroid.com
+  - wss://nostr.fluidtrack.in
   - wss://lbrygen.xyz
   - wss://nostro.cc
   - wss://nostring.deno.dev

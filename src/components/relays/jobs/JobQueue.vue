@@ -13,7 +13,7 @@
     <GetPulse />
 
     <LoadSeed
-      v-if="!store.prefs.clientSideProcessing || isSingle" />
+      v-if="!store.prefs.clientSideProcessing" />
 
     <CheckNip11
       v-if="

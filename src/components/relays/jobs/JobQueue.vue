@@ -29,7 +29,7 @@
         && !isSingle
       " />
       
-    <CheckGeo v-if="!isSingle" />
+    <CheckGeo />
 
     <CheckP2R v-if="!isSingle" />
 

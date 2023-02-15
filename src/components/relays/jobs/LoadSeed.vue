@@ -52,7 +52,7 @@ const localMethods = {
   LoadSeed(force, single){
     // if( ( this.store.jobs.getLastUpdate('relays/check') || ( this.store.jobs.processed?.['relays/check'] && this.store.jobs.processed?.['relays/check'].length ) ) && !force ) 
     //   return
-    if( (!this.isExpired(this.slug, 15*60*1000) && !force) && !this.isSingle ) 
+    if( (!this.isExpired(this.slug, 15*60*1000) && !force) ) 
       return
     
     this.queueJob(
@@ -140,7 +140,6 @@ const localMethods = {
                 result.check.read = read.length && read[0][1] === 'true' ? true : false
                 result.check.write = write.length && write[0][1] === 'true' ? true : false
               }
-              
 
               if(topics.length)
                 result.topics = this.cleanTopics(topics)

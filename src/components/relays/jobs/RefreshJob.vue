@@ -111,6 +111,7 @@ const localMethods = {
       console.log('wtf checking single', single)
       await this.check(single)
         .then((result) =>{
+          result.aggregate = this.getAggregate(result)
           this.store.results.mergeDeep({ 
             [result.url]: this.pruneResult(result)
           })

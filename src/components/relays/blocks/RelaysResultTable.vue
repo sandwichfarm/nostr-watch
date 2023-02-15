@@ -58,10 +58,10 @@
                         <code class="text-xs block">Location</code>
                       </th>
                       <th v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
-                        <code class="text-xs block">Uptime(12h)</code>
+                        <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortUptime=!this.store.prefs.sortUptime">Uptime(12h)</code>
                       </th>
                       <th v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
-                        <code class="text-xs block">Avg. Latency</code>
+                        <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortLatency=!this.store.prefs.sortLatency" :class="this.store.prefs.sortLatency? 'bg-black/50 rounded-sm': ''">Latency</code>
                       </th>
                       <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
                         <code class="text-xs block">Connect</code>
@@ -490,8 +490,9 @@
       getCheckIndicator(){
         return (relay, key) => {
           return { 
-            'bg-green-500': this.store.results.get(relay)?.check?.[key] !== false,
-            'bg-red-500': this.store.results.get(relay)?.check?.[key] === false,
+            'bg-green-500 dark:bg-green-600': this.store.results.get(relay)?.check?.[key] === true,
+            'bg-orange-600': this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted',
+            'bg-red-500': this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate !== 'restricted',
             'bg-gray-500': 'undefined' === typeof this.store.results.get(relay)?.check?.[key],
             // '': this.store.prefs.getTheme === 'spacious',
             // '': this.store.prefs.getTheme === 'comfortable',

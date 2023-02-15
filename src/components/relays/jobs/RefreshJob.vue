@@ -129,7 +129,8 @@ const localMethods = {
             this.check(relay)
               .then((result) => {
                 resultsChunk[result.url] = result 
-                this.completeRelay(result, resolve)
+                this.completeRelay(result)
+                resolve()
               })
               .catch( () => { 
                 resolve()
@@ -145,13 +146,11 @@ const localMethods = {
     } 
   },
 
-  completeRelay: function(result, resolve){
+  completeRelay: function(result){
     const relay = result.url
     result = this.pruneResult(relay, result)
     console.log(result.url, result)
     this.store.jobs.addProcessed(this.slug, relay)
-    if(resolve instanceof Function)
-      resolve()
   },
 
   completeAll: function(single){

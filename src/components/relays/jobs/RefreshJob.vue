@@ -110,7 +110,9 @@ const localMethods = {
     if(single) {
       console.log('wtf checking single', single)
       await this.check(single)
-        .then((result) => this.completeRelay(result) )
+        .then((result) =>{
+          this.store.results.mergeDeep({ [result.url]: this.completeRelay(result)  })
+        })
         .catch( () => console.log('there was an error') )
       this.completeAll(single)
     } 
@@ -149,8 +151,9 @@ const localMethods = {
   completeRelay: function(result){
     const relay = result.url
     result = this.pruneResult(relay, result)
-    console.log(result.url, result)
+    // console.log(result.url, result)
     this.store.jobs.addProcessed(this.slug, relay)
+    return result
   },
 
   completeAll: function(single){

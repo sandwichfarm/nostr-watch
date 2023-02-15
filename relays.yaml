@@ -323,6 +323,7 @@ relays:
   - wss://relay.nostr.net.in
   - wss://nostr-mv.ashiroid.com
   - wss://lbrygen.xyz
+  - wss://nostro.cc
   - wss://nostring.deno.dev
   - wss://relay.nostr.vet
   - wss://nostrsatva.net

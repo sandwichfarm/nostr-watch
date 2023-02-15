@@ -230,13 +230,6 @@ const localMethods = {
       sum += arr[i];
     return Math.floor(parseFloat(sum/total));
   },
-  queueJob: function(id, fn, unique){
-    this.store.jobs.addJob({
-      id: id,
-      handler: fn,
-      unique: unique
-    })
-  },
 
   setRefreshInterval: function(){
     clearInterval(this.interval)

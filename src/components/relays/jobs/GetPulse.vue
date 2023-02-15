@@ -42,7 +42,7 @@ const localMethods = {
     else
       this.queueJob(
         this.slug, 
-        this.jobPulses,
+        () => this.jobPulses(),
         true
       )
   },

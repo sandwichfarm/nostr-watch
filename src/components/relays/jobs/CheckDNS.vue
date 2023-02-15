@@ -35,7 +35,7 @@ const localMethods = {
 
     this.queueJob(
       this.slug, 
-      async () => await this.jobDNS,
+      async () => await this.jobDNS(),
       true
     )
   },
@@ -47,32 +47,34 @@ const localMethods = {
       })
       .catch( err => console.error(err) )
     }
-    this.relays = this.store.relays.getAll
-    const relays = this.relays.filter( relay => !this.store.jobs.processed[this.slug]?.includes(relay))
-    const relayChunks = this.chunk(100, relays)
-    //console.log('chunks', )
-    let promises = [],
-        dnsAcc = {}
-    for(let c=0;c<relayChunks.length;c++) {
-      const relays = relayChunks[c]
-      relays.forEach( async (relay) => {
-        const promise = new Promise( resolve => {
-          dnsAcc[relay] = {}
-          this.getDNS(relay)
-            .then( (dns) => {
-              dnsAcc[relay] = dns
-              // console.log('dns', dnsAcc)
-              this.store.jobs.addProcessed(this.slug, relay)
-              resolve()
-            })
-            .catch( err => console.error(err) )
+    else {
+      this.relays = this.store.relays.getAll
+      const relays = this.relays.filter( relay => !this.store.jobs.processed[this.slug]?.includes(relay))
+      const relayChunks = this.chunk(100, relays)
+      //console.log('chunks', )
+      let promises = [],
+          dnsAcc = {}
+      for(let c=0;c<relayChunks.length;c++) {
+        const relays = relayChunks[c]
+        relays.forEach( async (relay) => {
+          const promise = new Promise( resolve => {
+            dnsAcc[relay] = {}
+            this.getDNS(relay)
+              .then( (dns) => {
+                dnsAcc[relay] = dns
+                // console.log('dns', dnsAcc)
+                this.store.jobs.addProcessed(this.slug, relay)
+                resolve()
+              })
+              .catch( err => console.error(err) )
+          })
+          promises.push(promise)
         })
-        promises.push(promise)
-      })
-      await Promise.all(promises)
-      this.store.relays.dns = Object.assign(this.store.relays.dns, dnsAcc)
-      promises = []
-      dnsAcc = {} 
+        await Promise.all(promises)
+        this.store.relays.dns = Object.assign(this.store.relays.dns, dnsAcc)
+        promises = []
+        dnsAcc = {} 
+      }
     }
     this.store.jobs.completeJob(this.slug)
   },

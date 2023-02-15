@@ -134,8 +134,7 @@ const localMethods = {
             const relay = chunk[index] 
             this.check(relay)
               .then((result) => {
-                resultsChunk[result.url] = result 
-                this.completeRelay(result)
+                resultsChunk[result.url] = this.completeRelay(result)
                 resolve()
               })
               .catch( () => { 

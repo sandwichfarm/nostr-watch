@@ -17,7 +17,7 @@ import SharedComputed from '@/shared/computed.js'
 const localMethods = {
   CheckP2R(force){
     if( (!this.isExpired(this.slug, 1) && !force) || this.isSingle ) 
-      return
+      return  
     this.queueJob(
       this.slug, 
       async () => {
@@ -35,7 +35,7 @@ const localMethods = {
           catch(e){
             result.validP2R = false
           }
-          this.store.results.mergeRight({[relay]: result})
+          this.store.results.mergeDeep({[relay]: result})
           this.store.jobs.addProcessed(this.slug, relay)
         }
         this.store.jobs.completeJob(this.slug)

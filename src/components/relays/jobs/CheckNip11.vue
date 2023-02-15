@@ -40,7 +40,7 @@ const localMethods = {
         this.relays.forEach( relay => {
           if(!this.store.results.get(relay))
             return
-          this.store.results.mergeRight( { [relay]: this.validatePubkey(relay) } )
+          this.store.results.mergeDeep( { [relay]: this.validatePubkey(relay) } )
         })
         this.store.jobs.completeJob(this.slug)
       },

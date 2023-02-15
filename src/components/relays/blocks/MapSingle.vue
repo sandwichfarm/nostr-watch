@@ -26,7 +26,7 @@
       :lat-lng="center"
       :radius="2"
       :weight="4"
-      :color="getCircleColor()"
+      :color="getCircleColor"
       :fillOpacity="1"
       :class="relay"
       >
@@ -58,33 +58,29 @@ export default {
 
       return ll
     },
+  },
+  computed: {
     getCircleColor(){
-
-      const relay = this.relay
-
-      ////console.log(this.geo?.lat, this.geo?.lon)
-
       if(!this.geo?.lat || !this.geo?.lon)
         return 'transparent'
 
-      if(this.store.results.get(relay)?.aggregate == 'public') {
+      if(this.store.results.get(this.relay)?.aggregate == 'public') {
         return '#00AA00'
       }
-      else if(this.store.results.get(relay)?.aggregate == 'restricted') {
+      else if(this.store.results.get(this.relay)?.aggregate == 'restricted') {
         return '#FFA500'
       }
-      else if(this.store.results.get(relay)?.aggregate == 'offline') {
+      else if(this.store.results.get(this.relay)?.aggregate == 'offline') {
         return '#FF0000'
       }
-
-      return 'black'
       
+      return 'black'
     }
   },
   async beforeMount() {
     //console.log(this.geo)
     this.center = this.getLatLng()
-    this.markerColor = this.getCircleColor()
+    this.markerColor = this.getCircleColor
   },
   props: {
     geo: {

@@ -11,10 +11,10 @@
             <XMarkIcon v-else class="block h-6 w-6" aria-hidden="true" />
         </DisclosureButton>
         </div>
-        <span class="inline-block text-center text-slate-50 text-xl mt-4 md:mt-0">
+        <a href="/" class="inline-block text-center text-slate-50 text-xl mt-4 md:mt-0">
           nostr.watch
           <sup class="relative -top-2" style="font-size: 0.6rem">{{ version }}</sup>
-        </span>
+        </a>
         <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
           <div class="hidden sm:ml-6 md:block">
             <div class="flex space-x-4" v-if="!pendingFirstCompletion">

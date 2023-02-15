@@ -272,25 +272,21 @@ export default {
     },
 
     getAggregate: function(result) {
-      let aggregateTally = 0
-      aggregateTally += result?.check.connect ? 1 : 0
-      aggregateTally += result?.check.read ? 1 : 0
-      aggregateTally += result?.check.write ? 1 : 0
-      
-      if(aggregateTally > 1)
-        aggregateTally += result?.info?.limitation?.payment_required ? -1 : 0
 
-      //console.log(result.url, result?.check.connect, result?.check.read, result?.check.write, aggregateTally)
-
-      if (aggregateTally >= 3) {
+      if(result?.check.connect && result?.check.read && result?.check.write)
         return 'public'
-      }
-      else if (aggregateTally == 0) {
+
+      if(!result?.check.connect && !result?.check.read && !result?.check.write)
         return 'offline'
-      }
-      else {
+
+      // else if(this.isPayToRelay(result.url))
+      //   return 'restricted'
+
+      if(result?.check.connect && (result?.check.read || result?.check.write))
         return 'restricted'
-      }
+
+      if(result?.check.connect)
+        return 'restricted'
     },
 
     relaysTotal: function() {

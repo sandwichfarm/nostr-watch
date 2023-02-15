@@ -4,15 +4,12 @@ export const useJobStore = defineStore(
   'jobs', 
   {
   state: () => ({ 
-    lastUpdate: new Object(),
-
-    //processing cache
-    processed: new Object(),
-
+    lastUpdate:   new Object(),
+    processed:    new Object(),
     //queue
-    pending: new Array(),
-    completed: new Array(),
-    active: new Object(),
+    pending:      new Array(),
+    completed:    new Array(),
+    active:       new Object(),
   }),
   getters: {
     getLastUpdate: (state) => (key) => state.lastUpdate?.[key] ? state.lastUpdate?.[key] : false,
@@ -59,7 +56,6 @@ export const useJobStore = defineStore(
     },
     //queue
     async addJob(job){
-      
       if(job?.unique && this.isJobPending(job.id))
         return
       console.log('add job', job.id, 'is pending:', this.isJobPending(job.id), 'active:', this?.active?.id)
@@ -73,17 +69,18 @@ export const useJobStore = defineStore(
         this.active = this.pending[0]
         //console.log('started', this.active.id)
         this.pending.shift()
-        await this.runJob()
+        this.runJob()
       }
       else {
         this.active = {}
       }
     },
     async runJob(){
+      const handler = this.active.handler
       if(this.active.handler instanceof AsyncFunction)
-        await this.active.handler()
+        await handler()
       else 
-        this.active.handler()
+        handler()
     },
     completeJob(slug){
       console.log('complete job', slug, this.active.id !== slug)
@@ -107,14 +104,12 @@ export const useJobStore = defineStore(
       ////console.log('remove job', index)
       this.pending.splice( index, 1 )
     },
-
     addProcessed(slug, key){
       if( !(this.processed[slug] instanceof Array) )
         this.processed[slug] = new Array()
       if(!this.processed[slug].includes(key))
         this.processed[slug].push(key)
     },
-    
   },
   share: {
     // An array of fields that the plugin will ignore.

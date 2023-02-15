@@ -30,11 +30,11 @@
       
     <CheckGeo v-if="!isSingle" />
 
+    <CheckP2R v-if="!isSingle" />
+
     <RefreshJob 
       v-if="store.prefs.clientSideProcessing || isSingle || this.store.prefs.isFirstVisit" />
     
-    <CheckP2R v-if="!isSingle" />
-
     <CheckDNS v-if="!isSingle" />
 
     <HistoryJob />

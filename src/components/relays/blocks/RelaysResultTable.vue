@@ -48,7 +48,7 @@
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()()">
                         <code class="text-xs block">Upvote</code>
                       </th> -->
-                      <th v-if="!store.layout.editorIsExpanded" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <th v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">P2R</code>
                       </th>
                       <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
@@ -94,7 +94,7 @@
                       </th>
                     </tr>
                 </thead>
-                <tbody class="divide-y">
+                <tbody class="divide-y text-black/80 dark:text-white/80">
                     <tr 
                       v-for="(relay, index) in subsectionRelays"  
                       :key="generateKey(relay, 'aggregate')" 
@@ -107,7 +107,7 @@
                       </td>
 
                       <td class="w-62 relay left-align relay-url text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50">
-                          <a class="text-black dark:text-white" :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
+                          <a class="text-black/80 dark:text-white/80" :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
                           <span class="text-inherit flex-1 align-middle hidden lg:inline-block pl-3 m1-3 text-sm whitespace-nowrap truncate" v-if="store.results.get(relay)?.topics">
                             {{ getTopics(relay) }}
                           </span>
@@ -122,7 +122,10 @@
                       </td> -->
 
                       <td v-if="!store.layout.editorIsExpanded" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
-                        <a v-if="isPayToRelay(relay)" :href="this.store.results.get(relay)?.validP2R ? this.store.results.get(relay).info.payments_url : null" class="block align-center" target="_blank">
+                        <a 
+                          v-if="isPayToRelay(relay) && this.store.jobs.getLastUpdate('relays/check/p2r')"
+                          :href="this.store.results.get(relay)?.validP2R ? this.store.results.get(relay).info.payments_url : null" 
+                          class="block align-center" target="_blank">
                           <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" class="inline-block align-center w-6 h-6 stroke-green-600/90 dark:stroke-green-400/60"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> -->
                           <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360">
                             <circle :style="this.store.results.get(relay).validP2R ? 'fill:#f8991d' : 'fill:red'" class="cls-1" cx="180" cy="180" r="179"/>
@@ -179,8 +182,8 @@
                         <span>{{ store.results.get(relay)?.latency?.final }}<span v-if="store.results.get(relay)?.check?.latency">ms</span></span>
                       </td> -->
 
-                      <td v-if=" store.jobs.getLastUpdate('relays/seed')" class="w-24 latency text-center text-sm font-bold">
-                        <span v-if="store.results.get(relay)?.latency?.average">
+                      <td v-if=" store.jobs.getLastUpdate('relays/seed')" class="w-24 latency text-center text-sm font-bold ">
+                        <span v-if="store.results.get(relay)?.latency?.average" class="text-black/80 dark:text-white/80">
                           {{ store.results.get(relay).latency.average }}ms
                         </span>
                         <span v-if="!store.results.get(relay)?.latency?.average && (store.jobs.isProcessed('relays/check', relay))" class="font-normal italic text-black/30 dark:text-white/30">timeout</span>
@@ -415,7 +418,6 @@
           if(this.store.results.get(relay)?.info?.limitation?.payment_required)
             return true
         }
-        
       },
       getTopics(){
         return relay => {

@@ -721,6 +721,7 @@ export default defineComponent({
 
   async mounted() {
     // this.getAdminNotes()
+    console.log('store?', Object.keys(this.store))
     this.interval = setInterval(() => {
       this.setData()
     },1000)

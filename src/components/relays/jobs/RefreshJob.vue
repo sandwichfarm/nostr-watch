@@ -69,12 +69,12 @@ const localMethods = {
     )
   },
 
-  pruneResult: function(relay, result){
+  pruneResult: function(result){
     let resultPruned
 
     if(result) {
       resultPruned = {
-        url: relay,
+        url: result.url,
         aggregate: result.aggregate,
         check: {
           connect: result.check.connect,
@@ -97,7 +97,7 @@ const localMethods = {
       if(result?.pubkeyError)
         resultPruned.pubkeyError = result.pubkeyError
 
-      const uptime = this.getUptimePercentage(relay)
+      const uptime = this.getUptimePercentage(result.url)
       if(uptime)
         resultPruned.uptime = uptime
     }
@@ -111,10 +111,13 @@ const localMethods = {
       console.log('wtf checking single', single)
       await this.check(single)
         .then((result) =>{
-          this.store.results.mergeDeep({ [result.url]: this.completeRelay(result)  })
+          this.store.results.mergeDeep({ 
+            [result.url]: this.pruneResult(result)
+          })
+          this.completeRelay(result)
         })
         .catch( () => console.log('there was an error') )
-      this.completeAll(single)
+      this.store.jobs.completeJob(this.slug)
     } 
     else {
       console.log('wtf checking all', single)
@@ -150,25 +153,23 @@ const localMethods = {
 
   completeRelay: function(result){
     const relay = result.url
-    result = this.pruneResult(relay, result)
-    // console.log(result.url, result)
     this.store.jobs.addProcessed(this.slug, relay)
-    return result
+    return this.pruneResult(result)
   },
 
-  completeAll: function(single){
+  completeAll: function(){
     this.store.jobs.completeJob(this.slug)
     
-    if(single)
-      return 
+    // if(single)
+    //   return 
 
-    ['public', 'restricted', 'offline'].forEach( aggregate => {
-      this.store.relays
-        .setAggregateCache(
-          aggregate,
-          this.store.relays.getAll
-            .filter(  relay => this.store.results.get(relay).aggregate === aggregate ))
-    })
+    // ['public', 'restricted', 'offline'].forEach( aggregate => {
+    //   this.store.relays
+    //     .setAggregateCache(
+    //       aggregate,
+    //       this.store.relays.getAll
+    //         .filter(  relay => this.store.results.get(relay).aggregate === aggregate ))
+    // })
   },
 
   check: async function(relay){
@@ -363,8 +364,8 @@ export default defineComponent({
         return this.store.prefs.duration
       if( this.store.results.get(relay)?.check?.connect && this.store.results.get(relay)?.check?.read && this.store.results.get(relay)?.check?.write && typeof this.store.results.get(relay)?.latency?.final !== 'undefined' )
         return this.store.results.get(relay).latency.final * 5 
-      if(this.store.results.get(relay)?.check?.connect && this.store.results.get(relay)?.check?.read && this.store.results.get(relay)?.check?.write)
-        return 30*1000
+      // if(this.store.results.get(relay)?.check?.connect && this.store.results.get(relay)?.check?.read && this.store.results.get(relay)?.check?.write)
+        // return 30*1000
       return this.store.prefs.duration
     }
   }),

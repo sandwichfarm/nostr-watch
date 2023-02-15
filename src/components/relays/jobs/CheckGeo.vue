@@ -119,8 +119,10 @@ export default defineComponent({
   },
   beforeMount(){},
   mounted(){ 
-    if(this.isSingle)
+    if(this.isSingle){
+      this.slug = `relays/geo/${this.relayFromUrl}`
       this.GeoJob(true, this.relayFromUrl)
+    }
     else if(this.store.jobs.isJobActive(this.slug))
       this.GeoJob(true)
     else

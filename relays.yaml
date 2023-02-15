@@ -71,7 +71,6 @@ relays:
   - wss://nostr.slothy.win
   - wss://nostr-verif.slothy.win
   - wss://nostr.coinos.io
-  - wss://relay.nostropolis.xyz/websocket
   - wss://lv01.tater.ninja
   - wss://nostr-2.orba.ca
   - wss://nostr.orba.ca
@@ -324,4 +323,9 @@ relays:
   - wss://relay.nostr.net.in
   - wss://nostr-mv.ashiroid.com
   - wss://nostr.fluidtrack.in
-  
+  - wss://lbrygen.xyz
+  - wss://nostro.cc
+  - wss://nostring.deno.dev
+  - wss://relay.nostr.vet
+  - wss://nostrsatva.net
+  - wss://nostr.beta3.dev

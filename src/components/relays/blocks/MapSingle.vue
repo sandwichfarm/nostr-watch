@@ -73,7 +73,7 @@ export default {
       else if(this.store.results.get(this.relay)?.aggregate == 'offline') {
         return '#FF0000'
       }
-      
+
       return 'black'
     }
   },

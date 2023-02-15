@@ -25,13 +25,6 @@ import SharedComputed from '@/shared/computed.js'
 import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
-  queueJob: function(id, fn, unique){
-    this.store.jobs.addJob({
-      id: id,
-      handler: fn,
-      unique: unique
-    })
-  },
   invalidate(force){
     if( !this.isExpired(this.slug) && !force ) 
       return

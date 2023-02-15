@@ -135,16 +135,12 @@ const localMethods = {
                 const connect = event.tags.filter( tag => tag[0] == 'online'),
                       read = event.tags.filter( tag => tag[0] == 'read'),
                       write = event.tags.filter( tag => tag[0] == 'write')
-                
-                // if( connect[0][1] === 'true' && read[0][1] === 'true' && write[0][1] === 'false')
-                //   console.log(result.url, 'is restricted')
-
-                result.check = {
-                  connect: connect.length && connect[0][1] === 'true' ? true : false,
-                  read: read.length && read[0][1] === 'true' ? true : false,
-                  write: write.length && write[0][1] === 'true' ? true : false,
-                }
-              }                  
+                    
+                result.check.connect = connect.length && connect[0][1] === 'true' ? true : false
+                result.check.read = read.length && read[0][1] === 'true' ? true : false
+                result.check.write = write.length && write[0][1] === 'true' ? true : false
+              }
+              
 
               if(topics.length)
                 result.topics = this.cleanTopics(topics)

@@ -745,9 +745,9 @@ export default defineComponent({
     },
     jsonDNS(){
       return relay => {
-        const geo = structuredClone(this.store.relays.geo?.[relay])
-        if(geo?.dns)
-          return JSON.stringify(geo.dns, null, 4)
+        const dns = structuredClone(this.store.relays.dns?.[relay])
+        if(dns)
+          return JSON.stringify(dns, null, 4)
         return JSON.stringify({}, null, 4)
       }
     },

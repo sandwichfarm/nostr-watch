@@ -28,19 +28,25 @@ const localMethods = {
   CheckDNS(force){  
     console.log('invalidating', this.slug)
 
-    if( !this.isExpired(this.slug, 24*60*60*1000) && !force )
+    if( (!this.isExpired(this.slug, 24*60*60*1000) && !force) && !this.isSingle )
       return
     
     console.log('invalidating DNS', 'expired', this.slug, this.jobDNS)
 
     this.queueJob(
       this.slug, 
-      this.jobDNS,
+      async () => await this.jobDNS,
       true
     )
   },
-  async jobDNS(){
+  async jobDNS(single){
     // alert('dns')
+    if(single) {
+      this.getDNS(single).then( dns => {
+        this.store.relays.dns = Object.assign(this.store.relays.dns, { [single]: dns } )
+      })
+      .catch( err => console.error(err) )
+    }
     this.relays = this.store.relays.getAll
     const relays = this.relays.filter( relay => !this.store.jobs.processed[this.slug]?.includes(relay))
     const relayChunks = this.chunk(100, relays)
@@ -115,7 +121,11 @@ export default defineComponent({
   mounted(){  
     this.resolver = new doh.DohResolver('https://1.1.1.1/dns-query')
     console.log('resolver', this.resolver)
-    if(this.store.jobs.isJobActive(this.slug))
+    if(this.isSingle){
+      this.slug = `relays/dns/${this.relayFromUrl}`
+      this.CheckDNS(true, this.relayFromUrl)
+    }
+    else if(this.store.jobs.isJobActive(this.slug))
       this.CheckDNS(true)
     else
       this.CheckDNS()

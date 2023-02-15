@@ -322,6 +322,6 @@ relays:
   - wss://nostr.600.wtf
   - wss://relay.nostr.net.in
   - wss://nostr-mv.ashiroid.com
+  - wss://relay.nostr.vet
   - wss://nostrsatva.net
   - wss://nostr.beta3.dev
-  

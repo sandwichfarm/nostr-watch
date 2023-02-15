@@ -2,6 +2,7 @@
 <span class="inline-block mr-12 pt-1.5">
   <span class="text-white/40 lg:text-sm mx-2 text-xs font-bold">
     <GetRelays
+      v-if="!isSingle"
       v-bind:relaysProp="relays" />
 
     <DetectRegion 

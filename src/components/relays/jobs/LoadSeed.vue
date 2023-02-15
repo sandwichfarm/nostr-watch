@@ -58,7 +58,7 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       async () => {
-        this.getFromHistory(single)
+        this.LoadSeedJob(single)
       },
       true
     )
@@ -82,7 +82,7 @@ const localMethods = {
             )
     ) 
   },
-  async getFromHistory(single){
+  async LoadSeedJob(single){
     this.relays = [...this.store.relays.getAll]
     const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
     let relayChunks = this.chunk(250, relays),

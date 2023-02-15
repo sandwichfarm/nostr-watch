@@ -50,6 +50,7 @@
         </div>
 
         <div 
+          v-if="result.latency?.average"
           id="status" 
           class="flex-none w-full md:w-auto md:flex mb-2 py-5" 
           > <!--something is weird here with margin-->
@@ -175,11 +176,8 @@
 
 
         <div class="flex-none lg:flex mb-8">
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0"  v-if="geo">
+          <!-- <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0"  v-if="geo">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <!-- <div class="py-3 px-6 border-b border-gray-300">
-                Featured
-              </div> -->
               <div class="py-6 px-4">
                 <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
                   Network Summary
@@ -191,9 +189,9 @@
                 </p>
               </div>
             </div>
-          </div>
+          </div> -->
 
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="Object.keys(result?.info).length">
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="Object.keys(result?.info)?.length">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
               <div class="py-6 px-4">
                 <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
@@ -208,9 +206,6 @@
 
           <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info?.pubkey">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <!-- <div class="py-3 px-6 border-b border-gray-300">
-                Featured
-              </div> -->
               <div class="py-6 px-4">
                 <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
                   PubKey
@@ -218,14 +213,13 @@
                 <p class="text-gray-700 text-base mb-4 dark:text-white/60 text-ellipsis overflow-hidden">
                   The relay's pubkey is <code class="block text-ellipsis w-full">{{ result?.info?.pubkey }}</code>
                 </p>
-                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
               </div>
-              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
-                2 days ago
-              </div> -->
             </div>
           </div>
         </div>
+
+
+
 
         <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="geo">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
@@ -955,6 +949,8 @@ export default defineComponent({
 
       this.lastUpdate = this.store.jobs.getLastUpdate('relays')
       this.relay = this.relayFromUrl
+
+      console.log(this.relay, this.store.relays.getGeo(this.relay))
 
       this.geo = this.store.relays.getGeo(this.relay)
 

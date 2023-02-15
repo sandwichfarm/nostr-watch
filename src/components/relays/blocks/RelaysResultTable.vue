@@ -60,7 +60,7 @@
                       <th v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
                         <code class="text-xs block">Uptime(12h)</code>
                       </th>
-                      <th scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
+                      <th v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
                         <code class="text-xs block">Avg. Latency</code>
                       </th>
                       <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
@@ -107,7 +107,9 @@
                       </td>
 
                       <td class="w-62 relay left-align relay-url text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50">
-                          <a class="text-black/80 dark:text-white/80" :href="`/relay/${relayClean(relay)}`">{{ relay.replace('wss://', '') }}</a>
+                          <a class="text-black/80 dark:text-white/80" :href="`/relay/${relayClean(relay)}`">
+                            {{ relay.replace('wss://', '') }}
+                          </a>
                           <span class="text-inherit flex-1 align-middle hidden lg:inline-block pl-3 m1-3 text-sm whitespace-nowrap truncate" v-if="store.results.get(relay)?.topics">
                             {{ getTopics(relay) }}
                           </span>
@@ -121,9 +123,9 @@
                         </a>
                       </td> -->
 
-                      <td v-if="!store.layout.editorIsExpanded" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
-                        <a 
-                          v-if="isPayToRelay(relay) && this.store.jobs.getLastUpdate('relays/check/p2r')"
+                      <td v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
+                        <a
+                          v-if="isPayToRelay(relay)"
                           :href="this.store.results.get(relay)?.validP2R ? this.store.results.get(relay).info.payments_url : null" 
                           class="block align-center" target="_blank">
                           <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" class="inline-block align-center w-6 h-6 stroke-green-600/90 dark:stroke-green-400/60"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> -->
@@ -158,7 +160,7 @@
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" class="w-24 latency text-center">
+                      <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" class="w-24 text-center">
                         <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime">
                           {{ this.store.results.get(relay)?.uptime }}%
                         </span>
@@ -182,7 +184,7 @@
                         <span>{{ store.results.get(relay)?.latency?.final }}<span v-if="store.results.get(relay)?.check?.latency">ms</span></span>
                       </td> -->
 
-                      <td v-if=" store.jobs.getLastUpdate('relays/seed')" class="w-24 latency text-center text-sm font-bold ">
+                      <td v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" class="w-24 latency text-center text-sm font-bold ">
                         <span v-if="store.results.get(relay)?.latency?.average" class="text-black/80 dark:text-white/80">
                           {{ store.results.get(relay).latency.average }}ms
                         </span>

@@ -52,9 +52,7 @@
         <div 
           id="status" 
           class="flex-none w-full md:w-auto md:flex mb-2 py-5" 
-          v-if="
-            showLatency ||
-            (result.check?.averageLatency === null || result.check?.averageLatency === true)"> <!--something is weird here with margin-->
+          > <!--something is weird here with margin-->
           <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 
               v-if="result.latency?.average"
@@ -122,6 +120,8 @@
               </span>
           </div>
         </div>
+
+        
 
         <!-- <div class="flex justify-center">
           <div class="block rounded-lg shadow-lg bg-white max-w-sm text-center">
@@ -234,6 +234,27 @@
               </span>
           </div>
         </div>
+ 
+        <!-- <a :click="showRawData=!showRawData" class="cursor-pointer">Raw</a> -->
+        <h2 class="text-left text-2xl text-black/50 dark:text-white/50 my-4 font-extrabold">Raw Data</h2>
+        <div>
+          <h3 class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NIP-11</h3>
+          <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ JSON.stringify(this.result.info, null, 4) }}</pre>
+        </div>
+        <div>
+          <h3 class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">GEO</h3>
+          <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay] ? jsonGeo(relay) : 'not found' }}</pre>
+        </div>
+        <div>
+          <h3 class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">DNS</h3>
+          <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay]?.dns ? jsonDNS(relay) : 'not found' }}</pre>
+        </div>
+        <div>
+          <h3 class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NOSTR.WATCH</h3>
+          <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.results.get(relay) ? jsonCheck(relay) : 'not found' }}</pre>
+        </div>
+
+
 
         <!-- <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="true">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
@@ -675,6 +696,7 @@ export default defineComponent({
       geo: {},
       events: {},
       interval: null,
+      showRawData: false,
       showLatency: false,
       pulses : {},
       hbMin: 0,
@@ -718,6 +740,34 @@ export default defineComponent({
     result(){
       return this.store.results.get(this.relay)
     },
+    jsonGeo(){
+      return relay => {
+        const geo = structuredClone(this.store.relays.geo?.[relay])
+        if(geo?.dns)
+          delete geo.dns 
+        return JSON.stringify(geo, null, 4)
+      }
+    },
+    jsonDNS(){
+      return relay => {
+        const geo = structuredClone(this.store.relays.geo?.[relay])
+        if(geo?.dns)
+          return JSON.stringify(geo.dns, null, 4)
+        return JSON.stringify({}, null, 4)
+      }
+    },
+    jsonCheck(){
+      return relay => {
+        const res = structuredClone(this.store.results.get(relay))
+        if(res?.info)
+          delete res.info
+        if(res?.latency?.data)
+          res.latency = res.latency.data
+        if(res)
+          return JSON.stringify(res, null, 4)
+        return JSON.stringify({}, null, 4)
+      }
+    },
     sanitizeAndDetectEmail() {
       return str => {
         if( !(str instanceof String) )
@@ -744,17 +794,12 @@ export default defineComponent({
     },
     normalizeTopic: function(){
       return topic => {
-
-        console.log(topic)
-
         const result = this.result
-
         const val = topic[1],
               minVal = result?.topics[result?.topics?.length-1][1], 
               maxVal = result?.topics[0][1],
               newMin = 1,
               newMax = 5
-
         const size = Math.round( newMin + (val - minVal) * (newMax - newMin) / (maxVal - minVal))
 
         if(size === 1)

@@ -40,12 +40,12 @@ export const useRelaysStore = defineStore('relays', {
       if( 'online' == aggregate )
         return state.urls.filter( (relay) => results?.[relay]?.check?.connect )
       
-      if( 'nips' === aggregate)
-        return state.urls.filter( (relay) => { 
-          return  results?.[relay]?.info?.supported_nips  
-                  && Object.keys(results[relay].info.supported_nips).length 
-                  && results?.[relay]?.pubkeyValid
-        })
+      // if( 'nips' === aggregate)
+      //   return state.urls.filter( (relay) => { 
+      //     return  results?.[relay]?.info?.supported_nips  
+      //             && Object.keys(results[relay].info.supported_nips).length 
+      //             && results?.[relay]?.pubkeyValid
+      //   })
 
       if( 'favorite' == aggregate )
         return state.favorites

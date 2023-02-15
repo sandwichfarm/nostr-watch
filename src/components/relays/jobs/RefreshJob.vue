@@ -20,7 +20,7 @@
       v-if="!store.jobs.isJobActive(this.slug)"
       class=" text-xs -mt-1.5 my-1 py-1 px-3 rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
       :disabled='store.jobs.isJobActive(this.slug)' 
-      @click="refreshNow()">  
+      @click="checkNow()">  
         check{{ relay ? ` ${relay}` : "" }} Now
     </button>
   </div>
@@ -197,7 +197,7 @@ const localMethods = {
       $inspector
         .on('open', () => {})
         .on('complete', (instance) => {
-          //console.log('completed?', instance.result)
+          console.log('aggr', instance.result.url, this.getAggregate(instance.result), instance.result.check.connect, instance.result.check.read, instance.result.check.write)
           instance.result.aggregate = this.getAggregate(instance.result)
           instance.result.log = instance.log
           this.closeRelay(instance.relay)
@@ -254,7 +254,7 @@ const localMethods = {
     })
   },
 
-  refreshNow(){
+  checkNow(){
     this.CheckRelaysJob(true)
   },
 
@@ -338,7 +338,7 @@ export default defineComponent({
     if( this.isSingle ){
       console.log('is single')
       this.slug = `relays/check/${this.relayFromUrl}`
-      this.CheckRelaysJob(true)
+      this.CheckRelaysJob(true, this.relayFromUrl)
       // this.runLatencyCheck()
     } else {
       this.CheckRelaysJob()

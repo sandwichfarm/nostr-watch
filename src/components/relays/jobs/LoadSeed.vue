@@ -148,7 +148,9 @@ const localMethods = {
 
               if(topics.length)
                 result.topics = this.cleanTopics(topics)
-                
+
+              console.log('aggr', this.result.url, this.getAggregate(result), result.check.connect, result.check.read, result.check.write)
+              
               result.aggregate = this.getAggregate(result)
 
               resultsChunk[relay] = result

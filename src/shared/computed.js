@@ -1,6 +1,12 @@
 import {useRoute} from 'vue-router'
 
 export default {
+    isPayToRelay(){
+        return relay => {
+            if(this.store.results.get(relay)?.info?.limitation?.payment_required)
+                return true
+        }
+    },
     isExpired: function(){
         return (slug, expireAfter) => {
             if(!expireAfter)

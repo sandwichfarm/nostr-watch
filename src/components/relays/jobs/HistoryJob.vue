@@ -20,10 +20,12 @@ const LocalMethods = {
       this.slug,
       () => {
         //console.log('stats run()')
+        this.relays = this.store.relays.getAll
         this.store.stats.set('nips', this.collateSupportedNips)
         this.store.stats.set('continents', this.collateContinents)
         this.store.stats.set('countries', this.collateCountries)
         this.store.stats.set('software', this.collateSoftware)
+        
         setTimeout(() => this.store.jobs.completeJob(this.slug), 2000)
       },
       true
@@ -55,7 +57,7 @@ export default defineComponent({
 
   data: function(){
     return {
-      relays: this.store.relays.getAll,
+      relays: this.getRelays( this.store.relays.all ),
       geo: this.store.relays.geo,
       slug: 'relays/stats'
     }

@@ -720,8 +720,6 @@ export default defineComponent({
   },
 
   async mounted() {
-    // this.getAdminNotes()
-    console.log('store?', Object.keys(this.store))
     this.interval = setInterval(() => {
       this.setData()
     },1000)
@@ -951,7 +949,7 @@ export default defineComponent({
       this.lastUpdate = this.store.jobs.getLastUpdate('relays')
       this.relay = this.relayFromUrl
 
-      console.log(this.relay, this.store.relays.getGeo(this.relay))
+      // console.log(this.relay, this.store.relays.getGeo(this.relay))
 
       this.geo = this.store.relays.getGeo(this.relay)
 

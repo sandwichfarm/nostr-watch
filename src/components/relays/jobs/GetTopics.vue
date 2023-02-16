@@ -54,9 +54,7 @@ const LocalMethods = {
               .on('event', async (r, sub_id, event) => {
                 if(subid === sub_id){
                   const relay = event.tags.filter( tag => 'd' === tag[0])?.[0]
-                  const data = JSON.parse(event.content)
                   const topics = event.tags.filter( tag => 't' === tag[0])
-                  console.log(relay, data)
                   chunkResults[relay] = {}
                   if(topics)
                     chunkResults[relay].topics = this.cleanTopics(topics)
@@ -75,7 +73,7 @@ const LocalMethods = {
             
           })
           promises.push(promise) 
-          console.log('results', Object.keys(this.store.results.all).length, 'chunk results', Object.keys(chunkResults).length)
+          // console.log('results', Object.keys(this.store.results.all).length, 'chunk results', Object.keys(chunkResults).length)
           await Promise.all(promises)
           this.store.results.merge(chunkResults)
           promises = []

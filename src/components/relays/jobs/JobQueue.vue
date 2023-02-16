@@ -146,7 +146,7 @@ export default defineComponent({
   },
   methods: {
     async tick(){
-      console.log('pending', this.store.jobs.pending)
+      // console.log('pending', this.store.jobs.pending)
       if(this.currentJob === this.store.jobs.getActiveSlug)
         return 
       this.currentJob = this.store.jobs.getActiveSlug
@@ -156,7 +156,7 @@ export default defineComponent({
     async processJob(){
       if(!(this.store.jobs.active?.handler instanceof Function))
         return 
-      console.log('processJob()', this.store.jobs.active.id, 'type', typeof this.store.jobs.active.handler, 'is async', this.store.jobs.active.handler instanceof this.AsyncFunction)
+      // console.log('processJob()', this.store.jobs.active.id, 'type', typeof this.store.jobs.active.handler, 'is async', this.store.jobs.active.handler instanceof this.AsyncFunction)
       if(this.store.jobs.active.handler instanceof this.AsyncFunction)
         await this.store.jobs.active.handler()
       else 

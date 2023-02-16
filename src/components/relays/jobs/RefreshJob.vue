@@ -65,7 +65,7 @@ const localMethods = {
     if(!this.windowActive)
       return
 
-    console.log('queue job', single, this.slug)
+    // console.log('queue job', single, this.slug)
     
     this.queueJob(
       this.slug, 
@@ -141,7 +141,7 @@ const localMethods = {
         }
         await Promise.all(promises)
         this.store.results.mergeDeep(resultsChunk)
-        console.log('merging', Object.keys(resultsChunk).length, 'into', Object.keys(this.store.results.all))
+        // console.log('merging', Object.keys(resultsChunk).length, 'into', Object.keys(this.store.results.all))
       }
     } 
     this.completeAll(single)
@@ -181,7 +181,7 @@ const localMethods = {
   },
 
   check: async function(relay){
-    console.log('checking', relay)
+    // console.log('checking', relay)
     if(this.stop)
       return
     return new Promise( (resolve) => {
@@ -209,7 +209,7 @@ const localMethods = {
         .on('open', () => {          
         })
         .on('complete', (instance) => {
-          console.log('aggr', instance.result.url, this.getAggregate(instance.result), instance.result.check.connect, instance.result.check.read, instance.result.check.write)
+          // console.log('aggr', instance.result.url, this.getAggregate(instance.result), instance.result.check.connect, instance.result.check.read, instance.result.check.write)
           instance.result.aggregate = this.getAggregate(instance.result)
           instance.result.log = instance.log
           this.closeRelay(instance.relay)
@@ -376,7 +376,6 @@ export default defineComponent({
 
   mounted(){
     if( this.isSingle ){
-      console.log('is single')
       this.slug = `relays/check/${this.relayFromUrl}`
       this.CheckRelaysJob(true, this.relayFromUrl)
       // this.runLatencyCheck()

@@ -32,7 +32,6 @@ import { RelayPool } from 'nostr'
 
 const localMethods = {
   invalidatePulse(force){
-    console.log('invalidate pulse')
     if( (!this.isExpired(this.slug, 1) && !force) && !this.isSingle ) 
       return
     

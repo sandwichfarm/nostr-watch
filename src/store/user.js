@@ -34,7 +34,7 @@ export const useUserStore = defineStore('user', {
       const store = useRelaysStore()
       const relays = store.getFavorites.length ? store.getFavorites : ['wss://nostr.sandwich.farm']
       this.kind3Event = await subscribeKind3(this.pubKey, relays)
-      console.log('kind3', this.kind3Event)
+      // console.log('kind3', this.kind3Event)
       return this.kind3Event?.content || {}
     },
     setKind3: async function(obj) { 

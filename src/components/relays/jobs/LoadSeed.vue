@@ -144,7 +144,7 @@ const localMethods = {
               if(topics.length)
                 result.topics = this.cleanTopics(topics)
 
-              console.log('aggr', this.result.url, this.getAggregate(result), result.check.connect, result.check.read, result.check.write)
+              // console.log('aggr', this.result.url, this.getAggregate(result), result.check.connect, result.check.read, result.check.write)
               
               result.aggregate = this.getAggregate(result)
 
@@ -162,7 +162,7 @@ const localMethods = {
             resolve()
           })
       })
-      console.log('results chunk', Object.keys(resultsChunk).length)
+      // console.log('results chunk', Object.keys(resultsChunk).length)
       promises.push(promise)
       this.store.results.mergeLeft(resultsChunk)
       await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 

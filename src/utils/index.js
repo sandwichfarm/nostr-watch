@@ -128,8 +128,7 @@ export const subscribeKind3 = async function(pubkey, relays){
           ordered = [],
           total = relays.length
 
-    let eose = 0,
-        events = 0
+    let eose = 0
 
     const complete = function(){
       if(!ordered.length)
@@ -153,25 +152,21 @@ export const subscribeKind3 = async function(pubkey, relays){
         })
       })
       .on('event', (relay, _subid, ev) => {
+        if(_subid !== subid)
+          return 
         
-        if(_subid == subid){
-          if(!ev.content.length)
-            return
-          // console.log('the content', ev.content)
-          try {
-            ev.content = JSON.parse(ev.content)
-          }
-          catch(e){
-            ev.content = {}
-          }
-          ordered.push(ev)
-          events++ 
-          console.log('events', events, '/', total)
+        if(!ev.content.length)
+          return
+        try {
+          ev.content = JSON.parse(ev.content)
         }
-        
+        catch(e){
+          ev.content = {}
+        }
+        ordered.push(ev)
       })
       .on('eose', () => {
-        console.log('eose', eose, '/', total, eose < total)
+        // console.log('eose', eose, '/', total, eose < total)
         eose++
         if(eose < total)
           return 

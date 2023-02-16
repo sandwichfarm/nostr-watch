@@ -245,7 +245,6 @@
           return 
         this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
         this.refreshCounts( this.getRelays(this.store.relays.getAll) )
-        console.log('refresh!')
       },
       resetFilters(){
         this.store.filters.reset()

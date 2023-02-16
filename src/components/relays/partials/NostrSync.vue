@@ -1,5 +1,5 @@
 <template>
-<div class="inline" v-if="store.user.getPublicKey.length && false">
+<div class="inline" v-if="store.user.getPublicKey.length">
     <div class="inline text-left">
 
       <span v-if="savedSuccess" class="inline-block mr-3"> 
@@ -16,7 +16,7 @@
         v-on:click="this.store.jobs.getActiveSlug === 'relays/check' ? false : toggleEditor()" 
         :class="{
           'cursor-not-allowed opacity-40': this.store.jobs.getActiveSlug === 'relays/check',
-          'cursor-pointer': this.store.jobs.getActiveSlug === 'user/relay/list'
+          'cursor-pointer': this.store.jobs.getActiveSlug === 'user/list/contacts'
         }"
         class="mr-3 inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-m font-medium bg-slate-500/30 dark:text-white dark:bg-white/20  dark:hover:bg-white/40 shadow-sm  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
             <span v-if="this.store.layout.editorExpanded">
@@ -33,7 +33,7 @@
         ref="btnRef" 
         type="button" 
         v-on:click="changed ? persistChanges() : false" 
-        v-if="this.store.layout.editorExpanded && store.jobs.getActiveSlug !== 'user/relay/list'"
+        v-if="this.store.layout.editorExpanded && store.jobs.getActiveSlug !== 'user/list/contacts'"
         :class="{
           'cursor-not-allowed opacity-40': !changed,
           'cursor-pointer': changed
@@ -73,6 +73,7 @@ export default defineComponent({
       savedTo: [],
       savedSuccess: null,
       interval: null,
+      cacheActiveNavItem: null,
       // editor: false,
       // popoverShow: false
     }
@@ -119,9 +120,16 @@ export default defineComponent({
   },
   methods: Object.assign(RelaysLib, {
     toggleEditor: async function(){
+      if(!this.store.layout.editorIsExpanded) { //it's being opened (before-open)
+        this.cacheActiveNavItem = this.store.layout.getActiveSlug
+        // this.$refs.nav_relays_find_favorite.click()
+        this.store.layout.setActive('relays/find', 'favorite')
+      }
+      else { //it's being closed (before-close)
+        this.store.layout.setActive('relays/find', this.cacheActiveNavItem)
+      }
       this.store.layout.toggleEditor()
-      this.queueKind3('user/relay/list')
-      // this.queueKind10002('user/relay/list')
+      this.queueKind3('user/list/contacts')
     },
     persistChanges: async function(){
       const event = {
@@ -133,10 +141,6 @@ export default defineComponent({
       }
       event.id = getEventHash(event)
 
-      //console.log('kind3 event', event)
-
-      //console.log(window.nostr, typeof window.nostr.signEvent)
-
       const signedEvent = await window.nostr.signEvent(structuredClone(event))
 
       let ok = validateEvent(signedEvent)
@@ -144,8 +148,6 @@ export default defineComponent({
 
       if(!ok || !veryOk)
         return 
-
-      //console.log('valid event?', ok, veryOk)
       
       const relaysWrite = Object.keys(this.store.user.kind3).filter( key => this.store.user.kind3[key].write)
 

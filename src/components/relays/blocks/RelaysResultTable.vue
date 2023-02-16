@@ -1,5 +1,4 @@
 <template>
-
    <div class="pt-0 px-1 sm:px-6 lg:px-8 dark:bg-black/20 rounded-lg">
       <div class="mt-8 flex flex-col">
       <div class="overflow-x-auto">
@@ -66,28 +65,22 @@
                       <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
                         <code class="text-xs block">Connect</code>
                       </th>
-                      <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
+                      <th v-if="!store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
                         <code class="text-xs block">Read</code>
                       </th>
 
               
-                      <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
+                      <th v-if="!store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
                       </th>
 
-                      <th v-if="store.layout.editorIsExpanded && isLoggedIn() && !store.prefs.isFirstVisit" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <!-- <span class="verified-shape-wrapper">
-                          <span class="shape verified"></span>
-                        </span> -->
+                      <!-- <th v-if="store.layout.editorIsExpanded && isLoggedIn() && !store.prefs.isFirstVisit" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">Read</code>
                       </th>
 
                       <th v-if="store.layout.editorIsExpanded && isLoggedIn() && !store.prefs.isFirstVisit" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <!-- <span class="verified-shape-wrapper">
-                          <span class="shape verified"></span>
-                        </span> -->
                         <code class="text-xs block">Write</code>
-                      </th>
+                      </th> -->
 
                       <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
                         <code class="text-xs block">Favorite</code>
@@ -221,7 +214,7 @@
                       </td>
 
                       <!-- editor -->
-                      <td v-if="store.jobs.getActiveSlug != 'user/relay/list' 
+                      <td v-if="store.jobs.getActiveSlug != 'user/list/contacts' 
                                 && store.layout.editorIsExpanded 
                                 && typeof store.user.kind3?.[relay]?.read !== `undefined`
                                 && isLoggedIn()"
@@ -236,7 +229,8 @@
                         </Switch>
                       </td>
 
-                      <td v-if="store.jobs.getActiveSlug != 'user/relay/list' 
+                     
+                      <td v-if="store.jobs.getActiveSlug != 'user/list/contacts' 
                                 && store.layout.editorIsExpanded 
                                 && typeof store.user.kind3?.[relay]?.write !== `undefined` 
                                 && isLoggedIn()"
@@ -254,7 +248,7 @@
                       
                       <td 
                         colspan="2" 
-                        v-if="store.layout.editorExpanded && store.jobs.getActiveSlug == 'user/relay/list'" 
+                        v-if="store.layout.editorExpanded && store.jobs.getActiveSlug == 'user/list/contacts'" 
                         class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
                         <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -264,7 +258,7 @@
 
                       <td 
                         colspan="2" 
-                        v-if="store.layout.editorExpanded && !store.relays.isFavorite(relay) && store.jobs.getActiveSlug != 'user/relay/list'" 
+                        v-if="store.layout.editorExpanded && !store.relays.isFavorite(relay) && store.jobs.getActiveSlug != 'user/list/contacts'" 
                         class="w-auto text-center md:table-cell lg:table-cell xl:table-cell">
                       </td>
 

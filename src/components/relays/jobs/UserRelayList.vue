@@ -36,8 +36,6 @@ localMethods.invalidate = function(force){
   if( !this.store.prefs.useKind3 )
     return
   
-  //console.log('wtf?', this.slug, !this.isExpired(this.slug) && !force)
-
   this.queueKind3(this.slug)
 }
 
@@ -58,7 +56,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      slug: 'user/relay/list',
+      slug: 'user/list/contacts',
       kind3Remote: new Object(),
       kind3Local: {}
     }

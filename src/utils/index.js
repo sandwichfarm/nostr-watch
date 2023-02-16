@@ -5,6 +5,8 @@ dotenv.config()
 import { daemons } from '@/config/nwd-geo.yaml'
 import { getDistance } from 'geolib';
 import { continents } from '../../cache/continents.js'
+import { RelayPool } from 'nostr'
+import crypto from 'crypto'
 
 export const timeSince = function(date) {
   var seconds = Math.floor((new Date() - date) / 1000);
@@ -115,4 +117,62 @@ export const getDnsFromRelay = async function(relay){
     .then((data) => { dns = data.Answer ? data.Answer : false })
     .catch(err => console.error('./scripts/geo.js', err))
   return dns
+}
+
+export const subscribeKind3 = async function(pubkey, relays){
+  return new Promise( resolve => {
+    const pool = new RelayPool(relays, { reconnect: true }),
+          subid = crypto.randomBytes(40).toString('hex'),
+          ordered = [],
+          total = relays.length
+
+    let eose = 0,
+        events = 0
+
+    const complete = function(){
+      if(!ordered.length)
+        return resolve({})
+      ordered.sort().reverse()
+      try{pool.close()} catch(e){""}
+      clearTimeout(timeout)
+      resolve(ordered[0])
+    }
+
+    const timeout = setTimeout( () => complete(), 10000 )
+
+    pool
+      .on('open', r => {
+        r.subscribe(subid, {
+          limit: 1,
+          kinds: [3],
+          authors:[ pubkey ]
+        })
+      })
+      .on('event', (relay, _subid, ev) => {
+        
+        if(_subid == subid){
+          if(!ev.content.length)
+            return
+          // console.log('the content', ev.content)
+          try {
+            ev.content = JSON.parse(ev.content)
+          }
+          catch(e){
+            ev.content = {}
+          }
+          ordered.push(ev)
+          events++ 
+          console.log('events', events, '/', total)
+        }
+        
+      })
+      .on('eose', () => {
+        console.log('eose', eose, '/', total, eose < total)
+        eose++
+        if(eose < total)
+          return 
+        complete()
+      })
+      .on('error', () => { })
+  })
 }

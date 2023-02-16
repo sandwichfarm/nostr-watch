@@ -1,4 +1,9 @@
 <template>
+  <div 
+    v-if="store.jobs.getActiveSlug?.includes('relays/check/') && !isSingle"
+    class="text-white/30">
+    checking {{ store.jobs.getActiveSlug.replace('relays/check/', '') }}
+  </div>
   <div
       v-if="(!store.jobs.isActive || store.jobs.getActiveSlug === this.slug) && !this.isSingle"
       class="text-inherit">
@@ -106,22 +111,10 @@ const localMethods = {
   },
 
   checkJob: async function(single){
-    console.log('wtf run job', single, this.slug)
     if(single) {
-      console.log('wtf checking single', single)
-      await this.check(single)
-        .then((result) =>{
-          result.aggregate = this.getAggregate(result)
-          this.store.results.mergeDeep({ 
-            [result.url]: this.pruneResult(result)
-          })
-          this.completeRelay(result)
-        })
-        .catch( () => console.log('there was an error') )
-      this.store.jobs.completeJob(this.slug)
+      this.checkSingle(single, this.slug)
     } 
     else {
-      console.log('wtf checking all', single)
       this.relays = this.store.relays.getAll
       const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
       let relayChunks = this.chunk(100, relays)
@@ -130,14 +123,21 @@ const localMethods = {
             resultsChunk = {}
         const chunk = relayChunks[c]
         for(let index = 0; index < chunk.length; index++) {
+          await new Promise( resolve => setTimeout(resolve, 100))
           const promise = new Promise( resolve => {
             const relay = chunk[index] 
             this.check(relay)
               .then((result) => {
-                resultsChunk[result.url] = this.completeRelay(result)
+                this.store.jobs.addProcessed(this.slug, result.url)
+                resultsChunk[result.url] = this.pruneResult(result)
+                // const inRetry = this.retry.indexOf(relay)
+                // if(inRetry > -1)
+                //   this.retry.splice(inRetry, 1)
                 resolve()
               })
-              .catch( () => { 
+              .catch( (err) => { 
+                console.error(err)
+                // this.retry.push(relay)
                 resolve()
               })
           })
@@ -147,13 +147,35 @@ const localMethods = {
         this.store.results.mergeDeep(resultsChunk)
         console.log('merging', Object.keys(resultsChunk).length, 'into', Object.keys(this.store.results.all))
       }
-      this.completeAll(single)
     } 
+    this.completeAll(single)
+    // if(this.retry.length) {
+    //   this.retry.forEach( relay => {
+    //     this.queueJob(
+    //       this.slug, 
+    //       async () => await this.checkJob(relay),
+    //       true
+    //     )
+    //   })
+    //   this.retries++
+    // }
+  },
+
+  checkSingle: async function(relay, slug){
+    await this.check(relay)
+        .then((result) =>{
+          result.aggregate = this.getAggregate(result)
+          this.store.results.mergeDeep({ 
+            [result.url]: this.pruneResult(result)
+          })
+          this.completeRelay(result)
+        })
+        .catch( (err) => console.error(`there was an error: ${err}`) )
+      this.store.jobs.completeJob(slug)
   },
 
   completeRelay: function(result){
-    const relay = result.url
-    this.store.jobs.addProcessed(this.slug, relay)
+    this.store.jobs.addProcessed(this.slug, result.url)
     return this.pruneResult(result)
   },
 
@@ -184,9 +206,9 @@ const localMethods = {
           getInfo: this.store.prefs.checkNip11 || this.isSingle,
           getIdentities: false,
           run: true,
-          connectTimeout: 5*1000,
-          readTimeout: 5*1000,
-          writeTimeout: 5*1000,
+          connectTimeout: this.inspectTimeout,
+          readTimeout: this.inspectTimeout,
+          writeTimeout: this.inspectTimeout,
         }
       
       // if(this.isSingle)
@@ -234,6 +256,9 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
+      if( this.store.jobs.isIdle )
+        this.lazyChecks()
+
       if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )
         return
       
@@ -253,6 +278,34 @@ const localMethods = {
 
   checkNow(){
     this.CheckRelaysJob(true)
+  },
+
+  async lazyChecks(){
+    if(this.lazyLast && (Date.now()-this.lazyLast)<this.lazyInterval )
+      return
+
+    // relays with uptime in the last 12hr
+    const relays = Object.keys(this.store.results.all).filter( async (relay) => {
+      const result = this.store.results.get(relay)
+      return 'offline' === result?.aggregate && result?.uptime > 10
+    })
+
+    
+    relays.forEach( async (relay) => {
+      const result = this.store.results.get(relay),
+            slug = `relays/check/${result.url}`,
+            expired = (Date.now()-this.store.jobs.getLastUpdate(slug))>this.lazyInterval 
+      if(!expired)
+        return
+      if('offline' === result?.aggregate && result?.uptime > 90)
+        this.queueJob(
+          slug, 
+          async () => await this.checkSingle(result.url, slug), 
+          true
+        )
+    })
+
+    this.lazyLast = Date.now()
   },
 
   handleVisibility(){
@@ -303,7 +356,12 @@ export default defineComponent({
       slug: 'relays/check',
       latencies: [],
       inspectors: [],
-      stop: false
+      stop: false,
+      inspectTimeout: 15*1000,
+      retry: [],
+      retries: 1,
+      lazyLast: null,
+      lazyInterval: 10*60*1000
       // history: null
     }
   },
@@ -347,6 +405,13 @@ export default defineComponent({
   updated(){},
 
   computed: Object.assign(SharedComputed, {
+    relayFromSlug: function(){
+      return slug => {
+        const segments = slug.split('/')
+        if(segments.length === 3)
+          return segments[2]
+      }
+    },
     getDynamicTimeout: function(){
       const calculated = this.averageLatency*this.relays.length
       return calculated > 10000 ? calculated : 10000

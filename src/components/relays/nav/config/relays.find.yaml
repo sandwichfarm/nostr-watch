@@ -20,15 +20,21 @@ items:
     slug: offline
     href: '#offline'
     description: Relays where a connection cannot currently be established
- 
-  # - name: Nips
-  #   slug: nips
-  #   href: '#nips'
-  #   description: Relays with reported nip support, optionally filtered
   - name: All
     slug: all
     href: '#all'
     description: All relays ordered by latency
+  - name: Favorites
+    slug: favorite
+    href: '#favorite'
+    condition: auth
+    description: Relays you have favorited
+
+  # - name: Nips
+  #   slug: nips
+  #   href: '#nips'
+  #   description: Relays with reported nip support, optionally filtered
+
   # - name: Favorites
   #   slug: favorite
   #   href: '#favorite'

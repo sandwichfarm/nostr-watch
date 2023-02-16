@@ -130,14 +130,10 @@ const localMethods = {
               .then((result) => {
                 this.store.jobs.addProcessed(this.slug, result.url)
                 resultsChunk[result.url] = this.pruneResult(result)
-                // const inRetry = this.retry.indexOf(relay)
-                // if(inRetry > -1)
-                //   this.retry.splice(inRetry, 1)
                 resolve()
               })
               .catch( (err) => { 
                 console.error(err)
-                // this.retry.push(relay)
                 resolve()
               })
           })
@@ -149,16 +145,6 @@ const localMethods = {
       }
     } 
     this.completeAll(single)
-    // if(this.retry.length) {
-    //   this.retry.forEach( relay => {
-    //     this.queueJob(
-    //       this.slug, 
-    //       async () => await this.checkJob(relay),
-    //       true
-    //     )
-    //   })
-    //   this.retries++
-    // }
   },
 
   checkSingle: async function(relay, slug){
@@ -292,10 +278,10 @@ const localMethods = {
     
     relays.forEach( async (relay) => {
       const result = this.store.results.get(relay),
-            slug = `relays/check/${result.url}`,
-            expired = (Date.now()-this.store.jobs.getLastUpdate(slug))>this.lazyInterval 
-      if(!expired)
-        return
+            slug = `relays/check/${result.url}`
+      //       expired = (Date.now()-this.store.jobs.getLastUpdate(slug))>this.lazyInterval 
+      // if(!expired)
+      //   return
       if('offline' === result?.aggregate && result?.uptime > 90)
         this.queueJob(
           slug, 
@@ -360,7 +346,7 @@ export default defineComponent({
       retry: [],
       retries: 1,
       lazyLast: null,
-      lazyInterval: 1*60*1000
+      lazyInterval: 1*1000
       // history: null
     }
   },

@@ -51,7 +51,9 @@ export default defineComponent({
       const pubkey = await window.nostr.getPublicKey()
       this.store.user.setPublicKey(pubkey)
       await this.getData()
-      this.queueKind3('user/list/contacts')
+      delete this.store.jobs.lastUpdate['user/list/contacts']
+      // this.queueKind3('user/list/contacts')
+      this.$forceUpdate()
     },
     getData: function(){
       const pool = new RelayPool([...this.store.relays.getFavorites], { reconnect: false })

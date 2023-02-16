@@ -283,12 +283,11 @@ const localMethods = {
     if(this.lazyLast && (Date.now()-this.lazyLast)<this.lazyInterval )
       return
 
-    // relays with uptime in the last 12hr
+    // relays with uptime in the last ~10hr
     const relays = Object.keys(this.store.results.all).filter( async (relay) => {
       const result = this.store.results.get(relay)
       return 'offline' === result?.aggregate && result?.uptime > 10
     })
-
     
     relays.forEach( async (relay) => {
       const result = this.store.results.get(relay),
@@ -360,7 +359,7 @@ export default defineComponent({
       retry: [],
       retries: 1,
       lazyLast: null,
-      lazyInterval: 10*60*1000
+      lazyInterval: 1*60*1000
       // history: null
     }
   },

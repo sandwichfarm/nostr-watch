@@ -51,7 +51,7 @@ export default defineComponent({
       const pubkey = await window.nostr.getPublicKey()
       this.store.user.setPublicKey(pubkey)
       await this.getData()
-      this.queueKind3('user/relay/list')
+      this.queueKind3('user/list/contacts')
     },
     getData: function(){
       const pool = new RelayPool([...this.store.relays.getFavorites], { reconnect: false })

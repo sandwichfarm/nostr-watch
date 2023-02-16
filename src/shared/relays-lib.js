@@ -128,11 +128,11 @@ export default {
             Object.keys(this.store.user.kind3).forEach( key => {
               this.store.relays.setFavorite(key)
             })
-            this.store.jobs.completeJob(this.slug)
+            this.store.jobs.completeJob(slug)
           })
           .catch( err => {
             console.error('error!', err)
-            this.store.jobs.completeJob(this.slug)
+            this.store.jobs.completeJob(slug)
           })
       },
       true
@@ -219,7 +219,7 @@ export default {
 
   
   sortRelays(relays){
-    console.log('first visit', this.store.prefs.isFirstVisit)
+    // console.log('first visit', this.store.prefs.isFirstVisit)
     // if(this.store.prefs.isFirstVisit)
     //   return this.store.relays.getShuffled
 

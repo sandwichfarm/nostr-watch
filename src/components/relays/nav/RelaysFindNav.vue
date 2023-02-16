@@ -6,8 +6,9 @@
       <div class="flex px-2 lg:px-0">
         <div class="hidden md:flex md:space-x-2 lg:flex lg:space-x-2">
           <a v-for="item in getFilteredNav"
+              :ref="`nav_relays_find_${item.slug}`"
               :key="`subnav-${item.slug}`"
-              :href="item.href" 
+              :href="item.href"
               @click="toggleActiveContent(item.slug)"
               class="inline-flex items-center"
               :class="getNavButtonClass(item.slug)">
@@ -33,6 +34,7 @@
       <!-- Current: "bg-indigo-50 border-indigo-500 text-indigo-700", Default: "border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800" -->
       <DisclosureButton 
           v-for="item in store.layout.getNavGroup(this.navSlug)"
+          :ref="`nav_relays_find_${item.slug}`"
           :key="`subnav-${item.slug}`"
           @click="toggleActiveContent(item.slug)"
           :class="getNavButtonClass(item.slug)"

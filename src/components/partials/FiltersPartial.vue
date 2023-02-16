@@ -51,11 +51,13 @@
 
       
 
-    <div v-if="store.filters.enabled && (store.jobs.isJobActive('relays/check') || store.jobs.isJobActive('relays/seed'))" class="italic bg-black/5 text-black/80 dark:bg-white/5 dark:text-white/50 py-2 px-3">
+    <!-- <div v-if="store.filters.enabled && (store.jobs.isJobActive('relays/check') || store.jobs.isJobActive('relays/seed'))" class="italic bg-black/5 text-black/80 dark:bg-white/5 dark:text-white/50 py-2 px-3">
       <em>filters are hidden during updates</em>
     </div>
 
-    <div v-if="store.filters.enabled && (!store.jobs.isJobActive('relays/check') && !store.jobs.isJobActive('relays/seed') )" class="py-2 px-3 dark:bg-black/10">
+    <div v-if="store.filters.enabled && (!store.jobs.isJobActive('relays/check') && !store.jobs.isJobActive('relays/seed') )" class="py-2 px-3 dark:bg-black/10"> -->
+    <div v-if="store.filters.enabled" class="py-2 px-3 dark:bg-black/10">
+
       <!-- valid -->
       <div class="mb-4 block flex-none" v-if="this.store.jobs.lastUpdate?.['relays/nip11']">
         <span  

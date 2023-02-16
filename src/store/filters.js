@@ -8,7 +8,6 @@ export const useFilterStore = defineStore('filters', {
     isValid:          new Object(),
     rules:            new Object(),
     meta:             new Object(),
-    count:            { nips: {}, software: {}, countries: {}, continents: {} }, //fix this or remove.
   }),
   getters: {
     getRuleGroups: state => Object.keys(state.rules) || [],

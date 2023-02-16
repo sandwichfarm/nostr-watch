@@ -1,19 +1,18 @@
 <template>
   <div class="ml-1 hidden lg:block">
-    <div class="mb-4 block">
-      <div 
-        class="mr-3  my-4 cursor-pointer inline-block"
-        @click="toggleFilterEnabled">
-        <span class="py-1 px-2 bg-black/30 block" v-if="!store.filters.enabled">Enable Filters</span>
-        <span class="py-1 px-2 bg-white/30 block" v-if="store.filters.enabled" >Disable Filters</span>
-      </div>
+    <div 
+      class="mr-3 my-4  inline-block">
+      Filters: 
+    </div>
 
-      <span class="mr-3 py-1 px-2 bg-black/20 inline-block cursor-pointer" 
-        @click="resetFilters()"
-        v-if="areClearableFilters">
-        Clear Filters
-      </span>
+    <div 
+      class="mr-3 my-4 cursor-pointer inline-block"
+      @click="toggleFilterEnabled">
+      <span class="py-1 px-2 text-red-600/50 bg-black/30 block" v-if="!store.filters.enabled">Disabled</span>
+      <span class="py-1 px-2 bg-green-500/10 text-green-100 block" v-if="store.filters.enabled" >Enabled</span>
+    </div>
 
+    <div class="mb-4 inline-block">
       <div class="inline-block" :class="{'opacity-20':!store.filters.enabled}">
         <div class="inline-block">
           <span v-if="store.filters.rules?.nips && Object.keys(store.filters.rules?.nips)?.length" class="ml-3 mr-1">nips</span>
@@ -41,6 +40,16 @@
         </div>                
       </div>
     </div>
+
+    <span class="mr-3 ml-4 py-1 px-2 bg-black/20 inline-block cursor-pointer" 
+        @click="resetFilters()"
+        v-if="areClearableFilters">
+        Clear Filters
+      </span>
+
+      
+
+      
 
     <div v-if="store.filters.enabled && (store.jobs.isJobActive('relays/check') || store.jobs.isJobActive('relays/seed'))" class="italic bg-black/5 text-black/80 dark:bg-white/5 dark:text-white/50 py-2 px-3">
       <em>filters are hidden during updates</em>
@@ -243,6 +252,9 @@
       toggleFilterEnabled(){
         this.store.filters.enabled = !this.store.filters.enabled
         this.refreshCounts( this.getRelays(this.store.relays.getAll) )
+      },
+      toggleSortingEnabled(key){
+        this.store.sort.mode[key] = this.store.filters.sortNext(key)
       },
 
     }),

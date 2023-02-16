@@ -12,7 +12,7 @@ import { useJobStore } from './jobs.js'
 import { useProfileStore } from './profiles.js'
 import { useStatusStore } from './status.js'
 import { useFilterStore } from './filters.js'
-
+import { useSortingStore } from './sorting.js'
 
 export const plugin = (app) => {
   const pinia = createPinia()
@@ -47,5 +47,6 @@ export const setupStore = function(){
     status: useStatusStore(),
     filters: useFilterStore(),
     results: useResultsStore(),
+    sort: useSortingStore(),
   }
 }

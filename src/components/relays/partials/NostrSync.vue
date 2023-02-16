@@ -123,14 +123,6 @@ export default defineComponent({
   },
   methods: Object.assign(RelaysLib, {
     toggleEditor: async function(){
-      if(!this.store.layout.editorIsExpanded) { //it's being opened (before-open)
-        this.cacheActiveNavItem = this.store.layout.getActiveSlug
-        // this.$refs.nav_relays_find_favorite.click()
-        this.store.layout.setActive('relays/find', 'favorite')
-      }
-      else { //it's being closed (before-close)
-        this.store.layout.setActive('relays/find', this.cacheActiveNavItem)
-      }
       this.store.layout.toggleEditor()
       this.queueKind3('user/list/contacts')
     },

@@ -134,7 +134,9 @@ export const subscribeKind3 = async function(pubkey, relays){
     const complete = function(){
       if(!ordered.length)
         return resolve({})
-      ordered.sort().reverse()
+      ordered.sort( (a, b) => {
+        return b.created_at - a.created_at
+      })
       try{pool.close()} catch(e){""}
       clearTimeout(timeout)
       resolve(ordered[0])

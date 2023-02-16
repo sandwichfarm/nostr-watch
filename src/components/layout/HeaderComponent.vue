@@ -74,17 +74,17 @@
               <MenuItems 
                 style="z-index:9000 !important;" 
                 class="absolute right-0 z-9000 mt-2 w-64 origin-top-right rounded-md bg-white dark:bg-slate-800 dark:border dark:border-slate-600 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <span v-if="store.user.getName" class="block text-ellipsis text-sm w-full font-extrabold mt-2">
+                  <span v-if="store.user.getName" class="block text-ellipsis text-sm w-full font-extrabold mt-2 px-4 py-2">
                     {{ store.user.getName  }}
                   </span>  
-                  <span v-if="store.user.getNip05" class="block text-ellipsis text-sm w-full mt-2">
+                  <span v-if="store.user.getNip05" class="block text-ellipsis text-sm w-full mt-2 px-4 py-2">
                     {{ store.user.getNip05  }}
                   </span>  
-                  <span class="block text-ellipsis text-xs mt-3 mb-2">
+                  <span class="block text-ellipsis text-xs mt-3 mb-2 px-4 py-2">
                     <code>{{ store.user.getPublicKey.slice(0, 16) }}...</code>
                   </span>  
-                  <MenuItem v-slot="{ active }">
-                  <a href="#" @click="signOut()" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Sign out</a>
+                  <MenuItem>
+                  <a href="#" @click="signOut()" class="hover:bg-white/20 px-4 py-2 block mt-1 -mb-1 rounded-b-md">Sign out</a>
                   </MenuItem>
               </MenuItems>
               </transition>
@@ -139,16 +139,16 @@
 </Disclosure>
 </template>
 <style scoped>
-nav.menu {
+/* nav.menu {
   position:relative;
   z-index:10;
-}
+} */
 /* nav span,
 nav.menu a {
   display: inline-block;
 } */
 
-nav.menu a { 
+/* nav.menu a { 
   text-decoration: none;
   margin: 0 22px 0 0;
   padding:5px 10px;
@@ -164,7 +164,7 @@ nav.menu a.active {
 
 nav.menu a:hover { 
   background: #f0f0f0;
-}
+} */
 
 </style>
 

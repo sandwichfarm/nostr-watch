@@ -2,6 +2,10 @@
 <div class="inline" v-if="store.user.getPublicKey.length">
     <div class="inline text-left">
 
+      <span v-if="store.jobs.getActiveSlug !== 'user/list/contacts' && !savedSuccess" class="inline-block mr-3"> 
+          <code class="text-xs text-black/40  dark:text-white/50">KIND:3</code> updated {{ timeSince(timeSinceUpdate) }} ago
+      </span>
+
       <span v-if="savedSuccess" class="inline-block mr-3"> 
           <svg class="h-4 w-4 inline-block" fill="none" stroke="#32CD32" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -48,13 +52,14 @@
 </template>
 <script>
 // import { createPopper } from "@popperjs/core";
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent, toRefs, ref } from 'vue'
 import { setupStore } from '@/store/'
 import safeStringify from 'fast-safe-stringify'
 import { getEventHash, validateEvent, verifySignature } from 'nostr-tools'
 import RelaysLib from '@/shared/relays-lib'
 import { RelayPool } from 'nostr'
 import objHash from 'object-hash'
+import { timeSince } from '@/utils'
 
 export default defineComponent({
   name: "NostrSync",
@@ -83,6 +88,7 @@ export default defineComponent({
     this.hashCache = structuredClone(this.hashOG)
     this.store.layout.editorOff()
     this.interval = setInterval( () => {
+
       if(this.savedTo.length)
         this.savedSuccess = this.savedTo.shift()
       else 
@@ -98,25 +104,22 @@ export default defineComponent({
       if(hashOG === hashCurrent )
         return this.changed = false
 
-      //console.log('input cache did not match', hashCache)
-
-      //console.log(
-      //   'changed?', 
-      //   this.changed,
-      //   'ok..',
-      //   hashCache, 
-      //   objHash(this.store.user.getKind3), 
-      //   hashCache == objHash(this.store.user.getKind3)
-      // )
-
       this.hashCache = objHash(structuredClone(this.store.user.getKind3))
       this.changed = true
-
-    }, 500)
+    }, 1000)
   },
   unmounted(){
     clearInterval(this.interval)
     this.store.layout.editorOff()
+  },
+  computed: {
+    timeSince(){
+      return timestamp => timeSince(timestamp)
+    },
+    timeSinceUpdate(){
+      const createdAt = ref(this.store.user.kind3Event.created_at)
+      return parseInt(JSON.parse(createdAt.value))*1000
+    }
   },
   methods: Object.assign(RelaysLib, {
     toggleEditor: async function(){
@@ -168,6 +171,9 @@ export default defineComponent({
         if(this.wsIsOpen(relay.ws))
           this.closeRelay(relay)
       })
+
+      this.store.user.kind3Event = signedEvent 
+
       this.toggleEditor()
     },
     togglePopover: function(){

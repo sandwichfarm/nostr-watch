@@ -19,7 +19,7 @@ jobs:
         run: yarn install
         
       - name: ENV_VARS 
-        run: echo 'VUE_APP_IP_API_KEY="$VUE_APP_IP_API_KEY"' >> .env && cat .env
+        run: echo "VUE_APP_IP_API_KEY=$VUE_APP_IP_API_KEY" >> .env && cat .env
 
       - name: Docker Build & tag
         run: |

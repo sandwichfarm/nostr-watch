@@ -93,7 +93,12 @@ export const useRelaysStore = defineStore('relays', {
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
     addRelays(relayUrls){ 
-      this.urls = Array.from(new Set( removeDuplicateHostnames( [...this.urls, ...relayUrls] ) ) )
+      const deduped = removeDuplicateHostnames( [...this.urls, ...relayUrls])
+      let newRelays = []
+      if(deduped.length > this.urls.length)
+        newRelays = deduped.filter( relay => !this.urls.includes(relay) )
+      this.urls = Array.from(new Set(deduped)) 
+      return newRelays
     },
     setRelays(relayUrls){ this.urls = relayUrls },
     // setResult(result){ 

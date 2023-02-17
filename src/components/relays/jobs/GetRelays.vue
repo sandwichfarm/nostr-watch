@@ -39,19 +39,23 @@ const localMethods = {
           fetch(`https://api.nostr.watch/v1/online`)
             .then((response) => {
               if (!response.ok) {
+                this.store.status.api = false
                 this.finish(relays, true)
                 return
               }
               response.json()
                 .then( json => {
+                  this.store.status.api = true
                   this.store.relays.urlsOnline = json
                   this.finish([...json, ...relays], true)
                 })
                 .catch( () => {
+                  this.store.status.api = false
                   this.finish(relays, true)
                 })
             })
             .catch( () => { 
+              this.store.status.api = false
               this.finish(relays, true)
             })
         }
@@ -61,7 +65,17 @@ const localMethods = {
   },
   finish(_relays, clear){
     
-    this.store.relays.addRelays(_relays)
+    const newRelays = this.store.relays.addRelays(_relays)
+
+    if(newRelays.length)
+      newRelays.forEach( relay => {
+        console.log('new relay!', relay)
+        // this.queueJob(
+        //   slug, 
+        //   async () => await this.checkSingle(result.url, slug), 
+        //   true
+        // )
+      })
 
     this.relays = this.store.relays.getAll
 

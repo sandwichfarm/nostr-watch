@@ -6,9 +6,11 @@ export const useLayoutStore = defineStore(
     state: () => ({ 
       mapExpanded: false,
       editorExpanded: false,
+      rawDataExpanded: false,
       active: {},
       nav: {},
       activeTab: null,
+      
     }),
     getters: {
       getActiveTab: (state) => state.activeTab,
@@ -18,6 +20,7 @@ export const useLayoutStore = defineStore(
       getNavGroup: (state) => (group) => state.nav[group],
       mapIsExpanded: (state) => state.mapExpanded,
       editorIsExpanded: state => state.editorExpanded,
+      rawDataIsExpanded: state => state.rawDataExpanded,
     },
     actions: {
       deactivateTab(tabId){
@@ -29,7 +32,8 @@ export const useLayoutStore = defineStore(
       setActive(section, slug){ this.active[section] = slug },
       toggleMap(){ this.mapExpanded = !this.mapExpanded },
       toggleEditor(){ this.editorExpanded = !this.editorExpanded },
-      editorOff(){ this.editorExpanded = false }
+      editorOff(){ this.editorExpanded = false },
+      toggleRawData(){ this.rawDataExpanded = !this.rawDataExpanded }
     },
     share: {
       // An array of fields that the plugin will ignore.

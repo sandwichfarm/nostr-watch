@@ -5,6 +5,7 @@ export const useJobStore = defineStore(
   {
   state: () => ({ 
     lastUpdate:   new Object(),
+    uncommitted:   new Object(),
     processed:    new Object(),
     //queue
     pending:      new Array(),
@@ -50,6 +51,20 @@ export const useJobStore = defineStore(
   
   },
   actions: {
+    addUncommitted(slug, relay){
+      if(!(this.uncommitted?.[slug] instanceof Array))
+        this.uncommitted[slug] = new Array() 
+      this.uncommitted[slug].push(relay)
+    },
+    applyUncommitted(slug){
+      if(!(this.uncommitted?.[slug] instanceof Array))
+        return 
+      this.processed[slug] = this.processed[slug].filter( relay => !this.uncommitted[slug].includes(relay))
+      this.uncommitted[slug] = new Array()
+    },
+    commitUncommitted(slug){
+      this.uncommitted[slug] = new Array()
+    },
     updateNow(key){ 
       ////console.log('update timestamp', key)
       this.lastUpdate[key] = Date.now() 

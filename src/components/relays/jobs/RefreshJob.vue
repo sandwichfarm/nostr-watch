@@ -117,6 +117,7 @@ const localMethods = {
     } 
     else {
       this.relays = this.store.relays.getAll
+      this.store.jobs.applyUncommitted(this.slug)
       const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
       let relayChunks = this.chunk(100, relays)
       for(let c=0;c<relayChunks.length;c++){
@@ -130,6 +131,7 @@ const localMethods = {
             this.check(relay)
               .then((result) => {
                 this.store.jobs.addProcessed(this.slug, result.url)
+                this.store.jobs.addUncommitted(this.slug, result.url)
                 resultsChunk[result.url] = this.pruneResult(result)
                 resolve()
               })
@@ -139,10 +141,10 @@ const localMethods = {
               })
           })
           promises.push(promise)
+          this.store.jobs.commitUncommitted(this.slug)
         }
         await Promise.all(promises)
         this.store.results.mergeDeep(resultsChunk)
-        // console.log('merging', Object.keys(resultsChunk).length, 'into', Object.keys(this.store.results.all))
       }
     } 
     this.completeAll(single)

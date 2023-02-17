@@ -736,6 +736,11 @@ export default defineComponent({
   },
 
   async mounted() {
+    
+    console.log(this.$route, ['json-nip-11','json-geo','json-dns','json-nostrwatch'].includes(this.$route.hash)
+    )
+    if(['json-nip-11','json-geo','json-dns','json-nostrwatch'].includes(this.$route.hash))
+      this.store.layout.rawDataExpanded = true
     this.interval = setInterval(() => {
       this.setData()
     },1000)

@@ -1,8 +1,8 @@
 <template>
   <Disclosure as="nav" class="bg-gray-800" v-slot="{ open }">
     <!-- <div class="mx-auto max-w-none"> -->
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="relative h-16 flex-none md:flex lg:flex content-center text-center mx-3 justify-between">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 align-middle">
+      <div class="relative h-16 flex-none md:flex lg:flex align-middle items-center  text-center mx-3 justify-between">
         <div class="absolute inset-y-0 left-0  flex items-center sm:hidden">
         <!-- Mobile menu button-->
         <DisclosureButton class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">

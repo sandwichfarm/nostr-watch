@@ -91,7 +91,7 @@ const localMethods = {
         },
       } 
 
-      if(Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostr-relay-inspector
+      if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostr-relay-inspector
         resultPruned.info = result.info
 
       if(result.latency) 
@@ -204,7 +204,7 @@ const localMethods = {
           instance.result.aggregate = this.getAggregate(instance.result)
           instance.result.log = instance.log
           this.closeRelay(instance.relay)
-          resolve(instance.result)
+          resolve(instance.result)  
         })
         .on('error', () => {
           resolve()

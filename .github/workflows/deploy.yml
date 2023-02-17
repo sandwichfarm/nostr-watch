@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env: 
-  - VUE_APP_IP_API_KEY: {{ vars.VUE_APP_IP_API_KEY }}
+  VUE_APP_IP_API_KEY: ${{ vars.VUE_APP_IP_API_KEY }}
     
 jobs:
   deploy:

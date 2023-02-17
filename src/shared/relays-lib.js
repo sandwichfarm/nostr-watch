@@ -3,7 +3,7 @@ import {sort} from 'array-timsort'
 
 export default {
   cleanTopics(topics){
-    console.log(topics.map( topic => [ topic[1], topic?.[2] ] ))
+    // console.log(topics.map( topic => [ topic[1], topic?.[2] ] ))
     return topics
       .filter( topic => 
         !this.store.prefs.ignoreTopics

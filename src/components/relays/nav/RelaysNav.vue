@@ -7,22 +7,20 @@
 <template>
   <div class="bg-slate-700 px-2 sm:px-4 lg:px-8 ">
     <div class="lg:flex lg:h-8 mx-auto max-w-7xl h-8">
-      <div class="flex md:w-0 lg:w-40 lg:ml-8">
+      <div class="hidden lg:flex md:w-0 lg:w-40 lg:ml-8">
         <NostrWatchStatus />
       </div>
       <div class="lg:flex lg:px-0">
-        <div class="lg:flex lg:space-x-2" v-if="!pendingFirstCompletion">
+        <div class="block md:flex lg:space-x-2 text-center items-center content-center" v-if="!pendingFirstCompletion">
           <router-link 
             :to="{name: 'relaysFind'}" 
-            class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
+            class=" mx-1 my-1 px-3 inline-block lg:inline-flex items-center text-sm font-medium text-white rounded-md">
             Browse
           </router-link>
-          <!-- <router-link to="/relays/map" class="inline-flex items-center mx-1 text-sm font-medium text-white">Map</router-link> -->
-
           <router-link 
             
             :to="{name: 'relaysStats'}" 
-            class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
+            class="mx-1 my-1 px-3 inline-block md:inline-flex  items-center text-sm font-medium text-white  rounded-md ">
             Statistics
           </router-link>
           <!-- <a v-for="item in store.layout.getNavGroup(this.navSlug)"

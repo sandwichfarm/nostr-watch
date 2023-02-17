@@ -83,7 +83,7 @@ export const useJobStore = defineStore(
         handler()
     },
     completeJob(slug){
-      console.log('complete job', slug, this.active.id !== slug)
+      // console.log('complete job', slug, this.active.id !== slug)
       if(this.active.id !== slug)
         return
       this.updateNow(this.active.id)

@@ -43,8 +43,12 @@
           </div>
         </div>
 
-        <div id="status" class="flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
-          <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-2xl flex-1 block py-3" :class="check(key)">
+        <div id="status" class="block lg:flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
+          <div 
+            v-for="key in ['connect', 'read', 'write']" 
+            :key="key" 
+            class="text-white text-lg md:text-xl lg:text-2xl block lg:flex-1 block py-3" 
+            :class="check(key)">
             <span>{{key}}</span>  
           </div>
         </div>
@@ -230,25 +234,26 @@
         </div>
  
         <!-- <a :click="showRawData=!showRawData" class="cursor-pointer">Raw</a> -->
-        <h2 class="text-left text-2xl text-black/50 dark:text-white/50 my-4 font-extrabold">Raw Data</h2>
-        <div>
-          <h3 id="json-nip-11" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NIP-11</h3>
-          <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ JSON.stringify(this.result.info, null, 4) }}</pre>
+       
+        <div class="hidden lg:block">
+          <h2 class="text-left text-2xl text-black/50 dark:text-white/50 my-4 font-extrabold">Raw Data</h2>
+          <div>
+            <h3 id="json-nip-11" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NIP-11</h3>
+            <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ JSON.stringify(this.result.info, null, 4) }}</pre>
+          </div>
+          <div>
+            <h3 id="json-geo" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">GEO</h3>
+            <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay] ? jsonGeo(relay) : 'not found' }}</pre>
+          </div>
+          <div>
+            <h3 id="json-dns" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">DNS</h3>
+            <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay]?.dns ? jsonDNS(relay) : 'not found' }}</pre>
+          </div>
+          <div>
+            <h3 id="json-nostrwatch" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NOSTR.WATCH</h3>
+            <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.results.get(relay) ? jsonCheck(relay) : 'not found' }}</pre>
+          </div>
         </div>
-        <div>
-          <h3 id="json-geo" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">GEO</h3>
-          <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay] ? jsonGeo(relay) : 'not found' }}</pre>
-        </div>
-        <div>
-          <h3 id="json-dns" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">DNS</h3>
-          <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay]?.dns ? jsonDNS(relay) : 'not found' }}</pre>
-        </div>
-        <div>
-          <h3 id="json-nostrwatch" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NOSTR.WATCH</h3>
-          <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.results.get(relay) ? jsonCheck(relay) : 'not found' }}</pre>
-        </div>
-
-
 
         <!-- <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="true">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">

@@ -111,6 +111,8 @@ export default {
     $pool.relays.forEach( $relay => this.closeRelay( $relay ) )
   },
   closeRelay: function( $relay ){
+    if(!$relay.ws?.readyState || !$relay?.ws.OPEN)
+      return 
     if($relay.ws.readyState === $relay.ws.OPEN )
       $relay.close()
   },

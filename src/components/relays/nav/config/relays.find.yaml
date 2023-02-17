@@ -1,21 +1,40 @@
 items:
+
+  - name: Online
+    slug: online
+    href: '#Online'
+    description: Relays where a connection can currently be established. 
+  - name: Public
+    slug: public
+    href: '#public'
+    description: Public relays are relays where anyone can read or write. 
+  - name: Restricted
+    slug: restricted
+    href: '#restricted'
+    description: Restricted relays are relays where there are read and/or write restrictions
+  - name: Paid
+    slug: paid
+    href: '#paid'
+    description: Relays that use a payment model to mitigate spam.
+  - name: Offline
+    slug: offline
+    href: '#offline'
+    description: Relays where a connection cannot currently be established
   - name: All
     slug: all
     href: '#all'
     description: All relays ordered by latency
-  - name: Public
-    slug: public
-    href: '#public'
-    description: All public relays ordered by latency. Public relays are relays where anyone can read or write. 
-  - name: Restricted
-    slug: restricted
-    href: '#restricted'
-    description: Restricted relays ordered by latency. Restricted relays are relays where there are read and/or write restrictions
-  - name: Offline
-    slug: offline
-    href: '#offline'
-    group: relays
-    description: Relays where a connection cannot currently be established
+  - name: Favorites
+    slug: favorite
+    href: '#favorite'
+    condition: auth
+    description: Relays you have favorited
+
+  # - name: Nips
+  #   slug: nips
+  #   href: '#nips'
+  #   description: Relays with reported nip support, optionally filtered
+
   # - name: Favorites
   #   slug: favorite
   #   href: '#favorite'

@@ -51,9 +51,9 @@
       </l-marker>
 
     </l-map>
-    <span @click="this.handleToggleMap()" id="map_control">
-      <button class="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-900 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 border border-gray-400 dark:border-white/10 rounded shadow" v-if="!store.layout.mapIsExpanded">full map</button>
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="store.layout.mapIsExpanded">relay list</button>
+    <span id="map_control" class="content-center text-center hidden lg:block">
+      <button @click="this.handleToggleMap()" class="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-900 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 border border-gray-400 dark:border-white/10 rounded shadow" v-if="!store.layout.mapIsExpanded">full map</button>
+      <button @click="this.handleToggleMap()" class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow" v-if="store.layout.mapIsExpanded">relay list</button>
     </span>
   </div>
   
@@ -86,16 +86,14 @@ export default defineComponent({
   
   setup(props){
     const {activeSubsectionProp: activeSubsection} = toRefs(props)
-    const {resultsProp: results} = toRefs(props)
     return { 
       store : setupStore(),
-      results: results,
       activeSubsection: activeSubsection
     }
   },
 
   data() {
-    // console.log(this.store.layout.mapIsExpanded, {
+    //console.log(this.store.layout.mapIsExpanded, {
     //   zoom: this.store.layout.mapIsExpanded ? 4 : 2,
     //   minZoom: this.store.layout.mapIsExpanded ? 4 : 2,
     //   maxZoom: this.store.layout.mapIsExpanded ? 7 : 2,
@@ -127,7 +125,7 @@ export default defineComponent({
     setTimeout( () => {
       this.$refs.map.leafletObject.whenReady(async () => {
         await this.$refs.map.leafletObject
-          .flyTo(
+          .setView(
             this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482], 
             this.store.layout.mapIsExpanded ? 4 : 2
           )
@@ -152,12 +150,6 @@ export default defineComponent({
   },
   updated(){},
   props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
     activeSubsectionProp: {
       type: String,
       default(){
@@ -167,7 +159,7 @@ export default defineComponent({
   },
   computed: {
     subsectionRelays(){
-      return this.sortRelays( this.store.relays.getRelays(this.activeSubsection, this.results ) )
+      return this.getRelays( this.store.relays.getRelays(this.activeSubsection, this.store.results.all ) )
     },
     relayUrl() {
       // We will see what `params` is shortly
@@ -177,7 +169,7 @@ export default defineComponent({
       return (nip) => `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
     },
     badgeCheck(){
-      return (relay, key) => `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${key}&color=${this.results?.[relay]?.check?.[key] ? 'green' : 'red'}`
+      return (relay, key) => `https://img.shields.io/static/v1?style=for-the-badge&label=&message=${key}&color=${this.store.results.get(relay)?.check?.[key] ? 'green' : 'red'}`
     },
     nipSignature(){
       return (key) => key.toString().length == 1 ? `0${key}` : key
@@ -199,24 +191,23 @@ export default defineComponent({
       }
     },
     getRelaysWithGeo(){
-      
-      return this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object && this.subsectionRelays.includes(relay) )
+      return this.getRelays( this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object) ) 
     },
     isRelayInActiveSubsection(){
-      return (relay) => this.store.relays.getRelays(this.activeSubsection, this.results).includes(relay)
+      return (relay) => this.store.relays.getRelays(this.activeSubsection, this.store.results.all).includes(relay)
     },
     getColorViz(){
       return (relay) => {
         if(!this.isRelayInActiveSubsection(relay))
           return 'transparent'
 
-        if(this.results[relay]?.aggregate == 'public')
+        if(this.store.results.get(relay)?.aggregate == 'public')
           return '#00AA00'
 
-        if(this.results[relay]?.aggregate == 'restricted')
+        if(this.store.results.get(relay)?.aggregate == 'restricted')
           return '#FFA500'
 
-        if(this.results[relay]?.aggregate == 'offline')
+        if(this.store.results.get(relay)?.aggregate == 'offline')
           return '#FF0000'
         
         return 'transparent'
@@ -262,10 +253,11 @@ export default defineComponent({
         
 
       // // this.$refs.map.leafletObject.setZoom();
-      // this.$refs.map.leafletObject.setView(
-      //   this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482],
-      //   this.store.layout.mapIsExpanded ? 4 : 2
-      // )
+      // this.$refs.map.leafletObject
+      //       .setView(
+      //         this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482],
+      //         this.store.layout.mapIsExpanded ? 4 : 2
+      //       )
 
       await this.$refs.map.leafletObject
             .flyTo(
@@ -402,257 +394,3 @@ button .expand,
 } */
 </style>
 
-
-<!-- 
-<template>
-
-  <div :class="mapToggleClass">
-    
-    <l-map
-      ref="map"
-      v-model:zoom="zoom"
-      :center="[34.41322, -1.219482]"
-      :minZoom="zoom"
-      :maxZoom="zoom"
-      :zoomControl="false"
-      :dragging="false"
-      :touchZoom="false"
-      :scrollWheelZoom="false"
-      :doubleClickZoom="false"
-      >
-
-      <l-tile-layer
-        url="http://{s}.tile.osm.org/{z}/{x}/{y}.png"
-        layer-type="base"
-        name="OpenStreetMap"
-        attribution='<a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      />
-
-      <l-circle-marker
-        v-for="relay in getRelaysWithGeo.filter( () => !this.expanded )"
-        :key="`${relay}-circle`"
-        :lat-lng="center"
-        :radius="2"
-        :weight="4"
-        :color="markerColor"
-        :fillOpacity="1"
-        :class="true" >
-      </l-circle-marker>
-
-      <l-marker
-        v-for="relay in getRelaysWithGeo.filter( () => this.expanded )"
-        :key="`${relay}-marker`"
-        :lat-lng="getLatLng(relay)">
-        <l-popup>
-          {{ relay }}
-        </l-popup>
-      </l-marker>
-
-    </l-map>
-
-    <button @click="toggleMap">
-      <span class="expand">expand</span> 
-      <span class="collapse">collapse</span>
-      map
-    </button>
-  </div>
-  
-</template>
-
-<script>
-import { defineComponent, toRefs } from 'vue'
-import "leaflet/dist/leaflet.css"
-import { LMap, LTileLayer, LCircleMarker } from "@vue-leaflet/vue-leaflet"
-import { setupStore } from '@/store'
-
-import RelaysLib from '@/shared/relays-lib.js'
-
-export default defineComponent({
-  name: "MapSummary",
-  components: {
-    LMap,
-    LTileLayer,
-    LCircleMarker,
-  },
-  data() {
-    return {
-      zoom: 2,
-      center: [40.41322, -1.219482],
-      expanded: false,
-      relays: [],
-    };
-  },
-  setup(props){
-    const {activeSubsectionProp: activeSubsection} = toRefs(props)
-    const {resultsProp: results} = toRefs(props)
-    return { 
-      store : setupStore(),
-      results: results,
-      activeSubsection: activeSubsection
-    }
-  },
-  mounted() {
-    this.geo = this.store.relays.geo
-  },
-  beforeUnmount(){
-    //console.log('beforeUnmount', '$refs', this.$refs)
-  },
-  unmounted(){
-    //console.log('unmounted', '$refs', this.$refs)
-    delete this.$refs.map
-  },
-  updated(){},
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-    activeSubsectionProp: {
-      type: String,
-      default(){
-        return ""
-      }
-    },
-  },
-  computed: {
-    getCircleClass(relay){
-      //console.log('the relay', relay)
-      return (relay) => {
-        return {
-          visible: this.isRelayInActiveSubsection(relay),
-          hidden: !this.isRelayInActiveSubsection(relay),
-          [relay]: true
-        }
-      }
-    },
-    getMarkerClass(relay){
-      //console.log('the relay', relay)
-      return (relay) => {
-        return {
-          visible: this.isRelayInActiveSubsection(relay),
-          hidden: !this.isRelayInActiveSubsection(relay),
-          [relay]: true
-        }
-      }
-    },
-    getRelaysWithGeo(){
-      return this.store.relays.getAll.filter( relay => this.geo?.[relay] instanceof Object )
-    },
-    isRelayInActiveSubsection(){
-      return (relay) => this.store.relays.getRelays(this.activeSubsection, this.results).includes(relay)
-    },
-    getCircleColor(){
-      return (relay) => {
-        if(!this.isRelayInActiveSubsection(relay))
-          return 'transparent'
-
-        if(this.results[relay]?.aggregate == 'public')
-          return '#00AA00'
-
-        if(this.results[relay]?.aggregate == 'restricted')
-          return '#FFA500'
-
-        if(this.results[relay]?.aggregate == 'offline')
-          return '#FF0000'
-        
-        return 'transparent'
-      }
-    },
-    getLat(){
-      return (relay) => this.geo[relay].lat
-    },
-    getLon(){
-      return (relay) => this.geo[relay].lon
-    },
-    mapToggleClass(){
-      return {
-        expanded: this.expanded
-      }
-    },
-  },
-  methods: Object.assign(RelaysLib, {
-    getLatLng(relay){
-      return [this.getLat(relay), this.getLon(relay)]
-    },
-    toggleMap(){
-      this.expanded = !this.expanded
-      setTimeout(() => { this.resetMapSize() }, 1)
-    },
-    resetMapSize(){
-      if (this.$refs.map.ready) 
-        this.$refs.map.leafletObject.invalidateSize()
-    }
-  }),
-  
-});
-
-
-</script>
-
-
-
-<style scoped>
-
-
-
-.leaflet-container {
-  position:relative;
-  z-index:900;
-  margin:0;
-  padding:0;
-  height:250px !important;
-  width:100%;
-/*  -webkit-transition:height 300ms ease-in-out;
-  -moz-transition:height 300ms ease-in-out;
-  -o-transition:height 300ms ease-in-out;
-  transition:height 300ms ease-in-out;*/
-}
-
-.expanded .leaflet-container {
-  position:absolute;
-  z-index:900;
-  margin:0;
-  padding:0;
-  top:0;
-  bottom:0;
-  width:100%;
-  height:100% !important;
-}
-
-.expanded .leaflet-container {
-  height:555px !important;
-}
-.leaflet-control-zoom {
-  display: none !important;
-}
-.expanded .leaflet-control-zoom {
-  display: block !important;
-}
-
-button {
-  position: relative;
-  z-index:901;
-  top: -30px;
-  background:rgba(255,255,255,0.5);
-  border:0;
-  padding:3px 6px;
-  color:#777;
-  cursor:pointer;
-}
-
-button:hover {
-  color:#222;
-}
-
-/* .expanded button .expand,
-button .collapse {
-  display:none;
-}
-
-button .expand,
-.expanded button .collapse {
-  display:inline;
-} */
-</style> -->

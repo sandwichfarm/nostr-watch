@@ -2,15 +2,32 @@ import { defineStore } from 'pinia'
 
 export const usePrefsStore = defineStore('prefs', {
   state: () => ({ 
+    firstVisit: true,
     refresh: true,
-    duration: 30*60*1000,
+    duration: 6*60*60*1000,
     pinFavorites: true,
     rowTheme: 'comfortable',
     filters: [],
     filterFn: [],
-    useKind3: true
+    useKind3: true,
+    clientSideProcessing: false,
+    clientSideProcessingUpgrade: false,
+    latencyFast: 200,
+    latencySlow: 1000,
+    sortUptime: true,
+    sortLatency: true, 
+    autoDetectRegion: true,
+    region: 'eu-west',
+    ignoreTopics: 'canonical,nostr',
+    showMaps: true,
+    discoverRelays: true,
+    checkNip11: true,
+    CheckNip11Frequency: 24*60*60*1000,
+    disableGeoDetection: false
   }),
   getters: {
+    get: state => key => state?.[key],
+    isFirstVisit: state => state.firstVisit,
     doRefresh: (state) => state.refresh,
     expireAfter: (state) => state.duration,
     doPinFavorites: (state) => state.pinFavorites,
@@ -18,6 +35,10 @@ export const usePrefsStore = defineStore('prefs', {
     getFilters: (state) => state.filterFn,
   },
   actions: {
+    setClientSideProcessing(value){
+      this.clientSideProcessing = value
+      this.clientSideProcessingUser = value
+    },
     enable(){ this.refresh = true },
     disable(){ this.refresh = false },
     toggleRefresh(){ this.refresh = !this.refresh },
@@ -31,14 +52,8 @@ export const usePrefsStore = defineStore('prefs', {
         return 
       this.filters.push(key)
       this.filterFn.push(fn) 
-      console.log('functions:', this.filterFn)
+      //console.log('functions:', this.filterFn)
     }
   },
-},
-{
-  persistedState: {
-    // excludePathts: ['activeFilters']
-    includePaths: ['refresh', 'duration', 'pinFavorites', 'rowTheme', 'filters']
-    // store options goes here
-  },
+  persistedState: {},
 })

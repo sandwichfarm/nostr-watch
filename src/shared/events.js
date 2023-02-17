@@ -11,22 +11,22 @@ events.discoverRelays = async function(){
     const pool = RelayPool(['wss://nostr.sandwich.farm'])
     pool
       .on('open', relay => {
-        // //console.log('open')
+        //console.log('open')
         relay.subscribe(subid, {limit: 1000, kinds:[3]})
       })
       .on('close', () => {
-        // //console.log('close')
+        //console.log('close')
       })
       .on('event', (relay, _subid, event) => {
         if(subid == _subid) {
           try { 
             relaysRemote = Object.assign(relaysRemote, JSON.parse(event.content))
-            relay.close()
+            this.closeRelay(relay)
           } catch(e) {""}
         }
       })
     setTimeout( () => {
-      pool.close()
+      this.closePool(pool)
       resolve(true) 
     }, 10*1000 )
   })
@@ -65,7 +65,7 @@ events.get = async function (){
     })
 
   setTimeout( () => {
-    pool.close()
+    this.closePool(pool)
     resolve(true) 
   }, 10*1000 )
 }

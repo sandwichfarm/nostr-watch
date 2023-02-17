@@ -1,16 +1,23 @@
-> this project is alpha! changes are fast and hard. branching model and tests will come with beta. 
+> this project is alpha! changes are fast and hard. branching model and tests will be introduced come beta. 
 
 Follow me: npub1uac67zc9er54ln0kl6e4qp2y6ta3enfcg7ywnayshvlw9r5w6ehsqq99rx
 
 LN & NIP-05: bread@sandwich.farm 
 
-# nostr-watch 0.1.0
+# nostr-watch 0.1
 
 A client-side nostr network status built with Vue3, Pinia, [nostr-tools](https://github.com/fiatjaf/nostr-tools), [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). Originally forked from [fiatjaf/nostr-relay-registry](http://github.com/fiatjaf/nostr-relay-registry) but ended up being a rewrite.
 
 nostr.watch aggregates data on nostr relays and the network in general to assist users, developers and relay operators. 
 
 Develop branch is deployed to https://next.nostr.watch
+
+## Relay Additions 
+Relay additions via Github as the primary method of adding relays will be phased out for a number of reasons, expect this change with the `0.2` release.
+
+If you are adding a relay, you need to use `main` as your base and submit your pr into `main`. Submissions to `develop` will still be approved, but your relay will not go online until a release. Whereas a PR into `main` will go live within 10 minutes of being merged. 
+
+PRs into `develop` will not recieve any notification about this requirement. 
 
 ## Features
 - [x] Real-time relay status 

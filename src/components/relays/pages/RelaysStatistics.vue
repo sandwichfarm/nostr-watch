@@ -1,13 +1,20 @@
 <template>
-  <RelaysNav 
-    v-bind:resultsProp="results" />
+  <RelaysNav />
 
-  <div id="wrapper" class="mx-auto max-w-7xl p-8 lg:p-32 mt-8 bg-black/5 dark:bg-black/20 rounded-lg" v-if="store.tasks.isProcessing('relays/check') && !store.tasks.getLastUpdate('relays/check')">
+  <div id="wrapper" 
+    class="mx-auto max-w-7xl p-8 lg:p-32 mt-8 bg-black/5 dark:bg-black/20 rounded-lg" 
+    v-if="
+      (store.jobs.isJobActive('relays/check') && !store.jobs.getLastUpdate('relays/check'))
+      ||
+      (store.jobs.isJobActive('relays/seed') && !store.jobs.getLastUpdate('relays/seed'))
+    ">
     <span class="text-3xl">
       Still compiling data, this can take 3-10 minutes if this is your first visit to nostr.watch
     </span>
   </div>  
-  <div id="wrapper" class="mx-auto max-w-7xl pt-8" v-if="store.tasks.getLastUpdate('relays/check')">  
+  <div id="wrapper" class="mx-auto max-w-7xl pt-8" v-if="
+    store.jobs.getLastUpdate('relays/check') || store.jobs.getLastUpdate('relays/seed')
+  ">  
     
     <h2 class="text-2xl dark:text-white/50">Overview</h2>
     <div class="max-w-full mx-4 py-2 sm:mx-auto sm:px-6 lg:px-8">
@@ -17,7 +24,7 @@
             <div class="sm:flex sm:items-start">
               <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                 <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Public Relays</h3>
-                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').length }}</p>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'public').length }}</p>
               </div>
             </div>
           </div>
@@ -27,7 +34,7 @@
             <div class="sm:flex sm:items-start">
               <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                 <h3 class="text-sm leading-6 font-medium text-gray-400 dark:text-gray-100">Restricted Relays</h3>
-                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'restricted').length }}</p>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'restricted').length }}</p>
               </div>
             </div>
           </div>
@@ -37,7 +44,7 @@
             <div class="sm:flex sm:items-start">
               <div class="text-center sm:mt-0 sm:ml-2 sm:text-left">
                 <h3 class="text-sm leading-6 font-medium text-gray-400">Offline Relays</h3>
-                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'offline').length }} </p>
+                <p class="text-3xl font-bold text-black  dark:text-white">{{ this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'offline').length }} </p>
               </div>
             </div>
           </div>
@@ -71,7 +78,7 @@
                 Country
               </h3>
               <p class="text-3xl font-bold text-black  dark:text-white">
-                {{ byCountry?.[0]?.key }}
+                {{ collateCountries?.[0]?.key }}
               </p>
             </div>
           </div>
@@ -85,7 +92,7 @@
                 Continent
               </h3>
               <p class="text-3xl font-bold text-black  dark:text-white">
-                {{ byContinent?.[0]?.key }}
+                {{ collateContinents?.[0]?.key }}
               </p>
             </div>
           </div>
@@ -98,7 +105,7 @@
 
   <div class="flex-none px-8 space-x-1 md:flex md:space-x-4 ">
     <div class="flex-none md:flex-1">
-      <table class="table-auto w-full m-auto" v-if="bySupportedNips">
+      <table class="table-auto w-full m-auto" v-if="collateSupportedNips">
         <thead>
           <tr>
             <th colspan="2" class="bg-slate-200/60 dark:bg-black/40 pt-2 rounded-t-lg">
@@ -109,7 +116,7 @@
           </tr>
         </thead>
         <tbody class="rounded-b-lg bg-slate-50 dark:bg-black/20">
-          <tr v-for="nip in bySupportedNips" :key="`nip-${nip.key}`">
+          <tr v-for="nip in collateSupportedNips" :key="`nip-${nip.key}`">
             <td class="text-right w-1/2  py-2 px-3 dark:text-white/70">{{ nipFormatted(nip.key) }}</td>
             <td class="text-left py-2 px-3 text-2xl"> 
               {{ nip.count }} 
@@ -120,7 +127,7 @@
       </table>
     </div>
     <div class="flex-1">
-      <table class="table-auto w-full m-auto">
+      <table class="table-auto w-full m-auto" v-if="collateSoftware">
         <thead>
           <tr>
             <th colspan="2" class="bg-slate-200/60 dark:bg-black/40 pt-2 rounded-t-lg">
@@ -131,7 +138,7 @@
           </tr>
         </thead>
         <tbody class="rounded-b-lg bg-slate-50 dark:bg-black/20">
-          <tr v-for="sw in this.bySoftware" :key="`nip-${sw.key}`">
+          <tr v-for="sw in collateSoftware" :key="`nip-${sw.key}`">
             <td class="text-right w-1/2 py-2 px-3 dark:text-white/70">{{ sw.key }}</td>
             <td class="text-left py-2 px-3 text-2xl"> {{ sw.count }} <span class="italic text-white/25 text-sm">relays</span></td>
           </tr>
@@ -144,7 +151,7 @@
 
   <div class="flex-none px-8 space-x-1 md:flex md:space-x-4 ">
     <div class="flex-none md:flex-1">
-      <table class="table-auto w-full m-auto" v-if="bySupportedNips">
+      <table class="table-auto w-full m-auto" v-if="collateCountries">
         <thead>
           <tr>
             <th colspan="2" class="bg-slate-200/60 dark:bg-black/40 pt-2 rounded-t-lg">
@@ -155,7 +162,7 @@
           </tr>
         </thead>
         <tbody class="rounded-b-lg bg-slate-50 dark:bg-black/20">
-          <tr v-for="item in byCountry" :key="`country-${item.key}`">
+          <tr v-for="item in collateCountries" :key="`country-${item.key}`">
             <td class="text-right w-1/2  py-2 px-3 dark:text-white/70">{{ item.key }}</td>
             <td class="text-left py-2 px-3 text-2xl"> 
               {{ item.count }} 
@@ -177,7 +184,7 @@
           </tr>
         </thead>
         <tbody class="rounded-b-lg bg-slate-50 dark:bg-black/20">
-          <tr v-for="item in this.byContinent" :key="`continent-${item.key}`">
+          <tr v-for="item in this.collateContinents" :key="`continent-${item.key}`">
             <td class="text-right w-1/2 py-2 px-3 dark:text-white/70">{{ item.key }}</td>
             <td class="text-left py-2 px-3text-2xl"> {{ item.count }} <span class="italic text-white/25 text-sm">relays</span></td>
           </tr>
@@ -206,7 +213,7 @@ import { defineComponent, defineAsyncComponent } from 'vue'
 import { setupStore } from '@/store'
 // import { UserLib } from '@/shared/user-lib.js'
 // import { History } from '@/shared/history.js'
-import { relays } from '../../../../relays.yaml'
+// import { relays } from '../../../../relays.yaml'
 import RelaysLib from '@/shared/relays-lib'
 
 const RelaysNav = defineAsyncComponent(() =>
@@ -230,14 +237,11 @@ export default defineComponent({
   },
 
   beforeMount(){
-    this.relays = this.store.relays.getAll?.length ? this.store.relays.getAll : relays
-    this.relays.forEach(relay => {
-      this.results[relay] = this.getCache(relay)
-    })
-    this.bySupportedNips = this.collateSupportedNips
-    this.byContinent = this.collateContinents
-    this.byCountry = this.collateCountries
-    this.bySoftware = this.collateSoftware
+    this.relays = this.store.relays.getAll
+    // this.bySupportedNips = this.collateSupportedNips
+    // this.byContinent = this.collateContinents
+    // this.byCountry = this.collateCountries
+    // this.bySoftware = this.collateSoftware
     // this.store.stats.set('nips', this.bySupportedNips)
     // this.store.stats.set('continents', this.byContinent)
     // this.store.stats.set('countries', this.byCountry)
@@ -246,12 +250,12 @@ export default defineComponent({
 
   async mounted(){
 
-    // this.remoteTask = await this.historicalData()
-    // this.store.stats.setHistory(this.remoteTask)
+    // this.remoteJob = await this.historicalData()
+    // this.store.stats.setHistory(this.remoteJob)
   },
 
   unmounted(){
-    delete this.remoteTask
+    delete this.remoteJob
   },
 
   data: function(){
@@ -262,7 +266,7 @@ export default defineComponent({
       byCountry: null,
       byContinent: null, 
       history: null,
-      remoteTask: null,
+      remoteJob: null,
       results: {},
     }
   },
@@ -280,7 +284,7 @@ export default defineComponent({
     //PUT OUT TO DRY!
     collateSupportedNips(){
       const dict = new Object()
-      Object.entries(this.results).forEach( (result) => {
+      Object.entries(this.store.results.all).forEach( (result) => {
         result = result[1]
         if(result?.info?.supported_nips)
           result?.info?.supported_nips.forEach( nip => { 
@@ -353,13 +357,13 @@ export default defineComponent({
     collateSoftware(){
       const bySoftware = new Object()
       this.relays.forEach( relay => {
-        if( !this.results?.[relay]?.info?.software ) {
+        if( !this.store.results.get(relay)?.info?.software ) {
           if( !(bySoftware.unknown instanceof Set) )
             bySoftware.unknown = new Set()
           bySoftware.unknown.add(relay)
           return
         }
-        const software = this.results[relay].info.software
+        const software = this.store.results.get(relay).info.software
         if( !(bySoftware[software] instanceof Set) )
           bySoftware[software] = new Set() 
         bySoftware[software].add(relay)
@@ -369,7 +373,7 @@ export default defineComponent({
         let segments, repo, org
         try {
           segments = new URL(sw).pathname.split('/')
-          console.log(sw, segments.length)
+          //console.log(sw, segments.length)
           repo = segments.pop()
           org = segments.pop()
           if(repo == '' || org == '')
@@ -391,10 +395,10 @@ export default defineComponent({
     },
     getMostPopularSoftware(){
       let result
-      for(let i=0;i<this.bySoftware.length;i++){
-        if(this.bySoftware[i].key === 'unknown') 
+      for(let i=0;i<this.collateSoftware.length;i++){
+        if(this.collateSoftware[i].key === 'unknown') 
           continue
-        result = this.bySoftware[i].key
+        result = this.collateSoftware[i].key
         break
       }
       return result

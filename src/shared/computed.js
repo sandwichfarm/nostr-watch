@@ -1,11 +1,17 @@
 import {useRoute} from 'vue-router'
 
 export default {
+    isPayToRelay(){
+        return relay => {
+            if(this.store.results.get(relay)?.info?.limitation?.payment_required)
+                return true
+        }
+    },
     isExpired: function(){
         return (slug, expireAfter) => {
             if(!expireAfter)
                 expireAfter = this.store.prefs.expireAfter
-            return !this.store.tasks.getLastUpdate(slug) || Date.now() - this.store.tasks.getLastUpdate(slug) > expireAfter
+            return !this.store.jobs.getLastUpdate(slug) || Date.now() - this.store.jobs.getLastUpdate(slug) > expireAfter
         }
     },
     path: function() { return useRoute().path },
@@ -27,4 +33,16 @@ export default {
             }
         }
     },
+    isFirstVisit(){
+        return      (!this.store.jobs.lastUpdate['relays/seed'] && !this.store.prefs.clientSideProcessing)
+                ||  ( !this.store.jobs.lastUpdate['relays/check'] && this.store.prefs.clientSideProcessing)
+    },
+    showBasicData(){
+        return this.isFirstVisit && this.store.jobs.getActiveSlug !== 'relays/seed' && !this.pendingFirstCompletion
+        // return this.isFirstVisit 
+    },
+    pendingFirstCompletion(){
+        return !this.store.jobs.lastUpdate['relays/seed'] && !this.store.jobs.lastUpdate['relays/check'] && this.$route.path === '/find/relays'
+        // return this.isFirstVisit 
+    }
 }

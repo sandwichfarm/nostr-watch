@@ -1,6 +1,10 @@
 <template>
-<div class="inline" v-if="store.user.getPublicKey.length && false">
+<div class="inline" v-if="store.user.getPublicKey.length">
     <div class="inline text-left">
+
+      <span v-if="store.jobs.getActiveSlug !== 'user/list/contacts' && !savedSuccess" class="inline-block mr-3"> 
+          <code class="text-xs text-black/40  dark:text-white/50">KIND:3</code> updated {{ timeSince(timeSinceUpdate) }} ago
+      </span>
 
       <span v-if="savedSuccess" class="inline-block mr-3"> 
           <svg class="h-4 w-4 inline-block" fill="none" stroke="#32CD32" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -10,13 +14,13 @@
       </span>
 
       <button 
-        :title="this.store.tasks.getActiveSlug === 'relays/check' ? 'disabled while relays are checking' : ''"
+        :title="this.store.jobs.getActiveSlug === 'relays/check' ? 'disabled while relays are checking' : ''"
         ref="btnRef" 
         type="button" 
-        v-on:click="this.store.tasks.getActiveSlug === 'relays/check' ? false : toggleEditor()" 
+        v-on:click="this.store.jobs.getActiveSlug === 'relays/check' ? false : toggleEditor()" 
         :class="{
-          'cursor-not-allowed opacity-40': this.store.tasks.getActiveSlug === 'relays/check',
-          'cursor-pointer': this.store.tasks.getActiveSlug === 'user/relay/list'
+          'cursor-not-allowed opacity-40': this.store.jobs.getActiveSlug === 'relays/check',
+          'cursor-pointer': this.store.jobs.getActiveSlug === 'user/list/contacts'
         }"
         class="mr-3 inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-m font-medium bg-slate-500/30 dark:text-white dark:bg-white/20  dark:hover:bg-white/40 shadow-sm  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto">
             <span v-if="this.store.layout.editorExpanded">
@@ -33,7 +37,7 @@
         ref="btnRef" 
         type="button" 
         v-on:click="changed ? persistChanges() : false" 
-        v-if="this.store.layout.editorExpanded && store.tasks.getActiveSlug !== 'user/relay/list'"
+        v-if="this.store.layout.editorExpanded && store.jobs.getActiveSlug !== 'user/list/contacts'"
         :class="{
           'cursor-not-allowed opacity-40': !changed,
           'cursor-pointer': changed
@@ -48,13 +52,14 @@
 </template>
 <script>
 // import { createPopper } from "@popperjs/core";
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent, toRefs, ref } from 'vue'
 import { setupStore } from '@/store/'
 import safeStringify from 'fast-safe-stringify'
 import { getEventHash, validateEvent, verifySignature } from 'nostr-tools'
 import RelaysLib from '@/shared/relays-lib'
 import { RelayPool } from 'nostr'
 import objHash from 'object-hash'
+import { timeSince } from '@/utils'
 
 export default defineComponent({
   name: "NostrSync",
@@ -73,6 +78,7 @@ export default defineComponent({
       savedTo: [],
       savedSuccess: null,
       interval: null,
+      cacheActiveNavItem: null,
       // editor: false,
       // popoverShow: false
     }
@@ -82,6 +88,7 @@ export default defineComponent({
     this.hashCache = structuredClone(this.hashOG)
     this.store.layout.editorOff()
     this.interval = setInterval( () => {
+
       if(this.savedTo.length)
         this.savedSuccess = this.savedTo.shift()
       else 
@@ -97,48 +104,27 @@ export default defineComponent({
       if(hashOG === hashCurrent )
         return this.changed = false
 
-      console.log('input cache did not match', hashCache)
-
-      console.log(
-        'changed?', 
-        this.changed,
-        'ok..',
-        hashCache, 
-        objHash(this.store.user.getKind3), 
-        hashCache == objHash(this.store.user.getKind3)
-      )
-
       this.hashCache = objHash(structuredClone(this.store.user.getKind3))
       this.changed = true
-
-    }, 500)
+    }, 1000)
   },
   unmounted(){
     clearInterval(this.interval)
     this.store.layout.editorOff()
   },
+  computed: {
+    timeSince(){
+      return timestamp => timeSince(timestamp)
+    },
+    timeSinceUpdate(){
+      const createdAt = ref(this.store.user.kind3Event.created_at)
+      return parseInt(JSON.parse(createdAt.value))*1000
+    }
+  },
   methods: Object.assign(RelaysLib, {
     toggleEditor: async function(){
       this.store.layout.toggleEditor()
-      this.queueKind3('user/relay/list')
-      // if(this.store.layout.editorExpanded)
-      //   this.queueJob(
-      //     'user/relay/list',
-      //     async () => {
-      //       await this.store.user.setKind3()
-      //         .then( () => {
-      //           Object.keys(this.store.user.kind3).forEach( key => {
-      //             this.store.relays.setFavorite(key)
-      //           })
-      //           this.store.tasks.completeJob()
-      //         })
-      //         .catch( err => {
-      //           console.error('error!', err)
-      //           this.store.tasks.completeJob()
-      //         })
-      //     },
-      //     true
-      //   )
+      this.queueKind3('user/list/contacts')
     },
     persistChanges: async function(){
       const event = {
@@ -150,10 +136,6 @@ export default defineComponent({
       }
       event.id = getEventHash(event)
 
-      console.log('kind3 event', event)
-
-      console.log(window.nostr, typeof window.nostr.signEvent)
-
       const signedEvent = await window.nostr.signEvent(structuredClone(event))
 
       let ok = validateEvent(signedEvent)
@@ -161,8 +143,6 @@ export default defineComponent({
 
       if(!ok || !veryOk)
         return 
-
-      console.log('valid event?', ok, veryOk)
       
       const relaysWrite = Object.keys(this.store.user.kind3).filter( key => this.store.user.kind3[key].write)
 
@@ -179,7 +159,13 @@ export default defineComponent({
       this.hashCache = this.hashOG
       this.changed = false
 
-      pool.close()
+      pool.relays.forEach( relay => {
+        if(this.wsIsOpen(relay.ws))
+          this.closeRelay(relay)
+      })
+
+      this.store.user.kind3Event = signedEvent 
+
       this.toggleEditor()
     },
     togglePopover: function(){

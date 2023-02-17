@@ -1,13 +1,13 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === slug"
-    class="text-white lg:text-sm mr-11 ml-2 mt-1.5 text-xs">
-    <span>
+    v-if="this.store.jobs.getActiveSlug === slug"
+    class="text-inherit">
+    <span class="text-inherit">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
-      Calculating Uptime
+      {{ isSingle ? `taking ${relayFromUrl}'s pulse` : "taking nostr's pulse" }}
     </span>
   </span>
 </template>
@@ -17,7 +17,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import crypto from 'crypto'
 import decodeJson from 'unescape-json'
@@ -27,45 +27,40 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-
 import { relays } from '../../../../relays.yaml'
 import { RelayPool } from 'nostr'
 
 const localMethods = {
-  invalidate(force){
-    if( (!this.isExpired(this.slug, 1000*60) && !force) ) 
+  invalidatePulse(force){
+    if( (!this.isExpired(this.slug, 1) && !force) && !this.isSingle ) 
       return
-    // const pool = new RelayPool( relays )
-
-    if(this.isSingle)
-      this.jobHeartbeats()
-    else
+    
       this.queueJob(
         this.slug, 
-        this.jobHeartbeats,
+        () => this.jobPulses(),
         true
       )
   },
-  async jobHeartbeats(){
+  async jobPulses(){
+    if(!this.store.status.historyNode)
+      return this.store.jobs.completeJob(this.slug)
     const subid = crypto.randomBytes(40).toString('hex')
-    const heartbeatsByEvent = new Object()
+    const pulsesByEvent = new Object()
     let total = 48,
         count = 0
     await new Promise( resolve => {
-      const pool = new RelayPool( ['wss://history.nostr.watch'] )
+      const pool = new RelayPool( ['wss://history.nostr.watch'], { reconnect: false } )
       const uniques = new Set()
       let timeout = setTimeout( () => { 
         resolve()
-        pool.unsubscribe(subid)
-        pool.close()
-      }, 10000 )
+        this.closePool(pool)
+      }, 20000 )
       pool
         .subscribe(subid, {
           kinds:    [1010],
           limit:    total, //12 hours 
           authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
-          '#e':     ['eu-west'],
-          // since:    Math.floor(this.store.tasks.getLastUpdate(this.slug)/1000)
+          '#e':     [this.store.prefs.region],
         })
       
       pool
@@ -78,9 +73,7 @@ const localMethods = {
           
           uniques.add(event.created_at)
 
-          // console.log('heartbeat found', count, event.id)
-        
-          heartbeatsByEvent[event.created_at] = decodeJson(event.content).online
+          pulsesByEvent[event.created_at] = decodeJson(event.content).online
 
           count++
 
@@ -88,84 +81,76 @@ const localMethods = {
             return 
           
           resolve()
-          pool.unsubscribe(subid)
-          pool.close()
+          this.closePool(pool)
         })
         .on('eose', () => {
           resolve()
-          pool.unsubscribe(subid)
-          pool.close()
+          this.closePool(pool)
           clearTimeout(timeout)
         })
       
     })
     
-    this.parseHeartbeats(heartbeatsByEvent)
+    this.parsePulses(pulsesByEvent)
 
   },
-  parseHeartbeats(data){
+  parsePulses(data){
     const allTimestamps = Object.keys(data),
-          heartbeatsByRelayObj = new Object()
+          pulsesByRelayObj = new Object()
 
     allTimestamps.forEach( timestamp => {
       data[timestamp].forEach( relayData => {
         const relay = relayData[0],
               latency = relayData[1]
 
-        if( !(heartbeatsByRelayObj[relay] instanceof Object) )
-          heartbeatsByRelayObj[relay] = allTimestamps.reduce( (acc, _timestamp) => {
+        if( !(pulsesByRelayObj[relay] instanceof Object) )
+          pulsesByRelayObj[relay] = allTimestamps.reduce( (acc, _timestamp) => {
             acc[_timestamp] = false
             return acc
           }, new Object())
-        heartbeatsByRelayObj[relay][timestamp] = latency
+        pulsesByRelayObj[relay][timestamp] = latency
       })
     })
 
-    const allRelaysInHeartbeats = Object.keys(heartbeatsByRelayObj)
+    const allRelaysInPulses = Object.keys(pulsesByRelayObj)
 
-    const heartbeats = new Object()
+    const pulses = new Object()
 
-    allRelaysInHeartbeats.forEach( relay => {
-      heartbeats[relay] = new Array()
-      // console.log(relay, heartbeatsByRelayObj[relay])
-      Object.keys(heartbeatsByRelayObj[relay]).forEach( (timestamp_) => {
-        heartbeats[relay].push({
+    allRelaysInPulses.forEach( relay => {
+      pulses[relay] = new Array()
+      //console.log(relay, pulsesByRelayObj[relay])
+      Object.keys(pulsesByRelayObj[relay]).forEach( (timestamp_) => {
+        pulses[relay].push({
           date: timestamp_,
-          latency: heartbeatsByRelayObj[relay][timestamp_]
+          latency: pulsesByRelayObj[relay][timestamp_]
         })
       })
-      heartbeats[relay].sort( (h1, h2) => h1.date - h2.date )
-      this.store.stats.addHeartbeat(relay, heartbeats[relay])
+      pulses[relay].sort( (h1, h2) => h1.date - h2.date )
+      this.store.stats.addPulse(relay, pulses[relay])
       this.setUptimePercentage(relay)
     })
-
-    // console.log(heartbeats)
-
-    // this.store.stats.addHeartbeats(heartbeats)
-
-    this.store.tasks.completeJob()
+    this.store.jobs.completeJob(this.slug)
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.slug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   }
 }
 export default defineComponent({
-  name: 'TemplateTask',
+  name: 'GetPulse',
   components: {},
   data() {
     return {
-      slug: 'relays/heartbeat',
-      heartbeats: {},
+      slug: 'relays/pulse',
+      pulses: {},
+      interval: null,
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
   created(){
@@ -175,37 +160,23 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.slug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
-    this.relays = Array.from(new Set(relays))
+    this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
-    // console.log('is processing', this.store.tasks.isProcessing(this.slug))
-
-    if(this.store.tasks.isProcessing(this.slug))
-      this.invalidate(true)
-    else
-      this.invalidate()
+    this.invalidatePulse()
+    // this.invalidateJob()
+    // this.interval = setInterval( this.invalidateJob, 1000 )
   },
   updated(){
     
   },
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
-  props: {
-    resultsProp: {
-      type: Object,
-      default(){
-        return {}
-      }
-    },
-  },
+  props: {},
 })
 </script>
 

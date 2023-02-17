@@ -12,7 +12,7 @@ export const screenIs = (screen = '') => {
   // "Theme" is an alias to where you keep your tailwind.config.js - most likely your project root
   const screens = tw.theme.extend.screens
 
-  console.log(screens)
+  //console.log(screens)
 
   // create a keyed object of screens that match
   const matches = Object.entries(screens).reduce((results, [name, size]) => {

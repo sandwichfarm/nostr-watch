@@ -1,6 +1,6 @@
 <template>
   <span 
-      v-if="this.store.tasks.getActiveSlug === taskSlug"
+      v-if="this.store.jobs.getActiveSlug === slug"
       class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
     <span>Retrieving operator profiles...</span>
   </span>
@@ -25,23 +25,16 @@ import SharedComputed from '@/shared/computed.js'
 import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
-  queueJob: function(id, fn, unique){
-    this.store.tasks.addJob({
-      id: id,
-      handler: fn,
-      unique: unique
-    })
-  },
   invalidate(force){
-    if( !this.isExpired(this.taskSlug) && !force ) 
+    if( !this.isExpired(this.slug) && !force ) 
       return
 
     this.queueJob(
-      this.taskSlug,
+      this.slug,
       () => {
         const relays = this.store.relays.getAggregateCache('public')
 
-        console.log('public relays', this.store.relays.getAggregateCache('public').length)
+        //console.log('public relays', this.store.relays.getAggregateCache('public').length)
 
         const pool = new RelayPool(relays)
         const subid = crypto.randomBytes(40).toString('hex')
@@ -58,13 +51,13 @@ const localMethods = {
         } 
 
         const kinds = [0,1,7]
-        //remove kind 1 for non-single page tasks
+        //remove kind 1 for non-single page jobs
         pool
           .on('open', relay => {
             relay.subscribe(subid, { limit:10, kinds:kinds, authors:[this.result.info.pubkey] })
           })
           .on('event', (relay, sub_id, event) => {
-            console.log(event)
+            //console.log(event)
             if(!kinds.includes(event.kind))
               return
             if(sub_id !== subid)
@@ -82,32 +75,32 @@ const localMethods = {
             u.add(event.id)
             if(event.kind === 0)
               this.store.profile.setProfile(JSON.parse(event.content)).catch()
-            console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
-            console.log( 'event!', event.content )
+            //console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
+            //console.log( 'event!', event.content )
           })
 
-        this.store.tasks.completeJob()
+        this.store.jobs.completeJob(this.slug)
           // .on('eose', relay => {
-          //   relay.close()
+          //   this.closeRelay(relay)
           // })
       },
       true 
     )
   },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.taskSlug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
 }
 
 export default defineComponent({
-  name: 'TemplateTask',
+  name: 'TemplateJob',
   components: {},
   data() {
     return {
-      taskSlug: 'relays/operatorprofiles'
+      slug: 'relays/operatorprofiles'
     }
   },
   setup(props){
@@ -124,25 +117,18 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
     
-    this.relays = Array.from(new Set(relays))
+    this.relays = this.store.relays.getAll()
   },
   mounted(){
-    console.log('task', this.taskSlug, 'is processing:', this.store.tasks.isProcessing(this.taskSlug))
-    if(this.store.tasks.isProcessing(this.taskSlug))
-      this.invalidate(true)
-    else
-      this.invalidate()
+    //console.log('job', this.slug, 'is processing:', this.store.jobs.isJobActive(this.slug))
+    this.invalidateJob()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, SharedMethods),
   props: {
     resultsProp: {

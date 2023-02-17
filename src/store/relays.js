@@ -6,35 +6,67 @@ import { useUserStore } from '@/store/user'
 export const useRelaysStore = defineStore('relays', {
   state: () => ({ 
     urls: new Array(),
+    urlsOnline: new Array(),
     // results: new Object(),
     geo: new Object(),
     lastUpdate: null,
     count: new Object(),
     processing: false,
-    processedRelays: new Set(),
     favorites: new Array(),
     aggregates: {},
     aggregatesAreSet: false,
     cached: new Object(),
-    canonicals: new Object()
+    canonicals: new Object(),
+    filters: new Object(),
+    dns: new Object()
   }),
   getters: {
     getAll: (state) => state.urls,
+    getOnline: (state) => state.urlsOnline,
+    getOffline: (state) => state.urls.filter( relay => !state.urlsOnline.includes(relay)),
     getShuffled: state => shuffle(state.urls),
     getShuffledPublic: state => {
-      console.log('aggregates are set',state.aggregatesAreSet )
       return state.aggregatesAreSet ? shuffle(state.aggregates.public) : shuffle(state.urls)
     },
     getRelays: (state) => (aggregate, results) => {
       if( 'all' == aggregate )
         return state.urls.map(x=>x)
+
+      if( 'paid' == aggregate ){
+        // console.log('paid!', state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )?.length, state.urls.length )
+        return state.urls.filter( (relay) => results?.[relay]?.info?.limitation?.payment_required )
+      }
+
+      if( 'online' == aggregate )
+        return state.urls.filter( (relay) => results?.[relay]?.check?.connect )
+      
+      // if( 'nips' === aggregate)
+      //   return state.urls.filter( (relay) => { 
+      //     return  results?.[relay]?.info?.supported_nips  
+      //             && Object.keys(results[relay].info.supported_nips).length 
+      //             && results?.[relay]?.pubkeyValid
+      //   })
+
       if( 'favorite' == aggregate )
         return state.favorites
-      return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
+
+      if(aggregate === 'public')
+        return state.urls.filter( (relay) => results?.[relay]?.aggregate == 'public' && !results?.[relay]?.info?.limitation?.payment_required )
+      else 
+        return state.urls.filter( (relay) => results?.[relay]?.aggregate == aggregate)
+    },
+    
+    getByNip: (state) => (nip, results) => {
+      return state.urls.filter( relay => results?.[relay]?.info?.supported_nips?.includes(nip) )
     },
 
     getByAggregate: state => aggregate => {
-      const results = state.urls.filter( (relay) => state.results?.[relay]?.aggregate == aggregate)
+      let results
+      if(aggregate === 'public')
+        results = state.urls.filter( (relay) => state.results?.[relay]?.aggregate == 'public' && !(state.results?.[relay]?.info?.payments_url instanceof String) )
+      else 
+        results = state.urls.filter( (relay) => state.results?.[relay]?.aggregate == aggregate)
+
       this.setAggregate(aggregate, results)
       return results
     },
@@ -60,9 +92,15 @@ export const useRelaysStore = defineStore('relays', {
   },
   actions: {
     addRelay(relayUrl){ this.urls.push(relayUrl) },
-    addRelays(relayUrls){ this.urls = Array.from(new Set(this.urls.concat(this.urls, relayUrls))) },
+    addRelays(relayUrls){ 
+      const deduped = removeDuplicateHostnames( [...this.urls, ...relayUrls])
+      let newRelays = []
+      if(deduped.length > this.urls.length)
+        newRelays = deduped.filter( relay => !this.urls.includes(relay) )
+      this.urls = Array.from(new Set(deduped)) 
+      return newRelays
+    },
     setRelays(relayUrls){ this.urls = relayUrls },
-
     // setResult(result){ 
     //   // this.setStat('relays', this.)
     //   this.results[result.url] = result 
@@ -100,11 +138,8 @@ export const useRelaysStore = defineStore('relays', {
 
     unsetFavorite(relayUrl){ 
       this.favorites = this.favorites.filter(item => item !== relayUrl)
-      
       const store = useUserStore()
-      console.log('before delete', typeof store.kind3[relayUrl])
       delete store.kind3[relayUrl]
-      console.log('deleted?', typeof store.kind3[relayUrl])
     },
 
     toggleFavorite(relayUrl){
@@ -144,4 +179,20 @@ function shuffle(array) {
   }
 
   return array;
+}
+
+
+const removeDuplicateHostnames = function(array) {
+  const hostnameMap = new Map();
+  const result = [];
+  
+  for (const url of array) {
+    const hostname = new URL(url).hostname;
+    if (!hostnameMap.has(hostname)) {
+      hostnameMap.set(hostname, true);
+      result.push(url);
+    }
+  }
+  
+  return result;
 }

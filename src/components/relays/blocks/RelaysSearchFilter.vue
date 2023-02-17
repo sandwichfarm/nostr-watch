@@ -41,7 +41,7 @@ const localMethods = {
     this.parseFilter(event.target.value)
   },
   parseFilter(string){
-    console.log('parsing', string)
+    //console.log('parsing', string)
     const segments = string.split(' ')
     segments.forEach(segment => {
       if(segment.includes('nip:'))
@@ -50,7 +50,7 @@ const localMethods = {
         this.parseRelay(segment)
       }
     })
-    console.log(this.store.prefs.getFilters)
+    //console.log(this.store.prefs.getFilters)
   },
   parseRelay(maybeRelay){
     const fn = (relays) => {
@@ -76,7 +76,7 @@ const localMethods = {
 
     const fn = (relays) => {
        return relays.filter( relay => {
-        const exists = this.result?.[relay]?.info?.supported_nips.includes(value)
+        const exists = this.store.results.get(relay)?.info?.supported_nips.includes(value)
         return not ? !exists : exists 
       })
     }
@@ -107,7 +107,7 @@ export default defineComponent({
   created(){
   },
   mounted(){
-    console.log('relay_filter ref', this.$refs.relay_filter)
+    //console.log('relay_filter ref', this.$refs.relay_filter)
     this.$refs.relay_filter.addEventListener('change', event => this.handleFilter(event))
 
     // this.preferences = this

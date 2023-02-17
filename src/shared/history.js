@@ -62,22 +62,22 @@ const History = async function(){
     return new Promise(resolve => {
       let total = 0
       const subid = crypto.randomBytes(40).toString('hex')
-      const pool = RelayPool(this.store.relays.getAll.filter( (relay) => this.results?.[relay]?.aggregate == 'public').filter( relay => this.results?.[relay]?.info?.supported_nips.includes(15)))
+      const pool = RelayPool(this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'public').filter( relay => this.store.results.get(relay)?.info?.supported_nips.includes(15)))
       pool
         .on('open', relay => {
-          // //console.log('open')
+          //console.log('open')
           relay.subscribe(subid, {since: 1609829, limit: 10000, kinds:[3]})
         })
         .on('eose', (relay) => {
           //console.log('closing', relay.url)
-          relay.close()
+          this.closeRelay(relay)
           resolve(true)
         })
         .on('event', (relay, _subid, event) => {
           if(subid == _subid) {
             //console.log(total++)
             try { 
-              // //console.log(event)
+              //console.log(event)
               const parsed = JSON.parse(event.content)
               relaysRemote = Object.assign(relaysRemote, parsed)
               Object.keys(parsed).forEach( key => {
@@ -85,7 +85,7 @@ const History = async function(){
                   relayTimeCodes[key] = new Array()
                 relayTimeCodes[key].push(event.created_at)
               })
-              relay.close()
+              this.closeRelay(relay)
             } catch(e) {
               console.error(e)
             }
@@ -93,7 +93,7 @@ const History = async function(){
         })
 
       setTimeout( () => {
-        pool.close()
+        this.closePool(pool)
         resolve(true) 
       }, 10*1000 )
     })
@@ -130,7 +130,7 @@ const History = async function(){
 
   // const checkRemoteRelays = async function(){
   //   for(let i=0;i<relaysRemote.length;i++) {
-  //     // //console.log('check for connect', remoteMerged[i])
+  //     //console.log('check for connect', remoteMerged[i])
   //     await checkRelay(relaysRemote[i])
   //             .catch( () => {
   //               remove.push(relaysRemote[i])

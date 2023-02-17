@@ -4,12 +4,12 @@
   <MapSingle
     :geo="geo"
     :relay="relay"
-    :result="result"
-    v-if="(geo instanceof Object)"
+    v-if="(geo instanceof Object) && store.prefs.showMaps"
   />
 
-  <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl">
-      <div v-if="store.tasks.isProcessing('relays/single') && !result" class="data-card flex bg-slate-100 dark:bg-black/20 dark:text-white/50 mt-12 shadow py-8 px-3">
+  <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl text-center content-center">
+
+      <div v-if="!result" class="data-card flex bg-slate-100 dark:bg-black/20 dark:text-white/50 mt-12 shadow py-8 px-3">
         <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
           <span class="block lg:text-lg"><strong>Data has not yet populated and is currently being processed.</strong> Depending on the availability of of the <strong>{{ relay }}</strong>, this may or may not be populated shortly.</span>
         </div>
@@ -21,7 +21,10 @@
           <div class="px-4 py-5 sm:px-6">
             <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
             <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
-            <span class="mt-1 w-auto text-xl text-gray-400" v-if="result?.info?.contact">Contact: <SafeMail :email="result.info.contact" /></span>
+            <span class="mt-1 w-auto text-xl text-gray-400" v-if="result?.info?.contact">
+              <span v-if="isContactType(result?.info?.contact, 'email')">Contact: <SafeMail :email="result.info.contact" /></span>
+              <span v-else>{{ result?.info?.contact }}</span>
+            </span>
           </div>
           <a 
           target="_blank" 
@@ -31,15 +34,33 @@
           </a>
         </div>
 
-        <div id="status" class="flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
-          <div v-for="key in ['connect', 'read', 'write']" :key="key" class="text-white text-lg md:text-xl lg:text-2xl flex-1 block py-3" :class="check(key)">
+
+        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="result?.topics && result?.topics.length">
+          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
+            <span v-for="topic in getTopics" :class="normalizeTopic(topic)" :key="`${result?.url}-${topic[0]}`">
+              #{{ topic[0] }}  
+            </span>
+          </div>
+        </div>
+
+        <div id="status" class="block lg:flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
+          <div 
+            v-for="key in ['connect', 'read', 'write']" 
+            :key="key" 
+            class="text-white text-lg md:text-xl lg:text-2xl block lg:flex-1 block py-3" 
+            :class="check(key)">
             <span>{{key}}</span>  
           </div>
         </div>
-        <div id="status" class="flex-none w-full md:w-auto md:flex mb-2 py-5" v-if="showLatency && (result.check.averageLatency === null || result.check.averageLatency === true)"> <!--something is weird here with margin-->
+
+        <div 
+          v-if="result.latency?.average"
+          id="status" 
+          class="flex-none w-full md:w-auto md:flex mb-2 py-5" 
+          > <!--something is weird here with margin-->
           <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
             <vue-gauge 
-              v-if="result.latency.average"
+              v-if="result.latency?.average"
               class="relative -top-6 -mb-12 m-auto inline-block"
               :refid="'relay-latency'"
               :options="{
@@ -51,11 +72,11 @@
           </div>
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3 class="text-black/70 dark:text-white/50 text-lg">Avg. Latency</h3>
-            <svg v-if="!result.latency.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg v-if="!result.latency?.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span>{{ result.latency.average }}</span>
+            <span>{{ result.latency?.average }}</span>
           </div>
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3 class="text-black/70 dark:text-white/50 text-lg">Min Latency</h3>
@@ -63,7 +84,7 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span>{{ result.latency.min }}</span>
+            <span>{{ result.latency?.min }}</span>
           </div>
           <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
             <h3 class="text-black/70 dark:text-white/50 text-lg">Max Latency</h3>
@@ -71,11 +92,11 @@
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span>{{ result.latency.max }}</span>
+            <span>{{ result.latency?.max }}</span>
           </div>
         </div>
 
-        <div class="mt-3 overflow-hidden mb-8" v-if="this.heartbeats && Object.keys(this.heartbeats).length > 24">
+        <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length > 24">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
               Uptime for the last
@@ -85,21 +106,21 @@
           </div>
           <div class="px-0 py-5 sm:px-0 flex">
             <!-- <span 
-              v-for="heartbeat in this.heartbeats"
-              :key="heartbeat.date"
+              v-for="pulse in this.pulses"
+              :key="pulse.date"
               class=" mr-1 flex-1 relative"
-              :class="getUptimeTickClass(heartbeat)">
-                <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
-                <span v-if="!heartbeat.latency">&nbsp;</span>
+              :class="getUptimeTickClass(pulse)">
+                <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="pulse.latency">{{ pulse.latency }}ms</span>
+                <span v-if="!pulse.latency">&nbsp;</span>
               </span> -->
 
             <span 
-              v-for="heartbeat in this.heartbeats"
-              :key="heartbeat.date"
+              v-for="pulse in this.pulses"
+              :key="pulse.date"
               class="mr-1 flex-1">
-                <span class="block" :class="getUptimeTickClass(heartbeat)">
-                  <span class="hidden lg:block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="heartbeat.latency">{{ heartbeat.latency }}ms</span>
-                  <span v-if="!heartbeat.latency">&nbsp;</span>
+                <span class="block" :class="getUptimeTickClass(pulse)">
+                  <span class="hidden lg:block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="pulse.latency">{{ pulse.latency }}ms</span>
+                  <span v-if="!pulse.latency">&nbsp;</span>
                 </span>
               </span>
           </div>
@@ -159,72 +180,89 @@
 
 
         <div class="flex-none lg:flex mb-8">
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0">
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0"  v-if="geo && Object.keys(geo)?.length">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <!-- <div class="py-3 px-6 border-b border-gray-300">
-                Featured
-              </div> -->
               <div class="py-6 px-4">
                 <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
                   Network Summary
                 </h5>
                 <p class="text-gray-700 text-base mb-4 dark:text-white/60">
-                  The IP of <strong>{{ geo?.dns.name }}</strong> is <strong>{{ geo?.dns.data }}</strong>
-                  <em>{{ geo?.dns.data }}</em> appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong>
+                  The IP of <strong>https://{{ geo?.dns?.name }}</strong> is <strong>{{ geo?.dns?.data }}</strong>
+                  and appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong>
                   The hosting provider is <strong>{{  geo?.as  }}</strong>.
                 </p>
-                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
               </div>
-              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
-                2 days ago
-              </div> -->
             </div>
           </div>
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info">
+
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info && Object.keys(result?.info)?.length">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <!-- <div class="py-3 px-6 border-b border-gray-300">
-                Featured
-              </div> -->
               <div class="py-6 px-4">
                 <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
                   Software
                 </h5>
                 <p class="text-gray-700 text-base mb-4 dark:text-white/60">
-                  <strong>{{relay}}</strong> is running <strong>{{ getSoftware }}</strong> version <strong>{{ result.info.version }}</strong>
+                  <strong>{{relay}}</strong> is running <strong>{{ getSoftware }}</strong> version <strong>{{ result?.info?.version }}</strong>
                 </p>
-                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
               </div>
-              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
-                2 days ago
-              </div> -->
             </div>
           </div>
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="this.result?.info?.pubkey">
+
+          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info?.pubkey">
             <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <!-- <div class="py-3 px-6 border-b border-gray-300">
-                Featured
-              </div> -->
               <div class="py-6 px-4">
                 <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
                   PubKey
                 </h5>
                 <p class="text-gray-700 text-base mb-4 dark:text-white/60 text-ellipsis overflow-hidden">
-                  The relay's pubkey is <code class="block text-ellipsis w-full">{{ this.result?.info.pubkey }}</code>
+                  The relay's pubkey is <code class="block text-ellipsis w-full">{{ result?.info?.pubkey }}</code>
                 </p>
-                <!-- <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button> -->
               </div>
-              <!-- <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
-                2 days ago
-              </div> -->
             </div>
           </div>
         </div>
+
+
+
 
         <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="geo">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
               It's <strong>{{ getLocalTime }}</strong> in <strong>{{ geo?.city }}</strong>
               </span>
+          </div>
+        </div>
+ 
+        <!-- <a :click="showRawData=!showRawData" class="cursor-pointer">Raw</a> -->
+       
+        <div class="hidden lg:block">
+          <h2 
+            class="text-center text-2xl text-black/50 dark:text-white/50 my-4 font-extrabold cursor-pointer block py-5"
+            :class="{ 
+              'bg-black/10 dark:bg-black/50': this.store.layout.rawDataIsExpanded,  
+              'bg-black/5 dark:bg-black/20': !this.store.layout.rawDataIsExpanded,  
+            }"
+            @click="this.store.layout.toggleRawData">
+            <code>{ ... }</code>
+          </h2>
+          <div 
+            v-if="this.store.layout.rawDataIsExpanded">
+            <div>
+              <h3 id="json-nip-11" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NIP-11</h3>
+              <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ JSON.stringify(this.result.info, null, 4) }}</pre>
+            </div>
+            <div>
+              <h3 id="json-geo" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">GEO</h3>
+              <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay] ? jsonGeo(relay) : 'not found' }}</pre>
+            </div>
+            <div>
+              <h3 id="json-dns" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">DNS</h3>
+              <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay]?.dns ? jsonDNS(relay) : 'not found' }}</pre>
+            </div>
+            <div>
+              <h3 id="json-nostrwatch" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NOSTR.WATCH</h3>
+              <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.results.get(relay) ? jsonCheck(relay) : 'not found' }}</pre>
+            </div>
           </div>
         </div>
 
@@ -612,7 +650,8 @@ const localMethods = {
             this.store.profile.set(JSON.parse(event.content))
         })
         .on('eose', relay => {
-          relay.close()
+          if(this.wsIsOpen(relay.ws))
+            this.closeRelay(relay)
         })
         
     },
@@ -652,7 +691,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'SingleRelay',
+  name: 'RelaySingle',
   
   components: {
     MapSingle,
@@ -663,13 +702,13 @@ export default defineComponent({
 
   data() {
     return {
-      result: {},
       relay: "",
       geo: {},
       events: {},
       interval: null,
+      showRawData: false,
       showLatency: false,
-      heartbeats : {},
+      pulses : {},
       hbMin: 0,
       hbMax: 0
     }
@@ -697,15 +736,11 @@ export default defineComponent({
   },
 
   async mounted() {
-    // this.getAdminNotes()
-    this.result = this.getCache(this.relayFromUrl)
-    if(this.result){
-      this.result.latency.average = null
-      this.result.latency.min = null
-      this.result.latency.max = null
-      this.showLatency = true 
-    }
-
+    
+    console.log(this.$route, ['json-nip-11','json-geo','json-dns','json-nostrwatch'].includes(this.$route.hash)
+    )
+    if(['json-nip-11','json-geo','json-dns','json-nostrwatch'].includes(this.$route.hash))
+      this.store.layout.rawDataExpanded = true
     this.interval = setInterval(() => {
       this.setData()
     },1000)
@@ -716,6 +751,83 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
+    result(){
+      return this.store.results.get(this.relay)
+    },
+    jsonGeo(){
+      return relay => {
+        const geo = structuredClone(this.store.relays.geo?.[relay])
+        if(geo?.dns)
+          delete geo.dns 
+        return JSON.stringify(geo, null, 4)
+      }
+    },
+    jsonDNS(){
+      return relay => {
+        const dns = structuredClone(this.store.relays.dns?.[relay])
+        if(dns)
+          return JSON.stringify(dns, null, 4)
+        return JSON.stringify({}, null, 4)
+      }
+    },
+    jsonCheck(){
+      return relay => {
+        const res = structuredClone(this.store.results.get(relay))
+        if(res?.info)
+          delete res.info
+        if(res?.latency?.data)
+          res.latency = res.latency.data
+        if(res)
+          return JSON.stringify(res, null, 4)
+        return JSON.stringify({}, null, 4)
+      }
+    },
+    sanitizeAndDetectEmail() {
+      return str => {
+        if( !(str instanceof String) )
+          return
+        // Sanitize the input string by removing any unwanted characters
+        const sanitizedString = str.replace(/[^\w\s@]+/g, '');
+
+        // Use a regular expression to find the email in the sanitized string
+        const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+        const email = sanitizedString.match(emailRegex);
+
+        return email ? email[0] : null;
+      }
+    },
+    isContactType: function(){
+      return (str, match) => {
+        if(this.sanitizeAndDetectEmail(str) && match === 'email')
+          return true
+      }
+    },
+    getTopics: function(){
+      // return this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
+      return this.result.topics
+    },
+    normalizeTopic: function(){
+      return topic => {
+        const result = this.result
+        const val = topic[1],
+              minVal = result?.topics[result?.topics?.length-1][1], 
+              maxVal = result?.topics[0][1],
+              newMin = 1,
+              newMax = 5
+        const size = Math.round( newMin + (val - minVal) * (newMax - newMin) / (maxVal - minVal))
+
+        if(size === 1)
+          return 'text-lg'
+        if(size === 2)
+          return 'text-1xl'
+        if(size === 3)
+          return 'text-2xl'
+        if(size === 4)
+          return 'text-3xl'
+        if(size === 5)
+          return 'text-4xl'
+      }
+    },
     getLocalTime: function(){
       let options = {
         timeZone: this.geo?.timezone,
@@ -731,23 +843,25 @@ export default defineComponent({
     },
     normalizeLatency: function(){
       return value =>  { 
-        return (value-0) / (1000-0) * 100
+        const fast = this.store.prefs.latencyFast,
+              slow = this.store.prefs.latencySlow
+        return (value-fast) / (slow-fast) * 100
       }
     },
     getUptimeTickClass: function(){
-      return heartbeat => {
+      return pulse => {
         return {
-          'bg-red-700/80 h-32': !heartbeat.latency,
-          // 'bg-green-400/50': heartbeat.latency,
-          [this.normalizeUptimeTick(heartbeat)]: heartbeat.latency,
+          'bg-red-700/80 h-32': !pulse.latency,
+          // 'bg-green-400/50': pulse.latency,
+          [this.normalizeUptimeTick(pulse)]: pulse.latency,
         }
       }
     },
     normalizeUptimeTick: function(){
-      return heartbeat => { 
-        if(!heartbeat.latency)
+      return pulse => { 
+        if(!pulse.latency)
           return
-        const val = heartbeat.latency,
+        const val = pulse.latency,
               minVal = this.hbMin,
               maxVal = this.hbMax, 
               newMin = 10,
@@ -757,13 +871,13 @@ export default defineComponent({
 
         let color 
         
-        if(heartbeat.latency<200) {
+        if(pulse.latency<this.store.prefs.latencyFast) {
           color = 'bg-green-400/60'
         } 
-        else if(heartbeat.latency<500) {
+        else if(pulse.latency<(this.store.prefs.latencySlow/2)) {
           color = 'bg-yellow-400/50'
         }
-        else if(heartbeat.latency<1000) {
+        else if(pulse.latency<this.store.prefs.latencySlow) {
           color = 'bg-orange-400/50'
         }
         else {
@@ -775,10 +889,6 @@ export default defineComponent({
     },
     getSoftware: function(){
       return this.result?.info?.software
-    },
-
-    getHostname: function(){
-      return (relay) => relay.replace('wss://', '')
     },
 
     badgeLink(){
@@ -836,9 +946,6 @@ export default defineComponent({
         'col-span-1': !this.result?.info,
       }
     }
-
-    
-    
   }),
 
   // updated() {
@@ -856,19 +963,23 @@ export default defineComponent({
       }
     },
     setData(){
+      const result = {}
+
+      result.topics = this.result?.topics
+
+      this.lastUpdate = this.store.jobs.getLastUpdate('relays')
       this.relay = this.relayFromUrl
-      // this.relays = this.store.relays.getAggregateCache('public')
-      this.lastUpdate = this.store.tasks.getLastUpdate('relays')
-      this.result = this.getCache(this.relay) || false
-      //
-      //console.log('single result', this.relayFromUrl, this.result, this.getCache(this.relay))
-      
+
+      // console.log(this.relay, this.store.relays.getGeo(this.relay))
+
       this.geo = this.store.relays.getGeo(this.relay)
 
-      this.heartbeats = this.store.stats.getHeartbeat(this.relay)
-      this.hbMin = Math.min.apply(Math, this.heartbeats?.map( hb => hb.latency ))
-      this.hbMax = Math.max.apply(Math, this.heartbeats?.map( hb => hb.latency ) )
-      //console.log(this.relay, this.lastUpdate, this.result, this.geo)
+      this.pulses = this.store.stats.getPulse(this.relay)
+      this.hbMin = Math.min.apply(Math, this.pulses?.map( hb => hb.latency ))
+      this.hbMax = Math.max.apply(Math, this.pulses?.map( hb => hb.latency ) )
+    
+      if(result.topics)
+        result.topics = result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
     }
   }),
 

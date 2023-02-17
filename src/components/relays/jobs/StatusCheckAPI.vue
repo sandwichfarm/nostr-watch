@@ -1,8 +1,8 @@
 <template>
   <span 
-    v-if="this.store.tasks.getActiveSlug === taskSlug"
-    class="text-white lg:text-sm mr-2 ml-2 mt-1.5 text-xs">
-    <span>Task Status here</span>
+    v-if="this.store.jobs.getActiveSlug === slug"
+    class="text-inherit">
+    <span class="text-inherit">connecting to api</span>
   </span>
 </template>
 
@@ -18,36 +18,49 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { relays } from '../../../../relays.yaml'
-
 const localMethods = {
   invalidate(force){
-    if( (!this.isExpired(this.taskSlug) && !force) ) 
+    if( (!this.isExpired(this.slug, 60*1000) && !force) ) 
       return
-    
     this.queueJob(
-      this.taskSlug, 
+      this.slug, 
       () => {
-        this.$pool
-          .subscribe()
+        this.timeout = setTimeout( () => {
+          this.store.status.api = false
+          this.finish()
+        }, 5000)
+        fetch(`https://api.nostr.watch/v1/online`)
+          .then((response) => {
+            this.store.status.api = response.ok ? true : false
+            this.finish(true)
+          })
+          .catch( () => { 
+            this.store.status.api = false
+            this.finish(true)
+          })
       },
       true
     )
   },
+  finish(clear){
+    this.store.jobs.completeJob(this.slug)
+    if(clear)
+      clearTimeout(this.timeout)
+  },
   timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.tasks.getLastUpdate(this.taskSlug)+this.store.prefs.duration-Date.now())) 
+    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
   },
   timeSinceRefresh(){
-    return this.timeSince(this.store.tasks.getLastUpdate(this.taskSlug)) || Date.now()
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   },
 }
 
 export default defineComponent({
-  name: 'TemplateTask',
+  name: 'StatusCheckHistoryNode',
   components: {},
   data() {
     return {
-      taskSlug: 'relays/*' //REMEMBER TO CHANGE!!!
+      slug: 'status/api' //REMEMBER TO CHANGE!!!
     }
   },
   setup(props){
@@ -64,28 +77,17 @@ export default defineComponent({
     clearInterval(this.interval)
   },
   beforeMount(){
-    this.lastUpdate = this.store.tasks.getLastUpdate(this.taskSlug)
+    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     this.untilNext = this.timeUntilRefresh()
     this.sinceLast = this.timeSinceRefresh()
-    
-    this.relays = Array.from(new Set(relays))
   },
   mounted(){
-    console.log('is processing', this.store.tasks.isProcessing(this.taskSlug))
+    //console.log('is processing', this.store.jobs.isJobActive(this.slug))
 
-    if(this.store.tasks.isProcessing(this.taskSlug))
-      this.invalidate(true)
-    else
-      this.invalidate()
-
-    this.setRefreshInterval()
+    this.invalidateJob()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {
-    getDynamicTimeout: function(){
-      return this.averageLatency*this.relays.length
-    },
-  }),
+  computed: Object.assign(SharedComputed, {}),
   methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {

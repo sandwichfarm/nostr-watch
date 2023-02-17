@@ -1,8 +1,8 @@
 <template>
   <Disclosure as="nav" class="bg-gray-800" v-slot="{ open }">
     <!-- <div class="mx-auto max-w-none"> -->
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="relative h-16 flex-none md:flex lg:flex items-center mx-3 justify-between">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 align-middle">
+      <div class="relative h-16 flex-none md:flex lg:flex align-middle items-center  text-center mx-3 justify-between">
         <div class="absolute inset-y-0 left-0  flex items-center sm:hidden">
         <!-- Mobile menu button-->
         <DisclosureButton class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
@@ -11,13 +11,13 @@
             <XMarkIcon v-else class="block h-6 w-6" aria-hidden="true" />
         </DisclosureButton>
         </div>
-        <span class="inline-block text-center text-slate-50 text-xl mt-4 md:mt-0">
+        <a href="/" class="inline-block mx-auto text-slate-50 text-xl mt-4 md:mt-0">
           nostr.watch
           <sup class="relative -top-2" style="font-size: 0.6rem">{{ version }}</sup>
-        </span>
+        </a>
         <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
           <div class="hidden sm:ml-6 md:block">
-            <div class="flex space-x-4">
+            <div class="flex space-x-4" v-if="!pendingFirstCompletion">
               
             <router-link 
               to="/relays"
@@ -52,6 +52,9 @@
         </div>
 
         <div class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+
+          <Preferences /> 
+
           <About />
 
           <DarkMode />
@@ -71,17 +74,17 @@
               <MenuItems 
                 style="z-index:9000 !important;" 
                 class="absolute right-0 z-9000 mt-2 w-64 origin-top-right rounded-md bg-white dark:bg-slate-800 dark:border dark:border-slate-600 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <span v-if="store.user.getName" class="block text-ellipsis text-sm w-full font-extrabold mt-2">
+                  <span v-if="store.user.getName" class="block text-ellipsis text-sm w-full font-extrabold mt-2 px-4 py-2">
                     {{ store.user.getName  }}
                   </span>  
-                  <span v-if="store.user.getNip05" class="block text-ellipsis text-sm w-full mt-2">
+                  <span v-if="store.user.getNip05" class="block text-ellipsis text-sm w-full mt-2 px-4 py-2">
                     {{ store.user.getNip05  }}
                   </span>  
-                  <span class="block text-ellipsis text-xs mt-3 mb-2">
+                  <span class="block text-ellipsis text-xs mt-3 mb-2 px-4 py-2">
                     <code>{{ store.user.getPublicKey.slice(0, 16) }}...</code>
                   </span>  
-                  <MenuItem v-slot="{ active }">
-                  <a href="#" @click="signOut()" :class="[active ? 'bg-gray-100' : '', 'block px-4 py-2 text-sm text-gray-700']">Sign out</a>
+                  <MenuItem>
+                  <a href="#" @click="signOut()" class="hover:bg-white/20 px-4 py-2 block mt-1 -mb-1 rounded-b-md">Sign out</a>
                   </MenuItem>
               </MenuItems>
               </transition>
@@ -136,16 +139,16 @@
 </Disclosure>
 </template>
 <style scoped>
-nav.menu {
+/* nav.menu {
   position:relative;
   z-index:10;
-}
+} */
 /* nav span,
 nav.menu a {
   display: inline-block;
 } */
 
-nav.menu a { 
+/* nav.menu a { 
   text-decoration: none;
   margin: 0 22px 0 0;
   padding:5px 10px;
@@ -161,7 +164,7 @@ nav.menu a.active {
 
 nav.menu a:hover { 
   background: #f0f0f0;
-}
+} */
 
 </style>
 
@@ -173,7 +176,11 @@ import { defineComponent, defineAsyncComponent } from 'vue'
 import { setupStore } from '@/store'
 import UserLib from '@/shared/user-lib.js'
 
-// import PreferencesComponent from '@/components/PreferencesComponent.vue'
+import SharedComputed from '@/shared/computed.js'
+
+const Preferences = defineAsyncComponent(() =>
+    import("@/components/user/UserQuickPreferences.vue" /* webpackChunkName: "UserQuickPreferences" */)
+);
 
 const About = defineAsyncComponent(() =>
     import("@/components/partials/AboutNostrWatch.vue" /* webpackChunkName: "About" */)
@@ -193,7 +200,7 @@ export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'HeaderComponent',
   components: {
-    // PreferencesComponent,
+    Preferences,
     AuthComponent,
     DarkMode,
     About,
@@ -214,14 +221,10 @@ export default defineComponent({
   created(){
   },
   mounted(){    
-    this.store.layout.setActiveTab(this.$tabId)
   },
   unmounted(){
-    // const activeId = this.store.layout.getActiveTab
-    this.store.layout.deactivateTab(this.$tabId)
   },
-  computed: {
-  },
+  computed: SharedComputed,
   methods: UserLib
 });
 </script>

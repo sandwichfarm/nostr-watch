@@ -1,11 +1,15 @@
 relays:
+  - wss://nostr.h4x0r.host
   - wss://nostr.1729.cloud
   - wss://lightningrelay.com
   - wss://relay.nostriches.org
+  - wss://private.red.gb.net
   - wss://nostr.wine
   - was://nostr.pleb.network
   - wss://nostr.inosta.cc
   - wss://nostr.pleb.network
+  - wss://private.red.gb.net
+  - wss://nostr.wine
   - wss://nostr.up.railway.app
   - wss://nostr.lnorb.com
   - wss://nos.lol
@@ -49,7 +53,6 @@ relays:
   - wss://nostr.sandwich.farm
   - wss://nostr.zebedee.cloud
   - wss://nostr-2.zebedee.cloud
-  - wss://nostr.shadownode.org
   - wss://nostr.nymsrelay.com
   - wss://expensive-relay.fiatjaf.com
   - wss://relay.kronkltd.net
@@ -252,7 +255,7 @@ relays:
   - wss://nostr.arguflow.gg
   - wss://nostr.milou.lol
   - wss://relay.nostr.africa
-  - wss://nostr.bitcoin-21.org
+  - wss://nostr.arguflow.gg
   - wss://nostr.snblago.com
   - wss://nostr.com.de
   - wss://relay.nostrview.com
@@ -334,3 +337,12 @@ relays:
   - wss://nostream.denizenid.com
   - wss://relay1.gems.xyz
   - wss://nostr.yuv.al
+  - wss://nostr01.opencult.com
+  - wss://nostream.denizenid.com
+  - wss://puravida.nostr.land
+  - wss://1.noztr.com
+  - wss://nostr.soscary.net
+  - wss://bitcoinmaximalists.online
+  - wss://nostr.uthark.com
+  - wss://nostr.yuv.al
+  - wss://nostream.denizenid.com

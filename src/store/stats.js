@@ -11,15 +11,17 @@ export const useStatStore = defineStore(
       continents: {},
       oldestRelayStillOnline: null,
       newestRelayOnline: null,
-      heartbeats: {},
+      pulses: {},
     }),
     getters: {
       getHistory: (state) => state.history,
-      getBySoftware: (state) => state.software,
-      getByNip: (state) => state.nips,
-      getByCountry: (state) => state.countries,
-      getByContinent: (state) => state.continents,
-      getHeartbeat: state => relay => state.heartbeats[relay],
+      getSoftwares: (state) => state.software,
+      getNips: (state) => state.nips,
+      getCountries: (state) => state.countries,
+      getByContinents: (state) => state.continents,
+      getPulse: state => relay => state.pulses[relay],
+
+      getItem: state => (key1, key2) => state[key1][key2],
       get: (state) => (which) => state[which],
     },
     actions: {
@@ -27,49 +29,56 @@ export const useStatStore = defineStore(
         this.history = payload 
       },
       set(type, payload){ 
-        Object.keys(payload).forEach( key => this[type][key] = Array.from(payload[key] ) )
+        if( !this?.[type] )
+          return console.warn(type, 'does not exist')
+        // Object.keys(payload).forEach( key => this[type][key] = Array.from(payload[key] ) )
+        this[type] = payload
       },
-      setHeartbeats(payload){
-        this.heartbeats = payload
+      setPulses(payload){
+        this.pulses = payload
       },
-      addHeartbeat(relay, payload){
-        if( !(this.heartbeats[relay] instanceof Array) )
-          this.heartbeats[relay] = new Array()
-        this.heartbeats[relay] = payload
+      addPulse(relay, payload){
+        if( !(this.pulses[relay] instanceof Array) )
+          this.pulses[relay] = new Array()
+        this.pulses[relay] = payload
       },
-      addHeartbeats(payload){
+      addPulses(payload){
         const relaysNow = Object.keys(payload) 
 
         // if(relaysThen.length !== relaysNow.length) {
         //   if(relaysNow.length > relaysThen.length ) {
         //     relaysNow.forEach(relay => {
-        //       if(this.heartbeats[relay] instanceof Array)
+        //       if(this.pulses[relay] instanceof Array)
         //         return 
-        //       this.heartbeats[relay] = new Array()
+        //       this.pulses[relay] = new Array()
         //     })
         //   }
         // }
-        console.log(this.heartbeats)
+        //console.log(this.pulses)
 
         relaysNow.forEach(relay => {
-          if( !(this.heartbeats[relay] instanceof Array) )
-            this.heartbeats[relay] = new Array()
-          this.heartbeats[relay] = this.heartbeats[relay].concat(payload[relay])
-          this.heartbeats[relay].sort((h1, h2) => h1.date - h2.date )
-          if(this.heartbeats[relay].length <= 48) 
+          if( !(this.pulses[relay] instanceof Array) )
+            this.pulses[relay] = new Array()
+          this.pulses[relay] = this.pulses[relay].concat(payload[relay])
+          this.pulses[relay].sort((h1, h2) => h1.date - h2.date )
+          if(this.pulses[relay].length <= 48) 
             return 
-          const delta = this.heartbeats.length - 48
-          this.heartbeats = this.heartbeats.splice(0, delta);
+          const delta = this.pulses.length - 48
+          this.pulses = this.pulses.splice(0, delta);
         })
 
-        console.log('new heartbeats', this.heartbeats)
-      }
-        
+        //console.log('new pulses', this.pulses)
+      },
+    },
+    persistedState: {
+      excludePaths: ['nips', 'software', 'countries', 'continents', 'pulses']
+    },
+    share: {
+      // An array of fields that the plugin will ignore.
+      omit: ['nips', 'software', 'countries', 'continents', 'pulses'],
+      // Override global config for this store.
+      enable: true,
     },
   },
-  // {
-  //   persistedState: {
-  //     excludePaths: ['heartbeats']
-  //   }
-  // }
+  
 )

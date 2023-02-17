@@ -7,18 +7,20 @@
 <template>
   <div class="bg-slate-700 px-2 sm:px-4 lg:px-8 ">
     <div class="lg:flex lg:h-8 mx-auto max-w-7xl h-8">
-      <div class="flex md:w-0 lg:w-32 lg:px-8 lg:ml-8 sm:hidden sm:w-0 ">&nbsp;</div>
+      <div class="hidden lg:flex md:w-0 lg:w-40 lg:ml-8">
+        <NostrWatchStatus />
+      </div>
       <div class="lg:flex lg:px-0">
-        <div class="lg:ml-48 lg:flex lg:space-x-2">
+        <div class="block md:flex lg:space-x-2 text-center items-center content-center" v-if="!pendingFirstCompletion">
           <router-link 
             :to="{name: 'relaysFind'}" 
-            class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
+            class=" mx-1 my-1 px-3 inline-block lg:inline-flex items-center text-sm font-medium text-white rounded-md">
             Browse
           </router-link>
-          <!-- <router-link to="/relays/map" class="inline-flex items-center mx-1 text-sm font-medium text-white">Map</router-link> -->
           <router-link 
+            
             :to="{name: 'relaysStats'}" 
-            class="inline-flex items-center mx-1 text-sm font-medium text-white my-1 rounded-md px-3">
+            class="mx-1 my-1 px-3 inline-block md:inline-flex  items-center text-sm font-medium text-white  rounded-md ">
             Statistics
           </router-link>
           <!-- <a v-for="item in store.layout.getNavGroup(this.navSlug)"
@@ -32,8 +34,9 @@
         </div>
       </div>
       <div class="width-max lg:flex lg:ml-auto">
-        <TasksManager
-          :resultsProp="results" />
+        <JobQueue
+          v-bind:relaysProp="relays" 
+          />
       </div>
       </div>
   </div>
@@ -47,18 +50,22 @@ import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
 import { setupNavData, mountNav, setActiveContent, loadNavContent, routeValid, parseHash, contentIsActive } from '@/shared/hash-router.js'
-// import RefreshTask from '@/components/relays/tasks/RefreshTask.vue'
+// import RefreshJob from '@/components/relays/jobs/RefreshJob.vue'
 
-const TasksManager = defineAsyncComponent(() =>
-    import("@/components/relays/tasks/TasksManager.vue" /* webpackChunkName: "TasksManager" */)
+const JobQueue = defineAsyncComponent(() =>
+    import("@/components/relays/jobs/JobQueue.vue" /* webpackChunkName: "JobQueue" */)
 );
 
+const NostrWatchStatus = defineAsyncComponent(() =>
+    import("@/components/partials/NostrWatchStatus.vue" /* webpackChunkName: "NostrWatchStatus" */)
+);
 
 export default defineComponent({
   title: "nostr.watch registry & network status",
   name: 'RelaysNav',
   components: {
-    TasksManager,
+    JobQueue,
+    NostrWatchStatus,
   },
   props: {
     resultsProp: {
@@ -67,8 +74,15 @@ export default defineComponent({
         return {}
       }
     },
+    relaysProp: {
+        type: Array,
+        default(){
+          return []
+        }
+      },
   },
   data(){
+    return {}
     // return setupNavData('relays')
   },
   setup(props){

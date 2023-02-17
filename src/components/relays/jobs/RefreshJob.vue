@@ -198,8 +198,7 @@ const localMethods = {
       const $inspector = new Inspector(relay, opts)
 
       $inspector
-        .on('open', () => {          
-        })
+        .on('open', () => {})
         .on('complete', (instance) => {
           // console.log('aggr', instance.result.url, this.getAggregate(instance.result), instance.result.check.connect, instance.result.check.read, instance.result.check.write)
           instance.result.aggregate = this.getAggregate(instance.result)

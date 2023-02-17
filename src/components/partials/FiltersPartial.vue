@@ -241,7 +241,7 @@
     methods: Object.assign(RelayMethods, {
       doRefreshCounts(){
         // console.log('active item', this.store.layout.getActiveItem('relays/find').slug, this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)
-        if(this.activeNavItem === this.store.layout.getActiveItem('relays/find').slug)
+        if(this.activeNavItem === this.store.layout.getActiveItem('relays/find')?.slug)
           return 
         this.activeNavItem = this.store.layout.getActiveItem('relays/find').slug
         this.refreshCounts( this.getRelays(this.store.relays.getAll) )

@@ -167,17 +167,6 @@ const localMethods = {
 
   completeAll: function(){
     this.store.jobs.completeJob(this.slug)
-    
-    // if(single)
-    //   return 
-
-    // ['public', 'restricted', 'offline'].forEach( aggregate => {
-    //   this.store.relays
-    //     .setAggregateCache(
-    //       aggregate,
-    //       this.store.relays.getAll
-    //         .filter(  relay => this.store.results.get(relay).aggregate === aggregate ))
-    // })
   },
 
   check: async function(relay){
@@ -273,15 +262,15 @@ const localMethods = {
     // relays with uptime in the last ~10hr
     const relays = Object.keys(this.store.results.all).filter( async (relay) => {
       const result = this.store.results.get(relay)
-      return 'offline' === result?.aggregate && result?.uptime > 10
+      return 'offline' === result?.aggregate && result?.uptime > 0
     })
     
     relays.forEach( async (relay) => {
-      const result = this.store.results.get(relay),
-            slug = `relays/check/${result.url}`
-      //       expired = (Date.now()-this.store.jobs.getLastUpdate(slug))>this.lazyInterval 
-      // if(!expired)
-      //   return
+      const slug = `relays/check/${relay}`,
+            expired = (Date.now()-this.store.jobs.getLastUpdate(slug))>this.lazyInterval 
+      if(!expired)
+        return
+      const result = this.store.results.get(relay)
       if('offline' === result?.aggregate && result?.uptime > 90)
         this.queueJob(
           slug, 
@@ -346,7 +335,7 @@ export default defineComponent({
       retry: [],
       retries: 1,
       lazyLast: null,
-      lazyInterval: 1*1000
+      lazyInterval: 5*60*1000
       // history: null
     }
   },

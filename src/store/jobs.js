@@ -58,13 +58,13 @@ export const useJobStore = defineStore(
     async addJob(job){
       if(job?.unique && this.isJobPending(job.id))
         return
-      console.log('add job', job.id, 'is pending:', this.isJobPending(job.id), 'active:', this?.active?.id)
+      // console.log('add job', job.id, 'is pending:', this.isJobPending(job.id), 'active:', this?.active?.id)
       this.pending.push(job)
       if( this.isIdle )
         this.startNextJob()
     },
     async startNextJob(){
-      console.log('starting next job', this.pending?.[0]?.id, this.pending?.[0]?.handler)
+      // console.log('starting next job', this.pending?.[0]?.id, this.pending?.[0]?.handler)
       if( this.arePending ) {
         this.active = this.pending[0]
         //console.log('started', this.active.id)

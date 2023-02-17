@@ -332,3 +332,5 @@ relays:
   - wss://nostr.community.networks.deavmi.assigned.network
   - wss://nostr.ownscale.org
   - wss://nostream.denizenid.com
+  - wss://relay1.gems.xyz
+  - wss://nostr.yuv.al

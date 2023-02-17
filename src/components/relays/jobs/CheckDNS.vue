@@ -26,12 +26,12 @@ import doh from 'dohjs'
 
 const localMethods = {
   CheckDNS(force){  
-    console.log('invalidating', this.slug)
+    // console.log('invalidating', this.slug)
 
     if( (!this.isExpired(this.slug, 24*60*60*1000) && !force) && !this.isSingle )
       return
     
-    console.log('invalidating DNS', 'expired', this.slug, this.jobDNS)
+    // console.log('invalidating DNS', 'expired', this.slug, this.jobDNS)
 
     this.queueJob(
       this.slug, 
@@ -122,7 +122,7 @@ export default defineComponent({
   beforeMount(){},
   mounted(){  
     this.resolver = new doh.DohResolver('https://1.1.1.1/dns-query')
-    console.log('resolver', this.resolver)
+    // console.log('resolver', this.resolver)
     if(this.isSingle){
       this.slug = `relays/dns/${this.relayFromUrl}`
       this.CheckDNS(true, this.relayFromUrl)

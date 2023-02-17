@@ -1,44 +1,45 @@
 <template>
-  <div 
-    v-if="store.jobs.getActiveSlug?.includes('relays/check/') && !isSingle"
-    class="text-white/30">
-    checking {{ store.jobs.getActiveSlug.replace('relays/check/', '') }}
-  </div>
-  <div
-      v-if="(!store.jobs.isActive || store.jobs.getActiveSlug === this.slug) && !this.isSingle"
-      class="text-inherit">
-    <span class="text-inherit">
-      <span v-if="!store.jobs.isJobActive(this.slug)" class="hidden lg:inline mr-2">Checked {{ sinceLast }} ago</span>
-      <span v-if="store.jobs.isJobActive(this.slug)" class="italic text-inherit ml-2 inline-block">
-        <svg class="-mt-1.5 animate-spin mr-1 h-4 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <div class="hidden lg:inline-block">
+    <div 
+      v-if="store.jobs.getActiveSlug?.includes('relays/check/') && !isSingle"
+      class="text-white/30">
+      checking {{ store.jobs.getActiveSlug.replace('relays/check/', '') }}
+    </div>
+    <div
+        v-if="(!store.jobs.isActive || store.jobs.getActiveSlug === this.slug) && !this.isSingle"
+        class="text-inherit">
+      <span class="text-inherit">
+        <span v-if="!store.jobs.isJobActive(this.slug)" class="hidden lg:inline mr-2">Checked {{ sinceLast }} ago</span>
+        <span v-if="store.jobs.isJobActive(this.slug)" class="italic text-inherit ml-2 inline-block">
+          <svg class="-mt-1.5 animate-spin mr-1 h-4 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ this.store.jobs.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Checked
+        </span>
+      </span>
+      <span class="text-inherit hidden lg:inline mr-1" v-if="!store.jobs.isJobActive(this.slug)">-</span>
+      <span class="text-inherit mr-2" v-if="store.prefs.refresh && !store.jobs.isJobActive(this.slug)"> 
+        next check in: {{ untilNext }}
+      </span>
+      <button 
+        v-if="!store.jobs.isJobActive(this.slug)"
+        class=" text-xs -mt-1.5 my-1 py-1 px-3 rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
+        :disabled='store.jobs.isJobActive(this.slug)' 
+        @click="checkNow()">  
+          check{{ relay ? ` ${relay}` : "" }} Now
+      </button>
+    </div>
+    <span
+      v-if="store.jobs.getActiveSlug === this.slug && this.isSingle"
+        class="text-inherit ml-2">
+        <svg class="animate-spin mr-2 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        {{ this.store.jobs.getProcessed(this.slug).length }}/{{ this.relays.length }} Relays Checked
-      </span>
+        checking {{ relayFromUrl }}
     </span>
-    <span class="text-inherit hidden lg:inline mr-1" v-if="!store.jobs.isJobActive(this.slug)">-</span>
-    <span class="text-inherit mr-2" v-if="store.prefs.refresh && !store.jobs.isJobActive(this.slug)"> 
-      next check in: {{ untilNext }}
-    </span>
-    <button 
-      v-if="!store.jobs.isJobActive(this.slug)"
-      class=" text-xs -mt-1.5 my-1 py-1 px-3 rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
-      :disabled='store.jobs.isJobActive(this.slug)' 
-      @click="checkNow()">  
-        check{{ relay ? ` ${relay}` : "" }} Now
-    </button>
   </div>
-  <span
-    v-if="store.jobs.getActiveSlug === this.slug && this.isSingle"
-      class="text-inherit ml-2">
-      <svg class="animate-spin mr-2 h-4 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      checking {{ relayFromUrl }}
-  </span>
-  
 </template>
 
 <style scoped>

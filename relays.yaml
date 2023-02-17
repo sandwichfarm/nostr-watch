@@ -331,3 +331,4 @@ relays:
   - wss://nostr.beta3.dev
   - wss://nostr.community.networks.deavmi.assigned.network
   - wss://nostr.ownscale.org
+  - wss://relay1.gems.xyz

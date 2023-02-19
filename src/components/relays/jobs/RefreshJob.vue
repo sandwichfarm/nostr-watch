@@ -113,7 +113,7 @@ const localMethods = {
 
   checkJob: async function(single){
     if(single) {
-      this.checkSingle(single, this.slug)
+      await this.checkSingle(single, this.slug)
     } 
     else {
       this.relays = this.store.relays.getAll

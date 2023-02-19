@@ -1,5 +1,7 @@
 relays:
-  - wss://nostr.h4x0r.host
+  - wss://nostr-au.coinfundit.com
+  - wss://nostr-eu.coinfundit.com
+  - wss://nostr-us.coinfundit.com
   - wss://nostr.1729.cloud
   - wss://lightningrelay.com
   - wss://relay.nostriches.org

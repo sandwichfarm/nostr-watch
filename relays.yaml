@@ -349,3 +349,4 @@ relays:
   - wss://nostream.denizenid.com
   - wss://pow.nostrati.com
   - wss://relay.nostrati.com
+  - wss://nostr.itas.li

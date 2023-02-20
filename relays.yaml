@@ -1,4 +1,5 @@
 relays:
+  - wss://nostr.21sats.net
   - wss://nostr.h4x0r.host
   - wss://nostr.1729.cloud
   - wss://lightningrelay.com

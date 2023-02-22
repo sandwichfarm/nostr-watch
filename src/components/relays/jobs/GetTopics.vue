@@ -54,7 +54,8 @@ const LocalMethods = {
               .on('event', async (r, sub_id, event) => {
                 if(subid === sub_id){
                   const relay = event.tags.filter( tag => 'd' === tag[0])?.[0]
-                  const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1], topicTag[2] ] )
+                  let topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1]?.toLowerCase(), topicTag[2] ] )
+                  topics = Array.from(new Set(topics))
                   chunkResults[relay] = {}
                   // console.log(relay, this.removeIgnoredTopics(topics))
                   if(topics && topics.length)

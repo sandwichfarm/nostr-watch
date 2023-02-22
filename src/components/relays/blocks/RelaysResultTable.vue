@@ -428,18 +428,10 @@
       }
     },
     computed: Object.assign(SharedComputed, {
-      // isPayToRelay(){
-      //   return relay => {
-      //     if(this.store.results.get(relay)?.info?.limitation?.payment_required)
-      //       return true
-      //   }
-      // },
       getTopics(){
         return relay => {
           let topics = ""
-          let topicsArr = this.store.results.get(relay)?.topics.filter( topic => {
-            return topic[0].length <= 32
-          }).slice(0, 3)
+          let topicsArr = this.store.results.get(relay)?.topics.filter( topic => topic[0].length <= 32 ).slice(0, 3)
           for(let topic in topicsArr){
             topics = `${topics}  #${topicsArr[topic][0]}`
           }

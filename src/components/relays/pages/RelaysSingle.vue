@@ -833,8 +833,8 @@ export default defineComponent({
       }
     },
     getTopics: function(){
-      // return this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
-      return this.result.topics
+      return this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
+      // return this.result.topics
     },
     normalizeTopic: function(){
       return topic => {

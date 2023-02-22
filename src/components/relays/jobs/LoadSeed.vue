@@ -106,7 +106,7 @@ const localMethods = {
               const relay = event.tags[0][1]
               const data = JSON.parse(event.content)
               // const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
-              const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online')
+              const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1], topicTag[2] ] )
               const result = {
                 url: relay,
                 
@@ -139,7 +139,7 @@ const localMethods = {
               }
 
               if(topics.length)
-                result.topics = this.cleanTopics(topics)
+                result.topics = this.removeIgnoredTopics(topics)
 
               // console.log('aggr', this.result.url, this.getAggregate(result), result.check.connect, result.check.read, result.check.write)
               

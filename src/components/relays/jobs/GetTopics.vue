@@ -54,10 +54,11 @@ const LocalMethods = {
               .on('event', async (r, sub_id, event) => {
                 if(subid === sub_id){
                   const relay = event.tags.filter( tag => 'd' === tag[0])?.[0]
-                  const topics = event.tags.filter( tag => 't' === tag[0])
+                  const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1], topicTag[2] ] )
                   chunkResults[relay] = {}
-                  if(topics)
-                    chunkResults[relay].topics = this.cleanTopics(topics)
+                  // console.log(relay, this.removeIgnoredTopics(topics))
+                  if(topics && topics.length)
+                    chunkResults[relay].topics = this.removeIgnoredTopics(topics)
                 }
               })
               .on('eose', () => {
@@ -73,15 +74,9 @@ const LocalMethods = {
             
           })
           promises.push(promise) 
-          // console.log('results', Object.keys(this.store.results.all).length, 'chunk results', Object.keys(chunkResults).length)
           await Promise.all(promises)
-          this.store.results.merge(chunkResults)
+          this.store.results.mergeDeep(chunkResults)
           promises = []
-          // Object.keys(this.store.results.all).forEach( relay => { 
-          //   if(this.store.results.get(relay))
-          //     // this.setCache(this.store.results.get(relay)) 
-          //     this.store.results.merge( { [relay]:  } )
-          // })
         }
         this.store.jobs.completeJob(this.slug)
       },

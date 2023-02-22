@@ -250,11 +250,6 @@ const localMethods = {
         
     }, 1000)
   },
-  setLatencyInterval: function(){
-    this.setLatencyInterval = setInterval( () => {
-
-    })
-  },
 
   checkNow(){
     this.store.jobs.lastUpdate[this.slug] = null

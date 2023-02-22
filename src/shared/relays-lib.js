@@ -2,17 +2,14 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
-  cleanTopics(topics){
-    // console.log(topics.map( topic => [ topic[1], topic?.[2] ] ))
+  removeIgnoredTopics(topics){
+    const ignored = this.store.prefs.ignoreTopics.split(',')
     return topics
-      .filter( topic => 
-        !this.store.prefs.ignoreTopics
-          .split(',')
+      .filter( topic =>
+        !ignored
           .map( ignoreTopic => ignoreTopic.trim() )
-          .includes(topic)
+          .includes(topic[0])
       )
-      .map( topic => [ topic[1], topic?.[2] ? new String(topic[2]).valueOf() : "1" ] )
-    
   },
 
   invalidateJob(name, force){

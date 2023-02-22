@@ -350,5 +350,6 @@ relays:
   - wss://pow.nostrati.com
   - wss://relay.nostrati.com
   - wss://nostr.itas.li
+  - wss://nostre.cc
   - wss://altcoinnect.xyz
   - wss://nostr.spleenrider.one

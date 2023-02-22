@@ -888,7 +888,7 @@ export default defineComponent({
       }
     },
     checkDimensions: function(){
-      return this.isPayToRelay(relay) ? ['connect'] : ['connect', 'read', 'write']
+      return this.isPayToRelay(this.relay) ? ['connect'] : ['connect', 'read', 'write']
     },
     normalizeUptimeTick: function(){
       return pulse => { 

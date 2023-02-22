@@ -17,7 +17,7 @@
 
       <section v-if="result">
 
-        <div id="status" class="block mb-8 px-5 py-8 bg-red-200/10 rounded-lg text-center text-2xl" v-if="isPayToRelay"> <!--something is weird here with margin-->
+        <div id="status" class="block mb-8 px-5 py-8 bg-red-200/10 rounded-lg text-center text-2xl" v-if="isPayToRelay(relay)"> <!--something is weird here with margin-->
             Paid Relays presently have limited results due to significantly higher support liability, once a suitable solution has been identified, service will resume as usual. Sorry for the inconvenience. 
         </div>
 
@@ -58,7 +58,7 @@
           </div>
         </div>
 
-        <div id="status" class="block mb-8 px-5 py-8 rounded-lg text-center text-2xl" v-if="isPayToRelay"> <!--something is weird here with margin-->
+        <div id="status" class="block mb-8 px-5 py-8 rounded-lg text-center text-2xl" v-if="isPayToRelay(relay)"> <!--something is weird here with margin-->
             {{ relay }} is a <strong>Paid Relay</strong>, writes to this relay require a payment
             <span v-if="this.result?.info?.fees?.admission?.[0]">
               of <strong>{{ getPaidRelayAdmission }}</strong>
@@ -888,7 +888,7 @@ export default defineComponent({
       }
     },
     checkDimensions: function(){
-      return this.isPayToRelay ? ['connect'] : ['connect', 'read', 'write']
+      return this.isPayToRelay(relay) ? ['connect'] : ['connect', 'read', 'write']
     },
     normalizeUptimeTick: function(){
       return pulse => { 

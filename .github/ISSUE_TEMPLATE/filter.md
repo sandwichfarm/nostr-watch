@@ -1,8 +1,8 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
+name: Filters
+about: Related to the addition or behavior of filters. If is a bug related to filters, please submit a Bug. 
 title: ''
-labels: 'enhancement'
+labels: 'filters'
 assignees: ''
 
 ---

@@ -64,7 +64,7 @@
               of <strong>{{ getPaidRelayAdmission }}</strong>
             </span>
             for write capabilities. <br />
-            <a v-if="result?.info?.payments_url" class="mt-6 inline-block button text-md bg-black/80 hover:bg-black/90 text-white font-bold py-2 px-4 rounded" href="{{ result.info.payments_url }}">
+            <a v-if="result?.info?.payments_url" class="mt-6 inline-block button text-md bg-black/80 hover:bg-black/90 text-white font-bold py-2 px-4 rounded" :href="result.info.payments_url">
               <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" v-if="isPayToRelay(relay)">
                 <circle style="fill:#f8991d" class="cls-1" cx="180" cy="180" r="179"/>
                 <rect class="fill-white dark:fill-black" x="201.48" y="37.16" width="23.49" height="40.14" transform="translate(21.82 -52.79) rotate(14.87)"/>

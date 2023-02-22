@@ -50,7 +50,6 @@ const LocalMethods = {
   async jobGeo(single){
     if( !process.env.VUE_APP_IP_API_KEY )
       return this.store.relays.geo = geo
-    console.log('geo', 'inside job')
     if(single) {
       getGeo(single).then( geo => {
         if(!geo?.lat)

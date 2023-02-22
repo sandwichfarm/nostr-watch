@@ -48,14 +48,16 @@ export default defineComponent({
     FirstVisit(force){
       if( !this.store.prefs.isFirstVisit && !force ) 
         return
+
+      const self = this
       
       this.queueJob(
-        this.slug, 
+        self.slug, 
         () => {
-          this.store.prefs.firstVisit = false
-          this.store.prefs.clientSideProcessing = true
-          this.$forceUpdate()
-          setTimeout(() => this.completeJob(this.slug), 3000)
+          self.store.prefs.firstVisit = false
+          self.store.prefs.clientSideProcessing = true
+          self.$forceUpdate()
+          setTimeout(() => self.completeJob(self.slug), 3000)
         },
         true
       )

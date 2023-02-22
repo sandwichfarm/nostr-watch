@@ -47,9 +47,9 @@
                       <!-- <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0" v-if="isLoggedIn()()">
                         <code class="text-xs block">Upvote</code>
                       </th> -->
-                      <th v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                      <!-- <th v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">P2R</code>
-                      </th>
+                      </th> -->
                       <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">Pubkey</code>
                       </th>
@@ -62,10 +62,12 @@
                       <th v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
                         <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortLatency=!this.store.prefs.sortLatency" :class="this.store.prefs.sortLatency? 'bg-black/50 rounded-sm': ''">Latency</code>
                       </th>
+
                       <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
                         <code class="text-xs block">Connect</code>
                       </th>
                       <th v-if="!store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
+                        
                         <code class="text-xs block">Read</code>
                       </th>
 
@@ -116,14 +118,13 @@
                         </a>
                       </td> -->
 
-                      <td v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
+                      <!-- <td v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <a
                           v-if="isPayToRelay(relay)"
                           :href="this.store.results.get(relay)?.validP2R ? this.store.results.get(relay).info.payments_url : null" 
                           class="block align-center" target="_blank">
-                          <!-- <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" class="inline-block align-center w-6 h-6 stroke-green-600/90 dark:stroke-green-400/60"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> -->
                           <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360">
-                            <circle :style="this.store.results.get(relay).validP2R ? 'fill:#f8991d' : 'fill:red'" class="cls-1" cx="180" cy="180" r="179"/>
+                            <circle style="fill:#f8991d" class="cls-1" cx="180" cy="180" r="179"/>
                             <rect class="fill-white dark:fill-black" x="201.48" y="37.16" width="23.49" height="40.14" transform="translate(21.82 -52.79) rotate(14.87)"/>
                             <rect class="fill-white dark:fill-black" x="135.03" y="287.5" width="23.49" height="40.14" transform="translate(83.82 -27.36) rotate(14.87)"/>
                             <rect class="fill-white dark:fill-black" x="184.27" y="38.29" width="23.49" height="167.49" transform="translate(364.26 -36.11) rotate(104.87)"/>
@@ -131,7 +132,7 @@
                             <rect class="fill-white dark:fill-black" x="152.89" y="156.52" width="23.49" height="167.49" transform="translate(439.1 142.78) rotate(104.87)"/>
                           </svg>
                         </a>
-                      </td>
+                      </td> -->
 
                       <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <!-- {{ this.store.results.get(relay)?.pubkeyValid }}
@@ -154,8 +155,11 @@
                       </td>
 
                       <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" class="w-24 text-center">
-                        <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime">
+                        <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime && !isPayToRelay(relay)">
                           {{ this.store.results.get(relay)?.uptime }}%
+                        </span>
+                        <span class="sm:px-6 text-sm italic h-full text-gray-800" v-if="this.store.results.get(relay)?.uptime && isPayToRelay(relay)">
+                          hidden
                         </span>
                       </td>
 
@@ -203,7 +207,7 @@
                       </td>
 
                       <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
-                        <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'write')">
+                        <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'write')" v-if="!isPayToRelay(relay)">
                           <span class="align-middle" v-if="isLoggedIn() && store.user.kind3?.[relay]?.write">
                             <svg class="inline-block" :class="getCheckIndicatorPolicy" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -211,11 +215,25 @@
                           </span>
                           <span v-else>&nbsp;</span>
                         </span>
+                        <a
+                          v-if="isPayToRelay(relay)"
+                          :href="this.store.results.get(relay)?.validP2R ? this.store.results.get(relay).info.payments_url : null" 
+                          class="block align-center" target="_blank">
+                          <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" v-if="isPayToRelay(relay)">
+                            <!-- <circle :style="this.store.results.get(relay).validP2R ? 'fill:#f8991d' : 'fill:red'" class="cls-1" cx="180" cy="180" r="179"/> -->
+                            <circle style="fill:#f8991d" class="cls-1" cx="180" cy="180" r="179"/>
+                            <rect class="fill-white dark:fill-black" x="201.48" y="37.16" width="23.49" height="40.14" transform="translate(21.82 -52.79) rotate(14.87)"/>
+                            <rect class="fill-white dark:fill-black" x="135.03" y="287.5" width="23.49" height="40.14" transform="translate(83.82 -27.36) rotate(14.87)"/>
+                            <rect class="fill-white dark:fill-black" x="184.27" y="38.29" width="23.49" height="167.49" transform="translate(364.26 -36.11) rotate(104.87)"/>
+                            <rect class="fill-white dark:fill-black" x="168.36" y="98.26" width="23.49" height="167.49" transform="translate(402.22 54.61) rotate(104.87)"/>
+                            <rect class="fill-white dark:fill-black" x="152.89" y="156.52" width="23.49" height="167.49" transform="translate(439.1 142.78) rotate(104.87)"/>
+                          </svg>
+                        </a>
                       </td>
 
                       <!-- editor -->
                       <td v-if="store.jobs.getActiveSlug != 'user/list/contacts' 
-                                && store.layout.editorIsExpanded 
+                                && store.layout.editorIsExpanded  
                                 && typeof store.user.kind3?.[relay]?.read !== `undefined`
                                 && isLoggedIn()"
                           class="text-center md:table-cell lg:table-cell xl:table-cell">
@@ -295,6 +313,7 @@
   // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
   
   import RelaysLib from '@/shared/relays-lib.js'
+  import SharedComputed from '@/shared/computed.js'
   import UserLib from '@/shared/user-lib.js'
   // import { screenIs } from '@/shared/layout.js'
 
@@ -408,13 +427,13 @@
         foundNips: null
       }
     },
-    computed: {
-      isPayToRelay(){
-        return relay => {
-          if(this.store.results.get(relay)?.info?.limitation?.payment_required)
-            return true
-        }
-      },
+    computed: Object.assign(SharedComputed, {
+      // isPayToRelay(){
+      //   return relay => {
+      //     if(this.store.results.get(relay)?.info?.limitation?.payment_required)
+      //       return true
+      //   }
+      // },
       getTopics(){
         return relay => {
           let topics = ""
@@ -485,17 +504,13 @@
         return (relay, key) => {
           return { 
             'bg-green-500 dark:bg-green-600': this.store.results.get(relay)?.check?.[key] === true,
-            'bg-orange-600': this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted',
-            'bg-red-500': this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate !== 'restricted',
+            'bg-orange-600': this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted' && (!this.store.results.get(relay)?.info?.limitation?.payment_required || key !== 'write'),
+            // 'bg-gray-600': key === 'write' && this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted' && this.store.results.get(relay)?.info?.limitation?.payment_required,
+            'bg-red-500': this.store.results.get(relay)?.check?.[key] === false,
             'bg-gray-500': 'undefined' === typeof this.store.results.get(relay)?.check?.[key],
-            // '': this.store.prefs.getTheme === 'spacious',
-            // '': this.store.prefs.getTheme === 'comfortable',
             'text-2xl block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
             'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
             'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
-            // 'success': this.store.results.get(relay)?.check?.[key] !== false,
-            // 'failure': this.store.results.get(relay)?.check?.[key] === false,
-            // 'pending': 'undefined' === typeof this.store.results.get(relay)?.check?.[key] 
             }
         } 
       },
@@ -510,19 +525,12 @@
         return (relay) => {
           return { 
             'w-4 h-4 bg-green-500': this.store.results.get(relay)?.aggregate === 'public',
-            'w-4 h-4 bg-orange-500': this.store.results.get(relay)?.aggregate === 'restricted',
+            'w-4 h-4 bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted',
+            // 'w-4 h-4 bg-gray-500': this.store.results.get(relay)?.aggregate === 'restricted' && this.store.results.get(relay)?.info?.limitation?.payment_required,
             'w-4 h-4 bg-red-500': this.store.results.get(relay)?.aggregate === 'offline',
             'ml-4': this.store.prefs.getTheme === 'spacious',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',
-            // '': this.store.prefs.getTheme === 'spacious',
-            // '': this.store.prefs.getTheme === 'comfortable',
-            // 'text-2xl h-16 block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
-            // 'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
-            // 'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
-            // 'success': this.store.results.get(relay)?.check?.[key] !== false,
-            // 'failure': this.store.results.get(relay)?.check?.[key] === false,
-            // 'pending': 'undefined' === typeof this.store.results.get(relay)?.check?.[key] 
             }
         } 
       },
@@ -563,7 +571,7 @@
       relayClean() {
         return (relay) => relay?.replace('wss://', '')
       },
-    },
+    }),
     methods: Object.assign(RelaysLib, UserLib, localMethods),
   })
   </script>

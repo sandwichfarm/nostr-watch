@@ -17,6 +17,10 @@
 
       <section v-if="result">
 
+        <div id="status" class="block mb-8 px-5 py-8 bg-red-200/10 rounded-lg text-center text-2xl" v-if="isPayToRelay"> <!--something is weird here with margin-->
+            Paid Relays presently have limited results due to significantly higher support liability, once a suitable solution has been identified, service will resume as usual. Sorry for the inconvenience. 
+        </div>
+
         <div id="title_card" class="data-card overflow-hidden sm:rounded-lg mb-8 pt-5" style="background:transparent">
           <div class="px-4 py-5 sm:px-6">
             <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
@@ -34,8 +38,9 @@
           </a>
         </div>
 
+        
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="result?.topics && result?.topics.length">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8 py-8 px-4" v-if="result?.topics && result?.topics.length">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span v-for="topic in getTopics" :class="normalizeTopic(topic)" :key="`${result?.url}-${topic[0]}`">
               #{{ topic[0] }}  
@@ -45,13 +50,32 @@
 
         <div id="status" class="block lg:flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
           <div 
-            v-for="key in ['connect', 'read', 'write']" 
+            v-for="key in checkDimensions" 
             :key="key" 
-            class="text-white text-lg md:text-xl lg:text-2xl block lg:flex-1 block py-3" 
+            class="text-white text-lg md:text-xl lg:text-2xl block lg:flex-1 py-3" 
             :class="check(key)">
             <span>{{key}}</span>  
           </div>
         </div>
+
+        <div id="status" class="block mb-8 px-5 py-8 rounded-lg text-center text-2xl" v-if="isPayToRelay"> <!--something is weird here with margin-->
+            {{ relay }} is a <strong>Paid Relay</strong>, writes to this relay require a payment
+            <span v-if="this.result?.info?.fees?.admission?.[0]">
+              of <strong>{{ getPaidRelayAdmission }}</strong>
+            </span>
+            for write capabilities. <br />
+            <a v-if="result?.info?.payments_url" class="mt-6 inline-block button text-md bg-black/80 hover:bg-black/90 text-white font-bold py-2 px-4 rounded" href="{{ result.info.payments_url }}">
+              <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" v-if="isPayToRelay(relay)">
+                <circle style="fill:#f8991d" class="cls-1" cx="180" cy="180" r="179"/>
+                <rect class="fill-white dark:fill-black" x="201.48" y="37.16" width="23.49" height="40.14" transform="translate(21.82 -52.79) rotate(14.87)"/>
+                <rect class="fill-white dark:fill-black" x="135.03" y="287.5" width="23.49" height="40.14" transform="translate(83.82 -27.36) rotate(14.87)"/>
+                <rect class="fill-white dark:fill-black" x="184.27" y="38.29" width="23.49" height="167.49" transform="translate(364.26 -36.11) rotate(104.87)"/>
+                <rect class="fill-white dark:fill-black" x="168.36" y="98.26" width="23.49" height="167.49" transform="translate(402.22 54.61) rotate(104.87)"/>
+                <rect class="fill-white dark:fill-black" x="152.89" y="156.52" width="23.49" height="167.49" transform="translate(439.1 142.78) rotate(104.87)"/>
+              </svg>
+              Buy Access
+            </a>
+        </div>   
 
         <div 
           v-if="result.latency?.average"
@@ -96,7 +120,7 @@
           </div>
         </div>
 
-        <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length > 24">
+        <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length > 24 && !isPayToRelay(relay)">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
               Uptime for the last
@@ -104,6 +128,7 @@
               <span :class="getUptimeColor(result)" v-if="result?.uptime">{{ result.uptime }}%</span>
             </h3>
           </div>
+
           <div class="px-0 py-5 sm:px-0 flex">
             <!-- <span 
               v-for="pulse in this.pulses"
@@ -736,9 +761,6 @@ export default defineComponent({
   },
 
   async mounted() {
-    
-    console.log(this.$route, ['json-nip-11','json-geo','json-dns','json-nostrwatch'].includes(this.$route.hash)
-    )
     if(['json-nip-11','json-geo','json-dns','json-nostrwatch'].includes(this.$route.hash))
       this.store.layout.rawDataExpanded = true
     this.interval = setInterval(() => {
@@ -751,6 +773,14 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
+    getPaidRelayAdmission(){
+      if(this.result?.info?.fees?.admission?.[0].unit === 'msats')
+        return `${Math.floor(this.result?.info?.fees?.admission?.[0].amount/1000)} sats`
+      else if(this.result?.info?.fees?.admission?.[0].unit === 'sats')
+        return `${this.result?.info?.fees?.admission?.[0].amount} sats`
+      else 
+        return `${this.result?.info?.fees?.admission?.[0].amount} ${this.result?.info?.fees?.admission?.[0].unit}` 
+    },
     result(){
       return this.store.results.get(this.relay)
     },
@@ -857,6 +887,9 @@ export default defineComponent({
         }
       }
     },
+    checkDimensions: function(){
+      return this.isPayToRelay ? ['connect'] : ['connect', 'read', 'write']
+    },
     normalizeUptimeTick: function(){
       return pulse => { 
         if(!pulse.latency)
@@ -947,11 +980,6 @@ export default defineComponent({
       }
     }
   }),
-
-  // updated() {
-  //    Object.keys(this.timeouts).forEach(timeout => clearTimeout(this.timeouts[timeout]))
-  //    Object.keys(this.intervals).forEach(interval => clearInterval(this.intervals[interval]))
-  // },
 
   methods: Object.assign(localMethods, RelaysLib, {
     check(key){

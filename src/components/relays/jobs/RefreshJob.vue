@@ -9,7 +9,7 @@
         v-if="(!store.jobs.isActive || store.jobs.getActiveSlug === this.slug) && !this.isSingle"
         class="text-inherit">
       <span class="text-inherit">
-        <span v-if="!store.jobs.isJobActive(this.slug)" class="hidden lg:inline mr-2">Checked {{ sinceLast }} ago</span>
+        <span v-if="!store.jobs.isJobActive(this.slug)" class="hidden lg:inline mr-2">Checked {{ timeSinceRefresh }} ago</span>
         <span v-if="store.jobs.isJobActive(this.slug)" class="italic text-inherit ml-2 inline-block">
           <svg class="-mt-1.5 animate-spin mr-1 h-4 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -20,7 +20,7 @@
       </span>
       <span class="text-inherit hidden lg:inline mr-1" v-if="!store.jobs.isJobActive(this.slug)">-</span>
       <span class="text-inherit mr-2" v-if="store.prefs.refresh && !store.jobs.isJobActive(this.slug)"> 
-        next check in: {{ untilNext }}
+        next check in: {{ timeUntilRefresh }}
       </span>
       <button 
         v-if="!store.jobs.isJobActive(this.slug)"
@@ -76,7 +76,7 @@ const localMethods = {
   },
 
   pruneResult: function(result){
-    let resultPruned
+    let resultPruned = {}
 
     if(result) {
       resultPruned = {
@@ -103,11 +103,14 @@ const localMethods = {
       if(result?.pubkeyError)
         resultPruned.pubkeyError = result.pubkeyError
 
-      const uptime = this.getUptimePercentage(result.url)
-      if(uptime)
-        resultPruned.uptime = uptime
-    }
+        if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
+          resultPruned.aggregate = 'restricted'
+          resultPruned.check.write = false 
+        }
 
+      const uptime = this.getUptimePercentage(result.url)
+      resultPruned.uptime = uptime
+    }
     return resultPruned
   },
 
@@ -154,8 +157,9 @@ const localMethods = {
     await this.check(relay)
         .then((result) =>{
           result.aggregate = this.getAggregate(result)
+          result = this.pruneResult(result)
           this.store.results.mergeDeep({ 
-            [result.url]: this.pruneResult(result)
+            [result.url]: result
           })
           this.completeRelay(result)
         })
@@ -165,7 +169,6 @@ const localMethods = {
 
   completeRelay: function(result){
     this.store.jobs.addProcessed(this.slug, result.url)
-    return this.pruneResult(result)
   },
 
   completeAll: function(){
@@ -239,8 +242,8 @@ const localMethods = {
       if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )
         return
       
-      this.untilNext = this.timeUntilRefresh()
-      this.sinceLast = this.timeSinceRefresh()
+      // this.untilNext = this.timeUntilRefresh()
+      // this.sinceLast = this.timeSinceRefresh()
 
       if(!this.store.jobs.isJobActive(this.slug) && !this.isSingle)
         this.CheckRelaysJob()
@@ -254,6 +257,8 @@ const localMethods = {
   },
 
   checkNow(){
+    this.store.jobs.lastUpdate[this.slug] = null
+    this.store.jobs.processed[this.slug] = []
     this.CheckRelaysJob(true)
   },
 
@@ -293,14 +298,6 @@ const localMethods = {
     if(this.windowActive) 
       this.store.layout.setActiveTab(this.$tabId)
   },
-
-
-  timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
-  },
-  timeSinceRefresh(){
-    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
-  },
 }
 
 export default defineComponent({
@@ -333,11 +330,11 @@ export default defineComponent({
       latencies: [],
       inspectors: [],
       stop: false,
-      inspectTimeout: 15*1000,
+      inspectTimeout: 30*1000,
       retry: [],
       retries: 1,
       lazyLast: null,
-      lazyInterval: 5*60*1000
+      lazyInterval: 6*60*60*1000
       // history: null
     }
   },
@@ -355,8 +352,8 @@ export default defineComponent({
 
   beforeMount(){
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-    this.untilNext = this.timeUntilRefresh()
-    this.sinceLast = this.timeSinceRefresh()
+    // this.untilNext = this.timeUntilRefresh()
+    // this.sinceLast = this.timeSinceRefresh()
 
     // for(let ri=0;ri-this.relays.length;ri++){
     //   const relay = this.relays[ri],
@@ -380,6 +377,12 @@ export default defineComponent({
   updated(){},
 
   computed: Object.assign(SharedComputed, {
+    timeUntilRefresh(){
+      return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+    },
+    timeSinceRefresh(){
+      return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
+    },
     relayFromSlug: function(){
       return slug => {
         const segments = slug.split('/')

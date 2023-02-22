@@ -85,8 +85,6 @@ export default defineComponent({
   },
   beforeMount(){
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-    this.untilNext = this.timeUntilRefresh()
-    this.sinceLast = this.timeSinceRefresh()
   },
   mounted(){
     //console.log('is processing', this.store.jobs.isJobActive(this.slug))

@@ -161,8 +161,6 @@ export default defineComponent({
   },
   beforeMount(){
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-    this.untilNext = this.timeUntilRefresh()
-    this.sinceLast = this.timeSinceRefresh()
     
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },

@@ -1,5 +1,4 @@
 items:
-
   - name: Online
     slug: online
     href: '#Online'
@@ -8,14 +7,14 @@ items:
     slug: public
     href: '#public'
     description: Public relays are relays where anyone can read or write. 
-  - name: Restricted
-    slug: restricted
-    href: '#restricted'
-    description: Restricted relays are relays where there are read and/or write restrictions
   - name: Paid
     slug: paid
     href: '#paid'
     description: Relays that use a payment model to mitigate spam.
+  - name: Restricted
+    slug: restricted
+    href: '#restricted'
+    description: Restricted relays are relays where there are read and/or write restrictions
   - name: Offline
     slug: offline
     href: '#offline'
@@ -29,24 +28,3 @@ items:
     href: '#favorite'
     condition: auth
     description: Relays you have favorited
-
-  # - name: Nips
-  #   slug: nips
-  #   href: '#nips'
-  #   description: Relays with reported nip support, optionally filtered
-
-  # - name: Favorites
-  #   slug: favorite
-  #   href: '#favorite'
-  #   condition: auth
-  #   description: Relays you have favorited
-  # - name: Invalid
-  #   slug: invalid
-  #   href: '#'
-  #   count: 0
-  #   group: relays
-  # - name: Onion
-  #   slug: onion
-  #   href: '#'
-  #   count: 0
-  #   group: relays

@@ -1,16 +1,26 @@
 import { defineStore } from 'pinia'
 
+const RETRY_LIMIT = 10
+
 export const useResultsStore = defineStore(
   'results', 
   {
     state: () => ({ 
       data: {},
+      retries: {}
     }),
     getters: {
       all: state => state.data,
-      get: state => relay => state.data?.[relay] || {}
+      get: state => relay => state.data?.[relay] || {},
+      //temporary resolution.
+      likelyFake: state => relay => state.retries?.[relay] > RETRY_LIMIT && !state.data?.[relay]?.check?.connect && state.data?.[relay]?.uptime === 100
     },
     actions: {
+      addRetry(relay){
+        if( !(this.retries[relay] instanceof Number) )
+          this.retries[relay] = 0
+        this.retries[relay]++
+      },
       setAll(results) {
         this.data = results
       },

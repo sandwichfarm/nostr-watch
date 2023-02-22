@@ -47,8 +47,8 @@
 
     <FirstVisit 
       v-if="this.store.prefs.isFirstVisit
-            && this.store.jobs.getLastUpdate('relays/check') 
-            && this.store.jobs.getLastUpdate('relays/seed')
+            && 
+            this.store.jobs.getLastUpdate('relays/seed')
             && !isSingle"/>
   </span>
 </span>
@@ -99,9 +99,6 @@ export default defineComponent({
     GetTopics,
     CheckP2R,
     FirstVisit
-    // TemplateJob,
-    // RelayCanonicalsJob,
-    // RelayOperatorJob
   },
   data(){
     return {
@@ -146,17 +143,14 @@ export default defineComponent({
   },
   methods: {
     async tick(){
-      // console.log('pending', this.store.jobs.pending)
       if(this.currentJob === this.store.jobs.getActiveSlug)
         return 
       this.currentJob = this.store.jobs.getActiveSlug
-      // await this.processJob()
       this.timeout = setTimeout(this.tick, 1000)
     },
     async processJob(){
       if(!(this.store.jobs.active?.handler instanceof Function))
         return 
-      // console.log('processJob()', this.store.jobs.active.id, 'type', typeof this.store.jobs.active.handler, 'is async', this.store.jobs.active.handler instanceof this.AsyncFunction)
       if(this.store.jobs.active.handler instanceof this.AsyncFunction)
         await this.store.jobs.active.handler()
       else 

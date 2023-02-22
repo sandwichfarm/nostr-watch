@@ -332,7 +332,7 @@ export default {
       const perc = this.getUptimePercentage(relay)
       const result = {}
       result.uptime = perc 
-      this.store.results.mergeRight( { [relay]: result  } )
+      this.store.results.mergeDeep( { [relay]: result  } )
       return result
     },
 

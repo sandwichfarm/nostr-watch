@@ -4,7 +4,7 @@
     class="text-inherit">
   <span class="text-inherit">
     <span v-if="!store.jobs.isJobActive(this.slug) && !isSingle" class="hidden text-inherit">
-      checked {{ sinceLast }} ago
+      checked {{ timeSinceRefresh }} ago
     </span>
     <span v-if="store.jobs.isJobActive(this.slug) && !isSingle" class="italic text-inherit ml-2 inline-block">
       <svg class="animate-spin mr-1 -mt-0.5 h-4 w-5 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -66,9 +66,6 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-      this.untilNext = this.timeUntilRefresh()
-      this.sinceLast = this.timeSinceRefresh()
       if(!this.store.jobs.isJobActive(this.slug) && !this.isSingle)
         this.LoadSeed()
     }, 15*60*1000)
@@ -146,7 +143,14 @@ const localMethods = {
 
               // console.log('aggr', this.result.url, this.getAggregate(result), result.check.connect, result.check.read, result.check.write)
               
+              
               result.aggregate = this.getAggregate(result)
+
+              if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
+                result.aggregate = 'restricted'
+                result.check.write = false 
+                console.log('should be restricted', result.aggregate, result.check.write)
+              }
 
               resultsChunk[relay] = result
 
@@ -175,9 +179,7 @@ const localMethods = {
   async checkOffline(){
 
   },
-  timeSinceRefresh(){
-    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
-  }
+
 }
 
 export default defineComponent({
@@ -208,8 +210,6 @@ export default defineComponent({
   },
   beforeMount(){
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-    this.untilNext = this.timeUntilRefresh()
-    this.sinceLast = this.timeSinceRefresh()
     
     this.relays = [...this.store.relays.getAll]
 
@@ -235,7 +235,11 @@ export default defineComponent({
       this.setRefreshInterval()
   },
   updated(){},
-  computed: Object.assign(SharedComputed, {}),
+  computed: Object.assign(SharedComputed, {
+    timeSinceRefresh(){
+      return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
+    }
+  }),
   methods: Object.assign(localMethods, RelayMethods),
   props: {
     resultsProp: {

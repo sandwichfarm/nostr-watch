@@ -78,12 +78,6 @@ const localMethods = {
     if(this.inspectors.length)
       this.inspectors.forEach( $inspector => $inspector.close() ) 
   },
-  timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration)) 
-  },
-  timeSinceRefresh(){
-    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
-  },
 }
 
 export default defineComponent({
@@ -111,8 +105,6 @@ export default defineComponent({
     this.relays = this.store.relays.getAll
 
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-    this.untilNext = this.timeUntilRefresh()
-    this.sinceLast = this.timeSinceRefresh()
   },
   async mounted(){
     if(this.store.jobs.isJobActive(this.slug))

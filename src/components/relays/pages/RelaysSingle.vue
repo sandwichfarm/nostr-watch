@@ -50,11 +50,11 @@
 
         <div id="status" class="block lg:flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
           <div 
-            v-for="key in checkDimensions" 
-            :key="key" 
+            v-for="type in checkDimensions" 
+            :key="type.key" 
             class="text-white text-lg md:text-xl lg:text-2xl block lg:flex-1 py-3" 
-            :class="check(key)">
-            <span>{{key}}</span>  
+            :class="check(type.key)">
+            <span>{{type.label}}</span>  
           </div>
         </div>
 
@@ -880,7 +880,7 @@ export default defineComponent({
       }
     },
     checkDimensions: function(){
-      return this.isPayToRelay(this.relay) ? ['connect'] : ['connect', 'read', 'write']
+      return this.isPayToRelay(this.relay) ? [{key: 'connect', label: 'online'}] : [{key: 'connect', label: 'online'}, {key: 'read', label: 'readable'}, {key: 'write', label: 'writable'}]
     },
     normalizeUptimeTick: function(){
       return pulse => { 

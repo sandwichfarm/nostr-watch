@@ -1,6 +1,29 @@
 import {useRoute} from 'vue-router'
 
 export default {
+    getPaidRelayPublication(){
+        return (publication, showUnit)=> {
+            let unit = '',
+                str = ''
+            
+            if(showUnit)
+                unit = ' sats'
+
+            if(publication?.unit === 'msats')
+                str = parseInt(publication.amount) >= 1000 ? `${str}${Math.floor(publication.amount/1000)} ${unit}` : `${publication.amount} ${publication.unit}`
+            else if(publication?.unit === 'sats')
+                str = `${str}${publication.amount}${unit}`
+            else if(publication?.amount && publication?.unit)
+                str = `${str}${publication?.amount} ${showUnit ? publication?.unit : ''}` 
+
+            if(publication?.kind) 
+                str = `${str} per kind ${publication.kind} event`
+            else 
+                str = `${str} per event.`
+
+            return str
+        }
+    },
     getPaidRelayAdmission(){
         return (result, showUnit)=> {
             if(!this.isPayToRelay(result.url))

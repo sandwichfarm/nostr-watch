@@ -132,7 +132,7 @@
                       class="h-1">
 
                       <td class="status-indicator w-2 text-left pr-2">
-                        <span v-if="!isPayToRelay(relay)" :class="getAggregateIndicator(relay)" class="block relative text-xs text-black"></span>
+                        <span :class="getAggregateIndicatorClass(relay)" class="w-4 h-4 block relative"></span>
                       </td>
 
                       <td class="w-62 relay left-align relay-url text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50">
@@ -553,13 +553,13 @@
           "h-4 w-4": this.store.prefs.getTheme === 'compact',
         }
       },
-      getAggregateIndicator(){
+      getAggregateIndicatorClass(){
         return (relay) => {
           return { 
-            'w-4 h-4 bg-green-500': this.store.results.get(relay)?.aggregate === 'public',
-            'w-4 h-4 bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted',
-            // 'w-4 h-4 bg-gray-500': this.store.results.get(relay)?.aggregate === 'restricted' && this.store.results.get(relay)?.info?.limitation?.payment_required,
-            'w-4 h-4 bg-red-500': this.store.results.get(relay)?.aggregate === 'offline',
+            'bg-green-500': this.store.results.get(relay)?.aggregate === 'public',
+            'bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted' && !this.isPayToRelay(relay),
+            'bg-black/10 dark:bg-white/10': this.isPayToRelay(relay),
+            'bg-red-500': this.store.results.get(relay)?.aggregate === 'offline',
             'ml-4': this.store.prefs.getTheme === 'spacious',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',

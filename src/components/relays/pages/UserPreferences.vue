@@ -275,7 +275,87 @@
             </div>
           </div>
 
-          <h2 class="text-2xl pt-8 text-pink-700 dark:text-pink-300 mt-4 font-extrabold">Data</h2>
+          <h2 class="text-2xl pt-8 text-pink-700 dark:text-pink-300 mt-4 font-extrabold">
+            Data
+          </h2>
+
+          <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+            <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
+              Advanced timeout?
+            </label>
+            <div class="mt-1 sm:col-span-2 sm:mt-0">
+              <Switch
+                v-model="store.prefs.advancedTimeout"
+                :class="store.prefs.advancedTimeout ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-black'"
+                class="relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+              >
+                <span class="sr-only">Use client-side processing</span>
+                <span
+                  aria-hidden="true"
+                  :class="store.prefs.advancedTimeout ? 'translate-x-5' : 'translate-x-0'"
+                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out"
+                />
+              </Switch>
+              <p class="mt-2 text-sm text-gray-500">If enabled, you can have different timeouts for connection, reading and writing during relay checks.</p>
+            </div>
+          </div>
+
+          <div v-if="!store.prefs.advancedTimeout" class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+            <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
+              Inspector Timeout
+            </label>
+            <div class="mt-1 sm:col-span-2 sm:mt-0">
+              {{ store.prefs.inspectTimeout }}
+              <input 
+                v-model="store.prefs.inspectTimeout"
+                class="rounded-lg overflow-hidden appearance-none bg-red-500 h-3 w-128" 
+                type="range" min="5000" max="60000" step="1"/>
+              <p class="mt-2 text-sm text-gray-500">What timeout should be used for connection, read and write checks?</p>
+            </div>
+          </div>
+
+          <div v-if="store.prefs.advancedTimeout" class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+            <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
+              Connect Timeout
+            </label>
+            <div class="mt-1 sm:col-span-2 sm:mt-0">
+              {{ store.prefs.connectTimeout }}
+              <input 
+                v-model="store.prefs.connectTimeout"
+                class="rounded-lg overflow-hidden appearance-none bg-red-500 h-3 w-128" 
+                type="range" min="5000" max="60000" step="1"/>
+              <p class="mt-2 text-sm text-gray-500">What timeout should be used for connection checks?</p>
+            </div>
+          </div>
+
+          <div v-if="store.prefs.advancedTimeout" class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+            <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
+              Read Timeout
+            </label>
+            <div class="mt-1 sm:col-span-2 sm:mt-0">
+              {{ store.prefs.readTimeout }}
+              <input 
+                v-model="store.prefs.readTimeout"
+                class="rounded-lg overflow-hidden appearance-none bg-red-500 h-3 w-128" 
+                type="range" min="5000" max="60000" step="1"/>
+              <p class="mt-2 text-sm text-gray-500">What timeout should be used for read checks?</p>
+            </div>
+          </div>
+
+          <div v-if="store.prefs.advancedTimeout" class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+            <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
+              Write Timeout
+            </label>
+            <div class="mt-1 sm:col-span-2 sm:mt-0">
+              {{ store.prefs.writeTimeout }}
+              <input 
+                v-model="store.prefs.writeTimeout"
+                class="rounded-lg overflow-hidden appearance-none bg-red-500 h-3 w-128" 
+                type="range" min="5000" max="60000" step="1"/>
+              <p class="mt-2 text-sm text-gray-500">What timeout should be used for write checks?</p>
+            </div>
+          </div>
+
           <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
               Check Pubkey (NIP-11)
@@ -315,7 +395,7 @@
                   class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out"
                 />
               </Switch>
-              <p class="mt-2 text-sm text-gray-500">If enabled, will use nostr.watch API to discover new relays periodically. <span class="text-red-500">This may have undesirable results</span></p>
+              <p class="mt-2 text-sm text-gray-500">If enabled, will use nostr.watch API to discover new relays periodically.</p>
             </div>
           </div>
 

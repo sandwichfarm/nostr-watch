@@ -251,6 +251,12 @@ export default {
             y = this.store.relays.isFavorite(relay2) || false
         return (x === y)? 0 : x? -1 : 1;
       })
+    if(this.store.prefs.sortFees && this.store.layout.getActive('relays/find') === 'paid')
+      sort(relays, (relay1, relay2) => {
+        let x = this.store.results.get(relay1)?.info?.fees?.admission?.[0]?.amount || 1000000000000,
+            y = this.store.results.get(relay2)?.info?.fees?.admission?.[0]?.amount || 1000000000000
+        return x-y
+      })
     // relays = this.sortRelaysFavoritesOnTop(relays)
     return Array.from(new Set(relays))
   },

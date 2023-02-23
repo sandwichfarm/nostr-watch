@@ -16,6 +16,7 @@ export const usePrefsStore = defineStore('prefs', {
     latencySlow: 1000,
     sortUptime: true,
     sortLatency: true, 
+    sortFees: true,
     autoDetectRegion: true,
     region: 'eu-west',
     ignoreTopics: 'canonical,nostr',

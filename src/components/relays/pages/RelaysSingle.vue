@@ -59,9 +59,9 @@
         </div>
 
         <div id="status" class="block mb-8 px-5 py-8 rounded-lg text-center text-2xl" v-if="isPayToRelay(relay)"> <!--something is weird here with margin-->
-            {{ relay }} is a <strong>Paid Relay</strong>, writes to this relay require a payment
+            {{ relay }} is a <strong>Paid Relay</strong> and requires a payment
             <span v-if="this.result?.info?.fees?.admission?.[0]">
-              of <strong>{{ getPaidRelayAdmission }}</strong>
+              of <strong>{{ getPaidRelayAdmission(this.result) }}</strong>
             </span>
             for write capabilities. <br />
             <a v-if="result?.info?.payments_url" class="mt-6 inline-block button text-md bg-black/80 hover:bg-black/90 text-white font-bold py-2 px-4 rounded" :href="result.info.payments_url">
@@ -773,14 +773,6 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
-    getPaidRelayAdmission(){
-      if(this.result?.info?.fees?.admission?.[0].unit === 'msats')
-        return `${Math.floor(this.result?.info?.fees?.admission?.[0].amount/1000)} sats`
-      else if(this.result?.info?.fees?.admission?.[0].unit === 'sats')
-        return `${this.result?.info?.fees?.admission?.[0].amount} sats`
-      else 
-        return `${this.result?.info?.fees?.admission?.[0].amount} ${this.result?.info?.fees?.admission?.[0].unit}` 
-    },
     result(){
       return this.store.results.get(this.relay)
     },
@@ -963,11 +955,9 @@ export default defineComponent({
     getDnsClass(){
       return {
         'col-span-1': true,
-        // 'col-span-1': !this.result?.info && !this.log,
       }
     },
     getGeoClass(){
-      //console.log('ok', !this.result?.info && !this.log)
       return {
         'col-span-2': !this.result?.info && !this.log,
       }

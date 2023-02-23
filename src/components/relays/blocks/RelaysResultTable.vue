@@ -50,17 +50,30 @@
                       <!-- <th v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">P2R</code>
                       </th> -->
+                      <th v-if="store.layout.getActive('relays/find') === 'paid'" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        <code class="text-xs block">
+                          Fee (sats)
+                        </code>
+                      </th>
                       <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <code class="text-xs block">Pubkey</code>
+                        <code class="text-xs block">
+                          Pubkey
+                        </code>
                       </th>
                       <th v-if="store.jobs.getLastUpdate('relays/geo')" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
-                        <code class="text-xs block">Location</code>
+                        <code class="text-xs block">
+                          Location
+                        </code>
                       </th>
-                      <th v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
-                        <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortUptime=!this.store.prefs.sortUptime">Uptime(12h)</code>
+                      <th v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
+                        <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortUptime=!this.store.prefs.sortUptime">
+                          Uptime(12h)
+                        </code>
                       </th>
                       <th v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
-                        <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortLatency=!this.store.prefs.sortLatency" :class="this.store.prefs.sortLatency? 'bg-black/50 rounded-sm': ''">Latency</code>
+                        <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortLatency=!this.store.prefs.sortLatency" :class="this.store.prefs.sortLatency? 'bg-black/50 rounded-sm': ''">
+                          Latency
+                        </code>
                       </th>
 
                       <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
@@ -110,6 +123,8 @@
                           </span>
                       </td>
 
+                      
+
                       <!-- <td class="w-16 fav text-center" v-if="isLoggedIn()()">
                         <a
                           class=" hover:opacity-100 cursor-pointer opacity-20" 
@@ -133,7 +148,9 @@
                           </svg>
                         </a>
                       </td> -->
-
+                      <td v-if="store.layout.getActive('relays/find') === 'paid'" class="text-sm font-bold relay text-right relay-url text-black/20 dark:text-white/80 hover:text-black/50 hover:dark:text-white/50">
+                        <a target="_blank" class="rounded-sm py-1 px-2 hover:bg-black/10 hover:dark:bg-white/10" :href="store.results.get(relay)?.info?.payments_url">{{ getPaidRelayAdmission( store.results.get(relay) ) }}</a>
+                      </td>
                       <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <!-- {{ this.store.results.get(relay)?.pubkeyValid }}
                         {{ this.store.results.get(relay)?.info?.pubkey }} -->
@@ -154,7 +171,7 @@
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" class="w-24 text-center">
+                      <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" class="w-24 text-center">
                         <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime && !isPayToRelay(relay)">
                           {{ this.store.results.get(relay)?.uptime }}%
                         </span>

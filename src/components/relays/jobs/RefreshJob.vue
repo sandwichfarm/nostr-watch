@@ -47,7 +47,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
@@ -187,9 +187,9 @@ const localMethods = {
           getInfo: this.store.prefs.checkNip11 || this.isSingle,
           getIdentities: false,
           run: true,
-          connectTimeout: this.inspectTimeout,
-          readTimeout: this.inspectTimeout,
-          writeTimeout: this.inspectTimeout,
+          connectTimeout: this.store.prefs.advancedTimeout ? this.store.prefs.connectTimeout : this.store.prefs.inspectTimeout,
+          readTimeout: this.store.prefs.advancedTimeout ? this.store.prefs.readTimeout : this.store.prefs.inspectTimeout,
+          writeTimeout: this.store.prefs.advancedTimeout ? this.store.prefs.writeTimeout : this.store.prefs.inspectTimeout,
         }
       
       // if(this.isSingle)
@@ -241,9 +241,6 @@ const localMethods = {
 
       if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )
         return
-      
-      // this.untilNext = this.timeUntilRefresh()
-      // this.sinceLast = this.timeSinceRefresh()
 
       if(!this.store.jobs.isJobActive(this.slug) && !this.isSingle)
         this.CheckRelaysJob()
@@ -258,13 +255,9 @@ const localMethods = {
   },
 
   async lazyChecks(){
-    if(this.lazyLast && (Date.now()-this.lazyLast)<this.lazyInterval )
-      return
-
-    // relays with uptime in the last ~10hr
     const relays = Object.keys(this.store.results.all).filter( async (relay) => {
       const result = this.store.results.get(relay)
-      return 'offline' === result?.aggregate && result?.uptime > 0
+      return ('offline' === result?.aggregate || 'restricted' === result?.aggregate) && result?.uptime > 0
     })
     
     relays.forEach( async (relay) => {
@@ -280,8 +273,6 @@ const localMethods = {
           true
         )
     })
-
-    this.lazyLast = Date.now()
   },
 
   handleVisibility(){
@@ -301,11 +292,9 @@ export default defineComponent({
 
   components: {},
 
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
-      store : setupStore(),
-      results: results
+      store : setupStore()
     }
   },
 
@@ -325,11 +314,10 @@ export default defineComponent({
       latencies: [],
       inspectors: [],
       stop: false,
-      inspectTimeout: 30*1000,
+      inspectTimeout: 15*1000,
       retry: [],
       retries: 1,
-      lazyLast: null,
-      lazyInterval: 6*60*60*1000
+      lazyInterval: 1*60*60*1000
       // history: null
     }
   },
@@ -346,15 +334,6 @@ export default defineComponent({
   },
 
   beforeMount(){
-    this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-    // this.untilNext = this.timeUntilRefresh()
-    // this.sinceLast = this.timeSinceRefresh()
-
-    // for(let ri=0;ri-this.relays.length;ri++){
-    //   const relay = this.relays[ri],
-    //         cache = this.getCache(relay)
-    //   this.store.results.get(relay) = cache
-    // }
   },
 
   mounted(){
@@ -395,8 +374,6 @@ export default defineComponent({
         return this.store.prefs.duration
       if( this.store.results.get(relay)?.check?.connect && this.store.results.get(relay)?.check?.read && this.store.results.get(relay)?.check?.write && typeof this.store.results.get(relay)?.latency?.final !== 'undefined' )
         return this.store.results.get(relay).latency.final * 5 
-      // if(this.store.results.get(relay)?.check?.connect && this.store.results.get(relay)?.check?.read && this.store.results.get(relay)?.check?.write)
-        // return 30*1000
       return this.store.prefs.duration
     }
   }),

@@ -24,7 +24,12 @@ export const usePrefsStore = defineStore('prefs', {
     discoverRelays: true,
     checkNip11: true,
     CheckNip11Frequency: 24*60*60*1000,
-    disableGeoDetection: false
+    disableGeoDetection: false,
+    advancedTimeout: false,
+    inspectTimeout: 15*1000,
+    connectTimeout: 15*1000,
+    writeTimeout: 15*1000,
+    readTimeout: 15*1000,
   }),
   getters: {
     get: state => key => state?.[key],

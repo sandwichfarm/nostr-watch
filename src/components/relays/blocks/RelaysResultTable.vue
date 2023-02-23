@@ -8,6 +8,7 @@
                 <thead>
                     <tr>
                       <th scope="col" class="text-left" colspan="2">
+
                         <span class="mr-3 hidden lg:inline-block">
                           <span 
                             :class="getThemeBtnClass('compact')" 
@@ -27,6 +28,7 @@
                              random relay
                             </a>
                         </span>
+
                         <span v-if="subsection != 'favorite' && store.relays.getFavorites.length" class="ml-6 text-slate-600">
                           <input type="checkbox" class=" cursor-pointer relative top-0.5 mr-1" id="relays-pin-favorites" v-model="store.prefs.pinFavorites" /> 
                           <label class="cursor-pointer font-thin text-xs" for="relays-pin-favorites">
@@ -50,17 +52,50 @@
                       <!-- <th v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">P2R</code>
                       </th> -->
+                      <th 
+                        v-if="store.layout.getActive('relays/find') === 'paid'" 
+                        scope="col" 
+                        class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        <code 
+                          class="text-xs block cursor-pointer"
+                          :class="{'bg-black/50 rounded-sm': store.prefs.sortFees }"
+                          @click="store.prefs.sortFees=!store.prefs.sortFees">
+                          Fee (sats)
+                        </code>
+                      </th>
                       <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <code class="text-xs block">Pubkey</code>
+                        <code class="text-xs block">
+                          Pubkey
+                        </code>
                       </th>
                       <th v-if="store.jobs.getLastUpdate('relays/geo')" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
-                        <code class="text-xs block">Location</code>
+                        <code class="text-xs block">
+                          Location
+                        </code>
                       </th>
-                      <th v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" scope="col" class="uptime text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
-                        <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortUptime=!this.store.prefs.sortUptime">Uptime(12h)</code>
+                      <th
+                        v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" 
+                        scope="col" 
+                        class="uptime text-center" 
+                        v-tooltip:top.tooltip="'Detected location of Relay'">
+                        <code 
+                          class="text-xs block cursor-pointer" 
+                          :class="this.store.prefs.sortUptime? 'bg-black/50 rounded-sm': ''"
+                          @click="this.store.prefs.sortUptime=!this.store.prefs.sortUptime">
+                          Uptime(12h)
+                        </code>
                       </th>
-                      <th v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" scope="col" class="latency text-center" v-tooltip:top.tooltip="'Relay Latency on Read'">
-                        <code class="text-xs block cursor-pointer" @click="this.store.prefs.sortLatency=!this.store.prefs.sortLatency" :class="this.store.prefs.sortLatency? 'bg-black/50 rounded-sm': ''">Latency</code>
+                      <th 
+                        v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" 
+                        scope="col" 
+                        class="latency text-center" 
+                        v-tooltip:top.tooltip="'Relay Latency on Read'">
+                        <code 
+                          class="text-xs block cursor-pointer" 
+                          :class="this.store.prefs.sortLatency? 'bg-black/50 rounded-sm': ''"
+                          @click="this.store.prefs.sortLatency=!this.store.prefs.sortLatency" >
+                          Latency
+                        </code>
                       </th>
 
                       <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
@@ -97,8 +132,7 @@
                       class="h-1">
 
                       <td class="status-indicator w-2 text-left pr-2">
-                        <span :class="getAggregateIndicator(relay)" class="block relative text-xs text-black">
-                        </span>
+                        <span :class="getAggregateIndicatorClass(relay)" class="w-4 h-4 block relative"></span>
                       </td>
 
                       <td class="w-62 relay left-align relay-url text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50">
@@ -109,6 +143,8 @@
                             {{ getTopics(relay) }}
                           </span>
                       </td>
+
+                      
 
                       <!-- <td class="w-16 fav text-center" v-if="isLoggedIn()()">
                         <a
@@ -134,6 +170,10 @@
                         </a>
                       </td> -->
 
+                      <td v-if="store.layout.getActive('relays/find') === 'paid'" class="text-sm font-bold relay text-center relay-url text-black/20 dark:text-white/80 hover:text-black/50 hover:dark:text-white/50">
+                        <a target="_blank" class="rounded-sm py-1 px-2 hover:bg-black/10 hover:dark:bg-white/10" :href="store.results.get(relay)?.info?.payments_url">{{ getPaidRelayAdmission( store.results.get(relay) ) }}</a>
+                      </td>
+
                       <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
                         <!-- {{ this.store.results.get(relay)?.pubkeyValid }}
                         {{ this.store.results.get(relay)?.info?.pubkey }} -->
@@ -154,7 +194,7 @@
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse')" class="w-24 text-center">
+                      <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" class="w-24 text-center">
                         <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime && !isPayToRelay(relay)">
                           {{ this.store.results.get(relay)?.uptime }}%
                         </span>
@@ -428,18 +468,10 @@
       }
     },
     computed: Object.assign(SharedComputed, {
-      // isPayToRelay(){
-      //   return relay => {
-      //     if(this.store.results.get(relay)?.info?.limitation?.payment_required)
-      //       return true
-      //   }
-      // },
       getTopics(){
         return relay => {
           let topics = ""
-          let topicsArr = this.store.results.get(relay)?.topics.filter( topic => {
-            return topic[0].length <= 32
-          }).slice(0, 3)
+          let topicsArr = this.store.results.get(relay)?.topics.filter( topic => topic[0].length <= 32 ).slice(0, 3)
           for(let topic in topicsArr){
             topics = `${topics}  #${topicsArr[topic][0]}`
           }
@@ -521,13 +553,13 @@
           "h-4 w-4": this.store.prefs.getTheme === 'compact',
         }
       },
-      getAggregateIndicator(){
+      getAggregateIndicatorClass(){
         return (relay) => {
           return { 
-            'w-4 h-4 bg-green-500': this.store.results.get(relay)?.aggregate === 'public',
-            'w-4 h-4 bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted',
-            // 'w-4 h-4 bg-gray-500': this.store.results.get(relay)?.aggregate === 'restricted' && this.store.results.get(relay)?.info?.limitation?.payment_required,
-            'w-4 h-4 bg-red-500': this.store.results.get(relay)?.aggregate === 'offline',
+            'bg-green-500': this.store.results.get(relay)?.aggregate === 'public',
+            'bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted' && !this.isPayToRelay(relay),
+            'bg-black/10 dark:bg-white/10': this.isPayToRelay(relay),
+            'bg-red-500': this.store.results.get(relay)?.aggregate === 'offline',
             'ml-4': this.store.prefs.getTheme === 'spacious',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',

@@ -106,7 +106,8 @@ const localMethods = {
               const relay = event.tags[0][1]
               const data = JSON.parse(event.content)
               // const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
-              const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online')
+              let topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1]?.toLowerCase(), topicTag[2] ] )
+                  topics = Array.from(new Set(topics))              
               const result = {
                 url: relay,
                 
@@ -119,13 +120,11 @@ const localMethods = {
                 },
               }
 
-              // if(uptimeLatency)
               result.uptime = this.getUptimePercentage(relay)
               
               if(data?.info)
                 result.info = data.info
               
-              // if(data?.latency[this.store.prefs.region]) //this one will create the illusion that everything is ok, TODO: Fix daemons and remove.
               result.latency = data?.latency[this.store.prefs.region] 
 
               if(event?.tags){
@@ -139,7 +138,7 @@ const localMethods = {
               }
 
               if(topics.length)
-                result.topics = this.cleanTopics(topics)
+                result.topics = this.removeIgnoredTopics(topics)
 
               // console.log('aggr', this.result.url, this.getAggregate(result), result.check.connect, result.check.read, result.check.write)
               

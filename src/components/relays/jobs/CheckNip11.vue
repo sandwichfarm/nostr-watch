@@ -31,7 +31,7 @@ import SharedComputed from '@/shared/computed.js'
 
 const localMethods = {
   CheckNip11(force){ 
-    if( !this.isExpired(this.slug, 24*60*60*1000) && !force )
+    if( !this.isExpired(this.slug, 60*1000) && !force )
       return
     this.queueJob(
       this.slug, 

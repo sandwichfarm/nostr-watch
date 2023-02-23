@@ -266,8 +266,11 @@
               <textarea 
                 id="ignoreTopics" 
                 name="ignoreTopics" 
+                :value="store.prefs.ignoreTopics"
+                @change="updateResultTopics"
+                @input="store.prefs.ignoreTopics = $event.target.value.toLowerCase()"
                 rows="3" 
-                class="py-2 px-3 block w-full max-w-lg rounded-md border-gray-800 dark:bg-black/30 dark:text-white/60 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" v-model="store.prefs.ignoreTopics" />
+                class="py-2 px-3 block w-full max-w-lg rounded-md border-gray-800 dark:bg-black/30 dark:text-white/60 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"  />
               <p class="mt-2 text-sm text-gray-500">Comma separated list, defaults are there because they are OP</p>
             </div>
           </div>
@@ -375,7 +378,7 @@ export default defineComponent({
       currentRegion: this.store.prefs.region,
       autoDetectRegion: this.store.prefs.autoDetectRegion,
       discoverRelays: this.store.prefs.discoverRelays,
-      checkNip11: this.store.prefs.checkNip11,
+      checkNip11: this.store.prefs.checkNip11
     }
   },
 
@@ -417,7 +420,12 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
-    
+    updateResultTopics(){
+      Object.keys(this.store.results.data).forEach( relay => {
+        if(this.store.results.data[relay]?.topics)
+          this.store.results.data[relay].topics = this.removeIgnoredTopics(this.store.results.data[relay]?.topics)
+      })
+    }
   }),
 
   methods: Object.assign(RelaysLib, localMethods), 

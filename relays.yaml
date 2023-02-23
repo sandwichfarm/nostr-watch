@@ -1,6 +1,9 @@
 relays:
   - wss://nostr.21sats.net
   - wss://nostr.h4x0r.host
+  - wss://nostr-au.coinfundit.com
+  - wss://nostr-eu.coinfundit.com
+  - wss://nostr-us.coinfundit.com
   - wss://nostr.1729.cloud
   - wss://lightningrelay.com
   - wss://relay.nostriches.org
@@ -353,5 +356,6 @@ relays:
   - wss://nostre.cc
   - wss://altcoinnect.xyz
   - wss://nostr.spleenrider.one
+  - wss://nostr.barf.bz
   - wss://noster.online
   - wss://nostr01.vida.dev

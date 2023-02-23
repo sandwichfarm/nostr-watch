@@ -1,6 +1,21 @@
 import {useRoute} from 'vue-router'
 
 export default {
+    getPaidRelayAdmission(){
+        return (result, showUnit)=> {
+            if(!this.isPayToRelay(result.url))
+                return
+            let unit = ''
+            if(showUnit)
+                unit = 'sats'
+            if(result?.info?.fees?.admission?.[0]?.unit === 'msats')
+                return `${Math.floor(result?.info?.fees?.admission?.[0].amount/1000)} ${unit}`
+            else if(result?.info?.fees?.admission?.[0]?.unit === 'sats')
+                return `${result?.info?.fees?.admission?.[0].amount} ${unit}`
+            else if(result?.info?.fees?.admission?.[0]?.amount && result?.info?.fees?.admission?.[0]?.unit)
+                return `${result?.info?.fees?.admission?.[0]?.amount} ${result?.info?.fees?.admission?.[0]?.unit}` 
+        }
+    },
     isPayToRelay(){
         return relay => {
             if(this.store.results.get(relay)?.info?.limitation?.payment_required)

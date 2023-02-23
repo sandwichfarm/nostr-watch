@@ -93,14 +93,6 @@ export default defineComponent({
   },
 
   data() {
-    //console.log(this.store.layout.mapIsExpanded, {
-    //   zoom: this.store.layout.mapIsExpanded ? 4 : 2,
-    //   minZoom: this.store.layout.mapIsExpanded ? 4 : 2,
-    //   maxZoom: this.store.layout.mapIsExpanded ? 7 : 2,
-    //   // center: this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [70.41322, -1.219482],
-    //   expanded: false,
-    //   relays: []
-    // })
     return {
       zoom: this.store.layout.mapIsExpanded ? 4 : 2,
       minZoom: 2,
@@ -116,30 +108,16 @@ export default defineComponent({
 
  async mounted() {
     this.geo = this.store.relays.geo
-    // this.store.layout.$subscribe( mutation => {
-    //   //console.log('mutation.key', mutation.events.key)
-    //   // if(mutation.events.key == "mapExpanded") 
-    //     // this.refreshMap()
-    // })
 
     setTimeout( () => {
-      this.$refs.map.leafletObject.whenReady(async () => {
+      this.$refs.map.leafletObject?.whenReady(async () => {
         await this.$refs.map.leafletObject
           .setView(
             this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482], 
             this.store.layout.mapIsExpanded ? 4 : 2
           )
       })
-    },1000)
-    
-    //console.log(this.$refs.map.leafletObject)
-    // this.$refs.map.leafletObject.setView(
-    //   this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482],
-    //   4
-    // )
-      
-
-    // this.refreshMap()    
+    },1000) 
   },
   beforeUnmount(){
     //console.log('beforeUnmount', '$refs', this.$refs)

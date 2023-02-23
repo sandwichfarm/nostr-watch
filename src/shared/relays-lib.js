@@ -2,17 +2,14 @@ import crypto from "crypto"
 import {sort} from 'array-timsort'
 
 export default {
-  cleanTopics(topics){
-    // console.log(topics.map( topic => [ topic[1], topic?.[2] ] ))
+  removeIgnoredTopics(topics){
+    const ignored = this.store.prefs.ignoreTopics.split(',')
     return topics
-      .filter( topic => 
-        !this.store.prefs.ignoreTopics
-          .split(',')
+      .filter( topic =>
+        !ignored
           .map( ignoreTopic => ignoreTopic.trim() )
-          .includes(topic)
+          .includes(topic[0])
       )
-      .map( topic => [ topic[1], topic?.[2] ? new String(topic[2]).valueOf() : "1" ] )
-    
   },
 
   invalidateJob(name, force){
@@ -253,6 +250,12 @@ export default {
         let x = this.store.relays.isFavorite(relay1) || false,
             y = this.store.relays.isFavorite(relay2) || false
         return (x === y)? 0 : x? -1 : 1;
+      })
+    if(this.store.prefs.sortFees && this.store.layout.getActive('relays/find') === 'paid')
+      sort(relays, (relay1, relay2) => {
+        let x = this.store.results.get(relay1)?.info?.fees?.admission?.[0]?.amount || 1000000000000,
+            y = this.store.results.get(relay2)?.info?.fees?.admission?.[0]?.amount || 1000000000000
+        return x-y
       })
     // relays = this.sortRelaysFavoritesOnTop(relays)
     return Array.from(new Set(relays))

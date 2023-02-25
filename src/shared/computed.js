@@ -3,24 +3,23 @@ import {useRoute} from 'vue-router'
 export default {
     timeSince: function() {
         return date => {
-            let seconds = Math.floor((new Date() - date) / 1000),
-                interval = seconds / 31536000;
-            if (interval > 1)
-                return Math.floor(interval) + " years";
-            interval = seconds / 2592000;
-            if (interval > 1)
-                return Math.floor(interval) + " months";
-            interval = seconds / 86400;
-            if (interval > 1)
-                return Math.floor(interval) + " days";
-            interval = seconds / 3600;
-            if (interval > 1)
-                return Math.floor(interval) + " hours";
-            interval = seconds / 60;
-            if (interval > 1)
-                return Math.floor(interval) + " minutes";
-            return Math.floor(seconds) + " seconds";
-        }   
+            const seconds = Math.floor((new Date() - date) / 1000)
+            const intervals = {
+              year: 31536000,
+              month: 2592000,
+              day: 86400,
+              hour: 3600,
+              minute: 60
+            }
+            let interval
+            for (let key in intervals) {
+              interval = Math.floor(seconds / intervals[key])
+              if (interval >= 1) {
+                return `${interval} ${key}${interval > 1 ? 's' : ''}`
+              }
+            }
+            return `${Math.floor(seconds)} seconds`
+          }  
         
     },
     getPaidRelayPublication(){

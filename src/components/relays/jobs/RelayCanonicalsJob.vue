@@ -84,7 +84,7 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'Canonicals',
+  name: 'CanoniCals',
   components: {},
   data() {
     return {

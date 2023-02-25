@@ -35,20 +35,22 @@ events.discoverRelays = async () => {
 
 events.addRelay = async () => {}
 
-events.signEvent = async event => {
-  let event = {
+events.signEvent = async privateKey => {
+  const event = {
     kind: 10101,
     created_at: Math.floor(Date.now() / 1000),
     tags: ['online', 'nostr-watch'],
     content: 'hello'
   }
 
-  event.id = getEventHash(event.id)
+  event.id = getEventHash(event)
   event.pubkey = getPublicKey(privateKey)
   event.sig = await signEvent(event, privateKey)
 
-  let ok = validateEvent(event)
-  let veryOk = await verifySignature(event)
+  const isValid = validateEvent(event)
+  const isVerified = await verifySignature(event)
+
+  return {isValid, isVerified}
 }
 
 events.get = async () => {
@@ -60,10 +62,18 @@ events.get = async () => {
   })
   pool.on('event', () => {})
 
-  setTimeout(() => {
+  const timeout = setTimeout(() => {
     this.closePool(pool)
     resolve(true)
   }, 10 * 1000)
+
+  try {
+    await pool.open()
+    clearTimeout(timeout)
+  } catch (err) {
+    this.closePool(pool)
+    throw err
+  }
 }
 
 events.publish = async () => {}

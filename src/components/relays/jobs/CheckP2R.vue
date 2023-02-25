@@ -16,7 +16,7 @@ import SharedComputed from '@/shared/computed.js'
 
 
 
-const updatedLocalMethods = {
+const localMethods = {
   async checkP2R(force) {
     if ((!this.isExpired(this.slug, 1) && !force) || this.isSingle) return;
 

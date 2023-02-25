@@ -17,7 +17,7 @@ import crypto from 'crypto'
 
 import { setupStore } from '@/store'
 
-import { RelayPool } from 'nostr'
+// import { RelayPool } from 'nostr'
 
 import SharedMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'

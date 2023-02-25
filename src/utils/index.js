@@ -1,8 +1,8 @@
-import { RelayPool } from 'nostr'
-import { continents } from '../../cache/continents.js'
+import {RelayPool} from 'nostr'
+import {continents} from '../../cache/continents.js'
 import crypto from 'crypto'
-import { daemons } from '@/config/nwd-geo.yaml'
-import { getDistance } from 'geolib'
+import {daemons} from '@/config/nwd-geo.yaml'
+import {getDistance} from 'geolib'
 
 export const timeSince = date => {
   const delta = (Date.now() - date) / 1000

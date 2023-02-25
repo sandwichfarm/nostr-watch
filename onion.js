@@ -1,6 +1,6 @@
 const url = require('url');
-const http = require('http');
-const https = require('https');
+// const http = require('http');
+// const https = require('https');
 const SocksProxyAgent = require('socks-proxy-agent');
 
 // Use the SOCKS_PROXY env var if using a custom bind address or port for your TOR proxy:

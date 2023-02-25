@@ -60,7 +60,7 @@ const History = async function(){
     relaysKnown = this.store.relays.getAll
     
     return new Promise(resolve => {
-      let total = 0
+      // let total = 0
       const subid = crypto.randomBytes(40).toString('hex')
       const pool = RelayPool(this.store.relays.getAll.filter( (relay) => this.store.results.get(relay)?.aggregate == 'public').filter( relay => this.store.results.get(relay)?.info?.supported_nips.includes(15)))
       pool

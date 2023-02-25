@@ -160,9 +160,7 @@ export const subscribeKind3 = async function (pubkey, relays) {
         eose++
         if (eose < total) return
         ordered.sort((a, b) => b.created_at - a.created_at)
-        try {
-          pool.close()
-        } catch (e) {}
+        pool.close()
         clearTimeout(timeout)
         resolve(ordered[0])
       })

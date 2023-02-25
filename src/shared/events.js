@@ -1,46 +1,45 @@
-import crypto from 'crypto',
-
-import { validateEvent, verifySignature, signEvent, getEventHash, getPublicKey } from 'nostr-tools'
-import { RelayPool } from 'nostr'
+import {
+  validateEvent,
+  verifySignature,
+  signEvent,
+  getEventHash,
+  getPublicKey
+} from 'nostr-tools'
+import {RelayPool} from 'nostr'
+import crypto from 'crypto'
 
 const events = {}
 
-events.discoverRelays = async function(){
+events.discoverRelays = async () => {
   return new Promise(resolve => {
     const subid = crypto.randomBytes(40).toString('hex')
-    const pool = RelayPool(['wss://nostr.sandwich.farm'])
-    pool
-      .on('open', relay => {
-        //console.log('open')
-        relay.subscribe(subid, {limit: 1000, kinds:[3]})
-      })
-      .on('close', () => {
-        //console.log('close')
-      })
-      .on('event', (relay, _subid, event) => {
-        if(subid == _subid) {
-          try { 
-            relaysRemote = Object.assign(relaysRemote, JSON.parse(event.content))
-            this.closeRelay(relay)
-          } catch(e) {""}
-        }
-      })
-    setTimeout( () => {
+    const pool = new RelayPool(['wss://nostr.sandwich.farm'])
+    pool.on('open', relay => {
+      relay.subscribe(subid, {limit: 1000, kinds: [3]})
+    })
+    pool.on('close', () => {})
+    pool.on('event', (relay, _subid, event) => {
+      if (subid === _subid) {
+        try {
+          relaysRemote = {...relaysRemote, ...JSON.parse(event.content)}
+          this.closeRelay(relay)
+        } catch (e) {}
+      }
+    })
+    setTimeout(() => {
       this.closePool(pool)
-      resolve(true) 
-    }, 10*1000 )
+      resolve(true)
+    }, 10 * 1000)
   })
 }
 
-events.addRelay = async function(){
-  
-}
+events.addRelay = async () => {}
 
-events.signEvent = async function(event){
+events.signEvent = async event => {
   let event = {
     kind: 10101,
     created_at: Math.floor(Date.now() / 1000),
-    tags: ["online", "nostr-watch"],
+    tags: ['online', 'nostr-watch'],
     content: 'hello'
   }
 
@@ -52,26 +51,21 @@ events.signEvent = async function(event){
   let veryOk = await verifySignature(event)
 }
 
-events.get = async function (){
-  const pool = new RelayPool(this.relays),
-        subid = crypto.randomBytes(40).toString('hex')
+events.get = async () => {
+  const pool = new RelayPool(this.relays)
+  const subid = crypto.randomBytes(40).toString('hex')
 
-  pool
-    .on('open', () => {
-      relay.subscribe(subid, {limit: 10000, kinds:[10101]})
-    })
-    .on('event', () => {
+  pool.on('open', () => {
+    relay.subscribe(subid, {limit: 10000, kinds: [10101]})
+  })
+  pool.on('event', () => {})
 
-    })
-
-  setTimeout( () => {
+  setTimeout(() => {
     this.closePool(pool)
-    resolve(true) 
-  }, 10*1000 )
+    resolve(true)
+  }, 10 * 1000)
 }
 
-events.publish = async function (){
+events.publish = async () => {}
 
-}
-
-export default Events
+export default events

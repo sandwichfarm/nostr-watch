@@ -361,3 +361,5 @@ relays:
   - wss://nostr01.vida.dev
   - wss://relay.punkhub.me
   - wss://relay.nostrdocs.com
+  - wss://sound-money-relay.denizenid.com
+  - wss://carnivore-diet-relay.denizenid.com

@@ -32,57 +32,52 @@ const getIp = async function(dns){
 }
 
 const getGeo = async function(ip) {
-  let geo
-  await fetch(`http://ip-api.com/json/${ip}`, { headers: { 'accept': 'application/dns-json' } })
-          .then(response => response.json())
-          .then((data) => { geo = data })
-          .catch(err => console.error('./scripts/geo.js', err))
+  let geo;
+  try {
+    const response = await fetch(`http://ip-api.com/json/${ip}`, { headers: { 'accept': 'application/dns-json' } });
+    geo = await response.json();
+  } catch (err) {
+    console.error('./scripts/geo.js', err);
+  }
   return geo;
 }
 
 const getContinent = function(countryCode) {
-  return JSON.parse(continents)
-    .filter( c => c.country_code == countryCode )
-    .map( cont => {
-      return {
-        continentCode: cont.continent_code,
-        continentName: cont.continent_name
-      }
-    })[0]
+  const continent = JSON.parse(continents).find(c => c.country_code == countryCode);
+  return {
+    continentCode: continent.continent_code,
+    continentName: continent.continent_name
+  };
 }
 
 const query = async function(){
-
   const relays = YAML.parse(relayUrls).relays.reverse(),
-        result = YAML.parse(geoCache).geo || {}
+        result = YAML.parse(geoCache).geo || {};
 
   for (const relay of relays) {
     await delay(1000).then(async () => {
-      //console.log('getting relay geo', relay)
+      let dns, ip, geo;
 
-      let dns, ip, geo
-
-      dns = await getDns(relay).catch()
-      ip = await getIp(dns).catch()
-      geo = await getGeo(ip).catch()
-
-      if(geo)
-        geo = Object.assign(geo, getContinent(geo.countryCode))
-
-      if(geo && dns)
-        geo.dns = dns[dns.length-1]
-  
-      if(geo && geo.status == 'success') {
-        delete geo.status
-        result[relay] = geo
+      try {
+        dns = await getDns(relay);
+        ip = await getIp(dns);
+        geo = await getGeo(ip);
+      } catch (err) {
+        console.warn('api was mean, no geo for', relay);
       }
 
-      if(!geo)
-        console.warn('api was mean, no geo for', relay)
-        
-    })
+      if(geo) {
+        geo = Object.assign(geo, getContinent(geo.countryCode));
+        geo.dns = dns[dns.length-1];
+      }
+
+      if(geo && geo.status == 'success') {
+        delete geo.status;
+        result[relay] = geo;
+      }
+    });
   }
-  return result
+  return result;
 }
 
 const run = async function(){

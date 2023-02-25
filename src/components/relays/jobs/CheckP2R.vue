@@ -14,36 +14,31 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-const localMethods = {
-  CheckP2R(force){
-    if( (!this.isExpired(this.slug, 1) && !force) || this.isSingle ) 
-      return  
-    this.queueJob(
-      this.slug, 
-      async () => {
-        const relays = this.store.relays.getRelays('paid', this.store.results.all)
-        for(let i=0;i<relays.length;i++){
-          const relay = relays[i],
-                result = {}
-          try {
-            const hostname = new URL(this.store.results.get(relay).info.payments_url).hostname 
-            if(hostname.includes('your-domain.com'))
-              result.validP2R = false 
-            else 
-            result.validP2R = true 
-          }
-          catch(e){
-            result.validP2R = false
-          }
-          this.store.results.mergeDeep({[relay]: result})
-          this.store.jobs.addProcessed(this.slug, relay)
-        }
-        this.store.jobs.completeJob(this.slug)
-      },
-      true
-    )
+
+
+const updatedLocalMethods = {
+  async checkP2R(force) {
+    if ((!this.isExpired(this.slug, 1) && !force) || this.isSingle) return;
+
+    const relays = this.store.relays.getRelays('paid', this.store.results.all);
+
+    for (const relay of relays) {
+      const result = {};
+
+      try {
+        const hostname = new URL(this.store.results.get(relay).info.payments_url).hostname;
+        result.validP2R = !hostname.includes('your-domain.com');
+      } catch (e) {
+        result.validP2R = false;
+      }
+
+      this.store.results.mergeDeep({ [relay]: result });
+      this.store.jobs.addProcessed(this.slug, relay);
+    }
+
+    this.store.jobs.completeJob(this.slug);
   },
-}
+};
 
 export default defineComponent({
   name: 'CheckP2R',

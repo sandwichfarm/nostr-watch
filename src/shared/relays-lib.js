@@ -239,7 +239,7 @@ export default {
             b = this.store.results.all?.[relay2]?.latency?.average || null
         return (b != null) - (a != null) || a - b;
       })
-    if(this.store.prefs.sortUptime)
+    if(this.store.prefs.sortUptime && this.store.layout.getActive('relays/find') !== 'paid')
       sort(relays, (relay1, relay2) => {
         let a = this.store.results.all?.[relay1]?.uptime || 0,
             b = this.store.results.all?.[relay2]?.uptime || 0

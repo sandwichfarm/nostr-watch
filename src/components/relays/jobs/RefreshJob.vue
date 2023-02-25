@@ -27,7 +27,7 @@
         class=" text-xs -mt-1.5 my-1 py-1 px-3 rounded border-b-3 border-slate-700 bg-slate-500  font-bold text-white hover:border-slate-500 hover:bg-slate-400" 
         :disabled='store.jobs.isJobActive(this.slug)' 
         @click="checkNow()">  
-          check{{ relay ? ` ${relay}` : "" }} Now
+          Check{{ relay ? ` ${relay}` : "" }} Now
       </button>
     </div>
     <span

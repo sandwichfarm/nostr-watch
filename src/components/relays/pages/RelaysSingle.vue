@@ -159,9 +159,9 @@
           </div>
         </div>
 
-        <div v-if="!pulses && result.check.connect" class="py-8 px-8 text-center text-lg">
+        <div v-if="!pulses && result?.check?.connect" class="py-8 px-8 text-center text-lg">
             This relay does not have any uptime data. This is likely because the operator or their hosting provider has blocked nostr.watch uptime daemons.
-        </div>
+        </div>  
 
         <!-- <div class="flex justify-center">
           <div class="block rounded-lg shadow-lg bg-white max-w-sm text-center">
@@ -256,9 +256,6 @@
             </div>
           </div>
         </div>
-
-
-
 
         <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="geo">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">

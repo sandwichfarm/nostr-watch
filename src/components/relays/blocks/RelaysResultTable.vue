@@ -60,9 +60,20 @@
                           class="text-xs block cursor-pointer"
                           :class="{'bg-black/50 rounded-sm': store.prefs.sortFees }"
                           @click="store.prefs.sortFees=!store.prefs.sortFees">
-                          Fee (sats)
+                          Admission
                         </code>
                       </th>
+
+                      <th 
+                        v-if="store.layout.getActive('relays/find') === 'paid'" 
+                        scope="col" 
+                        class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        <code 
+                          class="text-xs block">
+                          Publish<br/>Fee
+                        </code>
+                      </th>
+
                       <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">
                           Pubkey
@@ -106,7 +117,6 @@
                         <code class="text-xs block">Read</code>
                       </th>
 
-              
                       <th v-if="!store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
                       </th>
@@ -172,6 +182,10 @@
 
                       <td v-if="store.layout.getActive('relays/find') === 'paid'" class="text-sm font-bold relay text-center relay-url text-black/20 dark:text-white/80 hover:text-black/50 hover:dark:text-white/50">
                         <a target="_blank" class="rounded-sm py-1 px-2 hover:bg-black/10 hover:dark:bg-white/10" :href="store.results.get(relay)?.info?.payments_url">{{ getPaidRelayAdmission( store.results.get(relay) ) }}</a>
+                      </td>
+
+                      <td v-if="store.layout.getActive('relays/find') === 'paid'" class="text-sm font-bold relay text-center relay-url text-black/20 dark:text-white/80 hover:text-black/50 hover:dark:text-white/50">
+                        {{ store.results.get(relay)?.info?.fees?.publication?.length ? 'yes' : '' }}
                       </td>
 
                       <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">

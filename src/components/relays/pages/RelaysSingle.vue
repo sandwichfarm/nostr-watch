@@ -38,8 +38,6 @@
           </a>
         </div>
 
-        
-
         <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8 py-8 px-4" v-if="result?.topics && result?.topics.length">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span v-for="topic in getTopics" :class="normalizeTopic(topic)" :key="`${result?.url}-${topic[0]}`">
@@ -128,7 +126,7 @@
           </div>
         </div>
 
-        <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length > 24 && !isPayToRelay(relay)">
+        <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length && !isPayToRelay(relay)">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
               Uptime for the last
@@ -584,11 +582,6 @@
         </li> -->
       </ul>
     </div>
-
-      
-
-
-  
   </section>
   </div>
 </template>
@@ -832,8 +825,7 @@ export default defineComponent({
       }
     },
     getTopics: function(){
-      return this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
-      // return this.result.topics
+      return this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) ).slice(0, 20)
     },
     normalizeTopic: function(){
       return topic => {

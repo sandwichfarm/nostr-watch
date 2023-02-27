@@ -155,16 +155,18 @@ const localMethods = {
 
   checkSingle: async function(relay, slug){
     await this.check(relay)
-        .then((result) =>{
-          result.aggregate = this.getAggregate(result)
-          result = this.pruneResult(result)
-          this.store.results.mergeDeep({ 
-            [result.url]: result
-          })
-          this.completeRelay(result)
+      .then((result) =>{
+        result.aggregate = this.getAggregate(result)
+        result = this.pruneResult(result)
+        this.store.results.mergeDeep({ 
+          [result.url]: result
         })
-        .catch( (err) => console.error(`there was an error: ${err}`) )
-      this.store.jobs.completeJob(slug)
+        this.completeRelay(result)
+      })
+      .catch( (err) => console.error(`there was an error: ${err}`) )
+    if(this.stop)
+      return
+    this.store.jobs.completeJob(slug)
   },
 
   completeRelay: function(result){
@@ -172,6 +174,8 @@ const localMethods = {
   },
 
   completeAll: function(){
+    if(this.stop)
+      return
     this.store.jobs.completeJob(this.slug)
   },
 

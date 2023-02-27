@@ -27,7 +27,6 @@ relays:
 - wss://lbrygen.xyz
 - wss://lightningrelay.com
 - wss://lv01.tater.ninja
-- wss://middling.myddns.me:8080
 - wss://mule.platanito.org
 - wss://no-str.org
 - wss://no.contry.xyz
@@ -164,6 +163,7 @@ relays:
 - wss://nostr.lukeacl.com
 - wss://nostr.mado.io
 - wss://nostr.massmux.com
+- wss://nostr.middling.mydns.jp
 - wss://nostr.mikedilger.com
 - wss://nostr.milou.lol
 - wss://nostr.milou.lol

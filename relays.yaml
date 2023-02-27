@@ -1,7 +1,8 @@
 relays:
+- wss://nostr.libertasprimordium.com
 - wss://1.noztr.com
 - wss://Merrcurr.up.railway.app
-- wss://altcoinnect.xyz
+- wss://btc-italia.online
 - wss://astral.ninja
 - wss://at.nostrworks.com
 - wss://bitcoiner.social
@@ -26,7 +27,6 @@ relays:
 - wss://lbrygen.xyz
 - wss://lightningrelay.com
 - wss://lv01.tater.ninja
-- wss://middling.myddns.me:8080
 - wss://mule.platanito.org
 - wss://no-str.org
 - wss://no.contry.xyz
@@ -163,6 +163,7 @@ relays:
 - wss://nostr.lukeacl.com
 - wss://nostr.mado.io
 - wss://nostr.massmux.com
+- wss://nostr.middling.mydns.jp
 - wss://nostr.mikedilger.com
 - wss://nostr.milou.lol
 - wss://nostr.milou.lol
@@ -189,6 +190,7 @@ relays:
 - wss://nostr.pleb.network
 - wss://nostr.plebchain.org
 - wss://nostr.pobblelabs.org
+- wss://nostr.portemonero.com
 - wss://nostr.radixrat.com
 - wss://nostr.randomdevelopment.biz
 - wss://nostr.rdfriedl.com
@@ -264,6 +266,7 @@ relays:
 - wss://nostro.cc
 - wss://nostrrelay.com
 - wss://nostrsatva.net
+- wss://nostr.retroware.run.place
 - wss://offchain.pub
 - wss://paid.no.str.cr
 - wss://paid.spore.ws
@@ -365,3 +368,5 @@ relays:
 - wss://sound-money-relay.denizenid.com
 - wss://carnivore-diet-relay.denizenid.com
 - wss://nostr.rikmeijer.nl
+- wss://nostr.xmr.rocks
+- wss://nostr.azte.co

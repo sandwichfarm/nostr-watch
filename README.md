@@ -13,6 +13,8 @@ nostr.watch aggregates data on nostr relays and the network in general to assist
 Develop branch is deployed to https://next.nostr.watch
 
 ## Relay Additions 
+It is now suggested to add relays simply by using them and publishing your kind 3 to really any known relay in good health. Most of the relays are discovered at runtime. This change is not yet reflected in production. 
+
 Relay additions via Github as the primary method of adding relays will be phased out for a number of reasons, expect this change with the `0.2` release.
 
 If you are adding a relay, you need to use `main` as your base and submit your pr into `main`. Submissions to `develop` will still be approved, but your relay will not go online until a release. Whereas a PR into `main` will go live within 10 minutes of being merged. 

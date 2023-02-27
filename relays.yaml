@@ -265,6 +265,7 @@ relays:
 - wss://nostro.cc
 - wss://nostrrelay.com
 - wss://nostrsatva.net
+- wss://nostr.retroware.run.place
 - wss://offchain.pub
 - wss://paid.no.str.cr
 - wss://paid.spore.ws
@@ -365,3 +366,4 @@ relays:
 - wss://relay.nostrdocs.com
 - wss://sound-money-relay.denizenid.com
 - wss://carnivore-diet-relay.denizenid.com
+- wss://nostr.azte.co

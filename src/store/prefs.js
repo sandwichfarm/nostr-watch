@@ -58,7 +58,6 @@ export const usePrefsStore = defineStore('prefs', {
         return 
       this.filters.push(key)
       this.filterFn.push(fn) 
-      //console.log('functions:', this.filterFn)
     }
   },
   persistedState: {},

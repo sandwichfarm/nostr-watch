@@ -24,67 +24,64 @@ import SharedComputed from '@/shared/computed.js'
 
 import { relays } from '../../../../relays.yaml'
 
-const localMethods = {
-  Canonicals(force){
-    if( (!this.isExpired(this.slug) && !force) ) 
-      return
-    
-    const subid = crypto.randomBytes(40).toString('hex')
+const optimizedLocalMethods = {
+  async Canonicals(force) {
+    if (!this.isExpired(this.slug) && !force) {
+      return;
+    }
+    const subid = crypto.randomBytes(40).toString('hex');
+    const $pool = new RelayPool(['wss://history.nostr.watch'], { reconnect: false });
+    const hashes = {};
 
-    this.queueJob(
-      this.slug, 
-      async () => {
-        const $pool = new RelayPool(['wss://history.nostr.watch'], { reconnect: false })
+    $pool.on('open', (r) => {
+      r.subscribe(subid, {
+        limit: 1000,
+        kinds: [1],
+        "#t": ['canonical'],
+        authors: ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
+      });
+    });
 
-        $pool
-          .on('open', r => {
-            r.subscribe(subid, {
-              limit: 1000,
-              kinds: [ 1 ],
-              "#t": [ 'canonical' ],
-              authors:[ 'b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6' ]
-            })
-          })
-          .on('event', (relay, _subid, event) => {
-            if(_subid.includes(subid)){
-              const hash = event.tags.filter( tag => tag[0] === 'h')[0][1]
-              this.hashes[hash] = event.id
-            }
-          })
+    $pool.on('event', (relay, _subid, event) => {
+      if (_subid.includes(subid)) {
+        const hash = event.tags.filter((tag) => tag[0] === 'h')[0][1];
+        hashes[hash] = event.id;
+      }
+    });
 
-        await this.delay(5000)
+    await this.delay(5000);
 
-        try{
-          this.closePool($pool)
-        } catch(e){""}
+    try {
+      this.closePool($pool);
+    } catch (e) {}
 
-        relays.forEach( relay => {
-          const hash = this.hash(relay)
-          if( typeof this.hashes[hash] === "undefined" )
-            return 
-          this.canonicals[relay] = this.hashes[hash] //event.id
-        })
+    const canonicals = {};
+    this.relays.forEach((relay) => {
+      const hash = this.hash(relay);
+      if (typeof hashes[hash] === 'undefined') {
+        return;
+      }
+      canonicals[relay] = hashes[hash];
+    });
 
-        this.store.relays.setCanonicals(this.canonicals)
-
-        this.store.jobs.completeJob(this.slug)
-      }, 
-      true
-    )
+    this.store.relays.setCanonicals(canonicals);
+    this.store.jobs.completeJob(this.slug);
   },
-  timeUntilRefresh(){
-    return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
+  timeUntilRefresh() {
+    return this.timeSince(
+      Date.now() - (this.store.jobs.getLastUpdate(this.slug) + this.store.prefs.duration - Date.now())
+    );
   },
-  timeSinceRefresh(){
-    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
+  timeSinceRefresh() {
+    return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now();
   },
-  hash(relay){
+  hash(relay) {
     return crypto.createHash('md5').update(relay).digest('hex');
-  }
-}
+  },
+};
 
 export default defineComponent({
-  name: 'CanoniCals',
+  name: 'CanonicalsJobs',
   components: {},
   data() {
     return {

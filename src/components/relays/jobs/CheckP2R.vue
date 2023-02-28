@@ -8,25 +8,21 @@
 
 <script>
 import { defineComponent, toRefs } from 'vue'
-
 import { setupStore } from '@/store'
-
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-
-
-const localMethods = {
+const modernMethods = {
   async checkP2R(force) {
     if ((!this.isExpired(this.slug, 1) && !force) || this.isSingle) return;
 
-    const relays = this.store.relays.getRelays('paid', this.store.results.all);
+    const relays = this.store.relays.getRelays('paid', this.results.value);
 
     for (const relay of relays) {
       const result = {};
 
       try {
-        const hostname = new URL(this.store.results.get(relay).info.payments_url).hostname;
+        const hostname = new URL(this.results.value[relay].info.payments_url).hostname;
         result.validP2R = !hostname.includes('your-domain.com');
       } catch (e) {
         result.validP2R = false;
@@ -59,18 +55,17 @@ export default defineComponent({
   created(){
     clearInterval(this.interval)
   },
-  unmounted(){
-    clearInterval(this.interval)
-  },
   beforeMount(){
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
   },
   mounted(){    
     this.CheckP2R()
   },
-  updated(){},
-  computed: Object.assign(SharedComputed, {}),
-  methods: Object.assign(localMethods, RelayMethods),
+  beforeDestroy(){
+    clearInterval(this.interval)
+  },
+  computed: {...SharedComputed},
+  methods: {...localMethods, ...RelayMethods},
   props: {
     resultsProp: {
       type: Object,

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import { useRelaysStore } from '@/store/relays'
-import { subscribeKind3 } from '@/utils'
+import { subscribeKind3, subscribeKind10002 } from '@/utils'
 // import { isJson } from '@/utils'
 
 export const useUserStore = defineStore('user', {
@@ -12,8 +12,8 @@ export const useUserStore = defineStore('user', {
     testEvent:        false,
     kind3:            new Object(),
     kind3Event:       new Object(),
-    kind30001:        new Object(),
-    kind30001Event:   new Object(),
+    kind10002:        new Object(),
+    kind10002Event:   new Object(),
     ip:               null,
   }),
   getters: {
@@ -26,14 +26,14 @@ export const useUserStore = defineStore('user', {
     getTestEvent: (state) => state.testEvent,
     getKind3: (state) => state.kind3,
     getKind3Event: (state) => state.kind3Event,
-    getKind30001: state => state.kind30001,
-    getKind30001Event: state => state.kind30001Event,
+    getKind10002: state => state.kind30001,
+    getKind10002Event: state => state.kind30001Event,
   },
   actions: {
     retrieveKind3: async function() {
       const store = useRelaysStore()
       const relays = store.getFavorites.length ? store.getFavorites : ['wss://nostr.sandwich.farm']
-      this.kind3Event = await subscribeKind3(this.pubKey, relays)
+      this.kind3Event = await subscribeKind3(relays, this.pubKey)
       // console.log('kind3', this.kind3Event)
       return this.kind3Event?.content || {}
     },
@@ -42,6 +42,19 @@ export const useUserStore = defineStore('user', {
         this.kind3 = obj
       else 
         this.kind3 = Object.assign(this.kind3, await this.retrieveKind3())
+    },
+    retrieveKind10002: async function() {
+      const store = useRelaysStore()
+      const relays = store.getFavorites.length ? store.getFavorites : ['wss://nostr.sandwich.farm']
+      this.kind3Event = await subscribeKind10002(relays, this.pubKey)
+      // console.log('kind3', this.kind3Event)
+      return this.kind3Event?.content || {}
+    },
+    setKind10002: async function(obj) { 
+      if(obj instanceof Object && Object.keys(obj).length)
+        this.kind3 = obj
+      else 
+        this.kind3 = Object.assign(this.kind3, await this.retrieveKind10002())
     },
     setPublicKey: function(pubKey){ this.pubKey = pubKey },
     setProfile: function(stringifiedEvContent){ 

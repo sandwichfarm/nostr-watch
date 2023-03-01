@@ -121,30 +121,30 @@ export const getDnsFromRelay = async function(relay){
   return dns
 }
 
-export const subscribeKind3 = async function(pubkey, relays){
+export const subscribeKind3 = async function(relays, pubkey){
   return new Promise( resolve => {
     const pool = new RelayPool(relays, { reconnect: true }),
           subid = crypto.randomBytes(40).toString('hex'),
-          ordered = [],
+          events = [],
           total = relays.length
 
     let eose = 0
 
     const complete = function(){
-      if(!ordered.length)
+      if(!events.length)
         return resolve({})
-      ordered.sort( (a, b) => {
+      events.sort( (a, b) => {
         return b.created_at - a.created_at
       })
-      try{pool.close()} catch(e){""}
+      pool.close()
       clearTimeout(timeout)
-      resolve(ordered[0])
+      resolve(events[0])
     }
-
-    const timeout = setTimeout( () => complete(), 10000 )
+    const timeout = setTimeout( () => complete(), 20000 )
 
     pool
       .on('open', r => {
+        console.log('open?')
         r.subscribe(subid, {
           limit: 1,
           kinds: [3],
@@ -154,7 +154,6 @@ export const subscribeKind3 = async function(pubkey, relays){
       .on('event', (relay, _subid, ev) => {
         if(_subid !== subid)
           return 
-        
         if(!ev.content.length)
           return
         try {
@@ -163,10 +162,10 @@ export const subscribeKind3 = async function(pubkey, relays){
         catch(e){
           ev.content = {}
         }
-        ordered.push(ev)
+        events.push(ev)
       })
       .on('eose', () => {
-        // console.log('eose', eose, '/', total, eose < total)
+        console.log('eose')
         eose++
         if(eose < total)
           return 
@@ -175,3 +174,54 @@ export const subscribeKind3 = async function(pubkey, relays){
       .on('error', () => { })
   })
 }
+
+export const subscribeKind10002 = async function(relays, pubkey){
+  return new Promise( resolve => {
+    const pool = new RelayPool(relays, { reconnect: true }),
+          subid = crypto.randomBytes(40).toString('hex'),
+          events = [],
+          total = relays.length
+
+    let eose = 0
+
+    const complete = function(){
+      if(!events.length)
+        return resolve({})
+      events.sort( (a, b) => {
+        return b.created_at - a.created_at
+      })
+      pool.close()
+      clearTimeout(timeout)
+      resolve(events[0])
+    }
+
+    const timeout = setTimeout( () => complete(), 20000 )
+
+    pool
+      .on('open', r => {
+        console.log('open?')
+        r.subscribe(subid, {
+          limit: 1,
+          kinds: [10002],
+          authors:[ pubkey ]
+        })
+      })
+      .on('event', (relay, _subid, ev) => {
+        console.log(ev, ev.tags)
+        if(_subid !== subid)
+          return 
+        if(!ev.tags.length)
+          return
+        events.push(ev)
+      })
+      .on('eose', () => {
+        console.log('eose')
+        eose++
+        if(eose < total)
+          return 
+        complete()
+      })
+      .on('error', () => { })
+  })
+}
+

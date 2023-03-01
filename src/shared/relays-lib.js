@@ -113,30 +113,6 @@ export default {
     if($relay.ws.readyState === $relay.ws.OPEN )
       $relay.close()
   },
-  queueKind3: async function(slug){
-    this.queueJob(
-      slug,
-      async () => {
-        await this.store.user.setKind3()
-          .then( () => {
-            this.store.relays.getFavorites.forEach( relay => {
-              if(this.store.user?.kind3?.[relay])
-                return 
-              this.store.user.kind3[relay] = { read: false, write: false }
-            })
-            Object.keys(this.store.user.kind3).forEach( key => {
-              this.store.relays.setFavorite(key)
-            })
-            this.store.jobs.completeJob(slug)
-          })
-          .catch( err => {
-            console.error('error!', err)
-            this.store.jobs.completeJob(slug)
-          })
-      },
-      true
-    )
-  },
   queueJob: function(id, fn, unique){
     // console.log('queuing job', id, fn, unique)
     this.store.jobs.addJob({

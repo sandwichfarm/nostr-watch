@@ -2,7 +2,7 @@
   <span  
       v-if="this.store.jobs.getActiveSlug === slug && isLoggedIn"
       class="text-inherit">
-    <span class="text-inherit">looking for your contact list</span>
+    <span class="text-inherit">looking for your relay list</span>
   </span>
 </template>
 
@@ -11,10 +11,9 @@
 </style>
 
 <script>
-import crypto from 'crypto'
 // import { RelayPool } from 'nostr'
 
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import { setupStore } from '@/store'
 
@@ -22,12 +21,10 @@ import SharedMethods from '@/shared/relays-lib.js'
 import UserMethods from '@/shared/user-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { relays } from '../../../../relays.yaml'
-
 const localMethods = new Object()
 
 localMethods.invalidate = function(force){
-  if( !this.isExpired(this.slug) && !force ) 
+  if( !this.isExpired(this.slug, 1000) && !force ) 
     return
   
   if( !this.isLoggedIn() ) 
@@ -35,20 +32,8 @@ localMethods.invalidate = function(force){
 
   if( !this.store.prefs.useKind3 )
     return
-  
-  this.queueKind3(this.slug)
-}
 
-localMethods.timeUntilRefresh = function(){
-  return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
-}
-
-localMethods.timeSinceRefresh = function(){
-  return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()      
-}
-
-localMethods.hash = function(relay){
-  return crypto.createHash('md5').update(relay).digest('hex');
+  this.addUserRelayListJob()
 }
 
 export default defineComponent({
@@ -56,18 +41,12 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      slug: 'user/list/contacts',
-      kind3Remote: new Object(),
-      kind3Local: {}
+      slug: 'user/list/relays',
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
-    const {forceProp: force} = toRefs(props)
+  setup(){
     return { 
-      store : setupStore(),
-      results: results,
-      force: force
+      store : setupStore()
     }
   },
   created(){
@@ -78,8 +57,6 @@ export default defineComponent({
   },
   beforeMount(){
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-    
-    this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
     //console.log('job', this.slug, 'is processing:', this.store.jobs.isJobActive(this.slug))
@@ -87,7 +64,7 @@ export default defineComponent({
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),
-  methods: Object.assign(localMethods, UserMethods, SharedMethods),
+  methods: Object.assign(UserMethods, SharedMethods, localMethods),
   props: {
     resultsProp: {
       type: Object,

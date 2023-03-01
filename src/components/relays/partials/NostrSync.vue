@@ -56,7 +56,8 @@ import { defineComponent, toRefs, ref } from 'vue'
 import { setupStore } from '@/store/'
 import safeStringify from 'fast-safe-stringify'
 import { getEventHash, validateEvent, verifySignature } from 'nostr-tools'
-import RelaysLib from '@/shared/relays-lib'
+import RelayMethods from '@/shared/relays-lib'
+import UserMethods from '@/shared/user-lib'
 import { RelayPool } from 'nostr'
 import objHash from 'object-hash'
 import { timeSince } from '@/utils'
@@ -121,10 +122,10 @@ export default defineComponent({
       return parseInt(JSON.parse(createdAt.value))*1000
     }
   },
-  methods: Object.assign(RelaysLib, {
+  methods: Object.assign(RelayMethods, UserMethods, {
     toggleEditor: async function(){
       this.store.layout.toggleEditor()
-      this.queueKind3('user/list/contacts')
+      this.retrieveUserContactList(this.store.user.getPublicKey)
     },
     persistChanges: async function(){
       const event = {

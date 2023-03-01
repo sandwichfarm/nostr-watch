@@ -1,77 +1,25 @@
 import crypto from 'crypto',
 
-import { validateEvent, verifySignature, signEvent, getEventHash, getPublicKey } from 'nostr-tools'
-import { RelayPool } from 'nostr'
+import { validateEvent, verifySignature, signEvent } from 'nostr-tools'
 
 const events = {}
 
-events.discoverRelays = async function(){
-  return new Promise(resolve => {
-    const subid = crypto.randomBytes(40).toString('hex')
-    const pool = RelayPool(['wss://nostr.sandwich.farm'])
-    pool
-      .on('open', relay => {
-        //console.log('open')
-        relay.subscribe(subid, {limit: 1000, kinds:[3]})
-      })
-      .on('close', () => {
-        //console.log('close')
-      })
-      .on('event', (relay, _subid, event) => {
-        if(subid == _subid) {
-          try { 
-            relaysRemote = Object.assign(relaysRemote, JSON.parse(event.content))
-            this.closeRelay(relay)
-          } catch(e) {""}
-        }
-      })
-    setTimeout( () => {
-      this.closePool(pool)
-      resolve(true) 
-    }, 10*1000 )
-  })
+export const hasNip07Extension = async function(){
+  if(window.nostr instanceof Object)
+    return true
 }
 
-events.addRelay = async function(){
-  
+export const getPubKey = async function(){
+  return await window.nostr.getPublicKey()
 }
 
-events.signEvent = async function(event){
-  let event = {
-    kind: 10101,
-    created_at: Math.floor(Date.now() / 1000),
-    tags: ["online", "nostr-watch"],
-    content: 'hello'
-  }
-
-  event.id = getEventHash(event.id)
-  event.pubkey = getPublicKey(privateKey)
-  event.sig = await signEvent(event, privateKey)
-
-  let ok = validateEvent(event)
-  let veryOk = await verifySignature(event)
+export const signEvent = async function(event){
+  return await window.nostr.signEvent(event)
 }
 
-events.get = async function (){
-  const pool = new RelayPool(this.relays),
-        subid = crypto.randomBytes(40).toString('hex')
-
-  pool
-    .on('open', () => {
-      relay.subscribe(subid, {limit: 10000, kinds:[10101]})
-    })
-    .on('event', () => {
-
-    })
-
-  setTimeout( () => {
-    this.closePool(pool)
-    resolve(true) 
-  }, 10*1000 )
-}
-
-events.publish = async function (){
-
+export const eventIsValid = async function(signedEvent){
+  if(verifySignature(signedEvent) && validateEvent(signedEvent))
+    return true
 }
 
 export default Events

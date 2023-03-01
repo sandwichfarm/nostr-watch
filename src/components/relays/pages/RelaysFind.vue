@@ -28,7 +28,7 @@
             </p>
         </div>
         <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <NostrSync />
+          <!-- <NostrSync /> -->
           <button 
             v-if="!store.layout.editorExpanded"
             @click="$router.push('/relays/add')" 
@@ -71,16 +71,13 @@ import { relays } from '../../../../relays.yaml'
 import { geo } from '../../../../cache/geo.yaml'
 
 //async components
-// const JobQueue = defineAsyncComponent(() =>
-//     import("@/components/relays/jobs/JobQueue.vue" /* webpackChunkName: "JobQueue" */)
-// );
 const FiltersPartial = defineAsyncComponent(() =>
     import("@/components/partials/FiltersPartial.vue" /* webpackChunkName: "FiltersPartial" */)
 );
 
-const NostrSync = defineAsyncComponent(() =>
-    import("@/components/relays/partials/NostrSync.vue" /* webpackChunkName: "NostrSync" */)
-);
+// const NostrSync = defineAsyncComponent(() =>
+//     import("@/components/relays/partials/NostrSync.vue" /* webpackChunkName: "NostrSync" */)
+// );
 
 const MapSummary = defineAsyncComponent(() =>
     import("@/components/relays/blocks/MapSummary.vue" /* webpackChunkName: "MapSummary" */)
@@ -108,7 +105,7 @@ export default defineComponent({
     RelaysFindNav,
     MapSummary,
     RelaysResultTable,
-    NostrSync,
+    // NostrSync,
     FiltersPartial,
     // JobQueue
   },

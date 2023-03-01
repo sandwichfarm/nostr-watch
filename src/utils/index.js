@@ -175,7 +175,9 @@ export const subscribeKind3 = async function(relays, pubkey){
   })
 }
 
-export const subscribeKind10002 = async function(relays, pubkey){
+export const subscribeKind10002 = async function(relays, pubkey, _timeout){
+  if(!_timeout)
+    _timeout = 20000
   return new Promise( resolve => {
     const pool = new RelayPool(relays, { reconnect: true }),
           subid = crypto.randomBytes(40).toString('hex'),
@@ -195,7 +197,7 @@ export const subscribeKind10002 = async function(relays, pubkey){
       resolve(events[0])
     }
 
-    const timeout = setTimeout( () => complete(), 20000 )
+    const timeout = setTimeout( () => complete(), _timeout )
 
     pool
       .on('open', r => {

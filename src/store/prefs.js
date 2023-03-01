@@ -9,7 +9,6 @@ export const usePrefsStore = defineStore('prefs', {
     rowTheme: 'comfortable',
     filters: [],
     filterFn: [],
-    useKind3: true,
     clientSideProcessing: false,
     clientSideProcessingUpgrade: false,
     latencyFast: 200,
@@ -30,6 +29,7 @@ export const usePrefsStore = defineStore('prefs', {
     connectTimeout: 15*1000,
     writeTimeout: 15*1000,
     readTimeout: 15*1000,
+    useKind3: false
   }),
   getters: {
     get: state => key => state?.[key],

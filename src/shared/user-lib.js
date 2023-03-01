@@ -12,20 +12,22 @@ export default {
   authenticate: async function(){
     const pubkey = await window.nostr.getPublicKey()
     this.store.user.setPublicKey(pubkey)
+  },
+  getUserData: async function(){
     const relays = this.store.relays.getFavorites
     if(!relays?.length)
       return
-    await this.getUserProfileAndTestEvent(relays)
-    await this.getContactList(relays, this.store.user.getPublicKey)
-    await this.getRelayList(relays, this.store.user.getPublicKey)
+    await this.getUserProfileAndTestEvent(relays, this.store.user.getPublicKey)
+    await this.addUserContactListJob()
+    await this.addUserRelayListJob()
     this.setUserFavoritesFromContactList()
   },
-  getUserProfileAndTestEvent: function(relays){
+  getUserProfileAndTestEvent: function(relays, pubkey){
     const pool = new RelayPool(relays, { reconnect: false })
     return new Promise( resolve => {
       const subid = crypto.randomBytes(40).toString('hex'),
-            filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] },
-            filterEvent = { limit: 1, kinds:[1], authors: [this.store.user.getPublicKey ] }
+            filterProfile = { limit: 1, kinds:[0], authors: [pubkey] },
+            filterEvent = { limit: 1, kinds:[1], authors: [pubkey] }
 
       let foundProfile,
           foundEvent 
@@ -77,10 +79,7 @@ export default {
   getContactList: async function(relays, pubkey, slug){
     if(!slug)
       slug = 'user/list/contacts'
-    return subscribeKind3(relays, pubkey).catch( err => {
-      console.error('error!', err)
-      this.store.jobs.completeJob(slug)
-    })
+    return subscribeKind3(relays, pubkey)
   },
   addRelaysFromContactList: function(){
     this.store.relays.addRelays(Object.keys(this.store.user.kind3))
@@ -111,8 +110,11 @@ export default {
       slug,
       async () => {
         this.store.user.kind10002Event = await this.getRelayList(relays, this.store.user.getPublicKey)
+          .catch( err => {
+            console.error('error!', err)
+            this.store.jobs.completeJob(slug)
+          })
         this.store.user.kind10002 = this.store.user.kind3Event.tags.filter( tag => tag[0] === 'r')
-        console.log('kind10002', this.store.user.kind10002)
         this.addRelaysFromRelayList()
         this.addExistingFavoritesToRelayList()
         this.setUserFavoritesFromRelayList()
@@ -121,15 +123,11 @@ export default {
       true
     )
   },
-  getRelayList: async function(relays, pubkey, slug){
+  getRelayList: async function(relays, pubkey, slug, _timeout){
     if(!slug)
       slug = 'user/list/relays'
-    return subscribeKind10002(relays, pubkey).catch( err => {
-      console.error('error!', err)
-      this.store.jobs.completeJob(slug)
-    })
+    return subscribeKind10002(relays, pubkey, _timeout)
   },
-
   addRelaysFromRelayList: function(){
     this.store.relays.addRelays(Object.keys(this.store.user.kind10002))
   },

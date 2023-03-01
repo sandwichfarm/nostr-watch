@@ -2,7 +2,7 @@
   <span  
       v-if="this.store.jobs.getActiveSlug === slug && isLoggedIn"
       class="text-inherit">
-    <span class="text-inherit">looking for your relay list</span>
+    <span class="text-inherit">looking for your contact list</span>
   </span>
 </template>
 
@@ -30,7 +30,7 @@ localMethods.invalidate = function(force){
   if( !this.isLoggedIn() ) 
     return
 
-  this.addUserRelayListJob()
+  this.addUserContactListJob()
 }
 
 export default defineComponent({
@@ -38,7 +38,9 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      slug: 'user/list/relays',
+      slug: 'user/list/contacts',
+      kind3Remote: new Object(),
+      kind3Local: {}
     }
   },
   setup(){

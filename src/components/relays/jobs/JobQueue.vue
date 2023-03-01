@@ -43,7 +43,11 @@
     <GetTopics
       v-if="store.prefs.clientSideProcessing && !isSingle" />
 
-    <UserRelayList />
+    <UserRelayList 
+      v-if="!this.store.prefs.useKind3"/>
+      
+    <UserContactList
+      v-if="this.store.prefs.useKind3"/>
 
     <FirstVisit 
       v-if="this.store.prefs.isFirstVisit
@@ -66,6 +70,7 @@ import LoadSeed from './LoadSeed.vue'
 import RefreshJob from './RefreshJob.vue'
 import GetPulse from './GetPulse.vue'
 import UserRelayList from './UserRelayList.vue'
+import UserContactList from './UserContactList.vue'
 import StatusCheckHistoryNode from './StatusCheckHistoryNode.vue'
 // import StatusCheckAPI from './StatusCheckAPI.vue'
 import GetRelays from './GetRelays.vue'
@@ -90,6 +95,7 @@ export default defineComponent({
     RefreshJob,
     GetPulse,
     UserRelayList,
+    UserContactList,
     StatusCheckHistoryNode,
     GetRelays,
     CheckNip11,

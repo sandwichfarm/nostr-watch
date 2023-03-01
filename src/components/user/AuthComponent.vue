@@ -2,7 +2,7 @@
   <a 
     class="text-sm text-white hover:text-white" 
     v-if="signer && !isLoggedIn() && this.store.relays.getFavorites.length && this.store.jobs.isIdle" 
-    @click="authenticate" 
+    @click="authenticateAction" 
     href="#">
       Login
   </a>
@@ -37,13 +37,17 @@ export default defineComponent({
     this.showLogin()
     if(!this.isLoggedIn())
       return 
-    await this.getUserProfileAndTestEvent(this.store.relays.getFavorites)
-    this.addUserContactListJob()
+    await this.getUserProfileAndTestEvent(this.store.relays.getFavorites, this.store.user.getPublicKey)
   },
   updated(){
   },
   computed: {},
   methods: Object.assign(UserMethods, RelayMethods, {
+    authenticateAction: async function(){
+      await this.authenticate()
+      if(this.store.user.getPublicKey)
+        this.getUserData()
+    },
     showLogin: async function(){
       await new Promise( (resolve) => {
         setTimeout( () => {

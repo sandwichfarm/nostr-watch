@@ -358,6 +358,27 @@
 
           <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
+              Use Kind 3
+            </label>
+            <div class="mt-1 sm:col-span-2 sm:mt-0 align-left">
+              <Switch
+                v-model="store.prefs.useKind3"
+                :class="store.prefs.useKind3 ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-black'"
+                class="relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+              >
+                <span class="sr-only">Use Kind 3</span>
+                <span
+                  aria-hidden="true"
+                  :class="store.prefs.useKind3 ? 'translate-x-5' : 'translate-x-0'"
+                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out"
+                />
+              </Switch>
+              <p class="mt-2 text-sm text-gray-500">If enabled, nostr.watch will use kind 3 events instead of the new kind 10002 events (NIP-65) for your relay list</p>
+            </div>
+          </div>
+
+          <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+            <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
               Check Pubkey (NIP-11)
             </label>
             <div class="mt-1 sm:col-span-2 sm:mt-0 align-left">

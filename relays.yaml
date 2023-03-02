@@ -1,4 +1,5 @@
 relays:
+  - wss://relay.pineapple.pizza
   - wss://nostr.1729.cloud
   - wss://private.red.gb.net
   - wss://nostr.wine

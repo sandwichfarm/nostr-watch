@@ -7,6 +7,7 @@
     v-if="(geo instanceof Object) && store.prefs.showMaps"
   />
 
+
   <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl text-center content-center">
 
       <div v-if="!result" class="data-card flex bg-slate-100 dark:bg-black/20 dark:text-white/50 mt-12 shadow py-8 px-3">
@@ -51,7 +52,7 @@
             v-for="type in checkDimensions" 
             :key="type.key" 
             class="text-white text-lg md:text-xl lg:text-2xl block lg:flex-1 py-3" 
-            :class="check(type.key)">
+            :class="checkClass(type.key)">
             <span>{{type.label}}</span>  
           </div>
         </div>
@@ -255,11 +256,36 @@
           </div>
         </div>
 
-        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8  py-8" v-if="geo">
+        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border py-8" v-if="geo">
           <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
             <span>
               It's <strong>{{ getLocalTime }}</strong> in <strong>{{ geo?.city }}</strong>
               </span>
+          </div>
+        </div>
+
+        <div class="col-span-1" v-if="result?.log">
+          <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
+              <div class="overflow-hidden">
+                <table class="min-w-full text-center">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4">
+                        Log
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(log, index) in result.log" :key="`${log[0]}-${index}`">
+                      <td class="border-b text-sm text-gray-900 font-medium px-6 py-4 overflow-ellipsis font-mono" :class="getLogClass(log[0])">
+                        {{ log[1] }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
  
@@ -295,6 +321,8 @@
             </div>
           </div>
         </div>
+                      <!-- component -->
+
 
         <!-- <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="true">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
@@ -434,32 +462,8 @@
 
 
 
+        
 
-              <!-- component -->
-    <!-- <div class="col-span-1" :class="getLogsClass" v-if="result?.log">
-      <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-        <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
-          <div class="overflow-hidden">
-            <table class="min-w-full text-center">
-              <thead class="border-b">
-                <tr>
-                  <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4">
-                    Log
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="border-b" v-for="(log, index) in result.log" :key="`${log[0]}-${index}`">
-                  <td class="text-sm text-gray-900 font-medium px-6 py-4 overflow-ellipsis" :class="getLogClass(log[0])">
-                    {{ log[0] }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div> -->
 
 
           <!-- <div class="relative pb-8" v-if="event.kind === '7'">
@@ -604,9 +608,6 @@ import emoji from 'node-emoji';
 import { setupStore } from '@/store'
 import { useHead } from '@vueuse/head'
 
-import { RelayPool } from 'nostr'
-import crypto from 'crypto'
-
 const RelaysNav = defineAsyncComponent(() =>
     import("@/components/relays/nav/RelaysNav.vue" /* webpackChunkName: "RelaysNav" */)
 );
@@ -627,58 +628,6 @@ const localMethods = {
       } catch($e) {
         ////console.log('Cannot copy');
       }
-    },
-    getAdminNotes(){
-      if(!this.result?.info?.pubkey)
-        return 
-
-      const relays = this.store.relays.getAggregateCache('public')
-
-      //console.log('public relays', this.store.relays.getAggregateCache('public').length)
-
-      const pool = new RelayPool(relays)
-      const subid = crypto.randomBytes(40).toString('hex')
-      const uniques = {
-        0: new Set(),
-        1: new Set(),
-        7: new Set(),
-      }
-
-      const limits = {
-        0: 1,
-        1: 20,
-        7: 100
-      } 
-
-      const kinds = [0,1,7]
-      pool
-        .on('open', relay => {
-          relay.subscribe(subid, { limit:10, kinds:kinds, authors:[this.result.info.pubkey] })
-        })
-        .on('event', (relay, sub_id, event) => {
-          if(!kinds.includes(event.kind))
-            return
-          if(sub_id !== subid)
-            return
-          const u = uniques[event.kind],
-                l = limits[event.kind]
-          if( u.has(event.id) || u.size > l )
-            return
-          if( !(event instanceof Object) )
-            return
-          
-          if( !( this.events[event.kind] instanceof Object ))
-            this.events[event.kind] = new Object()
-          this.events[event.kind][event.id] = event
-          u.add(event.id)
-          if(parseInt(event.kind) === 0)
-            this.store.profile.set(JSON.parse(event.content))
-        })
-        .on('eose', relay => {
-          if(this.wsIsOpen(relay.ws))
-            this.closeRelay(relay)
-        })
-        
     },
     setEventType(event){
       if( (event.content === '+' || event.content === '-') && event.kind === 7 )
@@ -797,8 +746,8 @@ export default defineComponent({
         const res = structuredClone(this.store.results.get(relay))
         if(res?.info)
           delete res.info
-        if(res?.latency?.data)
-          res.latency = res.latency.data
+        if(res?.latency)
+          delete res.latency.final
         if(res)
           return JSON.stringify(res, null, 4)
         return JSON.stringify({}, null, 4)
@@ -937,11 +886,11 @@ export default defineComponent({
     getLogClass(){
       return (slug) => { 
         return {
-          ['bg-indigo-100 border-indigo-200']: slug == 'eose',
-          ['bg-red-100 border-red-200']: slug == 'wserror',
-          ['bg-yellow-100 border-yellow-200']: slug == 'error',
-          ['bg-green-100 border-green-200']: slug == 'ok',
-          ['bg-gray-50 border-gray-200']: slug == 'event',
+          ['bg-indigo-100 border-indigo-400']: slug.includes('eose'),
+          ['bg-red-100 border-red-400 dark:bg-red-400/50 dark:bg-red-400/30']: slug.includes('error'),
+          ['bg-green-400 border-green-300 dark:bg-green-400/50 dark:border-green-400/30 ']: slug.includes('success'),
+          ['bg-blue-300 border-blue-400 dark:bg-blue-300/50 dark:border-blue-300/30']: slug.includes('notice'),
+          ['bg-yellow-300 border-yellow-400 dark:bg-yellow-300/50 dark:bg-yellow-300/30']: slug.includes('timeout'),
         } 
       }
     },
@@ -971,10 +920,11 @@ export default defineComponent({
   }),
 
   methods: Object.assign(localMethods, RelaysLib, {
-    check(key){
+    checkClass(key){
       return { 
-        'bg-green-800': this.result?.check?.[key],
-        'bg-red-800': !this.result?.check?.[key],
+        'bg-green-800': this.result?.check?.[key] === true,
+        'bg-red-800': this.result?.check?.[key] === false,
+        'bg-gray-600': this.result?.check?.[key] === null,
         'rounded-tl-lg rounded-bl-lg': key == 'connect',
         'rounded-tr-lg rounded-br-lg': key == 'write',
       }

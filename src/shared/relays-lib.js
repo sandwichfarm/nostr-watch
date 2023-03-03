@@ -319,7 +319,7 @@ export default {
       return this.isDone() ? 'loaded' : ''
     },
 
-    getUptimePercentage(relay){
+    getReadabilityPercentage(relay){
       const pulses = this.store.stats.getPulse(relay)
       if(!pulses || !Object.keys(pulses).length )
         return
@@ -329,6 +329,14 @@ export default {
           0
       );
       return Math.floor((totalOnline/totalPulses)*100)
+    },
+
+    getUptimePercentage(relay){
+      const pulses = this.store.stats.getPulse(relay)
+      if(!pulses || !Object.keys(pulses).length )
+        return
+      const totalPulses = Object.keys(pulses).length 
+      return Math.floor((totalPulses/48)*100)
     },
 
     setUptimePercentage(relay){

@@ -61,7 +61,7 @@ async function discover(){
   await getRelays()
 
   return new Promise(resolve => {
-    const subid = crypto.randomBytes(40).toString('hex')
+    const subid = crypto.randomBytes(20).toString('hex')
     const pool = RelayPool(relaysKnown)
     pool
       .on('open', relay => {

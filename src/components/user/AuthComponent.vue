@@ -58,7 +58,7 @@ export default defineComponent({
     getData: function(){
       const pool = new RelayPool([...this.store.relays.getFavorites], { reconnect: false })
       return new Promise( resolve => {
-        const subid = crypto.randomBytes(40).toString('hex')
+        const subid = crypto.randomBytes(20).toString('hex')
         const filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] }
         const filterEvent = { limit: 1, kinds:[1], authors: [this.store.user.getPublicKey ] }
         let foundProfile = false,

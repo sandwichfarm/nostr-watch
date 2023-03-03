@@ -46,7 +46,7 @@ import SharedComputed from '@/shared/computed.js'
 
 import { RelayPool } from 'nostr'
 
-// import { Inspector } from 'nostr-relay-inspector'
+// import { RelayChecker } from 'nostrwatch-js'
 
 const localMethods = {
   LoadSeed(force, single){
@@ -89,7 +89,7 @@ const localMethods = {
       
       const promise = await new Promise( resolve => {
         const relayChunk = relayChunks[i]
-        const subid = `${crypto.randomBytes(40).toString('hex')}-${i}`
+        const subid = `${crypto.randomBytes(20).toString('hex')}-${i}`
         let $relay
         this.pool = new RelayPool(['wss://history.nostr.watch'])
         this.pool

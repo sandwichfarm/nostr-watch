@@ -45,6 +45,9 @@
 
     <UserRelayList />
 
+    <RelayOperatorJob 
+      v-if="isSingle" />
+
     <FirstVisit 
       v-if="this.store.prefs.isFirstVisit
             && 
@@ -75,12 +78,13 @@ import CheckDNS from './CheckDNS.vue'
 import CheckGeo from './CheckGeo.vue'
 import GetTopics from './GetTopics.vue'
 import CheckP2R from './CheckP2R.vue'
+import RelayOperatorJob from './RelayOperatorJob.vue'
 import FirstVisit from './FirstVisit.vue'
 // import TemplateJob from './TemplateJob.vue'
 
 
 // import RelayCanonicalsJob from './RelayCanonicalsJob.vue'
-// import RelayOperatorJob from './RelayOperatorJob.vue'
+
 
 export default defineComponent({
   name: "JobQueue",
@@ -98,6 +102,7 @@ export default defineComponent({
     CheckGeo,
     GetTopics,
     CheckP2R,
+    RelayOperatorJob,
     FirstVisit
   },
   data(){

@@ -124,7 +124,7 @@ export const getDnsFromRelay = async function(relay){
 export const subscribeKind3 = async function(pubkey, relays){
   return new Promise( resolve => {
     const pool = new RelayPool(relays, { reconnect: true }),
-          subid = crypto.randomBytes(40).toString('hex'),
+          subid = crypto.randomBytes(20).toString('hex'),
           ordered = [],
           total = relays.length
 

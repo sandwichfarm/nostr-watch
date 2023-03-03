@@ -44,7 +44,7 @@ const localMethods = {
   async jobPulses(){
     if(!this.store.status.historyNode)
       return this.store.jobs.completeJob(this.slug)
-    const subid = crypto.randomBytes(40).toString('hex')
+    const subid = crypto.randomBytes(20).toString('hex')
     const pulsesByEvent = new Object()
     let total = 48,
         count = 0

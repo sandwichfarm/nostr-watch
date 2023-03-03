@@ -302,7 +302,7 @@
 
           <div v-if="!store.prefs.advancedTimeout" class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
-              Inspector Timeout
+              RelayChecker Timeout
             </label>
             <div class="mt-1 sm:col-span-2 sm:mt-0">
               {{ store.prefs.inspectTimeout }}
@@ -477,22 +477,22 @@ export default defineComponent({
   async mounted() {
     this.interval = setInterval(() => {
       if(this.store.prefs.region !== this.currentRegion || this.store.prefs.autoDetectRegion !== this.autoDetectRegion){
-        delete this.store.jobs.getLastUpdate('relays/seed')
-        delete this.store.jobs.getLastUpdate('user/region')
+        delete this.store.jobs.lastUpdate['relays/seed']
+        delete this.store.jobs.lastUpdate['user/region']
         this.currentRegion = this.store.prefs.region
         this.autoDetectRegion = this.store.prefs.autoDetectRegion
         this.$forceUpdate()
       }
       if(this.store.prefs.discoverRelays !== this.discoverRelays){
-        delete this.store.jobs.getLastUpdate('relays/get')
-        delete this.store.jobs.getLastUpdate('relays/seed')
-        delete this.store.jobs.getLastUpdate('relays/check')
+        delete this.store.jobs.lastUpdate['relays/get']
+        delete this.store.jobs.lastUpdate['relays/seed']
+        delete this.store.jobs.lastUpdate['relays/check']
         this.discoverRelays = this.store.prefs.discoverRelays
         this.$forceUpdate()
       }
 
       if(this.store.prefs.checkNip11 !== this.checkNip11){
-        delete this.store.jobs.getLastUpdate('relays/nip11')
+        delete this.store.jobs.lastUpdate['relays/nip11']
         this.checkNip11 = this.store.prefs.checkNip11
         this.$forceUpdate()
       }

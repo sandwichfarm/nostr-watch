@@ -22,6 +22,7 @@ export const useRelaysStore = defineStore('relays', {
   }),
   getters: {
     getAll: (state) => state.urls,
+    all: (state) => state.urls,
     getOnline: (state) => state.urlsOnline,
     getOffline: (state) => state.urls.filter( relay => !state.urlsOnline.includes(relay)),
     getShuffled: state => shuffle(state.urls),

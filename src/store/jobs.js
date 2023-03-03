@@ -51,38 +51,42 @@ export const useJobStore = defineStore(
   
   },
   actions: {
+    addProcessed(slug, key){
+      if( !(this.processed[slug] instanceof Array) )
+        this.processed[slug] = new Array()
+      if(!this.processed[slug].includes(key))
+        this.processed[slug].push(key)
+    },
     addUncommitted(slug, relay){
       if(!(this.uncommitted?.[slug] instanceof Array))
-        this.uncommitted[slug] = new Array() 
+        this.resetUncommitted(slug)
       this.uncommitted[slug].push(relay)
     },
-    applyUncommitted(slug){
+    removeUncommittedFromProcessed(slug){
       if(!(this.uncommitted?.[slug] instanceof Array))
         return 
+      console.log('before removal',  this.processed[slug].length)
       this.processed[slug] = this.processed[slug].filter( relay => !this.uncommitted[slug].includes(relay))
-      this.uncommitted[slug] = new Array()
+      console.log('after removal',  this.processed[slug].length)
+      this.resetUncommitted(slug)
     },
-    commitUncommitted(slug){
+    resetUncommitted(slug){
       this.uncommitted[slug] = new Array()
     },
     updateNow(key){ 
-      ////console.log('update timestamp', key)
       this.lastUpdate[key] = Date.now() 
     },
     //queue
     async addJob(job){
       if(job?.unique && this.isJobPending(job.id))
         return
-      // console.log('add job', job.id, 'is pending:', this.isJobPending(job.id), 'active:', this?.active?.id)
       this.pending.push(job)
       if( this.isIdle )
         this.startNextJob()
     },
     async startNextJob(){
-      // console.log('starting next job', this.pending?.[0]?.id, this.pending?.[0]?.handler)
       if( this.arePending ) {
         this.active = this.pending[0]
-        //console.log('started', this.active.id)
         this.pending.shift()
         this.runJob()
       }
@@ -98,7 +102,6 @@ export const useJobStore = defineStore(
         handler()
     },
     completeJob(slug){
-      // console.log('complete job', slug, this.active.id !== slug)
       if(this.active.id !== slug)
         return
       this.updateNow(this.active.id)
@@ -107,23 +110,14 @@ export const useJobStore = defineStore(
       setTimeout( this.startNextJob, 50)
     },
     clearJobs(type){
-      ////console.log('clear jobs', type)
       this[type] = new Array()
     },
     cancelJob( id ){
-      ////console.log('cancel jobs', id)
       const index = this.pending.findIndex( job => job.id === id )
       this.removeJob( index )
     },
     removeJob( index ){
-      ////console.log('remove job', index)
       this.pending.splice( index, 1 )
-    },
-    addProcessed(slug, key){
-      if( !(this.processed[slug] instanceof Array) )
-        this.processed[slug] = new Array()
-      if(!this.processed[slug].includes(key))
-        this.processed[slug].push(key)
     },
   },
   share: {

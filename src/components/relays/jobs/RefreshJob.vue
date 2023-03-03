@@ -53,7 +53,7 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { Inspector } from 'nostr-relay-inspector'
+import { RelayChecker, getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency } from 'nostrwatch-js'
 
 // import { relays } from '../../../../relays.yaml'
 
@@ -67,12 +67,23 @@ const localMethods = {
       return
 
     // console.log('queue job', single, this.slug)
+
+    this.resolveUnprocessed()
     
     this.queueJob(
       this.slug, 
       async () => await this.checkJob(single), 
       true
     )
+  },
+
+  resolveUnprocessed: function(){
+    this.store.jobs.processed?.[this.slug]?.forEach( relay => {
+      if(this.store.results.get(relay))
+        return 
+      let index = this.store.jobs.processed[this.slug].indexOf(relay)
+      this.store.jobs.processed[this.slug].splice[index, 1]
+    })
   },
 
   pruneResult: function(result){
@@ -87,15 +98,20 @@ const localMethods = {
           read: result.check.read,
           write: result.check.write,
           latency: result.check.latency,
-          averageLatency: result.check.averageLatency
+          // averageLatency: result.check.averageLatency
         },
+        latency: {}
       } 
-
-      if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostr-relay-inspector
+      if(result.latency?.data?.length) {
+        resultPruned.latency.average = getAverageLatency(result.latency.data)
+        resultPruned.latency.median = getMedianLatency(result.latency.data)
+        resultPruned.latency.min = getMinLatency(result.latency.data)
+        resultPruned.latency.max = getMaxLatency(result.latency.data)
+        resultPruned.latency.data = result.latency.data
+      }
+      
+      if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostrwatch-js
         resultPruned.info = result.info
-
-      if(result.latency) 
-        resultPruned.latency = result.latency
 
       if(result?.pubkeyValid)
         resultPruned.pubkeyValid = result.pubkeyValid
@@ -103,10 +119,13 @@ const localMethods = {
       if(result?.pubkeyError)
         resultPruned.pubkeyError = result.pubkeyError
 
-        if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
-          resultPruned.aggregate = 'restricted'
-          resultPruned.check.write = false 
-        }
+      if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
+        resultPruned.aggregate = 'restricted'
+        resultPruned.check.write = false 
+      }
+
+      if(this.isSingle)
+        resultPruned.log = result.log
 
       const uptime = this.getUptimePercentage(result.url)
       resultPruned.uptime = uptime
@@ -120,12 +139,12 @@ const localMethods = {
     } 
     else {
       this.relays = this.store.relays.getAll
-      this.store.jobs.applyUncommitted(this.slug)
-      const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
+      this.store.jobs.removeUncommittedFromProcessed(this.slug)
+      const relays = this.sortRelays( this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) ) )
       let relayChunks = this.chunk(100, relays)
       for(let c=0;c<relayChunks.length;c++){
-        let promises = [],
-            resultsChunk = {}
+        let promises = []
+        this.resultsChunk = {}
         const chunk = relayChunks[c]
         for(let index = 0; index < chunk.length; index++) {
           await new Promise( resolve => setTimeout(resolve, 100))
@@ -133,9 +152,11 @@ const localMethods = {
             const relay = chunk[index] 
             this.check(relay)
               .then((result) => {
+                if(!result?.url)
+                  return
                 this.store.jobs.addProcessed(this.slug, result.url)
                 this.store.jobs.addUncommitted(this.slug, result.url)
-                resultsChunk[result.url] = this.pruneResult(result)
+                this.resultsChunk[result.url] = this.pruneResult(result)
                 resolve()
               })
               .catch( (err) => { 
@@ -144,13 +165,18 @@ const localMethods = {
               })
           })
           promises.push(promise)
-          this.store.jobs.commitUncommitted(this.slug)
+          this.store.jobs.resetUncommitted(this.slug)
         }
         await Promise.all(promises)
-        this.store.results.mergeDeep(resultsChunk)
+        this.store.results.mergeDeep(this.resultsChunk)
       }
     } 
     this.completeAll(single)
+  },
+
+  resetLog: function(relay){
+    if(this.store.results.data?.[relay])
+      this.store.results.data[relay].log = new Array()
   },
 
   checkSingle: async function(relay, slug){
@@ -158,14 +184,10 @@ const localMethods = {
       .then((result) =>{
         result.aggregate = this.getAggregate(result)
         result = this.pruneResult(result)
-        this.store.results.mergeDeep({ 
-          [result.url]: result
-        })
+        this.store.results.set(result) 
         this.completeRelay(result)
       })
       .catch( (err) => console.error(`there was an error: ${err}`) )
-    if(this.stop)
-      return
     this.store.jobs.completeJob(slug)
   },
 
@@ -174,17 +196,14 @@ const localMethods = {
   },
 
   completeAll: function(){
-    if(this.stop)
-      return
     this.store.jobs.completeJob(this.slug)
   },
 
   check: async function(relay){
     // console.log('checking', relay)
-    if(this.stop)
-      return
     return new Promise( (resolve) => {
       const opts = {
+          debug: true,
           checkRead: true, 
           checkWrite: true,   
           checkLatency: true,
@@ -202,39 +221,27 @@ const localMethods = {
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
 
-      const $inspector = new Inspector(relay, opts)
+      const $checker = new RelayChecker(relay, opts)
 
-      $inspector
+      $checker
         .on('open', () => {})
         .on('complete', (instance) => {
           // console.log('aggr', instance.result.url, this.getAggregate(instance.result), instance.result.check.connect, instance.result.check.read, instance.result.check.write)
           instance.result.aggregate = this.getAggregate(instance.result)
-          instance.result.log = instance.log
-          this.closeRelay(instance.relay)
           resolve(instance.result)  
         })
         .on('error', () => {
           resolve()
         })
+      if(this.isSingle)
+        $checker.on('change', (result) => {
+          this.store.results.mergeDeep({
+            [result.url]: this.pruneResult(result)
+          })
+        })
       
-      this.inspectors.push($inspector)
+      this.relayCheckers.push($checker)
     })
-  },
-
-  setAverageLatency: function(){
-    const latencies = new Array()
-    this.relays.forEach( relay => {
-      latencies.push(this.store.results.get(relay)?.latency?.final)
-    })
-    this.averageLatency =  this.average(latencies)
-  },
-
-  average(arr){
-    let sum = 0,
-        total = arr.length;
-    for (let i = 0;i<total;i++) 
-      sum += arr[i];
-    return Math.floor(parseFloat(sum/total));
   },
 
   setRefreshInterval: function(){
@@ -245,6 +252,10 @@ const localMethods = {
 
       if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )
         return
+
+      const unprocessed = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
+      if(unprocessed.length < 10)
+        console.log('unprocessed:', unprocessed)
 
       if(!this.store.jobs.isJobActive(this.slug) && !this.isSingle)
         this.CheckRelaysJob()
@@ -312,17 +323,17 @@ export default defineComponent({
       sinceLast: null,
       interval: null,
       windowActive: true,
-      averageLatency: 200,
+      // averageLatency: 200,
       pageOpen: 0,
       slug: 'relays/check',
       latencies: [],
-      inspectors: [],
+      relayCheckers: [],
       stop: false,
       inspectTimeout: 15*1000,
       retry: [],
       retries: 1,
-      lazyInterval: 1*60*60*1000
-      // history: null
+      lazyInterval: 1*60*60*1000,
+      resultsChunk: {},
     }
   },
 
@@ -333,8 +344,13 @@ export default defineComponent({
 
   unmounted(){
     clearInterval(this.interval)
-    this.inspectors.forEach( $inspector => $inspector.close())
-    this.stop = true
+    this.store.results.mergeDeep(this.resultsChunk)
+    this.relayCheckers.forEach( $checker => {
+      if(!($checker.isWsOpen instanceof Function))
+        return
+      if($checker.isWsOpen())
+        $checker.close()
+    })
   },
 
   beforeMount(){
@@ -342,8 +358,10 @@ export default defineComponent({
 
   mounted(){
     if( this.isSingle ){
-      this.slug = `relays/check/${this.relayFromUrl}`
-      this.CheckRelaysJob(true, this.relayFromUrl)
+      const relay = this.relayFromUrl
+      this.resetLog(relay)
+      this.slug = `relays/check/${relay}`
+      this.CheckRelaysJob(true, relay)
       // this.runLatencyCheck()
     } else {
       this.CheckRelaysJob()
@@ -368,10 +386,10 @@ export default defineComponent({
           return segments[2]
       }
     },
-    getDynamicTimeout: function(){
-      const calculated = this.averageLatency*this.relays.length
-      return calculated > 10000 ? calculated : 10000
-    },
+    // getDynamicTimeout: function(){
+    //   const calculated = this.averageLatency*this.relays.length
+    //   return calculated > 10000 ? calculated : 10000
+    // },
     getRefreshInterval: function(){
       const relay = this.relayFromUrl
       if( !relay )

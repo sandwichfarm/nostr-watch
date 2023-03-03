@@ -1,15 +1,17 @@
+// THIS IS A PREBUILD SCRIPT, IT IS USED FOR EDGE CASES LIKE AD-BLOCKERS AND BRAVE BROWSER.
+
 const fetch = require('cross-fetch'),
       fs = require('fs'),
       YAML = require('yaml'),
-
-      outFile = './cache/geo.yaml'
+      outFile = './public/geo.json',
+      dotenv = require('dotenv')
 
 let object,
     yaml,
-    result,
     relayUrls = fs.readFileSync('./relays.yaml', 'utf8'),
-    geoCache = fs.readFileSync('./cache/geo.yaml', 'utf8'),
     continents = fs.readFileSync('./cache/continents.json', 'utf8')
+
+dotenv.config()
 
 const getDns = async function(relay){
   let dns
@@ -21,7 +23,7 @@ const getDns = async function(relay){
 }
 
 const delay = async function(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 const getIp = async function(dns){
@@ -32,8 +34,15 @@ const getIp = async function(dns){
 }
 
 const getGeo = async function(ip) {
-  let geo
-  await fetch(`http://ip-api.com/json/${ip}`, { headers: { 'accept': 'application/dns-json' } })
+  let geo,
+      endpoint
+
+  if(process.env.VUE_APP_IP_API_KEY)
+    endpoint = `https://pro.ip-api.com/json/${ip}?key=${process.env.VUE_APP_IP_API_KEY}`
+  else 
+    endpoint = `http://ip-api.com/json/${ip}`
+
+  await fetch(endpoint, { headers: { 'accept': 'application/json' } })
           .then(response => response.json())
           .then((data) => { geo = data })
           .catch(err => console.error('./scripts/geo.js', err))
@@ -51,47 +60,67 @@ const getContinent = function(countryCode) {
     })[0]
 }
 
-const query = async function(){
+const getRelays = async function(){
+  let relays,
+      relaysCache = YAML.parse(relayUrls).relays.reverse()
+      
+  response = await fetch(`https://api.nostr.watch/v1/online`)
 
-  const relays = YAML.parse(relayUrls).relays.reverse(),
-        result = YAML.parse(geoCache).geo || {}
+  console.log('retrieved online relays via api')
+  let relaysArr = await response.json()
+
+  if(!relaysArr && !relaysArr?.length)
+    return relaysCache
+
+  relays = Array.from(new Set([...relaysArr, ...relaysCache]))
+  return relays
+}
+
+const query = async function(){
+  const relays = await getRelays()
+  console.log(`getRelays(): ${relays.length} relays`)
+  console.log('using api key:', process.env.VUE_APP_IP_API_KEY)
+  
+  let result = {}
+
+  let count = 1
 
   for (const relay of relays) {
-    await delay(1000).then(async () => {
-      //console.log('getting relay geo', relay)
+    if(!process.env.VUE_APP_IP_API_KEY)
+      await delay(1501) //free version of ip-api is rated limited to 45 reqs/m
 
-      let dns, ip, geo
+    let dns, ip, geo
 
-      dns = await getDns(relay).catch()
-      ip = await getIp(dns).catch()
-      geo = await getGeo(ip).catch()
+    dns = await getDns(relay).catch( err => console.error(err))
+    ip = await getIp(dns).catch( err => console.error(err))
+    geo = await getGeo(ip).catch( err => console.error(err))
 
-      if(geo)
-        geo = Object.assign(geo, getContinent(geo.countryCode))
+    // console.log('relay', dns, ip, geo)
 
-      if(geo && dns)
-        geo.dns = dns[dns.length-1]
-  
-      if(geo && geo.status == 'success') {
-        delete geo.status
-        result[relay] = geo
-      }
+    if(geo)
+      geo = Object.assign(geo, getContinent(geo.countryCode))
 
-      if(!geo)
-        console.warn('api was mean, no geo for', relay)
-        
-    })
+    if(geo && dns)
+      geo.dns = dns[dns.length-1]
+
+    if(geo && geo.status == 'success') {
+      delete geo.status
+      result[relay] = geo
+    }
+
+    console.log(`#${count++}`, ip, 'done')
+
+    if(!geo)
+      console.warn('api was mean, no geo for', relay)
+
   }
   return result
 }
 
 const run = async function(){
-  result = await query()
-  object = { geo: result }
-  yaml = new YAML.Document()
-  yaml.contents = object
+  geo = await query()
   //console.log(object)
-  fs.writeFile(outFile, yaml.toString(), (err) => {
+  fs.writeFile(outFile, JSON.stringify(geo), (err) => {
     if (err) return console.error('./scripts/geo.js', err);
   });
 }

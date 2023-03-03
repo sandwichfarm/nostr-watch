@@ -319,7 +319,28 @@ export default {
       return this.isDone() ? 'loaded' : ''
     },
 
-    getReadabilityPercentage(relay){
+    // getReadabilityPercentage(relay){
+    //   const pulses = this.store.stats.getPulse(relay)
+    //   if(!pulses || !Object.keys(pulses).length )
+    //     return
+    //   const totalPulses = Object.keys(pulses).length 
+    //   const totalOnline = Object.entries(pulses).reduce(
+    //       (acc, value) => value[1].latency ? acc+1 : acc,
+    //       0
+    //   );
+    //   return Math.floor((totalOnline/totalPulses)*100)
+    // },
+
+    // getUptimePercentage(relay){
+    //   const pulses = this.store.stats.getPulse(relay)
+    //   console.log(relay, pulses)
+    //   if(!pulses || !Object.keys(pulses).length )
+    //     return
+    //   const totalPulses = Object.keys(pulses).length 
+    //   return Math.floor((totalPulses/48)*100)
+    // },
+
+    getUptimePercentage(relay){
       const pulses = this.store.stats.getPulse(relay)
       if(!pulses || !Object.keys(pulses).length )
         return
@@ -329,14 +350,6 @@ export default {
           0
       );
       return Math.floor((totalOnline/totalPulses)*100)
-    },
-
-    getUptimePercentage(relay){
-      const pulses = this.store.stats.getPulse(relay)
-      if(!pulses || !Object.keys(pulses).length )
-        return
-      const totalPulses = Object.keys(pulses).length 
-      return Math.floor((totalPulses/48)*100)
     },
 
     setUptimePercentage(relay){

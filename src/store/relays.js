@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia'
 import { useUserStore } from '@/store/user'
-// import { relays } from '../../relays.yaml'
-// import { geo } from '../../relays.yaml'
 
 export const useRelaysStore = defineStore('relays', {
   state: () => ({ 
@@ -18,7 +16,9 @@ export const useRelaysStore = defineStore('relays', {
     cached: new Object(),
     canonicals: new Object(),
     filters: new Object(),
-    dns: new Object()
+    dns: new Object(),
+    //manually for now
+    popular: ['wss://relay.damus.io', 'wss://relay.snort.social', 'wss://eden.nostr.land', 'wss://nostr.orangepill.dev', 'wss://nos.lol', 'wss://brb.io', 'wss://relay.current.fyi', 'wss://nostr-pub.wellorder.net'],
   }),
   getters: {
     getAll: (state) => state.urls,
@@ -29,24 +29,16 @@ export const useRelaysStore = defineStore('relays', {
     getShuffledPublic: state => {
       return state.aggregatesAreSet ? shuffle(state.aggregates.public) : shuffle(state.urls)
     },
+    getPopular: state => state.popular,
     getRelays: (state) => (aggregate, results) => {
       if( 'all' == aggregate )
         return state.urls.map(x=>x)
 
-      if( 'paid' == aggregate ){
-        // console.log('paid!', state.urls.filter( (relay) => results?.[relay]?.info?.payments_url )?.length, state.urls.length )
+      if( 'paid' == aggregate )
         return state.urls.filter( (relay) => results?.[relay]?.info?.limitation?.payment_required )
-      }
 
       if( 'online' == aggregate )
         return state.urls.filter( (relay) => results?.[relay]?.check?.connect )
-      
-      // if( 'nips' === aggregate)
-      //   return state.urls.filter( (relay) => { 
-      //     return  results?.[relay]?.info?.supported_nips  
-      //             && Object.keys(results[relay].info.supported_nips).length 
-      //             && results?.[relay]?.pubkeyValid
-      //   })
 
       if( 'favorite' == aggregate )
         return state.favorites

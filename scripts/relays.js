@@ -1,3 +1,5 @@
+// DEPRECATED: THIS WAS A PREBUILD SCRIPT USED A LONG TIME AGO. IT'S PURPOSE WAS REPLACED BY THE API (https://api.nostr.watch)
+
 const { RelayPool, Relay } = require('nostr'),
       crypto = require('crypto'),
       writeYamlFile = require('write-yaml-file'),

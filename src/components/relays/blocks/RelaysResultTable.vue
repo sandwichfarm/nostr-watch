@@ -93,7 +93,7 @@
                           class="text-xs block cursor-pointer" 
                           :class="this.store.prefs.sortUptime? 'bg-black/50 rounded-sm': ''"
                           @click="this.store.prefs.sortUptime=!this.store.prefs.sortUptime">
-                          Uptime(12h)
+                          Readability
                         </code>
                       </th>
                       <th 

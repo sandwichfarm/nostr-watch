@@ -55,18 +55,13 @@ import SharedComputed from '@/shared/computed.js'
 
 import { RelayChecker, getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency } from 'nostrwatch-js'
 
-// import { relays } from '../../../../relays.yaml'
-
 const localMethods = {
   async CheckRelaysJob(force, single){
-    // console.log('invalidate?', !((!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle), this.windowActive)
     if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle ) 
       return
 
     if(!this.windowActive)
       return
-
-    // console.log('queue job', single, this.slug)
 
     this.resolveUnprocessed()
     
@@ -200,7 +195,6 @@ const localMethods = {
   },
 
   check: async function(relay){
-    // console.log('checking', relay)
     return new Promise( (resolve) => {
       const opts = {
           debug: true,
@@ -214,8 +208,7 @@ const localMethods = {
           readTimeout: this.store.prefs.advancedTimeout ? this.store.prefs.readTimeout : this.store.prefs.inspectTimeout,
           writeTimeout: this.store.prefs.advancedTimeout ? this.store.prefs.writeTimeout : this.store.prefs.inspectTimeout,
         }
-      
-      // if(this.isSingle)
+
       opts.checkAverageLatency = true
       
       if(this.store.user.testEvent)

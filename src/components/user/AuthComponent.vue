@@ -5,6 +5,7 @@
 <script>
 import { defineComponent } from 'vue'
 import { useRoute } from 'vue-router'
+import RelayMethods from '@/shared/relays-lib.js'
 import UserLib from '@/shared/user-lib.js'
 import { setupStore } from '@/store'
 import crypto from 'crypto'
@@ -29,14 +30,16 @@ export default defineComponent({
     }
   },
   async mounted(){
-    this.showAuth()
+    await this.showAuth()
+    if(!this.store.prefs.isFirstVisit)
+      this.auth()
     if(this.isLoggedIn())
       await this.getData()
   },
   updated(){
   },
   computed: {},
-  methods: Object.assign(UserLib, {
+  methods: Object.assign(RelayMethods, UserLib, {
     showAuth: async function(){
       await new Promise( (resolve) => {
         setTimeout( () => {
@@ -51,12 +54,11 @@ export default defineComponent({
       const pubkey = await window.nostr.getPublicKey()
       this.store.user.setPublicKey(pubkey)
       await this.getData()
-      delete this.store.jobs.lastUpdate['user/list/contacts']
-      // this.queueKind3('user/list/contacts')
-      this.$forceUpdate()
+      this.queueKind3('user/list/contacts')
     },
     getData: function(){
-      const pool = new RelayPool([...this.store.relays.getFavorites], { reconnect: false })
+      const relays = this.store.relays.getFavorites?.length ? this.store.relays.getFavorites : this.store.relays.getPopular
+      const pool = new RelayPool(relays, { reconnect: false })
       return new Promise( resolve => {
         const subid = crypto.randomBytes(20).toString('hex')
         const filterProfile = { limit: 1, kinds:[0], authors: [this.store.user.getPublicKey ] }

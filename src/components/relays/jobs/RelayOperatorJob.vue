@@ -11,7 +11,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import crypto from 'crypto'
 
@@ -30,13 +30,13 @@ const localMethods = {
     this.queueJob(
       this.slug,
       () => {
-        const pool = new RelayPool([this.relay])
-        const subid = crypto.randomBytes(20).toString('hex')
+        const pool = new RelayPool([this.relay]),
+              subid = crypto.randomBytes(20).toString('hex')
         pool
           .on('open', relay => {
             relay.subscribe(`${subid}-0`, { limit:1, kinds:[0], authors:[this.result.info.pubkey] })
             relay.subscribe(`${subid}-1`, { limit:10, kinds:[1], authors:[this.result.info.pubkey] })
-            // relay.subscribe(`${subid}-7`, { limit:10, kinds:[1], authors:[this.result.info.pubkey] })
+            // relay.subscribe(`${subid}-7`, { limit:10, kinds:[7], authors:[this.result.info.pubkey] })
           })
           .on('event', (relay, sub_id, event) => {
             if(subid === `${subid}-0`){
@@ -62,11 +62,9 @@ export default defineComponent({
       slug: 'relays/detail/operator'
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
   created(){

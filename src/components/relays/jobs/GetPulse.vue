@@ -92,7 +92,6 @@ const localMethods = {
     })
     
     this.parsePulses(pulsesByEvent)
-
   },
   parsePulses(data){
     const allTimestamps = Object.keys(data),
@@ -138,6 +137,7 @@ const localMethods = {
     return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   }
 }
+
 export default defineComponent({
   name: 'GetPulse',
   components: {},

@@ -33,12 +33,17 @@
 
     <CheckP2R v-if="!isSingle" />
 
+    <HistoryJob
+      />
+
+    
     <RefreshJob 
       v-if="store.prefs.clientSideProcessing || isSingle || this.store.prefs.isFirstVisit" />
     
     <CheckDNS v-if="!isSingle" />
 
-    <HistoryJob />
+    <HistoryJob
+      />
 
     <GetTopics
       v-if="store.prefs.clientSideProcessing && !isSingle" />

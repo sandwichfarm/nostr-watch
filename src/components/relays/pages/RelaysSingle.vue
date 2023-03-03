@@ -130,7 +130,7 @@
         <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length && !isPayToRelay(relay)">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
-              Uptime for the last
+              Readability for the last
               <span class=" text-gray-500 dark:text-gray-400">12hrs: </span> 
               <span :class="getUptimeColor(result)" v-if="result?.uptime">{{ result.uptime }}%</span>
             </h3>

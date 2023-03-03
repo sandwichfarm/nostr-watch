@@ -5,7 +5,8 @@
   "scripts": {
     "build": "vue-cli-service build",
     "build:quick": "vue-cli-service build",
-    "prebuild": "yarn get:geo",
+    "prebuild": "yarn get:geo && yarn prebuild:move",
+    "prebuild:move": "yaml-convert relays.yaml > public/relays.json",
     "get:relays": "node ./scripts/relays.js",
     "get:geo": "node ./scripts/geo.js",
     "serve": "vue-cli-service serve --host localhost",

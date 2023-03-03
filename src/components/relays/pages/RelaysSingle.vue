@@ -126,7 +126,11 @@
           </div>
         </div>
 
-        <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length && !isPayToRelay(relay)">
+        <div class="mb-8 text-center">
+          Uptime data is disabled for a few days while this feature is improved.
+        </div>
+
+        <div class="mt-3 hidden overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length && !isPayToRelay(relay)">
           <div class="px-0 pt-5 sm:px-6">
             <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
               Uptime for the last
@@ -157,9 +161,9 @@
           </div>
         </div>
 
-        <div v-if="!pulses && result?.check?.connect" class="py-8 px-8 text-center text-lg">
+        <!-- <div v-if="!pulses && result?.check?.connect" class="py-8 px-8 text-center text-lg">
             This relay does not have any uptime data. This is likely because the operator or their hosting provider has blocked nostr.watch uptime daemons.
-        </div>  
+        </div>   -->
 
         <!-- <div class="flex justify-center">
           <div class="block rounded-lg shadow-lg bg-white max-w-sm text-center">

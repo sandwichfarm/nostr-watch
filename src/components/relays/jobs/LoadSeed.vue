@@ -46,7 +46,7 @@ import SharedComputed from '@/shared/computed.js'
 
 import { RelayPool } from 'nostr'
 
-// import { Inspector } from 'nostr-relay-inspector'
+// import { RelayChecker } from 'nostrwatch-js'
 
 const localMethods = {
   LoadSeed(force, single){

@@ -7,7 +7,7 @@
           I launched nostr.watch as a prototype for fun
           and a few weeks later nostr took off. Built 
           with Vue3/Pinia, Tailwind, nostr-tools, 
-          nostr-js and nostr-relay-inspector. A fork of 
+          nostr-js and nostrwatch-js. A fork of 
           fiatjaf/nostr-relay-registry rewriten.
         </div>
         <div class="border-t text-md pt-3 border-slate-700 ">

@@ -27,7 +27,7 @@ import { setupStore } from '@/store'
 import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-// import { Inspector } from 'nostr-relay-inspector'
+// import { RelayChecker } from 'nostrwatch-js'
 
 const localMethods = {
   CheckNip11(force){ 

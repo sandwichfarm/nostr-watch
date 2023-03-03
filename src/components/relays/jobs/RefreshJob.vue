@@ -53,7 +53,7 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { Inspector } from 'nostr-relay-inspector'
+import { RelayChecker } from 'nostrwatch-js'
 
 // import { relays } from '../../../../relays.yaml'
 
@@ -91,7 +91,7 @@ const localMethods = {
         },
       } 
 
-      if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostr-relay-inspector
+      if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostrwatch-js
         resultPruned.info = result.info
 
       if(result.latency) 
@@ -202,7 +202,7 @@ const localMethods = {
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
 
-      const $inspector = new Inspector(relay, opts)
+      const $inspector = new RelayChecker(relay, opts)
 
       $inspector
         .on('open', () => {})

@@ -240,7 +240,7 @@ const localMethods = {
   setRefreshInterval: function(){
     clearInterval(this.interval)
     this.interval = setInterval(() => {
-      if( this.store.jobs.isIdle )
+      if( this.store.jobs.isIdle && !this.store.prefs.firstVisit )
         this.lazyChecks()
 
       if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )

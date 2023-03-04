@@ -302,7 +302,7 @@
 
           <div v-if="!store.prefs.advancedTimeout" class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
-              Inspector Timeout
+              RelayChecker Timeout
             </label>
             <div class="mt-1 sm:col-span-2 sm:mt-0">
               {{ store.prefs.inspectTimeout }}

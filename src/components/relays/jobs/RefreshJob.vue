@@ -53,7 +53,7 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { RelayChecker } from 'nostrwatch-js'
+import { RelayChecker, getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency } from 'nostrwatch-js'
 
 // import { relays } from '../../../../relays.yaml'
 
@@ -87,15 +87,20 @@ const localMethods = {
           read: result.check.read,
           write: result.check.write,
           latency: result.check.latency,
-          averageLatency: result.check.averageLatency
+          // averageLatency: result.check.averageLatency
         },
+        latency: {}
       } 
-
+      if(result.latency?.data?.length) {
+        resultPruned.latency.average = getAverageLatency(result.latency.data)
+        resultPruned.latency.median = getMedianLatency(result.latency.data)
+        resultPruned.latency.min = getMinLatency(result.latency.data)
+        resultPruned.latency.max = getMaxLatency(result.latency.data)
+        resultPruned.latency.data = result.latency.data
+      }
+      
       if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostrwatch-js
         resultPruned.info = result.info
-
-      if(result.latency) 
-        resultPruned.latency = result.latency
 
       if(result?.pubkeyValid)
         resultPruned.pubkeyValid = result.pubkeyValid
@@ -103,17 +108,19 @@ const localMethods = {
       if(result?.pubkeyError)
         resultPruned.pubkeyError = result.pubkeyError
 
-        if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
-          resultPruned.aggregate = 'restricted'
-          resultPruned.check.write = false 
-        }
+      if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
+        resultPruned.aggregate = 'restricted'
+        resultPruned.check.write = false 
+      }
+
+      if(this.isSingle)
+        resultPruned.log = result.log
 
       const uptime = this.getUptimePercentage(result.url)
       resultPruned.uptime = uptime
     }
     return resultPruned
   },
-
   checkJob: async function(single){
     if(single) {
       await this.checkSingle(single, this.slug)
@@ -124,8 +131,7 @@ const localMethods = {
       const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
       let relayChunks = this.chunk(100, relays)
       for(let c=0;c<relayChunks.length;c++){
-        let promises = [],
-            resultsChunk = {}
+        let promises = []
         const chunk = relayChunks[c]
         for(let index = 0; index < chunk.length; index++) {
           await new Promise( resolve => setTimeout(resolve, 100))
@@ -134,8 +140,8 @@ const localMethods = {
             this.check(relay)
               .then((result) => {
                 this.store.jobs.addProcessed(this.slug, result.url)
-                this.store.jobs.addUncommitted(this.slug, result.url)
-                resultsChunk[result.url] = this.pruneResult(result)
+                // resultsChunk[result.url] = this.pruneResult(result)
+                this.store.results.mergeDeep({ [result.url]: this.pruneResult(result) })
                 resolve()
               })
               .catch( (err) => { 
@@ -144,10 +150,8 @@ const localMethods = {
               })
           })
           promises.push(promise)
-          this.store.jobs.commitUncommitted(this.slug)
         }
         await Promise.all(promises)
-        this.store.results.mergeDeep(resultsChunk)
       }
     } 
     this.completeAll(single)

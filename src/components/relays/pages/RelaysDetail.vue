@@ -22,7 +22,6 @@
             Paid Relays presently have limited results due to significantly higher support liability, once a suitable solution has been identified, service will resume as usual. Sorry for the inconvenience. 
         </div>
 
-
         <DetailHeader :result="result" />
         <DetailCapabilities :result="result" />        
         <DetailLog :result="result" />

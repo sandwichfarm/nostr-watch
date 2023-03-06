@@ -84,7 +84,7 @@
                           Location
                         </code>
                       </th>
-                      <th
+                      <!-- <th
                         v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" 
                         scope="col" 
                         class="uptime text-center" 
@@ -95,7 +95,7 @@
                           @click="this.store.prefs.sortUptime=!this.store.prefs.sortUptime">
                           Readability
                         </code>
-                      </th>
+                      </th> -->
                       <th 
                         v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" 
                         scope="col" 
@@ -208,14 +208,14 @@
                         {{ getFlag(relay) }}
                       </td>
 
-                      <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" class="w-24 text-center">
+                      <!-- <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" class="w-24 text-center">
                         <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime && !isPayToRelay(relay)">
                           {{ this.store.results.get(relay)?.uptime }}%
                         </span>
                         <span class="sm:px-6 text-sm italic h-full text-gray-800" v-if="this.store.results.get(relay)?.uptime && isPayToRelay(relay)">
                           hidden
                         </span>
-                      </td>
+                      </td> -->
 
                       <!-- <td class="w-24 latency text-center">
                         <div class="px-4 py-5 sm:px-6 flex text-sm font-bold">

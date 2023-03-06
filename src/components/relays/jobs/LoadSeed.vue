@@ -46,7 +46,7 @@ import SharedComputed from '@/shared/computed.js'
 
 import { RelayPool } from 'nostr'
 
-// import { RelayChecker } from 'nostrwatch-js'
+import { getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency  } from 'nostrwatch-js'
 
 const localMethods = {
   LoadSeed(force, single){
@@ -101,9 +101,12 @@ const localMethods = {
               authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
             })
           })
-          .on('event', async (relay, sub_id, event) => {
+          .on('event', async ($relay, sub_id, event) => {
             if(subid === sub_id){
+              
               const relay = event.tags[0][1]
+              console.log(relay, this.timeSince(event.created_at*1000), event.content)
+
               const data = JSON.parse(event.content)
               // const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
               let topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1]?.toLowerCase(), topicTag[2] ] )
@@ -125,14 +128,20 @@ const localMethods = {
               if(data?.info)
                 result.info = data.info
               
-              result.latency = data?.latency[this.store.prefs.region] 
+              result.latency = {
+                average: data?.latency?.[this.store.prefs.region]?.[0] ? getAverageLatency(data?.latency?.[this.store.prefs.region][1]) : null,
+                median: data?.latency?.[this.store.prefs.region]?.[0] ? getMedianLatency(data?.latency?.[this.store.prefs.region][1]) : null,
+                min: data?.latency?.[this.store.prefs.region]?.[0] ? getMinLatency(data?.latency?.[this.store.prefs.region][1]) : null,
+                max: data?.latency?.[this.store.prefs.region]?.[0] ? getMaxLatency(data?.latency?.[this.store.prefs.region][1]) : null,
+                data: data?.latency?.[this.store.prefs.region]?.[1]
+              }
 
               if(event?.tags){
-                const connect = event.tags.filter( tag => tag[0] == 'online'),
-                      read = event.tags.filter( tag => tag[0] == 'read'),
+                // const connect = event.tags.filter( tag => tag[0] == 'online'),
+                const read = event.tags.filter( tag => tag[0] == 'read'),
                       write = event.tags.filter( tag => tag[0] == 'write')
                     
-                result.check.connect = connect.length && connect[0][1] === 'true' ? true : false
+                result.check.connect = true
                 result.check.read = read.length && read[0][1] === 'true' ? true : false
                 result.check.write = write.length && write[0][1] === 'true' ? true : false
               }

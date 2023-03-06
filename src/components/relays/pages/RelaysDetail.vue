@@ -22,307 +22,28 @@
             Paid Relays presently have limited results due to significantly higher support liability, once a suitable solution has been identified, service will resume as usual. Sorry for the inconvenience. 
         </div>
 
-        <div id="title_card" class="data-card overflow-hidden sm:rounded-lg mb-8 pt-5" style="background:transparent">
-          <div class="px-4 py-5 sm:px-6">
-            <h1 class="font-light text-3xl md:text-4xl xl:text-7xl">{{geo?.countryCode ? getFlag : ''}} <span @click="copy(relayFromUrl)">{{ relayFromUrl }}</span></h1>
-            <p class="mt-1 w-auto text-xl text-gray-500" v-if="result?.info?.description">{{ result.info.description }}</p>
-            <span class="mt-1 w-auto text-xl text-gray-400" v-if="result?.info?.contact">
-              <span v-if="isContactType(result?.info?.contact, 'email')">Contact: <SafeMail :email="result.info.contact" /></span>
-              <span v-else>{{ result?.info?.contact }}</span>
-            </span>
+
+        <DetailHeader :result="result" />
+        <DetailCapabilities :result="result" />        
+        <DetailLog :result="result" />
+        <div v-if=" 'complete' === this.result.state ">
+          <DetailTopics :result="result" />
+          <DetailPayToRelay :result="result" />
+          <DetailLatencyBlock :result="result" />
+          <DetailHistory :result="result" />
+          <DetailNips :result="result" />
+          <div class="flex-none lg:flex mb-8">
+            <DetailNetwork :result="result" />
+            <DetailSoftware :result="result" />
+            <DetailPubKey :result="result" />
           </div>
-          <a 
-          target="_blank" 
-          :href="`https://www.ssllabs.com/ssltest/analyze.html?d=${ getHostname(relay) }`"
-          class="inline-block py-2 px-3 bg-black/10 first-line:font-bold text-black dark:bg-white/50  dark:text-white ">
-            Check SSL
-          </a>
+          <DetailLocalTime :result="result" />
         </div>
-
-        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border mb-8 py-8 px-4" v-if="result?.topics && result?.topics.length">
-          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
-            <span v-for="topic in getTopics" :class="normalizeTopic(topic)" :key="`${result?.url}-${topic[0]}`">
-              #{{ topic[0] }}  
-            </span>
-          </div>
-        </div>
-
-        <div id="status" class="block lg:flex mb-2 py-5 rounded-lg"> <!--something is weird here with margin-->
-          <div 
-            v-for="type in checkDimensions" 
-            :key="type.key" 
-            class="text-white text-lg md:text-xl lg:text-2xl block lg:flex-1 py-3" 
-            :class="checkClass(type.key)">
-            <span>{{type.label}}</span>  
-          </div>
-        </div>
-
-        <div id="status" class="block mb-8 px-5 py-8 rounded-lg text-center text-2xl" v-if="isPayToRelay(relay)"> <!--something is weird here with margin-->
-            {{ relay }} is a <strong>Paid Relay</strong> and requires an admissions fee
-            <span v-if="this.result?.info?.fees?.admission?.[0]">
-              of <strong>{{ getPaidRelayAdmission(this.result, true) }}</strong>
-            </span>
-            for write capabilities. 
-            <span v-if="this.result?.info?.fees?.publication?.length">
-              <strong>Additionally,</strong> there are publication costs associated with this relay:
-              <span v-for="publication in this.result.info.fees.publication" :key="`${result.url}-${publication.amount}-${publication.unit}${publication?.kind ? '-'+publication.kind : ''}`">
-                <strong>{{ getPaidRelayPublication(publication, true) }}</strong>
-              </span>
-            </span>
-            <br />
-            
-            <a v-if="result?.info?.payments_url" class="mt-6 inline-block button text-md bg-black/80 hover:bg-black/90 text-white font-bold py-2 px-4 rounded" :href="result.info.payments_url">
-              <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" v-if="isPayToRelay(relay)">
-                <circle style="fill:#f8991d" class="cls-1" cx="180" cy="180" r="179"/>
-                <rect class="fill-white dark:fill-black" x="201.48" y="37.16" width="23.49" height="40.14" transform="translate(21.82 -52.79) rotate(14.87)"/>
-                <rect class="fill-white dark:fill-black" x="135.03" y="287.5" width="23.49" height="40.14" transform="translate(83.82 -27.36) rotate(14.87)"/>
-                <rect class="fill-white dark:fill-black" x="184.27" y="38.29" width="23.49" height="167.49" transform="translate(364.26 -36.11) rotate(104.87)"/>
-                <rect class="fill-white dark:fill-black" x="168.36" y="98.26" width="23.49" height="167.49" transform="translate(402.22 54.61) rotate(104.87)"/>
-                <rect class="fill-white dark:fill-black" x="152.89" y="156.52" width="23.49" height="167.49" transform="translate(439.1 142.78) rotate(104.87)"/>
-              </svg>
-              Pay Admission
-            </a>
-        </div>   
-
-        <div 
-          v-if="result.latency?.average"
-          id="status" 
-          class="flex-none w-full md:w-auto md:flex mb-2 py-5" 
-          > <!--something is weird here with margin-->
-          <div class="text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6 ">
-            <vue-gauge 
-              v-if="result.latency?.average"
-              class="relative -top-6 -mb-12 m-auto inline-block"
-              :refid="'relay-latency'"
-              :options="{
-                'needleValue':normalizeLatency(result?.latency?.average || result?.latency?.final),
-                'arcDelimiters':[33,66],
-                'rangeLabel': false,
-                'arcColors': ['green', 'orange', 'red'] }">
-            </vue-gauge>
-          </div>
-          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3 class="text-black/70 dark:text-white/50 text-lg">Avg. Latency</h3>
-            <svg v-if="!result.latency?.average" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>{{ result.latency?.average }}</span>
-          </div>
-          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3 class="text-black/70 dark:text-white/50 text-lg">Min Latency</h3>
-            <svg v-if="!result.latency.min" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>{{ result.latency?.min }}</span>
-          </div>
-          <div class="text-black dark:text-white text-lg md:text-xl lg:text-3xl flex-1 block py-6">
-            <h3 class="text-black/70 dark:text-white/50 text-lg">Max Latency</h3>
-            <svg v-if="!result.latency.max" class="animate-spin mr-1 mt-1 h-6 w-6 text-black dark:text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>{{ result.latency?.max }}</span>
-          </div>
-        </div>
-
-        <div class="mt-3 overflow-hidden mb-8" v-if="this.pulses && Object.keys(this.pulses).length && !isPayToRelay(relay)">
-          <div class="px-0 pt-5 sm:px-6">
-            <h3 class="text-lg md:text1xl lg:text-2xl xl:text-3xl">
-              Readability for the last
-              <span class=" text-gray-500 dark:text-gray-400">12hrs: </span> 
-              <span :class="getUptimeColor(result)" v-if="result?.uptime">{{ result.uptime }}%</span>
-            </h3>
-          </div>
-
-          <div class="px-0 py-5 sm:px-0 flex">
-            <!-- <span 
-              v-for="pulse in this.pulses"
-              :key="pulse.date"
-              class=" mr-1 flex-1 relative"
-              :class="getUptimeTickClass(pulse)">
-                <span class="block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="pulse.latency">{{ pulse.latency }}ms</span>
-                <span v-if="!pulse.latency">&nbsp;</span>
-              </span> -->
-
-            <span 
-              v-for="pulse in this.pulses"
-              :key="pulse.date"
-              class="mr-1 flex-1">
-                <span class="block" :class="getUptimeTickClass(pulse)">
-                  <span class="hidden lg:block origin-left-top transform relative -right-2 rotate-90 text-xs text-black/75 w-1" v-if="pulse.latency">{{ pulse.latency }}ms</span>
-                  <span v-if="!pulse.latency">&nbsp;</span>
-                </span>
-              </span>
-          </div>
-        </div>
-
-        <div v-if="!pulses && result?.check?.connect" class="py-8 px-8 text-center text-lg">
-            This relay does not have any uptime data. This is likely because the operator or their hosting provider has blocked nostr.watch uptime daemons.
-        </div>  
-
-        <!-- <div class="flex justify-center">
-          <div class="block rounded-lg shadow-lg bg-white max-w-sm text-center">
-            <div class="py-3 px-6 border-b border-gray-300">
-              Featured
-            </div>
-            <div class="p-6">
-              <h5 class="text-gray-900 text-xl font-medium mb-2">Special title treatment</h5>
-              <p class="text-gray-700 text-base mb-4">
-                With supporting text below as a natural lead-in to additional content.
-              </p>
-              <button type="button" class=" inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out">Button</button>
-            </div>
-            <div class="py-3 px-6 border-t border-gray-300 text-gray-600">
-              2 days ago
-            </div>
-          </div>
-        </div> -->
-
-
-       
-
-        
-        
-        
-
-        <!-- <div id="did_not_connect" v-if="!result?.check?.connect" class="mb-8 py-8">
-          <div class="data-card block mt-8 py-24 w-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700" v-if="!result?.check?.connect">
-            <h5 class="mb-2 text-2xl font-bold tracking-tight text-red-600 dark:text-red-300">This Relay Appears to be offline</h5>
-          </div>
-          <div class="flex bg-slate-50 shadow mt-8" v-if="Object.keys(this.result?.geo).length">
-            <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
-              I did find this...
-            </div>
-          </div>
-        </div> -->
-
-        <div id="nips" v-if="result?.info?.supported_nips" class="mb-8 py-1 overflow-hidden bg-slate-400 border-slate-200 shadow sm:rounded-lg dark:bg-slate-800">
-          <div class="px-1 py-2 sm:px-6">
-            <div class="lg:flex">
-              <div class="flex-none lg:flex-initial">
-                <h3 class="inline-block lg:block text-lg md:text-lg lg:text-xl xl:text-3xl mb-2 px-2 align-middle mt-4 font-black">nips</h3>
-              </div>
-              <a target="_blank" :href="nipLink(key)" v-for="key in result?.info?.supported_nips" :key="`nip-${key}`" 
-              class="hover:bg-slate-300 dark:hover:bg-black/20 hover:shadow pointer-cursor flex-initial gap-4  text-slate-800 text-1xl w-1/5 inline-block py-6 ">
-                <code>{{nipFormatted(key)}}</code>
-              </a>
-            </div>
-          </div>
-        </div>
-
-
-        <div class="flex-none lg:flex mb-8">
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0"  v-if="geo && Object.keys(geo)?.length">
-            <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <div class="py-6 px-4">
-                <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
-                  Network Summary
-                </h5>
-                <p class="text-gray-700 text-base mb-4 dark:text-white/60">
-                  The IP of <strong>https://{{ geo?.dns?.name }}</strong> is <strong>{{ geo?.dns?.data }}</strong>
-                  and appears to be in <strong>{{ geo?.city }} {{ geo?.country }}.</strong>
-                  The hosting provider is <strong>{{  geo?.as  }}</strong>.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info && Object.keys(result?.info)?.length">
-            <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <div class="py-6 px-4">
-                <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
-                  Software
-                </h5>
-                <p class="text-gray-700 text-base mb-4 dark:text-white/60">
-                  <strong>{{relay}}</strong> is running <strong>{{ getSoftware }}</strong> version <strong>{{ result?.info?.version }}</strong>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex-none lg:flex-1 justify-center mb-6 lg:mb-0" v-if="result?.info?.pubkey">
-            <div class="inline-block rounded-lg shadow-lg h-auto lg:h-full bg-white dark:bg-black/30 max-w-sm text-center">
-              <div class="py-6 px-4">
-                <h5 class="text-gray-900 dark:text-white/90 text-xl font-medium mb-2">
-                  PubKey
-                </h5>
-                <p class="text-gray-700 text-base mb-4 dark:text-white/60 text-ellipsis overflow-hidden">
-                  The relay's pubkey is <code class="block text-ellipsis w-full">{{ result?.info?.pubkey }}</code>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="data-card flex sm:rounded-lg bg-slate-50 dark:bg-black/20 border-slate-200 border py-8" v-if="geo">
-          <div class="text-slate-800 text-lg md:text-xl lg:text-3xl flex-none w-full block py-1 text-center">
-            <span>
-              It's <strong>{{ getLocalTime }}</strong> in <strong>{{ geo?.city }}</strong>
-              </span>
-          </div>
-        </div>
-
-        <div class="col-span-1" v-if="result?.log">
-          <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-            <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
-              <div class="overflow-hidden">
-                <table class="min-w-full text-center">
-                  <thead>
-                    <tr>
-                      <th scope="col" class="text-sm font-medium text-gray-900 px-6 py-4">
-                        Log
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(log, index) in result.log" :key="`${log[0]}-${index}`">
-                      <td class="border-b text-sm text-gray-900 font-medium px-6 py-4 overflow-ellipsis font-mono" :class="getLogClass(log[0])">
-                        {{ log[1] }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
- 
         <!-- <a :click="showRawData=!showRawData" class="cursor-pointer">Raw</a> -->
-       
-        <div class="hidden lg:block">
-          <h2 
-            class="text-center text-2xl text-black/50 dark:text-white/50 my-4 font-extrabold cursor-pointer block py-5"
-            :class="{ 
-              'bg-black/10 dark:bg-black/50': this.store.layout.rawDataIsExpanded,  
-              'bg-black/5 dark:bg-black/20': !this.store.layout.rawDataIsExpanded,  
-            }"
-            @click="this.store.layout.toggleRawData">
-            <code>{ ... }</code>
-          </h2>
-          <div 
-            v-if="this.store.layout.rawDataIsExpanded">
-            <div>
-              <h3 id="json-nip-11" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NIP-11</h3>
-              <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ JSON.stringify(this.result.info, null, 4) }}</pre>
-            </div>
-            <div>
-              <h3 id="json-geo" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">GEO</h3>
-              <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay] ? jsonGeo(relay) : 'not found' }}</pre>
-            </div>
-            <div>
-              <h3 id="json-dns" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">DNS</h3>
-              <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.relays.geo?.[relay]?.dns ? jsonDNS(relay) : 'not found' }}</pre>
-            </div>
-            <div>
-              <h3 id="json-nostrwatch" class="text-left text-xl text-black/50 dark:text-white/50 my-4 font-extrabold">NOSTR.WATCH</h3>
-              <pre class="p-4 bg-black/5 dark:bg-black/10 border border-black/20 text-left font-bold text-lg text-black/50 dark:text-white/40">{{ this.store.results.get(relay) ? jsonCheck(relay) : 'not found' }}</pre>
-            </div>
-          </div>
-        </div>
+        
+        <DetailJson :result="result" />
+        
                       <!-- component -->
-
 
         <!-- <div class="flex bg-slate-50 border-slate-200 mt-12 shadow" v-if="true">
           <div class="text-slate-800 text-3xl flex-none w-full block py-1 text-center">
@@ -594,11 +315,6 @@
 
 import { defineComponent, defineAsyncComponent } from 'vue'
 
-// import RelaysNav from '@/components/relays/nav/RelaysNav.vue'
-// import MapSingle from '@/components/relays/blocks/MapSingle.vue'
-
-import SafeMail from "@2alheure/vue-safe-mail";
-
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
@@ -612,12 +328,56 @@ const RelaysNav = defineAsyncComponent(() =>
     import("@/components/relays/nav/RelaysNav.vue" /* webpackChunkName: "RelaysNav" */)
 );
 
-const VueGauge = defineAsyncComponent(() =>
-    import('vue-gauge' /* webpackChunkName: "VueGauge" */)
-);
-
 const MapSingle = defineAsyncComponent(() =>
     import("@/components/relays/blocks/MapSingle.vue" /* webpackChunkName: "MapSingle" */)
+);
+
+const DetailHistory = defineAsyncComponent(() =>
+  import('@/components/detail/DetailHistory.vue' /* webpackChunkName: "DetailHistory" */)
+);
+
+const DetailLatencyBlock = defineAsyncComponent(() =>
+  import('@/components/detail/DetailLatencyBlock.vue' /* webpackChunkName: "DetailLatencyBlock" */)
+);
+
+const DetailPayToRelay = defineAsyncComponent(() =>
+  import('@/components/detail/DetailPayToRelay.vue' /* webpackChunkName: "DetailPayToRelay" */)
+);
+
+const DetailLog = defineAsyncComponent(() =>
+  import('@/components/detail/DetailLog.vue' /* webpackChunkName: "DetailLog" */)
+);
+
+const DetailHeader = defineAsyncComponent(() =>
+  import('@/components/detail/DetailHeader.vue' /* webpackChunkName: "DetailHeader" */)
+);
+
+const DetailTopics = defineAsyncComponent(() =>
+  import('@/components/detail/DetailTopics.vue' /* webpackChunkName: "DetailTopics" */)
+);
+
+const DetailCapabilities = defineAsyncComponent(() =>
+  import('@/components/detail/DetailCapabilities.vue' /* webpackChunkName: "DetailCapabilities" */)
+);
+
+const DetailNips = defineAsyncComponent(() =>
+  import('@/components/detail/DetailNips.vue' /* webpackChunkName: "DetailNips" */)
+);
+
+const DetailNetwork = defineAsyncComponent(() =>
+  import('@/components/detail/DetailNetwork.vue' /* webpackChunkName: "DetailNetwork" */)
+);
+
+const DetailSoftware = defineAsyncComponent(() =>
+  import('@/components/detail/DetailSoftware.vue' /* webpackChunkName: "DetailSoftware" */)
+);
+
+const DetailPubKey = defineAsyncComponent(() =>
+  import('@/components/detail/DetailPubKey.vue' /* webpackChunkName: "DetailPubKey" */)
+);
+
+const DetailLocalTime = defineAsyncComponent(() =>
+  import('@/components/detail/DetailLocalTime.vue' /* webpackChunkName: "DetailLocalTime" */)
 );
 
 const localMethods = {
@@ -669,14 +429,27 @@ export default defineComponent({
   
   components: {
     MapSingle,
-    SafeMail,
+    
     RelaysNav,
-    VueGauge,
+
+    DetailHistory, 
+    DetailLatencyBlock, 
+    DetailPayToRelay, 
+    DetailLog,
+    DetailHeader,
+    DetailTopics,
+    DetailCapabilities,
+    DetailNips,
+    DetailNetwork,
+    DetailPubKey,
+    DetailSoftware,
+    DetailLocalTime
+    // VueGauge,
   },
 
   data() {
     return {
-      relay: "",
+      relay: null,
       geo: {},
       events: {},
       interval: null,
@@ -684,7 +457,8 @@ export default defineComponent({
       showLatency: false,
       pulses : {},
       hbMin: 0,
-      hbMax: 0
+      hbMax: 0,
+      // result: null
     }
   },
 
@@ -710,21 +484,39 @@ export default defineComponent({
   },
 
   async mounted() {
+    this.result.log = []
+    this.result.state = 'pending'
     if(['json-nip-11','json-geo','json-dns','json-nostrwatch'].includes(this.$route.hash))
       this.store.layout.rawDataExpanded = true
-    this.interval = setInterval(() => {
-      this.setData()
-    },1000)
   },
 
   unmounted(){
     clearInterval(this.interval)
   },
 
+  methods: Object.assign(localMethods, RelaysLib, {
+    setData(){
+      this.relay = this.relayFromUrl
+      this.lastUpdate = this.store.jobs.getLastUpdate(`relays/check/${this.relay}`)
+      this.geo = this.store.relays.getGeo(this.relay)
+      this.pulses = this.store.stats.getPulse(this.relay)
+      this.hbMin = Math.min.apply(Math, this.pulses?.map( hb => hb.latency ))
+      this.hbMax = Math.max.apply(Math, this.pulses?.map( hb => hb.latency ) )
+      if(this.result?.topics)
+        this.result.topics = this.result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
+    }
+  }),
+
   computed: Object.assign(SharedComputed, {
     result(){
       return this.store.results.get(this.relay)
     },
+    // result(){
+    //   const result = structuredClone(this.store.results.get(this.relay))
+    //   result.state = 'pending'
+    //   result.log = []
+    //   return result
+    // }
     jsonGeo(){
       return relay => {
         const geo = structuredClone(this.store.relays.geo?.[relay])
@@ -765,12 +557,6 @@ export default defineComponent({
         const email = sanitizedString.match(emailRegex);
 
         return email ? email[0] : null;
-      }
-    },
-    isContactType: function(){
-      return (str, match) => {
-        if(this.sanitizeAndDetectEmail(str) && match === 'email')
-          return true
       }
     },
     getTopics: function(){
@@ -868,31 +654,8 @@ export default defineComponent({
       return (nip) => `https://img.shields.io/static/v1?style=for-the-badge&label=NIP&message=${this.nipSignature(nip)}&color=black`
     },
 
-    nipSignature(){
-      return (key) => key.toString().length == 1 ? `0${key}` : key
-    },
-
-    nipFormatted(){
-      return (key) => `NIP-${this.nipSignature(key)}`
-    },
-
-    nipLink(){
-      return (key) => `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
-    },
-
     getFlag () {
       return this.geo?.countryCode ? countryCodeEmoji(this.geo?.countryCode) : emoji.get('shrug');
-    },
-    getLogClass(){
-      return (slug) => { 
-        return {
-          ['bg-indigo-100 border-indigo-400']: slug.includes('eose'),
-          ['bg-red-100 border-red-400 dark:bg-red-400/50 dark:bg-red-400/30']: slug.includes('error'),
-          ['bg-green-400 border-green-300 dark:bg-green-400/50 dark:border-green-400/30 ']: slug.includes('success'),
-          ['bg-blue-300 border-blue-400 dark:bg-blue-300/50 dark:border-blue-300/30']: slug.includes('notice'),
-          ['bg-yellow-300 border-yellow-400 dark:bg-yellow-300/50 dark:bg-yellow-300/30']: slug.includes('timeout'),
-        } 
-      }
     },
     getInfoClass(){
       return {
@@ -916,39 +679,11 @@ export default defineComponent({
         'col-span-3': !this.result?.info && !this.log,
         'col-span-1': !this.result?.info,
       }
-    }
-  }),
-
-  methods: Object.assign(localMethods, RelaysLib, {
-    checkClass(key){
-      return { 
-        'bg-green-800': this.result?.check?.[key] === true,
-        'bg-red-800': this.result?.check?.[key] === false,
-        'bg-gray-600': this.result?.check?.[key] === null,
-        'rounded-tl-lg rounded-bl-lg': key == 'connect',
-        'rounded-tr-lg rounded-br-lg': key == 'write',
-      }
     },
-    setData(){
-      const result = {}
-
-      result.topics = this.result?.topics
-
-      this.lastUpdate = this.store.jobs.getLastUpdate('relays')
-      this.relay = this.relayFromUrl
-
-      // console.log(this.relay, this.store.relays.getGeo(this.relay))
-
-      this.geo = this.store.relays.getGeo(this.relay)
-
-      this.pulses = this.store.stats.getPulse(this.relay)
-      this.hbMin = Math.min.apply(Math, this.pulses?.map( hb => hb.latency ))
-      this.hbMax = Math.max.apply(Math, this.pulses?.map( hb => hb.latency ) )
     
-      if(result.topics)
-        result.topics = result.topics.filter( topic => !this.store.prefs.ignoreTopics.split(',').includes(topic[0]) )
-    }
   }),
+
+
 
 })
 </script>

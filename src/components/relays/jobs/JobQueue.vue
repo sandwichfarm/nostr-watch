@@ -10,7 +10,7 @@
 
     <StatusCheckHistoryNode />
 
-    <GetPulse />
+    <!-- <GetPulse /> -->
 
     <LoadSeed
       v-if="!store.prefs.clientSideProcessing" />
@@ -72,7 +72,7 @@ import SharedComputed from '@/shared/computed.js'
 import DetectRegion from './DetectRegion.vue'
 import LoadSeed from './LoadSeed.vue'
 import RefreshJob from './RefreshJob.vue'
-import GetPulse from './GetPulse.vue'
+// import GetPulse from './GetPulse.vue'
 import UserRelayList from './UserRelayList.vue'
 import StatusCheckHistoryNode from './StatusCheckHistoryNode.vue'
 // import StatusCheckAPI from './StatusCheckAPI.vue'
@@ -97,7 +97,7 @@ export default defineComponent({
     DetectRegion,
     LoadSeed,
     RefreshJob,
-    GetPulse,
+    // GetPulse,
     UserRelayList,
     StatusCheckHistoryNode,
     GetRelays,

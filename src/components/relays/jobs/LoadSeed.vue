@@ -112,9 +112,9 @@ const localMethods = {
                 url: relay,
                 
                 check: {
-                  connect: false,
-                  read: false,
-                  write: false,
+                  connect: null,
+                  read: null,
+                  write: null,
                   latency: data?.latency[this.store.prefs.region]?.final ? true : false,
                   averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
                 },

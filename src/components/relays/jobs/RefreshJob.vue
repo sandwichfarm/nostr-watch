@@ -1,5 +1,8 @@
 <template>
-  <div class="hidden lg:inline-block">
+  <div v-if="this.duration">
+    Finished. Took {{ timeSince(Date.now()-this.duration) }}
+  </div>
+  <div class="hidden lg:inline-block" v-if="!this.duration">
     <div 
       v-if="store.jobs.getActiveSlug?.includes('relays/check/') && !isSingle"
       class="text-white/30">
@@ -53,17 +56,20 @@ import { setupStore } from '@/store'
 import RelaysLib from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { RelayChecker, getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency } from 'nostrwatch-js'
+import { RelayChecker, QueuedChecker, getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency } from 'nostrwatch-js'
+
+// import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
   async CheckRelaysJob(force, single){
+    // console.log('invalidate?', !((!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle), this.windowActive)
     if( (!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle ) 
       return
 
     if(!this.windowActive)
       return
 
-    this.resolveUnprocessed()
+    // console.log('queue job', single, this.slug)
     
     this.queueJob(
       this.slug, 
@@ -72,20 +78,12 @@ const localMethods = {
     )
   },
 
-  resolveUnprocessed: function(){
-    this.store.jobs.processed?.[this.slug]?.forEach( relay => {
-      if(this.store.results.get(relay))
-        return 
-      let index = this.store.jobs.processed[this.slug].indexOf(relay)
-      this.store.jobs.processed[this.slug].splice[index, 1]
-    })
-  },
-
   pruneResult: function(result){
     let resultPruned = {}
 
     if(result) {
       resultPruned = {
+        state: result.state,
         url: result.url,
         aggregate: result.aggregate,
         check: {
@@ -93,7 +91,6 @@ const localMethods = {
           read: result.check.read,
           write: result.check.write,
           latency: result.check.latency,
-          // averageLatency: result.check.averageLatency
         },
         latency: {}
       } 
@@ -127,51 +124,49 @@ const localMethods = {
     }
     return resultPruned
   },
-
   checkJob: async function(single){
-    if(single) {
+    if(single)
       await this.checkSingle(single, this.slug)
-    } 
-    else {
-      this.relays = this.store.relays.getAll
-      this.store.jobs.removeUncommittedFromProcessed(this.slug)
-      const relays = this.sortRelays( this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) ) )
-      let relayChunks = this.chunk(100, relays)
-      for(let c=0;c<relayChunks.length;c++){
-        let promises = []
-        this.resultsChunk = {}
-        const chunk = relayChunks[c]
-        for(let index = 0; index < chunk.length; index++) {
-          await new Promise( resolve => setTimeout(resolve, 100))
-          const promise = new Promise( resolve => {
-            const relay = chunk[index] 
-            this.check(relay)
-              .then((result) => {
-                if(!result?.url)
-                  return
-                this.store.jobs.addProcessed(this.slug, result.url)
-                this.store.jobs.addUncommitted(this.slug, result.url)
-                this.resultsChunk[result.url] = this.pruneResult(result)
-                resolve()
-              })
-              .catch( (err) => { 
-                console.error(err)
-                resolve()
-              })
-          })
-          promises.push(promise)
-          this.store.jobs.resetUncommitted(this.slug)
-        }
-        await Promise.all(promises)
-        this.store.results.mergeDeep(this.resultsChunk)
-      }
-    } 
+    else
+      await this.checkQueue()
+
     this.completeAll(single)
   },
 
-  resetLog: function(relay){
-    if(this.store.results.data?.[relay])
-      this.store.results.data[relay].log = new Array()
+  queueOpts: function(){
+    return {
+        maxQueues:          this.store.prefs.firstVisit? 4: 2, 
+        concurrency:        this.store.prefs.firstVisit? 5: 5, 
+        fastTimeout:        this.store.prefs.firstVisit? 4000: 6000,
+        throttleMillis:     200,
+        RelayChecker:       this.checkerOpts()
+      }
+  },
+
+  checkQueue: async function(relays){
+    this.relays = relays? relays: this.store.relays.getAll
+    relays = this.sortRelays( this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) ) )
+    if(!relays.length)
+      return
+    return new Promise( resolve => {
+      this.queue = new QueuedChecker(relays, this.queueOpts())
+      this.queue
+        .on('result', result => {
+          if(!result?.url)
+            return
+          result.aggregate = this.getAggregate(result)
+          result = this.pruneResult(result)
+          this.store.results.mergeDeep({[result.url]: result})
+          this.store.jobs.addProcessed(this.slug, result.url)
+        })
+        .on('complete',async () => {
+          console.log('complete?')
+          // this.duration = this.queue.duration
+          // await new Promise( delay => setTimeout(delay, 5000) )
+          // this.duration = null
+          resolve()
+        })
+    })
   },
 
   checkSingle: async function(relay, slug){
@@ -179,10 +174,14 @@ const localMethods = {
       .then((result) =>{
         result.aggregate = this.getAggregate(result)
         result = this.pruneResult(result)
-        this.store.results.set(result) 
+        this.store.results.mergeDeep({ 
+          [result.url]: result
+        })
         this.completeRelay(result)
       })
       .catch( (err) => console.error(`there was an error: ${err}`) )
+    if(this.stop)
+      return
     this.store.jobs.completeJob(slug)
   },
 
@@ -191,25 +190,39 @@ const localMethods = {
   },
 
   completeAll: function(){
+    if(this.stop)
+      return
     this.store.jobs.completeJob(this.slug)
   },
 
-  check: async function(relay){
-    return new Promise( (resolve) => {
-      const opts = {
-          debug: true,
-          checkRead: true, 
-          checkWrite: true,   
-          checkLatency: true,
-          getInfo: this.store.prefs.checkNip11 || this.isSingle,
-          getIdentities: false,
-          run: true,
-          connectTimeout: this.store.prefs.advancedTimeout ? this.store.prefs.connectTimeout : this.store.prefs.inspectTimeout,
-          readTimeout: this.store.prefs.advancedTimeout ? this.store.prefs.readTimeout : this.store.prefs.inspectTimeout,
-          writeTimeout: this.store.prefs.advancedTimeout ? this.store.prefs.writeTimeout : this.store.prefs.inspectTimeout,
-        }
+  checkerOpts: function(){
+    const advT      =  this.store.prefs.advancedTimeout,
+          cTimeout  =  this.store.prefs.connectTimeout,
+          rTimeout  =  this.store.prefs.readTimeout,
+          wTimeout  =  this.store.prefs.writeTimeout,
+          inspectT  =  this.store.prefs.inspectTimeout
 
-      opts.checkAverageLatency = true
+    return {
+      debug:                true,        
+      checkRead:            true, 
+      checkWrite:           true,   
+      checkLatency:         true,
+      checkAverageLatency:  true,
+      getInfo:              this.store.prefs.checkNip11 || this.isSingle,
+      getIdentities:        false,
+      run:                  true,
+      connectTimeout:       advT?   cTimeout:   inspectT,
+      readTimeout:          advT?   rTimeout:   inspectT,
+      writeTimeout:         advT?   wTimeout:     inspectT,
+    }
+  },
+
+  check: async function(relay){
+    // console.log('checking', relay)
+    if(this.stop)
+      return
+    return new Promise( (resolve) => {
+      const opts = this.checkerOpts()
       
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
@@ -218,14 +231,14 @@ const localMethods = {
 
       $checker
         .on('open', () => {})
-        .on('complete', (instance) => {
-          // console.log('aggr', instance.result.url, this.getAggregate(instance.result), instance.result.check.connect, instance.result.check.read, instance.result.check.write)
-          instance.result.aggregate = this.getAggregate(instance.result)
-          resolve(instance.result)  
+        .on('complete', (self) => {
+          self.result.aggregate = this.getAggregate(self.result)
+          resolve(self.result)  
         })
         .on('error', () => {
           resolve()
         })
+        
       if(this.isSingle)
         $checker.on('change', (result) => {
           this.store.results.mergeDeep({
@@ -233,8 +246,26 @@ const localMethods = {
           })
         })
       
+      // $checker.run()
+      
       this.relayCheckers.push($checker)
     })
+  },
+
+  setAverageLatency: function(){
+    const latencies = new Array()
+    this.relays.forEach( relay => {
+      latencies.push(this.store.results.get(relay)?.latency?.final)
+    })
+    this.averageLatency =  this.average(latencies)
+  },
+
+  average(arr){
+    let sum = 0,
+        total = arr.length;
+    for (let i = 0;i<total;i++) 
+      sum += arr[i];
+    return Math.floor(parseFloat(sum/total));
   },
 
   setRefreshInterval: function(){
@@ -245,10 +276,6 @@ const localMethods = {
 
       if( (!this.store.prefs.refresh || !this.store.prefs.clientSideProcessing) && !this.isSingle )
         return
-
-      const unprocessed = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
-      if(unprocessed.length < 10)
-        console.log('unprocessed:', unprocessed)
 
       if(!this.store.jobs.isJobActive(this.slug) && !this.isSingle)
         this.CheckRelaysJob()
@@ -267,6 +294,8 @@ const localMethods = {
       const result = this.store.results.get(relay)
       return ('offline' === result?.aggregate || 'restricted' === result?.aggregate) && result?.uptime > 0
     })
+
+
     
     relays.forEach( async (relay) => {
       const slug = `relays/check/${relay}`,
@@ -316,7 +345,7 @@ export default defineComponent({
       sinceLast: null,
       interval: null,
       windowActive: true,
-      // averageLatency: 200,
+      averageLatency: 200,
       pageOpen: 0,
       slug: 'relays/check',
       latencies: [],
@@ -326,7 +355,8 @@ export default defineComponent({
       retry: [],
       retries: 1,
       lazyInterval: 1*60*60*1000,
-      resultsChunk: {},
+      duration: null
+      // history: null
     }
   },
 
@@ -336,14 +366,10 @@ export default defineComponent({
   },
 
   unmounted(){
+    console.log('unmounted!!!')
     clearInterval(this.interval)
-    this.store.results.mergeDeep(this.resultsChunk)
-    this.relayCheckers.forEach( $checker => {
-      if(!($checker.isWsOpen instanceof Function))
-        return
-      if($checker.isWsOpen())
-        $checker.close()
-    })
+    this.relayCheckers.forEach( $checker => $checker?.close())
+    this.stop = true
   },
 
   beforeMount(){
@@ -352,10 +378,8 @@ export default defineComponent({
   mounted(){
     if( this.isSingle ){
       const relay = this.relayFromUrl
-      this.resetLog(relay)
       this.slug = `relays/check/${relay}`
       this.CheckRelaysJob(true, relay)
-      // this.runLatencyCheck()
     } else {
       this.CheckRelaysJob()
     }
@@ -379,10 +403,10 @@ export default defineComponent({
           return segments[2]
       }
     },
-    // getDynamicTimeout: function(){
-    //   const calculated = this.averageLatency*this.relays.length
-    //   return calculated > 10000 ? calculated : 10000
-    // },
+    getDynamicTimeout: function(){
+      const calculated = this.averageLatency*this.relays.length
+      return calculated > 10000 ? calculated : 10000
+    },
     getRefreshInterval: function(){
       const relay = this.relayFromUrl
       if( !relay )
@@ -405,6 +429,33 @@ export default defineComponent({
   },
 
 })
+
+      // this.relays = this.store.relays.getAll
+      // const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
+      // await 
+      // let relayChunks = this.chunk(100, relays)
+      // for(let c=0;c<relayChunks.length;c++){
+      //   let promises = []
+      //   const chunk = relayChunks[c]
+      //   for(let index = 0; index < chunk.length; index++) {
+      //     await new Promise( resolve => setTimeout(resolve, 100))
+      //     const promise = new Promise( resolve => {
+      //       const relay = chunk[index] 
+      //       this.check(relay)
+      //         .then((result) => {
+      //           this.store.jobs.addProcessed(this.slug, result.url)
+      //           this.store.results.mergeDeep({ [result.url]: this.pruneResult(result) })
+      //           resolve()
+      //         })
+      //         .catch( (err) => { 
+      //           console.error(err)
+      //           resolve()
+      //         })
+      //     })
+      //     promises.push(promise)
+      //   }
+      //   await Promise.all(promises)
+      // }
 </script>
 
 <style scoped>
@@ -413,4 +464,3 @@ export default defineComponent({
  #refresh button:hover {color:#000;}
  #refresh button[disabled] {color:#999 !important; border-color:#e0e0e0}
 </style>
-

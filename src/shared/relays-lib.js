@@ -302,9 +302,9 @@ export default {
       return Object.entries(this.store.relays.results).length
     },
 
-    relaysComplete: function() {
-      return this.relays?.filter(relay => this.store.relays.results?.[relay]?.state == 'complete').length
-    },
+    // relaysComplete: function() {
+    //   return this.relays?.filter(relay => this.store.relays.results?.[relay]?.state == 'complete').length
+    // },
 
     sha1: function(message) {
       const hash = crypto.createHash('sha1').update(JSON.stringify(message)).digest('hex')

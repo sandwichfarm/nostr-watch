@@ -104,5 +104,16 @@ export default {
     pendingFirstCompletion(){
         return !this.store.jobs.lastUpdate['relays/seed'] && !this.store.jobs.lastUpdate['relays/check'] && this.$route.path === '/find/relays'
         // return this.isFirstVisit 
-    }
+    },
+    nipSignature(){
+        return (key) => key.toString().length == 1 ? `0${key}` : key
+    },
+
+    nipFormatted(){
+        return (key) => `NIP-${this.nipSignature(key)}`
+    },
+
+    nipLink(){
+        return (key) => `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
+    },
 }

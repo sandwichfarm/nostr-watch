@@ -57,7 +57,7 @@ const localMethods = {
       }, 20000 )
       pool
         .subscribe(subid, {
-          kinds:    [1010],
+          kinds:    [1411],
           limit:    total, //12 hours 
           authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
           '#e':     [this.store.prefs.region],
@@ -100,14 +100,20 @@ const localMethods = {
     allTimestamps.forEach( timestamp => {
       data[timestamp].forEach( relayData => {
         const relay = relayData[0],
-              latency = relayData[1]
+              connectLatency = relayData[1],
+              readLatency = relayData[1],
+              writeLatency = relayData[1]
 
         if( !(pulsesByRelayObj[relay] instanceof Object) )
           pulsesByRelayObj[relay] = allTimestamps.reduce( (acc, _timestamp) => {
             acc[_timestamp] = false
             return acc
           }, new Object())
-        pulsesByRelayObj[relay][timestamp] = latency
+        pulsesByRelayObj[relay][timestamp] = {
+          connect: connectLatency,
+          read: readLatency,
+          write: writeLatency,
+        }
       })
     })
 

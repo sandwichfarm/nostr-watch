@@ -60,8 +60,8 @@ export default defineComponent({
   methods: Object.assign(RelayMethods, {
     checkClass(key){
       return { 
-        'bg-green-800': this.result?.check?.[key] === true,
-        'bg-red-800': this.result?.check?.[key] === false,
+        'bg-green-800 dark:bg-green-800/70': this.result?.check?.[key] === true,
+        'bg-red-800 dark:bg-red-800/30': this.result?.check?.[key] === false,
         'bg-gray-600': this.result?.check?.[key] === null,
         'rounded-tl-lg rounded-bl-lg': key == 'connect',
         'rounded-tr-lg rounded-br-lg': key == 'write',

@@ -68,10 +68,11 @@ export default defineComponent({
       return (slug) => { 
         return {
           ['bg-indigo-100 border-indigo-400']: slug.includes('eose'),
-          ['bg-red-100 border-red-400 dark:bg-red-400/50 dark:bg-red-400/30']: slug.includes('error'),
-          ['bg-green-400 border-green-300 dark:bg-green-400/50 dark:border-green-400/30 ']: slug.includes('success'),
-          ['bg-blue-300 border-blue-400 dark:bg-blue-300/50 dark:border-blue-300/30']: slug.includes('notice'),
-          ['bg-yellow-300 border-yellow-400 dark:bg-yellow-300/50 dark:bg-yellow-300/30']: slug.includes('timeout'),
+          ['bg-red-300 border-red-400 dark:bg-red-400/50 dark:border-red-400/30 dark:text-white/50']: slug.includes('error'),
+          ['bg-green-400 border-green-300 dark:bg-green-400/40 dark:border-green-400/20 dark:text-white/50']: slug.includes('success'),
+          ['bg-blue-300 border-blue-400 dark:bg-blue-300/50 dark:border-blue-300/30 dark:text-white/50']: slug.includes('notice'),
+          ['bg-blue-500 border-blue-400 dark:bg-blue-500/50 dark:border-blue-400/30 dark:text-white/50']: slug.includes('info'),
+          ['bg-yellow-300 border-yellow-400 dark:bg-yellow-300/50 dark:bg-yellow-300/30 dark:text-white/50']: slug.includes('timeout'),
         } 
       }
     },

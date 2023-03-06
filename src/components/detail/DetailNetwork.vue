@@ -59,3 +59,5 @@ export default defineComponent({
   }),
 })
 </script>
+
+git add yarn.lock src/components/relays/pages/RelaysDetail.vue  src/components/relays/jobs/RefreshJob.vue src/components/relays/jobs/LoadSeed.vue package.json

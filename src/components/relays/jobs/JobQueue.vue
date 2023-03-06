@@ -1,63 +1,74 @@
 <template>
 <span class="inline-block mr-12 pt-1.5">
   <span class="text-white/40 lg:text-sm mx-2 text-xs font-bold">
-    <GetRelays
-      v-if="!isSingle"
-      v-bind:relaysProp="relays" />
+    <div v-if="this.isSingle">
+      <RefreshJob 
+        />
+      <CheckP2R v-if="!isSingle" />
+      <CheckGeo />
+      <!-- <HistoryJob
+        /> -->
+    </div>
+    <div v-if="!this.isSingle">
+      <GetRelays
+        v-if="!isSingle"
+        v-bind:relaysProp="relays" />
 
-    <DetectRegion 
-      v-if="store.prefs.autoDetectRegion && !store.prefs.disableGeoDetection" />
+      <DetectRegion 
+        v-if="store.prefs.autoDetectRegion && !store.prefs.disableGeoDetection" />
 
-    <StatusCheckHistoryNode />
+      <StatusCheckHistoryNode />
 
-    <!-- <GetPulse /> -->
+      <!-- <GetPulse /> -->
 
-    <LoadSeed
-      v-if="!store.prefs.clientSideProcessing" />
+      <LoadSeed
+        v-if="!store.prefs.clientSideProcessing" />
 
-    <CheckNip11
-      v-if="
-        (
+      <CheckNip11
+        v-if="
           (
-            !store.prefs.clientSideProcessing 
-            ||( !store.prefs.clientSideProcessing 
-                && isSingle 
-              ) 
-          ) 
-          && store.prefs.checkNip11
-        )
-        && !isSingle
-      " />
+            (
+              !store.prefs.clientSideProcessing 
+              ||( !store.prefs.clientSideProcessing 
+                  && isSingle 
+                ) 
+            ) 
+            && store.prefs.checkNip11
+          )
+          && !isSingle
+        " />
+        
+      <CheckGeo />
+
+      <CheckP2R v-if="!isSingle" />
+
+      <HistoryJob
+        />
+
       
-    <CheckGeo />
+      <RefreshJob 
+        v-if="store.prefs.clientSideProcessing || isSingle || this.store.prefs.isFirstVisit" />
+      
+      <CheckDNS v-if="!isSingle" />
 
-    <CheckP2R v-if="!isSingle" />
+      <HistoryJob
+        />
 
-    <HistoryJob
-      />
+      <GetTopics
+        v-if="store.prefs.clientSideProcessing && !isSingle" />
 
+      <UserRelayList />
+
+      <RelayOperatorJob 
+        v-if="isSingle" />
+
+      <FirstVisit 
+        v-if="this.store.prefs.isFirstVisit
+              && 
+              this.store.jobs.getLastUpdate('relays/seed')
+              && !isSingle"/>
+    </div>
     
-    <RefreshJob 
-      v-if="store.prefs.clientSideProcessing || isSingle || this.store.prefs.isFirstVisit" />
-    
-    <CheckDNS v-if="!isSingle" />
-
-    <HistoryJob
-      />
-
-    <GetTopics
-      v-if="store.prefs.clientSideProcessing && !isSingle" />
-
-    <UserRelayList />
-
-    <RelayOperatorJob 
-      v-if="isSingle" />
-
-    <FirstVisit 
-      v-if="this.store.prefs.isFirstVisit
-            && 
-            this.store.jobs.getLastUpdate('relays/seed')
-            && !isSingle"/>
   </span>
 </span>
 </template>
@@ -85,11 +96,6 @@ import GetTopics from './GetTopics.vue'
 import CheckP2R from './CheckP2R.vue'
 import RelayOperatorJob from './RelayOperatorJob.vue'
 import FirstVisit from './FirstVisit.vue'
-// import TemplateJob from './TemplateJob.vue'
-
-
-// import RelayCanonicalsJob from './RelayCanonicalsJob.vue'
-
 
 export default defineComponent({
   name: "JobQueue",

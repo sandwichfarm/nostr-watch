@@ -8,7 +8,6 @@
     We cannot get uptime at this time. Is your relay new or potentially blocking the crawler? No? Maybe nostr.watch is broken.
   
   </div>   -->
-
   <div 
     class="mt-3 overflow-hidden mb-8">
 

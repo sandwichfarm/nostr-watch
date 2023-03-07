@@ -4,10 +4,32 @@
       <div class="overflow-x-auto">
           <div class="inline-block min-w-full align-middle" v-if="subsectionRelays.length">
             <div class="relative overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <table class="min-w-full table-auto">
+                <table class="min-w-full table-fixed">
                 <thead>
                     <tr>
-                      <th scope="col" class="text-left" colspan="2">
+                      <th class="w-8">
+
+                      </th>
+
+                      <th 
+                        v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" 
+                        class="hidden md:table-cell lg:table-cell xl:table-cell verified w-10">
+                        <!-- <code class="text-xs block">
+
+                        </code> -->
+                      </th>
+                      <th
+                        v-if="store.jobs.getLastUpdate('relays/geo')" 
+                        scope="col" 
+                        class="text-center w-10" 
+                        v-tooltip:top.tooltip="'Detected location of Relay'">
+                        <!-- <code class="text-xs block">
+                        </code> -->
+                      </th>
+
+                      
+
+                      <th scope="col" class="text-left w-auto" colspan="1">
 
                         <span class="mr-3 hidden lg:inline-block">
                           <span 
@@ -52,10 +74,11 @@
                       <!-- <th v-if="!store.layout.editorIsExpanded && this.store.jobs.getLastUpdate('relays/check/p2r')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">P2R</code>
                       </th> -->
+                      
                       <th 
                         v-if="store.layout.getActive('relays/find') === 'paid'" 
                         scope="col" 
-                        class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        class="hidden md:table-cell lg:table-cell xl:table-cell verified w-24">
                         <code 
                           class="text-xs block cursor-pointer"
                           :class="{'bg-black/50 rounded-sm': store.prefs.sortFees }"
@@ -67,23 +90,13 @@
                       <th 
                         v-if="store.layout.getActive('relays/find') === 'paid'" 
                         scope="col" 
-                        class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        class="hidden md:table-cell lg:table-cell xl:table-cell verified w-24">
                         <code 
                           class="text-xs block">
-                          Publish<br/>Fee
+                          Publish Fee
                         </code>
                       </th>
 
-                      <th v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell verified">
-                        <code class="text-xs block">
-                          Pubkey
-                        </code>
-                      </th>
-                      <th v-if="store.jobs.getLastUpdate('relays/geo')" scope="col" class="location text-center" v-tooltip:top.tooltip="'Detected location of Relay'">
-                        <code class="text-xs block">
-                          Location
-                        </code>
-                      </th>
                       <!-- <th
                         v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" 
                         scope="col" 
@@ -93,13 +106,13 @@
                           class="text-xs block cursor-pointer" 
                           :class="this.store.prefs.sortUptime? 'bg-black/50 rounded-sm': ''"
                           @click="this.store.prefs.sortUptime=!this.store.prefs.sortUptime">
-                          Uptime(12h)
+                          Readability
                         </code>
                       </th> -->
-                      <th 
+                      <!-- <th 
                         v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" 
                         scope="col" 
-                        class="latency text-center" 
+                        class="latency text-center w-24" 
                         v-tooltip:top.tooltip="'Relay Latency on Read'">
                         <code 
                           class="text-xs block cursor-pointer" 
@@ -107,19 +120,29 @@
                           @click="this.store.prefs.sortLatency=!this.store.prefs.sortLatency" >
                           Latency
                         </code>
+                      </th> -->
+                      <th 
+                        v-for="check in ['overall', 'connect', 'read', 'write']"
+                        :key="`${check}-data`"
+                        scope="col" 
+                        class="latency text-center w-24" 
+                        v-tooltip:top.tooltip="`Relay Latency on ${check}`">
+                        <code 
+                          class="text-xs block cursor-pointer" >
+                          {{ 'overall' === check ? 'average' : check }}
+                        </code>
                       </th>
 
-                      <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
+                      <!-- <th v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell connect text-center" v-tooltip:top.tooltip="'Relay connection status'">
                         <code class="text-xs block">Connect</code>
                       </th>
                       <th v-if="!store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell first-line:read text-center" v-tooltip:top.tooltip="'Relay read status'">
-                        
                         <code class="text-xs block">Read</code>
                       </th>
 
                       <th v-if="!store.prefs.isFirstVisit" scope="col" class="hidden md:table-cell lg:table-cell xl:table-cell write text-center" v-tooltip:top.tooltip="'Relay write status'">
                         <code class="text-xs block">Write</code>
-                      </th>
+                      </th> -->
 
                       <!-- <th v-if="store.layout.editorIsExpanded && isLoggedIn() && !store.prefs.isFirstVisit" scope="col" class="w-16 hidden md:table-cell lg:table-cell xl:table-cell verified">
                         <code class="text-xs block">Read</code>
@@ -129,7 +152,7 @@
                         <code class="text-xs block">Write</code>
                       </th> -->
 
-                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0">
+                      <th scope="col" class="relative py-3.5 pl-0 pr-0 sm:pr-0  w-16">
                         <code class="text-xs block">Favorite</code>
                       </th>
                     </tr>
@@ -143,6 +166,29 @@
 
                       <td class="status-indicator w-2 text-left pr-2">
                         <span :class="getAggregateIndicatorClass(relay)" class="w-4 h-4 block relative"></span>
+                      </td>
+
+                      <td 
+                        v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" 
+                        class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell content-center text-center">
+                        <!-- {{ this.store.results.get(relay)?.pubkeyValid }}
+                        {{ this.store.results.get(relay)?.info?.pubkey }} -->
+                        <span 
+                          v-if="this.store.results.get(relay)?.pubkeyValid && this.store.results.get(relay)?.info?.pubkey" 
+                          v-tooltip:right.tooltip="`Valid pubkey was registered by relay: ${this.store.results.get(relay).info.pubkey}`" 
+                          class="cursor-pointer">
+                          <svg class="svg-icon fill-green-600 dark:fill-green-600/70" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
+                        </span> 
+                          <!-- <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(store.results.get(relay)?.identities).length"><span class="shape verified"></span></span></span> -->
+                        <span 
+                          v-if="!this.store.results.get(relay)?.pubkeyValid && this.store.results.get(relay)?.info?.pubkey" class="cursor-pointer" 
+                          v-tooltip:right.tooltip="`Provided pubkey ${this.store.results.get(relay).info.pubkey} is invalid, error: ${this.store.results.get(relay).pubkeyError}. Please review NIP-11 specification to fix.`">
+                          <svg class="svg-icon fill-red-500/70 dark:fill-red-500/70" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
+                        </span>
+                      </td>
+
+                      <td v-if="store.jobs.getLastUpdate('relays/geo')" class="w-4 location text-center opacity-70">
+                        <img :src="getFlagRef(relay)" class="w-6" />
                       </td>
 
                       <td class="w-62 relay left-align relay-url text-black/20 dark:text-white/20 hover:text-black/50 hover:dark:text-white/50">
@@ -188,28 +234,10 @@
                         {{ store.results.get(relay)?.info?.fees?.publication?.length ? 'yes' : '' }}
                       </td>
 
-                      <td v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
-                        <!-- {{ this.store.results.get(relay)?.pubkeyValid }}
-                        {{ this.store.results.get(relay)?.info?.pubkey }} -->
-                        <span 
-                          v-if="this.store.results.get(relay)?.pubkeyValid && this.store.results.get(relay)?.info?.pubkey" 
-                          v-tooltip:bottom.tooltip="`Valid pubkey was registered by relay: ${this.store.results.get(relay).info.pubkey}`" class="cursor-pointer">
-                          <svg class="svg-icon fill-green-500" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
-                        </span> 
-                          <!-- <span v-tooltip:top.tooltip="identityList(relay)"> <span class="verified-shape-wrapper cursor-pointer" v-if="Object.entries(store.results.get(relay)?.identities).length"><span class="shape verified"></span></span></span> -->
-                        <span 
-                          v-if="!this.store.results.get(relay)?.pubkeyValid && this.store.results.get(relay)?.info?.pubkey" class="cursor-pointer" 
-                          v-tooltip:bottom.tooltip="`Provided pubkey ${this.store.results.get(relay).info.pubkey} is invalid, error: ${this.store.results.get(relay).pubkeyError}. Please review NIP-11 specification to fix.`">
-                          <svg class="svg-icon fill-red-500/20" style="width: 1em; height: 1em;vertical-align: middle;overflow: hidden;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M969.530368 512l-123.871232 89.4464 62.595072 139.424768-152.020992 15.362048-15.254528 152.062976-139.446272-62.596096L512 969.530368l-89.43616-123.830272-139.435008 62.596096-15.254528-152.062976-152.052736-15.362048 62.595072-139.424768L54.470656 512l123.860992-89.435136-62.595072-139.436032 152.052736-15.361024 15.255552-152.052736 139.435008 62.595072L512 54.469632l89.4464 123.840512 139.424768-62.595072 15.254528 152.052736 152.042496 15.361024L845.574144 422.56384 969.530368 512z"  /></svg>
-                        </span>
-                      </td>
-
-                      <td v-if="store.jobs.getLastUpdate('relays/geo')" class="w-24 location text-center">
-                        {{ getFlag(relay) }}
-                      </td>
+                      
 
                       <!-- <td v-if="subsection != 'favorite' && store.jobs.getLastUpdate('relays/pulse') && store.layout.getActive('relays/find') !== 'paid'" class="w-24 text-center">
-                        <span class="sm:px-6 text-sm font-bold h-full" :class="getUptimeColor(relay)" v-if="this.store.results.get(relay)?.uptime && !isPayToRelay(relay)">
+                        <span class="sm:px-6 text-sm font-bold h-full" :class="getAbilityColor(relay)" v-if="this.store.results.get(relay)?.uptime && !isPayToRelay(relay)">
                           {{ this.store.results.get(relay)?.uptime }}%
                         </span>
                         <span class="sm:px-6 text-sm italic h-full text-gray-800" v-if="this.store.results.get(relay)?.uptime && isPayToRelay(relay)">
@@ -235,11 +263,38 @@
                         <span>{{ store.results.get(relay)?.latency?.final }}<span v-if="store.results.get(relay)?.check?.latency">ms</span></span>
                       </td> -->
 
-                      <td v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" class="w-24 latency text-center text-sm font-bold ">
+                      <!-- <td v-if="store.jobs.getLastUpdate('relays/seed') || store.jobs.getLastUpdate('relays/check')" class="w-24 latency text-center text-sm font-bold "> -->
+                      <!-- <td class="w-24 latency text-center text-sm font-bold ">
                         <span v-if="store.results.get(relay)?.latency?.average" class="text-black/80 dark:text-white/80">
                           {{ store.results.get(relay).latency.average }}ms
                         </span>
                         <span v-if="!store.results.get(relay)?.latency?.average && (store.jobs.isProcessed('relays/check', relay))" class="font-normal italic text-black/30 dark:text-white/30">timeout</span>
+                      </td> -->
+
+                      <td 
+                        v-for="check in ['overall', 'connect', 'data', 'write']" 
+                        :key="`latency-${check}-${relay}`"
+                        class="w-24 latency text-center text-sm ">
+                        <!-- {{ check }}
+                        {{ store.results.get(relay).latency }} -->
+<!-- 
+                        {{ store.results.get(relay).latency?.[check] }} -->
+
+                        <!-- {{  getMedianLatency(store.results.get(relay).latency?.overall) }} -->
+
+                        <span 
+                          v-if="store.results.get(relay)?.latency?.[check]?.length"
+                          class="text-black/80 dark:text-white/80">
+                            <span class="m-auto inline-block" v-if="check != 'overall'" :class="getCheckIndicator(relay, check)">
+                              &nbsp;
+                            </span>
+                            {{ store.results.get(relay).latency?.[check][0] }}ms
+                        </span>
+                        <span 
+                          v-if="!store.results.get(relay)?.latency?.[check]?.length && (store.jobs.isProcessed('relays/check', relay))" 
+                          class="font-normal italic text-black/30 dark:text-white/30">
+                            timeout
+                          </span>
                       </td>
 
                       <!-- no editor -->
@@ -359,10 +414,12 @@
   
   <script>
   import { defineComponent, toRefs } from 'vue'
-  import { countryCodeEmoji } from 'country-code-emoji';
-  import emoji from 'node-emoji';
+  // import { countryCodeEmoji } from 'country-code-emoji';
+  // import emoji from 'node-emoji';
   import crypto from 'crypto'
   import { Switch } from '@headlessui/vue'
+
+  import { getMedianLatency } from 'nostrwatch-js'
 
   // import SingleClearnet from '@/components/relays/SingleClearnet.vue'
   
@@ -415,7 +472,7 @@
   export default defineComponent({
     name: 'RelaysResultTable',
     components: {
-      Switch,
+      Switch
     },
     setup(props){
       const {subsectionProp: subsection} = toRefs(props)
@@ -482,6 +539,13 @@
       }
     },
     computed: Object.assign(SharedComputed, {
+      getMedianLatency(){
+        return arr => {
+          if(!(arr instanceof Array))
+            return
+          return getMedianLatency(arr)
+        }
+      },
       getTopics(){
         return relay => {
           let topics = ""
@@ -492,7 +556,7 @@
           return topics
         }
       },
-      getUptimeColor(){
+      getAbilityColor(){
         return relay => {
           return {
             'text-green-600/100 dark:text-green-600/80': this.store.results.get(relay)?.uptime >= 98,
@@ -549,14 +613,16 @@
       getCheckIndicator(){
         return (relay, key) => {
           return { 
-            'bg-green-500 dark:bg-green-600': this.store.results.get(relay)?.check?.[key] === true,
-            'bg-orange-600': this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted' && (!this.store.results.get(relay)?.info?.limitation?.payment_required || key !== 'write'),
+            // 'bg-green-500 dark:bg-green-600': this.store.results.get(relay)?.check?.[key] === true,
+            'bg-green-500 dark:bg-green-600': this.store.results.get(relay)?.latency?.[key],
+            'bg-orange-600': this.store.results.get(relay)?.check?.[key] === false && (!this.store.results.get(relay)?.info?.limitation?.payment_required || key !== 'write'),
             // 'bg-gray-600': key === 'write' && this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted' && this.store.results.get(relay)?.info?.limitation?.payment_required,
             'bg-red-500': this.store.results.get(relay)?.check?.[key] === false,
             'bg-gray-500': 'undefined' === typeof this.store.results.get(relay)?.check?.[key],
-            'text-2xl block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
-            'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
-            'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
+            'block m-auth h-3 w-3 rounded-md': true
+            // 'text-2xl block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
+            // 'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
+            // 'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
             }
         } 
       },
@@ -570,10 +636,10 @@
       getAggregateIndicatorClass(){
         return (relay) => {
           return { 
-            'bg-green-500': this.store.results.get(relay)?.aggregate === 'public',
-            'bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted' && !this.isPayToRelay(relay),
-            'bg-black/10 dark:bg-white/10': this.isPayToRelay(relay),
-            'bg-red-500': this.store.results.get(relay)?.aggregate === 'offline',
+            'bg-green-500 dark:bg-green-600/50': this.store.results.get(relay)?.latency?.connect?.[0],
+            // 'bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted' && !this.isPayToRelay(relay),
+            // 'bg-black/10 dark:bg-white/10': this.isPayToRelay(relay),
+            'bg-red-500': !this.store.results.get(relay)?.latency?.connect?.[0],
             'ml-4': this.store.prefs.getTheme === 'spacious',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',
@@ -583,8 +649,11 @@
       generateKey(){
         return (url, key) => crypto.createHash('md5').update(`${url}_${key}`).digest('hex')
       },
-      getFlag () {
-        return (relay) => this.relayGeo(relay)?.countryCode ? countryCodeEmoji(this.relayGeo(relay)?.countryCode) : emoji.get('shrug');
+      getFlagRef () {
+        return (relay) => {
+          return `/flags/${this.relayGeo(relay)?.countryCode}.svg`
+          // this.relayGeo(relay)?.countryCode ? countryCodeEmoji(this.relayGeo(relay)?.countryCode) : emoji.get('shrug');
+        }
       },
       identityList () {
         return (relay) => {

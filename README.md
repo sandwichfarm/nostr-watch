@@ -6,7 +6,7 @@ LN & NIP-05: bread@sandwich.farm
 
 # nostr-watch 0.2
 
-A client-side nostr network status built with Vue3, Pinia, [nostr-tools](https://github.com/fiatjaf/nostr-tools), [nostr-js](https://github.com/jb55/nostr-js) and [nostr-relay-inspector](https://github.com/dskvr/nostr-relay-inspector). Originally forked from [fiatjaf/nostr-relay-registry](http://github.com/fiatjaf/nostr-relay-registry) but ended up being a rewrite.
+A client-side nostr network status built with Vue3, Pinia, [nostr-tools](https://github.com/fiatjaf/nostr-tools), [nostr-js](https://github.com/jb55/nostr-js) and [nostrwatch-js](https://github.com/dskvr/nostrwatch-js). Originally forked from [fiatjaf/nostr-relay-registry](http://github.com/fiatjaf/nostr-relay-registry) but ended up being a rewrite.
 
 nostr.watch aggregates data on nostr relays and the network in general to assist users, developers and relay operators. 
 

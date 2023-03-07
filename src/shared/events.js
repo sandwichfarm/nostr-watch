@@ -7,7 +7,7 @@ const events = {}
 
 events.discoverRelays = async function(){
   return new Promise(resolve => {
-    const subid = crypto.randomBytes(40).toString('hex')
+    const subid = crypto.randomBytes(20).toString('hex')
     const pool = RelayPool(['wss://nostr.sandwich.farm'])
     pool
       .on('open', relay => {
@@ -54,7 +54,7 @@ events.signEvent = async function(event){
 
 events.get = async function (){
   const pool = new RelayPool(this.relays),
-        subid = crypto.randomBytes(40).toString('hex')
+        subid = crypto.randomBytes(20).toString('hex')
 
   pool
     .on('open', () => {

@@ -1,6 +1,24 @@
 import {useRoute} from 'vue-router'
 
 export default {
+    getAbilityRate(){
+        return (ability, relay) => {
+            const ticks = this.store.stats.getPulse(relay)
+            if(!ticks || !Object.keys(ticks).length )
+                return
+            const totalPulses = Object.keys(ticks).length 
+            if('connect' !== ability) {
+                const totalOnline = Object.entries(ticks).reduce(
+                (acc, value) => {
+                    return typeof value[1]?.[ability] === 'number' ? acc+1 : acc
+                },
+                0
+                );
+                return Math.floor((totalOnline/totalPulses)*100) 
+            }
+            return Math.floor((totalPulses/48)*100)
+        }
+    },
     timeSince: function() {
         return date => {
             let seconds = Math.floor((new Date() - date) / 1000),
@@ -82,14 +100,16 @@ export default {
     isSingle(){
         return typeof this.$route.params.relayUrl !== 'undefined'
     },
-    getUptimeColor(){
-        return result => {
+    getAbilityColor(){
+        return (result, ability) => {
+            if(!ability)
+                return 
             return {
-            'text-green-600/100 dark:text-green-600/80': result?.uptime >= 98,
-            'text-green-600/80 dark:text-green-400/50': result?.uptime >= 95 && result?.uptime < 98,
-            'text-yellow-600 dark:text-yellow-400/90': result?.uptime >= 90 && result?.uptime < 95,
-            'text-orange-500': result?.uptime >= 80 && result?.uptime < 90,
-            'text-red-400 dark:text-red-600': result?.uptime < 80,
+            'text-green-600/100 dark:text-green-600/80': result?.ability?.[ability] >= 98,
+            'text-green-600/80 dark:text-green-400/50': result?.ability?.[ability] >= 95 && result.ability?.[ability] < 98,
+            'text-yellow-600 dark:text-yellow-400/90': result?.ability?.[ability] >= 90 && result?.ability?.[ability] < 95,
+            'text-orange-500': result?.ability?.[ability] >= 80 && result?.ability?.[ability] < 90,
+            'text-red-400 dark:text-red-600': result?.ability?.[ability] < 80,
             }
         }
     },
@@ -104,5 +124,16 @@ export default {
     pendingFirstCompletion(){
         return !this.store.jobs.lastUpdate['relays/seed'] && !this.store.jobs.lastUpdate['relays/check'] && this.$route.path === '/find/relays'
         // return this.isFirstVisit 
-    }
+    },
+    nipSignature(){
+        return (key) => key.toString().length == 1 ? `0${key}` : key
+    },
+
+    nipFormatted(){
+        return (key) => `NIP-${this.nipSignature(key)}`
+    },
+
+    nipLink(){
+        return (key) => `https://github.com/nostr-protocol/nips/blob/master/${this.nipSignature(key)}.md`
+    },
 }

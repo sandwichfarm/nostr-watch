@@ -108,24 +108,15 @@ export default defineComponent({
 
  async mounted() {
     this.geo = this.store.relays.geo
-
-    setTimeout( () => {
-      this.$refs.map.leafletObject?.whenReady(async () => {
-        await this.$refs.map.leafletObject
-          .setView(
-            this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482], 
-            this.store.layout.mapIsExpanded ? 4 : 2
-          )
-      })
-    },1000) 
+    this.mapInit()
   },
   beforeUnmount(){
     //console.log('beforeUnmount', '$refs', this.$refs)
   },
-  unmounted(){
-    //console.log('unmounted', '$refs', this.$refs)
-    delete this.$refs.map
-  },
+  // unmounted(){
+  //   //console.log('unmounted', '$refs', this.$refs)
+  //   delete this.$refs.map
+  // },
   updated(){},
   props: {
     activeSubsectionProp: {
@@ -212,6 +203,24 @@ export default defineComponent({
     },
   },
   methods: Object.assign(RelaysLib, {
+    mapInit(){
+      let tries=0
+      const interval = setInterval( () => {
+        if(this.$refs?.map?.leafletObject?.whenReady)
+          this.$refs?.map?.leafletObject?.whenReady(async () => {
+            await this.$refs.map.leafletObject
+              .setView(
+                this.store.layout.mapIsExpanded ? [40.41322, -1.219482] : [35.41322, -1.219482], 
+                this.store.layout.mapIsExpanded ? 4 : 2
+              )
+          })
+        else 
+          tries++
+
+        if(tries>3)
+          clearInterval(interval) 
+      },1000) 
+    },
     async copy(text) {
       try {
         await navigator.clipboard.writeText(text);

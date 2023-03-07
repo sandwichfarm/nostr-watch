@@ -11,7 +11,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import crypto from 'crypto'
 
@@ -22,67 +22,32 @@ import { RelayPool } from 'nostr'
 import SharedMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
-import { relays } from '../../../../relays.yaml'
-
 const localMethods = {
-  invalidate(force){
-    if( !this.isExpired(this.slug) && !force ) 
+  RelayOperatorJob(force){
+    if( !this.isExpired(this.slug, 1000) && !force ) 
       return
 
     this.queueJob(
       this.slug,
       () => {
-        const relays = this.store.relays.getAggregateCache('public')
-
-        //console.log('public relays', this.store.relays.getAggregateCache('public').length)
-
-        const pool = new RelayPool(relays)
-        const subid = crypto.randomBytes(40).toString('hex')
-        const uniques = {
-          0: new Set(),
-          1: new Set(),
-          7: new Set(),
-        }
-
-        const limits = {
-          0: 1,
-          1: 20,
-          7: 100
-        } 
-
-        const kinds = [0,1,7]
-        //remove kind 1 for non-single page jobs
+        const pool = new RelayPool([this.relay]),
+              subid = crypto.randomBytes(20).toString('hex')
         pool
           .on('open', relay => {
-            relay.subscribe(subid, { limit:10, kinds:kinds, authors:[this.result.info.pubkey] })
+            relay.subscribe(`${subid}-0`, { limit:1, kinds:[0], authors:[this.result.info.pubkey] })
+            relay.subscribe(`${subid}-1`, { limit:10, kinds:[1], authors:[this.result.info.pubkey] })
+            // relay.subscribe(`${subid}-7`, { limit:10, kinds:[7], authors:[this.result.info.pubkey] })
           })
           .on('event', (relay, sub_id, event) => {
-            //console.log(event)
-            if(!kinds.includes(event.kind))
-              return
-            if(sub_id !== subid)
-              return
-            const u = uniques[event.kind],
-                  l = limits[event.kind]
-            if( u.has(event.id) || u.size > l )
-              return
-            if( !(event instanceof Object) )
-              return
-            
-            if( !( this.events[event.kind] instanceof Object ))
-              this.events[event.kind] = new Object()
-            this.events[event.kind][event.id] = event
-            u.add(event.id)
-            if(event.kind === 0)
+            if(subid === `${subid}-0`){
               this.store.profile.setProfile(JSON.parse(event.content)).catch()
-            //console.log(`kind: ${event.kind} found`, '... total',  u.size, Object.keys(this.events[event.kind]).length)
-            //console.log( 'event!', event.content )
+            }
+            if(subid === `${subid}-1`){
+              this.events[event.kind][event.id] = event
+            }
+            // if(subid === `${subid}-7`){}
           })
-
         this.store.jobs.completeJob(this.slug)
-          // .on('eose', relay => {
-          //   this.closeRelay(relay)
-          // })
       },
       true 
     )
@@ -90,18 +55,16 @@ const localMethods = {
 }
 
 export default defineComponent({
-  name: 'TemplateJob',
+  name: 'RelayOperatorJob',
   components: {},
   data() {
     return {
-      slug: 'relays/operatorprofiles'
+      slug: 'relays/detail/operator'
     }
   },
-  setup(props){
-    const {resultsProp: results} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      results: results
     }
   },
   created(){
@@ -113,11 +76,11 @@ export default defineComponent({
   beforeMount(){
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
     
-    this.relays = this.store.relays.getAll()
+    this.relays = this.store.relays.all
   },
   mounted(){
     //console.log('job', this.slug, 'is processing:', this.store.jobs.isJobActive(this.slug))
-    this.invalidateJob()
+    this.RelayOperatorJob()
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),

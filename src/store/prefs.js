@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 
 export const usePrefsStore = defineStore('prefs', {
   state: () => ({ 
+    migration: 0,
     firstVisit: true,
     refresh: true,
     duration: 6*60*60*1000,
@@ -30,7 +31,7 @@ export const usePrefsStore = defineStore('prefs', {
     connectTimeout: 15*1000,
     writeTimeout: 15*1000,
     readTimeout: 15*1000,
-    runtimeGeo: true
+    runtimeGeo: true,
   }),
   getters: {
     get: state => key => state?.[key],

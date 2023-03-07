@@ -171,7 +171,7 @@ const localMethods = {
   queueOpts: function(){
     return {
         maxQueues:          2, //this.store.prefs.firstVisit? 4: 5, 
-        concurrency:        11, //this.store.prefs.firstVisit? 5: 10, 
+        concurrency:        6, //this.store.prefs.firstVisit? 5: 10, 
         fastTimeout:        30000, //this.store.prefs.firstVisit? 5000: 10000,
         throttleMillis:     1000,
         RelayChecker:       this.checkerOpts()

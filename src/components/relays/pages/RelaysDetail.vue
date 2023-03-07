@@ -31,22 +31,25 @@
           <DetailLatencyBlock :result="result" />
          
 
-          <div class="bg-yellow-300/50 dark:bg-yellow-300/10 text-black/80 dark:text-white/70 border border-white/10 py-4 px-8 rounded-md">
+          <div v-if="pulses" class="bg-yellow-300/50 dark:bg-yellow-300/10 text-black/80 dark:text-white/70 border border-white/10 py-4 px-8 rounded-md">
             Historical connection, read and write latency are experimental, interpret data with a grain of salt. This data is constantly being improved. 
           </div>
 
 
           <DetailHistory
+            v-if="pulses"
             label="Connectability"
             ability="connect"
             :result="result" />
 
           <DetailHistory
+            v-if="pulses"
             label="Readability"
             ability="read"
             :result="result" />
 
           <DetailHistory
+            v-if="pulses"
             label="Writability"
             ability="write"
             :result="result" />

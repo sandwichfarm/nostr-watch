@@ -1,7 +1,7 @@
 <template>
 <div class="hidden lg:block">
   <h2 
-    class="text-center text-2xl text-black/50 dark:text-white/50 my-4 font-extrabold cursor-pointer block py-5"
+    class="text-center text-2xl text-black/50 dark:text-white/50 my-4 font-extrabold cursor-pointer block py-5 mb-8"
     :class="{ 
       'bg-black/10 dark:bg-black/50': this.store.layout.rawDataIsExpanded,  
       'bg-black/5 dark:bg-black/20': !this.store.layout.rawDataIsExpanded,  
@@ -70,7 +70,34 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
-    
+    jsonGeo(){
+      return relay => {
+        const geo = structuredClone(this.store.relays.geo?.[relay])
+        if(geo?.dns)
+          delete geo.dns 
+        return JSON.stringify(geo, null, 4)
+      }
+    },
+    jsonDNS(){
+      return relay => {
+        const dns = structuredClone(this.store.relays.dns?.[relay])
+        if(dns)
+          return JSON.stringify(dns, null, 4)
+        return JSON.stringify({}, null, 4)
+      }
+    },
+    jsonCheck(){
+      return relay => {
+        const res = structuredClone(this.store.results.get(relay))
+        if(res?.info)
+          delete res.info
+        if(res?.latency)
+          delete res.latency.final
+        if(res)
+          return JSON.stringify(res, null, 4)
+        return JSON.stringify({}, null, 4)
+      }
+    },
   }),
 })
 </script>

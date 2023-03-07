@@ -26,8 +26,9 @@
       <DetectRegion 
         v-if="store.prefs.autoDetectRegion && !store.prefs.disableGeoDetection" />
 
-      <!-- <LoadSeed
-        v-if="!store.prefs.clientSideProcessing && false" /> -->
+      <LoadSeed
+        v-if="!store.prefs.clientSideProcessing" />
+
       <CheckNip11
         v-if="
           (
@@ -83,7 +84,7 @@ import { setupStore } from '@/store'
 import SharedComputed from '@/shared/computed.js'
 
 import DetectRegion from './DetectRegion.vue'
-// import LoadSeed from './LoadSeed.vue'
+import LoadSeed from './LoadSeed.vue'
 import RefreshJob from './RefreshJob.vue'
 import GetPulse from './GetPulse.vue'
 import UserRelayList from './UserRelayList.vue'
@@ -104,7 +105,7 @@ export default defineComponent({
   name: "JobQueue",
   components: {
     DetectRegion,
-    // LoadSeed,
+    LoadSeed,
     RefreshJob,
     GetPulse,
     UserRelayList,

@@ -123,8 +123,8 @@ const localMethods = {
       }
       catch(e){""}
 
-      if(r.latency?.connect?.length && !r.check.connect) 
-        console.log('wtf', r.url, r.check.connect, r.check, r.latency )
+      // if(r.latency?.connect?.length && !r.check.connect) 
+      //   console.log('wtf', r.url, r.check.connect, r.check, r.latency )
 
       r.latency.average = r.latency.overall
 

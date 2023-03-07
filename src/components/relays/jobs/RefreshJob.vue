@@ -265,7 +265,7 @@ const localMethods = {
           inspectT  =  this.store.prefs.inspectTimeout
 
     return {
-      debug:                true,        
+      // debug:                true,        
       checkRead:            true, 
       checkWrite:           true,   
       checkLatency:         true,

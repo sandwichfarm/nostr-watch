@@ -162,9 +162,11 @@ const localMethods = {
       .then((result) =>{
         result.aggregate = this.getAggregate(result)
         result = this.pruneResult(result)
-        this.store.results.mergeDeep({ 
-          [result.url]: result
-        })
+        console.log(result)
+        this.store.results[result.url] = result
+        // this.store.results.mergeLeft({ 
+        //   [result.url]: result
+        // })
         this.completeRelay(result)
       })
       .catch( (err) => console.error(`there was an error: ${err}`) )

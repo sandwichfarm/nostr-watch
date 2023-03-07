@@ -75,8 +75,8 @@ const localMethods = {
     return result
   },
   closeAll(){
-    if(this.inspectors.length)
-      this.inspectors.forEach( $inspector => $inspector.close() ) 
+    if(this.relayCheckers.length)
+      this.relayCheckers.forEach( $inspector => $inspector.close() ) 
   },
 }
 
@@ -87,7 +87,7 @@ export default defineComponent({
     return {
       slug: 'relays/nip11', //REMEMBER TO CHANGE!!!\
       relays: [],
-      inspectors: [],
+      relayCheckers: [],
       interval: null,
     }
   },

@@ -2,7 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import RelaysFind from '@/components/relays/pages/RelaysFind.vue'
-import RelaysSingle from '@/components/relays/pages/RelaysSingle.vue'
+import RelaysDetail from '@/components/relays/pages/RelaysDetail.vue'
 // import RelaysMap from '@/components/relays/pages/RelaysMap.vue'
 import RelaysStatistics from '@/components/relays/pages/RelaysStatistics.vue'
 import UserPreferences from '@/components/relays/pages/UserPreferences.vue'
@@ -65,11 +65,11 @@ const routes = [
     },
     {
         path: '/relay/:protocol(ws?s)/:relayUrl(.*)',
-        component: RelaysSingle
+        component: RelaysDetail
     },
     {
         path: '/relay/:relayUrl(.*)',
-        component: RelaysSingle
+        component: RelaysDetail
     },
     {
         path: '/',

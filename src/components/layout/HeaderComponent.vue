@@ -40,18 +40,16 @@
               >
                 Feedback
               </a>
-              <a 
-                href="https://github.com/dskvr/nostr-watch"
-                target="_blank"
-                class="block text-white/50 hover:bg-white/25 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Git
-              </a>
+              
             </div>
           </div>
         </div>
 
         <div class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
+
+          <GithubLink />
+          
+          <TelegramLink />
 
           <Preferences /> 
 
@@ -178,6 +176,14 @@ import UserLib from '@/shared/user-lib.js'
 
 import SharedComputed from '@/shared/computed.js'
 
+const GithubLink = defineAsyncComponent(() =>
+    import("@/components/partials/GithubLink.vue" /* webpackChunkName: "GithubLink" */)
+);
+
+const TelegramLink = defineAsyncComponent(() =>
+    import("@/components/partials/TelegramLink.vue" /* webpackChunkName: "TelegramLink" */)
+);
+
 const Preferences = defineAsyncComponent(() =>
     import("@/components/user/UserQuickPreferences.vue" /* webpackChunkName: "UserQuickPreferences" */)
 );
@@ -204,6 +210,8 @@ export default defineComponent({
     AuthComponent,
     DarkMode,
     About,
+    TelegramLink,
+    GithubLink,
     Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems,
     Bars3Icon, XMarkIcon
   },

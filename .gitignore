@@ -2,7 +2,7 @@ yarn.lock
 node_modules
 *.wasm
 public/main.js
-lib/nostr-relay-inspector
+lib/nostrwatch-js
 dist
 yarn-error.log
 .env

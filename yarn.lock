@@ -4407,7 +4407,7 @@ event-target-shim@^5.0.0:
   resolved "https://registry.yarnpkg.com/event-target-shim/-/event-target-shim-5.0.1.tgz#5d4d3ebdf9583d63a5333ce2deb7480ab2b05789"
   integrity sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==
 
-eventemitter3@^4.0.0, eventemitter3@^4.0.4, eventemitter3@~4.0.0:
+eventemitter3@^4.0.0, eventemitter3@^4.0.4, eventemitter3@^4.0.7, eventemitter3@~4.0.0:
   version "4.0.7"
   resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-4.0.7.tgz#2de9b68f6528d5644ef5c59526a1b4a07306169f"
   integrity sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==
@@ -6803,10 +6803,10 @@ nostr@0.2.7:
     noble-secp256k1 "^1.2.14"
     ws "^8.8.1"
 
-nostrwatch-js@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/nostrwatch-js/-/nostrwatch-js-0.0.3.tgz#d29392a150e5f035e70050ec367ad28c6634e982"
-  integrity sha512-PKzdllt1wnBV8zTbfCl+O1YVKeLQbdo+vzaw65E1FB7nWlqd/ko5/S8aN2lMHl/gBdTPhzZVxxUdDgt+zSMTFA==
+nostrwatch-js@0.0.36:
+  version "0.0.36"
+  resolved "https://registry.yarnpkg.com/nostrwatch-js/-/nostrwatch-js-0.0.36.tgz#ca28d7a072e89943cffc2c8b6ae9f69d653c63ff"
+  integrity sha512-PrSIQK1Di42FHt36Ko/D92OGfNWXgY/tkooGR1JpC9dfPHlvVQ2yAFOZ16vNL0+9JVcN5o3YTWDZxvKmujp+qg==
   dependencies:
     convert-vapid-public-key "1.1.0"
     cross-fetch "3.1.5"
@@ -6814,6 +6814,7 @@ nostrwatch-js@0.0.3:
     node-fetch "3.3.0"
     nostr "0.2.7"
     nostr-tools "1.7.4"
+    p-queue "7.3.4"
     tape "5.6.1"
 
 npm-run-path@^2.0.0:
@@ -7032,6 +7033,14 @@ p-queue@6.6.2:
     eventemitter3 "^4.0.4"
     p-timeout "^3.2.0"
 
+p-queue@7.3.4:
+  version "7.3.4"
+  resolved "https://registry.yarnpkg.com/p-queue/-/p-queue-7.3.4.tgz#7ef7d89b6c1a0563596d98adbc9dc404e9ed4a84"
+  integrity sha512-esox8CWt0j9EZECFvkFl2WNPat8LN4t7WWeXq73D9ha0V96qPRufApZi4ZhPwXAln1uVVal429HVVKPa2X0yQg==
+  dependencies:
+    eventemitter3 "^4.0.7"
+    p-timeout "^5.0.2"
+
 p-retry@^4.5.0:
   version "4.6.2"
   resolved "https://registry.yarnpkg.com/p-retry/-/p-retry-4.6.2.tgz#9baae7184057edd4e17231cee04264106e092a16"
@@ -7046,6 +7055,11 @@ p-timeout@^3.2.0:
   integrity sha512-rhIwUycgwwKcP9yTOOFK/AKsAopjjCakVqLHePO3CC6Mir1Z99xT+R63jZxAT5lFZLa2inS5h+ZS2GvR99/FBg==
   dependencies:
     p-finally "^1.0.0"
+
+p-timeout@^5.0.2:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/p-timeout/-/p-timeout-5.1.0.tgz#b3c691cf4415138ce2d9cfe071dba11f0fee085b"
+  integrity sha512-auFDyzzzGZZZdHz3BtET9VEz0SE/uMEAx7uWfGPucfzEwwe/xH0iVeZibQmANYE/hp9T2+UUZT5m+BKyrDp3Ew==
 
 p-try@^2.0.0:
   version "2.2.0"
@@ -9499,6 +9513,11 @@ vue-cli-plugin-yaml-loader@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/vue-cli-plugin-yaml-loader/-/vue-cli-plugin-yaml-loader-1.0.0.tgz#13d6cc8a9461b7e48475db6a8b6d20f6c2d748e1"
   integrity sha512-Mm/CwFrBtsVZVML4+AtggQqKMz8Qb3B5dgQhUvA4KmI/r2Fd7gyMYK2Iwe1glc/bIMmaNE9qKITm4OimTfoCTw==
+
+vue-country-flag-next@2.3.2:
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/vue-country-flag-next/-/vue-country-flag-next-2.3.2.tgz#c35d283f83b7631be414c720391a8363991557c2"
+  integrity sha512-Lv12L1VTwlBgizpZ3xPEPO3zuIETaJmeSiPuLOWLLgu2EakwU/o72iKYiKcdZ6BXiSkfss+Ski5fDzjuxZ1DcA==
 
 vue-demi@*, vue-demi@^0.13.11:
   version "0.13.11"

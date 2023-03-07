@@ -1,8 +1,8 @@
-<template>
+<!-- <template>
   <span class="text-inherit" v-if="this.store.jobs.getActiveSlug === slug">
     analyzing relays
   </span>
-</template>
+</template> -->
 <script>
 import { defineComponent } from 'vue'
 import { setupStore } from '@/store'

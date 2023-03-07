@@ -1,3 +1,5 @@
+// DEPRECATED: THIS WAS A PREBUILD SCRIPT USED A LONG TIME AGO. IT'S PURPOSE WAS REPLACED BY THE API (https://api.nostr.watch)
+
 const { RelayPool, Relay } = require('nostr'),
       crypto = require('crypto'),
       writeYamlFile = require('write-yaml-file'),
@@ -61,7 +63,7 @@ async function discover(){
   await getRelays()
 
   return new Promise(resolve => {
-    const subid = crypto.randomBytes(40).toString('hex')
+    const subid = crypto.randomBytes(20).toString('hex')
     const pool = RelayPool(relaysKnown)
     pool
       .on('open', relay => {

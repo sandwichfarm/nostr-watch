@@ -38,6 +38,7 @@ export const useStatStore = defineStore(
         this.pulses = payload
       },
       addPulse(relay, payload){
+        console.log('addPulse()', relay, payload?.length)
         if( !(this.pulses[relay] instanceof Array) )
           this.pulses[relay] = new Array()
         this.pulses[relay] = payload

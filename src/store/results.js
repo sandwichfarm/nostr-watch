@@ -11,7 +11,7 @@ export const useResultsStore = defineStore(
     }),
     getters: {
       all: state => state.data,
-      get: state => relay => state.data?.[relay] || {},
+      get: state => relay => state.data?.[relay] || false,
       //temporary resolution.
       likelyFake: state => relay => state.retries?.[relay] > RETRY_LIMIT && !state.data?.[relay]?.check?.connect && state.data?.[relay]?.uptime === 100
     },

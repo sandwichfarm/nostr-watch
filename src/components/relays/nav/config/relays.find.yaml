@@ -11,10 +11,6 @@ items:
     slug: paid
     href: '#paid'
     description: Relays that use a payment model to mitigate spam.
-  - name: Restricted
-    slug: restricted
-    href: '#restricted'
-    description: Restricted relays are relays where there are read and/or write restrictions
   - name: Offline
     slug: offline
     href: '#offline'

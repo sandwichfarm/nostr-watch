@@ -51,8 +51,6 @@ import { getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency  } fr
 
 const localMethods = {
   LoadSeed(force, single){
-    // if( ( this.store.jobs.getLastUpdate('relays/check') || ( this.store.jobs.processed?.['relays/check'] && this.store.jobs.processed?.['relays/check'].length ) ) && !force ) 
-    //   return
     if( (!this.isExpired(this.slug, 15*60*1000) && !force) ) 
       return
     
@@ -245,14 +243,7 @@ export default defineComponent({
   },
   beforeMount(){
     this.lastUpdate = this.store.jobs.getLastUpdate(this.slug)
-    
     this.relays = [...this.store.relays.getAll]
-
-    // for(let ri=0;ri-this.relays.length;ri++){
-    //   const relay = this.relays[ri],
-    //         cache = this.getCache(relay)
-    //   this.store.results.get(relay) = cache
-    // }
   },
   mounted(){
     if(this.isSingle) {

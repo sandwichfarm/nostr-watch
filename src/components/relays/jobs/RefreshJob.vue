@@ -60,9 +60,6 @@ import { RelayChecker, QueuedChecker, getAverageLatency, getMedianLatency, getMi
 
 import { getGeo, getPrebuiltGeo } from '@/utils'
 
-
-// import { relays } from '../../../../relays.yaml'
-
 const localMethods = {
   async CheckRelaysJob(force, single){
     // console.log('invalidate?', !((!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle), this.windowActive)
@@ -71,10 +68,6 @@ const localMethods = {
 
     if(!this.windowActive)
       return
-
-    
-
-    // console.log('queue job', single, this.slug)
     
     this.queueJob(
       this.slug, 

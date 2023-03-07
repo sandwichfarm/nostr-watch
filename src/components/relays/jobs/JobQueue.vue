@@ -47,9 +47,7 @@
       <HistoryJob
         />
       <RefreshJob 
-        v-if="store.prefs.clientSideProcessing 
-              || this.store.prefs.isFirstVisit
-        " />
+        v-if="store.prefs.clientSideProcessing" />
 
       <CheckDNS 
         v-if="!isSingle" />

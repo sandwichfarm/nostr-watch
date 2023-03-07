@@ -84,10 +84,10 @@ const localMethods = {
   },
 
   pruneResult: function(result){
-    let resultPruned = {}
+    let r = {}
 
     if(result) {
-      resultPruned = {
+      r = {
         state: result.state,
         url: result.url,
         aggregate: result.aggregate,
@@ -100,53 +100,58 @@ const localMethods = {
         latency: {}
       } 
       if(result.latency?.data?.length) {
-        resultPruned.latency.average = getAverageLatency(result.latency.data)
-        resultPruned.latency.median = getMedianLatency(result.latency.data)
-        resultPruned.latency.min = getMinLatency(result.latency.data)
-        resultPruned.latency.max = getMaxLatency(result.latency.data)
-        resultPruned.latency.data = result.latency.data
+        r.latency.average = getAverageLatency(result.latency.data)
+        r.latency.median = getMedianLatency(result.latency.data)
+        r.latency.min = getMinLatency(result.latency.data)
+        r.latency.max = getMaxLatency(result.latency.data)
+        r.latency.data = result.latency.data
       }
-      resultPruned.latency.connect = result.latency?.connect? [result.latency?.connect]: result.latency?.connect
-      resultPruned.latency.write = result.latency?.write? [result.latency?.write]: result.latency.write
+      r.latency.connect = result.latency?.connect? [result.latency?.connect]: result.latency?.connect
+      r.latency.write = result.latency?.write? [result.latency?.write]: result.latency.write
 
-      // result.check.connect = resultPruned.latency?.connect? result.latency.connect: result.check.connect
-      // result.check.read = resultPruned.latency?.read? result.latency.read: result.check.read
-      // result.check.write = resultPruned.latency?.write? result.latency.write: result.check.write
+      // result.check.connect = r.latency?.connect? result.latency.connect: result.check.connect
+      // result.check.read = r.latency?.read? result.latency.read: result.check.read
+      // result.check.write = r.latency?.write? result.latency.write: result.check.write
+      try {
+        r.latency.overall = [
+          getAverageLatency([
+            ...r.latency?.connect? r.latency.connect: [], 
+            ...r.latency?.data? r.latency.data: [], 
+            ...r.latency?.write? r.latency.write: [], 
+          ])
+        ]
+      }
+      catch(e){""}
 
-      resultPruned.latency.overall = [
-        getAverageLatency([
-          ...resultPruned.latency?.connect? resultPruned.latency.connect: [], 
-          ...resultPruned.latency?.data? resultPruned.latency.data: [], 
-          ...resultPruned.latency?.write? resultPruned.latency.write: [], 
-        ])
-      ]
+      if(r.latency?.connect?.length && !r.check.connect) 
+        console.log('wtf', r.url, r.check.connect, r.check, r.latency )
 
-      resultPruned.latency.average = resultPruned.latency.overall
+      r.latency.average = r.latency.overall
 
       if(!result.check.connect && result.latency.connect )
         console.log('hmmm', result.url, !result.check.connect, result.latency.connect, '!result.check.connect && result.latency.connect', !result.check.connect && result.latency.connect)
       
       if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostrwatch-js
-        resultPruned.info = result.info
+        r.info = result.info
 
       if(result?.pubkeyValid)
-        resultPruned.pubkeyValid = result.pubkeyValid
+        r.pubkeyValid = result.pubkeyValid
 
       if(result?.pubkeyError)
-        resultPruned.pubkeyError = result.pubkeyError
+        r.pubkeyError = result.pubkeyError
 
       if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
-        resultPruned.aggregate = 'restricted'
-        resultPruned.check.write = false 
+        r.aggregate = 'restricted'
+        r.check.write = false 
       }
 
       if(this.isSingle)
-        resultPruned.log = result.log
+        r.log = result.log
 
       const uptime = this.getUptimePercentage(result.url)
-      resultPruned.uptime = uptime
+      r.uptime = uptime
     }
-    return resultPruned
+    return r
   },
   checkJob: async function(single){
 
@@ -166,9 +171,9 @@ const localMethods = {
   queueOpts: function(){
     return {
         maxQueues:          2, //this.store.prefs.firstVisit? 4: 5, 
-        concurrency:        3, //this.store.prefs.firstVisit? 5: 10, 
+        concurrency:        11, //this.store.prefs.firstVisit? 5: 10, 
         fastTimeout:        30000, //this.store.prefs.firstVisit? 5000: 10000,
-        throttleMillis:     200,
+        throttleMillis:     1000,
         RelayChecker:       this.checkerOpts()
       }
   },
@@ -211,9 +216,6 @@ const localMethods = {
           // console.log("checked:", result.url, result?.check?.connect, result?.latency?.connect)
           if(!result?.url)
             return
-
-          // if(this.queue.relays?.length && !result.check.connect)
-          //   return 
 
           this.setGeo(result.url)
           result.aggregate = this.getAggregate(result)

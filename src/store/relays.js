@@ -38,7 +38,7 @@ export const useRelaysStore = defineStore('relays', {
         return state.urls.filter( (relay) => results?.[relay]?.info?.limitation?.payment_required )
 
       if( 'online' == aggregate )
-        return state.urls.filter( (relay) => results?.[relay]?.check?.connect )
+        return state.urls.filter( (relay) => results?.[relay]?.latency?.connect?.length )
 
       if( 'favorite' == aggregate )
         return state.favorites

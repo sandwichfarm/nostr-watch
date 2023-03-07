@@ -13,7 +13,7 @@
 
                       <th 
                         v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" scope="col" 
-                        class="hidden md:table-cell lg:table-cell xl:table-cell verified w-7">
+                        class="hidden md:table-cell lg:table-cell xl:table-cell verified w-10">
                         <!-- <code class="text-xs block">
 
                         </code> -->
@@ -78,7 +78,7 @@
                       <th 
                         v-if="store.layout.getActive('relays/find') === 'paid'" 
                         scope="col" 
-                        class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        class="hidden md:table-cell lg:table-cell xl:table-cell verified w-24">
                         <code 
                           class="text-xs block cursor-pointer"
                           :class="{'bg-black/50 rounded-sm': store.prefs.sortFees }"
@@ -90,10 +90,10 @@
                       <th 
                         v-if="store.layout.getActive('relays/find') === 'paid'" 
                         scope="col" 
-                        class="hidden md:table-cell lg:table-cell xl:table-cell verified">
+                        class="hidden md:table-cell lg:table-cell xl:table-cell verified w-24">
                         <code 
                           class="text-xs block">
-                          Publish<br/>Fee
+                          Publish Fee
                         </code>
                       </th>
 
@@ -129,7 +129,7 @@
                         v-tooltip:top.tooltip="`Relay Latency on ${check}`">
                         <code 
                           class="text-xs block cursor-pointer" >
-                          {{ check }}
+                          {{ 'overall' === check ? 'average' : check }}
                         </code>
                       </th>
 
@@ -170,7 +170,7 @@
 
                       <td 
                         v-if="!store.layout.editorIsExpanded && store.prefs.checkNip11 && store.jobs.getLastUpdate('relays/nip11')" 
-                        class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell">
+                        class="w-12 verified text-center hidden md:table-cell lg:table-cell xl:table-cell content-center text-center">
                         <!-- {{ this.store.results.get(relay)?.pubkeyValid }}
                         {{ this.store.results.get(relay)?.info?.pubkey }} -->
                         <span 
@@ -187,7 +187,7 @@
                         </span>
                       </td>
 
-                      <td v-if="store.jobs.getLastUpdate('relays/geo')" class="w-4 location text-center">
+                      <td v-if="store.jobs.getLastUpdate('relays/geo')" class="w-4 location text-center opacity-70">
                         <img :src="getFlagRef(relay)" class="w-6" />
                       </td>
 
@@ -274,7 +274,7 @@
                       <td 
                         v-for="check in ['overall', 'connect', 'data', 'write']" 
                         :key="`latency-${check}-${relay}`"
-                        class="w-24 latency text-center text-sm font-bold ">
+                        class="w-24 latency text-center text-sm ">
                         <!-- {{ check }}
                         {{ store.results.get(relay).latency }} -->
 <!-- 
@@ -285,7 +285,7 @@
                         <span 
                           v-if="store.results.get(relay)?.latency?.[check]?.length"
                           class="text-black/80 dark:text-white/80">
-                            <span class="m-auto block" v-if="check != 'overall'" :class="getCheckIndicator(relay, check)">
+                            <span class="m-auto inline-block" v-if="check != 'overall'" :class="getCheckIndicator(relay, check)">
                               &nbsp;
                             </span>
                             {{ store.results.get(relay).latency?.[check][0] }}ms
@@ -619,9 +619,10 @@
             // 'bg-gray-600': key === 'write' && this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted' && this.store.results.get(relay)?.info?.limitation?.payment_required,
             'bg-red-500': this.store.results.get(relay)?.check?.[key] === false,
             'bg-gray-500': 'undefined' === typeof this.store.results.get(relay)?.check?.[key],
-            'text-2xl block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
-            'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
-            'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
+            'block m-auth h-3 w-3 rounded-md': true
+            // 'text-2xl block m-auth h-6 w-6 rounded-xl': this.store.prefs.getTheme === 'spacious',
+            // 'text-xl block m-auth h-5 w-5 rounded-2xl': this.store.prefs.getTheme === 'comfortable',
+            // 'text-xl block m-auth h-4 w-4 rounded-2xl': this.store.prefs.getTheme === 'compact',
             }
         } 
       },
@@ -635,10 +636,10 @@
       getAggregateIndicatorClass(){
         return (relay) => {
           return { 
-            'bg-green-500 dark:bg-green-600/50': this.store.results.get(relay)?.check?.connect,
+            'bg-green-500 dark:bg-green-600/50': this.store.results.get(relay)?.latency?.connect?.[0],
             // 'bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted' && !this.isPayToRelay(relay),
             // 'bg-black/10 dark:bg-white/10': this.isPayToRelay(relay),
-            'bg-red-500': this.store.results.get(relay).aggregate === 'offline',
+            'bg-red-500': !this.store.results.get(relay)?.latency?.connect?.[0],
             'ml-4': this.store.prefs.getTheme === 'spacious',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',

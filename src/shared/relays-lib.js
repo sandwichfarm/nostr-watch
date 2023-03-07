@@ -278,9 +278,8 @@ export default {
 
     getAggregate: function(result) {
 
-      if(!result?.check.connect)
+      if(!result?.latency?.connect)
         return 'offline'
-
 
       if(result?.check.connect && result?.check.read && result?.check.write)
         return 'public'

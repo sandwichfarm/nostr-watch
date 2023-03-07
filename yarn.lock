@@ -6803,10 +6803,10 @@ nostr@0.2.7:
     noble-secp256k1 "^1.2.14"
     ws "^8.8.1"
 
-nostrwatch-js@0.0.35:
-  version "0.0.35"
-  resolved "https://registry.yarnpkg.com/nostrwatch-js/-/nostrwatch-js-0.0.35.tgz#ff9a11efbad5076a356a71e28adc96c4437b5166"
-  integrity sha512-vWkb6bqch4Y69tj2KhDyZug1U2+avrXJAb9LRfmaKV5zy1m3SW5morxWVqB6nlWyoUtPodhPlDHquIEAmB1yFg==
+nostrwatch-js@0.0.36:
+  version "0.0.36"
+  resolved "https://registry.yarnpkg.com/nostrwatch-js/-/nostrwatch-js-0.0.36.tgz#ca28d7a072e89943cffc2c8b6ae9f69d653c63ff"
+  integrity sha512-PrSIQK1Di42FHt36Ko/D92OGfNWXgY/tkooGR1JpC9dfPHlvVQ2yAFOZ16vNL0+9JVcN5o3YTWDZxvKmujp+qg==
   dependencies:
     convert-vapid-public-key "1.1.0"
     cross-fetch "3.1.5"

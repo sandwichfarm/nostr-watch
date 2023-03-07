@@ -39,7 +39,7 @@
     "node-fetch": "3.3.0",
     "nostr": "0.2.5",
     "nostr-tools": "1.1.1",
-    "nostrwatch-js": "0.0.3",
+    "nostrwatch-js": "0.0.35",
     "object-hash": "3.0.0",
     "object-sizeof": "1.6.3",
     "onion-regex": "2.0.8",

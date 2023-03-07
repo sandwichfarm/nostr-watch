@@ -7,7 +7,6 @@
     v-if="(geo instanceof Object) && store.prefs.showMaps"
   />
 
-
   <div id="wrapper" class="mt-8 mx-auto w-auto max-w-7xl text-center content-center">
 
       <div v-if="!result" class="data-card flex bg-slate-100 dark:bg-black/20 dark:text-white/50 mt-12 shadow py-8 px-3">
@@ -28,9 +27,24 @@
         <div v-if=" 'complete' === this.result.state ">
           <DetailTopics :result="result" />
           <DetailPayToRelay :result="result" />
-          <DetailLatencyBlock :result="result" />
-          <DetailHistory :result="result" />
           <DetailNips :result="result" />
+          <DetailLatencyBlock :result="result" />
+         
+          <DetailHistory
+            label="Connectability"
+            ability="connect"
+            :result="result" />
+
+          <DetailHistory
+            label="Readability"
+            ability="read"
+            :result="result" />
+
+          <DetailHistory
+            label="Writability"
+            ability="write"
+            :result="result" />
+
           <div class="flex-none lg:flex mb-8">
             <DetailNetwork :result="result" />
             <DetailSoftware :result="result" />
@@ -603,48 +617,10 @@ export default defineComponent({
         return (value-fast) / (slow-fast) * 100
       }
     },
-    getUptimeTickClass: function(){
-      return pulse => {
-        return {
-          'bg-red-700/80 h-32': !pulse.latency,
-          // 'bg-green-400/50': pulse.latency,
-          [this.normalizeUptimeTick(pulse)]: pulse.latency,
-        }
-      }
-    },
     checkDimensions: function(){
       return this.isPayToRelay(this.relay) ? [{key: 'connect', label: 'online'}] : [{key: 'connect', label: 'online'}, {key: 'read', label: 'readable'}, {key: 'write', label: 'writable'}]
     },
-    normalizeUptimeTick: function(){
-      return pulse => { 
-        if(!pulse.latency)
-          return
-        const val = pulse.latency,
-              minVal = this.hbMin,
-              maxVal = this.hbMax, 
-              newMin = 10,
-              newMax = 30
-        const h = Math.round( newMin + (val - minVal) * (newMax - newMin) / (maxVal - minVal))
-        const m = 32 - h 
 
-        let color 
-        
-        if(pulse.latency<this.store.prefs.latencyFast) {
-          color = 'bg-green-400/60'
-        } 
-        else if(pulse.latency<(this.store.prefs.latencySlow/2)) {
-          color = 'bg-yellow-400/50'
-        }
-        else if(pulse.latency<this.store.prefs.latencySlow) {
-          color = 'bg-orange-400/50'
-        }
-        else {
-          color = 'bg-red-400/50'
-        }
-
-        return `h-${h} mt-${m} ${color}`
-      }
-    },
     getSoftware: function(){
       return this.result?.info?.software
     },

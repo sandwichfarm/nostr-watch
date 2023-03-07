@@ -58,6 +58,9 @@ import SharedComputed from '@/shared/computed.js'
 
 import { RelayChecker, QueuedChecker, getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency } from 'nostrwatch-js'
 
+import { getGeo, getPrebuiltGeo } from '@/utils'
+
+
 // import { relays } from '../../../../relays.yaml'
 
 const localMethods = {
@@ -68,6 +71,8 @@ const localMethods = {
 
     if(!this.windowActive)
       return
+
+    
 
     // console.log('queue job', single, this.slug)
     
@@ -101,6 +106,18 @@ const localMethods = {
         resultPruned.latency.max = getMaxLatency(result.latency.data)
         resultPruned.latency.data = result.latency.data
       }
+      resultPruned.latency.connect = result.latency?.connect? [result.latency?.connect]: result.latency?.connect
+      resultPruned.latency.write = result.latency?.write? [result.latency?.write]: result.latency.write
+
+      resultPruned.latency.overall = [
+        getAverageLatency([
+          ...resultPruned.latency?.connect? resultPruned.latency.connect: [], 
+          ...resultPruned.latency?.data? resultPruned.latency.data: [], 
+          ...resultPruned.latency?.write? resultPruned.latency.write: [], 
+        ])
+      ]
+
+      resultPruned.latency.average = resultPruned.latency.overall
       
       if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostrwatch-js
         resultPruned.info = result.info
@@ -125,35 +142,73 @@ const localMethods = {
     return resultPruned
   },
   checkJob: async function(single){
+
     if(single)
+    {
+      await this.setGeo(single)
       await this.checkSingle(single, this.slug)
-    else
+    } 
+    else 
+    {
       await this.checkQueue()
+    }
 
     this.completeAll(single)
   },
 
   queueOpts: function(){
     return {
-        maxQueues:          this.store.prefs.firstVisit? 4: 2, 
-        concurrency:        this.store.prefs.firstVisit? 5: 5, 
-        fastTimeout:        this.store.prefs.firstVisit? 4000: 6000,
+        maxQueues:          1, //this.store.prefs.firstVisit? 4: 5, 
+        concurrency:        50, //this.store.prefs.firstVisit? 5: 10, 
+        fastTimeout:        30000, //this.store.prefs.firstVisit? 5000: 10000,
         throttleMillis:     200,
         RelayChecker:       this.checkerOpts()
       }
   },
 
+  setGeo: async function(relay){
+    if( process.env.VUE_APP_IP_API_KEY && this.store.prefs.runtimeGeo ){
+      getGeo(relay).then( geo => {
+        if(!geo?.lat)
+          return
+        this.store.relays.geo = Object.assign(this.store.relays.geo, { [relay]: geo } )
+      })
+    }
+    else {
+      if(this.hasGeo)
+        return
+      await this.setGeoFromCache()
+    }
+  },
+
+  setGeoFromCache: async function(){
+    if( Object.keys(this.store.relays.geo.length) === this.store.relays.getAll.length )
+      return this.hasGeo = true
+    this.store.relays.geo = Object.assign(this.store.relays.geo, await getPrebuiltGeo() )
+  },
+
   checkQueue: async function(relays){
     this.relays = relays? relays: this.store.relays.getAll
     relays = this.sortRelays( this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) ) )
+    
     if(!relays.length)
       return
+
+      console.log('here', this.queueOpts())
+
     return new Promise( resolve => {
+      
       this.queue = new QueuedChecker(relays, this.queueOpts())
       this.queue
         .on('result', result => {
+          // console.log("checked:", result.url, result?.check?.connect, result?.latency?.connect)
           if(!result?.url)
             return
+
+          // if(this.queue.relays?.length && !result.check.connect)
+          //   return 
+
+          this.setGeo(result.url)
           result.aggregate = this.getAggregate(result)
           result = this.pruneResult(result)
           this.store.results.mergeDeep({[result.url]: result})
@@ -161,9 +216,6 @@ const localMethods = {
         })
         .on('complete',async () => {
           console.log('complete?')
-          // this.duration = this.queue.duration
-          // await new Promise( delay => setTimeout(delay, 5000) )
-          // this.duration = null
           resolve()
         })
     })
@@ -203,7 +255,7 @@ const localMethods = {
           inspectT  =  this.store.prefs.inspectTimeout
 
     return {
-      debug:                true,        
+      // debug:                true,        
       checkRead:            true, 
       checkWrite:           true,   
       checkLatency:         true,
@@ -294,9 +346,6 @@ const localMethods = {
       const result = this.store.results.get(relay)
       return ('offline' === result?.aggregate || 'restricted' === result?.aggregate) && result?.uptime > 0
     })
-
-
-    
     relays.forEach( async (relay) => {
       const slug = `relays/check/${relay}`,
             expired = (Date.now()-this.store.jobs.getLastUpdate(slug))>this.lazyInterval 
@@ -355,7 +404,8 @@ export default defineComponent({
       retry: [],
       retries: 1,
       lazyInterval: 1*60*60*1000,
-      duration: null
+      duration: null,
+      hasGeo: false
       // history: null
     }
   },

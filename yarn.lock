@@ -9514,6 +9514,11 @@ vue-cli-plugin-yaml-loader@~1.0.0:
   resolved "https://registry.yarnpkg.com/vue-cli-plugin-yaml-loader/-/vue-cli-plugin-yaml-loader-1.0.0.tgz#13d6cc8a9461b7e48475db6a8b6d20f6c2d748e1"
   integrity sha512-Mm/CwFrBtsVZVML4+AtggQqKMz8Qb3B5dgQhUvA4KmI/r2Fd7gyMYK2Iwe1glc/bIMmaNE9qKITm4OimTfoCTw==
 
+vue-country-flag-next@2.3.2:
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/vue-country-flag-next/-/vue-country-flag-next-2.3.2.tgz#c35d283f83b7631be414c720391a8363991557c2"
+  integrity sha512-Lv12L1VTwlBgizpZ3xPEPO3zuIETaJmeSiPuLOWLLgu2EakwU/o72iKYiKcdZ6BXiSkfss+Ski5fDzjuxZ1DcA==
+
 vue-demi@*, vue-demi@^0.13.11:
   version "0.13.11"
   resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.13.11.tgz#7d90369bdae8974d87b1973564ad390182410d99"

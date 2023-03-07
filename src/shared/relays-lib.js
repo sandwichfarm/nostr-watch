@@ -318,6 +318,7 @@ export default {
     loadingComplete: function(){
       return this.isDone() ? 'loaded' : ''
     },
+    
 
     // getReadabilityPercentage(relay){
     //   const pulses = this.store.stats.getPulse(relay)
@@ -353,10 +354,15 @@ export default {
     },
 
     setUptimePercentage(relay){
-      const perc = this.getUptimePercentage(relay)
-      const result = {}
-      result.uptime = perc 
+      const result = { ability: {} };
+
+      ['connect','read','write'].forEach(ability => {
+
+        result.ability[ability] = this.getAbilityRate(ability, relay)
+      })
+
       this.store.results.mergeDeep( { [relay]: result  } )
+
       return result
     },
 

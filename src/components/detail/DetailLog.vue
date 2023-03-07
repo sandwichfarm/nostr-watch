@@ -1,5 +1,5 @@
 <template>
-  <div class="col-span-1" v-if="result?.log">
+  <div class="col-span-1 mb-8" v-if="result?.log">
     <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
       <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
         <div class="overflow-hidden">

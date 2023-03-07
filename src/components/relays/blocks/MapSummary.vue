@@ -113,10 +113,10 @@ export default defineComponent({
   beforeUnmount(){
     //console.log('beforeUnmount', '$refs', this.$refs)
   },
-  unmounted(){
-    //console.log('unmounted', '$refs', this.$refs)
-    delete this.$refs.map
-  },
+  // unmounted(){
+  //   //console.log('unmounted', '$refs', this.$refs)
+  //   delete this.$refs.map
+  // },
   updated(){},
   props: {
     activeSubsectionProp: {

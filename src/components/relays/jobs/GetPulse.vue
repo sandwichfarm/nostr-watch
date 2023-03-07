@@ -31,9 +31,10 @@ import { relays } from '../../../../relays.yaml'
 import { RelayPool } from 'nostr'
 
 const localMethods = {
-  invalidatePulse(force){
-    if( (!this.isExpired(this.slug, 1) && !force) && !this.isSingle ) 
-      return
+  invalidatePulse(){
+    // if( (!this.isExpired(this.slug, 1) && !force) && !this.isSingle ) 
+    //   return
+    
     
       this.queueJob(
         this.slug, 
@@ -70,6 +71,8 @@ const localMethods = {
           
           if(uniques.has(event.created_at))
             return 
+
+          // console.log(decodeJson(event.content).online?.length)
           
           uniques.add(event.created_at)
 
@@ -100,9 +103,9 @@ const localMethods = {
     allTimestamps.forEach( timestamp => {
       data[timestamp].forEach( relayData => {
         const relay = relayData[0],
-              connectLatency = relayData[1],
-              readLatency = relayData[1],
-              writeLatency = relayData[1]
+              connectLatency = relayData[1]?.[0],
+              readLatency = relayData[2]?.[0],
+              writeLatency = relayData[3]?.[0]
 
         if( !(pulsesByRelayObj[relay] instanceof Object) )
           pulsesByRelayObj[relay] = allTimestamps.reduce( (acc, _timestamp) => {
@@ -125,15 +128,17 @@ const localMethods = {
       pulses[relay] = new Array()
       //console.log(relay, pulsesByRelayObj[relay])
       Object.keys(pulsesByRelayObj[relay]).forEach( (timestamp_) => {
-        pulses[relay].push({
+        pulses[relay].push(Object.assign(pulsesByRelayObj[relay][timestamp_], {
           date: timestamp_,
-          latency: pulsesByRelayObj[relay][timestamp_]
-        })
+        }))
       })
       pulses[relay].sort( (h1, h2) => h1.date - h2.date )
       this.store.stats.addPulse(relay, pulses[relay])
       this.setUptimePercentage(relay)
+      if(this.isSingle && this.relayFromUrl === relay)
+        console.log('viola!', relay, this.getAbilityRate('connect', relay), this.getAbilityRate('read', relay), this.getAbilityRate('write', relay), pulses[relay])
     })
+    
     this.store.jobs.completeJob(this.slug)
   },
   timeUntilRefresh(){
@@ -171,6 +176,7 @@ export default defineComponent({
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
+    console.log('ppulse?')
     this.invalidatePulse()
     // this.invalidateJob()
     // this.interval = setInterval( this.invalidateJob, 1000 )

@@ -145,6 +145,7 @@ export default {
       unique: unique
     })
   },
+
   getRelays(relays){
     if(!relays)
       relays = this.store.relays.getAll
@@ -190,7 +191,6 @@ export default {
       needles?.forEach( needle => {
         if(!this.store.filters.enabled && !this.store.filters.alwaysEnabled?.[haystack])
           return 
-
         if(haystack === 'nips')
           filtered = this.getRelaysByNip(filtered, parseInt(needle))
 
@@ -224,19 +224,19 @@ export default {
 
     if(this.store.prefs.sortLatency)
       sort(relays, (relay1, relay2) => {
-        let a = this.store.results.all?.[relay1]?.latency?.average || 100000,
-            b = this.store.results.all?.[relay2]?.latency?.average || 100000
+        let a = this.store.results.get(relay1)?.latency?.average || 100000,
+            b = this.store.results.get(relay2)?.latency?.average || 100000
         return a-b
       })
     sort(relays, (relay1, relay2) => {
-      let x = this.store.results.all?.[relay1]?.check?.connect || false,
-          y = this.store.results.all?.[relay2]?.check?.connect || false
+      let x = this.store.results.get(relay1)?.check?.connect || false,
+          y = this.store.results.get(relay2)?.check?.connect || false
       return (x === y)? 0 : x? -1 : 1;
     })
     if(this.store.prefs.sortLatency)
       sort(relays, (relay1, relay2) => {
-        let a = this.store.results.all?.[relay1]?.latency?.average || null,
-            b = this.store.results.all?.[relay2]?.latency?.average || null
+        let a = this.store.results.get(relay1)?.latency?.average || null,
+            b = this.store.results.get(relay2)?.latency?.average || null
         return (b != null) - (a != null) || a - b;
       })
     // if(this.store.prefs.sortUptime && this.store.layout.getActive('relays/find') !== 'paid')
@@ -278,11 +278,12 @@ export default {
 
     getAggregate: function(result) {
 
+      if(!result?.check.connect)
+        return 'offline'
+
+
       if(result?.check.connect && result?.check.read && result?.check.write)
         return 'public'
-
-      if(!result?.check.connect && !result?.check.read && !result?.check.write)
-        return 'offline'
 
       // else if(this.isPayToRelay(result.url))
       //   return 'restricted'

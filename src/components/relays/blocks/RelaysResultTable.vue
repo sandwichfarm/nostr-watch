@@ -613,8 +613,9 @@
       getCheckIndicator(){
         return (relay, key) => {
           return { 
-            'bg-green-500 dark:bg-green-600': this.store.results.get(relay)?.check?.[key] === true,
-            'bg-orange-600': this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted' && (!this.store.results.get(relay)?.info?.limitation?.payment_required || key !== 'write'),
+            // 'bg-green-500 dark:bg-green-600': this.store.results.get(relay)?.check?.[key] === true,
+            'bg-green-500 dark:bg-green-600': this.store.results.get(relay)?.latency?.[key],
+            'bg-orange-600': this.store.results.get(relay)?.check?.[key] === false && (!this.store.results.get(relay)?.info?.limitation?.payment_required || key !== 'write'),
             // 'bg-gray-600': key === 'write' && this.store.results.get(relay)?.check?.[key] === false && this.store.results.get(relay)?.aggregate === 'restricted' && this.store.results.get(relay)?.info?.limitation?.payment_required,
             'bg-red-500': this.store.results.get(relay)?.check?.[key] === false,
             'bg-gray-500': 'undefined' === typeof this.store.results.get(relay)?.check?.[key],
@@ -634,10 +635,10 @@
       getAggregateIndicatorClass(){
         return (relay) => {
           return { 
-            'bg-green-500 dark:bg-green-600/50': this.store.results.get(relay)?.check?.connect || this.store.results.get(relay)?.latency?.connect?.length,
+            'bg-green-500 dark:bg-green-600/50': this.store.results.get(relay)?.check?.connect,
             // 'bg-orange-600': this.store.results.get(relay)?.aggregate === 'restricted' && !this.isPayToRelay(relay),
             // 'bg-black/10 dark:bg-white/10': this.isPayToRelay(relay),
-            'bg-red-500': !this.store.results.get(relay)?.check?.connect &&  !this.store.results.get(relay)?.latency?.connect?.length,
+            'bg-red-500': this.store.results.get(relay).aggregate === 'offline',
             'ml-4': this.store.prefs.getTheme === 'spacious',
             'ml-2': this.store.prefs.getTheme === 'comfortable',
             'ml-1': this.store.prefs.getTheme === 'compact',

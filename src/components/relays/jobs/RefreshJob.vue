@@ -109,6 +109,10 @@ const localMethods = {
       resultPruned.latency.connect = result.latency?.connect? [result.latency?.connect]: result.latency?.connect
       resultPruned.latency.write = result.latency?.write? [result.latency?.write]: result.latency.write
 
+      // result.check.connect = resultPruned.latency?.connect? result.latency.connect: result.check.connect
+      // result.check.read = resultPruned.latency?.read? result.latency.read: result.check.read
+      // result.check.write = resultPruned.latency?.write? result.latency.write: result.check.write
+
       resultPruned.latency.overall = [
         getAverageLatency([
           ...resultPruned.latency?.connect? resultPruned.latency.connect: [], 
@@ -118,6 +122,9 @@ const localMethods = {
       ]
 
       resultPruned.latency.average = resultPruned.latency.overall
+
+      if(!result.check.connect && result.latency.connect )
+        console.log('hmmm', result.url, !result.check.connect, result.latency.connect, '!result.check.connect && result.latency.connect', !result.check.connect && result.latency.connect)
       
       if(result?.info && Object.keys(result.info).length) //should be null, but is an empty object. Need to fix in nostrwatch-js
         resultPruned.info = result.info
@@ -158,8 +165,8 @@ const localMethods = {
 
   queueOpts: function(){
     return {
-        maxQueues:          1, //this.store.prefs.firstVisit? 4: 5, 
-        concurrency:        50, //this.store.prefs.firstVisit? 5: 10, 
+        maxQueues:          2, //this.store.prefs.firstVisit? 4: 5, 
+        concurrency:        3, //this.store.prefs.firstVisit? 5: 10, 
         fastTimeout:        30000, //this.store.prefs.firstVisit? 5000: 10000,
         throttleMillis:     200,
         RelayChecker:       this.checkerOpts()
@@ -210,6 +217,7 @@ const localMethods = {
 
           this.setGeo(result.url)
           result.aggregate = this.getAggregate(result)
+          console.log('aggregate', result.url, result.aggregate)
           result = this.pruneResult(result)
           this.store.results.mergeDeep({[result.url]: result})
           this.store.jobs.addProcessed(this.slug, result.url)
@@ -255,7 +263,7 @@ const localMethods = {
           inspectT  =  this.store.prefs.inspectTimeout
 
     return {
-      // debug:                true,        
+      debug:                true,        
       checkRead:            true, 
       checkWrite:           true,   
       checkLatency:         true,

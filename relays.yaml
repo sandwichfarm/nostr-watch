@@ -299,6 +299,7 @@ relays:
 - wss://relay.lexingtonbitcoin.org
 - wss://relay.minds.com/nostr/v1/ws
 - wss://relay.minds.io/nostr/v1/ws
+- wss://relay.mostr.pub
 - wss://relay.mynostr.id
 - wss://relay.n057r.club
 - wss://relay.nosphr.com

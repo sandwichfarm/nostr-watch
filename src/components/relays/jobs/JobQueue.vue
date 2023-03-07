@@ -1,8 +1,8 @@
 <template>
 <span class="inline-block mr-12 pt-1.5">
   <span class="text-white/40 lg:text-sm mx-2 text-xs font-bold">
-    <MigrationsJob 
-      />
+    <!-- <MigrationsJob 
+      /> -->
     <div v-if="this.isSingle">
 
       <CheckGeo 
@@ -43,8 +43,8 @@
       <CheckP2R 
         v-if="!isSingle" />
 
-      <!-- <HistoryJob
-        /> -->
+      <HistoryJob
+        />
       <RefreshJob 
         v-if="store.prefs.clientSideProcessing 
               || this.store.prefs.isFirstVisit
@@ -58,7 +58,7 @@
         v-if="store.prefs.clientSideProcessing 
               && !isSingle
         " />
-        
+
       <UserRelayList />
 
       <RelayOperatorJob 
@@ -98,7 +98,7 @@ import GetTopics from './GetTopics.vue'
 import CheckP2R from './CheckP2R.vue'
 import RelayOperatorJob from './RelayOperatorJob.vue'
 import FirstVisit from './FirstVisit.vue'
-import MigrationsJob from './MigrationsJob.vue'
+// import MigrationsJob from './MigrationsJob.vue'
 
 export default defineComponent({
   name: "JobQueue",
@@ -118,7 +118,7 @@ export default defineComponent({
     CheckP2R,
     RelayOperatorJob,
     FirstVisit,
-    MigrationsJob
+    // MigrationsJob
   },
   data(){
     return {

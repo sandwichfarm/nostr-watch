@@ -9,6 +9,7 @@
   
   </div>   -->
   <div 
+    v-if="this.pulse"
     class="mt-3 overflow-hidden mb-8">
 
     <div 

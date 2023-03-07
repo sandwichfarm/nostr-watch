@@ -1,13 +1,13 @@
 <template>
 
   {{ pulses }}
-  <div 
+  <!-- <div 
     v-if="!pulses && result?.check?.connect" 
     class="py-8 px-8 text-center text-lg">
 
     We cannot get uptime at this time. Is your relay new or potentially blocking the crawler? No? Maybe nostr.watch is broken.
   
-  </div>  
+  </div>   -->
 
   <div 
     class="mt-3 overflow-hidden mb-8">

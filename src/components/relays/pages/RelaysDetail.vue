@@ -17,9 +17,9 @@
 
       <section v-if="result">
 
-        <div id="status" class="block mb-8 px-5 py-8 bg-red-200/10 rounded-lg text-center text-2xl" v-if="isPayToRelay(relay)"> <!--something is weird here with margin-->
+        <!-- <div id="status" class="block mb-8 px-5 py-8 bg-red-200/10 rounded-lg text-center text-2xl" v-if="isPayToRelay(relay)"> 
             Paid Relays presently have limited results due to significantly higher support liability, once a suitable solution has been identified, service will resume as usual. Sorry for the inconvenience. 
-        </div>
+        </div> -->
 
         <DetailHeader :result="result" />
         <DetailCapabilities :result="result" />        
@@ -31,10 +31,9 @@
           <DetailLatencyBlock :result="result" />
          
 
-          <div class="bg-yellow-300/50 dark:bg-yellow-300/10 text-black/80 dark:text-white/70 border border-white/10 py-4 px-8 rounded-md">
+          <div v-if="this.pulses" class="bg-yellow-300/50 dark:bg-yellow-300/10 text-black/80 dark:text-white/70 border border-white/10 py-4 px-8 rounded-md">
             Historical connection, read and write latency are experimental, interpret data with a grain of salt. This data is constantly being improved. 
           </div>
-
 
           <DetailHistory
             label="Connectability"

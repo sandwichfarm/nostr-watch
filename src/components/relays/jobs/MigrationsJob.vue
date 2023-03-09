@@ -1,4 +1,5 @@
 <template>
+  <!-- {{ store.prefs.migration }} -->
   <span 
     v-if="this.store.jobs.getActiveSlug === slug"
     class="text-inherit">
@@ -20,11 +21,12 @@ import RelayMethods from '@/shared/relays-lib.js'
 import SharedComputed from '@/shared/computed.js'
 
 export default defineComponent({
-  name: 'FirstVisit',
+  name: 'MigrationsJob',
   components: {},
   data() {
     return {
-      slug: 'initiated' //REMEMBER TO CHANGE!!!
+      slug: 'migrations', //REMEMBER TO CHANGE!!!
+      currentMigration: 1
     }
   },
   setup(){
@@ -40,27 +42,30 @@ export default defineComponent({
   },
   beforeMount(){},
   mounted(){
-    this.FirstVisit(this.name)
+    this.Migrations(this.name)
   },
   updated(){},
   computed: Object.assign(SharedComputed, {}),
   methods: Object.assign({
-    FirstVisit(force){
-      if( !this.store.prefs.isFirstVisit && !force ) 
-        return
-
+    Migrations(force){
       const self = this
-      
+      console.log('invalidate:', self.store.prefs.migration >= this.currentMigration)
+      if( self.store.prefs.migration >= this.currentMigration && !force ) 
+        return
       this.queueJob(
         self.slug, 
-        () => {
-          self.store.prefs.firstVisit = false
-          // self.store.prefs.clientSideProcessing = true
-          self.$forceUpdate()
-          setTimeout(() => self.completeJob(self.slug), 3000)
+        async () => {
+          console.log('is function', !(self?.[`migration${this.currentMigration}`] instanceof Function))
+          if( !(self?.[`migration${this.currentMigration}`] instanceof Function) )
+            return
+          await self[`migration${this.currentMigration}`]()
+          this.store.jobs.completeJob(this.slug)
         },
         true
       )
+    },
+    async migration1(){
+      await this.storageClearAll()
     },
     timeUntilRefresh(){
       return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
@@ -69,6 +74,7 @@ export default defineComponent({
       return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
     },
   }, RelayMethods),
+
   props: {},
   
 })

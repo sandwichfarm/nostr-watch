@@ -60,9 +60,6 @@ import { RelayChecker, QueuedChecker, getAverageLatency, getMedianLatency, getMi
 
 import { getGeo, getPrebuiltGeo } from '@/utils'
 
-
-// import { relays } from '../../../../relays.yaml'
-
 const localMethods = {
   async CheckRelaysJob(force, single){
     // console.log('invalidate?', !((!this.isExpired(this.slug, this.getRefreshInterval) && !force) && !this.isSingle), this.windowActive)
@@ -71,10 +68,6 @@ const localMethods = {
 
     if(!this.windowActive)
       return
-
-    
-
-    // console.log('queue job', single, this.slug)
     
     this.queueJob(
       this.slug, 
@@ -123,8 +116,8 @@ const localMethods = {
       }
       catch(e){""}
 
-      if(r.latency?.connect?.length && !r.check.connect) 
-        console.log('wtf', r.url, r.check.connect, r.check, r.latency )
+      // if(r.latency?.connect?.length && !r.check.connect) 
+      //   console.log('wtf', r.url, r.check.connect, r.check, r.latency )
 
       r.latency.average = r.latency.overall
 
@@ -171,7 +164,7 @@ const localMethods = {
   queueOpts: function(){
     return {
         maxQueues:          2, //this.store.prefs.firstVisit? 4: 5, 
-        concurrency:        11, //this.store.prefs.firstVisit? 5: 10, 
+        concurrency:        6, //this.store.prefs.firstVisit? 5: 10, 
         fastTimeout:        30000, //this.store.prefs.firstVisit? 5000: 10000,
         throttleMillis:     1000,
         RelayChecker:       this.checkerOpts()
@@ -236,6 +229,8 @@ const localMethods = {
       .then((result) =>{
         result.aggregate = this.getAggregate(result)
         result = this.pruneResult(result)
+        console.log(result)
+        // this.store.results[result.url] = result
         this.store.results.mergeDeep({ 
           [result.url]: result
         })

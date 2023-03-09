@@ -6803,10 +6803,10 @@ nostr@0.2.7:
     noble-secp256k1 "^1.2.14"
     ws "^8.8.1"
 
-nostrwatch-js@0.0.36:
-  version "0.0.36"
-  resolved "https://registry.yarnpkg.com/nostrwatch-js/-/nostrwatch-js-0.0.36.tgz#ca28d7a072e89943cffc2c8b6ae9f69d653c63ff"
-  integrity sha512-PrSIQK1Di42FHt36Ko/D92OGfNWXgY/tkooGR1JpC9dfPHlvVQ2yAFOZ16vNL0+9JVcN5o3YTWDZxvKmujp+qg==
+nostrwatch-js@0.0.37:
+  version "0.0.37"
+  resolved "https://registry.yarnpkg.com/nostrwatch-js/-/nostrwatch-js-0.0.37.tgz#229cbdd5dd857b08f304ec6300667599532d1f23"
+  integrity sha512-MnmdM3qAP2OApuEPZvYXNMJTtWNKtUzoRl/m7CppdaACvix7N3rMAAx6GihiivpeICLCKGtvXWy0WeH6giG10Q==
   dependencies:
     convert-vapid-public-key "1.1.0"
     cross-fetch "3.1.5"
@@ -10009,6 +10009,14 @@ yallist@^4.0.0:
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
   integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
 
+yaml-convert@1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/yaml-convert/-/yaml-convert-1.0.1.tgz#922799ff7a68055a8341b475a1d6ec38ab8dcb44"
+  integrity sha512-+LlsBOCJEd2hC+dGiEuHjHxdt7nhhru2lwq+tHWwjEViarR2DYxTKgQwlBzaMUA0K6yaDUrLEk4CuD6QxpHE3Q==
+  dependencies:
+    yaml "^1.10.2"
+    yargs "^17.3.1"
+
 yaml-loader@^0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/yaml-loader/-/yaml-loader-0.6.0.tgz#fe1c48b9f4803dace55a59a1474e790ba6ab1b48"
@@ -10049,6 +10057,19 @@ yargs@^17.0.1, yargs@^17.2.1:
   version "17.6.2"
   resolved "https://registry.yarnpkg.com/yargs/-/yargs-17.6.2.tgz#2e23f2944e976339a1ee00f18c77fedee8332541"
   integrity sha512-1/9UrdHjDZc0eOU0HxOHoS78C69UD3JRMvzlJ7S79S2nTaWRA/whGCTV8o9e/N/1Va9YIV7Q4sOxD8VV4pCWOw==
+  dependencies:
+    cliui "^8.0.1"
+    escalade "^3.1.1"
+    get-caller-file "^2.0.5"
+    require-directory "^2.1.1"
+    string-width "^4.2.3"
+    y18n "^5.0.5"
+    yargs-parser "^21.1.1"
+
+yargs@^17.3.1:
+  version "17.7.1"
+  resolved "https://registry.yarnpkg.com/yargs/-/yargs-17.7.1.tgz#34a77645201d1a8fc5213ace787c220eabbd0967"
+  integrity sha512-cwiTb08Xuv5fqF4AovYacTFNxk62th7LKJ6BL9IGUpTJrWoU7/7WdQGTP2SjKf1dUNBGzDd28p/Yfs/GI6JrLw==
   dependencies:
     cliui "^8.0.1"
     escalade "^3.1.1"

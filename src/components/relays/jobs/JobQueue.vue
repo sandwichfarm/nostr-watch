@@ -1,6 +1,8 @@
 <template>
 <span class="inline-block mr-12 pt-1.5">
   <span class="text-white/40 lg:text-sm mx-2 text-xs font-bold">
+    <!-- <MigrationsJob 
+      /> -->
     <div v-if="this.isSingle">
 
       <CheckGeo 
@@ -24,8 +26,9 @@
       <DetectRegion 
         v-if="store.prefs.autoDetectRegion && !store.prefs.disableGeoDetection" />
 
-      <!-- <LoadSeed
-        v-if="!store.prefs.clientSideProcessing && false" /> -->
+      <LoadSeed
+        v-if="!store.prefs.clientSideProcessing" />
+
       <CheckNip11
         v-if="
           (
@@ -41,12 +44,10 @@
       <CheckP2R 
         v-if="!isSingle" />
 
-      <!-- <HistoryJob
-        /> -->
+      <HistoryJob
+        />
       <RefreshJob 
-        v-if="store.prefs.clientSideProcessing 
-              || this.store.prefs.isFirstVisit
-        " />
+        v-if="store.prefs.clientSideProcessing" />
 
       <CheckDNS 
         v-if="!isSingle" />
@@ -56,15 +57,15 @@
         v-if="store.prefs.clientSideProcessing 
               && !isSingle
         " />
+
       <UserRelayList />
+
       <RelayOperatorJob 
         v-if="isSingle" />
 
       <div v-if="this.store.prefs.isFirstVisit">
         <FirstVisit 
-        v-if="this.store.prefs.isFirstVisit
-              && 
-              this.store.jobs.getLastUpdate('relays/seed')
+        v-if="this.store.jobs.getLastUpdate('relays/seed')
               && !isSingle"/>
       </div>
       
@@ -81,7 +82,7 @@ import { setupStore } from '@/store'
 import SharedComputed from '@/shared/computed.js'
 
 import DetectRegion from './DetectRegion.vue'
-// import LoadSeed from './LoadSeed.vue'
+import LoadSeed from './LoadSeed.vue'
 import RefreshJob from './RefreshJob.vue'
 import GetPulse from './GetPulse.vue'
 import UserRelayList from './UserRelayList.vue'
@@ -96,12 +97,13 @@ import GetTopics from './GetTopics.vue'
 import CheckP2R from './CheckP2R.vue'
 import RelayOperatorJob from './RelayOperatorJob.vue'
 import FirstVisit from './FirstVisit.vue'
+// import MigrationsJob from './MigrationsJob.vue'
 
 export default defineComponent({
   name: "JobQueue",
   components: {
     DetectRegion,
-    // LoadSeed,
+    LoadSeed,
     RefreshJob,
     GetPulse,
     UserRelayList,
@@ -114,7 +116,8 @@ export default defineComponent({
     GetTopics,
     CheckP2R,
     RelayOperatorJob,
-    FirstVisit
+    FirstVisit,
+    // MigrationsJob
   },
   data(){
     return {

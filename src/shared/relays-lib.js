@@ -276,6 +276,22 @@ export default {
       return this.$storage.removeStorageSync(key)
     },
 
+    async storageClearAll(tries){
+      if(!tries)
+        tries = 0
+      Object.keys(this.store).forEach( store => this.store[store].$reset )
+      localStorage.clear()
+      if(tries < 3)
+        this.storageClearAll(tries++)
+      else 
+        await new Promise( resolve => 
+          setTimeout( () => {
+            this.$forceUpdate
+            resolve()
+          }, 100) 
+        )
+    },
+
     getAggregate: function(result) {
 
       if(!result?.latency?.connect)

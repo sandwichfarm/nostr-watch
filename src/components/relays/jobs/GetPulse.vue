@@ -95,6 +95,7 @@ const localMethods = {
     })
     
     this.parsePulses(pulsesByEvent)
+    this.store.jobs.completeJob(this.slug)
   },
   parsePulses(data){
     const allTimestamps = Object.keys(data),
@@ -138,8 +139,6 @@ const localMethods = {
       if(this.isSingle && this.relayFromUrl === relay)
         console.log('viola!', relay, this.getAbilityRate('connect', relay), this.getAbilityRate('read', relay), this.getAbilityRate('write', relay), pulses[relay])
     })
-    
-    this.store.jobs.completeJob(this.slug)
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 

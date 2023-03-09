@@ -298,13 +298,13 @@
                       </td>
 
                       <!-- no editor -->
-                      <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
+                      <!-- <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.connect')">
                         <span class="m-auto block" :class="getCheckIndicator(relay, 'connect')">
                           &nbsp;
                         </span>
-                      </td>
+                      </td> -->
 
-                      <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
+                      <!-- <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.read')">
                         <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'read')">
                           <span class="align-middle h-max" v-if="isLoggedIn() && store.user.kind3?.[relay]?.read">
                             <svg class="inline-block " :class="getCheckIndicatorPolicy" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -313,9 +313,9 @@
                           </span>
                           <span v-else>&nbsp;</span>
                         </span>
-                      </td>
+                      </td> -->
 
-                      <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
+                      <!-- <td v-if="(!store.layout.editorIsExpanded || !isLoggedIn()) && !store.prefs.isFirstVisit" class="w-16 content-center text-center hidden md:table-cell lg:table-cell xl:table-cell" :key="generateKey(relay, 'check.write')">
                         <span class="m-auto block align-middle" :class="getCheckIndicator(relay, 'write')" v-if="!isPayToRelay(relay)">
                           <span class="align-middle" v-if="isLoggedIn() && store.user.kind3?.[relay]?.write">
                             <svg class="inline-block" :class="getCheckIndicatorPolicy" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -329,7 +329,7 @@
                           :href="this.store.results.get(relay)?.validP2R ? this.store.results.get(relay).info.payments_url : null" 
                           class="block align-center" target="_blank">
                           <svg id="Layer_1" class="w-5 h-5 align-center inline-block" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" v-if="isPayToRelay(relay)">
-                            <!-- <circle :style="this.store.results.get(relay).validP2R ? 'fill:#f8991d' : 'fill:red'" class="cls-1" cx="180" cy="180" r="179"/> -->
+                            
                             <circle style="fill:#f8991d" class="cls-1" cx="180" cy="180" r="179"/>
                             <rect class="fill-white dark:fill-black" x="201.48" y="37.16" width="23.49" height="40.14" transform="translate(21.82 -52.79) rotate(14.87)"/>
                             <rect class="fill-white dark:fill-black" x="135.03" y="287.5" width="23.49" height="40.14" transform="translate(83.82 -27.36) rotate(14.87)"/>
@@ -338,7 +338,7 @@
                             <rect class="fill-white dark:fill-black" x="152.89" y="156.52" width="23.49" height="167.49" transform="translate(439.1 142.78) rotate(104.87)"/>
                           </svg>
                         </a>
-                      </td>
+                      </td> -->
 
                       <!-- editor -->
                       <td v-if="store.jobs.getActiveSlug != 'user/list/contacts' 

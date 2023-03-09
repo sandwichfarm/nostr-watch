@@ -240,7 +240,7 @@ relays:
 - wss://nostr.yuv.al
 - wss://nostr.zaprite.io
 - wss://nostr.zebedee.cloud
-- wss://nostr.zenon.wtf
+- wss://nostr.zenon.info
 - wss://nostr.zerofeerouting.com
 - wss://nostr.zkid.social
 - wss://nostr.zoomout.chat
@@ -377,3 +377,8 @@ relays:
 - wss://africa.nostr.joburg
 - wss://relay.rebelbase.site
 - wss://relay.pineapple.pizza
+- wss://nostrelay.yeghro.site
+- wss://nostr.zerofiat.world
+- wss://nostr.zhongwen.world
+- wss://nostr.jolt.run
+- wss://nostr.chainbits.co.uk

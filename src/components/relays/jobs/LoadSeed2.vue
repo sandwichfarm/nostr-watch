@@ -80,114 +80,76 @@ const localMethods = {
             )
     ) 
   },
-  async LoadSeedJob(single){
+  async LoadSeedJob(){
     this.relays = [...this.store.relays.getAll]
-    const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )
-        const subid = `${crypto.randomBytes(20).toString('hex')}-${i}`
-        let $relay
-        this.pool = new RelayPool(['wss://history.nostr.watch'])
-        this.pool
-          .on('open', relay => {
-            $relay = relay
-            $relay.subscribe(subid, {
-              kinds:    [1411],
-              limit:    1,
-              "#e":     [this.store.prefs.region],
-              authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
-            })
-          })
-          .on('event', async ($relay, sub_id, event) => {
-            if(subid === sub_id){
-              relays = JSON.parse(event.content).online
-              relays.forEach( r => { 
-                result = {
-                  url: r[0], 
-                  latency: {
-                    connect: r?.[1] || null,
-                    read: r?.[2] || null,
-                    write: r?.[3] || null
-                  }
-                }
-              })
 
-              // const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
-              let topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1]?.toLowerCase(), topicTag[2] ] )
-                  topics = Array.from(new Set(topics))              
-              const result = {
-                url: relay,
-                
-                check: {
-                  connect: null,
-                  read: null,
-                  write: null,
-                  latency: data?.latency[this.store.prefs.region]?.final ? true : false,
-                  averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
-                },
-              }
+    const subid = `${crypto.randomBytes(20).toString('hex')}-seed`
 
-              result.uptime = this.getUptimePercentage(relay)
-              
-              if(data?.info)
-                result.info = data.info
-              
-              result.latency = {
-                average: data?.latency?.[this.store.prefs.region]?.[0] ? getAverageLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-                median: data?.latency?.[this.store.prefs.region]?.[0] ? getMedianLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-                min: data?.latency?.[this.store.prefs.region]?.[0] ? getMinLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-                max: data?.latency?.[this.store.prefs.region]?.[0] ? getMaxLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-                data: data?.latency?.[this.store.prefs.region]?.[1]
-              }
+    let relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) )  
 
-              if(event?.tags){
-                // const connect = event.tags.filter( tag => tag[0] == 'online'),
-                const read = event.tags.filter( tag => tag[0] == 'read'),
-                      write = event.tags.filter( tag => tag[0] == 'write')
-                    
-                result.check.connect = true
-                result.check.read = read.length && read[0][1] === 'true' ? true : false
-                result.check.write = write.length && write[0][1] === 'true' ? true : false
-              }
+    await new Promise(resolve => {
 
-              if(topics.length)
-                result.topics = this.removeIgnoredTopics(topics)
-
-              // console.log('aggr', this.result.url, this.getAggregate(result), result.check.connect, result.check.read, result.check.write)
-              
-              
-              result.aggregate = this.getAggregate(result)
-
-              if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
-                result.aggregate = 'restricted'
-                result.check.write = false 
-                console.log('should be restricted', result.aggregate, result.check.write)
-              }
-
-              resultsChunk[relay] = result
-
-              if(this.store.jobs.isProcessed(this.slug, relay))
-                return 
-              this.store.jobs.addProcessed(this.slug, relay)
-            }
-          })
-          .on('eose', async () => {
-            // this.pool.unsubscribe(subid)
-            this.closePool(this.pool)
-            await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
-            resolve()
-          })
+    this.pool = new RelayPool(['wss://history.nostr.watch'])
+    this.pool
+      .on('open', $relay => {
+        $relay.subscribe(subid, {
+          kinds:    [1411],
+          limit:    1,
+          "#e":     [this.store.prefs.region],
+          authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
+        })
       })
-      // console.log('results chunk', Object.keys(resultsChunk).length)
-      promises.push(promise)
-      this.store.results.mergeLeft(resultsChunk)
-      await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
-    }
-    await Promise.all(promises)
-    
-    this.store.jobs.completeJob(this.slug)
-    relayChunks = null
-  },
-  async checkOffline(){
+      .on('event', async ($relay, sub_id, event) => {
+        if(subid === sub_id){
+          relays = JSON.parse(event.content).online
+          relays.forEach( r => { 
+            const result = {
+              url: r[0], 
+              latency: {
+                connect: r?.[1]? getAverageLatency(r?.[1]): null,
+                read: r?.[2]? getAverageLatency(r?.[2]): null,
+                write: r?.[3]? getAverageLatency(r?.[3]): null,
+                data: r?.[2] || [],
+                min: getMinLatency(r?.[2]),
+                max: getMaxLatency(r?.[2]),
+                average: getAverageLatency(r?.[2]),
+                median: getMedianLatency(r?.[2]),
+              }
+            }
+            result.check.connect = result.latency?.connect? true: false
+            result.check.read = result.latency?.read? true: false
+            result.check.write = result.latency?.write? true: false
+            try {
+              result.latency.overall = [
+                getAverageLatency([
+                  ...result.latency?.connect? result.latency.connect: [], 
+                  ...result.latency?.data? result.latency.data: [], 
+                  ...result.latency?.write? result.latency.write: [], 
+                ])
+              ]
+            }
+            catch(e){""}
 
+            result.latency.average = result.latency.overall
+
+            this.store.results.mergeDeep({ [result.url]: result })
+            
+            if(this.store.jobs.isProcessed(this.slug, result.url))
+              return 
+
+            this.store.jobs.addProcessed(this.slug, result.url)
+          })
+        }
+      })
+      .on('eose', async () => {
+        // this.pool.unsubscribe(subid)
+        this.closePool(this.pool)
+        await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
+        resolve()
+      })
+
+    })
+    this.store.jobs.completeJob(this.slug)
   },
 
 }
@@ -197,7 +159,7 @@ export default defineComponent({
   components: {},
   data() {
     return {
-      slug: 'relays/seed', //REMEMBER TO CHANGE!!!
+      slug: 'relays/seed2', //REMEMBER TO CHANGE!!!
       pool: null,
       untilNext: null,
       refreshEvery: 5*60*1000,

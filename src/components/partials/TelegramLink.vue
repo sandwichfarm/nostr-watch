@@ -2,7 +2,7 @@
 <a 
   href="https://t.me/nostrwatch_official"
   target="_blank"
-  class="block text-white/50 hover:bg-white/25 px-1 py-1 rounded-md text-sm font-medium mr-1"
+  class="hidden md:block text-white/50 hover:bg-white/25 px-1 py-1 rounded-md text-sm font-medium mr-1"
 >
   <!-- telegram -->
   <svg 

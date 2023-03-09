@@ -1,5 +1,5 @@
 <template>
-  <Popover class="relative mr-2 invisible md:invisible lg:visible">
+  <Popover class="relative mr-2 hidden md:block">
     <PopoverButton>🤍</PopoverButton>
     <PopoverPanel class="absolute border text-white border-slate-600 rounded-md -left-48 mt-3 z-9000 bg-slate-900">
       <div class="w-96 px-3 py-5 text-center">

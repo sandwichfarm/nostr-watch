@@ -126,6 +126,9 @@
                         :key="`${check}-data`"
                         scope="col" 
                         class="latency text-center w-24" 
+                        :class="{
+                          'hidden md:table-cell': 'overall' !== check
+                        }"
                         v-tooltip:top.tooltip="`Relay Latency on ${check}`">
                         <code 
                           class="text-xs block cursor-pointer" >
@@ -274,6 +277,9 @@
                       <td 
                         v-for="check in ['overall', 'connect', 'data', 'write']" 
                         :key="`latency-${check}-${relay}`"
+                        :class="{
+                          'hidden md:table-cell': 'overall' !== check
+                        }"
                         class="w-24 latency text-center text-sm ">
                         <!-- {{ check }}
                         {{ store.results.get(relay).latency }} -->

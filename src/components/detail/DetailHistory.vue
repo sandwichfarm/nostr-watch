@@ -181,8 +181,6 @@ export default defineComponent({
           color = 'bg-red-400/50'
         }
 
-        console.log('normalizeUptimeTick()', ability, color)
-
         return `h-${h} mt-${m} ${color}`
       }
     },

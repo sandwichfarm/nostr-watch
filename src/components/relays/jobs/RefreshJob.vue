@@ -280,7 +280,7 @@ const localMethods = {
       return
     return new Promise( (resolve) => {
       const opts = this.checkerOpts()
-      
+
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
 
@@ -421,7 +421,6 @@ export default defineComponent({
   },
 
   unmounted(){
-    console.log('unmounted!!!')
     clearInterval(this.interval)
     this.relayCheckers.forEach( $checker => $checker?.close())
     this.stop = true

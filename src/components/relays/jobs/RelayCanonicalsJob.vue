@@ -29,7 +29,7 @@ const localMethods = {
     if( (!this.isExpired(this.slug) && !force) ) 
       return
     
-    const subid = crypto.randomBytes(40).toString('hex')
+    const subid = crypto.randomBytes(20).toString('hex')
 
     this.queueJob(
       this.slug, 

@@ -11,7 +11,7 @@
 </style>
 
 <script>
-import { defineComponent, toRefs } from 'vue'
+import { defineComponent } from 'vue'
 
 import { setupStore } from '@/store'
 
@@ -27,7 +27,9 @@ const localMethods = {
     this.queueJob(
       this.slug, 
       () => {
+        console.log('discover relays?', this.store.prefs.discoverRelays, !this.store.prefs.discoverRelays)
         if(!this.store.prefs.discoverRelays) {
+          console.log('using relays.yaml', relays)
           this.finish(relays)
         } 
         else {
@@ -64,20 +66,13 @@ const localMethods = {
     )
   },
   finish(_relays, clear){
-    
+    console.log('relays!', _relays)
     const newRelays = this.store.relays.addRelays(_relays)
 
     if(newRelays.length)
       newRelays.forEach( relay => {
         console.log('new relay!', relay)
-        // this.queueJob(
-        //   slug, 
-        //   async () => await this.checkSingle(result.url, slug), 
-        //   true
-        // )
       })
-
-    this.relays = this.store.relays.getAll
 
     if(clear)
       clearTimeout(this.timeout)
@@ -95,11 +90,9 @@ export default defineComponent({
       timeout: null
     }
   },
-  setup(props){
-    const {relaysProp: relays} = toRefs(props)
+  setup(){
     return { 
       store : setupStore(),
-      relays: relays
     }
   },
   created(){

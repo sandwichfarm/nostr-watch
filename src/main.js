@@ -19,7 +19,7 @@ const app = createApp(App)
 
 directives(app);
 
-app.config.globalProperties.$tabId = crypto.randomBytes(40).toString('hex')
+app.config.globalProperties.$tabId = crypto.randomBytes(20).toString('hex')
 
 app.config.globalProperties.$filters = []
 

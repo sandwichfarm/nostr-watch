@@ -31,9 +31,10 @@ import { relays } from '../../../../relays.yaml'
 import { RelayPool } from 'nostr'
 
 const localMethods = {
-  invalidatePulse(force){
-    if( (!this.isExpired(this.slug, 1) && !force) && !this.isSingle ) 
-      return
+  invalidatePulse(){
+    // if( (!this.isExpired(this.slug, 1) && !force) && !this.isSingle ) 
+    //   return
+    
     
       this.queueJob(
         this.slug, 
@@ -44,7 +45,7 @@ const localMethods = {
   async jobPulses(){
     if(!this.store.status.historyNode)
       return this.store.jobs.completeJob(this.slug)
-    const subid = crypto.randomBytes(40).toString('hex')
+    const subid = crypto.randomBytes(20).toString('hex')
     const pulsesByEvent = new Object()
     let total = 48,
         count = 0
@@ -57,7 +58,7 @@ const localMethods = {
       }, 20000 )
       pool
         .subscribe(subid, {
-          kinds:    [1010],
+          kinds:    [1411],
           limit:    total, //12 hours 
           authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
           '#e':     [this.store.prefs.region],
@@ -70,6 +71,8 @@ const localMethods = {
           
           if(uniques.has(event.created_at))
             return 
+
+          // console.log(decodeJson(event.content).online?.length)
           
           uniques.add(event.created_at)
 
@@ -92,7 +95,7 @@ const localMethods = {
     })
     
     this.parsePulses(pulsesByEvent)
-
+    this.store.jobs.completeJob(this.slug)
   },
   parsePulses(data){
     const allTimestamps = Object.keys(data),
@@ -101,14 +104,20 @@ const localMethods = {
     allTimestamps.forEach( timestamp => {
       data[timestamp].forEach( relayData => {
         const relay = relayData[0],
-              latency = relayData[1]
+              connectLatency = relayData[1]?.[0],
+              readLatency = relayData[2]?.[0],
+              writeLatency = relayData[3]?.[0]
 
         if( !(pulsesByRelayObj[relay] instanceof Object) )
           pulsesByRelayObj[relay] = allTimestamps.reduce( (acc, _timestamp) => {
             acc[_timestamp] = false
             return acc
           }, new Object())
-        pulsesByRelayObj[relay][timestamp] = latency
+        pulsesByRelayObj[relay][timestamp] = {
+          connect: connectLatency,
+          read: readLatency,
+          write: writeLatency,
+        }
       })
     })
 
@@ -120,16 +129,16 @@ const localMethods = {
       pulses[relay] = new Array()
       //console.log(relay, pulsesByRelayObj[relay])
       Object.keys(pulsesByRelayObj[relay]).forEach( (timestamp_) => {
-        pulses[relay].push({
+        pulses[relay].push(Object.assign(pulsesByRelayObj[relay][timestamp_], {
           date: timestamp_,
-          latency: pulsesByRelayObj[relay][timestamp_]
-        })
+        }))
       })
       pulses[relay].sort( (h1, h2) => h1.date - h2.date )
       this.store.stats.addPulse(relay, pulses[relay])
       this.setUptimePercentage(relay)
+      if(this.isSingle && this.relayFromUrl === relay)
+        console.log('viola!', relay, this.getAbilityRate('connect', relay), this.getAbilityRate('read', relay), this.getAbilityRate('write', relay), pulses[relay])
     })
-    this.store.jobs.completeJob(this.slug)
   },
   timeUntilRefresh(){
     return this.timeSince(Date.now()-(this.store.jobs.getLastUpdate(this.slug)+this.store.prefs.duration-Date.now())) 
@@ -138,6 +147,7 @@ const localMethods = {
     return this.timeSince(this.store.jobs.getLastUpdate(this.slug)) || Date.now()
   }
 }
+
 export default defineComponent({
   name: 'GetPulse',
   components: {},
@@ -165,6 +175,7 @@ export default defineComponent({
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
+    console.log('ppulse?')
     this.invalidatePulse()
     // this.invalidateJob()
     // this.interval = setInterval( this.invalidateJob, 1000 )

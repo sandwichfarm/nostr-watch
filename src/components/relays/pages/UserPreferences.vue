@@ -93,6 +93,27 @@
 
           <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
+              Use realtime geo-checking
+            </label>
+            <div class="mt-1 sm:col-span-2 sm:mt-0">
+              <Switch
+                v-model="store.prefs.runtimeGeo"
+                :class="store.prefs.runtimeGeo ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-black'"
+                class="relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+              >
+                <span class="sr-only">Auto-detect Region</span>
+                <span
+                  aria-hidden="true"
+                  :class="store.prefs.runtimeGeo ? 'translate-x-5' : 'translate-x-0'"
+                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out"
+                />
+              </Switch>
+              <p class="mt-2 text-sm text-gray-500">If disabled, geo-checking will use build-time data instead of API. Geo entires are very likely to be missing when this is disabled since this data is only updated periodically. Use this option if you use an ad-blocker or Brave Browser.</p>
+            </div>
+          </div>
+
+          <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+            <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
               Auto-detect Region
             </label>
             <div class="mt-1 sm:col-span-2 sm:mt-0">
@@ -114,7 +135,7 @@
 
           <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5" v-if="!store.prefs.autoDetectRegion">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
-              Auto-detect Region
+              Select region
             </label>
             <div class="mt-4 space-y-4">
             
@@ -122,22 +143,6 @@
                 <input v-model="store.prefs.region" :value="region" :id="region" name="push-notifications" type="radio" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500" />
                 <label :for="region" class="ml-3 block text-sm font-medium text-gray-700  dark:text-gray-500">{{ region }}</label>
               </div>
-              <!-- <div class="flex items-center">
-                <input v-model="store.prefs.region" value="eu-west" id="push-email" name="push-notifications" type="radio" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                <label for="push-email" class="ml-3 block text-sm font-medium text-gray-700  dark:text-gray-500">eu-west</label>
-              </div>
-              <div class="flex items-center">
-                <input v-model="store.prefs.region" value="asia-south" id="push-nothing" name="push-notifications" type="radio" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                <label for="push-nothing" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-500">asia-south</label>
-              </div>
-              <div class="flex items-center">
-                <input v-model="store.prefs.region" value="asia-southeast" id="push-nothing" name="push-notifications" type="radio" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                <label for="push-nothing" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-500">asia-southeast</label>
-              </div>
-              <div class="flex items-center">
-                <input v-model="store.prefs.region" value="au" id="push-nothing" name="push-notifications" type="radio" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                <label for="push-nothing" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-500">australia</label>
-              </div> -->
               <p class="mt-2 text-sm text-gray-500">The region determines where uptime<span v-if="!store.prefs.clientSideProcessing"> and latency</span> data is pulled from</p>
             </div>
           </div>
@@ -458,7 +463,8 @@ export default defineComponent({
       currentRegion: this.store.prefs.region,
       autoDetectRegion: this.store.prefs.autoDetectRegion,
       discoverRelays: this.store.prefs.discoverRelays,
-      checkNip11: this.store.prefs.checkNip11
+      checkNip11: this.store.prefs.checkNip11,
+      runtimeGeo: this.store.prefs.runtimeGeo
     }
   },
 
@@ -477,22 +483,26 @@ export default defineComponent({
   async mounted() {
     this.interval = setInterval(() => {
       if(this.store.prefs.region !== this.currentRegion || this.store.prefs.autoDetectRegion !== this.autoDetectRegion){
-        delete this.store.jobs.getLastUpdate('relays/seed')
-        delete this.store.jobs.getLastUpdate('user/region')
+        delete this.store.jobs.lastUpdate['relays/seed']
+        delete this.store.jobs.lastUpdate['user/region']
         this.currentRegion = this.store.prefs.region
         this.autoDetectRegion = this.store.prefs.autoDetectRegion
         this.$forceUpdate()
       }
       if(this.store.prefs.discoverRelays !== this.discoverRelays){
-        delete this.store.jobs.getLastUpdate('relays/get')
-        delete this.store.jobs.getLastUpdate('relays/seed')
-        delete this.store.jobs.getLastUpdate('relays/check')
+        delete this.store.jobs.lastUpdate['relays/get']
+        delete this.store.jobs.lastUpdate['relays/seed']
+        delete this.store.jobs.lastUpdate['relays/check']
         this.discoverRelays = this.store.prefs.discoverRelays
+        this.$forceUpdate()
+      }
+      if(this.store.prefs.runtimeGeo !== this.runtimeGeo){
+        delete this.store.jobs.lastUpdate['relays/geo']
         this.$forceUpdate()
       }
 
       if(this.store.prefs.checkNip11 !== this.checkNip11){
-        delete this.store.jobs.getLastUpdate('relays/nip11')
+        delete this.store.jobs.lastUpdate['relays/nip11']
         this.checkNip11 = this.store.prefs.checkNip11
         this.$forceUpdate()
       }

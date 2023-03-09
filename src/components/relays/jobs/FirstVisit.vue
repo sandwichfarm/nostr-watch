@@ -55,7 +55,7 @@ export default defineComponent({
         self.slug, 
         () => {
           self.store.prefs.firstVisit = false
-          self.store.prefs.clientSideProcessing = true
+          // self.store.prefs.clientSideProcessing = true
           self.$forceUpdate()
           setTimeout(() => self.completeJob(self.slug), 3000)
         },

@@ -104,7 +104,7 @@ const localMethods = {
           relays = JSON.parse(event.content).online
           relays.forEach( r => { 
             const result = {
-              url: r[0], 
+              url: relay, 
               latency: {
                 connect: r?.[1]? getAverageLatency(r?.[1]): null,
                 read: r?.[2]? getAverageLatency(r?.[2]): null,

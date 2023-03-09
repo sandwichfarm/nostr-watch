@@ -107,6 +107,9 @@ const localMethods = {
               
             const relay = event.tags[0][1]
 
+            if(!this.store.relays.has(relay))
+              this.store.relays.add(relay)
+
             const data = JSON.parse(event.content)
             // const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
             let topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1]?.toLowerCase(), topicTag[2] ] )
@@ -188,6 +191,7 @@ const localMethods = {
 
             if(this.store.jobs.isProcessed(this.slug, relay))
               return 
+
             this.store.jobs.addProcessed(this.slug, relay)
 
             resolve()
@@ -200,14 +204,28 @@ const localMethods = {
       })
       // console.log('results chunk', Object.keys(resultsChunk).length)
       promises.push(promise)
-      
-      await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
       this.store.results.mergeDeep(resultsChunk)
+      await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
     }
     await Promise.all(promises)
+
+    const offline = this.store.relays.getAll.filter( relay => !this.store.jobs.processed[this.slug].includes(relay))
     
+    offline.forEach( relay => {
+      this.store.results.mergeDeep({
+        [relay]: {
+          url: relay,
+          check: {
+            connect: false,
+            read: false,
+            write: false 
+          } 
+        }
+      })
+    })
+
+
     this.store.jobs.completeJob(this.slug)
-    relayChunks = null
   },
   async checkOffline(){
 

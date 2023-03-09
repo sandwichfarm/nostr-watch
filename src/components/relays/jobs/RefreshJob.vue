@@ -89,6 +89,7 @@ const localMethods = {
           read: result.check.read,
           write: result.check.write,
           latency: result.check.latency,
+          spamMitigation: result.check.spamMitigation
         },
         latency: {}
       } 

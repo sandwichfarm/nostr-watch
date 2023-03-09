@@ -142,12 +142,6 @@ const localMethods = {
               write: data?.latency?.[this.store.prefs.region]?.[2] || [],
             }
 
-            console.log(result.url, 'rawr', data?.latency?.[this.store.prefs.region])
-
-            // result.check.connect = result.latency?.connect? true: false
-            // result.check.read = result.latency?.read? true: false
-            // result.check.write = result.latency?.write? true: false
-
             try {
               result.latency.overall = [
                 getAverageLatency([
@@ -209,8 +203,8 @@ const localMethods = {
     }
     await Promise.all(promises)
 
-    const offline = this.store.relays.getAll.filter( relay => !this.store.jobs.processed[this.slug].includes(relay))
-    
+    const offline = this.store.relays.getAll.filter( relay => !this.store.jobs.processed?.[this.slug]?.includes(relay))
+
     offline.forEach( relay => {
       this.store.results.mergeDeep({
         [relay]: {
@@ -219,7 +213,8 @@ const localMethods = {
             connect: false,
             read: false,
             write: false 
-          } 
+          },
+          aggregate: 'offline'
         }
       })
     })

@@ -1,6 +1,6 @@
 {
   "name": "nostr-watch",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "private": true,
   "scripts": {
     "build": "vue-cli-service build",
@@ -40,7 +40,7 @@
     "node-fetch": "3.3.0",
     "nostr": "0.2.5",
     "nostr-tools": "1.1.1",
-    "nostrwatch-js": "0.0.39",
+    "nostrwatch-js": "0.0.42",
     "object-hash": "3.0.0",
     "object-sizeof": "1.6.3",
     "onion-regex": "2.0.8",

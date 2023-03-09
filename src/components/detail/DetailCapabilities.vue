@@ -55,6 +55,13 @@ export default defineComponent({
           return true
       }
     },
+    checkDimensions: function(){
+      let dims = [{key: 'connect', label: 'online'}, {key: 'read', label: 'readable'}, {key: 'write', label: 'writable'}, {key: 'spamMitigation', label: 'spam protection'}]
+      // if(this.isPayToRelay(this.relay)){
+      //   dims = dims.filter(dim => dim.label !== 'writable')
+      // } 
+      return dims
+    },
   }),
 
   methods: Object.assign(RelayMethods, {
@@ -63,8 +70,8 @@ export default defineComponent({
         'bg-green-800 dark:bg-green-800/70': this.result?.check?.[key] === true,
         'bg-red-800 dark:bg-red-800/30': this.result?.check?.[key] === false,
         'bg-gray-600': this.result?.check?.[key] === null,
-        'rounded-tl-lg rounded-bl-lg': key == 'connect',
-        'rounded-tr-lg rounded-br-lg': key == 'write',
+        'rounded-none lg:rounded-tl-lg lg:rounded-bl-lg': key == 'connect',
+        'rounded-none lg:rounded-tr-lg lg:rounded-br-lg': key == 'spamMitigation',
       }
     },
   }),

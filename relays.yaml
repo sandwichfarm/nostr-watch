@@ -18,7 +18,7 @@ relays:
 - wss://eden.nostr.land
 - wss://expensive-relay.fiatjaf.com
 - wss://foolay.nostr.moe
-- wss://free-relay.nostrich.land
+- wss://universe.nostrich.land
 - wss://freedom-relay.herokuapp.com/ws
 - wss://freespeech.casa
 - wss://global.relay.red

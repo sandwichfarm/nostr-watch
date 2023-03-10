@@ -1,4 +1,5 @@
 relays:
+- wss://nostr.0x50.tech
 - wss://paid.nostrified.org
 - wss://nostr.libertasprimordium.com
 - wss://1.noztr.com

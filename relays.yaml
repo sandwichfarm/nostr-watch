@@ -300,6 +300,7 @@ relays:
 - wss://relay.lexingtonbitcoin.org
 - wss://relay.minds.com/nostr/v1/ws
 - wss://relay.minds.io/nostr/v1/ws
+- wss://relay.mostr.pub
 - wss://relay.mynostr.id
 - wss://relay.n057r.club
 - wss://relay.nosphr.com
@@ -386,4 +387,6 @@ relays:
 - wss://relay.codl.co
 - wss://nostr.naut.social
 - wss://relays.world/nostr
+- wss://relay.intify.io
+- wss://relay.codl.co
 - wss://nostr.thesamecat.io

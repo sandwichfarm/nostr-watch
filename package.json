@@ -63,7 +63,7 @@
     "vue-tailwind": "2.5.1",
     "vue-use": "0.2.0",
     "vue3-storage": "0.1.11",
-    "webpack": "5.75.0",
+    "webpack": "5.76.0",
     "write-yaml-file": "4.2.0"
   },
   "devDependencies": {

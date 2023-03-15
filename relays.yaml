@@ -390,3 +390,4 @@ relays:
 - wss://relay.intify.io
 - wss://relay.codl.co
 - wss://nostr.thesamecat.io
+- wss://nostr-rs-relay.phamthanh.me

@@ -393,3 +393,5 @@ relays:
 - wss://nostr.thesamecat.io
 - wss://nostr-rs-relay.phamthanh.me
 - wss://relayable.org
+- wss://powrelay.xyz
+- wss://nostr-relay.app

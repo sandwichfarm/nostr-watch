@@ -392,5 +392,7 @@ relays:
 - wss://relay.codl.co
 - wss://nostr.thesamecat.io
 - wss://nostr-rs-relay.phamthanh.me
+- wss://relayable.org
 - wss://powrelay.xyz
 - wss://test.theglobalpersian.com
+- wss://nostr-relay.app

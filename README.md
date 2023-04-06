@@ -71,3 +71,9 @@ yarn lint
 ```
 yarn docker:build
 ```
+
+## Contributors
+
+<a align="center" href="https://github.com/dskvr/nostr-watch/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=dskvr/nostr-watch" />
+</a>

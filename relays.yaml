@@ -402,4 +402,5 @@ relays:
 - wss://relay.vtuber.directory
 - wss://nostr.hodl.haus
 - wss://nostr.cloudversia.com
+- wss://free.nostr.lc
 - wss://strfry.nostr-x.com

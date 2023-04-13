@@ -4,7 +4,9 @@ WORKDIR /app
 
 COPY . /app/
 
-RUN yarn && yarn build
+RUN yarn
+
+RUN yarn build
 
 FROM nginx:stable-alpine as nginx-nostr-relay-registry
 

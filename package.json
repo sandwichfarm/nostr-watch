@@ -1,13 +1,12 @@
 {
   "name": "nostr-watch",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "scripts": {
     "build": "vue-cli-service build",
     "build:quick": "vue-cli-service build",
     "prebuild": "yarn get:geo && yarn prebuild:move",
-    "prebuild:move": "yarn yaml-convert relays.yaml > public/relays.json",
-    "get:relays": "node ./scripts/relays.js",
+    "prebuild:move": "yarn yaml-convert relays.yaml -o public/relays.json",
     "get:geo": "node ./scripts/geo.js",
     "serve": "vue-cli-service serve --host localhost",
     "lint": "vue-cli-service lint",

@@ -188,7 +188,8 @@ const localMethods = {
   },
 
   setGeoFromCache: async function(){
-    if( Object.keys(this.store.relays.geo.length) === this.store.relays.getAll.length )
+    console.log('geo', Object.keys(this.store.relays.geo)?.length )
+    if( Object.keys(this.store.relays.geo)?.length )
       return this.hasGeo = true
     this.store.relays.geo = Object.assign(this.store.relays.geo, await getPrebuiltGeo() )
   },
@@ -200,10 +201,7 @@ const localMethods = {
     if(!relays.length)
       return
 
-      console.log('here', this.queueOpts())
-
     return new Promise( resolve => {
-      
       this.queue = new QueuedChecker(relays, this.queueOpts())
       this.queue
         .on('result', result => {

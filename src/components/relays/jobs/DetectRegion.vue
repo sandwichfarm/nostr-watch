@@ -72,6 +72,7 @@ export default defineComponent({
           catch(e) { //brave 
             this.store.prefs.clientSideProcessing = true
             this.store.prefs.disableGeoDetection = true
+            this.store.prefs.runtimeGeo = false
             location.reload() 
           }
         },

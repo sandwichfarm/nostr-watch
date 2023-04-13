@@ -1,4 +1,5 @@
 relays:
+- wss://relay.valera.co
 - wss://relay.nostr.ai
 - wss://nostr.0x50.tech
 - wss://paid.nostrified.org

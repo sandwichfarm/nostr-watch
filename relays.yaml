@@ -406,5 +406,6 @@ relays:
 - wss://nostr.cloudversia.com
 - wss://free.nostr.lc
 - wss://strfry.nostr-x.com
+- wss://nostr.privoxy.io
 - wss://paid.nostr.lc
 - wss://swiss.nostr.lc

@@ -193,7 +193,7 @@ relays:
 - wss://nostr.oxtr.dev
 - wss://nostr.pleb.network
 - wss://nostr.pleb.network
-- wss://nostr.plebchain.org
+- wss://ca.orangepill.dev
 - wss://nostr.pobblelabs.org
 - wss://nostr.portemonero.com
 - wss://nostr.radixrat.com

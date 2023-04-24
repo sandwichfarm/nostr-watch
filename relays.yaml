@@ -409,5 +409,6 @@ relays:
 - wss://nostr.privoxy.io
 - wss://paid.nostr.lc
 - wss://swiss.nostr.lc
+- wss://test.nostr.lc
 - wss://relay.nostrify.io
 - wss://nostr.debancariser.com

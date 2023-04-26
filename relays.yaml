@@ -412,5 +412,6 @@ relays:
 - wss://test.nostr.lc
 - wss://relay.nostrify.io
 - wss://nostr.debancariser.com
+- wss://relay.layer.systems
 - wss://denostr.paiya.app
 - wss://relay.darker.to

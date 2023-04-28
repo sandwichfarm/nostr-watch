@@ -122,7 +122,19 @@ const run = async function(){
   //console.log(object)
   fs.writeFile(outFile, JSON.stringify(geo), (err) => {
     if (err) return console.error('./scripts/geo.js', err);
+    console.log('public/geo.json written')
+    fs.readFile(outFile, 'utf8', (err, data) => {
+      if (err) return console.error('./scripts/geo.js', err);
+      try {
+        console.log(`geo.json members: ${Object.keys(data)?.length}`)
+      }
+      catch(err) {
+        console.error(err)
+      }
+        
+    })
   });
+  
 }
 
 run()

@@ -179,8 +179,6 @@ const localMethods = {
               console.log('should be restricted', result.aggregate, result.check.write)
             }
 
-            // this.store.results.mergeDeep({ [relay]: result })
-
             resultsChunk[relay] = result
 
             if(this.store.jobs.isProcessed(this.slug, relay))
@@ -188,14 +186,16 @@ const localMethods = {
 
             this.store.jobs.addProcessed(this.slug, relay)
 
-            resolve()
           })
           .on('eose', async () => {
+            console.log('eose', `chunk ${i}`, `total chunks: ${relayChunks.length}`)
             // this.pool.unsubscribe(subid)
             this.closePool(this.pool)
             await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
+            resolve()
           })
       })
+      console.log('promises', promises.length)
       // console.log('results chunk', Object.keys(resultsChunk).length)
       promises.push(promise)
       this.store.results.mergeDeep(resultsChunk)

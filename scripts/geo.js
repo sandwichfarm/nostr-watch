@@ -119,7 +119,6 @@ const query = async function(){
 
 const run = async function(){
   geo = await query()
-  //console.log(object)
   fs.writeFile(outFile, JSON.stringify(geo), (err) => {
     if (err) return console.error('./scripts/geo.js', err);
     console.log('public/geo.json written')
@@ -131,10 +130,8 @@ const run = async function(){
       catch(err) {
         console.error(err)
       }
-        
     })
   });
-  
 }
 
 run()

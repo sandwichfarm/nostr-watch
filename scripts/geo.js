@@ -119,12 +119,14 @@ const run = async function(){
   let geo = await query()
   console.log(`geo JS object members: ${Object.keys(geo)?.length}`)
   fs.writeFile(outFile, JSON.stringify(geo), (err) => {
-    if (err) return console.error('./scripts/geo.js', err);
+    if(err) 
+      return console.error('./scripts/geo.js', err);
     console.log('public/geo.json written')
     fs.readFile(outFile, 'utf8', (err, data) => {
-      if (err) return console.error('./scripts/geo.js', err);
+      if(err) 
+        return console.error('./scripts/geo.js', err);
       try {
-        console.log(`geo.json members: ${Object.keys(data)?.length}`)
+        console.log(`geo.json members: ${Object.keys(JSON.parse(data))?.length}`)
       }
       catch(err) {
         console.error(err)
@@ -134,4 +136,3 @@ const run = async function(){
 }
 
 run()
-

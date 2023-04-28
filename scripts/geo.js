@@ -6,9 +6,7 @@ const fetch = require('cross-fetch'),
       outFile = './public/geo.json',
       dotenv = require('dotenv')
 
-let object,
-    yaml,
-    relayUrls = fs.readFileSync('./relays.yaml', 'utf8'),
+let relayUrls = fs.readFileSync('./relays.yaml', 'utf8'),
     continents = fs.readFileSync('./cache/continents.json', 'utf8')
 
 dotenv.config()
@@ -118,7 +116,8 @@ const query = async function(){
 }
 
 const run = async function(){
-  geo = await query()
+  let geo = await query()
+  console.log(`geo JS object members: ${Object.keys(geo)?.length}`)
   fs.writeFile(outFile, JSON.stringify(geo), (err) => {
     if (err) return console.error('./scripts/geo.js', err);
     console.log('public/geo.json written')

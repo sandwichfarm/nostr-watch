@@ -1,4 +1,5 @@
 relays:
+- wss://relayable.org
 - wss://paid.nostrified.org
 - wss://nostr.libertasprimordium.com
 - wss://1.noztr.com

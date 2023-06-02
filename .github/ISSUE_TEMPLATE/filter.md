@@ -1,6 +1,6 @@
 ---
 name: Filters
-about: Related to the addition or behavior of filters. If is a bug related to filters, please submit a Bug. 
+about: Related to the addition or behavior of filters. 
 title: ''
 labels: 'filters'
 assignees: ''

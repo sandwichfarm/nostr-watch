@@ -16,7 +16,6 @@ relays:
 - wss://deschooling.us
 - wss://e.nos.lol
 - wss://eden.nostr.land
-- wss://eden.nostr.land
 - wss://expensive-relay.fiatjaf.com
 - wss://foolay.nostr.moe
 - wss://free-relay.nostrich.land
@@ -75,7 +74,6 @@ relays:
 - wss://nostr-relay.usebitcoin.space
 - wss://nostr-relay.wolfandcrow.tech
 - wss://nostr-sg.com
-- wss://nostr-sg.com
 - wss://nostr-us.coinfundit.com
 - wss://nostr-verif.slothy.win
 - wss://nostr-verified.wellorder.net
@@ -92,7 +90,6 @@ relays:
 - wss://nostr.aozing.com
 - wss://nostr.app.runonflux.io
 - wss://nostr.argdx.net
-- wss://nostr.arguflow.gg
 - wss://nostr.arguflow.gg
 - wss://nostr.barf.bz
 - wss://nostr.bch.ninja
@@ -168,7 +165,6 @@ relays:
 - wss://nostr.middling.mydns.jp
 - wss://nostr.mikedilger.com
 - wss://nostr.milou.lol
-- wss://nostr.milou.lol
 - wss://nostr.mom
 - wss://nostr.mouton.dev
 - wss://nostr.mrbits.it
@@ -188,7 +184,6 @@ relays:
 - wss://nostr.orba.ca
 - wss://nostr.ownscale.org
 - wss://nostr.oxtr.dev
-- wss://nostr.pleb.network
 - wss://nostr.pleb.network
 - wss://nostr.plebchain.org
 - wss://nostr.pobblelabs.org
@@ -233,10 +228,8 @@ relays:
 - wss://nostr.walletofsatoshi.com
 - wss://nostr.whoop.ph
 - wss://nostr.wine
-- wss://nostr.wine
 - wss://nostr.xpersona.net
 - wss://nostr.yael.at
-- wss://nostr.yuv.al
 - wss://nostr.yuv.al
 - wss://nostr.zaprite.io
 - wss://nostr.zebedee.cloud
@@ -255,8 +248,6 @@ relays:
 - wss://nostrafrica.pcdkd.fyi
 - wss://nostre.cc
 - wss://nostream.denizenid.com
-- wss://nostream.denizenid.com
-- wss://nostream.denizenid.com
 - wss://nostream.gromeul.eu
 - wss://nostream.kinchie.snowinning.com
 - wss://nostream.nostrly.io
@@ -274,8 +265,6 @@ relays:
 - wss://pow.nostrati.com
 - wss://pow32.nostr.land
 - wss://private-nostr.v0l.io
-- wss://private.red.gb.net
-- wss://private.red.gb.net
 - wss://private.red.gb.net
 - wss://public.nostr.swissrouting.com
 - wss://puravida.nostr.land
@@ -328,7 +317,6 @@ relays:
 - wss://relay.nostr.wirednet.jp
 - wss://relay.nostr.xyz
 - wss://relay.nostrati.com
-- wss://relay.nostrgraph.net
 - wss://relay.nostrgraph.net
 - wss://relay.nostrich.de
 - wss://relay.nostrich.land

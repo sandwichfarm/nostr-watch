@@ -47,7 +47,7 @@ import SharedComputed from '@/shared/computed.js'
 
 import { RelayPool } from 'nostr'
 
-import { getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency  } from 'nostrwatch-js'
+import { getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency, RelayCheckerResult } from 'nostrwatch-js'
 
 const localMethods = {
   LoadSeed(force, single){
@@ -78,154 +78,133 @@ const localMethods = {
             )
     ) 
   },
-  async LoadSeedJob(single){
-    this.relays = [...this.store.relays.getAll]
-    const relays = this.relays.filter( relay => !this.store.jobs.isProcessed(this.slug, relay) ),
-          resultsChunk = new Object()
-    let relayChunks = this.chunk(250, relays)
-    const promises = []
-    for (let i = 0; i < relayChunks.length; i++) {
-      const promise = await new Promise( resolve => {
-        const relayChunk = relayChunks[i],
-              subid = `${crypto.randomBytes(20).toString('hex')}-${i}`
-        let   $relay
+  async LoadSeedJob(){
+    const resultsChunk = new Object()
+    await new Promise( resolve => {
+      const subid = `${crypto.randomBytes(20).toString('hex')}`
+      let   $relay
 
-        this.pool = new RelayPool(['wss://history.nostr.watch'])
-        this.pool
-          .on('open', relay => {
-            $relay = relay
-            $relay.subscribe(subid, {
-              kinds:    [30304],
-              "#d":     single ? [ single ] : relayChunk,
-              authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
-            })
+      this.pool = new RelayPool(['wss://history.nostr.watch'])
+      this.pool
+        .on('open', relay => {
+          $relay = relay
+          $relay.subscribe(subid, {
+            kinds:    [30304],
+            since:    Math.round( (Date.now()-20*60*1000) / 1000 ),
+            authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
           })
-          .on('event', async ($relay, sub_id, event) => {
-            // console.dir(JSON.parse(event.content).latency)
-            if(subid !== sub_id)
-              return
-              
-            const relay = event.tags[0][1]
-
-            if(!this.store.relays.has(relay))
-              this.store.relays.add(relay)
-
-            const data = JSON.parse(event.content)
-            // const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
-            let topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1]?.toLowerCase(), topicTag[2] ] )
-                topics = Array.from(new Set(topics))              
-            const result = {
-              url: relay,
-              
-              check: {
-                connect: null,
-                read: null,
-                write: null,
-                latency: data?.latency[this.store.prefs.region]?.final ? true : false,
-                averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
-              },
-            }
-
-            result.uptime = this.getUptimePercentage(relay)
+        })
+        .on('event', async ($relay, sub_id, event) => {
+          if(subid !== sub_id)
+            return
             
-            if(data?.info)
-              result.info = data.info
+          const relay = event.tags[0][1]
 
-            result.latency = {
-              average: data?.latency?.[this.store.prefs.region]?.[1] ? getAverageLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-              median: data?.latency?.[this.store.prefs.region]?.[1] ? getMedianLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-              min: data?.latency?.[this.store.prefs.region]?.[1] ? getMinLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-              max: data?.latency?.[this.store.prefs.region]?.[1] ? getMaxLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-              data: data?.latency?.[this.store.prefs.region]?.[1] || [],
-              connect: data?.latency?.[this.store.prefs.region]?.[0] || [],
-              read: data?.latency?.[this.store.prefs.region]?.[1] || [],
-              write: data?.latency?.[this.store.prefs.region]?.[2] || [],
-            }
+          if(!this.store.relays.has(relay))
+            this.store.relays.add(relay)
 
-            try {
-              result.latency.overall = [
-                getAverageLatency([
-                  ...result.latency?.connect, 
-                  ...result.latency?.data, 
-                  ...result.latency?.write, 
-                ])
-              ]
-            }
-            catch(e){""}
-
-            result.latency.average = result.latency.overall
-
-            result.check.connect = true
-
-            if(event?.tags){
-              // const connect = event.tags.filter( tag => tag[0] == 'online'),
-              const read = event.tags.filter( tag => tag[0] == 'read'),
-                    write = event.tags.filter( tag => tag[0] == 'write')
-              result.check.read = read?.[0]?.[1] === 'true' ? true : false
-              result.check.write = write?.[0]?.[1] === 'true' ? true : false
-            }
-
-            if(topics.length)
-              result.topics = this.removeIgnoredTopics(topics)
-
-            // console.log('aggr', this.result.url, this.getAggregate(result), result.check.connect, result.check.read, result.check.write)
+          const data = JSON.parse(event.content)
+          // const topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topic => topic[1] )
+          let topics = event?.tags.filter( tag => tag[0] === 't' && tag[1] !== 'relay:read' && tag[1] !== 'relay:write' && tag[1] !== 'relay:online').map( topicTag => [ topicTag[1]?.toLowerCase(), topicTag[2] ] )
+              topics = Array.from(new Set(topics))              
+          const result = {
+            url: relay,
             
-            
-            result.aggregate = this.getAggregate(result)
+            check: {
+              connect: null,
+              read: null,
+              write: null,
+              latency: data?.latency[this.store.prefs.region]?.final ? true : false,
+              averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
+            },
+          }
 
-            if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
-              result.aggregate = 'restricted'
-              result.check.write = false 
-              console.log('should be restricted', result.aggregate, result.check.write)
-            }
+          result.uptime = this.getUptimePercentage(relay)
+          
+          if(data?.info)
+            result.info = data.info
 
-            resultsChunk[relay] = result
+          const regionLatency = data?.latency?.[this.store.prefs.region]
 
-            if(this.store.jobs.isProcessed(this.slug, relay))
-              return 
+          result.latency = {
+            average: regionLatency?.[1] ? getAverageLatency(regionLatency[1]) : null,
+            median: regionLatency?.[1] ? getMedianLatency(regionLatency[1]) : null,
+            min: regionLatency?.[1] ? getMinLatency(regionLatency[1]) : null,
+            max: regionLatency?.[1] ? getMaxLatency(regionLatency[1]) : null,
+            data: regionLatency?.[1] || [],
+            connect: regionLatency?.[0] || [],
+            read: regionLatency?.[1] || [],
+            write: regionLatency?.[2] || [],
+          }
 
-            this.store.jobs.addProcessed(this.slug, relay)
+          try {
+            result.latency.overall = [
+              getAverageLatency([
+                ...result.latency?.connect, 
+                ...result.latency?.data, 
+                ...result.latency?.write, 
+              ])
+            ]
+          }
+          catch(e){""}
 
-          })
-          .on('eose', async () => {
-            console.log('eose', `chunk ${i}`, `total chunks: ${relayChunks.length}`)
-            // this.pool.unsubscribe(subid)
-            this.closePool(this.pool)
-            await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
-            resolve()
-          })
-      })
-      console.log('promises', promises.length)
-      // console.log('results chunk', Object.keys(resultsChunk).length)
-      promises.push(promise)
-      this.store.results.mergeDeep(resultsChunk)
-      await new Promise( resolveDelay => setTimeout( resolveDelay, 500 ) ) 
-    }
-    await Promise.all(promises)
+          result.latency.average = result.latency.overall
 
-    const offline = this.store.relays.getAll.filter( relay => !this.store.jobs.processed?.[this.slug]?.includes(relay))
+          result.check.connect = true
 
-    offline.forEach( relay => {
-      this.store.results.mergeDeep({
-        [relay]: {
-          url: relay,
-          check: {
-            connect: false,
-            read: false,
-            write: false 
-          },
-          aggregate: 'offline'
-        }
-      })
+          if(event?.tags){
+            // const connect = event.tags.filter( tag => tag[0] == 'online'),
+            const read = event.tags.filter( tag => tag[0] == 'read'),
+                  write = event.tags.filter( tag => tag[0] == 'write')
+            result.check.read = read?.[0]?.[1] === 'true' ? true : false
+            result.check.write = write?.[0]?.[1] === 'true' ? true : false
+          }
+
+          if(topics.length)
+            result.topics = this.removeIgnoredTopics(topics)
+          
+          result.aggregate = this.getAggregate(result)
+
+          if(result?.info?.limitation?.payment_required && !this.isLoggedIn){
+            result.aggregate = 'restricted'
+            result.check.write = false 
+            console.log('should be restricted', result.aggregate, result.check.write)
+          }
+
+          // this.store.results.mergeDeep({ [relay]: result })
+
+          resultsChunk[relay] = result
+
+          if(this.store.jobs.isProcessed(this.slug, relay))
+            return 
+
+          this.store.jobs.addProcessed(this.slug, relay)
+        })
+        .on('eose', async () => {
+          // this.pool.unsubscribe(subid)
+          this.store.results.mergeDeep(resultsChunk)
+          this.closePool(this.pool)
+          await new Promise( resolveDelay => setTimeout( resolveDelay, 1000 ) )
+          resolve()
+        })
     })
 
+    if(Object.keys(resultsChunk)?.length)
+      this.checkOffline()
 
     this.store.jobs.completeJob(this.slug)
   },
   async checkOffline(){
+    const offline = this.store.relays.getAll.filter( relay => !this.store.jobs.processed?.[this.slug]?.includes(relay))
 
+    offline.forEach( relay => {
+      const result = structuredClone(RelayCheckerResult)
+      result.url = relay
+      result.state = 'complete'
+      result.aggregate = 'offline'
+      this.store.results.set(result)
+    })
   },
-
 }
 
 export default defineComponent({

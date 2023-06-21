@@ -36,8 +36,15 @@ PRs into `develop` will not recieve any notification about this requirement.
 - [ ] Lighting Tips to Relay Operators
 - [x] Relay Statistics 
 - [ ] Relay Historical Data (partially implemented)
-- [ ] Discover relays at runtime (currently buildtime, ready to move to runtime at 0.3) 
-- [ ] Discover geo at runtime
+- [x] Discover relays at runtime
+- [x] Discover geo at runtime
+- [ ] Relay Operator notes on Relay Pages 
+- [ ] Result sharing
+- [ ] Login, Dashboard and Account Settings
+- [ ] Goal Optimized UX and GUI
+- [ ] Portable Relay 
+- [ ] Relay Alerts Service
+
 
 ## Project setup
 ```
@@ -71,3 +78,9 @@ yarn lint
 ```
 yarn docker:build
 ```
+
+## Contributors
+
+<a align="center" href="https://github.com/dskvr/nostr-watch/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=dskvr/nostr-watch" />
+</a>

@@ -90,8 +90,7 @@ const localMethods = {
           $relay = relay
           $relay.subscribe(subid, {
             kinds:    [30304],
-            since:    Math.round( (Date.now()-60*60*1000) / 1000 ),
-            // "#d":     single ? [ single ] : relayChunk,
+            since:    Math.round( (Date.now()-20*60*1000) / 1000 ),
             authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
           })
         })
@@ -125,15 +124,17 @@ const localMethods = {
           if(data?.info)
             result.info = data.info
 
+          const regionLatency = data?.latency?.[this.store.prefs.region]
+
           result.latency = {
-            average: data?.latency?.[this.store.prefs.region]?.[1] ? getAverageLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-            median: data?.latency?.[this.store.prefs.region]?.[1] ? getMedianLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-            min: data?.latency?.[this.store.prefs.region]?.[1] ? getMinLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-            max: data?.latency?.[this.store.prefs.region]?.[1] ? getMaxLatency(data?.latency?.[this.store.prefs.region][1]) : null,
-            data: data?.latency?.[this.store.prefs.region]?.[1] || [],
-            connect: data?.latency?.[this.store.prefs.region]?.[0] || [],
-            read: data?.latency?.[this.store.prefs.region]?.[1] || [],
-            write: data?.latency?.[this.store.prefs.region]?.[2] || [],
+            average: regionLatency?.[1] ? getAverageLatency(regionLatency[1]) : null,
+            median: regionLatency?.[1] ? getMedianLatency(regionLatency[1]) : null,
+            min: regionLatency?.[1] ? getMinLatency(regionLatency[1]) : null,
+            max: regionLatency?.[1] ? getMaxLatency(regionLatency[1]) : null,
+            data: regionLatency?.[1] || [],
+            connect: regionLatency?.[0] || [],
+            read: regionLatency?.[1] || [],
+            write: regionLatency?.[2] || [],
           }
 
           try {
@@ -195,8 +196,13 @@ const localMethods = {
   },
   async checkOffline(){
     const offline = this.store.relays.getAll.filter( relay => !this.store.jobs.processed?.[this.slug]?.includes(relay))
+
     offline.forEach( relay => {
-      this.store.results[relay] = structuredClone(RelayCheckerResult)
+      const result = structuredClone(RelayCheckerResult)
+      result.url = relay
+      result.state = 'complete'
+      result.aggregate = 'offline'
+      this.store.results.set(result)
     })
   },
 }

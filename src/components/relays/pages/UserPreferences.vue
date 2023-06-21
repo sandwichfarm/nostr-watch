@@ -139,7 +139,7 @@
             </label>
             <div class="mt-4 space-y-4">
             
-              <div class="flex items-center" v-for="region in ['us-east', 'eu-west', 'asia-south', 'asia-southeast', 'australia']" :key="prefs-`${region}`">
+              <div class="flex items-center" v-for="region in ['us-east', 'eu-west', 'asia-south', 'asia-southeast', 'au']" :key="prefs-`${region}`">
                 <input v-model="store.prefs.region" :value="region" :id="region" name="push-notifications" type="radio" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500" />
                 <label :for="region" class="ml-3 block text-sm font-medium text-gray-700  dark:text-gray-500">{{ region }}</label>
               </div>

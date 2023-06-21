@@ -204,8 +204,7 @@ export default defineComponent({
   },
   methods: Object.assign(RelaysLib, {
     mapInit(){
-      let tries=0
-      const interval = setInterval( () => {
+      setTimeout( () => {
         if(this.$refs?.map?.leafletObject?.whenReady)
           this.$refs?.map?.leafletObject?.whenReady(async () => {
             await this.$refs.map.leafletObject
@@ -214,12 +213,7 @@ export default defineComponent({
                 this.store.layout.mapIsExpanded ? 4 : 2
               )
           })
-        else 
-          tries++
-
-        if(tries>3)
-          clearInterval(interval) 
-      },1000) 
+      }, 1000)
     },
     async copy(text) {
       try {

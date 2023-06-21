@@ -60,11 +60,11 @@ export const getPrebuiltGeo = async function(){
 
 
 export const getGeo = async function(relay){
-  let dns, ip, geo
+  let dns, ip, geo, error
   //console.log('ip-api key', process.env.VUE_APP_IP_API_KEY)
   dns = await getDnsFromRelay(relay).catch()
   ip = await getIPFromDNS(dns).catch()
-  geo = await getGeoFromIP(ip).catch()
+  geo = await getGeoFromIP(ip).catch( () => error = true )
 
   if(geo)
     geo = Object.assign(geo, getContinentFromCountryCode(geo.countryCode))
@@ -75,7 +75,8 @@ export const getGeo = async function(relay){
   }
   if(!geo)
     console.warn(`no geo result for: ${relay}`)
-
+  if(error)
+    throw Error('Geo IP API is blocked')
   return geo
 }
 
@@ -115,7 +116,7 @@ export const getGeoFromIP = async function(ip){
   await fetch(url, { headers: { 'accept': 'application/dns-json' } })
           .then(response => response.json())
           .then((data) => { geo = data })
-          .catch(err => console.error('getGeoFromIP()', err))
+          .catch(() => { throw Error("geo IP API is being blocked") } )
   return geo;
 }
 

@@ -89,6 +89,7 @@ const localMethods = {
           read: result.check.read,
           write: result.check.write,
           latency: result.check.latency,
+          spamMitigation: result.check.spamMitigation
         },
         latency: {}
       } 
@@ -187,7 +188,8 @@ const localMethods = {
   },
 
   setGeoFromCache: async function(){
-    if( Object.keys(this.store.relays.geo.length) === this.store.relays.getAll.length )
+    console.log('geo', Object.keys(this.store.relays.geo)?.length )
+    if( Object.keys(this.store.relays.geo)?.length )
       return this.hasGeo = true
     this.store.relays.geo = Object.assign(this.store.relays.geo, await getPrebuiltGeo() )
   },
@@ -199,10 +201,7 @@ const localMethods = {
     if(!relays.length)
       return
 
-      console.log('here', this.queueOpts())
-
     return new Promise( resolve => {
-      
       this.queue = new QueuedChecker(relays, this.queueOpts())
       this.queue
         .on('result', result => {
@@ -280,7 +279,7 @@ const localMethods = {
       return
     return new Promise( (resolve) => {
       const opts = this.checkerOpts()
-      
+
       if(this.store.user.testEvent)
         opts.testEvent = this.store.user.testEvent
 
@@ -421,7 +420,6 @@ export default defineComponent({
   },
 
   unmounted(){
-    console.log('unmounted!!!')
     clearInterval(this.interval)
     this.relayCheckers.forEach( $checker => $checker?.close())
     this.stop = true

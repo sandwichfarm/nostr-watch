@@ -48,7 +48,18 @@ const LocalMethods = {
     )
 
   },
+  async checkIPApi(){
+    const res = await new Promise( resolve => {
+      getGeo('wss://history.nostr.watch')
+        .then( () => resolve(true) ) 
+        .catch( () => resolve(false) )
+    })
+    return res 
+  },
   async jobGeo(single){
+    this.store.prefs.geoApiAccessible = await this.checkIPApi()
+    if(!this.store.prefs.geoApiAccessible)
+      this.store.prefs.runtimeGeo = false
     if( !process.env.VUE_APP_IP_API_KEY || !this.store.prefs.runtimeGeo ){
       console.log('using prebuild geo')
       let geo = await getPrebuiltGeo()
@@ -66,7 +77,6 @@ const LocalMethods = {
       this.relays = this.store.relays.getAll
       const relays = this.relays.filter( relay => !this.store.jobs.processed[this.slug]?.includes(relay))
       const relayChunks = this.chunk(100, relays)
-      //console.log('chunks', )
       let promises = [],
           geoAcc = {}
       for(let c=0;c<relayChunks.length;c++) {
@@ -74,14 +84,15 @@ const LocalMethods = {
         const relays = relayChunks[c]
         relays.forEach( async (relay) => {
           const promise = new Promise( resolve => {
-            getGeo(relay).then( geo => {
-              if(!geo?.lat)
-                return resolve()
-              geoAcc[relay] = geo
-              // console.log('geo for', relay)
-              this.store.jobs.addProcessed(this.slug, relay)
-              resolve()
-            })
+            getGeo(relay)
+              .then( geo => {
+                if(!geo?.lat)
+                  return resolve()
+                geoAcc[relay] = geo
+                // console.log('geo for', relay)
+                this.store.jobs.addProcessed(this.slug, relay)
+                resolve()
+              })
           })
           promises.push(promise)
         })

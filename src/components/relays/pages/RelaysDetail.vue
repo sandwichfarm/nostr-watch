@@ -601,9 +601,6 @@ export default defineComponent({
         return (value-fast) / (slow-fast) * 100
       }
     },
-    checkDimensions: function(){
-      return this.isPayToRelay(this.relay) ? [{key: 'connect', label: 'online'}] : [{key: 'connect', label: 'online'}, {key: 'read', label: 'readable'}, {key: 'write', label: 'writable'}]
-    },
 
     getSoftware: function(){
       return this.result?.info?.software
@@ -646,20 +643,3 @@ export default defineComponent({
 
 })
 </script>
-<style scoped>
-/* ul, ul li { padding:0; margin:0; list-style:none; }
-td { padding:5px 10px; }
-th h4 { text-align:center; padding:5px 10px; margin:0 0 6px; background:#f0f0f0; }
-table {margin:20px 10px 20px; border: 2px solid #f5f5f5; padding:20px}
-tr td:first-child { text-align:right }
-tr td:last-child { text-align:left }
-.indicator { display: table-cell; width:33% ; font-weight:bold; text-align: center !important; color: white; text-transform: uppercase; font-size:0.8em}
-body, .grid-Column { padding:0; margin:0; }
-.badges { display:block; margin: 10px 0 11px}
-.badges > span {margin-right:5px} */
-/* #wrapper {max-width:800px} */
-
-
-/* #relay-wrapper { margin: 50px 0 20px; padding: 20px 0} */
-/* h1 {cursor:pointer;font-size:40pt; margin: 0px 0 15px; padding:0 0 10px; border-bottom:3px solid #e9e9e9} */
-</style>

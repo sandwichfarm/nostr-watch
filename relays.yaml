@@ -1,5 +1,11 @@
 relays:
+<<<<<<< HEAD
 - wss://relayable.org
+=======
+- wss://relay.valera.co
+- wss://relay.nostr.ai
+- wss://nostr.0x50.tech
+>>>>>>> main
 - wss://paid.nostrified.org
 - wss://nostr.libertasprimordium.com
 - wss://1.noztr.com
@@ -18,7 +24,7 @@ relays:
 - wss://eden.nostr.land
 - wss://expensive-relay.fiatjaf.com
 - wss://foolay.nostr.moe
-- wss://free-relay.nostrich.land
+- wss://universe.nostrich.land
 - wss://freedom-relay.herokuapp.com/ws
 - wss://freespeech.casa
 - wss://global.relay.red
@@ -31,6 +37,7 @@ relays:
 - wss://mule.platanito.org
 - wss://no-str.org
 - wss://no.contry.xyz
+- wss://rs.nostr-x.com
 - wss://no.str.cr
 - wss://no.str.watch
 - wss://node01.nostress.cc
@@ -185,7 +192,12 @@ relays:
 - wss://nostr.ownscale.org
 - wss://nostr.oxtr.dev
 - wss://nostr.pleb.network
+<<<<<<< HEAD
 - wss://nostr.plebchain.org
+=======
+- wss://nostr.pleb.network
+- wss://ca.orangepill.dev
+>>>>>>> main
 - wss://nostr.pobblelabs.org
 - wss://nostr.portemonero.com
 - wss://nostr.radixrat.com
@@ -217,7 +229,6 @@ relays:
 - wss://nostr.supremestack.xyz
 - wss://nostr.swiss-enigma.ch
 - wss://nostr.thibautrey.fr
-- wss://nostr.tunnelsats.com
 - wss://nostr.unknown.place
 - wss://nostr.up.railway.app
 - wss://nostr.uselessshit.co
@@ -240,7 +251,6 @@ relays:
 - wss://nostr01.opencult.com
 - wss://nostr01.vida.dev
 - wss://nostr1.starbackr.me
-- wss://nostr1.tunnelsats.com
 - wss://nostr2.actn.io
 - wss://nostr2.namek.link
 - wss://nostr21.com
@@ -370,6 +380,7 @@ relays:
 - wss://nostr.zhongwen.world
 - wss://nostr.jolt.run
 - wss://nostr.chainbits.co.uk
+- wss://nostrrelay.geforcy.com
 - wss://relay.codl.co
 - wss://nostr.dogdogback.com
 - wss://relay2.nostr.vet
@@ -379,3 +390,46 @@ relays:
 - wss://nostr.crypticthreadz.com
 - wss://nostr.xpedite-tech.com
 - wss://nostr.misskey.cf
+- wss://nostr.naut.social
+- wss://relays.world/nostr
+- wss://relay.intify.io
+- wss://relay.codl.co
+- wss://nostr.thesamecat.io
+- wss://nostr-rs-relay.phamthanh.me
+- wss://relayable.org
+- wss://powrelay.xyz
+- wss://test.theglobalpersian.com
+- wss://nostr-relay.app
+- wss://relay.badgr.space
+- wss://relay.nostr-relay.org
+- wss://nostr.simplex.icu
+- wss://ithurtswhenip.ee
+- wss://the.hodl.haus
+- wss://relay.vtuber.directory
+- wss://nostr.hodl.haus
+- wss://nostr.cloudversia.com
+- wss://free.nostr.lc
+- wss://strfry.nostr-x.com
+- wss://nostr.privoxy.io
+- wss://paid.nostr.lc
+- wss://swiss.nostr.lc
+- wss://test.nostr.lc
+- wss://relay.nostrify.io
+- wss://nostr.debancariser.com
+- wss://relay.layer.systems
+- wss://denostr.paiya.app
+- wss://relay.darker.to
+- wss://nostr.crypticthreadz.com
+- wss://n.s.nyc
+- wss://wallets.fyoumoneypod.com/nostrrelay/fyoumoney
+- wss://relay.2nodez.com
+- wss://bitcoinforthe.lol
+- wss://nostr.filmweb.pl
+- wss://relay.leafbodhi.com
+- wss://nostr.dncn.xyz
+- wss://nostr.gleeze.com
+- wss://relay.hodl.ar
+- wss://nostr.mining.sc
+- wss://nostr.nicfab.eu
+- wss://relay.nostr-x.com
+- wss://relay.haths.cc

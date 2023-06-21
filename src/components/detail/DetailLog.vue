@@ -4,19 +4,22 @@
       <div class="py-2 inline-block min-w-full sm:px-6 lg:px-8">
         <div class="overflow-hidden">
           <table class="min-w-full text-center">
-            <thead>
-              <tr>
-                <th scope="col" class="text-sm font-medium text-gray-900 dark:text-white/50 px-6 py-4 ">
-                  <!-- Log -->
-                  Status: {{ this.result.state }}
-                </th>
-              </tr>
-            </thead>
             <tbody>
               <tr v-for="(log, index) in result.log" :key="`${log[0]}-${index}`">
                 <td class="border-b text-sm text-gray-900 font-medium px-6 py-4 overflow-ellipsis font-mono" :class="getLogClass(log[0])">
                   {{ log[1] }}
                 </td>
+              </tr>
+              <tr v-if="this.result.state !== 'complete'">
+                <th scope="col" 
+                    :class="{
+                      'loadingDark': isDark,
+                      'loading': !isDark
+                    }"
+                    class="font-mono  text-sm font-medium text-gray-900 dark:text-white/50 px-6 py-4 ">
+                  <!-- Log -->
+                  {{ this.result.state }}
+                </th>
               </tr>
             </tbody>
           </table>
@@ -30,6 +33,7 @@
 import { defineComponent } from 'vue'
 import SharedComputed from '@/shared/computed.js'
 import { setupStore } from '@/store'
+import { useDark } from "@vueuse/core";
 
 export default defineComponent({
   name: 'DetailLog',
@@ -64,6 +68,9 @@ export default defineComponent({
   },
 
   computed: Object.assign(SharedComputed, {
+    isDark(){
+      return useDark().value
+    },
     getLogClass(){
       return (slug) => { 
         return {
@@ -81,3 +88,37 @@ export default defineComponent({
   
 })
 </script>
+<style scoped>
+.loadingA {
+    animation-duration: 1.8s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-name: loadingAnimation;
+    animation-timing-function: linear;
+    /* background: #f6f7f8; */
+    background: linear-gradient(to right, #fafafa 8%, #f9f9f9 38%, #fafafa 54%);
+    background-size: 1000px 640px;
+    position: relative;
+}
+
+.loadingDark {
+    animation-duration: 1.8s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+    animation-name: loadingAnimation;
+    animation-timing-function: linear;
+    /* background: rgba(0,0,0,0.1); */
+    background: linear-gradient(to right, rgba(0,0,0,0.2) 8%, rgba(0,0,0,0.5) 38%, rgba(0,0,0,0.2) 74%);
+    background-size: 1000px 640px;
+    position: relative;
+}
+
+@keyframes loadingAnimation{
+    0%{
+        background-position: -468px 0
+    }
+    100%{
+        background-position: 468px 0
+    }
+}
+</style>

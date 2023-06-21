@@ -40,18 +40,18 @@ const localMethods = {
         this.relays.forEach( relay => {
           if(!this.store.results.get(relay))
             return
-          this.store.results.mergeDeep( { [relay]: this.validatePubkey(relay) } )
+          this.store.results.mergeDeep( { [relay]: this.getResultPubkeyValidation(relay) } )
         })
         this.store.jobs.completeJob(this.slug)
       },
       true
     )
   },
-  validatePubkey(relay){
+  getResultPubkeyValidation(relay){
     const result = this.store.results.get(relay)
 
     if(!result?.info?.pubkey)
-      return 
+      return result
 
     result.pubkeyValid = false
     

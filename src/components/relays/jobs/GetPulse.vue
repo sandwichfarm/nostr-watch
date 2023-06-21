@@ -175,7 +175,6 @@ export default defineComponent({
     this.relays = Array.from(new Set([...this.store.relays.getAll, ...relays]))
   },
   mounted(){
-    console.log('ppulse?')
     this.invalidatePulse()
     // this.invalidateJob()
     // this.interval = setInterval( this.invalidateJob, 1000 )

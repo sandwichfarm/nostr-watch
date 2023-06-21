@@ -21,6 +21,7 @@ export const useRelaysStore = defineStore('relays', {
     popular: ['wss://relay.damus.io', 'wss://relay.snort.social', 'wss://eden.nostr.land', 'wss://nostr.orangepill.dev', 'wss://nos.lol', 'wss://brb.io', 'wss://relay.current.fyi', 'wss://nostr-pub.wellorder.net'],
   }),
   getters: {
+    has: (state) => relay => state.urls.includes(relay),
     getAll: (state) => state.urls,
     all: (state) => state.urls,
     getOnline: (state) => state.urlsOnline,
@@ -84,6 +85,7 @@ export const useRelaysStore = defineStore('relays', {
     getCanonical: state => relay => state.canonicals[relay],
   },
   actions: {
+    add(relayUrl){ this.urls.push(relayUrl) },
     addRelay(relayUrl){ this.urls.push(relayUrl) },
     addRelays(relayUrls){ 
       const deduped = removeDuplicateHostnames( [...this.urls, ...relayUrls])

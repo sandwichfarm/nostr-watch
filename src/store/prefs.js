@@ -32,6 +32,7 @@ export const usePrefsStore = defineStore('prefs', {
     writeTimeout: 15*1000,
     readTimeout: 15*1000,
     runtimeGeo: true,
+    geoApiAccessible: true
   }),
   getters: {
     get: state => key => state?.[key],

@@ -31,8 +31,8 @@ export default defineComponent({
   },
   async mounted(){
     await this.showAuth()
-    if(!this.store.prefs.isFirstVisit)
-      this.auth()
+    // if(!this.store.prefs.isFirstVisit)
+    //   this.auth()
     if(this.isLoggedIn())
       await this.getData()
   },

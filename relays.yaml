@@ -321,6 +321,7 @@ relays:
 - wss://relay.nostr.wirednet.jp
 - wss://relay.nostr.xyz
 - wss://relay.nostrati.com
+- wss://relay.nostrcn.com
 - wss://relay.nostrgraph.net
 - wss://relay.nostrich.de
 - wss://relay.nostrich.land
@@ -434,3 +435,4 @@ relays:
 - wss://nostr.hexhex.online
 - wss://relay.bitransfer.org
 - wss://nostr.koutakou.tech
+- wss://nostr.ivmanto.dev

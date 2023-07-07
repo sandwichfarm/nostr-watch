@@ -417,7 +417,6 @@ relays:
 - wss://relay.darker.to
 - wss://nostr.crypticthreadz.com
 - wss://n.s.nyc
-- wss://wallets.fyoumoneypod.com/nostrrelay/fyoumoney
 - wss://relay.2nodez.com
 - wss://bitcoinforthe.lol
 - wss://nostr.filmweb.pl
@@ -441,3 +440,4 @@ relays:
 - wss://nostr-relay.texashedge.xyz
 - wss://nostr.cr0.bar
 - wss://relay.deezy.io
+- wss://nostr.maximacitadel.org

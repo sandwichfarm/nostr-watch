@@ -42,7 +42,7 @@ PRs into `develop` will not recieve any notification about this requirement.
 - [ ] Result sharing
 - [ ] Login, Dashboard and Account Settings
 - [ ] Goal Optimized UX and GUI
-- [ ] Portable Relay 
+- [ ] Portable Relay Detail Page
 - [ ] Relay Alerts Service
 
 

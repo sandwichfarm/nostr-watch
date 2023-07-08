@@ -29,7 +29,7 @@ PRs into `develop` will not recieve any notification about this requirement.
 - [x] Detailed Relay View
 - [x] Relay Behavior Analysis
 - [x] NIP Checks
-- [x] Geo Checks (build-time)
+- [x] Geo Checks
 - [x] Favorite Relays 
 - [x] Extension Support 
 - [x] Nostr signing, individualized relay testing 

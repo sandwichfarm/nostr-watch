@@ -1,4 +1,6 @@
 relays:
+- wss://nostr.coinfundit.com
+- wss://relay.verified-nostr.com
 - wss://yestr.me
 - wss://relayable.org
 - wss://relay.valera.co
@@ -51,10 +53,8 @@ relays:
 - wss://nostr-2.zebedee.cloud
 - wss://nostr-3.orba.ca
 - wss://nostr-alpha.gruntwerk.org
-- wss://nostr-au.coinfundit.com
 - wss://nostr-bg01.ciph.rs
 - wss://nostr-dev.wellorder.net
-- wss://nostr-eu.coinfundit.com
 - wss://nostr-mv.ashiroid.com
 - wss://nostr-pub.semisol.dev
 - wss://nostr-pub.wellorder.net
@@ -79,7 +79,6 @@ relays:
 - wss://nostr-relay.usebitcoin.space
 - wss://nostr-relay.wolfandcrow.tech
 - wss://nostr-sg.com
-- wss://nostr-us.coinfundit.com
 - wss://nostr-verif.slothy.win
 - wss://nostr-verified.wellorder.net
 - wss://nostr.0nyx.eu

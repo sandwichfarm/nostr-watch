@@ -1,4 +1,5 @@
 relays:
+- wss://nostr.planz.io
 - wss://yestr.me
 - wss://relayable.org
 - wss://relay.valera.co

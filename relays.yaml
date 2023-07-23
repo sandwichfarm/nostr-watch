@@ -1,4 +1,5 @@
 relays:
+- wss://nostr.planz.io
 - wss://yestr.me
 - wss://relayable.org
 - wss://relay.valera.co
@@ -450,3 +451,6 @@ relays:
 - wss://relay.vanderwarker.family
 - wss://nostr.ivmanto.dev
 - wss://soloco.nl
+- wss://bitstack.app
+- wss://relay.vanderwarker.family
+- wss://nostr.ivmanto.dev

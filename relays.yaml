@@ -1,4 +1,5 @@
 relays:
+- wss://relay.nostrfiles.dev
 - wss://nostr.coinfundit.com
 - wss://relay.verified-nostr.com
 - wss://nostr.planz.io

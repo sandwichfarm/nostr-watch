@@ -1,6 +1,7 @@
 relays:
 - wss://nostr.coinfundit.com
 - wss://relay.verified-nostr.com
+- wss://nostr.planz.io
 - wss://yestr.me
 - wss://relayable.org
 - wss://relay.valera.co
@@ -446,5 +447,8 @@ relays:
 - wss://dev.nostrplayground.com
 - wss://booger.pro
 - wss://nrelay.paypirate.xyz
+- wss://relay.vanderwarker.family
+- wss://nostr.ivmanto.dev
+- wss://bitstack.app
 - wss://relay.vanderwarker.family
 - wss://nostr.ivmanto.dev

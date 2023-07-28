@@ -89,6 +89,7 @@ relays:
 - wss://nostr.21crypto.ch
 - wss://nostr.21m.fr
 - wss://nostr.21sats.net
+- wss://nostr.2b9t.xyz
 - wss://nostr.600.wtf
 - wss://nostr.8e23.net
 - wss://nostr.actn.io
@@ -457,3 +458,4 @@ relays:
 - wss://relay.bitransfermedia.com
 - wss://relay.cubanoticias.info
 - wss://relay.nostry.eu
+- wss://purplerelay.com

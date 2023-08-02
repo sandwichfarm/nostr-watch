@@ -433,8 +433,7 @@ relays:
 - wss://nostr.schorsch.fans
 - wss://nostr.reelnetwork.eu
 - wss://nostril.cam
-- wss://beta.nostril.cam
-- wss://relay.nostr.sc
+
 - wss://nostr.indexafrica.io
 - wss://nostr.hexhex.online
 - wss://relay.bitransfer.org

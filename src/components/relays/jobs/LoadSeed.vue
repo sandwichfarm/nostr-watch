@@ -90,7 +90,7 @@ const localMethods = {
           $relay = relay
           $relay.subscribe(subid, {
             kinds:    [30304],
-            since:    Math.round( (Date.now()-20*60*1000) / 1000 ),
+            since:    Math.round( (Date.now()-2*60*60*1000) / 1000 ),
             authors:  ['b3b0d247f66bf40c4c9f4ce721abfe1fd3b7529fbc1ea5e64d5f0f8df3a4b6e6'],
           })
         })

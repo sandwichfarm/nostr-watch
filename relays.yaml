@@ -1,4 +1,9 @@
 relays:
+- wss://relay.nostrfiles.dev
+- wss://nostr.coinfundit.com
+- wss://relay.verified-nostr.com
+- wss://nostr.planz.io
+- wss://yestr.me
 - wss://relayable.org
 - wss://relay.valera.co
 - wss://relay.nostr.ai
@@ -51,10 +56,8 @@ relays:
 - wss://nostr-2.zebedee.cloud
 - wss://nostr-3.orba.ca
 - wss://nostr-alpha.gruntwerk.org
-- wss://nostr-au.coinfundit.com
 - wss://nostr-bg01.ciph.rs
 - wss://nostr-dev.wellorder.net
-- wss://nostr-eu.coinfundit.com
 - wss://nostr-mv.ashiroid.com
 - wss://nostr-pub.semisol.dev
 - wss://nostr-pub.wellorder.net
@@ -79,7 +82,6 @@ relays:
 - wss://nostr-relay.usebitcoin.space
 - wss://nostr-relay.wolfandcrow.tech
 - wss://nostr-sg.com
-- wss://nostr-us.coinfundit.com
 - wss://nostr-verif.slothy.win
 - wss://nostr-verified.wellorder.net
 - wss://nostr.0nyx.eu
@@ -88,6 +90,7 @@ relays:
 - wss://nostr.21crypto.ch
 - wss://nostr.21m.fr
 - wss://nostr.21sats.net
+- wss://nostr.2b9t.xyz
 - wss://nostr.600.wtf
 - wss://nostr.8e23.net
 - wss://nostr.actn.io
@@ -322,6 +325,7 @@ relays:
 - wss://relay.nostr.wirednet.jp
 - wss://relay.nostr.xyz
 - wss://relay.nostrati.com
+- wss://relay.nostrcn.com
 - wss://relay.nostrgraph.net
 - wss://relay.nostrich.de
 - wss://relay.nostrich.land
@@ -416,7 +420,6 @@ relays:
 - wss://relay.darker.to
 - wss://nostr.crypticthreadz.com
 - wss://n.s.nyc
-- wss://wallets.fyoumoneypod.com/nostrrelay/fyoumoney
 - wss://relay.2nodez.com
 - wss://bitcoinforthe.lol
 - wss://nostr.filmweb.pl
@@ -430,10 +433,30 @@ relays:
 - wss://relay.haths.cc
 - wss://nostr.schorsch.fans
 - wss://nostr.reelnetwork.eu
-- wss://relay.nostr.sc
+- wss://nostril.cam
 - wss://nostr.indexafrica.io
-- wss://bitstack.app
 - wss://nostr.thegrungies.com
 - wss://nostr.ivmanto.dev
 - wss://nostr.xmr.sh
 - wss://nos.nth.io
+- wss://nostr.hexhex.online
+- wss://relay.bitransfer.org
+- wss://nostr.koutakou.tech
+- wss://nostr.ivmanto.dev
+- wss://nostr-relay.texashedge.xyz
+- wss://nostr.cr0.bar
+- wss://relay.deezy.io
+- wss://nostr.maximacitadel.org
+- wss://relay.nostrss.re
+- wss://freerelay.xyz
+- wss://dev.nostrplayground.com
+- wss://booger.pro
+- wss://nrelay.paypirate.xyz
+- wss://relay.vanderwarker.family
+- wss://soloco.nl
+- wss://bitstack.app
+- wss://relay.vanderwarker.family
+- wss://relay.bitransfermedia.com
+- wss://relay.cubanoticias.info
+- wss://relay.nostry.eu
+- wss://purplerelay.com

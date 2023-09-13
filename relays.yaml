@@ -279,6 +279,7 @@ relays:
 - wss://relay-pub.deschooling.us
 - wss://relay.21baiwan.com
 - wss://relay.21spirits.io
+- wss://relay.bitcoinbarcelona.xyz
 - wss://relay.bitid.nz
 - wss://relay.bleskop.com
 - wss://relay.boring.surf
@@ -296,6 +297,7 @@ relays:
 - wss://relay.lexingtonbitcoin.org
 - wss://relay.minds.com/nostr/v1/ws
 - wss://relay.minds.io/nostr/v1/ws
+- wss://relay.minibolt.info
 - wss://relay.mostr.pub
 - wss://relay.mynostr.id
 - wss://relay.n057r.club

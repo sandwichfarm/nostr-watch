@@ -50,6 +50,7 @@ relays:
 - wss://nostr-01.dorafactory.org
 - wss://nostr-02.dorafactory.org
 - wss://nostr-01.yakihonne.com
+- wss://relay.yakihonne.com
 - wss://nostr-1.afarazit.eu
 - wss://nostr-1.nbo.angani.co
 - wss://nostr-2.afarazit.eu
@@ -466,3 +467,6 @@ relays:
 - wss://th1.nostr.earnkrub.xyz
 - wss://th2.nostr.earnkrub.xyz
 - wss://relay.piazza.today
+- wss://th1.nostream.earnkrub.xyz
+- wss://nostrasia.casa
+- wss://relay.nostr.jabber.ch

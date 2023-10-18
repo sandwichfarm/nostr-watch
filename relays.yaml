@@ -49,6 +49,7 @@ relays:
 - wss://nostr-01.bolt.observer
 - wss://nostr-01.dorafactory.org
 - wss://nostr-02.dorafactory.org
+- wss://nostr-03.dorafactory.org
 - wss://nostr-01.yakihonne.com
 - wss://relay.yakihonne.com
 - wss://nostr-1.afarazit.eu

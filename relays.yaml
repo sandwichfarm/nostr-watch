@@ -467,3 +467,4 @@ relays:
 - wss://relay.piazza.today
 - wss://relay.nostr.smoak.haus
 - wss://nostr.dehein.org
+- wss://ftp.halifax.rwth-aachen.de/nostr

@@ -1,4 +1,5 @@
 relays:
+- wss://sg.unfiltered.zone
 - wss://relay.nostrfiles.dev
 - wss://nostr.coinfundit.com
 - wss://relay.verified-nostr.com
@@ -48,7 +49,9 @@ relays:
 - wss://nostr-01.bolt.observer
 - wss://nostr-01.dorafactory.org
 - wss://nostr-02.dorafactory.org
+- wss://nostr-03.dorafactory.org
 - wss://nostr-01.yakihonne.com
+- wss://relay.yakihonne.com
 - wss://nostr-1.afarazit.eu
 - wss://nostr-1.nbo.angani.co
 - wss://nostr-2.afarazit.eu
@@ -465,6 +468,9 @@ relays:
 - wss://th1.nostr.earnkrub.xyz
 - wss://th2.nostr.earnkrub.xyz
 - wss://relay.piazza.today
+- wss://th1.nostream.earnkrub.xyz
+- wss://nostrasia.casa
+- wss://relay.nostr.jabber.ch
 - wss://relay.nostr.smoak.haus
 - wss://nostr.dehein.org
 - wss://ftp.halifax.rwth-aachen.de/nostr

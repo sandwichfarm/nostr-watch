@@ -1,0 +1,49 @@
+name: Restrict relays.yaml
+
+on:
+  pull_request:
+    paths:
+      - 'relays.yaml'
+    types: [opened, synchronize, reopened]
+
+jobs:
+  respond-and-close:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v2
+
+    - name: Check if User is Allowed
+      id: check_user
+      uses: actions/github-script@v5
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const allowedUsers = ['dskvr']; // Replace with actual usernames
+          const sender = context.payload.pull_request.user.login;
+          if (allowedUsers.includes(sender)) {
+            core.setOutput('is_allowed', 'yes');
+          } else {
+            core.setOutput('is_allowed', 'no');
+          }
+
+    - name: Comment on PR and Close
+      if: steps.check_user.outputs.is_allowed == 'no'
+      uses: actions/github-script@v5
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          const message = "Thank you for your submission, submitting relays is no longer achieved by modification of `relays.yaml`. To submit your relay to nostr.watch simply add your relay to your relays list and ensure you have a known and reachable relay on your relays list when it has been modified. See [here](https://github.com/sandwichfarm/nostr-watch/wiki/How-to-add-a-Relay-to-nostrwatch) for more information";
+          github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            body: message
+          });
+          github.rest.pulls.update({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber,
+            state: "closed"
+          });

@@ -1,0 +1,3768 @@
+
+URL       : http://localhost:8080/relays/find
+Scenario  : Default
+Iterations: 7 (Default)
+
+TEST RESULTS
+
+--------------------
+
+Test         : Go to /relays and back
+Failed       : Element a[href="/relays"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relays"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /preferences and back
+Memory change: +6.17 MB
+Leak detected: Yes
+
+Leaking objects:
+
+╔═════════════════════════════════════════╤═════════╤════════════════════════╗
+║ Object                                  │ # added │ Retained size increase ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Bounds                                  │ 1       │ +20 B                  ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLFormControlsCollection     │ 1       │ +96 B                  ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLFormElement                │ 1       │ +1.81 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLTableElement               │ 1       │ +144 B                 ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLTextAreaElement            │ 1       │ +1.18 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLUnknownElement             │ 1       │ +111 B                 ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ DohResolver                             │ 1       │ +7 B                   ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ LatLng                                  │ 1       │ +44 B                  ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLInputElement               │ 2       │ +2.67 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLTableSectionElement        │ 2       │ +256 B                 ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached ObservableArrayExoticObject    │ 3       │ +96 B                  ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached ShadowRoot                     │ 3       │ +1.26 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached V8ObservableArrayCSSStyleSheet │ 3       │ +336 B                 ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Point                                   │ 7       │ +308 B                 ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLElement                    │ 8       │ +2.17 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLHeadingElement             │ 8       │ +1.47 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLButtonElement              │ 12      │ +9.62 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLLabelElement               │ 12      │ +2.3 kB                ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLParagraphElement           │ 12      │ +2.11 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ NewClass                                │ 12      │ +19.4 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ ObjectRefImpl                           │ 16      │ +448 B                 ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ CSSStyleDeclaration                     │ 17      │ +944 B                 ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedNumber                       │ 17      │ +1.09 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedPreserveAspectRatio          │ 17      │ +1.09 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedRect                         │ 17      │ +1.09 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ SVGPathElement                          │ 17      │ +8.76 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ SVGSVGElement                           │ 17      │ +14.1 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedString                       │ 34      │ +1.9 kB                ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedTransformList                │ 34      │ +2.18 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ RefImpl                                 │ 37      │ +3.1 kB                ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ EffectScope                             │ 40      │ +17.2 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLDivElement                 │ 68      │ +88.8 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength                       │ 68      │ +4.35 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLTableRowElement            │ 258     │ +33 kB                 ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached EventListener                  │ 340     │ +38.7 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached V8EventListener                │ 340     │ +14.2 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLAnchorElement              │ 526     │ +212 kB                ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached DOMTokenList                   │ 532     │ +29.8 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl                         │ 632     │ +50.9 kB               ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect                          │ 711     │ +125 kB                ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Detached HTMLTableCellElement           │ 2321    │ +312 kB                ║
+╟─────────────────────────────────────────┼─────────┼────────────────────────╢
+║ Object                                  │ 27305   │ +5.11 MB               ║
+╚═════════════════════════════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+140.28571428571428 total):
+
+╔════════════════════╤═════════════════════╗
+║ Description        │ # added             ║
+╟────────────────────┼─────────────────────╢
+║ path               │ 17                  ║
+╟────────────────────┼─────────────────────╢
+║ span               │ 34.857142857142854  ║
+╟────────────────────┼─────────────────────╢
+║ code.text-xs.block │ 0.14285714285714285 ║
+╚════════════════════╧═════════════════════╝
+
+Leaking collections:
+
+╔════════╤════════╤════════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Type   │ Change │ Preview                │ Size increased at                                                                                                            ║
+╟────────┼────────┼────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ Array  │ +3     │ [Set, ...]             │ trackEffects                   webpack-internal:///./node_modules/@vue/reactivity/dist/reactivity.esm-bundler.js:320:23      ║
+║        │        │                        │ track                          webpack-internal:///./node_modules/@vue/reactivity/dist/reactivity.esm-bundler.js:304:5       ║
+║        │        │                        │ Object.get                     webpack-internal:///./node_modules/@vue/reactivity/dist/reactivity.esm-bundler.js:493:7       ║
+║        │        │                        │ traverse                       webpack-internal:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js:1924:21 ║
+║        │        │                        │ traverse                       webpack-internal:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js:1924:7  ║
+║        │        │                        │ ReactiveEffect.getter [as fn]  webpack-internal:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js:1783:20 ║
+║        │        │                        │ ReactiveEffect.run             webpack-internal:///./node_modules/@vue/reactivity/dist/reactivity.esm-bundler.js:217:19      ║
+║        │        │                        │ job                            webpack-internal:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js:1816:31 ║
+║        │        │                        │ callWithErrorHandling          webpack-internal:///./node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js:219:32  ║
+╟────────┼────────┼────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ Object │ +1     │ {resize5_2: null, ...} │ addOne                webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:2657:22                             ║
+║        │        │                        │ on                    webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:2565:7                              ║
+║        │        │                        │ NewClass._initEvents  webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:4054:7                              ║
+║        │        │                        │ NewClass.initialize   webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:3039:10                             ║
+║        │        │                        │ new NewClass          webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:372:23                              ║
+║        │        │                        │ createMap             webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:4419:10                             ║
+║        │        │                        │ eval                  webpack-internal:///./node_modules/@vue-leaflet/vue-leaflet/dist/vue-leaflet.esm.js:1946:30            ║
+╚════════╧════════╧════════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+--------------------
+
+Test         : Go to /relays/statistics and back
+Memory change: +11 MB
+Leak detected: Yes
+
+Leaking objects:
+
+╔═══════════════════════╤═════════╤════════════════════════╗
+║ Object                │ # added │ Retained size increase ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Promise               │ 1       │ +46 B                  ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Relay                 │ 1       │ +316 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ RelayPool             │ 1       │ +135 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ WebSocket             │ 1       │ +1.24 kB               ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ EventListener         │ 4       │ +637 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ V8EventHandlerNonNull │ 4       │ +349 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Detached Text         │ 1609    │ +108 kB                ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Map                   │ 3460    │ +4.41 MB               ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ (closure)             │ 65230   │ +2.51 MB               ║
+╚═══════════════════════╧═════════╧════════════════════════╝
+
+Leaking collections:
+
+╔════════╤════════╤════════════════════════╤═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Type   │ Change │ Preview                │ Size increased at                                                                                                 ║
+╟────────┼────────┼────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ Object │ +1     │ {resize5_2: null, ...} │ addOne                webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:2657:22                  ║
+║        │        │                        │ on                    webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:2565:7                   ║
+║        │        │                        │ NewClass._initEvents  webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:4054:7                   ║
+║        │        │                        │ NewClass.initialize   webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:3039:10                  ║
+║        │        │                        │ new NewClass          webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:372:23                   ║
+║        │        │                        │ createMap             webpack-internal:///./node_modules/leaflet/dist/leaflet-src.esm.js:4419:10                  ║
+║        │        │                        │ eval                  webpack-internal:///./node_modules/@vue-leaflet/vue-leaflet/dist/vue-leaflet.esm.js:1946:30 ║
+╚════════╧════════╧════════════════════════╧═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.1729.cloud and back
+Memory change: -201 kB
+Leak detected: No
+
+Leaking objects:
+
+╔══════════════════╤═════════╤════════════════════════╗
+║ Object           │ # added │ Retained size increase ║
+╟──────────────────┼─────────┼────────────────────────╢
+║ Detached Comment │ 82      │ +7.54 kB               ║
+╚══════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/private.red.gb.net and back
+Memory change: -717 kB
+Leak detected: No
+
+Leaking objects:
+
+╔══════════════════╤═════════╤════════════════════════╗
+║ Object           │ # added │ Retained size increase ║
+╟──────────────────┼─────────┼────────────────────────╢
+║ Detached Comment │ 82      │ +7.54 kB               ║
+╚══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.wine and back
+Memory change: -266 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.up.railway.app and back
+Memory change: -415 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════════╤═════════╤════════════════════════╗
+║ Object            │ # added │ Retained size increase ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength │ 1       │ +64 B                  ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ Detached Text     │ 22      │ +1.44 kB               ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ Detached Comment  │ 83      │ +7.64 kB               ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ Object            │ 1199    │ +165 kB                ║
+╚═══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.5714285714285714 total):
+
+╔═══════════════════╤═════════════════════╗
+║ Description       │ # added             ║
+╟───────────────────┼─────────────────────╢
+║ span.text-inherit │ 0.14285714285714285 ║
+╚═══════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.lnorb.com and back
+Memory change: -177 kB
+Leak detected: No
+
+Leaking objects:
+
+╔══════════════════╤═════════╤════════════════════════╗
+║ Object           │ # added │ Retained size increase ║
+╟──────────────────┼─────────┼────────────────────────╢
+║ Detached Comment │ 84      │ +7.73 kB               ║
+╚══════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nos.lol and back
+Memory change: -194 kB
+Leak detected: No
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.p2sh.co and back
+Memory change: -273 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.lnprivate.network and back
+Memory change: -254 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.vision and back
+Memory change: -5.97 MB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-3.orba.ca and back
+Memory change: -386 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════════╤═════════╤════════════════════════╗
+║ Object            │ # added │ Retained size increase ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength │ 1       │ +64 B                  ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ (closure)         │ 5       │ +-40 kB                ║
+╚═══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.5714285714285714 total):
+
+╔═══════════════════╤═════════════════════╗
+║ Description       │ # added             ║
+╟───────────────────┼─────────────────────╢
+║ span.text-inherit │ 0.14285714285714285 ║
+╚═══════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/satstacker.cloud and back
+Memory change: -261 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/freedom-relay.herokuapp.com/ws and back
+Memory change: -270 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.freeberty.net and back
+Memory change: -294 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +3.23 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/eden.nostr.land and back
+Memory change: -224 kB
+Leak detected: No
+
+Leaking objects:
+
+╔══════════════════╤═════════╤════════════════════════╗
+║ Object           │ # added │ Retained size increase ║
+╟──────────────────┼─────────┼────────────────────────╢
+║ Detached Comment │ 82      │ +7.54 kB               ║
+╚══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.onsats.org and back
+Memory change: -217 kB
+Leak detected: No
+
+Leaking objects:
+
+╔══════════════════╤═════════╤════════════════════════╗
+║ Object           │ # added │ Retained size increase ║
+╟──────────────────┼─────────┼────────────────────────╢
+║ Detached Comment │ 82      │ +7.54 kB               ║
+╟──────────────────┼─────────┼────────────────────────╢
+║ Object           │ 1202    │ +99.5 kB               ║
+╚══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.untethr.me and back
+Memory change: -126 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +-3.84 kB              ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +-449 B                ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Object          │ 1027    │ +-315 kB               ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.lnmarkets.com and back
+Memory change: -497 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1174    │ +-271 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.unknown.place and back
+Memory change: -422 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.semisol.dev and back
+Memory change: -245 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-pub.semisol.dev and back
+Memory change: -667 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════╤═════════╤════════════════════════╗
+║ Object    │ # added │ Retained size increase ║
+╟───────────┼─────────┼────────────────────────╢
+║ Set       │ 2       │ +1.83 kB               ║
+╟───────────┼─────────┼────────────────────────╢
+║ (closure) │ 37      │ +-3.6 kB               ║
+╟───────────┼─────────┼────────────────────────╢
+║ Object    │ 60      │ +286 kB                ║
+╚═══════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+14.571428571428571 total):
+
+╔═════════════════════════════════════════════════════════════════════════════════╤═════════════════════╗
+║ Description                                                                     │ # added             ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span                                                                            │ 0.2857142857142857  ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.w-4.h-4.bg-green-500.ml-2.block.relative                                   │ 0.14285714285714285 ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-green-600/100.dark:text-green-600/80 │ 11.857142857142858  ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.m-auto.block.align-middle.bg-green-500.text-xl.m-auth.h-5.w-5.rounded-2xl  │ 0.14285714285714285 ║
+╚═════════════════════════════════════════════════════════════════════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-verified.wellorder.net and back
+Memory change: -761 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +5.57 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +913 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+2.7142857142857144 total):
+
+╔═════════════════════════════════════════════════════════════════════════════════╤═════════════════════╗
+║ Description                                                                     │ # added             ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span                                                                            │ 0.2857142857142857  ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-green-600/100.dark:text-green-600/80 │ 3.2857142857142856  ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-red-400.dark:text-red-600            │ 0.42857142857142855 ║
+╚═════════════════════════════════════════════════════════════════════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.drss.io and back
+Failed       : Protocol error (DOMDebugger.getEventListeners): Cannot find context with specified id
+ProtocolError: Protocol error (DOMDebugger.getEventListeners): Cannot find context with specified id
+    at file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/node_modules/puppeteer-core/lib/esm/puppeteer/common/Connection.js:324:24
+    at new Promise (<anonymous>)
+    at CDPSessionImpl.send (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/node_modules/puppeteer-core/lib/esm/puppeteer/common/Connection.js:320:16)
+    at getDomNodesAndListeners (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/metrics/domNodesAndListeners/eventListeners.js:33:44)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async Object.afterIterations (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/metrics/domNodesAndListeners/index.js:19:36)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:160:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+
+
+--------------------
+
+Test         : Go to /relay/nostr.rocks and back
+Memory change: -491 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 974     │ +39.7 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.openchain.fr and back
+Memory change: -285 kB
+Leak detected: No
+
+Leaking objects:
+
+╔══════════════════╤═════════╤════════════════════════╗
+║ Object           │ # added │ Retained size increase ║
+╟──────────────────┼─────────┼────────────────────────╢
+║ Detached Comment │ 59      │ +5.43 kB               ║
+╚══════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.delo.software and back
+Memory change: -263 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1110    │ +74 kB                 ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.info and back
+Memory change: -265 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.pro and back
+Memory change: -344 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ HTMLSpanElement │ 23      │ +2.93 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Text            │ 23      │ +1.46 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Array           │ 221     │ +-19.4 kB              ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+23.142857142857142 total):
+
+╔═════════════════════════════════════════════════════════════════════════════════╤════════════════════╗
+║ Description                                                                     │ # added            ║
+╟─────────────────────────────────────────────────────────────────────────────────┼────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-green-600/100.dark:text-green-600/80 │ 18.142857142857142 ║
+╚═════════════════════════════════════════════════════════════════════════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.minds.com/nostr/v1/ws and back
+Memory change: -269 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.damus.io and back
+Memory change: +3.94 MB
+Leak detected: Yes
+
+Leaking objects:
+
+╔═══════════════════════╤═════════╤════════════════════════╗
+║ Object                │ # added │ Retained size increase ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ SHA512                │ 1       │ +15 B                  ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ BroadcastChannel      │ 9       │ +504 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ ObliviousSet          │ 9       │ +216 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Module                │ 10      │ +205 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Detached InternalNode │ 559     │ +-16 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Array                 │ 8202    │ +209 kB                ║
+╚═══════════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.zaprite.io and back
+Memory change: -270 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.oxtr.dev and back
+Memory change: -240 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════╤═════════╤════════════════════════╗
+║ Object        │ # added │ Retained size increase ║
+╟───────────────┼─────────┼────────────────────────╢
+║ Detached Text │ 20      │ +1.28 kB               ║
+╚═══════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.ono.re and back
+Memory change: -243 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════╤═════════╤════════════════════════╗
+║ Object        │ # added │ Retained size increase ║
+╟───────────────┼─────────┼────────────────────────╢
+║ Set           │ 1       │ +96 B                  ║
+╟───────────────┼─────────┼────────────────────────╢
+║ (closure)     │ 18      │ +-35.6 kB              ║
+╟───────────────┼─────────┼────────────────────────╢
+║ Detached Text │ 20      │ +1.28 kB               ║
+╟───────────────┼─────────┼────────────────────────╢
+║ Object        │ 1202    │ +105 kB                ║
+╚═══════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.grunch.dev and back
+Memory change: -272 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.cynsar.foundation and back
+Memory change: +2.38 MB
+Leak detected: Yes
+
+Leaking objects:
+
+╔═══════════════════════╤═════════╤════════════════════════╗
+║ Object                │ # added │ Retained size increase ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Arguments             │ 3       │ +137 B                 ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ Detached InternalNode │ 591     │ +9.63 kB               ║
+╚═══════════════════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.2857142857142857 total):
+
+╔══════════════════╤═════════════════════╤═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event            │ # added             │ Nodes                                                                                                                                                                                                                                                                                                                       ║
+╟──────────────────┼─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ keydown          │ 0.14285714285714285 │ Window, button#headlessui-disclosure-button-16.inline-flex.items-center.rounded-md.p-2.text-gray-400.hover:bg-gray-100.dark:hover:bg-black/50.hover:text-gray-500.focus:outline-none.focus:ring-2.focus:ring-inset.focus:ring-indigo-500 (+0.14285714285714285), button#headlessui-popover-button-11 (+0.14285714285714285) ║
+╟──────────────────┼─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ visibilitychange │ 0.14285714285714285 │ #document                                                                                                                                                                                                                                                                                                                   ║
+╚══════════════════╧═════════════════════╧═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-pub.wellorder.net and back
+Memory change: -255 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1076    │ +70 kB                 ║
+╚════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═══════════════════╤═════════════════════╗
+║ Description       │ # added             ║
+╟───────────────────┼─────────────────────╢
+║ span.text-inherit │ 0.14285714285714285 ║
+╚═══════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.oldcity-bitcoiners.info and back
+Memory change: -256 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.bitid.nz and back
+Memory change: -216 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1414    │ +120 kB                ║
+╚════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔══════════════════╤═════════════════════╤═══════════╗
+║ Event            │ # added             │ Nodes     ║
+╟──────────────────┼─────────────────────┼───────────╢
+║ visibilitychange │ 0.14285714285714285 │ #document ║
+╚══════════════════╧═════════════════════╧═══════════╝
+
+Leaking DOM nodes (+0.42857142857142855 total):
+
+╔═══════════════════╤═════════════════════╗
+║ Description       │ # added             ║
+╟───────────────────┼─────────────────────╢
+║ div               │ 0.2857142857142857  ║
+╟───────────────────┼─────────────────────╢
+║ span.text-inherit │ 0.14285714285714285 ║
+╚═══════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.xyz and back
+Memory change: -54.4 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════════╤═════════╤════════════════════════╗
+║ Object            │ # added │ Retained size increase ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength │ 1       │ +64 B                  ║
+╚═══════════════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.42857142857142855 total):
+
+╔══════════════════╤════════════════════╤═══════════╗
+║ Event            │ # added            │ Nodes     ║
+╟──────────────────┼────────────────────┼───────────╢
+║ visibilitychange │ 0.5714285714285714 │ #document ║
+╚══════════════════╧════════════════════╧═══════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.futohq.com and back
+Memory change: -239 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.rdfriedl.com and back
+Memory change: -278 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +3.25 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +150 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔═══════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event │ # added             │ Nodes                                                                                                                                                                        ║
+╟───────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ click │ 0.14285714285714285 │ button.text-xs.-mt-1.5.my-1.py-1.px-3.rounded.border-b-3.border-slate-700.bg-slate-500.font-bold.text-white.hover:border-slate-500.hover:bg-slate-400 (+0.14285714285714285) ║
+╚═══════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+Leaking DOM nodes (+0.7142857142857143 total):
+
+╔═════════════╤════════════════════╗
+║ Description │ # added            ║
+╟─────────────┼────────────────────╢
+║ Total       │ 0.7142857142857143 ║
+╚═════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.farscapian.com and back
+Memory change: -247 kB
+Leak detected: No
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔═══════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event │ # added             │ Nodes                                                                                                                                                                        ║
+╟───────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ click │ 0.14285714285714285 │ button.text-xs.-mt-1.5.my-1.py-1.px-3.rounded.border-b-3.border-slate-700.bg-slate-500.font-bold.text-white.hover:border-slate-500.hover:bg-slate-400 (+0.14285714285714285) ║
+╚═══════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+Leaking DOM nodes (+0.7142857142857143 total):
+
+╔═════════════╤════════════════════╗
+║ Description │ # added            ║
+╟─────────────┼────────────────────╢
+║ Total       │ 0.7142857142857143 ║
+╚═════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/astral.ninja and back
+Memory change: -256 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1172    │ +82.7 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.sovereign-stack.org and back
+Memory change: -158 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════════╤═════════╤════════════════════════╗
+║ Object              │ # added │ Retained size increase ║
+╟─────────────────────┼─────────┼────────────────────────╢
+║ CSSStyleDeclaration │ 1       │ +23 B                  ║
+╟─────────────────────┼─────────┼────────────────────────╢
+║ Promise             │ 2       │ +192 B                 ║
+╟─────────────────────┼─────────┼────────────────────────╢
+║ Text                │ 4       │ +231 B                 ║
+╚═════════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.sandwich.farm and back
+Failed       : Element a[href="/relay/nostr.sandwich.farm"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.sandwich.farm"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.zebedee.cloud and back
+Failed       : Element a[href="/relay/nostr.zebedee.cloud"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.zebedee.cloud"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /relay/nostr-2.zebedee.cloud and back
+Failed       : Element a[href="/relay/nostr-2.zebedee.cloud"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr-2.zebedee.cloud"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /relay/nostr.nymsrelay.com and back
+Failed       : Element a[href="/relay/nostr.nymsrelay.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.nymsrelay.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /relay/expensive-relay.fiatjaf.com and back
+Failed       : Element a[href="/relay/expensive-relay.fiatjaf.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/expensive-relay.fiatjaf.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/relay.kronkltd.net and back
+Failed       : Element a[href="/relay/relay.kronkltd.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/relay.kronkltd.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/relay.r3d.red and back
+Failed       : Element a[href="/relay/relay.r3d.red"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/relay.r3d.red"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/relay.valireum.net and back
+Failed       : Element a[href="/relay/relay.valireum.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/relay.valireum.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.fmt.wiz.biz and back
+Failed       : Element a[href="/relay/nostr.fmt.wiz.biz"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.fmt.wiz.biz"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.v0l.io and back
+Failed       : Element a[href="/relay/nostr.v0l.io"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.v0l.io"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/relay.cryptocculture.com and back
+Failed       : Element a[href="/relay/relay.cryptocculture.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/relay.cryptocculture.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.fly.dev and back
+Failed       : Element a[href="/relay/nostr.fly.dev"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.fly.dev"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.nordlysln.net and back
+Failed       : Element a[href="/relay/nostr.nordlysln.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.nordlysln.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.gkbrk.com and back
+Failed       : Element a[href="/relay/nostr-relay.gkbrk.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr-relay.gkbrk.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.zerofeerouting.com and back
+Failed       : Element a[href="/relay/nostr.zerofeerouting.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.zerofeerouting.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/no.str.cr and back
+Failed       : Element a[href="/relay/no.str.cr"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/no.str.cr"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.ch and back
+Failed       : Element a[href="/relay/relay.nostr.ch"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/relay.nostr.ch"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/rsslay.nostr.net and back
+Failed       : Element a[href="/relay/rsslay.nostr.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/rsslay.nostr.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.cercatrova.me and back
+Failed       : Element a[href="/relay/nostr.cercatrova.me"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.cercatrova.me"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/public.nostr.swissrouting.com and back
+Failed       : Element a[href="/relay/public.nostr.swissrouting.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/public.nostr.swissrouting.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.nonce.academy and back
+Memory change: -162 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Map    │ 96      │ +23.2 kB               ║
+╟────────┼─────────┼────────────────────────╢
+║ Set    │ 976     │ +101 kB                ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.rewardsbunny.com and back
+Memory change: -259 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.slothy.win and back
+Memory change: -260 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-verif.slothy.win and back
+Memory change: -271 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +2.33 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.coinos.io and back
+Memory change: -215 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1197    │ +101 kB                ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostropolis.xyz/websocket and back
+Memory change: -195 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════════╤═════════╤════════════════════════╗
+║ Object            │ # added │ Retained size increase ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ (closure)         │ 1       │ +150 kB                ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ Detached Comment  │ 1       │ +92 B                  ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength │ 1       │ +64 B                  ║
+╚═══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+1.7142857142857142 total):
+
+╔══════════════════════════════════════════════════════════════════════╤═════════════════════╗
+║ Description                                                          │ # added             ║
+╟──────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.text-inherit                                                    │ 0.14285714285714285 ║
+╟──────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-red-400.dark:text-red-600 │ 1.1428571428571428  ║
+╚══════════════════════════════════════════════════════════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/lv01.tater.ninja and back
+Memory change: -312 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-2.orba.ca and back
+Memory change: -272 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.orba.ca and back
+Memory change: -232 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1354    │ +94.1 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.supremestack.xyz and back
+Memory change: -310 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +68 B                  ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +1.38 kB               ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostrrelay.com and back
+Memory change: -401 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-01.bolt.observer and back
+Memory change: -250 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1317    │ +96.8 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.mom and back
+Memory change: -260 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +1.08 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +9.51 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Set             │ 975     │ +102 kB                ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.au and back
+Memory change: -199 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1115    │ +74.4 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.swiss-enigma.ch and back
+Memory change: -383 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.oooxxx.ml and back
+Memory change: -245 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.yael.at and back
+Failed       : Element a[href="/relay/nostr.yael.at"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.yael.at"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.trustbtc.org and back
+Failed       : Element a[href="/relay/nostr-relay.trustbtc.org"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr-relay.trustbtc.org"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /relay/nostr.namek.link and back
+Failed       : Element a[href="/relay/nostr.namek.link"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.namek.link"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.wolfandcrow.tech and back
+Memory change: -229 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1103    │ +83.9 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔═══════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event │ # added             │ Nodes                                                                                                                                                                        ║
+╟───────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ click │ 0.14285714285714285 │ button.text-xs.-mt-1.5.my-1.py-1.px-3.rounded.border-b-3.border-slate-700.bg-slate-500.font-bold.text-white.hover:border-slate-500.hover:bg-slate-400 (+0.14285714285714285) ║
+╚═══════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+Leaking DOM nodes (+0.7142857142857143 total):
+
+╔═════════════╤════════════════════╗
+║ Description │ # added            ║
+╟─────────────┼────────────────────╢
+║ Total       │ 0.7142857142857143 ║
+╚═════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.8e23.net and back
+Failed       : Element a[href="/relay/nostr.8e23.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.8e23.net"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.actn.io and back
+Failed       : Element a[href="/relay/nostr.actn.io"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.actn.io"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /relay/relay.sendstr.com and back
+Failed       : Element a[href="/relay/relay.sendstr.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/relay.sendstr.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+    at async runWithSpinner (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:77:13)
+
+
+--------------------
+
+Test         : Go to /relay/nostr.satsophone.tk and back
+Failed       : Element a[href="/relay/nostr.satsophone.tk"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.satsophone.tk"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.derekross.me and back
+Failed       : Element a[href="/relay/nostr-relay.derekross.me"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr-relay.derekross.me"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.jiashanlu.synology.me and back
+Failed       : Element a[href="/relay/nostr.jiashanlu.synology.me"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.jiashanlu.synology.me"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.radixrat.com and back
+Failed       : Element a[href="/relay/nostr.radixrat.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.radixrat.com"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.shawnyeager.net and back
+Memory change: -209 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.dev.kronkltd.net and back
+Memory change: -242 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +580 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr2.namek.link and back
+Memory change: +2.56 MB
+Leak detected: Yes
+
+Leaking objects:
+
+╔═══════════════════════╤═════════╤════════════════════════╗
+║ Object                │ # added │ Retained size increase ║
+╟───────────────────────┼─────────┼────────────────────────╢
+║ V8EventHandlerNonNull │ 2       │ +142 B                 ║
+╚═══════════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-dev.wellorder.net and back
+Memory change: -481 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.mwmdev.com and back
+Memory change: -264 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1168    │ +90.3 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.21spirits.io and back
+Memory change: -234 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ DOMRectReadOnly │ 2       │ +112 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Detached Text   │ 20      │ +1.28 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Object          │ 1201    │ +105 kB                ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.freedomnode.com and back
+Memory change: -274 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.minds.io/nostr/v1/ws and back
+Memory change: -270 kB
+Leak detected: No
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════════════════════════════════════════════════════════════════════════╤═════════════════════╗
+║ Description                                                                     │ # added             ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.text-inherit                                                               │ 0.14285714285714285 ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-green-600/100.dark:text-green-600/80 │ 0.2857142857142857  ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.font-normal.italic.text-black/30.dark:text-white/30                        │ 0.14285714285714285 ║
+╟─────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-red-400.dark:text-red-600            │ 0.14285714285714285 ║
+╚═════════════════════════════════════════════════════════════════════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.einundzwanzig.space and back
+Failed       : Element a[href="/relay/nostr.einundzwanzig.space"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+TypeError: Element a[href="/relay/nostr.einundzwanzig.space"] is not clickable or is not an in-page SPA navigation 
+element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:36:13)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+
+TypeError: element.click is not a function
+    at clickFirstVisible (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:34:21)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:95:5)
+    at async iteration (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/defaultScenario.js:88:3)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:156:11
+    at async runWithCdpSession (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:105:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:144:15
+    at async runOnFreshPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:36:14)
+    at async runIterationOnPage (file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:142:13)
+    at async file:///Users/sandwich/.npm/_npx/21814/lib/node_modules/fuite/src/index.js:200:17
+
+
+--------------------
+
+Test         : Go to /relay/nostr.d11n.net and back
+Memory change: -270 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr1.tunnelsats.com and back
+Memory change: -305 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +1.14 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +1.6 kB                ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.tunnelsats.com and back
+Memory change: +7.51 MB
+Leak detected: Yes
+
+Leaking objects:
+
+╔═══════════════╤═════════╤════════════════════════╗
+║ Object        │ # added │ Retained size increase ║
+╟───────────────┼─────────┼────────────────────────╢
+║ Promise       │ 4       │ +411 B                 ║
+╟───────────────┼─────────┼────────────────────────╢
+║ ObjectRefImpl │ 7       │ +196 B                 ║
+╟───────────────┼─────────┼────────────────────────╢
+║ Detached Text │ 1069    │ +70.4 kB               ║
+╟───────────────┼─────────┼────────────────────────╢
+║ Set           │ 9134    │ +2.71 MB               ║
+╚═══════════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.8571428571428571 total):
+
+╔══════════════════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event            │ # added             │ Nodes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ║
+╟──────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ keydown          │ 0.42857142857142855 │ Window, button#headlessui-disclosure-button-21.inline-flex.items-center.justify-center.rounded-md.p-2.text-gray-400.hover:bg-gray-700.hover:text-white.focus:outline-none.focus:ring-2.focus:ring-inset.focus:ring-white (+0.14285714285714285), button#headlessui-disclosure-button-36.inline-flex.items-center.rounded-md.p-2.text-gray-400.hover:bg-gray-100.dark:hover:bg-black/50.hover:text-gray-500.focus:outline-none.focus:ring-2.focus:ring-inset.focus:ring-indigo-500 (+0.14285714285714285), button#headlessui-popover-button-31 (+0.14285714285714285) ║
+╟──────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ visibilitychange │ 0.42857142857142855 │ #document                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ║
+╚══════════════════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.leximaster.com and back
+Memory change: -251 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.hugo.md and back
+Memory change: -247 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/mule.platanito.org and back
+Memory change: -3.16 MB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.ryzizub.com and back
+Memory change: -255 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.w3ird.tech and back
+Memory change: -225 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.robotechy.com and back
+Memory change: -251 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1174    │ +87.6 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.stoner.com and back
+Memory change: -245 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostrmoto.xyz and back
+Memory change: -247 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.boring.surf and back
+Memory change: -3.05 MB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +3.47 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +-97.4 kB              ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔═══════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event │ # added             │ Nodes                                                                                                                                                                        ║
+╟───────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ click │ 0.14285714285714285 │ button.text-xs.-mt-1.5.my-1.py-1.px-3.rounded.border-b-3.border-slate-700.bg-slate-500.font-bold.text-white.hover:border-slate-500.hover:bg-slate-400 (+0.14285714285714285) ║
+╚═══════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.bongbong.com and back
+Memory change: -130 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.gruntwerk.org and back
+Memory change: -240 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.mado.io and back
+Memory change: -246 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.corebreach.com and back
+Memory change: -266 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.hyperlingo.com and back
+Memory change: -280 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +3.95 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +150 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.ethtozero.fr and back
+Memory change: -387 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════════╤═════════╤════════════════════════╗
+║ Object            │ # added │ Retained size increase ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength │ 1       │ +64 B                  ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ Array             │ 1176    │ +75.9 kB               ║
+╚═══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.5714285714285714 total):
+
+╔═══════════════════╤═════════════════════╗
+║ Description       │ # added             ║
+╟───────────────────┼─────────────────────╢
+║ span.text-inherit │ 0.14285714285714285 ║
+╚═══════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.digitalmob.ro and back
+Memory change: -276 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +3.93 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +157 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Object          │ 1023    │ +52 kB                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Array           │ 1085    │ +83.8 kB               ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔═══════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event │ # added             │ Nodes                                                                                                                                                                        ║
+╟───────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ click │ 0.14285714285714285 │ button.text-xs.-mt-1.5.my-1.py-1.px-3.rounded.border-b-3.border-slate-700.bg-slate-500.font-bold.text-white.hover:border-slate-500.hover:bg-slate-400 (+0.14285714285714285) ║
+╚═══════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+Leaking DOM nodes (+0.7142857142857143 total):
+
+╔═════════════╤════════════════════╗
+║ Description │ # added            ║
+╟─────────────┼────────────────────╢
+║ Total       │ 0.7142857142857143 ║
+╚═════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/jiggytom.ddns.net and back
+Memory change: -246 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════╤═════════╤════════════════════════╗
+║ Object    │ # added │ Retained size increase ║
+╟───────────┼─────────┼────────────────────────╢
+║ (closure) │ 96      │ +-25.6 kB              ║
+╚═══════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.sectiontwo.org and back
+Memory change: -218 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.roundrockbitcoiners.com and back
+Memory change: -224 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.nodeofsven.com and back
+Memory change: -251 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1174    │ +87.8 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.jimc.me and back
+Memory change: -411 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════════╤═════════╤════════════════════════╗
+║ Object            │ # added │ Retained size increase ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl   │ 1       │ +2.16 kB               ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect    │ 1       │ +-7.3 kB               ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength │ 1       │ +64 B                  ║
+╚═══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.5714285714285714 total):
+
+╔═══════════════════╤═════════════════════╗
+║ Description       │ # added             ║
+╟───────────────────┼─────────────────────╢
+║ span.text-inherit │ 0.14285714285714285 ║
+╚═══════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.utxo.lol and back
+Memory change: -274 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +3.95 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +163 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Object          │ 1023    │ +54.1 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Array           │ 1085    │ +79.2 kB               ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔═══════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event │ # added             │ Nodes                                                                                                                                                                        ║
+╟───────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ click │ 0.14285714285714285 │ button.text-xs.-mt-1.5.my-1.py-1.px-3.rounded.border-b-3.border-slate-700.bg-slate-500.font-bold.text-white.hover:border-slate-500.hover:bg-slate-400 (+0.14285714285714285) ║
+╚═══════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+Leaking DOM nodes (+0.7142857142857143 total):
+
+╔═════════════╤════════════════════╗
+║ Description │ # added            ║
+╟─────────────┼────────────────────╢
+║ Total       │ 0.7142857142857143 ║
+╚═════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.lexingtonbitcoin.org and back
+Memory change: -261 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.mikedilger.com and back
+Memory change: -256 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.f44.dev and back
+Memory change: -260 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nyx.ma and back
+Memory change: -240 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════╤═════════╤════════════════════════╗
+║ Object    │ # added │ Retained size increase ║
+╟───────────┼─────────┼────────────────────────╢
+║ (closure) │ 17      │ +-46.2 kB              ║
+╚═══════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.walletofsatoshi.com and back
+Memory change: -254 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1174    │ +87.7 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.shmueli.org and back
+Memory change: -3.18 MB
+Leak detected: No
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔═══════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event │ # added             │ Nodes                                                                                                                                                                        ║
+╟───────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ click │ 0.14285714285714285 │ button.text-xs.-mt-1.5.my-1.py-1.px-3.rounded.border-b-3.border-slate-700.bg-slate-500.font-bold.text-white.hover:border-slate-500.hover:bg-slate-400 (+0.14285714285714285) ║
+╚═══════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═══════════════════════════════════════════════════════╤═════════════════════╗
+║ Description                                           │ # added             ║
+╟───────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-orange-500 │ 0.14285714285714285 ║
+╚═══════════════════════════════════════════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/wizards.wormrobot.org and back
+Memory change: -272 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +3.93 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ Array           │ 1082    │ +76.5 kB               ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.orangepill.dev and back
+Memory change: -278 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +3.95 kB               ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking event listeners (+0.14285714285714285 total):
+
+╔═══════╤═════════════════════╤══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Event │ # added             │ Nodes                                                                                                                                                                        ║
+╟───────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ click │ 0.14285714285714285 │ button.text-xs.-mt-1.5.my-1.py-1.px-3.rounded.border-b-3.border-slate-700.bg-slate-500.font-bold.text-white.hover:border-slate-500.hover:bg-slate-400 (+0.14285714285714285) ║
+╚═══════╧═════════════════════╧══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+Leaking DOM nodes (+0.7142857142857143 total):
+
+╔═════════════╤════════════════════╗
+║ Description │ # added            ║
+╟─────────────┼────────────────────╢
+║ Total       │ 0.7142857142857143 ║
+╚═════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/paid.no.str.cr and back
+Memory change: -258 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.sovbit.com and back
+Memory change: -256 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1174    │ +86.9 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.datamagik.com and back
+Memory change: -252 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostrid.com and back
+Memory change: -3.09 MB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════════╤═════════╤════════════════════════╗
+║ Object            │ # added │ Retained size increase ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength │ 1       │ +64 B                  ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ Promise           │ 100     │ +7.75 kB               ║
+╚═══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr1.starbackr.me and back
+Memory change: -413 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.schnitzel.world and back
+Memory change: -203 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.express and back
+Memory change: -273 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/sg.qemura.xyz and back
+Memory change: -278 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.formigator.eu and back
+Memory change: -263 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1177    │ +94 kB                 ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.xpersona.net and back
+Memory change: -278 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.n057r.club and back
+Memory change: -279 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.digitalreformation.info and back
+Memory change: -278 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.gromeul.eu and back
+Memory change: -263 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.alekberg.net and back
+Memory change: -361 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr2.actn.io and back
+Memory change: -277 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Set    │ 1       │ +443 B                 ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.usebitcoin.space and back
+Memory change: -261 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1123    │ +80.1 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostrich.friendship.tw and back
+Memory change: -269 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1110    │ +77 kB                 ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.mustardnodes.com and back
+Memory change: -280 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1119    │ +77.2 kB               ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1179    │ +89.4 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-alpha.gruntwerk.org and back
+Memory change: -265 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.australiaeast.cloudapp.azure.com and back
+Memory change: -259 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.bch.ninja and back
+Memory change: -274 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.smoove.net and back
+Memory change: -267 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.j3s7m4n.com and back
+Memory change: -268 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.demovement.net and back
+Memory change: -266 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Set    │ 1       │ +96 B                  ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.thesimplekid.com and back
+Memory change: -3.04 MB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +958 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +-98 kB                ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.42857142857142855 total):
+
+╔══════════════════════════════════════════════════════════════════════╤════════════════════╗
+║ Description                                                          │ # added            ║
+╟──────────────────────────────────────────────────────────────────────┼────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-red-400.dark:text-red-600 │ 0.2857142857142857 ║
+╚══════════════════════════════════════════════════════════════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.aozing.com and back
+Memory change: -285 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.blocs.fr and back
+Memory change: -304 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +782 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/no.str.watch and back
+Memory change: -267 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.vulpem.com and back
+Memory change: -242 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Set    │ 1       │ +425 B                 ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1203    │ +105 kB                ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1260    │ +95.7 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/btc.klendazu.com and back
+Memory change: -277 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.hackerman.pro and back
+Memory change: -3.19 MB
+Leak detected: No
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.mrbits.it and back
+Memory change: -310 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +41 B                  ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.coollamer.com and back
+Memory change: -292 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +68 B                  ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +1.73 kB               ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/node01.nostress.cc and back
+Memory change: -269 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.zenon.wtf and back
+Memory change: -266 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.massmux.com and back
+Memory change: -273 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/no.contry.xyz and back
+Memory change: -328 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.bg and back
+Memory change: -277 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.uselessshit.co and back
+Memory change: -280 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1180    │ +82.6 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/brb.io and back
+Memory change: -347 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════╤═════════╤════════════════════════╗
+║ Object    │ # added │ Retained size increase ║
+╟───────────┼─────────┼────────────────────────╢
+║ (closure) │ 1       │ +-46.6 kB              ║
+╚═══════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostream.gromeul.eu and back
+Memory change: -263 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +58 B                  ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.ro and back
+Memory change: -242 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.developer.li and back
+Memory change: -279 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.screaminglife.io and back
+Memory change: -281 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/deschooling.us and back
+Memory change: -266 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay-pub.deschooling.us and back
+Memory change: -276 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.bitcoiner.social and back
+Memory change: -258 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Set    │ 71      │ +6.82 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr-pub1.southflorida.ninja and back
+Memory change: -260 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.ncsa.illinois.edu and back
+Memory change: -3.06 MB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +944 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +-98 kB                ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.2857142857142857 total):
+
+╔════════════════════════════════════════════════════════════════════════════════╤═════════════════════╗
+║ Description                                                                    │ # added             ║
+╟────────────────────────────────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-green-600/80.dark:text-green-400/50 │ 0.14285714285714285 ║
+╚════════════════════════════════════════════════════════════════════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.relayer.se and back
+Memory change: -23.7 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════════════╤═════════╤════════════════════════╗
+║ Object            │ # added │ Retained size increase ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl   │ 1       │ +68 B                  ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ Promise           │ 1       │ +208 B                 ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect    │ 1       │ +2.93 kB               ║
+╟───────────────────┼─────────┼────────────────────────╢
+║ SVGAnimatedLength │ 1       │ +64 B                  ║
+╚═══════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.5714285714285714 total):
+
+╔═════════════╤════════════════════╗
+║ Description │ # added            ║
+╟─────────────┼────────────────────╢
+║ Total       │ 0.5714285714285714 ║
+╚═════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.noones.com and back
+Memory change: -276 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1170    │ +81.8 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.lu.ke and back
+Memory change: -255 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostrgraph.net and back
+Memory change: -266 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/private-nostr.v0l.io and back
+Memory change: -267 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostrprotocol.net and back
+Memory change: -348 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.itssilvestre.com and back
+Memory change: -280 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.whoop.ph and back
+Memory change: -277 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.zoomout.chat and back
+Memory change: -283 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.chaker.net and back
+Memory change: -247 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-1.nbo.angani.co and back
+Memory change: -257 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr3.actn.io and back
+Memory change: -3.03 MB
+Leak detected: No
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═══════════════════════════════════════════════════════╤═════════════════════╗
+║ Description                                           │ # added             ║
+╟───────────────────────────────────────────────────────┼─────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-orange-500 │ 0.14285714285714285 ║
+╚═══════════════════════════════════════════════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.nu and back
+Memory change: -268 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.taxi and back
+Memory change: -273 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.easydns.ca and back
+Memory change: -263 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.bostonbtc.com and back
+Memory change: -273 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/no-str.org and back
+Memory change: +2.59 MB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/knostr.neutrine.com and back
+Memory change: -272 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostrical.com and back
+Memory change: -309 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +-6 B                  ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.milou.lol and back
+Memory change: -275 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.snort.social and back
+Memory change: -274 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.pobblelabs.org and back
+Memory change: -267 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.bitcoin.ninja and back
+Memory change: -3.19 MB
+Leak detected: No
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/pow32.nostr.land and back
+Memory change: -268 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.simatime.com and back
+Memory change: -271 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostrex.fly.dev and back
+Memory change: -263 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.kollider.xyz and back
+Memory change: -270 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.band and back
+Memory change: -277 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nosphr.com and back
+Memory change: -3.21 MB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +958 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +-98 kB                ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/rsslay.nostr.moe and back
+Memory change: -274 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.scot and back
+Memory change: -282 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostrich.de and back
+Memory change: -275 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.mouton.dev and back
+Memory change: -356 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.handyjunky.com and back
+Memory change: -273 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1167    │ +85.2 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/student.chadpolytechnic.com and back
+Memory change: -267 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/e.nos.lol and back
+Memory change: -275 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.moe and back
+Memory change: -298 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +109 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +136 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.current.fyi and back
+Memory change: -285 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1105    │ +70.5 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostr-latam.link and back
+Memory change: -278 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.klabo.blog and back
+Memory change: -277 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1166    │ +85.6 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.localhost.re and back
+Memory change: -264 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.coinsamba.com.br and back
+Memory change: -280 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1179    │ +86.7 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/deconomy-netser.ddns.net:2121 and back
+Memory change: -305 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 99      │ +20.6 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.band/restricted and back
+Memory change: -265 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Set    │ 1       │ +96 B                  ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/tmp-relay.cesc.trade and back
+Memory change: -270 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/foolay.nostr.moe and back
+Memory change: -317 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.21m.fr and back
+Memory change: -3.03 MB
+Leak detected: No
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════════════════════════════════════════════════════════════════════════╤════════════════════╗
+║ Description                                                                     │ # added            ║
+╟─────────────────────────────────────────────────────────────────────────────────┼────────────────────╢
+║ span.sm:px-6.text-sm.font-bold.h-full.text-green-600/100.dark:text-green-600/80 │ 0.2857142857142857 ║
+╚═════════════════════════════════════════════════════════════════════════════════╧════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/zur.nostr.sx and back
+Memory change: -290 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-relay.texashedge.xyz and back
+Memory change: -360 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/spleenrider.herokuapp.com and back
+Memory change: -352 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═══════════╤═════════╤════════════════════════╗
+║ Object    │ # added │ Retained size increase ║
+╟───────────┼─────────┼────────────────────────╢
+║ (closure) │ 1       │ +-46.4 kB              ║
+╚═══════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.bitcoin.sex and back
+Memory change: -265 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostrzoo.com and back
+Memory change: -238 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1259    │ +96.5 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/blg.nostr.sx and back
+Memory change: -272 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.1f52b.xyz and back
+Memory change: -267 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.blockchaincaffe.it and back
+Memory change: -275 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/freespeech.casa and back
+Memory change: -264 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr-bg01.ciph.rs and back
+Memory change: -314 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.plebstr.com and back
+Memory change: -267 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/knostr.neutrine.com:8880 and back
+Memory change: -3.06 MB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +985 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +-98 kB                ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.ahaspharos.de and back
+Memory change: -379 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.argdx.net and back
+Memory change: -269 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/global.relay.red and back
+Memory change: -271 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.app.runonflux.io and back
+Memory change: -273 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1121    │ +79.6 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.bitcoin-21.org and back
+Memory change: -270 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.arguflow.gg and back
+Memory change: -3.03 MB
+Leak detected: No
+
+Leaking DOM nodes (+0.14285714285714285 total):
+
+╔═════════════╤═════════════════════╗
+║ Description │ # added             ║
+╟─────────────┼─────────────────────╢
+║ Total       │ 0.14285714285714285 ║
+╚═════════════╧═════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/relay.nostr.africa and back
+Memory change: -268 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1110    │ +74.4 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.snblago.com and back
+Memory change: -299 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +768 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +227 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.com.de and back
+Memory change: -386 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/relay.nostrview.com and back
+Memory change: -267 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/Merrcurr.up.railway.app and back
+Memory change: -257 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr.bingtech.tk and back
+Memory change: -272 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/nostr01.opencult.com and back
+Memory change: -301 kB
+Leak detected: No
+
+Leaking objects:
+
+╔═════════════════╤═════════╤════════════════════════╗
+║ Object          │ # added │ Retained size increase ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ComputedRefImpl │ 1       │ +782 B                 ║
+╟─────────────────┼─────────┼────────────────────────╢
+║ ReactiveEffect  │ 1       │ +134 B                 ║
+╚═════════════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostream.denizenid.com and back
+Memory change: -273 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/puravida.nostr.land and back
+Memory change: -268 kB
+Leak detected: No
+
+--------------------
+
+Test         : Go to /relay/1.noztr.com and back
+Memory change: -273 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Array  │ 1179    │ +88.2 kB               ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+
+Test         : Go to /relay/nostr.soscary.net and back
+Memory change: -251 kB
+Leak detected: No
+
+Leaking objects:
+
+╔════════╤═════════╤════════════════════════╗
+║ Object │ # added │ Retained size increase ║
+╟────────┼─────────┼────────────────────────╢
+║ Object │ 1116    │ +80 kB                 ║
+╚════════╧═════════╧════════════════════════╝
+
+--------------------
+

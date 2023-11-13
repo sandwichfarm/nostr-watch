@@ -1,0 +1,44 @@
+messages:
+  11cb5ca38038c3eb41bd014814f6e2e18da18ff1:
+    text: "we don't accept any events"
+    code: "CONNECT_ONLY"
+
+  1003d4ec1466033d0dcc4a1babc6c5f409784593:
+    text: "NIP-05 verification needed to publish events"
+    code: "NIP_05_REQUIRED"
+
+  2e36f6955db854ac51105aa198fdf37cec694135:
+    text: "[ERROR]: Pubkey is not whitelisted."
+    code: "WHITELIST_REQUIRED"
+
+  5d6c9cb06d52c3f0456cc08fdf883dbe19b3c782:
+    text: "failed to save event from 5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541"
+    code: "BLOCKS_WRITE_STATUS_CHECK"
+  2c791b26eda3205558c235973ca84cc68a80e5e0:
+    text: "pubkey is not allowed to publish to this relay"
+    code: "BLOCKS_WRITE_STATUS_CHECK"
+  203442bfdf9f7f1562f1164b6dc79fefb42790ac:
+    text: 'failed to save event 41ce9bc50da77dda5542f020370ecc2b056d8f2be93c1cedf1bf57efcab095b0: pq: duplicate key value violates unique constraint "ididx"'
+    code: "BLOCKS_WRITE_STATUS_CHECK"
+  af155223f0e51dea64560c4ef6dc341a2775af76:
+    text: 'failed to save event from 5a462fa6044b4b8da318528a6987a45e3adf832bd1c64bd6910eacfecdf07541'
+    code: 'BLOCKS_WRITE_STATUS_CHECK'
+codes:
+  CONNECT_ONLY:
+    type: "very_restricted"
+    description: "This relay can be connected to, but has zero read/write access"
+  READ_ONLY:
+    type: "write_restricted"
+    description: "This relay only access read queries"
+  WRITE_ONLY:
+    type: "read_restricted"
+    description: "This relay only accepts the publishing of events"
+  NIP_05_REQUIRED:
+    type: "write_restricted"
+    description: "This relay only accepts the publishing of events from NIP-05 verified public keys"
+  WHITELIST_REQUIRED:
+    type: "write_restricted"
+    description: "This relay only accepts the publishing of events from whitelisted public keys"
+  BLOCKS_WRITE_STATUS_CHECK:
+    type: "maybe_public"
+    description: "This relay blocks the events that enable us to test writing to the relay, so there's some uncertainty"

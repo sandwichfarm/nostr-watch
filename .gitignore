@@ -1,4 +1,8 @@
 yarn.lock
 node_modules
 *.wasm
-out.js
+public/main.js
+lib/nostrwatch-js
+dist
+yarn-error.log
+.env

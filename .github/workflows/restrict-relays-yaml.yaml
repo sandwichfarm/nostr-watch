@@ -1,4 +1,4 @@
-name: Relay PR Response
+name: Restrict relays.yaml
 
 on:
   pull_request:

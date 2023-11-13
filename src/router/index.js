@@ -20,7 +20,7 @@ const routes = [
         name: 'relaysAdd',
         path: '/relays/add',
         beforeEnter() {
-            window.location.href = 'https://github.com/dskvr/nostr-watch/edit/main/relays.yaml'
+            window.location.href = 'https://github.com/sandwichfarm/nostr-watch/wiki/How-to-add-a-Relay-to-nostrwatch'
         },
         component: RedirectComponent
     },

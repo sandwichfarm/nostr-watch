@@ -1,4 +1,4 @@
-relays:
+- wss://relay.snort.social
 - wss://sg.unfiltered.zone
 - wss://relay.nostrfiles.dev
 - wss://nostr.coinfundit.com
@@ -477,3 +477,5 @@ relays:
 - wss://nostr.sixteensixtyone.com
 - wss://nostr.1661.io
 - wss://ftp.halifax.rwth-aachen.de/nostr
+- wss://nostr.tavux.tech
+- wss://nostr.papanode.com

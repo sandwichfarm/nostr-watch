@@ -1,9 +1,0 @@
-services:
-    nostr-relay-registry:
-       ports:
-            - '80:80'
-       restart: always
-       logging:
-            options:
-                max-size: 1g
-       image: nostr-relay-status

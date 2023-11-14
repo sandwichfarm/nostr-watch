@@ -1,3 +1,4 @@
+relays:
 - wss://relay.snort.social
 - wss://sg.unfiltered.zone
 - wss://relay.nostrfiles.dev

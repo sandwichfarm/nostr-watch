@@ -1,4 +1,4 @@
-- wss://relay.snort.social
+relays:
 - wss://sg.unfiltered.zone
 - wss://relay.nostrfiles.dev
 - wss://nostr.coinfundit.com

@@ -1,0 +1,24 @@
+{
+  "name": "@nostrwatch/nocap",
+  "version": "0.1.0",
+  "main": "index.js",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "vitest",
+    "test-ui": "vitest --ui"
+  },
+  "dependencies": {
+    "fetch-h2": "3.0.2",
+    "get-ssl-certificate": "2.3.3",
+    "jest": "29.7.0",
+    "promise-deferred": "2.0.4",
+    "ssl-checker": "2.0.8",
+    "ssl-validator": "3.0.0",
+    "vitest": "0.34.6"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "7.23.3",
+    "@vitest/ui": "0.34.6"
+  }
+}

@@ -1,18 +1,8 @@
 {
-  "packages": [
-    "nostrwatch-api",
-    "nostrwatch-db",
-    "nostrwatch-discovery",
-    "nostrwatch-js",
-    "nostrwatch-publisher",
-    "nostrwatch-relay",
-    "nostrwatch-relay-daemon",
-    "nostrwatch-status",
-    "nostrwatch-ui"
-  ],
+  "packages": ["packages/*", "packages/nocap/adapters/*"],
   "version": "independent",
   "npmClient": "yarn",
-  "useWorkspaces": false,
+  "useWorkspaces": true,
   "command": {
     "publish": {
       "conventionalCommits": true,

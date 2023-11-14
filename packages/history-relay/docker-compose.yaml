@@ -1,0 +1,11 @@
+version: "3"
+services:
+  strfry:
+    container_name: strfry
+    image: dockurr/strfry:latest
+    ports:
+        - 7777:7777
+    volumes:
+        - ./strfry-db:/app/strfry-db
+        - ./strfry.conf:/etc/strfry.conf
+        - ./whitelist.js:/app/whitelist.js

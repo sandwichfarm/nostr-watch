@@ -1,0 +1,11 @@
+{
+  "name": "@nostrwatch/nocap-ssl-adapter-default",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "get-ssl-cert": "2.3.3",
+    "ssl-checker": "2.0.8"
+  }
+}

@@ -1,7 +1,7 @@
 {
-  "name": "nostrwatch-monorepo",
+  "name": "@nostrwatch/monorepo",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.1",
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "clean": "lerna clean",
@@ -9,5 +9,14 @@
   },
   "devDependencies": {
     "lerna": "^4.0.0"
-  }
+  },
+<<<<<<< HEAD
+  "workspaces": [ "packages/*", "packages/nocap/adapters/**/*" ],
+=======
+  "workspaces": [ "packages/*", "packages/nocap/adapters/*" ],
+>>>>>>> 25d5d07... stuff
+  "main": "index.js",
+  "repository": "git@github.com:sandwichfarm/nostr-watch.git",
+  "author": "dskvr <dskvr@users.noreply.github.com>",
+  "license": "MIT"
 }

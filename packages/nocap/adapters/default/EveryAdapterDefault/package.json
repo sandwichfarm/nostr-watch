@@ -1,0 +1,7 @@
+{
+  "name": "@nostrwatch/nocap-all-adapters-default",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT"
+}

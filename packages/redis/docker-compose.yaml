@@ -1,0 +1,11 @@
+version: "3"
+services:
+  cache:
+    image: redis:latest
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes: 
+      - ./.redis:/data:rw
+    # env_file: .env
+    command: redis-server

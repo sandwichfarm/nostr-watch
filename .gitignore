@@ -1,8 +1,18 @@
 yarn.lock
-node_modules
+**/node_modules
 *.wasm
 public/main.js
 lib/nostrwatch-js
 dist
 yarn-error.log
 .env
+!*.sample
+.lmdb
+<<<<<<< HEAD
+.redis
+packages/nostrwatch-db
+packages/nostrwatch-history-relay/strfry-db/data.mdb
+dist/js/chunk-vendors.cd206719.js.map
+=======
+.redis
+>>>>>>> 25d5d07... stuff

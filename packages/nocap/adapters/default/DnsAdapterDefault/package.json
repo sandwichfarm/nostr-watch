@@ -1,0 +1,12 @@
+{
+  "name": "@nostrwatch/nocap-dns-adapter-default",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "cross-fetch": "4.0.0",
+    "dohjs": "0.3.3",
+    "fetch-h2": "3.0.2"
+  }
+}

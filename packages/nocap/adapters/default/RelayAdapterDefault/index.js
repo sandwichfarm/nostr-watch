@@ -73,11 +73,9 @@ class RelayAdapterDefault {
       this.$.on_eose(ev[1])
     }
     if(ev[0] === 'OK') {
-      console.log('OK')
       this.$.on_ok(ev[1])
     }
     if(ev[0] === 'NOTICE') {
-      console.log(ev)
       this.$.on_notice(ev[1])
     }
     if(ev[0] === 'AUTH') {

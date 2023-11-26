@@ -1,7 +1,7 @@
 {
   "name": "@nostrwatch/nocap",
   "version": "0.1.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -19,6 +19,8 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
-    "@vitest/ui": "0.34.6"
+    "@vitest/ui": "0.34.6",
+    "vitest-nostr": "0.4.1",
+    "vitest-websocket-mock": "0.2.2"
   }
 }

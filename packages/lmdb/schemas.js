@@ -22,7 +22,7 @@ export class CacheTime {
     }
 }
 
-export class Stats {
+export class Stat {
     constructor(config={}) {
         Object.assign(this,config);
     }
@@ -45,6 +45,7 @@ export default ($db) => {
     $db.defineSchema(Check);
     $db.defineSchema(Info);
     $db.defineSchema(CacheTime);
-    $db.defineSchema(Stats);
+    $db.defineSchema(Stat);
+    $db.defineSchema(Note);
     return $db
 }

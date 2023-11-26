@@ -24,7 +24,9 @@ export const chunkArray = function(arr, chunkSize) {
 // Function to check if a single queue is empty
 export const isQueueEmpty = async function(queue) {
     const counts = await queue.getJobCounts("active");
-    return counts.waiting === 0 && counts.active === 0 && counts.delayed === 0 && counts.completed === 0 && counts.failed === 0;
+    // console.log('isQueueEmpty', counts)
+    return counts.active === 0;
+    // return counts.active === 0 && counts.delayed === 0 && counts.completed === 0 && counts.failed === 0;
 };
 
 export const areAllQueuesEmpty = async function(queues) {
@@ -34,12 +36,13 @@ export const areAllQueuesEmpty = async function(queues) {
 
 // Function to wait until a single queue is empty
 export const whenAllQueuesEmpty = function(queues, callback) {
-  const checkQueues = async () => {
+  const checkQueues = async () => {      
       const allEmpty = await areAllQueuesEmpty(queues);
+      // console.log('whenAllQueuesEmpty: checking queues', Object.keys(queues), allEmpty)  
       if (allEmpty) {
           callback(); // Trigger the callback when all queues are empty
       }
-      setTimeout(checkQueues, 1000); // Recheck after a specified interval
+      setTimeout(checkQueues, 100); // Recheck after a specified interval
   };
   checkQueues();
 };
@@ -48,6 +51,7 @@ export const whenAllQueuesEmpty = function(queues, callback) {
 // Function to check if a single queue has active jobs
 export const isQueueActive = async function(queue) {
   const counts = await queue.getJobCounts("active");
+  console.log('active', counts.active)
   return counts.active > 0;
 };
 

@@ -2,49 +2,54 @@ import lmdb from './lmdb.js'
 import Logger from '@nostrwatch/logger'
 import config from './config.js'
 
-import { getSeedStatic } from '@nostrwatch/seed'
+
 import { configureQueues } from './queue.js'
 import { relayListWatcher } from './watcher.js'
 import { isQueueActive, areAllQueuesEmpty, whenAllQueuesEmpty, whenAnyQueueIsActive, delay } from './utils.js'
-import { relayId } from '@nostrwatch/utils'
-
-import { open } from 'lmdb'
-
-import { Relay } from '@nostrwatch/lmdb/schemas.js'
 
 const logger = new Logger('daemon')
 
 export default async () => {
-  const do_backfill = config?.backfill_lmdb ? config.backfill_lmdb : false
-  const is_backfilled = await lmdb.cachetime.get('backfilled')
-
   return new Promise( async (resolve) => {
     //configure the queues
-    const {batchQueue, crawlQueue, postProcessQueue, batchWorker, crawlWorker, postProcessWorker, connection:$connection} = await configureQueues()
-    const queues = {batchQueue, crawlQueue, postProcessQueue}
-    const workers = {batchWorker, crawlWorker, postProcessWorker}
-    const connection = $connection
-    
-    await delay(1000)
+    const {batchQueue, crawlQueue, connection:$connection} = await configureQueues()
+    const queues = {batchQueue, crawlQueue}
 
-    //init
-    
+    // if(config?.debug?.drain_on_launch)  {
+    //   logger.info('draining queues')
+    //   await batchQueue.obliterate()
+    //   await crawlQueue.obliterate()
+    // }
 
-    const generateRelayBatches = () => {
-      if(!isQueueActive(crawlQueue))
-        batchQueue.add('batchRelays', {});
-      else 
-        setTimeout(generateRelayBatches, 1000*60)
-    }
-    generateRelayBatches()
+    // await delay(10000)
 
-    logger.info('starting watcher')
+    // const workers = {batchWorker, crawlWorker, postProcessWorker}
+    // const connection = $connection
+    // const generateRelayBatches = () => {
+    //   if(!isQueueActive(crawlQueue))
+    //     batchQueue.add('batchRelays', {});
+    //   else 
+    //     setTimeout(generateRelayBatches, 1000*60)
+    // }
+    batchQueue.add('batchRelays', {});
+    // {repeat: {cron: '0 */2 * * *'}}
+    // generateRelayBatches()
 
-    const watcher = relayListWatcher({
-      queues: queues,
-      openSignal: whenAllQueuesEmpty, 
-      closeSignal: whenAnyQueueIsActive
+    whenAllQueuesEmpty([batchQueue, crawlQueue], () => {
+      batchQueue.add('batchRelays', {});
     })
+
+
+    // logger.info('starting watcher')
+
+    const watcher = null
+    // const watcher = relayListWatcher({
+    //   queues: queues,
+    //   openSignal: whenAllQueuesEmpty, 
+    //   closeSignal: whenAnyQueueIsActive
+    // })
+
+
 
     resolve({ queues, watcher })
   })

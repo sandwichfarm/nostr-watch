@@ -2,12 +2,12 @@ import { Relay, Info } from "../schemas.js"
 import { operators, IDS } from "lmdb-oql";
 import { relayId, now } from "../utils.js"
 
-const { $eq, $gte, $isDefined } = operators
+const { $eq, $gte, $and, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
 
 import Logger from "@nostrwatch/logger" 
 const logger = new Logger('lmdb:relay')
 
-import { ResultInterface as RelayRecord } from "@nostrwatch/nocap";
+import { ResultInterface as ResultType } from "@nostrwatch/nocap";
 
 export default class RelayMixin {
   constructor(db) {
@@ -22,7 +22,7 @@ export default class RelayMixin {
     this.requires = relay_requires(this.db)
     this.supports = relay_supports(this.db)
     this.limits = relay_limits(this.db)
-    this.batch = new RelayBatch(this.db)
+    this.batch = relay_batch(this.db)
   }
 
   async insert(RelayObj){
@@ -32,9 +32,8 @@ export default class RelayMixin {
   }
   
   async insertIfNotExists(RelayObj) {
-    if( await this.exists(RelayObj.url) )
-      return null
-    return this.insert(RelayObj)
+    if( !(this.exists(RelayObj.url)) )
+      return this.insert(RelayObj)
   }
 
   async update(RelayObj) {
@@ -66,10 +65,10 @@ export default class RelayMixin {
     return [...this.db.$.select(select).from(Relay).where(where)]
   }
 
-  async exists(RelayObjOrUrl) {
+  exists(RelayObjOrUrl) {
     const url = RelayObjOrUrl?.url || RelayObjOrUrl
-    const result = await this.get.one(url)
-    if(result)
+    const exists = this.get.one(url)
+    if(exists)
       return true
     return false
   } 
@@ -79,48 +78,42 @@ export default class RelayMixin {
   } 
 }
 
-class RelayBatch {
-  
-  constructor(db) {
-    this.db = db;
-  }
+const relay_batch = (db) => {
+  const keys = ['insert', 'insertIfNotExists', 'upsert', 'update', 'delete'];
+  const fns = {};
+  keys.forEach( key => {
+    fns[key] = async (RelayObjs) => {
+      if(!(RelayObjs instanceof Array))
+        throw new Error("Relay.batch: Must be an array")
+      const result = []
+      //process records in series. This is important for cache time and reduction/elimination of commit errors.
+      for await (const RelayObj of RelayObjs) {
+        try { 
+          result.push(await db.relay[key](RelayObj))
+        }
+        catch(e) { logger.warn(e) }
+      }
+      return result
+    }
+  })
+  return fns
+}
 
-  async insert(RelayObjs) {
-    if(!(RelayObjs instanceof Array))
-      throw new Error("Relay.batch.insert: Must be an array")
-    return Promise.all(RelayObjs.map(async (RelayObj) => {
-      return this.db.relay.insert(RelayObj)  
-    }))
+const parseSelect = (key) => {
+  const $ResultType = new ResultType()
+  if(!key)
+    key = Object.keys($ResultType).filter(key => typeof key !== 'function' && key !== 'defaults')
+  if(key instanceof Object && !(key instanceof Array))
+    return key
+  if(key == 'id')
+    key = '#'
+  if(typeof key === 'string')
+    key = [key]
+  const select = { Relay: {} }
+  for (const k of key) {
+    select.Relay[k] = (value,{root}) => { root[k]=value; }
   }
-
-  async insertIfNotExists(RelayObjs) {
-    if(!(RelayObjs instanceof Array))
-      throw new Error("Relay.batch.insertIfNotExists: Must be an array")
-    return Promise.all(RelayObjs.map(async (RelayObj) => {
-      return this.db.relay.insertIfNotExists(RelayObj)
-    }))
-  }
-  
-  async upsert(RelayObjs) {
-    if(!(RelayObjs instanceof Array))
-      throw new Error("Relay.batch.upsert: Must be an array")
-    return Promise.all(RelayObjs.map(async (RelayObj) => {
-      return this.db.relay.upsert(RelayObj)
-    }))
-  }
-
-  async update(RelayObjs) {
-    return Promise.all(RelayObjs.map(async (RelayObj) => {
-      return this.db.relay.update(RelayObj)
-    }))
-  }
-
-  async delete(RelayObjsOrUrls) {
-    return Promise.all(RelayObjsOrUrls.map(async (RelayObjOrUrl) => {
-      return this.db.relay.delete(RelayObjOrUrl)
-    }))
-  }
-
+  return select
 }
 
 const relay_limits = (db) => {
@@ -160,8 +153,6 @@ const relay_is = (db) => {
   return handler(fn)
 }
 
-
-
 const relay_requires = (db) => {
   const fn = {
     db,
@@ -174,7 +165,6 @@ const relay_requires = (db) => {
   }
   return handler(fn)
 }
-
 
 const relay_has = (db) => {
   const fn = {
@@ -194,13 +184,45 @@ const relay_has = (db) => {
 const relay_supports = (db) => {
   const fn = {
     db,
-    nip(nip){
-      return this.db.relay.get.one(relayUrl)?.info?.supported_nips?.[nip]
+    nip(relay, nip){
+      if(relay instanceof String) 
+        return this.db.relay.get.one(relayUrl)?.info?.supported_nips?.[nip]
+      else 
+        return this.db.relay.all(null, {Relay: { '#': relayId(relay), info: { supported_nips: $includes(nip) }}})
     },
-    nips(nips){
+    nips(relay=null, nips=[], supportsAll=false){
+      if(!(nips instanceof Array))
+        throw new Error("Relay.supports.nips(): Argument must be an array")
+      if(relay instanceof String)
+        return this.nipsSingle(relay, nips, supportsAll)
+      else if(relay === null)
+        return this.nipsMany(relay, nips, supportsAll)
+      else 
+        throw new Error("Relay.supports.nips(): Argument must be a relay url or null")
+    },
+    nips_single(relay, nips, supportsAll=false){
       const supports = {}
-      nips.forEach(nip => response[nip] = this.nip(nip))
-      return supports
+      nips.forEach(nip => supports[nip] = this.nip(relay, nip))
+      if(supportsAll)
+        return Object.values(supports).every(support => support)
+      else 
+        return supports
+    },
+    nips_many(relay, nips, supportsAll=false){
+      const supports = {}
+      let select = null
+      if(selectKeys)
+        select = parseSelect('url')
+      nips.forEach(nip => {
+        supports[nip]=this.db.relay.all(select, { Relay: { info: (value) => value?.supported_nips?.[nip] }})
+      })
+      if(supportsAll){
+          const urlsFromEachKey = Object.values(supports).map(objects =>
+            new Set(objects.map(obj => obj.url))
+          );
+          const commonUrls = urlsFromEachKey.reduce((a, b) => new Set([...a].filter(x => b.has(x))));
+          return Array.from(commonUrls);
+      }
     }
   }
   return handler(fn)
@@ -210,11 +232,11 @@ const relay_get = (db) => {
   const fns = {
     db,
     one(relayUrl) {
-      return this.db.$.get(relayId(relayUrl)) || []
+      return this.db.$.get(relayId(relayUrl)) || false
     },
     all(select=null, where=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from( Relay ).where({ Relay: { '#': 'Relay'  } })] || []
+      return [...this.db.$.select(select).from( Relay ).where({ Relay: { url: (value) => value?.length  } })] || []
     },
     allIds(){
       const result = this.all(IDS).flat()
@@ -222,45 +244,42 @@ const relay_get = (db) => {
     },
     online(select=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from( Relay ).where({ Relay: { connect: true } })] || []
+      return [...this.db.$.select(select).from( Relay ).where({ Relay: { connect: $matches(true) } })] || []
     },
-    public() {
-      return !this.paid() || []
+    network(network, select=null) {
+      select = parseSelect(select)
+      return [...this.db.$.select(select).from( Relay ).where({ Relay: { network } })] || []
     },
-    paid() {
-      return this.db.relay.limitation('payment_required') || []
+    public(select=null) {
+      select = parseSelect(select)
+      return  [...this.db.$
+                .select(select)
+                .from( Relay )
+                .where({ Relay: { info: (value) => !value?.payment_required || value.payment_required === false }})
+              ] || []
+    },
+    paid(select=null) {
+      select = parseSelect(select)
+      return  [...this.db.$
+                .select(select)
+                .from( Relay )
+                .where({ Relay: { info: (value) => value?.payment_required && value.payment_required === true }})
+              ] || []
     },
     dead(select=null) {
       select = parseSelect(select)
-      const toBeAlive = now() - config?.global?.relayAliveThreshold || timestring('30d')
-      return [...this.db.$.select(select).from(Relay).where({ Relay: { last_seen: $gte(toBeAlive) } })] || []
+      // const toBeAlive = now() - config?.global?.relayAliveThreshold || timestring('30d')
+      // return [...this.db.$.select(select).from(Relay).where({ Relay: { last_seen: $gte(toBeAlive) } })] || []
     },
     supportsNip(nip, select=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from(Relay).where({ Relay: { supported_nips: $in(nip) } })] || []
+      return [...this.db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => value.includes(nip) } })] || []
     },
     doesNotSupportNip(nip, select=null) {
-      return [...this.db.$.select(select).from(Relay).where({ Relay: { supported_nips: $nin(nip) } })] || []
+      return [...this.db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => !value.includes(nip) } })] || []
     }
   }
 
-  const parseSelect = (key) => {
-    const $RelayRecord = new RelayRecord()
-    if(!key)
-      key = Object.keys($RelayRecord).filter(key => typeof key !== 'function' && key !== 'defaults')
-    if(key instanceof Object && !(key instanceof Array))
-      return key
-    if(key == 'id')
-      key = '#'
-    if(typeof key === 'string')
-      key = [key]
-    const select = { Relay: {} }
-    for (const k of key) {
-      select.Relay[k] = (value,{root}) => { root[k]=value; }
-    }
-    console.log(select)
-    return select
-  }
 
   const validator = (...args) => {
     // const relayUrl = args[0]
@@ -282,12 +301,13 @@ const relay_count = (db) => {
   const fns = {}
   Object.keys(db.relay.get).forEach(fnkey => {
     if(!(db.relay.get[fnkey] instanceof Function))
-      return 
+      return 0
     fns[fnkey] = (...args) => {
-      console.log(args)
-      db.relay.get[fnkey](...args)?.length || 0
+      return db.relay.get[fnkey](...args)?.length? db.relay.get[fnkey](...args).length: 0
     }
   })
+  delete fns.one // not a count
+  fns.all = fns.allIds // alias
   return fns
 }
 

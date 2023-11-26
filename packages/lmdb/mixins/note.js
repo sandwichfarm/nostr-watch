@@ -2,7 +2,7 @@ import { noteId } from '../../utils/index.js'
 import { operators, IDS } from "lmdb-oql";
 import { Note } from '../schemas.js'
 
-const { $eq, $gte, $isDefined } = operators 
+const { $eq, $gte, $isDefined, $matches } = operators 
 
 export default class NoteMixin { 
   constructor(db) {
@@ -12,11 +12,10 @@ export default class NoteMixin {
     this.count = new NoteCounters(db)
   }
 
-  async exists(input) {
-    if(input?.id)
-      return this.db.$.get(noteId(input.id))
-    else 
-      return this.db.$.get(noteId(input))
+  exists(input) {
+    if(this.db.note.get.one(input))
+      return true
+    return false
   }
 }
 
@@ -25,8 +24,20 @@ class NoteGetters {
     this.db = db;
   }
 
-  async allIds(){
-    return [...this.db.$.select(IDS).from(Note).where({ Note: { id: $isDefined } })]
+  one(noteid){
+    if(noteid?.id)
+      noteid = noteid.id
+    if(!noteid.includes('Note@'))
+      noteid = noteId(noteid)
+    return this.db.$.get(noteid)
+  }
+
+  all(){
+    return [...this.db.$.select().from( Note ).where({ Note: { "#": "Note" } })].flat()
+  }
+
+  allIds(){
+    return [...this.db.$.select(IDS).from( Note ).where({ Note: { "#": "Note" } })].flat()
   }
 }
 
@@ -36,9 +47,10 @@ class NoteSetters {
   }
 
   async one(note) {
+    if(!note?.id)
+      throw new Error('Note must have an id')
     const id = noteId(note.id)
-    if(new String(note.id).length <= 64)
-      this.db.$.put(noteId(note.id), new Note(note))
+    return this.db.$.put(id, new Note(note)).catch()
   }
 }
 
@@ -47,8 +59,7 @@ class NoteCounters {
     this.db = db;
   }
   
-  async all() {
-    const ids = await this.db.note.get.allIds()
-    return ids.flat().length
+  all() {
+    return this.db.note.get.allIds().length
   }
 }

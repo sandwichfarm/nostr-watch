@@ -433,13 +433,12 @@ export default class {
 
   getAdapterType(adapterName){
     let type 
-    // console.log(adapterName)  
     this.adaptersValid.forEach(adapterKey => {
       if(adapterName.toLowerCase().startsWith(adapterKey))
         type = adapterKey
     })
-    // if(!type)
-    //   throw new Error(`Adapter ${adapterName} is not a valid adapter`)
+    if(typeof type === 'undefined')
+      throw new Error(`Adapter ${adapterName} is not a valid adapter`)
     return type
   }
 }

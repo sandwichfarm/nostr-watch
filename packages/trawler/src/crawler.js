@@ -5,42 +5,36 @@ import { NostrFetcher } from 'nostr-fetch';
 import { SimplePool } from 'nostr-tools';
 import { simplePoolAdapter } from '@nostr-fetch/adapter-nostr-tools'
 
+import lmdb from "./lmdb.js"
+import { ResultInterface } from "@nostrwatch/nocap";
 import Logger from "@nostrwatch/logger";
-import { nowstr } from "../../utils/index.js";
+
 import { parseRelayList } from "./parsers.js";
 import { lastCrawledId, checkOnline }  from "./utils.js";
-
 import { parseRelayNetwork } from "../../utils/index.js"
-
-import lmdb from "./lmdb.js"
-import config from "./config.js"
 
 const logger = new Logger('crawler')
 
 export const crawl = async function($job){
-  const relaysChunk = $job.data.relays
-
+  const relays = $job.data.relays
   const pool = new SimplePool();
   const fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool));
-
   const promises = [] 
 
   let relaysPersisted = new Set(),
       listCount = 0
 
-  relaysChunk.forEach( async (relay) => {
-    const relaySize = new Blob([relay]).size
-    //hard limit on relay size: https://github.com/kriszyp/lmdb-js/issues/219
-    console.debug(`checking ${relay} (${relaySize} bytes)`)
+  relays.forEach( async (relay) => {
+    const rlog = new Logger(relay)
     
-    if(relaySize > 1978)
+    const keySize = new Blob([relay]).size
+    if(keySize > 1978)
       return logger.error(`relay ${relay} is too large (${relaySize} bytes), skipping`)
 
     promises.push( new Promise( async (resolve) => {  
       let lastEvent = 0
       const cacheSince = await lmdb.cachetime.get( lastCrawledId(relay) )
       let since = cacheSince?.v || 0
-      if(`${since}`.length > 10) since = Math.round(since/1000)
       $job.updateProgress(`${relay} resuming from ${since}`)
       
       try {      
@@ -59,37 +53,22 @@ export const crawl = async function($job){
             continue
           }
 
-          const list = parseRelayList(ev)
-          if(!(list instanceof Array)) 
+          let relayList = parseRelayList(ev)
+          
+          if(!(relayList instanceof Array)) 
             continue
           
           //prepare relays for lmdb
-          const objList = list.map(relay => ({
-            url: relay,
-            network: parseRelayNetwork(relay),
-            info: {},
-            geo: {},
-            dns: {},
-            ipv4: {},
-            ipv6: {},
-            ssl: {},
-            connect: false,
-            read: false,
-            write: false,
-            readAuth: false,
-            writeAuth: false, 
-            readAuthType: "",
-            writeAuthType: "", 
-            connectLatency: -1,
-            readLatency: -1,
-            writeLatency:  -1,
-            found: null,
-            last_seen: null,
-            last_checked: null
-          }))
+          relayList = relayList.map( relay => {
+            const result = new ResultInterface()
+            result.set('url', relay)
+            result.set('network', parseRelayNetwork(relay))
+            return result.dump()
+          })
 
-          const relayPersisted = await lmdb.relay.batch.insertIfNotExists(objList)
-          relayPersisted.forEach(relay => relaysPersisted.add(relay))
+          const listPersisted = await lmdb.relay.batch.insertIfNotExists(relayList)
+          listPersisted.forEach(relay => relaysPersisted.add(relay))
+
         
           //store the note
           await lmdb.note.set.one(ev)
@@ -107,9 +86,8 @@ export const crawl = async function($job){
       }
 
       if(lastEvent > 0)
-        //loop could terminate without every updating lastEvent, overwriting real values.
         await lmdb.cachetime.set( lastCrawledId(relay), lastEvent )
-
+      
       resolve()
     }))
   })

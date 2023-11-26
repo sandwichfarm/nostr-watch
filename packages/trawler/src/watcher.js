@@ -5,12 +5,14 @@ import lmdb from "./lmdb.js";
 import { now } from "@nostrwatch/utils";
 import config from "./config.js"
 
+import { parseRelayNetwork } from "../../utils/index.js"
+
 const logger = new Logger('watcher')
 
 export const relayListWatcher = async function(options) {
   const { openSignal, closeSignal, queues } = options
 
-  const since = lmdb.cachetime.get('watcher_last_update') || 0;
+  let since = lmdb.cachetime.get('watcherLastUpdate') || 0;
   const relayListProviders = config?.relay_list_providers || [];
 
   if(!relayListProviders.length) 
@@ -24,22 +26,33 @@ export const relayListWatcher = async function(options) {
   });
 
   let subscription
+  let connected = false
 
   openSignal([queues.batchQueue, queues.crawlQueue], async () => {
-    await ndk.connect();
-    subscription = subscribeToRelayLists({ ndk, since, queues })
+    if(!connected) {
+      connected = true
+      console.log('open!')
+      await ndk.connect().catch( () => connected = false);
+      subscription = subscribeToRelayLists({ ndk, since })
+    }
   })
 
-  closeSignal(queues.crawlQueue, async () => {
-    since = now()
-    subscription = null
-    await ndk.disconnect()
+  closeSignal([queues.batchQueue, queues.crawlQueue], async () => {
+    if(connected) {
+      connected = false
+      console.log('close!')
+      since = now()
+      lmdb.cachetime.set('watcherLastUpdate', since)
+      subscription = null
+      await ndk.disconnect()
+    }
   })
 }
 
 const subscribeToRelayLists = async function(options) {
-  const { ndk, since, queues } = options
-  const { postProcessQueue } = queues
+  const { ndk, since } = options
+
+  console.log('subscribing!')
 
   const sub = ndk.subscribe({ 
     kinds: [ 2, 3, 10002 ],
@@ -47,8 +60,18 @@ const subscribeToRelayLists = async function(options) {
   });
 
   sub.on("event", (note) => {
-    const relayList = parseRelayList(note)
-    postProcessQueue.add('postProcessJob', { relayList });
+    console.log('note!')
+    let relayList = parseRelayList(note)
+    if(!(relayList instanceof Array)) 
+      return
+    relayList.map( relay => {
+      const result = new ResultInterface()
+      result.set('url', relay)
+      result.set('network', parseRelayNetwork(relay))
+      return result.dump()
+    })
+    logger.info(`new relays found: ${relayList.length}`)
+    lmdb.relay.batch.insertIfNotExists(relayList)
   });
 
   return sub

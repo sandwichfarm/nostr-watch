@@ -1,7 +1,7 @@
 export class Validator {
   validate(key, value){
     // console.log(this)
-    console.log('validator', key, value)
+    // console.log('validator', key, value)
     // if(!this?.[key])
     //   throw new Error(`${this.constructor.name} does not have property ${key}`)
     if(value && typeof this.defaults[key] !== typeof value)
@@ -25,11 +25,11 @@ export class Validator {
   }
 
   dump(){
-    return Object.keys(this).reduce((acc, key) => {
+    return { ...Object.keys(this).reduce((acc, key) => {
       if(key === 'defaults')
         return acc
       acc[key] = this[key]
       return acc
-    }, {})
+    }, {}) }
   }
 }

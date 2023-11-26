@@ -16,11 +16,11 @@ const logger = new Logger('lmdb')
 let open;
 
 if (typeof window !== 'undefined') {
-  import('lmdb-indexeddb').then(module => {
+  await import('lmdb-indexeddb').then(module => {
     open = module.open;
   });
 } else {
-  import('lmdb').then(module => {
+  await import('lmdb').then(module => {
     open = module.open;
   });
 }
@@ -29,15 +29,8 @@ class DbWrapper {
   constructor(dbPath, opts={}){
     this.$ = withExtensions(open(dbPath, opts));
     this.$ = schemas(this.$);
-    // this.service = ServiceMixin(this)
-    // this.relay = RelayMixin(this)
-    // this.check = CheckMixin(this)
-    // this.info = InfoMixin(this)
-    // this.cachetime = CacheTimeMixin(this)
-    // this.stat = StatMixin(this)
-    // this.note = NoteMixin(this)
   }
-  addMixin(cl) {
+  addSchema(cl) {
     const key = cl.name.toLowerCase().replace("mixin","")
     if(!cl)
       throw new Error("Missing schema class")
@@ -57,12 +50,12 @@ export default (dbPath, opts={}) => {
     if(!db?.$)
       throw new Error("Failed to initialize LMDB database")
   }
-  db.addMixin(ServiceMixin)
-  db.addMixin(RelayMixin)
-  db.addMixin(CheckMixin)
-  db.addMixin(InfoMixin)
-  db.addMixin(CacheTimeMixin)
-  db.addMixin(StatMixin)
-  db.addMixin(NoteMixin)
+  db.addSchema(ServiceMixin)
+  db.addSchema(RelayMixin)
+  db.addSchema(CheckMixin)
+  db.addSchema(InfoMixin)
+  db.addSchema(CacheTimeMixin)
+  db.addSchema(StatMixin)
+  db.addSchema(NoteMixin)
   return db
 }

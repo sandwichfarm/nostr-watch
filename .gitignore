@@ -8,11 +8,10 @@ yarn-error.log
 .env
 !*.sample
 .lmdb
-<<<<<<< HEAD
 .redis
 packages/nostrwatch-db
 packages/nostrwatch-history-relay/strfry-db/data.mdb
+packages/relaydb-cli
 dist/js/chunk-vendors.cd206719.js.map
-=======
-.redis
->>>>>>> 25d5d07... stuff
+node_modules
+ours.sh

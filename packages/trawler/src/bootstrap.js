@@ -1,5 +1,5 @@
 import { getSeedStatic } from "@nostrwatch/seed"
-import lmdb from "./lmdb.js"
+import lmdb from "./relaydb.js"
 import config from "./config.js"
 import Logger from "@nostrwatch/logger"
 import { fetch } from "cross-fetch"

@@ -1,13 +1,13 @@
-import db from '@nostrwatch/lmdb'
+import rdb from '@nostrwatch/relaydb'
 import config from './config.js'
 
-let $db
+let $rdb
 
 if(!config?.lmdb_path)
   throw new Error("No LMDB path specified in config")
 
-if(!$db) {
-  $db = db(config.lmdb_path)
+if(!$rdb) {
+  $rdb = rdb(config.lmdb_path)
 }
 
-export default $db
+export default $rdb

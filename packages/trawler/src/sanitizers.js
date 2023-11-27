@@ -4,7 +4,7 @@
  * @returns Filtered and deduped list of relays
  */
 
-import lmdb from './lmdb.js'
+import lmdb from './relaydb.js'
 import Logger from '@nostrwatch/logger'
 
 const logger = new Logger('sanitizers')

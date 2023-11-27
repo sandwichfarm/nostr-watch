@@ -1,9 +1,7 @@
 yarn.lock
 **/node_modules
 *.wasm
-public/main.js
-lib/nostrwatch-js
-dist
+**/dist
 yarn-error.log
 .env
 !*.sample

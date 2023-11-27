@@ -2,5 +2,11 @@
   "name": "@nostrwatch/redis",
   "version": "0.0.1",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@bull-board/api": "5.9.2",
+    "@bull-board/fastify": "5.9.2",
+    "bullmq": "4.14.2",
+    "fastify": "4.24.3"
+  }
 }

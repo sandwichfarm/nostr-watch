@@ -41,7 +41,7 @@ $ = heavy development
 - `...TBA`
 
 ### Wrappers 
-- [**`lmdb`**](packageslmdb/) `[~]`: A wrapper for `lmdb` and various `lmdb` modules used by various packages for consistent and implementation agnostic integration. 
+- [**`relaydb`**](packages/relaydb) `[~]`: An interface wrapper for `lmdb` that defines schemas for datastore implemented by some daemons.
 
 ### Templates 
 - [**`kind-relay`**](packages/kind-relay) `[?]`: A generalized repository with scripts to make deploying kind-specific relays that make scanning, synching and/or routing a breeze. Might live in it's own repository.

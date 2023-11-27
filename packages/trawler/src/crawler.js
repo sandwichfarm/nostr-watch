@@ -5,7 +5,7 @@ import { NostrFetcher } from 'nostr-fetch';
 import { SimplePool } from 'nostr-tools';
 import { simplePoolAdapter } from '@nostr-fetch/adapter-nostr-tools'
 
-import lmdb from "./lmdb.js"
+import rdb from "./relaydb.js"
 import { ResultInterface } from "@nostrwatch/nocap";
 import Logger from "@nostrwatch/logger";
 
@@ -33,7 +33,7 @@ export const crawl = async function($job){
 
     promises.push( new Promise( async (resolve) => {  
       let lastEvent = 0
-      const cacheSince = await lmdb.cachetime.get( lastCrawledId(relay) )
+      const cacheSince = await rdb.cachetime.get( lastCrawledId(relay) )
       let since = cacheSince?.v || 0
       $job.updateProgress(`${relay} resuming from ${since}`)
       
@@ -48,8 +48,8 @@ export const crawl = async function($job){
         for await (const ev of it) {
           const timestamp = parseInt(ev.created_at)
           lastEvent = (timestamp>lastEvent? (timestamp>since? timestamp: since): lastEvent)
-          if( await lmdb.note.exists(ev) ) {
-            await lmdb.cachetime.set( lastCrawledId(relay), lastEvent )
+          if( await rdb.note.exists(ev) ) {
+            await rdb.cachetime.set( lastCrawledId(relay), lastEvent )
             continue
           }
 
@@ -58,7 +58,7 @@ export const crawl = async function($job){
           if(!(relayList instanceof Array)) 
             continue
           
-          //prepare relays for lmdb
+          //prepare relays for rdb
           relayList = relayList.map( relay => {
             const result = new ResultInterface()
             result.set('url', relay)
@@ -66,11 +66,11 @@ export const crawl = async function($job){
             return result.dump()
           })
 
-          const listPersisted = await lmdb.relay.batch.insertIfNotExists(relayList)
+          const listPersisted = await rdb.relay.batch.insertIfNotExists(relayList)
           listPersisted.forEach(relay => relaysPersisted.add(relay))
 
           //store the note
-          await lmdb.note.set.one(ev)
+          await rdb.note.set.one(ev)
 
           //increment counter
           listCount++
@@ -85,7 +85,7 @@ export const crawl = async function($job){
       }
 
       if(lastEvent > 0)
-        await lmdb.cachetime.set( lastCrawledId(relay), lastEvent )
+        await rdb.cachetime.set( lastCrawledId(relay), lastEvent )
       
       resolve()
     }))

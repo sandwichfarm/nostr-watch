@@ -33,7 +33,7 @@ $ = heavy development
 - [**`schemata`**](packages/schemata) `[~]`: A collection of `json-schema` used by testing suites and periodic publisher sampling for data-integrity validation
 
 ### Daemons 
-- [**`trawler`**](packages/trawler) `[$]`: A daemon with the single purpose of collating, sanitizing and basic classification of relays. Daemon can leverage `rest-api`.
+- [**`trawler`**](packages/trawler) `[~]`: A daemon with the single purpose of collating, sanitizing and basic classification of relays. Daemon can leverage `rest-api`.
 - [**`nocapd`**](packages/nocapd) `[^]`: A daemon that persistently monitors relays and produces a rich dataset. Daemon can leverage `rest-api`.
 - [**`publisher`**](packages/publisher) `[^]`: A module and daemonn that standardizes @nostrwatch events for data propagation via relays.
 - [**`rest-api`**](packages/api) `[^]`: An simple `api` that interfaces with `lmdb` to provide endpoints and expose daemon data. 
@@ -41,7 +41,7 @@ $ = heavy development
 - `...TBA`
 
 ### Wrappers 
-- [**`lmdb`**](packageslmdb/) `[$]`: A wrapper for `lmdb` and various `lmdb` modules used by various packages for consistent and implementation agnostic integration. 
+- [**`lmdb`**](packageslmdb/) `[~]`: A wrapper for `lmdb` and various `lmdb` modules used by various packages for consistent and implementation agnostic integration. 
 
 ### Templates 
 - [**`kind-relay`**](packages/kind-relay) `[?]`: A generalized repository with scripts to make deploying kind-specific relays that make scanning, synching and/or routing a breeze. Might live in it's own repository.

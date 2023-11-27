@@ -19,13 +19,13 @@ export const nowstr = () => Math.round(now()/1000)
 export const devnull = () => {}
 
 export const RedisConnectionDetails = function(){
-  const env = {}
+  const redis = {}
   Object.keys(process.env).forEach(key => {
     if(key.startsWith('REDIS_'))
-      env[key.replace('REDIS_', '').toLowerCase()] = process.env[key]
+    redis[key.replace('REDIS_', '').toLowerCase()] = process.env[key]
   })
-  console.log(env)
-  return env
+  console.log(redis)
+  return redis
 }
 
 export const loadConfigSync = function(key){

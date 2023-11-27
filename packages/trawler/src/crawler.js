@@ -69,7 +69,6 @@ export const crawl = async function($job){
           const listPersisted = await lmdb.relay.batch.insertIfNotExists(relayList)
           listPersisted.forEach(relay => relaysPersisted.add(relay))
 
-        
           //store the note
           await lmdb.note.set.one(ev)
 

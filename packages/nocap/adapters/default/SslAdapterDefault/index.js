@@ -9,12 +9,13 @@ class SslAdapterDefault {
 
   async check_ssl(resolve){
     const url = new URL(this.$.url)
-    console.log(typeof url.hostname)
-    console.log(typeof url.port)
-    const response = await sslChecker(this.sslCheckerOptions(url.hostname, url.port))
+    const hostname = url.hostname 
+    const timeout = this.$.config?.ssl_timeout? this.$.config.ssl_timeout: 1000
+    console.log(this.sslCheckerOptions(hostname, url.port))
+    const response = await sslChecker(hostname, this.sslCheckerOptions(url.port))
     response.adapter = 'DefaultSslAdapter'
     response.checked_at = new Date()
-    response.cert = await sslCertificate.get(url.hostname, this.$.config?.ssl_timeout || 250, url.port || 443, 'https:') || {}
+    response.cert = await sslCertificate.get(hostname, timeout)
     response.cert.issuer = response?.cert?.issuer || {}
     response.validFor.push(await sslValidator.validateSSL(response.cert.pemEncoded, { domain: url.hostname }))
     response.validFor = [...new Set(response.validFor)].filter( domain => domain instanceof String && domain !== "" )
@@ -23,8 +24,8 @@ class SslAdapterDefault {
     
   }
 
-  sslCheckerOptions(hostname, port){
-    return { hostname, options: { method: "GET", port: port || 443 } }
+  sslCheckerOptions(port){
+    return { method: "GET", port: port || 443 } 
   }
 
 }

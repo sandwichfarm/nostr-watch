@@ -63,7 +63,7 @@ export default class {
   async checkAll(){
     this.defaultAdapters()
     for(const check of this.checks) {
-      await this.check(check).catch(this.logger.warn)
+      await this.check(check)
     }
     return this.results.dump()
   }
@@ -419,8 +419,9 @@ export default class {
     return Object.keys(AllDefaultAdapters)
   }
 
-  async defaultAdapters(){
-    if(this.adaptersInitialized) return
+  defaultAdapters(){
+    if(this.adaptersInitialized) 
+      return this.adapters
     this.defaultAdapterKeys().forEach( adapterKey => {
       const adapterType = this.getAdapterType(adapterKey)
       if(!this.adapters?.[adapterType]){

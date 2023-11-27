@@ -13,7 +13,7 @@ class RelayAdapterDefault {
    */
   async check_connect(){
     if(this.$.isConnected()) 
-      this.throw('Cannot check connect, already connected')
+      this.$.logger.warn('Cannot check connect, already connected')
     this.$.set('ws', new WebSocket(this.$.url))
     this.bind_events()
     return this.$.addPromise('connect')

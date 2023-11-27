@@ -1,16 +1,20 @@
 import { Nocap, ConfigInterface, ResultInterface, SessionHelper, TimeoutHelper, LatencyHelper, DeferredWrapper } from '../index.js'; // Update the import path accordingly
 import { describe, it, expect, test, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { RelayAdapterDefault, InfoAdapterDefault, GeoAdapterDefault, DnsAdapterDefault, SslAdapterDefault } from '@nostrwatch/nocap-all-adapters-default'
+import { fetch } from 'cross-fetch';
 
 import { createMockRelay, faker, MockRelay } from "vitest-nostr";
 
-const url = `wss://relay.damus.io/`
+let url = `wss://relay.damus.io/`
 let nocap 
 let relay
 
 beforeAll(async () => {
-  // relay = createMockRelay(url);
-  // await relay.connected;
+  // const onlineRelays = await fetch(`https://api.nostr.watch/v1/online`).then( res => res.json() ).then( res => res.relays[0].url )
+  // const randomRelay = faker.random.arrayElement(onlineRelays)
+  // url = randomRelay? randomRelay : url
+  // console.log(url)
+  // return
 });
 
 afterAll(() => {
@@ -18,16 +22,20 @@ afterAll(() => {
 });
 
 beforeEach(async () => {
-  nocap = new Nocap(url);
+  
 })
 
 afterEach(async () => {
-  nocap.close()
+  if(nocap?.close)
+    nocap.close()
+  nocap = null
 })
 
-describe("Nocap", () => {
-  
-  describe("constructor()",async () => {
+describe("Nocap class", () => {
+
+  const nocap = new Nocap(url);
+
+  describe("constructor()", async () => {
 
     it("is defined", () => expect(Nocap).toBeDefined());
     it("is a class", () => expect(typeof Nocap).toBe("function"));
@@ -64,14 +72,11 @@ describe("Nocap", () => {
     it("promises is an instance of DeferredWrapper", () => {
       expect(nocap.promises).toBeInstanceOf(DeferredWrapper);
     });
-  });
+  })
 
   describe("getAdapterType()", async () => {
     
     it("should throw when given invalid key", () => {
-      console.log(nocap.getAdapterType('invalid'))
-      let type = nocap.getAdapterType('invalid')
-      console.log(type)
       expect(() => { nocap.getAdapterType('invalid') }).toThrow()
     })
 
@@ -97,26 +102,23 @@ describe("Nocap", () => {
 
   describe("defaultAdapterKeys()", async () => {
     it("should return an array", () => {
-      const result = nocap.defaultAdapterKeys();
-      console.log(result);
-      expect(Array.isArray(result)).toBe(true);
+      expect(Array.isArray(nocap.defaultAdapterKeys())).toBe(true);
     })
   })
 
-  describe("useAdapter()", async () => {
+  console.log(typeof nocap)
 
-    it("should be an object", () => {
-      console.log(typeof RelayAdapterDefault);
-      expect(() => typeof RelayAdapterDefault).toBe('object');
-    })
-    
-  })
+  // describe("useAdapter()", async () => {
+  //   it("should be an object", () => {
+  //     // expect(typeof RelayAdapterDefault).toBe('object');
+  //   })
+  // })
 
   describe("defaultAdapters()", async () => {
-    // nocap.defaultAdapters();
-
-    it("should be a function", () => {
-      expect(typeof nocap.defaultAdapters).toBe("function");
+    
+    it("should return an object", () => {
+      const defaultAdapters = nocap.defaultAdapters()
+      expect(defaultAdapters).toBeInstanceOf(Object);
     })
 
     it("should instantiate default relay adapter", () => {
@@ -144,47 +146,94 @@ describe("Nocap", () => {
   })
 
   describe("check()", async () => {
-    
-    it("should return an object with specific structure", async () => {
-      const response = await nocap.check('connect')
-    
-      // Check if it's an object
-      expect(typeof response).toBe('object');
-    
-      // Check if specific properties exist and their types
-      expect(response).toHaveProperty('connect');
-      expect(typeof response.connect).toBe('boolean');
-    
-      expect(response).toHaveProperty('connectLatency');
-      expect(typeof response.connectLatency).toBe('number');
-    });
 
+    describe("check('connect')", async () => {
+      
+      it("should returnn connect result", async () => {
+        
+        const response = await nocap.check('connect')
+      
+        // Check if it's an object
+        expect(typeof response).toBe('object');
+      
+        // Check if specific properties exist and their types
+        expect(response).toHaveProperty('connect');
+        expect(typeof response.connect).toBe('boolean');
+      
+        expect(response).toHaveProperty('connectLatency');
+        expect(typeof response.connectLatency).toBe('number');
+
+      })
+    })
+
+    describe("check('read')", async () => {
+      
+      it("should returnn write result", async () => {
+        
+        const response = await nocap.check('read')
+      
+        // Check if it's an object
+        expect(typeof response).toBe('object');
+      
+        // Check if specific properties exist and their types
+        expect(response).toHaveProperty('read');
+        expect(typeof response.read).toBe('boolean');
+      
+        expect(response).toHaveProperty('readLatency');
+        expect(typeof response.readLatency).toBe('number');
+
+      })
+    })
+
+    describe("check('write')", async () => {
+      
+      it("should return write result", async () => {
+        
+        const response = await nocap.check('write')
+
+        console.log('write check', response)
+      
+        // Check if it's an object
+        expect(typeof response).toBe('object');
+      
+        // Check if specific properties exist and their types
+        expect(response).toHaveProperty('write');
+        expect(typeof response.write).toBe('boolean');
+      
+        expect(response).toHaveProperty('writeLatency');
+        expect(typeof response.writeLatency).toBe('number');
+
+      })
+    })
   })
 
 
-  // describe("all()", async () => {
-  //   const nocap = new Nocap(url);
-  //   await vi.dynamicImportSettled()
+  describe("checAll()", async () => {
 
-  //   it("check_all() should exist", () => {
-  //     expect(typeof nocap.check_all).toBe("function");
-  //   });
-  //   it('check_all() should run all checks', async () => {
-  //     nocap.check_connect = vi.fn();
-  //     nocap.check_read = vi.fn(); 
-  //     nocap.check_write = vi.fn(); 
-  //     nocap.check_geo = vi.fn(); 
-  //     nocap.check_dns = vi.fn(); 
-  //     nocap.check_ssl = vi.fn(); 
-  //     await nocap.check_all();
-  //     expect(nocap.check_connect).toHaveBeenCalled();
-  //     expect(nocap.check_read).toHaveBeenCalled();
-  //     expect(nocap.check_write).toHaveBeenCalled();
-  //     expect(nocap.check_geo).toHaveBeenCalled();
-  //     expect(nocap.check_dns).toHaveBeenCalled();
-  //     expect(nocap.check_ssl).toHaveBeenCalled();
-  //   });
-  // });
+    it("checkAll() should exist", () => {
+      expect(typeof nocap.checkAll).toBe("function");
+    });
+
+    it('checkAll() should run all checks', async () => {
+      const result = await nocap.checkAll();
+      expect(result).toBeInstanceOf(Object);
+      expect(result).toHaveProperty('connect');
+      expect(result).toHaveProperty('read');
+      expect(result).toHaveProperty('write');
+      expect(result.connect).toBe(true);
+      expect(result.read).toBe(true);
+      expect(result.write).toBe(true);
+      expect(result.connectLatency).toBeGreaterThan(0);
+      expect(result.readLatency).toBeGreaterThan(0);
+      expect(result.writeLatency).toBeGreaterThan(0);
+      expect(result.geo).toBeInstanceOf(Object);
+      expect(result.dns).toBeInstanceOf(Object);
+      expect(result.info).toBeInstanceOf(Object);
+      expect(result.ssl).toBeInstanceOf(Object);
+      expect(typeof result.url).toBeTypeOf('string');
+
+    });
+  });
 
   // describe("check()", async () => {
   //   const nocap = new Nocap(url);
@@ -313,5 +362,6 @@ describe("Nocap", () => {
 //       expect(typeof nocap.setRule).toBe("function");
 //     });
 //   });
+// });
 // });
 });

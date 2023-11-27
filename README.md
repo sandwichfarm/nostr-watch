@@ -49,6 +49,9 @@ $ = heavy development
 - [**`history-relay`**](packages/history-relay) `[^]`: Simply a few configs for the new nostr.watch history relay. History relays store events for the nostr.watch datalayer.
 - [**`redis`**](packages/redis) `[%]`: Convenience configuration that standardizes redis configuration for stack. Primarily used for development and eventually deployments. Redis is used for persistent queues.
 
+### Derivatives 
+- [**`nostrawl`**](https://github.com/sandwichfarm/nostrawl) `[?]`: A package for trawling any number of nostr relays. Generalized logic from `trawler`. Combines `nostr-fetch` and queues, to make coalescing data from specific filters simple.
+
 ### Philosophy
 nostr.watch legacy has been using nostr as a data layer successfully since February 2023, less some ... _ehem_ ... hiccups. When it comes to the gui, it's a poor user experience that resulted from technical debt, scope creep and inopportune but uniquely opportune timing. It has never had any database. It has run entirely off data from nostr. Relays are the database. 
 

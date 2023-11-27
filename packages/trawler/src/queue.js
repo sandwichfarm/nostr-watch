@@ -82,12 +82,12 @@ export const configureQueues = async function(){
         crawlWorker.on('failed', crawlJobFailed)
         crawlWorker.on('progress', crawlJobProgress)
 
-  await crawlQueue.drain()
+  // await crawlQueue.drain()
 
-  if(config?.debug?.on_launch_drain_all) {
-    await batchQueue.drain()
-    await crawlQueue.drain()
-  }
+  // if(config?.debug?.on_launch_drain_all) {
+  //   await batchQueue.drain()
+  //   await crawlQueue.drain()
+  // }
 
   return {
     batchQueue,

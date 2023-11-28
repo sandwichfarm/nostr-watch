@@ -77,17 +77,18 @@ export default class {
       await this.check(this.checks)
       return this.results.dump()
     }
-      
+
     if(typeof keys === 'string')
       return this._check(keys)
     
-    if(keys instanceof Array) {
+    if(keys instanceof Array && keys.length) {
       let result = {}
       for(const key of keys){
         result = { ...result, ...await this._check(key) }
       }
       return new Promise(resolve => resolve(result))
     }
+    return this.throw(`check(${keys}) failed. keys must be string or populated array`)
   }
 
   async _check(key){ 
@@ -108,6 +109,7 @@ export default class {
 
     if( typeof key !== 'string')
       throw new Error('Key must be string')
+
     if( !this?.adapters?.[adapter]?.[`check_${key}`] )
       throw new Error(`check_${key} method not found in ${adapter} Adapter, key should be 'connect', 'read', or 'write'`)
 

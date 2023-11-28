@@ -1,0 +1,48 @@
+name: publish to npm
+on:
+  push:
+    branches:
+      - 'next'
+    paths:
+      - 'packages/**'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - package: 'nocap'
+            nodeVersion: '18'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.nodeVersion }}
+
+      - name: Change to package directory
+        run: cd packages/${{ matrix.package }}
+
+      - run: yarn install
+      - run: yarn test
+
+      - id: publish
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: packages/${{ matrix.package }}
+          strategy: upgrade
+
+      - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ matrix.package }}-${{ steps.publish.outputs.version }}
+          release_name: v${{ matrix.package }}-${{ steps.publish.outputs.version }}
+          body: ""
+          draft: false
+          prerelease: true

@@ -12,15 +12,22 @@ export class Validator {
     this[key] = value
   }
 
+  setMany(obj){
+    Object.keys(obj).forEach(key => {
+      this.set(key, obj[key])
+    })
+  }
+
   get(key) {
     this.validate(key)
     return this[key]
   }
 
-  setMany(obj){
-    Object.keys(obj).forEach(key => {
-      this.set(key, obj[key])
-    })
+  getMany(keys){
+    return keys.reduce((acc, key) => {
+      acc[key] = this.get(key)
+      return acc
+    }, {})
   }
 
   dump(){

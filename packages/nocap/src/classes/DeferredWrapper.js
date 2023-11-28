@@ -8,7 +8,7 @@ export class DeferredWrapper {
   }
 
   add(key, timeout, timeoutCb){
-    this.create(key)
+    const deferred = this.create(key)
     if(timeout)
       this.timeout.create(key, timeout, () => {
         this.reject(key, { timeout: true } )
@@ -19,7 +19,7 @@ export class DeferredWrapper {
           catch(e) { this.logger.error(`error in timeout callback for ${key}: ${e.message}` ) }
         }
       })
-    return this.get(key).promise
+    return deferred
   }
 
   resolve(key, result){ 
@@ -54,10 +54,12 @@ export class DeferredWrapper {
   create(key){
     this.setup()
     this.promises[this.session()][key] = new Deferred()
+    return this.get(key)
   }
 
   get(key){
-    return this.promises[this.session()][key]
+    const deferred = this.promises[this.session()]?.[key]
+    return deferred
   }
 
   setup(){

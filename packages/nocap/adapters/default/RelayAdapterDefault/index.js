@@ -12,12 +12,10 @@ class RelayAdapterDefault {
    * @private
    * @returns promise<result?>
    */
-  async check_connect(){
-    if(this.$.isConnected()) 
-      this.$.logger.warn('Cannot check connect, already connected')
+  async check_connect(deferred){
     this.$.set('ws', new WebSocket(this.$.url))
     this.bind_events()
-    return this.$.addPromise('connect')
+    return deferred
   }
 
   /**
@@ -29,7 +27,6 @@ class RelayAdapterDefault {
   async check_read(){
     let event = JSON.stringify(['REQ', this.$.subid('read'), { limit: 1, kinds: [1] }])
     this.$.ws.send(event)
-    return this.$.addPromise('read')
   }
   
   /**
@@ -41,7 +38,6 @@ class RelayAdapterDefault {
   async check_write(){
     const ev = JSON.stringify(['EVENT', this.config?.event_sample || this.$.SAMPLE_EVENT])
     this.$.ws.send(ev)
-    return this.$.addPromise('write')
   }
 
   /**

@@ -1,6 +1,7 @@
 import { Validator } from '../classes/Validator.js'
 
 export const ConfigDefaults = {
+  logLevel: 'info',
   connectTimeout: 5000,
   readTimeout: 5000,
   writeTimeout: 5000,

@@ -25,7 +25,9 @@ import SAMPLE_EVENT from "../data/sample_event.js"
  */
 
 export default class {
+
   constructor(url, config) {
+    
     this.url = url
     this.ws = null         //set by adapter, needed for conn. status. might be refactored.
     this.$instance = null   //placeholder for adapters to use for storing a pre-initialized instance
@@ -44,12 +46,13 @@ export default class {
     this.timeouts = new TimeoutHelper(this.session)
     this.latency = new LatencyHelper(this.session)
     this.promises = new DeferredWrapper(this.session, this.timeouts)
-    this.logger = new Logger(url)
+    this.logger = new Logger(url, this.config.logLevel)
     //
     this.SAMPLE_EVENT = SAMPLE_EVENT
     //
     this.results.set('url', url)
     this.results.set('network', parseRelayNetwork(url))
+    this.logger.debug(`constructor(${url}, ${JSON.stringify(config)})`)
   }
 
   set(key, value){
@@ -65,49 +68,169 @@ export default class {
   }
 
   async checkAll(){
+    this.logger.debug(`checkAll()`)
     this.defaultAdapters()
     for(const check of this.checks) {
-      await this.check(check).catch(this.logger.warn)
+      await this.check(check)
     }
     return this.results.dump()
   }
 
   async check(key){ 
+    this.logger.debug(`check(${key})`)
     this.defaultAdapters()
-    const adapter = this.routeAdapter(key)
-    if( typeof key !== 'string')
-      return this.throw('Key must be string')
-    if( !this?.adapters?.[adapter]?.[`check_${key}`] )
-      return this.throw(`Cannot check ${key}, key invalid`)
     await this.start(key)
-    await this.adapters[adapter][`check_${key}`](this.single_step_resolve.bind(this))
-    return this.promises.get(key).promise
+    const result = await this.promises.get(key).promise
+    if(result?.error) {
+      this.on_check_error( key, result )
+    }
+    return result
   } 
 
-  single_step_resolve(key, result){
-    this.addPromise(key)
-    return this.finish(key, result, this.promises.get(key).resolve)
-  }
+  // async _check(keys){
+  //   if(keys === "all")
+  //     return this.check(this.checks)
+  
+  //   if(typeof keys === 'string')
+  //     return this._check(keys)
+    
+  //   if(keys instanceof Array) {
+  //     let result = {}
+  //     for(const key of keys){
+  //       result = { ...result, ...await this.check(key) }
+  //     }
+  //     return new Promise(resolve => resolve(result))
+  //   }
+  // }
 
   async start(key){
-    if(key !== 'connect' && !this.isConnected()) {
-      await this.adapters.relay.check_connect()
-      if(!this.isConnected())
-        throw new Error(`Cannot check ${key}, cannot connect to relay`)
-    }
-    this.current = key
-    this.latency.start(key)
+    this.logger.debug(`start(${key})`)
+    const deferred = this.addDeferred(key)
+    const adapter = this.routeAdapter(key)
+
+    if( typeof key !== 'string')
+      throw new Error('Key must be string')
+    if( !this?.adapters?.[adapter]?.[`check_${key}`] )
+      throw new Error(`check_${key} method not found in ${adapter} Adapter, key should be 'connect', 'read', or 'write'`)
+
+    this.precheck(key)
+      .then(() => {
+        this.logger.debug(`${key}: precheck resolved`)
+        this.current = key
+        this.latency.start(key)
+        this.adapters[adapter][`check_${key}`]()
+      })
+      .catch((precheck) => {
+        if(precheck.error === true) {
+          this.logger.debug(`${key}: precheck rejected with error`)
+          this.logger.error(`Error in ${key} precheck: ${precheck.error}`)
+          this.promises.get(key).resolve({ [key]: false, [`${key}Latency`]: -1, ...precheck })
+        }
+        else if(key === 'connect' && precheck.error === false && precheck?.result){
+          this.logger.debug(`${key}: precheck rejected with cached result`)
+          this.logger.warn(`Precheck found that connect check was already fulfilled, returning cached result`)
+          this.promises.get(key).resolve(precheck.result)
+        }
+        else {
+          throw new Error(`start(): precheck rejection for ${key} should not ever get here.`)
+        }
+        deferred.reject()
+      })
+    return deferred.promise
   }
 
-  async finish(key, result={}, resolve){
+  async finish(key, result={}){
+    this.logger.debug(`${key}: finish()`)
     this.current = null
     this.latency.finish(key)
     result[`${key}Latency`] = this.latency.duration(key)
     this.results.set('url', this.url)
     this.results.set(`${key}Latency`, result[`${key}Latency`])
     this.results.setMany(result)
-    resolve(result)
+    this.promises.get(key).resolve(result)
     this.on_change()
+  }
+
+  async precheck(key){
+    this.logger.debug(`${key}: precheck()`)
+    const deferred = this.addDeferred(`precheck_${key}`)
+    const needsWebsocket = ['connect', 'read', 'write'].includes(key)
+    const keyIsConnect = key === 'connect'
+    const resolvePrecheck = deferred.resolve
+    const rejectPrecheck = deferred.reject
+    const connectAttempted = this.promises.reflect('connect').state.isFulfilled
+
+    const waitForConnection = async () => {
+      this.logger.debug(`${key}: waitForConnection()`)
+      if(this.isConnected())
+        return resolvePrecheck()
+      if(this.isConnecting())
+        setTimeout(waitForConnection, 100)
+      if(this.isClosed())
+        return rejectPrecheck({ error: true, reason: new Error(`Cannot check ${key}, websocket connection to relay is closed`) })
+    }
+
+    const prechecker = async () => {
+      this.logger.debug(`${key}: prechecker()`)
+      //Doesn't need websocket. Resolve precheck immediately.
+      
+      if( !needsWebsocket ){  
+        this.logger.debug(`${key}: prechecker(): doesn't need websocket. Continue to ${key} check`)
+        return resolvePrecheck()
+      }
+
+      //Websocket is open, and key is not connect, resolve precheck
+      if( keyIsConnect && !this.isConnected() ) {  
+        this.logger.debug(`${key}: prechecker(): websocket is not open, and key is connect. Continue to check.`)
+        return resolvePrecheck()
+      }
+
+      //Websocket is open, and key is not connect, resolve precheck
+      if( !keyIsConnect && this.isConnected() ) {  
+        this.logger.debug(`${key}: prechecker(): websocket is open, key is not connect. Continue to check.`)
+        return resolvePrecheck()
+      }
+
+      //Websocket is connecting
+      if( this.isConnecting() ) {
+        this.logger.debug(`${key}: prechecker(): websocket is connecting`)
+        await waitForConnection()
+        if( this.isConnected() ) 
+          return resolvePrecheck()
+        else
+          return rejectPrecheck({ error: true, reason: new Error(`Cannot check ${key}, websocket connection could not be established`) })
+      }
+
+      //Websocket is open, key is connect, reject precheck and directly resolve check deferred promise with cached result to bypass starting the connect check.
+      if(keyIsConnect && this.isConnected()) {
+        this.logger.debug(`${key}: prechecker(): websocket is open, key is connect`)
+        // this.logger.debug(`precheck(${key}):prechecker():websocket is open, key is connect`)
+        rejectPrecheck({ error: false, reason: 'Cannot check connect because websocket is already connected, returning cached result'})
+      }
+
+      //Websocket is not connecting, key is not connect
+      if( !keyIsConnect && !this.isConnected()) {
+        this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect`)
+        const error = { error: true, reason: new Error(`Cannot check ${key}, no active websocket connection to relay`) }
+        if(connectAttempted){
+          this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect, connectAttempted is true`)
+          this.logger.warn(`Error in ${key} precheck: ${error.reason}`)
+          return rejectPrecheck(error)
+        }
+        const result = await this.check('connect')
+        if(result.connect){
+          this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect, connectAttempted is false, connect check succeeded`)
+          return resolvePrecheck()
+        }
+        else {
+          this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect, connectAttempted is false, connect check failed`)
+          return rejectPrecheck(error)
+        }
+      } 
+      this.logger.debug(`${key}: Made it here without resolving or rejecting precheck. You missed something.`)
+    }
+    await prechecker()
+    return deferred.promise
   }
 
   subid(key){
@@ -392,8 +515,11 @@ export default class {
     return this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
   }
 
-  addPromise(key){
-    return this.promises.add(key, this.config?.[`${key}_timeout`])
+  addDeferred(key){
+    const existingDeferred = this.promises.get(key)
+    if(!existingDeferred)
+      this.promises.add(key, this.config?.[`${key}_timeout`])
+    return this.promises.get(key)
   }
 
   routeAdapter(key){
@@ -426,6 +552,7 @@ export default class {
   }
 
   defaultAdapters(){
+    this.logger.debug(`defaultAdapters()`)
     if(this.adaptersInitialized) 
       return this.adapters
     this.defaultAdapterKeys().forEach( adapterKey => {

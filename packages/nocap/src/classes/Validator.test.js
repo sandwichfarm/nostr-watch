@@ -40,7 +40,7 @@ describe('Validator', () => {
   it('should dump all properties except defaults', () => {
     validator.name = 'Bob';
     validator.age = 40;
-    const dumped = validator.dump();
+    const dumped = validator.raw();
 
     expect(dumped).toEqual({ name: 'Bob', age: 40 });
     expect(dumped.defaults).toBeUndefined();

@@ -36,9 +36,9 @@ export default class {
     //
     this.adaptersInitialized = false
     this.adapters = {}
-    this.adaptersValid = ['relay', 'info', 'geo', 'dns','ssl']
+    this.adaptersValid = ['websocket', 'info', 'geo', 'dns','ssl']
     //
-    this.checks = ['connect', 'read', 'write', 'info', 'geo', 'dns', 'ssl']
+    this.checks = ['connect', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
     //
     this.config = new ConfigInterface(config)
     this.results = new ResultInterface()
@@ -75,7 +75,7 @@ export default class {
   async check(keys){
     if(keys === "all") {
       await this.check(this.checks)
-      return this.results.dump()
+      return this.results.raw()
     }
 
     if(typeof keys === 'string')
@@ -96,8 +96,8 @@ export default class {
     this.defaultAdapters()
     await this.start(key)
     const result = await this.promises.get(key).promise
-    if(result?.error) {
-      this.on_check_error( key, result )
+    if(result.status === "error") {
+      this.on_check_error( key, { status: "error", message: result.message } )
     }
     return result
   } 
@@ -139,15 +139,19 @@ export default class {
     return deferred.promise
   }
 
-  async finish(key, result={}){
+  async finish(key, data={}){
     this.logger.debug(`${key}: finish()`)
     this.current = null
     this.latency.finish(key)
-    result[`${key}Latency`] = this.latency.duration(key)
-    this.results.set('url', this.url)
-    this.results.set(`${key}Latency`, result[`${key}Latency`])
-    this.results.setMany(result)
-    this.promises.get(key).resolve(result)
+    const url = this.results.get('url')
+    const network = this.results.get('network')
+    const adapter_key = this.routeAdapter(key)
+    const adapter_name = this.adapters[adapter_key].constructor.name 
+    const adapters = [ ...new Set( this.results.get('adapters').concat([adapter_name]) ) ]
+    const checked_at = Date.now()
+    data.duration = this.latency.duration(key)
+    this.results.setMany({ checked_at, adapters, [key]: {...data} })
+    this.promises.get(key).resolve({ url, network, checked_at, adapters, ...data })
     this.on_change()
   }
 
@@ -166,7 +170,7 @@ export default class {
       if(this.isConnecting())
         setTimeout(waitForConnection, 100)
       if(this.isClosed())
-        return rejectPrecheck({ error: true, reason: new Error(`Cannot check ${key}, websocket connection to relay is closed`) })
+        return rejectPrecheck({ status: "error", message: new Error(`Cannot check ${key}, websocket connection to relay is closed`) })
     }
 
     const prechecker = async () => {
@@ -197,23 +201,23 @@ export default class {
         if( this.isConnected() ) 
           return resolvePrecheck()
         else
-          return rejectPrecheck({ error: true, reason: new Error(`Cannot check ${key}, websocket connection could not be established`) })
+          return rejectPrecheck({ status: "error", message: `Cannot check ${key}, websocket connection could not be established` })
       }
 
       //Websocket is open, key is connect, reject precheck and directly resolve check deferred promise with cached result to bypass starting the connect check.
       if(keyIsConnect && this.isConnected()) {
         this.logger.debug(`${key}: prechecker(): websocket is open, key is connect`)
         // this.logger.debug(`precheck(${key}):prechecker():websocket is open, key is connect`)
-        rejectPrecheck({ error: false, reason: 'Cannot check connect because websocket is already connected, returning cached result'})
+        rejectPrecheck({ status: "error", message: 'Cannot check connect because websocket is already connected, returning cached result'})
       }
 
       //Websocket is not connecting, key is not connect
       if( !keyIsConnect && !this.isConnected()) {
         this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect`)
-        const error = { error: true, reason: new Error(`Cannot check ${key}, no active websocket connection to relay`) }
+        const error = { status: "error", message: `Cannot check ${key}, no active websocket connection to relay` }
         if(connectAttempted){
           this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect, connectAttempted is true`)
-          this.logger.warn(`Error in ${key} precheck: ${error.reason}`)
+          this.logger.warn(`Error in ${key} precheck: ${error.message}`)
           return rejectPrecheck(error)
         }
         const result = await this.check('connect')
@@ -347,7 +351,7 @@ export default class {
    * @returns null
    */
   on_notice(notice){
-    console.log(notice)
+    this.logger.info(notice)
     this.track('relay', 'notice', notice)
     this.cbcall('notice')
     if(this?.adapters?.relay?.handle_notice)
@@ -397,6 +401,18 @@ export default class {
     this?.handle_auth(challenge)
   }
 
+    /**
+   * on_check_error
+   * Implementation specific Event triggered by Check.finish
+   * 
+   * @private
+   * @returns null
+   */
+    on_check_error(key, err){
+      this.cbcall('error', key, err)
+      this.track(key, 'error', err)
+    }
+
   /**
    * on_change
    * Implementation specific Event triggered by Check.finish
@@ -414,9 +430,8 @@ export default class {
    * @private
    * @returns null
    */ 
-  handle_connect_check(success){
-    const result = { connect: success }
-    this.finish('connect', result, this.promises.get('connect').resolve)
+  handle_connect_check(data){
+    this.finish('connect', { data }, this.promises.get('connect').resolve)
   }
 
   /**
@@ -425,9 +440,8 @@ export default class {
    * @private
    * @returns null
    */ 
-  handle_read_check(success){
-    const result = { read: success }
-    this.finish('read', result, this.promises.get('read').resolve)
+  handle_read_check(data){
+    this.finish('read', { data }, this.promises.get('read').resolve)
   }
 
   /**
@@ -436,9 +450,8 @@ export default class {
    * @private
    * @returns null
    */
-  handle_write_check(success){
-    const result = { write: success }
-    this.finish('write', result, this.promises.get('write').resolve)
+  handle_write_check(data){
+    this.finish('write', { data }, this.promises.get('write').resolve)
   }
 
   /**
@@ -526,7 +539,7 @@ export default class {
       case 'connect':
       case 'read':
       case 'write':
-        return 'relay'
+        return 'websocket'
       case 'info':
       case 'geo':
       case 'dns':

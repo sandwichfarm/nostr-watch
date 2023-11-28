@@ -7,19 +7,17 @@ class DnsAdapterDefault {
     this.$ = parent
   }
   async check_dns(){ 
+    let result, data = {}
     if(this.$.results.get('network') !== 'clearnet')
       return this.$.logger.warn('DNS check skipped for url not accessible over clearnet')
     let err = false
     let url = this.$.url.replace('wss://', '').replace('ws://', '')
     const query = `https://1.1.1.1/dns-query?name=${url}`
     const headers = { accept: 'application/dns-json' }
-    const response = await fetch( query, { headers } ).catch((e) => { err = e })
-    if(err) return this.$.throw(err)
-    const dns = await response.json().catch((e) => { err = e })
-    if(err) return this.$.throw(err)
-    const ipv4 = dns?.Answer?.length ? this.filterIPv4FromDoh(dns) : []
-    const ipv6 = dns?.Answer?.length ? this.filterIPv6FromDoh(dns) : []
-    const result = { dns, ipv4, ipv6 }
+    const response = await fetch( query, { headers } ).catch((e) => { result = { status: "error", message: e.message, data } })
+    data = await response.json()
+    if(!result)
+      result = { status: "success", data }
     this.$.finish('dns', result)
   } 
 

@@ -11,7 +11,7 @@ import { TimeoutHelper } from "./classes/TimeoutHelper.js";
 import DnsAdapterDefault from '@nostrwatch/nocap-dns-adapter-default'
 import GeoAdapterDefault from '@nostrwatch/nocap-geo-adapter-default'
 import InfoAdapterDefault from '@nostrwatch/nocap-info-adapter-default'
-import RelayAdapterDefault from '@nostrwatch/nocap-relay-adapter-default'
+import RelayAdapterDefault from '../adapters/default/WebsocketAdapterDefault/index.js'
 import SslAdapterDefault from '@nostrwatch/nocap-ssl-adapter-default'
 
 export {

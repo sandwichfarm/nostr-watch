@@ -7,7 +7,7 @@ export class Validator {
       throw new Error(`${this.constructor.name} property ${key} is not of type ${typeof value}`)
   }
 
-  set(key, value) {
+  _set(key, value) {
     this.validate(key, value)
     this[key] = value
   }
@@ -18,7 +18,7 @@ export class Validator {
     })
   }
 
-  get(key) {
+  _get(key) {
     this.validate(key)
     return this[key]
   }
@@ -30,10 +30,11 @@ export class Validator {
     }, {})
   }
 
-  dump(){
+  raw(){
     return { ...Object.keys(this.defaults).reduce((acc, key) => {
       acc[key] = this[key]
       return acc
     }, {}) }
   }
+  
 }

@@ -60,10 +60,23 @@ export const crawl = async function($job){
           
           //prepare relays for rdb
           relayList = relayList.map( relay => {
-            const result = new ResultInterface()
-            result.set('url', relay)
-            result.set('network', parseRelayNetwork(relay))
-            return result.dump()
+            const result = {
+              url: relay,
+              network: parseRelayNetwork(relay),
+              status: {
+                connect: false,
+                read: false,
+                write: false 
+              },
+              info: "",
+              geo: "",
+              dns: "",
+              ssl: "",
+              checked_at: -1,
+              first_seen: -1,
+              last_seen: -1
+            }
+            return result
           })
 
           const listPersisted = await rdb.relay.batch.insertIfNotExists(relayList)

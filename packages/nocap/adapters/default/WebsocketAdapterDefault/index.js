@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 
-class RelayAdapterDefault {
+class WebsocketAdapterDefault {
 
   constructor(parent){
     this.$ = parent
@@ -80,4 +80,4 @@ class RelayAdapterDefault {
   }
 }
 
-export default RelayAdapterDefault
+export default WebsocketAdapterDefault

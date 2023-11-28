@@ -23,4 +23,13 @@ export class ConfigInterface extends Validator {
     Object.assign(this, ConfigDefaults, config)
     this.defaults = Object.freeze(ConfigDefaults)
   }
+
+  get(key){
+    this._get(key)
+  }
+
+  set(key, value){
+    this._get(key, value)
+  }
+  
 }

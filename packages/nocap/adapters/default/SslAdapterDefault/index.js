@@ -7,7 +7,7 @@ class SslAdapterDefault {
     this.$ = parent
   }
 
-  async check_ssl(resolve){
+  async check_ssl(){
     const url = new URL(this.$.url)
     const hostname = url.hostname 
     const timeout = this.$.config?.ssl_timeout? this.$.config.ssl_timeout: 1000
@@ -20,8 +20,7 @@ class SslAdapterDefault {
     response.validFor.push(await sslValidator.validateSSL(response.cert.pemEncoded, { domain: url.hostname }))
     response.validFor = [...new Set(response.validFor)].filter( domain => domain instanceof String && domain !== "" )
     const result = { ssl: response }
-    resolve('ssl', result)
-    
+    this.$.finish('ssl', result)
   }
 
   sslCheckerOptions(port){

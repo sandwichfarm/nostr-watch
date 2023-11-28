@@ -6,7 +6,7 @@ class DnsAdapterDefault {
   constructor(parent){ 
     this.$ = parent
   }
-  async check_dns(resolve){ 
+  async check_dns(){ 
     if(this.$.results.get('network') !== 'clearnet')
       return this.$.logger.warn('DNS check skipped for url not accessible over clearnet')
     let err = false
@@ -20,7 +20,7 @@ class DnsAdapterDefault {
     const ipv4 = dns?.Answer?.length ? this.filterIPv4FromDoh(dns) : []
     const ipv6 = dns?.Answer?.length ? this.filterIPv6FromDoh(dns) : []
     const result = { dns, ipv4, ipv6 }
-    resolve('dns', result)
+    this.$.finish('dns', result)
   } 
 
   filterIPv4FromDoh(jsonData) {

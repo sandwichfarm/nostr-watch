@@ -25,21 +25,21 @@ describe('DeferredWrapper', () => {
 
   it('should add a new deferred promise', () => {
     const deferred = deferredWrapper.add('testKey');
-    expect(typeof deferred.then).toBe('function')
+    expect(typeof deferred.promise.then).toBe('function')
     expect(deferredWrapper.promises['mockSession']['testKey']).toBeInstanceOf(Deferred);
   });
 
   it('should resolve a promise', async () => {
-    const promise = deferredWrapper.add('testKey');
+    const deferred = deferredWrapper.add('testKey');
     deferredWrapper.resolve('testKey', 'testResult');
-    await expect(promise).resolves.toEqual('testResult');
+    await expect(deferred.promise).resolves.toEqual('testResult');
   });
 
   it('should reject a promise', async () => {
-    const promise = deferredWrapper.add('testKey');
+    const deferred = deferredWrapper.add('testKey');
     const testError = new Error('testError');
     deferredWrapper.reject('testKey', testError);
-    await expect(promise).rejects.toThrow(testError);
+    await expect(deferred.promise).rejects.toThrow(testError);
   });
 
   it('should reflect the state of a promise', async () => {

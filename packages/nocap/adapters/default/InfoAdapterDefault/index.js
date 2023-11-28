@@ -5,7 +5,7 @@ class InfoAdapterDefault {
     this.$ = parent
   }
 
-  async check_info(resolve){
+  async check_info(){
     const controller = new AbortController();
     const { signal } = controller;
     const url = new URL(this.$.url),
@@ -20,7 +20,7 @@ class InfoAdapterDefault {
       const response = await fetch(url.toString(), { method, headers, signal })
       const json = await response.json()
       const result = { info: json }
-      resolve('info', result)
+      this.$.finish('info', result)
     }
     catch(e) { return this.$.throw(e) }
   }

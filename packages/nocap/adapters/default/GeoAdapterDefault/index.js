@@ -5,13 +5,13 @@ import { fetch } from 'cross-fetch'
     this.$ = parent
   }
 
-  async check_geo(resolve){ 
+  async check_geo(){ 
     let err
     let endpoint 
     const ipArr = this.$.results.get('ipv4')
     const ip = ipArr[ipArr?.length-1]
     if(!ip)
-      resolve('geo', { geo: { error: 'No IP address found' } })
+      this.$.finish('geo', { geo: { error: 'No IP address. Run dns check first.' }})
     if(this.config?.auth?.ip_api_key)
       endpoint = `https://pro.ip-api.com/json/${ip}?key=${this.config.auth.ip_api_key}`
     else 
@@ -21,7 +21,7 @@ import { fetch } from 'cross-fetch'
     if(err) return this.throw(err)
     const json = await response.json()
     const result = { geo: json }
-    resolve('geo', result)
+    this.$.finish('geo', result)
   }
 }
 

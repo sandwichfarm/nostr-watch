@@ -1,4 +1,5 @@
 import { NocapdQueue } from '@nostrwatch/controlflow';
+import { Nocap, DeferredWrapper } from '@nostrwatch/nocap';
 
 export class NocapWrapper {
   constructor(relay){
@@ -10,6 +11,7 @@ export class NocapWrapper {
     this.retries = {}
     this.max_retries = 3
     this.retry_every = 5000
+    this.deferreds = new DeferredWrapper()
     this.connect()
   }
 
@@ -17,13 +19,25 @@ export class NocapWrapper {
     this.nocap.check('connect')
   }
 
-  async run_full_check(){
-    await !this.nocap.isActive()
-    return this.nocap.checkAll()
+  async run(keys){
+    if(typeof keys === 'string')
+      keys = [keys] 
+    for(const key of keys){
+      if(!this?.[`run_${key}_check`] && !(this?.[`run_${key}_check`] instanceof Function))
+        throw new Error(`No check method for ${key}`)
+      result = await this[`run_${key}_check`]()
+    }
   }
 
-  async run_full_websocket_check() {
-    await !this.nocap.isActive()
+  async run_full_check(){
+    const deferred = this.deferred.add('full_check')
+    await this.wait_for_inactive()
+    const results = await this.nocap.check()
+    return deferred.promise
+  }
+
+  async run_websocket_check() {
+    await this.wait_for_inactive()
     await this.nocap.check('read')
     await this.nocap.check('write')
     return this.nocap.results.dump() 
@@ -69,14 +83,13 @@ export class NocapWrapper {
   }
 
   async wait_for_inactive(retries=0){
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       if(this.nocap.isActive()){
         setTimeout(() => {
-          retries++
           if(retries > this.max_retries)
-            resolve()
+            reject()
           else 
-            this.wait_for_inactive(retries).then(resolve)
+            this.wait_for_inactive(retries++).then(resolve)
         }, 100)
       } else {
         resolve()

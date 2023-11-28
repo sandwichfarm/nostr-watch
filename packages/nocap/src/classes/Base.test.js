@@ -10,16 +10,18 @@ let nocap
 
 beforeAll(async () => {});
 
-afterAll(() => {});
+afterAll(() => {
+  if(nocap?.close)
+    nocap.close()
+  nocap = null
+});
 
 beforeEach(async () => {
   
 })
 
 afterEach(async () => {
-  if(nocap?.close)
-    nocap.close()
-  nocap = null
+  
 })
 
 describe("Nocap class", () => {
@@ -194,7 +196,7 @@ describe("Nocap class", () => {
 
     describe("check('connect')", async () => {
       
-      it("should returnn connect result", async () => {
+      it("should return connect result", async () => {
         const response = await nocap.check('connect')
         expect(typeof response).toBe('object');
         expect(response).toHaveProperty('connect');

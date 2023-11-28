@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+
 class RelayAdapterDefault {
 
   constructor(parent){

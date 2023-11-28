@@ -26,13 +26,12 @@ class RelayAdapterDefault {
    * @private
    * @returns promise<result?>
    */
-  async check_read(format = 'json'){
+  async check_read(){
     let event = JSON.stringify(['REQ', this.$.subid('read'), { limit: 1, kinds: [1] }])
-    if(format === 'binary')
-      event = Buffer.from(event)
     this.$.ws.send(event)
     return this.$.addPromise('read')
   }
+  
   /**
    * check_write
    * Returns a promise that resolves to the result of the write check, called by Base.checkWrite

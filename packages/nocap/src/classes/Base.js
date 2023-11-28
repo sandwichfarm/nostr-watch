@@ -30,7 +30,7 @@ export default class {
     this.ws = null         //set by adapter, needed for conn. status. might be refactored.
     this.$instance = null   //placeholder for adapters to use for storing a pre-initialized instance
     this.cb = {}     //holds user defined callbacks
-    this.current = ""
+    this.current = null
     //
     this.adaptersInitialized = false
     this.adapters = {}
@@ -60,6 +60,10 @@ export default class {
     return this[key]
   }
 
+  isActive(){
+    return this.current === null? false: true 
+  }
+
   async checkAll(){
     this.defaultAdapters()
     for(const check of this.checks) {
@@ -76,12 +80,11 @@ export default class {
     if( !this?.adapters?.[adapter]?.[`check_${key}`] )
       return this.throw(`Cannot check ${key}, key invalid`)
     await this.start(key)
-    await this.adapters[adapter][`check_${key}`](this.quick_resolve_check.bind(this))
-    this.current = key
+    await this.adapters[adapter][`check_${key}`](this.single_step_resolve.bind(this))
     return this.promises.get(key).promise
   } 
 
-  quick_resolve_check(key, result){
+  single_step_resolve(key, result){
     this.addPromise(key)
     return this.finish(key, result, this.promises.get(key).resolve)
   }
@@ -92,10 +95,12 @@ export default class {
       if(!this.isConnected())
         throw new Error(`Cannot check ${key}, cannot connect to relay`)
     }
+    this.current = key
     this.latency.start(key)
   }
 
   async finish(key, result={}, resolve){
+    this.current = null
     this.latency.finish(key)
     result[`${key}Latency`] = this.latency.duration(key)
     this.results.set('url', this.url)

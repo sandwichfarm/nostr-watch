@@ -1,7 +1,7 @@
 import Nocap from "./classes/Base.js";
 
-import { ConfigInterface } from "./interfaces/ConfigInterface.js";
-import { ResultInterface } from "./interfaces/ResultInterface.js";
+import { ConfigInterface } from "./types/NocapConfig.js";
+import { ResultInterface } from "./types/NocapResult.js";
 
 import { DeferredWrapper } from "./classes/DeferredWrapper.js";
 import { LatencyHelper } from "./classes/LatencyHelper.js";

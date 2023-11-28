@@ -22,7 +22,7 @@ export class DeferredWrapper {
     return this.get(key).promise
   }
 
-  resolve(key, result){
+  resolve(key, result){ 
     if(this.timeout.has(key))
       clearTimeout(this.timeout.get(key))
     this.get(key).resolve(result)
@@ -31,7 +31,7 @@ export class DeferredWrapper {
   reject(key, error){
     if(this.timeout.has(key))
       clearTimeout(this.timeout.get(key))
-    this.promises.get(key).reject(error)
+    this.get(key).reject(error)
   }
 
   reflect(key) {

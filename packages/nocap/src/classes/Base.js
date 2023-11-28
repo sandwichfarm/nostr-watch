@@ -63,7 +63,7 @@ export default class {
   async checkAll(){
     this.defaultAdapters()
     for(const check of this.checks) {
-      await this.check(check)
+      await this.check(check).catch(this.logger.warn)
     }
     return this.results.dump()
   }
@@ -98,6 +98,7 @@ export default class {
   async finish(key, result={}, resolve){
     this.latency.finish(key)
     result[`${key}Latency`] = this.latency.duration(key)
+    this.results.set('url', this.url)
     this.results.set(`${key}Latency`, result[`${key}Latency`])
     this.results.setMany(result)
     resolve(result)
@@ -166,6 +167,7 @@ export default class {
    */
   on_open(e){
     this.cbcall('open', e)
+    this.track('relay', 'open')
     this.handle_connect_check(true)
   }
 
@@ -178,6 +180,7 @@ export default class {
    */
   on_error(err){
     this.cbcall('error')
+    this.track('relay', 'error', err)
     this?.handle_error(err)
   }
 
@@ -190,6 +193,7 @@ export default class {
    */
   on_close(e){
     this.cbcall('close', e)
+    this.track('relay', 'close', e)
     this?.handle_close(e)
   }
 
@@ -202,11 +206,7 @@ export default class {
    */
   on_event(subid, ev){
     this.unsubscribe(subid)
-    // if(Buffer.isBuffer(ev))
-    //   ev = JSON.parse(buffer.toString())
-    // else if(typeof ev === 'string')
-    //   ev = JSON.parse(ev)
-    // ev = JSON.parse(ev.toString())
+    this.track('relay', 'event', ev.id)
     if(this?.adapters?.relay?.handle_event)
       this.adapters.relay.handle_event(subid, ev)
     this.handle_read_check(true)
@@ -221,7 +221,7 @@ export default class {
    */
   on_notice(notice){
     console.log(notice)
-    this.logger.warn(notice)
+    this.track('relay', 'notice', notice)
     this.cbcall('notice')
     if(this?.adapters?.relay?.handle_notice)
       this.adapters.relay.handle_notice(notice)
@@ -236,6 +236,7 @@ export default class {
    */
   on_eose(eose){
     this.cbcall('eose')
+    this.track('relay', 'eose', eose) 
     this.handle_eose(eose)
     if(this.promises.reflect('read').state.isPending)
       this?.logger.warn(`received EOSE event but read promise is pending`)
@@ -249,7 +250,6 @@ export default class {
    * @returns null
    */  
   on_ok(ok){
-    console.log('on_ok')  
     this.cbcall('ok')
     this.handle_ok(ok)
     this.handle_write_check(true)
@@ -266,6 +266,7 @@ export default class {
    */
   on_auth(challenge){
     this.cbcall('auth', challenge)
+    this.track('relay', 'auth', challenge)
     this?.handle_auth(challenge)
   }
 
@@ -345,7 +346,7 @@ export default class {
     // this.finish('duration', result)
   }  
   
-  log(adapter, key, data){
+  track(adapter, key, data){
     if(!this.enableCheckLog)
       return
 
@@ -359,11 +360,11 @@ export default class {
     })
   }
 
-  getLog(key){
+  getTrack(key){
     return this.logdata?.[key] || false
   }
 
-  clearLog(session){
+  clearTrack(session){
     if(session)
       delete this.logdata[session]
     else
@@ -429,13 +430,13 @@ export default class {
       }
     })
     this.adaptersInitialized = true
-    return this.adapters
+    return this.adapters 
   }
 
   getAdapterType(adapterName){
     let type 
     this.adaptersValid.forEach(adapterKey => {
-      if(adapterName.toLowerCase().startsWith(adapterKey))
+      if(adapterName.toLowerCase().startsWith(adapterKey)) 
         type = adapterKey
     })
     if(typeof type === 'undefined')

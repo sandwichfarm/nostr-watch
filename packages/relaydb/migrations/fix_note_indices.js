@@ -9,9 +9,12 @@
  * remove them.
  */
 
+import dotenv from 'dotenv'
 
 import lmdb from '../index.js'
 const db = lmdb('/Users/sandwich/Develop/nostr-watch/packages/trawler/lmdb/nw.mdb')
+
+dotenv.config()
 
 const chunkArray = function(arr, chunkSize) {
   if (chunkSize <= 0) {

@@ -35,7 +35,9 @@ export class DeferredWrapper {
   }
 
   reflect(key) {
-    const promise = this.get(key).promise;
+    const promise = this.get(key).promise;    
+    if(!promise) 
+      return false
     const state = { isFulfilled: false, isRejected: false, isPending: true };
     const reflectedPromise = promise
         .then(
@@ -57,8 +59,12 @@ export class DeferredWrapper {
     return this.get(key)
   }
 
+  exists(key){
+    return this.promises?.[this.session()]?.[key]
+  }
+
   get(key){
-    const deferred = this.promises[this.session()]?.[key]
+    const deferred = this.promises[this.session()][key]
     return deferred
   }
 

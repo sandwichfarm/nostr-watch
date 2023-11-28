@@ -47,6 +47,7 @@ export default class {
     this.latency = new LatencyHelper(this.session)
     this.promises = new DeferredWrapper(this.session, this.timeouts)
     this.logger = new Logger(url, this.config.logLevel)
+    this.customChecks = {}
     //
     this.SAMPLE_EVENT = SAMPLE_EVENT
     //
@@ -68,15 +69,28 @@ export default class {
   }
 
   async checkAll(){
-    this.logger.debug(`checkAll()`)
-    this.defaultAdapters()
-    for(const check of this.checks) {
-      await this.check(check)
-    }
-    return this.results.dump()
+    return this.check('all')
   }
 
-  async check(key){ 
+  async check(keys){
+    if(keys === "all") {
+      await this.check(this.checks)
+      return this.results.dump()
+    }
+      
+    if(typeof keys === 'string')
+      return this._check(keys)
+    
+    if(keys instanceof Array) {
+      let result = {}
+      for(const key of keys){
+        result = { ...result, ...await this._check(key) }
+      }
+      return new Promise(resolve => resolve(result))
+    }
+  }
+
+  async _check(key){ 
     this.logger.debug(`check(${key})`)
     this.defaultAdapters()
     await this.start(key)
@@ -87,24 +101,8 @@ export default class {
     return result
   } 
 
-  // async _check(keys){
-  //   if(keys === "all")
-  //     return this.check(this.checks)
-  
-  //   if(typeof keys === 'string')
-  //     return this._check(keys)
-    
-  //   if(keys instanceof Array) {
-  //     let result = {}
-  //     for(const key of keys){
-  //       result = { ...result, ...await this.check(key) }
-  //     }
-  //     return new Promise(resolve => resolve(result))
-  //   }
-  // }
-
   async start(key){
-    this.logger.debug(`start(${key})`)
+    this.logger.debug(`${key}: start()`)
     const deferred = this.addDeferred(key)
     const adapter = this.routeAdapter(key)
 
@@ -132,7 +130,7 @@ export default class {
           this.promises.get(key).resolve(precheck.result)
         }
         else {
-          throw new Error(`start(): precheck rejection for ${key} should not ever get here.`)
+          throw new Error(`start(): precheck rejection for ${key} should not ever get here: ${JSON.stringify(precheck)}`)
         }
         deferred.reject()
       })
@@ -152,13 +150,12 @@ export default class {
   }
 
   async precheck(key){
-    this.logger.debug(`${key}: precheck()`)
     const deferred = this.addDeferred(`precheck_${key}`)
     const needsWebsocket = ['connect', 'read', 'write'].includes(key)
     const keyIsConnect = key === 'connect'
     const resolvePrecheck = deferred.resolve
     const rejectPrecheck = deferred.reject
-    const connectAttempted = this.promises.reflect('connect').state.isFulfilled
+    const connectAttempted = this.promises.exists('connect') && this.promises.reflect('connect').state.isFulfilled
 
     const waitForConnection = async () => {
       this.logger.debug(`${key}: waitForConnection()`)
@@ -171,7 +168,7 @@ export default class {
     }
 
     const prechecker = async () => {
-      this.logger.debug(`${key}: prechecker()`)
+      this.logger.debug(`${key}: prechecker(): needs websocket: ${needsWebsocket}, key is connect: ${keyIsConnect}, connectAttempted: ${connectAttempted}`)
       //Doesn't need websocket. Resolve precheck immediately.
       
       if( !needsWebsocket ){  
@@ -516,7 +513,7 @@ export default class {
   }
 
   addDeferred(key){
-    const existingDeferred = this.promises.get(key)
+    const existingDeferred = this.promises.exists(key)
     if(!existingDeferred)
       this.promises.add(key, this.config?.[`${key}_timeout`])
     return this.promises.get(key)

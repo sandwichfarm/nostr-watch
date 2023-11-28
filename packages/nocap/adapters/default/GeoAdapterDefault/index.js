@@ -11,7 +11,7 @@ import { fetch } from 'cross-fetch'
     const ipArr = this.$.results.get('ipv4')
     const ip = ipArr[ipArr?.length-1]
     if(!ip)
-      this.$.finish('geo', { geo: { error: 'No IP address found' }})
+      this.$.finish('geo', { geo: { error: 'No IP address. Run dns check first.' }})
     if(this.config?.auth?.ip_api_key)
       endpoint = `https://pro.ip-api.com/json/${ip}?key=${this.config.auth.ip_api_key}`
     else 

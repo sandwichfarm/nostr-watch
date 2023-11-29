@@ -16,14 +16,6 @@ afterAll(() => {
   nocap = null
 });
 
-beforeEach(async () => {
-  
-})
-
-afterEach(async () => {
-  
-})
-
 describe("Nocap class", () => {
 
   let nocap = new Nocap(url);

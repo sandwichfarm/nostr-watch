@@ -9,9 +9,7 @@ import CacheTimeMixin from "./mixins/cachetime.js"
 import StatMixin from "./mixins/stat.js"
 import ServiceMixin from "./mixins/service.js"
 import NoteMixin from "./mixins/note.js";
-
 import Logger from "@nostrwatch/logger" 
-const logger = new Logger('lmdb')
 
 let open;
 
@@ -29,8 +27,9 @@ class DbWrapper {
   constructor(dbPath, opts={}){
     this.$ = withExtensions(open(dbPath, opts));
     this.$ = schemas(this.$);
+    this.logger = new Logger('lmdb')
   }
-  addSchema(cl) {
+  addHelpers(cl) {
     const key = cl.name.toLowerCase().replace("mixin","")
     if(!cl)
       throw new Error("Missing schema class")
@@ -42,7 +41,7 @@ class DbWrapper {
   }
 }
 
-let db 
+let db
 
 export default (dbPath, opts={}) => {
   if(!db) {
@@ -50,12 +49,12 @@ export default (dbPath, opts={}) => {
     if(!db?.$)
       throw new Error("Failed to initialize LMDB database")
   }
-  db.addSchema(ServiceMixin)
-  db.addSchema(RelayMixin)
-  db.addSchema(CheckMixin)
-  db.addSchema(InfoMixin)
-  db.addSchema(CacheTimeMixin)
-  db.addSchema(StatMixin)
-  db.addSchema(NoteMixin)
+  db.addHelpers(ServiceMixin)
+  db.addHelpers(RelayMixin)
+  db.addHelpers(CheckMixin)
+  db.addHelpers(InfoMixin)
+  db.addHelpers(CacheTimeMixin)
+  db.addHelpers(StatMixin)
+  db.addHelpers(NoteMixin)
   return db
 }

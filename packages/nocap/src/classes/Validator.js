@@ -30,8 +30,9 @@ export class Validator {
     }, {})
   }
 
-  raw(){
-    return { ...Object.keys(this.defaults).reduce((acc, key) => {
+  _raw(keys=null){
+    keys = keys? keys : Object.keys(this)
+    return { ...keys.reduce((acc, key) => {
       acc[key] = this[key]
       return acc
     }, {}) }

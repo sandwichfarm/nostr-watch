@@ -72,27 +72,33 @@ export default class {
     return this.check('all')
   }
 
-  async check(keys){
-    if(keys === "all") {
-      await this.check(this.checks)
-      return this.results.raw()
-    }
-
-    if(typeof keys === 'string')
-      return this._check(keys)
+  async rawResult(key, raw){
     
-    if(keys instanceof Array && keys.length) {
-      let result = {}
-      for(const key of keys){
-        result = { ...result, ...await this._check(key) }
-      }
-      return new Promise(resolve => resolve(result))
+  }
+
+  async check(keys, raw=true){
+    let result 
+    if(keys == "all") {
+      console.log('check all')
+      return this.check(this.checks)
     }
-    return this.throw(`check(${keys}) failed. keys must be string or populated array`)
+    else if(typeof keys === 'string') {
+      result = await this._check(keys)
+    }
+    else if(keys instanceof Array && keys.length) {
+      for(const key of keys){
+        await this._check(key)
+      }
+      result = this.results.raw(keys)
+    }
+    else {
+      return this.throw(`check(${keys}) failed. keys must be string or populated array`)
+    }
+    return raw? result: this.results.cleanResult(keys, result)
   }
 
   async _check(key){ 
-    this.logger.debug(`check(${key})`)
+    this.logger.debug(`${key}: check()`)
     this.defaultAdapters()
     await this.start(key)
     const result = await this.promises.get(key).promise
@@ -121,15 +127,15 @@ export default class {
         this.adapters[adapter][`check_${key}`]()
       })
       .catch((precheck) => {
-        if(precheck.error === true) {
-          this.logger.debug(`${key}: precheck rejected with error`)
-          this.logger.error(`Error in ${key} precheck: ${precheck.error}`)
-          this.promises.get(key).resolve({ [key]: false, [`${key}Latency`]: -1, ...precheck })
-        }
-        else if(key === 'connect' && precheck.error === false && precheck?.result){
+        if(key === 'connect' && precheck.status == "error" && precheck?.result){
           this.logger.debug(`${key}: precheck rejected with cached result`)
           this.logger.warn(`Precheck found that connect check was already fulfilled, returning cached result`)
           this.promises.get(key).resolve(precheck.result)
+        }
+        else if(precheck.status == "error") {
+          this.logger.debug(`${key}: precheck rejected with error`)
+          this.logger.err(`Error in ${key} precheck: ${precheck.error}`)
+          this.promises.get(key).resolve({ [key]: false, [`${key}Latency`]: -1, ...precheck })
         }
         else {
           throw new Error(`start(): precheck rejection for ${key} should not ever get here: ${JSON.stringify(precheck)}`)
@@ -149,9 +155,10 @@ export default class {
     const adapter_name = this.adapters[adapter_key].constructor.name 
     const adapters = [ ...new Set( this.results.get('adapters').concat([adapter_name]) ) ]
     const checked_at = Date.now()
-    data.duration = this.latency.duration(key)
-    this.results.setMany({ checked_at, adapters, [key]: {...data} })
-    this.promises.get(key).resolve({ url, network, checked_at, adapters, ...data })
+    data.duration = this.latency.duration(key)  
+    const result = { url, network, checked_at, adapters, [key]: {...data} }
+    this.results.setMany(result)
+    this.promises.get(key).resolve(result)
     this.on_change()
   }
 
@@ -214,21 +221,7 @@ export default class {
       //Websocket is not connecting, key is not connect
       if( !keyIsConnect && !this.isConnected()) {
         this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect`)
-        const error = { status: "error", message: `Cannot check ${key}, no active websocket connection to relay` }
-        if(connectAttempted){
-          this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect, connectAttempted is true`)
-          this.logger.warn(`Error in ${key} precheck: ${error.message}`)
-          return rejectPrecheck(error)
-        }
-        const result = await this.check('connect')
-        if(result.connect){
-          this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect, connectAttempted is false, connect check succeeded`)
-          return resolvePrecheck()
-        }
-        else {
-          this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect, connectAttempted is false, connect check failed`)
-          return rejectPrecheck(error)
-        }
+        return rejectPrecheck({ status: "error", message: `Cannot check ${key}, no active websocket connection to relay` })
       } 
       this.logger.debug(`${key}: Made it here without resolving or rejecting precheck. You missed something.`)
     }

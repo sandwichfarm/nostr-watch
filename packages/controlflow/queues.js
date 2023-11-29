@@ -1,20 +1,20 @@
 import dotenv from 'dotenv'
-import { Queue } from 'bullmq';
+import { Queue, QueueEvents, Worker } from 'bullmq';
 import { RedisConnectionDetails } from '@nostrwatch/utils'
 
 dotenv.config()
 
-const Trawler = (qopts) => {
+const Trawler = (qopts={}) => {
   qopts = { connection: RedisConnectionDetails(), ...qopts }
   return new Queue('Trawler', qopts)
 }
 
-const Nocapd = (qopts) => {
+const Nocapd = (qopts={}) => {
   qopts = { connection: RedisConnectionDetails(), ...qopts }
   return new Queue('Nocapd', qopts)
 }
 
-const RestApi = (qopts) => {
+const RestApi = (qopts={}) => {
   qopts = { connection: RedisConnectionDetails(), ...qopts }
   return new Queue('Nocapd', qopts)
 }
@@ -22,5 +22,8 @@ const RestApi = (qopts) => {
 export {
   Trawler,
   Nocapd,
-  RestApi
+  RestApi,
+  Queue as BullQueue,
+  QueueEvents as BullQueueEvents,
+  Worker as BullWorker, 
 }

@@ -6,6 +6,7 @@ class InfoAdapterDefault {
   }
 
   async check_info(){
+    let result, data = {}
     const controller = new AbortController();
     const { signal } = controller;
     const url = new URL(this.$.url),
@@ -15,14 +16,16 @@ class InfoAdapterDefault {
     url.protocol = 'https:'
 
     this.$.timeouts.create('info', this.$.config.info_timeout, () => controller.abort())
-
     try {
       const response = await fetch(url.toString(), { method, headers, signal })
-      const json = await response.json()
-      const result = { info: json }
-      this.$.finish('info', result)
+      data = await response.json()
     }
-    catch(e) { return this.$.throw(e) }
+    catch(e) { 
+      result = { status: "error", message: e.message, data }
+    }
+    if(!result)
+      result = { status: "success", data }
+    this.$.finish('info', result)
   }
 }
 

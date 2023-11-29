@@ -8,25 +8,22 @@ class SslAdapterDefault {
   }
 
   async check_ssl(){
+    let result, data = {}
     const url = new URL(this.$.url)
     const hostname = url.hostname 
     const timeout = this.$.config?.ssl_timeout? this.$.config.ssl_timeout: 1000
-    console.log(this.sslCheckerOptions(hostname, url.port))
-    const response = await sslChecker(hostname, this.sslCheckerOptions(url.port))
-    response.adapter = 'DefaultSslAdapter'
-    response.checked_at = new Date()
-    response.cert = await sslCertificate.get(hostname, timeout)
-    response.cert.issuer = response?.cert?.issuer || {}
-    response.validFor.push(await sslValidator.validateSSL(response.cert.pemEncoded, { domain: url.hostname }))
-    response.validFor = [...new Set(response.validFor)].filter( domain => domain instanceof String && domain !== "" )
-    const result = { ssl: response }
+    const sslCheckerResponse = await sslChecker(hostname, this.sslCheckerOptions(url.port)).catch( (e) => { result = { status: "error", status: "error", message: e.message, data } } )
+    const sslCertificateResponse = await sslCertificate.get(hostname, timeout).catch( (e) => { result = { status: "error", message: e.message, data } } )
+    data.days_remaining = sslCheckerResponse.daysRemaining
+    data.valid = sslCheckerResponse.valid
+    data = {...data, ...sslCertificateResponse }
+    if(!result)
+      result = { status: "success", data }
     this.$.finish('ssl', result)
   }
-
   sslCheckerOptions(port){
     return { method: "GET", port: port || 443 } 
   }
-
 }
 
 export default SslAdapterDefault

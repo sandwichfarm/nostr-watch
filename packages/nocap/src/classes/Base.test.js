@@ -1,6 +1,6 @@
 import { Nocap, ConfigInterface, ResultInterface, SessionHelper, TimeoutHelper, LatencyHelper, DeferredWrapper } from '../index.js'; // Update the import path accordingly
 import { describe, it, expect, test, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
-import { RelayAdapterDefault, InfoAdapterDefault, GeoAdapterDefault, DnsAdapterDefault, SslAdapterDefault } from '@nostrwatch/nocap-all-adapters-default'
+import { WebsocketAdapterDefault, InfoAdapterDefault, GeoAdapterDefault, DnsAdapterDefault, SslAdapterDefault } from '@nostrwatch/nocap-all-adapters-default'
 import { fetch } from 'cross-fetch';
 
 import { createMockRelay, faker, MockRelay } from "vitest-nostr";
@@ -15,14 +15,6 @@ afterAll(() => {
     nocap.close()
   nocap = null
 });
-
-beforeEach(async () => {
-  
-})
-
-afterEach(async () => {
-  
-})
 
 describe("Nocap class", () => {
 
@@ -88,8 +80,8 @@ describe("Nocap class", () => {
       validtype = nocap.getAdapterType('SslAdapterDefault');
       expect(validtype).toBe('ssl')
       
-      validtype = nocap.getAdapterType('RelayAdapterDefault');
-      expect(validtype).toBe('relay')
+      validtype = nocap.getAdapterType('WebsocketAdapterDefault');
+      expect(validtype).toBe('websocket')
     })
   })
 
@@ -99,11 +91,9 @@ describe("Nocap class", () => {
     })
   })
 
-  console.log(typeof nocap)
-
   // describe("useAdapter()", async () => {
   //   it("should be an object", () => {
-  //     // expect(typeof RelayAdapterDefault).toBe('object');
+  //     // expect(typeof WebsocketAdapterDefault).toBe('object');
   //   })
   // })
 
@@ -114,10 +104,10 @@ describe("Nocap class", () => {
       expect(defaultAdapters).toBeInstanceOf(Object);
     })
 
-    it("should instantiate default relay adapter", () => {
-      expect(nocap.adapters.relay.check_connect).toBeTypeOf("function");
-      expect(nocap.adapters.relay.check_read).toBeTypeOf("function");
-      expect(nocap.adapters.relay.check_write).toBeTypeOf("function");      
+    it("should instantiate default websocket adapter", () => {
+      expect(nocap.adapters.websocket.check_connect).toBeTypeOf("function");
+      expect(nocap.adapters.websocket.check_read).toBeTypeOf("function");
+      expect(nocap.adapters.websocket.check_write).toBeTypeOf("function");      
     })
 
     it("should instantiate default info adapter", () => {
@@ -149,12 +139,19 @@ describe("Nocap class", () => {
       expect(result).toHaveProperty('connect');
       expect(result).toHaveProperty('read');
       expect(result).toHaveProperty('write');
-      expect(result.connect).toBeTypeOf('boolean');
-      expect(result.read).toBeTypeOf('boolean');
-      expect(result.write).toBeTypeOf('boolean');
-      expect(result.connectLatency).toBeTypeOf('number');
-      expect(result.readLatency).toBeTypeOf('number');
-      expect(result.writeLatency).toBeTypeOf('number');
+      
+      expect(result.connect).toBeInstanceOf(Object);
+      expect(result.connect.data).toBeTypeOf('boolean');
+      expect(result.connect.duration).toBeTypeOf('number');
+      
+      expect(result.read).toBeInstanceOf(Object);
+      expect(result.read.data).toBeTypeOf('boolean');
+      expect(result.read.duration).toBeTypeOf('number');
+      
+      expect(result.write).toBeInstanceOf(Object);
+      expect(result.write.data).toBeTypeOf('boolean');
+      expect(result.write.duration).toBeTypeOf('number');
+
       expect(result.geo).toBeInstanceOf(Object);
       expect(result.dns).toBeInstanceOf(Object);
       expect(result.info).toBeInstanceOf(Object);
@@ -193,128 +190,198 @@ describe("Nocap class", () => {
       expect(nocap.check("ssl")).toBeInstanceOf(Promise);
     });
 
+    describe("check", async () => {
 
-    describe("check('connect')", async () => {
+      describe("check('connect')", async () => {
+        const method = 'connect'
+        it("defaults should return connect result", async () => {
+          const response = await nocap.check(method)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response[method]).toHaveProperty('data');
+          expect(response[method]).toHaveProperty('duration');
+          expect(response[method].data).toBeTypeOf('boolean');
+          expect(response[method].duration).toBeTypeOf('number');
+        })
+  
+        it("clean results should return connect result", async () => {
+          const response = await nocap.check(method, false)
+          console.log(response)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('boolean');
+          expect(response).toHaveProperty(`${method}_duration`);
+          expect(response[`${method}_duration`]).toBeTypeOf('number');
+        })
+      })
+
+      describe("check('read')", async () => {
+        const method = 'read'
+        it("defaults should return connect result", async () => {
+          const response = await nocap.check(method)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response[method]).toHaveProperty('data');
+          expect(response[method]).toHaveProperty('duration');
+          expect(response[method].data).toBeTypeOf('boolean');
+          expect(response[method].duration).toBeTypeOf('number');
+        })
+  
+        it("clean results should return connect result", async () => {
+          const response = await nocap.check(method, false)
+          console.log(response)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('boolean');
+          expect(response).toHaveProperty(`${method}_duration`);
+          expect(response[`${method}_duration`]).toBeTypeOf('number');
+        })
+      })
+
+      describe("check('write')", async () => {
+        const method = 'write'
+        it("defaults should return connect result", async () => {
+          const response = await nocap.check(method)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response[method]).toHaveProperty('data');
+          expect(response[method]).toHaveProperty('duration');
+          expect(response[method].data).toBeTypeOf('boolean');
+          expect(response[method].duration).toBeTypeOf('number');
+        })
+  
+        it("clean results should return connect result", async () => {
+          const response = await nocap.check(method, false)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('boolean');
+          expect(response).toHaveProperty(`${method}_duration`);
+          expect(response[`${method}_duration`]).toBeTypeOf('number');
+        })
+      })
+
+      describe("check('write')", async () => {
+        const method = 'write'
+        it("defaults should return connect result", async () => {
+          const response = await nocap.check(method)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response[method]).toHaveProperty('data');
+          expect(response[method]).toHaveProperty('duration');
+          expect(response[method].data).toBeTypeOf('boolean');
+          expect(response[method].duration).toBeTypeOf('number');
+        })
+  
+        it("clean results should return connect result", async () => {
+          const response = await nocap.check(method, false)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('boolean');
+          expect(response).toHaveProperty(`${method}_duration`);
+          expect(response[`${method}_duration`]).toBeTypeOf('number');
+        })
+      })
+
+      describe(`check('info')`, async () => {
+        const method = 'info'
+        it("defaults should return connect result", async () => {
+          const response = await nocap.check(method)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response[method]).toHaveProperty('data');
+          expect(response[method]).toHaveProperty('duration');
+          expect(response[method].data).toBeTypeOf('object');
+          expect(response[method].duration).toBeTypeOf('number');
+        })
+  
+        it("clean results should return connect result", async () => {
+          const response = await nocap.check(method, false)
+          console.log(response)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response).toHaveProperty(`${method}_duration`);
+          expect(response[`${method}_duration`]).toBeTypeOf('number');
+        })
+      })
+
       
-      it("should return connect result", async () => {
-        const response = await nocap.check('connect')
-        expect(typeof response).toBe('object');
-        expect(response).toHaveProperty('connect');
-        expect(typeof response.connect).toBe('boolean');
-        expect(response).toHaveProperty('connectLatency');
-        expect(typeof response.connectLatency).toBe('number');
+      describe(`check('dns')`, async () => {
+        const method = 'dns'
+        it("defaults should return connect result", async () => {
+          const response = await nocap.check(method)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response[method]).toHaveProperty('data');
+          expect(response[method]).toHaveProperty('duration');
+          expect(response[method].data).toBeTypeOf('object');
+          expect(response[method].duration).toBeTypeOf('number');
+        })
+  
+        it("clean results should return connect result", async () => {
+          const response = await nocap.check(method, false)
+          console.log(response)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response).toHaveProperty(`${method}_duration`);
+          expect(response[`${method}_duration`]).toBeTypeOf('number');
+        })
       })
-    })
 
-    describe("check('read')", async () => {
-      it("should return read result", async () => {
-        const response = await nocap.check('read')
-        expect(typeof response).toBe('object');
-        expect(response).toHaveProperty('read');
-        expect(typeof response.read).toBe('boolean');
-        expect(response).toHaveProperty('readLatency');
-        expect(typeof response.readLatency).toBe('number');
+      describe(`check('geo')`, async () => {
+        const method = 'geo'
+        it("defaults should return connect result", async () => {
+          const response = await nocap.check(method)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response[method]).toHaveProperty('data');
+          expect(response[method]).toHaveProperty('duration');
+          expect(response[method].data).toBeTypeOf('object');
+          expect(response[method].duration).toBeTypeOf('number');
+        })
+  
+        it("clean results should return connect result", async () => {
+          const response = await nocap.check(method, false)
+          console.log(response)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response).toHaveProperty(`${method}_duration`);
+          expect(response[`${method}_duration`]).toBeTypeOf('number');
+        })
       })
-    })
 
-    describe("check('write')", async () => {
-      it("should return write result", async () => {
-        const response = await nocap.check('write')
-        console.log('write check', response)
-        expect(typeof response).toBe('object');
-        expect(response).toHaveProperty('write');
-        expect(typeof response.write).toBe('boolean');
-        expect(response).toHaveProperty('writeLatency');
-        expect(typeof response.writeLatency).toBe('number');
-      })
-    })
-
-    describe("check('geo')", async () => {
-      it("should return geo result", async () => {
-        const response = await nocap.check('geo')
-        console.log('write check', response)
-        expect(typeof response).toBe('object');
-        expect(response).toHaveProperty('geo');
-        expect(typeof response.geo).toBe('object');
-        expect(response).toHaveProperty('geoLatency');
-        expect(typeof response.geoLatency).toBe('number');
-      })
-    })
-
-    describe("check('dns')", async () => {
-      it("should return dns result", async () => {
-        const response = await nocap.check('dns')
-        console.log('write check', response)
-        expect(typeof response).toBe('object');
-        expect(response).toHaveProperty('dns');
-        expect(typeof response.dns).toBe('object');
-        expect(response).toHaveProperty('dnsLatency');
-        expect(typeof response.dnsLatency).toBe('number');
-      })
-    })
-
-    describe("check('info')", async () => {
-      it("should return info result", async () => {
-        const response = await nocap.check('info')
-        console.log('info check', response)
-        expect(typeof response).toBe('object');
-        expect(response).toHaveProperty('info');
-        expect(typeof response.info).toBe('object');
-        expect(response).toHaveProperty('infoLatency');
-        expect(typeof response.infoLatency).toBe('number');
+      describe(`check('ssl')`, async () => {
+        const method = 'ssl'
+        it("defaults should return connect result", async () => {
+          const response = await nocap.check(method)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response[method]).toHaveProperty('data');
+          expect(response[method]).toHaveProperty('duration');
+          expect(response[method].data).toBeTypeOf('object');
+          expect(response[method].duration).toBeTypeOf('number');
+        })
+  
+        it("clean results should return connect result", async () => {
+          const response = await nocap.check(method, false)
+          console.log(response)
+          expect(response).toBeTypeOf('object');
+          expect(response).toHaveProperty(method);
+          expect(response[method]).toBeTypeOf('object');
+          expect(response).toHaveProperty(`${method}_duration`);
+          expect(response[`${method}_duration`]).toBeTypeOf('number');
+        })
       })
     })
   });
-
-//   describe("start()", () => {
-//     const nocap = new Nocap(url);
-    
-
-//     it("defines start()", () => {
-//       expect(typeof nocap.start).toBe("function");
-//     });
-
-//     it('start() should connect before other checks', async () => {
-      
-//       const nocap = new Nocap(url);
-//       vi.spyOn(nocap, 'isConnected').mockImplementation(() => true)
-//       vi.spyOn(nocap, 'check_connect').mockImplementation(() => true)
-//       nocap.isConnected = vi.fn().mockReturnValueOnce(true); 
-//       nocap.check_connect = vi.fn().mockReturnValueOnce(true);
-//       await nocap.start('read');
-//       expect(nocap.isConnected).toHaveBeenCalled();
-//       expect(nocap.check_connect).toHaveBeenCalled();    
-
-//     });
-//   });
-
-//   describe("finish()", () => {
-//     const nocap = new Nocap(url);
-
-//     it("defines finish()", () => {
-//       expect(typeof nocap.setRule).toBe("function");
-//     });
-//   });
-
-//   describe("subid()", () => {
-//     const nocap = new Nocap(url);
-
-//     it("defines subid()", () => {
-//       expect(typeof nocap.setRule).toBe("function");
-//     });
-//   });
-
-//   describe("keyFromSubid()", () => {
-//     it("defines keyFromSubid()", () => {
-//       expect(typeof nocap.setRule).toBe("function");
-//     });
-//   });
-
-//   describe("throw()", () => {
-//     it("defines throw()", () => {
-//       expect(typeof nocap.setRule).toBe("function");
-//     });
-//   });
-// });
-// });
 });

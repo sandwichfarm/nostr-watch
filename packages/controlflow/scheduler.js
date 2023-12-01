@@ -68,17 +68,17 @@ export class Scheduler {
       // Define the rule for scheduling
       const rule = new schedule.RecurrenceRule();
       rule.start = startTime; // Set the start time
-      rule.rule = `*/${worker.frequency / 1000} * * * * *`; // Set the frequency in seconds
+      rule.rule = `*/${Math.round(worker.frequency / 1000)} * * * * *`; // Set the frequency in seconds
       // Schedule the job
       this.schedules[name] = schedule.scheduleJob(rule, this.workers[name].handler);
     });
   }
 
-  getAllJobs() {
+  getAll() {
     return this.schedules;
   }
 
-  getJobByName(name) {
+  get(name) {
     return this.schedules[name];
   }
 

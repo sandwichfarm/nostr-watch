@@ -1,4 +1,4 @@
-class NocapdQueues {
+export class NocapdQueues {
   constructor(){
     /** @type {object} */
     this.managers = {}
@@ -8,6 +8,8 @@ class NocapdQueues {
     this.events = null 
     /** @type {WorkerManager} */
     this.managers = null 
+    /** @type {Scheduler} */ 
+    this.scheduler = null
   }
 
   pause(q){

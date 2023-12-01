@@ -1,20 +1,19 @@
-import { RelayCheckWebsocket, RelayCheckResultInfo, RelayCheckResultDns, RelayCheckResultGeo, RelayCheckResultSsl } from '@nostrwatch/transform'
+import { RelayCheckResultDns } from '@nostrwatch/transform'
+import Nocap from '@nostrwatch/nocap'
 
-export default {
-  id: 'Dns',
-  frequency: 24*60*60*1000, //24 hours
-  runner: async (job) => {
+export default class extends WorkerManager {
+  constructor(config){
+    super(config)
+    this.id = 'info'
+    this.frequency = 6*60*60*1000 //6 hours
+  }
+  async runner(job){
     const { relay, checks } = job.data;
-    const nocapd = new NocapdWrapper(relay);
-    if(!this.hasChanged(await nocapd.check('dns').data, db.relayInfo.get(db.relay.get(infoNow.url).dns))) 
+    const nocapd = new Nocap(relay);
+    const dnsOld = this.rdb.checks.info.get(relay.url)
+    const dnsNew = await nocapd.check('dns')
+    if(!this.hasChanged(dnsOld, dnsNew.data))
       return { skip: true }
-    return info
-  },
-  eventHandlers: {
-    complete: async (job, result) => {
-      const { relay, checks } = job.data;
-      const check = new RelayCheckResultDns(result, 'nocap');
-      const id = db.check.dns.insert(check.toJson());
-    }
+    return dnsNew
   }
 };

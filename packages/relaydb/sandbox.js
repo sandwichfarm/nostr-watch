@@ -9,6 +9,9 @@ import { Relay } from "./schemas.js"
 import { parseRelayNetwork } from "@nostrwatch/utils"
 import { delay } from "../trawler/src/utils.js";
 
+import { inspect } from 'util'
+const log = obj => console.log(inspect(obj, false, null, true))
+
 import Logger from "@nostrwatch/logger" 
 const logger = new Logger('lmdb')
 
@@ -18,7 +21,7 @@ const { $notDefined, $isDefined, $isNull, $isFalsy, $isTruthy, $isUndefined } = 
 
 await delay(1000)
 
-const db = lmdb('/Users/sandwich/Develop/nostr-watch/packages/trawler/lmdb/nw.mdb') //{indexOptions:{fulltext:true}}
+const db = lmdb('/Users/sandwich/Develop/nostr-watch/.lmdb/nw.mdb') //{indexOptions:{fulltext:true}}
 const start = new Date().getTime()
 // console.log(db.$)
 
@@ -69,7 +72,10 @@ const start = new Date().getTime()
 // const connectIsTruthy = [...db.$.select(IDS).from(Relay).where({ Relay: {  connect: $isTruthy  } })]
 // const connectIsUndefined = [...db.$.select().from(Relay).where({ Relay: {  connect: $isUndefined  } })]
 // const nokey = [...db.$.select().from(Relay).where({ Relay: {  $notDefined('nokey')  } })]
-// const tor = [...db.$.select().from(Relay).where({ Relay: {  network: 'tor'  } })]
+// console.log([...db.$.select().from(Relay).where({ Relay: {  network: 'tor'  } })])
+let tor = db.relay.get.network('tor', ['url'])
+tor = tor.map((relay) => { return relay.url })
+console.dir(tor, {'maxArrayLength': null})
 // console.log(nokey.length)
 
 
@@ -107,8 +113,8 @@ console.log(db.relay.count.network('clearnet'), 'clearnet relays')
 console.log(db.relay.count.network('tor'), 'tor relays')
 console.log(db.relay.count.network('i2p'), 'i2p relays')
 console.log(db.relay.count.network('cjdns'), 'cjdns relays')
-console.log('NOTES')
-console.log(db.note.count.all(), 'notes')
-console.log('STAT')
+// console.log('NOTES')
+// console.log(db.note.count.all(), 'notes')
+// console.log('STAT')
 const duration = new Date().getTime() - start
 console.log(`${duration}ms`)

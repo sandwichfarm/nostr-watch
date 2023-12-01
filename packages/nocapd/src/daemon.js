@@ -1,40 +1,44 @@
-import NocapdWrapper from './NocapWrapper.js'
 import relaydb from '@nostwatch/relaydb'
-import { NocapdQueue, BullQueue, BullQueueEvents, BullWorker } from '@nostrwatch/controlflow'
-import { RelayRecord } from '@nostrwatch/relaydb'
-import { relayId } from '@nostrwatch/utils'
+import { NocapdQueue, BullQueueEvents, BullWorker } from '@nostrwatch/controlflow'
+import { NocapdQueues } from './classes/NocapdQueues.js'
 import { Scheduler } from '@nostrwatch/scheduler'
-import { RelayCheckWebsocket, RelayCheckResultInfo, RelayCheckResultDns, RelayCheckResultGeo, RelayCheckResultSsl } from '@nostrwatch/transform'
 
-const rdb = new relaydb(process.env.RELAY_DB_PATH || './.lmdb')
+import { WelcomeManager } from './managers/welcome.js'
+import { WebsocketManager } from './managers/websocket.js'
+import { GeoManager } from './managers/geo.js'
+import { DnsManager } from './managers/dns.js'
+import { InfoManager } from './managers/info.js'
+import { SslManager } from './managers/ssl.js'
 
-const relays = db.relay.all()
+const rdb = new relaydb(process.env.RELAYDB_PATH || './.lmdb')
 
 const initWorkers = (config) => {
   if(config?.workers?.length > 0)
     throw new Error('config.workers needs to be an array of WorkerManagers')
-  const $q = new NWQueue()
+  const $q = new NocapdQueues()
   const schedule = {}
   $q.managers = {}
   $q.queue = new NocapdQueue()
   $q.events = new BullQueueEvents($q.queue.name)
   config.managers.forEach(Manager => {
-    $q.managers[Manager.name] = new Manager($q, rdb, Manager.config)
-    $q.managers[Manager.name].$worker = new BullWorker($q.queue.name, $q.managers[Manager.name].handle, { jobType: Manager.name, concurrency: $q.managers[Manager.name].concurrency })
-    schedule[Manager.name] = { name: Manager.name, frequency: $q.managers[Manager.name].frequency }
+    const name = Manager.name
+    $q.managers[name] = new Manager($q, rdb, Manager.config)
+    $q.managers[name].$worker = new BullWorker($q.queue.name, $q.managers[name].handle, { jobType: name, concurrency: $q.managers[name].concurrency })
+    schedule[name] = { name, frequency: $q.managers[name].frequency, handler: $q.managers[name].populator }
   })
-  $q.scheduler = new Scheduler({})
+  $q.scheduler = new Scheduler(schedule)
   return $q
 }
 
 export const daemon = () => {
-  initWorkers({
+  return initWorkers({
     managers: [ 
-      { name: 'WelcomeManager', config: WelcomeManager }, 
-      { name: 'WebsocketManager', config: WebsocketManager }, 
-      { name: 'InfoManager', config: InfoManager }, 
-      { name: 'DnsManager', config: DnsManager }, 
-      { name: 'GeoManager', config: GeoManager }, 
-      { name: 'SslManager', config: SslManager}]
+      WelcomeManager, 
+      WebsocketManager, 
+      InfoManager,
+      DnsManager,
+      GeoManager,
+      SslManager
+    ]
   })
 }

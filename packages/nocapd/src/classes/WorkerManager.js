@@ -1,4 +1,7 @@
-class WorkerManager {
+import transform from '@nostrwatch/transform'
+import Nocap from '@nostrwatch/nocap'
+
+export class WorkerManager {
   constructor($q, rdb, config){
     if(config?.id)
       throw new Error('WorkerManager needs an id')
@@ -43,9 +46,12 @@ class WorkerManager {
 
     /** @type {array} */
     this.worker_events = ['completed', 'failed', 'progress', 'stalled', 'waiting', 'active', 'delayed', 'drained', 'paused', 'resumed']
-    
+
     /** @type {array} */
     this.queue_eventst = ['active', 'completed', 'delayed', 'drained', 'error', 'failed', 'paused', 'progress', 'resumed', 'stalled', 'waiting']
+
+    /** @type {Nocap} */  
+    this.Nocap = Nocap
 
     if(!(this.handler instanceof Function))
       throw new Error('WorkerManager handler needs to be a function')
@@ -63,8 +69,23 @@ class WorkerManager {
 
   cbcall(handler, ...args){
     [].shift.call(args,1)
+    if(this?.[`_${handler}`] && typeof this[`_${handler}`] === 'function')
+      this[`_${handler}`](...args)
     if(typeof this.cb[handler] === 'function')
       this.cb[handler](...args)
+  }
+
+  async _complete(job, result){
+    const { checks } = job.data;
+    persists = job.data.persists? job.data.persists: checks
+    for( const key in persists){
+      const transformer = new transform[key](result[key], 'nocap');
+      const rdbRecord = transformer.toJson()
+      const id = this.rdb.check[key].insert(rdbRecord)
+      await this.rdb.relay.patch({ url: result.url, [key]: id });
+    }
+    if(checks.includes('websocket'))
+      this.rdb.relay.patch({ url: result.url, last_checked: Date.now() });
   }
 
   hasChanged(data1, data2){
@@ -83,12 +104,8 @@ class WorkerManager {
     $.queue.add(this.constructor.name, job)
   }
 
-  async populate(){
-    return this.populator()
-  }
-
   async _populator(){
     const relays = db.relays.get.allIds()
     relays.forEach(relay => { this.$.queue.add(this.constructor.name, { relay: relay }) })
-  },
+  }
 }

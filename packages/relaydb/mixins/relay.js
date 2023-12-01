@@ -1,6 +1,6 @@
 import { Relay, Info } from "../schemas.js"
 import { operators, IDS } from "lmdb-oql";
-import { relayId, now } from "../utils.js"
+import { relayId, now, parseSelect, helperHandler } from "../utils.js"
 
 const { $eq, $gte, $and, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
 
@@ -15,6 +15,7 @@ export default class RelayMixin {
   }
 
   init(){
+    this.batch = relay_batch(this.db)
     this.get = relay_get(this.db)
     this.count = relay_count(this.db)
     this.is = relay_is(this.db)
@@ -22,12 +23,10 @@ export default class RelayMixin {
     this.requires = relay_requires(this.db)
     this.supports = relay_supports(this.db)
     this.limits = relay_limits(this.db)
-    this.batch = relay_batch(this.db)
   }
 
   async insert(RelayObj){
-    if(!RelayObj?.url)
-      throw new Error("Relay object must have a url property")
+    this.validate(RelayObj)
     return this.db.$.put(relayId(RelayObj.url), new Relay(RelayObj))
   }
   
@@ -37,18 +36,25 @@ export default class RelayMixin {
   }
 
   async update(RelayObj) {
-    if(!RelayObj?.url)
-      throw new Error("Relay object must have a url property")
-    const _old = this.$.get(relayId(RelayObj.url))
-    if(!_old)
+    this.validate(RelayObj)
+    const current = this.$.get(relayId(RelayObj.url))
+    if(!current)
       throw new Error(`Cannot update because ${RelayObj.url} does not exist`)
-    const new_ = {..._old, ...RelayObj}
-    return this.insert(new_)
+    return this.insert({...RelayObj})
+  }
+
+  async patch(RelayObj) {
+    this.validate(RelayObj)
+    const current = this.$.get(relayId(RelayObj.url))
+    if(!current)
+      throw new Error(`Cannot patch because ${RelayObj.url} does not exist`)
+    delete RelayObj.url
+    if(RelayObj?.['#']) delete RelayObj['#']
+    return this.insert({...current, ...RelayObj})
   }
   
   async upsert(RelayObj) {
-    if(!RelayObj?.url)
-      throw new Error("Relay object must have a url property")
+    this.validate(RelayObj)
     if( await this.exists(RelayObj.url) )
       return this.update(RelayObj)
     return this.insert(RelayObj)
@@ -59,6 +65,11 @@ export default class RelayMixin {
     if(!this.exists(url))
       throw new Error(`Cannot delete because ${url} does not exist`)
     return this.db.$.remove(relayId(url))
+  }
+
+  validate(RelayObj){
+    if(!RelayObj?.url)
+      throw new Error("Relay object must have a url property")
   }
 
   async select(select=null, where=null) {
@@ -86,7 +97,6 @@ const relay_batch = (db) => {
       if(!(RelayObjs instanceof Array))
         throw new Error("Relay.batch: Must be an array")
       const result = []
-      //process records in series. This is important for cache time and reduction/elimination of commit errors.
       for await (const RelayObj of RelayObjs) {
         try { 
           result.push(await db.relay[key](RelayObj))
@@ -99,36 +109,19 @@ const relay_batch = (db) => {
   return fns
 }
 
-const parseSelect = (key) => {
-  const $ResultType = new ResultType()
-  if(!key)
-    key = Object.keys($ResultType).filter(key => typeof key !== 'function' && key !== 'defaults')
-  if(key instanceof Object && !(key instanceof Array))
-    return key
-  if(key == 'id')
-    key = '#'
-  if(typeof key === 'string')
-    key = [key]
-  const select = { Relay: {} }
-  for (const k of key) {
-    select.Relay[k] = (value,{root}) => { root[k]=value; }
-  }
-  return select
-}
-
 const relay_limits = (db) => {
   const fn = {
     db,
     country(relayUrl, country_code){
       if(!country_code)
-        return logger.warn(`Country code is required`)
+        throw new Error(`Country code is required (example: US)`)
       return this.countries.includes(country_code)
     },
     countries(relayUrl){
       return this.db.relay.get.one(relayUrl)?.relay_countries
     },
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_is = (db) => {
@@ -150,7 +143,7 @@ const relay_is = (db) => {
       return !this.db.relay.requires.payment(relayUrl) && !this.db.relay.requires.auth(relayUrl)
     }
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_requires = (db) => {
@@ -163,7 +156,7 @@ const relay_requires = (db) => {
       return this.db.relay.has.limitation(relayUrl, 'payment_required')
     },
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_has = (db) => {
@@ -178,7 +171,7 @@ const relay_has = (db) => {
       return record?.[key]
     },
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_supports = (db) => {
@@ -208,11 +201,11 @@ const relay_supports = (db) => {
       else 
         return supports
     },
-    nips_many(relay, nips, supportsAll=false){
+    nips_many(relay, nips, selectKeys, supportsAll=false){
       const supports = {}
       let select = null
       if(selectKeys)
-        select = parseSelect('url')
+        select = parseSelect(selectKeys)
       nips.forEach(nip => {
         supports[nip]=this.db.relay.all(select, { Relay: { info: (value) => value?.supported_nips?.[nip] }})
       })
@@ -223,9 +216,10 @@ const relay_supports = (db) => {
           const commonUrls = urlsFromEachKey.reduce((a, b) => new Set([...a].filter(x => b.has(x))));
           return Array.from(commonUrls);
       }
+      return supports
     }
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_get = (db) => {
@@ -295,7 +289,7 @@ const relay_get = (db) => {
     return true
   }
 
-  return handler(fns, validator)
+  return helperHandler(fns, validator)
 }
 
 const relay_count = (db) => {
@@ -310,21 +304,4 @@ const relay_count = (db) => {
   delete fns.one // not a count
   fns.all = fns.allIds // alias
   return fns
-}
-
-const handler = (fn, validator=null) => {
-  const _ = (..._args) => {
-    const fnkey = _args[0]
-    const args = Array.from(_args).slice(1)
-    if(validator && !validator(...args))
-      return
-    return fn[fnkey](...args)
-  }
-
-  const $fns = {}
-  Object.keys(fn).forEach(fnkey => {
-    if(fn[fnkey] instanceof Function)
-      $fns[fnkey] = (...args) => _(fnkey, ...args)
-  })
-  return $fns
 }

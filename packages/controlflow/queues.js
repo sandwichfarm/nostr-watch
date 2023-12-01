@@ -4,25 +4,25 @@ import { RedisConnectionDetails } from '@nostrwatch/utils'
 
 dotenv.config()
 
-const Trawler = (qopts={}) => {
+const TrawlerQueue = (qopts={}) => {
   qopts = { connection: RedisConnectionDetails(), ...qopts }
   return new Queue('Trawler', qopts)
 }
 
-const Nocapd = (qopts={}) => {
+const NocapdQueue = (qopts={}) => {
   qopts = { connection: RedisConnectionDetails(), ...qopts }
   return new Queue('Nocapd', qopts)
 }
 
-const RestApi = (qopts={}) => {
+const RestApiQueue = (qopts={}) => {
   qopts = { connection: RedisConnectionDetails(), ...qopts }
   return new Queue('Nocapd', qopts)
 }
 
 export {
-  Trawler,
-  Nocapd,
-  RestApi,
+  TrawlerQueue,
+  NocapdQueue,
+  RestApiQueue,
   Queue as BullQueue,
   QueueEvents as BullQueueEvents,
   Worker as BullWorker, 

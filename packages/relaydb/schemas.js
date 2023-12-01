@@ -40,6 +40,36 @@ export class Note {
     }
 }
 
+export class RelayCheckWebsocket {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export class RelayCheckInfo {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export class RelayCheckDns {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export class RelayCheckGeo {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export class RelayCheckSsl {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
 export default ($db) => {
     $db.defineSchema(Relay);
     $db.defineSchema(Check);

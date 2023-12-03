@@ -1,6 +1,7 @@
+
 import hash from 'object-hash'
 
-class RelayCheck {
+export class RelayCheck {
   /**
    * @type {string} Unique identifier for the relay
    */

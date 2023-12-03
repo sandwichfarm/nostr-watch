@@ -1,4 +1,6 @@
-export class RelayCheckResultDns extends RelayCheck {
+import { RelayCheck } from './headers.js'
+
+export class RelayCheckDns extends RelayCheck {
   /**
    * @type {object} The data structure specific to RelayCheckResultDns
    */

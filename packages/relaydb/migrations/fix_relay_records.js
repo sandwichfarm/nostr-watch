@@ -52,16 +52,12 @@ const chunkArray = function(arr, chunkSize) {
         const RELAYRECORD = {
           url: url,
           network: relay.network,
-          status: {
-            connect: false,
-            read: false,
-            write: false 
-          },
+          websocket: {},
           info: "",
           geo: "",
           dns: "",
           ssl: "",
-          checked_at: -1,
+          last_checked: -1,
           first_seen: -1,
           last_seen: -1
         }

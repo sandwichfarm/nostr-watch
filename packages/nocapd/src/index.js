@@ -1,6 +1,6 @@
-import { startNocapd} from './daemon.js';
+import { Nocapd } from './daemon.js';
 
-const nocapd = startNocapd()
+const nocapd = Nocapd()
 
 async function gracefulShutdown(signal) {
   console.log(`Received ${signal}, closing application...`);

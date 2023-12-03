@@ -1,10 +1,10 @@
 import { parseSelect, helperHandler } from "../utils.js"
-import { RelayCheckWebsocket, RelayCheckInfo, RelayCheckDns, RelayCheckGeo, RelayCheckSsl } from './schemas.js'
+import { RelayCheckWebsocket, RelayCheckInfo, RelayCheckDns, RelayCheckGeo, RelayCheckSsl } from '../schemas.js'
 import { operators, IDS } from "lmdb-oql";
 
 const { $eq, $gte, $and, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
 
-export default class RelayMixin {
+export default class RelayCheckMixin {
   constructor(db) {
     this.db = db;
     this.checks = ['websocket', 'info', 'dns', 'geo','ssl']

@@ -1,3 +1,5 @@
+import { RelayCheck } from './headers.js'
+
 export class RelayCheckInfo extends RelayCheck {
   /**
    * @type {object} The data structure specific to RelayCheckInfo

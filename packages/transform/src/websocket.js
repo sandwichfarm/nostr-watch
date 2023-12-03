@@ -1,4 +1,4 @@
-
+import { RelayCheck } from './headers.js'
 
 export class RelayCheckWebsocket extends RelayCheck {
   /**

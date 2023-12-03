@@ -4,9 +4,10 @@ export const relayId = (relay, schema="Relay") => `${schema}@${murmurhash.v3(rel
 export const serviceId = (service) => `Service@${service}`
 export const cacheTimeId = (key) => `CacheTime@${key}`
 export const now = () => new Date().getTime()
+import { ResultInterface } from "@nostrwatch/nocap";
 
 export const parseSelect = (key) => {
-  const $ResultType = new ResultType()
+  const $ResultType = new ResultInterface()
   if(!key)
     key = Object.keys($ResultType).filter(key => typeof key !== 'function' && key !== 'defaults')
   if(key instanceof Object && !(key instanceof Array))

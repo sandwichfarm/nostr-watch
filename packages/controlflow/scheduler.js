@@ -1,4 +1,4 @@
-const schedule = require('node-schedule');
+import schedule from 'node-schedule'
 
 export class Scheduler {
   constructor(workers) {
@@ -14,11 +14,13 @@ export class Scheduler {
     const totalFrequency = this.workers.reduce((sum, worker) => sum + worker.frequency, 0);
     let cumulativeOffset = 0;
     this.workers.forEach(worker => {
-        this.jobCache[worker.worker] = {
+      console.log(worker)
+      this.analysis[worker.name] = {
           frequency: worker.frequency,
-          offset: this.calculateBestOffset(worker, cumulativeOffset, totalFrequency)
+          offset: this.calculateBestOffset(worker, cumulativeOffset, totalFrequency),
+          handler: worker.handler
         };
-        cumulativeOffset += this.jobCache[worker.worker].offset;
+        cumulativeOffset += this.analysis[worker.name].offset;
     });
   }
 
@@ -37,8 +39,8 @@ export class Scheduler {
 
   isCollision(proposedOffset, frequency, totalFrequency) {
     // Check if the proposed offset collides with other tasks
-    for (let otherWorkerName in this.jobCache) {
-      const otherWorker = this.jobCache[otherWorkerName];
+    for (let otherWorkerName in this.analysis) {
+      const otherWorker = this.analysis[otherWorkerName];
       if (this.doIntervalsOverlap(proposedOffset, frequency, otherWorker.offset, otherWorker.frequency, totalFrequency)) {
           return true;
       }
@@ -70,7 +72,7 @@ export class Scheduler {
       rule.start = startTime; // Set the start time
       rule.rule = `*/${Math.round(worker.frequency / 1000)} * * * * *`; // Set the frequency in seconds
       // Schedule the job
-      this.schedules[name] = schedule.scheduleJob(rule, this.workers[name].handler);
+      this.schedules[name] = schedule.scheduleJob(rule, this.analysis[name].handler);
     });
   }
 

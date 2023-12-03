@@ -1,7 +1,8 @@
-import { Relay, Info } from "../schemas.js"
+import { schemas } from "../schemas.js"
 import { operators, IDS } from "lmdb-oql";
 import { relayId, now, parseSelect, helperHandler } from "../utils.js"
 
+const { Relay, Info } = schemas
 const { $eq, $gte, $and, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
 
 import Logger from "@nostrwatch/logger" 
@@ -118,7 +119,7 @@ const relay_limits = (db) => {
       return this.countries.includes(country_code)
     },
     countries(relayUrl){
-      return this.db.relay.get.one(relayUrl)?.relay_countries
+      return db.relay.get.one(relayUrl)?.relay_countries
     },
   }
   return helperHandler(fn)
@@ -128,19 +129,19 @@ const relay_is = (db) => {
   const fn = {
     db,
     online(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.connect
+      return db.relay.get.one(relayUrl)?.connect
     },
     readable(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.read
+      return db.relay.get.one(relayUrl)?.read
     },
     writable(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.write
+      return db.relay.get.one(relayUrl)?.write
     },
     dead(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.dead
+      return db.relay.get.one(relayUrl)?.dead
     },
     public(relayUrl) {
-      return !this.db.relay.requires.payment(relayUrl) && !this.db.relay.requires.auth(relayUrl)
+      return !db.relay.requires.payment(relayUrl) && !db.relay.requires.auth(relayUrl)
     }
   }
   return helperHandler(fn)
@@ -150,10 +151,10 @@ const relay_requires = (db) => {
   const fn = {
     db,
     auth(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.auth
+      return db.relay.get.one(relayUrl)?.auth
     },
     payment(relayUrl) {
-      return this.db.relay.has.limitation(relayUrl, 'payment_required')
+      return db.relay.has.limitation(relayUrl, 'payment_required')
     },
   }
   return helperHandler(fn)
@@ -179,9 +180,9 @@ const relay_supports = (db) => {
     db,
     nip(relay, nip){
       if(relay instanceof String) 
-        return this.db.relay.get.one(relayUrl)?.info?.supported_nips?.[nip]
+        return db.relay.get.one(relayUrl)?.info?.supported_nips?.[nip]
       else 
-        return this.db.relay.all(null, {Relay: { '#': relayId(relay), info: { supported_nips: $includes(nip) }}})
+        return db.relay.all(null, {Relay: { '#': relayId(relay), info: { supported_nips: $includes(nip) }}})
     },
     nips(relay=null, nips=[], supportsAll=false){
       if(!(nips instanceof Array))
@@ -226,12 +227,12 @@ const relay_get = (db) => {
   const fns = {
     db,
     one(relayUrl) {
-      return this.db.$.get(relayId(relayUrl)) || false
+      return db.$.get(relayId(relayUrl)) || false
     },
     all(select=null, where=null) {
       select = parseSelect(select)
       // return [...this.db.$.select(select).from( Relay ).where({ Relay: { url: (value) => value?.length  } })] || []
-      return [...this.db.$.select(select).from( Relay ).where({ Relay: { '#': 'Relay@' } })] || []
+      return [...db.$.select(select).from( Relay ).where({ Relay: { '#': 'Relay@' } })] || []
     },
     allIds(){
       const result = this.all(IDS).flat()
@@ -239,15 +240,15 @@ const relay_get = (db) => {
     },
     online(select=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from( Relay ).where({ Relay: { connect: $matches(true) } })] || []
+      return [...db.$.select(select).from( Relay ).where({ Relay: { connect: $matches(true) } })] || []
     },
     network(network, select=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from( Relay ).where({ Relay: { network } })] || []
+      return [...db.$.select(select).from( Relay ).where({ Relay: { network } })] || []
     },
     public(select=null) {
       select = parseSelect(select)
-      return  [...this.db.$
+      return  [...db.$
                 .select(select)
                 .from( Relay )
                 .where({ Relay: { info: (value) => !value?.payment_required || value.payment_required === false }})
@@ -255,7 +256,7 @@ const relay_get = (db) => {
     },
     paid(select=null) {
       select = parseSelect(select)
-      return  [...this.db.$
+      return  [...db.$
                 .select(select)
                 .from( Relay )
                 .where({ Relay: { info: (value) => value?.payment_required && value.payment_required === true }})
@@ -268,10 +269,10 @@ const relay_get = (db) => {
     },
     supportsNip(nip, select=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => value.includes(nip) } })] || []
+      return [...db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => value.includes(nip) } })] || []
     },
     doesNotSupportNip(nip, select=null) {
-      return [...this.db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => !value.includes(nip) } })] || []
+      return [...db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => !value.includes(nip) } })] || []
     }
   }
 

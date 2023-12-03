@@ -24,7 +24,6 @@ export const RedisConnectionDetails = function(){
     if(key.startsWith('REDIS_'))
     redis[key.replace('REDIS_', '').toLowerCase()] = process.env[key]
   })
-  console.log(redis)
   return redis
 }
 

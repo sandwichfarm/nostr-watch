@@ -1,4 +1,6 @@
-export class RelayCheckResultSsl extends RelayCheck {
+import { RelayCheck } from './headers.js'
+
+export class RelayCheckSsl extends RelayCheck {
   /**
    * @type {object} The data structure specific to RelayCheckResultSsl
    */

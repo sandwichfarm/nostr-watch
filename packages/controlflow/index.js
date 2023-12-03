@@ -1,9 +1,12 @@
-import { TrawlerQueue, NocapdQueue, RestApiQueue } from './queues.js'
-import { Scheduler as NWScheduler } from './scheduler.js' 
+import { TrawlerQueue, NocapdQueue, RestApiQueue, BullQueue, BullQueueEvents, BullWorker } from './queues.js'
+import { Scheduler } from './scheduler.js' 
 
-export default {
+export {
   TrawlerQueue, 
   NocapdQueue,
   RestApiQueue,
-  NWScheduler
+  Scheduler,
+  BullQueue,
+  BullQueueEvents,
+  BullWorker
 }

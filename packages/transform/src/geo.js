@@ -1,4 +1,6 @@
-export class RelayCheckResultGeo extends RelayCheck {
+import { RelayCheck } from './headers.js'
+
+export class RelayCheckGeo extends RelayCheck {
   /**
    * @type {object} The data structure specific to RelayCheckResultGeo
    */

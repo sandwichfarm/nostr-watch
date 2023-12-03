@@ -1,6 +1,6 @@
 // import { open } from 'lmdb'
 import { withExtensions } from "lmdb-oql";
-import schemas from "./schemas.js";
+import { defineSchemas, schemas } from "./schemas.js";
 
 import RelayMixin from "./mixins/relay.js"
 import RelayCheckHelper from "./mixins/relaycheck.js";
@@ -27,7 +27,8 @@ if (typeof window !== 'undefined') {
 class DbWrapper {
   constructor(dbPath, opts={}){
     this.$ = withExtensions(open(dbPath, opts));
-    this.$ = schemas(this.$);
+    this.$ = defineSchemas(this.$);
+    this.schemas = schemas
     this.logger = new Logger('lmdb')
   }
   addHelpers(cl) {

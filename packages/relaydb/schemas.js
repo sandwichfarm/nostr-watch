@@ -4,29 +4,12 @@ export class Relay {
     }
 }
 
-export class Check {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
-
-export class Info {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
-
 export class CacheTime {
     constructor(config={}) {
         Object.assign(this,config);
     }
 }
 
-export class Stat {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
 
 export class Service {
     constructor(config={}) {
@@ -70,12 +53,25 @@ export class RelayCheckSsl {
     }
 }
 
-export default ($db) => {
+export const defineSchemas = ($db) => {
+    //relay record 
     $db.defineSchema(Relay);
-    $db.defineSchema(Check);
-    $db.defineSchema(Info);
-    $db.defineSchema(CacheTime);
-    $db.defineSchema(Stat);
+
+    //note cache 
     $db.defineSchema(Note);
+
+    //relay checks
+    $db.defineSchema(RelayCheckWebsocket);
+    $db.defineSchema(RelayCheckInfo);
+    $db.defineSchema(RelayCheckDns);
+    $db.defineSchema(RelayCheckGeo);
+    $db.defineSchema(RelayCheckSsl);
+
+    //app meta 
+    $db.defineSchema(CacheTime);
     return $db
+}
+
+export const schemas = {
+    Relay, CacheTime, Note, RelayCheckWebsocket, RelayCheckInfo, RelayCheckDns, RelayCheckGeo, RelayCheckSsl
 }

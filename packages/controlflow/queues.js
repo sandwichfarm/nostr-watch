@@ -16,7 +16,7 @@ const NocapdQueue = (qopts={}) => {
 
 const RestApiQueue = (qopts={}) => {
   qopts = { connection: RedisConnectionDetails(), ...qopts }
-  return new BullQueue('Nocapd', qopts)
+  return new BullQueue('RestApi', qopts)
 }
 
 export {

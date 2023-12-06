@@ -1,5 +1,6 @@
 
 import hash from 'object-hash'
+import { relayId } from '@nostrwatch/utils'
 
 export class RelayCheck {
   /**
@@ -32,26 +33,25 @@ export class RelayCheck {
    */
   duration = -1;
 
-  constructor(data, format=`rdb`) {
-    switch(format){
-      case 'rdb':
-        this.relay_id = data.relay_id || '';
-        this.checked_at = data.checked_at || -1;
-        this.checked_by = data.checked_by || '';
-        this.adapters = data.adapters || [];
-        this.dropped_fields = data.dropped_fields || [];
-        this.duration = data.duration || -1;
-        this.data = { ...this.data, ...data.data };
-        break;
-      case 'nocap':
-        this.fromNocap(data)
-        break;
-    }
+  constructor() {}
+
+  fromRdb(headers, result) {
+    this.relay_id = headers?.relay_id? headers.relay_id: '';
+    this.checked_at = headers?.checked_at? headers.checked_at: -1;
+    this.checked_by = headers?.checked_by? headers.checked_by: '';
+    this.adapters = headers?.adapters? headers.adapters: [];
+    this.dropped_fields = headers?.dropped_fields? headers.dropped_fields: [];
+    this.duration = headers?.duration? headers.duration: -1;
+    this.data = result?.data? { ...this.data, ...result.data }: {};
   }
+
+  // fromNocap(){
+  //   console.warn(`fromNocap() not implemented in ${this.constructor.name} transformer`)
+  // }
 
   // Method to set headers from NocapResult to the class
   setHeadersFromNocap(nocapResult) {
-    this.relay_id = nocapResult.relay_id;
+    this.relay_id = relayId(nocapResult.url);
     this.checked_at = nocapResult.checked_at;
     this.checked_by = nocapResult.checked_by;
     this.adapters = nocapResult.adapters;
@@ -60,7 +60,7 @@ export class RelayCheck {
   }
 
   // Method to set headers from the class to NocapResult
-  setHeadersToNocap(nocapResult) {
+  setHeadersToNocap(nocapResult={}) {
     nocapResult.relay_id = this.relay_id;
     nocapResult.checked_at = this.checked_at;
     nocapResult.checked_by = this.checked_by;
@@ -77,6 +77,15 @@ export class RelayCheck {
   }
 
   hashData() { 
-    this.hash = hash(data)
+    this.hash = hash(this.data)
+  }
+
+  toJSON(){
+    const result = {}
+    Object.keys(this).forEach(key => {
+      if(typeof this[key] !== 'function') 
+        result[key] = this[key]
+    })
+    return result
   }
 }

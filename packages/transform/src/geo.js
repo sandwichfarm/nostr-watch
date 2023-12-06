@@ -31,8 +31,8 @@ export class RelayCheckGeo extends RelayCheck {
     }
   }
 
-  out() {
-    const nocapResult = this.setHeadersToNocap(nocapResult);
+  toNocap() {
+    const nocapResult = this.setHeadersToNocap({});
 
     // Include the relevant fields only, excluding 'status' and 'query'
     nocapResult.data = { ...this.data };
@@ -52,5 +52,6 @@ export class RelayCheckGeo extends RelayCheck {
       }
     }
     this.hashData()
+    return this.toJSON()
   }
 }

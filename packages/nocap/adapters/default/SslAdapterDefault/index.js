@@ -14,8 +14,8 @@ class SslAdapterDefault {
     const timeout = this.$.config?.ssl_timeout? this.$.config.ssl_timeout: 1000
     const sslCheckerResponse = await sslChecker(hostname, this.sslCheckerOptions(url.port)).catch( (e) => { result = { status: "error", status: "error", message: e.message, data } } )
     const sslCertificateResponse = await sslCertificate.get(hostname, timeout).catch( (e) => { result = { status: "error", message: e.message, data } } )
-    data.days_remaining = sslCheckerResponse.daysRemaining
-    data.valid = sslCheckerResponse.valid
+    data.days_remaining = sslCheckerResponse?.daysRemaining? sslCheckerResponse.daysRemaining: null
+    data.valid = sslCheckerResponse?.valid? sslCheckerResponse.valid: null
     data = {...data, ...sslCertificateResponse }
     if(!result)
       result = { status: "success", data }

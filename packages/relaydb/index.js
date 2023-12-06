@@ -3,7 +3,7 @@ import { withExtensions } from "lmdb-oql";
 import { defineSchemas, schemas } from "./schemas.js";
 
 import RelayMixin from "./mixins/relay.js"
-import RelayCheckHelper from "./mixins/relaycheck.js";
+import RelayCheckHelper from "./mixins/check.js";
 import InfoMixin from "./mixins/info.js"
 import CacheTimeMixin from "./mixins/cachetime.js"
 import StatMixin from "./mixins/stat.js"

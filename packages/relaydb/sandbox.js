@@ -15,7 +15,7 @@ const log = obj => console.log(inspect(obj, false, null, true))
 import Logger from "@nostrwatch/logger" 
 const logger = new Logger('lmdb')
 
-const { $notDefined, $isDefined, $isNull, $isFalsy, $isTruthy, $isUndefined } = operators
+const { $gt, $lt, $notDefined, $isDefined, $isNull, $isFalsy, $isTruthy, $isUndefined } = operators
 
 // const db = withExtensions(open('/Users/sandwich/Develop/nostr-watch/packages/trawler/lmdb/nw.mdb', {indexOptions:{fulltext:true}}))
 
@@ -73,9 +73,11 @@ const start = new Date().getTime()
 // const connectIsUndefined = [...db.$.select().from(Relay).where({ Relay: {  connect: $isUndefined  } })]
 // const nokey = [...db.$.select().from(Relay).where({ Relay: {  $notDefined('nokey')  } })]
 // console.log([...db.$.select().from(Relay).where({ Relay: {  network: 'tor'  } })])
-let tor = db.relay.get.network('tor', ['url'])
-tor = tor.map((relay) => { return relay.url })
-console.dir(tor, {'maxArrayLength': null})
+console.log(db.relay.count.online(), 'online')
+console.log([...db.$.select().from(Relay).where({ Relay: { last_checked: $gt(0) }}) ].length)
+// let tor = db.relay.get.network('tor', ['url'])
+// tor = tor.map((relay) => { return relay.url })
+// console.dir(tor, {'maxArrayLength': null})
 // console.log(nokey.length)
 
 

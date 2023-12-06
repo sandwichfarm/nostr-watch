@@ -50,7 +50,7 @@ export class WorkerManager {
     this.worker_events = ['completed', 'failed', 'progress', 'stalled', 'waiting', 'active', 'delayed', 'drained', 'paused', 'resumed']
 
     /** @type {array} */
-    this.queue_eventst = ['active', 'completed', 'delayed', 'drained', 'error', 'failed', 'paused', 'progress', 'resumed', 'stalled', 'waiting']
+    this.queue_events = ['active', 'completed', 'delayed', 'drained', 'error', 'failed', 'paused', 'progress', 'resumed', 'stalled', 'waiting']
 
     /** @type {Nocap} */  
     this.Nocap = Nocap
@@ -61,29 +61,50 @@ export class WorkerManager {
     //   throw new Error('WorkerManager populator needs to be a function')
     // if(!(this.scheduler instanceof Function))
     //   throw new Error('WorkerManager scheduler needs to be a function')
-    if(!(this.on_complete instanceof Function))
-      throw new Error('WorkerManager on_complete needs to be a function')
+    if(!(this.on_completed instanceof Function))
+      throw new Error('WorkerManager on_completed needs to be a function')
+  }
+
+  setWorker($worker){
+    this.$worker = $worker 
+    this.bind_events()
   }
 
   bind_events(){
-    Object.keys(this.eventHanders).forEach(handler => this.$worker.on(handler, (...args) => this.cbcall(handler, args)))
+    // this.$worker.on('completed', this.log.warn.bind(this))
+    this.worker_events.forEach(handler => {
+      console.log(`bind on_${handler} event handler on ${this.$worker.name}:${this.constructor.name} (JobType: ${this.$worker.opts.jobType})`)
+      this.$worker.on(handler, (...args) => this.cbcall(handler, ...args))
+      // this.$worker.on(handler, this.log.warn.bind(this))
+    })
   }
 
-  cbcall(handler, ...args){
-    [].shift.call(args,1)
-    if(this?.[`on_${handler}`] && typeof this[`_${handler}`] === 'function')
+  cbcall(...args){
+    const handler = [].shift.call(args)
+    if(this?.[`on_${handler}`] && typeof this[`on_${handler}`] === 'function')
       this[`on_${handler}`](...args)
     if(typeof this.cb[handler] === 'function')
       this.cb[handler](...args)
   }
 
-  async on_complete(job, result){
-    this.log.debug('Job completed')
-    const persists = job.data.persists? job.data.persists: job.data.checks
-    for( const key in persists){
-      const transformer = new transform[key](result, 'nocap');
-      const rdbRecord = transformer.toJson()
-      const id = this.rdb.check[key].insert(rdbRecord)
+  async on_completed(job, result){
+    this.log.warn('Job completed', result)
+    let persists = job.data?.persists? job.data.persists: job.data.checks
+    if(persists.includes('connect')) {
+      persists = persists.filter(persist => !['connect', 'read', 'write'].includes(persist)) 
+      if(result['connect']?.status !== 'error') persists.push('websocket')
+    }
+    const relayId = this.rdb.relay.id(job.data.relay)
+    result.relay_id = relayId
+    for( let key of persists){
+      if(result[key]?.status === 'error') continue
+      const Transform = transform[key]; 
+      const transformer = new Transform();
+      transformer.fromNocap(result)
+      const rdbRecord = transformer.toJSON()
+      // console.log(rdbRecord)
+      process.exit()
+      const id = await this.rdb.check[key].insert(rdbRecord)
       await this.rdb.relay.patch({ url: result.url, [key]: id });
     }
     if(job.data.checks.includes('websocket'))
@@ -100,7 +121,7 @@ export class WorkerManager {
   }
 
   async addJob(job){
-    this.log.debug(`Adding job: ${JSON.stringify(job)}`)
+    this.log.info(`Adding job: ${this.constructor.name} ${JSON.stringify(job)}`)
     this.$.queue.add(this.constructor.name, job)
   }
 

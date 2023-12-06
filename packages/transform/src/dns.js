@@ -22,8 +22,8 @@ export class RelayCheckDns extends RelayCheck {
     }
   }
 
-  out() {
-    const nocapResult = this.setHeadersToNocap(nocapResult);
+  toNocap() {
+    const nocapResult = this.setHeadersToNocap({});
     nocapResult.data = this.data;
 
     return nocapResult;
@@ -31,11 +31,10 @@ export class RelayCheckDns extends RelayCheck {
 
   fromNocap(nocapResult) {
     this.setHeadersFromNocap(nocapResult);
-
     if (nocapResult.data) {
       this.data = { ...this.data, ...nocapResult.data };
     }
-
     this.hashData()
+    return this.toJSON()
   }
 }

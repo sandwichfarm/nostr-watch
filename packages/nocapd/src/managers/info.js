@@ -7,7 +7,7 @@ export class InfoManager extends WorkerManager {
     this.frequency = 6*60*60*1000 //6 hours
   }
   async runner(job){
-    this.log.debug(`Running info check for ${job.data.relay.url}`)
+    this.log.info(`Running info check for ${job.data.relay.url}`)
     const { relay } = job.data;
     const nocapd = new this.Nocap(relay);
     const infoOld = this.rdb.checks.info.get(this.rdb.relay.get(relay).info)

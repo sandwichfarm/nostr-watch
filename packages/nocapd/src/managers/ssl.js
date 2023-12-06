@@ -10,7 +10,7 @@ export class SslManager extends WorkerManager {
     // Implementation to be provided later
   }
   async runner(job){
-    this.log.debug(`Running ssl check for ${job.data.relay.url}`);
+    this.log.info(`Running ssl check for ${job.data.relay.url}`);
     const { relay, checks } = job.data;
     const nocapd = new this.Nocap(relay);
     const result = await nocapd.check(['ssl'], { ssl_timeout: this.timeout });

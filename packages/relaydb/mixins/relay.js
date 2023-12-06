@@ -50,7 +50,7 @@ export default class RelayMixin {
     if(!current)
       throw new Error(`Cannot patch because ${RelayObj.url} does not exist`)
     delete RelayObj.url
-    if(RelayObj?.['#']) delete RelayObj['#']
+    if(current?.['#']) delete current['#']
     return this.insert({...current, ...RelayObj})
   }
   
@@ -88,6 +88,10 @@ export default class RelayMixin {
   retention(relayUrl) {
     return this.get.one(relayUrl)?.retention
   } 
+
+  id(relayUrl) {
+    return relayId(relayUrl)
+  }
 }
 
 const relay_batch = (db) => {

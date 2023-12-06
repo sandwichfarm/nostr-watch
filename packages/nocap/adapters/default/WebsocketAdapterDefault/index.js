@@ -48,9 +48,15 @@ class WebsocketAdapterDefault {
    * @returns null
    */ 
   bind_events(){
-    this.$.ws.on('open', (e) => this.$.on_open(e))
-    this.$.ws.on('message', (ev) => this.handle_nostr_event(ev))
-    this.$.ws.on('close', (e) => this.$.on_close(e))
+    try { 
+      this.$.ws.on('open', (e) => this.$.on_open(e))
+      this.$.ws.on('message', (ev) => this.handle_nostr_event(ev))
+      this.$.ws.on('close', (e) => this.$.on_close(e))
+      this.$.ws.on('error', (...args) => this.$.on_error(...args))
+    }
+    catch(e) {
+      this.$.log.warn(e)
+    }
   }
 
   /**

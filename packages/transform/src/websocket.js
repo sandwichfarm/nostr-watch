@@ -1,48 +1,42 @@
 import { RelayCheck } from './headers.js'
 
 export class RelayCheckWebsocket extends RelayCheck {
-  /**
-   * @type {boolean|null} Data indicating whether connect operation was successful
-   */
-  connect = null;
-
-  /**
-   * @type {boolean|null} Data indicating whether read operation was successful
-   */
-  read = null;
-
-  /**
-   * @type {boolean|null} Data indicating whether write operation was successful
-   */
-  write = null;
-
-  /**
-   * @type {number} Duration of the connect operation
-   */
-  connectDuration = -1;
-
-  /**
-   * @type {number} Duration of the read operation
-   */
-  readDuration = -1;
-
-  /**
-   * @type {number} Duration of the write operation
-   */
-  writeDuration = -1;
-
-  /**
-   * @type {string} Identifier of the entity that checked the data
-   */
-  checked_by = '';
 
   constructor(data) {
     super(data);
-    this.checked_by = data.checked_by || '';
+      /**
+       * @type {boolean|null} Data indicating whether connect operation was successful
+       */
+      this.connect = null;
+
+      /**
+       * @type {boolean|null} Data indicating whether read operation was successful
+       */
+      this.read = null;
+
+      /**
+       * @type {boolean|null} Data indicating whether write operation was successful
+       */
+      this.write = null;
+
+      /**
+       * @type {number} Duration of the connect operation
+       */
+      this.connectDuration = -1;
+
+      /**
+       * @type {number} Duration of the read operation
+       */
+      this.readDuration = -1;
+
+      /**
+       * @type {number} Duration of the write operation
+       */
+      this.writeDuration = -1;
   }
 
-  out() {
-    const nocapResult = this.setHeadersToNocap(nocapResult);
+  toNocap() {
+    const nocapResult = this.setHeadersToNocap({});
     nocapResult.connect = { data: this.connect, duration: this.connectDuration };
     nocapResult.read = { data: this.read, duration: this.readDuration };
     nocapResult.write = { data: this.write, duration: this.writeDuration };

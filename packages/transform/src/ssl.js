@@ -33,27 +33,27 @@ export class RelayCheckSsl extends RelayCheck {
     pemEncoded: ''
   };
 
-  constructor(data) {
-    super(data);
-    if (data.data) {
-      this.data = { ...this.data, ...data.data };
-    }
+  constructor(headers, result) {
+    super(headers, result);
+   
   }
 
-  out() {
-    const nocapResult = this.setHeadersToNocap(nocapResult);
+  toNocap() {
+    const nocapResult = this.setHeadersToNocap();
     nocapResult.data = this.data;
-
     return nocapResult;
   }
 
-  fromNocap(nocapResult) {
-    this.setHeadersFromNocap(nocapResult);
-
-    if (nocapResult.data) {
-      this.data = { ...this.data, ...nocapResult.data };
-    }
+  fromNocap(headers, result) {
+    console.log('WTF!', !result || !result?.data || Object.keys(result.data).length === 0)
+    console.log('HEADER KEYS!', Object.keys(headers))
+    console.log('RESULT KEYS!', Object.keys(result), Object.keys(result.data))
+    this.setHeadersFromNocap(headers);
+    if (!result || !result?.data || Object.keys(result.data).length === 0)
+      this.data = {}
+    else 
+      this.data = { ...this.data, ...result.data }
     this.hashData()
+    return this.toJSON()
   }
 }
-

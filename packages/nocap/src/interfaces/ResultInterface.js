@@ -31,7 +31,6 @@ export class ResultInterface extends Validator {
     }
     else {
       result = {}
-      console.log(k)
       for(const key of k) {
         const { data, duration } = this.get(key)
         result = { ...result, [key]: data, [`${key}_duration`]: duration }

@@ -31,13 +31,13 @@ export class RelayCheckInfo extends RelayCheck {
 
   constructor(data, format=`rdb`) {
     super(data);
-    if (data.data) {
-      this.data = { ...this.data, ...data.data };
+    if (!data?.data) {
+      this.data = {}
     }
   }
 
-  out() {
-    const nocapResult = this.setHeadersToNocap(nocapResult);
+  toNocap() {
+    const nocapResult = this.setHeadersToNocap({});
     nocapResult.data = this.data;
 
     return nocapResult;
@@ -51,8 +51,9 @@ export class RelayCheckInfo extends RelayCheck {
     }
 
     // Detect and record dropped fields
-    this.detectDroppedFields(nocapResult, ['data']);
+    this.detectDroppedFields(nocapResult, this.data);
 
     this.hashData()
+    return this.toJSON()
   }
 }

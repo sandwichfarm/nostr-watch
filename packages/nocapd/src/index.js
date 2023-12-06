@@ -10,7 +10,7 @@ async function gracefulShutdown(signal) {
 
 process.on('uncaughtException', async (error) => {
   console.error('Uncaught Exception:', error);
-  await gracefulShutdown('uncaughtException');
+  // await gracefulShutdown('uncaughtException');
 });
 
 process.on('unhandledRejection', async (reason, promise) => {

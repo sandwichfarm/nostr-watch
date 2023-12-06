@@ -16,7 +16,9 @@ class DnsAdapterDefault {
     const headers = { accept: 'application/dns-json' }
     const response = await fetch( query, { headers } ).catch((e) => { result = { status: "error", message: e.message, data } })
     data = await response.json()
-    if(!result)
+    if(!data?.Answer || data.Answer.length === 0 || Object.keys(data.Answer[0]) === 0)
+      result = { status: "error", message: "No DNS Answer" }
+    else
       result = { status: "success", data }
     this.$.finish('dns', result)
   } 

@@ -14,7 +14,7 @@ export class DnsManager extends WorkerManager {
     this.log.debug(`Running dns check for ${job.data.relay.url}`)
     const { relay, checks } = job.data;
     const nocapd = new Nocap(relay);
-    const dnsOld = this.rdb.checks.dns.get(relay.url)
+    const dnsOld = this.rdb.checks.dns.get.one(relay.url)
     const dnsNew = await nocapd.check('dns')
     if(!this.hasChanged(dnsOld.data, dnsNew.data))
       return { skip: true }

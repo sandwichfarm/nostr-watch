@@ -51,7 +51,7 @@ export const whenAllQueuesEmpty = function(queues, callback) {
 // Function to check if a single queue has active jobs
 export const isQueueActive = async function(queue) {
   const counts = await queue.getJobCounts("active");
-  console.log('active', counts.active)
+  // console.log('active', counts.active)
   return counts.active > 0;
 };
 

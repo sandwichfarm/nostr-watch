@@ -79,7 +79,6 @@ export default class {
   async check(keys, raw=true){
     let result 
     if(keys == "all") {
-      console.log('check all')
       return this.check(this.checks)
     }
     else if(typeof keys === 'string') {
@@ -134,8 +133,8 @@ export default class {
         }
         else if(precheck.status == "error") {
           this.logger.debug(`${key}: precheck rejected with error`)
-          this.logger.err(`Error in ${key} precheck: ${precheck.error}`)
-          this.promises.get(key).resolve({ [key]: false, [`${key}Latency`]: -1, ...precheck })
+          this.logger.warn(`Error in ${key} precheck: ${precheck.message}`)
+          this.promises.get(key).resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })
         }
         else {
           throw new Error(`start(): precheck rejection for ${key} should not ever get here: ${JSON.stringify(precheck)}`)
@@ -143,6 +142,16 @@ export default class {
         deferred.reject()
       })
     return deferred.promise
+  }
+
+  websocket_hard_fail(){
+    this.logger.debug(`websocket_hard_fail()`)
+    const wschecks = ['connect', 'read', 'write']
+    wschecks.forEach(key => { 
+      this.results.set(key, { data: false, duration: -1, status: "error", message: "Websocket connection failed" }) 
+    })
+    this.promises.get(this.current).resolve(this.results.get(this.current))
+    this.current = null
   }
 
   async finish(key, data={}){
@@ -182,8 +191,8 @@ export default class {
 
     const prechecker = async () => {
       this.logger.debug(`${key}: prechecker(): needs websocket: ${needsWebsocket}, key is connect: ${keyIsConnect}, connectAttempted: ${connectAttempted}`)
+
       //Doesn't need websocket. Resolve precheck immediately.
-      
       if( !needsWebsocket ){  
         this.logger.debug(`${key}: prechecker(): doesn't need websocket. Continue to ${key} check`)
         return resolvePrecheck()
@@ -223,6 +232,7 @@ export default class {
         this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect`)
         return rejectPrecheck({ status: "error", message: `Cannot check ${key}, no active websocket connection to relay` })
       } 
+
       this.logger.debug(`${key}: Made it here without resolving or rejecting precheck. You missed something.`)
     }
     await prechecker()
@@ -305,7 +315,8 @@ export default class {
   on_error(err){
     this.cbcall('error')
     this.track('relay', 'error', err)
-    this?.handle_error(err)
+    if(this?.handle_error)
+      this?.handle_error(err)
   }
 
   /**
@@ -344,7 +355,7 @@ export default class {
    * @returns null
    */
   on_notice(notice){
-    this.logger.info(notice)
+    this.logger.debug(notice)
     this.track('relay', 'notice', notice)
     this.cbcall('notice')
     if(this?.adapters?.relay?.handle_notice)
@@ -424,7 +435,7 @@ export default class {
    * @returns null
    */ 
   handle_connect_check(data){
-    this.finish('connect', { data }, this.promises.get('connect').resolve)
+    this.finish('connect', { data })
   }
 
   /**
@@ -434,7 +445,7 @@ export default class {
    * @returns null
    */ 
   handle_read_check(data){
-    this.finish('read', { data }, this.promises.get('read').resolve)
+    this.finish('read', { data })
   }
 
   /**
@@ -444,7 +455,20 @@ export default class {
    * @returns null
    */
   handle_write_check(data){
-    this.finish('write', { data }, this.promises.get('write').resolve)
+    this.finish('write', { data })
+  }
+
+  /**
+   * handle_error
+   * Implementation specific handler triggered by Hooks proxy-handler
+   * @private
+   * @returns null
+   */
+  handle_error(){
+    // this.unsubscribe()
+    // this.close()
+    this.websocket_hard_fail()
+    // this.finish(this.current, { [this.current]: false, duration: -1 }, this.promises.get(this.current).reject)
   }
 
   /**

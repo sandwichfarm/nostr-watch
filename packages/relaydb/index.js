@@ -3,12 +3,13 @@ import { withExtensions } from "lmdb-oql";
 import { defineSchemas, schemas } from "./schemas.js";
 
 import RelayMixin from "./mixins/relay.js"
-import RelayCheckHelper from "./mixins/check.js";
+import ChecksMixin from "./mixins/checks.js"
 import InfoMixin from "./mixins/info.js"
 import CacheTimeMixin from "./mixins/cachetime.js"
 import StatMixin from "./mixins/stat.js"
 import ServiceMixin from "./mixins/service.js"
 import NoteMixin from "./mixins/note.js";
+
 
 import Logger from "@nostrwatch/logger" 
 
@@ -53,7 +54,7 @@ export default (dbPath, opts={}) => {
   }
   db.addHelpers(ServiceMixin)
   db.addHelpers(RelayMixin)
-  db.addHelpers(RelayCheckHelper)
+  db.addHelpers(ChecksMixin)
   db.addHelpers(InfoMixin)
   db.addHelpers(CacheTimeMixin)
   db.addHelpers(StatMixin)

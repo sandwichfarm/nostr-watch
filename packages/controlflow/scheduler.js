@@ -10,38 +10,38 @@ export class Scheduler {
   }
 
   analyzeAndCacheWorkers() {
-    this.workers.sort((a, b) => a.frequency - b.frequency);
-    const totalFrequency = this.workers.reduce((sum, worker) => sum + worker.frequency, 0);
+    this.workers.sort((a, b) => a.interval - b.interval);
+    const totalInterval = this.workers.reduce((sum, worker) => sum + worker.interval, 0);
     let cumulativeOffset = 0;
     this.workers.forEach(worker => {
-      console.log(worker)
+      // console.log(worker)
       this.analysis[worker.name] = {
-          frequency: worker.frequency,
-          offset: this.calculateBestOffset(worker, cumulativeOffset, totalFrequency),
+          interval: worker.interval,
+          offset: this.calculateBestOffset(worker, cumulativeOffset, totalInterval),
           handler: worker.handler
         };
         cumulativeOffset += this.analysis[worker.name].offset;
     });
   }
 
-  calculateBestOffset(worker, currentOffset, totalFrequency) {
+  calculateBestOffset(worker, currentOffset, totalInterval) {
     // Calculate an ideal gap between tasks
-    const idealGap = totalFrequency / this.workers.length;
+    const idealGap = totalInterval / this.workers.length;
     // Start by proposing an offset that spaces out the tasks evenly
     let proposedOffset = currentOffset + idealGap;
     // Adjust the proposed offset to avoid as much overlap as possible
     // This loop tries to find a spot where the current task is least likely to collide with others
-    while (this.isCollision(proposedOffset, worker.frequency, totalFrequency)) {
-      proposedOffset = (proposedOffset + worker.frequency) % totalFrequency;
+    while (this.isCollision(proposedOffset, worker.interval, totalInterval)) {
+      proposedOffset = (proposedOffset + worker.interval) % totalInterval;
     }
-    return proposedOffset % totalFrequency;
+    return proposedOffset % totalInterval;
   }
 
-  isCollision(proposedOffset, frequency, totalFrequency) {
+  isCollision(proposedOffset, interval, totalInterval) {
     // Check if the proposed offset collides with other tasks
     for (let otherWorkerName in this.analysis) {
       const otherWorker = this.analysis[otherWorkerName];
-      if (this.doIntervalsOverlap(proposedOffset, frequency, otherWorker.offset, otherWorker.frequency, totalFrequency)) {
+      if (this.doIntervalsOverlap(proposedOffset, interval, otherWorker.offset, otherWorker.interval, totalInterval)) {
           return true;
       }
     }
@@ -70,7 +70,7 @@ export class Scheduler {
       // Define the rule for scheduling
       const rule = new schedule.RecurrenceRule();
       rule.start = startTime; // Set the start time
-      rule.rule = `*/${Math.round(worker.frequency / 1000)} * * * * *`; // Set the frequency in seconds
+      rule.rule = `*/${Math.round(worker.interval / 1000)} * * * * *`; // Set the interval in seconds
       // Schedule the job
       this.schedules[name] = schedule.scheduleJob(rule, this.analysis[name].handler);
     });

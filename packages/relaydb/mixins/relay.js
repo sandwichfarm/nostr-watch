@@ -1,12 +1,16 @@
 import { schemas } from "../schemas.js"
 import { operators, IDS } from "lmdb-oql";
-import { relayId, now, parseSelect, helperHandler } from "../utils.js"
+import { relayId, ParseSelect, helperHandler } from "../utils.js"
 
-const { Relay, Info } = schemas
-const { $eq, $gte, $and, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
+const { Relay, RelayCheckWebsocket, RelayCheckInfo } = schemas
+const { $eq, $gte, $and, $isNuall, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
 
 import Logger from "@nostrwatch/logger" 
 const logger = new Logger('lmdb:relay')
+
+import { RelayRecord } from "../defaults.js"
+
+const parseSelect = ParseSelect(RelayRecord, "Relay")
 
 import { ResultInterface as ResultType } from "@nostrwatch/nocap";
 
@@ -38,20 +42,20 @@ export default class RelayMixin {
 
   async update(RelayObj) {
     this.validate(RelayObj)
-    const current = this.$.get(relayId(RelayObj.url))
+    const current = this.db.$.get(relayId(RelayObj.url))
     if(!current)
       throw new Error(`Cannot update because ${RelayObj.url} does not exist`)
     return this.insert({...RelayObj})
   }
 
-  async patch(RelayObj) {
-    this.validate(RelayObj)
-    const current = this.$.get(relayId(RelayObj.url))
+  async patch(RelayFieldsObj) {
+    this.validate(RelayFieldsObj)
+    const current = await this.db.$.get(relayId(RelayFieldsObj.url))
     if(!current)
-      throw new Error(`Cannot patch because ${RelayObj.url} does not exist`)
-    delete RelayObj.url
+      throw new Error(`Cannot patch because ${RelayFieldsObj.url} does not exist`)
+    RelayFieldsObj.url = new URL(RelayFieldsObj.url).toString()
     if(current?.['#']) delete current['#']
-    return this.insert({...current, ...RelayObj})
+    return this.insert({...current, ...RelayFieldsObj})
   }
   
   async upsert(RelayObj) {
@@ -104,7 +108,9 @@ const relay_batch = (db) => {
       const result = []
       for await (const RelayObj of RelayObjs) {
         try { 
-          result.push(await db.relay[key](RelayObj))
+          const id = await db.relay[key](RelayObj).catch(logger.warn)
+          if(typeof id !== 'undefined')
+            result.push(id)
         }
         catch(e) { logger.warn(e) }
       }
@@ -230,13 +236,23 @@ const relay_supports = (db) => {
 const relay_get = (db) => {
   const fns = {
     db,
-    one(relayUrl) {
-      return db.$.get(relayId(relayUrl)) || false
+    one(relay) {
+      if(typeof relay !== 'string')
+        throw new Error("Relay.get.one(): Argument must be a string")
+      if(!relay.startsWith('Relay@'))
+        relay = relayId(relay)
+      return db.$.get(relay) || false
+    },
+    many(relayUrls) {
+      return relayUrls.map(relayUrl => this.one(relayUrl))
     },
     all(select=null, where=null) {
       select = parseSelect(select)
+      if(!where)
+        where = { Relay: { '#': 'Relay@' } }  
       // return [...this.db.$.select(select).from( Relay ).where({ Relay: { url: (value) => value?.length  } })] || []
-      return [...db.$.select(select).from( Relay ).where({ Relay: { '#': 'Relay@' } })] || []
+      // return [...db.$.select(select).from( Relay ).where({ Relay: { '#': 'Relay@' } })] || []
+      return [...db.$.select(select).from( Relay ).where(where)] || []
     },
     allIds(){
       const result = this.all(IDS).flat()
@@ -244,7 +260,8 @@ const relay_get = (db) => {
     },
     online(select=null) {
       select = parseSelect(select)
-      return [...db.$.select(select).from( Relay ).where({ Relay: { connect: $matches(true) } })] || []
+      return [...db.$.select(select).from( Relay, RelayCheckWebsocket ).where({ Relay: { last_seen: $gte(0) } })] || []
+      // return [...db.$.select(select).from( Relay ).where({ Relay: { connect: $matches(true) } })] || []
     },
     network(network, select=null) {
       select = parseSelect(select)
@@ -252,22 +269,22 @@ const relay_get = (db) => {
     },
     public(select=null) {
       select = parseSelect(select)
-      return  [...db.$
-                .select(select)
-                .from( Relay )
-                .where({ Relay: { info: (value) => !value?.payment_required || value.payment_required === false }})
-              ] || []
+      return  db.check.info.get.all(select).filter( rci => !rci?.data?.limitation || !rci?.data?.limitation?.payment_required || rci.data.limitation.payment_required === false )
     },
     paid(select=null) {
       select = parseSelect(select)
-      return  [...db.$
-                .select(select)
-                .from( Relay )
-                .where({ Relay: { info: (value) => value?.payment_required && value.payment_required === true }})
-              ] || []
+      const paymentRequired = db.check.info.get.all().filter( rci => rci?.data?.limitation && rci?.data?.limitation?.payment_required && rci.data.limitation.payment_required === true ).map( res => [ res.relay_id, res['#'] ] ) 
+      const relayIds = paymentRequired.map( r => r[0] )
+      const relayInfoIds = paymentRequired.map( r => r[1] )
+      console.log('ids', relayIds)
+      let relays = this.many(relayIds)
+      relays = relays.filter( relay => relay.info.ref )
+
+      return this.many(relayIds)
     },
     dead(select=null) {
       select = parseSelect(select)
+      
       // const toBeAlive = now() - config?.global?.relayAliveThreshold || timestring('30d')
       // return [...this.db.$.select(select).from(Relay).where({ Relay: { last_seen: $gte(toBeAlive) } })] || []
     },
@@ -277,9 +294,15 @@ const relay_get = (db) => {
     },
     doesNotSupportNip(nip, select=null) {
       return [...db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => !value.includes(nip) } })] || []
+    },
+    null(key, select=null){
+      if(typeof key !== 'string')
+        throw new Error("Relay.get.null(): Argument must be a string")
+      select = parseSelect(select)
+      // return [...db.$.select(select).from(Relay).where({ Relay: { [key]: (k)=>k==null } })] || []
+      return db.relay.get.all(select).filter((r)=>r[key]==null)
     }
   }
-
 
   const validator = (...args) => {
     // const relayUrl = args[0]

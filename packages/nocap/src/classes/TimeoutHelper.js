@@ -12,6 +12,14 @@ export class TimeoutHelper {
     this.setup()
   }
 
+  get(key){
+    return this.timeouts[this.session.get()][key]
+  }
+
+  has(key){
+    return this.timeouts?.[this.session.get()]?.[key]? true : false
+  }
+
   create(key, timeout=1000, timeoutCb=()=>{}){
     if(!this.timeouts?.[this.session.get()])
       this.timeouts[this.session.get()] = {}
@@ -20,7 +28,7 @@ export class TimeoutHelper {
         try { 
           timeoutCb()
         }
-        catch(e) { this.logger.error(`error in timeout callback for ${key}: ${e.message}` )  }
+        catch(e) { throw new Error(`error in timeout callback for ${key}: ${e.message}` )  }
       }
     }, timeout)
   }

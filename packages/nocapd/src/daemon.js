@@ -29,38 +29,37 @@ const scheduleJob = (manager) =>{
 const initWorkers = async (config) => {
   if(config?.workers?.length > 0)
     throw new Error('config.workers needs to be an array of WorkerManagers')
-  const $q = new NocapdQueues()
-  const schedules = []
+  const $q = new NocapdQueues({ pubkey: process.env.DAEMON_PUBKEY })
+  const schedule = []
   $q.managers = {}
   $q.queue = NocapdQueue()
   await $q.queue.pause()
   await $q.queue.drain()
-  await $q.queue.clean(  -1, // 1 minute
-  -1, // max number of jobs to clean
-  'active')
-  await $q.queue.clean(  -1, // 1 minute
-  -1, // max number of jobs to clean
-  'stalled')
   // await $q.queue.obliterate()
-  await $q.queue.resume() 
+  
 
   $q.events = new BullQueueEvents($q.queue.name, {connection: RedisConnectionDetails()})
   config.managers.forEach(Manager => {
     const mname = Manager.name
-    $q.managers[mname] = new Manager($q, rdb, { logger: new Logger(mname) })
-    // console.log($q.queue.name, $q.managers[mname].runner,  { jobType: mname, concurrency: $q.managers[mname].concurrency, priority: $q.managers[mname].priority, connection: RedisConnectionDetails() })
-    const $worker = new BullWorker($q.queue.name, $q.managers[mname].runner.bind($q.managers[mname]), { jobType: mname, concurrency: $q.managers[mname].concurrency, priority: $q.managers[mname].priority, connection: RedisConnectionDetails() })
-    $q.managers[mname].setWorker($worker)
-    // schedule.push({ name: mname, frequency: $q.managers[mname].frequency, handler: $q.managers[mname].populator.bind($q.managers[mname]) })
-    // schedules.push(scheduleJob($q.managers[mname]))
+    const $manager = new Manager($q, rdb, { logger: new Logger(mname), pubkey: process.env.DAEMON_PUBKEY })
+    // console.log($q.queue.name, $manager.runner,  { jobType: mname, concurrency: $manager.concurrency, priority: $manager.priority, connection: RedisConnectionDetails() })
+    schedule.push({ name: mname, interval: $manager.interval, handler: $manager.populator.bind($manager) })
+    // schedules.push(scheduleJob($manager))
     // process.exit()
-    $q.managers[mname].populator()
+    // $manager.populator()
+    $q.managers[mname] = $manager
   })
-  setInterval( async () => console.log(await $q.queue.getJobCounts()), 5000)
+
+  const $worker = new BullWorker($q.queue.name, $q.route.bind($q), { concurrency: 3 } )
+  $q.setWorker($worker)
+  $q.populateAll()
   
-  // $q.scheduler = new Scheduler(schedule)
-  // console.log($q.scheduler.analysis)
-  $q.schedules = schedules
+
+  // setInterval( async () => console.log(await $q.queue.getJobCounts()), 5000)
+  
+  // console.log('schedule', schedule)
+  $q.scheduler = new Scheduler(schedule)
+  await $q.queue.resume() 
   return $q
 }
 
@@ -68,8 +67,8 @@ export const Nocapd = () => {
   const $q = initWorkers({
     managers: [ 
       WelcomeManager, 
-      // WebsocketManager, 
-      // InfoManager,
+      WebsocketManager, 
+      InfoManager,
       // DnsManager,
       // GeoManager,
       // SslManager

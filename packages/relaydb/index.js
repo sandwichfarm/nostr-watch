@@ -10,7 +10,6 @@ import StatMixin from "./mixins/stat.js"
 import ServiceMixin from "./mixins/service.js"
 import NoteMixin from "./mixins/note.js";
 
-
 import Logger from "@nostrwatch/logger" 
 
 let open;
@@ -61,3 +60,7 @@ export default (dbPath, opts={}) => {
   db.addHelpers(NoteMixin)
   return db
 }
+
+export { RelayRecord } from './defaults.js'
+
+export { ParseSelect } from "./utils.js";

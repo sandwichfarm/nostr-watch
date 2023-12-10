@@ -11,7 +11,7 @@ class SslAdapterDefault {
     let result, data = {}
     const url = new URL(this.$.url)
     const hostname = url.hostname 
-    const timeout = this.$.config?.ssl_timeout? this.$.config.ssl_timeout: 1000
+    const timeout = this.$.config?.timeout.ssl? this.$.config.timeout.ssl: 1000
     const sslCheckerResponse = await sslChecker(hostname, this.sslCheckerOptions(url.port)).catch( (e) => { result = { status: "error", status: "error", message: e.message, data } } )
     const sslCertificateResponse = await sslCertificate.get(hostname, timeout).catch( (e) => { result = { status: "error", message: e.message, data } } )
     data.days_remaining = sslCheckerResponse?.daysRemaining? sslCheckerResponse.daysRemaining: null

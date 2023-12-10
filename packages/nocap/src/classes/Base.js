@@ -10,6 +10,7 @@ import { SessionHelper } from "./SessionHelper.js";
 import { TimeoutHelper } from "./TimeoutHelper.js";
 import { LatencyHelper } from "./LatencyHelper.js";
 import { DeferredWrapper } from "./DeferredWrapper.js";
+import { Counter } from "./Counter.js";
 
 import AllDefaultAdapters from "@nostrwatch/nocap-all-adapters-default"
 
@@ -27,7 +28,7 @@ import SAMPLE_EVENT from "../data/sample_event.js"
 export default class {
 
   constructor(url, config) {
-    
+
     this.url = url
     this.ws = null         //set by adapter, needed for conn. status. might be refactored.
     this.$instance = null   //placeholder for adapters to use for storing a pre-initialized instance
@@ -47,6 +48,7 @@ export default class {
     this.latency = new LatencyHelper(this.session)
     this.promises = new DeferredWrapper(this.session, this.timeouts)
     this.logger = new Logger(url, this.config.logLevel)
+    this.count = new Counter(this.session, [...this.checks])
     this.customChecks = {}
     //
     this.SAMPLE_EVENT = SAMPLE_EVENT
@@ -83,11 +85,13 @@ export default class {
     }
     else if(typeof keys === 'string') {
       result = await this._check(keys)
+      this.close()
     }
     else if(keys instanceof Array && keys.length) {
       for(const key of keys){
         await this._check(key)
       }
+      this.close()
       result = this.results.raw(keys)
     }
     else {
@@ -107,9 +111,18 @@ export default class {
     return result
   } 
 
+  maybeTimeoutReject(key){
+    return (reject) => {  
+      if(this.isWebsocketKey(key))
+        return reject({ data: false, duration: -1, status: "error", message: `Websocket connection to relay timed out (after ${this.config.timeout[key]}ms}` })
+      else 
+        return reject({ data: {}, duration: -1, status: "error", message: `${key} check timed out (after ${this.config.timeout[key]}ms}` })
+    }
+  }
+
   async start(key){
     this.logger.debug(`${key}: start()`)
-    const deferred = this.addDeferred(key)
+    const deferred = this.addDeferred(key, this.maybeTimeoutReject(key))
     const adapter = this.routeAdapter(key)
 
     if( typeof key !== 'string')
@@ -127,13 +140,11 @@ export default class {
       })
       .catch((precheck) => {
         if(key === 'connect' && precheck.status == "error" && precheck?.result){
-          this.logger.debug(`${key}: precheck rejected with cached result`)
-          this.logger.warn(`Precheck found that connect check was already fulfilled, returning cached result`)
+          this.logger.debug(`${key}: Precheck found that connect check was already fulfilled, returning cached result`)
           this.promises.get(key).resolve(precheck.result)
         }
         else if(precheck.status == "error") {
-          this.logger.debug(`${key}: precheck rejected with error`)
-          this.logger.warn(`Error in ${key} precheck: ${precheck.message}`)
+          this.logger.debug(`${key} precheck failed: ${precheck.message}`)
           this.promises.get(key).resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })
         }
         else {
@@ -158,22 +169,53 @@ export default class {
     this.logger.debug(`${key}: finish()`)
     this.current = null
     this.latency.finish(key)
-    const url = this.results.get('url')
-    const network = this.results.get('network')
-    const adapter_key = this.routeAdapter(key)
-    const adapter_name = this.adapters[adapter_key].constructor.name 
-    const adapters = [ ...new Set( this.results.get('adapters').concat([adapter_name]) ) ]
-    const checked_at = Date.now()
-    data.duration = this.latency.duration(key)  
-    const result = { url, network, checked_at, adapters, [key]: {...data} }
+    const result = this.produce_result(key, data)
+    if(this.skip_result(key)) return
     this.results.setMany(result)
     this.promises.get(key).resolve(result)
     this.on_change()
   }
 
+  skip_result(key){
+    let skip = false 
+    let reason 
+    if(this.promises.reflect(key).state.isRejected){
+      skip = true 
+      reason = 'rejected'
+    }
+    if(this.promises.reflect(key).state.isFulfilled){
+      skip = true 
+      reason = 'already fulfilled'
+    }
+    if(!skip) return 
+    
+    this.logger.warn(`Skipping ${key} check because it was ${reason} when finish() was called`)
+    return true
+  }
+
+  produce_result(key, data={}){
+    const result = {}
+    const adapter_key = this.routeAdapter(key)
+    const adapter_name = this.adapters[adapter_key].constructor.name 
+
+    result.url = this.results.get('url')
+    result.network = this.results.get('network')
+    result.adapters = [ ...new Set( this.results.get('adapters').concat([adapter_name]) ) ]
+    result.checked_at = Date.now()
+    result.checked_by = this.config.checked_by
+    data.duration = this.latency.duration(key)  
+    result[key] = { ...data }
+
+    return result
+  }
+
+  isWebsocketKey(key){
+    return ['connect', 'read', 'write'].includes(key)
+  }
+
   async precheck(key){
     const deferred = this.addDeferred(`precheck_${key}`)
-    const needsWebsocket = ['connect', 'read', 'write'].includes(key)
+    const needsWebsocket = this.isWebsocketKey(key)
     const keyIsConnect = key === 'connect'
     const resolvePrecheck = deferred.resolve
     const rejectPrecheck = deferred.reject
@@ -226,7 +268,6 @@ export default class {
         // this.logger.debug(`precheck(${key}):prechecker():websocket is open, key is connect`)
         rejectPrecheck({ status: "error", message: 'Cannot check connect because websocket is already connected, returning cached result'})
       }
-
       //Websocket is not connecting, key is not connect
       if( !keyIsConnect && !this.isConnected()) {
         this.logger.debug(`${key}: prechecker(): websocket is not connecting, key is not connect`)
@@ -340,7 +381,6 @@ export default class {
    * @returns null
    */
   on_event(subid, ev){
-    this.unsubscribe(subid)
     this.track('relay', 'event', ev.id)
     if(this?.adapters?.relay?.handle_event)
       this.adapters.relay.handle_event(subid, ev)
@@ -372,9 +412,8 @@ export default class {
   on_eose(eose){
     this.cbcall('eose')
     this.track('relay', 'eose', eose) 
-    this.handle_eose(eose)
     if(this.promises.reflect('read').state.isPending)
-      this?.logger.warn(`received EOSE event but read promise is pending`)
+      this.handle_eose(eose)
   }
 
   /**
@@ -387,9 +426,8 @@ export default class {
   on_ok(ok){
     this.cbcall('ok')
     this.handle_ok(ok)
-    this.handle_write_check(true)
     if(this.promises.reflect('write').state.isPending)
-      this?.logger.warn(`received OK event but write promise is pending`)
+      this.handle_write_check(true)
   }
 
   /**
@@ -402,7 +440,7 @@ export default class {
   on_auth(challenge){
     this.cbcall('auth', challenge)
     this.track('relay', 'auth', challenge)
-    this?.handle_auth(challenge)
+    this.handle_auth(challenge)
   }
 
     /**
@@ -425,7 +463,7 @@ export default class {
    * @returns null
    */
   on_change(){
-    this.cbcall('change', this.result)
+    this.cbcall('change', this.results)
   }
 
   /**
@@ -445,6 +483,7 @@ export default class {
    * @returns null
    */ 
   handle_read_check(data){
+    this.unsubscribe(this.subid('read'))
     this.finish('read', { data })
   }
 
@@ -456,6 +495,16 @@ export default class {
    */
   handle_write_check(data){
     this.finish('write', { data })
+  }
+
+  /**
+   * handle_auth
+   * Implementation specific handler triggered by Hooks proxy-handler
+   * @private
+   * @returns null
+  */
+  handle_auth(challenge){
+  
   }
 
   /**
@@ -488,7 +537,7 @@ export default class {
    * @returns null
    */
   handle_eose(){
-    
+    this.handle_read_check(true)
   }
 
   /**
@@ -544,10 +593,10 @@ export default class {
     return this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
   }
 
-  addDeferred(key){
+  addDeferred(key, cb=()=>{}){
     const existingDeferred = this.promises.exists(key)
     if(!existingDeferred)
-      this.promises.add(key, this.config?.[`${key}_timeout`])
+      this.promises.add(key, this.config?.timeout?.[key], cb)
     return this.promises.get(key)
   }
 

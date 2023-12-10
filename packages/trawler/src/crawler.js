@@ -6,12 +6,13 @@ import { SimplePool } from 'nostr-tools';
 import { simplePoolAdapter } from '@nostr-fetch/adapter-nostr-tools'
 
 import rdb from "./relaydb.js"
-import { ResultInterface } from "@nostrwatch/nocap";
 import Logger from "@nostrwatch/logger";
 
 import { parseRelayList } from "./parsers.js";
 import { lastCrawledId, checkOnline }  from "./utils.js";
 import { parseRelayNetwork } from "../../utils/index.js"
+
+import { RelayRecord } from "@nostrwatch/relaydb"
 
 const logger = new Logger('crawler')
 
@@ -60,36 +61,26 @@ export const crawl = async function($job){
           
           //prepare relays for rdb
           relayList = relayList.map( relay => {
-            const result = {
+            return {
+              ...RelayRecord,
               url: relay,
-              network: parseRelayNetwork(relay),
-              status: {
-                connect: false,
-                read: false,
-                write: false 
-              },
-              info: "",
-              geo: "",
-              dns: "",
-              ssl: "",
-              checked_at: -1,
-              first_seen: -1,
-              last_seen: -1
+              network: parseRelayNetwork(relay)
             }
-            return result
           })
 
           const listPersisted = await rdb.relay.batch.insertIfNotExists(relayList)
+        
           listPersisted.forEach(relay => relaysPersisted.add(relay))
-
-          //store the note
-          await rdb.note.set.one(ev)
 
           //increment counter
           listCount++
 
-          if(relaysPersisted?.size)
-            $job.updateProgress(`${relay}: ${listCount} new lists found, ${relaysPersisted.size} new relays found`)
+          //store the note
+          if(listPersisted?.length && listPersisted.length > 0) {
+            await rdb.note.set.one(ev)
+            if(relaysPersisted?.size)
+              $job.updateProgress(`${relay}: ${listCount} lists found, +${listPersisted?.length} relays persisted, ${relaysPersisted.size} total found in this chunk, ${rdb.relay.count.all()} total relays`)
+          }
         }
       }
       catch(err) {

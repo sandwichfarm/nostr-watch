@@ -11,6 +11,7 @@
 
 
 import Relaydb from '../index.js'
+import { RelayRecord } from '../index.js'
 import dotenv from 'dotenv'
 dotenv.config()
 
@@ -50,16 +51,9 @@ const chunkArray = function(arr, chunkSize) {
       const url = new URL(relay.url).toString()
       try {
         const RELAYRECORD = {
+          ...RelayRecord,
           url: url,
           network: relay.network,
-          websocket: {},
-          info: "",
-          geo: "",
-          dns: "",
-          ssl: "",
-          last_checked: -1,
-          first_seen: -1,
-          last_seen: -1
         }
         console.log(RELAYRECORD)
         console.log('SET:', `#${count++}`, await relaydb.relay.insert(RELAYRECORD))

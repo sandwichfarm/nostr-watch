@@ -4,7 +4,9 @@ export class GeoManager extends WorkerManager {
   constructor($q, rdb, config){
     super($q, rdb, config)
     this.id = 'geo'
-    this.frequency = 24*60*60*1000 //24 hours
+    this.interval = 24*60*60*1000 //1 day
+    this.expires = 6*24*60*60*1000 //6 hours
+    this.priority = 40
   }
   async populator(){
     this.log.info('Populating geo jobs')
@@ -16,11 +18,15 @@ export class GeoManager extends WorkerManager {
       this.$.queue.add(job)
     })
   }
-  async runner(job){
+  async work(job){
     this.log.info(`Running geo check for ${job.data.relay.url}`)
     const { relay, checks } = job.data;
     const nocapd = new this.Nocap(relay);
-    const result = await nocapd.check(checks, { geo_timeout: this.timeout });
+    const result = await nocapd.check(['dns'], { timeout: { ssl: this.timeout }});
     return result;
+  }
+
+  async on_complete(){
+
   }
 };

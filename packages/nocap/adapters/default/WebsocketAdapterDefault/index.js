@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { WebsocketTor } from 'ws-tor'
 
 class WebsocketAdapterDefault {
 
@@ -13,7 +14,14 @@ class WebsocketAdapterDefault {
    * @returns promise<result?>
    */
   async check_connect(deferred){
-    this.$.set('ws', new WebSocket(this.$.url))
+    let $ws
+
+    if(this.$.results.network === 'tor') 
+      $ws = new WebsocketTor(this.$.url, { socksHost: this.$.config?.tor?.host, socksPort: this.$.config?.tor?.port })
+    else
+      $ws = new WebSocket(this.$.url)
+    
+    this.$.set('ws', $ws)
     this.bind_events()
     return deferred
   }

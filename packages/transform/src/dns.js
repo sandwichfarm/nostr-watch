@@ -17,7 +17,7 @@ export class RelayCheckDns extends RelayCheck {
 
   constructor(data) {
     super(data);
-    if (data.data) {
+    if (data?.data) {
       this.data = { ...this.data, ...data.data };
     }
   }

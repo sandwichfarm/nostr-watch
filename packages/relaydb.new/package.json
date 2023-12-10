@@ -1,0 +1,12 @@
+{
+  "name": "@nostrwatch/db",
+  "version": "0.0.1",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "sequelize": "6.35.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

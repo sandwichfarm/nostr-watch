@@ -1,15 +1,13 @@
 import hash from 'object-hash'
 
-import transform from '@nostrwatch/transform'
 import { Nocap } from '@nostrwatch/nocap'
 
-
 export class WorkerManager {
-  constructor($q, rdb, config){
+  constructor($parent, rdb, config){
     // if(config?.id)
     //   throw new Error('WorkerManager needs an id')
     /** @type {NWQueue} */
-    this.$ = $q
+    this.$ = $parent
 
     /** @type {db} */
     this.rdb = rdb
@@ -17,11 +15,8 @@ export class WorkerManager {
     /** @type {object} */
     this.cb = {}
     
-    // /** @type {string} */
-    // this.id = config.id 
-
-    /** @type {BullWorker} */
-    this.$worker = null
+    /** @type {string} */
+    this.pubkey = config?.pubkey? config.pubkey: null
 
     /** @type {number} */
     this.priority = config?.priority? config.priority: 1
@@ -29,19 +24,12 @@ export class WorkerManager {
     /** @type {number} */
     this.concurrency = config?.concurrency? config.concurrency: 1
 
+    this.bindEvents = true
+
     /** @type {number} */
     this.timeout = config?.timeout? config.timeout: 5000
 
     this.log = config?.logger? config.logger.logger: console
-
-    // /** @type {number} */
-    // this.frequency = config?.frequency? config.frequency: 60*60*1000 //1hour default
-
-    // /** @type {function} */
-    // this.handler = config?.handler? config.handler.bind(this): () => { console.warn(`handler not defined for ${this.id}`) }
-
-    // /** @type {function} */
-    // this.populator = config?.populator? config.populator.bind(this): this._populator.bind(this)
 
     /** @type {function} */
     this.scheduler = config?.scheduler? config.scheduler.bind(this): () => { console.warn(`scheduler not defined for ${this.id}`) }
@@ -55,29 +43,42 @@ export class WorkerManager {
     /** @type {Nocap} */  
     this.Nocap = Nocap
 
-    // if(!(this.handler instanceof Function))
-    //   throw new Error('WorkerManager handler needs to be a function')
-    // if(!(this.populator instanceof Function))
-    //   throw new Error('WorkerManager populator needs to be a function')
-    // if(!(this.scheduler instanceof Function))
-    //   throw new Error('WorkerManager scheduler needs to be a function')
     if(!(this.on_completed instanceof Function))
       throw new Error('WorkerManager on_completed needs to be a function')
+    
+    this.log.info(`${this.id()} initialized`)
+
+    this.interval = 24*60*60*1000 //24h
+
+    this.expires = 24*60*60*1000 //24h
   }
 
-  setWorker($worker){
-    this.$worker = $worker 
-    this.bind_events()
+  siblingKeys(){
+    return Object.keys(this.$.managers).filter(key => key !== this.constructor.name)
   }
 
-  bind_events(){
-    // this.$worker.on('completed', this.log.warn.bind(this))
-    this.worker_events.forEach(handler => {
-      console.log(`bind on_${handler} event handler on ${this.$worker.name}:${this.constructor.name} (JobType: ${this.$worker.opts.jobType})`)
-      this.$worker.on(handler, (...args) => this.cbcall(handler, ...args))
-      // this.$worker.on(handler, this.log.warn.bind(this))
+  siblings(){
+    const result = {}
+    this.siblingKeys().forEach( key => {
+      result[key] = this.$.managers[key]
     })
+    return result
   }
+
+  id(workerKey){
+    if(!workerKey)
+      workerKey = this.slug()
+    return `${workerKey}@${this.pubkey}`
+  }
+
+  slug(){
+    return this.constructor.name
+  }
+
+  // setWorker($worker){
+  //   this.$worker = $worker 
+  //   this.bind_events()
+  // }
 
   cbcall(...args){
     const handler = [].shift.call(args)
@@ -85,30 +86,6 @@ export class WorkerManager {
       this[`on_${handler}`](...args)
     if(typeof this.cb[handler] === 'function')
       this.cb[handler](...args)
-  }
-
-  async on_completed(job, result){
-    this.log.warn('Job completed', result)
-    let persists = job.data?.persists? job.data.persists: job.data.checks
-    if(persists.includes('connect')) {
-      persists = persists.filter(persist => !['connect', 'read', 'write'].includes(persist)) 
-      if(result['connect']?.status !== 'error') persists.push('websocket')
-    }
-    const relayId = this.rdb.relay.id(job.data.relay)
-    result.relay_id = relayId
-    for( let key of persists){
-      if(result[key]?.status === 'error') continue
-      const Transform = transform[key]; 
-      const transformer = new Transform();
-      transformer.fromNocap(result)
-      const rdbRecord = transformer.toJSON()
-      // console.log(rdbRecord)
-      process.exit()
-      const id = await this.rdb.check[key].insert(rdbRecord)
-      await this.rdb.relay.patch({ url: result.url, [key]: id });
-    }
-    if(job.data.checks.includes('websocket'))
-      this.rdb.relay.patch({ url: result.url, last_checked: Date.now() });
   }
 
   hasChanged(data1, data2){
@@ -120,14 +97,48 @@ export class WorkerManager {
     this.cb[event] = handler.bind(this)
   }
 
-  async addJob(job){
-    this.log.info(`Adding job: ${this.constructor.name} ${JSON.stringify(job)}`)
-    this.$.queue.add(this.constructor.name, job)
+  jobId(relay, workerKey){
+    return `${this.id(workerKey)}:${relay}`
+  }
+
+  async _work(job){
+    if(job.id.startsWith(this.id())) {
+      this.log.warn(`[work] ${job.id} is a ${this.constructor.name} job, running...`)
+      return this.work()
+    }
+    this.log.warn(`[work] ${job.id} is not a ${this.constructor.name} job, passing to next worker`)
+  }
+
+  async addJob(jdata, workerKey){
+    const jobOpts = {
+      priority: this.priority,
+      removeOnComplete: {
+        age: 60*10,
+      },
+      removeOnFail: {
+        age: 60*10,
+      }
+    }
+    if(!workerKey)
+      workerKey = this.constructor.name
+    this.log.debug(`Adding job for ${workerKey}: ${JSON.stringify(jdata)}`)
+    this.$.queue.add(this.id(workerKey), jdata, { jobId: this.jobId(jdata.relay, workerKey), ...jobOpts})
   }
 
   async populator(){
     this.log.debug('Populator not defined')
     const relays = this.rdb.relay.get.allIds()
     relays.forEach(relay => { this.$.queue.add(this.constructor.name, { relay: relay, checks: [this.id] }) })
+  }
+
+  async on_completed(job, rvalue) {
+    if(typeof rvalue !== 'object') return
+    if(rvalue?.skip === true) return this.log.debug(`${this.constructor.name} check skipped for ${job.data.relay}`)
+    const { result } = rvalue
+    this.log.debug(`DS check complete for ${job.data.relay}: ${JSON.stringify(result)}`)
+    const dnsId = await this.rdb.check.dns.insert(result)
+    const relayUpdate = { url: result.url, info: { ref: dnsId, changed_at: Date.now() } }
+    await this.rdb.relay.get.one(result.url)
+    await this.rdb.relay.patch(relayUpdate)
   }
 }

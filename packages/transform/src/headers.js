@@ -80,7 +80,7 @@ export class RelayCheck {
     this.hash = hash(this.data)
   }
 
-  toJSON(){
+  toJson(){
     const result = {}
     Object.keys(this).forEach(key => {
       if(typeof this[key] !== 'function') 

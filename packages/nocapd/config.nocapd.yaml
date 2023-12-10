@@ -1,0 +1,63 @@
+# env file is used for secrets
+envfile:  .env
+
+loglevel: info 
+
+# how are relays populated?
+populate_relays:
+    from: api #api, relaydb, events
+    every: 5m
+  
+# which checks should nocapd run? 
+checks: 
+  global:              # these override individual settings for checks. 
+    # enabled: true 
+    # expires: 1hr
+    # interval: 1m  
+    # persist: true   
+
+  websocket: 
+    enabled: true       
+    expires: 1h        # when should a relay's websocket check expire?
+    interval: 5m       # how often to look for relays that need to be checked?
+    persist: true      # should the results be persisted to local cache? 
+
+  info: 
+    enabled: true
+    expires: 1hr
+    interval: 30m
+    persist: true 
+
+  geo: 
+    enabled: true
+    expires: 1d
+    interval: 1hr 
+    persist: true 
+
+  dns: 
+    enabled: true
+    expires: 1d 
+    interval: 12hr
+    persist: true 
+
+  ssl:
+    enabled: true
+    expires: 1d
+    interval: 15m
+    persist: true
+
+bullmq:
+  type: remote      # is redis backend for bullmq local or remote? If local, 'sync' via 'bullmq' will not work. 
+
+# sync is used to synchronize checks to a main db. 
+# Unneeded if instance has local access to relaydb and only running one nocapd instance. 
+sync:
+  enabled: false            # is it enabled? 
+  checks:                   # which checks to sychronize
+    - websocket
+    - info
+    - geo
+    - dns
+    - ssl
+
+  via: bullmq               # how? (bullmq is only supported method rn)

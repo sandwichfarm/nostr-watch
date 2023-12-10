@@ -21,7 +21,7 @@ export class RelayCheckGeo extends RelayCheck {
 
   constructor(data) {
     super(data);
-    if (data.data) {
+    if (data?.data) {
       // Only copy relevant fields, excluding 'status' and 'query'
       for (const key of Object.keys(this.data)) {
         if (data.data[key] !== undefined) {

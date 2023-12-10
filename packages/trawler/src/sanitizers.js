@@ -13,7 +13,7 @@ export const normalizeRelays = (relays) => {
   return relays 
           .map( sanitizeRelayUrl )
           .filter( qualifyRelayUrl )
-          .reduce ( normalizeRelayUrls, [] )
+          .reduce ( normalizeRelayUrlAcc, [] )
 }
 
 export const sanitizeRelayList = (relays) => {
@@ -58,7 +58,7 @@ export const qualifyRelayUrl = (relay) => {
   return true;
 }
 
-const normalizeRelayUrls = (acc, relay) => {
+const normalizeRelayUrlAcc = (acc, relay) => {
   const normalized = normalizeRelayUrl(relay);
   if (normalized) {
     acc.push(normalized);
@@ -66,9 +66,15 @@ const normalizeRelayUrls = (acc, relay) => {
   return acc;
 }
 
+const normalizeRelayUrls = (relays) => {
+  return relays.map( relay => normalizeRelayUrl(relay))
+}
+
 const normalizeRelayUrl = (relay) => {
   try {
-    return new URL(relay).toString()
+    const url = new URL(relay)
+    url.hash = ''
+    return url.toString()
   }
   catch(e) {
     return 

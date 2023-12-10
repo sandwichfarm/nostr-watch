@@ -1,107 +1,105 @@
-import { schemas } from "../schemas.js"
+import { ParseSelect, helperHandler} from '../utils.js'
+import { RelayCheckWebsocket, RelayCheckInfo, RelayCheckDns, RelayCheckGeo, RelayCheckSsl } from '../schemas.js'
 import { operators, IDS } from "lmdb-oql";
-import { relayId, now, parseSelect, helperHandler } from "../utils.js"
 
-const { Relay, Info } = schemas
-const { $eq, $gte, $and, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
+const { $isDefined } = operators
 
-import Logger from "@nostrwatch/logger" 
-const logger = new Logger('lmdb:relay')
+import transform from '@nostrwatch/transform'
+// const { $eq, $gte, $and, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
 
-import { ResultInterface as ResultType } from "@nostrwatch/nocap";
-
-export default class RelayChecksMixin {
+export default class CheckMixin {
   constructor(db) {
     this.db = db;
+    this.init()
   }
 
   init(){
-    ['websocket', 'info', 'dns', 'geo', 'ssl'].forEach( key => {
-      this[key] = {}
-      this[key].insert = check_insert(this.db, key)
-      this[key].insertIfNotExists = check_insertIfNotExists(this.db, key)
-      this[key].update = check_update(this.db, key)
-      this[key].patch = check_patch(this.db, key)
-      this[key].delete = check_delete(this.db, key)
-      this[key].exists = check_exists(this.db, key)
-      this[key].get = check_get(this.db, key)
+    ['websocket', 'info', 'dns', 'geo','ssl'].forEach(check => {
+      this[check] = {}
+      this[check].get = check_get(this.db, check)
+      this[check].insert = check_insert(this, check)
     })
   }
 
-  async insert(RelayObj){
-    this.validate(RelayObj)
-    return this.db.$.put(relayId(RelayObj.url), new Relay(RelayObj))
-  }
-  
-  async insertIfNotExists(RelayObj) {
-    if( !(this.exists(RelayObj.url)) )
-      return this.insert(RelayObj)
-  }
-
-  async update(RelayObj) {
-    this.validate(RelayObj)
-    const current = this.$.get(relayId(RelayObj.url))
-    if(!current)
-      throw new Error(`Cannot update because ${RelayObj.url} does not exist`)
-    return this.insert({...RelayObj})
-  }
-
-  async patch(RelayObj) {
-    this.validate(RelayObj)
-    const current = this.$.get(relayId(RelayObj.url))
-    if(!current)
-      throw new Error(`Cannot patch because ${RelayObj.url} does not exist`)
-    delete RelayObj.url
-    if(current?.['#']) delete current['#']
-    return this.insert({...current, ...RelayObj})
-  }
-  
-  async upsert(RelayObj) {
-    this.validate(RelayObj)
-    if( await this.exists(RelayObj.url) )
-      return this.update(RelayObj)
-    return this.insert(RelayObj)
-  }
-
-  async delete(RelayObjOrUrl) {
-    const url = RelayObjOrUrl?.url || RelayObjOrUrl
-    if(!this.exists(url))
-      throw new Error(`Cannot delete because ${url} does not exist`)
-    return this.db.$.remove(relayId(url))
-  }
-
   validate(RelayObj){
+    // console.log(RelayObj)
     if(!RelayObj?.url)
       throw new Error("Relay object must have a url property")
   }
+}
 
-  async select(select=null, where=null) {
-    return [...this.db.$.select(select).from(Relay).where(where)]
-  }
-
-  exists(RelayObjOrUrl) {
-    const url = RelayObjOrUrl?.url || RelayObjOrUrl
-    const exists = this.get.one(url)
-    if(exists)
-      return true
-    return false
-  } 
-
-  retention(relayUrl) {
-    return this.get.one(relayUrl)?.retention
-  } 
-
-  id(relayUrl) {
-    return relayId(relayUrl)
+const check_insert = (self, key) => {
+  const Schema = inferSchema(key)
+  // const schema = Schema.name
+  return (DataObj) => {
+    self.validate(DataObj)
+    const RdbDataObj = maybeTransform(DataObj, key)
+    return self.db.$.put(null, new Schema(RdbDataObj))
   }
 }
 
-const validate = (RelayObj) => {
-  if(!RelayObj?.relay_id)
-    throw new Error("Relay object must have a relay_id property")
+const check_get = (self, key) => {
+  const Schema = inferSchema(key)
+  const schema = Schema.name
+  const transformer = new transform[key]() 
+  const parseSelect = ParseSelect(transformer.toJson(), transformer.constructor.name)
+  
+  const fns = {
+    one(relayUrl, select=null){
+      select = parseSelect( select )
+      return [...self.db.$.select(select).from( Schema ).where( { [schema]: { 'relay_id': self.db.relay.id(relayUrl) } } )][0] || false
+    },
+    mostRecent(relayUrl, select=null) {
+      select = parseSelect( select )
+      return [...self.db.$.select( select ).from( Schema ).where({ [schema]: { '#': `${schema}@` } })][0] || false
+    },
+    all(select=null) {
+      select = parseSelect( select )
+      // return [...this.db.$.select(select).from( Relay ).where({ Relay: { url: (value) => value?.length  } })] || []
+      return [...self.$.select( select ).from( Schema ).where({ [schema]: { '#': `${schema}@` } })] || []
+      // return [...self.$.select( select ).from( Schema ).where({ [schema]: { relay_id: $isDefined() } })] || []
+    },
+    allIds(){
+      const result = self.all(IDS).flat()
+      return result || []
+    }
+  }
+  return helperHandler(fns)
 }
 
-const check_insert = (db, key) => async (result) => {
-  const info = new Info()
-  return db.$.put(null, info)
+const maybeTransform = (data, key) => {
+  // console.log(data)
+  //relaydb data format
+  if(data?.relay_id && data.relay_id !== null && data.relay_id.length)
+    return data
+
+  // console.log(key, Object.keys(transform))
+
+  const ToRdbData = new transform[key]()
+
+  //event 
+  if(data?.sig && data?.tags && data?.pubkey)
+    return ToRdbData.fromEvent(data)
+
+  //nocap
+  if(data?.adapters instanceof Array)
+    return ToRdbData.fromNocap(data)
+
+  throw new Error(`Data provided for ${key} did not match any known formats: ${JSON.stringify(data)}`)
+}
+
+const inferSchema = (key) => {
+  switch(key){
+    case 'info':
+      return RelayCheckInfo
+    case 'dns':
+      return RelayCheckDns
+    case 'geo':
+      return RelayCheckGeo
+    case'ssl':
+      return RelayCheckSsl
+    case 'websocket':
+    default:
+      return RelayCheckWebsocket
+  }
 }

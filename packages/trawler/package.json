@@ -8,8 +8,6 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@bull-board/api": "5.9.2",
-    "@bull-board/fastify": "5.9.2",
     "@nostr-dev-kit/ndk": "2.0.5",
     "@nostr-dev-kit/ndk-cache-redis": "2.0.5",
     "@nostr-fetch/adapter-ndk": "0.13.1",

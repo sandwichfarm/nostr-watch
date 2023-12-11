@@ -1,5 +1,5 @@
 {
-  "name": "@nostrwatch/relaydb",
+  "name": "@nostrwatch/relaycache",
   "version": "0.0.1",
   "type": "module",
   "main": "index.js",
@@ -7,7 +7,6 @@
   "dependencies": {
     "dotenv": "16.3.1",
     "lmdb-index": "1.1.0",
-    "lmdb-indexeddb": "0.0.9",
     "lmdb-oql": "0.5.5",
     "murmurhash": "2.0.1",
     "object-hash": "3.0.0"

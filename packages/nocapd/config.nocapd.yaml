@@ -5,7 +5,7 @@ loglevel: info
 
 # how are relays populated?
 populate_relays:
-    from: api #api, relaydb, events
+    from: api #api, relaycache, events
     every: 5m
   
 # which checks should nocapd run? 

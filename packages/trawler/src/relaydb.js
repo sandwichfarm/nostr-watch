@@ -1,13 +1,13 @@
-import rdb from '@nostrwatch/relaydb'
+import rcache from '@nostrwatch/relaycache'
 import config from './config.js'
 
-let $rdb
+let $rcache
 
 if(!config?.lmdb_path)
   throw new Error("No LMDB path specified in config")
 
-if(!$rdb) {
-  $rdb = rdb(config.lmdb_path)
+if(!$rcache) {
+  $rcache = rcache(config.lmdb_path)
 }
 
-export default $rdb
+export default $rcache

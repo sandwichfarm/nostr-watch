@@ -1,18 +1,19 @@
 version: '3.8'
 services:
-  db:
+  relaydb:
     image: postgres:latest
     ports:
       - "5432:5432"
-    environment:
-      POSTGRES_DB: ${POSTGRES_USER:-nostrwatch_dev}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_USER:-postgres}
+    env_file:
+      - .env
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - nostrwatch-network
+      - .pg:/var/lib/postgresql/data
 
-networks:
-  nostrwatch-network:
-    driver: bridge
+  nodejs_app:
+    build: .  # Build the Node.js app using the Dockerfile in the current directory
+    ports:
+      - "3000:3000"  # Map your app's port to a host port if needed
+    depends_on:
+      - relaydb  # Ensure that the PostgreSQL container is started before the Node.js app
+    env_file:
+      - .env  # You can specify environment variables here if needed

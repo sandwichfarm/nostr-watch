@@ -122,7 +122,6 @@ const relay_batch = (db) => {
 
 const relay_limits = (db) => {
   const fn = {
-    db,
     country(relayUrl, country_code){
       if(!country_code)
         throw new Error(`Country code is required (example: US)`)
@@ -137,7 +136,6 @@ const relay_limits = (db) => {
 
 const relay_is = (db) => {
   const fn = {
-    db,
     online(relayUrl) {
       return db.relay.get.one(relayUrl)?.connect
     },
@@ -159,7 +157,6 @@ const relay_is = (db) => {
 
 const relay_requires = (db) => {
   const fn = {
-    db,
     auth(relayUrl) {
       return db.relay.get.one(relayUrl)?.auth
     },
@@ -172,7 +169,6 @@ const relay_requires = (db) => {
 
 const relay_has = (db) => {
   const fn = {
-    db,
     limitation(relayUrl, key) {
       const record = this.db.relay.get.info(relayUrl)?.limitation
       if(!key)
@@ -187,7 +183,6 @@ const relay_has = (db) => {
 
 const relay_supports = (db) => {
   const fn = {
-    db,
     nip(relay, nip){
       if(relay instanceof String) 
         return db.relay.get.one(relayUrl)?.info?.supported_nips?.[nip]

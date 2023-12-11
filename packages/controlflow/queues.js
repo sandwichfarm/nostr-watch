@@ -14,12 +14,18 @@ const NocapdQueue = (qopts={}) => {
   return new BullQueue('Nocapd', qopts)
 }
 
+const SyncQueue = (qopts={}) => {
+  qopts = { connection: RedisConnectionDetails(), ...qopts }
+  return new BullQueue('Nocapd', qopts)
+}
+
 const RestApiQueue = (qopts={}) => {
   qopts = { connection: RedisConnectionDetails(), ...qopts }
   return new BullQueue('RestApi', qopts)
 }
 
 export {
+  SyncQueue,
   TrawlerQueue,
   NocapdQueue,
   RestApiQueue,

@@ -1,23 +1,27 @@
 import { Nocap } from '@nostrwatch/nocap'
 import rcache from './relaydb.js'
-import { lastCheckedId, retriesId } from './utils.js'
+import { lastCheckedId, retryId } from './utils.js'
 
 export default async () => {
   const relays = rcache.relay.get.all(['url', 'online'])
   const uncheckedRelays = getUncheckedRelays(relays)
   const expiredRelays = await getExpiredRelays(relays)
+  
   const relaysToCheck = [ ...uncheckedRelays, ...expiredRelays ]
+  let onlineRelays = relays.filter( relay => relay.online )
 
+  // console.log(onlineRelays)
+
+  console.log(`online relays: ${onlineRelays.length}`)
   console.log(`expired relays: ${expiredRelays.length}`)
   console.log(`unchecked relays: ${uncheckedRelays.length}`)
   console.log(`relays to check: ${relaysToCheck.length}`)
-
+  
   await initRetryCount(relays)
 
   if(relaysToCheck.length === 0) return
 
-  let onlineRelays = relays.filter( relay => relay.online )
-  console.log(`checkCache(): Quickly filtering through ${relaysToCheck.length} unchecked relays before trawling, ${onlineRelays.length} cached relays are online`)
+  console.log(`checkCache(): Quickly filtering through ${uncheckedRelays.length} unchecked, ${expiredRelays.length} expired and a total of ${relaysToCheck.length} relays before trawling. There are currently ${onlineRelays.length} relays online according to the cache.`)
   for ( const relay of relaysToCheck ) {
     const { url } = relay
     let online = false
@@ -31,56 +35,62 @@ export default async () => {
     await setRetries(url, online)
     rcache.relay.patch({ url, online })
   }
-  onlineRelays = relays.filter( relay => relay.online )
+  onlineRelays = rcache.relay.get.all(['url', 'online']).filter( relay => relay.online )
   console.log(`checkCache(): Completed, ${onlineRelays.length} cached relays are online`)
 }
 
 const retryPenalty = (retries) => {
+  if(typeof retries === 'undefined') return 0
   const map = [
-    { threshold: 3, delay: 1000 * 60 * 1 },
-    { threshold: 6, delay: 1000 * 60 * 60 * 24 },
-    { threshold: 13, delay: 1000 * 60 * 60 * 24 * 7 },
-    { threshold: 17, delay: 1000 * 60 * 60 * 24 * 28 },
-    { threshold: 29, delay: 1000 * 60 * 60 * 24 * 90 }
+    { max: 3, delay: 1000 * 60 * 4 },
+    { max: 6, delay: 1000 * 60 * 60 * 24 },
+    { max: 13, delay: 1000 * 60 * 60 * 24 * 7 },
+    { max: 17, delay: 1000 * 60 * 60 * 24 * 28 },
+    { max: 29, delay: 1000 * 60 * 60 * 24 * 90 }
   ];
-  const found = map.find(entry => retries < entry.threshold);
+  const found = map.find(entry => retries <= entry.max);
   return found ? found.delay : map[map.length - 1].delay;
 };
-
-const initRetryCount = async (relays) => {
-  relays.forEach(async (relay) => {
-    const url = relay.url
-    const retries = await rcache.cachetime.get( retriesId(url) )
-    if(typeof retries === 'undefined')
-      console.log(await rcache.cachetime.set(retriesId(url), 0))
-  })
-}
-
-const getExpiredRelays = async (relays=[]) => {
-  return relays.filter( async relay => { 
-    const lastChecked = await rcache.cachetime.get( lastCheckedId(relay.url) )
-    const retries = await rcache.cachetime.get( retriesId(relay.url) )
-    if(!lastChecked) return false
-    const expiration = lastChecked + retryPenalty(retries)
-    return expiration < Date.now() 
-  })
-}
 
 const getUncheckedRelays = (relays=[]) => {
   let unchecked = relays.filter( relay => relay.online == null )
   return unchecked?.length? unchecked: []
 }
 
-const setRetries = async ( url, online ) => {
-  if(online) {
-    console.log(url, 'is online')
-    await rcache.cachetime.set(retriesId(url), 0)
-  } else { 
-    await rcache.cachetime.increment(retriesId(url))
-  }
-}
-
 const setLastChecked = async (url) => {
   await rcache.cachetime.set( lastCheckedId(url), Date.now() )
 }
 
+const initRetryCount = async (relays) => {
+  relays.forEach(async (relay) => {
+    const url = relay.url
+    // console.log(retryId(url))
+    const retries = rcache.retry.get( retryId(url) )
+    if(typeof retries === 'undefined')
+      await rcache.retry.set(retryId(url), 0)
+  })
+}
+
+const getExpiredRelays = async (relays=[]) => {
+  const relayStatuses = await Promise.all(relays.map(async relay => {
+    const url = relay.url;
+    const lastChecked = await rcache.cachetime.get(lastCheckedId(url))?.v;
+    if (!lastChecked) return { relay, isExpired: true };
+    const retries = await rcache.retry.get(retryId(url));
+    const interval = retryPenalty(retries)
+    const isExpired = lastChecked + interval < Date.now();
+    return { relay, isExpired };
+  }));
+  return relayStatuses.filter(r => r.isExpired).map(r => r.relay);
+}
+
+const setRetries = async ( url, online ) => {
+  let id 
+  if(online) {
+    console.log(url, 'is online')
+    id = await rcache.retry.set(retryId(url), 0)
+  } else { 
+    // console.log(url, 'is offline')
+    id = await rcache.retry.increment(retryId(url))
+  }
+}

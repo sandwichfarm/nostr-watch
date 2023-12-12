@@ -9,22 +9,8 @@ export default class CacheTimeMixin {
     this.db = db;
   }
 
-  async get(key){
+  get(key){
     return this.db.$.get(cacheTimeId(key))
-  }
-
-  async increment(key, amt=1){
-    const current = await this.get(key)
-    if(!current)
-      return this.set(key, amt)
-    return this.set(key, current.v + amt)
-  }
-
-  async decrement(key, amt=1){
-    const current = await this.get(key)
-    if(!current)
-      return this.set(key, -amt)
-    return this.set(key, current.v - amt)
   }
 
   async set(key, value=now()){

@@ -4,6 +4,8 @@
  * @returns Filtered and deduped list of relays
  */
 
+import isLocal from "url-local"
+
 import lmdb from './relaydb.js'
 import Logger from '@nostrwatch/logger'
 
@@ -37,6 +39,9 @@ export const relayAlreadyKnown = async (relay) => {
 }
 
 export const qualifyRelayUrl = (relay) => {
+  if(isLocal(relay))
+    return false
+
   if( /^(wss:\/\/)(.*)(:\/\/)(.*)$/.test(relay) ) //multiple protocols
     return false 
 

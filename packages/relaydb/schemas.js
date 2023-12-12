@@ -4,6 +4,12 @@ export class Relay {
     }
 }
 
+export class Retry {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
 export class CacheTime {
     constructor(config={}) {
         Object.assign(this,config);

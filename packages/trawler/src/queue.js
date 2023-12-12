@@ -2,9 +2,6 @@ import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { RedisConnectionDetails } from '@nostrwatch/utils'
 
-import { bootstrap } from './bootstrap.js'
-import { chunkArray } from './utils.js'
-
 import { trawl } from './trawler.js';
 import Logger from '@nostrwatch/logger'
 
@@ -14,45 +11,9 @@ import checkCache from './check-cache.js'
 
 import config from './config.js'
 
-import rdb from './relaydb.js'
-
-const relaysPerChunk = config?.trawl_concurrent_relays || 50;
-
 export const configureQueues = async function(){
 
   const connection = new Redis()
-
-  /**********
-   * Batcher
-   */
-
-  const batchLogger = new Logger('batch queue')
-
-  //queue
-  const batchQueue = new Queue('batchQueue', { removeOnComplete: true, removeOnFail: true, timeout: 1000*60*10, connection: RedisConnectionDetails()})
-
-  //job
-  const batchJob = async (job) => {
-    if(rdb.relay.count.all() > 0) await checkCache()
-    let bootstrapRelays = await bootstrap()
-    const batches = chunkArray(bootstrapRelays, relaysPerChunk)
-    batches.forEach( (batch, index) => {
-      batchLogger.info(`adding batch ${index} to trawlQueue`)
-      trawler.$Queue.add(`trawlBatch${index}`, { relays: batch })
-    })
-  }
-
-  const batchJobCompleted = async (job, returnvalue) => {
-    batchLogger.info(`batchJob ${job.id} completed`)
-  }
-
-  const batchJobFailed = async (job, err) => {
-    batchLogger.err(`batchJob ${job.id} failed: ${err}`)
-  }
-
-  const batchWorker = new Worker('batchQueue', batchJob, { concurrency: 1, connection: RedisConnectionDetails(), blockingConnection: true })
-        batchWorker.on('completed', batchJobCompleted);
-        batchWorker.on('failed', batchJobFailed); 
 
   /**********
    * Trawler 
@@ -90,9 +51,7 @@ export const configureQueues = async function(){
         trawlWorker.on('progress', trawlJobProgress)
 
   return {
-    batchQueue,
     trawlQueue: trawler.$Queue,
-    batchWorker,
     trawlWorker,
     connection
   }

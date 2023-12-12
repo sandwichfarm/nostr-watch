@@ -23,6 +23,7 @@
     "nostr-fetch": "0.13.1",
     "nostr-tools": "1.17.0",
     "timestring": "7.0.0",
+    "url-local": "2.0.0",
     "websocket-polyfill": "0.0.3",
     "ws": "8.14.2"
   },

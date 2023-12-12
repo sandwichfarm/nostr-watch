@@ -122,7 +122,7 @@ export default class {
 
   async start(key){
     this.logger.debug(`${key}: start()`)
-    const deferred = this.addDeferred(key, this.maybeTimeoutReject(key))
+    const deferred = await this.addDeferred(key, this.maybeTimeoutReject(key))
     const adapter = this.routeAdapter(key)
 
     if( typeof key !== 'string')
@@ -161,7 +161,9 @@ export default class {
     wschecks.forEach(key => { 
       this.results.set(key, { data: false, duration: -1, status: "error", message: "Websocket connection failed" }) 
     })
-    this.promises.get(this.current).resolve(this.results.get(this.current))
+    const promise = this.promises.get(this.current)
+    if(!promise) return this.logger.warn(`websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
+    promise.resolve(this.results.get(this.current))
     this.current = null
   }
 
@@ -214,7 +216,7 @@ export default class {
   }
 
   async precheck(key){
-    const deferred = this.addDeferred(`precheck_${key}`)
+    const deferred = await this.addDeferred(`precheck_${key}`)
     const needsWebsocket = this.isWebsocketKey(key)
     const keyIsConnect = key === 'connect'
     const resolvePrecheck = deferred.resolve
@@ -593,10 +595,11 @@ export default class {
     return this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
   }
 
-  addDeferred(key, cb=()=>{}){
+  async addDeferred(key, cb=()=>{}){
     const existingDeferred = this.promises.exists(key)
-    if(!existingDeferred)
-      this.promises.add(key, this.config?.timeout?.[key], cb)
+    if(existingDeferred) 
+      await this.promises.get(key).promise
+    this.promises.add(key, this.config?.timeout?.[key], cb)
     return this.promises.get(key)
   }
 

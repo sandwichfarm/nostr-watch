@@ -3,7 +3,6 @@ import models from './models/index.js'
 import helpers from './helpers/index.js'
 
 import initdb from './init.js'
-
 const initRes = await initdb(10)
 
 console.log('created new:', initRes.dbNew)
@@ -18,6 +17,7 @@ try {
 }
 
 export default {
+  sequelize,
   connect: sequelize,
   models,
   helpers,

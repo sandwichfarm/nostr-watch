@@ -1,2 +1,2 @@
-export { SyncQueue, TrawlerQueue, NocapdQueue, RestApiQueue, BullQueue, BullQueueEvents, BullWorker } from './queues.js'
+export { SyncQueue, TrawlQueue, NocapdQueue, RestApiQueue, QueueInit, BullMQ } from './queues.js'
 export { Scheduler } from './scheduler.js' 

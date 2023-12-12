@@ -33,8 +33,6 @@ const chunkArray = function(arr, chunkSize) {
   return result;
 }
 
-  // const relays = await relaydb.relay.get.allIds()
-  console.log(relaydb.relay.count.all())
   const relays = await relaydb.relay.get.all()
   
   const chunks = chunkArray(relays, 100)

@@ -5,12 +5,18 @@ import { RedisConnectionDetails } from '@nostrwatch/utils'
 import { bootstrap } from './bootstrap.js'
 import { chunkArray } from './utils.js'
 
-import { crawl } from './crawler.js';
+import { trawl } from './trawler.js';
 import Logger from '@nostrwatch/logger'
+
+import { TrawlQueue } from '@nostrwatch/controlflow'
+
+import checkCache from './check-cache.js'
 
 import config from './config.js'
 
-const relaysPerChunk = config?.crawl_concurrent_relays || 50;
+import rdb from './relaydb.js'
+
+const relaysPerChunk = config?.trawl_concurrent_relays || 50;
 
 export const configureQueues = async function(){
 
@@ -27,11 +33,12 @@ export const configureQueues = async function(){
 
   //job
   const batchJob = async (job) => {
-    const bootstrapRelays = await bootstrap()
+    if(rdb.relay.count.all() > 0) await checkCache()
+    let bootstrapRelays = await bootstrap()
     const batches = chunkArray(bootstrapRelays, relaysPerChunk)
     batches.forEach( (batch, index) => {
-      batchLogger.info(`adding batch ${index} to crawlQueue`)
-      crawlQueue.add(`crawlBatch${index}`, { relays: batch })
+      batchLogger.info(`adding batch ${index} to trawlQueue`)
+      trawler.$Queue.add(`trawlBatch${index}`, { relays: batch })
     })
   }
 
@@ -48,45 +55,45 @@ export const configureQueues = async function(){
         batchWorker.on('failed', batchJobFailed); 
 
   /**********
-   * Crawler 
+   * Trawler 
    */
 
-  const crawlLogger = new Logger('crawler queue')
+  const trawlLogger = new Logger('trawler queue')
 
   //queue
 
-  const crawlQueueDrained = () => {}
+  const trawler = TrawlQueue({ removeOnComplete: { age: 30*60*1000 }, removeOnFail: { age: 30*60*1000 }, timeout: 1000*60*10 })
 
-  const crawlQueue = new Queue('crawlQueue', { removeOnComplete: true, removeOnFail: true, timeout: 1000*60*10, connection: RedisConnectionDetails() })
-        crawlQueue.on('drained', crawlQueueDrained)
-
-  //job
-  const crawlJob = async ($job) => {
-    return crawl($job)
+  const trawlJobProgress = async ($job, progress) => {
+    // console.log(Object.keys($job.data))
+    trawlLogger.info(`progress: ${progress}`)
   }
 
-  const crawlJobCompleted = async ($job, foundRelays) => {
-    crawlLogger.info(`crawlJob#${$job.id} found ${foundRelays.length} relays}`)
+  const trawlQueueDrained = () => {}
+  
+  trawler.$Queue.drain()
+
+  trawler.$Queue.on('drained', trawlQueueDrained)
+  // trawler.$QueueEvents.on('progress', trawlJobProgress)
+
+  const trawlJobCompleted = async ($job, foundRelays) => {
+    trawlLogger.info(`trawlJob#${$job.id} found ${foundRelays.length} relays}`)
   }
 
-  const crawlJobFailed = async ($job, err) => {
-    crawlLogger.info(`crawlJob ${$job.id} failed: ${err}`)
+  const trawlJobFailed = async ($job, err) => {
+    trawlLogger.warn(`trawlJob ${$job.id} failed: ${err}`)
   }
 
-  const crawlJobProgress = async ($job, progress) => {
-    crawlLogger.info(progress)
-  }
-
-  const crawlWorker = new Worker('crawlQueue', crawlJob, { concurrency: 1, connection: RedisConnectionDetails(), maxStalledCount: 1 })
-        crawlWorker.on('completed', crawlJobCompleted)
-        crawlWorker.on('failed', crawlJobFailed)
-        crawlWorker.on('progress', crawlJobProgress)
+  const trawlWorker = new Worker(trawler.$Queue.name, trawl, { concurrency: 1, maxStalledCount: 1 })
+        trawlWorker.on('completed', trawlJobCompleted)
+        trawlWorker.on('failed', trawlJobFailed)
+        trawlWorker.on('progress', trawlJobProgress)
 
   return {
     batchQueue,
-    crawlQueue,
+    trawlQueue: trawler.$Queue,
     batchWorker,
-    crawlWorker,
+    trawlWorker,
     connection
   }
 }

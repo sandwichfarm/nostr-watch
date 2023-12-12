@@ -3,11 +3,14 @@ import config from './config.js'
 
 let $rcache
 
-if(!config?.lmdb_path)
+console.log(process.env.PWD, process.cwd())
+console.log('config', config)
+
+if(!config?.cache_path)
   throw new Error("No LMDB path specified in config")
 
 if(!$rcache) {
-  $rcache = rcache(config.lmdb_path)
+  $rcache = rcache(config.cache_path)
 }
 
 export default $rcache

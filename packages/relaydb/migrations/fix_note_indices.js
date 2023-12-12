@@ -36,16 +36,12 @@ export default async () => {
 
   const chunks = chunkArray(notes, 500)
 
-  console.log(chunks.length)
-
   let count = 0
   for(const chunk of chunks){
-    console.log('CHUNKS', chunks.length)
     for await (const { key, value:note } of chunk){
-      console.log('SETTING:', key)
       try {
         const NOTE = { id: note.id, created_at: note.created_at, kind: note.kind, pubkey: note.pubkey, content: note.content, sig: note.sig, tags: note.tags }
-        console.log('SET:', `#${count++}`, await db.note.set.one(NOTE))
+        await db.note.set.one(NOTE)
       }
       catch(e){ console.log('ERROR:', note.id) }
     }

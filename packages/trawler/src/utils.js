@@ -1,7 +1,11 @@
 import _timestring from "timestring";
 import WebSocket from 'ws';
 
-export const lastCrawledId = (relay) => `LastCrawled:${relay}`
+export const lastTrawledId = (relay) => `LastTrawled:${relay}`
+
+export const lastCheckedId = (relay) => `LastChecked:${relay}`
+
+export const retriesId = (relay) => `Retries:${relay}`
 
 export const excludeKnownRelays = (known, discovered) => {
   return discovered.filter( relay => !known.includes(relay) )

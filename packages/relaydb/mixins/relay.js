@@ -24,10 +24,10 @@ export default class RelayMixin {
     this.get = relay_get(this.db)
     this.count = relay_count(this.db)
     this.is = relay_is(this.db)
-    this.has = relay_has(this.db)
-    this.requires = relay_requires(this.db)
-    this.supports = relay_supports(this.db)
-    this.limits = relay_limits(this.db)
+    // this.has = relay_has(this.db)
+    // this.requires = relay_requires(this.db)
+    // this.supports = relay_supports(this.db)
+    // this.limits = relay_limits(this.db)
   }
 
   async insert(RelayObj){
@@ -121,36 +121,36 @@ const relay_batch = (db) => {
 }
 
 const relay_limits = (db) => {
-  const fn = {
-    country(relayUrl, country_code){
-      if(!country_code)
-        throw new Error(`Country code is required (example: US)`)
-      return this.countries.includes(country_code)
-    },
-    countries(relayUrl){
-      return db.relay.get.one(relayUrl)?.relay_countries
-    },
-  }
-  return helperHandler(fn)
+  // const fn = {
+  //   country(relayUrl, country_code){
+  //     if(!country_code)
+  //       throw new Error(`Country code is required (example: US)`)
+  //     return this.countries.includes(country_code)
+  //   },
+  //   countries(relayUrl){
+  //     return db.relay.get.one(relayUrl)?.relay_countries
+  //   },
+  // }
+  // return helperHandler(fn)
 }
 
 const relay_is = (db) => {
   const fn = {
     online(relayUrl) {
-      return db.relay.get.one(relayUrl)?.connect
+      return db.relay.get.one(relayUrl)?.online
     },
-    readable(relayUrl) {
-      return db.relay.get.one(relayUrl)?.read
-    },
-    writable(relayUrl) {
-      return db.relay.get.one(relayUrl)?.write
-    },
-    dead(relayUrl) {
-      return db.relay.get.one(relayUrl)?.dead
-    },
-    public(relayUrl) {
-      return !db.relay.requires.payment(relayUrl) && !db.relay.requires.auth(relayUrl)
-    }
+    // readable(relayUrl) {
+    //   return db.relay.get.one(relayUrl)?.read
+    // },
+    // writable(relayUrl) {
+    //   return db.relay.get.one(relayUrl)?.write
+    // },
+    // dead(relayUrl) {
+    //   return db.relay.get.one(relayUrl)?.dead
+    // },
+    // public(relayUrl) {
+    //   return !db.relay.requires.payment(relayUrl) && !db.relay.requires.auth(relayUrl)
+    // }
   }
   return helperHandler(fn)
 }
@@ -230,7 +230,6 @@ const relay_supports = (db) => {
 
 const relay_get = (db) => {
   const fns = {
-    db,
     one(relay) {
       if(typeof relay !== 'string')
         throw new Error("Relay.get.one(): Argument must be a string")
@@ -245,8 +244,6 @@ const relay_get = (db) => {
       select = parseSelect(select)
       if(!where)
         where = { Relay: { '#': 'Relay@' } }  
-      // return [...this.db.$.select(select).from( Relay ).where({ Relay: { url: (value) => value?.length  } })] || []
-      // return [...db.$.select(select).from( Relay ).where({ Relay: { '#': 'Relay@' } })] || []
       return [...db.$.select(select).from( Relay ).where(where)] || []
     },
     allIds(){
@@ -255,8 +252,7 @@ const relay_get = (db) => {
     },
     online(select=null) {
       select = parseSelect(select)
-      return [...db.$.select(select).from( Relay, RelayCheckWebsocket ).where({ Relay: { last_seen: $gte(0) } })] || []
-      // return [...db.$.select(select).from( Relay ).where({ Relay: { connect: $matches(true) } })] || []
+      return [...db.$.select(select).from( Relay, RelayCheckWebsocket ).where({ Relay: { online: true } })] || []
     },
     network(network, select=null) {
       select = parseSelect(select)

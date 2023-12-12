@@ -1,6 +1,6 @@
 import schedule from 'node-schedule'
 
-import relaydb from '@nostrwatch/relaydb'
+import relaycache from '@nostrwatch/relaycache'
 import { NocapdQueue, BullQueueEvents, BullWorker, Scheduler } from '@nostrwatch/controlflow'
 import { RedisConnectionDetails } from '@nostrwatch/utils'
 
@@ -17,7 +17,7 @@ import Logger from '@nostrwatch/logger'
 
 const log = new Logger('nocapd')
 
-const rdb = relaydb(process.env.RELAYDB_PATH || './.lmdb')
+const rdb = relaycache(process.env.RELAYDB_PATH || './.lmdb')
 
 const scheduleJob = (manager) =>{
   const rule = new schedule.RecurrenceRule();

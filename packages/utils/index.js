@@ -43,14 +43,15 @@ export const loadConfigSync = function(key){
   }
 }
 
-export const loadConfig = async function (key){
+export const loadConfig = async function (key=null){
   try {
-    if(!process.env?.CONFIG_PATH)
+    const config = process.env?.CONFIG_PATH
+    if(!config)
       return {}
-    const fileContents = await fs.readFile(process.env.CONFIG_PATH, 'utf8');
+    const fileContents = await fs.readFile(config, 'utf8');
     let data = yaml.load(fileContents);
     if (data?.[key]) {
-      data = data[key];  // Assuming you want to access 'key' in data
+      data = data[key];  //if a global config file, only select config from key.
     }
     return data;
   } catch (e) {

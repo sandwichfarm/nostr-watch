@@ -28,7 +28,7 @@ export const relayListWatcher = async function(options) {
   let subscription
   let connected = false
 
-  openSignal([queues.batchQueue, queues.crawlQueue], async () => {
+  openSignal([queues.batchQueue, queues.trawlQueue], async () => {
     if(!connected) {
       connected = true
       console.log('open!')
@@ -37,7 +37,7 @@ export const relayListWatcher = async function(options) {
     }
   })
 
-  closeSignal([queues.batchQueue, queues.crawlQueue], async () => {
+  closeSignal([queues.batchQueue, queues.trawlQueue], async () => {
     if(connected) {
       connected = false
       console.log('close!')

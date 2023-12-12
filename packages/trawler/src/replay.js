@@ -1,5 +1,5 @@
 import rcache from "./relaydb.js"
-import { relaysFromRelayList } from "./crawler.js"
+import { relaysFromRelayList } from "./trawler.js"
 
 export const replay = async () => {
   const notes = await rcache.note.get.all()

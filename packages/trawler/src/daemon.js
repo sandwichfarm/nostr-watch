@@ -8,15 +8,15 @@ const logger = new Logger('daemon')
 
 export default async () => {
   return new Promise( async (resolve) => {
-    const {batchQueue, crawlQueue} = await configureQueues()
-    const queues = {batchQueue, crawlQueue}
+    const {batchQueue, trawlQueue} = await configureQueues()
+    const queues = {batchQueue, trawlQueue}
     
     batchQueue.add('batchRelays', {});
 
-    whenAllQueuesEmpty([batchQueue, crawlQueue], () => {
+    whenAllQueuesEmpty([batchQueue, trawlQueue], () => {
       batchQueue.add('batchRelays', {});
     })
-    whenAnyQueueIsActive([batchQueue, crawlQueue], () => {})
+    whenAnyQueueIsActive([batchQueue, trawlQueue], () => {})
 
     const watcher = null
 

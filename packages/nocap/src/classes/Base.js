@@ -156,7 +156,7 @@ export default class {
   }
 
   websocket_hard_fail(){
-    this.logger.debug(`websocket_hard_fail()`)
+    this.logger.debug(`websocket_hard_fail(): ${this.url}`)
     const wschecks = ['connect', 'read', 'write']
     wschecks.forEach(key => { 
       this.results.set(key, { data: false, duration: -1, status: "error", message: "Websocket connection failed" }) 

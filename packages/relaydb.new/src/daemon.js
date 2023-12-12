@@ -1,3 +1,5 @@
 import run from "./daemon/index.js"
 
-await run()
+const $worker = await run()
+
+// $worker.on('completed', job => console.log(job, 'completed'))

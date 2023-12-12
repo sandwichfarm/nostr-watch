@@ -1,27 +1,41 @@
-import { SyncQueue, BullWorker } from '@nostrwatch/controlflow'
+import rdb from '../index.js'
+import { SyncQueue } from '@nostrwatch/controlflow'
 import { RedisConnectionDetails } from '@nostrwatch/utils'
+import { Relay } from '../models/index.js'
 
-const handlers = []
+const sync = SyncQueue();
+sync.$Queue.drain()
+
+await rdb.connect.sync()
 
 export const generateModulePath = (jobData) => {
   const { action, condition, type, batch } = jobData
   if(!action || !type)  throw new Error("No action or type provided, absolutely necessary!!!")
-  const batchStr = batch? batch+"-": ""
-  return `./jobs/${type.toLowerCase()}-${batchStr.toLowerCase()}${action.toLowerCase()}-${condition.toLowerCase()}.js`
+  const batchStr = batch? "batch-": ""
+  return `${process.env.PWD}/src/daemon/jobs/${type.toLowerCase()}-${batchStr.toLowerCase()}${action.toLowerCase()}-${condition.toLowerCase()}.js`
 }
 
-export default () => {
-  const $q = SyncQueue()
+export default async () => {
+  const handlers = {}; // Use an object instead of an array
+  let result
   const worker = async (job) => {
-    console.log(job)
-    const { data } = job
-    const { roundtrip, payload } = job
-    if(handlers?.[data.type])
-      handlers[data.type] = await import(generateModulePath( data ))
+    const { data } = job;
+    let { roundtrip, payload } = data;
+    try { 
+      if (!handlers[data.type]){
+         const { default: work } = await import(generateModulePath(data));
+         handlers[data.type] = work
+      }
+      result = await handlers[data.type](payload);
+    }
+    catch(err) {
+      console.log(err);
+    }
+    if(result.length > 0) console.log(`${await Relay.count()} total`)
     return { 
       roundtrip, 
-      result: handlers[data.type]( payload ) 
-    }
-  }
-  return new BullWorker($q.constructor.name, worker, { concurrency: 1, connection: RedisConnectionDetails() })
-}
+      result
+    };
+  };
+  return new sync.Worker(sync.$Queue.name, worker, { concurrency: 1, connection: RedisConnectionDetails() });
+};

@@ -8,6 +8,7 @@ import { simplePoolAdapter } from '@nostr-fetch/adapter-nostr-tools'
 import config from "./config.js"
 import rcache from "./relaydb.js"
 import Logger from "@nostrwatch/logger";
+import sync from "./sync.js"
 
 import { parseRelayList } from "./parsers.js";
 import { lastTrawledId }  from "./utils.js";
@@ -45,8 +46,8 @@ const setLastEvent = (ev, since, lastEvent) => {
 }
 
 const determineSince = async (relay) => {
-  const cacheSince = await rcache.cachetime.get( lastTrawledId(relay) )
-  return cacheSince?.v || 0
+  const cacheSince = await rcache.cachetime.get.one( lastTrawledId(relay) )
+  return cacheSince || 0
 }
 
 export const relaysFromRelayList = async ( ev ) => {
@@ -94,7 +95,7 @@ export const trawl = async function($job){
       
       let lastEvent = 0
       let since = await determineSince(relay)
-      $job.updateProgress(`${relay} resuming from ${since}`)
+      $job.updateProgress({ type: 'resuming', source: relay, since })
       try {      
         
         const it = await fetcher.allEventsIterator(
@@ -111,17 +112,20 @@ export const trawl = async function($job){
           addRelaysToCache(relayList)
           if(relayList === false) continue
           deferPersist[ev.id] = async () => await rcache.note.set.one(ev)
-          const jobData = trawlJobData(relayList, { 
-            requestedBy: config.id,
-            source: relay, 
-            trawlJobId: $job.id,
-            eventId: ev.id
-          })
-          await $SyncQueue.add('relay-create', jobData, { priority: 1 })
+
+          const data = trawlJobData(relayList, { 
+                  requestedBy: process.env.DAEMON_PUBKEY,
+                  source: relay, 
+                  trawlJobId: $job.id,
+                  eventId: ev.id
+                })
+
+          await sync.relays.out(data)
+          // await $SyncQueue.add('relay-create', jobData, { priority: 1 })
         }
       }
       catch(err) {
-        logger.err(`error trawling ${relay}: ${err}`)
+        logger.err(`${relay}: ${err}`)
       }
       if(lastEvent > 0)
         await rcache.cachetime.set( lastTrawledId(relay), lastEvent )
@@ -132,22 +136,25 @@ export const trawl = async function($job){
   return [...relaysPersisted]
 }
 
-$SyncEvents.on( 'completed', async ({returnvalue}) => {
-  
-  const { result, roundtrip } = returnvalue
-  const { requestedBy, source, trawlJobId, eventId } = roundtrip
-  if(requestedBy != config.id) return 
-  
-  const $trawlJob = await $TrawlQueue.getJob(trawlJobId)
-  if(result === false || result.length == 0) return
-  result.forEach(relay => relaysPersisted.add(relay))
-  listCount++
-  if(result?.length && result.length > 0) {
+const watchQueue = () => {
+  $SyncEvents.on( 'completed', async ({returnvalue}) => {
+    const { result, roundtrip } = returnvalue
+    const { requestedBy, source, trawlJobId, eventId } = roundtrip
+    if(requestedBy != process.env.DAEMON_PUBKEY) return 
+    const $trawlJob = await $TrawlQueue.getJob(trawlJobId)
+    if(result === false || result.length == 0) return
+    result.forEach(relay => relaysPersisted.add(relay))
+    listCount++
+    if(result?.length && result.length > 0) {
+      if(deferPersist?.[eventId])
+        await deferPersist[eventId]()
+      if(relaysPersisted?.size && typeof $trawlJob?.updateProgress === 'function')
+        await $currentJob.updateProgress({ type: 'found', source, listCount, result, relaysPersisted, total: rcache.relay.count.all() })
+    } 
     if(deferPersist?.[eventId])
-      await deferPersist[eventId]()
-    if(relaysPersisted?.size && typeof $trawlJob?.updateProgress === 'function')
-      await $currentJob.updateProgress(`${source}: ${listCount} lists found, +${result?.length} relays persisted, ${relaysPersisted.size} total found in this chunk`)
-  } 
-  if(deferPersist?.[eventId])
-    delete deferPersist[eventId]
-})
+      delete deferPersist[eventId]
+  })
+}
+
+if(config?.trawler?.sync?.out?.queue)
+  watchQueue()

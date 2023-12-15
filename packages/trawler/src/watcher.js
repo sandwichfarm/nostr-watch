@@ -12,7 +12,7 @@ const logger = new Logger('watcher')
 export const relayListWatcher = async function(options) {
   const { openSignal, closeSignal, queues } = options
 
-  let since = lmdb.cachetime.get('watcherLastUpdate') || 0;
+  let since = lmdb.cachetime.get.one('watcherLastUpdate') || 0;
   const relayListProviders = config?.relay_list_providers || [];
 
   if(!relayListProviders.length) 

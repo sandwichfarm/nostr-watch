@@ -82,7 +82,8 @@ const normalizeRelayUrl = (relay) => {
     return url.toString()
   }
   catch(e) {
-    return 
+    logger.warn(`Failed to normalize relay ${relay}`)
+    return ""
   }
 }
 
@@ -144,20 +145,16 @@ export const relaysFilterDuplicates = (relays) => {
   });
 }
 
-
 export const relaysFilterPortDuplicates = (relays) => {
   const relaysMap = new Map(relays.map(relay => [new URL(relay).hostname, relay]));
   return Array.from(relaysMap.values());
 }
-
 
 export const relaysFilterRobotsTxtDisallowed = (relays) => {
   const disallowed = cache.get('disallowed') || [];
   return relays.filter(relay => !disallowed.includes(relay));
 }
 
-
 export const relaysFilterBlocked = (relays) => {
   return relays.filter(relay => !BLOCK_HOSTNAMES.some(hostname => relay.includes(hostname)));
 }
-

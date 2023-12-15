@@ -11,15 +11,10 @@ describe('BaseRelayCheckInfo', () => {
         expect(baseInfo.adapters).toBeNull();
         expect(baseInfo.dropped_fields).toEqual([]);
     });
-
-    // If there are methods in BaseRelayCheckInfo, test them here
-    // For example:
     it('should correctly identify extra fields', () => {
         const baseInfo = new BaseRelayCheckInfo();
         const extraFields = baseInfo.getExtraFields({ unknownField: 'value' });
 
         expect(extraFields).toEqual(['unknownField']);
     });
-
-    // Additional tests for other methods and behaviors
 });

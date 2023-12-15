@@ -12,16 +12,16 @@ export const bootstrap = async () => {
       cache = [], 
       api = []
 
-  if(config.seed_sources.includes('config') && config?.seed instanceof Array)
+  if(config.trawler.seed_sources.includes('config') && config?.seed instanceof Array)
     configseed = config?.seed
 
-  if(config.seed_sources.includes('static'))
+  if(config.trawler.seed_sources.includes('static'))
     staticseed = await relaysFromStaticSeed()
 
-  if(config.seed_sources.includes('cache'))
+  if(config.trawler.seed_sources.includes('cache'))
     cache = await relaysOnlineFromCache()
 
-  if(config.seed_sources.includes('api'))
+  if(config.trawler.seed_sources.includes('api'))
     api = await relaysOnlineFromApi()
 
   const uniques = new Set([...configseed, ...staticseed, ...cache, ...api])
@@ -41,7 +41,7 @@ export const relaysOnlineFromApi = async () => {
   let found = false
   logger.debug('api results retrieved.')
   return new Promise( resolve => {
-    fetch(`${config.remotes.rest_api}/online`, {signal: controller.signal  })
+    fetch(`${config.trawler.remotes.rest_api}/online`, {signal: controller.signal  })
       .then((response) => {
         if (!response.ok) {
           resolve()

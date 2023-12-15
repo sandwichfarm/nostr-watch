@@ -2,8 +2,8 @@ import { WorkerManager } from '../classes/WorkerManager.js'
 
 export class InfoManager extends WorkerManager {
 
-  constructor($q, rdb, config){
-    super($q, rdb, config)
+  constructor($q, nwc, config){
+    super($q, nwc, config)
     this.interval = 5*60*1000       //checks for expired items every...
     this.expires = 6*60*60*1000     //6 hours
     this.timeout = 15*1000
@@ -12,8 +12,8 @@ export class InfoManager extends WorkerManager {
   }
 
   async populator(){
-    const { Relay } = this.rdb.schemas
-    const relays = this.rdb.relay.get.null('info', ['url']).map(r=>r.url) 
+    const { Relay } = this.nwc.schemas
+    const relays = this.nwc.cachetime.expired('info')
     this.log.info(`Found ${relays.length} new info jobs`)
     relays.forEach(relay => {
       const job = { relay }
@@ -23,10 +23,10 @@ export class InfoManager extends WorkerManager {
 
   async work(job){
     const { relay } = job.data;
-    const infoOldId = this.rdb.relay.get.one(relay)?.info?.ref
+    const infoOldId = this.nwc.relay.get.one(relay)?.info?.ref
     let infoOld = {}
     if(infoOldId) {
-      const record = this.rdb.checks.info.get(infoOldId)
+      const record = this.nwc.checks.info.get(infoOldId)
       infoOld = record?.data
     }
     const nocap = new this.Nocap(relay);
@@ -44,11 +44,11 @@ export class InfoManager extends WorkerManager {
     let infoId = null
     if(persist){
       this.log.debug(`Info check complete for ${job.data.relay}: ${JSON.stringify(result)}`)
-      const infoId = await this.rdb.check.info.insert(result)
+      const infoId = await this.nwc.check.info.insert(result)
     }
-    const record = await this.rdb.relay.get.one(result.url)
+    const record = await this.nwc.relay.get.one(result.url)
     if(record.info === null || persist) {
-      await this.rdb.relay.patch({ 
+      await this.nwc.relay.patch({ 
         url: result.url, 
         info: { 
           name: result?.info?.data?.name || null, 

@@ -1,31 +1,46 @@
 import { Nocap } from '@nostrwatch/nocap'
 import rcache from './relaydb.js'
 import { lastCheckedId, retryId } from './utils.js'
+import Logger from '@nostrwatch/logger'
+import config from './config.js'
+
+const logger = new Logger('check-cache')
 
 export default async () => {
   const relays = rcache.relay.get.all(['url', 'online'])
   const uncheckedRelays = getUncheckedRelays(relays)
   const expiredRelays = await getExpiredRelays(relays)
   
-  const relaysToCheck = [ ...uncheckedRelays, ...expiredRelays ]
+  const relaysToCheck = [...new Set([ ...uncheckedRelays, ...expiredRelays ])]
   let onlineRelays = relays.filter( relay => relay.online )
+  const totalRelays = relays.length
 
-  // console.log(onlineRelays)
+  // logger.info(onlineRelays)
 
-  console.log(`online relays: ${onlineRelays.length}`)
-  console.log(`expired relays: ${expiredRelays.length}`)
-  console.log(`unchecked relays: ${uncheckedRelays.length}`)
-  console.log(`relays to check: ${relaysToCheck.length}`)
+  logger.info(`total relays: ${totalRelays}`)
+  logger.info(`online relays: ${onlineRelays.length}`)
+  logger.info(`expired relays: ${expiredRelays.length}`)
+  logger.info(`unchecked relays: ${uncheckedRelays.length}`)
+  logger.info(`relays to check: ${relaysToCheck.length}`)
   
   await initRetryCount(relays)
 
   if(relaysToCheck.length === 0) return
 
-  console.log(`checkCache(): Quickly filtering through ${uncheckedRelays.length} unchecked, ${expiredRelays.length} expired and a total of ${relaysToCheck.length} relays before trawling. There are currently ${onlineRelays.length} relays online according to the cache.`)
-  for ( const relay of relaysToCheck ) {
+  const doTruncate = config?.trawler?.check?.max
+
+  if(config?.trawler?.check?.max && relaysToCheck.length > config.trawler.check.max && typeof config.trawler.check.max === 'number') 
+    relaysToCheck.length = parseInt(config.trawler.check.max)
+
+  logger.info(`checkCache(): Quickly filtering through ${uncheckedRelays.length} unchecked, 
+    ${expiredRelays.length} expired and a total of ${totalRelays.length} relays before trawling. 
+    ${doTruncate? "Since Max value is set, so only filtering "+relaysToCheck.length+" Relays.": ""} 
+    There are currently ${onlineRelays.length} relays online according to the cache.
+  `)
+  for await ( const relay of relaysToCheck ) {
     const { url } = relay
     let online = false
-    const nocap = new Nocap(url, { timeout: { connect: 1000 }})
+    const nocap = new Nocap(url, { timeout: { connect: config?.trawler?.check?.timeout || 500 }})
     try {
       await nocap.check('connect').catch()
       online = nocap.results.get('connect').data? true: false
@@ -36,18 +51,22 @@ export default async () => {
     rcache.relay.patch({ url, online })
   }
   onlineRelays = rcache.relay.get.all(['url', 'online']).filter( relay => relay.online )
-  console.log(`checkCache(): Completed, ${onlineRelays.length} cached relays are online`)
+  logger.info(`checkCache(): Completed, ${onlineRelays.length} cached relays are online`)
 }
 
-const retryPenalty = (retries) => {
+const expiry = (retries) => {
   if(typeof retries === 'undefined') return 0
-  const map = [
-    { max: 3, delay: 1000 * 60 * 4 },
-    { max: 6, delay: 1000 * 60 * 60 * 24 },
-    { max: 13, delay: 1000 * 60 * 60 * 24 * 7 },
-    { max: 17, delay: 1000 * 60 * 60 * 24 * 28 },
-    { max: 29, delay: 1000 * 60 * 60 * 24 * 90 }
-  ];
+  let map
+  if(config?.trawler?.check?.expiry && config.trawler.check.expiry instanceof Array )
+    map = config.trawler.check.expiry.map( entry => { return { max: entry.max, delay: parseInt(eval(entry.delay)) } }  )
+  else
+    map = [
+      { max: 3, delay: 1000 * 60 * 60 },
+      { max: 6, delay: 1000 * 60 * 60 * 24 },
+      { max: 13, delay: 1000 * 60 * 60 * 24 * 7 },
+      { max: 17, delay: 1000 * 60 * 60 * 24 * 28 },
+      { max: 29, delay: 1000 * 60 * 60 * 24 * 90 }
+    ];
   const found = map.find(entry => retries <= entry.max);
   return found ? found.delay : map[map.length - 1].delay;
 };
@@ -58,15 +77,15 @@ const getUncheckedRelays = (relays=[]) => {
 }
 
 const setLastChecked = async (url) => {
-  await rcache.cachetime.set( lastCheckedId(url), Date.now() )
+  await rcache.cachetime.set( lastCheckedId('online',url), Date.now() )
 }
 
 const initRetryCount = async (relays) => {
   relays.forEach(async (relay) => {
     const url = relay.url
-    // console.log(retryId(url))
+    // logger.info(retryId(url))
     const retries = rcache.retry.get( retryId(url) )
-    if(typeof retries === 'undefined')
+    if(typeof retries === 'undefined' || typeof retries === null)
       await rcache.retry.set(retryId(url), 0)
   })
 }
@@ -74,11 +93,10 @@ const initRetryCount = async (relays) => {
 const getExpiredRelays = async (relays=[]) => {
   const relayStatuses = await Promise.all(relays.map(async relay => {
     const url = relay.url;
-    const lastChecked = await rcache.cachetime.get(lastCheckedId(url))?.v;
+    const lastChecked = await rcache.cachetime.get.one( lastCheckedId('online',url) );
     if (!lastChecked) return { relay, isExpired: true };
     const retries = await rcache.retry.get(retryId(url));
-    const interval = retryPenalty(retries)
-    const isExpired = lastChecked + interval < Date.now();
+    const isExpired = lastChecked < Date.now() - expiry(retries);
     return { relay, isExpired };
   }));
   return relayStatuses.filter(r => r.isExpired).map(r => r.relay);
@@ -87,10 +105,10 @@ const getExpiredRelays = async (relays=[]) => {
 const setRetries = async ( url, online ) => {
   let id 
   if(online) {
-    console.log(url, 'is online')
+    logger.info(`${url} is online`)
     id = await rcache.retry.set(retryId(url), 0)
   } else { 
-    // console.log(url, 'is offline')
+    // logger.info(url, 'is offline')
     id = await rcache.retry.increment(retryId(url))
   }
 }

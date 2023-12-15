@@ -29,6 +29,7 @@ class DbWrapper {
   constructor(dbPath, opts={}){
     this.$ = withExtensions(open(dbPath, opts));
     this.$ = defineSchemas(this.$);
+    this.initialized = false
     this.schemas = schemas
     this.logger = new Logger('lmdb')
   }
@@ -37,14 +38,18 @@ class DbWrapper {
     if(!cl)
       throw new Error("Missing schema class")
     if(this?.[key])
-      throw new Error("Mixin already added")
+      this.logger.warn(`Mixin already added: ${key}`)
+      // throw new Error("Mixin already added")
     this[key] = new cl(this)
     if(this[key]?.init)
-      this[key].init()
+      this[key].init() 
   }
 }
 
 let db
+
+export { RelayRecord } from './defaults.js'
+export { ParseSelect } from "./utils.js";
 
 export default (dbPath, opts={}) => {
   if(!db) {
@@ -52,6 +57,7 @@ export default (dbPath, opts={}) => {
     if(!db?.$)
       throw new Error("Failed to initialize LMDB database")
   }
+  if(db.initialized) return db
   db.addHelpers(ServiceMixin)
   db.addHelpers(RelayMixin)
   db.addHelpers(RetryMixin)
@@ -60,9 +66,7 @@ export default (dbPath, opts={}) => {
   db.addHelpers(CacheTimeMixin)
   db.addHelpers(StatMixin)
   db.addHelpers(NoteMixin)
+  db.initialized = true
   return db
 }
 
-export { RelayRecord } from './defaults.js'
-
-export { ParseSelect } from "./utils.js";

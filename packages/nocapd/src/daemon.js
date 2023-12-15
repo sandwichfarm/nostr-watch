@@ -6,6 +6,7 @@ import { RedisConnectionDetails } from '@nostrwatch/utils'
 
 import { NocapdQueues } from './classes/NocapdQueues.js'
 
+import { AllManager }  from './managers/all.js'
 import { WelcomeManager }  from './managers/welcome.js'
 import { WebsocketManager } from './managers/websocket.js'
 import { GeoManager } from './managers/geo.js'
@@ -13,11 +14,13 @@ import { DnsManager } from './managers/dns.js'
 import { InfoManager } from './managers/info.js'
 import { SslManager } from './managers/ssl.js'
 
+import { bootstrap } from '@nostrwatch/seed'
+
 import Logger from '@nostrwatch/logger'
 
 const log = new Logger('nocapd')
 
-const rdb = relaycache(process.env.RELAYDB_PATH || './.lmdb')
+const rcache = relaycache(process.env.RELAYDB_PATH || './.lmdb')
 
 const scheduleJob = (manager) =>{
   const rule = new schedule.RecurrenceRule();
@@ -36,12 +39,11 @@ const initWorkers = async (config) => {
   await $q.queue.pause()
   await $q.queue.drain()
   // await $q.queue.obliterate()
-  
 
   $q.events = new BullQueueEvents($q.queue.name, {connection: RedisConnectionDetails()})
   config.managers.forEach(Manager => {
     const mname = Manager.name
-    const $manager = new Manager($q, rdb, { logger: new Logger(mname), pubkey: process.env.DAEMON_PUBKEY })
+    const $manager = new Manager($q, rcache, { logger: new Logger(mname), pubkey: process.env.DAEMON_PUBKEY })
     // console.log($q.queue.name, $manager.runner,  { jobType: mname, concurrency: $manager.concurrency, priority: $manager.priority, connection: RedisConnectionDetails() })
     schedule.push({ name: mname, interval: $manager.interval, handler: $manager.populator.bind($manager) })
     // schedules.push(scheduleJob($manager))
@@ -53,22 +55,25 @@ const initWorkers = async (config) => {
   const $worker = new BullWorker($q.queue.name, $q.route.bind($q), { concurrency: 3 } )
   $q.setWorker($worker)
   $q.populateAll()
-  
-
-  // setInterval( async () => console.log(await $q.queue.getJobCounts()), 5000)
-  
-  // console.log('schedule', schedule)
   $q.scheduler = new Scheduler(schedule)
   await $q.queue.resume() 
   return $q
 }
 
-export const Nocapd = () => {
+export const Nocapd = async () => {
+  if(rcache.relays.count.all() === 0){
+    const relays = await bootstrap('nocapd')
+    relays
+      .map(r => { url: r })
+      .forEach(relayObj => rcache.relay.insertIfNotExists(relayObj))
+  }
+  
   const $q = initWorkers({
     managers: [ 
-      WelcomeManager, 
-      WebsocketManager, 
-      InfoManager,
+      AllManager,
+      // WelcomeManager, 
+      // WebsocketManager, 
+      // InfoManager,
       // DnsManager,
       // GeoManager,
       // SslManager

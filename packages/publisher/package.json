@@ -1,0 +1,13 @@
+{
+  "name": "@nostrwatch/publisher",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Library for publishing nostr.watch relay status and publisher registration events",
+  "main": "index.js",
+  "repository": "http://github.com/sandwichfarm/nostr-watch",
+  "author": "sandwich <dskvr@no-reply.github.com> ",
+  "license": "MIT",
+  "dependencies": {
+    "nostr-tools": "1.17.0"
+  }
+}

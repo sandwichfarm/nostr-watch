@@ -1,11 +1,3 @@
-import { Trawler, Nocapd, RestApi } from './queues.js'
-import { Scheduler as NWScheduler } from './scheduler.js' 
-
-export default {
-  NWQueues: {
-    Trawler, 
-    Nocapd,
-    RestApi
-  },
-  NWScheduler
-}
+export { SyncQueue, TrawlQueue, NocapdQueue, RestApiQueue, QueueInit, BullMQ } from './src/queues.js'
+export { Scheduler } from './src/scheduler.js' 
+export { RetryManager } from './src/retry.js'

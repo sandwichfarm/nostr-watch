@@ -1,13 +1,16 @@
-import rdb from '@nostrwatch/relaydb'
-import config from './config.js'
+import rcache from '@nostrwatch/relaycache'
+import config from "./config.js"
 
-let $rdb
+let $rcache
 
-if(!config?.lmdb_path)
-  throw new Error("No LMDB path specified in config")
+console.log(process.env.PWD, process.cwd())
+console.log('config', config)
 
-if(!$rdb) {
-  $rdb = rdb(config.lmdb_path)
+if(!process.env.NWCACHE_PATH)
+  throw new Error("NWCACHE_PATH, the path to the nostr watch LMDB cache, was not specified in the environment.")
+
+if(!$rcache) {
+  $rcache = rcache(process.env.NWCACHE_PATH)
 }
 
-export default $rdb
+export default $rcache

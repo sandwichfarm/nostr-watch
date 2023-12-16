@@ -3,6 +3,7 @@ export const ResultDefaults = {
   network: "",
   adapters: [],
   checked_at: -1, 
+  checked_by: "",
   connect: {},
   read: {},
   write: {},
@@ -18,7 +19,7 @@ export class ResultInterface extends Validator {
   constructor(){
     super()
     Object.assign(this, ResultDefaults)
-    this.header_keys = ['url', 'created_at', 'network', 'adapters', 'checked_at']
+    this.header_keys = ['url', 'network', 'adapters', 'checked_at', 'checked_by']
     this.defaults = Object.freeze(ResultDefaults)
     
   }
@@ -31,7 +32,6 @@ export class ResultInterface extends Validator {
     }
     else {
       result = {}
-      console.log(k)
       for(const key of k) {
         const { data, duration } = this.get(key)
         result = { ...result, [key]: data, [`${key}_duration`]: duration }
@@ -41,18 +41,6 @@ export class ResultInterface extends Validator {
   }
 
   get(key){
-    // switch(key){
-    //   case "url":
-    //   case "checked_at":
-    //   case "adapters":
-    //   case "network":
-    //   case "connect":
-    //   case "read":
-    //   case "write":
-    //     return this._get(key)
-    //   default:
-    //     return this._get(key).data
-    // }
     return this._get(key)
   }
 
@@ -70,7 +58,7 @@ export class ResultInterface extends Validator {
   }
 
   getIps(protocol='ipv4') {
-    const answer = this.get('dns')?.Answer
+    const answer = this.get('dns')?.data?.Answer
     if(!answer || !answer.length)
       return []
     const regex = {}

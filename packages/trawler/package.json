@@ -8,11 +8,6 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@bull-board/api": "5.9.2",
-    "@bull-board/fastify": "5.9.2",
-    "@nostr-dev-kit/ndk": "2.0.5",
-    "@nostr-dev-kit/ndk-cache-redis": "2.0.5",
-    "@nostr-fetch/adapter-ndk": "0.13.1",
     "@nostr-fetch/adapter-nostr-tools": "0.13.1",
     "@types/ioredis": "5.0.0",
     "bullmq": "4.13.3",
@@ -22,13 +17,16 @@
     "lmdb": "2.8.5",
     "logging": "3.3.0",
     "murmurhash": "2.0.1",
+    "node-schedule": "2.1.1",
     "nostr-fetch": "0.13.1",
     "nostr-tools": "1.17.0",
     "timestring": "7.0.0",
+    "url-local": "2.0.0",
     "websocket-polyfill": "0.0.3",
     "ws": "8.14.2"
   },
   "scripts": {
+    "launch": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "license": "MIT"

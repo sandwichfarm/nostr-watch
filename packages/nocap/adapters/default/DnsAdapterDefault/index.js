@@ -9,14 +9,16 @@ class DnsAdapterDefault {
   async check_dns(){ 
     let result, data = {}
     if(this.$.results.get('network') !== 'clearnet')
-      return this.$.logger.warn('DNS check skipped for url not accessible over clearnet')
+      return this.$.logger.debug('DNS check skipped for url not accessible over clearnet')
     let err = false
-    let url = this.$.url.replace('wss://', '').replace('ws://', '')
+    let url = this.$.url.replace('wss://', '').replace('ws://', '').replace(/\/+$/, '');
     const query = `https://1.1.1.1/dns-query?name=${url}`
     const headers = { accept: 'application/dns-json' }
-    const response = await fetch( query, { headers } ).catch((e) => { result = { status: "error", message: e.message, data } })
+    const response = await fetch( query, { headers } ).catch((e) => { result = { status: "error", message: e.message, data } })    
     data = await response.json()
-    if(!result)
+    if(!data?.Answer || data.Answer.length === 0 || Object.keys(data.Answer[0]) === 0)
+      result = { status: "error", message: "No DNS Answer" }
+    else
       result = { status: "success", data }
     this.$.finish('dns', result)
   } 

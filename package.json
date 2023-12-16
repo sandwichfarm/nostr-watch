@@ -7,9 +7,7 @@
     "clean": "lerna clean",
     "test": "lerna run test"
   },
-  "devDependencies": {
-    "lerna": "^4.0.0"
-  },
+  "devDependencies": {},
   "workspaces": [ "packages/*", "packages/nocap/adapters/**/*" ],
   "main": "index.js",
   "repository": "git@github.com:sandwichfarm/nostr-watch.git",

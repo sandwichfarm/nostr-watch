@@ -1,11 +1,17 @@
-import { Relay, Info } from "../schemas.js"
+import { schemas } from "../schemas.js"
 import { operators, IDS } from "lmdb-oql";
-import { relayId, now } from "../utils.js"
+import { relayId, ParseSelect, helperHandler } from "../utils.js"
 
-const { $eq, $gte, $and, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
+const { Relay, RelayCheckWebsocket, RelayCheckInfo } = schemas
+const { $eq, $gte, $and, $isNuall, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
 
 import Logger from "@nostrwatch/logger" 
+
 const logger = new Logger('lmdb:relay')
+
+import { RelayRecord } from "../defaults.js"
+
+const parseSelect = ParseSelect(RelayRecord, "Relay")
 
 import { ResultInterface as ResultType } from "@nostrwatch/nocap";
 
@@ -15,19 +21,18 @@ export default class RelayMixin {
   }
 
   init(){
+    this.batch = relay_batch(this.db)
     this.get = relay_get(this.db)
     this.count = relay_count(this.db)
     this.is = relay_is(this.db)
-    this.has = relay_has(this.db)
-    this.requires = relay_requires(this.db)
-    this.supports = relay_supports(this.db)
-    this.limits = relay_limits(this.db)
-    this.batch = relay_batch(this.db)
+    // this.has = relay_has(this.db)
+    // this.requires = relay_requires(this.db)
+    // this.supports = relay_supports(this.db)
+    // this.limits = relay_limits(this.db)
   }
 
   async insert(RelayObj){
-    if(!RelayObj?.url)
-      throw new Error("Relay object must have a url property")
+    this.validate(RelayObj)
     return this.db.$.put(relayId(RelayObj.url), new Relay(RelayObj))
   }
   
@@ -37,18 +42,25 @@ export default class RelayMixin {
   }
 
   async update(RelayObj) {
-    if(!RelayObj?.url)
-      throw new Error("Relay object must have a url property")
-    const _old = this.$.get(relayId(RelayObj.url))
-    if(!_old)
+    this.validate(RelayObj)
+    const current = this.db.$.get(relayId(RelayObj.url))
+    if(!current)
       throw new Error(`Cannot update because ${RelayObj.url} does not exist`)
-    const new_ = {..._old, ...RelayObj}
-    return this.insert(new_)
+    return this.insert({...RelayObj})
+  }
+
+  async patch(RelayFieldsObj) {
+    this.validate(RelayFieldsObj)
+    const current = await this.db.$.get(relayId(RelayFieldsObj.url))
+    if(!current)
+      throw new Error(`Cannot patch because ${RelayFieldsObj.url} does not exist`)
+    RelayFieldsObj.url = new URL(RelayFieldsObj.url).toString()
+    if(current?.['#']) delete current['#']
+    return this.insert({...current, ...RelayFieldsObj})
   }
   
   async upsert(RelayObj) {
-    if(!RelayObj?.url)
-      throw new Error("Relay object must have a url property")
+    this.validate(RelayObj)
     if( await this.exists(RelayObj.url) )
       return this.update(RelayObj)
     return this.insert(RelayObj)
@@ -59,6 +71,11 @@ export default class RelayMixin {
     if(!this.exists(url))
       throw new Error(`Cannot delete because ${url} does not exist`)
     return this.db.$.remove(relayId(url))
+  }
+
+  validate(RelayObj){
+    if(!RelayObj?.url)
+      throw new Error("Relay object must have a url property")
   }
 
   async select(select=null, where=null) {
@@ -76,6 +93,10 @@ export default class RelayMixin {
   retention(relayUrl) {
     return this.get.one(relayUrl)?.retention
   } 
+
+  id(relayUrl) {
+    return relayId(relayUrl)
+  }
 }
 
 const relay_batch = (db) => {
@@ -86,10 +107,11 @@ const relay_batch = (db) => {
       if(!(RelayObjs instanceof Array))
         throw new Error("Relay.batch: Must be an array")
       const result = []
-      //process records in series. This is important for cache time and reduction/elimination of commit errors.
       for await (const RelayObj of RelayObjs) {
         try { 
-          result.push(await db.relay[key](RelayObj))
+          const id = await db.relay[key](RelayObj).catch()
+          if(typeof id !== 'undefined')
+            result.push(id)
         }
         catch(e) { logger.warn(e) }
       }
@@ -99,76 +121,55 @@ const relay_batch = (db) => {
   return fns
 }
 
-const parseSelect = (key) => {
-  const $ResultType = new ResultType()
-  if(!key)
-    key = Object.keys($ResultType).filter(key => typeof key !== 'function' && key !== 'defaults')
-  if(key instanceof Object && !(key instanceof Array))
-    return key
-  if(key == 'id')
-    key = '#'
-  if(typeof key === 'string')
-    key = [key]
-  const select = { Relay: {} }
-  for (const k of key) {
-    select.Relay[k] = (value,{root}) => { root[k]=value; }
-  }
-  return select
-}
-
 const relay_limits = (db) => {
-  const fn = {
-    db,
-    country(relayUrl, country_code){
-      if(!country_code)
-        return logger.warn(`Country code is required`)
-      return this.countries.includes(country_code)
-    },
-    countries(relayUrl){
-      return this.db.relay.get.one(relayUrl)?.relay_countries
-    },
-  }
-  return handler(fn)
+  // const fn = {
+  //   country(relayUrl, country_code){
+  //     if(!country_code)
+  //       throw new Error(`Country code is required (example: US)`)
+  //     return this.countries.includes(country_code)
+  //   },
+  //   countries(relayUrl){
+  //     return db.relay.get.one(relayUrl)?.relay_countries
+  //   },
+  // }
+  // return helperHandler(fn)
 }
 
 const relay_is = (db) => {
   const fn = {
-    db,
     online(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.connect
+      return db.relay.get.one(relayUrl)?.online
     },
-    readable(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.read
-    },
-    writable(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.write
-    },
-    dead(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.dead
-    },
-    public(relayUrl) {
-      return !this.db.relay.requires.payment(relayUrl) && !this.db.relay.requires.auth(relayUrl)
-    }
+    // readable(relayUrl) {
+    //   return db.relay.get.one(relayUrl)?.read
+    // },
+    // writable(relayUrl) {
+    //   return db.relay.get.one(relayUrl)?.write
+    // },
+    // dead(relayUrl) {
+    //   return db.relay.get.one(relayUrl)?.dead
+    // },
+    // public(relayUrl) {
+    //   return !db.relay.requires.payment(relayUrl) && !db.relay.requires.auth(relayUrl)
+    // }
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_requires = (db) => {
   const fn = {
-    db,
     auth(relayUrl) {
-      return this.db.relay.get.one(relayUrl)?.auth
+      return db.relay.get.one(relayUrl)?.auth
     },
     payment(relayUrl) {
-      return this.db.relay.has.limitation(relayUrl, 'payment_required')
+      return db.relay.has.limitation(relayUrl, 'payment_required')
     },
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_has = (db) => {
   const fn = {
-    db,
     limitation(relayUrl, key) {
       const record = this.db.relay.get.info(relayUrl)?.limitation
       if(!key)
@@ -178,17 +179,16 @@ const relay_has = (db) => {
       return record?.[key]
     },
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_supports = (db) => {
   const fn = {
-    db,
     nip(relay, nip){
       if(relay instanceof String) 
-        return this.db.relay.get.one(relayUrl)?.info?.supported_nips?.[nip]
+        return db.relay.get.one(relayUrl)?.info?.supported_nips?.[nip]
       else 
-        return this.db.relay.all(null, {Relay: { '#': relayId(relay), info: { supported_nips: $includes(nip) }}})
+        return db.relay.all(null, {Relay: { '#': relayId(relay), info: { supported_nips: $includes(nip) }}})
     },
     nips(relay=null, nips=[], supportsAll=false){
       if(!(nips instanceof Array))
@@ -208,11 +208,11 @@ const relay_supports = (db) => {
       else 
         return supports
     },
-    nips_many(relay, nips, supportsAll=false){
+    nips_many(relay, nips, selectKeys, supportsAll=false){
       const supports = {}
       let select = null
       if(selectKeys)
-        select = parseSelect('url')
+        select = parseSelect(selectKeys)
       nips.forEach(nip => {
         supports[nip]=this.db.relay.all(select, { Relay: { info: (value) => value?.supported_nips?.[nip] }})
       })
@@ -223,21 +223,29 @@ const relay_supports = (db) => {
           const commonUrls = urlsFromEachKey.reduce((a, b) => new Set([...a].filter(x => b.has(x))));
           return Array.from(commonUrls);
       }
+      return supports
     }
   }
-  return handler(fn)
+  return helperHandler(fn)
 }
 
 const relay_get = (db) => {
   const fns = {
-    db,
-    one(relayUrl) {
-      return this.db.$.get(relayId(relayUrl)) || false
+    one(relay) {
+      if(typeof relay !== 'string')
+        throw new Error("Relay.get.one(): Argument must be a string")
+      if(!relay.startsWith('Relay@'))
+        relay = relayId(relay)
+      return db.$.get(relay) || false
+    },
+    many(relayUrls) {
+      return relayUrls.map(relayUrl => this.one(relayUrl))
     },
     all(select=null, where=null) {
       select = parseSelect(select)
-      // return [...this.db.$.select(select).from( Relay ).where({ Relay: { url: (value) => value?.length  } })] || []
-      return [...this.db.$.select(select).from( Relay ).where({ Relay: { '#': 'Relay@' } })] || []
+      if(!where)
+        where = { Relay: { '#': 'Relay@' } }  
+      return [...db.$.select(select).from( Relay ).where(where)] || []
     },
     allIds(){
       const result = this.all(IDS).flat()
@@ -245,42 +253,48 @@ const relay_get = (db) => {
     },
     online(select=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from( Relay ).where({ Relay: { connect: $matches(true) } })] || []
+      return [...db.$.select(select).from( Relay, RelayCheckWebsocket ).where({ Relay: { online: true } })] || []
     },
     network(network, select=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from( Relay ).where({ Relay: { network } })] || []
+      return [...db.$.select(select).from( Relay ).where({ Relay: { network } })] || []
     },
     public(select=null) {
       select = parseSelect(select)
-      return  [...this.db.$
-                .select(select)
-                .from( Relay )
-                .where({ Relay: { info: (value) => !value?.payment_required || value.payment_required === false }})
-              ] || []
+      return  db.check.info.get.all(select).filter( rci => !rci?.data?.limitation || !rci?.data?.limitation?.payment_required || rci.data.limitation.payment_required === false )
     },
     paid(select=null) {
       select = parseSelect(select)
-      return  [...this.db.$
-                .select(select)
-                .from( Relay )
-                .where({ Relay: { info: (value) => value?.payment_required && value.payment_required === true }})
-              ] || []
+      const paymentRequired = db.check.info.get.all().filter( rci => rci?.data?.limitation && rci?.data?.limitation?.payment_required && rci.data.limitation.payment_required === true ).map( res => [ res.relay_id, res['#'] ] ) 
+      const relayIds = paymentRequired.map( r => r[0] )
+      const relayInfoIds = paymentRequired.map( r => r[1] )
+      console.log('ids', relayIds)
+      let relays = this.many(relayIds)
+      relays = relays.filter( relay => relay.info.ref )
+
+      return this.many(relayIds)
     },
     dead(select=null) {
       select = parseSelect(select)
+      
       // const toBeAlive = now() - config?.global?.relayAliveThreshold || timestring('30d')
       // return [...this.db.$.select(select).from(Relay).where({ Relay: { last_seen: $gte(toBeAlive) } })] || []
     },
     supportsNip(nip, select=null) {
       select = parseSelect(select)
-      return [...this.db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => value.includes(nip) } })] || []
+      return [...db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => value.includes(nip) } })] || []
     },
     doesNotSupportNip(nip, select=null) {
-      return [...this.db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => !value.includes(nip) } })] || []
+      return [...db.$.select(select).from(Relay).where({ Relay: { supported_nips: (value) => !value.includes(nip) } })] || []
+    },
+    null(key, select=null){
+      if(typeof key !== 'string')
+        throw new Error("Relay.get.null(): Argument must be a string")
+      select = parseSelect(select)
+      // return [...db.$.select(select).from(Relay).where({ Relay: { [key]: (k)=>k==null } })] || []
+      return db.relay.get.all(select).filter((r)=>r[key]==null)
     }
   }
-
 
   const validator = (...args) => {
     // const relayUrl = args[0]
@@ -295,7 +309,7 @@ const relay_get = (db) => {
     return true
   }
 
-  return handler(fns, validator)
+  return helperHandler(fns, validator)
 }
 
 const relay_count = (db) => {
@@ -310,21 +324,4 @@ const relay_count = (db) => {
   delete fns.one // not a count
   fns.all = fns.allIds // alias
   return fns
-}
-
-const handler = (fn, validator=null) => {
-  const _ = (..._args) => {
-    const fnkey = _args[0]
-    const args = Array.from(_args).slice(1)
-    if(validator && !validator(...args))
-      return
-    return fn[fnkey](...args)
-  }
-
-  const $fns = {}
-  Object.keys(fn).forEach(fnkey => {
-    if(fn[fnkey] instanceof Function)
-      $fns[fnkey] = (...args) => _(fnkey, ...args)
-  })
-  return $fns
 }

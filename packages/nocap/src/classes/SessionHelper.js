@@ -4,6 +4,7 @@ import { random } from '../utils.js'
 export class SessionHelper {  
   constructor(){
     this.init()
+    this.initial = true 
   }
 
   init(){
@@ -15,10 +16,11 @@ export class SessionHelper {
     this.id.write = murmurhash.v3('write', this.salt)
     this.id.info = murmurhash.v3('info', this.salt)
     this.id.geo = murmurhash.v3('geo', this.salt)
+    this.initial = false
     return this.id
   }
 
-  new(){
+  create(){
     return this.init() 
   }
 

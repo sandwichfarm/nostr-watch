@@ -1,0 +1,52 @@
+
+    # - static
+  # seed: 
+  #   - wss://relay.snort.social
+  #   - wss://relay.damus.io
+publisher: 
+  to_relays: 
+    - 'wss://history.nostr.watch'
+trawler:
+  trawl_concurrent_relays: 3
+  relay_list_providers: 
+    - wss://purplepag.es
+  check: 
+    enabled: true 
+    timeout: 1000
+    interval: 10*60*1000
+    max: 500
+    expiry: [
+      { max: 3, delay: 1000 * 60 * 60 * 12},
+      { max: 6, delay: 1000 * 60 * 60 * 24 },
+      { max: 13, delay: 1000 * 60 * 60 * 24 * 7 },
+      { max: 17, delay: 1000 * 60 * 60 * 24 * 28 },
+      { max: 29, delay: 1000 * 60 * 60 * 24 * 90 }
+    ]
+  check_cache: true
+  publish:
+    to_relays: 
+      - 'wss://history.nostr.watch'
+    interval: 20*60*1000
+    expiry: 60*60*1000
+    kinds:
+      - 30066
+      # - 10066
+  seed: 
+    remotes:
+      rest_api: https://api.nostr.watch/v1
+    sources:
+      - api
+      - nwcache
+  sync:
+    relays: 
+      out:
+        queue: true
+        events:
+          30066:
+            properties: 
+              - url
+      in: 
+        - api
+          - 'https://api.nostr.watch/v1'
+        - events: 
+          - 'self'

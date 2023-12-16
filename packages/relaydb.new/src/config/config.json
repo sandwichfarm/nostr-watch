@@ -1,0 +1,19 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres",
+    "dialect": "postgres",
+    "benchmark": false
+  },
+  "test": {
+    "username": "my-test-user",
+    "password": "my-test-password",
+    "database": "relaydb-test"
+  },
+  "production": {
+    "username": "nw-prod",
+    "password": "my-production-password",
+    "database": "relaydb-prod"
+  }
+}

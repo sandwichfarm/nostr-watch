@@ -11,12 +11,14 @@ export class DeferredWrapper {
     const deferred = this.create(key)
     if(timeout)
       this.timeout.create(key, timeout, () => {
-        this.reject(key, { timeout: true } )
         if(timeoutCb instanceof Function) {
           try { 
-            timeoutCb()
+            timeoutCb(deferred.reject)
           }
           catch(e) { this.logger.error(`error in timeout callback for ${key}: ${e.message}` ) }
+        }
+        else {
+          this.reject(key, { status: "error", message: `timeout of ${timeout}ms exceeded for ${key}` })
         }
       })
     return deferred

@@ -4,6 +4,8 @@
  * @returns Filtered and deduped list of relays
  */
 
+import isLocal from "url-local"
+
 import lmdb from './relaydb.js'
 import Logger from '@nostrwatch/logger'
 
@@ -13,7 +15,7 @@ export const normalizeRelays = (relays) => {
   return relays 
           .map( sanitizeRelayUrl )
           .filter( qualifyRelayUrl )
-          .reduce ( normalizeRelayUrls, [] )
+          .reduce ( normalizeRelayUrlAcc, [] )
 }
 
 export const sanitizeRelayList = (relays) => {
@@ -37,6 +39,9 @@ export const relayAlreadyKnown = async (relay) => {
 }
 
 export const qualifyRelayUrl = (relay) => {
+  if(isLocal(relay))
+    return false
+
   if( /^(wss:\/\/)(.*)(:\/\/)(.*)$/.test(relay) ) //multiple protocols
     return false 
 
@@ -58,7 +63,7 @@ export const qualifyRelayUrl = (relay) => {
   return true;
 }
 
-const normalizeRelayUrls = (acc, relay) => {
+const normalizeRelayUrlAcc = (acc, relay) => {
   const normalized = normalizeRelayUrl(relay);
   if (normalized) {
     acc.push(normalized);
@@ -66,12 +71,19 @@ const normalizeRelayUrls = (acc, relay) => {
   return acc;
 }
 
+const normalizeRelayUrls = (relays) => {
+  return relays.map( relay => normalizeRelayUrl(relay))
+}
+
 const normalizeRelayUrl = (relay) => {
   try {
-    return new URL(relay).toString()
+    const url = new URL(relay)
+    url.hash = ''
+    return url.toString()
   }
   catch(e) {
-    return 
+    logger.warn(`Failed to normalize relay ${relay}`)
+    return ""
   }
 }
 
@@ -133,20 +145,16 @@ export const relaysFilterDuplicates = (relays) => {
   });
 }
 
-
 export const relaysFilterPortDuplicates = (relays) => {
   const relaysMap = new Map(relays.map(relay => [new URL(relay).hostname, relay]));
   return Array.from(relaysMap.values());
 }
-
 
 export const relaysFilterRobotsTxtDisallowed = (relays) => {
   const disallowed = cache.get('disallowed') || [];
   return relays.filter(relay => !disallowed.includes(relay));
 }
 
-
 export const relaysFilterBlocked = (relays) => {
   return relays.filter(relay => !BLOCK_HOSTNAMES.some(hostname => relay.includes(hostname)));
 }
-

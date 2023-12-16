@@ -1,0 +1,18 @@
+{
+  "name": "@nostrwatch/relaydb",
+  "version": "0.0.1",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "launch": "node src/daemon.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "pg": "8.11.3",
+    "sequelize": "6.35.0",
+    "sequelize-pg-utilities": "2.0.2"
+  },
+  "devDependencies": {
+    "sequelize-test-helpers": "1.4.3"
+  }
+}

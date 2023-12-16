@@ -15,7 +15,7 @@ class InfoAdapterDefault {
     
     url.protocol = 'https:'
 
-    this.$.timeouts.create('info', this.$.config.info_timeout, () => controller.abort())
+    this.$.timeouts.create('info', this.$.config.timeout.info, () => controller.abort())
     try {
       const response = await fetch(url.toString(), { method, headers, signal })
       data = await response.json()

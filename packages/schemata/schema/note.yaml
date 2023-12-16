@@ -1,0 +1,35 @@
+$schema: http://json-schema.org/draft-07/schema#
+name: 'nostr.note'
+type: object
+properties:
+  id:
+    type: string
+    pattern: '^[0-9a-f]{64}$' # 32 bytes lowercase hex-encoded sha256
+  kind:
+    type: integer
+    enum: [1] # Assuming "kind" can only be 1, you can adjust the allowed values accordingly
+  pubkey:
+    type: string
+    pattern: '^[0-9a-f]{64}$' # 32 bytes lowercase hex-encoded public key
+  created_at:
+    type: integer
+  content:
+    type: string
+  tags:
+    type: array
+    items:
+      type: array
+      items:
+        type: string
+  sig:
+    type: string
+    pattern: '^[0-9a-f]{128}$' # 64 bytes lowercase hex
+required:
+  - id
+  - kind
+  - pubkey
+  - created_at
+  - content
+  - tags
+  - sig
+additionalProperties: false

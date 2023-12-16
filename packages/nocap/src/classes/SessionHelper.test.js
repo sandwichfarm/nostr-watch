@@ -9,7 +9,6 @@ describe('SessionHelper', () => {
 
   beforeEach(() => {
     sessionHelper = new SessionHelper();
-    console.log(sessionHelper.salt, typeof sessionHelper.salt)
   });
 
   afterEach(() => {
@@ -25,10 +24,7 @@ describe('SessionHelper', () => {
     const random2 = murmurhash.v3(random(50))
     const key1 = murmurhash.v3('key', random1)
     const key2 = murmurhash.v3('key', random2)
-
-    console.log(random1, random2)
     expect(random1 === random2).toBe(false)
-    console.log(key1, key2)
     expect(key1 === key2).toBe(false)
   })
 
@@ -64,9 +60,9 @@ describe('SessionHelper', () => {
     const oldIds = Object.assign({}, sessionHelper.id)
     console.log(oldIds)
 
-    sessionHelper.new(); 
+    sessionHelper.create(); 
 
-    console.log(sessionHelper.new())
+    console.log(sessionHelper.create())
     
     expect(sessionHelper.id.session).not.toEqual(oldIds.session);
     expect(sessionHelper.id.connect).not.toEqual(oldIds.connect);

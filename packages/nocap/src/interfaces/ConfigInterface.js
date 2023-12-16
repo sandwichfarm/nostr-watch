@@ -2,12 +2,18 @@ import { Validator } from '../classes/Validator.js'
 
 export const ConfigDefaults = {
   logLevel: 'info',
-  connectTimeout: 5000,
-  readTimeout: 5000,
-  writeTimeout: 5000,
-  infoTimeout: 5000,
-  dnsTimeout: 5000,
-  geoTimeout: 5000
+  checked_by: '',
+  timeout: {
+    connect: 10000,
+    read: 10000,
+    write: 10000,
+    info: 10000,
+    dns: 2000,
+    geo: 2000,
+    ssl: 2000
+  },
+  tor: {},
+  adapterOptions: {},
 }
 
 /**
@@ -29,7 +35,7 @@ export class ConfigInterface extends Validator {
   }
 
   set(key, value){
-    this._get(key, value)
+    this._set(key, value)
   }
   
 }

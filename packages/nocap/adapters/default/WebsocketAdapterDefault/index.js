@@ -1,4 +1,6 @@
+import "websocket-polyfill";
 import WebSocket from 'ws';
+import { WebsocketTor } from 'ws-tor'
 
 class WebsocketAdapterDefault {
 
@@ -13,7 +15,14 @@ class WebsocketAdapterDefault {
    * @returns promise<result?>
    */
   async check_connect(deferred){
-    this.$.set('ws', new WebSocket(this.$.url))
+    let $ws
+
+    // if(this.$.results.network === 'tor') 
+    //   $ws = new WebsocketTor(this.$.url, { socksHost: this.$.config?.tor?.host, socksPort: this.$.config?.tor?.port })
+    // else
+    $ws = new WebSocket(this.$.url)
+    
+    this.$.set('ws', $ws)
     this.bind_events()
     return deferred
   }
@@ -48,9 +57,15 @@ class WebsocketAdapterDefault {
    * @returns null
    */ 
   bind_events(){
-    this.$.ws.on('open', (e) => this.$.on_open(e))
-    this.$.ws.on('message', (ev) => this.handle_nostr_event(ev))
-    this.$.ws.on('close', (e) => this.$.on_close(e))
+    try { 
+      this.$.ws.on('open', (e) => this.$.on_open(e))
+      this.$.ws.on('message', (ev) => this.handle_nostr_event(ev))
+      this.$.ws.on('close', (e) => this.$.on_close(e))
+      this.$.ws.on('error', (...args) => this.$.on_error(...args))
+    }
+    catch(e) {
+      this.$.log.warn(e)
+    }
   }
 
   /**

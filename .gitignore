@@ -13,3 +13,6 @@ packages/relaydb-cli
 dist/js/chunk-vendors.cd206719.js.map
 node_modules
 ours.sh
+.pg
+packages/synx
+packages/kinds

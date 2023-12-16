@@ -4,13 +4,7 @@ export class Relay {
     }
 }
 
-export class Check {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
-
-export class Info {
+export class Retry {
     constructor(config={}) {
         Object.assign(this,config);
     }
@@ -22,11 +16,6 @@ export class CacheTime {
     }
 }
 
-export class Stat {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
 
 export class Service {
     constructor(config={}) {
@@ -40,12 +29,55 @@ export class Note {
     }
 }
 
-export default ($db) => {
+export class RelayCheckWebsocket {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export class RelayCheckInfo {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export class RelayCheckDns {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export class RelayCheckGeo {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export class RelayCheckSsl {
+    constructor(config={}) {
+        Object.assign(this,config);
+    }
+}
+
+export const defineSchemas = ($db) => {
+    //relay record 
     $db.defineSchema(Relay);
-    $db.defineSchema(Check);
-    $db.defineSchema(Info);
-    $db.defineSchema(CacheTime);
-    $db.defineSchema(Stat);
+
+    //note cache 
     $db.defineSchema(Note);
+
+    //relay checks
+    $db.defineSchema(RelayCheckWebsocket);
+    $db.defineSchema(RelayCheckInfo);
+    $db.defineSchema(RelayCheckDns);
+    $db.defineSchema(RelayCheckGeo);
+    $db.defineSchema(RelayCheckSsl);
+
+    //app meta 
+    $db.defineSchema(CacheTime);
     return $db
+}
+
+export const schemas = {
+    Relay, CacheTime, Note, RelayCheckWebsocket, RelayCheckInfo, RelayCheckDns, RelayCheckGeo, RelayCheckSsl
 }

@@ -1,0 +1,12 @@
+{
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"]
+    },
+    "lint": {},
+    "test": {
+      "dependsOn": ["^build"]
+    }
+  },
+  "$schema": "https://turborepo.org/schema.json"
+}

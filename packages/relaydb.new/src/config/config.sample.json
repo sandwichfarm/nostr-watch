@@ -1,0 +1,12 @@
+{
+  "development": {
+    "username": "nw-dev",
+    "password": "password",
+    "database": "relaydb-dev"
+  },
+  "test": {
+    "username": "nw-test",
+    "password": "password",
+    "database": "relaydb-test"
+  }
+}

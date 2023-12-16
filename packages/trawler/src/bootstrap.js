@@ -1,5 +1,5 @@
 import { getSeedStatic } from "@nostrwatch/seed"
-import lmdb from "./relaydb.js"
+import rcache from "./relaydb.js"
 import config from "./config.js"
 import Logger from "@nostrwatch/logger"
 import { fetch } from "cross-fetch"
@@ -9,22 +9,24 @@ const logger = new Logger('bootstrap')
 export const bootstrap = async () => {
   let configseed = [],
       staticseed = [], 
-      lmdb = [], 
+      cache = [], 
       api = []
 
-  if(config.seed_sources.includes('config') && config?.seed instanceof Array)
+  if(config.trawler.seed_sources.includes('config') && config?.seed instanceof Array)
     configseed = config?.seed
 
-  if(config.seed_sources.includes('static'))
+  if(config.trawler.seed_sources.includes('static'))
     staticseed = await relaysFromStaticSeed()
 
-  if(config.seed_sources.includes('lmdb'))
-    lmdb = await relaysOnlineFromLmdb()
+  if(config.trawler.seed_sources.includes('cache'))
+    cache = await relaysOnlineFromCache()
 
-  if(config.seed_sources.includes('api'))
+  if(config.trawler.seed_sources.includes('api'))
     api = await relaysOnlineFromApi()
 
-  const uniques = new Set([...configseed, ...staticseed, ...lmdb, ...api])
+  const uniques = new Set([...configseed, ...staticseed, ...cache, ...api])
+
+  logger.info(`Bootstrapped ${uniques.size} relays`)
 
   return [...uniques]
 }
@@ -39,7 +41,7 @@ export const relaysOnlineFromApi = async () => {
   let found = false
   logger.debug('api results retrieved.')
   return new Promise( resolve => {
-    fetch(`${config.remotes.rest_api}/online`, {signal: controller.signal  })
+    fetch(`${config.trawler.remotes.rest_api}/online`, {signal: controller.signal  })
       .then((response) => {
         if (!response.ok) {
           resolve()
@@ -62,8 +64,6 @@ export const relaysOnlineFromApi = async () => {
               relays = response.relays //presumed
             }
 
-            logger.info(`api returned ${relays.length} relays`)
-
             resolve(relays)
 
             clearTimeout(timeout)
@@ -80,6 +80,6 @@ export const relaysOnlineFromApi = async () => {
   })
 }
 
-export const relaysOnlineFromLmdb = async () => {
-  return lmdb.relay.get.online()
+export const relaysOnlineFromCache = async () => {
+  return rcache.relay.get.online()
 }

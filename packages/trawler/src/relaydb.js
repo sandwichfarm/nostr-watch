@@ -1,4 +1,4 @@
-import rcache from '@nostrwatch/relaycache'
+import rcache from '@nostrwatch/nwcache'
 import config from "./config.js"
 
 let $rcache

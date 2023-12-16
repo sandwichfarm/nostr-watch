@@ -86,7 +86,7 @@ export const relaysFromEvents = async (opts) => {
 }
 
 export const relaysOnlineFromCache = async (opts) => {
-  const { default: nwcache } = await import("@nostrwatch/relaycache")
+  const { default: nwcache } = await import("@nostrwatch/nwcache")
   const $nwcache = nwcache(process.env.NWCACHE_PATH)
   return $nwcache.relay.get.online('url').map( relay => relay.url )
 }

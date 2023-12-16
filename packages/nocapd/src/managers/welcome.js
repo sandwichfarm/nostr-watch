@@ -1,6 +1,6 @@
 
 import { WorkerManager } from '../classes/WorkerManager.js'
-import { ParseSelect, RelayRecord } from '@nostrwatch/relaycache'
+import { ParseSelect, RelayRecord } from '@nostrwatch/nwcache'
 const parseSelect = ParseSelect(RelayRecord, "Relay")
 
 export class WelcomeManager extends WorkerManager {

@@ -1,7 +1,7 @@
 import schedule from 'node-schedule'
 
-import relaycache from '@nostrwatch/relaycache'
-import { NocapdQueue, BullMQ, Scheduler } from '@nostrwatch/controlflow'
+import relaycache from '@nostrwatch/nwcache'
+import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
 import { RedisConnectionDetails } from '@nostrwatch/utils'
 
 import { NocapdQueues } from './classes/NocapdQueues.js'

@@ -1,4 +1,4 @@
-import relaycache from '@nostrwatch/relaycache'
+import relaycache from '@nostrwatch/nwcache'
 import { capitalize, loadConfig } from "@nostrwatch/utils"
 
 const rcache = relaycache(process.env.NWCACHE_PATH)
@@ -16,7 +16,6 @@ export class RetryManager {
     this.retries = []
     this.config = config?.[caller]?.[action]
   }
-  
 
   cacheId(url){
     return `${capitalize(this.caller)}:${url}`

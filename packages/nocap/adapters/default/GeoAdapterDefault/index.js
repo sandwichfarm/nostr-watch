@@ -9,12 +9,15 @@ import { fetch } from 'cross-fetch'
     let endpoint 
     const ips = this.$.results.getIps('ipv4')
     const ip = ips[ips?.length-1]
+    const apiKey = process.env?.IP_API_KEY
+    //todo, enable override via options
+    const fields = 'continent,continentCode,countryCode,regionName,city,lat,lon,isp,as,asname,query'
     if(typeof ip !== 'string')
       return this.$.finish('geo', { status: "error", message: 'No IP address. Run `dns` check first.', data: {} })
-    if(this.config?.auth?.ip_api_key)
-      endpoint = `https://pro.ip-api.com/json/${ip}?key=${this.config.auth.ip_api_key}`
+    if(apiKey)
+      endpoint = `https://pro.ip-api.com/json/${ip}?key=${apiKey}&fields=${fields}`
     else 
-      endpoint = `http://ip-api.com/json/${ip}`
+      endpoint = `http://ip-api.com/json/${ip}?fields=${fields}`
     const headers = { 'accept': 'application/json' }
     const response = await fetch(endpoint, { headers }).catch(e => err=e)
     delete response.query

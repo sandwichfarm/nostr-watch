@@ -27,7 +27,7 @@ import SAMPLE_EVENT from "../data/sample_event.js"
 
 export default class {
 
-  constructor(url, config) {
+  constructor(url, config={}) {
 
     this.url = url
     this.ws = null         //set by adapter, needed for conn. status. might be refactored.
@@ -53,6 +53,7 @@ export default class {
     //
     this.SAMPLE_EVENT = SAMPLE_EVENT
     //
+    this.hard_fail = false
     this.results.set('url', url)
     this.results.set('network', parseRelayNetwork(url))
     this.logger.debug(`constructor(${url}, ${JSON.stringify(config)})`)
@@ -80,6 +81,11 @@ export default class {
 
   async check(keys, raw=true){
     let result 
+    if(!this.session.initial){
+      this.hard_fail = false
+      this.results.reset({ url: this.url, network: this.network })
+      this.session.create()
+    }
     if(keys == "all") {
       return this.check(this.checks)
     }
@@ -89,7 +95,8 @@ export default class {
     }
     else if(keys instanceof Array && keys.length) {
       for(const key of keys){
-        await this._check(key)
+        if(this.hard_fail !== true)
+          await this._check(key)
       }
       this.close()
       result = this.results.raw(keys)
@@ -362,6 +369,20 @@ export default class {
       this?.handle_error(err)
   }
 
+    /**
+   * handle_error
+   * Standard Websocket handler triggered by ws.on_error
+   * @private
+   * @returns null
+   */
+    handle_error(){
+      // this.unsubscribe()
+      // this.close()
+      this.websocket_hard_fail()
+      // this.finish(this.current, { [this.current]: false, duration: -1 }, this.promises.get(this.current).reject)
+    }
+  
+
   /**
    * on_close
    * Standard WebSocket event triggered by Adapter 
@@ -509,18 +530,6 @@ export default class {
   
   }
 
-  /**
-   * handle_error
-   * Implementation specific handler triggered by Hooks proxy-handler
-   * @private
-   * @returns null
-   */
-  handle_error(){
-    // this.unsubscribe()
-    // this.close()
-    this.websocket_hard_fail()
-    // this.finish(this.current, { [this.current]: false, duration: -1 }, this.promises.get(this.current).reject)
-  }
 
   /**
    * handle_on

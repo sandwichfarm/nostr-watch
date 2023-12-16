@@ -1,3 +1,4 @@
+import "websocket-polyfill";
 import WebSocket from 'ws';
 import { WebsocketTor } from 'ws-tor'
 
@@ -16,10 +17,10 @@ class WebsocketAdapterDefault {
   async check_connect(deferred){
     let $ws
 
-    if(this.$.results.network === 'tor') 
-      $ws = new WebsocketTor(this.$.url, { socksHost: this.$.config?.tor?.host, socksPort: this.$.config?.tor?.port })
-    else
-      $ws = new WebSocket(this.$.url)
+    // if(this.$.results.network === 'tor') 
+    //   $ws = new WebsocketTor(this.$.url, { socksHost: this.$.config?.tor?.host, socksPort: this.$.config?.tor?.port })
+    // else
+    $ws = new WebSocket(this.$.url)
     
     this.$.set('ws', $ws)
     this.bind_events()

@@ -14,7 +14,7 @@ import Relaydb from '../index.js'
 import dotenv from 'dotenv'
 dotenv.config()
 
-const dbpath = process.env.RELAYDB_PATH
+const dbpath = process.env.NWCACHE_PATH
 
 const relaydb = Relaydb(dbpath? dbpath : './.lmdb')
 

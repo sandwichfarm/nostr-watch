@@ -37,5 +37,9 @@ export class Validator {
       return acc
     }, {}) }
   }
+
+  reset(initalValues={}){
+    Object.assign(this, this.defaults, initalValues)
+  }
   
 }

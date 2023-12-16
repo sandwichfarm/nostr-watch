@@ -44,6 +44,7 @@ export class NocapdQueues {
 
     if(typeof job === 'object')
       name = job.name
+
     else if (typeof job === 'string')
       name = job.split(':')[0]
 
@@ -90,10 +91,11 @@ export class NocapdQueues {
       this.cb[handler](...args)
   }
 
-  populateAll(){
-    Object.keys(this.managers).forEach( m => {
-      this.managers[m].populator()
-    })
+  async populateAll(){
+    const mkeys = Object.keys(this.managers)
+    for await ( const mkey of mkeys ){
+      await this.managers[mkey]._populator()
+    }
   }
 
   pause(q){

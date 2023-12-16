@@ -60,9 +60,9 @@ describe('SessionHelper', () => {
     const oldIds = Object.assign({}, sessionHelper.id)
     console.log(oldIds)
 
-    sessionHelper.new(); 
+    sessionHelper.create(); 
 
-    console.log(sessionHelper.new())
+    console.log(sessionHelper.create())
     
     expect(sessionHelper.id.session).not.toEqual(oldIds.session);
     expect(sessionHelper.id.connect).not.toEqual(oldIds.connect);

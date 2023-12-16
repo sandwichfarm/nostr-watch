@@ -1,26 +1,29 @@
 import schedule from 'node-schedule'
 
 import relaycache from '@nostrwatch/relaycache'
-import { NocapdQueue, BullQueueEvents, BullWorker, Scheduler } from '@nostrwatch/controlflow'
+import { NocapdQueue, BullMQ, Scheduler } from '@nostrwatch/controlflow'
 import { RedisConnectionDetails } from '@nostrwatch/utils'
 
 import { NocapdQueues } from './classes/NocapdQueues.js'
+import { parseRelayNetwork, relayId, capitalize, loadConfig } from "@nostrwatch/utils"
 
-import { AllManager }  from './managers/all.js'
-import { WelcomeManager }  from './managers/welcome.js'
-import { WebsocketManager } from './managers/websocket.js'
-import { GeoManager } from './managers/geo.js'
-import { DnsManager } from './managers/dns.js'
-import { InfoManager } from './managers/info.js'
-import { SslManager } from './managers/ssl.js'
+// import { AllManager }  from './managers/all.js'
+// import { WelcomeManager }  from './managers/welcome.js'
+// import { WebsocketManager } from './managers/websocket.js'
+// import { GeoManager } from './managers/geo.js'
+// import { DnsManager } from './managers/dns.js'
+// import { InfoManager } from './managers/info.js'
+// import { SslManager } from './managers/ssl.js'
 
 import { bootstrap } from '@nostrwatch/seed'
 
 import Logger from '@nostrwatch/logger'
 
+const { QueueEvents, Worker } = BullMQ
 const log = new Logger('nocapd')
+const rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
 
-const rcache = relaycache(process.env.RELAYDB_PATH || './.lmdb')
+let config 
 
 const scheduleJob = (manager) =>{
   const rule = new schedule.RecurrenceRule();
@@ -29,65 +32,64 @@ const scheduleJob = (manager) =>{
   return schedule.scheduleJob(rule, () => manager.populator())
 }
 
+const initManagers = async ($q, config) => {
+  config.managers.forEach(async Manager => {
+    const mpath = `./managers/${Manager}.js`
+    const imp = await import(mpath).catch( e => log.err(`Error importing ${mpath}: ${e.message}`) )
+    try {
+      const mname = imp[Manager].name
+      const $manager = new imp[Manager]($q, rcache, { logger: new Logger(mname), pubkey: process.env.DAEMON_PUBKEY })
+      $q.managers[mname] = $manager
+    }
+    catch(e){
+      log.err(`Error initializing ${Manager}: ${e.message}`)
+    }
+  })
+}
+
 const initWorkers = async (config) => {
-  if(config?.workers?.length > 0)
+  if(config?.managers?.length === 0 || !(config?.managers instanceof Array))
     throw new Error('config.workers needs to be an array of WorkerManagers')
   const $q = new NocapdQueues({ pubkey: process.env.DAEMON_PUBKEY })
-  const schedule = []
-  $q.managers = {}
-  $q.queue = NocapdQueue()
+  const { $Queue:$NocapdQueue, $QueueEvents:$NocapdQueueEvents } = NocapdQueue()
+  $q.queue = $NocapdQueue
   await $q.queue.pause()
   await $q.queue.drain()
-  // await $q.queue.obliterate()
-
-  $q.events = new BullQueueEvents($q.queue.name, {connection: RedisConnectionDetails()})
-  config.managers.forEach(Manager => {
-    const mname = Manager.name
-    const $manager = new Manager($q, rcache, { logger: new Logger(mname), pubkey: process.env.DAEMON_PUBKEY })
-    // console.log($q.queue.name, $manager.runner,  { jobType: mname, concurrency: $manager.concurrency, priority: $manager.priority, connection: RedisConnectionDetails() })
-    schedule.push({ name: mname, interval: $manager.interval, handler: $manager.populator.bind($manager) })
-    // schedules.push(scheduleJob($manager))
-    // process.exit()
-    // $manager.populator()
-    $q.managers[mname] = $manager
-  })
-
-  const $worker = new BullWorker($q.queue.name, $q.route.bind($q), { concurrency: 3 } )
+  $q.events = $NocapdQueueEvents
+  $q.managers = initManagers($q, config)
+  const $worker = new Worker($q.queue.name, $q.route.bind($q), { concurrency: 10 } )
+  await $worker.pause()
   $q.setWorker($worker)
-  $q.populateAll()
-  $q.scheduler = new Scheduler(schedule)
+  await $q.populateAll()
   await $q.queue.resume() 
   return $q
 }
 
-export const Nocapd = async () => {
-  if(rcache.relays.count.all() === 0){
-    const relays = await bootstrap('nocapd')
-    relays
-      .map(r => { url: r })
-      .forEach(relayObj => rcache.relay.insertIfNotExists(relayObj))
+const enabledWorkerManagers = () => {
+  const eman = []
+  for( const manager of Object.keys(config?.nocapd?.checks) ) {
+    if(config?.nocapd?.checks?.[manager]?.enabled === true)
+      eman.push(`${capitalize(manager)}Manager`)
   }
-  
-  const $q = initWorkers({
-    managers: [ 
-      AllManager,
-      // WelcomeManager, 
-      // WebsocketManager, 
-      // InfoManager,
-      // DnsManager,
-      // GeoManager,
-      // SslManager
-    ]
+  return eman
+}
+
+export const Nocapd = async () => {
+  config = await loadConfig()
+  if(rcache.relay.count.all() === 0){
+    let relays = await bootstrap('nocapd')
+    console.log(`found ${relays.length} relays`)
+    relays = relays
+      .map(r => { return { url: r, network: parseRelayNetwork(r), online: null, geo: [], attributes: [] } })
+    const persisted = await rcache.relay.batch.insertIfNotExists(relays)
+    console.log('persisted:', persisted.length)
+  }
+  const $q = await initWorkers({
+    managers: enabledWorkerManagers() || [],
   })
   return {
     stop: () => {
       console.log('stopping')
-      // $q.schedules.forEach( job => {
-      //   schedule.gracefulShutdown(job);
-      // })
-      // Object.keys($q.managers).forEach( m => {
-      //   $q.managers[m].$worker.pause()
-      // })
     },
     $q
   }

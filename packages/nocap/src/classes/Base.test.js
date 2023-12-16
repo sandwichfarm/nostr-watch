@@ -196,6 +196,7 @@ describe("Nocap class", () => {
         const method = 'connect'
         it("defaults should return connect result", async () => {
           const response = await nocap.check(method)
+          console.log('check(connect)', response)
           expect(response).toBeTypeOf('object');
           expect(response).toHaveProperty(method);
           expect(response[method]).toBeTypeOf('object');

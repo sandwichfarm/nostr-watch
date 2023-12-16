@@ -5,7 +5,11 @@ import network from './network.js'
 export { getEnvValue, setEnvValue } from './env-tools.js'
 export { loadConfigSync, loadConfig, extractConfig } from './config.js'
 
-export { env } from './env.js'
+// export { env } from './env.js'
+
+let { DAEMON_PUBKEY } = process.env;
+DAEMON_PUBKEY = DAEMON_PUBKEY? DAEMON_PUBKEY : 'WARNING_DAEMON_PUBKEY_UNSET';
+export { DAEMON_PUBKEY }
 
 export const parseRelayNetwork = network.parseRelayNetwork
 export const relaysSerializedByNetwork = network.relaysSerializedByNetwork
@@ -15,7 +19,7 @@ export const relayId = (relay, schema="Relay") => `${schema}@${hashRelay(relay)}
 export const serviceId = (service) => `Service@${service}`
 export const cacheTimeId = (key) => `CacheTime@${key}`
 export const noteId = (key) => `Note@${key}`
-
+export const lastCheckedId = (key, relay) => `${DAEMON_PUBKEY}:LastChecked:${key}:${relay}`
 
 export const now = () => new Date().getTime()
 export const nowstr = () => Math.round(now()/1000)
@@ -67,5 +71,5 @@ export const msToCronTime = (milliseconds) => {
 }
 
 export const capitalize = (str) => {
-  return string.charAt(0).toUpperCase()+string.slice(1);
+  return str.charAt(0).toUpperCase()+str.slice(1);
 }

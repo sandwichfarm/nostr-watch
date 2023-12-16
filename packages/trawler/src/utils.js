@@ -1,17 +1,11 @@
 import _timestring from "timestring";
 import WebSocket from 'ws';
 
-import { env } from '@nostrwatch/utils'
-
-let { DAEMON_PUBKEY } = env;
-DAEMON_PUBKEY = DAEMON_PUBKEY? DAEMON_PUBKEY : 'WARNING_DAEMON_PUBKEY_UNSET';
-export { DAEMON_PUBKEY }
+// import { env } from '@nostrwatch/utils'
 
 export const lastTrawledId = (relay) => `LastTrawled:${relay}`
 export const retryId = (relay) => `Trawler:${relay}`
-export const lastCheckedId = (key, relay) => `${DAEMON_PUBKEY}:LastChecked:${key}:${relay}`
 export const lastPublishedId = (relay) => `LastPublished:${relay}`
-
 export const excludeKnownRelays = (known, discovered) => {
   return discovered.filter( relay => !known.includes(relay) )
 }

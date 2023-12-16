@@ -6,6 +6,7 @@ const { Relay, RelayCheckWebsocket, RelayCheckInfo } = schemas
 const { $eq, $gte, $and, $isNuall, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
 
 import Logger from "@nostrwatch/logger" 
+
 const logger = new Logger('lmdb:relay')
 
 import { RelayRecord } from "../defaults.js"
@@ -108,7 +109,7 @@ const relay_batch = (db) => {
       const result = []
       for await (const RelayObj of RelayObjs) {
         try { 
-          const id = await db.relay[key](RelayObj).catch(logger.warn)
+          const id = await db.relay[key](RelayObj).catch()
           if(typeof id !== 'undefined')
             result.push(id)
         }

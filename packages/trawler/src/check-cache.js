@@ -1,8 +1,11 @@
 import { Nocap } from '@nostrwatch/nocap'
-import rcache from './relaydb.js'
-import { lastCheckedId, retryId } from './utils.js'
+import { lastCheckedId } from '@nostrwatch/utils'
 import Logger from '@nostrwatch/logger'
+
+import rcache from './relaydb.js'
 import config from './config.js'
+
+import { retryId } from './utils.js'
 
 const logger = new Logger('check-cache')
 

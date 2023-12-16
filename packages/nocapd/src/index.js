@@ -4,7 +4,7 @@ const nocapd = Nocapd()
 
 async function gracefulShutdown(signal) {
   console.log(`Received ${signal}, closing application...`);
-  await nocapd.stop()
+  // await nocapd.stop()
   process.exit(0);
 }
 

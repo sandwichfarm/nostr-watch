@@ -8,7 +8,7 @@ export default class Logger {
 
   constructor(name, log_level="INFO", split_logs=false) {
     this.logger = createLogger?.default? createLogger.default(name): createLogger(name)
-    this.log_level = new String(config.log_level? config.log_level : log_level).toUpperCase();
+    this.log_level = new String(config?.log_level? config.log_level : log_level).toUpperCase();
     this.split_logs = split_logs || false
   }
 

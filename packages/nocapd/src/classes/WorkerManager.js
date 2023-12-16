@@ -1,28 +1,34 @@
 import hash from 'object-hash'
 
 import { Nocap } from '@nostrwatch/nocap'
+import { delay } from '@nostrwatch/utils'
+
+import chalk from 'chalk';
+
 
 export class WorkerManager {
-  constructor($parent, rdb, config){
+  constructor($q, rcache, config){
     // if(config?.id)
     //   throw new Error('WorkerManager needs an id')
     /** @type {NWQueue} */
-    this.$ = $parent
+    this.$ = $q
 
     /** @type {db} */
-    this.rdb = rdb
+    this.rcache = rcache
 
     /** @type {object} */
     this.cb = {}
     
     /** @type {string} */
-    this.pubkey = config?.pubkey? config.pubkey: null
+    this.pubkey = process.env?.DAEMON_PUBKEY
 
     /** @type {number} */
     this.priority = config?.priority? config.priority: 1
 
     /** @type {number} */
     this.concurrency = config?.concurrency? config.concurrency: 1
+
+    this.networks = config?.networks? config.networks: ['clearnet']
 
     this.bindEvents = true
 
@@ -51,6 +57,32 @@ export class WorkerManager {
     this.interval = 24*60*60*1000 //24h
 
     this.expires = 24*60*60*1000 //24h
+
+    this.stats = setInterval( async () => await this.counts(), 30*1000 )
+
+    this.delay = delay
+
+    this.processed = 0
+
+    this.total = 0
+  }
+
+  calculateProgress() {
+    if (this.total === 0) return "0.00%"; // Prevent division by zero
+    let percentage = (this.processed / this.total) * 100;
+    return percentage.toFixed(2) + "%";
+  }
+
+  progressMessage(url, result={}, error=false){
+    const failure = chalk.red;
+    const success = chalk.bold.green;
+    const mute = chalk.gray
+    this.log.info(
+      `[${chalk.bgBlack(this.calculateProgress())}]`, 
+      `${mute(this.processed)}/${mute(this.total)}`,
+      `${url}:`, 
+      result?.connect?.data? success("online"): failure("offline")),
+      error? chalk.gray.italic('error'): ''
   }
 
   siblingKeys(){
@@ -73,6 +105,12 @@ export class WorkerManager {
 
   slug(){
     return this.constructor.name
+  }
+
+  async counts(){
+    const counts = await this.$.queue.getJobCounts()
+    this.log.info(`[stats] active: ${counts.active}, completed: ${ counts.completed }, failed: ${counts.failed}, prioritized: ${counts.prioritized}, delayed: ${counts.delayed}, waiting: ${counts.waiting}, paused: ${counts.paused}, total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized}`)
+    return counts
   }
 
   // setWorker($worker){
@@ -109,7 +147,26 @@ export class WorkerManager {
     this.log.warn(`[work] ${job.id} is not a ${this.constructor.name} job, passing to next worker`)
   }
 
-  async addJob(jdata, workerKey){
+  _populator(){
+    this.total = 0
+    this.processed = 0
+    this.populator()
+  }
+
+  async addRelayJobs(relays, workerKey){
+    
+    for await ( const relay of relays ){
+      await this.addRelayJob({ relay }, workerKey)
+    }
+    const c = await this.counts()
+    this.total = c.prioritized + c.waiting
+  }
+
+  async addRelayJob(jdata, workerKey){
+    // if(jdata?.relay) {
+    //   if(!this.networks.includes(parseRelayNetwork(jdata.relay))) 
+    //     return this.log.info(`Skipping ${this.constructor.name} check for ${jdata.relay} because it is not in config.nocap.networks (default: clearnet only)`)
+    // }
     const jobOpts = {
       priority: this.priority,
       removeOnComplete: {
@@ -122,23 +179,23 @@ export class WorkerManager {
     if(!workerKey)
       workerKey = this.constructor.name
     this.log.debug(`Adding job for ${workerKey}: ${JSON.stringify(jdata)}`)
-    this.$.queue.add(this.id(workerKey), jdata, { jobId: this.jobId(jdata.relay, workerKey), ...jobOpts})
+    return this.$.queue.add( this.id(workerKey), jdata, { jobId: this.jobId(jdata.relay, workerKey), ...jobOpts})
   }
 
   async populator(){
     this.log.debug('Populator not defined')
-    const relays = this.rdb.relay.get.allIds()
+    const relays = this.rcache.relay.get.allIds()
     relays.forEach(relay => { this.$.queue.add(this.constructor.name, { relay: relay, checks: [this.id] }) })
   }
 
-  async on_completed(job, rvalue) {
-    if(typeof rvalue !== 'object') return
-    if(rvalue?.skip === true) return this.log.debug(`${this.constructor.name} check skipped for ${job.data.relay}`)
-    const { result } = rvalue
-    this.log.debug(`DS check complete for ${job.data.relay}: ${JSON.stringify(result)}`)
-    const dnsId = await this.rdb.check.dns.insert(result)
-    const relayUpdate = { url: result.url, info: { ref: dnsId, changed_at: Date.now() } }
-    await this.rdb.relay.get.one(result.url)
-    await this.rdb.relay.patch(relayUpdate)
-  }
+  // async on_completed(job, rvalue) {
+  //   if(typeof rvalue !== 'object') return
+  //   if(rvalue?.skip === true) return this.log.debug(`${this.constructor.name} check skipped for ${job.data.relay}`)
+  //   const { result } = rvalue
+  //   this.log.debug(`DS check complete for ${job.data.relay}: ${JSON.stringify(result)}`)
+  //   const dnsId = await this.rcache.check.dns.insert(result)
+  //   const relayUpdate = { url: result.url, info: { ref: dnsId, changed_at: Date.now() } }
+  //   await this.rcache.relay.get.one(result.url)
+  //   await this.rcache.relay.patch(relayUpdate)
+  // }
 }

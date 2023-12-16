@@ -32,7 +32,6 @@ export default class CacheTimeMixin {
         select = this.parseSelect(select)
         if(!where)
           where = { [this.nameClean()]: { '#': this.id() } }  
-        console.log(select, where)
         return [...this.db.$.select().from( this.schema ).where( where )] || []
       },
       allIds: () => {

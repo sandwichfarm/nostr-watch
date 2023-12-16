@@ -58,7 +58,7 @@ export const relaysFromRelayList = async ( ev ) => {
   
   relayList = relayList.map( relay => {
     return {
-      id: relayId(relay),
+      // id: relayId(relay),
       url: relay,
       network: parseRelayNetwork(relay),
       online: null
@@ -105,7 +105,6 @@ export const trawl = async function($job){
           { sort: true }
         )
         for await (const ev of it) {
-          
           lastEvent = setLastEvent(ev, since, lastEvent)
           if( await noteInCache(ev, relay, lastEvent) ) continue 
           const relayList = await relaysFromRelayList(ev)
@@ -125,7 +124,7 @@ export const trawl = async function($job){
         }
       }
       catch(err) {
-        logger.err(`${relay}: ${err}`)
+        logger.error(`${relay}: ${err}`)
       }
       if(lastEvent > 0)
         await rcache.cachetime.set( lastTrawledId(relay), lastEvent )
@@ -158,3 +157,4 @@ const watchQueue = () => {
 
 if(config?.trawler?.sync?.out?.queue)
   watchQueue()
+

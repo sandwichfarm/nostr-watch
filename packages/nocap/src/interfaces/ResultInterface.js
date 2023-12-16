@@ -41,18 +41,6 @@ export class ResultInterface extends Validator {
   }
 
   get(key){
-    // switch(key){
-    //   case "url":
-    //   case "checked_at":
-    //   case "adapters":
-    //   case "network":
-    //   case "connect":
-    //   case "read":
-    //   case "write":
-    //     return this._get(key)
-    //   default:
-    //     return this._get(key).data
-    // }
     return this._get(key)
   }
 
@@ -70,7 +58,7 @@ export class ResultInterface extends Validator {
   }
 
   getIps(protocol='ipv4') {
-    const answer = this.get('dns')?.Answer
+    const answer = this.get('dns')?.data?.Answer
     if(!answer || !answer.length)
       return []
     const regex = {}

@@ -51,6 +51,7 @@ $ = heavy development
 
 ### Derivatives 
 - [**`nostrawl`**](https://github.com/sandwichfarm/nostrawl) `[@]`: A package for trawling any number of nostr relays. Generalized logic from `trawler`. Combines `nostr-fetch` and queues, to make coalescing data from specific filters simple.
+- [**`nostr-geotags`**](https://github.com/sandwichfarm/nostr-geotags/tree/main) `[@]`: A package for generating event geo `g` tags for events, needed for `NIP-66`.
 
 ### Philosophy
 nostr.watch legacy has been using nostr as a data layer successfully since February 2023, less some ... _ehem_ ... hiccups. When it comes to the gui, it's a poor user experience that resulted from technical debt, scope creep and inopportune but uniquely opportune timing. It has never had any database. It has run entirely off data from nostr. Relays are the database. 

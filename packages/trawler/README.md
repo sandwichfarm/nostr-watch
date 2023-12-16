@@ -1,5 +1,3 @@
-> Heavy experimentation, this package is a mess. 
-
 # @nostrwatch/trawler 
 Scrapes `10002` events and persists to `nwcache`
 

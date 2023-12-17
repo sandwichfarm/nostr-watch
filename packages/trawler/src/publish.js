@@ -42,9 +42,9 @@ export const publishOne = async (relay) => {
 
 export const publishMany = async (relays = []) => {
   relays = filterRelaysProperties(relays)
-  console.log('before filter', relays.length)
+  // console.log('before filter', relays.length)
   const filteredRelays = relays.filter(relayIsExpired);
-  console.log('after filter', filteredRelays.length)
+  // console.log('after filter', filteredRelays.length)
   if (!filteredRelays.length) return;
   await p30066.many(filteredRelays);
   await updatePublishTimes(filteredRelays);

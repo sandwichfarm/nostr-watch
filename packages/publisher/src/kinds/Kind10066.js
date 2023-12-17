@@ -3,10 +3,11 @@ import { Publisher } from '../Publisher.js'
 export class Kind10066 extends Publisher {
   constructor(){
     super()
+    this.kind = 10066
   }
 
   generateEvent(publisher){
-    const eventTpl = this.tpl(30066)
+    const eventTpl = this.tpl()
     const tags = []
 
     const { url, kinds, parameters, geo,  } = publisher

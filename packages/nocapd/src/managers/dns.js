@@ -1,8 +1,5 @@
 import { WorkerManager } from '../classes/WorkerManager.js'
-import transform from '@nostrwatch/transform'
 import { Nocap } from '@nostrwatch/nocap'
-
-const { RelayCheckResultDns } = transform
 
 export class DnsManager extends WorkerManager {
   constructor($q, rdb, config){

@@ -21,7 +21,7 @@ import SAMPLE_EVENT from "../data/sample_event.js"
  * 
  * @class
  * @classdesc Base class for all Check classes
- * @param {string} url - The URL of the relay to connect to
+ * @param {string} url - The URL of the relay to check
  * @param {object} config - The configuration object for the check
  */
 
@@ -59,14 +59,6 @@ export default class {
     this.logger.debug(`constructor(${url}, ${JSON.stringify(config)})`)
   }
 
-  set(key, value){
-    this[key] = value
-  }
-
-  get(key){
-    return this[key]
-  }
-
   isActive(){
     return this.current === null? false: true 
   }
@@ -75,11 +67,17 @@ export default class {
     return this.check('all')
   }
 
-  async rawResult(key, raw){
-    
-  }
-
-  async check(keys, raw=true){
+  /**
+   * check
+   * Public method for dataprep and routing a check request
+   * 
+   * @public
+   * @async
+   * @param {(string|string[])} keys - The keys to check
+   * @param {boolean} headers - Whether to include headers in result (default: true)
+   * @returns {Promise<*>} - The result of the checks
+   */
+  async check(keys, headers=true){
     let result 
     if(!this.session.initial){
       this.hard_fail = false
@@ -89,12 +87,12 @@ export default class {
     if(keys == "all") {
       return this.check(this.checks)
     }
-    else if(typeof keys === 'string') {
+    else if(typeof keys === 'string' && this.checks.includes(keys)) {
       result = await this._check(keys)
       this.close()
     }
     else if(keys instanceof Array && keys.length) {
-      for(const key of keys){
+      for await (const key of keys){
         if(this.hard_fail !== true)
           await this._check(key)
       }
@@ -102,22 +100,40 @@ export default class {
       result = this.results.raw(keys)
     }
     else {
-      return this.throw(`check(${keys}) failed. keys must be string or populated array`)
+      return this.throw(`check(${keys}) failed. keys must be one (string) or several (array of strings) of: ${this.checks.join(', ')}`)
     }
-    return raw? result: this.results.cleanResult(keys, result)
+    if(this.isConnected()) this.close()
+    return headers? result: this.results.cleanResult(keys, result)
   }
 
+  /**
+   * _check
+   * Internal method to perform a check for a given key
+   * 
+   * @private
+   * @async
+   * @param {string} key - The key to perform the check on
+   * @returns {Promise<*>} - The result of the check
+   */
   async _check(key){ 
     this.logger.debug(`${key}: check()`)
     this.defaultAdapters()
-    await this.start(key)
+    const precheck = await this.start(key).catch( err => this.logger.debug(err) )
     const result = await this.promises.get(key).promise
     if(result.status === "error") {
-      this.on_check_error( key, { status: "error", message: result.message } )
+      this.on_check_error( key, result )
     }
     return result
   } 
 
+  /**
+   * maybeTimeoutReject
+   * Creates a reject function for a timeout scenario
+   * 
+   * @private
+   * @param {string} key - The key associated with the timeout
+   * @returns {Function} - The reject function
+   */
   maybeTimeoutReject(key){
     return (reject) => {  
       if(this.isWebsocketKey(key))
@@ -127,9 +143,35 @@ export default class {
     }
   }
 
+ /**
+   * maybeTimeoutResolve
+   * Creates a resolve function for a timeout scenario
+   * 
+   * @private
+   * @param {string} key - The key associated with the timeout
+   * @returns {Function} - The reject function
+   */
+ maybeTimeoutResolve(key){
+  return (resolve) => {  
+    if(this.isWebsocketKey(key))
+      return resolve({ data: false, duration: -1, status: "error", message: `Websocket connection to relay timed out (after ${this.config.timeout[key]}ms}` })
+    else 
+      return resolve({ data: {}, duration: -1, status: "error", message: `${key} check timed out (after ${this.config.timeout[key]}ms}` })
+  }
+}
+
+  /**
+   * start
+   * Creates deferred promise for check (key), validates check (key), validates adapter for given check (key), performs a precheck, handles pre-check results, calls check in the corresponding adapter and returns the deferred's promise. 
+   * 
+   * @private
+   * @async
+   * @param {string} key - The key to start the check for
+   * @returns {Promise<*>} - The promise for the started check
+   */
   async start(key){
     this.logger.debug(`${key}: start()`)
-    const deferred = await this.addDeferred(key, this.maybeTimeoutReject(key))
+    const checkDeferred = await this.addDeferred(key, this.maybeTimeoutReject(key))
     const adapter = this.routeAdapter(key)
 
     if( typeof key !== 'string')
@@ -146,67 +188,83 @@ export default class {
         this.adapters[adapter][`check_${key}`]()
       })
       .catch((precheck) => {
+        let reason
         if(key === 'connect' && precheck.status == "error" && precheck?.result){
-          this.logger.debug(`${key}: Precheck found that connect check was already fulfilled, returning cached result`)
-          this.promises.get(key).resolve(precheck.result)
+          reason = `${key}: Precheck found that connect check was already fulfilled, returning cached result`
+          // this.promises.get(key).resolve(precheck.result)
+          checkDeferred.resolve(precheck.result)
         }
         else if(precheck.status == "error") {
-          this.logger.debug(`${key} precheck failed: ${precheck.message}`)
-          this.promises.get(key).resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })
+          reason = `${key} precheck failed: ${precheck.message}`
+          // this.promises.get(key).resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })
+          checkDeferred.resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })
         }
         else {
-          throw new Error(`start(): precheck rejection for ${key} should not ever get here: ${JSON.stringify(precheck)}`)
+          reason = `start(): precheck rejection for ${key} should not ever get here: ${JSON.stringify(precheck)}`
         }
-        deferred.reject()
+        // deferred.reject(reason)
       })
-    return deferred.promise
+    return checkDeferred.promise
   }
 
-  websocket_hard_fail(){
-    this.logger.debug(`websocket_hard_fail(): ${this.url}`)
-    const wschecks = ['connect', 'read', 'write']
-    wschecks.forEach(key => { 
-      this.results.set(key, { data: false, duration: -1, status: "error", message: "Websocket connection failed" }) 
-    })
-    const promise = this.promises.get(this.current)
-    if(!promise) return this.logger.warn(`websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
-    promise.resolve(this.results.get(this.current))
-    this.current = null
-  }
-
+  /**
+   * finish
+   * Set's resets values, produces result, checks the result, resolves the promise for a given check (key) and triggers on_change
+   * 
+   * @private
+   * @async
+   * @param {string} key - The key to finish the check for
+   * @param {Object} data - The data associated with the check
+   */
   async finish(key, data={}){
     this.logger.debug(`${key}: finish()`)
     this.current = null
     this.latency.finish(key)
     const result = this.produce_result(key, data)
-    if(this.skip_result(key)) return
+    if(this.ignore_result(key)) return
     this.results.setMany(result)
     this.promises.get(key).resolve(result)
     this.on_change()
   }
 
-  skip_result(key){
-    let skip = false 
+  /**
+   * ignore_result
+   * Determines if the result for a given key should be ignore
+   * 
+   * @private
+   * @param {string} key - The key to check for ignoring
+   * @returns {boolean} - True if the result should be ignored, false otherwise
+   */
+  ignore_result(key){
+    let ignore = false 
     let reason 
     if(this.promises.reflect(key).state.isRejected){
-      skip = true 
+      ignore = true 
       reason = 'rejected'
     }
     if(this.promises.reflect(key).state.isFulfilled){
-      skip = true 
+      ignore = true 
       reason = 'already fulfilled'
     }
-    if(!skip) return 
+    if(!ignore) return 
     
-    this.logger.warn(`Skipping ${key} check because it was ${reason} when finish() was called`)
+    this.logger.warn(`Ignoring ${key} check because the promise was ${reason} when finish() was called`)
     return true
   }
 
+  /**
+   * produce_result
+   * Produces the result for a given key
+   * 
+   * @private
+   * @param {string} key - The key to produce the result for
+   * @param {Object} data - The data to include in the result
+   * @returns {Object} - The produced result
+   */
   produce_result(key, data={}){
     const result = {}
     const adapter_key = this.routeAdapter(key)
     const adapter_name = this.adapters[adapter_key].constructor.name 
-
     result.url = this.results.get('url')
     result.network = this.results.get('network')
     result.adapters = [ ...new Set( this.results.get('adapters').concat([adapter_name]) ) ]
@@ -214,20 +272,36 @@ export default class {
     result.checked_by = this.config.checked_by
     data.duration = this.latency.duration(key)  
     result[key] = { ...data }
-
     return result
   }
 
+  /**
+   * isWebsocketKey
+   * Checks if a given key is associated with websocket operations
+   * 
+   * @private
+   * @param {string} key - The key to check
+   * @returns {boolean} - True if it's a websocket key, false otherwise
+   */
   isWebsocketKey(key){
     return ['connect', 'read', 'write'].includes(key)
   }
 
+  /**
+   * precheck
+   * Checks whether a given check can actually be executed given the state and parameters of the current instance. 
+   * 
+   * @private
+   * @async
+   * @param {string} key - The key to precheck
+   * @returns {Promise<*>} - The promise of the precheck
+   */
   async precheck(key){
-    const deferred = await this.addDeferred(`precheck_${key}`)
+    const precheckDeferred = await this.addDeferred(`precheck_${key}`)
     const needsWebsocket = this.isWebsocketKey(key)
     const keyIsConnect = key === 'connect'
-    const resolvePrecheck = deferred.resolve
-    const rejectPrecheck = deferred.reject
+    const resolvePrecheck = precheckDeferred.resolve
+    const rejectPrecheck = precheckDeferred.reject
     const connectAttempted = this.promises.exists('connect') && this.promises.reflect('connect').state.isFulfilled
 
     const waitForConnection = async () => {
@@ -286,33 +360,67 @@ export default class {
       this.logger.debug(`${key}: Made it here without resolving or rejecting precheck. You missed something.`)
     }
     await prechecker()
-    return deferred.promise
+    return precheckDeferred.promise
   }
 
+  /**
+   * subid
+   * Generates a subscription ID from child session instance for a given key
+   * 
+   * @private
+   * @param {string} key - The key to generate the subscription ID for
+   * @returns {string} - The generated subscription ID
+   */
   subid(key){
     return `${this.session.get()}${this.session.get(key)}` 
   }
 
+  /**
+   * keyFromSubid
+   * Retrieves the key from a given subscription ID
+   * 
+   * @private
+   * @param {string} subid - The subscription ID
+   * @returns {string} - The key associated with the subscription ID
+   */
   keyFromSubid(subid){
     return Object.keys(this.session.id).find(key => subid.startsWith(this.session.get(key)));
   }
 
-  throw(error){
-    return Promise.reject(error);
-  }
-
+  /**
+   * unsubscribe
+   * Invokes websocket adapter's unsubscribe method if it exists, otherwise attempts to unsubscribe via adapter provided ws instance
+   * 
+   * @private
+   * @param {string} subid - The subscription ID to unsubscribe from
+   */
   unsubscribe(subid){
     if(!this.isConnected())
       return 
-    const event = ['CLOSE', subid]
-    // const buffer = Buffer.from(JSON.stringify(event));
-    this.ws.send(event)
+    if(this.adapters.websocket?.unsubscribe)
+      return this.adapters.websocket.unsubscribe()
+    this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'close', 
+      () => this.ws.send(['CLOSE', subid]), 
+      subid
+    )
   }
 
+  /**
+   * close
+   * Invokes websocket adapter's close method if it exists, otherwise tries to close the websocket connection via adapter provided ws instance
+   * 
+   * @private
+   */
   close(){
-    if(!this.isConnected())
+    if( this.isClosing() || !this.isConnected() || this.isClosed())
       return
-    this.ws.close()
+    this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'close', 
+      () => this.ws.close() 
+    )
   }
 
   /**
@@ -405,8 +513,8 @@ export default class {
    */
   on_event(subid, ev){
     this.track('relay', 'event', ev.id)
-    if(this?.adapters?.relay?.handle_event)
-      this.adapters.relay.handle_event(subid, ev)
+    if(this?.adapters?.websocket?.handle_event)
+      this.adapters.websocket.handle_event(subid, ev)
     this.handle_read_check(true)
   }
 
@@ -421,8 +529,8 @@ export default class {
     this.logger.debug(notice)
     this.track('relay', 'notice', notice)
     this.cbcall('notice')
-    if(this?.adapters?.relay?.handle_notice)
-      this.adapters.relay.handle_notice(notice)
+    if(this?.adapters?.websocket?.handle_notice)
+      this.adapters.websocket.handle_notice(notice)
   }
 
   /**
@@ -562,7 +670,36 @@ export default class {
     // this.log('hook', 'close', result)
     // this.finish('duration', result)
   }  
+
+
+  /**
+   * websocket_hard_fail
+   * Handles the hard failure of a websocket connection
+   * 
+   * @private
+   */
+  websocket_hard_fail(){
+    this.logger.debug(`websocket_hard_fail(): ${this.url}`)
+    const wschecks = ['connect', 'read', 'write']
+    wschecks.forEach(key => { 
+      this.results.set(key, { data: false, duration: -1, status: "error", message: "Websocket connection failed" }) 
+    })
+    const promise = this.promises.get(this.current)
+    if(!promise) return this.logger.warn(`websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
+    this.hard_fail = true
+    promise.resolve(this.results.get(this.current))
+    this.current = null
+  }
   
+  /**
+   * track
+   * Tracks an event for a given adapter and key
+   * 
+   * @private
+   * @param {string} adapter - The adapter associated with the event
+   * @param {string} key - The key associated with the event
+   * @param {*} data - The data to track
+   */
   track(adapter, key, data){
     if(!this.enableCheckLog)
       return
@@ -577,10 +714,25 @@ export default class {
     })
   }
 
+  /**
+   * getTrack
+   * Retrieves tracked data for a given key
+   * 
+   * @private
+   * @param {string} key - The key to retrieve tracked data for
+   * @returns {*} - The tracked data
+   */
   getTrack(key){
     return this.logdata?.[key] || false
   }
 
+  /**
+   * clearTrack
+   * Clears tracked data for a given session or all sessions
+   * 
+   * @private
+   * @param {string} [session] - The session to clear tracked data for
+   */
   clearTrack(session){
     if(session)
       delete this.logdata[session]
@@ -588,22 +740,119 @@ export default class {
       this.logdata = {}
   }
 
+  /**
+   * maybeExecuteAdapterMethod
+   * If adapter method exists, call it and return it's result, otherwise returnn provided altFn result 
+   * 
+   * @private
+   * @param {string} [session] - The session to clear tracked data for
+   */
+  maybeExecuteAdapterMethod(adapter, methodname, altFn=()=>{}, ...args) {
+    if(this.adapters?.[adapter]?.[methodname]) {
+      return this.adapters[adapter][methodname](...args)
+    } else {
+      try {
+        return altFn(...args)
+      }
+      catch(err){
+        throw new Error(`Provided alternative functiiion: Threw error using default method: ${err}, the respective adapter should probably define this method instead` )
+      }
+    }   
+  }
+
+  /**
+   * maybeExecuteAdapterMethod
+   * If adapter method exists, call it and return it's result, otherwise returnn provided altFn result 
+   * 
+   * @private
+   * @param {string} [session] - The session to clear tracked data for
+   */
+  attemptBaseCall(call, ...args){
+    try {
+      if(typeof fn === 'function')
+        return call()
+      else 
+        return call
+    }
+    catch(err) {
+      throw new Error(`close(): Threw error using default method via ws instance: ${err}, the respective adapter should probably provide this method instead` )
+    }
+  }
+
+  /**
+   * isConnecting
+   * Checks if the connection is currently in the process of connecting
+   * 
+   * @private
+   * @returns {boolean} - True if connecting, false otherwise
+   */
   isConnecting(){
-    return this.ws?.readyState && this.ws.readyState === WebSocket.CONNECTING ? true : false
+    if(this.isConnected())
+      return
+    return this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'isConnecting', 
+      () => this.ws?.readyState && this.ws.readyState === WebSocket.CONNECTING ? true : false
+    )
   }
 
+  /**
+   * isConnected
+   * Checks if the connection is currently established
+   * 
+   * @private
+   * @returns {boolean} - True if connected, false otherwise
+   */
   isConnected(){
-    return this.ws?.readyState && this.ws.readyState === WebSocket.OPEN ? true : false
+    return this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'isConnected', 
+      () => this.ws?.readyState && this.ws.readyState === WebSocket.OPEN ? true : false
+    )
   }
 
+  /**
+   * isClosing
+   * Checks if the connection is currently in the process of closing
+   * 
+   * @private
+   * @returns {boolean} - True if closing, false otherwise
+   */
   isClosing(){
-    return this.ws?.readyState && this.ws.readyState === WebSocket.CLOSING ? true : false
+    if(this.isClosed())
+      return
+    return this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'isClosing', 
+      () => this.ws?.readyState && this.ws.readyState === WebSocket.CONNECTING ? true : false
+    )
   }
 
+  /**
+   * isClosed
+   * Checks if the connection is currently closed
+   * 
+   * @private
+   * @returns {boolean} - True if closed, false otherwise
+   */
   isClosed(){
-    return this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
+    return this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'isClosed', 
+      () => this.ws?.readyState && this.ws.readyState === WebSocket.CONNECTING ? true : false
+    )
   }
 
+  /**
+   * addDeferred
+   * Helper for adding a deferred object via child promises instance for a given key
+   * 
+   * @private
+   * @async
+   * @param {string} key - The key to add the deferred for
+   * @param {Function} [cb=()=>{}] - The callback function for the deferred
+   * @returns {Promise<*>} - The promise of the deferred
+   */
   async addDeferred(key, cb=()=>{}){
     const existingDeferred = this.promises.exists(key)
     if(existingDeferred) 
@@ -612,6 +861,14 @@ export default class {
     return this.promises.get(key)
   }
 
+  /**
+   * routeAdapter
+   * Determines the appropriate adapter for a given key
+   * 
+   * @private
+   * @param {string} key - The key to route the adapter for
+   * @returns {string} - The routed adapter
+   */
   routeAdapter(key){
     switch(key){
       case 'connect':
@@ -628,6 +885,14 @@ export default class {
     }
   }
 
+  /**
+   * useAdapter
+   * Initializes and uses a given Adapter
+   * 
+   * @private
+   * @async
+   * @param {Function} Adapter - The Adapter class to use
+   */
   async useAdapter(Adapter){
     const name = Adapter.name
     const adapterKey = this.getAdapterType(name)
@@ -637,10 +902,24 @@ export default class {
     this.adapters[adapterKey] = $Adapter
   }
 
+  /**
+   * defaultAdapterKeys
+   * Retrieves the default keys for adapters
+   * 
+   * @private
+   * @returns {string[]} - The array of default adapter keys
+   */
   defaultAdapterKeys(){
     return Object.keys(AllDefaultAdapters)
   }
 
+  /**
+   * defaultAdapters
+   * Initializes the default adapters
+   * 
+   * @private
+   * @returns {Object} - The initialized adapters
+   */
   defaultAdapters(){
     this.logger.debug(`defaultAdapters()`)
     if(this.adaptersInitialized) 
@@ -655,6 +934,14 @@ export default class {
     return this.adapters 
   }
 
+  /**
+   * getAdapterType
+   * Helper that determines the type of an adapter based on its class name
+   * 
+   * @private
+   * @param {string} adapterName - The name of the adapter
+   * @returns {string} - The type of the adapter
+   */
   getAdapterType(adapterName){
     let type 
     this.adaptersValid.forEach(adapterKey => {
@@ -665,5 +952,40 @@ export default class {
       throw new Error(`Adapter ${adapterName} is not a valid adapter`)
     return type
   }
+
+  /**
+   * set
+   * Sets a value for a given key in the instance
+   * 
+   * @public
+   * @param {string} key - The key to set
+   * @param {*} value - The value to set for the key
+   */
+  set(key, value){
+    this[key] = value
+  }
+  /**
+   * get
+   * Retrieves the value of a given key from the instance
+   * 
+   * @public
+   * @param {string} key - The key to retrieve the value for
+   * @returns {*} - The value of the specified key
+   */
+  get(key){
+    return this[key]
+  }
+
+  /**
+   * throw
+   * returns a rejected promise with a provided error as the reason. 
+   * 
+   * @private
+   * @param {Error} error - The error to throw
+   * @returns {Promise<*>} - A promise that rejects with the provided error
+   */
+    throw(error){
+      return Promise.reject(error);
+    }
 }
 

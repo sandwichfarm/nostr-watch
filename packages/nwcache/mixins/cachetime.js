@@ -15,7 +15,8 @@ export default class CacheTimeMixin {
   // }
 
   async set(key, value=now()){
-    return this.db.$.put(this.id(key), new CacheTime({k: key, v: value}))
+    const id = this.id(key)
+    return this.db.$.put(id, new CacheTime({k: key, v: value}))
   }
 
   id(key){

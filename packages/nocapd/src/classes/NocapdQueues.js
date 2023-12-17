@@ -14,7 +14,7 @@ export class NocapdQueues {
     this.scheduler = null
     /** @type {object} */
     this.cb = {}
-
+    /** @type {object} */
     this.pubkey = config?.pubkey? config.pubkey: null
 
     /** @type {array} */
@@ -48,6 +48,12 @@ export class NocapdQueues {
     else if (typeof job === 'string')
       name = job.split(':')[0]
 
+    // if(event === 'drained')
+    //   console.log(`${event}!`, name, job?.id)
+
+    // if(event === 'completed')
+    //   console.log(`${event}!`, name, job?.id)
+
     if(name) {
       const daemonManager = name.split('@')[0]
       const daemonPubkey = name.split('@')[1]
@@ -56,14 +62,20 @@ export class NocapdQueues {
       //   return this.log.warn(`[route_event] ${daemonPubkey} !== ${this.pubkey}`)
   
       if(!this.managers[daemonManager])
-        throw new Error(`No manager found for ${daemonManager}`)
+        this.log.warn(`No manager found for ${daemonManager} to handle ${event} event for pubkey: ${daemonPubkey}`)
   
       return this.managers[daemonManager].cbcall(event, ...args)
+    }
+    //these events apply to the worker not the manager an d don't have any parameters, 
+    //so cannot be routed like completions and failures.
+    else if( event === 'drained' ) {
+      for( const manager in this.managers ) {
+        this.managers[manager].cbcall(event)
+      }
     }
     else {
       this.cbcall(event, ...args)
     }
-
   }
 
   setWorker($worker){
@@ -93,7 +105,6 @@ export class NocapdQueues {
 
   async populateAll(){
     const mkeys = Object.keys(this.managers)
-    console.log(`populateAll()`, mkeys)
     for await ( const mkey of mkeys ){
       // this.log.debug(`populateAll() -> ${mkey}:populator()`)
       await this.managers[mkey]._populator()

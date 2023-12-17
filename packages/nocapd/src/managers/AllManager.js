@@ -1,8 +1,7 @@
 import mapper from 'object-mapper'
 import ngeotags from 'nostr-geotags'
 
-import { RetryManager } from '@nostrwatch/controlflow'
-import { parseRelayNetwork, lastCheckedId, delay } from '@nostrwatch/utils'
+
 import Publish from '@nostrwatch/publisher'
 
 import { WorkerManager } from '../classes/WorkerManager.js'
@@ -10,39 +9,21 @@ import { WorkerManager } from '../classes/WorkerManager.js'
 const publish30066 = new Publish.Kind30066()
 
 export class AllManager extends WorkerManager {
-  constructor($, rcache, config){
-    super($, rcache, config)
+  constructor($, rcache, opts){
+    super($, rcache, opts)
     this.interval = 60*1000       //checks for expired items every...
-    this.timeout = 9*1000
+    this.timeout = 6*1000
     this.timeoutBuffer = 1000
-    this.priority = 10
-    this.retry = new RetryManager('nocapd', 'check', this.rcache.relay.get.all())
-  }
-
-  cacheId(url){
-    return lastCheckedId(this.id, url)
-  }
-
-  async populator(){
-    this.log.debug(`${this.id()}:populator()`)
-    await this.retry.init()
-    const relaysUnchecked = await this.getUncheckedRelays()
-    const relaysExpired = await this.retry.getExpiredRelays(this.cacheId.bind(this))
-    let relays = [...new Set([...relaysUnchecked, ...relaysExpired])]
-    relays = relays.map(r=>r.url).filter(relay => this.networks.includes(parseRelayNetwork(relay)))
-    this.log.info(`expired: ${relaysExpired.length}, unchecked: ${relaysUnchecked.length}, total: ${relays.length}`)
-    await this.$.worker.pause()
-    await this.addRelayJobs(relays)
-    this.log.info('Waiting for 5s...')
-    await delay(5000)
-    await this.$.worker.resume()
   }
 
   async work(job){
-    const error = (err) => { this.log.error(`Error running websocket check for ${job.data.relay}: ${err.message}`) }
+    this.log.debug(`${this.id()}:work()`, job.id)
+    
+    const error = (err) => { this.log.debug(`Could not run websocket check for ${job.data.relay}: ${err.message}`) }
     try {
-      this.log.debug(`Running websocket check for ${job.data.relay}`)
-      const { relay:url } = job.data
+      this.log.debug(`Running comprehensive check for ${job.data.relay}`)
+      const { relay:url } = job.data 
+      // console.log(await this.getLastChecked(url), Date.now(),  (Date.now()-await this.getLastChecked(url))/1000/60)
       const dpubkey = this.pubkey
       const nocapOpts = { 
         timeout: { 
@@ -53,13 +34,19 @@ export class AllManager extends WorkerManager {
         checked_by: dpubkey 
       }
       const nocapd = new this.Nocap(url, nocapOpts)
-      const result = await nocapd.check('all').catch(error)
-      if( !result?.connect?.data )
-        return { result: false }
+      let result = {}
+      await nocapd.check('all')
+        .catch( err => {
+          error(err)
+        })
+        .then( _result => {
+          result = _result
+        })
+      // if(!result?.checked_at)
+      //   result.checked_at = Date.now()
       return { result } 
     } 
     catch(err) {
-      this.processed++
       error(err)
       return { result: false }
     }
@@ -68,43 +55,35 @@ export class AllManager extends WorkerManager {
   async on_completed(job, rvalue){
     const { relay:url } = job.data
     const { result  } = rvalue
+
+    if(!result)
+      return this.on_failed(job, new Error(`Nocap complete (all) check failed for ${url}`))
+
     const { checked_at } = result
+
     this.processed++
     this.progressMessage(url, result)
-    if(!result)
-      return this.log.debug(`Nocap complete (all) check failed for ${url}`)
-    this.retry.setRetries( url, true )
-    await this.setLastChecked( url, checked_at )
-    // this.log.debug(`Nocap complete (all) check complete for ${url}: connect: ${result?.connect?.data}, read: ${result?.read?.data}, write: ${result?.write?.data}`)
-    result.retries = this.retry.getRetries(url)
+    
+    const relay_id = await this.updateRelayCache(result)      
+    const retry_id = await this.retry.setRetries( url, true )
+    const lastChecked_id = await this.setLastChecked( url, Date.now() )
+
+    // console.log('success', await this.rcache.$.get(relay_id)?.online, await this.rcache.$.get(retry_id)?.v, await this.rcache.$.get(lastChecked_id)?.v)
+
     const event30066Data = event30066DataFromResult( result )
     await publish30066.one(event30066Data)
-    // const event10066Data = event10066DataFromResult( result )
-    // await publish10066.one(event10066Data)
   }
 
   async on_failed(job, err){
     const { relay:url } = job.data
     // console.log('url:onfailed', url)
     this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}`)
-    this.retry.setRetries(url, false)
-    this.processed++
+    const retry_id = await this.retry.setRetries(url, false)
+    const lastChecked_id = await this.setLastChecked( url, Date.now() )
+    // console.log('failed', await this.rcache.$.get(retry_id)?.v, await this.rcache.$.get(lastChecked_id)?.v)
     this.progressMessage(url, null, true)
-  }
+    this.processed++
 
-  async getUncheckedRelays(){
-    let unchecked = await this.rcache.cachetime.get.all()?.filter( relay => relay.online == null )
-    if(this.networks.length)
-      unchecked = unchecked?.filter( relay => this.networks.includes(relay.network) )
-    return unchecked?.length? unchecked: []
-  }
-  
-  async setLastChecked(url, date=Date.now()){
-    await this.rcache.cachetime.set( lastCheckedId('online',url), date )
-  }
-
-  async setLastPublished(url, date=Date.now()){
-    await this.rcache.cachetime.set( lastCheckedId('online',url), date )
   }
 }
 
@@ -140,6 +119,17 @@ const event30066DataFromResult = result => {
   
   eventData.url = result.url 
   eventData.online = result.connect.data
+
+  eventData.rtt = []
+
+  if(result?.connect?.duration > 0)
+    eventData.rtt.push({ type: 'open', rtt: result.connect.duration })
+
+  if(result?.read?.duration > 0)
+    eventData.rtt.push({ type: 'subscribe', rtt: result.read.duration })
+
+  if(result?.write?.duration > 0)
+    eventData.rtt.push({ type: 'publish', rtt: result.write.duration })
 
   if(eventData.retries > 0)
     eventData.retries = result.retries

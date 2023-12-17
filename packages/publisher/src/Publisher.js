@@ -22,7 +22,7 @@ export class Publisher {
         const unsignedEvent = this.generateEvent(relay)
         signedEvents.push(this.signEvent(unsignedEvent))
       }
-      await this.publishEvents(signedEvents)
+      await this.publishEvents(signedEvents).catch(console.error)
     }
   }
 

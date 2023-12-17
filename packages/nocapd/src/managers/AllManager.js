@@ -26,6 +26,12 @@ export class AllManager extends WorkerManager {
   async populator(){
     this.log.debug(`${this.id()}:populator()`)
     await this.retry.init()
+    //TODO:
+    //get relays
+    //iterate through each
+    //assign retries, expiry, lastChecked, lastPublished 
+    //filter expired
+    //group and sort [...online, ...unchecked, ...expired.sort(`by retries asc`)]
     const relaysUnchecked = await this.getUncheckedRelays()
     const relaysExpired = await this.retry.getExpiredRelays(this.cacheId.bind(this))
     let relays = [...new Set([...relaysUnchecked, ...relaysExpired])]
@@ -140,6 +146,17 @@ const event30066DataFromResult = result => {
   
   eventData.url = result.url 
   eventData.online = result.connect.data
+
+  eventData.rtt = []
+
+  if(result?.connect?.duration > 0)
+    eventData.rtt.push({ type: 'open', rtt: result.connect.duration })
+
+  if(result?.read?.duration > 0)
+    eventData.rtt.push({ type: 'subscribe', rtt: result.read.duration })
+
+  if(result?.write?.duration > 0)
+    eventData.rtt.push({ type: 'publish', rtt: result.write.duration })
 
   if(eventData.retries > 0)
     eventData.retries = result.retries

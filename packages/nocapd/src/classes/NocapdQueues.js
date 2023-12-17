@@ -14,7 +14,7 @@ export class NocapdQueues {
     this.scheduler = null
     /** @type {object} */
     this.cb = {}
-
+    /** @type {object} */
     this.pubkey = config?.pubkey? config.pubkey: null
 
     /** @type {array} */

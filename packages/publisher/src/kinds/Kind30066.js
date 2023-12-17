@@ -18,6 +18,9 @@ export class Kind30066 extends Publisher {
     if(relay?.network)
       tags.push(['n', relay?.network])
 
+    if(relay?.rtt && relay?.rtt?.type && relay?.rtt?.data instanceof Array)
+      relay.rtt.forEach( rtt => tags.push([`rtt_${rtt.type}`, ...rtt.data]) )
+
     if(relay?.geo)
       if(typeof relay?.geo === 'string')
         tags.push(['g', relay?.geo])

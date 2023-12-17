@@ -21,7 +21,7 @@ import SAMPLE_EVENT from "../data/sample_event.js"
  * 
  * @class
  * @classdesc Base class for all Check classes
- * @param {string} url - The URL of the relay to connect to
+ * @param {string} url - The URL of the relay to check
  * @param {object} config - The configuration object for the check
  */
 
@@ -94,7 +94,7 @@ export default class {
       this.close()
     }
     else if(keys instanceof Array && keys.length) {
-      for(const key of keys){
+      for await (const key of keys){
         if(this.hard_fail !== true)
           await this._check(key)
       }
@@ -104,6 +104,7 @@ export default class {
     else {
       return this.throw(`check(${keys}) failed. keys must be string or populated array`)
     }
+    if(this.isConnected()) this.close()
     return raw? result: this.results.cleanResult(keys, result)
   }
 
@@ -170,6 +171,7 @@ export default class {
     })
     const promise = this.promises.get(this.current)
     if(!promise) return this.logger.warn(`websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
+    this.hard_fail = true
     promise.resolve(this.results.get(this.current))
     this.current = null
   }

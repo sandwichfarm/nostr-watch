@@ -2,10 +2,11 @@ import fs from 'fs/promises';
 import path from 'path'
 import yaml from 'js-yaml';
 
-// let config
+let config
 
 export const extractConfig = async (caller, provider, warn=true) => {
   let opts = {}
+  if(!config) config = await loadConfig()
   await config
   if(config?.[caller]?.[provider]) 
     opts = config[caller][provider]
@@ -44,5 +45,3 @@ export const loadConfig = async function (){
     return {};
   }
 }
-
-// config = await loadConfig()

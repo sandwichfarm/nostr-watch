@@ -124,7 +124,7 @@ export const trawl = async function($job){
         }
       }
       catch(err) {
-        logger.error(`${relay}: ${err}`)
+        logger.err(`${relay}: ${err}`)
       }
       if(lastEvent > 0)
         await rcache.cachetime.set( lastTrawledId(relay), lastEvent )

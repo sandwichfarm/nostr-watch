@@ -1,11 +1,13 @@
-import fs from 'fs/promises';
+import fs from 'fs';
+import fsp from 'fs/promises';
 import path from 'path'
 import yaml from 'js-yaml';
 
-// let config
+let config
 
 export const extractConfig = async (caller, provider, warn=true) => {
   let opts = {}
+  if(!config) config = await loadConfig()
   await config
   if(config?.[caller]?.[provider]) 
     opts = config[caller][provider]
@@ -17,32 +19,26 @@ export const extractConfig = async (caller, provider, warn=true) => {
   return opts
 }
 
-export const loadConfigSync = function(){
+export const loadConfigSync = function() {
   try {
-    const config = process.env?.CONFIG_PATH? process.env.CONFIG_PATH: './config.yaml'
-    if(!config)
-      return {}
+    const configPath = process.env.CONFIG_PATH || './config.yaml';
+    if (!configPath) return {};
     const fileContents = fs.readFileSync(configPath, 'utf8');
     return yaml.load(fileContents);
   } catch (e) {
       console.error(e);
       return {};
   }
-}
+};
 
-export const loadConfig = async function (){
+export const loadConfig = async function() {
   try {
-    const config = process.env?.CONFIG_PATH? process.env.CONFIG_PATH: './config.yaml'
-    console.log('config path:', config)
-    if(!config)
-      return {}
-    const fileContents = await fs.readFile(config, 'utf8');
-    let data = yaml.load(fileContents);
-    return data;
+    const configPath = process.env.CONFIG_PATH || './config.yaml';
+    if (!configPath) return {};
+    const fileContents = await fsp.readFile(configPath, 'utf8');
+    return yaml.load(fileContents);
   } catch (e) {
     console.error(e);
     return {};
   }
-}
-
-// config = await loadConfig()
+};

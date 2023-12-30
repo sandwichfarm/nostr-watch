@@ -15,5 +15,5 @@ process.on('uncaughtException', async (error) => {
 
 process.on('unhandledRejection', async (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  await gracefulShutdown('unhandledRejection');
+  // await gracefulShutdown('unhandledRejection');
 });

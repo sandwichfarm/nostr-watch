@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as a parent image, based on Alpine
-FROM node:14-alpine
+FROM node:20-alpine
 
 RUN mkdir /app
 
@@ -8,6 +8,8 @@ WORKDIR /app
 
 # Copy the current directory contents into the container at /usr/src/app
 COPY . .
+
+RUN echo "registry=http://host.docker.internal:4873" > .npmrc
 
 # Install any needed packages specified in package.json
 RUN yarn install

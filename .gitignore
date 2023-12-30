@@ -16,3 +16,4 @@ ours.sh
 .pg
 packages/synx
 packages/kinds
+.npmrc

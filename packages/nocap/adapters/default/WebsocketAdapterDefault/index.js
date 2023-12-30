@@ -93,6 +93,12 @@ class WebsocketAdapterDefault {
       this.$.on_auth(ev[1])
     }
   }
+
+  close(){
+    if(!this.$.isConnected())
+      return
+    this.$.ws.close()
+  }
 }
 
 export default WebsocketAdapterDefault

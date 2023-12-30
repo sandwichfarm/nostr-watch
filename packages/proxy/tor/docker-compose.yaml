@@ -1,8 +1,0 @@
-version: "3"
-services:
-  privoxy:
-    image: dperson/torproxy
-    restart: always
-    ports:
-      - '8118:8118'
-      - '9050:9050'

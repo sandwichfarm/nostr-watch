@@ -17,12 +17,12 @@ export class Publisher {
     let count = 0
     for await ( const chunk of relaysChunks ) {
       let signedEvents = []
-      this.logger.info(`publishEvents(): publishing ${chunk.length} events from chunk ${count++}/${relaysChunks.length}`)
+      this.logger.debug(`publishEvents(): publishing ${chunk.length} events from chunk ${count++}/${relaysChunks.length}`)
       for ( const relay of chunk ) {
         const unsignedEvent = this.generateEvent(relay)
         signedEvents.push(this.signEvent(unsignedEvent))
       }
-      await this.publishEvents(signedEvents)
+      await this.publishEvents(signedEvents).catch(console.error)
     }
   }
 
@@ -36,10 +36,12 @@ export class Publisher {
     this.logger.debug(`one(): published event`)
   }
 
-  tpl(kind=1){
+  tpl(){
+    if(!this?.kind)
+      throw new Error('tpl(): this.kind must be defined')
     return {
       pubkey: process.env.DAEMON_PUBKEY,
-      kind,
+      kind: this.kind,
       content: "",
       tags: [],
       created_at: Math.round(Date.now()/1000)
@@ -91,5 +93,6 @@ export class Publisher {
       publishes.push( await this.publishEvent(signedEvent) )
     }
     return publishes
+  
   }
 }

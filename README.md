@@ -10,48 +10,46 @@ A monorepo with packages consisting of modules and daemons for tracking various 
 ```
 alpha legend
 ------------
++ = stable
 $ = heavy development
 @ = light development
 % = very early stage
 ~ = experimentation stage, prototyping
 ^ = porting from legacy, pushed when buggy but bootable
 ? = not started, research phase
+! = refactoring
 ```
 
-### Tools 
-- [**`gui-web`**](packages/gui-web) `[~]`: Web app for monitoring relays. Has two modes, first one leverages data propagated by daemons to history relay(s) to seed the local dataset and `nocap` for client-side processing. Consumes existing packages by using an `lmdb` adapter for `IndexedDb` in the browser. Will be rewritten from the ground up.
-
+### Apps 
+- [**`gui-web`**](packages/gui-web) `[?]`: Web app for monitoring relays. Has two modes, first one leverages data propagated by daemons to history relay(s) to seed the local dataset and `nocap` for client-side processing. Consumes existing packages by using an `lmdb` adapter for `IndexedDb` in the browser. Will be rewritten from the ground up.
+- [**`status`**](packages/status) `[?]`: Status daemon for monitors; watches for their output and detects downtime. 
 - _`...TBA`_
 
 ### Modules 
 - [**`nocap`**](packages/nocap) `[$]`: Successor to `nostrwatch-js`, an extensible module for tracking various datapoints on relays.
+- [**`publisher`**](packages/publisher) `[$]`: A module and daemonn that standardizes @nostrwatch events for data propagation via relays.
 - _`...TBA`_
+
 
 ### Utilities
 - [**`utils`**](packages/utils) `[%]`: General utilities and shared stateless functionality. 
-- [**`logger`**](packages/logger) `[@]`: A wrapper for `logging` implemented by deamons.
-- [**`schemata`**](packages/schemata) `[~]`: A collection of `json-schema` used by testing suites and periodic publisher sampling for data-integrity validation
+- [**`logger`**](packages/logger) `[+]`: A wrapper for `logging` implemented by deamons.
 
 ### Daemons 
-- [**`trawler`**](packages/trawler) `[~]`: A daemon with the single purpose of collating, sanitizing and basic classification of relays. Daemon can leverage `rest-api`.
-- [**`nocapd`**](packages/nocapd) `[^]`: A daemon that persistently monitors relays and produces a rich dataset. Daemon can leverage `rest-api`.
-- [**`publisher`**](packages/publisher) `[^]`: A module and daemonn that standardizes @nostrwatch events for data propagation via relays.
-- [**`rest-api`**](packages/api) `[^]`: An simple `api` that interfaces with `lmdb` to provide endpoints and expose daemon data. 
-- [**`status`**](packages/status) `[~]`: A status monitor daemon, GUI and cli for nostrwatch daemons, apis and datalayer. Daemon can leverage `rest-api`.
+- [**`trawler`**](packages/trawler) `[$]`: A daemon with the single purpose of collating, sanitizing and basic classification of relays. Daemon can leverage `rest-api`.
+- [**`nocapd`**](packages/nocapd) `[$]`: A daemon that persistently monitors relays and produces a rich dataset. Daemon can leverage `rest-api`.
 - `...TBA`
 
-### Wrappers 
-- [**`relaydb`**](packages/relaydb) `[~]`: An interface wrapper for `lmdb` that defines schemas for datastore implemented by some daemons.
+### Cache 
+- [**`nwcache`**](packages/relaydb) `[@]`: An interface for `lmdb` which is used as a processing cache. 
 
 ### Templates 
-- [**`kind-relay`**](packages/kind-relay) `[?]`: A generalized repository with scripts to make deploying kind-specific relays that make scanning, synching and/or routing a breeze. Might live in it's own repository.
-- [**`docker`**](packages/docker) `[?]`: Contains a variety of specialized `Dockerfiles` and `docker-compose` files that combine various daemons in different ways. Will be used for testing at first. 
-- [**`history-relay`**](packages/history-relay) `[^]`: Simply a few configs for the new nostr.watch history relay. History relays store events for the nostr.watch datalayer.
-- [**`redis`**](packages/redis) `[%]`: Convenience configuration that standardizes redis configuration for stack. Primarily used for development and eventually deployments. Redis is used for persistent queues.
+- [**`history-relay`**](packages/history-relay) `[?]`: A few configs for the new nostr.watch history relay. History relays store events for the nostr.watch datalayer.
+- [**`redis`**](packages/redis) `[%]`: Convenience configuration that standardizes redis configuration for stack. Primarily used for development and eventually deployments. Redis is used for BullMQ
 
 ### Derivatives 
 - [**`nostrawl`**](https://github.com/sandwichfarm/nostrawl) `[@]`: A package for trawling any number of nostr relays. Generalized logic from `trawler`. Combines `nostr-fetch` and queues, to make coalescing data from specific filters simple.
-- [**`nostr-geotags`**](https://github.com/sandwichfarm/nostr-geotags/tree/main) `[@]`: A package for generating event geo `g` tags for events, needed for `NIP-66`.
+- [**`nostr-geotags`**](https://github.com/sandwichfarm/nostr-geotags/tree/main) `[+]`: A package for generating event geo `g` tags for events, needed for `NIP-66`.
 
 ### Philosophy
 nostr.watch legacy has been using nostr as a data layer successfully since February 2023, less some ... _ehem_ ... hiccups. When it comes to the gui, it's a poor user experience that resulted from technical debt, scope creep and inopportune but uniquely opportune timing. It has never had any database. It has run entirely off data from nostr. Relays are the database. 

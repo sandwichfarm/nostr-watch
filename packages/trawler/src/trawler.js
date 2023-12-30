@@ -28,9 +28,11 @@ let promises,
     $currentJob
 
 const addRelaysToCache = async (relayList) => {
+  const ids = []
   relayList.forEach(async (relayObj) => {
-    await rcache.relay.insertIfNotExists(relayObj)
+    ids.push(await rcache.relay.insertIfNotExists(relayObj))
   })
+  return ids
 }
 
 const noteInCache = async (ev, relay, lastEvent) => {
@@ -58,7 +60,6 @@ export const relaysFromRelayList = async ( ev ) => {
   
   relayList = relayList.map( relay => {
     return {
-      // id: relayId(relay),
       url: relay,
       network: parseRelayNetwork(relay),
       online: null
@@ -67,7 +68,7 @@ export const relaysFromRelayList = async ( ev ) => {
   return relayList
 }
 
-const trawlJobData = (relayList, roundtrip) => {
+const jobData = (relayList, roundtrip) => {
   return { 
     type: 'relay', 
     action: 'create', 
@@ -108,23 +109,24 @@ export const trawl = async function($job){
           lastEvent = setLastEvent(ev, since, lastEvent)
           if( await noteInCache(ev, relay, lastEvent) ) continue 
           const relayList = await relaysFromRelayList(ev)
-          addRelaysToCache(relayList)
+          const cacheIds = addRelaysToCache(relayList)
           if(relayList === false) continue
+          listCount++
           deferPersist[ev.id] = async () => await rcache.note.set.one(ev)
-
-          const data = trawlJobData(relayList, { 
-                  requestedBy: process.env.DAEMON_PUBKEY,
-                  source: relay, 
-                  trawlJobId: $job.id,
-                  eventId: ev.id
-                })
-
+          const roundtrip = { 
+            requestedBy: process.env.DAEMON_PUBKEY,
+            source: relay, 
+            trawlJobId: $job.id,
+            eventId: ev.id
+          }
+          if(config?.trawler?.sync?.out?.events)
+            roundtrip.syncEventsCallback = syncEventsCallback
+          const data = jobData(relayList, roundtrip)
           await sync.relays.out(data)
-          // await $SyncQueue.add('relay-create', jobData, { priority: 1 })
         }
       }
       catch(err) {
-        logger.error(`${relay}: ${err}`)
+        logger.err(`${relay}: ${err}`)
       }
       if(lastEvent > 0)
         await rcache.cachetime.set( lastTrawledId(relay), lastEvent )
@@ -138,23 +140,31 @@ export const trawl = async function($job){
 const watchQueue = () => {
   $SyncEvents.on( 'completed', async ({returnvalue}) => {
     const { result, roundtrip } = returnvalue
-    const { requestedBy, source, trawlJobId, eventId } = roundtrip
+    const { requestedBy } = roundtrip
     if(requestedBy != process.env.DAEMON_PUBKEY) return 
-    const $trawlJob = await $TrawlQueue.getJob(trawlJobId)
-    if(result === false || result.length == 0) return
-    result.forEach(relay => relaysPersisted.add(relay))
-    listCount++
-    if(result?.length && result.length > 0) {
-      if(deferPersist?.[eventId])
-        await deferPersist[eventId]()
-      if(relaysPersisted?.size && typeof $trawlJob?.updateProgress === 'function')
-        await $currentJob.updateProgress({ type: 'found', source, listCount, result, relaysPersisted, total: rcache.relay.count.all() })
-    } 
-    if(deferPersist?.[eventId])
-      delete deferPersist[eventId]
+    return finish(result, roundtrip)
   })
 }
 
 if(config?.trawler?.sync?.out?.queue)
   watchQueue()
+
+const syncEventsCallback = ( { result, roundtrip} ) => {
+  finish( result, roundtrip )
+}
+
+const finish = async (result, roundtrip) => {
+  if(result === false || result.length == 0) return
+  const { source, trawlJobId, eventId } = roundtrip
+  const $trawlJob = await $TrawlQueue.getJob(trawlJobId)
+  result.forEach(relay => relaysPersisted.add(relay))
+  if(result?.length && result.length > 0) {
+    if(deferPersist?.[eventId])
+      await deferPersist[eventId]()
+    if(relaysPersisted?.size && typeof $trawlJob?.updateProgress === 'function')
+      await $trawlJob.updateProgress({ type: 'found', source, listCount, result, relaysPersisted, total: rcache.relay.count.all() })
+  } 
+  if(deferPersist?.[eventId])
+    delete deferPersist[eventId]
+}
 

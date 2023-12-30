@@ -3,20 +3,28 @@ import { Publisher } from '../Publisher.js'
 export class Kind30066 extends Publisher { 
   constructor(){
     super()
+    this.kind = 30066
   }
 
   generateEvent(relay){
     if(!relay?.url)
       throw new Error('generateEvent(): relay must have a url property')
-    const eventTpl = this.tpl(30066)
+
+    const eventTpl = this.tpl()
     const tags = []
+
     tags.push(['d', relay?.url])
 
-    if(relay?.online)
+    if(typeof relay?.online === 'boolean')
       tags.push(['s', relay?.online? 'online' : 'offline'])
 
-    if(relay?.network)
-      tags.push(['n', relay?.network])
+    if(relay?.network){
+      tags.push(['L', 'network'])
+      tags.push(['l', relay?.network, 'network'])
+    }
+
+    if(relay?.rtt && relay?.rtt?.type && relay?.rtt?.data instanceof Array)
+      relay.rtt.forEach( rtt => tags.push([`rtt_${rtt.type}`, ...rtt.data]) )
 
     if(relay?.geo)
       if(typeof relay?.geo === 'string')
@@ -34,6 +42,7 @@ export class Kind30066 extends Publisher {
       ...eventTpl,
       tags
     }
+
     return event
   }
 }

@@ -135,7 +135,9 @@ describe("Nocap class", () => {
 
     it('checkAll() should run all checks', async () => {
       const result = await nocap.checkAll();
+      console.log('checkAll()', result)
       expect(result).toBeInstanceOf(Object);
+      expect(typeof result.url).toBeTypeOf('string');
       expect(result).toHaveProperty('connect');
       expect(result).toHaveProperty('read');
       expect(result).toHaveProperty('write');
@@ -150,13 +152,13 @@ describe("Nocap class", () => {
       
       expect(result.write).toBeInstanceOf(Object);
       expect(result.write.data).toBeTypeOf('boolean');
-      expect(result.write.duration).toBeTypeOf('number');
+      expect(result.write.duration).toBeTypeOf('number'); 
 
       expect(result.geo).toBeInstanceOf(Object);
       expect(result.dns).toBeInstanceOf(Object);
       expect(result.info).toBeInstanceOf(Object);
       expect(result.ssl).toBeInstanceOf(Object);
-      expect(typeof result.url).toBeTypeOf('string');
+      
     });
   });
 
@@ -206,9 +208,9 @@ describe("Nocap class", () => {
           expect(response[method].duration).toBeTypeOf('number');
         })
   
-        it("clean results should return connect result", async () => {
+        it("raw === false should return connect result", async () => {
           const response = await nocap.check(method, false)
-          console.log(response)
+          console.log('check(connect, false)', response)
           expect(response).toBeTypeOf('object');
           expect(response).toHaveProperty(method);
           expect(response[method]).toBeTypeOf('boolean');
@@ -220,7 +222,8 @@ describe("Nocap class", () => {
       describe("check('read')", async () => {
         const method = 'read'
         it("defaults should return connect result", async () => {
-          const response = await nocap.check(method)
+          const response = await nocap.check(['connect', method])
+          console.log('check(read)', response)
           expect(response).toBeTypeOf('object');
           expect(response).toHaveProperty(method);
           expect(response[method]).toBeTypeOf('object');
@@ -231,8 +234,8 @@ describe("Nocap class", () => {
         })
   
         it("clean results should return connect result", async () => {
-          const response = await nocap.check(method, false)
-          console.log(response)
+          const response = await nocap.check(['connect', method], false)
+          console.log('check(read, false)', response)
           expect(response).toBeTypeOf('object');
           expect(response).toHaveProperty(method);
           expect(response[method]).toBeTypeOf('boolean');
@@ -243,8 +246,9 @@ describe("Nocap class", () => {
 
       describe("check('write')", async () => {
         const method = 'write'
-        it("defaults should return connect result", async () => {
-          const response = await nocap.check(method)
+        it("raw === false should return connect result", async () => {
+          const response = await nocap.check(['connect', method])
+          console.log('check(write, false)', response)
           expect(response).toBeTypeOf('object');
           expect(response).toHaveProperty(method);
           expect(response[method]).toBeTypeOf('object');
@@ -255,30 +259,8 @@ describe("Nocap class", () => {
         })
   
         it("clean results should return connect result", async () => {
-          const response = await nocap.check(method, false)
-          expect(response).toBeTypeOf('object');
-          expect(response).toHaveProperty(method);
-          expect(response[method]).toBeTypeOf('boolean');
-          expect(response).toHaveProperty(`${method}_duration`);
-          expect(response[`${method}_duration`]).toBeTypeOf('number');
-        })
-      })
-
-      describe("check('write')", async () => {
-        const method = 'write'
-        it("defaults should return connect result", async () => {
-          const response = await nocap.check(method)
-          expect(response).toBeTypeOf('object');
-          expect(response).toHaveProperty(method);
-          expect(response[method]).toBeTypeOf('object');
-          expect(response[method]).toHaveProperty('data');
-          expect(response[method]).toHaveProperty('duration');
-          expect(response[method].data).toBeTypeOf('boolean');
-          expect(response[method].duration).toBeTypeOf('number');
-        })
-  
-        it("clean results should return connect result", async () => {
-          const response = await nocap.check(method, false)
+          const response = await nocap.check(['connect', method], false)
+          console.log('check(write, false)', response)
           expect(response).toBeTypeOf('object');
           expect(response).toHaveProperty(method);
           expect(response[method]).toBeTypeOf('boolean');

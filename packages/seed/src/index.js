@@ -19,16 +19,16 @@ export const bootstrap = async (caller) => {
   if(!opts?.sources)
     return logger.warn(`No seed sources specified in 'config.${caller}.seed.sources' nor in 'config.seed.sources', cannot seed`)
 
-  let configseed = [],
-      staticseed = [], 
-      nwcache = [], 
-      api = [],
-      events = []
+  let configseed = emptyResponse(),
+      staticseed = emptyResponse(), 
+      nwcache = emptyResponse(), 
+      api = emptyResponse(),
+      events = emptyResponse()
 
   console.log(opts.sources, opts.sources.includes('api'))
 
   if(opts.sources.includes('config'))
-    configseed = config?.seed
+    configseed = [ config?.seed, Date.now() ]
 
   if(opts.sources.includes('static'))
     staticseed = await relaysFromStaticSeed(opts)
@@ -42,12 +42,14 @@ export const bootstrap = async (caller) => {
   if(opts.sources.includes('events'))
     events = await relaysFromEvents(opts)
 
-  const uniques = new Set([...configseed, ...staticseed, ...nwcache, ...api, ...events])
+  const uniques = new Set([...configseed[0], ...staticseed[0], ...nwcache[0], ...api[0], ...events[0]])
 
-  logger.info(`Bootstrapped ${uniques.size} relays`)
+  const dates = { config: configseed[1], static: staticseed[1], cache: nwcache[1], api: api[1], events: events[1] }
 
-  return [...uniques]
+  return [ [...uniques], dates]
 }
+
+const emptyResponse = () => [[], Date.now()]
 
 export const relaysFromEvents = async (opts) => {
   if(!opts?.options?.events?.pubkeys)
@@ -77,30 +79,34 @@ export const relaysFromEvents = async (opts) => {
     { since: 0 }
   )
   const relays = []
+  let newest = 0
   for await(const ev of events) {
+    if(ev.created_at > newest) newest = ev.created_at
     const relay = ev.tags.find( tag => tag[0] === 'd' && !tag[0].includes('#') )?.[1]
     if(!relay) continue
     relays.push(relay)
   }
-  return [...new Set(relays)]
+  return [[...new Set(relays)], newest]
 }
 
 export const relaysOnlineFromCache = async (opts) => {
   const { default: nwcache } = await import("@nostrwatch/nwcache")
   const $nwcache = nwcache(process.env.NWCACHE_PATH)
-  return $nwcache.relay.get.online('url').map( relay => relay.url )
+  return [ $nwcache.relay.get.online('url').map( relay => relay.url ), Date.now() ]
 }
 
 export const relaysFromStaticSeed = async (opts) => {
   try {
     const fileContents = await fs.readFile(STATIC_SEED_FILE, 'utf8');
     const data = yaml.load(fileContents);
-    return data?.relays || [];
+    return data?.relays? [ data.relays, Date.now() ]: emptyResponse() //update Date to reflect modification date of seed file.
   } catch (e) {
     console.error(e);
-    return []
+    return emptyResponse()
   }
 }
+
+
 
 export const relaysOnlineFromApi = async (opts) => {
   if(!opts.remotes.rest_api) throw new Error("relaysOnlineFromApi(): No nostr-watch rest_api specified in opts (host.com/v1 or host.com/v2)")
@@ -133,17 +139,17 @@ export const relaysOnlineFromApi = async (opts) => {
               relays = response.relays //presumed
             }
 
-            resolve(relays)
+            resolve([relays, Date.now()])
 
             clearTimeout(timeout)
           })
           .catch( () => {
-            resolve([])
+            resolve(emptyResponse())
             clearTimeout(timeout)
           })
       })
       .catch( () => { 
-        resolve([])
+        resolve(emptyResponse())
         clearTimeout(timeout)
       })
   })

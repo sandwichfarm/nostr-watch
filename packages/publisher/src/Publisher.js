@@ -4,6 +4,23 @@ import { loadConfig, chunkArray } from '@nostrwatch/utils'
 
 const config = await loadConfig()
 
+import fs from 'fs/promises';
+
+async function writeObjectToFile(obj) {
+
+  const filename = obj.tags.find( tag => tag[0] === 'd' )[1].replace('wss://', '').replace('ws://', '').replace('http://', '').replace('https://', '').replace('/', '')
+  
+  const fileName = `./.events/${filename}.json`;
+  const jsonContent = JSON.stringify(obj, null, 2); // pretty-print JSON
+
+  try {
+    await fs.writeFile(fileName, jsonContent);
+    // console.log(`File ${fileName} has been written.`);
+  } catch (error) {
+    console.error('Error writing file:', error);
+  }
+}
+
 export class Publisher { 
 
   constructor(){
@@ -81,6 +98,7 @@ export class Publisher {
   }
 
   async publishEvent(signedEvent){
+    writeObjectToFile(signedEvent);
     const pool = new SimplePool();
     const relays = config.publisher.to_relays
     let pubs = pool.publish(relays, signedEvent)
@@ -93,6 +111,5 @@ export class Publisher {
       publishes.push( await this.publishEvent(signedEvent) )
     }
     return publishes
-  
   }
 }

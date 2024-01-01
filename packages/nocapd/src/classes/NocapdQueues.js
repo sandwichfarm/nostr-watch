@@ -48,12 +48,6 @@ export class NocapdQueues {
     else if (typeof job === 'string')
       name = job.split(':')[0]
 
-    // if(event === 'drained')
-    //   console.log(`${event}!`, name, job?.id)
-
-    // if(event === 'completed')
-    //   console.log(`${event}!`, name, job?.id)
-
     if(name) {
       const daemonManager = name.split('@')[0]
       const daemonPubkey = name.split('@')[1]
@@ -84,9 +78,7 @@ export class NocapdQueues {
   }
 
   bind_events(){
-    // if(!this.bindEvents) return
     this.worker_events.forEach(handler => {
-      // console.log(`bind on_${handler} event handler on ${this.worker.name}:${this.constructor.name}`)
       this.worker.on(handler, (...args) => this.route_event(handler, ...args))
     })
   }

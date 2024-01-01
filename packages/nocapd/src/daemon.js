@@ -109,9 +109,6 @@ export const Nocapd = async () => {
   await maybeBootstrap()
   const $q = await initWorker()
   return {
-    // stop: () => {
-    //   log.warn('Stopping nocapd')
-    // },
     $q
   }
 }

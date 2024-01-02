@@ -98,7 +98,7 @@ export class Publisher {
   }
 
   async publishEvent(signedEvent){
-    writeObjectToFile(signedEvent);
+    // writeObjectToFile(signedEvent);
     const pool = new SimplePool();
     const relays = config.publisher.to_relays
     let pubs = pool.publish(relays, signedEvent)

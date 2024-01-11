@@ -12,7 +12,7 @@ export class AllManager extends WorkerManager {
   constructor($, rcache, opts){
     super($, rcache, opts)
     this.interval = 60*1000       //checks for expired items every...
-    this.timeout = 6*1000
+    this.timeout = 9*1000
     this.timeoutBuffer = 1000
   }
 
@@ -74,8 +74,9 @@ export class AllManager extends WorkerManager {
   async on_failed(job, err){
     const { relay:url } = job.data
     this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}`)
-    const retry_id = await this.retry.setRetries(url, false)
+    const retry_id = await this.retry.setRetries( url, false )
     const lastChecked_id = await this.setLastChecked( url, Date.now() )
+    const relay_id = await this.updateRelayCache({ url, connect: { data: false }} ) 
     this.progressMessage(url, null, true)
     this.processed++
   }

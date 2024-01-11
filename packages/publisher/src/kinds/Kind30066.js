@@ -24,9 +24,6 @@ export class Kind30066 extends Publisher {
     if(relay?.ssltag)
       tags.push(relay.ssltag)
 
-    if(relay?.geo)
-      relay?.geo.forEach( geo => tags.push(geo) )
-
     if(relay?.labels){
       relay.labels.forEach(labels => {
         const key = labels.shift()
@@ -34,6 +31,9 @@ export class Kind30066 extends Publisher {
         labels.forEach(label => tags.push(['l', label, key]))
       })
     }
+
+    if(relay?.geo)
+      relay?.geo.forEach( geo => tags.push(geo) )
 
     if(relay?.nips && relay?.nips instanceof Array)
       relay.nips.forEach( nip => tags.push(['N', `${nip}`]) )

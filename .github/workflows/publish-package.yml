@@ -12,8 +12,19 @@ jobs:
     strategy:
       matrix:
         include:
+          - package: 'logger'
+            nodeVersion: '20'
           - package: 'nocap'
-            nodeVersion: '18'
+            nodeVersion: '20'
+          - package: 'seed'
+            nodeVersion: '20'
+          - package: 'utils'
+            nodeVersion: '20'
+          - package: 'nwcache'
+            nodeVersion: '20'
+          - package: 'controlflow'
+            nodeVersion: '20'
+            
     steps:
       - uses: actions/checkout@v3
 
@@ -24,7 +35,7 @@ jobs:
 
       - name: Change to package directory
         run: cd packages/${{ matrix.package }}
-
+ 
       - run: yarn install
       - run: yarn test
 

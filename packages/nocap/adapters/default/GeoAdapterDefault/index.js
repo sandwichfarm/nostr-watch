@@ -19,7 +19,7 @@ import { fetch } from 'cross-fetch'
     else 
       endpoint = `http://ip-api.com/json/${ip}?fields=${fields}`
     const headers = { 'accept': 'application/json' }
-    const response = await fetch(endpoint, { headers }).catch(e => err=e)
+    const response = await fetch(endpoint, { headers }).catch(this.$.logger.warn)
     delete response.query
     delete response.status
     const result = { status: "success", data: await response.json() }

@@ -1,18 +1,18 @@
 import mapper from 'object-mapper'
 import ngeotags from 'nostr-geotags'
-
-
 import Publish from '@nostrwatch/publisher'
 
 import { WorkerManager } from '../classes/WorkerManager.js'
 
 const publish30066 = new Publish.Kind30066()
 
+
+
 export class AllManager extends WorkerManager {
   constructor($, rcache, opts){
     super($, rcache, opts)
     this.interval = 60*1000       //checks for expired items every...
-    this.timeout = 6*1000
+    this.timeout = 9*1000
     this.timeoutBuffer = 1000
   }
 
@@ -23,7 +23,6 @@ export class AllManager extends WorkerManager {
     try {
       this.log.debug(`Running comprehensive check for ${job.data.relay}`)
       const { relay:url } = job.data 
-      // console.log(await this.getLastChecked(url), Date.now(),  (Date.now()-await this.getLastChecked(url))/1000/60)
       const dpubkey = this.pubkey
       const nocapOpts = { 
         timeout: { 
@@ -56,7 +55,7 @@ export class AllManager extends WorkerManager {
     const { relay:url } = job.data
     const { result  } = rvalue
 
-    if(!result)
+    if(!result || !result?.connect?.data)
       return this.on_failed(job, new Error(`Nocap complete (all) check failed for ${url}`))
 
     const { checked_at } = result
@@ -68,22 +67,18 @@ export class AllManager extends WorkerManager {
     const retry_id = await this.retry.setRetries( url, true )
     const lastChecked_id = await this.setLastChecked( url, Date.now() )
 
-    // console.log('success', await this.rcache.$.get(relay_id)?.online, await this.rcache.$.get(retry_id)?.v, await this.rcache.$.get(lastChecked_id)?.v)
-
     const event30066Data = event30066DataFromResult( result )
-    await publish30066.one(event30066Data)
+    await publish30066.one(event30066Data)    
   }
 
   async on_failed(job, err){
     const { relay:url } = job.data
-    // console.log('url:onfailed', url)
     this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}`)
-    const retry_id = await this.retry.setRetries(url, false)
+    const retry_id = await this.retry.setRetries( url, false )
     const lastChecked_id = await this.setLastChecked( url, Date.now() )
-    // console.log('failed', await this.rcache.$.get(retry_id)?.v, await this.rcache.$.get(lastChecked_id)?.v)
+    const relay_id = await this.updateRelayCache({ url, connect: { data: false }} ) 
     this.progressMessage(url, null, true)
     this.processed++
-
   }
 }
 
@@ -106,7 +101,11 @@ const truncatedResult = (result, type) => {
 
 const event30066DataFromResult = result => {
   const eventData = {}
-  const attributes = []
+  const labels = []
+  const nips = []
+
+  const dns = result.dns?.data || {}
+  const isDns = Object.keys(dns)?.length > 0  
 
   const geo = transformGeoResult(result.geo?.data) || {}
   const isGeo = Object.keys(geo)?.length > 0
@@ -122,41 +121,65 @@ const event30066DataFromResult = result => {
 
   eventData.rtt = []
 
+  if(result?.network)
+    eventData.network = result.network
+
   if(result?.connect?.duration > 0)
-    eventData.rtt.push({ type: 'open', rtt: result.connect.duration })
+    eventData.rtt.push([ 'open', result.connect.duration ])
 
   if(result?.read?.duration > 0)
-    eventData.rtt.push({ type: 'subscribe', rtt: result.read.duration })
+    eventData.rtt.push([ 'subscribe', result.read.duration ])
 
   if(result?.write?.duration > 0)
-    eventData.rtt.push({ type: 'publish', rtt: result.write.duration })
+    eventData.rtt.push([ 'publish', result.write.duration ])
 
   if(eventData.retries > 0)
     eventData.retries = result.retries
 
   if(isGeo)
-    eventData.geo = ngeotags(geo, { iso31662: true })
+    eventData.geo = ngeotags(geo, { iso31662: true, iso3163: true })
   
   if(isInfo){
-    if(info?.limitations?.payment_required === true)
-      attributes.push('payment-required')
-    if(info?.limitations?.auth_required === true)
-      attributes.push('auth-required')
+    if(info?.limitation?.payment_required === true)
+      labels.push(['nip11.limitation', 'payment-required'])
+    if(info?.limitation?.auth_required === true)
+      labels.push(['nip11.limitation', 'auth-required'])
+    if(info?.pubkey)
+      labels.push(['nip11.pubkey', info.pubkey])
+    if(info?.contact)
+      labels.push(['nip11.contact', info.contact])
+    if(info?.name)
+      labels.push(['nip11.name', info.name])
+    if(info?.software)
+      labels.push(['nip11.software', info.software])
+    if(info?.version)
+      labels.push(['nip11.version', info.version])
     if(info?.supported_nips instanceof Array)
-      info.supported_nips.forEach(nip => attributes.push(`nip-${nip}`))
+      info.supported_nips.forEach(nip => {
+        nips.push(`${nip}`)
+      })
+    if(info?.tags)
+      labels.push(['nip11.tags', ...info.tags])
+    if(info?.language_tags)
+      labels.push(['nip11.language_tags', ...info.language_tags ])
   }
 
   if(isSsl)
-    attributes.push(ssl?.valid === true? 'ssl-valid' :'ssl-invalid') 
+    eventData.ssltag = [ 'ssl', ssl?.valid === true? 'valid': 'invalid', `${new Date(ssl.valid_from).getTime()}`, `${new Date(ssl.valid_to).getTime()}` ]
 
   if(isGeo)
     if(geo?.as)
-      attributes.push(geo.as)
+      labels.push(['as', geo.as])
+    if(geo?.asn)
+      labels.push(['asn', geo.asn])
     if(geo?.ip)
-      attributes.push(geo.ip)
+      labels.push([`ipv4`, geo.ip])
 
-  if(attributes.length)
-    eventData.attributes = attributes
+  if(labels.length)
+    eventData.labels = labels
+
+  if(nips.length)
+    eventData.nips = nips
 
   return eventData
 }
@@ -164,6 +187,7 @@ const event30066DataFromResult = result => {
 const transformGeoResult = geo => {  
   const map = {
     "as": "as",
+    "asn": "asn",
     "city": "cityName",
     "countryCode": "countryCode",
     "regionName": "regionName",

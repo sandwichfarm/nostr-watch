@@ -21,6 +21,7 @@ class SslAdapterDefault {
       result = { status: "success", data }
     this.$.finish('ssl', result)
   }
+  
   sslCheckerOptions(port){
     return { method: "GET", port: port || 443 } 
   }

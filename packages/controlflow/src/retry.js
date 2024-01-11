@@ -40,6 +40,10 @@ export class RetryManager {
     return await rcache.retry.get(this.cacheId(url))
   }
 
+  async getExpiry( url ){
+    return this.expiry( await this.getRetries(url) )
+  }
+
   async setRetries( url, success ){
     let id 
     if(success) {

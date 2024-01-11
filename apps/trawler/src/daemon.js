@@ -49,6 +49,7 @@ export default async () => {
     const relays = seed[0]
     const updatedAt = seed[1]
     await populateTrawler( relays )
+    trawlWorker.on('drained', () => populateTrawler( relays ) )
     resolve({ queues: { trawlQueue }, watcher: null })
   })
 }

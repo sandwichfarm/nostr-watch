@@ -274,7 +274,7 @@ export class WorkerManager {
 
   async isExpired(url, lastChecked) {
       const retries = await this.retry.getRetries(url);
-      const expiry = retries > 0 ? this.retry.expiry(retries) : this.expires;
+      const expiry = retries > 0 ? await this.retry.getExpiry(url) : this.expires;
       return lastChecked < Date.now() - expiry;
   }
 

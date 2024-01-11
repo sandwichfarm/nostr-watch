@@ -15,28 +15,28 @@ export class Kind30066 extends Publisher {
 
     tags.push(['d', relay?.url])
 
-    if(typeof relay?.online === 'boolean')
-      tags.push(['s', relay?.online? 'online' : 'offline'])
+    if(relay?.network)
+      tags.push(['n', relay?.network])
 
-    if(relay?.network){
-      tags.push(['L', 'network'])
-      tags.push(['l', relay?.network, 'network'])
+    if(relay?.rtt && relay?.rtt instanceof Array)
+      relay.rtt.forEach( rtt => tags.push(['rtt', rtt.shift(), ...rtt.map(String)]) )
+
+    if(relay?.ssltag)
+      tags.push(relay.ssltag)
+
+    if(relay?.labels){
+      relay.labels.forEach(labels => {
+        const key = labels.shift()
+        tags.push(['L', key])
+        labels.forEach(label => tags.push(['l', label, key]))
+      })
     }
 
-    if(relay?.rtt && relay?.rtt?.type && relay?.rtt?.data instanceof Array)
-      relay.rtt.forEach( rtt => tags.push([`rtt_${rtt.type}`, ...rtt.data]) )
-
     if(relay?.geo)
-      if(typeof relay?.geo === 'string')
-        tags.push(['g', relay?.geo])
-      else if(typeof relay?.geo === 'array')
-        relay?.geo.forEach( geo => tags.push(['g', geo]) )
+      relay?.geo.forEach( geo => tags.push(geo) )
 
-    if(relay?.attributes)
-      relay?.attributes.forEach( attribute => tags.push(['t', attribute]) )
-
-    if(relay?.retries)
-      tags.push(['retries', relay?.retries])
+    if(relay?.nips && relay?.nips instanceof Array)
+      relay.nips.forEach( nip => tags.push(['N', `${nip}`]) )
 
     const event = {
       ...eventTpl,

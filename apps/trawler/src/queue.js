@@ -33,11 +33,13 @@ export const configureQueues = async function(){
     }
   }
 
-  const trawlQueueDrained = () => {}
+  const trawlQueueDrained = () => {
+
+  }
   
   trawler.$Queue.drain()
 
-  trawler.$Queue.on('drained', trawlQueueDrained)
+  // trawler.$Queue.on('drained', trawlQueueDrained)
   // trawler.$QueueEvents.on('progress', trawlJobProgress)
 
   const trawlJobCompleted = async ($job, foundRelays) => {

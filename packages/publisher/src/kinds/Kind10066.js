@@ -6,11 +6,11 @@ export class Kind10066 extends Publisher {
     this.kind = 10066
   }
 
-  generateEvent(publisher){
+  generateEvent(relay){
     const eventTpl = this.tpl()
     const tags = []
 
-    const { url, kinds, parameters, geo,  } = publisher
+    // const { url, kinds, parameters, geo,  } = publisher
 
     if(kinds)
       kinds.forEach( kind => tags.push(['kind', kind]) )

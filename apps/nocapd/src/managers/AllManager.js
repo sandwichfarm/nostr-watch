@@ -12,7 +12,7 @@ export class AllManager extends WorkerManager {
   constructor($, rcache, opts){
     super($, rcache, opts)
     this.interval = 60*1000       //checks for expired items every...
-    this.timeout = 9*1000
+    this.timeout = 15*1000
     this.timeoutBuffer = 1000
   }
 

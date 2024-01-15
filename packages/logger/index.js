@@ -13,35 +13,35 @@ export default class Logger {
   }
 
   fatal(message) {
-    if (!['FATAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'].includes(this.log_level))
+    if (!['FATAL', 'ERROR', 'WARN', 'INFO', 'DEBUG'].includes(this?.log_level))
       return
     this.logger.error(`FATAL: ${message}`);
     this.write(message)
   }
   
   err(message) {
-    if (!['ERROR', 'WARN', 'INFO', 'DEBUG'].includes(this.log_level))
+    if (!['ERROR', 'WARN', 'INFO', 'DEBUG'].includes(this?.log_level))
       return
     this.logger.error(message);
     this.write(message)
   }
   
   warn(message) {
-    if (!['WARN', 'INFO', 'DEBUG'].includes(this.log_level))
+    if (!['WARN', 'INFO', 'DEBUG'].includes(this?.log_level))
       return
     this.logger.warn(message);
     this.write(message)
   }
   
   info(message) {
-    if (!['INFO', 'DEBUG'].includes(this.log_level))
+    if (!['INFO', 'DEBUG'].includes(this?.log_level))
       return
     this.logger.info(message);
     this.write(message)
   }
   
   debug(message) {
-    if (!['DEBUG'].includes(this.log_level))
+    if (!['DEBUG'].includes(this?.log_level))
       return 
     this.logger.debug(message);
     this.write(message)

@@ -11,6 +11,7 @@
     "@nostr-fetch/adapter-nostr-tools": "0.13.1",
     "@types/ioredis": "5.0.0",
     "bullmq": "4.13.3",
+    "chalk": "^5.3.0",
     "cross-fetch": "4.0.0",
     "dotenv": "16.3.1",
     "fastify": "4.24.3",

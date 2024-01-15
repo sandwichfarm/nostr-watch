@@ -5,21 +5,22 @@ import config from "./config.js"
 import checkCache from './check-cache.js'
 import publish from './publish.js'
 import Logger from '@nostrwatch/logger'
+import chalk from 'chalk'
 
 import { configureQueues } from './queue.js'
 import { bootstrap } from '@nostrwatch/seed'
-import { chunkArray, msToCronTime } from "@nostrwatch/utils"
+import { chunkArray, msToCronTime } from '@nostrwatch/utils'
 
 const {trawlQueue, trawlWorker} = await configureQueues()
 const logger = new Logger('daemon')
 let busy = false
 
 const populateTrawler = async (relays) => {
-  await trawlWorker.pause()
+await trawlWorker.pause()
   const relaysPerChunk = config?.trawler?.trawl_concurrent_relays || 50;
   const batches = chunkArray(relays, relaysPerChunk)
   batches.forEach( (batch, index) => {
-    logger.info(`adding batch ${index} to trawlQueue`)
+    logger.debug(`adding batch ${index} to trawlQueue`)
     trawlQueue.add(`trawlBatch${index}`, { relays: batch })
   })
   trawlWorker.resume()
@@ -41,8 +42,24 @@ const schedules = () => {
   schedule.scheduleJob( msToCronTime(checkEveryMs), maybeCheckRelays )
 }
 
+const header = () => {
+  console.log(chalk.bold(`
+
+@nostrwatch/
+ dMMMMMMP dMMMMb  .aMMMb  dMP dMP dMP dMP     dMMMMMP dMMMMb
+   dMP   dMP.dMP dMP"dMP dMP dMP dMP dMP     dMP     dMP.dMP
+  dMP   dMMMMK" dMMMMMP dMP dMP dMP dMP     dMMMP   dMMMMK" 
+ dMP   dMP"AMF dMP dMP dMP.dMP.dMP dMP     dMP     dMP"AMF  
+dMP   dMP dMP dMP dMP  VMMMPVMMP" dMMMMMP dMMMMMP dMP dMP   
+
+
+`));
+}
+
+
 export default async () => {
   return new Promise( async (resolve) => {
+    header()
     schedules()
     await maybeCheckRelays()
     const seed = await bootstrap('trawler')

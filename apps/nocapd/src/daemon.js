@@ -1,5 +1,6 @@
 import schedule from 'node-schedule'
 import timestring from 'timestring'
+import chalk from 'chalk'
 
 import relaycache from '@nostrwatch/nwcache'
 import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
@@ -104,7 +105,24 @@ const maybeBootstrap = async () => {
   }
 }
 
+const header = () => {
+  console.log(chalk.bold(`
+
+@nostrwatch/  
+                                                   dP
+                                                   88
+88d888b. .d8888b. .d8888b. .d8888b. 88d888b. .d888b88
+88'  \`88 88'  \`88 88'  \`"" 88'  \`88 88'  \`88 88'  \`88
+88    88 88.  .88 88.  ... 88.  .88 88.  .88 88.  .88
+dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
+                                    88               
+                                    dP               
+
+`))
+}
+
 export const Nocapd = async () => {
+  header()
   config = await loadConfig()
   await maybeBootstrap()
   const $q = await initWorker()

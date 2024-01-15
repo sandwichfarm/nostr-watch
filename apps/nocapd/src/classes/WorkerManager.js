@@ -7,7 +7,6 @@ import timestring from 'timestring'
 
 import chalk from 'chalk';
 
-
 export class WorkerManager {
   constructor($q, rcache, opts){
     // if(opts?.id)

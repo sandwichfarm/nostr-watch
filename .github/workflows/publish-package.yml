@@ -41,7 +41,7 @@ jobs:
         uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: ./packages/${{ matrix.package }}
+          package: ./packages/${{ matrix.package }}/package.json
           strategy: upgrade
 
       - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true

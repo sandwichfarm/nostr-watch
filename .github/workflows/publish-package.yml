@@ -1,5 +1,6 @@
 name: publish to npm
 on:
+  workflow_dispatch: 
   push:
     branches:
       - 'next'
@@ -33,17 +34,14 @@ jobs:
         with:
           node-version: ${{ matrix.nodeVersion }}
 
-      - name: Change to package directory
-        run: cd packages/${{ matrix.package }}
- 
-      - run: yarn install
-      # - run: yarn test
+      - name: Install Package
+        run: cd ./packages/${{ matrix.package }} && yarn install
 
       - id: publish
         uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: packages/${{ matrix.package }}
+          package: ./packages/${{ matrix.package }}
           strategy: upgrade
 
       - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true

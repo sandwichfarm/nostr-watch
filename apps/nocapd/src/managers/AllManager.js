@@ -6,8 +6,6 @@ import { WorkerManager } from '../classes/WorkerManager.js'
 
 const publish30066 = new Publish.Kind30066()
 
-
-
 export class AllManager extends WorkerManager {
   constructor($, rcache, opts){
     super($, rcache, opts)

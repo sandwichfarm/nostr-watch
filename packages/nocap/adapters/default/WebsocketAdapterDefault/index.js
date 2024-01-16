@@ -47,7 +47,6 @@ class WebsocketAdapterDefault {
   async check_write(){
     this.$.logger.debug(`check_write()`)
     const ev = JSON.stringify(['EVENT', this.config?.event_sample || this.$.SAMPLE_EVENT])
-    console.log(ev)
     this.$.ws.send(ev)
   }
 
@@ -78,7 +77,6 @@ class WebsocketAdapterDefault {
    */
   handle_nostr_event(buffer){
     const ev = JSON.parse(buffer.toString())
-    console.log(ev[0])
     if(ev[0] === 'EVENT') {
       if(this.$.subid('read') === ev[1])
         this.$.on_event(ev[1], ev[2])

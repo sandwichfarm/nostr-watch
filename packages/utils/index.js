@@ -11,6 +11,8 @@ let { DAEMON_PUBKEY } = process.env;
 DAEMON_PUBKEY = DAEMON_PUBKEY? DAEMON_PUBKEY : 'WARNING_DAEMON_PUBKEY_UNSET';
 export { DAEMON_PUBKEY }
 
+export const isBrowser = () => (typeof window !== 'undefined' && typeof document !== 'undefined')
+
 export const parseRelayNetwork = network.parseRelayNetwork
 export const relaysSerializedByNetwork = network.relaysSerializedByNetwork
 

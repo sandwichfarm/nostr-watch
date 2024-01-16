@@ -116,6 +116,7 @@ export default class {
    * @returns {Promise<*>} - The result of the check
    */
   async _check(key){ 
+    if(!this.can_check(key)) return
     this.logger.debug(`${key}: check()`)
     this.defaultAdapters()
     const precheck = await this.start(key).catch( err => this.logger.debug(err) )
@@ -125,6 +126,14 @@ export default class {
     }
     return result
   } 
+
+  can_check(key){
+    if(this.is_browser() && key === 'ssl') {
+      this.logger.err('Cannot check SSL from browser')
+      return
+    }
+    return true 
+  }
 
   /**
    * maybeTimeoutReject
@@ -986,8 +995,20 @@ export default class {
    * @param {Error} error - The error to throw
    * @returns {Promise<*>} - A promise that rejects with the provided error
    */
-    throw(error){
-      return Promise.reject(error);
-    }
+  throw(error){
+    return Promise.reject(error);
+  }
+
+  /**
+   * is_browser
+   * Returns true if in a browser environment
+   * 
+   * @private
+   * @returns {boolean}
+   */
+  is_browser(){
+    (typeof window !== 'undefined' && typeof document !== 'undefined')
+  }
+    
 }
 

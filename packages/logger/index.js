@@ -21,7 +21,7 @@ export default class Logger {
   
   err(message) {
     if (!['ERROR', 'WARN', 'INFO', 'DEBUG'].includes(this?.log_level))
-      return
+      return                                                                                                                                                                                      
     this.logger.error(message);
     this.write(message)
   }
@@ -41,8 +41,6 @@ export default class Logger {
   }
   
   debug(message) {
-    if (!['DEBUG'].includes(this?.log_level))
-      return 
     this.logger.debug(message);
     this.write(message)
   }

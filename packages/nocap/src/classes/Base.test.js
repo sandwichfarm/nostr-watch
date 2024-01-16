@@ -5,7 +5,7 @@ import { fetch } from 'cross-fetch';
 
 import { createMockRelay, faker, MockRelay } from "vitest-nostr";
 
-let url = `wss://history.nostr.watch`
+let url = `wss://relay.damus.io`
 let nocap
 
 beforeAll(async () => {});
@@ -309,7 +309,7 @@ describe("Nocap class", () => {
   
         it("clean results should return connect result", async () => {
           const response = await nocap.check(method, false)
-          console.log(response)
+          console.log("check('dns')", response)
           expect(response).toBeTypeOf('object');
           expect(response).toHaveProperty(method);
           expect(response[method]).toBeTypeOf('object');

@@ -2,7 +2,8 @@ import murmurhash from 'murmurhash'
 import { random } from '../utils.js'
 
 export class SessionHelper {  
-  constructor(){
+  constructor(url){
+    this.url = url
     this.init()
     this.initial = true 
   }

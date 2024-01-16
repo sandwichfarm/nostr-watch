@@ -1,10 +1,13 @@
 import Deferred from 'promise-deferred'
+import Logger from "@nostrwatch/logger"
+
 
 export class DeferredWrapper {
   constructor($session, $timeout){
     this.promises = {}
     this.timeout = $timeout
     this.$session = $session
+    this.logger = new Logger(this.$session.url)
   }
 
   add(key, timeout, timeoutCb){
@@ -24,15 +27,16 @@ export class DeferredWrapper {
     return deferred
   }
 
-  resolve(key, result){ 
+  async resolve(key, result){ 
+    this.logger.debug(`deferred:resolve("${key}")`, `has timeout: ${this.timeout.has(key)}`)
     if(this.timeout.has(key))
-      clearTimeout(this.timeout.get(key))
-    this.get(key).resolve(result)
+      this.timeout.clear(key)
+    return this.get(key).resolve(result)
   }
 
   reject(key, error){
     if(this.timeout.has(key))
-      clearTimeout(this.timeout.get(key))
+      this.timeout.clear(key)
     this.get(key).reject(error)
   }
 
@@ -62,11 +66,13 @@ export class DeferredWrapper {
   }
 
   exists(key){
-    return this.promises?.[this.session()]?.[key]
+    this.logger.debug(`deferred:exists("${key}")`)
+    return typeof this.promises?.[this.session()]?.[key] === 'object'
   }
 
   get(key){
     const deferred = this.promises[this.session()][key]
+    this.logger.debug(`deferred:get("${key}"), exists: ${typeof deferred !== 'undefined'}`)
     return deferred
   }
 

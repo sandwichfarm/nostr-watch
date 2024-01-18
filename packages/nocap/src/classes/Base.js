@@ -59,14 +59,6 @@ export default class {
     this.logger.debug(`constructor(${url}, ${JSON.stringify(config)})`)
   }
 
-  isActive(){
-    return this.current === null? false: true 
-  }
-
-  async checkAll(){
-    return this.check('all')
-  }
-
   /**
    * check
    * Public method for dataprep and routing a check request
@@ -127,12 +119,52 @@ export default class {
     return result
   } 
 
+
+  /**
+   * can_check
+   * Determines if a check can be performed for a given key
+   *
+   * This method checks whether the current environment is a browser and the key is 'ssl'.
+   * If so, it logs an error indicating SSL checks cannot be performed from the browser.
+   * Otherwise, it returns true, allowing the check to proceed.
+   *
+   * @param {string} key - The key to verify if a check can be performed on
+   * @returns {boolean} - True if the check can be performed, otherwise false
+   */
   can_check(key){
     if(this.is_browser() && key === 'ssl') {
       this.logger.err('Cannot check SSL from browser')
       return
     }
     return true 
+  }
+
+  /**
+   * isActive
+   * Checks if the current object is active
+   *
+   * This method evaluates the 'current' property of the instance.
+   * If 'current' is null, the method returns false, indicating the object is not active.
+   * Otherwise, it returns true, indicating the object is active.
+   *
+   * @returns {boolean} - True if the current object is active, otherwise false
+   */
+  isActive(){
+    return this.current === null? false: true 
+  }
+
+  /**
+   * checkAll
+   * Asynchronously initiates a check for all items
+   *
+   * This method is a convenience wrapper that asynchronously triggers a check for 'all' items.
+   * It delegates the actual checking process to the 'check' method with 'all' as the argument.
+   *
+   * @async
+   * @returns {Promise<*>} - The result of the check for all items
+   */
+  async checkAll(){
+    return this.check('all')
   }
 
   /**

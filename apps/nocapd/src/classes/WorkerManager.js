@@ -73,6 +73,8 @@ export class WorkerManager {
     this.processed = 0
 
     this.total = 0
+
+    this.relayMeta = new Map()
   }
 
   calculateProgress() {
@@ -86,11 +88,11 @@ export class WorkerManager {
     const success = chalk.bold.green;
     const mute = chalk.gray
     this.log.info(
-      `[${chalk.bgBlack(this.calculateProgress())}]`, 
-        `${mute(this.processed)}/${mute(this.total)}`,
-      `${url}:`, 
-      result?.connect?.data? success("online"): failure("offline")),
-      error? chalk.gray.italic('error'): ''
+      `[${chalk.bgBlack(this.calculateProgress())}] `+
+      `${mute(this.processed)}/${mute(this.total)}  `+
+      `${url}: ${result?.connect?.data? success("online"): failure("offline")}  `+
+      `${(result?.connect?.duration+result?.read?.duration+result?.write?.duration)/1000} seconds  `+
+      `${error? chalk.gray.italic('error'): ''}`)
   }
 
   siblingKeys(){
@@ -175,13 +177,38 @@ export class WorkerManager {
   }
 
   async addRelayJob(jdata){
+    const priority = this.getPriority(jdata.relay)
     const jobOpts = {
-      priority: this.priority,
+      priority: priority,
       removeOnComplete: true,
       removeOnFail: true
     }
     this.log.debug(`Adding job for ${this.slug()}: ${JSON.stringify(jdata)}`)
     return this.$.queue.add( this.id(), jdata, { jobId: this.jobId(jdata.relay), ...jobOpts})
+  }
+
+  getPriority(relay){
+    const {group, retries} = this.relayMeta.get(relay)
+    if(group === 'online')
+      return 1
+    if(group === 'unchecked')
+      return 10 
+    if(group === 'expired'){
+      if(!retries)
+        return 50
+      if(retries > 16)
+        return 100
+      else if(retries > 12)
+        return 80
+      else if(retries > 8)
+        return 70
+      else if(retries > 6)
+       return 65
+      else if( retries > 3)
+        return 55
+      else 
+        return 50
+    }
   }
 
   cacheId(url){
@@ -230,32 +257,46 @@ export class WorkerManager {
     const allRelays = await this.rcache.relay.get.all();
     const onlineRelays = [];
     const uncheckedRelays = [];
-    const expiredRelays = [];
+    let expiredRelays = [];
+
+    this.relayMeta = new Map()
+  
     for (const relay of allRelays) {
       const lastChecked = await this.rcache.cachetime.get.one(this.cacheId(relay.url));
+      const retries = await this.retry.getRetries(relay.url);
       const isExpired = await this.isExpired(relay.url, lastChecked);
-      const isOnline = relay?.online === true
-
+      const isOnline = relay?.online === true;
+  
+      let group = '';
       if (isOnline && isExpired) {
         onlineRelays.push(relay.url);
+        group = 'online';
       } else if (!lastChecked) {
         uncheckedRelays.push(relay.url);
+        group = 'unchecked';
       } else if (isExpired) {
-        expiredRelays.push({ url: relay.url, lastChecked });
+        expiredRelays.push({ url: relay.url, lastChecked, retries });
+        group = 'expired';
       }
+  
+      this.relayMeta.set(relay.url, { group, retries: retries > 0 ? retries : undefined });
     }
-    expiredRelays.sort((a, b) => a.lastChecked - b.lastChecked);
+  
+    expiredRelays = expiredRelays.sort((a, b) => a.retries - b.retries);
+  
     this.log.info(`online: ${await this.rcache.relay.get.online()?.length}, \
     online & expired: ${onlineRelays.length}, \
     expired: ${expiredRelays.length}, \
     unchecked: ${uncheckedRelays.filter(this.qualifyNetwork.bind(this)).length}, \
-    total: ${allRelays.length}`)
-    const deduped = [...onlineRelays, ...uncheckedRelays, ...expiredRelays.map(r => r.url)];
-
-    const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this))
-    const truncateLength = this.get_truncate_length(allRelays)
-    return relaysFiltered.slice(0, truncateLength)
+    total: ${allRelays.length}`);
+  
+    const deduped = [...new Set([...onlineRelays, ...uncheckedRelays, ...expiredRelays.map(r => r.url)])];
+    const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));
+    const truncateLength = this.get_truncate_length(allRelays);
+  
+    return relaysFiltered.slice(0, truncateLength);
   }
+  
 
   get_truncate_length(relays){
     let length = relays.length

@@ -43,7 +43,8 @@ jobs:
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: ./packages/${{ matrix.package }}/package.json
-          strategy: upgrade
+          strategy: all
+          access: public
 
       - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true
         id: create_release

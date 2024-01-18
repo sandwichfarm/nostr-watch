@@ -52,7 +52,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ matrix.package }}-${{ steps.publish.outputs.version }}
+          tag_name: @nostrwatch/${{ matrix.package }}#${{ steps.publish.outputs.version }}
           release_name: v${{ matrix.package }}-${{ steps.publish.outputs.version }}
           body: ""
           draft: false

@@ -16,8 +16,6 @@ jobs:
         include:
           - package: 'logger'
             nodeVersion: '20'
-          - package: 'nocap'
-            nodeVersion: '20'
           - package: 'seed'
             nodeVersion: '20'
           - package: 'utils'
@@ -25,6 +23,18 @@ jobs:
           - package: 'nwcache'
             nodeVersion: '20'
           - package: 'controlflow'
+            nodeVersion: '20'
+          - package: 'nocap'
+            nodeVersion: '20'
+          - package: 'nocap-websocket-adapter-default'
+            nodeVersion: '20'
+          - package: 'nocap-info-adapter-default'
+            nodeVersion: '20'
+          - package: 'nocap-dns-adapter-default'
+            nodeVersion: '20'
+          - package: 'nocap-geo-adapter-default'
+            nodeVersion: '20'
+          - package: 'nocap-ssl-adapter-default'
             nodeVersion: '20'
             
     steps:

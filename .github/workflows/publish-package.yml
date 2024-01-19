@@ -48,7 +48,9 @@ jobs:
       - name: Find Package
         id: find_package
         run: |
-          WORKSPACES_JSON="$(yarn workspaces info --json)"
+          WORKSPACES_JSON="$(yarn workspaces info --json)" # Get the raw JSON output from 'yarn workspaces info --json'
+          WORKSPACES_JSON="${WORKSPACES_JSON#*{}" # Remove any text before the first '{' character
+          WORKSPACES_JSON="${WORKSPACES_JSON%*}}" # Remove any text after the last '}' character
           PKG_PATH=$(echo "$WORKSPACES_JSON" | jq -r '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
           echo "THE PATH: $PKG_PATH" >> .fml
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"

@@ -48,34 +48,36 @@ jobs:
       - name: Set Meta
         id: meta
         run: |
-          RELEASE="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"s
-          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+          RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"s
+          echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
 
       - name: Find Package
-        id: find-package
+        id: find_package
         run: |
           WORKSPACES_JSON=$(yarn workspaces info --json)
           PKG_PATH=$("$WORKSPACES_JSON" | jq -r '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
-          echo "path=$PKG_PATH" >> $GITHUB_OUTPUT
+          echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Install Package
-        id: install-package
+        id: install_package
         run: |
-          cd "${{ steps.find-package.outputs.path }}"
+          cd "${{ steps.find-find_package.outputs.the_path }}"
           yarn install
 
-      - id: publish
+      - name: Publish Package
+        id: publish
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: ${{ steps.find-package.outputs.path }}/package.json
+          package: ${{ steps.find_package.outputs.the_path }}/package.json
           strategy: all
           access: public
 
       - name: Archive Subdirectory
+        id: archive
         run: |
-          cd "${{ steps.find-package.outputs.path }}"
-          zip -r ${{ steps.meta.outputs.release}}.zip ${{ steps.find-package.outputs.path }}
+          cd "${{ steps.find_package.outputs.the_path }}"
+          zip -r ${{ steps.meta.outputs.release_slug}}.zip ${{ steps.find_package.outputs.the_path }}
 
       - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true
         id: create_release
@@ -83,8 +85,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.meta.outputs.release }}
-          release_name: ${{ steps.meta.outputs.release }}
+          tag_name: ${{ steps.meta.outputs.release_slug }}
+          release_name: ${{ steps.meta.outputs.release_slug }}
           body: ""
           draft: false
           prerelease: true
@@ -95,6 +97,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ steps.meta.outputs.release}}.zip
-          asset_name: ${{ steps.meta.outputs.release}}.zip
+          asset_path: ./${{ steps.meta.outputs.release_slug}}.zip
+          asset_name: ${{ steps.meta.outputs.release_slug}}.zip
           asset_content_type: application/zip

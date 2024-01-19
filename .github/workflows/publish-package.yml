@@ -47,9 +47,9 @@ jobs:
 
       - name: Install Package
         run: |
-          JSON=$(yarn workspaces info --json)
-          PATH=$($JSON | jq -r '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
-          cd "$PATH" && yarn install
+          WORKSPACES_JSON=$(yarn workspaces info --json)
+          PKG_PATH=$("$WORKSPACES_JSON" | jq -r '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
+          cd "$PKG_PATH" && yarn install
 
       - id: publish
         uses: JS-DevTools/npm-publish@v3

@@ -24,6 +24,8 @@ jobs:
             nodeVersion: '20'
           - package: 'controlflow'
             nodeVersion: '20'
+          - package: 'publisher'
+            nodeVersion: '20'
           - package: 'nocap'
             nodeVersion: '20'
           - package: 'nocap-websocket-adapter-default'

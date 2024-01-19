@@ -45,19 +45,37 @@ jobs:
         with:
           node-version: ${{ matrix.nodeVersion }}
 
-      - name: Install Package
+      - name: Set Meta
+        id: meta
+        run: |
+          RELEASE="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"s
+          echo "release=$RELEASE" >> $GITHUB_OUTPUTS
+
+      - name: Find Package
+        id: find-package
         run: |
           WORKSPACES_JSON=$(yarn workspaces info --json)
           PKG_PATH=$("$WORKSPACES_JSON" | jq -r '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
-          cd "$PKG_PATH" && yarn install
+          echo "path=$PKG_PATH" >> $GITHUB_OUTPUTS
+
+      - name: Install Package
+        id: install-package
+        run: |
+          cd "${{ steps.find-package.outputs.path }}"
+          yarn install
 
       - id: publish
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
-          package: ./packages/${{ matrix.package }}/package.json
+          package: ${{ steps.find-package.outputs.path }}/package.json
           strategy: all
           access: public
+
+      - name: Archive Subdirectory
+        run: |
+          cd "${{ steps.find-package.outputs.path }}"
+          zip -r ${{ steps.meta.outputs.release}}.zip ${{ steps.find-package.outputs.path }}
 
       - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true
         id: create_release
@@ -65,8 +83,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ matrix.package }}@v${{ steps.publish.outputs.version }}
-          release_name: ${{ matrix.package }}@${{ steps.publish.outputs.version }}
+          tag_name: ${{ steps.meta.outputs.release }}
+          release_name: ${{ steps.meta.outputs.release }}
           body: ""
           draft: false
           prerelease: true
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ steps.meta.outputs.release}}.zip
+          asset_name: ${{ steps.meta.outputs.release}}.zip
+          asset_content_type: application/zip

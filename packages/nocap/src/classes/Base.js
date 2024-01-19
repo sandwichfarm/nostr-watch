@@ -233,8 +233,7 @@ export default class {
           reason = `${key}: Precheck found that connect check was already fulfilled, returning cached result`
           // this.promises.get(key).resolve(precheck.result)
           checkDeferred.resolve(precheck.result)
-        }
-        else if(precheck.status == "error") {
+        } (precheck.status == "error") {
           reason = `${key} precheck failed: ${precheck.message}`
           // this.promises.get(key).resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })
           checkDeferred.resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })
@@ -440,12 +439,12 @@ export default class {
       return 
     if(this.adapters.websocket?.unsubscribe)
       return this.adapters.websocket.unsubscribe()
-    // this.maybeExecuteAdapterMethod(
-    //   'websocket', 
-    //   'close', 
-    //   () => this.ws.send(['CLOSE', subid]), 
-    //   subid
-    // )
+    this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'unsubscribe', 
+      () => this.ws.send(['CLOSE', subid]), 
+      subid
+    )
   }
 
   /**
@@ -460,8 +459,8 @@ export default class {
       return
     this.maybeExecuteAdapterMethod(
       'websocket', 
-      'close', 
-      () => this.ws.close() 
+      'close',
+      () => this.ws.close()
     )
   }
 
@@ -866,7 +865,7 @@ export default class {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isClosing', 
-      () => this.ws?.readyState && this.ws.readyState === WebSocket.CONNECTING ? true : false
+      () => this.ws?.readyState && this.ws.readyState === WebSocket.CLOSING ? true : false
     )
   }
 
@@ -881,7 +880,7 @@ export default class {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isClosed', 
-      () => this.ws?.readyState && this.ws.readyState === WebSocket.CONNECTING ? true : false
+      () => this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
     )
   }
 

@@ -1,6 +1,6 @@
 import "websocket-polyfill";
 import WebSocket from 'ws';
-import { WebsocketTor } from 'ws-tor'
+// import { WebsocketTor } from 'ws-tor'
 
 class WebsocketAdapterDefault {
 
@@ -20,8 +20,13 @@ class WebsocketAdapterDefault {
     // if(this.$.results.network === 'tor') 
     //   $ws = new WebsocketTor(this.$.url, { socksHost: this.$.config?.tor?.host, socksPort: this.$.config?.tor?.port })
     // else
+
     $ws = new WebSocket(this.$.url)
     
+    /*
+      If a WebSocket adapter doesn't use WS, don't set a ws obj
+      But you do need to create isConnecting, isConnected, isClosing, isClosing methods
+    */
     this.$.set('ws', $ws)
     this.bind_events()
     return deferred
@@ -95,8 +100,29 @@ class WebsocketAdapterDefault {
     }
   }
 
+  unsubscribe() {
+    this.$.ws.send(['CLOSE', subid])
+  }
+
+  /* 
+    since this adapter uses `ws` library, these methods are handled by base class 
+    and do not need to be implemented in adapter.
+  */
+  // isConnected() {
+  //   this.ws?.readyState && this.ws.readyState === WebSocket.OPEN ? true : false
+  // }
+  // isConnecting() {
+  //   this.ws?.readyState && this.ws.readyState === WebSocket.CONNECTING ? true : false
+  // }
+  // isClosing() {
+  //   this.ws?.readyState && this.ws.readyState === WebSocket.CLOSING ? true : false
+  // }
+  // isClosed() {
+  //   this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
+  // }
+  
   close(){
-    if(!this.$.isConnected())
+    if(!this.isConnected())
       return
     this.$.ws.close()
   }

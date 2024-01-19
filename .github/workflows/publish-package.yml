@@ -55,7 +55,7 @@ jobs:
           CLEANED_JSON=$(echo "$WORKSPACES_JSON" | grep -v 'yarn workspaces v' | grep -v 'Done in' | sed -n '/^{/,/^}/p')
 
           # Process the JSON with jq to extract the package path
-          PKG_PATH=$(echo "$CLEANED_JSON" | jq -r '.["@nostrwatch/'"${matrix_package}"'"].location')
+          PKG_PATH=$(echo "$CLEANED_JSON" | jq -r '.["@nostrwatch/'"${matrix.package}"'"].location')
 
           # Check if the location is not null (valid JSON)
           if [[ ! -z "$PKG_PATH" && "$PKG_PATH" != "null" ]]; then

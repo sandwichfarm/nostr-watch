@@ -1,5 +1,5 @@
 {
-  "name": "@nostrwatch/nocap-relay-adapter-default",
+  "name": "@nostrwatch/nocap-websocket-adapter-default",
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",

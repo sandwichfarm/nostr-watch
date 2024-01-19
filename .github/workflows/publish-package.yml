@@ -62,8 +62,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ matrix.package }}@${{ steps.publish.outputs.version }}
-          release_name: ${{ matrix.package }}@v${{ steps.publish.outputs.version }}
+          tag_name: ${{ matrix.package }}@v${{ steps.publish.outputs.version }}
+          release_name: ${{ matrix.package }}@${{ steps.publish.outputs.version }}
           body: ""
           draft: false
           prerelease: true

@@ -38,6 +38,8 @@ jobs:
             nodeVersion: '20'
           - package: 'nocap-ssl-adapter-default'
             nodeVersion: '20'
+          - package: 'nocap-every-adapter-default'
+            nodeVersion: '20'
             
     steps:
       - uses: actions/checkout@v3

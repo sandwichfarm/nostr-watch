@@ -48,11 +48,21 @@ jobs:
       - name: Find Package
         id: find_package
         run: |
-          WORKSPACES_JSON="$(yarn workspaces info --json)" # Get the raw JSON output from 'yarn workspaces info --json'
-          WORKSPACES_JSON="${WORKSPACES_JSON#*{}" # Remove any text before the first '{' character
-          WORKSPACES_JSON="${WORKSPACES_JSON%*}}" # Remove any text after the last '}' character
-          PKG_PATH=$(echo "$WORKSPACES_JSON" | jq -r '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
-          echo "THE PATH: $PKG_PATH" >> .fml
+          # Get the raw JSON output from 'yarn workspaces info --json'
+          WORKSPACES_JSON=$(yarn workspaces info --json)
+
+          # Extract only the JSON part using grep and sed
+          CLEANED_JSON=$(echo "$WORKSPACES_JSON" | grep -v 'yarn workspaces v' | grep -v 'Done in' | sed -n '/^{/,/^}/p')
+
+          # Process the JSON with jq to extract the package path
+          PKG_PATH=$(echo "$CLEANED_JSON" | jq -r '.["@nostrwatch/'"${matrix_package}"'"].location')
+
+          # Check if the location is not null (valid JSON)
+          if [[ ! -z "$PKG_PATH" && "$PKG_PATH" != "null" ]]; then
+              echo "PKG_PATH: $PKG_PATH"
+          else
+              echo "Error: Unable to extract valid JSON data."
+          fi
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Install Package

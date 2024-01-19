@@ -90,7 +90,6 @@ jobs:
       - name: Archive Subdirectory
         id: archive
         run: |
-          cd "${{ steps.find_package.outputs.the_path }}"
           zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
 
       - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true

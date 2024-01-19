@@ -46,7 +46,9 @@ jobs:
           node-version: ${{ matrix.nodeVersion }}
 
       - name: Install Package
-        run: cd ./packages/${{ matrix.package }} && yarn install
+        run: |
+          PATH=$(yarn workspaces info --json | jq '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
+          cd $PATH && yarn install
 
       - id: publish
         uses: JS-DevTools/npm-publish@v3

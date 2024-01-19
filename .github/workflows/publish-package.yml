@@ -68,7 +68,6 @@ jobs:
       - name: Install Package
         id: install_package
         run: |
-          ECHO "THE PATH: ${{ steps.find_package.outputs.the_path }}"
           cd "${{ steps.find_package.outputs.the_path }}"
           yarn install
 
@@ -91,7 +90,6 @@ jobs:
       - name: Archive Subdirectory
         id: archive
         run: |
-          ECHO "THE SLUG: ${{ steps.meta.outputs.release_slug}}"
           cd "${{ steps.find_package.outputs.the_path }}"
           zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
 

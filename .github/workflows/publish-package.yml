@@ -1,4 +1,5 @@
 name: GH Release and NPM Publish
+id: release-publish
 on:
   workflow_dispatch: 
   push:
@@ -45,23 +46,19 @@ jobs:
         with:
           node-version: ${{ matrix.nodeVersion }}
 
-      - name: Set Meta
-        id: meta
-        run: |
-          RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"s
-          echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
-
       - name: Find Package
         id: find_package
         run: |
-          WORKSPACES_JSON=$(yarn workspaces info --json)
-          PKG_PATH=$("$WORKSPACES_JSON" | jq -r '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
+          WORKSPACES_JSON="$(yarn workspaces info --json)"
+          PKG_PATH=$(echo "$WORKSPACES_JSON" | jq -r '.data | fromjson | ."@nostrwatch/${{ matrix.package }}".location')
+          echo "THE PATH: $PKG_PATH" >> .fml
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Install Package
         id: install_package
         run: |
-          cd "${{ steps.find-find_package.outputs.the_path }}"
+          ECHO "THE PATH: ${{ steps.find_package.outputs.the_path }}"
+          cd "${{ steps.find_package.outputs.the_path }}"
           yarn install
 
       - name: Publish Package
@@ -73,11 +70,19 @@ jobs:
           strategy: all
           access: public
 
+      - name: Set Meta
+        id: meta
+        run: |
+          RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"
+          echo "RELEASE SLUG: $RELEASE_SLUG" >> .fml
+          echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
+
       - name: Archive Subdirectory
         id: archive
         run: |
+          ECHO "THE SLUG: ${{ steps.meta.outputs.release_slug}}"
           cd "${{ steps.find_package.outputs.the_path }}"
-          zip -r ${{ steps.meta.outputs.release_slug}}.zip ${{ steps.find_package.outputs.the_path }}
+          zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
 
       - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true
         id: create_release

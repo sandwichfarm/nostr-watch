@@ -438,8 +438,8 @@ export default class {
   unsubscribe(subid){
     if(!this.isConnected())
       return 
-    if(this.adapters.websocket?.unsubscribe)
-      return this.adapters.websocket.unsubscribe()
+    // if(this.adapters.websocket?.unsubscribe)
+    //   return this.adapters.websocket.unsubscribe()
     this.maybeExecuteAdapterMethod(
       'websocket', 
       'unsubscribe', 

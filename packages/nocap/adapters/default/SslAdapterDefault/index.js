@@ -1,4 +1,3 @@
-import sslValidator from 'ssl-validator'
 import sslChecker from "ssl-checker";
 import sslCertificate from 'get-ssl-cert'
 

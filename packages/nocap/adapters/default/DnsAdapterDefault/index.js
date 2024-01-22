@@ -1,6 +1,6 @@
-// import fetch from 'cross-fetch'
-import { fetch } from 'fetch-h2'
-import doh from 'dohjs'
+import fetch from 'cross-fetch'
+// import { fetch } from 'fetch-h2'
+// import doh from 'dohjs'
 
 class DnsAdapterDefault {
   constructor(parent){ 

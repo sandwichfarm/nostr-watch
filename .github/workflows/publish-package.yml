@@ -77,12 +77,24 @@ jobs:
           echo "RELEASE SLUG: $RELEASE_SLUG" >> .fml
           echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
 
+      - name: Check for Tag
+        id: slug_exists
+        run: |
+          TAG="${{ steps.meta.outputs.release_slug}}"
+          if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
+            echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"           
+          else
+            echo "release_slugs_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Archive Subdirectory
+        if: steps.slug_exists.outputs.release_slugs_exists != true
+        needs: [slug_exists]
         id: archive
         run: |
           zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
 
-      - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true
+      - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true && steps.slug_exists.outputs.release_slugs_exists != true
         id: create_release
         uses: actions/create-release@latest
         env:
@@ -95,6 +107,8 @@ jobs:
           prerelease: true
 
       - name: Upload Release Asset
+        if: steps.slug_exists.outputs.release_slugs_exists != true
+        needs: [create_release]
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

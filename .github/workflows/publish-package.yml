@@ -91,7 +91,6 @@ jobs:
 
       - name: Archive Subdirectory
         if: steps.slug_exists.outputs.release_slugs_exists != true
-        needs: [slug_exists]
         id: archive
         run: |
           zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
@@ -110,7 +109,6 @@ jobs:
 
       - name: Upload Release Asset
         if: steps.slug_exists.outputs.release_slugs_exists != true
-        needs: [create_release]
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

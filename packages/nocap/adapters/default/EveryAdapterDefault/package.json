@@ -3,5 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@nostrwatch/nocap-dns-adapter-default": "^1.0.0",
+    "@nostrwatch/nocap-geo-adapter-default": "^1.0.0",
+    "@nostrwatch/nocap-info-adapter-default": "^1.0.0",
+    "@nostrwatch/nocap-ssl-adapter-default": "^1.0.0",
+    "@nostrwatch/nocap-websocket-adapter-default": "^1.0.0"
+  }
 }

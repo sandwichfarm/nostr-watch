@@ -75,7 +75,7 @@ const initWorker = async () => {
   await $NocapdQueue.pause()
   await $NocapdQueue.drain()
 
-  const $worker = new Worker($NocapdQueue.name, $q.route.bind($q), { concurrency: 10 } )
+  const $worker = new Worker($NocapdQueue.name, $q.route.bind($q), { concurrency: 3 } )
   await $worker.pause()
   
   $q.queue = $NocapdQueue

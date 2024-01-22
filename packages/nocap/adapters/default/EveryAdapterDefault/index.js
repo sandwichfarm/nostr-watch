@@ -1,4 +1,4 @@
-import WebsocketAdapterDefault from '@nostrwatch/nocap-relay-adapter-default'
+import WebsocketAdapterDefault from '@nostrwatch/nocap-websocket-adapter-default'
 import InfoAdapterDefault from '@nostrwatch/nocap-info-adapter-default'
 import SslAdapterDefault from '@nostrwatch/nocap-ssl-adapter-default'
 import DnsAdapterDefault from '@nostrwatch/nocap-dns-adapter-default'

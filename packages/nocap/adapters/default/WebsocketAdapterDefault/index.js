@@ -100,14 +100,13 @@ class WebsocketAdapterDefault {
     }
   }
 
-  unsubscribe() {
-    this.$.ws.send(['CLOSE', subid])
-  }
-
   /* 
     since this adapter uses `ws` library, these methods are handled by base class 
     and do not need to be implemented in adapter.
   */
+  //  unsubscribe(subid) {
+  //   this.$.ws.send(['CLOSE', subid])
+  // }
   // isConnected() {
   //   this.ws?.readyState && this.ws.readyState === WebSocket.OPEN ? true : false
   // }
@@ -121,11 +120,11 @@ class WebsocketAdapterDefault {
   //   this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
   // }
   
-  close(){
-    if(!this.isConnected())
-      return
-    this.$.ws.close()
-  }
+  // close(){
+  //   if(!this.isConnected())
+  //     return
+  //   this.$.ws.close()
+  // }
 }
 
 export default WebsocketAdapterDefault

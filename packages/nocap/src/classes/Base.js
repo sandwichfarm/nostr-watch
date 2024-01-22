@@ -233,7 +233,8 @@ export default class {
           reason = `${key}: Precheck found that connect check was already fulfilled, returning cached result`
           // this.promises.get(key).resolve(precheck.result)
           checkDeferred.resolve(precheck.result)
-        } (precheck.status == "error") {
+        } 
+        else if (precheck.status == "error") {
           reason = `${key} precheck failed: ${precheck.message}`
           // this.promises.get(key).resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })
           checkDeferred.resolve({ [key]: false, [`${key}Duration`]: -1, ...precheck })

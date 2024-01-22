@@ -12,7 +12,7 @@ import { LatencyHelper } from "./LatencyHelper.js";
 import { DeferredWrapper } from "./DeferredWrapper.js";
 import { Counter } from "./Counter.js";
 
-import AllDefaultAdapters from "@nostrwatch/nocap-all-adapters-default"
+import AllDefaultAdapters from "@nostrwatch/nocap-every-adapter-default"
 
 import SAMPLE_EVENT from "../data/sample_event.js"
 

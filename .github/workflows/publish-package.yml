@@ -91,12 +91,12 @@ jobs:
           fi
 
       - name: Archive Subdirectory
-        if: steps.slug_exists.outputs.release_slug_exists != true
+        if: steps.slug_exists.outputs.release_slug_exists != 'true'
         id: archive
         run: |
           zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
 
-      - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != true && steps.slug_exists.outputs.release_slugs_exists != true
+      - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != 'true' && steps.slug_exists.outputs.release_slugs_exists != 'true'
         id: create_release
         uses: actions/create-release@latest
         env:
@@ -109,7 +109,7 @@ jobs:
           prerelease: true
 
       - name: Upload Release Asset
-        if: steps.slug_exists.outputs.release_slug_exists != true
+        if: steps.slug_exists.outputs.release_slug_exists != 'true'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

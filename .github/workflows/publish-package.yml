@@ -6,6 +6,8 @@ on:
       - 'next'
     paths:
       - 'packages/**'
+      - 'package.json'
+      - '.github/workflows/publish-package.yml'
 
 jobs:
   publish:

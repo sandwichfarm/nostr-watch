@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@nostrwatch/logger": "^0.0.1",
-    "@nostrwatch/nocap-every-adapter-default": "^1.0.1",
+    "@nostrwatch/nocap-every-adapter-default": "^1.0.2",
     "@nostrwatch/utils": "^0.0.1",
     "fetch-h2": "3.0.2",
     "get-ssl-certificate": "2.3.3",

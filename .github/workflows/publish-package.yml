@@ -96,7 +96,8 @@ jobs:
         run: |
           zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
 
-      - if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != 'true' && steps.slug_exists.outputs.release_slugs_exists != 'true'
+      - name: Create Release ${{ steps.meta.outputs.release_slug }}
+        if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != 'true' && steps.slug_exists.outputs.release_slug_exists != 'true'
         id: create_release
         uses: actions/create-release@latest
         env:
@@ -108,7 +109,7 @@ jobs:
           draft: false
           prerelease: true
 
-      - name: Upload Release Asset
+      - name: Upload Release Asset ${{ steps.meta.outputs.release_slug }}.zip
         if: steps.slug_exists.outputs.release_slug_exists != 'true'
         uses: actions/upload-release-asset@v1
         env:

@@ -11,7 +11,7 @@
     "@nostr-fetch/adapter-nostr-tools": "0.13.1",
     "@nostrwatch/controlflow": "^0.0.1",
     "@nostrwatch/logger": "^0.0.1",
-    "@nostrwatch/nocap": "^0.1.1",
+    "@nostrwatch/nocap": "^0.1.2",
     "@nostrwatch/nwcache": "^0.0.1",
     "@nostrwatch/publisher": "^0.0.1",
     "@nostrwatch/seed": "^0.0.1",
@@ -35,7 +35,8 @@
   },
   "scripts": {
     "launch": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docker:buildup": "docker compose build --no-cache && docker compose up"
   },
   "license": "MIT"
 }

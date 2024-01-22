@@ -82,7 +82,7 @@ jobs:
       - name: Check for Tag
         id: slug_exists
         run: |
-          git fetch --all
+          git fetch --tags
           TAG="${{ steps.meta.outputs.release_slug}}"
           if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
             echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"

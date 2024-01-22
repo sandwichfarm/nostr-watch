@@ -12,7 +12,7 @@ import { LatencyHelper } from "./LatencyHelper.js";
 import { DeferredWrapper } from "./DeferredWrapper.js";
 import { Counter } from "./Counter.js";
 
-import AllDefaultAdapters from "@nostrwatch/nocap-every-adapter-default"
+import EveryDefaultAdapter from "@nostrwatch/nocap-every-adapter-default"
 
 import SAMPLE_EVENT from "../data/sample_event.js"
 
@@ -953,7 +953,7 @@ export default class {
    * @returns {string[]} - The array of default adapter keys
    */
   defaultAdapterKeys(){
-    return Object.keys(AllDefaultAdapters)
+    return Object.keys(EveryDefaultAdapter)
   }
 
   /**
@@ -970,7 +970,7 @@ export default class {
     this.defaultAdapterKeys().forEach( adapterKey => {
       const adapterType = this.getAdapterType(adapterKey)
       if(!this.adapters?.[adapterType]){
-        this.useAdapter(AllDefaultAdapters[adapterKey])
+        this.useAdapter(EveryDefaultAdapter[adapterKey])
       }
     })
     this.adaptersInitialized = true

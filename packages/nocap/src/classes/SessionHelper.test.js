@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SessionHelper } from './SessionHelper.js'
 import murmurhash from 'murmurhash'
 import { random } from '../utils.js'
-import * as utilsModule from '../utils.js'
 
 describe('SessionHelper', () => {
   let sessionHelper;
@@ -37,8 +36,6 @@ describe('SessionHelper', () => {
     console.log(key1, key2)
     expect(key1 === key2).toBe(false)
   })
-
-  
 
   it('should create hash ids correctly', () => {
     const expectedSessionId = murmurhash.v3('session', sessionHelper.salt);

@@ -84,13 +84,13 @@ jobs:
         run: |
           TAG="${{ steps.meta.outputs.release_slug}}"
           if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
-            echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"           
+            echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "release_slugs_exists=false" >> "$GITHUB_OUTPUT"
+            echo "release_slug_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Archive Subdirectory
-        if: steps.slug_exists.outputs.release_slugs_exists != true
+        if: steps.slug_exists.outputs.release_slug_exists != true
         id: archive
         run: |
           zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
@@ -108,7 +108,7 @@ jobs:
           prerelease: true
 
       - name: Upload Release Asset
-        if: steps.slug_exists.outputs.release_slugs_exists != true
+        if: steps.slug_exists.outputs.release_slug_exists != true
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

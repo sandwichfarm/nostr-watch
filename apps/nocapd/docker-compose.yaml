@@ -1,26 +1,47 @@
 version: "3"
 services:
-  # nocapd:
-  #   container_name: trawler
-  #   restart: unless-stopped
-  #   build: .
-  #   volumes:
-  #     - ./nocapd.config.yaml:/etc/@nostrwatch/nocapd/config.yaml
-  #     - ./.lmdb:/app/.lmdb
-  #   environment:
-  #     DOCKER: 'yes'
-  #   env_file: .env
-  cache:
-    image: redis:latest
-    restart: always
-    ports:
-      - '6379:6379'
-    volumes: 
-      - ./.redis:/.data:rw
-    env_file: .env
-    command: redis-server --loglevel $REDIS_LOGLEVEL
+  nocapd:
+    container_name: nocapd
+    restart: unless-stopped
+    build: 
+      context: .
+      args:
+        BUILDKIT_INLINE_CACHE: 0
+      dockerfile: Dockerfile
+    volumes:
+      - /Users/sandwich/Develop/nostr-watch/.lmdb:/app/.lmdb:rw
+      - ./.env.docker:/app/.env:ro
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      DOCKER: 'yes'
+    env_file: .env.docker
+    # depends_on: 
+    #   - cache
+    networks:
+      - trawlernet
+#   cache:
+#     image: redis:latest
+#     restart: always
+#     ports:
+#       - '6379:6379'
+#     volumes: 
+#       - ./.redis:/.data:rw
+#     env_file: .env.docker
+#     command: redis-server
+#     healthcheck:
+#       test: ["CMD", "redis-cli", "ping"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 3
+#     networks:
+#       - nocapdnet
+
 volumes: 
   lmdb:
     driver: local
-  cache:
+  cache: 
     driver: local
+
+networks:
+  trawlernet:
+    driver: bridge

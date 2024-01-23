@@ -3,7 +3,7 @@ yarn.lock
 *.wasm
 **/dist
 yarn-error.log
-.env
+.env*
 !*.sample
 .lmdb
 .redis

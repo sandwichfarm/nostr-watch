@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap-every-adapter-default",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "main": "index.js",
   "license": "MIT",
@@ -9,6 +9,6 @@
     "@nostrwatch/nocap-geo-adapter-default": "^1.0.0",
     "@nostrwatch/nocap-info-adapter-default": "^1.0.0",
     "@nostrwatch/nocap-ssl-adapter-default": "^1.0.1",
-    "@nostrwatch/nocap-websocket-adapter-default": "^1.0.2"
+    "@nostrwatch/nocap-websocket-adapter-default": "^1.0.3"
   }
 }

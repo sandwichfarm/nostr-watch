@@ -4,7 +4,6 @@ import chalk from 'chalk'
 
 import relaycache from '@nostrwatch/nwcache'
 import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
-import { RedisConnectionDetails } from '@nostrwatch/utils'
 
 import { NocapdQueues } from './classes/NocapdQueues.js'
 import { parseRelayNetwork, relayId, capitalize, loadConfig } from "@nostrwatch/utils"
@@ -13,7 +12,7 @@ import { bootstrap } from '@nostrwatch/seed'
 
 import Logger from '@nostrwatch/logger'
 
-const { QueueEvents, Worker } = BullMQ
+const { Worker } = BullMQ
 const log = new Logger('nocapd')
 const rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
 

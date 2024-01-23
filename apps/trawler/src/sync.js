@@ -1,5 +1,8 @@
-import { SyncQueue } from "@nostrwatch/controlflow"
+
 import hash from 'object-hash'
+
+import { SyncQueue } from "@nostrwatch/controlflow"
+
 import config from "./config.js"
 import publish from "./publish.js"
 

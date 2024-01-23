@@ -12,10 +12,10 @@ COPY . .
 # RUN echo "registry=http://host.docker.internal:4873" > .npmrc
 
 # Install any needed packages specified in package.json
-RUN yarn install  --network-timeout 1000000
+RUN yarn install --network-timeout 1000000
 
 # Make port 3000 available to the world outside this container
-EXPOSE 3000
+# EXPOSE 3000
 
 # Run the app when the container launches
-CMD ["node", "src/daemon.js"]
+CMD ["node", "src/index.js"]

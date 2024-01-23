@@ -1,6 +1,9 @@
 import dotenv from 'dotenv'
 import { Queue, QueueEvents, Worker } from 'bullmq';
 import { RedisConnectionDetails } from '@nostrwatch/utils'
+import Logger from '@nostrwatch/logger'
+
+const log = new Logger('controlflow::queues')
 
 dotenv.config()
 
@@ -24,9 +27,12 @@ export const RestApiQueue = (qopts={}) => {
 
 export const QueueInit = (key, qopts={}) => {
   if($?.[key]) return $[key]
-  qopts = { connection: RedisConnectionDetails(), ...qopts }
+  const connection = RedisConnectionDetails()
+  log.debug(connection)
+  log.debug(qopts)
+  qopts = { connection, ...qopts }
   const $Queue = new Queue(key, qopts)
-  const $QueueEvents = new QueueEvents($Queue.name, { connection: RedisConnectionDetails() } )
+  const $QueueEvents = new QueueEvents($Queue.name, { connection } )
   $[key] = { $Queue, $QueueEvents, Worker }
   return $[key]
 }

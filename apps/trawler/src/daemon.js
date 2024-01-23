@@ -11,6 +11,8 @@ import { configureQueues } from './queue.js'
 import { bootstrap } from '@nostrwatch/seed'
 import { chunkArray, msToCronTime } from '@nostrwatch/utils'
 
+import { RedisConnectionDetails } from '@nostrwatch/utils'
+
 const {trawlQueue, trawlWorker} = await configureQueues()
 const logger = new Logger('daemon')
 let busy = false
@@ -51,7 +53,6 @@ const header = () => {
   dMP   dMMMMK" dMMMMMP dMP dMP dMP dMP     dMMMP   dMMMMK" 
  dMP   dMP"AMF dMP dMP dMP.dMP.dMP dMP     dMP     dMP"AMF  
 dMP   dMP dMP dMP dMP  VMMMPVMMP" dMMMMMP dMMMMMP dMP dMP   
-
 
 `));
 }

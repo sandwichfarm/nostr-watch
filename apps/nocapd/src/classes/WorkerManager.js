@@ -282,7 +282,7 @@ export class WorkerManager {
       this.relayMeta.set(relay.url, { group, retries: retries > 0 ? retries : undefined });
     }
   
-    expiredRelays = expiredRelays.sort((a, b) => a.retries - b.retries);
+    expiredRelays = expiredRelays.sort((a, b) => a.retries - b.retries).map(r => r.url);
   
     this.log.info(`online: ${await this.rcache.relay.get.online()?.length}, \
     online & expired: ${onlineRelays.length}, \
@@ -290,7 +290,7 @@ export class WorkerManager {
     unchecked: ${uncheckedRelays.filter(this.qualifyNetwork.bind(this)).length}, \
     total: ${allRelays.length}`);
   
-    const deduped = [...new Set([...onlineRelays, ...uncheckedRelays, ...expiredRelays.map(r => r.url)])];
+    const deduped = [...new Set([...onlineRelays, ...uncheckedRelays, ...expiredRelays])];
     const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));
     const truncateLength = this.get_truncate_length(allRelays);
   

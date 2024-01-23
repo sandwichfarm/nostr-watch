@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap-websocket-adapter-default",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "main": "index.js",
   "license": "MIT",

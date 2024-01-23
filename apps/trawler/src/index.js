@@ -8,4 +8,4 @@ const logger = new Logger('root')
 logger.debug('Current Directory', process.cwd())
 
 const $ = daemon()
-$.catch(logger.error);
+$.catch(logger.err);

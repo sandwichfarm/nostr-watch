@@ -85,7 +85,7 @@ class WebsocketAdapterDefault {
       const ev = JSON.parse(buffer.toString())
     } 
     catch(e){
-      this.$.logger.error(`${this.$.url} responded with invalid JSON: ${e}`)
+      this.$.logger.err(`${this.$.url} responded with invalid JSON: ${e}`)
       return this.$.on_error(e)
     }
     if(ev[0] === 'EVENT') {

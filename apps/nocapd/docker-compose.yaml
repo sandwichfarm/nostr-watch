@@ -3,7 +3,8 @@ services:
   nocapd:
     container_name: nocapd
     restart: unless-stopped
-    build: 
+    image: nocapd
+    build:     
       context: .
       args:
         BUILDKIT_INLINE_CACHE: 0

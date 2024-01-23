@@ -20,6 +20,7 @@
     "timestring": "^7.0.0"
   },
   "scripts": {
-    "launch": "node src/index.js"
+    "launch": "node src/index.js",
+    "deploy:theship": "./deploy.theship.sh"
   }
 }

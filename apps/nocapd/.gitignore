@@ -3,3 +3,6 @@ config.y*ml
 yarn.lock
 .events
 .env*
+deploy.theship.sh
+docker-compose.theship.yaml
+*.tar

@@ -3,16 +3,18 @@ import timestring from 'timestring'
 import chalk from 'chalk'
 
 import relaycache from '@nostrwatch/nwcache'
+
 import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
+const { Worker } = BullMQ
 
 import { NocapdQueues } from './classes/NocapdQueues.js'
-import { parseRelayNetwork, relayId, capitalize, loadConfig } from "@nostrwatch/utils"
+import { parseRelayNetwork, capitalize, loadConfig, RedisConnectionDetails } from "@nostrwatch/utils"
 
 import { bootstrap } from '@nostrwatch/seed'
 
 import Logger from '@nostrwatch/logger'
 
-const { Worker } = BullMQ
+
 const log = new Logger('nocapd')
 const rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
 
@@ -71,10 +73,11 @@ const initManagers = async ($q) => {
 const initWorker = async () => {
   const $q = new NocapdQueues({ pubkey: process.env.DAEMON_PUBKEY })
   const { $Queue:$NocapdQueue, $QueueEvents:$NocapdQueueEvents } = NocapdQueue()
+  const connection = RedisConnectionDetails()
   await $NocapdQueue.pause()
   await $NocapdQueue.drain()
 
-  const $worker = new Worker($NocapdQueue.name, $q.route.bind($q), { concurrency: 3 } )
+  const $worker = new Worker($NocapdQueue.name, $q.route.bind($q), { concurrency: 3, connection } )
   await $worker.pause()
   
   $q.queue = $NocapdQueue

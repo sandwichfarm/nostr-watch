@@ -18,4 +18,4 @@ RUN yarn install --network-timeout 1000000
 # EXPOSE 3000
 
 # Run the app when the container launches
-CMD ["node", "src/index.js"]
+CMD yarn launch

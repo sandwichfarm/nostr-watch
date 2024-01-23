@@ -525,12 +525,12 @@ export default class {
    * @private
    * @returns null
    */
-    handle_error(){
-      // this.unsubscribe()
-      // this.close()
-      this.websocket_hard_fail()
-      // this.finish(this.current, { [this.current]: false, duration: -1 }, this.promises.get(this.current).reject)
-    }
+  handle_error(){
+    // this.unsubscribe()
+    // this.close()
+    this.websocket_hard_fail()
+    // this.finish(this.current, { [this.current]: false, duration: -1 }, this.promises.get(this.current).reject)
+  }
   
 
   /**

@@ -1,14 +1,15 @@
-import { Worker } from 'bullmq';
-import Redis from 'ioredis';
-
 import { trawl } from './trawler.js';
 import Logger from '@nostrwatch/logger'
 
-import { TrawlQueue } from '@nostrwatch/controlflow'
+import { TrawlQueue, BullMQ } from '@nostrwatch/controlflow'
+
+const { Worker } = BullMQ
+
+import { RedisConnectionDetails } from '@nostrwatch/utils'
 
 export const configureQueues = async function(){
 
-  const connection = new Redis()
+  const connection = RedisConnectionDetails()
 
   /**********
    * Trawler 
@@ -21,6 +22,7 @@ export const configureQueues = async function(){
   const trawler = TrawlQueue({ removeOnComplete: { age: 30*60*1000 }, removeOnFail: { age: 30*60*1000 }, timeout: 1000*60*10 })
 
   const trawlJobProgress = async ($job, progress) => {
+    console.log("progress")
     if(!(progress instanceof Object)) return trawlLogger.warn(`Progress data is not an object, it's a ${typeof progress}`)
     const { type, source } = progress 
     if(type === 'found'){
@@ -50,14 +52,13 @@ export const configureQueues = async function(){
     trawlLogger.warn(`trawlJob ${$job.id} failed: ${err}`)
   }
 
-  const trawlWorker = new Worker(trawler.$Queue.name, trawl, { concurrency: 1, maxStalledCount: 1 })
+  const trawlWorker = new Worker(trawler.$Queue.name, trawl, { concurrency: 1, maxStalledCount: 1, connection })
         trawlWorker.on('completed', trawlJobCompleted)
         trawlWorker.on('failed', trawlJobFailed)
         trawlWorker.on('progress', trawlJobProgress)
 
   return {
     trawlQueue: trawler.$Queue,
-    trawlWorker,
-    connection
+    trawlWorker
   }
 }

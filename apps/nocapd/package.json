@@ -7,7 +7,7 @@
   "dependencies": {
     "@nostr-fetch/adapter-nostr-tools": "0.14.1",
     "@nostrwatch/controlflow": "^0.0.2",
-    "@nostrwatch/logger": "^0.0.2",
+    "@nostrwatch/logger": "^0.0.3",
     "@nostrwatch/nocap": "^0.1.7",
     "@nostrwatch/nwcache": "^0.0.1",
     "@nostrwatch/publisher": "^0.0.1",

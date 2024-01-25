@@ -1,6 +1,19 @@
 import { Nocapd } from './daemon.js';
 
-const nocapd = Nocapd()
+let $process = null
+
+const run = () => {
+  //check for nocapd directories 
+  //check for monitor configs
+  //compare monitor config
+  $process = daemon()
+}
+
+const daemon = () => {
+  return Nocapd()
+}
+
+run()
 
 async function gracefulShutdown(signal) {
   console.log(`Received ${signal}, closing application...`);

@@ -1,15 +1,15 @@
 export class NocapdQueues {
   constructor(config){
     /** @type {object} */
-    this.managers = {}
+    // this.checks = {}
     /** @type {BullQueue} */
     this.queue = null 
     /** @type {BullQueueEvents} */
     this.events = null 
     /** @type {BullWorker} */ 
     this.worker = null
-    /** @type {WorkerManager} */
-    this.managers = null 
+    // /** @type {WorkerManager} */
+    this.checks = null 
     /** @type {Scheduler} */ 
     this.scheduler = null
     /** @type {object} */
@@ -32,10 +32,10 @@ export class NocapdQueues {
     if(daemonPubkey !== this.pubkey) 
       console.warn(`[route] ${daemonPubkey} !== ${this.pubkey}`)
 
-    if(!this.managers[daemonManager])
+    if(!this.checks[daemonManager])
       throw new Error(`No manager found for ${daemonManager}`)
 
-    return this.managers[daemonManager].work(job)
+    return this.checks[daemonManager].work(job)
   }
 
   route_event(event, ...args){
@@ -55,16 +55,17 @@ export class NocapdQueues {
       // if(daemonPubkey !== this.pubkey) 
       //   return this.log.warn(`[route_event] ${daemonPubkey} !== ${this.pubkey}`)
   
-      if(!this.managers[daemonManager])
-        this.log.warn(`No manager found for ${daemonManager} to handle ${event} event for pubkey: ${daemonPubkey}`)
+      if(!this.checks[daemonManager])
+        return 
+        // this.log.warn(`No manager found for ${daemonManager} to handle ${event} event for pubkey: ${daemonPubkey}`)
   
-      return this.managers[daemonManager].cbcall(event, ...args)
+      return this.checks[daemonManager].cbcall(event, ...args)
     }
     //these events apply to the worker not the manager an d don't have any parameters, 
     //so cannot be routed like completions and failures.
     else if( event === 'drained' ) {
-      for( const manager in this.managers ) {
-        this.managers[manager].cbcall(event)
+      for( const manager in this.checks ) {
+        this.checks[manager].cbcall(event)
       }
     }
     else {
@@ -96,10 +97,10 @@ export class NocapdQueues {
   }
 
   async populateAll(){
-    const mkeys = Object.keys(this.managers)
+    const mkeys = Object.keys(this.checks)
     for await ( const mkey of mkeys ){
       // this.log.debug(`populateAll() -> ${mkey}:populator()`)
-      await this.managers[mkey]._populator()
+      await this.checks[mkey].populator()
     }
   }
 

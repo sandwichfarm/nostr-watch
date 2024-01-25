@@ -1,68 +1,57 @@
 import hash from 'object-hash'
+import mapper from 'object-mapper'
+import timestring from 'timestring'
+import chalk from 'chalk';
+
+import ngeotags from 'nostr-geotags'
 
 import { RetryManager } from '@nostrwatch/controlflow'
 import { Nocap } from '@nostrwatch/nocap'
 import { parseRelayNetwork, delay, lastCheckedId } from '@nostrwatch/utils'
-import timestring from 'timestring'
+import Publish from '@nostrwatch/publisher'
 
-import chalk from 'chalk';
+const publish30066 = new Publish.Kind30066()
 
-export class WorkerManager {
-  constructor($q, rcache, opts){
-    // if(opts?.id)
-    //   throw new Error('WorkerManager needs an id')
-    /** @type {NWQueue} */
+export class NWWorker {
+  constructor(check, $q, rcache, opts){
+
     this.$ = $q
 
-    this.shortname = this.slug().replace('Manager', '').toLowerCase()
+    this.slug = check
 
-    // this.retry = new RetryManager(`nocapd/${this.shortname}`, opts.retry)
-    this.retry = new RetryManager(`nocapd`, opts.retry)
+    // this.retry = new RetryManager(`nocapd/${this.slug}`, opts.retry)
+    this.retry = new RetryManager(`nocapd/${this.slug}`, opts.retry)
 
-    /** @type {db} */
     this.rcache = rcache
 
-    /** @type {object} */
     this.cb = {}
     
-    /** @type {string} */
     this.pubkey = process.env?.DAEMON_PUBKEY
 
-    /** @type {number} */
-    this.priority = opts?.checks?.[this.shortname]?.priority? opts.checks[this.shortname].priority: 10
-
-    /** @type {number} */
-    this.concurrency = opts?.concurrency? opts.concurrency: 1
-
-    this.expires = opts?.checks?.[this.shortname]?.expires? timestring(opts.checks[this.shortname].expires, 'ms'): 60*60*1000
-
-    this.interval = opts?.checks?.[this.shortname]?.interval? timestring(opts.checks[this.shortname].interval, 'ms'): 60*1000
+    const checkOpts = opts?.checks?.options
+    this.timeout = this.setTimeout(checkOpts?.timeout)
+    this.priority = checkOpts?.priority? checkOpts.priority: 10
+    this.expires = checkOpts?.expires? timestring(checkOpts.expires, 'ms'): 60*60*1000
+    this.interval = checkOpts?.interval? timestring(checkOpts.interval, 'ms'): 60*1000
 
     this.networks = opts?.networks? opts.networks: ['clearnet']
 
     this.bindEvents = true
 
-    /** @type {number} */
-    this.timeout = opts?.timeout? opts.timeout: 5000
-
     this.log = opts?.logger? opts.logger.logger: console
 
-    /** @type {function} */
     this.scheduler = opts?.scheduler? opts.scheduler.bind(this): () => { console.warn(`scheduler not defined for ${this.id}`) }
 
     this.opts = opts
 
-    /** @type {array} */
     this.worker_events = ['completed', 'failed', 'progress', 'stalled', 'waiting', 'active', 'delayed', 'drained', 'paused', 'resumed']
 
-    /** @type {array} */
     this.queue_events = ['active', 'completed', 'delayed', 'drained', 'error', 'failed', 'paused', 'progress', 'resumed', 'stalled', 'waiting']
 
-    /** @type {Nocap} */  
     this.Nocap = Nocap
 
     if(!this?.on_completed || !(this.on_completed instanceof Function))
-      throw new Error(`${this.slug()}: on_completed needs to be defined and a function`)
+      throw new Error(`${this.slug}: on_completed needs to be defined and a function`)
     
     this.log.info(`${this.id()} initialized`)
 
@@ -75,6 +64,77 @@ export class WorkerManager {
     this.total = 0
 
     this.relayMeta = new Map()
+  }
+
+  get_key_for_check(){
+    switch(this.slug){
+      case "geo":
+        return ['dns', 'geo']
+      case "websocket":
+        return ['connect', 'read', 'write']
+      default:
+        return this.slug
+    }
+  }
+
+  async work(job){
+    const failure = (err) => { this.log.debug(`Could not run ${this.slug} check for ${job.data.relay}: ${err.message}`) }  
+    try {
+      this.log.debug(`${this.id()}:work()`, job.id)
+      this.log.debug(`Running ${this.slug} check for ${job.data.relay}`)
+      const { relay:url } = job.data 
+      const dpubkey = this.pubkey
+      const nocapOpts = { 
+        timeout: this.timeout,
+        checked_by: dpubkey 
+      }
+      const nocapd = new this.Nocap(url, nocapOpts)
+      let result = {}
+      //geo requires data from dns check first
+      const check = this.get_key_for_check()
+      await nocapd.check(check)
+        .catch( err => {
+          failure(`Failure inside check(): ${err}`)
+        })
+        .then( _result => {
+          result = _result
+        })
+      return { result } 
+    } 
+    catch(err) {
+      failure(`Failure inside work() block: ${err}`)
+      return { result: false }
+    }
+  }
+
+  async on_completed(job, rvalue){
+    const { relay:url } = job.data
+    const { result  } = rvalue
+
+    if(!result || !result?.connect?.data)
+      return this.on_failed(job, new Error(`Nocap.check('${this.slug}'): failed for ${url}`))
+
+    const { checked_at } = result
+
+    this.processed++
+    this.progressMessage(url, result)
+    
+    const relay_id = await this.updateRelayCache(result)      
+    const retry_id = await this.retry.setRetries( url, true )
+    const lastChecked_id = await this.setLastChecked( url, Date.now() )
+
+    const event30066Data = event30066DataFromResult( result )
+    await publish30066.one(event30066Data)    
+  }
+
+  async on_failed(job, err){
+    const { relay:url } = job.data
+    this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}`)
+    const retry_id = await this.retry.setRetries( url, false )
+    const lastChecked_id = await this.setLastChecked( url, Date.now() )
+    const relay_id = await this.updateRelayCache({ url, connect: { data: false }} ) 
+    this.progressMessage(url, null, true)
+    this.processed++
   }
 
   calculateProgress() {
@@ -108,11 +168,7 @@ export class WorkerManager {
   }
 
   id(){
-    return `${this.slug()}@${this.pubkey}`
-  }
-
-  slug(){
-    return this.constructor.name
+    return `${this.slug}@${this.pubkey}`
   }
 
   async counts(){
@@ -144,25 +200,26 @@ export class WorkerManager {
 
   async _work(job){
     if(job.id.startsWith(this.id())) {
-      this.log.debug(`[work] ${job.id} is a ${this.slug()} job, running...`)
+      this.log.debug(`[work] ${job.id} is a ${this.slug} job, running...`)
       return this.work()
     }
-    this.log.debug(`[work] ${job.id} is not a ${this.slug()} job, passing to next worker`)
+    this.log.warn(`[work] ${job.id} is not a ${this.slug} job, passing to next worker`)
   }
 
-  async work(job){
-    throw new Error(`work() not implemented by subclass "${this.slug()}"`)
+  // async work(job){
+  //   throw new Error(`work() not implemented by subclass "${this.slug}"`)
+  // }
+
+  static getShortName(slug){
+    return slug.replace('Manager', '').toLowerCase()
   }
 
-  async _populator(){
-    this.log.debug(`${this.id()}:_populator()`)
-    let relays
-    if(this?.populator instanceof Function)
-      relays = await this.populator()
-    else 
-      relays = await this.getRelays()
+  async populator(){
+    const relays = await this.getRelays()
+    this.log.info(relays.length)
     await this.$.worker.pause()
     await this.addRelayJobs(relays)
+    this.log.debug(`${this.id()}:_populator(): Added ${relays?.length} to queue`)
     delay(1000)
     await this.$.worker.resume()
   }
@@ -183,36 +240,58 @@ export class WorkerManager {
       removeOnComplete: true,
       removeOnFail: true
     }
-    this.log.debug(`Adding job for ${this.slug()}: ${JSON.stringify(jdata)}`)
+    this.log.debug(`Adding job for ${this.slug}: ${JSON.stringify(jdata)}`)
     return this.$.queue.add( this.id(), jdata, { jobId: this.jobId(jdata.relay), ...jobOpts})
+  }
+
+  setTimeout(config){
+    this.timeout = {
+      connect: 3000,
+      read: 3000,
+      write: 3000,
+      info: 2000,
+      dns: 1000,
+      geo: 1000,
+      ssl: 1000
+    }
+    if(config instanceof Object){
+      return this.timeout = {...this.timeout, ...config}
+    }
+    if(config instanceof Number){
+      for (let key in this.timeout) {
+        this.timeout[key] = config;
+      }
+      return this.timeout
+    }
   }
 
   getPriority(relay){
     const {group, retries} = this.relayMeta.get(relay)
+    const format = i => Math.ceil(i)
     if(group === 'online')
-      return 1
+      return format(this.priority/10)
     if(group === 'unchecked')
-      return 10 
+      return format(this.priority)
     if(group === 'expired'){
       if(!retries)
-        return 50
+        return format(this.priority*4)
       if(retries > 16)
-        return 100
+        return format(this.priority*10)
       else if(retries > 12)
-        return 80
+        return format(this.priority*8)
       else if(retries > 8)
-        return 70
+        return format(this.priority*7)
       else if(retries > 6)
-       return 65
+       return format(this.priority*6)
       else if( retries > 3)
-        return 55
+        return format(this.priority*5)
       else 
-        return 50
+        return format(this.priority*4)
     }
   }
 
   cacheId(url){
-    return lastCheckedId(this.shortname, url)
+    return lastCheckedId(this.slug, url)
   }
 
   async setLastChecked(url, date=Date.now()){
@@ -234,6 +313,7 @@ export class WorkerManager {
         const promise = new Promise( async (resolve, reject) => { 
           const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data), data: result[key].data }
           const _check_id = await this.rcache.check[key].insert(_record)
+          console.log(_check_id)
           if(!_check_id)
             reject()
           record = {...record, ...{ [key]: _check_id }}
@@ -246,10 +326,6 @@ export class WorkerManager {
     record.url = url
     record.online = result.connect.data
     const $id = await this.rcache.relay.patch(record)
-    // console.log('---')
-    // console.log($id)
-    // console.log(this.rcache.relay.get.one(url))
-    // console.log('---')
     return $id
   }
 
@@ -332,4 +408,105 @@ const evaluateMaxRelays = (evaluate, relays) => {
   catch(e){
     this.log.error(`Error evaluating config.nocapd.checks.all.max -> "${config.nocapd.checks.all.max}": ${e.message}`)
   }
+}
+
+const event30066DataFromResult = result => {
+  const eventData = {}
+  const labels = []
+  const nips = []
+
+  const dns = result.dns?.data || {}
+  const isDns = Object.keys(dns)?.length > 0  
+
+  const geo = transformGeoResult(result.geo?.data) || {}
+  const isGeo = Object.keys(geo)?.length > 0
+
+  const info = result.info?.data || {}
+  const isInfo = Object.keys(info)?.length > 0
+
+  const ssl = result.ssl?.data || {}
+  const isSsl = Object.keys(ssl)?.length > 0
+  
+  eventData.url = result.url 
+  eventData.online = result.connect.data
+
+  eventData.rtt = []
+
+  if(result?.network)
+    eventData.network = result.network
+
+  if(result?.connect?.duration > 0)
+    eventData.rtt.push([ 'open', result.connect.duration ])
+
+  if(result?.read?.duration > 0)
+    eventData.rtt.push([ 'subscribe', result.read.duration ])
+
+  if(result?.write?.duration > 0)
+    eventData.rtt.push([ 'publish', result.write.duration ])
+
+  if(eventData.retries > 0)
+    eventData.retries = result.retries
+
+  if(isGeo)
+    eventData.geo = ngeotags(geo, { iso31662: true, iso3163: true })
+  
+  if(isInfo){
+    if(info?.limitation?.payment_required === true)
+      labels.push(['nip11.limitation', 'payment-required'])
+    if(info?.limitation?.auth_required === true)
+      labels.push(['nip11.limitation', 'auth-required'])
+    if(info?.pubkey)
+      labels.push(['nip11.pubkey', info.pubkey])
+    if(info?.contact)
+      labels.push(['nip11.contact', info.contact])
+    if(info?.name)
+      labels.push(['nip11.name', info.name])
+    if(info?.software)
+      labels.push(['nip11.software', info.software])
+    if(info?.version)
+      labels.push(['nip11.version', info.version])
+    if(info?.supported_nips instanceof Array)
+      info.supported_nips.forEach(nip => {
+        nips.push(`${nip}`)
+      })
+    if(info?.tags)
+      labels.push(['nip11.tags', ...info.tags])
+    if(info?.language_tags)
+      labels.push(['nip11.language_tags', ...info.language_tags ])
+  }
+
+  if(isSsl)
+    eventData.ssltag = [ 'ssl', ssl?.valid === true? 'valid': 'invalid', `${new Date(ssl.valid_from).getTime()}`, `${new Date(ssl.valid_to).getTime()}` ]
+
+  if(isGeo)
+    if(geo?.as)
+      labels.push(['as', geo.as])
+    if(geo?.asn)
+      labels.push(['asn', geo.asn])
+    if(geo?.ip)
+      labels.push([`ipv4`, geo.ip])
+
+  if(labels.length)
+    eventData.labels = labels
+
+  if(nips.length)
+    eventData.nips = nips
+
+  return eventData
+}
+
+const transformGeoResult = geo => {  
+  const map = {
+    "as": "as",
+    "asn": "asn",
+    "city": "cityName",
+    "countryCode": "countryCode",
+    "regionName": "regionName",
+    "continent": "contentName",
+    "continentCode": "continentCode",
+    "lat": "lat",
+    "lon": "lon",
+    "query": "ip",
+  }
+  return mapper(geo, map)
 }

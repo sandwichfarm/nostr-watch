@@ -4,6 +4,7 @@ import chalk from 'chalk'
 
 import relaycache from '@nostrwatch/nwcache'
 
+import { NWWorker } from './classes/Worker.js'
 import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
 const { Worker } = BullMQ
 
@@ -20,20 +21,20 @@ const rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
 
 let config 
 
-const schedulePopulator = ($manager) =>{
+const schedulePopulator = ($check) =>{
   const rule = new schedule.RecurrenceRule();
   rule.start = Date.now(); // Set the start time
-  rule.rule = `*/${Math.round($manager.interval / 1000)} * * * * *`; // Set the frequency in seconds
+  rule.rule = `*/${Math.round($check.interval / 1000)} * * * * *`; // Set the frequency in seconds
   return schedule.scheduleJob(rule, async () => { 
-    log.info(`running schedule for ${$manager.slug()}._populator`)
-    await $manager._populator()
+    log.info(`running schedule for ${$check.slug}.populator`)
+    await $check.populator()
   })
 }
 
 const scheduleSyncRelays = async () =>{
-  if(!config?.nocapd?.sync?.in?.events) return
+  if(!config?.nocapd?.seed?.options?.events) return
   // await syncRelaysIn()
-  const interval = config.nocapd.sync.in.events?.interval || 60*60
+  const interval = config?.nocapd?.seed?.options?.events?.interval || 60*60
   log.info(`scheduling syncRelaysIn() every ${timestring(interval, 'm')} minutes`)
   const rule = new schedule.RecurrenceRule();
   rule.start = Date.now(); // Set the start time
@@ -49,25 +50,21 @@ const syncRelaysIn = async () => {
     return persisted
 }
 
-const initManagers = async ($q) => {
-  const managers = {}
-  const enabledManagers = enabledWorkerManagers() || []
-  for await ( const Manager of enabledManagers ) {
-    const mpath = `./managers/${Manager}.js`
-    const imp = await import(mpath)
+const initChecks = async ($q) => {
+  const checks = {}
+  const EnabledChecks = enabledChecks() || []
+  for await ( const check of EnabledChecks ) {
     try {
-      const mname = imp[Manager].name
       const nocapdConf = config?.nocapd || {}
-      const $manager = new imp[Manager]($q, rcache, {...nocapdConf , logger: new Logger(mname), pubkey: process.env.DAEMON_PUBKEY })
-      managers[mname] = $manager
-      schedulePopulator($manager)
+      checks[check] = new NWWorker(check, $q, rcache, {...nocapdConf, logger: new Logger(check), pubkey: process.env.DAEMON_PUBKEY })
+      schedulePopulator(checks[check])
     }
     catch(e){
-      log.err(`Error initializing ${Manager}: ${e.message}`)
+      log.err(`Error initializing ${check}: ${e.message}`)
     }
   }
   await scheduleSyncRelays()
-  return managers
+  return checks
 }
 
 const initWorker = async () => {
@@ -76,14 +73,15 @@ const initWorker = async () => {
   const connection = RedisConnectionDetails()
   await $NocapdQueue.pause()
   await $NocapdQueue.drain()
-
-  const $worker = new Worker($NocapdQueue.name, $q.route.bind($q), { concurrency: 3, connection } )
+  const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
+  log.info(`Worker concurrency: ${concurrency}`)
+  const $worker = new Worker($NocapdQueue.name, $q.route.bind($q), { concurrency, connection } )
   await $worker.pause()
   
   $q.queue = $NocapdQueue
   $q.events = $NocapdQueueEvents
   $q.setWorker($worker)
-  $q.managers = await initManagers($q)
+  $q.checks = await initChecks($q)
   
   await $q.populateAll()
   await $q.queue.resume() 
@@ -91,19 +89,16 @@ const initWorker = async () => {
   return $q
 }
 
-const enabledWorkerManagers = () => {
+const enabledChecks = () => {
   const eman = []
-  for( const manager of Object.keys(config?.nocapd?.checks) ) {
-    if(config?.nocapd?.checks?.[manager]?.enabled === true)
-      eman.push(`${capitalize(manager)}Manager`)
-  }
-  return eman
+  return config?.nocapd?.checks?.enabled instanceof Array? config.nocapd.checks.enabled: 'all'
 }
 
 const maybeBootstrap = async () => {
+  log.info(`Boostrapping..`)
   if(rcache.relay.count.all() === 0){
     const persisted = await syncRelaysIn()
-    log.info(`Boostrappted ${persisted.length} relays`)
+    log.info(`Boostrapped ${persisted.length} relays`)
   }
 }
 

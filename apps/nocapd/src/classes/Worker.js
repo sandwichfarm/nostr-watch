@@ -313,7 +313,7 @@ export class NWWorker {
         const promise = new Promise( async (resolve, reject) => { 
           const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data), data: result[key].data }
           const _check_id = await this.rcache.check[key].insert(_record)
-          console.log(_check_id)
+          // console.log(_check_id)
           if(!_check_id)
             reject()
           record = {...record, ...{ [key]: _check_id }}

@@ -1,6 +1,5 @@
 node_modules
 config.y*ml
-yarn.lock
 .events
 .env*
 deploy.theship.sh

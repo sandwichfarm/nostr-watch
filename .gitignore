@@ -17,3 +17,4 @@ ours.sh
 packages/synx
 packages/kinds
 .npmrc
+.ansible

@@ -7,11 +7,11 @@ import { fetch } from 'cross-fetch'
 
   async check_geo(){ 
     let endpoint 
-    const ips = this.$.results.getIps('ipv4')
-    const ip = ips[ips?.length-1]
+    const iparr = this.$.results.get('dns')?.data.ipv4
+    const ip = iparr[iparr.length-1]
     const apiKey = process.env?.IP_API_KEY
     //todo, enable override via options
-    const fields = 'continent,continentCode,countryCode,regionName,city,lat,lon,isp,as,asname,query'
+    const fields = 'proxy,mobile,timezone,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,isp,as,asname,query'
     if(typeof ip !== 'string')
       return this.$.finish('geo', { status: "error", message: 'No IP address. Run `dns` check first.', data: {} })
     if(apiKey)

@@ -13,8 +13,8 @@ trawler:
   check: 
     enabled: true 
     timeout: 1000
-    interval: 60*60*1000
-    max: 100
+    interval: 24*60*60*1000
+    max: 1000
     expiry: [
       { max: 3, delay: 1000 * 60 * 60 * 12},
       { max: 6, delay: 1000 * 60 * 60 * 24 },

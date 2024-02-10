@@ -1,9 +1,12 @@
 import { Publisher } from '../Publisher.js'
 
-export class Kind10066 extends Publisher {
+import ngeotags from 'nostr-geotags'
+
+
+export class Kind10166 extends Publisher {
   constructor(){
     super()
-    this.kind = 10066
+    this.kind = 10166
   }
 
   generateEvent(relay){

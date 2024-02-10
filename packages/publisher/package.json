@@ -8,6 +8,7 @@
   "author": "sandwich <dskvr@no-reply.github.com> ",
   "license": "MIT",
   "dependencies": {
+    "nostr-geotags": "^0.4.1",
     "nostr-tools": "1.17.0"
   }
 }

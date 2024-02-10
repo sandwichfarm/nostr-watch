@@ -6,9 +6,12 @@ const config = await loadConfig()
 
 import fs from 'fs/promises';
 
+const log = new Logger('publisher')
+
 async function writeObjectToFile(obj) {
 
-  const filename = obj.tags.find( tag => tag[0] === 'd' )[1].replace('wss://', '').replace('ws://', '').replace('http://', '').replace('https://', '').replace('/', '')
+  let filename = obj.tags.find( tag => tag[0] === 'd' )[1].replace('wss://', '').replace('ws://', '').replace('http://', '').replace('https://', '').replace('/', '')
+  filename = `${obj.kind}-${filename}`
   
   const fileName = `./.events/${filename}.json`;
   const jsonContent = JSON.stringify(obj, null, 2); // pretty-print JSON
@@ -98,10 +101,14 @@ export class Publisher {
   }
 
   async publishEvent(signedEvent){
-    // writeObjectToFile(signedEvent);
+    writeObjectToFile(signedEvent);
+    console.log
     const pool = new SimplePool();
     const relays = config.publisher.to_relays
     let pubs = pool.publish(relays, signedEvent)
+    await Promise.all( pubs )
+    // console.log(pubs)
+    // process.exit()
     return Promise.all( pubs )
   }
 

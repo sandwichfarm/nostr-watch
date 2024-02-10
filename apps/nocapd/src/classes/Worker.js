@@ -1,16 +1,12 @@
 import hash from 'object-hash'
-import mapper from 'object-mapper'
+
 import timestring from 'timestring'
 import chalk from 'chalk';
-
-import ngeotags from 'nostr-geotags'
 
 import { RetryManager } from '@nostrwatch/controlflow'
 import { Nocap } from '@nostrwatch/nocap'
 import { parseRelayNetwork, delay, lastCheckedId } from '@nostrwatch/utils'
 import Publish from '@nostrwatch/publisher'
-
-const publish30066 = new Publish.Kind30066()
 
 export class NWWorker {
   constructor(check, $q, rcache, opts){
@@ -123,8 +119,12 @@ export class NWWorker {
     const retry_id = await this.retry.setRetries( url, true )
     const lastChecked_id = await this.setLastChecked( url, Date.now() )
 
-    const event30066Data = event30066DataFromResult( result )
-    await publish30066.one(event30066Data)    
+    const publish30066 = new Publish.Kind30066()
+    const publish30166 = new Publish.Kind30166()  
+
+    await publish30066.one( result )    
+    await publish30166.one( result )   
+     
   }
 
   async on_failed(job, err){
@@ -410,103 +410,32 @@ const evaluateMaxRelays = (evaluate, relays) => {
   }
 }
 
-const event30066DataFromResult = result => {
-  const eventData = {}
-  const labels = []
-  const nips = []
+const eventDataFromResult = result => {
+  const events = []
 
   const dns = result.dns?.data || {}
-  const isDns = Object.keys(dns)?.length > 0  
-
-  const geo = transformGeoResult(result.geo?.data) || {}
-  const isGeo = Object.keys(geo)?.length > 0
-
   const info = result.info?.data || {}
-  const isInfo = Object.keys(info)?.length > 0
-
+  const geo = transformGeoResult(result.geo?.data) || {}
   const ssl = result.ssl?.data || {}
-  const isSsl = Object.keys(ssl)?.length > 0
-  
-  eventData.url = result.url 
-  eventData.online = result.connect.data
+  const rtt = { open: result.open.duration, read: result.read.duration, write: result.write.duration } || {}
 
-  eventData.rtt = []
-
-  if(result?.network)
-    eventData.network = result.network
-
-  if(result?.connect?.duration > 0)
-    eventData.rtt.push([ 'open', result.connect.duration ])
-
-  if(result?.read?.duration > 0)
-    eventData.rtt.push([ 'subscribe', result.read.duration ])
-
-  if(result?.write?.duration > 0)
-    eventData.rtt.push([ 'publish', result.write.duration ])
-
-  if(eventData.retries > 0)
-    eventData.retries = result.retries
-
-  if(isGeo)
-    eventData.geo = ngeotags(geo, { iso31662: true, iso3163: true })
-  
-  if(isInfo){
-    if(info?.limitation?.payment_required === true)
-      labels.push(['nip11.limitation', 'payment-required'])
-    if(info?.limitation?.auth_required === true)
-      labels.push(['nip11.limitation', 'auth-required'])
-    if(info?.pubkey)
-      labels.push(['nip11.pubkey', info.pubkey])
-    if(info?.contact)
-      labels.push(['nip11.contact', info.contact])
-    if(info?.name)
-      labels.push(['nip11.name', info.name])
-    if(info?.software)
-      labels.push(['nip11.software', info.software])
-    if(info?.version)
-      labels.push(['nip11.version', info.version])
-    if(info?.supported_nips instanceof Array)
-      info.supported_nips.forEach(nip => {
-        nips.push(`${nip}`)
-      })
-    if(info?.tags)
-      labels.push(['nip11.tags', ...info.tags])
-    if(info?.language_tags)
-      labels.push(['nip11.language_tags', ...info.language_tags ])
+  const translated = {
+    url: result.url,
+    network: result.network, 
+    isRtt: Object.keys(rtt)?.length > 0,
+    isDns: Object.keys(dns)?.length > 0,
+    isInfo: Object.keys(info)?.length > 0,
+    isGeo: Object.keys(geo)?.length > 0,
+    isSsl: Object.keys(ssl)?.length > 0,
+    rtt,
+    info,
+    dns,
+    geo,
+    ssl
   }
 
-  if(isSsl)
-    eventData.ssltag = [ 'ssl', ssl?.valid === true? 'valid': 'invalid', `${new Date(ssl.valid_from).getTime()}`, `${new Date(ssl.valid_to).getTime()}` ]
-
-  if(isGeo)
-    if(geo?.as)
-      labels.push(['as', geo.as])
-    if(geo?.asn)
-      labels.push(['asn', geo.asn])
-    if(geo?.ip)
-      labels.push([`ipv4`, geo.ip])
-
-  if(labels.length)
-    eventData.labels = labels
-
-  if(nips.length)
-    eventData.nips = nips
-
-  return eventData
+  const k30066 = ev30066(translated)
+  const k30166 = ev30166(translated)
+  return [ k30066, k30166 ]
 }
 
-const transformGeoResult = geo => {  
-  const map = {
-    "as": "as",
-    "asn": "asn",
-    "city": "cityName",
-    "countryCode": "countryCode",
-    "regionName": "regionName",
-    "continent": "contentName",
-    "continentCode": "continentCode",
-    "lat": "lat",
-    "lon": "lon",
-    "query": "ip",
-  }
-  return mapper(geo, map)
-}

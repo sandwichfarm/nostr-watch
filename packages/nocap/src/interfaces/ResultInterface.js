@@ -57,8 +57,25 @@ export class ResultInterface extends Validator {
     }
   }
 
-  getIps(protocol='ipv4') {
-    const answer = this.get('dns')?.data?.Answer
+  get_ip(protocol='ipv4') {
+    return ResultInterface.getIp(this.get('dns'), protocol)
+  }
+
+  get_ips(protocol='ipv4') {
+    return ResultInterface.getIps(this.get('dns'), protocol)
+  }
+
+  raw(keys){
+    return this._raw([ ...this.header_keys, ...keys])
+  }
+
+  static getIp(dns, protocol){
+    const answer = getIps(protocol, dns)
+    return answer?.[0] || null
+  }
+
+  static getIps(dns, protocol){
+    const answer = dns?.raw?.data?.Answer
     if(!answer || !answer.length)
       return []
     const regex = {}
@@ -67,8 +84,6 @@ export class ResultInterface extends Validator {
     return answer.filter(answer => regex[protocol.toLowerCase()].test(answer.data)).map(answer => answer.data) || null;
   }
 
-  raw(keys){
-    return this._raw([ ...this.header_keys, ...keys])
-  }
+
 
 }

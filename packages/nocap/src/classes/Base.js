@@ -168,37 +168,26 @@ export default class {
   }
 
   /**
-   * maybeTimeoutReject
-   * Creates a reject function for a timeout scenario
-   * 
-   * @private
-   * @param {string} key - The key associated with the timeout
-   * @returns {Function} - The reject function
-   */
-  maybeTimeoutReject(key){ 
-    return (reject) => {  
-      const message = `${key} check timed out (after ${this.config.timeout[key]}ms}` 
-      this.logger.debug(message)
-      return reject({ data: {}, duration: -1, status: "error", message})
-    }
-  }
-
- /**
-   * maybeTimeoutResolve
+   * maybe_timeout
    * Creates a resolve function for a timeout scenario
    * 
    * @private
    * @param {string} key - The key associated with the timeout
    * @returns {Function} - The reject function
    */
- maybeTimeoutResolve(key){
-  return (resolve) => {  
-    if(this.isWebsocketKey(key))
-      return resolve({ data: false, duration: -1, status: "error", message: `Websocket connection to relay timed out (after ${this.config.timeout[key]}ms}` })
-    else 
-      return resolve({ data: {}, duration: -1, status: "error", message: `${key} check timed out (after ${this.config.timeout[key]}ms}` })
+  maybe_timeout(key){ 
+    return (resolve, reject) => {  
+      const message = `${key} check timed out (after ${this.config.timeout[key]}ms}` 
+      this.logger.debug(message)
+      const data = this.isWebsocketKey(key)? false: {}
+      if(key === 'connect' && this.config.rejectOnConnectFailure){
+        return reject({ data, duration: -1, status: "error", message})
+      }
+      else {
+        return this.finish( key, { data, duration: -1, status: "error", message})
+      }
+    }
   }
-}
 
   /**
    * start
@@ -211,7 +200,7 @@ export default class {
    */
   async start(key){
     this.logger.debug(`${key}: start()`)
-    const checkDeferred = await this.addDeferred(key, this.maybeTimeoutReject(key))
+    const checkDeferred = await this.addDeferred(key, this.maybe_timeout(key))
     const adapter = this.routeAdapter(key)
 
     if( typeof key !== 'string')
@@ -310,7 +299,8 @@ export default class {
     result.adapters = [ ...new Set( this.results.get('adapters').concat([adapter_name]) ) ]
     result.checked_at = Date.now()
     result.checked_by = this.config.checked_by
-    data.duration = this.latency.duration(key)  
+    if(!data?.duration)
+      data.duration = this.latency.duration(key)  
     result[key] = { ...data }
     return result
   }

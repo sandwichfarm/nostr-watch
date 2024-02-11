@@ -14,6 +14,7 @@ export const ConfigDefaults = {
   },
   tor: {},
   adapterOptions: {},
+  rejectOnConnectFailure: false
 }
 
 /**

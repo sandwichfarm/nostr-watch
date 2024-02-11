@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "main": "src/index.js",
   "type": "module",
   "license": "MIT",

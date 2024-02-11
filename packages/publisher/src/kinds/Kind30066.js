@@ -52,13 +52,12 @@ export class Kind30066 extends Publisher {
   
     if(data?.network)
       tags.push( ['other', 'network', data.network] )
-  
     if(isRtt) {
-      if(data.connect?.data && data.connect?.duration > 0)
+      if(data.connect?.data && data.connect?.duration > 0 && data?.write?.status !== 'error')
         tags.push([ 'rtt', 'open', data.connect.duration.toString() ])
-      if(data.read?.data && data?.read?.duration > 0)
+      if(data.read?.data && data?.read?.duration > 0 && data?.write?.status !== 'error')
         tags.push([ 'rtt', 'read', data.read.duration.toString() ])
-      if(data.write?.data && data?.write?.duration > 0)
+      if(data.write?.data && data?.write?.duration > 0 && data?.write?.status !== 'error')
         tags.push([ 'rtt', 'write', data.write.duration.toString() ])
     }    
   
@@ -138,6 +137,8 @@ export class Kind30066 extends Publisher {
             tags.push( [ 'geo', prop, val.toString() ] )
           }   
         }
+
+        
     }
 
   
@@ -169,10 +170,8 @@ export class Kind30066 extends Publisher {
           tags.push( [ 'ssl', prop, val? 'true': 'false' ] )
         }
       }
-    }  
+    } 
 
-    // console.log(tags)
-    // process.exit()
     return tags
   }
 

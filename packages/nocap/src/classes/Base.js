@@ -515,10 +515,10 @@ export default class {
    * @private
    * @returns null
    */
-  handle_error(){
+  handle_error(err){
     // this.unsubscribe()
     // this.close()
-    this.websocket_hard_fail()
+    this.websocket_hard_fail(err)
     // this.finish(this.current, { [this.current]: false, duration: -1 }, this.promises.get(this.current).reject)
   }
   
@@ -710,11 +710,11 @@ export default class {
    * 
    * @private
    */
-  websocket_hard_fail(){
+  websocket_hard_fail(err){
     this.logger.debug(`websocket_hard_fail(): ${this.url}`)
     const wschecks = ['connect', 'read', 'write']
     wschecks.forEach(key => { 
-      this.results.set(key, { data: false, duration: -1, status: "error", message: "Websocket connection failed" }) 
+      this.results.set(key, { data: false, duration: -1, status: "error", message: err }) 
     })
     const promise = this.promises.get(this.current)
     if(!promise) return this.logger.warn(`websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)

@@ -107,23 +107,24 @@ export class NWWorker {
     const { relay:url } = job.data
     const { result  } = rvalue
 
-    if(!result || !result?.connect?.data)
+    if(!result || result?.connect?.data !== true)
       return this.on_failed(job, new Error(`Nocap.check('${this.slug}'): failed for ${url}`))
 
     const { checked_at } = result
-
-    this.processed++
-    this.progressMessage(url, result)
-    
-    const relay_id = await this.updateRelayCache(result)      
-    const retry_id = await this.retry.setRetries( url, true )
-    const lastChecked_id = await this.setLastChecked( url, Date.now() )
 
     const publish30066 = new Publish.Kind30066()
     const publish30166 = new Publish.Kind30166()  
 
     await publish30066.one( result )    
     await publish30166.one( result )   
+
+    this.processed++
+    
+    const relay_id = await this.updateRelayCache(result)      
+    const retry_id = await this.retry.setRetries( url, true )
+    const lastChecked_id = await this.setLastChecked( url, Date.now() )
+
+    this.progressMessage(url, result)
      
   }
 
@@ -143,7 +144,7 @@ export class NWWorker {
     return percentage.toFixed(2) + "%";
   }
 
-  progressMessage(url, result={}, error=false){
+  async progressMessage(url, result={}, error=false){
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray
@@ -152,7 +153,9 @@ export class NWWorker {
       `${mute(this.processed)}/${mute(this.total)}  `+
       `${url}: ${result?.connect?.data === true? success("online"): failure("offline")} ${result?.read?.data === true? success("readable"): failure("unreadable")} ${result?.write?.data === true? success("writable"): failure("unwritable")}  `+
       `${(result?.connect?.duration+result?.read?.duration+result?.write?.duration)/1000} seconds  `+
-      `${error? chalk.gray.italic('error'): ''}`)
+      `${error? chalk.gray.italic('error'): ''}  ` +
+      `[${error? await this.retry.getRetries(url) + " retries": ""}]`)
+      
   }
 
   siblingKeys(){
@@ -273,8 +276,6 @@ export class NWWorker {
     if(group === 'unchecked')
       return format(this.priority)
     if(group === 'expired'){
-      if(!retries)
-        return format(this.priority*4)
       if(retries > 16)
         return format(this.priority*10)
       else if(retries > 12)
@@ -389,7 +390,8 @@ export class NWWorker {
   }
 
   async isExpired(url, lastChecked) {
-      const retries = await this.retry.getRetries(url);
+      let retries = await this.retry.getRetries(url);
+      retries = retries === null? 0: retries
       const expiry = retries > 0 ? await this.retry.getExpiry(url) : this.expires;
       return lastChecked < Date.now() - expiry;
   }

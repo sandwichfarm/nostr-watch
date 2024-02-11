@@ -119,11 +119,11 @@ export class Kind30066 extends Publisher {
         if(data.geo.data?.isp)
           tags.push(['dns', 'isp', data.geo.data?.isp])
         if(data.geo.data?.isMobile)
-          tags.push(['dns', 'isMobile', data.geo.data?.isMobile? 'true': 'false'])
+          tags.push(['dns', 'is_mobile', data.geo.data?.isMobile? 'true': 'false'])
         if(data.geo.data?.isProxy)
-          tags.push(['dns', 'isProxy', data.geo.data?.isProxy? 'true': 'false'])
+          tags.push(['dns', 'is_proxy', data.geo.data?.isProxy? 'true': 'false'])
         //
-        const geoIgnore = ['ip', 'as', 'asname', 'isp', 'isMobile', 'isProxy']
+        const geoIgnore = ['ip', 'as', 'asname', 'isp', 'is_mobile', 'is_proxy']
         for(const prop in data.geo.data){
           let val = data.geo.data[prop]
           if(geoIgnore.includes(prop)) continue 
@@ -197,8 +197,7 @@ const transformGeoResult = geo => {
     "country": "countryName",
     "countryCode": "countryCode",
     "continent": "contentName",
-    "continentCode": "continentCode",
-
+    "continentCode": "continentCode"
   }
   return mapper(geo, map)
 }

@@ -109,7 +109,7 @@ export const relaysFromStaticSeed = async (opts) => {
 
 
 export const relaysOnlineFromApi = async (opts) => {
-  if(!opts.remotes.rest_api) throw new Error("relaysOnlineFromApi(): No nostr-watch rest_api specified in opts (host.com/v1 or host.com/v2)")
+  if(!opts?.remotes?.rest_api) throw new Error("relaysOnlineFromApi(): No nostr-watch rest_api specified in opts (host.com/v1 or host.com/v2)")
   const controller = new AbortController();
   const rest_api = opts.remotes.rest_api
   let timeout = setTimeout( () => controller.abort(), 10000)

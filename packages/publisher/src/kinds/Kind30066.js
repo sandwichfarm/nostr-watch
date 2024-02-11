@@ -143,6 +143,7 @@ export class Kind30066 extends Publisher {
   
     if(isSsl){
       const sslIgnore = ['valid', 'days_remaining']
+      data.ssl.data = transformSslResult(data.ssl.data)
       for(const prop in data.ssl.data){
         if(sslIgnore.includes(prop)) continue
 
@@ -201,6 +202,24 @@ const transformGeoResult = geo => {
   }
   return mapper(geo, map)
 }
+
+const transformSslResult = ssl => {  
+    const map = {
+      "modulus": "modulus",
+      "subjectaltname": "subject_alt_name",
+      "exponent": "exponent",
+      "valid_from": "valid_from",
+      "valid_to": "valid_to",
+      "fingerprint": "fingerprint",
+      "fingerprint256": "fingerprint256",
+      "fingerprint512": "fingerprint512",
+      "ext_key_usage": "ext_key_usage",
+      "serialNumber": "serial_number",
+      "pemEncoded": "pem_encoded"
+    }
+    return mapper(ssl, map)
+}
+
 
 const isTimeString = (str) => {
   return /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\s+\d{4}\s+GMT\b/.test(str);

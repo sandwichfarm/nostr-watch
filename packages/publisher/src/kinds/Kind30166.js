@@ -77,7 +77,7 @@ const transformGeoResult = geo => {
     "continentCode": "continentCode",
     "lat": "lat",
     "lon": "lon",
-    "query": "ip",
+    "query": "ip"
   }
   return mapper(geo, map)
 }

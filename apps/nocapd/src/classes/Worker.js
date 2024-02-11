@@ -150,7 +150,7 @@ export class NWWorker {
     this.log.info(
       `[${chalk.bgBlack(this.calculateProgress())}] `+
       `${mute(this.processed)}/${mute(this.total)}  `+
-      `${url}: ${result?.connect?.data? success("online"): failure("offline")}  `+
+      `${url}: ${result?.connect?.data === true? success("online"): failure("offline")} ${result?.read?.data === true? success("readable"): failure("unreadable")} ${result?.write?.data === true? success("writable"): failure("unwritable")}  `+
       `${(result?.connect?.duration+result?.read?.duration+result?.write?.duration)/1000} seconds  `+
       `${error? chalk.gray.italic('error'): ''}`)
   }
@@ -438,4 +438,3 @@ const eventDataFromResult = result => {
   const k30166 = ev30166(translated)
   return [ k30066, k30166 ]
 }
-

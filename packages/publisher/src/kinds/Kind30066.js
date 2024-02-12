@@ -39,7 +39,7 @@ export class Kind30066 extends Publisher {
   static generateTags(data){
     let tags = []
 
-    const isRtt = data?.connect?.data === true
+    const isRtt = data?.connect?.data === true || data?.connect?.duration > 0
     const isDns =  Object.keys(data?.dns || {})?.length > 0
     const isInfo =  Object.keys(data?.info?.data || {})?.length > 0
     const isGeo =  Object.keys(data?.geo?.data || {})?.length > 0

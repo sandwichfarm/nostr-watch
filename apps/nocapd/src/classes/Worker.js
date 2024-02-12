@@ -32,8 +32,6 @@ export class NWWorker {
 
     this.networks = opts?.networks? opts.networks: ['clearnet']
 
-    this.bindEvents = true
-
     this.log = opts?.logger? opts.logger.logger: console
 
     this.scheduler = opts?.scheduler? opts.scheduler.bind(this): () => { console.warn(`scheduler not defined for ${this.id}`) }
@@ -50,9 +48,7 @@ export class NWWorker {
       throw new Error(`${this.slug}: on_completed needs to be defined and a function`)
     
     this.log.info(`${this.id()} initialized`)
-
-    // this.stats = setInterval( async () => await this.counts(), 30*1000 )
-
+    
     this.delay = delay
 
     this.processed = 0
@@ -107,8 +103,10 @@ export class NWWorker {
     const { relay:url } = job.data
     const { result  } = rvalue
 
-    if(!result || result?.connect?.data !== true)
+    if(!result || !result?.connect?.data)
       return this.on_failed(job, new Error(`Nocap.check('${this.slug}'): failed for ${url}`))
+
+    // console.log('PUBLISHING', url, result?.connect?.data, result?.read?.data, result?.write?.data)
 
     const { checked_at } = result
 
@@ -410,33 +408,4 @@ const evaluateMaxRelays = (evaluate, relays) => {
   catch(e){
     this.log.error(`Error evaluating config.nocapd.checks.all.max -> "${config.nocapd.checks.all.max}": ${e.message}`)
   }
-}
-
-const eventDataFromResult = result => {
-  const events = []
-
-  const dns = result.dns?.data || {}
-  const info = result.info?.data || {}
-  const geo = transformGeoResult(result.geo?.data) || {}
-  const ssl = result.ssl?.data || {}
-  const rtt = { open: result.open.duration, read: result.read.duration, write: result.write.duration } || {}
-
-  const translated = {
-    url: result.url,
-    network: result.network, 
-    isRtt: Object.keys(rtt)?.length > 0,
-    isDns: Object.keys(dns)?.length > 0,
-    isInfo: Object.keys(info)?.length > 0,
-    isGeo: Object.keys(geo)?.length > 0,
-    isSsl: Object.keys(ssl)?.length > 0,
-    rtt,
-    info,
-    dns,
-    geo,
-    ssl
-  }
-
-  const k30066 = ev30066(translated)
-  const k30166 = ev30166(translated)
-  return [ k30066, k30166 ]
 }

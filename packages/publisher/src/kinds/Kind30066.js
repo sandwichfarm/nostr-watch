@@ -182,7 +182,6 @@ export class Kind30066 extends Publisher {
       process.exit()
     }
 
-
     return tags
   }
 

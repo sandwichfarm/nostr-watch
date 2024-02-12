@@ -78,7 +78,8 @@ export class NWWorker {
       const dpubkey = this.pubkey
       const nocapOpts = { 
         timeout: this.timeout,
-        checked_by: dpubkey 
+        checked_by: dpubkey,
+        rejectOnConnectFailure: true
       }
       const nocapd = new this.Nocap(url, nocapOpts)
       let result = {}

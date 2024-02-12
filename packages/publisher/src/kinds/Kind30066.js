@@ -39,8 +39,8 @@ export class Kind30066 extends Publisher {
   static generateTags(data){
     let tags = []
 
-    const isRtt = data?.connect?.data === true || data?.connect?.duration > 0
-    const isDns =  Object.keys(data?.dns || {})?.length > 0
+    const isRtt = data?.connect?.data
+    const isDns =  Object.keys(data?.dns?.data || {})?.length > 0
     const isInfo =  Object.keys(data?.info?.data || {})?.length > 0
     const isGeo =  Object.keys(data?.geo?.data || {})?.length > 0
     const isSsl =  Object.keys(data?.ssl?.data || {})?.length > 0
@@ -170,7 +170,18 @@ export class Kind30066 extends Publisher {
           tags.push( [ 'ssl', prop, val? 'true': 'false' ] )
         }
       }
-    } 
+    }
+    
+    const countRttTags = tags.filter( tag => tag[0] === 'rtt' )?.length 
+
+    console.log(data.url, countRttTags)
+
+    if(!countRttTags || countRttTags == 0){
+      console.log(data)
+      console.log(tags)
+      process.exit()
+    }
+
 
     return tags
   }

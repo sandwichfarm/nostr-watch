@@ -106,6 +106,7 @@ export class NWWorker {
     if(!result || !result?.connect?.data)
       return this.on_failed(job, new Error(`Nocap.check('${this.slug}'): failed for ${url}`))
 
+    
     // console.log('PUBLISHING', url, result?.connect?.data, result?.read?.data, result?.write?.data)
 
     const { checked_at } = result
@@ -118,9 +119,9 @@ export class NWWorker {
 
     this.processed++
     
-    const relay_id = await this.updateRelayCache(result)      
-    const retry_id = await this.retry.setRetries( url, true )
-    const lastChecked_id = await this.setLastChecked( url, Date.now() )
+    await this.updateRelayCache(result)      
+    await this.retry.setRetries( url, true )
+    await this.setLastChecked( url, Date.now() )
 
     this.progressMessage(url, result)
      

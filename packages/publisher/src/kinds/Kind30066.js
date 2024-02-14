@@ -174,18 +174,8 @@ export class Kind30066 extends Publisher {
     
     const countRttTags = tags.filter( tag => tag[0] === 'rtt' )?.length 
 
-    console.log(data.url, countRttTags)
-
-    if(!countRttTags || countRttTags == 0){
-      console.log(data)
-      console.log(tags)
-      process.exit()
-    }
-
     return tags
   }
-
-
 }
 
 const transformGeoResult = geo => {  

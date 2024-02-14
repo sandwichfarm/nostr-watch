@@ -16,7 +16,7 @@
     "chalk": "5.3.0",
     "ngeohash": "^0.6.3",
     "nostr-fetch": "0.14.1",
-    "nostr-geotags": "^0.2.2",
+    "nostr-geotags": "^0.5.0",
     "object-mapper": "6.2.0",
     "timestring": "^7.0.0"
   },

@@ -195,8 +195,8 @@ const transformGeoResult = geo => {
     "regionName": "regionName",
     "country": "countryName",
     "countryCode": "countryCode",
-    "continent": "contentName",
-    "continentCode": "continentCode"
+    // "continent": "contentName",
+    // "continentCode": "continentCode"
   }
   return mapper(geo, map)
 }

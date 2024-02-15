@@ -73,8 +73,8 @@ const transformGeoResult = geo => {
     "countryCode": "countryCode",
     "country": "countryName",
     "regionName": "regionName",
-    "continent": "contentName",
-    "continentCode": "continentCode",
+    // "continent": "contentName",
+    // "continentCode": "continentCode",
     "lat": "lat",
     "lon": "lon",
     "query": "ip"

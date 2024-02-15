@@ -84,10 +84,3 @@ yarn bootstrap
 ## Testing
 Testing suite is not yet implemented. 
 
-## Legacy Participants
-A special thank you to the 300+ individuals who submitted their relay and/or oppenned issues/pull requests to nostrwatch legacy and to the 1M+ unique visitors over the last year. A huge thank you to OpenSats for giving my vision a new life. 
-
-<a align="center" href="https://github.com/dskvr/nostr-watch/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=dskvr/nostr-watch" />
-</a>
-

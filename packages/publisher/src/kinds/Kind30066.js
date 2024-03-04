@@ -203,17 +203,7 @@ const transformGeoResult = geo => {
 
 const transformSslResult = ssl => {  
     const map = {
-      "modulus": "modulus",
-      "subjectaltname": "subject_alt_name",
-      "exponent": "exponent",
-      "valid_from": "valid_from",
-      "valid_to": "valid_to",
-      "fingerprint": "fingerprint",
-      "fingerprint256": "fingerprint256",
-      "fingerprint512": "fingerprint512",
-      "ext_key_usage": "ext_key_usage",
-      "serialNumber": "serial_number",
-      "pemEncoded": "pem_encoded"
+      "publisher.kinds": "kinds",
     }
     return mapper(ssl, map)
 }

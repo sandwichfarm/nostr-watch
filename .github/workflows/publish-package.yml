@@ -16,6 +16,8 @@ jobs:
       fail-fast: false 
       matrix:
         include:
+          - package: 'announce'
+            nodeVersion: '20'
           - package: 'logger'
             nodeVersion: '20'
           - package: 'seed'

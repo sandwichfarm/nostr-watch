@@ -22,7 +22,7 @@ const filterRelaysProperties = (relays) => {
 
 const relayIsExpired = (relay) => {
   const lastPublished = rcache.cachetime.get.one( lastPublishedId(relay.url) );
-  const expiry = eval(config?.trawler?.publish?.expiry) || 4 * 60 * 60 * 10000;
+  const expiry = eval(config?.trawler?.publisher?.expiry) || 4 * 60 * 60 * 10000;
   if (!lastPublished) return true;
   if (lastPublished < new Date() - expiry) return true;
   return false;

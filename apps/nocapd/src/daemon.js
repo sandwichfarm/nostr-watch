@@ -3,6 +3,7 @@ import timestring from 'timestring'
 import chalk from 'chalk'
 
 import relaycache from '@nostrwatch/nwcache'
+import { AnnounceMonitor } from '@nostrwatch/announce'
 
 import { NWWorker } from './classes/Worker.js'
 import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
@@ -20,6 +21,17 @@ const log = new Logger('nocapd')
 const rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
 
 let config 
+
+const maybeAnnounce = () => {
+  const map = {
+    "publisher.kinds": "kinds",
+    "nocapd.checks.options.timeout": "timeouts",
+    "nocapd.checks.options.expires": "interval",
+    "monitor.geo": "geo",
+    "monitor.owner": "owner"
+  }
+  const announce = AnnounceMonitor(mapper(config, map))
+}
 
 const schedulePopulator = ($check) =>{
   const rule = new schedule.RecurrenceRule();
@@ -121,6 +133,7 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 export const Nocapd = async () => {
   header()
   config = await loadConfig()
+  maybeAnnounce()
   await maybeBootstrap()
   const $q = await initWorker()
   return {

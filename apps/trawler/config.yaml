@@ -14,7 +14,7 @@ trawler:
     enabled: true 
     timeout: 1000
     interval: 24*60*60*1000
-    max: 1
+    max: 3000
     expiry: [
       { max: 3, delay: 1000 * 60 * 60 * 12},
       { max: 6, delay: 1000 * 60 * 60 * 24 },
@@ -23,7 +23,7 @@ trawler:
       { max: 29, delay: 1000 * 60 * 60 * 24 * 90 }
     ]
   check_cache: true
-  publish:
+  publisher:
     to_relays: 
       - 'wss://history.nostr.watch'
     interval: 30*60*1000

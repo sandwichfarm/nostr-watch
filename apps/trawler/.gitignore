@@ -6,4 +6,4 @@ lmdb.bak
 cache
 .env*
 !.env.sample
-
+config*

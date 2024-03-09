@@ -106,14 +106,14 @@ export class AnnounceMonitor {
     return signed
   }
 
-  async publish( relays: string[] ): string[] {
+  async publish( relays: string[] ): Promise<string[]> {
     if(!this.events) throw new Error("Event has not yet been generated") 
     const pubbedIds: string[] = []
     const $pool = new SimplePool()
     const kinds = Object.keys(this.events)
     for(let i = 0; i < kinds.length; i++) {
       const kind = kinds[i]    
-      const promises = $pool.publish(relays, this.events[kind]).catch(console.error)
+      const promises = $pool.publish(relays, this.events[kind])
       await Promise.all(promises)
       console.log(this.events[kind].id, 'published to', relays.join(', '))
       pubbedIds.push(this.events[kind].id)

@@ -27,18 +27,20 @@ const maybeAnnounce = () => {
   const map = {
     "publisher.kinds": "kinds",
     "nocapd.checks.options.timeout": "timeouts",
-    "nocapd.checks.options.expires": "interval",
+    "nocapd.checks.options.expires": "frequency",
     "monitor.geo": "geo",
     "monitor.owner": "owner",
     "publisher.to_relays": "relays",
     "monitor.info": "profile"
   }
   const conf = mapper(config, map)
+  conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf)
   announce.generate()
   announce.sign( process.env.DAEMON_PRIVKEY  )
   console.dir(conf)
   console.dir(announce.events)
+  console.dir(announce.events['10166'].tags)
   announce.publish( conf.relays )
    
 }

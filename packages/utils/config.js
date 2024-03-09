@@ -35,7 +35,7 @@ export const loadConfig = async function() {
   try {
     const configPath = process.env.CONFIG_PATH || './config.yaml';
     if (!configPath) return {};
-    const fileContents = await fsp.readFile(configPath, 'utf8');
+    const fileContents = await fsp.readFile(configPath, 'utf8').catch(console.error);
     return yaml.load(fileContents);
   } catch (e) {
     console.error(e);

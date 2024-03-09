@@ -39,7 +39,7 @@ export default class {
     this.adapters = {}
     this.adaptersValid = ['websocket', 'info', 'geo', 'dns','ssl']
     //
-    this.checks = ['connect', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
+    this.checks = ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
     //
     this.config = new ConfigInterface(config)
     this.results = new ResultInterface()
@@ -180,7 +180,7 @@ export default class {
       const message = `${key} check timed out (after ${this.config.timeout[key]}ms}` 
       this.logger.debug(message)
       const data = this.isWebsocketKey(key)? false: {}
-      if(key === 'connect' && this.config.rejectOnConnectFailure){
+      if(key === 'open' && this.config.rejectOnConnectFailure){
         return reject({ data, duration: -1, status: "error", message})
       }
       else {
@@ -218,8 +218,8 @@ export default class {
       })
       .catch((precheck) => {
         let reason
-        if(key === 'connect' && precheck.status == "error" && precheck?.result){
-          reason = `${key}: Precheck found that connect check was already fulfilled, returning cached result`
+        if(key === 'open' && precheck.status == "error" && precheck?.result){
+          reason = `${key}: Precheck found that open check was already fulfilled, returning cached result`
           // this.promises.get(key).resolve(precheck.result)
           checkDeferred.resolve(precheck.result)
         } 
@@ -314,7 +314,7 @@ export default class {
    * @returns {boolean} - True if it's a websocket key, false otherwise
    */
   isWebsocketKey(key){
-    return ['connect', 'read', 'write'].includes(key)
+    return ['open', 'read', 'write'].includes(key)
   }
 
   /**
@@ -329,10 +329,10 @@ export default class {
   async precheck(key){
     const precheckDeferred = await this.addDeferred(`precheck_${key}`)
     const needsWebsocket = this.isWebsocketKey(key)
-    const keyIsConnect = key === 'connect'
+    const keyIsConnect = key === 'open'
     const resolvePrecheck = precheckDeferred.resolve
     const rejectPrecheck = precheckDeferred.reject
-    const connectAttempted = this.promises.exists('connect') && this.promises.reflect('connect').state.isPending
+    const connectAttempted = this.promises.exists('open') && this.promises.reflect('open').state.isPending
 
     const waitForConnection = async () => {
       this.logger.debug(`${key}: waitForConnection()`)
@@ -345,7 +345,7 @@ export default class {
     }
 
     const prechecker = async () => {
-      this.logger.debug(`${key}: prechecker(): needs websocket: ${needsWebsocket}, key is connect: ${keyIsConnect}, connectAttempted: ${connectAttempted}`)
+      this.logger.debug(`${key}: prechecker(): needs websocket: ${needsWebsocket}, key is open: ${keyIsConnect}, connectAttempted: ${connectAttempted}`)
 
       //Doesn't need websocket. Resolve precheck immediately.
       if( !needsWebsocket ){  
@@ -353,15 +353,15 @@ export default class {
         return resolvePrecheck()
       }
 
-      //Websocket is open, and key is not connect, resolve precheck
+      //Websocket is open, and key is not open, resolve precheck
       if( keyIsConnect && !this.isConnected() ) {  
-        this.logger.debug(`${key}: prechecker(): websocket is not open, and key is connect. Continue to check.`)
+        this.logger.debug(`${key}: prechecker(): websocket is not open, and key is open. Continue to check.`)
         return resolvePrecheck()
       }
 
-      //Websocket is open, and key is not connect, resolve precheck
+      //Websocket is open, and key is not open, resolve precheck
       if( !keyIsConnect && this.isConnected() ) {  
-        this.logger.debug(`${key}: prechecker(): websocket is open, key is not connect. Continue to check.`)
+        this.logger.debug(`${key}: prechecker(): websocket is open, key is not open. Continue to check.`)
         return resolvePrecheck()
       }
 
@@ -376,15 +376,15 @@ export default class {
       }
 
 
-      //Websocket is open, key is connect, reject precheck and directly resolve check deferred promise with cached result to bypass starting the connect check.
+      //Websocket is open, key is open, reject precheck and directly resolve check deferred promise with cached result to bypass starting the open check.
       if(keyIsConnect && this.isConnected()) {
-        this.logger.debug(`${key}: prechecker(): websocket is open, key is connect`)
-        // this.logger.debug(`precheck(${key}):prechecker():websocket is open, key is connect`)
-        rejectPrecheck({ status: "error", message: 'Cannot check connect because websocket is already connected, returning cached result'})
+        this.logger.debug(`${key}: prechecker(): websocket is open, key is open`)
+        // this.logger.debug(`precheck(${key}):prechecker():websocket is open, key is open`)
+        rejectPrecheck({ status: "error", message: 'Cannot check open because websocket is already connected, returning cached result'})
       }
-      //Websocket is not connected, key is not connect
+      //Websocket is not connected, key is not open
       if( !keyIsConnect && !this.isConnected()) {
-        this.logger.debug(`${key}: prechecker(): websocket is not connected, key is not connect`)
+        this.logger.debug(`${key}: prechecker(): websocket is not connected, key is not open`)
         return rejectPrecheck({ status: "error", message: `Cannot check ${key}, no active websocket connection to relay` })
       } 
 
@@ -634,7 +634,7 @@ export default class {
    * @returns null
    */ 
   handle_connect_check(data){
-    this.finish('connect', { data })
+    this.finish('open', { data })
   }
 
   /**
@@ -712,7 +712,7 @@ export default class {
    */
   websocket_hard_fail(err){
     this.logger.debug(`websocket_hard_fail(): ${this.url}`)
-    const wschecks = ['connect', 'read', 'write']
+    const wschecks = ['open', 'read', 'write']
     wschecks.forEach(key => { 
       this.results.set(key, { data: false, duration: -1, status: "error", message: err }) 
     })
@@ -904,7 +904,7 @@ export default class {
    */
   routeAdapter(key){
     switch(key){
-      case 'connect':
+      case 'open':
       case 'read':
       case 'write':
         return 'websocket'

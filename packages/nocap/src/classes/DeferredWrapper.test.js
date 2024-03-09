@@ -1,32 +1,33 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { DeferredWrapper } from './DeferredWrapper.js'
 import Deferred from 'promise-deferred'
+import { SessionHelper } from './SessionHelper.js'
+import { TimeoutHelper } from './TimeoutHelper.js'
 
 describe('DeferredWrapper', () => {
+  const url = "wss://test.nostr.watch"
   let deferredWrapper;
-  let mockSession;
-  let mockTimeout;
+  let session;
+  let sessionId;
+  let timeout;
 
   beforeEach(() => {
-    mockSession = { get: vi.fn(() => 'mockSession') };
-    mockTimeout = {
-      create: vi.fn(),
-      has: vi.fn(),
-      get: vi.fn()
-    };
-    deferredWrapper = new DeferredWrapper(mockSession, mockTimeout);
+    session = new SessionHelper(url)
+    sessionId = session.get()
+    timeout = new TimeoutHelper(session)
+    deferredWrapper = new DeferredWrapper(session, timeout);
   });
 
   it('should initialize correctly', () => {
     expect(deferredWrapper.promises).toEqual({});
-    expect(deferredWrapper.timeout).toBe(mockTimeout);
-    expect(deferredWrapper.$session).toBe(mockSession);
+    expect(deferredWrapper.timeout).toBe(timeout);
+    expect(deferredWrapper.$session).toBe(session);
   });
 
   it('should add a new deferred promise', () => {
     const deferred = deferredWrapper.add('testKey');
     expect(typeof deferred.promise.then).toBe('function')
-    expect(deferredWrapper.promises['mockSession']['testKey']).toBeInstanceOf(Deferred);
+    expect(deferredWrapper.promises[sessionId]['testKey']).toBeInstanceOf(Deferred);
   });
 
   it('should resolve a promise', async () => {
@@ -55,12 +56,12 @@ describe('DeferredWrapper', () => {
   it('should clear session promises', () => {
     deferredWrapper.add('testKey');
     deferredWrapper.clearSessionPromises();
-    expect(deferredWrapper.promises['mockSession']).toBeUndefined();
+    expect(deferredWrapper.promises[sessionId]).toBeUndefined();
   });
 
   it('should create a new promise', () => {
     deferredWrapper.create('testKey');
-    expect(deferredWrapper.promises['mockSession']['testKey']).toBeInstanceOf(Deferred);
+    expect(deferredWrapper.promises[sessionId]['testKey']).toBeInstanceOf(Deferred);
   });
 
   it('should get an existing promise', () => {

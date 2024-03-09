@@ -39,7 +39,7 @@ export class Kind30066 extends PublisherNocap {
   static generateTags(data){
     let tags = []
 
-    const isRtt = data?.connect?.data
+    const isRtt = data?.open?.data
     const isDns =  Object.keys(data?.dns?.data || {})?.length > 0
     const isInfo =  Object.keys(data?.info?.data || {})?.length > 0
     const isGeo =  Object.keys(data?.geo?.data || {})?.length > 0
@@ -53,8 +53,8 @@ export class Kind30066 extends PublisherNocap {
     if(data?.network)
       tags.push( ['other', 'network', data.network] )
     if(isRtt) {
-      if(data.connect?.data)
-        tags.push([ 'rtt', 'open', data.connect.duration.toString() ])
+      if(data.open?.data)
+        tags.push([ 'rtt', 'open', data.open.duration.toString() ])
       if(data?.read?.data)
         tags.push([ 'rtt', 'read', data.read.duration.toString() ])
       if(data?.write?.data)

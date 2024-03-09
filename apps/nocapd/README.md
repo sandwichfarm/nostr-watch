@@ -45,7 +45,7 @@ nocapd:
       interval: 1m
       priority: 10
       timeout: {
-        connect: 15000,
+        open: 15000,
         read: 15000,
         write: 15000,
         dns: 3000,

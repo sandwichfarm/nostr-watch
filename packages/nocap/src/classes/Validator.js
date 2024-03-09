@@ -14,7 +14,7 @@ export class Validator {
 
   setMany(obj){
     Object.keys(obj).forEach(key => {
-      this.set(key, obj[key])
+      this._set(key, obj[key])
     })
   }
 
@@ -33,7 +33,8 @@ export class Validator {
   _raw(keys=null){
     keys = keys? keys : Object.keys(this)
     return { ...keys.reduce((acc, key) => {
-      acc[key] = this[key]
+      if(key !== 'defaults')
+        acc[key] = this[key]
       return acc
     }, {}) }
   }

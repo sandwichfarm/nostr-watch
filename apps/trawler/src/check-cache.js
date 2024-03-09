@@ -43,10 +43,10 @@ export default async () => {
   for await ( const relay of relaysToCheck ) {
     const { url } = relay
     let online = false
-    const nocap = new Nocap(url, { timeout: { connect: config?.trawler?.check?.timeout || 500 }})
+    const nocap = new Nocap(url, { timeout: { open: config?.trawler?.check?.timeout || 500 }})
     try {
-      await nocap.check('connect').catch()
-      online = nocap.results.get('connect').data? true: false
+      await nocap.check('open').catch()
+      online = nocap.results.get('open').data? true: false
     }
     catch(e) { }
     await setLastChecked(url)

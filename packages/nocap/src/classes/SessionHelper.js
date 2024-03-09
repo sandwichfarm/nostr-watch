@@ -12,7 +12,7 @@ export class SessionHelper {
     this.salt = murmurhash.v3(random(50)) 
     this.id = {}
     this.id.session = murmurhash.v3('session', this.salt)
-    this.id.connect = murmurhash.v3('connect', this.salt)
+    this.id.open = murmurhash.v3('open', this.salt)
     this.id.read = murmurhash.v3('read', this.salt)
     this.id.write = murmurhash.v3('write', this.salt)
     this.id.info = murmurhash.v3('info', this.salt)
@@ -26,7 +26,7 @@ export class SessionHelper {
   }
 
   get(key){
-    if(!key)
+    if(!key || !this?.id?.[key])
       return this.id.session
     return this.id[key]
   } 

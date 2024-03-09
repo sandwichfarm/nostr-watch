@@ -4,7 +4,7 @@ export const ConfigDefaults = {
   logLevel: 'info',
   checked_by: '',
   timeout: {
-    connect: 10000,
+    open: 10000,
     read: 10000,
     write: 10000,
     info: 10000,

@@ -39,14 +39,14 @@ describe('SessionHelper', () => {
 
   it('should create hash ids correctly', () => {
     const expectedSessionId = murmurhash.v3('session', sessionHelper.salt);
-    const expectedConnectId = murmurhash.v3('connect', sessionHelper.salt);
+    const expectedConnectId = murmurhash.v3('open', sessionHelper.salt);
     const expectedReadId = murmurhash.v3('read', sessionHelper.salt);
     const expectedWriteId = murmurhash.v3('write', sessionHelper.salt);
     const expectedInfoId = murmurhash.v3('info', sessionHelper.salt);
     const expectedGeoId = murmurhash.v3('geo', sessionHelper.salt);
 
     expect(sessionHelper.id.session).toEqual(expectedSessionId);
-    expect(sessionHelper.id.connect).toEqual(expectedConnectId);
+    expect(sessionHelper.id.open).toEqual(expectedConnectId);
     expect(sessionHelper.id.read).toEqual(expectedReadId);
     expect(sessionHelper.id.write).toEqual(expectedWriteId);
     expect(sessionHelper.id.info).toEqual(expectedInfoId);
@@ -62,7 +62,7 @@ describe('SessionHelper', () => {
     console.log(sessionHelper.create())
     
     expect(sessionHelper.id.session).not.toEqual(oldIds.session);
-    expect(sessionHelper.id.connect).not.toEqual(oldIds.connect);
+    expect(sessionHelper.id.open).not.toEqual(oldIds.open);
     expect(sessionHelper.id.read).not.toEqual(oldIds.read);
     expect(sessionHelper.id.write).not.toEqual(oldIds.write);
     expect(sessionHelper.id.info).not.toEqual(oldIds.info);
@@ -71,7 +71,7 @@ describe('SessionHelper', () => {
 
   it('should return correct id for get(key)', () => {
     expect(sessionHelper.get('session')).toEqual(sessionHelper.id.session);
-    expect(sessionHelper.get('connect')).toEqual(sessionHelper.id.connect);
+    expect(sessionHelper.get('open')).toEqual(sessionHelper.id.open);
     expect(sessionHelper.get('read')).toEqual(sessionHelper.id.read);
     expect(sessionHelper.get('write')).toEqual(sessionHelper.id.write);
     expect(sessionHelper.get('info')).toEqual(sessionHelper.id.info);

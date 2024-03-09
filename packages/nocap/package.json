@@ -1,12 +1,12 @@
 {
   "name": "@nostrwatch/nocap",
-  "version": "0.1.11",
+  "version": "0.2.1",
   "main": "src/index.js",
   "type": "module",
   "license": "MIT",
   "scripts": {
     "test": "vitest",
-    "test-ui": "vitest --ui"
+    "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
     "@nostrwatch/logger": "^0.0.1",

@@ -9,12 +9,12 @@ class WebsocketAdapterDefault {
   }
 
   /**
-   * check_connect 
+   * check_open 
    * Returns a promise that resolves to the result of the connection check, called by Base.checkConnect
    * @private
    * @returns promise<result?>
    */
-  async check_connect(deferred){
+  async check_open(deferred){
     let $ws
 
     // if(this.$.results.network === 'tor') 

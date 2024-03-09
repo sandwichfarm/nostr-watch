@@ -4,7 +4,7 @@ export const ResultDefaults = {
   adapters: [],
   checked_at: -1, 
   checked_by: "",
-  connect: {},
+  open: {},
   read: {},
   write: {},
   info: {},
@@ -50,7 +50,7 @@ export class ResultInterface extends Validator {
 
   did(key){
     switch(key){
-      case 'connect':
+      case 'open':
       case'read':
       case 'write':
         return this.get(key).data

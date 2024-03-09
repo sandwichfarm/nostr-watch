@@ -63,7 +63,7 @@ export class NWWorker {
       case "geo":
         return ['dns', 'geo']
       case "websocket":
-        return ['connect', 'read', 'write']
+        return ['open', 'read', 'write']
       default:
         return this.slug
     }
@@ -104,11 +104,11 @@ export class NWWorker {
     const { relay:url } = job.data
     const { result  } = rvalue
 
-    if(!result || !result?.connect?.data)
+    if(!result || !result?.open?.data)
       return this.on_failed(job, new Error(`Nocap.check('${this.slug}'): failed for ${url}`))
 
     
-    // console.log('PUBLISHING', url, result?.connect?.data, result?.read?.data, result?.write?.data)
+    // console.log('PUBLISHING', url, result?.open?.data, result?.read?.data, result?.write?.data)
 
     const { checked_at } = result
 
@@ -133,7 +133,7 @@ export class NWWorker {
     this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}`)
     const retry_id = await this.retry.setRetries( url, false )
     const lastChecked_id = await this.setLastChecked( url, Date.now() )
-    const relay_id = await this.updateRelayCache({ url, connect: { data: false }} ) 
+    const relay_id = await this.updateRelayCache({ url, open: { data: false }} ) 
     this.progressMessage(url, null, true)
     this.processed++
   }
@@ -151,8 +151,8 @@ export class NWWorker {
     this.log.info(
       `[${chalk.bgBlack(this.calculateProgress())}] `+
       `${mute(this.processed)}/${mute(this.total)}  `+
-      `${url}: ${result?.connect?.data === true? success("online"): failure("offline")} ${result?.read?.data === true? success("readable"): failure("unreadable")} ${result?.write?.data === true? success("writable"): failure("unwritable")}  `+
-      `${(result?.connect?.duration+result?.read?.duration+result?.write?.duration)/1000} seconds  `+
+      `${url}: ${result?.open?.data === true? success("online"): failure("offline")} ${result?.read?.data === true? success("readable"): failure("unreadable")} ${result?.write?.data === true? success("writable"): failure("unwritable")}  `+
+      `${(result?.open?.duration+result?.read?.duration+result?.write?.duration)/1000} seconds  `+
       `${error? chalk.gray.italic('error'): ''}  ` +
       `[${error? await this.retry.getRetries(url) + " retries": ""}]`)
       
@@ -249,7 +249,7 @@ export class NWWorker {
 
   setTimeout(config){
     this.timeout = {
-      connect: 3000,
+      open: 3000,
       read: 3000,
       write: 3000,
       info: 2000,
@@ -325,7 +325,7 @@ export class NWWorker {
     }
     await Promise.allSettled(promises)
     record.url = url
-    record.online = result.connect.data
+    record.online = result.open.data
     const $id = await this.rcache.relay.patch(record)
     return $id
   }

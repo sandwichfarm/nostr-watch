@@ -1,6 +1,7 @@
 import schedule from 'node-schedule'
 import timestring from 'timestring'
 import chalk from 'chalk'
+import mapper from 'object-mapper'
 
 import relaycache from '@nostrwatch/nwcache'
 import { AnnounceMonitor } from '@nostrwatch/announce'
@@ -28,9 +29,18 @@ const maybeAnnounce = () => {
     "nocapd.checks.options.timeout": "timeouts",
     "nocapd.checks.options.expires": "interval",
     "monitor.geo": "geo",
-    "monitor.owner": "owner"
+    "monitor.owner": "owner",
+    "publisher.to_relays": "relays",
+    "monitor.info": "profile"
   }
-  const announce = AnnounceMonitor(mapper(config, map))
+  const conf = mapper(config, map)
+  const announce = new AnnounceMonitor(conf)
+  announce.generate()
+  announce.sign( process.env.DAEMON_PRIVKEY  )
+  console.dir(conf)
+  console.dir(announce.events)
+  announce.publish( conf.relays )
+   
 }
 
 const schedulePopulator = ($check) =>{

@@ -1,13 +1,13 @@
 import mapper from 'object-mapper'
 import ngeohash from 'ngeohash'
 
-import { Publisher } from '../Publisher.js'
+import { PublisherNocap } from '../Publisher.js'
 
-export class Kind30066 extends Publisher { 
+export class Kind30066 extends PublisherNocap { 
   constructor(){
     super()
     this.kind = 30066
-    this.discoverable = ['d']
+    this.discoverable = {tags: 'd'}
     this.human_readable = true
     this.machine_readable = true
   }

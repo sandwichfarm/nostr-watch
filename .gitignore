@@ -17,3 +17,6 @@ packages/synx
 packages/kinds
 .npmrc
 .ansible
+.envs 
+.configs
+.docker

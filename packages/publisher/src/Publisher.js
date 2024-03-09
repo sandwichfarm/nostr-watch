@@ -24,40 +24,15 @@ async function writeObjectToFile(obj) {
   }
 }
 
+
 export class Publisher { 
 
   constructor(){
-    this.logger = new Logger('publisher')
-  }
-
-  async many(relays){
-    this.logger.debug(`many(): attempting to publish ${relays.length} events to ${JSON.stringify(config.publisher.to_relays)} relays`)
-    if(!(relays instanceof Array)) throw new Error('many(): relays must be an array')
-    const relaysChunks = chunkArray(relays, 50)
-    let count = 0
-    for await ( const chunk of relaysChunks ) {
-      let signedEvents = []
-      this.logger.debug(`publishEvents(): publishing ${chunk.length} events from chunk ${count++}/${relaysChunks.length}`)
-      for ( const relay of chunk ) {
-        const unsignedEvent = this.generateEvent(relay)
-        signedEvents.push(this.signEvent(unsignedEvent))
-      }
-      await this.publishEvents(signedEvents).catch(console.error)
-    }
-  }
-
-  async one(relay){
-    if(!relay?.url) throw new Error('one(): relay must have a url property')
-    if(!config.publisher?.to_relays) throw new Error('one(): config.publisher.to_relays is not configured')
-    this.logger.debug(`one(): attempting to publish event for relay ${relay.url} to ${JSON.stringify(config.publisher?.to_relays)} relays`)
-    const unsignedEvent = this.generateEvent(relay)
-    const signedEvent = this.signEvent(unsignedEvent)
-    await this.publishEvent(signedEvent)
-    this.logger.debug(`one(): published event`)
+    this.logger = new Logger('publisher[generic]')
   }
 
   tpl(){
-    if(!this?.kind)
+    if(typeof this?.kind === 'undefined' || this.kind === null)
       throw new Error('tpl(): this.kind must be defined')
     return {
       pubkey: process.env.DAEMON_PUBKEY,
@@ -68,8 +43,28 @@ export class Publisher {
     }
   }
 
+  // generateEvent(data){
+  //   this.logger.warn('generateEvent(): has not been implemented by subclass, using generic functions')
+  //   const staticClass = eval(`kind${this.kind}`)
+  //   let tags = [], 
+  //       content = ""
+  //   if(staticClass?.generateTags)
+  //     tags = Kind30066.generateTags(data)
+    
+  //   if(staticClass?.generateContent)
+  //     content = Kind30066.generateContent(data)
+    
+  //   const event = {
+  //     ...this.tpl(),
+  //     content,
+  //     tags
+  //   }
+
+  //   return event
+  // }
+  
+
   generateEvent(){
-    this.logger.warn('generateEvent(): has not been implemented by subclass, generating a blank event')
     return this.tpl(30066)
   }
 
@@ -119,4 +114,40 @@ export class Publisher {
     }
     return publishes
   }
+}
+
+
+export class PublisherNocap extends Publisher {
+  
+  constructor(){
+    super()
+    this.logger = new Logger('publisher[nocap]')
+  }
+
+  async many(relays){
+    this.logger.debug(`many(): attempting to publish ${relays.length} events to ${JSON.stringify(config.publisher.to_relays)} relays`)
+    if(!(relays instanceof Array)) throw new Error('many(): relays must be an array')
+    const relaysChunks = chunkArray(relays, 50)
+    let count = 0
+    for await ( const chunk of relaysChunks ) {
+      let signedEvents = []
+      this.logger.debug(`publishEvents(): publishing ${chunk.length} events from chunk ${count++}/${relaysChunks.length}`)
+      for ( const relay of chunk ) {
+        const unsignedEvent = this.generateEvent(relay)
+        signedEvents.push(this.signEvent(unsignedEvent))
+      }
+      await this.publishEvents(signedEvents).catch(console.error)
+    }
+  }
+
+  async one(relay){
+    if(!relay?.url) throw new Error('one(): relay must have a url property')
+    if(!config.publisher?.to_relays) throw new Error('one(): config.publisher.to_relays is not configured')
+    this.logger.debug(`one(): attempting to publish event for relay ${relay.url} to ${JSON.stringify(config.publisher?.to_relays)} relays`)
+    const unsignedEvent = this.generateEvent(relay)
+    const signedEvent = this.signEvent(unsignedEvent)
+    await this.publishEvent(signedEvent)
+    this.logger.debug(`one(): published event`)
+  }
+
 }

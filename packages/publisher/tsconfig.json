@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./types", // Directory to output .d.ts files
+    "noEmit": false,
+    "strict": true
+  },
+  "include": [
+    "./src/**/*" // Adjust this path to the directory of your JS files
+  ]
+}

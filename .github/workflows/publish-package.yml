@@ -18,6 +18,7 @@ jobs:
         include:
           - package: 'announce'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'logger'
             nodeVersion: '20'
           - package: 'seed'
@@ -64,6 +65,12 @@ jobs:
         run: |
           cd "${{ steps.find_package.outputs.the_path }}"
           yarn install
+
+      - name: Pre-Publist 
+        if: matrix.typescript == 'true'
+        run: |
+          cd "${{ steps.find_package.outputs.the_path }}"
+          yarn prepublish
 
       - name: Publish Package
         id: publish

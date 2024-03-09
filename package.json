@@ -3,8 +3,11 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
+    "deploy:nocapd@all": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/amsterdam -i .ansible/inventories/johannesburg -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney",
     "deploy:nocapd@theship": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/theship --ask-become-pass",
-    "deploy:nocapd@frankfurt": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/frankfurt --ask-become-pass"
+    "deploy:nocapd@frankfurt": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/frankfurt --ask-become-pass",
+    "deploy:nocapd@amsterdam": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/amsterdam"
+
   },
   "packageManager": "yarn@1.22.23^",
   "devDependencies": {},

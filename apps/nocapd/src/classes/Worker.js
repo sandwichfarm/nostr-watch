@@ -377,10 +377,10 @@ export class NWWorker {
 
   get_truncate_length(relays){
     let length = relays.length
-    if(typeof this.opts?.checks?.all?.max === 'number')
-      length = this.opts.checks.all.max
-    if(typeof this.opts?.checks?.all?.max === 'string' )
-      length = evaluateMaxRelays(this.opts.checks.all.max, relays)
+    if(typeof this.opts?.checks?.options?.max === 'number')
+      length = this.opts.checks.options.max
+    if(typeof this.opts?.checks?.options?.max === 'string' )
+      length = evaluateMaxRelays(this.opts.checks.options.max, relays)
     return length < relays.length? length: relays.length
   }
 
@@ -408,6 +408,6 @@ const evaluateMaxRelays = (evaluate, relays) => {
     return parseInt( eval( evaluate ) )
   }
   catch(e){
-    this.log.error(`Error evaluating config.nocapd.checks.all.max -> "${config.nocapd.checks.all.max}": ${e.message}`)
+    this.log.error(`Error evaluating config.nocapd.checks.all.max -> "${config.nocapd.checks.options.max}": ${e.message}`)
   }
 }

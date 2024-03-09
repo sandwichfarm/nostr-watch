@@ -42,7 +42,6 @@ const maybeAnnounce = () => {
   console.dir(announce.events)
   console.dir(announce.events['10166'].tags)
   announce.publish( conf.relays )
-   
 }
 
 const schedulePopulator = ($check) =>{

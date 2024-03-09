@@ -115,7 +115,7 @@ export class AnnounceMonitor {
       const kind = kinds[i]    
       const promises = $pool.publish(relays, this.events[kind])
       await Promise.all(promises)
-      console.log(this.events[kind].id, 'published to', relays.join(', '))
+      console.log(this.events[kind].kind, 'published to', relays.join(', '))
       pubbedIds.push(this.events[kind].id)
     }
     return pubbedIds

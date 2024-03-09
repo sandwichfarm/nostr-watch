@@ -23,7 +23,7 @@ const rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
 
 let config 
 
-const maybeAnnounce = () => {
+const maybeAnnounce = async () => {
   const map = {
     "publisher.kinds": "kinds",
     "nocapd.checks.options.timeout": "timeouts",
@@ -41,7 +41,7 @@ const maybeAnnounce = () => {
   console.dir(conf)
   console.dir(announce.events)
   console.dir(announce.events['10166'].tags)
-  announce.publish( conf.relays )
+  await announce.publish( conf.relays )
 }
 
 const schedulePopulator = ($check) =>{
@@ -144,7 +144,7 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 export const Nocapd = async () => {
   header()
   config = await loadConfig()
-  maybeAnnounce()
+  await maybeAnnounce()
   await maybeBootstrap()
   const $q = await initWorker()
   return {

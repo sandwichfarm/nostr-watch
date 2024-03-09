@@ -77,9 +77,8 @@ export class Publisher {
   }
 
   signEvent(unsignedEvent){
-    const signedEvent = unsignedEvent
-    signedEvent.id = getEventHash(signedEvent)
-    signedEvent.sig = getSignature(signedEvent, process.env.DAEMON_PRIVKEY)
+    unsignedEvent.id = getEventHash(unsignedEvent)
+    const signedEvent = getSignature(unsignedEvent, process.env.DAEMON_PRIVKEY || "")
     const valid = validateEvent(signedEvent) && verifySignature(signedEvent)
     if(!valid)
       throw new Error('generateEvent(): event does not validate')  

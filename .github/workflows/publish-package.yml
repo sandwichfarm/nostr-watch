@@ -66,7 +66,7 @@ jobs:
           cd "${{ steps.find_package.outputs.the_path }}"
           yarn install
 
-      - name: Pre-Publist 
+      - name: Pre-Publish
         if: matrix.typescript == 'true'
         run: |
           cd "${{ steps.find_package.outputs.the_path }}"

@@ -9,7 +9,7 @@
     "@nostrwatch/announce": "^0.0.5",
     "@nostrwatch/controlflow": "^0.0.2",
     "@nostrwatch/logger": "^0.0.3",
-    "@nostrwatch/nocap": "^0.2.1",
+    "@nostrwatch/nocap": "^0.2.2",
     "@nostrwatch/nwcache": "^0.0.2",
     "@nostrwatch/publisher": "^0.2.2",
     "@nostrwatch/seed": "^0.0.1",

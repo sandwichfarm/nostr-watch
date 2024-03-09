@@ -28,6 +28,7 @@ const maybeAnnounce = async () => {
     "publisher.kinds": "kinds",
     "nocapd.checks.options.timeout": "timeouts",
     "nocapd.checks.options.expires": "frequency",
+    "nocapd.checks.enabled": "checks",
     "monitor.geo": "geo",
     "monitor.owner": "owner",
     "publisher.to_relays": "relays",

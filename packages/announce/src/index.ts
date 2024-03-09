@@ -23,6 +23,7 @@ interface AnnounceMonitorOptions {
   kinds?: number[];
   timeouts?: object;
   counts?: number[];
+  checks?: string[];
   owner?: string;
   frequency?: string;
   relays?: string[];
@@ -52,6 +53,7 @@ export class AnnounceMonitor {
       kinds = [],
       timeouts = {},
       counts = [],
+      checks = [],
       owner = '',
       frequency = '',
       profile = {},
@@ -64,6 +66,7 @@ export class AnnounceMonitor {
     if (!(timeouts instanceof Object)) throw new Error("timeouts must be object");
     if (!(kinds instanceof Array)) throw new Error("kinds must be array");
     if (!(counts instanceof Array)) throw new Error("counts must be array");
+    if (!(checks instanceof Array)) throw new Error("checks must be array");
     if (typeof owner !== "string") throw new Error("owner must be string");
     if (typeof frequency !== "string") throw new Error("frequency must be string");
 
@@ -77,9 +80,16 @@ export class AnnounceMonitor {
     this.monReg.counts = counts;
     this.monReg.owner = owner;
     this.monReg.frequency = frequency;
+    this.monReg.checks = AnnounceMonitor.formatChecks(checks)
 
     this.monRelays = relays;
     this.monProfile = profile;
+  }
+
+  static formatChecks(checks: Array<string>): Array<string> {
+    if(checks.length === 1 && checks[0] === 'all')
+      return ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
+    return checks
   }
 
   generate(): any {

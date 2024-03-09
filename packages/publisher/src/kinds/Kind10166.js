@@ -37,11 +37,17 @@ export class Kind10166 extends Publisher {
       tags.push(['frequency', data.frequency]);
     if(data?.owner)
       tags.push(['owner', data.owner]);
-    data?.kinds.map(kind => kind.toString()).forEach(kind => tags.push(["k", kind]));
-    data?.counts.map(count => count.toString()).forEach(count => tags.push(["c", count]));
-   Object.keys(data?.timeouts || []).map(key => [ key, data.timeouts[key] ]).forEach(timeout => tags.push([ "timeout", timeout[0], timeout[1].toString() ] ));
-    if(data?.geo && data.geo instanceof Object) tags = [...tags, ...ngeotags(data.geo, geoOpts)];
-    console.dir(tags)
+    if(data?.kinds)
+      data?.kinds.map(kind => kind.toString()).forEach(kind => tags.push(["k", kind]));
+    if(data?.counts)
+      data?.counts.map(count => count.toString()).forEach(count => tags.push(["n", count]));
+    if(data?.checks)
+      data?.checks.map(check => check.toString()).forEach(check => tags.push(["c", check]));
+    if(data?.timeouts)
+      Object.keys(data?.timeouts || []).map(key => [ key, data.timeouts[key] ]).forEach(timeout => tags.push([ "timeout", timeout[0], timeout[1].toString() ] ));
+    if(data?.geo && data.geo instanceof Object) 
+      tags = [...tags, ...ngeotags(data.geo, geoOpts)];
+    // console.dir(tags)
     return tags;
   }
 }

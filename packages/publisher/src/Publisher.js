@@ -76,16 +76,16 @@ export class Publisher {
     return unsignedEvents
   }
 
-  signEvent(unsignedEvent){
-    unsignedEvent.id = getEventHash(unsignedEvent)
-    const signedEvent = getSignature(unsignedEvent, process.env.DAEMON_PRIVKEY || "")
-    console.log('++signedEvent')
-    console.dir(signedEvent)
-    const valid = validateEvent(signedEvent) && verifySignature(signedEvent)
+  signEvent(event){
+    event.id = getEventHash(event)
+    event.sig = getSignature(event, process.env.DAEMON_PRIVKEY || "")
+    // console.log('++signedEvent')
+    // console.dir(event)
+    const valid = validateEvent(event) && verifySignature(event)
     if(!valid)
       throw new Error('generateEvent(): event does not validate')  
     // if(signedEvent.tags.filter( tag => tag[0]==='s' && tag[1]==='online' ).length > 0) console.log(signedEvent)
-    return signedEvent
+    return event
   }
 
   signEvents(unsignedEvents){

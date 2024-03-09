@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/announce",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Generates a NIP-66 10166 event, NIP-65 10002 event and NIP-01 0 events for monitors on *every* boot.",
   "main": "dist/index.js",
   "type": "module",
@@ -17,7 +17,7 @@
     "nostr-tools": "^2.3.1"
   },
   "devDependencies": {
-    "@nostrwatch/publisher": "^0.2.0",
+    "@nostrwatch/publisher": "^0.2.2",
     "@types/node": "^20.11.24",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",

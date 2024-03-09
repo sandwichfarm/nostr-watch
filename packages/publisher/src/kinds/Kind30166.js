@@ -24,11 +24,9 @@ export class Kind30166 extends PublisherNocap {
 
   static generateTags(data){
     let tags = []
-  
-    data.geo.data = transformGeoResult(data.geo.data)
-  
+
     tags.push(['d', data.url])
-  
+      
     if(data?.network){
       tags.push(['n', data.network])
     }
@@ -64,6 +62,7 @@ export class Kind30166 extends PublisherNocap {
     }
   
     if(data?.geo?.data){
+      data.geo.data = transformGeoResult(data.geo.data)
       tags = [...tags, ...ngeotags(data.geo.data, { iso31662: true, iso3163: true, cityName: true })]
     }
 

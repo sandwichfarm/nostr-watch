@@ -61,8 +61,10 @@ export class Kind30166 extends PublisherNocap {
       tags.push(['s', data.info.data.software])
     }
   
-    if(data?.geo?.data && Object.keys(data?.geo?.data).length > 0){
-      tags = [...tags, ...ngeotags(transformGeoResult(data.geo.data), { iso31662: true, iso31663: true, cityName: true })]
+    if(data?.geo?.data && Object.keys(data.geo.data).length > 0){
+      const geod = transformGeoResult(data.geo.data)
+      console.log(geod)
+      tags = [...tags, ...ngeotags(geod, { iso31662: true, iso31663: true, cityName: true })]
     }
 
     return tags

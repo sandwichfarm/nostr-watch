@@ -329,7 +329,7 @@ export default class {
   async precheck(key){
     const precheckDeferred = await this.addDeferred(`precheck_${key}`)
     const needsWebsocket = this.isWebsocketKey(key)
-    const keyIsConnect = key === 'open'
+    const keyIsOpen = key === 'open'
     const resolvePrecheck = precheckDeferred.resolve
     const rejectPrecheck = precheckDeferred.reject
     const connectAttempted = this.promises.exists('open') && this.promises.reflect('open').state.isPending
@@ -345,7 +345,7 @@ export default class {
     }
 
     const prechecker = async () => {
-      this.logger.debug(`${key}: prechecker(): needs websocket: ${needsWebsocket}, key is open: ${keyIsConnect}, connectAttempted: ${connectAttempted}`)
+      this.logger.debug(`${key}: prechecker(): needs websocket: ${needsWebsocket}, key is open: ${keyIsOpen}, connectAttempted: ${connectAttempted}`)
 
       //Doesn't need websocket. Resolve precheck immediately.
       if( !needsWebsocket ){  
@@ -354,13 +354,13 @@ export default class {
       }
 
       //Websocket is open, and key is not open, resolve precheck
-      if( keyIsConnect && !this.isConnected() ) {  
+      if( keyIsOpen && !this.isConnected() ) {  
         this.logger.debug(`${key}: prechecker(): websocket is not open, and key is open. Continue to check.`)
         return resolvePrecheck()
       }
 
       //Websocket is open, and key is not open, resolve precheck
-      if( !keyIsConnect && this.isConnected() ) {  
+      if( !keyIsOpen && this.isConnected() ) {  
         this.logger.debug(`${key}: prechecker(): websocket is open, key is not open. Continue to check.`)
         return resolvePrecheck()
       }
@@ -377,13 +377,13 @@ export default class {
 
 
       //Websocket is open, key is open, reject precheck and directly resolve check deferred promise with cached result to bypass starting the open check.
-      if(keyIsConnect && this.isConnected()) {
+      if(keyIsOpen && this.isConnected()) {
         this.logger.debug(`${key}: prechecker(): websocket is open, key is open`)
         // this.logger.debug(`precheck(${key}):prechecker():websocket is open, key is open`)
         rejectPrecheck({ status: "error", message: 'Cannot check open because websocket is already connected, returning cached result'})
       }
       //Websocket is not connected, key is not open
-      if( !keyIsConnect && !this.isConnected()) {
+      if( !keyIsOpen && !this.isConnected()) {
         this.logger.debug(`${key}: prechecker(): websocket is not connected, key is not open`)
         return rejectPrecheck({ status: "error", message: `Cannot check ${key}, no active websocket connection to relay` })
       } 

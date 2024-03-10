@@ -8,12 +8,18 @@ export const ConfigDefaults = {
     read: 10000,
     write: 10000,
     info: 10000,
-    dns: 2000,
-    geo: 2000,
-    ssl: 2000
+    dns: 5000,
+    geo: 5000,
+    ssl: 5000
   },
   tor: {},
-  adapterOptions: {},
+  adapterOptions: {
+    websocket: {},
+    info: {},
+    geo: {},
+    dns: {},
+    ssl: {}
+  },
   rejectOnConnectFailure: false
 }
 

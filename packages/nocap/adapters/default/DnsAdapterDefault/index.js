@@ -9,7 +9,8 @@ class DnsAdapterDefault {
     if(this.$.results.get('network') !== 'clearnet')
       return this.$.logger.debug('DNS check skipped for url not accessible over clearnet')
     let err = false
-    let url = this.$.url.replace('wss://', '').replace('ws://', '').replace(/\/+$/, '');
+    let Url = new URL(this.$.url)
+    let url = `${Url.protocol}//${Url.host}`.replace('wss://', '').replace('ws://', '').replace(/\/+$/, '');
     const query = `https://1.1.1.1/dns-query?name=${url}`
     const headers = { accept: 'application/dns-json' }
     const response = await fetch( query, { headers } ).catch((e) => { result = { status: "error", message: e.message, data } })   

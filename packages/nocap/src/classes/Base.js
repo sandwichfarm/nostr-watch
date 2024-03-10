@@ -111,15 +111,12 @@ export default class {
    */
   async _check(key){ 
     if(!this.can_check(key)) return
-    console.log(key)
-    console.log(this.current)
     this.logger.debug(`${key}: check()`)
     this.defaultAdapters()
     const precheck = await this.start(key).catch( err => this.logger.debug(err) )
     const result = await this.promises.get(key).promise
-    // console.log(result)
     // process.exit()
-    if(result[key].status === "error") {
+    if(result?.[key]?.status === "error" ) {
       this.on_check_error( key, result )
     }
     return result
@@ -207,7 +204,7 @@ export default class {
   async start(key){
     this.logger.debug(`${key}: start()`)
     const checkDeferred = await this.addDeferred(key, this.maybe_timeout(key))
-    checkDeferred.catch(this.logger.debug)
+    // checkDeferred.catch(this.logger.debug)
 
     const adapter = this.routeAdapter(key)
 
@@ -724,7 +721,12 @@ export default class {
     this.checks.forEach(key => { 
       let message
       if(wschecks.includes(key))
-        message = err.open.message
+        if(err?.code)
+          message = `${err.syscall} ${err.code}`
+        else if(err?.open?.message)
+          message = err.open.message
+        else 
+          message = "unknown error"
       else
         message = "Check skipped because no connection could be made to relay's websocket."
       this.results.set(key, { data: false, duration: -1, status: "error", message }) 

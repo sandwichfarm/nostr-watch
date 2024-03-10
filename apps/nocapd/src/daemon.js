@@ -79,7 +79,7 @@ const initChecks = async ($q) => {
   const EnabledChecks = enabledChecks() || []
   for await ( const check of EnabledChecks ) {
     try {
-      const nocapdConf = config?.nocapd || {}
+      const nocapdConf = config || {}
       checks[check] = new NWWorker(check, $q, rcache, {...nocapdConf, logger: new Logger(check), pubkey: process.env.DAEMON_PUBKEY })
       schedulePopulator(checks[check])
     }

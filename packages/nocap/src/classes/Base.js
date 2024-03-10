@@ -70,6 +70,7 @@ export default class {
    * @returns {Promise<*>} - The result of the checks
    */
   async check(keys, headers=true){
+    this.keys = keys
     let result 
     if(!this.session.initial){
       this.hard_fail = false
@@ -85,8 +86,9 @@ export default class {
     }
     else if(keys instanceof Array && keys.length) {
       for await (const key of keys){
-        if(this.hard_fail !== true)
-          await this._check(key)
+        if(this.hard_fail === true) continue
+        this.current = key
+        await this._check(key)
       }
       this.close()
       result = this.results.raw(keys)
@@ -109,11 +111,15 @@ export default class {
    */
   async _check(key){ 
     if(!this.can_check(key)) return
+    console.log(key)
+    console.log(this.current)
     this.logger.debug(`${key}: check()`)
     this.defaultAdapters()
     const precheck = await this.start(key).catch( err => this.logger.debug(err) )
     const result = await this.promises.get(key).promise
-    if(result.status === "error") {
+    // console.log(result)
+    // process.exit()
+    if(result[key].status === "error") {
       this.on_check_error( key, result )
     }
     return result
@@ -201,6 +207,8 @@ export default class {
   async start(key){
     this.logger.debug(`${key}: start()`)
     const checkDeferred = await this.addDeferred(key, this.maybe_timeout(key))
+    checkDeferred.catch(this.logger.debug)
+
     const adapter = this.routeAdapter(key)
 
     if( typeof key !== 'string')
@@ -212,7 +220,6 @@ export default class {
     this.precheck(key)
       .then(async () => {
         this.logger.debug(`${key}: precheck resolved`)
-        this.current = key
         this.latency.start(key)
         await this.adapters[adapter][`check_${key}`]()
       })
@@ -247,7 +254,7 @@ export default class {
    */
   async finish(key, data={}){
     this.logger.debug(`${key}: finish()`)
-    this.current = null
+    // this.current = null
     this.latency.finish(key)
     const result = this.produce_result(key, data)
     if(this.ignore_result(key)) return this.logger.debug(`ignoring result ${key}`)
@@ -505,8 +512,7 @@ export default class {
   on_error(err){
     this.cbcall('error')
     this.track('relay', 'error', err)
-    if(this?.handle_error)
-      this?.handle_error(err)
+    this?.handle_error(err)
   }
 
     /**
@@ -614,6 +620,8 @@ export default class {
     on_check_error(key, err){
       this.cbcall('error', key, err)
       this.track(key, 'error', err)
+      if(key === 'open' && this.config.failAllChecksOnConnectFailure)
+        this.websocket_hard_fail(err)
     }
 
   /**
@@ -713,8 +721,13 @@ export default class {
   websocket_hard_fail(err){
     this.logger.debug(`websocket_hard_fail(): ${this.url}`)
     const wschecks = ['open', 'read', 'write']
-    wschecks.forEach(key => { 
-      this.results.set(key, { data: false, duration: -1, status: "error", message: err }) 
+    this.checks.forEach(key => { 
+      let message
+      if(wschecks.includes(key))
+        message = err.open.message
+      else
+        message = "Check skipped because no connection could be made to relay's websocket."
+      this.results.set(key, { data: false, duration: -1, status: "error", message }) 
     })
     const promise = this.promises.get(this.current)
     if(!promise) return this.logger.warn(`websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)

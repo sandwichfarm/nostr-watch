@@ -29,8 +29,8 @@ export class NocapdQueues {
     const daemonManager = name.split('@')[0]
     const daemonPubkey = name.split('@')[1]
 
-    if(daemonPubkey !== this.pubkey) 
-      console.warn(`[route] ${daemonPubkey} !== ${this.pubkey}`)
+    // if(daemonPubkey !== this.pubkey) 
+    //   console.warn(`[route] ${daemonPubkey} !== ${this.pubkey}`)
 
     if(!this.checks[daemonManager])
       throw new Error(`No manager found for ${daemonManager}`)

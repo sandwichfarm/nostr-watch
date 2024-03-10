@@ -102,7 +102,7 @@ export class Publisher {
     const pool = new SimplePool();
     const relays = config.publisher.to_relays
     let pubs = pool.publish(relays, signedEvent)
-    await Promise.all( pubs )
+    await Promise.all( pubs ).catch(console.error)
     // console.log(pubs)
     // process.exit()
     return Promise.all( pubs )

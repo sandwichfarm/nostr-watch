@@ -9,14 +9,17 @@ import { parseRelayNetwork, delay, lastCheckedId } from '@nostrwatch/utils'
 import Publish from '@nostrwatch/publisher'
 
 export class NWWorker {
-  constructor(check, $q, rcache, opts){
+  constructor(check, $q, rcache, conf){
 
     this.$ = $q
 
     this.slug = check
 
+    this.config = conf
+    this.opts = conf.nocapd
+
     // this.retry = new RetryManager(`nocapd/${this.slug}`, opts.retry)
-    this.retry = new RetryManager(`nocapd/${this.slug}`, opts.retry)
+    this.retry = new RetryManager(`nocapd/${this.slug}`, this.opts.retry)
 
     this.rcache = rcache
 
@@ -24,19 +27,21 @@ export class NWWorker {
     
     this.pubkey = process.env?.DAEMON_PUBKEY
 
-    const checkOpts = opts?.checks?.options
+    
+
+    const checkOpts = this.opts?.checks?.options
     this.timeout = this.setTimeout(checkOpts?.timeout)
     this.priority = checkOpts?.priority? checkOpts.priority: 10
     this.expires = checkOpts?.expires? timestring(checkOpts.expires, 'ms'): 60*60*1000
     this.interval = checkOpts?.interval? timestring(checkOpts.interval, 'ms'): 60*1000
 
-    this.networks = opts?.networks? opts.networks: ['clearnet']
+    this.networks = this.opts?.networks? this.opts.networks: ['clearnet']
 
-    this.log = opts?.logger? opts.logger.logger: console
+    this.log = this.opts?.logger? this.opts.logger.logger: console
 
-    this.scheduler = opts?.scheduler? opts.scheduler.bind(this): () => { console.warn(`scheduler not defined for ${this.id}`) }
+    this.scheduler = this.opts?.scheduler? this.opts.scheduler.bind(this): () => { console.warn(`scheduler not defined for ${this.id}`) }
 
-    this.opts = opts
+    
 
     this.worker_events = ['completed', 'failed', 'progress', 'stalled', 'waiting', 'active', 'delayed', 'drained', 'paused', 'resumed']
 
@@ -72,8 +77,8 @@ export class NWWorker {
   async work(job){
     const failure = (err) => { this.log.debug(`Could not run ${this.slug} check for ${job.data.relay}: ${err.message}`) }  
     try {
-      this.log.debug(`${this.id()}:work()`, job.id)
-      this.log.debug(`Running ${this.slug} check for ${job.data.relay}`)
+      // this.log.debug(`${this.id()}:work()`, job.id)
+      // this.log.debug(`Running ${this.slug} check for ${job.data.relay}`)
       const { relay:url } = job.data 
       const dpubkey = this.pubkey
       const nocapOpts = { 
@@ -104,20 +109,46 @@ export class NWWorker {
     const { relay:url } = job.data
     const { result  } = rvalue
 
-    if(!result || !result?.open?.data)
-      return this.on_failed(job, new Error(`Nocap.check('${this.slug}'): failed for ${url}`))
+    const offline = result?.open?.data !== true
+    // const probablyNotARelay = result?.read?.data !== true && result?.write.data !== true && ( this.opts.nocapd.checks.enabled.includes('info') && !result?.info?.data?.pubkey )
+
+    if(!result || offline){
+      // console.log("not publishing: open = ", result?.open?.data)
+      this.on_failed(job, new Error(`Nocap.check('${this.slug}'): failed for ${url}`))
+      return 
+    }
 
     
-    // console.log('PUBLISHING', url, result?.open?.data, result?.read?.data, result?.write?.data)
 
     const { checked_at } = result
 
-    const publish30066 = new Publish.Kind30066()
-    const publish30166 = new Publish.Kind30166()  
+    // console.log(this.opts, this.config?.publisher?.kinds?.contains(30066))
 
-    await publish30066.one( result )    
-    await publish30166.one( result )   
+    if(result.url === "wss://br.purplerelay.com/"){
+      console.dir(result)
+      throw new Error('wtf')
+      process.exit()
+    }
 
+    if(this.config?.publisher?.kinds?.includes(30066) ){
+      // console.log('PUBLISHING', 30066, url, result?.open?.data)
+      const publish30066 = new Publish.Kind30066()
+      const testEvent = publish30066.generateEvent( result )
+      if(testEvent.tags.filter( tag => tag[0] === 'rtt' ).length === 0) {
+        // console.log('!!!WTF: no rtt')
+        console.dir(testEvent)
+        throw new Error("No rtt!!!!")
+      } else {
+        // console.log(`${testEvent.tags.filter( tag => tag[0] === 'rtt' ).length} rtt tags found`)
+      }
+      await publish30066.one( result )   
+    }
+
+    if(this.config?.publisher?.kinds?.includes(30166) ){
+      const publish30166 = new Publish.Kind30166()  
+      await publish30166.one( result )  
+    }
+    
     this.processed++
     
     await this.updateRelayCache(result)      
@@ -171,7 +202,8 @@ export class NWWorker {
   }
 
   id(){
-    return `${this.slug}@${this.pubkey}`
+    // return `${this.slug}@${this.pubkey}`
+    return this.pubkey
   }
 
   async counts(){
@@ -243,7 +275,7 @@ export class NWWorker {
       removeOnComplete: true,
       removeOnFail: true
     }
-    this.log.debug(`Adding job for ${this.slug}: ${JSON.stringify(jdata)}`)
+    // this.log.debug(`Adding job for ${this.slug}: ${JSON.stringify(jdata)}`)
     return this.$.queue.add( this.id(), jdata, { jobId: this.jobId(jdata.relay), ...jobOpts})
   }
 

@@ -36,7 +36,7 @@ export class Kind10166 extends Publisher {
     if(data?.frequency)
       tags.push(['frequency', data.frequency]);
     if(data?.owner)
-      tags.push(['owner', data.owner]);
+      tags.push(['o', data.owner]);
     if(data?.kinds)
       data?.kinds.map(kind => kind.toString()).forEach(kind => tags.push(["k", kind]));
     if(data?.counts)

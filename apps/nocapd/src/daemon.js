@@ -70,6 +70,7 @@ const syncRelaysIn = async () => {
 
 const initWorker = async () => {
   const connection = RedisConnectionDetails()
+  console.log(connection)
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   const $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('NocapdQueues') })
   const ncdq = NocapdQueue()

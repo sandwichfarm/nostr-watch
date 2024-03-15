@@ -74,63 +74,63 @@ export class NWWorker {
     this.log.info(relays.length)
     await this.$.worker.pause()
     await this.addRelayJobs(relays)
-    //this.log.debug(`${this.id()}:_populator(): Added ${relays?.length} to queue`)
-    // //this.log.debug(`relays added: ${relays}`)
+    this.log.debug(`${this.id()}:_populator(): Added ${relays?.length} to queue`)
     delay(1000)
     await this.$.worker.resume()
   }
 
   async work(job){
-    //this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
-    const failure = (err) => { this.log.debug(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+    this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
+    const failure = (err) => { this.log.info(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     try {
       const { relay:url } = job.data 
       const nocap = new Nocap(url, this.nocapOpts)
       const result = await nocap.check(this.opts.checks.enabled).catch(failure)
-      if(!result) return { result: false }
       return { result } 
     } 
     catch(err) {
+      console.log(err)
       failure(new Error(`Failure inside work() block: ${err}`))
       return { result: false }
     }
   }
 
   async on_completed(job, rvalue){
-    //this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
+    this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
     const { result } = rvalue
     const offline = result?.open?.data !== true
     if(!result || offline){
       this.on_failed(job, new Error(`Nocap.check('${this.checks}'): failed for ${job.data.relay}`))
       return 
     }
+    this.progressMessage(result.url, result)
     if(this.config?.publisher?.kinds?.includes(30066) ){
       const publish30066 = new Publish.Kind30066()
       await publish30066.one( result )   
     }
+    
     if(this.config?.publisher?.kinds?.includes(30166) ){
       const publish30166 = new Publish.Kind30166()  
       await publish30166.one( result )  
     }
-    await this.after_completed(result)
+    await this.after_completed( result )
   }
 
   async after_completed(result){
-    //this.log.debug(`after_completed(): ${result.url}`)
+    this.log.debug(`after_completed(): ${result.url}`)
     this.processed++
-    await this.updateRelayCache(result)      
+    await this.updateRelayCache( { ...result} )      
     await this.retry.setRetries( result.url, true )
     await this.setLastChecked( result.url, Date.now() )
-    this.progressMessage(result.url, result)
   }
 
   async on_failed(job, err){
-    //this.log.debug(`on_failed(): ${job.id}`)
+    this.log.debug(`on_failed(): ${job.id}`)
     const { relay:url } = job.data
     const retry_id = await this.retry.setRetries( url, false )
     const lastChecked_id = await this.setLastChecked( url, Date.now() )
     const relay_id = await this.updateRelayCache({ url, open: { data: false }} ) 
-    // this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}, retry_id: ${retry_id}, lastChecked_id: ${lastChecked_id}, relay_id: ${relay_id}`)
+    this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}, retry_id: ${retry_id}, lastChecked_id: ${lastChecked_id}, relay_id: ${relay_id}`)
     this.progressMessage(url, null, true)
     this.processed++
   }

@@ -1,13 +1,12 @@
 import relaycache from '@nostrwatch/nwcache'
 import { capitalize, loadConfig } from "@nostrwatch/utils"
 
-const rcache = relaycache(process.env.NWCACHE_PATH)
-
-const config = await loadConfig()
+let rcache
 
 export class RetryManager {
 
   constructor(caller, config) {
+    rcache = relaycache(process.env.NWCACHE_PATH)
     if(!caller) throw new Error('caller is required')
     // if(!action) throw new Error('action is required') 
     this.caller = caller 

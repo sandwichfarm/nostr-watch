@@ -1,4 +1,4 @@
-// import schedule from 'node-schedule'
+import schedule from 'node-schedule'
 
 import timestring from 'timestring'
 import chalk from 'chalk'
@@ -9,7 +9,7 @@ import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
 import relaycache from '@nostrwatch/nwcache'
 import { bootstrap } from '@nostrwatch/seed'
-import { parseRelayNetwork, loadConfig, RedisConnectionDetails } from "@nostrwatch/utils"
+import { parseRelayNetwork, delay, loadConfig, RedisConnectionDetails } from "@nostrwatch/utils"
 
 import { NWWorker } from './classes/Worker.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
@@ -39,28 +39,28 @@ const maybeAnnounce = async () => {
   await announce.publish( conf.relays )
 }
 
-// const schedulePopulator = ($checker) =>{
-//   const rule = new schedule.RecurrenceRule();
-//   rule.start = Date.now(); // Set the start time
-//   rule.rule = `*/${Math.round($checker.interval / 1000)} * * * * *`; // Set the frequency in seconds
-//   return schedule.scheduleJob(rule, async () => { 
-//     log.info(`running schedule for ${$check.slug}.populator`)
-//     await $checker.populator()
-//   })
-// }
+const schedulePopulator = ($checker) =>{
+  const rule = new schedule.RecurrenceRule();
+  rule.start = Date.now(); // Set the start time
+  rule.rule = `*/${timestring($checker.interval, "s")} * * * * *`; // Set the frequency in seconds
+  return schedule.scheduleJob(rule, async () => { 
+    log.info(`running schedule for ${$checker.pubkey}.populator`)
+    await $checker.populator()
+  })
+}
 
-// const scheduleSyncRelays = async () =>{
-//   if(!config?.nocapd?.seed?.options?.events) return
-//   const interval = config?.nocapd?.seed?.options?.events?.interval || 60*60
-//   log.info(`scheduling syncRelaysIn() every ${timestring(interval, 'm')} minutes`)
-//   const rule = new schedule.RecurrenceRule();
-//   rule.start = Date.now(); // Set the start time
-//   rule.rule = `*/${timestring(interval)} * * * * *`; // Set the frequency in seconds
-//   return schedule.scheduleJob(rule, syncRelaysIn )
-// }
+const scheduleSyncRelays = () =>{
+  if(!config?.nocapd?.seed?.options?.events) return
+  const interval = timestring(config?.nocapd?.seed?.options?.events?.interval, "s") || timestring("1h", "s")
+  log.info(`scheduling syncRelaysIn() every ${interval/60} minutes`)
+  const rule = new schedule.RecurrenceRule();
+  rule.start = Date.now(); // Set the start time
+  rule.rule = `*/${interval} * * * * *`; // Set the frequency in seconds
+  return schedule.scheduleJob(rule, syncRelaysIn )
+}
 
 const syncRelaysIn = async () => {
-    log.info(`syncRelaysIn()`)
+    log.debug(`syncRelaysIn()`)
     const syncData = await bootstrap('nocapd')
     const relays = syncData[0].map(r => { return { url: r, online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     const persisted = await rcache.relay.batch.insertIfNotExists(relays)
@@ -73,16 +73,21 @@ const initWorker = async () => {
   console.log(connection)
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   const $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('NocapdQueues') })
-  const ncdq = NocapdQueue()
+  const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
   $q
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('NWWorker'), pubkey: PUBKEY }) )
-    .set( 'worker' , new BullMQ.Worker($q.queue.name, job => $q.checker.work(job), { concurrency, connection } ) )
-  await $q.drain().catch(console.warn)
-  await $q.obliterate().catch(console.warn)
+    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection } ) )
   await $q.checker.populator()
+  
+  schedulePopulator($q.checker)
+  scheduleSyncRelays() 
+
   await $q.resume()
+
+  log.info(`@nostrwatch/nocapd initialized: ${$q.queue.name}`)
+
   return $q
 }
 
@@ -113,6 +118,7 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 export const Nocapd = async () => {
   header()
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
+  await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
   await maybeAnnounce()
   await maybeBootstrap()

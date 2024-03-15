@@ -13,8 +13,9 @@ export const TrawlQueue = (qopts={}) => {
   return QueueInit('TrawlQueue', qopts)
 }
 
-export const NocapdQueue = (qopts={}) => {
-  return QueueInit('NocapdQueue', qopts)
+export const NocapdQueue = (name=null, qopts={}) => {
+  name = name? name: 'NocapdQueue'
+  return QueueInit(name, qopts)
 }
 
 export const SyncQueue = (qopts={}) => {

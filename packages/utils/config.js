@@ -33,7 +33,7 @@ export const loadConfigSync = function() {
 export const loadConfig = async function() {
   const handle_error = (e) => { 
     // console.error(e);
-    throw new Error('config.yaml not found')
+    return new Error('config.yaml not found')
   }
   const configPath = process.env.CONFIG_PATH || './config.yaml';
   if (!configPath) return {};

@@ -1,14 +1,15 @@
 import hash from 'object-hash'
-
 import timestring from 'timestring'
 import chalk from 'chalk';
 
 import { RetryManager } from '@nostrwatch/controlflow'
+import Logger from '@nostrwatch/logger'
 import { Nocap } from '@nostrwatch/nocap'
 import { parseRelayNetwork, delay, lastCheckedId } from '@nostrwatch/utils'
 import Publish from '@nostrwatch/publisher'
 
 export class NWWorker {
+  
   constructor(pubkey, $q, rcache, config){
     this.pubkey = pubkey
     this.$ = $q
@@ -22,7 +23,7 @@ export class NWWorker {
     this.setupDefaultValues()
     this.setupConfig()
     this.setupNocapOpts()
-    this.setupImports()
+    this.setupJobOpts()
   }
 
   setupDefaultValues(){
@@ -30,18 +31,21 @@ export class NWWorker {
     this.processed = 0
     this.total = 0
     this.relayMeta = new Map()
+    this.jobOpts = {}
+    this.nocapOpts = {}
   }
 
   setupConfig(){
     this.opts = this.config.nocapd
     this.retry = new RetryManager(`nocapd/${this.pubkey}`, this.opts?.retry)
-    this.checkOpts = this.opts?.checks?.options
+    this.checks = this.opts?.checks?.enabled.includes('all')? Nocap.checksSupported(): this.opts?.checks?.enabled
+    this.checkOpts = this.opts?.checks?.options || {}
     this.timeout = this.setTimeout(this.checkOpts?.timeout)
     this.priority = this.checkOpts?.priority? this.checkOpts.priority: 10
     this.expires = this.checkOpts?.expires? timestring(this.checkOpts.expires, 'ms'): 60*60*1000
     this.interval = this.checkOpts?.interval? timestring(this.checkOpts.interval, 'ms'): 60*1000
     this.networks = this.opts?.networks? this.opts.networks: ['clearnet']
-    this.log = this.opts?.logger? this.opts.logger.logger: console
+    this.log = this.config?.logger? this.config.logger: new Logger('nocap/$NWWorker')
   }
 
   setupNocapOpts(){
@@ -52,29 +56,38 @@ export class NWWorker {
     }
   }
 
-  //needed anymore?!?!
-  setupImports(){
-    this.delay = delay
-    this.Nocap = Nocap
+  setupJobOpts(){
+    this.jobOpts = {
+      removeOnComplete: true,
+      removeOnFail: true
+    }
+  }
+
+  updateJobOpts(obj){
+    this.jobOpts = { ...this.jobOpts, ...obj }
+    return this.jobOpts
   }
 
   async populator(){
+    this.log.info(`${this.id()}:_populator(): populating queue`)
     const relays = await this.getRelays()
     this.log.info(relays.length)
     await this.$.worker.pause()
     await this.addRelayJobs(relays)
-    this.log.debug(`${this.id()}:_populator(): Added ${relays?.length} to queue`)
+    //this.log.debug(`${this.id()}:_populator(): Added ${relays?.length} to queue`)
+    // //this.log.debug(`relays added: ${relays}`)
     delay(1000)
     await this.$.worker.resume()
   }
 
-
   async work(job){
-    const failure = (err) => { this.log.debug(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+    //this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
+    const failure = (err) => { this.log.warn(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     try {
       const { relay:url } = job.data 
-      const nocapd = new this.Nocap(url, this.nocapOpts)
-      const result = await nocapd.check(this.opts.checks.enabled).catch(failure)
+      const nocap = new Nocap(url, this.nocapOpts)
+      const result = await nocap.check(this.opts.checks.enabled).catch(failure)
+      if(!result) return { result: false }
       return { result } 
     } 
     catch(err) {
@@ -84,10 +97,11 @@ export class NWWorker {
   }
 
   async on_completed(job, rvalue){
-    const { result  } = rvalue
+    //this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
+    const { result } = rvalue
     const offline = result?.open?.data !== true
     if(!result || offline){
-      this.on_failed(job, new Error(`Nocap.check('${this.opts.checks.enabled}'): failed for ${job.data.relay}`))
+      this.on_failed(job, new Error(`Nocap.check('${this.checks}'): failed for ${job.data.relay}`))
       return 
     }
     if(this.config?.publisher?.kinds?.includes(30066) ){
@@ -102,6 +116,7 @@ export class NWWorker {
   }
 
   async after_completed(result){
+    //this.log.debug(`after_completed(): ${result.url}`)
     this.processed++
     await this.updateRelayCache(result)      
     await this.retry.setRetries( result.url, true )
@@ -110,22 +125,24 @@ export class NWWorker {
   }
 
   async on_failed(job, err){
+    //this.log.debug(`on_failed(): ${job.id}`)
     const { relay:url } = job.data
-    
     const retry_id = await this.retry.setRetries( url, false )
     const lastChecked_id = await this.setLastChecked( url, Date.now() )
     const relay_id = await this.updateRelayCache({ url, open: { data: false }} ) 
-    this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}, retry_id: ${retry_id}, lastChecked_id: ${lastChecked_id}, relay_id: ${relay_id}`)
+    // this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}, retry_id: ${retry_id}, lastChecked_id: ${lastChecked_id}, relay_id: ${relay_id}`)
     this.progressMessage(url, null, true)
     this.processed++
   }
 
   async on_drained(){
+    //this.log.debug(`on_drained()`)  
     this.total = 0
     this.processed = 0
   }
 
   cbcall(...args){
+    //this.log.debug(`cbcall(): ${args}`)
     const handler = [].shift.call(args)
     if(this?.[`on_${handler}`] && typeof this[`on_${handler}`] === 'function')
       this[`on_${handler}`](...args)
@@ -133,24 +150,60 @@ export class NWWorker {
       this.cb[handler](...args)
   }
 
+  async addRelayJobs(relays){
+    //this.log.debug(`Relay Counts: ${JSON.stringify(await this.counts())}`)
+    for await ( const relay of relays ){
+      const $job = await this.addRelayJob({ relay })
+      if($job?.id)
+        this.total++
+    }
+    const c = await this.counts()
+    //this.log.debug(`Relay Counts: ${JSON.stringify(c)}`)
+  }
+
+  async addRelayJob(jdata){
+    //this.log.debug(`Adding job for ${jdata.relay} with ${this.opts.checks.enabled} nocap checks: ${JSON.stringify(jdata)}`)
+    const priority = this.getPriority(jdata.relay)
+    this.updateJobOpts({ priority })
+    return this.$.queue.add( this.id(), jdata, { jobId: this.jobId(jdata.relay), ...this.jobOpts})
+  }
+
   calculateProgress() {
+    //this.log.debug(`calculateProgress()`)
     if (this.total === 0) return "0.00%"; // Prevent division by zero
     let percentage = (this.processed / this.total) * 100;
     return percentage.toFixed(2) + "%";
   }
 
   async progressMessage(url, result={}, error=false){
+    //this.log.debug(`progressMessage()`)
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray
-    this.log.info(
-      `[${chalk.bgBlack(this.calculateProgress())}] `+
-      `${mute(this.processed)}/${mute(this.total)}  `+
-      `${url}: ${result?.open?.data === true? success("online"): failure("offline")} ${result?.read?.data === true? success("readable"): failure("unreadable")} ${result?.write?.data === true? success("writable"): failure("unwritable")}  `+
-      `${(result?.open?.duration+result?.read?.duration+result?.write?.duration)/1000} seconds  `+
-      `${error? chalk.gray.italic('error'): ''}  ` +
-      `[${error? await this.retry.getRetries(url) + " retries": ""}]`)
-      
+    let progress = ''
+    progress += `[${chalk.bgBlack(this.calculateProgress())}] `
+    progress += `${mute(this.processed)}/${mute(this.total)}  `
+    progress += `${url}: `
+    if(this.checks.includes('open'))
+      progress += `${result?.open?.data === true? success("online"): failure("offline")} `
+    if(this.checks.includes('read'))
+      progress += `${result?.read?.data === true? success("readable"): failure("unreadable")} ` 
+    if(this.checks.includes('write'))
+      progress += `${result?.write?.data === true? success("writable"): failure("unwritable")} `
+    if(this.checks.includes('dns'))
+      progress += `${Object.keys(result?.dns?.data || {}).length? success("dns"): failure("dns")} `
+    if(this.checks.includes('ssl'))
+      progress += `${Object.keys(result?.ssl?.data || {}).length? success("ssl"): failure("ssl")} `
+    if(this.checks.includes('geo'))
+      progress += `${Object.keys(result?.geo?.data || {}).length? success("geo"): failure("geo")} `
+    if(this.checks.includes('info'))
+      progress += `${Object.keys(result?.info?.data || {}).length? success("info"): failure("info")} `
+    
+    progress += `${(result?.open?.duration+result?.read?.duration+result?.write?.duration)/1000} seconds  `
+    progress += `${error? chalk.gray.italic('error'): ''}  ` 
+    progress += `[${error? await this.retry.getRetries(url) + " retries": ""}]`
+
+    this.log.info(progress)       
   }
 
   id(){
@@ -164,8 +217,9 @@ export class NWWorker {
   }
 
   hasChanged(data1, data2){
-    this.log.debug(`hasChanged: ${hash(data1) !== hash(data2)}`)
-    return hash(data1) !== hash(data2)
+    const changed = hash(data1) !== hash(data2)
+    //this.log.debug(`hasChanged: ${changed}`)
+    return changed
   }
 
   on(event, handler){
@@ -174,27 +228,6 @@ export class NWWorker {
 
   jobId(relay){
     return `${this.id()}:${relay}`
-  }
-
-
-  async addRelayJobs(relays){
-    for await ( const relay of relays ){
-      const $job = await this.addRelayJob({ relay })
-      if($job?.id)
-        this.total++
-    }
-    const c = await this.counts()
-    this.log.debug(`Relay Counts: ${c}`)
-  }
-
-  async addRelayJob(jdata){
-    const priority = this.getPriority(jdata.relay)
-    const jobOpts = {
-      priority: priority,
-      removeOnComplete: true,
-      removeOnFail: true
-    }
-    return this.$.queue.add( this.id(), jdata, { jobId: this.jobId(jdata.relay), ...jobOpts})
   }
 
   setTimeout(config){
@@ -260,8 +293,9 @@ export class NWWorker {
     let   record = new Object()
 
     for( const key of ['info', 'dns', 'geo', 'ssl'] ){
-      if(result?.[key]?.data && Object.keys(result[key].data)?.length){
-        const handle_promise = async (resolve, reject) => { 
+      const resultHasKey = result?.[key]?.data && Object.keys(result[key].data)?.length > 0
+      if(resultHasKey){
+        const persist_result = async (resolve, reject) => { 
           const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data), data: result[key].data }
           const _check_id = await this.rcache.check[key].insert(_record)
           if(!_check_id)
@@ -269,12 +303,12 @@ export class NWWorker {
           record = {...record, ...{ [key]: _check_id }}
           resolve()
         }
-        promises.push( new Promise( handle_promise ) )
+        promises.push( new Promise( persist_result ) )
       }
     }
     await Promise.allSettled(promises)
     record.url = url
-    record.online = result.open.data
+    if(result?.open?.data) record.online = result.open.data
     const $id = await this.rcache.relay.patch(record)
     return $id
   }

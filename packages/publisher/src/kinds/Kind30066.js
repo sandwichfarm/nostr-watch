@@ -13,7 +13,6 @@ export class Kind30066 extends PublisherNocap {
   }
 
   generateEvent(data){
-
     let tags = Kind30066.generateTags(data)
     const content = Kind30066.generateContent(data)
     

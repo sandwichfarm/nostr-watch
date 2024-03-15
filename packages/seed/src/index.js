@@ -25,7 +25,7 @@ export const bootstrap = async (caller) => {
       api = emptyResponse(),
       events = emptyResponse()
 
-  console.log(opts.sources, opts.sources.includes('api'))
+  // console.log(opts.sources, opts.sources.includes('api'))
 
   if(opts.sources.includes('config'))
     configseed = [ config?.seed, Date.now() ]
@@ -105,8 +105,6 @@ export const relaysFromStaticSeed = async (opts) => {
     return emptyResponse()
   }
 }
-
-
 
 export const relaysOnlineFromApi = async (opts) => {
   if(!opts?.remotes?.rest_api) throw new Error("relaysOnlineFromApi(): No nostr-watch rest_api specified in opts (host.com/v1 or host.com/v2)")

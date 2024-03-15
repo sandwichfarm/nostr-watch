@@ -25,7 +25,7 @@ import SAMPLE_EVENT from "../data/sample_event.js"
  * @param {object} config - The configuration object for the check
  */
 
-export default class {
+export default class Base {
 
   constructor(url, config={}) {
 
@@ -39,7 +39,7 @@ export default class {
     this.adapters = {}
     this.adaptersValid = ['websocket', 'info', 'geo', 'dns', 'ssl']
     //
-    this.checks = ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
+    this.checks = Base.checksSupported()
     this.requestedChecks = []
     //
     this.config = new ConfigInterface(config)
@@ -1050,5 +1050,17 @@ export default class {
     (typeof window !== 'undefined' && typeof document !== 'undefined')
   }
     
+
+  /**
+   * checksSupported
+   * Returns true if in a browser environment
+   * 
+   * @public
+   * @static
+   * @returns {boolean}
+   */
+  static checksSupported(){
+    return ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
+  }
 }
 

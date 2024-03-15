@@ -1,3 +1,5 @@
+import Logger from '@nostrwatch/logger'
+
 export class NocapdQueues {
   constructor(opts){
     this.setup(opts)
@@ -7,16 +9,17 @@ export class NocapdQueues {
 
   setup(opts){
     this.pubkey = opts?.pubkey? opts.pubkey: null
+    this.log = this.opts?.logger? this.opts.logger: new Logger('nocap/$NocapdQueues')
     this.cb = {}
     this.queue = null 
     this.events = null 
     this.worker = null
     this.checker = null
     this.worker_events = ['completed', 'failed', 'progress', 'stalled', 'waiting', 'active', 'delayed', 'drained', 'paused', 'resumed']
-    
   }
 
   route_event(event, ...args){
+    // this.log.info(`route_event(): ${event}, ${args || "no event args"}`)
     const job = args[0]
     let name = null
 
@@ -37,13 +40,16 @@ export class NocapdQueues {
     }
   }
 
-  setWorker($worker){
-    this.worker = $worker
-    this.bind_events()
+  set(key, fn){
+    // this.log.info(`set('${key}'): with ${typeof fn}`)
+    this[key] = fn
+    if(key === 'worker') this.bind_events()
+    return this
   }
 
   bind_events(){
     this.worker_events.forEach(handler => {
+      //this.log.debug(`bind_events(): binding ${handler} to ${this.worker.name}`)
       this.worker.on(handler, (...args) => this.route_event(handler, ...args))
     })
   }
@@ -60,27 +66,19 @@ export class NocapdQueues {
       this.cb[handler](...args)
   }
 
-  pause(q){
-    if(q)
-      return this.queue?.[q].pause()
-    Object.keys(this.queue).forEach(q => this.queue[q].pause())
+  async pause(){
+    return await this.queue.pause()
   }
 
-  start(q){
-    if(q)
-      return this.queue?.[q].start()
-    Object.keys(this.queue).forEach(q => this.queue[q].start())
+  async resume(){
+    return await this.queue.resume()
   }
 
-  drain(q){
-    if(q)
-      return this.queue?.[q].drain()
-    Object.keys(this.queue).forEach(q => this.queue[q].drain())
+  async drain(){
+    return await this.queue.drain()
   }
 
-  obliterate(q){
-    if(q)
-      return this.queue?.[q].obliterate()
-    Object.keys(this.queue).forEach(q => this.queue[q].obliterate())
+  async obliterate(){
+    return await this.queue.obliterate()
   }
 }

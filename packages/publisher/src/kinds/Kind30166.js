@@ -30,17 +30,18 @@ export class Kind30166 extends PublisherNocap {
     if(data?.network){
       tags.push(['n', data.network])
     }
-  
-    for(const nip in data.info.data.supported_nips){
-      tags.push(['N', String(nip)])
-    }
-  
-    for(const lang in data.info.data.language_tags){
-      tags.push(['l', String(lang)])
-    }
-  
-    for(const tag in data.info.data.tags){
-      tags.push(['t', String(tag)])
+    if(data?.info){
+      for(const nip in data.info.data.supported_nips){
+        tags.push(['N', String(nip)])
+      }
+
+      for(const lang in data.info.data.language_tags){
+        tags.push(['l', String(lang)])
+      }
+    
+      for(const tag in data.info.data.tags){
+        tags.push(['t', String(tag)])
+      }
     }
   
     if(data?.info?.data?.limitation?.auth_required === true){
@@ -63,7 +64,6 @@ export class Kind30166 extends PublisherNocap {
   
     if(data?.geo?.data && Object.keys(data.geo.data).length > 0){
       const geod = transformGeoResult(data.geo.data)
-      console.log(geod)
       tags = [...tags, ...ngeotags(geod, { iso31662: true, iso31663: true, cityName: true })]
     }
 

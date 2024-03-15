@@ -9,164 +9,128 @@ import { parseRelayNetwork, delay, lastCheckedId } from '@nostrwatch/utils'
 import Publish from '@nostrwatch/publisher'
 
 export class NWWorker {
-  constructor(check, $q, rcache, conf){
-
+  constructor(pubkey, $q, rcache, config){
+    this.pubkey = pubkey
     this.$ = $q
-
-    this.slug = check
-
-    this.config = conf
-    this.opts = conf.nocapd
-
-    // this.retry = new RetryManager(`nocapd/${this.slug}`, opts.retry)
-    this.retry = new RetryManager(`nocapd/${this.slug}`, this.opts.retry)
-
     this.rcache = rcache
-
-    this.cb = {}
-    
-    this.pubkey = process.env?.DAEMON_PUBKEY
-
-    
-
-    const checkOpts = this.opts?.checks?.options
-    this.timeout = this.setTimeout(checkOpts?.timeout)
-    this.priority = checkOpts?.priority? checkOpts.priority: 10
-    this.expires = checkOpts?.expires? timestring(checkOpts.expires, 'ms'): 60*60*1000
-    this.interval = checkOpts?.interval? timestring(checkOpts.interval, 'ms'): 60*1000
-
-    this.networks = this.opts?.networks? this.opts.networks: ['clearnet']
-
-    this.log = this.opts?.logger? this.opts.logger.logger: console
-
-    this.scheduler = this.opts?.scheduler? this.opts.scheduler.bind(this): () => { console.warn(`scheduler not defined for ${this.id}`) }
-
-    
-
-    this.worker_events = ['completed', 'failed', 'progress', 'stalled', 'waiting', 'active', 'delayed', 'drained', 'paused', 'resumed']
-
-    this.queue_events = ['active', 'completed', 'delayed', 'drained', 'error', 'failed', 'paused', 'progress', 'resumed', 'stalled', 'waiting']
-
-    this.Nocap = Nocap
-
-    if(!this?.on_completed || !(this.on_completed instanceof Function))
-      throw new Error(`${this.slug}: on_completed needs to be defined and a function`)
-    
+    this.config = config
+    this.setup()
     this.log.info(`${this.id()} initialized`)
-    
-    this.delay = delay
+  }
 
+  setup(){
+    this.setupDefaultValues()
+    this.setupConfig()
+    this.setupNocapOpts()
+    this.setupImports()
+  }
+
+  setupDefaultValues(){
+    this.cb = {}
     this.processed = 0
-
     this.total = 0
-
     this.relayMeta = new Map()
   }
 
-  get_key_for_check(){
-    switch(this.slug){
-      case "geo":
-        return ['dns', 'geo']
-      case "websocket":
-        return ['open', 'read', 'write']
-      default:
-        return this.slug
+  setupConfig(){
+    this.opts = this.config.nocapd
+    this.retry = new RetryManager(`nocapd/${this.pubkey}`, this.opts?.retry)
+    this.checkOpts = this.opts?.checks?.options
+    this.timeout = this.setTimeout(this.checkOpts?.timeout)
+    this.priority = this.checkOpts?.priority? this.checkOpts.priority: 10
+    this.expires = this.checkOpts?.expires? timestring(this.checkOpts.expires, 'ms'): 60*60*1000
+    this.interval = this.checkOpts?.interval? timestring(this.checkOpts.interval, 'ms'): 60*1000
+    this.networks = this.opts?.networks? this.opts.networks: ['clearnet']
+    this.log = this.opts?.logger? this.opts.logger.logger: console
+  }
+
+  setupNocapOpts(){
+    this.nocapOpts = { 
+      timeout: this.timeout,
+      checked_by: this.pubkey,
+      rejectOnConnectFailure: true
     }
   }
 
+  //needed anymore?!?!
+  setupImports(){
+    this.delay = delay
+    this.Nocap = Nocap
+  }
+
+  async populator(){
+    const relays = await this.getRelays()
+    this.log.info(relays.length)
+    await this.$.worker.pause()
+    await this.addRelayJobs(relays)
+    this.log.debug(`${this.id()}:_populator(): Added ${relays?.length} to queue`)
+    delay(1000)
+    await this.$.worker.resume()
+  }
+
+
   async work(job){
-    const failure = (err) => { this.log.debug(`Could not run ${this.slug} check for ${job.data.relay}: ${err.message}`) }  
+    const failure = (err) => { this.log.debug(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     try {
-      // this.log.debug(`${this.id()}:work()`, job.id)
-      // this.log.debug(`Running ${this.slug} check for ${job.data.relay}`)
       const { relay:url } = job.data 
-      const dpubkey = this.pubkey
-      const nocapOpts = { 
-        timeout: this.timeout,
-        checked_by: dpubkey,
-        rejectOnConnectFailure: true
-      }
-      const nocapd = new this.Nocap(url, nocapOpts)
-      let result = {}
-      //geo requires data from dns check first
-      const check = this.get_key_for_check()
-      await nocapd.check(check)
-        .catch( err => {
-          failure(`Failure inside check(): ${err}`)
-        })
-        .then( _result => {
-          result = _result
-        })
+      const nocapd = new this.Nocap(url, this.nocapOpts)
+      const result = await nocapd.check(this.opts.checks.enabled).catch(failure)
       return { result } 
     } 
     catch(err) {
-      failure(`Failure inside work() block: ${err}`)
+      failure(new Error(`Failure inside work() block: ${err}`))
       return { result: false }
     }
   }
 
   async on_completed(job, rvalue){
-    const { relay:url } = job.data
     const { result  } = rvalue
-
     const offline = result?.open?.data !== true
-    // const probablyNotARelay = result?.read?.data !== true && result?.write.data !== true && ( this.opts.nocapd.checks.enabled.includes('info') && !result?.info?.data?.pubkey )
-
     if(!result || offline){
-      // console.log("not publishing: open = ", result?.open?.data)
-      this.on_failed(job, new Error(`Nocap.check('${this.slug}'): failed for ${url}`))
+      this.on_failed(job, new Error(`Nocap.check('${this.opts.checks.enabled}'): failed for ${job.data.relay}`))
       return 
     }
-
-    
-
-    const { checked_at } = result
-
-    // console.log(this.opts, this.config?.publisher?.kinds?.contains(30066))
-
-    if(result.url === "wss://br.purplerelay.com/"){
-      console.dir(result)
-      throw new Error('wtf')
-      process.exit()
-    }
-
     if(this.config?.publisher?.kinds?.includes(30066) ){
-      // console.log('PUBLISHING', 30066, url, result?.open?.data)
       const publish30066 = new Publish.Kind30066()
-      const testEvent = publish30066.generateEvent( result )
-      if(testEvent.tags.filter( tag => tag[0] === 'rtt' ).length === 0) {
-        // console.log('!!!WTF: no rtt')
-        console.dir(testEvent)
-        throw new Error("No rtt!!!!")
-      } else {
-        // console.log(`${testEvent.tags.filter( tag => tag[0] === 'rtt' ).length} rtt tags found`)
-      }
       await publish30066.one( result )   
     }
-
     if(this.config?.publisher?.kinds?.includes(30166) ){
       const publish30166 = new Publish.Kind30166()  
       await publish30166.one( result )  
     }
-    
-    this.processed++
-    
-    await this.updateRelayCache(result)      
-    await this.retry.setRetries( url, true )
-    await this.setLastChecked( url, Date.now() )
+    await this.after_completed(result)
+  }
 
-    this.progressMessage(url, result)
-     
+  async after_completed(result){
+    this.processed++
+    await this.updateRelayCache(result)      
+    await this.retry.setRetries( result.url, true )
+    await this.setLastChecked( result.url, Date.now() )
+    this.progressMessage(result.url, result)
   }
 
   async on_failed(job, err){
     const { relay:url } = job.data
-    this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}`)
+    
     const retry_id = await this.retry.setRetries( url, false )
     const lastChecked_id = await this.setLastChecked( url, Date.now() )
     const relay_id = await this.updateRelayCache({ url, open: { data: false }} ) 
+    this.log?.debug(`Websocket check failed for ${job.data.relay}: ${JSON.stringify(err)}, retry_id: ${retry_id}, lastChecked_id: ${lastChecked_id}, relay_id: ${relay_id}`)
     this.progressMessage(url, null, true)
     this.processed++
+  }
+
+  async on_drained(){
+    this.total = 0
+    this.processed = 0
+  }
+
+  cbcall(...args){
+    const handler = [].shift.call(args)
+    if(this?.[`on_${handler}`] && typeof this[`on_${handler}`] === 'function')
+      this[`on_${handler}`](...args)
+    if(typeof this.cb[handler] === 'function')
+      this.cb[handler](...args)
   }
 
   calculateProgress() {
@@ -189,20 +153,7 @@ export class NWWorker {
       
   }
 
-  siblingKeys(){
-    return Object.keys(this.$.managers).filter(key => key !== this.constructor.name)
-  }
-
-  siblings(){
-    const result = {}
-    this.siblingKeys().forEach( key => {
-      result[key] = this.$.managers[key]
-    })
-    return result
-  }
-
   id(){
-    // return `${this.slug}@${this.pubkey}`
     return this.pubkey
   }
 
@@ -210,14 +161,6 @@ export class NWWorker {
     const counts = await this.$.queue.getJobCounts()
     this.log.info(`[stats] active: ${counts.active}, completed: ${ counts.completed }, failed: ${counts.failed}, prioritized: ${counts.prioritized}, delayed: ${counts.delayed}, waiting: ${counts.waiting}, paused: ${counts.paused}, total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized}`)
     return counts
-  }
-
-  cbcall(...args){
-    const handler = [].shift.call(args)
-    if(this?.[`on_${handler}`] && typeof this[`on_${handler}`] === 'function')
-      this[`on_${handler}`](...args)
-    if(typeof this.cb[handler] === 'function')
-      this.cb[handler](...args)
   }
 
   hasChanged(data1, data2){
@@ -233,31 +176,6 @@ export class NWWorker {
     return `${this.id()}:${relay}`
   }
 
-  async _work(job){
-    if(job.id.startsWith(this.id())) {
-      this.log.debug(`[work] ${job.id} is a ${this.slug} job, running...`)
-      return this.work()
-    }
-    this.log.warn(`[work] ${job.id} is not a ${this.slug} job, passing to next worker`)
-  }
-
-  // async work(job){
-  //   throw new Error(`work() not implemented by subclass "${this.slug}"`)
-  // }
-
-  static getShortName(slug){
-    return slug.replace('Manager', '').toLowerCase()
-  }
-
-  async populator(){
-    const relays = await this.getRelays()
-    this.log.info(relays.length)
-    await this.$.worker.pause()
-    await this.addRelayJobs(relays)
-    this.log.debug(`${this.id()}:_populator(): Added ${relays?.length} to queue`)
-    delay(1000)
-    await this.$.worker.resume()
-  }
 
   async addRelayJobs(relays){
     for await ( const relay of relays ){
@@ -266,6 +184,7 @@ export class NWWorker {
         this.total++
     }
     const c = await this.counts()
+    this.log.debug(`Relay Counts: ${c}`)
   }
 
   async addRelayJob(jdata){
@@ -275,7 +194,6 @@ export class NWWorker {
       removeOnComplete: true,
       removeOnFail: true
     }
-    // this.log.debug(`Adding job for ${this.slug}: ${JSON.stringify(jdata)}`)
     return this.$.queue.add( this.id(), jdata, { jobId: this.jobId(jdata.relay), ...jobOpts})
   }
 
@@ -324,14 +242,14 @@ export class NWWorker {
   }
 
   cacheId(url){
-    return lastCheckedId(this.slug, url)
+    return lastCheckedId(this.pubkey, url)
   }
 
   async setLastChecked(url, date=Date.now()){
     return this.rcache.cachetime.set( this.cacheId(url), date )
   }
 
-  async getLastChecked(url, date=Date.now()){
+  async getLastChecked(url){
     return this.rcache.cachetime.get.one( this.cacheId(url) )
   }
 
@@ -343,16 +261,15 @@ export class NWWorker {
 
     for( const key of ['info', 'dns', 'geo', 'ssl'] ){
       if(result?.[key]?.data && Object.keys(result[key].data)?.length){
-        const promise = new Promise( async (resolve, reject) => { 
+        const handle_promise = async (resolve, reject) => { 
           const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data), data: result[key].data }
           const _check_id = await this.rcache.check[key].insert(_record)
-          // console.log(_check_id)
           if(!_check_id)
             reject()
           record = {...record, ...{ [key]: _check_id }}
           resolve()
-        })
-        promises.push(promise)
+        }
+        promises.push( new Promise( handle_promise ) )
       }
     }
     await Promise.allSettled(promises)
@@ -428,11 +345,6 @@ export class NWWorker {
       return lastChecked < Date.now() - expiry;
   }
 
-  async on_drained(){
-    this.total = 0
-    this.processed = 0
-  }
-
 }
 
 const evaluateMaxRelays = (evaluate, relays) => {
@@ -440,6 +352,6 @@ const evaluateMaxRelays = (evaluate, relays) => {
     return parseInt( eval( evaluate ) )
   }
   catch(e){
-    this.log.error(`Error evaluating config.nocapd.checks.all.max -> "${config.nocapd.checks.options.max}": ${e.message}`)
+    this.log.error(`Error evaluating this.opts.checks.options.max -> "${this?.opts?.checks?.options?.max} || "is undefined"": ${e?.message || "error undefined"}`)
   }
 }

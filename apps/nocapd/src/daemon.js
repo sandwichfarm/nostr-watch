@@ -21,6 +21,8 @@ import Logger from '@nostrwatch/logger'
 const log = new Logger('nocapd')
 const rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
 
+const PUBKEY = process.env.DAEMON_PUBKEY
+
 let config 
 
 const maybeAnnounce = async () => {
@@ -39,9 +41,9 @@ const maybeAnnounce = async () => {
   const announce = new AnnounceMonitor(conf)
   announce.generate()
   announce.sign( process.env.DAEMON_PRIVKEY  )
-  console.dir(conf)
-  console.dir(announce.events)
-  console.dir(announce.events['10166'].tags)
+  // console.dir(conf)
+  // console.dir(announce.events)
+  // console.dir(announce.events['10166'].tags)
   await announce.publish( conf.relays )
 }
 
@@ -67,6 +69,7 @@ const scheduleSyncRelays = async () =>{
 }
 
 const syncRelaysIn = async () => {
+    log.info(`syncRelaysIn()`)
     const syncData = await bootstrap('nocapd')
     const relays = syncData[0].map(r => { return { url: r, online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     const persisted = await rcache.relay.batch.insertIfNotExists(relays)
@@ -74,52 +77,28 @@ const syncRelaysIn = async () => {
     return persisted
 }
 
-const initChecks = async ($q) => {
-  const checks = {}
-  const EnabledChecks = enabledChecks() || []
-  for await ( const check of EnabledChecks ) {
-    try {
-      const nocapdConf = config || {}
-      checks[check] = new NWWorker(check, $q, rcache, {...nocapdConf, logger: new Logger(check), pubkey: process.env.DAEMON_PUBKEY })
-      schedulePopulator(checks[check])
-    }
-    catch(e){
-      log.err(`Error initializing ${check}: ${e.message}`)
-    }
-  }
-  await scheduleSyncRelays()
-  return checks
-}
-
 const initWorker = async () => {
-  const $q = new NocapdQueues({ pubkey: process.env.DAEMON_PUBKEY })
+  const $q = new NocapdQueues({ pubkey: PUBKEY })
   const { $Queue:$NocapdQueue, $QueueEvents:$NocapdQueueEvents } = NocapdQueue()
   const connection = RedisConnectionDetails()
   await $NocapdQueue.pause()
   await $NocapdQueue.drain()
+  $q.checker = new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger(PUBKEY), pubkey: PUBKEY })
+  log.info(`Worker Name: ${$NocapdQueue.name}`)
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   log.info(`Worker concurrency: ${concurrency}`)
-  const $worker = new Worker($NocapdQueue.name, $q.route.bind($q), { concurrency, connection } )
+  const $worker = new Worker(PUBKEY, $q.checker.work, { concurrency, connection } )
   await $worker.pause()
-  
   $q.queue = $NocapdQueue
   $q.events = $NocapdQueueEvents
   $q.setWorker($worker)
-  $q.checks = await initChecks($q)
-  
-  await $q.populateAll()
+  await $q.checker.populator()
   await $q.queue.resume() 
-  
   return $q
 }
 
-const enabledChecks = () => {
-  const eman = []
-  return config?.nocapd?.checks?.enabled instanceof Array? config.nocapd.checks.enabled: 'all'
-}
-
 const maybeBootstrap = async () => {
-  log.info(`Boostrapping..`)
+  log.info(`Boostrapping...`)
   if(rcache.relay.count.all() === 0){
     const persisted = await syncRelaysIn()
     log.info(`Boostrapped ${persisted.length} relays`)
@@ -144,7 +123,7 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 
 export const Nocapd = async () => {
   header()
-  config = await loadConfig()
+  config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
   await maybeAnnounce()
   await maybeBootstrap()
   const $q = await initWorker()

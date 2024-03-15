@@ -11,7 +11,7 @@ export class RetryManager {
     if(!caller) throw new Error('caller is required')
     // if(!action) throw new Error('action is required') 
     this.caller = caller 
-    this.config = config
+    this.config = config || {}
     this.retries = []
   }
 

@@ -1,5 +1,4 @@
 import { verifyEvent, finalizeEvent, SimplePool, Event } from "nostr-tools";
-import ngeotags from "nostr-geotags";
 import { Kind10166, Kind0, Kind10002 } from "@nostrwatch/publisher";
 
 const NIP66_MONITOR_REGISTER = 10166;
@@ -7,16 +6,6 @@ const NIP66_MONITOR_REGISTER = 10166;
 interface GeoTagOption {
   // Define properties of GeoTagOption if needed
 }
-
-// interface AnnounceMonitorOptions {
-//   geo?: object;
-//   kinds?: number[];
-//   timeouts?: number[];
-//   counts?: number[];
-//   owner?: string;
-//   frequency?: string;
-// }
-
 
 interface AnnounceMonitorOptions {
   geo?: object;
@@ -35,12 +24,6 @@ export class AnnounceMonitor {
   public monReg?: any;
   public monRelays: string[] = [];
   public monProfile: any;
-  // private geo?: object;
-  // private kinds: number[];
-  // private timeouts: object;
-  // private counts: number[];
-  // private owner: string;
-  // private frequency: string;
 
   constructor(options: AnnounceMonitorOptions) {
     this.setup(options);
@@ -110,7 +93,6 @@ export class AnnounceMonitor {
     if(!this.events) throw new Error("Event has not yet been generated (run generate() first)") 
     const signed: Event[] = []
     Object.keys(this.events).forEach( kind => {  
-      // console.log(`event kind: ${kind}`, this.events[kind])
       this.events[kind] = finalizeEvent(this.events[kind], sk)
     })
     return signed
@@ -125,7 +107,6 @@ export class AnnounceMonitor {
       const kind = kinds[i]    
       const promises = $pool.publish(relays, this.events[kind])
       await Promise.all(promises)
-      console.log(this.events[kind].kind, 'published to', relays.join(', '))
       pubbedIds.push(this.events[kind].id)
     }
     return pubbedIds

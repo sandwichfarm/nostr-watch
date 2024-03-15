@@ -22,7 +22,6 @@ export const configureQueues = async function(){
   const trawler = TrawlQueue({ removeOnComplete: { age: 30*60*1000 }, removeOnFail: { age: 30*60*1000 }, timeout: 1000*60*10 })
 
   const trawlJobProgress = async ($job, progress) => {
-    console.log("progress")
     if(!(progress instanceof Object)) return trawlLogger.warn(`Progress data is not an object, it's a ${typeof progress}`)
     const { type, source } = progress 
     if(type === 'found'){

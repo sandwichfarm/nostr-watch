@@ -61,7 +61,6 @@ export class Scheduler {
       }
   }
 
-
   createSchedules() {
     Object.keys(this.analysis).forEach(name => {
       const worker = this.analysis[name];

@@ -25,7 +25,7 @@ import SAMPLE_EVENT from "../data/sample_event.js"
  * @param {object} config - The configuration object for the check
  */
 
-export default class {
+export default class Base {
 
   constructor(url, config={}) {
 
@@ -37,9 +37,10 @@ export default class {
     //
     this.adaptersInitialized = false
     this.adapters = {}
-    this.adaptersValid = ['websocket', 'info', 'geo', 'dns','ssl']
+    this.adaptersValid = ['websocket', 'info', 'geo', 'dns', 'ssl']
     //
-    this.checks = ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
+    this.checks = Base.checksSupported()
+    this.requestedChecks = []
     //
     this.config = new ConfigInterface(config)
     this.results = new ResultInterface()
@@ -85,6 +86,7 @@ export default class {
       this.close()
     }
     else if(keys instanceof Array && keys.length) {
+      this.requestedChecks = keys
       for await (const key of keys){
         if(this.hard_fail === true) continue
         this.current = key
@@ -94,7 +96,8 @@ export default class {
       result = this.results.raw(keys)
     }
     else {
-      return this.throw(`check(${keys}) failed. keys must be one (string) or several (array of strings) of: ${this.checks.join(', ')}`)
+      throw new Error(`check(${keys}) failed. keys must be one (string) or several (array of strings) of: ${this.checks.join(', ')}`)
+      // return this.throw(`check(${keys}) failed. keys must be one (string) or several (array of strings) of: ${this.checks.join(', ')}`)
     }
     // if(this.isConnected()) this.close()
     return headers? result: this.results.cleanResult(keys, result)
@@ -136,8 +139,8 @@ export default class {
    */
   can_check(key){
     if(this.is_browser() && key === 'ssl') {
-      this.logger.err('Cannot check SSL from browser')
-      return
+      this.logger.warn('Cannot check SSL from browser')
+      return false
     }
     return true 
   }
@@ -279,8 +282,7 @@ export default class {
       ignore = true 
       reason = 'already fulfilled'
     }
-    if(!ignore) return 
-    
+    if(!ignore) return false
     this.logger.warn(`Ignoring ${key} check because the promise was ${reason} when finish() was called`)
     return true
   }
@@ -450,7 +452,7 @@ export default class {
    */
   close(){
     this.logger.debug(`close()`)
-    if( this.isClosing() || !this.isConnected() || this.isClosed())
+    if( !this.isConnected() || this.isClosing() || this.isClosed())
       return
     this.maybeExecuteAdapterMethod(
       'websocket', 
@@ -609,7 +611,7 @@ export default class {
 
     /**
    * on_check_error
-   * Implementation specific Event triggered by Check.finish
+   * nocap specific Event triggered by Check.finish
    * 
    * @private
    * @returns null
@@ -623,7 +625,7 @@ export default class {
 
   /**
    * on_change
-   * Implementation specific Event triggered by Check.finish
+   * nocap specific Event triggered by Check.finish
    * 
    * @private
    * @returns null
@@ -634,7 +636,7 @@ export default class {
 
   /**
    * handle_connect
-   * Implementation specific handler triggered by Hooks proxy-handler
+   * nocap specific handler triggered by Hooks proxy-handler
    * @private
    * @returns null
    */ 
@@ -644,7 +646,7 @@ export default class {
 
   /**
    * handle_read 
-   * Implementation specific handler triggered by Hooks proxy-handler
+   * nocap specific handler triggered by Hooks proxy-handler
    * @private
    * @returns null
    */ 
@@ -655,7 +657,7 @@ export default class {
 
   /**
    * handle_write 
-   * Implementation specific handler triggered by Hooks proxy-handler
+   * nocap specific handler triggered by Hooks proxy-handler
    * @private
    * @returns null
    */
@@ -666,7 +668,7 @@ export default class {
 
   /**
    * handle_auth
-   * Implementation specific handler triggered by Hooks proxy-handler
+   * Nostr handler triggered by Hooks proxy-handler
    * @private
    * @returns null
   */
@@ -718,13 +720,15 @@ export default class {
   websocket_hard_fail(err){
     this.logger.debug(`websocket_hard_fail(): ${this.url}`)
     const wschecks = ['open', 'read', 'write']
-    this.checks.forEach(key => { 
+    this.requestedChecks.forEach(key => { 
       let message
       if(wschecks.includes(key))
         if(err?.code)
           message = `${err.syscall} ${err.code}`
         else if(err?.open?.message)
           message = err.open.message
+        else if(typeof err ==='string')
+          message = err
         else 
           message = "unknown error"
       else
@@ -905,8 +909,7 @@ export default class {
     const existingDeferred = this.promises.exists(key)
     if(existingDeferred) 
       return this.promises.get(key).promise
-    this.promises.add(key, this.config?.timeout?.[key], cb)
-    return this.promises.get(key)
+    return this.promises.add(key, this.config?.timeout?.[key], cb)
   }
 
   /**
@@ -1047,5 +1050,17 @@ export default class {
     (typeof window !== 'undefined' && typeof document !== 'undefined')
   }
     
+
+  /**
+   * checksSupported
+   * Returns true if in a browser environment
+   * 
+   * @public
+   * @static
+   * @returns {boolean}
+   */
+  static checksSupported(){
+    return ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
+  }
 }
 

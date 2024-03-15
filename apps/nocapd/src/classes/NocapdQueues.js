@@ -1,44 +1,25 @@
+import Logger from '@nostrwatch/logger'
+
 export class NocapdQueues {
-  constructor(config){
-    /** @type {object} */
-    // this.checks = {}
-    /** @type {BullQueue} */
-    this.queue = null 
-    /** @type {BullQueueEvents} */
-    this.events = null 
-    /** @type {BullWorker} */ 
-    this.worker = null
-    // /** @type {WorkerManager} */
-    this.checks = null 
-    /** @type {Scheduler} */ 
-    this.scheduler = null
-    /** @type {object} */
-    this.cb = {}
-    /** @type {object} */
-    this.pubkey = config?.pubkey? config.pubkey: null
-
-    /** @type {array} */
-    this.worker_events = ['completed', 'failed', 'progress', 'stalled', 'waiting', 'active', 'delayed', 'drained', 'paused', 'resumed']
-
+  constructor(opts){
+    this.setup(opts)
     if(!this.pubkey)
       throw new Error(`NocapdQueues requires a pubkey`)
   }
 
-  route(job){
-    const { name } = job
-    const daemonManager = name.split('@')[0]
-    const daemonPubkey = name.split('@')[1]
-
-    // if(daemonPubkey !== this.pubkey) 
-    //   console.warn(`[route] ${daemonPubkey} !== ${this.pubkey}`)
-
-    if(!this.checks[daemonManager])
-      throw new Error(`No manager found for ${daemonManager}`)
-
-    return this.checks[daemonManager].work(job)
+  setup(opts){
+    this.pubkey = opts?.pubkey? opts.pubkey: null
+    this.log = this.opts?.logger? this.opts.logger: new Logger('nocap/$NocapdQueues')
+    this.cb = {}
+    this.queue = null 
+    this.events = null 
+    this.worker = null
+    this.checker = null
+    this.worker_events = ['completed', 'failed', 'progress', 'stalled', 'waiting', 'active', 'delayed', 'drained', 'paused', 'resumed']
   }
 
   route_event(event, ...args){
+    // this.log.info(`route_event(): ${event}, ${args || "no event args"}`)
     const job = args[0]
     let name = null
 
@@ -49,37 +30,26 @@ export class NocapdQueues {
       name = job.split(':')[0]
 
     if(name) {
-      const daemonManager = name.split('@')[0]
-      const daemonPubkey = name.split('@')[1]
-  
-      // if(daemonPubkey !== this.pubkey) 
-      //   return this.log.warn(`[route_event] ${daemonPubkey} !== ${this.pubkey}`)
-  
-      if(!this.checks[daemonManager])
-        return 
-        // this.log.warn(`No manager found for ${daemonManager} to handle ${event} event for pubkey: ${daemonPubkey}`)
-  
-      return this.checks[daemonManager].cbcall(event, ...args)
+      return this.checker.cbcall(event, ...args)
     }
-    //these events apply to the worker not the manager an d don't have any parameters, 
-    //so cannot be routed like completions and failures.
     else if( event === 'drained' ) {
-      for( const manager in this.checks ) {
-        this.checks[manager].cbcall(event)
-      }
+      this.checker.cbcall(event)
     }
     else {
       this.cbcall(event, ...args)
     }
   }
 
-  setWorker($worker){
-    this.worker = $worker
-    this.bind_events()
+  set(key, fn){
+    // this.log.info(`set('${key}'): with ${typeof fn}`)
+    this[key] = fn
+    if(key === 'worker') this.bind_events()
+    return this
   }
 
   bind_events(){
     this.worker_events.forEach(handler => {
+      //this.log.debug(`bind_events(): binding ${handler} to ${this.worker.name}`)
       this.worker.on(handler, (...args) => this.route_event(handler, ...args))
     })
   }
@@ -96,35 +66,19 @@ export class NocapdQueues {
       this.cb[handler](...args)
   }
 
-  async populateAll(){
-    const mkeys = Object.keys(this.checks)
-    for await ( const mkey of mkeys ){
-      // this.log.debug(`populateAll() -> ${mkey}:populator()`)
-      await this.checks[mkey].populator()
-    }
+  async pause(){
+    return await this.queue.pause()
   }
 
-  pause(q){
-    if(q)
-      return this.queue?.[q].pause()
-    Object.keys(this.queue).forEach(q => this.queue[q].pause())
+  async resume(){
+    return await this.queue.resume()
   }
 
-  start(q){
-    if(q)
-      return this.queue?.[q].start()
-    Object.keys(this.queue).forEach(q => this.queue[q].start())
+  async drain(){
+    return await this.queue.drain()
   }
 
-  drain(q){
-    if(q)
-      return this.queue?.[q].drain()
-    Object.keys(this.queue).forEach(q => this.queue[q].drain())
-  }
-
-  obliterate(q){
-    if(q)
-      return this.queue?.[q].obliterate()
-    Object.keys(this.queue).forEach(q => this.queue[q].obliterate())
+  async obliterate(){
+    return await this.queue.obliterate()
   }
 }

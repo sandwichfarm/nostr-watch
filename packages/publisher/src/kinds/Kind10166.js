@@ -47,7 +47,6 @@ export class Kind10166 extends Publisher {
       Object.keys(data?.timeouts || []).map(key => [ key, data.timeouts[key] ]).forEach(timeout => tags.push([ "timeout", timeout[0], timeout[1].toString() ] ));
     if(data?.geo && data.geo instanceof Object) 
       tags = [...tags, ...ngeotags(data.geo, geoOpts)];
-    // console.dir(tags)
     return tags;
   }
 }

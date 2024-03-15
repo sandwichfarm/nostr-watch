@@ -86,8 +86,9 @@ class WebsocketAdapterDefault {
       ev = JSON.parse(buffer.toString())
     } 
     catch(e){
-      this.$.logger.err(`${this.$.url} responded with invalid JSON: ${e}`)
-      return
+      const err = `${this.$.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`
+      this.$.logger.err(err)
+      return this.$.websocket_hard_fail(err)
     }
     if(!ev || !(ev instanceof Array) || !ev.length) return
     if(ev[0] === 'EVENT') {

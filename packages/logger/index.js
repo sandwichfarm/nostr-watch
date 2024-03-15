@@ -41,6 +41,8 @@ export default class Logger {
   }
   
   debug(message) {
+    if (!['DEBUG'].includes(this?.log_level) && !process.env?.DEBUG)
+      return
     this.logger.debug(message);
     this.write(message)
   }

@@ -21,10 +21,9 @@ export class ResultInterface extends Validator {
     Object.assign(this, ResultDefaults)
     this.header_keys = ['url', 'network', 'adapters', 'checked_at', 'checked_by']
     this.defaults = Object.freeze(ResultDefaults)
-    
   }
 
-  cleanResult(k, result={}){
+  cleanResult(k, result={}, ignore=[]){
     if(typeof k === 'string') {
       const { data, duration }  = this.get(k)
       result = { [k]: data, [`${k}_duration`]: duration }
@@ -33,9 +32,20 @@ export class ResultInterface extends Validator {
     else {
       result = {}
       for(const key of k) {
+        if(ignore.includes(key)) continue
         const { data, duration } = this.get(key)
         result = { ...result, [key]: data, [`${key}_duration`]: duration }
       }
+    }
+    return result
+  }
+
+  removeFromResult(remove=[]){
+    if(!remove.length) return 
+    const result = { ...this.result }
+    for(const key of remove){
+      delete result[key]
+      delete result[`${key}_duration`]
     }
     return result
   }
@@ -65,7 +75,8 @@ export class ResultInterface extends Validator {
     return ResultInterface.getIps(this.get('dns'), protocol)
   }
 
-  raw(keys){
+  raw(keys, ignore=[]){
+    keys = keys.filter(key => !ignore.includes(key));
     return this._raw([ ...this.header_keys, ...keys])
   }
 

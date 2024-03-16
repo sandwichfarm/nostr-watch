@@ -20,6 +20,7 @@ export const ConfigDefaults = {
     dns: {},
     ssl: {}
   },
+  removeFromResult: [],
   rejectOnConnectFailure: false,
   failAllChecksOnConnectFailure: true
 }

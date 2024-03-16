@@ -28,36 +28,86 @@ import SAMPLE_EVENT from "../data/sample_event.js"
 export default class Base {
 
   constructor(url, config={}) {
-
     this.url = url
+    this._init(config)
+    this.logger.debug(`constructor(${url}, ${JSON.stringify(this.config)})`)
+  }
+
+  _init(config){
+    this._init_defaults()
+    this._init_instances(config)
+    this._init_results()
+    this._init_checks()
+  }
+
+  _init_defaults(){
     this.ws = null         //set by adapter, needed for conn. status. might be refactored.
-    this.$instance = null   //placeholder for adapters to use for storing a pre-initialized instance
     this.cb = {}     //holds user defined callbacks
     this.current = null
-    //
+    this.hard_fail = false
+    this.SAMPLE_EVENT = SAMPLE_EVENT
+    
+    this.checks = Base.checksSupported()
+    this.checksRequested = []
+    this.checksIgnoreOutput = []
+    this.checksCustom = {}
+
     this.adaptersInitialized = false
     this.adapters = {}
     this.adaptersValid = ['websocket', 'info', 'geo', 'dns', 'ssl']
-    //
-    this.checks = Base.checksSupported()
-    this.requestedChecks = []
-    //
+  }
+
+  _init_instances(config){
     this.config = new ConfigInterface(config)
     this.results = new ResultInterface()
-    this.session = new SessionHelper(url)
+    this.session = new SessionHelper(this.url)
     this.timeouts = new TimeoutHelper(this.session)
     this.latency = new LatencyHelper(this.session)
     this.promises = new DeferredWrapper(this.session, this.timeouts)
-    this.logger = new Logger(url, this.config.logLevel)
+    this.logger = new Logger(this.url, this.config.logLevel)
     this.count = new Counter(this.session, [...this.checks])
-    this.customChecks = {}
-    //
-    this.SAMPLE_EVENT = SAMPLE_EVENT
-    //
-    this.hard_fail = false
-    this.results.set('url', url)
-    this.results.set('network', parseRelayNetwork(url))
-    this.logger.debug(`constructor(${url}, ${JSON.stringify(config)})`)
+  }
+
+  _init_results(){
+    this.results.set('url', this.url)
+    this.results.set('network', parseRelayNetwork(this.url))
+  }
+
+  _init_checks(){
+    if(this.config.get('removeFromResult'))
+      this.checksIgnoreOutput = [ ...this.checksIgnoreOutput, ...this.config.get('removeFromResult') ]
+  }
+
+  evaluate_requested_checks(){
+    this.ensure_check_dependencies();
+    this.order_requested_checks()
+  }
+
+  order_requested_checks() {
+    const idealOrder = Base.checksSupported()
+    
+    this.checksRequested.sort((a, b) => {
+        let indexA = idealOrder.indexOf(a);
+        let indexB = idealOrder.indexOf(b);
+
+        if (indexA === -1) indexA = Infinity;
+        if (indexB === -1) indexB = Infinity;
+
+        return indexA - indexB;
+    });
+  }
+
+  ensure_check_dependencies(){
+    if(!this.checksRequested.includes('open')){
+      this.checksRequested.unshift('open')
+      if(!this.checksIgnoreOutput.includes('open'))
+        this.checksIgnoreOutput.push('open')
+    }
+    if(this.checksRequested.includes('geo') && !this.checksRequested.includes('dns')){
+      this.checksRequested.unshift('dns')
+      if(!this.checksIgnoreOutput.includes('dns'))
+        this.checksIgnoreOutput.push('dns')
+    }
   }
 
   /**
@@ -82,18 +132,18 @@ export default class Base {
       return this.check(this.checks)
     }
     else if(typeof keys === 'string' && this.checks.includes(keys)) {
-      result = await this._check(keys)
-      this.close()
+      return this.check([keys])
     }
     else if(keys instanceof Array && keys.length) {
-      this.requestedChecks = keys
-      for await (const key of keys){
+      this.checksRequested = keys
+      this.evaluate_requested_checks()
+      for await (const key of this.checksRequested){
         if(this.hard_fail === true) continue
         this.current = key
         await this._check(key)
       }
       this.close()
-      result = this.results.raw(keys)
+      result = this.results.raw(this.checksRequested, this.checksIgnoreOutput)
     }
     else {
       throw new Error(`check(${keys}) failed. keys must be one (string) or several (array of strings) of: ${this.checks.join(', ')}`)
@@ -720,7 +770,7 @@ export default class Base {
   websocket_hard_fail(err){
     this.logger.debug(`websocket_hard_fail(): ${this.url}`)
     const wschecks = ['open', 'read', 'write']
-    this.requestedChecks.forEach(key => { 
+    this.checksRequested.forEach(key => { 
       let message
       if(wschecks.includes(key))
         if(err?.code)
@@ -1060,7 +1110,7 @@ export default class Base {
    * @returns {boolean}
    */
   static checksSupported(){
-    return ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
+    return ['open', 'read', 'write', 'ssl', 'dns', 'geo', 'info'];
   }
 }
 

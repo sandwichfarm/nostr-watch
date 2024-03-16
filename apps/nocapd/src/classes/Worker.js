@@ -29,7 +29,7 @@ export class NWWorker {
 
   setupDefaultValues(){
     this.cb = {}
-    this.processed = 0
+    this.processed = 1
     this.total = 0
     this.relayMeta = new Map()
     this.jobOpts = {}
@@ -79,14 +79,12 @@ export class NWWorker {
   async populator(){
     this.log.info(`populator()`)
     await this.$.worker.pause()
-    this.log.debug(`populator(): worker paused`)
     const relays = await this.getRelays()
-    this.log.debug(`populator(): adding ${relays.length} relays to queue`)
-    await this.addRelayJobs(relays)
-    this.log.debug(`populator(): added ${relays.length} relays to queue`)
+    if(relays.length > 0)
+      await this.addRelayJobs(relays)
+    else 
+      this.setTimeout( this.populator.bind(this), this.interval)
     await this.$.worker.resume()
-    this.log.debug(`populator(): worker resumed`)
-    
   }
 
   async work(job){
@@ -109,6 +107,7 @@ export class NWWorker {
     this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
     const { result } = rvalue
     let fail = result?.open?.data? false: true
+    this.progressMessage(result.url, result, fail)
     if(fail)
       await this.on_fail( result )
     else
@@ -147,8 +146,6 @@ export class NWWorker {
     await this.retry.setRetries( result.url, !error )
     await delay(100)
     await this.setLastChecked( result.url, Date.now() )
-
-    this.progressMessage(result.url, result, error)
   }
 
   cbcall(...args){
@@ -171,8 +168,8 @@ export class NWWorker {
   
   async resetProgressCounts(){
     const c = await this.counts()
-    this.total = c.prioritized
-    this.processed = 0
+    this.total = c.prioritized + c.active
+    this.processed = 1
     this.log.debug(`total jobs: ${this.total}`)
   }
 
@@ -318,7 +315,11 @@ export class NWWorker {
       const resultHasKey = result?.[key]?.data && Object.keys(result[key].data)?.length > 0
       if(resultHasKey){
         const persist_result = async (resolve, reject) => { 
-          const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data), data: JSON.stringify(result[key].data) }
+          this.log.debug(`persist_result(${key})`)
+          
+          const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data) }
+          if(key === 'ssl') _record.data = JSON.stringify({ valid_to: result[key].data.valid_to, valid_from: result[key].data.valid_from })
+          else              _record.data = JSON.stringify(result[key].data)
           const _check_id = await this.rcache.check[key].insert(_record)
           if(!_check_id)
             reject()

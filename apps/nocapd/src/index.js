@@ -52,3 +52,22 @@ async function gracefulShutdown(signal) {
 }
 
 const $d = await run()
+
+
+import { createRequire } from 'module';
+import path from 'path';
+
+const require = createRequire(import.meta.url);
+const nodeModulesPath = path.join(process.cwd(), 'node_modules');
+const dependencies = require('../package.json').dependencies;
+
+for (const dep of Object.keys(dependencies)) {
+  if(!dep.startsWith('@nostrwatch')) continue;
+  try {
+    const packageJsonPath = path.join(nodeModulesPath, dep, 'package.json');
+    const packageJson = require(packageJsonPath); // Using require from 'module' for JSON
+    console.log(`${dep}: ${packageJson.version}`);
+  } catch (error) {
+    console.error(`Could not read version for dependency ${dep}: ${error}`);
+  }
+}

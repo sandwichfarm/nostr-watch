@@ -100,12 +100,12 @@ export default class Base {
   ensure_check_dependencies(){
     if(!this.checksRequested.includes('open')){
       this.checksRequested.unshift('open')
-      if(!this.checksIgnoreOutput.includes('open'))
+      if(!this.checksIgnoreOutput.includes('open') && this.config.is('autoDepsIgnoredInResult', true))
         this.checksIgnoreOutput.push('open')
     }
     if(this.checksRequested.includes('geo') && !this.checksRequested.includes('dns')){
       this.checksRequested.unshift('dns')
-      if(!this.checksIgnoreOutput.includes('dns'))
+      if(!this.checksIgnoreOutput.includes('dns') && this.config.is('autoDepsIgnoredInResult', true))
         this.checksIgnoreOutput.push('dns')
     }
   }

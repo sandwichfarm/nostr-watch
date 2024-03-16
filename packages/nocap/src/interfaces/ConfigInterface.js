@@ -20,9 +20,10 @@ export const ConfigDefaults = {
     dns: {},
     ssl: {}
   },
+  autoDepsIgnoredInResult: true,
   removeFromResult: [],
-  rejectOnConnectFailure: false,
-  failAllChecksOnConnectFailure: true
+  failAllChecksOnConnectFailure: true,
+  rejectOnConnectFailure: false
 }
 
 /**
@@ -45,6 +46,32 @@ export class ConfigInterface extends Validator {
 
   set(key, value){
     this._set(key, value)
+  }
+
+  eq(key, value){
+    return this._get(key) === value
+  }
+
+  gt(key, value){
+    try { 
+      return this._get(key) > value
+    }
+    catch(e){
+      console.warn(`the value of "key" (arg 1) and the value (arg 2) must both be numbers (int, float)`)
+    }
+  }
+
+  lt(key, value){
+    try { 
+      return this._get(key) < value
+    }
+    catch(e){
+      console.warn(`the value of "key" (arg 1) and the value (arg 2) must both be numbers (int, float)`)
+    }
+  }
+
+  is(key, value){
+    return this.eq(key, value)
   }
   
 }

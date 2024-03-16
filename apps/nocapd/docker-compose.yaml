@@ -16,32 +16,32 @@ services:
     environment:
       DOCKER: 'yes'
     env_file: .env.docker
-    depends_on: 
-      - cache
+    # depends_on: 
+    #   - cache
     networks:
       - nocapdnet
-  cache:
-    image: redis:latest
-    restart: always
-    ports:
-      - '6379:6379'
-    volumes: 
-      - ./.redis:/.data:rw
-    env_file: .env.docker
-    command: redis-server
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    networks:
-      - nocapdnet
+  # cache:
+  #   image: redis:latest
+  #   restart: always
+  #   ports:
+  #     - '6379:6379'
+  #   volumes: 
+  #     - ./.redis:/.data:rw
+  #   env_file: .env.docker
+  #   command: redis-server
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #   networks:
+  #     - nocapdnet
 
 volumes: 
   lmdb:
     driver: local
-  cache: 
-    driver: local
+  # cache: 
+  #   driver: local
 
 networks:
   nocapdnet:

@@ -52,14 +52,13 @@ export class NWWorker {
     this.nocapOpts = { 
       timeout: this.timeout,
       checked_by: this.pubkey
-      // rejectOnConnectFailure: true
     }
   }
 
   setupJobOpts(){
-    this.jobOpts = {
-      removeOnComplete: true,
-      removeOnFail: true
+    this.jobOpts ={
+      removeOnComplete: 100,
+      removeOnFail: 100
     }
   }
 

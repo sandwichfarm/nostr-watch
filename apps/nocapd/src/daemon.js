@@ -70,6 +70,12 @@ const syncRelaysIn = async () => {
     return persisted
 }
 
+const queueOpts = () => {
+  return {
+    lockDuration: 2*60*1000
+  }
+}
+
 const initWorker = async () => {
   const connection = RedisConnectionDetails()
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
@@ -79,7 +85,7 @@ const initWorker = async () => {
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
-    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, lockDuration: 2*60*1000 } ) )
+    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
   await $q.checker.populator()
   
   schedulePopulator($q.checker)
@@ -93,7 +99,7 @@ const initWorker = async () => {
 }
 
 const maybeBootstrap = async () => {
-  log.info(`Boostrapping...`)
+  log.info(`Bootstrapping...`)
   if(rcache.relay.count.all() === 0){
     const persisted = await syncRelaysIn()
     log.info(`Boostrapped ${persisted.length} relays`)

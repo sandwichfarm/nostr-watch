@@ -29,8 +29,6 @@ export const RestApiQueue = (qopts={}) => {
 export const QueueInit = (key, qopts={}) => {
   if($?.[key]) return $[key]
   const connection = RedisConnectionDetails()
-  log.debug(connection)
-  log.debug(qopts)
   qopts = { connection, ...qopts }
   const $Queue = new Queue(key, qopts)
   const $QueueEvents = new QueueEvents($Queue.name, { connection } )

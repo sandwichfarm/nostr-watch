@@ -126,6 +126,7 @@ const stop = async() => {
 export const Nocapd = async () => {
   header()
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
+  console.log(config)
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
   await maybeAnnounce()

@@ -12,7 +12,7 @@
     "@nostrwatch/nocap": "^0.4.1",
     "@nostrwatch/nwcache": "^0.0.2",
     "@nostrwatch/publisher": "^0.3.2",
-    "@nostrwatch/seed": "^0.0.1",
+    "@nostrwatch/seed": "^0.0.2",
     "@nostrwatch/utils": "^0.0.3",
     "bluebird": "3.7.2",
     "chalk": "5.3.0",

@@ -306,6 +306,7 @@ export class NWWorker {
     await Promise.allSettled(promises)
     record.url = url
     if(result?.open?.data) record.online = result.open.data
+    await delay(100)
     const $id = await this.rcache.relay.patch(record)
     return $id
   }

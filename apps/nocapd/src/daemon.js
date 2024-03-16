@@ -36,7 +36,7 @@ const maybeAnnounce = async () => {
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf)
   announce.generate()
-  announce.sign( process.env.DAEMON_PRIVKEY  )
+  announce.sign( process.env.DAEMON_PRIVKEY )
   await announce.publish( conf.relays )
 }
 
@@ -71,7 +71,6 @@ const syncRelaysIn = async () => {
 
 const initWorker = async () => {
   const connection = RedisConnectionDetails()
-  console.log(connection)
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   const $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('NocapdQueues') })
   const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)

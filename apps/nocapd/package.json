@@ -7,11 +7,11 @@
   "dependencies": {
     "@nostr-fetch/adapter-nostr-tools": "0.14.1",
     "@nostrwatch/announce": "^0.1.0",
-    "@nostrwatch/controlflow": "^0.0.3",
+    "@nostrwatch/controlflow": "^0.1.0",
     "@nostrwatch/logger": "^0.0.4",
     "@nostrwatch/nocap": "^0.4.2",
-    "@nostrwatch/nwcache": "^0.0.2",
-    "@nostrwatch/publisher": "^0.3.2",
+    "@nostrwatch/nwcache": "^0.1.0",
+    "@nostrwatch/publisher": "^0.4.0",
     "@nostrwatch/seed": "^0.0.2",
     "@nostrwatch/utils": "^0.0.3",
     "bluebird": "3.7.2",
@@ -20,6 +20,7 @@
     "nostr-fetch": "0.14.1",
     "nostr-geotags": "^0.5.0",
     "object-mapper": "6.2.0",
+    "promise-deferred": "2.0.4",
     "timestring": "^7.0.0"
   },
   "scripts": {

@@ -1,17 +1,14 @@
 import relaycache from '@nostrwatch/nwcache'
 import { capitalize, loadConfig } from "@nostrwatch/utils"
 
-let rcache
-
 export class RetryManager {
 
-  constructor(caller, config) {
-    rcache = relaycache(process.env.NWCACHE_PATH)
+  constructor(caller, config, rcache) {
     if(!caller) throw new Error('caller is required')
-    // if(!action) throw new Error('action is required') 
     this.caller = caller 
     this.config = config || {}
     this.retries = []
+    this.rcache = rcache
   }
 
   cacheId(url){
@@ -33,24 +30,24 @@ export class RetryManager {
       ];
     const found = map.find(entry => retries <= entry.max);
     return found ? found.delay : map[map.length - 1].delay;
-  };
-
-  async getRetries( url ){
-    return await rcache.retry.get(this.cacheId(url))
   }
 
-  async getExpiry( url ){
-    return this.expiry( await this.getRetries(url) )
+  getRetries( url ){
+    return this.rcache.retry.get(this.cacheId(url))
+  }
+
+  getExpiry( url ){
+    return this.expiry( this.getRetries(url) )
   }
 
   async setRetries( url, success ){
     let id 
     if(success) {
       this.log?.debug(`${url} did not require a retry`)
-      id = await rcache.retry.set(this.cacheId(url), 0)
+      id = await this.rcache.retry.set(this.cacheId(url), 0)
     } else { 
       this.log?.debug(`${url} required a retry`)
-      id = await rcache.retry.increment(this.cacheId(url))
+      id = await this.rcache.retry.increment(this.cacheId(url))
     }
     return id
   }

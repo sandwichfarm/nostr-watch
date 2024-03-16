@@ -1,5 +1,8 @@
 import { Nocapd as daemon } from './daemon.js';
 import _bluebird from 'bluebird'
+// import Segfault from 'segfault'
+
+// Segfault.registerHandler("segfaults.log");
 
 const run = async () => {
   await tracePromises()

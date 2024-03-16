@@ -135,19 +135,16 @@ export class Kind30066 extends PublisherNocap {
           if(val instanceof Number || isFloat(val)){
             tags.push( [ 'geo', prop, val.toString() ] )
           }   
-        }
-
-        
+        }        
     }
 
-  
     if(isSsl){
       const sslIgnore = ['valid', 'days_remaining']
-      data.ssl.data = transformSslResult(data.ssl.data)
-      for(const prop in data.ssl.data){
+      const sslData = transformSslResult(data.ssl.data)
+      for(const prop in sslData){
         if(sslIgnore.includes(prop)) continue
 
-        const val = data.ssl.data[prop]
+        const val = sslData[prop]
 
         if(val instanceof Array){
           tags.push( [ 'ssl', prop, ...val ] )
@@ -202,7 +199,17 @@ const transformGeoResult = geo => {
 
 const transformSslResult = ssl => {  
     const map = {
-      "publisher.kinds": "kinds",
+      "modulus": "modulus",
+      "subjectaltname": "subject_alt_name",
+      "exponent": "exponent",
+      "valid_from": "valid_from",
+      "valid_to": "valid_to",
+      "fingerprint": "fingerprint",
+      "fingerprint256": "fingerprint256",
+      "fingerprint512": "fingerprint512",
+      "ext_key_usage": "ext_key_usage",
+      "serialNumber": "serial_number",
+      "pemEncoded": "pem_encoded"
     }
     return mapper(ssl, map)
 }

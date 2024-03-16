@@ -9,7 +9,7 @@ export class NocapdQueues {
 
   setup(opts){
     this.pubkey = opts?.pubkey? opts.pubkey: null
-    this.log = this.opts?.logger? this.opts.logger: new Logger('nocap/$NocapdQueues')
+    this.log = this.opts?.logger? this.opts.logger: new Logger('nocap/queue-manager')
     this.cb = {}
     this.queue = null 
     this.events = null 
@@ -64,6 +64,7 @@ export class NocapdQueues {
 
   on(event, handler){
     this.cb[event] = handler.bind(this)
+    return this
   }
 
   cbcall(...args){
@@ -75,18 +76,23 @@ export class NocapdQueues {
   }
 
   async pause(){
-    return await this.queue.pause()
+    await this.queue.pause()
+    return this
   }
 
   async resume(){
-    return await this.queue.resume()
+    await this.queue.resume()
+    return this
   }
 
   async drain(){
-    return await this.queue.drain()
+    await this.queue.drain()
+    return this
+    
   }
 
   async obliterate(){
-    return await this.queue.obliterate()
+    await this.queue.obliterate()
+    return this
   }
 }

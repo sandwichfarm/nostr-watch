@@ -63,3 +63,21 @@ export const msToCronTime = (milliseconds) => {
 export const capitalize = (str) => {
   return str.charAt(0).toUpperCase()+str.slice(1);
 }
+
+
+export const isObject = (item) => {
+  return (item && typeof item === 'object' && !Array.isArray(item));
+}
+
+export const deepCopy = (obj) => {
+  if (isObject(obj)) {
+    const copy = {};
+    Object.keys(obj).forEach((key) => {
+      copy[key] = deepCopy(obj[key]);
+    });
+    return copy;
+  } else if (Array.isArray(obj)) {
+    return obj.map((item) => deepCopy(item));
+  }
+  return obj;
+}

@@ -73,6 +73,8 @@ export const defineSchemas = ($db) => {
     $db.defineSchema(RelayCheckGeo);
     $db.defineSchema(RelayCheckSsl);
 
+    $db.defineSchema(Retry);
+
     //app meta 
     $db.defineSchema(CacheTime);
     return $db

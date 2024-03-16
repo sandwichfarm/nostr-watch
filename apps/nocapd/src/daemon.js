@@ -1,4 +1,5 @@
 import schedule from 'node-schedule'
+import Deferred from 'promise-deferred'
 
 import timestring from 'timestring'
 import chalk from 'chalk'
@@ -20,6 +21,48 @@ const log = new Logger('@nostrwatch/nocapd')
 let rcache
 let config 
 let $q
+
+const populateQueue = async () => { 
+  log.info(`drained: ${$q.queue.name}`)
+  await $q.checker.populator() 
+  await delay(2000)
+  await $q.checker.resetProgressCounts()
+}
+
+const initWorker = async () => {
+  const connection = RedisConnectionDetails()
+  const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
+  const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
+  $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('@nostrwatch/nocapd:queue-control'), redis: connection })
+  await $q
+    .set( 'queue'  , ncdq.$Queue )
+    .set( 'events' , ncdq.$QueueEvents )
+    .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
+    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
+    .drain()
+  await $q.obliterate().catch(()=>{})
+  setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
+  $q.events.on('drained', populateQueue)
+  await populateQueue()
+  $q.resume()
+  log.info(`initialized: ${$q.queue.name}`)
+  return $q
+}
+
+const stop = async() => {
+  log.info(`Gracefully shutting down...`)
+  $q.worker.hard_stop = true
+
+  log.debug(`shutdown progress: $q.worker.pause()`)
+  await $q.worker.pause()
+  // log.debug(`shutdown progress: $q.worker.stop()`)
+  // await $q.worker.stop()
+  log.debug(`shutdown progress: $q.queue.drain()`)
+  await $q.queue.drain()
+  log.debug(`shutdown progress: await rcache.$.close()`)
+  await rcache.$.close()
+  log.debug(`shutdown progress: complete!`)
+}
 
 const maybeAnnounce = async () => {
   log.info(`maybeAnnounce()`)
@@ -64,8 +107,10 @@ const scheduleSyncRelays = () =>{
 const syncRelaysIn = async () => {
     log.debug(`syncRelaysIn()`)
     const syncData = await bootstrap('nocapd')
+    log.debug(`syncRelaysIn(): synced ${syncData[0].length} relays`)
     const relays = syncData[0].map(r => { return { url: r, online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     const persisted = await rcache.relay.batch.insertIfNotExists(relays)
+    log.debug(`syncRelaysIn(): persisted ${persisted.length} relays`)
     log.info(`synced ${persisted.length} relays`)
     return persisted
 }
@@ -74,28 +119,6 @@ const queueOpts = () => {
   return {
     lockDuration: 2*60*1000
   }
-}
-
-const initWorker = async () => {
-  const connection = RedisConnectionDetails()
-  const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
-  const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
-  $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('@nostrwatch/nocapd:queue-control'), redis: connection })
-  $q
-    .set( 'queue'  , ncdq.$Queue )
-    .set( 'events' , ncdq.$QueueEvents )
-    .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
-    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
-  await $q.checker.populator()
-  
-  schedulePopulator($q.checker)
-  scheduleSyncRelays() 
-
-  await $q.resume()
-
-  log.info(`@nostrwatch/nocapd initialized: ${$q.queue.name}`)
-
-  return $q
 }
 
 const maybeBootstrap = async () => {
@@ -122,23 +145,58 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 `))
 }
 
-const stop = async() => {
-  log.info(`Gracefully shutting down...`)
-  await $q.worker.stop()
-  await rcache.$.close()
-}
+// export const Nocapd = async () => {
+//   const lmdbConnected = new Deferred()
 
+//   const lmdbRetry = async (e) => {
+//     log.warn(`lmdb is in a mood, retrying in 2 seconds. Here's its' error btw: ${e}`)
+//     await delay(2000)
+//     await lmdbConnect()
+//   }
+  
+//   const lmdbConnect = async () => {
+//     await relaycache(process.env.NWCACHE_PATH || './.lmdb')
+//       .then( lmdbConnected.resolve )
+//       .catch( lmdbRetry )
+//   }
+
+//   const init = async () =>{
+//     header()
+//     config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
+//     await delay(2000)
+//     lmdbConnect()
+//     rcache = await lmdbConnected.promise
+//     await delay(1000)
+//     await maybeAnnounce()
+//     await maybeBootstrap()
+//     $q = await initWorker()
+//     return {
+//       $q,
+//       stop
+//     }
+//   }
+
+//   try {
+//     init()
+//   }
+//   catch(e){
+//     await delay(2000)
+//     init()
+//   }
+  
+// }
 
 export const Nocapd = async () => {
   header()
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
+  await delay(1000)
   await maybeAnnounce()
   await maybeBootstrap()
   $q = await initWorker()
   return {
     $q,
     stop
-  }
+  } 
 }

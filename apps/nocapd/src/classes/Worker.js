@@ -57,8 +57,10 @@ export class NWWorker {
 
   setupJobOpts(){
     this.jobOpts ={
-      removeOnComplete: 100,
-      removeOnFail: 100
+      removeOnComplete: {
+        age: this.expires,
+      },
+      removeOnFail: 11,
     }
   }
 

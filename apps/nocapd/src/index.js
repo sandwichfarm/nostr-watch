@@ -32,7 +32,7 @@ const globalHandlers = () => {
   });
   
   process.on('unhandledRejection', async (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // console.error('Unhandled Rejection at:', promise, 'reason:', reason);
     // await gracefulShutdown('unhandledRejection');
   });
 
@@ -45,7 +45,7 @@ const globalHandlers = () => {
 async function gracefulShutdown(signal) {
   console.log(`Received ${signal}, closing application...`);
   await $d.stop()
-  process.exit(0);
+  process.exit(9);
 }
 
 const $d = await run()

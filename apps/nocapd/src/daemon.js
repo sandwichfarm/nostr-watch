@@ -15,7 +15,7 @@ import { NWWorker } from './classes/Worker.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
 
 const PUBKEY = process.env.DAEMON_PUBKEY
-const log = new Logger('nocapd')
+const log = new Logger('@nostrwatch/nocapd')
 
 let rcache
 let config 
@@ -74,11 +74,11 @@ const initWorker = async () => {
   const connection = RedisConnectionDetails()
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
-  $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('NocapdQueues') })
+  $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('@nostrwatch/nocapd:queue-control'), redis: connection })
   $q
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
-    .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('NWWorker'), pubkey: PUBKEY }) )
+    .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, lockDuration: 2*60*1000 } ) )
   await $q.checker.populator()
   
@@ -118,21 +118,21 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 
 const stop = async() => {
   log.info(`Gracefully shutting down...`)
-  await rcache.close()
   await $q.worker.stop()
+  await rcache.$.close()
 }
 
 
 export const Nocapd = async () => {
   header()
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
-  console.log(config)
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
   await maybeAnnounce()
   await maybeBootstrap()
+  $q = await initWorker()
   return {
-    $q: await initWorker(),
+    $q,
     stop
   }
 }

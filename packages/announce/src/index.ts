@@ -1,5 +1,10 @@
+import chalk from 'chalk'
+
 import { verifyEvent, finalizeEvent, SimplePool, Event } from "nostr-tools";
 import { Kind10166, Kind0, Kind10002 } from "@nostrwatch/publisher";
+// import Logger from "@nostrwatch/logger";
+
+// const log = new Logger('@nostrwatch/announce')
 
 const NIP66_MONITOR_REGISTER = 10166;
 
@@ -107,6 +112,7 @@ export class AnnounceMonitor {
       const kind = kinds[i]    
       const promises = $pool.publish(relays, this.events[kind])
       await Promise.all(promises)
+      console.log(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(relays.join(','))}`)
       pubbedIds.push(this.events[kind].id)
     }
     return pubbedIds
@@ -115,6 +121,4 @@ export class AnnounceMonitor {
   static verify(ev: any): boolean {
     return verifyEvent(ev);
   }
-
-
 }

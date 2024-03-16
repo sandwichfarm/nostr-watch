@@ -23,7 +23,8 @@ export const ConfigDefaults = {
   autoDepsIgnoredInResult: true,
   removeFromResult: [],
   failAllChecksOnConnectFailure: true,
-  rejectOnConnectFailure: false
+  rejectOnConnectFailure: false,
+  websocketAlwaysTerminate: true
 }
 
 /**

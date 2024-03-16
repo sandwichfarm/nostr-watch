@@ -517,7 +517,7 @@ export default class Base {
       'close',
       () => this.ws.close()
     )
-    if(this.hard_fail) return this.terminate(key)
+    if(this.hard_fail || this.config.websocketAlwaysTerminate === true) return this.terminate(key)
   }
 
   /**

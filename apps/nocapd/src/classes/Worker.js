@@ -91,7 +91,7 @@ export class NWWorker {
     catch(err) {
       console.log(err)
       failure(new Error(`Failure inside work() block: ${err}`))
-      return { result: false }
+      return { result: { url: job.data.relay, open: { data: false }} }
     }
   }
 
@@ -128,7 +128,9 @@ export class NWWorker {
     this.log.debug(`after_completed(): ${result.url}`)
     this.processed++
     await this.updateRelayCache( { ...result } )      
+    await delay(200)
     await this.retry.setRetries( result.url, !error )
+    await delay(200)
     await this.setLastChecked( result.url, Date.now() )
   }
 
@@ -139,7 +141,7 @@ export class NWWorker {
   }
 
   cbcall(...args){
-    //this.log.debug(`cbcall(): ${args}`)
+    this.log.debug(`cbcall(): ${JSON.stringify(args)}`)
     const handler = [].shift.call(args)
     if(this?.[`on_${handler}`] && typeof this[`on_${handler}`] === 'function')
       this[`on_${handler}`](...args)
@@ -148,32 +150,30 @@ export class NWWorker {
   }
 
   async addRelayJobs(relays){
-    //this.log.debug(`Relay Counts: ${JSON.stringify(await this.counts())}`)
+    this.log.debug(`Relay Counts: ${JSON.stringify(await this.counts())}`)
     for await ( const relay of relays ){
       const $job = await this.addRelayJob({ relay })
       if($job?.id)
         this.total++
     }
-    const c = await this.counts()
-    //this.log.debug(`Relay Counts: ${JSON.stringify(c)}`)
   }
 
   async addRelayJob(jdata){
-    //this.log.debug(`Adding job for ${jdata.relay} with ${this.opts.checks.enabled} nocap checks: ${JSON.stringify(jdata)}`)
+    this.log.debug(`Adding job for ${jdata.relay} with ${this.opts.checks.enabled} nocap checks: ${JSON.stringify(jdata)}`)
     const priority = this.getPriority(jdata.relay)
     this.updateJobOpts({ priority })
     return this.$.queue.add( this.id(), jdata, { jobId: this.jobId(jdata.relay), ...this.jobOpts})
   }
 
   calculateProgress() {
-    //this.log.debug(`calculateProgress()`)
+    this.log.debug(`calculateProgress()`)
     if (this.total === 0) return "0.00%"; // Prevent division by zero
     let percentage = (this.processed / this.total) * 100;
     return percentage.toFixed(2) + "%";
   }
 
   async progressMessage(url, result={}, error=false){
-    //this.log.debug(`progressMessage()`)
+    this.log.debug(`progressMessage()`)
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray

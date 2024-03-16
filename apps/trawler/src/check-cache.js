@@ -114,4 +114,5 @@ const setRetries = async ( url, online ) => {
     // logger.info(url, 'is offline')
     id = await rcache.retry.increment(retryId(url))
   }
+  return id
 }

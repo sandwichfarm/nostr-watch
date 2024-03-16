@@ -506,6 +506,7 @@ export default class Base {
    * If a hard failure has been previously invoked, will also terminate
    * 
    * @public
+   * @param {string} key - The name of the check that invoked the closure
    */
   close(key=""){
     this.logger.debug(`${key}: close()`)
@@ -524,6 +525,7 @@ export default class Base {
    * Invokes websocket adapter's terminate method if it exists, otherwise tries to terminate the websocket connection via adapter provided ws instance
    * 
    * @public
+   * @param {string} key - The name of the check that invoked the termination
    */
   terminate(key=""){
     this.logger.debug(`${key}: terminate()`)

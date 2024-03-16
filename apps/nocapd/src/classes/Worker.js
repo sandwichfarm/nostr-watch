@@ -81,7 +81,7 @@ export class NWWorker {
 
   async work(job){
     this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
-    const failure = (err) => { this.log.info(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+    const failure = (err) => { this.log.debug(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     try {
       const { relay:url } = job.data 
       const nocap = new Nocap(url, this.nocapOpts)

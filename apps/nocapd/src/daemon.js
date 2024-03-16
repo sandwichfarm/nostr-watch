@@ -21,6 +21,7 @@ let rcache
 let config 
 
 const maybeAnnounce = async () => {
+  log.info(`maybeAnnounce()`)
   const map = {
     "publisher.kinds": "kinds",
     "nocapd.checks.options.timeout": "timeouts",

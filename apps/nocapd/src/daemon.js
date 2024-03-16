@@ -78,7 +78,7 @@ const initWorker = async () => {
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('NWWorker'), pubkey: PUBKEY }) )
-    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection } ) )
+    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, lockDuration: 2*60*1000 } ) )
   await $q.checker.populator()
   
   schedulePopulator($q.checker)

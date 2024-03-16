@@ -1,6 +1,7 @@
 import { Nocapd } from './daemon.js';
+import _bluebird from 'bluebird'
 
-let $process = null
+let $process
 
 const run = () => {
   //check for nocapd directories 
@@ -13,7 +14,19 @@ const daemon = () => {
   return Nocapd()
 }
 
-run()
+if(process?.env?.NODE_ENV === 'development'){
+  global.Promise = _bluebird
+
+  Promise.config({
+    longStackTraces: true,
+    warnings: true // Enable warnings for best practices, including possibly unhandled rejections
+  });
+
+  Promise.onPossiblyUnhandledRejection(function(error, promise) {
+    console.error("Possibly Unhandled Rejection:");
+    console.error(error.stack || error);
+  });
+}
 
 async function gracefulShutdown(signal) {
   console.log(`Received ${signal}, closing application...`);
@@ -30,3 +43,5 @@ process.on('unhandledRejection', async (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   // await gracefulShutdown('unhandledRejection');
 });
+
+run()

@@ -1,47 +1,51 @@
-import { Nocapd } from './daemon.js';
+import { Nocapd as daemon } from './daemon.js';
 import _bluebird from 'bluebird'
 
-let $process
-
-const run = () => {
-  //check for nocapd directories 
-  //check for monitor configs
-  //compare monitor config
-  $process = daemon()
+const run = async () => {
+  await tracePromises()
+  const $d = await daemon()
+  globalHandlers()
+  return $d
 }
 
-const daemon = () => {
-  return Nocapd()
+const tracePromises = async () => {
+  if(process?.env?.NODE_ENV === 'development'){
+    await import('bluebird')
+    global.Promise = _bluebird
+
+    Promise.config({
+      longStackTraces: true,
+      warnings: true // Enable warnings for best practices, including possibly unhandled rejections
+    });
+
+    Promise.onPossiblyUnhandledRejection(function(error, promise) {
+      console.error("Possibly Unhandled Rejection:");
+      console.error(error.stack || error);
+    });
+  }
 }
 
-if(process?.env?.NODE_ENV === 'development'){
-  global.Promise = _bluebird
-
-  Promise.config({
-    longStackTraces: true,
-    warnings: true // Enable warnings for best practices, including possibly unhandled rejections
+const globalHandlers = () => {
+  process.on('uncaughtException', async (error) => {
+    console.error('Uncaught Exception:', error);
+    // await gracefulShutdown('uncaughtException');
+  });
+  
+  process.on('unhandledRejection', async (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // await gracefulShutdown('unhandledRejection');
   });
 
-  Promise.onPossiblyUnhandledRejection(function(error, promise) {
-    console.error("Possibly Unhandled Rejection:");
-    console.error(error.stack || error);
+  const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
+  signals.forEach(signal => {
+    process.on(signal, async () => await gracefulShutdown(signal));
   });
 }
 
 async function gracefulShutdown(signal) {
   console.log(`Received ${signal}, closing application...`);
-  // await nocapd.stop()
+  await $d.stop()
   process.exit(0);
 }
 
-process.on('uncaughtException', async (error) => {
-  console.error('Uncaught Exception:', error);
-  // await gracefulShutdown('uncaughtException');
-});
-
-process.on('unhandledRejection', async (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  // await gracefulShutdown('unhandledRejection');
-});
-
-run()
+const $d = await run()

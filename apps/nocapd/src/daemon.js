@@ -19,6 +19,7 @@ const log = new Logger('nocapd')
 
 let rcache
 let config 
+let $q
 
 const maybeAnnounce = async () => {
   log.info(`maybeAnnounce()`)
@@ -72,8 +73,8 @@ const syncRelaysIn = async () => {
 const initWorker = async () => {
   const connection = RedisConnectionDetails()
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
-  const $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('NocapdQueues') })
   const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
+  $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('NocapdQueues') })
   $q
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
@@ -115,6 +116,13 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 `))
 }
 
+const stop = async() => {
+  log.info(`Gracefully shutting down...`)
+  await rcache.close()
+  await $q.worker.stop()
+}
+
+
 export const Nocapd = async () => {
   header()
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
@@ -123,6 +131,7 @@ export const Nocapd = async () => {
   await maybeAnnounce()
   await maybeBootstrap()
   return {
-    $q: await initWorker()
+    $q: await initWorker(),
+    stop
   }
 }

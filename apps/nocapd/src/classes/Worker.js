@@ -216,8 +216,9 @@ export class NWWorker {
     }
     
     if(error) {
+      const retries = await this.retry.getRetries(url)
       progress += `${error? chalk.gray.italic('error'): ''}  ` 
-      progress += `[${await this.retry.getRetries(url)} retries}]`
+      progress += `[${retries !== null? retries: 0} retries]`
     }
 
     this.log.info(progress)       

@@ -44,6 +44,7 @@ export default class Base {
     this.ws = null         //set by adapter, needed for conn. status. might be refactored.
     this.cb = {}     //holds user defined callbacks
     this.current = null
+    this.previous = null
     this.hard_fail = false
     this.SAMPLE_EVENT = SAMPLE_EVENT
     
@@ -83,6 +84,19 @@ export default class Base {
     this.order_requested_checks()
   }
 
+  ensure_check_dependencies(){
+    if(!this.checksRequested.includes('open')){
+      this.checksRequested.unshift('open')
+      if(!this.checksIgnoreOutput.includes('open') && this.config.is('autoDepsIgnoredInResult', true))
+        this.checksIgnoreOutput.push('open')
+    }
+    if(this.checksRequested.includes('geo') && !this.checksRequested.includes('dns')){
+      this.checksRequested.unshift('dns')
+      if(!this.checksIgnoreOutput.includes('dns') && this.config.is('autoDepsIgnoredInResult', true))
+        this.checksIgnoreOutput.push('dns')
+    }
+  }
+
   order_requested_checks() {
     const idealOrder = Base.checksSupported()
     
@@ -95,19 +109,6 @@ export default class Base {
 
         return indexA - indexB;
     });
-  }
-
-  ensure_check_dependencies(){
-    if(!this.checksRequested.includes('open')){
-      this.checksRequested.unshift('open')
-      if(!this.checksIgnoreOutput.includes('open') && this.config.is('autoDepsIgnoredInResult', true))
-        this.checksIgnoreOutput.push('open')
-    }
-    if(this.checksRequested.includes('geo') && !this.checksRequested.includes('dns')){
-      this.checksRequested.unshift('dns')
-      if(!this.checksIgnoreOutput.includes('dns') && this.config.is('autoDepsIgnoredInResult', true))
-        this.checksIgnoreOutput.push('dns')
-    }
   }
 
   /**
@@ -123,34 +124,37 @@ export default class Base {
   async check(keys, headers=true){
     this.keys = keys
     let result 
+
     if(!this.session.initial){
       this.hard_fail = false
       this.results.reset({ url: this.url, network: this.network })
       this.session.create()
     }
-    if(keys == "all") {
+    
+    if(keys == "all") 
       return this.check(this.checks)
-    }
-    else if(typeof keys === 'string' && this.checks.includes(keys)) {
+
+    if(typeof keys === 'string' && this.checks.includes(keys))
       return this.check([keys])
+
+    if( !(keys instanceof Array) || !keys.length) 
+      return this.throw(`check(${keys}) failed. keys must be one (string) or several (array of strings).`)
+    
+    this.checksRequested = keys
+    this.evaluate_requested_checks()
+    for await (const key of this.checksRequested){
+      if(this.hard_fail === true) continue
+      this.logger.debug(`${key}: check(${keys}): setting current and running this._check()`)
+      this.current = key
+      await this._check(key)
+      this.logger.debug(`${key}: check(${keys}): this._check() resolved`)
     }
-    else if(keys instanceof Array && keys.length) {
-      this.checksRequested = keys
-      this.evaluate_requested_checks()
-      for await (const key of this.checksRequested){
-        if(this.hard_fail === true) continue
-        this.current = key
-        await this._check(key)
-      }
-      this.close()
-      result = this.results.raw(this.checksRequested, this.checksIgnoreOutput)
-    }
-    else {
-      throw new Error(`check(${keys}) failed. keys must be one (string) or several (array of strings) of: ${this.checks.join(', ')}`)
-      // return this.throw(`check(${keys}) failed. keys must be one (string) or several (array of strings) of: ${this.checks.join(', ')}`)
-    }
-    // if(this.isConnected()) this.close()
-    return headers? result: this.results.cleanResult(keys, result)
+    this.close(this.previous)
+    this.logger.debug(`${this.previous}: websocket closed, returning result`)
+    result = this.results.raw(this.checksRequested, this.checksIgnoreOutput)
+    return headers
+      ? result
+      : this.results.cleanResult(keys, result)
   }
 
   /**
@@ -166,9 +170,10 @@ export default class Base {
     if(!this.can_check(key)) return
     this.logger.debug(`${key}: check()`)
     this.defaultAdapters()
-    const precheck = await this.start(key).catch( err => this.logger.debug(err) )
+    await this.start(key).catch( err => this.logger.debug(err) )
     const result = await this.promises.get(key).promise
     // process.exit()
+    this.logger.debug(`${key}: check(): resolved`)
     if(result?.[key]?.status === "error" ) {
       this.on_check_error( key, result )
     }
@@ -233,7 +238,7 @@ export default class Base {
    */
   maybe_timeout(key){ 
     return (resolve, reject) => {  
-      const message = `${key} check timed out (after ${this.config.timeout[key]}ms}` 
+      const message = `${key}: check timed out (after ${this.config.timeout[key]}ms}` 
       this.logger.debug(message)
       const data = this.isWebsocketKey(key)? false: {}
       if(key === 'open' && this.config.rejectOnConnectFailure){
@@ -288,6 +293,7 @@ export default class Base {
         else {
           reason = `start(): precheck rejection for ${key} should not ever get here: ${JSON.stringify(precheck)}`
         }
+        this.logger.debug(reason)
         // deferred.reject(reason)
       })
     return checkDeferred.promise
@@ -497,17 +503,36 @@ export default class Base {
   /**
    * close
    * Invokes websocket adapter's close method if it exists, otherwise tries to close the websocket connection via adapter provided ws instance
+   * If a hard failure has been previously invoked, will also terminate
    * 
-   * @private
+   * @public
    */
-  close(){
-    this.logger.debug(`close()`)
-    if( !this.isConnected() || this.isClosing() || this.isClosed())
-      return
+  close(key=""){
+    this.logger.debug(`${key}: close()`)
+    if( !this.isConnected() && this.isClosing() && this.isClosed()) return
+    this.logger.debug(`${key}: close(): closing`)
     this.maybeExecuteAdapterMethod(
       'websocket', 
       'close',
       () => this.ws.close()
+    )
+    if(this.hard_fail) return this.terminate(key)
+  }
+
+  /**
+   * terminate
+   * Invokes websocket adapter's terminate method if it exists, otherwise tries to terminate the websocket connection via adapter provided ws instance
+   * 
+   * @public
+   */
+  terminate(key=""){
+    this.logger.debug(`${key}: terminate()`)
+    if(!this.isConnected() && !this.isClosing()) return 
+    this.logger.debug(`${key}: terminate(): terminating!`)
+    this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'terminate',
+      () => this.ws.terminate()
     )
   }
 
@@ -571,10 +596,9 @@ export default class Base {
    * @returns null
    */
   handle_error(err){
-    // this.unsubscribe()
-    // this.close()
+    if(this.hard_fail) return
+    this.logger.debug(`handle_error(): ${err}`)
     this.websocket_hard_fail(err)
-    // this.finish(this.current, { [this.current]: false, duration: -1 }, this.promises.get(this.current).reject)
   }
   
 
@@ -667,6 +691,7 @@ export default class Base {
    * @returns null
    */
     on_check_error(key, err){
+      this.logger.debug(`${key}: on_check_error(): ${err}`)
       this.cbcall('error', key, err)
       this.track(key, 'error', err)
       if(key === 'open' && this.config.failAllChecksOnConnectFailure)
@@ -768,7 +793,8 @@ export default class Base {
    * @private
    */
   websocket_hard_fail(err){
-    this.logger.debug(`websocket_hard_fail(): ${this.url}`)
+    // if(this.hard_fail || this.current === null) return
+    this.logger.debug(`${this.current}: websocket_hard_fail(): ${this.url}`)
     const wschecks = ['open', 'read', 'write']
     this.checksRequested.forEach(key => { 
       let message
@@ -786,9 +812,10 @@ export default class Base {
       this.results.set(key, { data: false, duration: -1, status: "error", message }) 
     })
     const promise = this.promises.get(this.current)
-    if(!promise) return this.logger.warn(`websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
+    if(!promise) return this.logger.warn(`${this.current}: websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
     this.hard_fail = true
     promise.resolve(this.results.get(this.current))
+    this.previous = this.current
     this.current = null
   }
   

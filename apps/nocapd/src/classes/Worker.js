@@ -166,11 +166,15 @@ export class NWWorker {
   }
 
   async sweepJobs(){
-    for( const job of Object.values(this.jobs) ){
-      if(job.created_at > Date.now() - this.expires) continue 
+    const expiredJobs = []
+    Object.values(this.jobs).forEach( async (job) => {
+      const expired = await this.isExpired(job.data.relay, timestring(job.timestamp, "ms"))
+      if(!job?.data?.relay || !expired) return 
+      this.log.debug(`sweepJobs(): removing expired job: ${job.data.relay}: expired? ${this.isExpired(job.data.relay, timestring(job.timestamp, "ms"))} because ${job.timestamp}, ${timestring(job.timestamp, "ms")}`)
       delete this.jobs[job.id]
-      await job.remove().catch(e => this.log.debug(`Could not remove job: ${job.id}: Error:`, e))
-    }
+      expiredJobs.push(job.remove().catch(e => this.log.debug(`sweepJobs(): Could not remove job: ${job.id}: Error:`, e)))
+    })
+    await Promise.all(expiredJobs).catch(e => this.log.debug(`sweepJobs(): Promise.all(expiredJobs): Error: `, e))
   }
 
   async addRelayJobs(relays){
@@ -219,10 +223,10 @@ export class NWWorker {
       progress += `${result?.read?.data === true? success("readable"): failure("unreadable")} ` 
     if(this.checks.includes('write'))
       progress += `${result?.write?.data === true? success("writable"): failure("unwritable")} `
-    if(this.checks.includes('dns'))
-      progress += `${Object.keys(result?.dns?.data || {}).length? success("dns"): failure("dns")} `
     if(this.checks.includes('ssl'))
       progress += `${Object.keys(result?.ssl?.data || {}).length? success("ssl"): failure("ssl")} `
+    if(this.checks.includes('dns'))
+      progress += `${Object.keys(result?.dns?.data || {}).length? success("dns"): failure("dns")} `
     if(this.checks.includes('geo'))
       progress += `${Object.keys(result?.geo?.data || {}).length? success("geo"): failure("geo")} `
     if(this.checks.includes('info'))
@@ -437,6 +441,7 @@ export class NWWorker {
   }
 
   async isExpired(url, lastChecked) {
+      if(!lastChecked) this.log.err(`isExpired(): lastChecked is undefined for ${url}`)
       let retries = await this.retry.getRetries(url);
       retries = retries === null? 0: retries
       const expiry = retries > 0 ? this.retry.getExpiry(url) : this.expires;

@@ -64,10 +64,8 @@ export class NWWorker {
 
   setupJobOpts(){
     this.jobOpts ={
-      removeOnComplete: {
-        age: Math.round(this.expires/1000),
-      },
-      removeOnFail: 11,
+      removeOnComplete: true,
+      removeOnFail: true
     }
   }
 
@@ -347,6 +345,8 @@ export class NWWorker {
     this.relayMeta = new Map()
   
     for (const relay of allRelays) {
+      if(!this.qualifyNetwork(relay.url)) continue
+
       this.log.debug(`getRelays() relay: ${relay.url}`)
 
       this.log.debug(`getRelays() relay: ${relay.url}: lastChecked()`)
@@ -375,9 +375,11 @@ export class NWWorker {
   
     this.log.info(`online: ${await this.rcache.relay.get.online()?.length}, \
     online & expired: ${onlineRelays.length}, \
-    expired: ${expiredRelays.length}, \
+    expired: ${expiredRelays.filter(this.qualifyNetwork.bind(this)).length}, \
     unchecked: ${uncheckedRelays.filter(this.qualifyNetwork.bind(this)).length}, \
     total: ${allRelays.length}`);
+
+    console.log('!!! expired relays', expiredRelays)
   
     const deduped = [...new Set([...onlineRelays, ...uncheckedRelays, ...expiredRelays])];
     const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));

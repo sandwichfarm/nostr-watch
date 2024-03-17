@@ -4,4 +4,4 @@ RUN mkdir /app
 WORKDIR /app
 COPY . .
 RUN yarn install
-CMD yarn launch
+CMD node src/index.js

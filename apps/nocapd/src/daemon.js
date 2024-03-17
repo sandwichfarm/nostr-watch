@@ -21,6 +21,8 @@ const log = new Logger('@nostrwatch/nocapd')
 let rcache
 let config 
 let $q
+let intervalPopulate
+let intervalSyncRelays
 
 const populateQueue = async () => { 
   log.info(`drained: ${$q.queue.name}`)
@@ -37,6 +39,11 @@ const checkQueue = async () => {
   await populateQueue()
 }
 
+const setIntervals = () => {
+  intervalSyncRelays = setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
+  intervalPopulate = setInterval( checkQueue, timestring( "1m", "ms" ))
+}
+
 const initWorker = async () => {
   const connection = RedisConnectionDetails()
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
@@ -49,8 +56,7 @@ const initWorker = async () => {
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
     .drain()
   await $q.obliterate().catch(()=>{})
-  setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
-  setInterval( checkQueue, timestring( "1m", "ms" ))
+  setIntervals()
   // $q.events.on('drained', populateQueue)
   await populateQueue()
   $q.resume()

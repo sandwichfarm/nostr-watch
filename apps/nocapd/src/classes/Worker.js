@@ -230,7 +230,7 @@ export class NWWorker {
 
   async counts(){
     const counts = await this.$.queue.getJobCounts()
-    this.log.info(`[stats] active: ${counts.active}, completed: ${ counts.completed }, failed: ${counts.failed}, prioritized: ${counts.prioritized}, delayed: ${counts.delayed}, waiting: ${counts.waiting}, paused: ${counts.paused}, total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized}`)
+    this.log.info(chalk.bgBlack.white.bold(`[stats] active: ${counts.active} - completed: ${ counts.completed }  -  failed: ${counts.failed}  -  prioritized: ${counts.prioritized}  -  delayed: ${counts.delayed}  -  waiting: ${counts.waiting}  -  paused: ${counts.paused}  -  total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized}`))
     return counts
   }
 
@@ -338,10 +338,11 @@ export class NWWorker {
 
   async getRelays() {
     this.log.debug(`getRelays()`)
-    const allRelays = await this.rcache.relay.get.all();
+    const allRelays = await this.rcache.relay.get.all('url');
     const onlineRelays = [];
     const uncheckedRelays = [];
     let expiredRelays = [];
+    let truncateLength
 
     this.relayMeta = new Map()
   
@@ -380,9 +381,12 @@ export class NWWorker {
   
     const deduped = [...new Set([...onlineRelays, ...uncheckedRelays, ...expiredRelays])];
     const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));
-    const truncateLength = this.get_truncate_length(allRelays);
-  
-    return relaysFiltered.slice(0, truncateLength);
+    
+    if(this.opts?.checks?.options?.max){
+      truncateLength = this.get_truncate_length(allRelays);
+      return relaysFiltered.slice(0, truncateLength);
+    }
+    return relaysFiltered   
   }
 
   get_truncate_length(relays){

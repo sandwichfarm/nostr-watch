@@ -97,8 +97,8 @@ export class Publisher {
     const pool = new SimplePool();
     const relays = config.publisher.to_relays
     let pubs = pool.publish(relays, signedEvent)
-    await Promise.all( pubs ).catch( e => { log.error(`publishEvent(): Error: ${e}`) })
-    return Promise.all( pubs )
+    // await Promise.all( pubs ).catch( e => { log.error(`publishEvent(): Error: ${e}`) })
+    return Promise.allSettled( pubs )
   }
 
   async publishEvents(signedEvents){

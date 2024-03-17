@@ -138,7 +138,7 @@ export default class Base {
       return this.check([keys])
 
     if( !(keys instanceof Array) || !keys.length) 
-      return this.throw(`check(${keys}) failed. keys must be one (string) or several (array of strings).`)
+      return this.throw(new Error(`check(${keys}) failed. keys must be one (string) or several (array of strings).`))
     
     this.checksRequested = keys
     this.evaluate_requested_checks()

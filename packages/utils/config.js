@@ -25,14 +25,13 @@ export const loadConfigSync = function() {
     const fileContents = fs.readFileSync(configPath, 'utf8');
     return yaml.load(fileContents);
   } catch (e) {
-      console.error(e);
+      console.error("loadConfigSync Error: ", e);
       throw new Error('config.yaml not found')
   }
 };
 
 export const loadConfig = async function() {
   const handle_error = (e) => { 
-    // console.error(e);
     return new Error('config.yaml not found')
   }
   const configPath = process.env.CONFIG_PATH || './config.yaml';

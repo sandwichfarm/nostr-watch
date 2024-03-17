@@ -29,7 +29,7 @@ export class Kind0 extends Publisher {
       content = JSON.stringify(data)
     }
     catch(e){
-      console.dir(data)
+      console.dir(`Kind0::generateContent(): Error: ${e}`)
       throw new Error('Was not able to stringify data for kind 0 content field.')
     }
     return content 

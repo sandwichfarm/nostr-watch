@@ -25,8 +25,6 @@ export const bootstrap = async (caller) => {
       api = emptyResponse(),
       events = emptyResponse()
 
-  // console.log(opts.sources, opts.sources.includes('api'))
-
   if(opts.sources.includes('config'))
     configseed = [ config?.seed, Date.now() ]
 
@@ -101,7 +99,7 @@ export const relaysFromStaticSeed = async (opts) => {
     const data = yaml.load(fileContents);
     return data?.relays? [ data.relays, Date.now() ]: emptyResponse() //update Date to reflect modification date of seed file.
   } catch (e) {
-    console.error(e);
+    logger.err(e);
     return emptyResponse()
   }
 }

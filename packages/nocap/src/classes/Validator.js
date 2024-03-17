@@ -1,6 +1,5 @@
 export class Validator {
   validate(key, value){
-    // console.log(this)
     if(typeof this?.defaults?.[key] === 'undefined')
       throw new Error(`${this.constructor.name} does not have property '${key}'`)
     if(value && typeof this.defaults[key] !== typeof value)

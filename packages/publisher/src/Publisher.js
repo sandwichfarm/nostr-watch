@@ -18,7 +18,6 @@ async function writeObjectToFile(obj) {
 
   try {
     await fs.writeFile(fileName, jsonContent);
-    // console.log(`File ${fileName} has been written.`);
   } catch (error) {
     console.error('Error writing file:', error);
   }
@@ -79,12 +78,9 @@ export class Publisher {
   signEvent(event){
     event.id = getEventHash(event)
     event.sig = getSignature(event, process.env.DAEMON_PRIVKEY || "")
-    // console.log('++signedEvent')
-    // console.dir(event)
     const valid = validateEvent(event) && verifySignature(event)
     if(!valid)
       throw new Error('generateEvent(): event does not validate')  
-    // if(signedEvent.tags.filter( tag => tag[0]==='s' && tag[1]==='online' ).length > 0) console.log(signedEvent)
     return event
   }
 
@@ -98,13 +94,10 @@ export class Publisher {
 
   async publishEvent(signedEvent){
     // writeObjectToFile(signedEvent);
-    console.log
     const pool = new SimplePool();
     const relays = config.publisher.to_relays
     let pubs = pool.publish(relays, signedEvent)
-    await Promise.all( pubs ).catch(console.error)
-    // console.log(pubs)
-    // process.exit()
+    await Promise.all( pubs ).catch( e => { log.error(`publishEvent(): Error: ${e}`) })
     return Promise.all( pubs )
   }
 
@@ -137,7 +130,7 @@ export class PublisherNocap extends Publisher {
         const unsignedEvent = this.generateEvent(relay)
         signedEvents.push(this.signEvent(unsignedEvent))
       }
-      await this.publishEvents(signedEvents).catch(console.error)
+      await this.publishEvents(signedEvents).catch( e => { log.error(`PublisherNocap::many(): Error: ${e}`) })
     }
   }
 

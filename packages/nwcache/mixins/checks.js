@@ -17,7 +17,6 @@ export default class CheckMixin {
   }
 
   validate(RelayObj){
-    // console.log(RelayObj)
     if(!RelayObj?.url)
       throw new Error("Relay object must have a url property")
   }

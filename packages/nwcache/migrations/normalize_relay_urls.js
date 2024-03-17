@@ -36,11 +36,7 @@ const chunkArray = function(arr, chunkSize) {
   console.log(relaydb.relay.count.all())
   const relays = await relaydb.relay.get.all()
   
-  const chunks = chunkArray(relays, 100)
-
-  // console.log(chunks)
-  // process.exit()
-  
+  const chunks = chunkArray(relays, 100)  
 
   let count = 0
   for(const chunk of chunks){

@@ -23,12 +23,15 @@ let config
 let $q
 let intervalPopulate
 let intervalSyncRelays
+let intervalBugCheck
+let lastPopulate = 0
 
 const populateQueue = async () => { 
-  log.info(`drained: ${$q.queue.name}`)
-  await $q.checker.populator() 
+  const resume = await $q.checker.populator() 
   await delay(2000)
   await $q.checker.resetProgressCounts()
+  resume()
+  lastPopulate = Date.now()
 }
 
 const checkQueue = async () => {
@@ -36,12 +39,12 @@ const checkQueue = async () => {
   const enqueue = counts.prioritized + counts.active
   if(enqueue > 0) return 
   log.info(`drained: ${$q.queue.name}`)
-  await populateQueue()
+  populateQueue()
 }
 
 const setIntervals = () => {
   intervalSyncRelays = setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
-  intervalPopulate = setInterval( checkQueue, timestring( "1m", "ms" ))
+  intervalPopulate = setInterval( checkQueue, timestring( config?.nocapd?.checks?.options?.interval, "ms" ))
 }
 
 const initWorker = async () => {

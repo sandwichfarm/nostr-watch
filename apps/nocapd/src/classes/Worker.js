@@ -82,7 +82,7 @@ export class NWWorker {
       await this.addRelayJobs(relays)
     else 
       this.setTimeout( this.populator.bind(this), this.interval)
-    await this.$.worker.resume()
+    return async () => await this.$.worker.resume()
   }
 
   async work(job){
@@ -95,7 +95,6 @@ export class NWWorker {
       return { result } 
     } 
     catch(err) {
-      console.log(err)
       failure(new Error(`Failure inside work() block: ${err}`))
       return { result: { url: job.data.relay, open: { data: false }} }
     }

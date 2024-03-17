@@ -11,7 +11,7 @@
     "@nostrwatch/logger": "^0.0.4",
     "@nostrwatch/nocap": "^0.4.2",
     "@nostrwatch/nwcache": "^0.1.0",
-    "@nostrwatch/publisher": "^0.4.0",
+    "@nostrwatch/publisher": "^0.4.1",
     "@nostrwatch/seed": "^0.0.2",
     "@nostrwatch/utils": "^0.0.3",
     "bluebird": "3.7.2",
@@ -26,6 +26,7 @@
   "scripts": {
     "launch": "node src/index.js",
     "trace": "node --trace-warnings src/index.js",
-    "debug": "DEBUG=* node --trace-warnings src/index.js"
+    "debug": "DEBUG=* node --trace-warnings src/index.js",
+    "docker:build@debug": "docker build -t nostrwatch/nocapd:latest -f Dockerfile.debug ."
   }
 }

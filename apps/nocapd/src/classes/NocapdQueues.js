@@ -35,8 +35,6 @@ export class NocapdQueues {
     else if (typeof job === 'string')
       name = job.split(':')[0]
 
-    // console.log(event, 'name', name, name === this.pubkey, args.length, args[2])
-
     if(name === this.pubkey) {
       return this.checker.cbcall(event, ...args)
     }

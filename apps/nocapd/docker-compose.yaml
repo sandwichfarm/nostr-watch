@@ -4,6 +4,7 @@ services:
     container_name: nocapd
     restart: unless-stopped
     image: nocapd
+    tty: true
     build:     
       context: .
       args:

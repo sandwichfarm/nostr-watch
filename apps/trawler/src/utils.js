@@ -13,13 +13,12 @@ export const excludeKnownRelays = (known, discovered) => {
 // Function to check if a single queue is empty
 export const isQueueEmpty = async function(queue) {
     const counts = await queue.getJobCounts("active");
-    // console.log('isQueueEmpty', counts)
     return counts.active === 0;
     // return counts.active === 0 && counts.delayed === 0 && counts.completed === 0 && counts.failed === 0;
 };
 
 export const areAllQueuesEmpty = async function(queues) {
-  const checks = await Promise.all(Object.keys(queues).map((key) => isQueueEmpty(queues[key])));
+  const checks = await Promise.allSettled(Object.keys(queues).map((key) => isQueueEmpty(queues[key])));
   return checks.every(check => check);
 }
 
@@ -36,12 +35,11 @@ export const whenAllQueuesEmpty = function(queues, callback=()=>{}) {
 
 export const isQueueActive = async function(queue) {
   const counts = await queue.getJobCounts("active");
-  // console.log('active', counts.active)
   return counts.active > 0;
 };
 
 export const isAnyQueueActive = async function(queues) {
-  const checks = await Promise.all(Object.keys(queues).map((key) => isQueueActive(queues[key])));
+  const checks = await Promise.allSettled(Object.keys(queues).map((key) => isQueueActive(queues[key])));
   return checks.some(check => check);
 };
 

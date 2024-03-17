@@ -44,7 +44,8 @@ const checkQueue = async () => {
 
 const setIntervals = () => {
   intervalSyncRelays = setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
-  intervalPopulate = setInterval( checkQueue, timestring( config?.nocapd?.checks?.options?.interval, "ms" ))
+  schedulePopulator()
+  // intervalPopulate = setInterval( checkQueue, timestring( config?.nocapd?.checks?.options?.interval, "ms" ))
 }
 
 const initWorker = async () => {
@@ -102,13 +103,13 @@ const maybeAnnounce = async () => {
   await announce.publish( conf.relays )
 }
 
-const schedulePopulator = ($checker) =>{
+const schedulePopulator = () =>{
   const rule = new schedule.RecurrenceRule();
   rule.start = Date.now(); // Set the start time
-  rule.rule = `*/${timestring($checker.interval, "s")} * * * * *`; // Set the frequency in seconds
+  rule.rule = `*/${timestring($q.checker.interval, "s")} * * * * *`; // Set the frequency in seconds
   return schedule.scheduleJob(rule, async () => { 
-    log.info(`running schedule for ${$checker.pubkey}.populator`)
-    await $checker.populator()
+    log.info(chalk.grey.italic(`=== scheduled population of ${$q.queue.name} every ${timestring($q.checker.interval, 's')} seconds ===`))
+    await checkQueue()
   })
 }
 
@@ -125,11 +126,10 @@ const scheduleSyncRelays = () =>{
 const syncRelaysIn = async () => {
     log.debug(`syncRelaysIn()`)
     const syncData = await bootstrap('nocapd')
-    log.debug(`syncRelaysIn(): synced ${syncData[0].length} relays`)
+    log.debug(`syncRelaysIn(): found ${syncData[0].length} *maybe new* relays`)
     const relays = syncData[0].map(r => { return { url: r, online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     const persisted = await rcache.relay.batch.insertIfNotExists(relays)
-    log.debug(`syncRelaysIn(): persisted ${persisted.length} relays`)
-    log.info(`synced ${persisted.length} relays`)
+    log.info(`syncRelaysIn(): persisted ${persisted.length} relays`)
     return persisted
 }
 
@@ -147,21 +147,7 @@ const maybeBootstrap = async () => {
   }
 }
 
-const header = () => {
-  console.log(chalk.bold(`
 
-@nostrwatch/nocapd  
-                                                   dP
-                                                   88
-88d888b. .d8888b. .d8888b. .d8888b. 88d888b. .d888b88
-88'  \`88 88'  \`88 88'  \`"" 88'  \`88 88'  \`88 88'  \`88
-88    88 88.  .88 88.  ... 88.  .88 88.  .88 88.  .88
-dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
-                                    88               
-                                    dP               
-
-`))
-}
 
 // export const Nocapd = async () => {
 //   const lmdbConnected = new Deferred()
@@ -205,7 +191,6 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 // }
 
 export const Nocapd = async () => {
-  header()
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')

@@ -17,6 +17,8 @@ export class NWWorker {
     this.config = config
     this.setup()
     this.log.info(`${this.id()} initialized`)
+    this.jobs = {}
+    this.cache_counts = {}
   }
 
   setup(){
@@ -64,7 +66,9 @@ export class NWWorker {
 
   setupJobOpts(){
     this.jobOpts ={
-      removeOnComplete: true,
+      removeOnComplete: {
+        age: timestring(this.expires, "ms")
+      },
       removeOnFail: true
     }
   }
@@ -78,10 +82,10 @@ export class NWWorker {
     this.log.info(`populator()`)
     await this.$.worker.pause()
     const relays = await this.getRelays()
-    if(relays.length > 0)
-      await this.addRelayJobs(relays)
-    else 
-      this.setTimeout( this.populator.bind(this), this.interval)
+    // if(relays.length > 0)
+    await this.addRelayJobs(relays)
+    // else 
+    //   this.setTimeout( this.populator.bind(this), this.interval)
     return async () => await this.$.worker.resume()
   }
 
@@ -154,15 +158,6 @@ export class NWWorker {
       this.cb[handler](...args)
   }
 
-  async addRelayJobs(relays){
-    this.log.debug(`addRelayJobs(): for ${relays.length} relays`)
-    const promises = []
-    for await ( const relay of relays ){
-      promises.push(this.addRelayJob({ relay }))
-    }
-    await Promise.all(promises)
-  }
-  
   async resetProgressCounts(){
     const c = await this.counts()
     this.total = c.prioritized + c.active
@@ -170,11 +165,36 @@ export class NWWorker {
     this.log.debug(`total jobs: ${this.total}`)
   }
 
+  async sweepJobs(){
+    for( const job of Object.values(this.jobs) ){
+      if(job.created_at > Date.now() - this.expires) continue 
+      delete this.jobs[job.id]
+      await job.remove().catch(e => this.log.debug(`Could not remove job: ${job.id}: Error:`, e))
+    }
+  }
+
+  async addRelayJobs(relays){
+    this.log.debug(`addRelayJobs(): for ${relays.length} relays`)
+    await this.sweepJobs()
+    relays.forEach( async (relay) => {
+      let job = this.jobs?.[this.jobId(relay)]
+      if(job) {
+        await job.remove().catch(e => this.log.debug(`Could not remove job: ${relay}: Error:`, e))
+        this.log.info(`job removed: ${this.jobId(relay)}`)
+      }
+      job = await this.addRelayJob({ relay })
+      this.jobs[job.id] = job
+    })
+    const jobs = Object.values(this.jobs)
+    if(jobs.length > 0) await Promise.all(jobs)
+  }
+  
   async addRelayJob(jdata){
     this.log.debug(`Adding job for ${jdata.relay} with ${this.opts.checks.enabled} nocap checks: ${JSON.stringify(jdata)}`)
+    const jobId = this.jobId(jdata.relay)
     const priority = this.getPriority(jdata.relay)
     this.updateJobOpts({ priority })
-    return this.$.queue.add( this.id(), jdata, { jobId: this.jobId(jdata.relay), ...this.jobOpts})
+    return this.$.queue.add( this.id(), jdata, { jobId, ...this.jobOpts})
   }
 
   calculateProgress() {
@@ -227,7 +247,8 @@ export class NWWorker {
 
   async counts(){
     const counts = await this.$.queue.getJobCounts()
-    this.log.info(chalk.bgBlack.white.bold(`[stats] active: ${counts.active} - completed: ${ counts.completed }  -  failed: ${counts.failed}  -  prioritized: ${counts.prioritized}  -  delayed: ${counts.delayed}  -  waiting: ${counts.waiting}  -  paused: ${counts.paused}  -  total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized}`))
+    this.show_cache_counts()
+    this.log.info(chalk.magenta.bold(`=== [queue stats] active: ${counts.active} - completed: ${ counts.completed }  -  failed: ${counts.failed}  -  prioritized: ${counts.prioritized}  -  delayed: ${counts.delayed}  -  waiting: ${counts.waiting}  -  paused: ${counts.paused}  -  total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized} ===`))
     return counts
   }
 
@@ -320,14 +341,14 @@ export class NWWorker {
           else              _record.data = JSON.stringify(result[key].data)
           const _check_id = await this.rcache.check[key].insert(_record)
           if(!_check_id)
-            reject()
+            reject(new Error(`Could not persist ${_check_id} check`))
           record[key] = _check_id
           resolve()
         }
         promises.push( new Promise( persist_result ) )
       }
     }
-    await Promise.allSettled(promises)
+    await Promise.all(promises)
     await delay(100)
     const $id = await this.rcache.relay.patch(record)
     return $id
@@ -335,8 +356,9 @@ export class NWWorker {
 
   async getRelays() {
     this.log.debug(`getRelays()`)
-    const allRelays = await this.rcache.relay.get.all('url');
-    const onlineRelays = [];
+    const allRelays = await this.rcache.relay.get.all();
+    const onlineRelays = []
+    const onlineExpiredRelays = [];
     const uncheckedRelays = [];
     let expiredRelays = [];
     let truncateLength
@@ -355,10 +377,12 @@ export class NWWorker {
       this.log.debug(`getRelays() relay: ${relay.url}: isExpired()`)
       const isExpired = await this.isExpired(relay.url, lastChecked);
       const isOnline = relay?.online === true;
+
+      if(isOnline) onlineRelays.push(relay.url);
   
       let group = '';
       if (isOnline && isExpired) {
-        onlineRelays.push(relay.url);
+        onlineExpiredRelays.push(relay.url);
         group = 'online';
       } else if (!lastChecked) {
         uncheckedRelays.push(relay.url);
@@ -372,13 +396,9 @@ export class NWWorker {
   
     expiredRelays = expiredRelays.sort((a, b) => a.retries - b.retries).map(r => r.url);
   
-    this.log.info(`online: ${await this.rcache.relay.get.online()?.length}, \
-    online & expired: ${onlineRelays.length}, \
-    expired: ${expiredRelays.filter(this.qualifyNetwork.bind(this)).length}, \
-    unchecked: ${uncheckedRelays.filter(this.qualifyNetwork.bind(this)).length}, \
-    total: ${allRelays.length}`);
+    await this.store_cache_counts(allRelays.length, onlineRelays.length, onlineExpiredRelays.length, expiredRelays.length, uncheckedRelays.length)
   
-    const deduped = [...new Set([...onlineRelays, ...uncheckedRelays, ...expiredRelays])];
+    const deduped = [...new Set([...onlineExpiredRelays, ...uncheckedRelays, ...expiredRelays])];
     const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));
     
     if(this.opts?.checks?.options?.max){
@@ -386,6 +406,20 @@ export class NWWorker {
       return relaysFiltered.slice(0, truncateLength);
     }
     return relaysFiltered   
+  }
+
+  async store_cache_counts(allRelays, online, onlineExpired, expired, unchecked){
+      this.cache_counts = { allRelays, online, onlineExpired, expired, unchecked }
+  }
+
+  show_cache_counts(){
+    let cacheMessage = ''
+    cacheMessage += `=== [cache stats] online: ${this.cache_counts.online}  -  `
+    cacheMessage += `online & expired: ${this.cache_counts.onlineExpired}  -  `
+    cacheMessage += `expired: ${this.cache_counts.expired}  -  `
+    cacheMessage += `unchecked: ${this.cache_counts.unchecked}  -  `
+    cacheMessage += `total: ${this.cache_counts.allRelays} ===`
+    this.log.info(chalk.blue.bold(cacheMessage));
   }
 
   get_truncate_length(relays){

@@ -1,11 +1,29 @@
-import { Nocapd as daemon } from './daemon.js';
+import chalk from 'chalk'
+import { createRequire } from 'module';
 import _bluebird from 'bluebird'
-// import Segfault from 'segfault'
 
-// Segfault.registerHandler("segfaults.log");
+import { Nocapd as daemon } from './daemon.js';
+
+const header = () => {
+  console.log(chalk.bold(`
+
+@nostrwatch/nocapd  
+                                                   dP
+                                                   88
+88d888b. .d8888b. .d8888b. .d8888b. 88d888b. .d888b88
+88'  \`88 88'  \`88 88'  \`"" 88'  \`88 88'  \`88 88'  \`88
+88    88 88.  .88 88.  ... 88.  .88 88.  .88 88.  .88
+dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
+                                    88               
+                                    dP               
+
+`))
+}
 
 const run = async () => {
   await tracePromises()
+  header()
+  showDependencies()
   const $d = await daemon()
   globalHandlers()
   return $d
@@ -18,7 +36,7 @@ const tracePromises = async () => {
 
     Promise.config({
       longStackTraces: true,
-      warnings: true // Enable warnings for best practices, including possibly unhandled rejections
+      warnings: true
     });
 
     Promise.onPossiblyUnhandledRejection(function(error, promise) {
@@ -29,20 +47,19 @@ const tracePromises = async () => {
 }
 
 const globalHandlers = () => {
-  process.on('uncaughtException', async (error) => {
-    console.error('Uncaught Exception:', error);
-    // await gracefulShutdown('uncaughtException');
-  });
-  
-  process.on('unhandledRejection', async (reason, promise) => {
-    // console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    // await gracefulShutdown('unhandledRejection');
-  });
-
   const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
+  
   signals.forEach(signal => {
     process.on(signal, async () => await gracefulShutdown(signal));
   });
+
+  process.on('uncaughtException', async (error) => {
+    console.error('Uncaught Exception:', error);
+  });
+  
+  process.on('unhandledRejection', async (reason, promise) => {
+    console.error('Unhandled Rejection:', error);
+  });  
 }
 
 async function gracefulShutdown(signal) {
@@ -51,23 +68,38 @@ async function gracefulShutdown(signal) {
   process.exit(9);
 }
 
+const showDependencies = async () => {
+  const require = createRequire(import.meta.url);
+  const dependencies = require('../package.json').dependencies;
+  for (const dep of Object.keys(dependencies)) {
+    if(!dep.startsWith('@nostrwatch')) continue;
+    const versionImplemented = dependencies[dep].replace(/[^0-9.]/g, '')
+    const versionLatest = (await getPackageLatestVersion(dep)).replace(/[^0-9.]/g, '')
+    const versionsMatch = versionImplemented === versionLatest
+    if(versionsMatch){
+      console.log(`${dep}: ${versionImplemented} == ${versionLatest} ✅`);
+    }
+    else {
+      console.log(`${dep}: ${versionImplemented} -> ${versionLatest} ❌ [UPGRADE NEEDED]`);
+    }
+  }
+}
+
+const getPackageLatestVersion = async (packageName) => {
+  try {
+    const url = `https://registry.npmjs.org/${packageName}/latest`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.version;
+  } catch (error) {
+    console.error('Error fetching latest package version:', error);
+    return null;
+  }
+};
+
 const $d = await run()
 
 
-import { createRequire } from 'module';
-import path from 'path';
 
-const require = createRequire(import.meta.url);
-const nodeModulesPath = path.join(process.cwd(), 'node_modules');
-const dependencies = require('../package.json').dependencies;
 
-for (const dep of Object.keys(dependencies)) {
-  if(!dep.startsWith('@nostrwatch')) continue;
-  try {
-    const packageJsonPath = path.join(nodeModulesPath, dep, 'package.json');
-    const packageJson = require(packageJsonPath); // Using require from 'module' for JSON
-    console.log(`${dep}: ${packageJson.version}`);
-  } catch (error) {
-    console.error(`Could not read version for dependency ${dep}: ${error}`);
-  }
-}
+

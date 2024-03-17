@@ -38,7 +38,7 @@ const checkQueue = async () => {
   const counts = await $q.checker.counts()
   const enqueue = counts.prioritized + counts.active
   if(enqueue > 0) return 
-  log.info(`drained: ${$q.queue.name}`)
+  log.debug(`drained: ${$q.queue.name}`)
   populateQueue()
 }
 
@@ -58,8 +58,10 @@ const initWorker = async () => {
     .set( 'events' , ncdq.$QueueEvents )
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
-    .drain()
-  await $q.obliterate().catch(()=>{})
+    // .drain()
+  // await $q.obliterate().catch(()=>{})
+
+  await $q.checker.drainSmart()
   setIntervals()
   // $q.events.on('drained', populateQueue)
   await populateQueue()
@@ -108,7 +110,7 @@ const schedulePopulator = () =>{
   rule.start = Date.now(); // Set the start time
   rule.rule = `*/${timestring($q.checker.interval, "s")} * * * * *`; // Set the frequency in seconds
   return schedule.scheduleJob(rule, async () => { 
-    log.info(chalk.grey.italic(`=== scheduled population of ${$q.queue.name} every ${timestring($q.checker.interval, 's')} seconds ===`))
+    log.info(chalk.grey.italic(`=== scheduled population check for ${$q.queue.name} every ${timestring($q.checker.interval, 's')} seconds ===`))
     await checkQueue()
   })
 }

@@ -7,6 +7,7 @@
     "deploy:nocapd@theship": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/theship --ask-become-pass",
     "deploy:nocapd@frankfurt": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/frankfurt --ask-become-pass",
     "deploy:nocapd@amsterdam": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/amsterdam",
+    "deploy:nocapd@newyork": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/newyork",
     "deploy:nocapd@johannesburg": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/johannesburg"
 
   },

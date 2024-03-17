@@ -66,10 +66,10 @@ export class NWWorker {
 
   setupJobOpts(){
     this.jobOpts ={
-      removeOnComplete: {
-        age: timestring(this.expires, "ms")
-      },
-      removeOnFail: true
+      removeOnComplete: false,
+      removeOnFail: {
+        age: timestring('10m', 's')
+      }
     }
   }
 
@@ -79,7 +79,7 @@ export class NWWorker {
   }
 
   async populator(){
-    this.log.info(`populator()`)
+    this.log.debug(`populator()`)
     await this.$.worker.pause()
     const relays = await this.getRelays()
     // if(relays.length > 0)
@@ -255,8 +255,10 @@ export class NWWorker {
 
   async counts(){
     const counts = await this.$.queue.getJobCounts()
-    this.show_cache_counts()
-    this.log.info(chalk.magenta.bold(`=== [queue stats] active: ${counts.active} - completed: ${ counts.completed }  -  failed: ${counts.failed}  -  prioritized: ${counts.prioritized}  -  delayed: ${counts.delayed}  -  waiting: ${counts.waiting}  -  paused: ${counts.paused}  -  total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized} ===`))
+    if(counts.prioritized + counts.active > 0) {
+      this.log.info(chalk.magenta.bold(`=== [queue stats] active: ${counts.active} - completed: ${ counts.completed }  -  failed: ${counts.failed}  -  prioritized: ${counts.prioritized}  -  delayed: ${counts.delayed}  -  waiting: ${counts.waiting}  -  paused: ${counts.paused}  -  total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized} ===`))
+      this.show_cache_counts()
+    }
     return counts
   }
 

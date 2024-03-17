@@ -165,26 +165,30 @@ export class NWWorker {
     this.log.debug(`total jobs: ${this.total}`)
   }
 
-  async sweepJobs(){
+  async drainSmart(){
     const expiredJobs = []
     Object.values(this.jobs).forEach( async (job) => {
-      const expired = await this.isExpired(job.data.relay, timestring(job.timestamp, "ms"))
-      if(!job?.data?.relay || !expired) return 
-      this.log.debug(`sweepJobs(): removing expired job: ${job.data.relay}: expired? ${this.isExpired(job.data.relay, timestring(job.timestamp, "ms"))} because ${job.timestamp}, ${timestring(job.timestamp, "ms")}`)
+      if(!job?.data?.relay) return
+      const url = job.data.relay
+      const online = (await this.rcache.relay.get.one(url))?.online === true
+      const expired = await this.isExpired(url, timestring(job.timestamp, "ms"))
+      if(!expired && online) return 
+      this.log.debug(`drainSmart(): removing expired job: ${url}: online? ${online}, expired? ${this.isExpired(url, timestring(job.timestamp, "ms"))}`)
       delete this.jobs[job.id]
-      expiredJobs.push(job.remove().catch(e => this.log.debug(`sweepJobs(): Could not remove job: ${job.id}: Error:`, e)))
+      expiredJobs.push(job.remove().catch(e => this.log.debug(`drainSmart(): Could not remove job: ${job.id}: Error:`, e)))
     })
-    await Promise.all(expiredJobs).catch(e => this.log.debug(`sweepJobs(): Promise.all(expiredJobs): Error: `, e))
+    await Promise.all(expiredJobs).catch(e => this.log.debug(`drainSmart(): Promise.all(expiredJobs): Error: `, e))
   }
 
   async addRelayJobs(relays){
     this.log.debug(`addRelayJobs(): for ${relays.length} relays`)
-    await this.sweepJobs()
+    await this.drainSmart()
     relays.forEach( async (relay) => {
       let job = this.jobs?.[this.jobId(relay)]
       if(job) {
-        await job.remove().catch(e => this.log.debug(`Could not remove job: ${relay}: Error:`, e))
-        this.log.info(`job removed: ${this.jobId(relay)}`)
+        await job.remove()
+                .then(  () => this.log.debug(`job removed: ${this.jobId(relay)}`))
+                .catch( e => this.log.debug(`Could not remove job: ${relay}: Error:`, e))
       }
       job = await this.addRelayJob({ relay })
       this.jobs[job.id] = job
@@ -332,14 +336,13 @@ export class NWWorker {
     let   record = new Object()
 
     record.url = url
-    if(result?.open?.data) record.online = result.open.data
+    record.online = result?.open?.data? true: false
 
     for( const key of ['info', 'dns', 'geo', 'ssl'] ){
       const resultHasKey = result?.[key]?.data && Object.keys(result[key].data)?.length > 0
       if(resultHasKey){
         const persist_result = async (resolve, reject) => { 
           this.log.debug(`persist_result(${key})`)
-          
           const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data) }
           if(key === 'ssl') _record.data = JSON.stringify({ valid_to: result[key].data.valid_to, valid_from: result[key].data.valid_from })
           else              _record.data = JSON.stringify(result[key].data)

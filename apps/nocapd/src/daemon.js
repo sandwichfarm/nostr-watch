@@ -29,6 +29,14 @@ const populateQueue = async () => {
   await $q.checker.resetProgressCounts()
 }
 
+const checkQueue = async () => {
+  const counts = await $q.checker.counts()
+  const enqueue = counts.prioritized + counts.active
+  if(enqueue > 0) return 
+  log.info(`drained: ${$q.queue.name}`)
+  await populateQueue()
+}
+
 const initWorker = async () => {
   const connection = RedisConnectionDetails()
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
@@ -42,7 +50,8 @@ const initWorker = async () => {
     .drain()
   await $q.obliterate().catch(()=>{})
   setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
-  $q.events.on('drained', populateQueue)
+  setInterval( checkQueue, timestring( "1m", "ms" ))
+  // $q.events.on('drained', populateQueue)
   await populateQueue()
   $q.resume()
   log.info(`initialized: ${$q.queue.name}`)

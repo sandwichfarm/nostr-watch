@@ -378,8 +378,6 @@ export class NWWorker {
     expired: ${expiredRelays.filter(this.qualifyNetwork.bind(this)).length}, \
     unchecked: ${uncheckedRelays.filter(this.qualifyNetwork.bind(this)).length}, \
     total: ${allRelays.length}`);
-
-    console.log('!!! expired relays', expiredRelays)
   
     const deduped = [...new Set([...onlineRelays, ...uncheckedRelays, ...expiredRelays])];
     const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));

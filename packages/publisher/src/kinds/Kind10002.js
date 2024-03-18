@@ -24,5 +24,11 @@ export class Kind10002 extends Publisher {
     const tags = relays.map( relay => ['r', relay] )
     return tags
   }
+
+  parse(event){
+    return {
+      relays: event.tags.filter(tag => tag === 'r').map( tag => tag[1] )
+    }
+  }
   
 }

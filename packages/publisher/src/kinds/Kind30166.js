@@ -23,6 +23,8 @@ export class Kind30166 extends PublisherNocap {
   }
 
   static generateTags(data){
+    const protocol = new URL(data.url).protocol
+
     let tags = []
 
     tags.push(['d', data.url])
@@ -57,6 +59,15 @@ export class Kind30166 extends PublisherNocap {
     else {
       tags.push(['R', '!payment'])
     }
+
+    
+    if(data?.ssl && protocol === 'wss:') {
+      const current = data.ssl.data.valid_from < Date.now() && data.ssl.data.valid_to > Date.now()
+      tags.push(['R', current  ? 'ssl' : '!ssl'])
+    }
+    else(protocol !== 'wss:') {
+      tags.push(['R', '!ssl'])
+    }
   
     if(data?.info?.data?.software){
       tags.push(['s', data.info.data.software])
@@ -69,6 +80,26 @@ export class Kind30166 extends PublisherNocap {
 
     return tags
   }
+
+  parse(event){
+    return {
+      url: event.tags.find(tag => tag[0] === 'd')?.[1],
+      network: event.tags.find(tag => tag[0] === 'n')?.[1],
+      info: {
+        supported_nips: event.tags.filter(tag => tag[0] === 'N').map(tag => parseInt(tag[1])),
+        language_tags: event.tags.filter(tag => tag[0] === 'l').map(tag => tag[1]),
+        tags: event.tags.filter(tag => tag[0] === 't').map(tag => tag[1]),
+        limitation: {
+          auth_required: event.tags.find(tag => tag[0] === 'R' && tag[1].includes('auth')).map( tag => tag[1].includes('!')? false: true ),
+          payment_required: event.tags.find(tag => tag[0] === 'R' && tag[1].includes('payment')).map( tag => tag[1].includes('!')? false: true )
+        },
+        software: event.tags.find(tag => tag[0] === 's')?.[1]
+      },
+      ssl: event.tags.find(tag => tag[0] === 'R' && tag[1].includes('ssl')).map( tag => tag[1].includes('!')? false: true ),
+      geo: ngeotags.parse(event.tags)
+    }
+  }
+
 }
 
 const transformGeoResult = geo => {  

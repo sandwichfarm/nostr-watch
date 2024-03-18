@@ -1,5 +1,6 @@
 import mapper from 'object-mapper'
 import ngeohash from 'ngeohash'
+import { ParseEvent } from '@nostrwatch/parse'
 
 import { PublisherNocap } from '../Publisher.js'
 
@@ -167,11 +168,18 @@ export class Kind30066 extends PublisherNocap {
         }
       }
     }
-    
-    const countRttTags = tags.filter( tag => tag[0] === 'rtt' )?.length 
 
     return tags
   }
+
+  _parse(){
+    Kind30066.parse(this.event)
+  }
+
+  static parse(event){
+    return ParseEvent.groupedKeys(event)
+  }
+  
 }
 
 const transformGeoResult = geo => {  

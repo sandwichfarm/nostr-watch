@@ -34,4 +34,8 @@ export class Kind0 extends Publisher {
     }
     return content 
   }
+
+  static parse(event){
+    return JSON.parse(event.content)
+  }
 }

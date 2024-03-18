@@ -23,9 +23,8 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 const run = async () => {
   await tracePromises()
   header()
-  showDependencies()
+  await showDependencies()
   const $d = await daemon()
-  globalHandlers()
   return $d
 }
 
@@ -46,7 +45,7 @@ const tracePromises = async () => {
   }
 }
 
-const globalHandlers = () => {
+const globalHandlers = ($daemon) => {
   const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
   
   signals.forEach(signal => {
@@ -60,6 +59,16 @@ const globalHandlers = () => {
   process.on('unhandledRejection', async (reason, promise) => {
     console.error('Unhandled Rejection:', error);
   });  
+
+  $daemon.$q.queue.on('error', async (err) => {
+    console.error('Queue Error: ', err);
+    gracefulShutdown(err)
+  })
+
+  $daemon.$q.queue.on('ioredis:close', async (err) => {
+    console.error('Queue: ioredis:close: ', err);
+    gracefulShutdown(err)
+  })
 }
 
 async function gracefulShutdown(signal) {
@@ -98,7 +107,7 @@ const getPackageLatestVersion = async (packageName) => {
 };
 
 const $d = await run()
-
+globalHandlers($d)
 
 
 

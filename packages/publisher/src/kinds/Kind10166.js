@@ -49,4 +49,17 @@ export class Kind10166 extends Publisher {
       tags = [...tags, ...ngeotags(data.geo, geoOpts)];
     return tags;
   }
+
+  static parse(event){
+    return {
+      frequency: event.tags.find(tag => tag[0] === 'frequency')?.[1],
+      owner: event.tags.find(tag => tag[0] === 'o')?.[1],
+      kinds: event.tags.filter(tag => tag[0] === 'k').map(tag => tag[1]),
+      counts: event.tags.filter(tag => tag[0] === 'n').map(tag => tag[1]),
+      checks: event.tags.filter(tag => tag[0] === 'c').map(tag => tag[1]),
+      timeouts: event.tags.filter(tag => tag[0] === 'timeout').reduce((acc, tag) => { acc[tag[1]] = parseInt(tag[2]); return acc; }, {}),
+      geo: ngeotags.parse(event.tags)
+    }
+  }
+
 }

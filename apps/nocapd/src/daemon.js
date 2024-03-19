@@ -138,7 +138,7 @@ const syncRelaysIn = async () => {
     log.debug(`syncRelaysIn()`)
     const syncData = await bootstrap('nocapd')
     log.debug(`syncRelaysIn(): found ${syncData[0].length} *maybe new* relays`)
-    const relays = syncData[0].map(r => { return { url: new URL(r).url, online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
+    const relays = syncData[0].map(r => { return { url: new URL(r).toString(), online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     const persisted = await rcache.relay.batch.insertIfNotExists(relays)
     if(persisted.length === 0) return 0
     log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))

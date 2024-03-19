@@ -233,7 +233,7 @@ const relay_get = (db) => {
   const fns = {
     one(relay) {
       if(typeof relay !== 'string')
-        throw new Error(`Relay.get.one(): Argument must be a string: ${relay}: ${typeof relay}`)
+        throw new Error(`Relay.get.one(): Argument must be a string: [${relay}: ${typeof relay}] -> [${relay.toString()}: string]`)
       if(!relay.startsWith('Relay@'))
         relay = relayId(relay)
       return db.$.get(relay) || false

@@ -121,24 +121,17 @@ export class NWWorker {
     await this.after_completed( result, fail )
   }
 
-  async publish_30066(result){
+
+  async on_success(result){
+    this.log.debug(`on_success(): ${result.url}`)
     if(this.config?.publisher?.kinds?.includes(30066) ){
       const publish30066 = new Publish.Kind30066()
       await publish30066.one( result )   
     }
-  }
-
-  async publish_30166(result){
     if(this.config?.publisher?.kinds?.includes(30166) ){
       const publish30166 = new Publish.Kind30166()  
       await publish30166.one( result )
     }
-  }
-
-  async on_success(result){
-    this.log.debug(`on_success(): ${result.url}`)
-    await this.publish_30066(result)
-    await this.publish_30166(result)
   }
 
   async on_fail(result){
@@ -179,7 +172,8 @@ export class NWWorker {
         delete this.jobs[job.id]
         return this.log.warn(`drainSmart(): url must be string! ${url}: ${typeof url}`)
       }
-      const online = (await this.rcache.relay.get.one(url))?.online === true
+      const $relay = this.rcache.relay.get.one(url)
+      const online = $relay?.online === true
       const expired = await this.isExpired(url, timestring(job.timestamp, "ms"))
       if(!expired && online) return 
       this.log.debug(`drainSmart(): removing expired job: ${url}: online? ${online}, expired? ${this.isExpired(url, timestring(job.timestamp, "ms"))}`)

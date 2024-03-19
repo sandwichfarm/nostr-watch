@@ -6,9 +6,9 @@ import ngeotags from 'nostr-geotags';
  */
 export class Kind10166 extends Publisher {
   constructor() {
-    super();
-    /** @type {number} The kind identifier. */
-    this.kind = 10166;
+    const KIND = 10166;
+    super(KIND);
+    this.kind = KIND;
   }
 
   /**

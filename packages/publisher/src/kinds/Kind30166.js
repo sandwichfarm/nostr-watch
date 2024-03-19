@@ -5,8 +5,9 @@ import { PublisherNocap } from '../Publisher.js'
 
 export class Kind30166 extends PublisherNocap { 
   constructor(){
-    super()
-    this.kind = 30166
+    const KIND =30166
+    super(KIND)
+    this.kind = KIND
     this.discoverable = {tags: ['d', 'n', 'l', 'N', 's', 't', 'R']}
     this.human_readable = false
     this.machine_readable = true
@@ -65,7 +66,7 @@ export class Kind30166 extends PublisherNocap {
       const current = data.ssl.data.valid_from < Date.now() && data.ssl.data.valid_to > Date.now()
       tags.push(['R', current  ? 'ssl' : '!ssl'])
     }
-    else(protocol !== 'wss:') {
+    else if(protocol !== 'wss:') {
       tags.push(['R', '!ssl'])
     }
   

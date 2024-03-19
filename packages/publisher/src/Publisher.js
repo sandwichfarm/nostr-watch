@@ -26,8 +26,8 @@ async function writeObjectToFile(obj) {
 
 export class Publisher { 
 
-  constructor(){
-    this.logger = new Logger('publisher[generic]')
+  constructor(key="generic"){
+    this.logger = new Logger(`publisher[${key}]`)
   }
 
   tpl(){

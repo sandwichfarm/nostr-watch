@@ -2,8 +2,9 @@ import { Publisher } from '../Publisher.js'
 
 export class Kind10002 extends Publisher {
   constructor(){
-    super()
-    this.kind = 10002
+    const KIND = 10002
+    super(KIND)
+    this.kind = KIND
     this.discoverable = { pubkey: true }
     this.human_readable = false
     this.machine_readable = true
@@ -30,5 +31,4 @@ export class Kind10002 extends Publisher {
       relays: event.tags.filter(tag => tag === 'r').map( tag => tag[1] )
     }
   }
-  
 }

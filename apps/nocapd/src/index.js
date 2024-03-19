@@ -62,12 +62,34 @@ const globalHandlers = ($daemon) => {
 
   $daemon.$q.queue.on('error', async (err) => {
     console.error('Queue Error: ', err);
-    gracefulShutdown(err)
+    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
+      const code = err?.code? err.code: '[code undefined!]'
+      gracefulShutdown(code)
+    }
+  })
+
+  $daemon.$q.events.on('error', async (err) => {
+    console.error('QueueEvents Error: ', err);
+    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
+      const code = err?.code? err.code: '[code undefined!]'
+      gracefulShutdown(code)
+    }
   })
 
   $daemon.$q.queue.on('ioredis:close', async (err) => {
     console.error('Queue: ioredis:close: ', err);
-    gracefulShutdown(err)
+    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
+      const code = err?.code? err.code: '[code undefined!]'
+      gracefulShutdown(code)
+    }
+  })
+
+  $daemon.$q.worker.on('error', async (err) => {
+    console.error('Worker Error: ', err);
+    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
+      const code = err?.code? err.code: '[code undefined!]'
+      gracefulShutdown(code)
+    }
   })
 }
 

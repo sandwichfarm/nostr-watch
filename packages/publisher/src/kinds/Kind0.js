@@ -2,8 +2,9 @@ import { Publisher } from '../Publisher.js'
 
 export class Kind0 extends Publisher {
   constructor(){
-    super()
-    this.kind = 0
+    const KIND = 0
+    super(KIND)
+    this.kind = KIND
     this.discoverable = { pubkey: true }
     this.human_readable = false
     this.machine_readable = true

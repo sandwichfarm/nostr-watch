@@ -15,16 +15,14 @@ import { parseRelayNetwork, delay, loadConfig, RedisConnectionDetails } from "@n
 import { NWWorker } from './classes/Worker.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
 
+import migrate from './migrate/index.js'
+
 const PUBKEY = process.env.DAEMON_PUBKEY
 const log = new Logger('@nostrwatch/nocapd')
 
 let rcache
 let config 
 let $q
-// let intervalPopulate
-// let intervalSyncRelays
-// let intervalBugCheck
-// let lastPopulate = 0
 
 const populateQueue = async () => { 
   const resume = await $q.checker.populator() 
@@ -106,33 +104,44 @@ const maybeAnnounce = async () => {
   await announce.publish( conf.relays )
 }
 
-const schedulePopulator = () =>{
+const scheduleSeconds = (name, intervalMs, cb) => {
+  log.info(`${name}: scheduling to fire every ${timestring(intervalMs, "s")} seconds`)
   const rule = new schedule.RecurrenceRule();
-  rule.start = Date.now(); // Set the start time
-  rule.rule = `*/${timestring($q.checker.interval, "s")} * * * * *`; // Set the frequency in seconds
-  return schedule.scheduleJob(rule, async () => { 
-    log.info(chalk.grey.italic(`=== scheduled population check for ${$q.queue.name} every ${timestring($q.checker.interval, 's')} seconds ===`))
+  const _interval = timestring(intervalMs, "s")
+  rule.start = Date.now(); 
+  rule.rule = `*/${_interval} * * * * *`; 
+  return schedule.scheduleJob(rule, async () => await cb())
+}
+
+const schedulePopulator = () =>{
+  const name = "checkQueue()"
+  const intervalMs = $q.checker.interval
+  const job = async () => { 
+    log.info(chalk.grey.italic(`=== scheduled population check for ${$q.queue.name} every ${timestring(intervalMs, "s")} seconds ===`))
     await checkQueue()
-  })
+  }
+  return scheduleSeconds(name, intervalMs, job)
 }
 
 const scheduleSyncRelays = () =>{
+  const name = "syncRelaysIn()"
   if(!config?.nocapd?.seed?.options?.events) return
-  const interval = timestring(config?.nocapd?.seed?.options?.events?.interval, "s") || timestring("1h", "s")
-  log.info(`scheduling syncRelaysIn() every ${interval/60} minutes`)
-  const rule = new schedule.RecurrenceRule();
-  rule.start = Date.now(); // Set the start time
-  rule.rule = `*/${interval} * * * * *`; // Set the frequency in seconds
-  return schedule.scheduleJob(rule, syncRelaysIn )
+  const intervalMs = config.nocapd.seed.options.events.interval
+  log.info(`syncRelaysIn(): scheduling to fire every ${timestring(intervalMs, "s")} seconds`)
+  const job = async () => {
+    await syncRelaysIn() 
+  }
+  return scheduleSeconds(name, intervalMs, job)
 }
 
 const syncRelaysIn = async () => {
     log.debug(`syncRelaysIn()`)
     const syncData = await bootstrap('nocapd')
     log.debug(`syncRelaysIn(): found ${syncData[0].length} *maybe new* relays`)
-    const relays = syncData[0].map(r => { return { url: r, online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
+    const relays = syncData[0].map(r => { return { url: new URL(r), online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     const persisted = await rcache.relay.batch.insertIfNotExists(relays)
-    log.info(`syncRelaysIn(): persisted ${persisted.length} relays`)
+    if(persisted.length === 0) return 0
+    log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
     return persisted
 }
 
@@ -181,9 +190,12 @@ async function gracefulShutdown(signal) {
 }
 
 export const Nocapd = async () => {
+  
+  
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
+  await migrate(rcache)
   await delay(1000)
   await maybeAnnounce()
   await maybeBootstrap()

@@ -389,7 +389,7 @@ export class NWWorker {
       this.log.debug(`getRelays() relay: ${relay.url}: retries()`)
       const retries = await this.retry.getRetries(relay.url);
       this.log.debug(`getRelays() relay: ${relay.url}: isExpired()`)
-      const isExpired = await this.isExpired(relay.url, lastChecked);
+      const isExpired = lastChecked? await this.isExpired(relay.url, lastChecked): true;
       const isOnline = relay?.online === true;
 
       if(isOnline) onlineRelays.push(relay.url);
@@ -451,7 +451,6 @@ export class NWWorker {
   }
 
   async isExpired(url, lastChecked) {
-      if(!lastChecked) this.log.err(`isExpired(): lastChecked is undefined for ${url}`)
       let retries = await this.retry.getRetries(url);
       retries = retries === null? 0: retries
       const expiry = retries > 0 ? this.retry.getExpiry(url) : this.expires;

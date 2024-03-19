@@ -177,7 +177,7 @@ export class NWWorker {
       const url = job.data.relay
       if(typeof url !== 'string') {
         delete this.jobs[job.id]
-        return this.log.debug(`drainSmart(): url must be string! ${url}: ${typeof url}`)
+        return this.log.warn(`drainSmart(): url must be string! ${url}: ${typeof url}`)
       }
       const online = (await this.rcache.relay.get.one(url))?.online === true
       const expired = await this.isExpired(url, timestring(job.timestamp, "ms"))

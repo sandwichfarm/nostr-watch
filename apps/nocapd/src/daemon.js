@@ -176,7 +176,7 @@ const globalHandlers = () => {
 
 async function gracefulShutdown(signal) {
   console.log(`Received ${signal}`);
-  await $q.stop(signal)
+  await stop(signal)
   process.exit(9);
 }
 

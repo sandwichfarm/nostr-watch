@@ -21,17 +21,17 @@ const log = new Logger('@nostrwatch/nocapd')
 let rcache
 let config 
 let $q
-let intervalPopulate
-let intervalSyncRelays
-let intervalBugCheck
-let lastPopulate = 0
+// let intervalPopulate
+// let intervalSyncRelays
+// let intervalBugCheck
+// let lastPopulate = 0
 
 const populateQueue = async () => { 
   const resume = await $q.checker.populator() 
   await delay(2000)
   await $q.checker.resetProgressCounts()
   resume()
-  lastPopulate = Date.now()
+  // lastPopulate = Date.now()
 }
 
 const checkQueue = async () => {
@@ -43,8 +43,9 @@ const checkQueue = async () => {
 }
 
 const setIntervals = () => {
-  intervalSyncRelays = setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
+  // intervalSyncRelays = setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
   schedulePopulator()
+  scheduleSyncRelays()
   // intervalPopulate = setInterval( checkQueue, timestring( config?.nocapd?.checks?.options?.interval, "ms" ))
 }
 
@@ -70,16 +71,16 @@ const initWorker = async () => {
   return $q
 }
 
-const stop = async() => {
+const stop = async(signal) => {
+  log.info(`Received ${signal}`);
   log.info(`Gracefully shutting down...`)
   $q.worker.hard_stop = true
-
-  log.debug(`shutdown progress: $q.worker.pause()`)
-  await $q.worker.pause()
-  // log.debug(`shutdown progress: $q.worker.stop()`)
-  // await $q.worker.stop()
-  log.debug(`shutdown progress: $q.queue.drain()`)
-  await $q.queue.drain()
+  if(signal !== 'EAI_AGAIN'){
+    log.debug(`shutdown progress: $q.worker.pause()`)
+    await $q.worker.pause()
+    log.debug(`shutdown progress: $q.queue.drain()`)
+    await $q.queue.drain()
+  }
   log.debug(`shutdown progress: await rcache.$.close()`)
   await rcache.$.close()
   log.debug(`shutdown progress: complete!`)
@@ -149,48 +150,35 @@ const maybeBootstrap = async () => {
   }
 }
 
-
-
-// export const Nocapd = async () => {
-//   const lmdbConnected = new Deferred()
-
-//   const lmdbRetry = async (e) => {
-//     log.warn(`lmdb is in a mood, retrying in 2 seconds. Here's its' error btw: ${e}`)
-//     await delay(2000)
-//     await lmdbConnect()
-//   }
+const globalHandlers = () => {
+  const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
   
-//   const lmdbConnect = async () => {
-//     await relaycache(process.env.NWCACHE_PATH || './.lmdb')
-//       .then( lmdbConnected.resolve )
-//       .catch( lmdbRetry )
-//   }
+  signals.forEach(signal => {
+    process.on(signal, async () => await gracefulShutdown(signal));
+  });
 
-//   const init = async () =>{
-//     header()
-//     config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
-//     await delay(2000)
-//     lmdbConnect()
-//     rcache = await lmdbConnected.promise
-//     await delay(1000)
-//     await maybeAnnounce()
-//     await maybeBootstrap()
-//     $q = await initWorker()
-//     return {
-//       $q,
-//       stop
-//     }
-//   }
-
-//   try {
-//     init()
-//   }
-//   catch(e){
-//     await delay(2000)
-//     init()
-//   }
+  process.on('uncaughtException', async (error) => {
+    console.error('Uncaught Exception:', error);
+  });
   
-// }
+  process.on('unhandledRejection', async (reason, promise) => {
+    console.error('Unhandled Rejection:', promise.catch(console.error));
+  });  
+
+  $q.worker.on('error', async (err) => {
+    console.error('Worker Error: ', err);
+    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
+      const code = err?.code? err.code: '[code undefined!]'
+      gracefulShutdown(code)
+    }
+  })
+}
+
+async function gracefulShutdown(signal) {
+  console.log(`Received ${signal}`);
+  await $q.stop(signal)
+  process.exit(9);
+}
 
 export const Nocapd = async () => {
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
@@ -200,6 +188,7 @@ export const Nocapd = async () => {
   await maybeAnnounce()
   await maybeBootstrap()
   $q = await initWorker()
+  globalHandlers()
   return {
     $q,
     stop

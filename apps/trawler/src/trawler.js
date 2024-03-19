@@ -1,5 +1,5 @@
 import "websocket-polyfill";
-import { Blob } from 'buffer';
+// import { Blob } from 'buffer';
 
 import { NostrFetcher } from 'nostr-fetch';
 import { SimplePool } from 'nostr-tools';

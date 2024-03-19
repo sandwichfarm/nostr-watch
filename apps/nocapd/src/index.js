@@ -45,60 +45,6 @@ const tracePromises = async () => {
   }
 }
 
-const globalHandlers = ($daemon) => {
-  const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
-  
-  signals.forEach(signal => {
-    process.on(signal, async () => await gracefulShutdown(signal));
-  });
-
-  process.on('uncaughtException', async (error) => {
-    console.error('Uncaught Exception:', error);
-  });
-  
-  process.on('unhandledRejection', async (reason, promise) => {
-    console.error('Unhandled Rejection:', error);
-  });  
-
-  $daemon.$q.queue.on('error', async (err) => {
-    console.error('Queue Error: ', err);
-    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
-      const code = err?.code? err.code: '[code undefined!]'
-      gracefulShutdown(code)
-    }
-  })
-
-  $daemon.$q.events.on('error', async (err) => {
-    console.error('QueueEvents Error: ', err);
-    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
-      const code = err?.code? err.code: '[code undefined!]'
-      gracefulShutdown(code)
-    }
-  })
-
-  $daemon.$q.queue.on('ioredis:close', async (err) => {
-    console.error('Queue: ioredis:close: ', err);
-    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
-      const code = err?.code? err.code: '[code undefined!]'
-      gracefulShutdown(code)
-    }
-  })
-
-  $daemon.$q.worker.on('error', async (err) => {
-    console.error('Worker Error: ', err);
-    if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
-      const code = err?.code? err.code: '[code undefined!]'
-      gracefulShutdown(code)
-    }
-  })
-}
-
-async function gracefulShutdown(signal) {
-  console.log(`Received ${signal}, closing application...`);
-  await $d.stop()
-  process.exit(9);
-}
-
 const showDependencies = async () => {
   const require = createRequire(import.meta.url);
   const dependencies = require('../package.json').dependencies;
@@ -129,7 +75,6 @@ const getPackageLatestVersion = async (packageName) => {
 };
 
 const $d = await run()
-globalHandlers($d)
 
 
 

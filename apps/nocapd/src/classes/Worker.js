@@ -104,6 +104,11 @@ export class NWWorker {
     }
   }
 
+  async on_error(job, err){
+    this.log.debug(`on_error(): ${job.id}: ${err}`)
+    await this.on_fail( result )
+  }
+
   async on_completed(job, rvalue){
     this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
     const { result } = rvalue
@@ -457,6 +462,7 @@ export class NWWorker {
 
 const evaluateMaxRelays = (evaluate, relays) => {
   try {
+    relays;
     return parseInt( eval( evaluate ) )
   }
   catch(e){

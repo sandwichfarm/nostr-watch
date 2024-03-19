@@ -68,7 +68,7 @@ export const relaysFromEvents = async (opts) => {
   const fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool));
 
   const kinds = [ 30066 ]
-  const authors = opts.options.events.publisherPubKeys
+  const authors = opts.options.events.pubkeys
   const fetchFromRelays = opts.options.events.relays
 
   const events = await fetcher.fetchAllEvents(

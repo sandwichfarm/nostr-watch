@@ -15,8 +15,21 @@ const {trawlQueue, trawlWorker} = await configureQueues()
 const logger = new Logger('daemon')
 let busy = false
 
+const header = () => {
+  console.log(chalk.bold(`
+
+@nostrwatch/
+ dMMMMMMP dMMMMb  .aMMMb  dMP dMP dMP dMP     dMMMMMP dMMMMb
+   dMP   dMP.dMP dMP"dMP dMP dMP dMP dMP     dMP     dMP.dMP
+  dMP   dMMMMK" dMMMMMP dMP dMP dMP dMP     dMMMP   dMMMMK" 
+ dMP   dMP"AMF dMP dMP dMP.dMP.dMP dMP     dMP     dMP"AMF  
+dMP   dMP dMP dMP dMP  VMMMPVMMP" dMMMMMP dMMMMMP dMP dMP   
+
+`));
+}
+
 const populateTrawler = async (relays) => {
-await trawlWorker.pause()
+  await trawlWorker.pause()
   const relaysPerChunk = config?.trawler?.trawl_concurrent_relays || 50;
   const batches = chunkArray(relays, relaysPerChunk)
   batches.forEach( (batch, index) => {
@@ -40,19 +53,6 @@ const maybeCheckRelays = async () => {
 const schedules = () => {
   const checkEveryMs = config?.trawler?.check?.interval? parseInt(eval(config.trawler.check.interval)): 12*60*60*1000
   schedule.scheduleJob( msToCronTime(checkEveryMs), maybeCheckRelays )
-}
-
-const header = () => {
-  console.log(chalk.bold(`
-
-@nostrwatch/
- dMMMMMMP dMMMMb  .aMMMb  dMP dMP dMP dMP     dMMMMMP dMMMMb
-   dMP   dMP.dMP dMP"dMP dMP dMP dMP dMP     dMP     dMP.dMP
-  dMP   dMMMMK" dMMMMMP dMP dMP dMP dMP     dMMMP   dMMMMK" 
- dMP   dMP"AMF dMP dMP dMP.dMP.dMP dMP     dMP     dMP"AMF  
-dMP   dMP dMP dMP dMP  VMMMPVMMP" dMMMMMP dMMMMMP dMP dMP   
-
-`));
 }
 
 

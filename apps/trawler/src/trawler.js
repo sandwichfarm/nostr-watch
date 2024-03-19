@@ -107,11 +107,16 @@ export const trawl = async function($job){
         )
         for await (const ev of it) {
           lastEvent = setLastEvent(ev, since, lastEvent)
-          if( await noteInCache(ev, relay, lastEvent) ) continue 
+          if( await noteInCache(ev, relay, lastEvent) ) {
+            console.log('noteInCache() true')
+            continue 
+          }
           const relayList = await relaysFromRelayList(ev)
+
           const cacheIds = addRelaysToCache(relayList)
           if(relayList === false) continue
           listCount++
+
           deferPersist[ev.id] = async () => await rcache.note.set.one(ev)
           const roundtrip = { 
             requestedBy: process.env.DAEMON_PUBKEY,
@@ -134,6 +139,7 @@ export const trawl = async function($job){
     }))
   })
   await Promise.allSettled(Object.values(promises))
+  console.log(`relays persisted: ${[...relaysPersisted]}`)
   return [...relaysPersisted]
 }
 

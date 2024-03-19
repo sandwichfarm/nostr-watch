@@ -42,7 +42,7 @@ export const syncRelayIn = async (data) => {
 }
 
 export const syncRelaysIn = async (data) => {
-  if(config?.trawler?.sync.relays?.in?.queue){
+  if(syncConfig?.relays?.in?.queue){
     if(!(data.payload instanceof Array)) throw new Error("syncRelaysIn(): data.payload must be an array, not an object, otherwise use syncRelayIn() if trying to sync a single relay")
     await $SyncQueue.add('relays-get', data, { priority: 1, jobId: `SyncIn@${process.env.DAEMON_PUBKEY}:${hash(data.payload)}` })
     //watch for completed on jobid, populate cache

@@ -1,0 +1,1 @@
+//manages active cache instance from queue plugin

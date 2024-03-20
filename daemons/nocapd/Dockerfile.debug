@@ -1,0 +1,7 @@
+# Use an official Node.js runtime as a parent image, based on Alpine
+FROM node:20-alpine
+RUN mkdir /app
+WORKDIR /app
+COPY . .
+RUN yarn install
+CMD NODE_ENV=development node --trace-warnings src/index.js

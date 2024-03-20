@@ -121,7 +121,6 @@ export class NWWorker {
     await this.after_completed( result, fail )
   }
 
-
   async on_success(result){
     this.log.debug(`on_success(): ${result.url}`)
     if(this.config?.publisher?.kinds?.includes(30066) ){
@@ -141,9 +140,7 @@ export class NWWorker {
   async after_completed(result, error=false){
     this.log.debug(`after_completed(): ${result.url}`)
     await this.updateRelayCache( { ...result } )      
-    await delay(100)
     await this.retry.setRetries( result.url, !error )
-    await delay(100)
     await this.setLastChecked( result.url, Date.now() )
   }
 
@@ -182,7 +179,7 @@ export class NWWorker {
     })
     await Promise.all(expiredJobs).catch(e => this.log.debug(`drainSmart(): Promise.all(expiredJobs): Error: `, e))
   }
-
+  
   async addRelayJobs(relays){
     this.log.debug(`addRelayJobs(): for ${relays.length} relays`)
     await this.drainSmart()

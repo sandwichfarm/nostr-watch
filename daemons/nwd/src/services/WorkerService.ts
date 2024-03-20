@@ -1,1 +1,0 @@
-//manages active cache instance(s) from worker plugin(s)

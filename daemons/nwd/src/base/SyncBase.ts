@@ -9,6 +9,6 @@ class SyncBase extends PluginBase {
     this.description = 'SyncBase'
     this.author = 'Sandwich'
     this.limit = -1
-    this.manager.activate(this)
+
   }
 }

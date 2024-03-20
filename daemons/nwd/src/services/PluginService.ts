@@ -51,7 +51,6 @@ export class PluginService {
     return this._pluginTypeCounts
   }
 
-
   setTypeCount(type: string, count: number){
     this._pluginTypeCounts[type] = count
   }

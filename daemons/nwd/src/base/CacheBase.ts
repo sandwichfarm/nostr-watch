@@ -1,15 +1,33 @@
-import { PluginBase } from './PluginBase'
+import { PluginBase, PluginDataAccess } from './PluginBase'
 import { PluginService } from '../services/PluginService'
+import { IdentityService } from '../services/IdentityService'
+
+
 
 export class CacheBase extends PluginBase {
   
   protected static _limit: number = 1;
+  protected static _type: string = "cache";
+
+  private static _access: PluginDataAccess = { "identity": [ "pubkey" ] };
   // protected static _limit: number;
   // protected static _name: string;
   // protected static _version: string;
 
-  constructor($PluginService: PluginService) {
-    super($PluginService)
+  constructor($PluginService: PluginService, $IdentityService: IdentityService) {
+    super($PluginService, $IdentityService)
+  }
+
+  private _id(key: string): string{
+    return `${this.identity.pubkey.length(12)}:${CacheBase.type}:${key}`
+  }
+
+  public getLastCache(key: string): any {
+    return this._getLastCache(key)
+  }
+
+  public setLastCache(key: string, value: any) {
+    this._setLastCache(key, value)
   }
 
   public relayExists(relayUrl: string): boolean {
@@ -64,4 +82,7 @@ export class CacheBase extends PluginBase {
   private _relayPatch(relay: string, value: any): boolean {}
   private _relayDelete(): boolean {}
   private _relayDeleteIfExists(relay: string): boolean {}
+
+  private _getLastCache(key: string): any {}
+  private _setLastCache(key: string, value: any): any {}
 }

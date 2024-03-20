@@ -1,0 +1,39 @@
+daemon:
+  meta: 
+    slug: 
+    profile: 
+      name: 
+      image:
+      picture:
+      about:
+      nip05:
+      lud06: 
+      lud16: 
+    operator:
+plugins:
+  cache: 
+    lmdb: 
+      stuff: 
+  worker: 
+    trawler: 
+      interval: 
+      expires: 
+      backoff: 
+  queue: 
+    bullmq: 
+  sync: 
+    interval: 
+      in: 
+      out: 
+    expires: 
+      in: 
+      out: 
+    events: 
+      in: 
+        interval: #override
+        pubkeys: 
+          - "" 
+      out:   
+    remoteCache: 
+      in:
+      out: 

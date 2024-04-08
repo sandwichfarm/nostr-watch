@@ -9,7 +9,7 @@ import { fetch } from 'cross-fetch'
     let endpoint 
     const iparr = this.$.results.get('dns')?.data.ipv4
     const ip = iparr[iparr.length-1]
-    const apiKey = process?.env?.IP_API_KEY? process.env.IP_API_KEY: this.$.config.adapterOptions.geo.apiKey
+    const apiKey = typeof process !== 'undefined' && process?.env?.IP_API_KEY? process.env.IP_API_KEY: this.$.config.adapterOptions.geo.apiKey
     //todo, enable override via options
     const fields = 'proxy,mobile,timezone,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,isp,as,asname,query'
     if(typeof ip !== 'string')

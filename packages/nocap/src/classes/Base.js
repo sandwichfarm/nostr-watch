@@ -172,7 +172,6 @@ export default class Base {
     this.defaultAdapters()
     await this.start(key).catch( err => this.logger.debug(err) )
     const result = await this.promises.get(key).promise
-    // process.exit()
     this.logger.debug(`${key}: check(): resolved`)
     if(result?.[key]?.status === "error" ) {
       this.on_check_error( key, result )

@@ -9,7 +9,7 @@
     "deploy:nocapd@amsterdam": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/amsterdam",
     "deploy:nocapd@newyork": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/newyork",
     "deploy:nocapd@johannesburg": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/johannesburg",
-    "deploy:nocapd@johannesburg": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/frankfurt",
+    "deploy:nocapd@saopaulo": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/saopaulo",
     "nukecache@all": "ansible-playbook .ansible/nocapd/nuke-cache.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney"
   },
   "packageManager": "yarn@1.22.23^",

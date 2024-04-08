@@ -75,7 +75,7 @@ export class AnnounceMonitor {
   }
 
   static formatChecks(checks: Array<string>): Array<string> {
-    if(checks.length === 1 && checks[0] === 'all')
+    if(checks.includes('all'))
       return ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
     return checks
   }

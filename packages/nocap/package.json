@@ -9,7 +9,7 @@
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "@nostrwatch/logger": "^0.0.1",
+    "@nostrwatch/logger": "^0.0.5",
     "@nostrwatch/nocap-every-adapter-default": "^1.2.0",
     "@nostrwatch/utils": "^0.0.3",
     "fetch-h2": "3.0.2",

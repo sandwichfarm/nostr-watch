@@ -5,11 +5,23 @@ import { fetch } from 'cross-fetch'
     this.$ = parent
   }
 
+  isNodeEnvironment() {
+    return typeof global !== 'undefined' && global?.process?.versions?.node;
+  }
+
+  getApiKey() {
+    if (this.isNodeEnvironment()) {
+      return process.env.IP_API_KEY ? process.env.IP_API_KEY : this.$.config.adapterOptions.geo.apiKey;
+    } else {
+      return this.$.config.adapterOptions.geo.apiKey;
+    }
+  }
+
   async check_geo(){ 
     let endpoint 
     const iparr = this.$.results.get('dns')?.data.ipv4
     const ip = iparr[iparr.length-1]
-    const apiKey = typeof process !== 'undefined' && process?.env?.IP_API_KEY? process.env.IP_API_KEY: this.$.config.adapterOptions.geo.apiKey
+    const apiKey = this.getApiKey();
     //todo, enable override via options
     const fields = 'proxy,mobile,timezone,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,isp,as,asname,query'
     if(typeof ip !== 'string')

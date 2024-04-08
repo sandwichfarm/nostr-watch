@@ -1,6 +1,5 @@
 import 'dotenv/config'
 import { appendFile } from 'fs/promises'
-import config from './config.js'
 import createLogger from 'logging';
 
 //wrapper for logging: https://www.npmjs.com/package/logging
@@ -8,7 +7,7 @@ export default class Logger {
 
   constructor(name, log_level="INFO", split_logs=false) {
     this.logger = createLogger?.default? createLogger.default(name): createLogger(name)
-    this.log_level = new String(config?.log_level? config.log_level : log_level).toUpperCase();
+    this.log_level = (log_level || 'info').toUpperCase();
     this.split_logs = split_logs || false
   }
 

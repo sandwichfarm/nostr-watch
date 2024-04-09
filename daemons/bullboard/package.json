@@ -1,0 +1,15 @@
+{
+  "name": "@nostrwatch/bullboard",
+  "version": "0.0.1",
+  "main": "index.js",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@bull-board/api": "5.15.1",
+    "@bull-board/express": "5.15.1",
+    "express": "4.18.3"
+  },
+  "scripts": {
+    "launch": "node index.js"
+  }
+}

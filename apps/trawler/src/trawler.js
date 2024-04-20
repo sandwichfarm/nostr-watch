@@ -101,7 +101,7 @@ export const trawl = async function($job){
         
         const it = await fetcher.allEventsIterator(
           [ relay ],
-          { kinds: [ 2, 10002 ] },
+          { kinds: [ 10002 ] },
           { since },
           { sort: true }
         )

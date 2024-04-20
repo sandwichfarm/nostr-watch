@@ -1,3 +1,4 @@
+import { parse } from 'dotenv'
 import { normalizeRelays } from './sanitizers.js'
 
 export const parseRelayList = (note) => {
@@ -8,6 +9,8 @@ export const parseRelayList = (note) => {
     parsed = parseRelayListFromKind3(note)
   if(note.kind === 10002)
     parsed = parseRelayListFromKind10002(note)
+  if(note.kind === 30002)
+    parsed = parseRelayListFromKind30002(note)
 
   return normalizeRelays(parsed)
 }
@@ -31,6 +34,16 @@ export const parseRelayListFromKind10002 = (note) => {
   try { 
     dirtyRelayList = note?.tags
       .filter( t => t[0] === 'r' )
+      .map( t => t[1] )
+  } catch(e) {""}
+  return dirtyRelayList ? dirtyRelayList : [] 
+}
+
+export const parseRelayListFromKind30002 = (note) => {
+  let dirtyRelayList
+  try { 
+    dirtyRelayList = note?.tags
+      .filter( t => t[0] === 'relay' )
       .map( t => t[1] )
   } catch(e) {""}
   return dirtyRelayList ? dirtyRelayList : [] 

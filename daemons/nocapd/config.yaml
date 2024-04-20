@@ -1,0 +1,79 @@
+monitor: 
+  slug: budapest
+  owner: "e771af0b05c8e95fcdf6feb3500544d2fb1ccd384788e9f490bb3ee28e8ed66f"
+  info:
+    name: Test Monitor
+    about: NIP-66 Network Monitor operating out of my living room
+    nip05: no-reply@nostr.watch 
+    # lud06: 
+    # lud16: 
+    # website: 
+    # zapService: 
+  geo:
+    cityName: Budapest
+    country: Hungary
+    countryCode: HU
+    lat: 47.4979
+    lon: 19.0402
+    regionCode: BU
+    regionName: Budapest
+    continentName: Europe
+
+publisher: 
+  to_relays: 
+    - 'wss://history.nostr.watch'
+  kinds:
+    - 30166
+    - 30066
+
+nocapd: 
+  loglevel: info 
+  networks: 
+    - clearnet
+  retry: 
+    expiry: [
+      { max: 3, delay: 1000 * 60 * 1},
+      { max: 5, delay: 1000 * 60 * 20},
+      { max: 7, delay: 1000 * 60 * 60 * 1},
+      { max: 11, delay: 1000 * 60 * 60 * 3},
+      { max: 15, delay: 1000 * 60 * 60 * 6 },
+      { max: 22, delay: 1000 * 60 * 60 * 24 },
+      { max: 107, delay: 1000 * 60 * 60 * 24 * 7 }
+    ]
+
+  seed: 
+    sources:
+      - events 
+      - api
+    options:
+        events:
+          interval: 15m
+          relays: 
+            - 'wss://history.nostr.watch'                                         
+          pubkeys:
+            - '6cd206fb5517a77497b53a4c64219fd8b5bce845231ecd271e74a96b03afdcda'  
+    remotes:
+      rest_api: 'https://api.nostr.watch/v1'
+  checks: 
+    enabled:
+      - all
+    options: 
+      enabled: true 
+      expires: 1h
+      interval: 15s
+      priority: 10
+      timeout: {
+        open: 15000,
+        read: 15000,
+        write: 15000,
+        dns: 3000,
+        geo: 3000,
+        info: 6000,
+        ssl: 3000,
+      }
+      max: "Math.ceil(relays.length/60)"
+
+  bullmq:
+    type: remote      # is redis backend for bullmq local or remote? If local, 'sync' via 'bullmq' will not work. 
+    worker: 
+      concurrency: 8

@@ -1,0 +1,9 @@
+{
+  "name": "@nostrwatch/qmonitor",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@nostr-dev-kit/ndk": "2.5.0"
+  }
+}

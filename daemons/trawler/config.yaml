@@ -1,0 +1,51 @@
+trawler: 
+  trawl_concurrent_relays: 1
+  check: 
+    enabled: false
+    max: 1000
+    timeout: 5000
+    expiry: 24*60*60*1000
+    interval: 4*60*60*1000
+  sync:
+    relays:
+      out: 
+        events: 
+          properties: 
+           - url
+  seed: 
+    sources:
+      - events 
+    options:
+        events:
+          interval: 15m
+          relays: 
+            - 'wss://history.nostr.watch'                                         
+          pubkeys:
+            - '6cd206fb5517a77497b53a4c64219fd8b5bce845231ecd271e74a96b03afdcda' 
+publisher: 
+  to_relays: 
+    - 'wss://history.nostr.watch'
+
+
+# config?.trawler?.trawl_concurrent_relays
+
+# config?.trawler?.check?.max
+# config?.trawler?.check?.timeout
+# config?.trawler?.check?.expiry
+# config?.trawler?.check?.interval
+
+# config?.trawler?.check?.enabled
+
+# config?.trawler?.publisher?.expiry
+
+# syncConfig?.relays?.out?.queue
+
+# config?.trawler?.sync
+# config?.trawler?.sync?.relays?.out?.queue
+# config?.trawler?.sync?.relays?.out?.events
+# config?.trawler?.sync?.relays?.in?.events
+# config?.trawler?.sync?.relays?.in?.queue
+# config?.trawler?.sync?.
+# config?.trawler?.sync?.
+# config?.trawler?.sync?.
+# config?.trawler?.sync?.

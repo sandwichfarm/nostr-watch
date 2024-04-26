@@ -1,4 +1,9 @@
-export const random = (length) => {
+/**
+ * Generates a random string of a specified length using alphanumeric characters.
+ * @param length The desired length of the random string.
+ * @returns A random string composed of uppercase and lowercase letters and digits.
+ */
+export const random = (length: number): string => {
   let result = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const charactersLength = characters.length;
@@ -9,4 +14,3 @@ export const random = (length) => {
   }
   return result;
 }
-

@@ -47,13 +47,13 @@ export default class Logger {
   }
   
   async write(message){
-    const dir = config?.write_logs
-    if(!dir?.length) return
-    let filepath
-    if(this.name && this.split_logs)
-      filepath = `${dir}/${id}.log`
-    else 
-      filepath = `${dir}/debug.log`
-    await appendFile(filepath, `${this.log_level}: ${message}\n`)
+    // const dir = config?.write_logs
+    // if(!dir?.length) return
+    // let filepath
+    // if(this.name && this.split_logs)
+    //   filepath = `${dir}/${id}.log`
+    // else 
+    //   filepath = `${dir}/debug.log`
+    // await appendFile(filepath, `${this.log_level}: ${message}\n`)
   }
 }

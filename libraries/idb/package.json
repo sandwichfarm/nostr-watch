@@ -1,0 +1,57 @@
+{
+  "name": "@nostrwatch/idb",
+  "version": "0.0.1",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@nostr-dev-kit/ndk": "2.8.2",
+    "@nostrwatch/kit": "0.0.1",
+    "dexie": "4.0.8",
+    "dexie-observable": "4.0.1-beta.13",
+    "dexie-syncable": "4.0.1-beta.13",
+    "json-stringify-deterministic": "1.0.12",
+    "ngeohash": "0.6.3",
+    "object-code": "1.3.3",
+    "object-mapper": "6.2.0",
+    "p-queue": "8.0.1",
+    "vite-plugin-node-polyfills": "0.22.0"
+  },
+  "devDependencies": {
+    "@types/dexie": "1.3.1",
+    "@types/ngeohash": "0.6.8",
+    "@types/node": "20.14.8",
+    "@types/object-mapper": "6.2.2",
+    "@vitest/coverage-v8": "1.6.0",
+    "@vitest/ui": "1.6.0",
+    "http-server": "14.1.1",
+    "rimraf": "5.0.8",
+    "tsdoc": "0.0.4",
+    "tsx": "4.16.2",
+    "typedoc": "0.26.2",
+    "typedoc-plugin-ensure-internal": "https://github.com/deap82/typedoc-plugin-ensure-internal",
+    "typescript": "5.5.2",
+    "vite": "5.3.1",
+    "vite-tsconfig-paths": "4.3.2",
+    "vitest": "1.6.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test-ui": "vitest --ui --coverage.enabled=true",
+    "start": "node dist/app.js",
+    "dev": "tsc-watch --onSuccess 'node dist/app.js'",
+    "lint": "eslint . --ext .ts",
+    "coverage": "vitest run --reporter=junit --coverage.reporter=json-summary --coverage.enabled=true",
+    "docs": "npx typedoc src/index.ts --out ./docs --ignoreCompilerErrors --plugin typedoc-plugin-ensure-internal",
+    "serve-docs": "http-server ./docs",
+    "clean": "rimraf dist"
+  },
+  "files": [
+    "README.md",
+    "dist",
+    "src",
+    "tsconfig.json",
+    ".yalc"
+  ]
+}

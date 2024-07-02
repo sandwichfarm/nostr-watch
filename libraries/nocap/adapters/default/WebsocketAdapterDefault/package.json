@@ -1,0 +1,11 @@
+{
+  "name": "@nostrwatch/nocap-websocket-adapter-default",
+  "version": "1.3.0",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "websocket-polyfill": "^0.0.3",
+    "ws": "8.18.0"
+  }
+}

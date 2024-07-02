@@ -1,0 +1,11 @@
+{
+	"/": [],
+	"/relays/by/country/[countryCode]": [],
+	"/relays/by/follows/[pubkey]": [],
+	"/relays/by/monitor/[monitorPubkey]": [],
+	"/relays/by/nip/[nip]": [],
+	"/relays/by/operator-pubkey/[pubkey]": [],
+	"/relays/by/software/[software]": [],
+	"/relay/[protocol]/[...relay]": [],
+	"/stream": []
+}

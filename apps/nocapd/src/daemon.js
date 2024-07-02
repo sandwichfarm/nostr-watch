@@ -1,3 +1,5 @@
+import "websocket-polyfill";
+
 import schedule from 'node-schedule'
 import Deferred from 'promise-deferred'
 
@@ -73,12 +75,31 @@ const stop = async(signal) => {
   log.info(`Received ${signal}`);
   log.info(`Gracefully shutting down...`)
   $q.worker.hard_stop = true
-  if(signal !== 'EAI_AGAIN'){
-    log.debug(`shutdown progress: $q.worker.pause()`)
-    await $q.worker.pause()
-    log.debug(`shutdown progress: $q.queue.drain()`)
-    await $q.queue.drain()
+  log.info(`shutdown progress: schedule.gracefulShutdown()`)
+  schedule.gracefulShutdown()
+  log.info(`shutdown progress: $q.worker.pause()`)
+  $q.worker.pause()
+  log.info(`shutdown progress: $q.queue.pause()`)
+  $q.queue.pause()
+  log.info(`shutdown progress: $q.queue.drain()`)
+  await $q.queue.drain()
+  log.info(`shutdown progress: checking active jobs`)
+  const {active:numActive} = await $q.queue.getJobCounts('active')
+  if(numActive > 0) {
+    log.info(`shutdown progress: ${numActive} active jobs`)
+    await new Promise( resolve => {
+      $q.queue.on('drained', resolve)
+    })
+    log.info(`shutdown progress: no more jobs`)
   }
+  log.info(`shutdown progress: $q.queue.obliterate()`)
+  await $q.queue.obliterate()
+  // if(signal !== 'EAI_AGAIN'){
+
+  // }
+  // else {
+
+  // }
   log.debug(`shutdown progress: await rcache.$.close()`)
   await rcache.$.close()
   log.debug(`shutdown progress: complete!`)
@@ -124,7 +145,7 @@ const schedulePopulator = () =>{
 }
 
 const scheduleSyncRelays = () =>{
-  const name = "syncRelaysIn()"
+  const name = "scheduleSyncRelays()"
   if(!config?.nocapd?.seed?.options?.events) return
   const intervalMs = config.nocapd.seed.options.events.interval
   log.info(`syncRelaysIn(): scheduling to fire every ${timestring(intervalMs, "s")} seconds`)
@@ -190,14 +211,12 @@ async function gracefulShutdown(signal) {
 }
 
 export const Nocapd = async () => {
-  
-  
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
   await migrate(rcache)
   await delay(1000)
-  await maybeAnnounce()
+  // await maybeAnnounce()
   await maybeBootstrap()
   $q = await initWorker()
   globalHandlers()

@@ -1,0 +1,7 @@
+node_modules
+.env 
+.secrets
+.yalc
+yalc.lock
+dist
+docs

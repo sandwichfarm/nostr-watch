@@ -756,7 +756,6 @@ export default class Base {
   
   }
 
-
   /**
    * handle_on
    * Nostr handler called by Base proxy-handler

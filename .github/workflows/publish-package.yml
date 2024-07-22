@@ -58,6 +58,13 @@ jobs:
         with:
           node-version: ${{ matrix.nodeVersion }}
 
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Bootstrap Packages
+        run: yarn workspaces run bootstrap
+        if: github.workspace == 'true'
+
       - name: Find Package
         id: find_package
         run: |

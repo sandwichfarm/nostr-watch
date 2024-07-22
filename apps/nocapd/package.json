@@ -8,7 +8,7 @@
     "@nostr-fetch/adapter-nostr-tools": "0.14.1",
     "@nostrwatch/announce": "^0.1.0",
     "@nostrwatch/controlflow": "^0.1.0",
-    "@nostrwatch/logger": "^0.0.5",
+    "@nostrwatch/logger": "^0.0.6",
     "@nostrwatch/nocap": "^0.5.0",
     "@nostrwatch/nocap-every-adapter-default": "1.3.0",
     "@nostrwatch/nwcache": "^0.1.2",

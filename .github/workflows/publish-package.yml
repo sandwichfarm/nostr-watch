@@ -35,6 +35,8 @@ jobs:
             nodeVersion: '20'
           - package: 'nocap-websocket-adapter-default'
             nodeVersion: '20'
+          - package: 'nocap-websocket-browser-adapter-default'
+            nodeVersion: '20'
           - package: 'nocap-info-adapter-default'
             nodeVersion: '20'
           - package: 'nocap-dns-adapter-default'

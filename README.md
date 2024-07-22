@@ -1,67 +1,31 @@
 > @nostrwatch is in heavy development, everything below is presently early alpha. Legacy nostrwatch is only in maintenance mode and will only be edited to keep the site running smooth-ish until it can be fully replaced. 
 
 # @nostrwatch 
-A monorepo with packages consisting of modules and daemons for tracking various relay datapoints. All packages are loosely coupled enabling independent, full-stack or hybrid implementations
+nostr.watch discovers, monitors and indexes nostr relays, and then publishes NIP-66 events to nostr.relays. The stack a number of packages to make it work, some universally useful, and some not. 
 
-**nostrwatch is an OpenSats grant recipient**
+**nostrwatch is an [OpenSats](https://opensats.org) grant recipient**
 
-## Packages
+# Status 
+Presently reworking many parts of the stack to make it easier to maintain, contribute towards and use. 
 
-```
-alpha legend
-------------
-+ = stable
-$ = heavy development
-@ = light development
-% = very early stage
-~ = experimentation stage, prototyping
-^ = porting from legacy, pushed when buggy but bootable
-? = not started, research phase
-! = refactoring
-```
+- Trying to DRY everything up as much as possible. 
+- Refactor the daemons, eliminate ugly patterns from a bad decision and use NDK for event construction/publishing. 
+- As fast as `nwcache` is, it's a total pain, the cache is going to be simplified so it works as a `kit` adapter.
 
-### Apps 
-- [**`gui-web`**](packages/gui-web) `[?]`: Web app for monitoring relays. Has two modes, first one leverages data propagated by daemons to history relay(s) to seed the local dataset and `nocap` for client-side processing. Consumes existing packages by using an `lmdb` adapter for `IndexedDb` in the browser. Will be rewritten from the ground up.
-- [**`status`**](packages/status) `[?]`: Status daemon for monitors; watches for their output and detects downtime. 
-- _`...TBA`_
+# Stack
 
-### Modules 
-- [**`nocap`**](packages/nocap) `[$]`: Successor to `nostrwatch-js`, an extensible module for tracking various datapoints on relays.
-- [**`publisher`**](packages/publisher) `[$]`: A module and daemonn that standardizes @nostrwatch events for data propagation via relays.
-- _`...TBA`_
+## daemons 
+- **trawler** - finds new relays to monitor
+- **nocapd** - monitors relays and publishes NIP-66 events
 
+## gui
+- **nostr.watch** - early stages
 
-### Utilities
-- [**`utils`**](packages/utils) `[%]`: General utilities and shared stateless functionality. 
-- [**`logger`**](packages/logger) `[+]`: A wrapper for `logging` implemented by deamons.
+## libraries 
+- **nocap** - Runs basic checks on relays.
+- **kit** - Attempts to simplify the process of aggregating NIP-66 events (overkill for general use!)
+- **idb** - Purpose built IDB for more advanced NIP-66 usage (overkill for general use!)
 
-### Daemons 
-- [**`trawler`**](packages/trawler) `[$]`: A daemon with the single purpose of collating, sanitizing and basic classification of relays. Daemon can leverage `rest-api`.
-- [**`nocapd`**](packages/nocapd) `[$]`: A daemon that persistently monitors relays and produces a rich dataset. Daemon can leverage `rest-api`.
-- `...TBA`
-
-### Cache 
-- [**`nwcache`**](packages/relaydb) `[@]`: An interface for `lmdb` which is used as a processing cache. 
-
-### Templates 
-- [**`history-relay`**](packages/history-relay) `[?]`: A few configs for the new nostr.watch history relay. History relays store events for the nostr.watch datalayer.
-- [**`redis`**](packages/redis) `[%]`: Convenience configuration that standardizes redis configuration for stack. Primarily used for development and eventually deployments. Redis is used for BullMQ
-
-### Derivatives 
-- [**`nostrawl`**](https://github.com/sandwichfarm/nostrawl) `[@]`: A package for trawling any number of nostr relays. Generalized logic from `trawler`. Combines `nostr-fetch` and queues, to make coalescing data from specific filters simple.
-- [**`nostr-geotags`**](https://github.com/sandwichfarm/nostr-geotags/tree/main) `[+]`: A package for generating event geo `g` tags for events, needed for `NIP-66`.
-
-### Philosophy
-nostr.watch legacy has been using nostr as a data layer successfully since February 2023, less some ... _ehem_ ... hiccups. When it comes to the gui, it's a poor user experience that resulted from technical debt, scope creep and inopportune but uniquely opportune timing. It has never had any database. It has run entirely off data from nostr. Relays are the database. 
-
-`@nostrwatch:next` will continue to employ the philosophy of nostr as a source of truth. However, this time `lmdb` will be used for local cache for performance and to produce richer datasets. Each daemon has it's own database, but daemons in a shared environment can (or can not) share the same database.
-
-### Contribution
-Contribution during this stage would be difficult but I'm open to it. If you want to contribute in any way, the best place to start is to open a [discussion](https://github.com/sandwichfarm/nostr-watch/discussions) and review the nostrwatch [project tracker](https://github.com/orgs/sandwichfarm/projects/3). Projects will grow as I migrate relevant items from planning that are presently in Notion to Github (~December). 
-
-1. I often rapidly prototype in javascript, but modules will be ported to Typescript by the respective package's beta. 
-2. Daemons with little need for type safety are likely to stay vanilla javascript unless it becomes a priority or someone takes initiative. 
-3. Discuss -> Propose -> Execute
 
 ### Development 
 a `CONTRIBUTE.md` will exist somewhere down the road. Since it's early stage, many details are not yet established, but here some details that are:

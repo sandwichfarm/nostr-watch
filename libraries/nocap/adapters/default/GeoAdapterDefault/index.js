@@ -1,5 +1,8 @@
 import { fetch } from 'cross-fetch'
 
+const IPV4 = /\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
+
+
  class GeoAdapterDefault {
   constructor(parent){
     this.$ = parent
@@ -19,8 +22,19 @@ import { fetch } from 'cross-fetch'
 
   async check_geo(){ 
     let endpoint 
-    const iparr = this.$.results.get('dns')?.data.ipv4
-    const ip = iparr[iparr.length-1]
+    let ip
+    const result = { status: "success", data: {} }
+    if(IPV4.test(this.$.url)) {
+      ip = this.$.url.match(IPV4)[0]; 
+    } 
+    else if(!this.$.results.get('dns')?.data?.ipv4?.length) {
+      return this.$.finish('geo', result)
+    }
+    else {
+      const iparr = this.$.results.get('dns')?.data?.ipv4
+      // console.log(iparr)
+      ip = iparr[iparr.length-1]
+    }
     const apiKey = this.getApiKey();
     //todo, enable override via options
     const fields = 'proxy,mobile,timezone,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,isp,as,asname,query'
@@ -34,7 +48,7 @@ import { fetch } from 'cross-fetch'
     const response = await fetch(endpoint, { headers }).catch(this.$.logger.warn)
     delete response.query
     delete response.status
-    const result = { status: "success", data: await response.json() }
+    result.data = await response.json()
     this.$.finish('geo', result)
   }
 }

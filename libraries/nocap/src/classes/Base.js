@@ -276,7 +276,8 @@ export default class Base {
       .then(async () => {
         this.logger.debug(`${key}: precheck resolved`)
         this.latency.start(key)
-        await this.adapters[adapter][`check_${key}`]()
+        this.logger.debug(`${key}:  this.adapters[${adapter}][check_${key}]()`)
+        await this.adapters[adapter][`check_${key}`]().catch( (e) => this.logger.err(`${key}: ${e.message}`) )
       })
       .catch((precheck) => {
         let reason
@@ -517,7 +518,7 @@ export default class Base {
       'close',
       () => this.ws.close()
     )
-    return this.terminate(key)
+    this.terminate(key)
   }
 
   /**

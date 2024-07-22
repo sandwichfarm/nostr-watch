@@ -6,8 +6,6 @@ const config = await loadConfig()
 
 import fs from 'fs/promises';
 
-const log = new Logger('publisher')
-
 async function writeObjectToFile(obj) {
 
   let filename = obj.tags.find( tag => tag[0] === 'd' )[1].replace('wss://', '').replace('ws://', '').replace('http://', '').replace('https://', '').replace('/', '')
@@ -85,7 +83,7 @@ export class Publisher {
       return event
     } catch(e) {
       this.logger.err(`signEvent(): Error: ${e}`)
-      console.log(event)
+      // console.log(event)
     }
   }
 

@@ -75,7 +75,7 @@ export class NWWorker {
     this.expires = this.checkOpts?.expires? timestring(this.checkOpts.expires, 'ms'): 60*60*1000
     this.interval = this.checkOpts?.interval? timestring(this.checkOpts.interval, 'ms'): 60*1000
     this.networks = this.opts?.networks? this.opts.networks: ['clearnet']
-    this.log = this.config?.logger? this.config.logger: new Logger('nocap/$NWWorker')
+    this.log = this.config?.logger? this.config.logger: new Logger('nocap/NWWorker')
   }
 
   setupInstances(){
@@ -91,10 +91,7 @@ export class NWWorker {
     this.log.debug(`populator()`)
     await this.$.worker.pause()
     const relays = await this.getRelays()
-    // if(relays.length > 0)
     await this.addRelayJobs(relays)
-    // else 
-    //   this.setTimeout( this.populator.bind(this), this.interval)
     return async () => await this.$.worker.resume()
   }
 
@@ -115,13 +112,13 @@ export class NWWorker {
   }
 
   async on_error(job, err){
-    // if(this.hard_stop) return
+    if(this.hard_stop) return
     this.log.debug(`on_error(): ${job.id}: ${err}`)
     await this.on_fail( job )
   }
 
   async on_completed(job, rvalue){
-    // if(this.hard_stop) return
+    if(this.hard_stop) return
     this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
     const { result } = rvalue
     if(!result?.url) return console.error(`url was empty:`, job.id)
@@ -136,15 +133,15 @@ export class NWWorker {
   }
 
   async on_success(result){
-    // if(this.hard_stop) return
+    if(this.hard_stop) return
     this.log.debug(`on_success(): ${result.url}`)
     if(this.config?.publisher?.kinds?.includes(30066) ){
       const publish30066 = new Publish.Kind30066()
-      await publish30066.one( result )   
+      await publish30066.one( result ).catch(this.log.error)  
     }
     if(this.config?.publisher?.kinds?.includes(30166) ){
-      const publish30166 = new Publish.Kind30166()  
-      await publish30166.one( result )
+      const publish30166 = new Publish.Kind30166()
+      await publish30166.one( result ).catch(this.log.error)  
     }
   }
 

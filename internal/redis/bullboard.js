@@ -1,38 +1,27 @@
-const { createBullBoard } = require('@bull-board/api');
-const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
-const { FastifyAdapter } = require('@bull-board/fastify');
-const { Queue: QueueMQ, Worker } = require('bullmq');
-const fastify = require('fastify');
+import express from 'express';
+import { createBullBoard } from '@bull-board/api';
+import { BullAdapter } from '@bull-board/api/bullAdapter';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { ExpressAdapter } from '@bull-board/express';
 
-const sleep = (t) => new Promise((resolve) => setTimeout(resolve, t * 1000));
+import { NoCapdQueue } from '@nostrwatch/controlflow'
 
-const redisOptions = {
-  port: 6379,
-  host: 'localhost',
-  password: '',
-  tls: false,
-};
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath('/');
 
-const queueMQ = new QueueMQ();
+const { addQueue, removeQueue, setQueues, replaceQueues } = createBullBoard({
+  queues: [new BullAdapter(someQueue), new BullAdapter(someOtherQueue), new BullMQAdapter(queueMQ)],
+  serverAdapter: serverAdapter,
+});
 
-const serverAdapter = new FastifyAdapter()
+const app = express();
 
-createBullBoard({
-  queues: [new BullMQAdapter(queueMQ)],
-  serverAdapter,
-  options: {
-    uiConfig: {
-      boardTitle: 'My BOARD',
-      boardLogo: {
-        path: 'https://cdn.my-domain.com/logo.png',
-        width: '100px',
-        height: 200,
-      },
-      miscLinks: [{text: 'Logout', url: '/logout'}],
-      favIcon: {
-        default: 'static/images/logo.svg',
-        alternative: 'static/favicon-32x32.png',
-      },
-    },
-  },
+app.use('/', serverAdapter.getRouter());
+
+// other configurations of your server
+
+app.listen(3000, () => {
+  console.log('Running on 3000...');
+  console.log('For the UI, open http://localhost:3000/admin/queues');
+  console.log('Make sure Redis is running on port 6379 by default');
 });

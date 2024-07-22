@@ -10,7 +10,7 @@
     "@nostrwatch/controlflow": "^0.2.1",
     "@nostrwatch/logger": "^0.0.6",
     "@nostrwatch/nocap": "^0.5.2",
-    "@nostrwatch/nocap-every-adapter-default": "1.3.1",
+    "@nostrwatch/nocap-every-adapter-default": "1.3.2",
     "@nostrwatch/nwcache": "^0.1.2",
     "@nostrwatch/publisher": "^0.4.3",
     "@nostrwatch/seed": "^0.0.2",

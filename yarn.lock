@@ -1826,6 +1826,13 @@
     dotenv "16.3.1"
     node-schedule "2.1.1"
 
+"@nostrwatch/logger@^0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@nostrwatch/logger/-/logger-0.0.5.tgz#6c31ea07cd299211839ddba005cd93174d10061e"
+  integrity sha512-NOFDBmslF6+HwRq1FmYaKcSM0GNXFWgVKBaJpWW1XqjBvXiYmZKTs5Jpo+FOTxB5ytcH4TFW79v5jZCQ/SaAMw==
+  dependencies:
+    logging "^3.3.0"
+
 "@nostrwatch/nocap@^0.4.0":
   version "0.4.7"
   resolved "https://registry.yarnpkg.com/@nostrwatch/nocap/-/nocap-0.4.7.tgz#a08ee673e0c80b99a0d410ac0e75e49a3a01e25e"

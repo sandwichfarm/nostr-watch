@@ -10,8 +10,8 @@
   "dependencies": {
     "@nostr-fetch/adapter-nostr-tools": "0.13.1",
     "@nostrwatch/controlflow": "^0.0.3",
-    "@nostrwatch/logger": "^0.0.5",
-    "@nostrwatch/nocap": "^0.4.0",
+    "@nostrwatch/logger": "^0.0.6",
+    "@nostrwatch/nocap": "^0.5.1",
     "@nostrwatch/nwcache": "^0.0.1",
     "@nostrwatch/publisher": "^0.2.4",
     "@nostrwatch/seed": "^0.0.1",

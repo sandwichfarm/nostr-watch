@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/nocap",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "main": "src/index.js",
   "type": "module",
   "license": "MIT",
@@ -9,7 +9,7 @@
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "@nostrwatch/logger": "^0.0.6",
+    "@nostrwatch/logger": "0.0.6",
     "@nostrwatch/nocap-every-adapter-default": "^1.3.0",
     "fetch-h2": "3.0.2",
     "get-ssl-certificate": "2.3.3",

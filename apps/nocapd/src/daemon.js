@@ -37,8 +37,8 @@ const populateQueue = async () => {
 const checkQueue = async () => {
   const counts = await $q.checker.counts()
   const enqueue = counts.prioritized + counts.active
-  if(enqueue > 0) return 
-  log.debug(`drained: ${$q.queue.name}`)
+  if(enqueue > 0) return log.debug(`checkQueue(): ${$q.queue.name}: ${enqueue} events active`)
+  // log.debug(`drained: ${$q.queue.name}`)
   populateQueue()
 }
 
@@ -51,6 +51,7 @@ const setIntervals = () => {
 
 const initWorker = async () => {
   const connection = RedisConnectionDetails()
+  log.info(`initWorker(): connecting to redis at`, connection)
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
   $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('@nostrwatch/nocapd:queue-control'), redis: connection })
@@ -59,9 +60,9 @@ const initWorker = async () => {
     .set( 'events' , ncdq.$QueueEvents )
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
-    // .drain()
-  // await $q.obliterate().catch(()=>{})
-
+  
+  await $q.queue.drain()
+  // await $q.queue.obliterate()
   await $q.checker.drainSmart()
   setIntervals()
   // $q.events.on('drained', populateQueue)
@@ -81,17 +82,24 @@ const stop = async(signal) => {
   $q.worker.pause()
   log.info(`shutdown progress: $q.queue.pause()`)
   $q.queue.pause()
+  await rcache.$.close()
   log.info(`shutdown progress: $q.queue.drain()`)
   await $q.queue.drain()
   log.info(`shutdown progress: checking active jobs`)
-  const {active:numActive} = await $q.queue.getJobCounts('active')
-  if(numActive > 0) {
-    log.info(`shutdown progress: ${numActive} active jobs`)
-    await new Promise( resolve => {
-      $q.queue.on('drained', resolve)
-    })
-    log.info(`shutdown progress: no more jobs`)
-  }
+  // const {active:numActive} = await $q.queue.getJobCounts('active')
+  // if(numActive > 0) {
+  //   log.info(`shutdown progress: ${numActive} active jobs`)
+  //   await new Promise( resolve => {
+  //     const intVal = setInterval(async () => {
+  //       const {active:numActive} = await $q.queue.getJobCounts('active')
+  //       if(numActive === 0) {
+  //         clearInterval(intVal)
+  //         resolve()
+  //       }
+  //     }, 1000)
+  //   })
+  //   log.info(`shutdown progress: no more jobs`)
+  // }
   log.info(`shutdown progress: $q.queue.obliterate()`)
   await $q.queue.obliterate()
   // if(signal !== 'EAI_AGAIN'){
@@ -160,7 +168,10 @@ const syncRelaysIn = async () => {
     const syncData = await bootstrap('nocapd')
     log.debug(`syncRelaysIn(): found ${syncData[0].length} *maybe new* relays`)
     const relays = syncData[0].map(r => { return { url: new URL(r).toString(), online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
-    const persisted = await rcache.relay.batch.insertIfNotExists(relays)
+    log.debug(`syncRelaysIn(): Persisting ${relays.length} relays`, relays)
+    const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
+    log.debug(`syncRelaysIn(): Persisted ${persisted} new relays`)
+    console.log('fucking relays', await this.rcache.relay.get.all().length)
     if(persisted.length === 0) return 0
     log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
     return persisted

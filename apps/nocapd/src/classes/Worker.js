@@ -11,41 +11,15 @@ import Publish from '@nostrwatch/publisher'
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
+const adaptersArray = Object.values(nocapAdapters)
+
 
 export class NWWorker {
 
   $
   rcache
   pubkey
-  cb = {}
-  processed = 1
-  total = 0
-  relayMeta = new Map()
-  cache_counts = {}
-  jobs = {}
-  hard_stop = false
-
-  nocapOpts = { 
-    timeout: this.timeout,
-    checked_by: this.pubkey
-  }
-
-  jobOpts = {
-    removeOnComplete: false,
-    removeOnFail: {
-      age: timestring('10m', 's')
-    }
-  }
-
-  timeout = {
-    open: 3000,
-    read: 3000,
-    write: 3000,
-    info: 2000,
-    dns: 1000,
-    geo: 1000,
-    ssl: 1000
-  }
+  
   
   constructor(pubkey, $q, rcache, config){
     this.pubkey = pubkey
@@ -58,6 +32,37 @@ export class NWWorker {
 
   setup(){
     this.setupConfig()
+
+    this.cb = {}
+    this.processed = 1
+    this.total = 0
+    this.relayMeta = new Map()
+    this.cache_counts = {}
+    this.jobs = {}
+    this.hard_stop = false
+
+    this.nocapOpts = { 
+      timeout: this.timeout,
+      checked_by: this.pubkey
+    }
+  
+    this.jobOpts = {
+      removeOnComplete: false,
+      removeOnFail: {
+        age: timestring('10m', 's')
+      }
+    }
+  
+    this.timeout = {
+      open: 3000,
+      read: 3000,
+      write: 3000,
+      info: 2000,
+      dns: 1000,
+      geo: 1000,
+      ssl: 1000
+    }
+
     this.setupInstances()
   }
 
@@ -78,8 +83,8 @@ export class NWWorker {
   }
 
   updateJobOpts(obj){
-    this.jobOpts = { ...this.jobOpts, ...obj }
-    return this.jobOpts
+    const jobOpts = { ...this.jobOpts, ...obj }
+    return jobOpts
   }
 
   async populator(){
@@ -99,9 +104,8 @@ export class NWWorker {
     try {
       const { relay:url } = job.data 
       const nocap = new Nocap(url, this.nocapOpts)
-      await nocap.useAdapters(Object.values(nocapAdapters))
+      await nocap.useAdapters([...adaptersArray])
       const result = await nocap.check(this.opts.checks.enabled).catch(failure)
-      // console.log(url, result)
       return { result } 
     } 
     catch(err) {
@@ -111,18 +115,19 @@ export class NWWorker {
   }
 
   async on_error(job, err){
-    if(this.hard_stop) return
+    // if(this.hard_stop) return
     this.log.debug(`on_error(): ${job.id}: ${err}`)
     await this.on_fail( job )
   }
 
   async on_completed(job, rvalue){
-    if(this.hard_stop) return
+    // if(this.hard_stop) return
     this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
     const { result } = rvalue
     if(!result?.url) return console.error(`url was empty:`, job.id)
     let fail = result?.open?.data? false: true
     this.progressMessage(result.url, result, fail)
+    delete this.jobs[job.id]
     if(fail)
       await this.on_fail( result )
     else
@@ -131,7 +136,7 @@ export class NWWorker {
   }
 
   async on_success(result){
-    if(this.hard_stop) return
+    // if(this.hard_stop) return
     this.log.debug(`on_success(): ${result.url}`)
     if(this.config?.publisher?.kinds?.includes(30066) ){
       const publish30066 = new Publish.Kind30066()
@@ -144,12 +149,12 @@ export class NWWorker {
   }
 
   async on_fail(result){
-    if(this.hard_stop) return
+    // if(this.hard_stop) return
     this.log.debug(`on_fail(): ${result.url}`)
   }
 
   async after_completed(result, error=false){
-    if(this.hard_stop) return
+    // if(this.hard_stop) return
     this.log.debug(`after_completed(): ${result.url}`)
     await this.updateRelayCache( { ...result } )      
     await this.retry.setRetries( result.url, !error )
@@ -157,7 +162,7 @@ export class NWWorker {
   }
 
   cbcall(...args){
-    if(this.hard_stop) return
+    // if(this.hard_stop) return
     this.log.debug(`cbcall(): ${JSON.stringify(args)}`)
     const handler = [].shift.call(args)
     if(this?.[`on_${handler}`] && typeof this[`on_${handler}`] === 'function')
@@ -196,7 +201,7 @@ export class NWWorker {
   async addRelayJobs(relays){
     this.log.debug(`addRelayJobs(): for ${relays.length} relays`)
     await this.drainSmart()
-    relays.forEach( async (relay) => {
+    for(const relay of relays){
       let job = this.jobs?.[this.jobId(relay)]
       if(job) {
         await job.remove()
@@ -205,17 +210,18 @@ export class NWWorker {
       }
       job = await this.addRelayJob({ relay })
       this.jobs[job.id] = job
-    })
+    }
     const jobs = Object.values(this.jobs)
-    if(jobs.length > 0) await Promise.all(jobs)
+    if(jobs.length === 0) return 
+    await Promise.allSettled(jobs)
   }
   
   async addRelayJob(jdata){
-    this.log.debug(`Adding job for ${jdata.relay} with ${this.opts.checks.enabled} nocap checks: ${JSON.stringify(jdata)}`)
+    this.log.debug(`Adding job for ${jdata.relay} with ${this.opts.checks.enabled} nocap checks: ${JSON.stringify(jdata.relay)}`)
     const jobId = this.jobId(jdata.relay)
     const priority = this.getPriority(jdata.relay)
-    this.updateJobOpts({ priority })
-    return this.$.queue.add( this.id(), jdata, { jobId, ...this.jobOpts})
+    const jobOpts = this.updateJobOpts({ priority })
+    return this.$.queue.add( this.id(), jdata, { jobId, ...jobOpts})
   }
 
   calculateProgress() {
@@ -383,13 +389,18 @@ export class NWWorker {
 
       this.log.debug(`getRelays() relay: ${relay.url}`)
 
-      this.log.debug(`getRelays() relay: ${relay.url}: lastChecked()`)
+      
       const lastChecked = await this.rcache.cachetime.get.one(this.cacheId(relay.url));
-      this.log.debug(`getRelays() relay: ${relay.url}: retries()`)
+      this.log.debug(`getRelays() relay: ${relay.url}: lastChecked(): ${lastChecked}`)
+      
       const retries = await this.retry.getRetries(relay.url);
-      this.log.debug(`getRelays() relay: ${relay.url}: isExpired()`)
+      this.log.debug(`getRelays() relay: ${relay.url}: retries(): ${retries}`)
+      
       const isExpired = lastChecked? await this.isExpired(relay.url, lastChecked): true;
+      this.log.debug(`getRelays() relay: ${relay.url}: isExpired(): ${isExpired}`)
+      
       const isOnline = relay?.online === true;
+      this.log.debug(`getRelays() relay: ${relay.url}: isOnline(): ${isOnline}`)
 
       if(isOnline) onlineRelays.push(relay.url);
   

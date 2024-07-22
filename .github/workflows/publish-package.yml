@@ -5,7 +5,9 @@ on:
     branches:
       - 'next'
     paths:
-      - 'packages/**'
+      - 'libraries/**'
+      - 'internal/**'
+      - 'scripts/**'
       - 'package.json'
       - '.github/workflows/publish-package.yml'
 

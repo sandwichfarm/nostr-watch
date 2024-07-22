@@ -1,0 +1,1 @@
+export { default as component } from "../../../../src/routes/relays/by/operator-pubkey/[pubkey]/+page.svelte";

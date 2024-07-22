@@ -1,0 +1,1 @@
+export { default as component } from "../../../../src/routes/relays/by/follows/[pubkey]/+page.svelte";

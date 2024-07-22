@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "lib": ["es2022", "dom"],
+    "outDir": "./dist",
+    "module": "esnext",
+    "target": "es2022",
+    "declaration": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "baseUrl": "."
+  },
+  "include": ["src/**/*", ".yalc"],
+  "exclude": ["./dist", "**/*.test.ts", "./node_modules", "docs"]
+}

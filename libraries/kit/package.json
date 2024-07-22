@@ -1,0 +1,47 @@
+{
+  "name": "@nostrwatch/kit",
+  "version": "0.0.1",
+  "description": "NIP-66 relay discoverability via NDK",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test-ui": "vitest --ui --coverage.enabled=true",
+    "start": "node dist/app.js",
+    "dev": "tsc-watch --onSuccess 'node dist/app.js'",
+    "lint": "eslint . --ext .ts",
+    "coverage": "vitest run --reporter=junit --coverage.reporter=json-summary --coverage.enabled=true",
+    "docs": "npx typedoc src/index.ts --out ./docs --ignoreCompilerErrors --plugin typedoc-plugin-ensure-internal",
+    "serve-docs": "http-server ./docs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@nostr-dev-kit/ndk": "2.8.2 ",
+    "@nostr-fetch/adapter-ndk": "0.15.1",
+    "import2": "1.0.3",
+    "nostr-fetch": "0.15.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.8",
+    "@vitest/coverage-v8": "1.6.0",
+    "@vitest/ui": "1.6.0",
+    "http-server": "14.1.1",
+    "tsdoc": "0.0.4",
+    "typedoc": "0.26.2",
+    "typedoc-plugin-ensure-internal": "https://github.com/deap82/typedoc-plugin-ensure-internal",
+    "typescript": "5.5.2",
+    "vite": "5.3.1",
+    "vite-tsconfig-paths": "4.3.2",
+    "vitest": "1.6.0"
+  },
+  "files": [
+    "README.md",
+    "dist",
+    "src",
+    "tsconfig.json",
+    ".yalc"
+  ]
+}

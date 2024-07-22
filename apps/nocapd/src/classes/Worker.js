@@ -4,9 +4,13 @@ import chalk from 'chalk';
 
 import { RetryManager } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
-import { Nocap } from '@nostrwatch/nocap'
+
 import { parseRelayNetwork, delay, lastCheckedId } from '@nostrwatch/utils'
 import Publish from '@nostrwatch/publisher'
+
+import { Nocap } from "@nostrwatch/nocap"
+import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
+
 
 export class NWWorker {
   
@@ -91,11 +95,13 @@ export class NWWorker {
 
   async work(job){
     this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
-    const failure = (err) => { this.log.debug(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+    const failure = (err) => { this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     try {
       const { relay:url } = job.data 
       const nocap = new Nocap(url, this.nocapOpts)
+      await nocap.useAdapters(Object.values(nocapAdapters))
       const result = await nocap.check(this.opts.checks.enabled).catch(failure)
+      // console.log(url, result)
       return { result } 
     } 
     catch(err) {
@@ -105,13 +111,16 @@ export class NWWorker {
   }
 
   async on_error(job, err){
+    if(this.hard_stop) return
     this.log.debug(`on_error(): ${job.id}: ${err}`)
-    await this.on_fail( result )
+    await this.on_fail( job )
   }
 
   async on_completed(job, rvalue){
+    if(this.hard_stop) return
     this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
     const { result } = rvalue
+    if(!result?.url) return console.error(`url was empty:`, job.id)
     let fail = result?.open?.data? false: true
     this.progressMessage(result.url, result, fail)
     if(fail)
@@ -122,6 +131,7 @@ export class NWWorker {
   }
 
   async on_success(result){
+    if(this.hard_stop) return
     this.log.debug(`on_success(): ${result.url}`)
     if(this.config?.publisher?.kinds?.includes(30066) ){
       const publish30066 = new Publish.Kind30066()
@@ -134,10 +144,12 @@ export class NWWorker {
   }
 
   async on_fail(result){
+    if(this.hard_stop) return
     this.log.debug(`on_fail(): ${result.url}`)
   }
 
   async after_completed(result, error=false){
+    if(this.hard_stop) return
     this.log.debug(`after_completed(): ${result.url}`)
     await this.updateRelayCache( { ...result } )      
     await this.retry.setRetries( result.url, !error )
@@ -145,6 +157,7 @@ export class NWWorker {
   }
 
   cbcall(...args){
+    if(this.hard_stop) return
     this.log.debug(`cbcall(): ${JSON.stringify(args)}`)
     const handler = [].shift.call(args)
     if(this?.[`on_${handler}`] && typeof this[`on_${handler}`] === 'function')
@@ -460,6 +473,6 @@ const evaluateMaxRelays = (evaluate, relays) => {
     return parseInt( eval( evaluate ) )
   }
   catch(e){
-    this.log.error(`Error evaluating this.opts.checks.options.max -> "${this?.opts?.checks?.options?.max} || "is undefined"": ${e?.message || "error undefined"}`)
+    this.log.err(`Error evaluating this.opts.checks.options.max -> "${this?.opts?.checks?.options?.max} || "is undefined"": ${e?.message || "error undefined"}`)
   }
 }

@@ -1,3 +1,4 @@
+.turbo
 **/node_modules
 *.wasm
 **/dist
@@ -20,3 +21,4 @@ packages/kinds
 .envs 
 .configs
 .docker
+.sveltekit

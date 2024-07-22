@@ -26,5 +26,8 @@
     "vitest": "0.34.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "0.2.2"
+  },
+  "peerDependencies": {
+    "vitest": "^0.32.0"
   }
 }

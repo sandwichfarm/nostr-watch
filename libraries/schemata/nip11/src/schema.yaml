@@ -21,14 +21,15 @@ properties:
     type: "string"
   retention:
     type: "array"
-    items: "#/$defs/retent"
+    items:
+      $ref: "#/$defs/retent"
   relay_country:
     type: "array"
     items:
       type: "string"
   icon:
     anyOf:
-      - $ref: "#/$def/saneUrl"
+      - $ref: "#/$defs/saneUrl"
       - format: "hostname"
   language_tags:
     type: "array"
@@ -40,7 +41,7 @@ properties:
       type: "string"
   posting_policy:
     anyOf:
-      - $ref: "#/$def/saneUrl"
+      - $ref: "#/$defs/saneUrl"
       - format: "hostname"
   limitation:
     type: "object"
@@ -71,14 +72,18 @@ properties:
         type: "number"
       created_at_upper_limit:
         type: "number"
-payments_url:
-  anyOf:
-    - $ref: "#/$def/saneUrl"
-    - format: "hostname"
-fees:
-  admission: "#/$def/fee"
-  subscription: "#/$def/fee"
-  publication: "#/$def/fee"
+  payments_url:
+    anyOf:
+      - $ref: "#/$defs/saneUrl"
+      - format: "hostname"
+  fees:
+    properties:
+      admission:
+        $ref: "#/$defs/fee"
+      subscription:
+        $ref: "#/$defs/fee"
+      publication:
+        $ref: "#/$defs/fee"
 required:
   - name
   - description

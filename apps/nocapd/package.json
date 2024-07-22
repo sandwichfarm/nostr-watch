@@ -24,6 +24,9 @@
     "promise-deferred": "2.0.4",
     "timestring": "^7.0.0"
   },
+  "peerDependencies": {
+    "nostr-tools": "^1.3.0"
+  },
   "scripts": {
     "launch": "NODE_DEBUG=bull node src/index.js",
     "trace": "node --trace-warnings src/index.js",

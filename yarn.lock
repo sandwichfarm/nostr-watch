@@ -1826,32 +1826,7 @@
     dotenv "16.3.1"
     node-schedule "2.1.1"
 
-"@nostrwatch/logger@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.npmjs.org/@nostrwatch/logger/-/logger-0.0.3.tgz#9a492f94abe049e9bd3a0632fa28d61efab95db0"
-  integrity sha512-IJGb4MArQ5JGVjx0r8p3uRLqcot8zFgKeHziw/RT4j0j/1oj0WMvOSIDyTtWFDtu3i3FN1hbDC9oSnmBqjR8Cw==
-  dependencies:
-    logging "^3.3.0"
-
-"@nostrwatch/logger@^0.0.4":
-  version "0.0.4"
-  resolved "https://registry.npmjs.org/@nostrwatch/logger/-/logger-0.0.4.tgz#25dabd5bc85a57dd5ceeaa66f2fab5fb72b5e2ef"
-  integrity sha512-fVdbR/TDeNMaD/8ofAN8mksR9iwTgwyQwNAkedmqk9FHdpmxViQ/6GVgyt+B3jAhgj6QkgpqOw/lWxSjdRhp1w==
-  dependencies:
-    logging "^3.3.0"
-
-"@nostrwatch/nocap-every-adapter-default@1.2.2":
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/@nostrwatch/nocap-every-adapter-default/-/nocap-every-adapter-default-1.2.2.tgz#05c13a5341aca57d8f2f02b9f794805fdefad774"
-  integrity sha512-9itPbz0nIza0vohldcxqKc+w50vGcLrOxwWg/beu6YkkLKhWa0aJa+Kp7stW6CG0puE8gVymwN/Baskybl558A==
-  dependencies:
-    "@nostrwatch/nocap-dns-adapter-default" "^1.0.2"
-    "@nostrwatch/nocap-geo-adapter-default" "^1.0.3"
-    "@nostrwatch/nocap-info-adapter-default" "^1.0.1"
-    "@nostrwatch/nocap-ssl-adapter-default" "^1.0.1"
-    "@nostrwatch/nocap-websocket-adapter-default" "^1.2.0"
-
-"@nostrwatch/nocap@^0.4.0", "@nostrwatch/nocap@^0.4.2":
+"@nostrwatch/nocap@^0.4.0":
   version "0.4.7"
   resolved "https://registry.yarnpkg.com/@nostrwatch/nocap/-/nocap-0.4.7.tgz#a08ee673e0c80b99a0d410ac0e75e49a3a01e25e"
   integrity sha512-TZjisRYArCdfwIR0tIursD45ubL8a2HMFe+IUTc9jhU2afaCaz8SUUQGVR4Zbce0FoN2i5IjujsFHePJ3MGBIw==
@@ -1901,13 +1876,6 @@
   integrity sha512-3Zcit9AASHbDCHsVZdFsEnHpsXP1Vdnw7BRk0su+KC72jsu88bhFwWGJpRcUrLGqCs0Y9NCf3ZPd3oDSLJNcJQ==
   dependencies:
     js-yaml "4.1.0"
-
-"@nostrwatch/utils@0.1.2":
-  version "0.1.2"
-  resolved "https://registry.yarnpkg.com/@nostrwatch/utils/-/utils-0.1.2.tgz#49a9f4d2c492acbbe1d4ffe1eb70af7908b1a579"
-  integrity sha512-pB61s1cPMJGRqBXh4WlxujddQ/T9vkjoZyNUbITKsGlbvQXIW7G/mgn6Ukk+r3nux30TKYeHiJEK4YFjwS9bFw==
-  dependencies:
-    dotenv "16.3.1"
 
 "@nostrwatch/utils@^0.0.3":
   version "0.0.3"

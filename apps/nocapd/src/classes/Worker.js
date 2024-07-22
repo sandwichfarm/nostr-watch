@@ -13,6 +13,39 @@ import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
 
 export class NWWorker {
+
+  $
+  rcache
+  pubkey
+  cb = {}
+  processed = 1
+  total = 0
+  relayMeta = new Map()
+  cache_counts = {}
+  jobs = {}
+  hard_stop = false
+
+  nocapOpts = { 
+    timeout: this.timeout,
+    checked_by: this.pubkey
+  }
+
+  jobOpts = {
+    removeOnComplete: false,
+    removeOnFail: {
+      age: timestring('10m', 's')
+    }
+  }
+
+  timeout = {
+    open: 3000,
+    read: 3000,
+    write: 3000,
+    info: 2000,
+    dns: 1000,
+    geo: 1000,
+    ssl: 1000
+  }
   
   constructor(pubkey, $q, rcache, config){
     this.pubkey = pubkey
@@ -21,31 +54,15 @@ export class NWWorker {
     this.config = config
     this.setup()
     this.log.info(`${this.id()} initialized`)
-    this.jobs = {}
-    this.cache_counts = {}
   }
 
   setup(){
-    this.setupDefaultValues()
     this.setupConfig()
-    this.setupNocapOpts()
-    this.setupJobOpts()
     this.setupInstances()
-  }
-
-  setupDefaultValues(){
-    this.cb = {}
-    this.processed = 1
-    this.total = 0
-    this.relayMeta = new Map()
-    this.jobOpts = {}
-    this.nocapOpts = {}
-    this.hard_stop = false
   }
 
   setupConfig(){
     this.opts = this.config.nocapd
-    
     this.checks = this.opts?.checks?.enabled.includes('all')? Nocap.checksSupported(): this.opts?.checks?.enabled
     this.checkOpts = this.opts?.checks?.options || {}
     this.timeout = this.setTimeout(this.checkOpts?.timeout)
@@ -54,27 +71,10 @@ export class NWWorker {
     this.interval = this.checkOpts?.interval? timestring(this.checkOpts.interval, 'ms'): 60*1000
     this.networks = this.opts?.networks? this.opts.networks: ['clearnet']
     this.log = this.config?.logger? this.config.logger: new Logger('nocap/$NWWorker')
-    
   }
 
   setupInstances(){
     this.retry = new RetryManager(`nocapd/${this.pubkey}`, this.opts?.retry, this.rcache)
-  }
-
-  setupNocapOpts(){
-    this.nocapOpts = { 
-      timeout: this.timeout,
-      checked_by: this.pubkey
-    }
-  }
-
-  setupJobOpts(){
-    this.jobOpts ={
-      removeOnComplete: false,
-      removeOnFail: {
-        age: timestring('10m', 's')
-      }
-    }
   }
 
   updateJobOpts(obj){
@@ -289,15 +289,6 @@ export class NWWorker {
   }
 
   setTimeout(config){
-    this.timeout = {
-      open: 3000,
-      read: 3000,
-      write: 3000,
-      info: 2000,
-      dns: 1000,
-      geo: 1000,
-      ssl: 1000
-    }
     if(config instanceof Object){
       return this.timeout = {...this.timeout, ...config}
     }

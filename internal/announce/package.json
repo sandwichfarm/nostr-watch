@@ -16,7 +16,7 @@
     "nostr-tools": "2.1.4"
   },
   "devDependencies": {
-    "@nostrwatch/publisher": "^0.3.2",
+    "@nostrwatch/publisher": "0.4.3",
     "@types/node": "^20.11.24",
     "@types/ws": "8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.1.1",

@@ -146,12 +146,12 @@ export class NWWorker {
   }
 
   async on_fail(result){
-    // if(this.hard_stop) return
+    if(this.hard_stop) return
     this.log.debug(`on_fail(): ${result.url}`)
   }
 
   async after_completed(result, error=false){
-    // if(this.hard_stop) return
+    if(this.hard_stop) return
     this.log.debug(`after_completed(): ${result.url}`)
     await this.updateRelayCache( { ...result } )      
     await this.retry.setRetries( result.url, !error )

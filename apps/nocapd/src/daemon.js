@@ -27,18 +27,14 @@ let config
 let $q
 
 const populateQueue = async () => { 
-  const resume = await $q.checker.populator() 
-  await delay(2000)
+  await $q.checker.populator() 
   await $q.checker.resetProgressCounts()
-  resume()
-  // lastPopulate = Date.now()
 }
 
 const checkQueue = async () => {
   const counts = await $q.checker.counts()
   const enqueue = counts.prioritized + counts.active
   if(enqueue > 0) return log.debug(`checkQueue(): ${$q.queue.name}: ${enqueue} events active`)
-  // log.debug(`drained: ${$q.queue.name}`)
   populateQueue()
 }
 
@@ -62,6 +58,8 @@ const initWorker = async () => {
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
   
+
+  $q.queue.on('drained', () => { log.info(`queue was fucking drained.`) }) 
   await $q.checker.drainSmart()
   setIntervals()
   await populateQueue()

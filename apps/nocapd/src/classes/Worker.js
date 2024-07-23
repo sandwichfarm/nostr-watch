@@ -89,10 +89,8 @@ export class NWWorker {
 
   async populator(){
     this.log.debug(`populator()`)
-    await this.$.worker.pause()
     const relays = await this.getRelays()
     await this.addRelayJobs(relays)
-    return async () => await this.$.worker.resume()
   }
 
   async work(job){
@@ -386,7 +384,6 @@ export class NWWorker {
 
       this.log.debug(`getRelays() relay: ${relay.url}`)
 
-      
       const lastChecked = await this.rcache.cachetime.get.one(this.cacheId(relay.url));
       this.log.debug(`getRelays() relay: ${relay.url}: lastChecked(): ${lastChecked}`)
       
@@ -443,15 +440,6 @@ export class NWWorker {
     this.log.info(chalk.blue.bold(cacheMessage));
   }
 
-  get_truncate_length(relays){
-    let length = relays.length
-    if(typeof this.opts?.checks?.options?.max === 'number')
-      length = this.opts.checks.options.max
-    if(typeof this.opts?.checks?.options?.max === 'string' )
-      length = evaluateMaxRelays(this.opts.checks.options.max, relays)
-    return length < relays.length? length: relays.length
-  }
-
   qualifyNetwork(url){
     const network = parseRelayNetwork(url)
     return this.networks.includes(network)
@@ -462,6 +450,15 @@ export class NWWorker {
       retries = retries === null? 0: retries
       const expiry = retries > 0 ? this.retry.getExpiry(url) : this.expires;
       return lastChecked < Date.now() - expiry;
+  }
+
+  get_truncate_length(relays){
+    let length = relays.length
+    if(typeof this.opts?.checks?.options?.max === 'number')
+      length = this.opts.checks.options.max
+    if(typeof this.opts?.checks?.options?.max === 'string' )
+      length = evaluateMaxRelays(this.opts.checks.options.max, relays)
+    return length < relays.length? length: relays.length
   }
 
 }

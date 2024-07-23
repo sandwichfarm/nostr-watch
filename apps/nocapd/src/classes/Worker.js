@@ -100,7 +100,7 @@ export class NWWorker {
     const failure = (err) => { this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     try {
       const { relay:url } = job.data 
-      const nocap = new Nocap(url, this.nocapOpts)
+      const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
       await nocap.useAdapters([...adaptersArray])
       const result = await nocap.check(this.opts.checks.enabled).catch(failure)
       return { result } 

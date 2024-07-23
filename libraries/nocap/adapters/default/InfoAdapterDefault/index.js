@@ -9,25 +9,41 @@ class InfoAdapterDefault {
 
   async check_info(){
     let result, data = {}
-    const controller = new AbortController();
-    const { signal } = controller;
-    const url = new URL(this.$.url),
+    const controller = new AbortController(),
+          { signal } = controller,
+          url = new URL(this.$.url),
           headers = {"Accept": "application/nostr+json"},
           method = 'GET'
-    
-    url.protocol = 'https:'
 
-    // this.$.timeouts.create('info', this.$.config.timeout.info, () => controller.abort())
-    try {
+    if( this.$.results.get('network') === 'tor' ) 
+    {
+      url.protocol = 'onion:';
+    }
+    else if(url.protocol === 'ws:') 
+    {
+      url.protocol = 'http:';
+    }
+    else if (url.protocol === 'wss:') 
+    {
+      url.protocol = 'https:';
+    }
+
+    try 
+    {
       const response = await fetch(url.toString(), { method, headers, signal })
       data = await response.json()
     }
-    catch(e) { 
+
+    catch(e) 
+    { 
       result = { status: "error", message: e.message, data }
     }
     
-    if(!result)
+    if(!result) 
+    {
       result = { status: "success", data }
+    }
+      
     // else {
     //   // const validate = this.ajv.compile(data)
     //   // const valid = validate(data)

@@ -4,9 +4,19 @@ class SslAdapterDefault {
   }
 
   async check_ssl(){
+
     if(typeof window !== 'undefined') {
       console.warn('Cannot check SSL from browser.');
       return;
+    }
+
+    let result, data = {};
+    const url = new URL(this.$.url);
+    const hostname = url.hostname;
+    const timeout = this.$.config?.timeout.ssl || 1000;
+
+    if(url.protocol === 'ws:'){
+      return this.$.finish('ssl', { status: "error", message: "Cannot check SSL for unsecured websocket.", data: {} });
     }
       
     let sslCertificate, sslChecker;
@@ -22,11 +32,7 @@ class SslAdapterDefault {
       return;
     }
 
-    let result, data = {};
-    const url = new URL(this.$.url);
-    const hostname = url.hostname;
-    const timeout = this.$.config?.timeout.ssl || 1000;
-
+  
     let sslCheckerResponse, sslCertificateResponse;
     try {
       // Call Node.js specific functions only if available

@@ -39,7 +39,7 @@ const localMethods = {
             location.reload()
           this.closePool($pool)
           setTimeout(()=>this.store.jobs.completeJob(this.slug), 500)
-        }, 5000)
+        }, 15000)
         $pool
           .on('open', () => {
             clearTimeout(timeout)

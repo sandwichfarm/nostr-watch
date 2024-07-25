@@ -55,18 +55,26 @@ const localMethods = {
 
     result.pubkeyValid = false
     
-    if(result.info.pubkey.startsWith('npub')) {
-      result.pubkeyError = "pubkey is in npub format, should be hex"
-      return result
-    }
-    if(!result.info.pubkey.match(/[0-9A-Fa-f]{6}/g)) {
-      result.pubkeyError = "pubkey is not hex"
-      return result
-    }
+    const pubkeyIsString = result?.info?.pubkey && typeof result.info.pubkey === 'string'
 
-    const pubkey = Uint8Array.from(Buffer.from(result.info.pubkey, 'hex'));
-    if(pubkey.length !== 32){
-      result.pubkeyError = 'pubkey is expected to be 32'
+    if(pubkeyIsString) {
+      if(result.info.pubkey.startsWith('npub')) {
+        result.pubkeyError = "pubkey is in npub format, should be hex"
+        return result
+      }
+      if(!result.info.pubkey?.match(/[0-9A-Fa-f]{6}/g)) {
+        result.pubkeyError = "pubkey is not hex"
+        return result
+      }
+
+      const pubkey = Uint8Array.from(Buffer.from(result.info.pubkey, 'hex'));
+      if(pubkey.length !== 32){
+        result.pubkeyError = 'pubkey is expected to be 32'
+        return result
+      }
+    }
+    else {
+      result.pubkeyError = 'pubkey is not a string'
       return result
     }
 

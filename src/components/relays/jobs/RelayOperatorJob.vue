@@ -27,6 +27,9 @@ const localMethods = {
     if( !this.isExpired(this.slug, 1000) && !force ) 
       return
 
+    if( !this.result?.info?.pubkey || typeof this.result.info.pubkey !== 'string' )
+      return 
+
     this.queueJob(
       this.slug,
       () => {
@@ -36,7 +39,6 @@ const localMethods = {
           .on('open', relay => {
             relay.subscribe(`${subid}-0`, { limit:1, kinds:[0], authors:[this.result.info.pubkey] })
             relay.subscribe(`${subid}-1`, { limit:10, kinds:[1], authors:[this.result.info.pubkey] })
-            // relay.subscribe(`${subid}-7`, { limit:10, kinds:[7], authors:[this.result.info.pubkey] })
           })
           .on('event', (relay, sub_id, event) => {
             if(subid === `${subid}-0`){

@@ -1162,5 +1162,27 @@ export default class Base {
   static checksSupported() {
     return ['open', 'read', 'write', 'ssl', 'dns', 'geo', 'info'];
   }
+
+  /**
+   * translateCheckKeys
+   * Translates check key shortcuts and synonyms to internal keys. 
+   * 
+   * @public
+   * @static
+   * @param {string[]} checks - The array of checks to translate
+   */
+  static translateCheckKeys(checks) {
+    const translation = {
+      'rtt' : ['open', 'read', 'write'],
+      'nip11': ['info']
+    }
+    const translated = []
+    checks.forEach(check => {
+      if(translation?.[check])
+        return translated.push(...translation[check]);
+      translated.push(check)
+    })
+    return Array.from(new Set(translated))
+  }
 }
 

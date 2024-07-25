@@ -13,6 +13,10 @@ export const TrawlQueue = (qopts={}) => {
   return QueueInit('TrawlQueue', qopts)
 }
 
+export const LivenessQueue = (qopts={}) => {
+  return QueueInit('LivenessQueue', qopts)
+}
+
 export const NocapdQueue = (name=null, qopts={}) => {
   name = name? name: 'NocapdQueue'
   return QueueInit(name, qopts)
@@ -45,6 +49,7 @@ export const BullMQ = {
 export default {
   SyncQueue,
   TrawlQueue,
+  LivenessQueue,
   NocapdQueue,
   RestApiQueue,
   QueueInit,

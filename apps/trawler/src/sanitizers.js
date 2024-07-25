@@ -4,12 +4,12 @@
  * @returns Filtered and deduped list of relays
  */
 
+import Logger from '@nostrwatch/logger'
 import isLocal from "url-local"
 
-import lmdb from './relaydb.js'
-import Logger from '@nostrwatch/logger'
-
 const logger = new Logger('sanitizers')
+
+const BLOCK_HOSTNAMES = [];
 
 export const normalizeRelays = (relays) => {
   return relays 
@@ -31,11 +31,6 @@ export const sanitizeRelayList = (relays) => {
   });
 
   return relays
-}
-
-export const relayAlreadyKnown = async (relay) => {
-  if(await lmdb.relay.exists(relay))
-    return false
 }
 
 export const qualifyRelayUrl = (relay) => {
@@ -79,6 +74,7 @@ const normalizeRelayUrl = (relay) => {
   try {
     const url = new URL(relay)
     url.hash = ''
+    url.search = ''
     return url.toString()
   }
   catch(e) {
@@ -101,7 +97,6 @@ export const sanitizeRelayUrl = (relay) => {
     return ""
   }
 }
-
 
 export const relaysFilterInvalid = (relays) => {
   let invalids = 0;
@@ -127,7 +122,6 @@ export const relaysFilterInvalid = (relays) => {
   });
   return validRelays;
 }
-
 
 export const relaysFilterDuplicates = (relays) => {
   const hostnameMap = new Map();

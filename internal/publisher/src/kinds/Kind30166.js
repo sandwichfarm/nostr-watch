@@ -15,11 +15,11 @@ export class Kind30166 extends PublisherNocap {
     let content
     const tags = Kind30166.generateTags(check)
     try {
-      content = `${JSON.stringify(check.content)}`
+      content = `${JSON.stringify(check.info?.data)}`
     } catch (e) {
       content = "{}"
       this.logger.err(`generateEvent(): Error: ${e}`)
-      this.logger.info(check.content)
+      this.logger.info(check.info?.data)
     }
     const event = {
       ...this.tpl(),

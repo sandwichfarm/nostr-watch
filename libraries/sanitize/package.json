@@ -1,0 +1,19 @@
+{
+  "name": "@nostrwatch/sanitize",
+  "version": "0.0.1",
+  "description": "sanitize nostr kind 2/10002 relay lists",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "url-local": "3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4",
+    "vitest": "2.0.4"
+  },
+  "license": "MIT"
+}

@@ -148,6 +148,8 @@ export class Kind30166 extends PublisherNocap {
 
     tags.push(['l', 'draft7', 'nip66.draft'])
 
+    console.log(tags)
+
     return tags
   }
 }

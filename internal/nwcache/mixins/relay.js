@@ -51,7 +51,7 @@ export default class RelayMixin {
 
   async patch(RelayFieldsObj) {
     this.validate(RelayFieldsObj)
-    const current = await this.db.$.get(relayId(RelayFieldsObj.url))
+    const current = this.db.$.get(relayId(RelayFieldsObj.url))
     if(!current)
       throw new Error(`Cannot patch because ${RelayFieldsObj.url} does not exist`)
     RelayFieldsObj.url = new URL(RelayFieldsObj.url).toString()

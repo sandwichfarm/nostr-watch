@@ -4,13 +4,13 @@ export const ConfigDefaults = {
   logLevel: 'info',
   checked_by: '',
   timeout: {
-    open: 10000,
-    read: 10000,
-    write: 10000,
-    info: 10000,
-    dns: 5000,
-    geo: 5000,
-    ssl: 5000
+    open: 5000,
+    read: 5000,
+    write: 5000,
+    info: 5000,
+    dns: 2000,
+    geo: 1000,
+    ssl: 1000
   },
   tor: {},
   adapterOptions: {

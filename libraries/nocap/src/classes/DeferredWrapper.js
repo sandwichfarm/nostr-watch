@@ -7,7 +7,7 @@ export class DeferredWrapper {
     this.promises = {}
     this.timeout = $timeout
     this.$session = $session
-    this.logger = new Logger(this.$session.url)
+    this.logger = new Logger(`@nostrwatch/nocap::Deferred: ${this.$session.url}`)
   }
 
   add(key, timeout, timeoutCb){

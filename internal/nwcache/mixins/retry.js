@@ -1,7 +1,4 @@
-import { operators } from "lmdb-oql";
 import { Retry } from "../schemas.js"
-
-const { $eq, $gte } = operators
 
 export default class RetryMixin {
   constructor(db) {
@@ -29,13 +26,13 @@ export default class RetryMixin {
 
   async increment(key, amt=1){
     key = this.inferKey(key)
-    const current = await this.get(key)
+    const current = this.get(key)
     return this.set(key, current? current + amt: amt)
   }
 
   async decrement(key, amt=1){
     key = this.inferKey(key)
-    const current = await this.get(key)
+    const current = this.get(key)
     return this.set(key, current? current - amt: -amt)
   }
 }

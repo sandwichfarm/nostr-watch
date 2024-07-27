@@ -24,8 +24,8 @@ async function writeObjectToFile(obj) {
 
 export class Publisher { 
 
-  constructor(key="generic"){
-    this.logger = new Logger(`publisher[${key}]`)
+  constructor(key){
+    this.logger = new Logger(`@nostrwatch/publisher: ${key}`)
   }
 
   tpl(){
@@ -40,29 +40,9 @@ export class Publisher {
     }
   }
 
-  // generateEvent(data){
-  //   this.logger.warn('generateEvent(): has not been implemented by subclass, using generic functions')
-  //   const staticClass = eval(`kind${this.kind}`)
-  //   let tags = [], 
-  //       content = ""
-  //   if(staticClass?.generateTags)
-  //     tags = Kind30066.generateTags(data)
-    
-  //   if(staticClass?.generateContent)
-  //     content = Kind30066.generateContent(data)
-    
-  //   const event = {
-  //     ...this.tpl(),
-  //     content,
-  //     tags
-  //   }
-
-  //   return event
-  // }
-  
-
-  generateEvent(){
-    return this.tpl(30066)
+  generateEvent(data){
+    data
+    return this.tpl(30166)
   }
 
   generateEvents(relays){
@@ -83,7 +63,7 @@ export class Publisher {
       return event
     } catch(e) {
       this.logger.err(`signEvent(): Error: ${e}`)
-      // console.log(event)
+      this.logger.info(event)
     }
   }
 
@@ -96,12 +76,12 @@ export class Publisher {
   }
 
   async publishEvent(signedEvent){
-    // writeObjectToFile(signedEvent);
     const pool = new SimplePool();
     const relays = config.publisher.to_relays
     let pubs = pool.publish(relays, signedEvent)
-    // await Promise.all( pubs ).catch( e => { log.error(`publishEvent(): Error: ${e}`) })
-    return Promise.allSettled( pubs ).catch( e => { log.error(`publishEvent(): Error: ${e}`) } )
+    const res = await Promise.allSettled( pubs ).catch( e => { log.error(`publishEvent(): Error: ${e}`) } )
+    pool.close(relays)
+    return res
   }
 
   async publishEvents(signedEvents){
@@ -116,8 +96,8 @@ export class Publisher {
 
 export class PublisherNocap extends Publisher {
   
-  constructor(){
-    super()
+  constructor(key="generic"){
+    super(key)
     this.logger = new Logger('publisher[nocap]')
   }
 
@@ -133,7 +113,7 @@ export class PublisherNocap extends Publisher {
         const unsignedEvent = this.generateEvent(relay)
         signedEvents.push(this.signEvent(unsignedEvent))
       }
-      await this.publishEvents(signedEvents).catch( e => { log.error(`PublisherNocap::many(): Error: ${e}`) })
+      await this.publishEvents(signedEvents).catch( e => { this.logger.error(`PublisherNocap::many(): Error: ${e}`) })
     }
   }
 

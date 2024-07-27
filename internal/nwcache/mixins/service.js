@@ -21,7 +21,7 @@ class ServiceChecker {
   }
 
   async is(service, status) {
-    const result = await this.db.$.get(serviceId(service))
+    const result = this.db.$.get(serviceId(service))
     if(result?.online === status)
       return true
   }

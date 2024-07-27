@@ -63,7 +63,7 @@ export default class Base {
     this.timeouts = new TimeoutHelper(this.session)
     this.latency = new LatencyHelper(this.session)
     this.promises = new DeferredWrapper(this.session, this.timeouts)
-    this.logger = new Logger(this.url, this.config.logLevel)
+    this.logger = new Logger(`@nostrwatch/nocap: ${this.url}`, this.config.logLevel)
     this.count = new Counter(this.session, [...this.checks])
   }
 

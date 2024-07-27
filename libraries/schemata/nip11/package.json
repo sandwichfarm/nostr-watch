@@ -1,37 +1,20 @@
 {
-  "name": "@nostrwatch/nip11",
-  "type": "module",
+  "name": "@nostrwatch/nip11-schema",
   "version": "0.0.1",
-  "main": "dist/bundle.js",
+  "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "ajv": "8.17.1",
-    "quicktype": "23.0.170",
+    "json-loader": "0.5.7",
+    "ts-loader": "9.5.1",
+    "typescript": "5.5.4",
     "webpack": "5.93.0",
     "webpack-cli": "5.1.4",
-    "yaml": "2.4.5"
-  },
-  "devDependencies": {
-    "ts-loader": "^9.2.6",
-    "typedoc": "^0.22.15",
-    "typescript": "^4.5.2",
-    "vitest": "^0.20.2",
-    "yaml-convert": "1.0.1",
-    "yaml-loader": "0.8.1"
+    "webpack-merge": "6.0.1",
+    "webpack-node-externals": "3.0.0",
+    "yaml-convert": "1.0.1"
   },
   "scripts": {
-    "qt": "yarn convert && yarn qt:types && yarn qt:ts && yarn qt:flow && yarn qt:zod",
-    "qt:types": "quicktype --src dist/schema.json -o src/types.ts --src-lang schema --just-types",
-    "qt:ts": "quicktype -s schema ./dist/schema.json -o src/serialize.ts --lang ts",
-    "qt:flow": "quicktype -s schema ./dist/schema.json -o ./packages/flow/src/index.ts --lang flow",
-    "qt:zod": "quicktype -s schema ./dist/schema.json -o ./packages/zod/src/index.ts --lang typescript-zod",
-    "clean": "rimraf src/**/*.js",
-    "build": "yarn clean && yarn qt && tsc && webpack --config webpack.config.mjs",
-    "convert": "yaml-convert --input src/schema.yaml --output dist/schema.json",
-    "test": "vitest",
-    "docs": "typedoc"
-  },
-  "peerDependencies": {
-    "typescript": "^4.5.2"
+    "prebuild": "mkdir -p dist && yaml-convert --input src/schema.yaml --output src/schema.json && cp src/schema.json dist/schema.json",
+    "build": "tsc && webpack --mode development --stats verbose"
   }
 }

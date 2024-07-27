@@ -15,7 +15,10 @@ class SslAdapterDefault {
     const hostname = url.hostname;
     const timeout = this.$.config?.timeout.ssl || 1000;
 
+    console.log("SERIOUSLY WTF", this.$.url, url.protocol );
+
     if(url.protocol === 'ws:'){
+      this.$.logger.warn('Cannot check SSL for unsecured websocket.');  
       return this.$.finish('ssl', { status: "error", message: "Cannot check SSL for unsecured websocket.", data: {} });
     }
       

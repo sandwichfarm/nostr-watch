@@ -82,25 +82,31 @@ export class AnnounceMonitor {
 
   generate(): any {
     const $monReg = new Kind10166()
-    this.events["10166"] = $monReg.generateEvent({...this.monReg})
+    $monReg.generateEvent({...this.monReg})
+    this.events["10166"] = $monReg
 
     const $monRelays = new Kind10002()
-    if(this.monRelays.length)
-      this.events["10002"] = $monRelays.generateEvent([...this.monRelays])
+    if(this.monRelays.length) {
+      $monRelays.generateEvent([...this.monRelays])
+      this.events["10002"] = $monRelays
+    }
     
     const $monProfile = new Kind0() 
-    if(Object.keys(this.monProfile).length)
-      this.events["0"] = $monProfile.generateEvent({...this.monProfile})
+    if(Object.keys(this.monProfile).length) {
+      $monProfile.generateEvent({...this.monProfile})
+      this.events["0"] = $monProfile
+    }
     return this.events
   }
 
   sign(sk: Uint8Array): any {
     if(!this.events) throw new Error("Event has not yet been generated (run generate() first)") 
-    const signed: Event[] = []
-    Object.keys(this.events).forEach( kind => {  
-      this.events[kind] = finalizeEvent(this.events[kind], sk)
+    Object.values(this.events).forEach( publisher => {  
+      console.log(publisher.signEvent())
+      this.events[publisher.kind] = publisher.signEvent()
     })
-    return signed
+    console.log(this.events[publisher.kind])
+    return this.events[publisher.kind]
   }
 
   async publish( relays: string[] ): Promise<string[]> {

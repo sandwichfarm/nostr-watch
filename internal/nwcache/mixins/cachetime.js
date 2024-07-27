@@ -40,7 +40,7 @@ export default class CacheTimeMixin {
         return [...this.db.$.select(IDS).from( this.schema ).where( where )] || []
       },
       one: (key, select=null)  => {
-        select = this.parseSelect(select)
+        // select = this.parseSelect(select)
         if(!key.includes(this.id()))
           key = this.id(key)
         return this.db.$.get( key )?.v

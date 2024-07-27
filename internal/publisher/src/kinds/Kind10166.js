@@ -1,3 +1,4 @@
+import { getEventHash } from 'nostr-tools';
 import { Publisher } from '../Publisher.js';
 import ngeotags from 'nostr-geotags';
 
@@ -22,6 +23,8 @@ export class Kind10166 extends Publisher {
       ...this.tpl(),
       tags
     };
+    let id = getEventHash(event)
+    event.id = id
     return event;
   }
 
@@ -35,8 +38,8 @@ export class Kind10166 extends Publisher {
     let tags = [];
     if(data?.frequency)
       tags.push(['frequency', data.frequency]);
-    if(data?.owner)
-      tags.push(['o', data.owner]);
+    // if(data?.owner)
+    //   tags.push(['o', data.owner]);
     if(data?.kinds)
       data?.kinds.map(kind => kind.toString()).forEach(kind => tags.push(["k", kind]));
     if(data?.counts)
@@ -45,8 +48,8 @@ export class Kind10166 extends Publisher {
       data?.checks.map(check => check.toString()).forEach(check => tags.push(["c", check]));
     if(data?.timeouts)
       Object.keys(data?.timeouts || []).map(key => [ key, data.timeouts[key] ]).forEach(timeout => tags.push([ "timeout", timeout[0], timeout[1].toString() ] ));
-    if(data?.geo && data.geo instanceof Object) 
-      tags = [...tags, ...ngeotags(data.geo, geoOpts)];
+    // if(data?.geo && data.geo instanceof Object) 
+    //   tags = [...tags, ...ngeotags(data.geo, geoOpts)];
     return tags;
   }
 

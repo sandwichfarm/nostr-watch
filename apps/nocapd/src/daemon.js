@@ -34,15 +34,15 @@ const populateQueue = async () => {
 const checkQueue = async () => {
   const counts = await $q.checker.counts()
   const enqueue = counts.prioritized + counts.active
-  if(enqueue > 0) return log.debug(`checkQueue(): ${$q.queue.name}: ${enqueue} events active`)
+  if(enqueue > 0) {
+    return log.debug(`checkQueue(): ${$q.queue.name}: ${enqueue} events active`)
+  }
   populateQueue()
 }
 
 const setIntervals = () => {
-  // intervalSyncRelays = setInterval( syncRelaysIn, timestring(config?.nocapd?.seed?.options?.events?.interval, "ms") || timestring("1h", "ms"))
   schedulePopulator()
   scheduleSyncRelays()
-  // intervalPopulate = setInterval( checkQueue, timestring( config?.nocapd?.checks?.options?.interval, "ms" ))
 }
 
 
@@ -59,7 +59,6 @@ const initWorker = async () => {
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
   
 
-  $q.queue.on('drained', () => { log.info(`queue was fucking drained.`) }) 
   await $q.checker.drainSmart()
   setIntervals()
   await populateQueue()
@@ -78,6 +77,7 @@ const stop = async(signal) => {
   $q.worker.pause()
   log.info(`shutdown progress: $q.queue.pause()`)
   $q.queue.pause()
+  log.info(`shutdown progress: close lmdb`)
   rcache.$.close()
   log.info(`shutdown progress: $q.queue.drain()`)
   $q.queue.drain()
@@ -103,13 +103,13 @@ const maybeAnnounce = async () => {
   const announce = new AnnounceMonitor(conf)
   announce.generate()
   announce.sign( process.env.DAEMON_PRIVKEY )
-  await announce.publish( conf.relays )
+  await announce.publish( conf.relays ).catch(log.warn)
 }
 
 const scheduleSeconds = async (name, intervalMs, cb) => {
   const active = await $q.queue.getActive();
   const jobIds = active.map(job => job.id);
-  console.log('Active Job IDs:', jobIds);
+  // console.log('Active Job IDs:', jobIds);
 
   log.info(`${name}: scheduling to fire every ${timestring(intervalMs, "s")} seconds`)
   const rule = new schedule.RecurrenceRule();
@@ -192,7 +192,7 @@ const globalHandlers = () => {
 }
 
 async function gracefulShutdown(signal) {
-  console.log(`Received ${signal}`);
+  // console.log(`Received ${signal}`);
   await stop(signal)
   process.exit(9);
 }
@@ -205,9 +205,10 @@ export const Nocapd = async () => {
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
   await migrate(rcache)
   await delay(1000)
-  // await maybeAnnounce()
+  await maybeAnnounce()
   await maybeBootstrap()
   $q = await initWorker()
+  $q.worker.on('drained', populateQueue)
   // setInterval( async () => {
   //   const active = await $q.queue.getActive();
   //   const jobIds = active.map(job => job.id);

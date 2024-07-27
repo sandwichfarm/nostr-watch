@@ -34,7 +34,7 @@ export class Kind1066 extends Publisher {
 
     tags.push(['r', data.url])
 
-    const aTag = ['a', `30066:${data.pubkey}:${data.url}`]
+    const aTag = ['a', `30166:${data.pubkey}:${data.url}`]
     if(data?.relayHint)
       aTag.push(data.relayHint)
     tags.push(aTag)

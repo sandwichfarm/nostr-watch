@@ -3,7 +3,7 @@ import rcache from "./relaydb.js"
 import config from "./config.js"
 import { lastPublishedId } from "./utils.js"
 
-const p30066 = new Publish.Kind30066()
+const p30166 = new Publish.Kind30166()
 
 const filterRelayProperties = (relay) => {
   const relay_ = {}
@@ -20,13 +20,13 @@ const filterRelaysProperties = (relays) => {
   return relays.map( filterRelayProperties )
 }
 
-const relayIsExpired = (relay) => {
-  const lastPublished = rcache.cachetime.get.one( lastPublishedId(relay.url) );
-  const expiry = eval(config?.trawler?.publisher?.expiry) || 4 * 60 * 60 * 10000;
-  if (!lastPublished) return true;
-  if (lastPublished < new Date() - expiry) return true;
-  return false;
-}
+// const relayIsExpired = (relay) => {
+//   const lastPublished = rcache.cachetime.get.one( lastPublishedId(relay.url) );
+//   const expiry = eval(config?.trawler?.publisher?.expiry) || 4 * 60 * 60 * 10000;
+//   if (!lastPublished) return true;
+//   if (lastPublished < new Date() - expiry) return true;
+//   return false;
+// }
 
 const updatePublishTimes = async (relays=[]) => {
   for await ( const relay of relays ) {
@@ -37,15 +37,15 @@ const updatePublishTimes = async (relays=[]) => {
 export const publishOne = async (relay) => {
   relay = filterRelayProperties(relay)
   if(!relay) throw new Error('publishOne(): relay must be defined')
-  await p30066.one(relay)
+  await p30166.one(relay)
 }
 
 export const publishMany = async (relays = []) => {
   relays = filterRelaysProperties(relays)
-  const filteredRelays = relays.filter(relayIsExpired);
-  if (!filteredRelays.length) return;
-  await p30066.many(filteredRelays);
-  await updatePublishTimes(filteredRelays);
+  // const filteredRelays = relays.filter(relayIsExpired);
+  if (!relays.length) return;
+  await p30166.many(relays);
+  // await updatePublishTimes(relays)
 }
 
 export const publishAll = async () => {

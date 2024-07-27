@@ -21,13 +21,15 @@
   },
   "workspaces": [
     "apps/*",
-    "libraries/nocap/adapters/**/*",
-    "libraries/kit/adapters/**/*",
-    "libraries/*",
-    "libraries/adapters/**/*",
     "demos/*",
     "internal/*",
+    "libraries/*",
+    "libraries/nocap/adapters/**/*",
+    "libraries/kit/adapters/**/*",
+    "libraries/adapters/**/*",
+    "libraries/validators/**/*",
     "libraries/schemata/**/*"
+    
   ],
   "useWorkspaces": true,
   "main": "index.js",

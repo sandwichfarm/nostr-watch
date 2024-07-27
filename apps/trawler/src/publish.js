@@ -3,7 +3,7 @@ import rcache from "./relaydb.js"
 import config from "./config.js"
 import { lastPublishedId } from "./utils.js"
 
-const p30066 = new Publish.Kind30066()
+const p30166 = new Publish.Kind30166()
 
 const filterRelayProperties = (relay) => {
   const relay_ = {}
@@ -37,14 +37,14 @@ const updatePublishTimes = async (relays=[]) => {
 export const publishOne = async (relay) => {
   relay = filterRelayProperties(relay)
   if(!relay) throw new Error('publishOne(): relay must be defined')
-  await p30066.one(relay)
+  await p30166.one(relay)
 }
 
 export const publishMany = async (relays = []) => {
   relays = filterRelaysProperties(relays)
   const filteredRelays = relays.filter(relayIsExpired);
   if (!filteredRelays.length) return;
-  await p30066.many(filteredRelays);
+  await p30166.many(filteredRelays);
   await updatePublishTimes(filteredRelays);
 }
 

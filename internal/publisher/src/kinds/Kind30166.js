@@ -1,11 +1,8 @@
-import mapper from 'object-mapper'
-import ngeotags from 'nostr-geotags'
-
 import { PublisherNocap } from '../Publisher.js'
 
 export class Kind30166 extends PublisherNocap { 
   constructor(){
-    const KIND =30166
+    const KIND = 30166
     super(KIND)
     this.kind = KIND
     this.discoverable = {tags: ['d', 'n', 'l', 'N', 's', 't', 'R']}
@@ -14,9 +11,7 @@ export class Kind30166 extends PublisherNocap {
   }
 
   generateEvent(data){
-    
     const tags = Kind30166.generateTags(data)
-
     return {
       ...this.tpl(),
       tags
@@ -29,94 +24,117 @@ export class Kind30166 extends PublisherNocap {
     let tags = []
 
     tags.push(['d', data.url])
+
+    if( data?.open?.data ){
+      tags.push(['rtt-open', data?.open?.duration])
+    }
+
+    if( data?.read?.data ){
+      tags.push(['rtt-read', data?.read?.duration])
+    }
+
+    if( data?.write?.data ){
+      tags.push(['rtt-write', data?.write?.duration])
+    }
       
-    if(data?.network){
+    if (data?.network){
       tags.push(['n', data.network])
     }
-    if(data?.info){
+
+    if (data?.info){
+      if (data?.info?.data?.pubkey){
+        tags.push(['p', data.info.data.pubkey])
+      }
+
       for(const nip in data.info.data.supported_nips){
         tags.push(['N', String(nip)])
       }
 
       for(const lang in data.info.data.language_tags){
-        tags.push(['l', String(lang)])
+        //TODO: validate language tags, attempt transform on invalids.
+        tags.push(['L', 'ISO-639-1'])
+        tags.push(['l', String(lang), 'ISO-639-1'])
       }
     
       for(const tag in data.info.data.tags){
         tags.push(['t', String(tag)])
       }
-    }
-  
-    if(data?.info?.data?.limitation?.auth_required === true){
-      tags.push(['R', 'auth'])
-    }
-    else {
-      tags.push(['R', '!auth'])
-    }
-  
-    if(data?.info?.data?.limitation?.payment_required === true){
-      tags.push(['R', 'payment'])
-    }
-    else {
-      tags.push(['R', '!payment'])
+
+      if (data?.info?.data?.limitation?.auth_required === true){
+        tags.push(['R', 'auth'])
+      }
+      else {
+        tags.push(['R', '!auth'])
+      }
+
+      if (data?.info?.data?.limitation?.payment_required === true){
+        tags.push(['R', 'payment'])
+      }
+      else {
+        tags.push(['R', '!payment'])
+      }
+
+      if (data?.info?.data?.software){
+        tags.push(['s', data.info.data.software])
+      }
+
+      if (data?.info?.data?.version ){
+        tags.push(['L', 'nip11.version'])
+        tags.push(['l', data.info.data.version, 'nip11.version'])
+      }
     }
 
-    
-    if(data?.ssl && protocol === 'wss:') {
-      const current = data.ssl.data.valid_from < Date.now() && data.ssl.data.valid_to > Date.now()
+    if (data?.ssl && protocol === 'wss:') {
+      const validFrom = new Date(data.ssl.data.valid_from).getTime()
+      const validTo = new Date(data.ssl.data.valid_to).getTime()
+      const current = validFrom < Date.now() && validTo > Date.now()
       tags.push(['R', current  ? 'ssl' : '!ssl'])
     }
     else if(protocol !== 'wss:') {
       tags.push(['R', '!ssl'])
     }
-  
-    if(data?.info?.data?.software){
-      tags.push(['s', data.info.data.software])
+
+    if (data?.dns?.data?.ipv4?.length){
+      tags.push(['L', 'dns.ipv4'])
+      for(const ipv4 of data.dns.data.ipv4){
+        tags.push(['l', ipv4, 'dns.ipv4'])
+      }
     }
-  
-    if(data?.geo?.data && Object.keys(data.geo.data).length > 0){
-      const geod = transformGeoResult(data.geo.data)
-      tags = [...tags, ...ngeotags(geod, { iso31662: true, iso31663: true, cityName: true })]
+
+    if (data?.dns?.data?.ipv6?.length){
+      tags.push(['L', 'dns.ipv6'])
+      for(const ipv6 of data.dns.data.ipv6){
+        tags.push(['l', ipv6, 'dns.ipv6'])
+      }
     }
+
+    if (data?.geo?.isp){
+      tags.push(['L', 'host.isp'])
+      tags.push(['l', data.dns?.data?.isp, 'host.isp'])
+    }
+
+    if (data?.geo?.as){
+      tags.push(['L', 'host.as'])
+      tags.push(['l', data.geo?.data?.as, 'host.as'])
+    }
+
+    if (data?.geo?.asn){
+      tags.push(['L', 'host.asn'])
+      tags.push(['l', data.geo?.data?.asname, 'host.asn'])
+    }
+
+    if (data?.geo?.data?.countryCode){
+      tags.push(['L', 'ISO-3166-1:alpha-2'])
+      tags.push(['l', data?.geo?.data?.countryCode, 'ISO-3166-1:alpha-2'])
+    }
+
+    if (data?.geo?.data?.cityName){
+      tags.push(['L', 'watch.nostr.cityName'])
+      tags.push(['l', data?.geo?.data?.cityName, 'watch.nostr.cityName'])
+    }
+
+    tags.push(['l', 'draft7', 'nip66.draft'])
 
     return tags
   }
-
-  parse(event){
-    return {
-      url: event.tags.find(tag => tag[0] === 'd')?.[1],
-      network: event.tags.find(tag => tag[0] === 'n')?.[1],
-      info: {
-        supported_nips: event.tags.filter(tag => tag[0] === 'N').map(tag => parseInt(tag[1])),
-        language_tags: event.tags.filter(tag => tag[0] === 'l').map(tag => tag[1]),
-        tags: event.tags.filter(tag => tag[0] === 't').map(tag => tag[1]),
-        limitation: {
-          auth_required: event.tags.find(tag => tag[0] === 'R' && tag[1].includes('auth')).map( tag => tag[1].includes('!')? false: true ),
-          payment_required: event.tags.find(tag => tag[0] === 'R' && tag[1].includes('payment')).map( tag => tag[1].includes('!')? false: true )
-        },
-        software: event.tags.find(tag => tag[0] === 's')?.[1]
-      },
-      ssl: event.tags.find(tag => tag[0] === 'R' && tag[1].includes('ssl')).map( tag => tag[1].includes('!')? false: true ),
-      geo: ngeotags.parse(event.tags)
-    }
-  }
-
-}
-
-const transformGeoResult = geo => {  
-  const map = {
-    "as": "asn",
-    "asname": "as",
-    "isp": "isp",
-    "city": "cityName",
-    "countryCode": "countryCode",
-    "country": "countryName",
-    "regionName": "regionName",
-    // "continent": "contentName",
-    // "continentCode": "continentCode",
-    "lat": "lat",
-    "lon": "lon",
-    "query": "ip"
-  }
-  return mapper(geo, map)
 }

@@ -133,14 +133,8 @@ export class NWWorker {
   async on_success(result){
     if(this.hard_stop) return
     this.log.debug(`on_success(): ${result.url}`)
-    if(this.config?.publisher?.kinds?.includes(30066) ){
-      const publish30066 = new Publish.Kind30066()
-      await publish30066.one( result ).catch(this.log.error)  
-    }
-    if(this.config?.publisher?.kinds?.includes(30166) ){
-      const publish30166 = new Publish.Kind30166()
-      await publish30166.one( result ).catch(this.log.error)  
-    }
+    const publish30166 = new Publish.Kind30166()
+    await publish30166.one( result ).catch(this.log.error)  
   }
 
   async on_fail(result){

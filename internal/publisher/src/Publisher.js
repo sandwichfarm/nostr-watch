@@ -24,7 +24,7 @@ async function writeObjectToFile(obj) {
 
 export class Publisher { 
 
-  constructor(key="generic"){
+  constructor(key){
     this.logger = new Logger(`publisher[${key}]`)
   }
 
@@ -40,29 +40,9 @@ export class Publisher {
     }
   }
 
-  // generateEvent(data){
-  //   this.logger.warn('generateEvent(): has not been implemented by subclass, using generic functions')
-  //   const staticClass = eval(`kind${this.kind}`)
-  //   let tags = [], 
-  //       content = ""
-  //   if(staticClass?.generateTags)
-  //     tags = Kind30066.generateTags(data)
-    
-  //   if(staticClass?.generateContent)
-  //     content = Kind30066.generateContent(data)
-    
-  //   const event = {
-  //     ...this.tpl(),
-  //     content,
-  //     tags
-  //   }
-
-  //   return event
-  // }
-  
-
-  generateEvent(){
-    return this.tpl(30066)
+  generateEvent(data){
+    data
+    return this.tpl(30166)
   }
 
   generateEvents(relays){
@@ -82,6 +62,7 @@ export class Publisher {
         throw new Error('generateEvent(): event does not validate')  
       return event
     } catch(e) {
+      console.log(event)
       this.logger.err(`signEvent(): Error: ${e}`)
       // console.log(event)
     }
@@ -116,8 +97,8 @@ export class Publisher {
 
 export class PublisherNocap extends Publisher {
   
-  constructor(){
-    super()
+  constructor(key="generic"){
+    super(key)
     this.logger = new Logger('publisher[nocap]')
   }
 

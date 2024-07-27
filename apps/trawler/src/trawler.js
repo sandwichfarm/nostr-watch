@@ -17,6 +17,8 @@ import { SyncQueue, TrawlQueue } from "@nostrwatch/controlflow"
 
 const logger = new Logger('trawler')
 
+const ignore = ["wss://nostr.searx.is/"]
+
 const { $Queue:$SyncQueue, $QueueEvents:$SyncEvents } = SyncQueue()
 const { $Queue:$TrawlQueue, $QueueEvents:$TrawlEvents } = TrawlQueue()
 
@@ -29,10 +31,10 @@ let promises,
 
 const addRelaysToCache = async (relayList) => {
   const ids = []
-  relayList.forEach(async (relayObj) => {
+  for (const relayObj of relayList) {
     ids.push(await rcache.relay.insertIfNotExists(relayObj))
-  })
-  return ids
+  }
+  return ids.filter(id => id !== undefined)
 }
 
 const noteInCache = async (ev, relay, lastEvent) => {
@@ -86,14 +88,14 @@ export const trawl = async function($job){
   listCount = 0
   $currentJob = $job
 
-  const relays = $job.data.relays
+  const relays = $job.data.relays.filter( relay => !ignore.includes(relay.url) )
   const pool = new SimplePool();
   const fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool));
+  const kinds = [ 2, 10002 ]
 
   relays.forEach( async (relay) => {
     
     promises.push(new Promise( async (resolve) => {
-      
       let lastEvent = 0
       let since = await determineSince(relay)
       $job.updateProgress({ type: 'resuming', source: relay, since })
@@ -101,23 +103,39 @@ export const trawl = async function($job){
         
         const it = await fetcher.allEventsIterator(
           [ relay ],
-          { kinds: [ 2, 10002 ] },
+          { kinds },
           { since },
           { sort: true }
         )
         for await (const ev of it) {
+          if(!kinds.includes(ev.kind)) {
+            continue
+          }
           lastEvent = setLastEvent(ev, since, lastEvent)
           if( await noteInCache(ev, relay, lastEvent) ) {
-            console.log('noteInCache() true')
             continue 
           }
           const relayList = await relaysFromRelayList(ev)
 
-          const cacheIds = addRelaysToCache(relayList)
           if(relayList === false) continue
           listCount++
 
+          const cacheIds = await addRelaysToCache(relayList)
+
+          for( const id of cacheIds ) {
+            relaysPersisted.add(rcache.relay.get.one(id)?.url)
+          }
+
           deferPersist[ev.id] = async () => await rcache.note.set.one(ev)
+
+          if(cacheIds.length === 0) {
+            await deferPersist[ev.id]()
+            delete deferPersist[ev.id]
+            continue
+          }
+
+          console.log(`found ${cacheIds.length} new relays`)
+          
           const roundtrip = { 
             requestedBy: process.env.DAEMON_PUBKEY,
             source: relay, 
@@ -126,6 +144,7 @@ export const trawl = async function($job){
           }
           if(config?.trawler?.sync?.out?.events)
             roundtrip.syncEventsCallback = syncEventsCallback
+          
           const data = jobData(relayList, roundtrip)
           await sync.relays.out(data)
         }
@@ -139,8 +158,10 @@ export const trawl = async function($job){
     }))
   })
   await Promise.allSettled(Object.values(promises))
-  console.log(`relays persisted: ${[...relaysPersisted]}`)
-  return [...relaysPersisted]
+  if(relaysPersisted.size > 0 ){
+    console.log(`${relaysPersisted.size} relays persisted: ${[...relaysPersisted]}`)
+  }
+  return [...Array.from(relaysPersisted)]
 }
 
 const watchQueue = () => {
@@ -173,4 +194,3 @@ const finish = async (result, roundtrip) => {
   if(deferPersist?.[eventId])
     delete deferPersist[eventId]
 }
-

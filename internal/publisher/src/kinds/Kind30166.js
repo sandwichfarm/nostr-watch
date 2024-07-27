@@ -71,19 +71,25 @@ export class Kind30166 extends PublisherNocap {
         tags.push(['p', info.pubkey])
       }
 
-      for(const nip in info.supported_nips){
-        tags.push(['N', String(nip)])
+      if(info?.supported_nips) {
+        for(const nip of info.supported_nips){
+          tags.push(['N', String(nip)])
+        }
       }
 
-      for(const lang in info.language_tags){
-        //TODO: validate language tags, attempt transform on invalids.
-        tags.push(['L', 'ISO-639-1'])
-        tags.push(['l', String(lang), 'ISO-639-1'])
+      if(info?.language_tags) {
+        for(const lang of info.language_tags){
+          //TODO: validate language tags, attempt transform on invalids.
+          tags.push(['L', 'ISO-639-1'])
+          tags.push(['l', String(lang), 'ISO-639-1'])
+        }
       }
     
-      for(const tag in info.tags){
-        tags.push(['t', String(tag)])
-      }
+      if(info?.tags) {
+        for(const tag of info.tags){
+          tags.push(['t', String(tag)])
+        }
+      }      
 
       if (info?.limitation?.auth_required === true){
         tags.push(['R', 'auth'])

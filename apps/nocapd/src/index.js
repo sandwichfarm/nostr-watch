@@ -57,7 +57,7 @@ const showDependencies = async () => {
       console.log(`${dep}: ${versionImplemented} == ${versionLatest} ✅`);
     }
     else {
-      console.log(`${dep}: ${versionImplemented} -> ${versionLatest} ❌ [UPGRADE NEEDED]`);
+      console.log(`${dep}: ${versionImplemented} -> ${versionLatest} ❌ [ACTION NEEDED]`);
     }
   }
 }

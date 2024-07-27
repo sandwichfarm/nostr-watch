@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/publisher",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "description": "Library for publishing nostr.watch relay status and publisher registration events",
   "main": "index.js",

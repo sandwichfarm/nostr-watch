@@ -134,7 +134,7 @@ export class NWWorker {
     if(this.hard_stop) return
     this.log.debug(`on_success(): ${result.url}`)
     const publish30166 = new Publish.Kind30166()
-    await publish30166.one( result ).catch(this.log.error)  
+    await publish30166.one( result ).catch(this.log.error.bind(this.log))  
   }
 
   async on_fail(result){

@@ -101,12 +101,10 @@ export class AnnounceMonitor {
 
   sign(sk: Uint8Array): any {
     if(!this.events) throw new Error("Event has not yet been generated (run generate() first)") 
-    Object.values(this.events).forEach( publisher => {  
+    Object.values(this.events).forEach( (publisher: any) => {  
       console.log(publisher.signEvent())
       this.events[publisher.kind] = publisher.signEvent()
     })
-    console.log(this.events[publisher.kind])
-    return this.events[publisher.kind]
   }
 
   async publish( relays: string[] ): Promise<string[]> {

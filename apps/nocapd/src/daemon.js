@@ -197,15 +197,13 @@ async function gracefulShutdown(signal) {
   process.exit(9);
 }
 
-
-
 export const Nocapd = async () => {
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
   await migrate(rcache)
   await delay(1000)
-  await maybeAnnounce()
+  // await maybeAnnounce()
   await maybeBootstrap()
   $q = await initWorker()
   $q.worker.on('drained', populateQueue)

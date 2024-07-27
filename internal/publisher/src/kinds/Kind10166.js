@@ -48,21 +48,9 @@ export class Kind10166 extends Publisher {
       data?.checks.map(check => check.toString()).forEach(check => tags.push(["c", check]));
     if(data?.timeouts)
       Object.keys(data?.timeouts || []).map(key => [ key, data.timeouts[key] ]).forEach(timeout => tags.push([ "timeout", timeout[0], timeout[1].toString() ] ));
-    // if(data?.geo && data.geo instanceof Object) 
-    //   tags = [...tags, ...ngeotags(data.geo, geoOpts)];
+    if(data?.geo && data.geo instanceof Object) 
+      tags = [...tags, ...ngeotags(data.geo, geoOpts)];
     return tags;
-  }
-
-  static parse(event){
-    return {
-      frequency: event.tags.find(tag => tag[0] === 'frequency')?.[1],
-      owner: event.tags.find(tag => tag[0] === 'o')?.[1],
-      kinds: event.tags.filter(tag => tag[0] === 'k').map(tag => tag[1]),
-      counts: event.tags.filter(tag => tag[0] === 'n').map(tag => tag[1]),
-      checks: event.tags.filter(tag => tag[0] === 'c').map(tag => tag[1]),
-      timeouts: event.tags.filter(tag => tag[0] === 'timeout').reduce((acc, tag) => { acc[tag[1]] = parseInt(tag[2]); return acc; }, {}),
-      geo: ngeotags.parse(event.tags)
-    }
   }
 
 }

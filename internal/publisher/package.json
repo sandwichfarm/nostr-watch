@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/publisher",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "type": "module",
   "description": "Library for publishing nostr.watch relay status and publisher registration events",
   "main": "index.js",
@@ -8,7 +8,7 @@
   "author": "sandwich <dskvr@no-reply.github.com> ",
   "license": "MIT",
   "dependencies": {
-    "nostr-geotags": "^0.5.0",
+    "nostr-geotags": "^0.7.1",
     "nostr-tools": "1.17.0"
   }
 }

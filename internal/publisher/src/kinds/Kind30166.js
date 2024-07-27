@@ -1,4 +1,5 @@
 import { PublisherNocap } from '../Publisher.js'
+import ngeotags from 'nostr-geotags';
 
 export class Kind30166 extends PublisherNocap { 
   constructor(){
@@ -131,15 +132,8 @@ export class Kind30166 extends PublisherNocap {
       tags.push(['l', data.geo?.data?.asname, 'host.asn'])
     }
 
-    if (data?.geo?.data?.countryCode){
-      tags.push(['L', 'ISO-3166-1:alpha-2'])
-      tags.push(['l', data?.geo?.data?.countryCode, 'ISO-3166-1:alpha-2'])
-    }
-
-    if (data?.geo?.data?.cityName){
-      tags.push(['L', 'watch.nostr.cityName'])
-      tags.push(['l', data?.geo?.data?.cityName, 'watch.nostr.cityName'])
-    }
+    if(data?.geo?.data && data.geo.data instanceof Object) 
+      tags = [...tags, ...ngeotags(data.geo.data, {isoAsNamespace: false})];
 
     tags.push(['l', 'draft7', 'nip66.draft'])
 

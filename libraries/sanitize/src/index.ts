@@ -55,30 +55,34 @@ export const fuzzyRelays = (relays: string[]): { originals: string[], good: stri
   }
 }
 
-
 /**
  * qualifyRelayUrl
+ * 
+ * qualify relay URLs with pessimistic invalidation pattern as opposed to validation pattern
+ * 
  * @param {string} relay - Relay URL
  * @returns {boolean} Whether the relay URL qualifies based on various criteria
  */
-export const qualifyRelayUrl = (relay: string): boolean => {
-  if( relay.length === 0 ) return false;
+export const qualifyRelayUrl = (maybeRelay: string): boolean => {
+  if( typeof maybeRelay !== "string" ) return false; 
 
-  if (isLocalNet(relay)) return false;
+  if( maybeRelay.length === 0 ) return false;
 
-  if (isLocal(relay)) return false;
+  if ( isLocalNet(maybeRelay) ) return false;
 
-  if (/^(wss:\/\/)(.*)(:\/\/)(.*)$/.test(relay)) return false; // multiple protocols
+  if ( isLocal(maybeRelay) ) return false;
 
-  if (!relay.startsWith('wss://') && !relay.startsWith('ws://')) return false;
+  if ( /^(wss:\/\/)(.*)(:\/\/)(.*)$/.test(maybeRelay) ) return false; // multiple protocols
 
-  if (relay.match(/localhost|\.local|[\n\r]|\[object object\]/)) return false;
+  if ( !maybeRelay.startsWith('wss://') && !maybeRelay.startsWith('ws://') ) return false;
 
-  if (relay.includes('http://') || relay.includes('https://')) return false;
+  if ( maybeRelay.match(/localhost|\.local|[\n\r]|\[object object\]/)) return false;
 
-  if (relay.match(/(127\.)\d{0,3}(\.)\d{0,3}(\.)\d{0,3}|(192\.168|10\.)\d{1,3}(\.)\d{1,3}/)) return false;
+  if ( maybeRelay.includes('http://') || maybeRelay.includes('https://') ) return false;
 
-  if (/(npub)[A-z0-9]{0,60}/.test(relay)) return false;
+  if ( maybeRelay.match(/(127\.)\d{0,3}(\.)\d{0,3}(\.)\d{0,3}|(192\.168|10\.)\d{1,3}(\.)\d{1,3}/) ) return false;
+
+  if ( /(npub)[A-z0-9]{0,60}/.test(maybeRelay) ) return false;
 
   return true;
 };
@@ -130,13 +134,13 @@ const normalizeRelayUrl = (relay: string): string => {
  */
 export const sanitizeRelayUrl = (relay: string): string => {
   try {
-    let url = decodeURI(relay)
+    let _url = decodeURI(relay)
       .toLowerCase()
       .trim()
-      .replace(/[\s\t]+/, '') // Consolidate whitespace and tab removal
-      .replace(/\/+$/, '') // Remove trailing slashes
-      .split(',')[0]; // Get the first part before any comma
-    url = new URL(url);
+      .replace(/[\s\t]+/, '')
+      .replace(/\/+$/, '')
+      .split(',')[0];
+    const url = new URL(_url);
     return url.toString();
   } catch (e) {
     logger.warn(`Failed to sanitize relay ${relay}`);
@@ -153,12 +157,8 @@ export const sanitizeRelayUrl = (relay: string): string => {
  *                             Returns null if the input is not a string.
  */
 export const isLocal = (_url: string): boolean | null => {
-  if (typeof _url !== "string") {
-    return null;
-  }
   try {
     const url: URL = new URL(_url);
-
     // Check if the URL protocol is file
     return url.protocol === "file:";
   } catch (err) {
@@ -166,8 +166,6 @@ export const isLocal = (_url: string): boolean | null => {
     if (/^[a-zA-Z]:\\/.test(_url) || /^\\\\/.test(_url)) {
       return true;
     }
-    // Assume invalid URLs are local-like paths for simplicity
-    return true;
   }
 };
 

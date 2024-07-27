@@ -45,15 +45,15 @@ export class Kind30166 extends PublisherNocap {
 
     tags.push(['d', check.url])
 
-    if( open ){
+    if( open && open > 0 ){
       tags.push(['rtt-open', String(open)])
     }
 
-    if( read ){
+    if( read && read > 0 ){
       tags.push(['rtt-read', String(read)])
     }
 
-    if( write ){
+    if( write && write > 0 ){
       tags.push(['rtt-write', String(write)])
     }
       

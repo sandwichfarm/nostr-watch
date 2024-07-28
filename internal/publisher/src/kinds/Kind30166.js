@@ -68,7 +68,13 @@ export class Kind30166 extends PublisherNocap {
 
     if (info){
       if (info?.pubkey && typeof info?.pubkey === 'string'){
-        tags.push(['p', info.pubkey])
+        const regex = /^(?:[0-9a-f]{64})$/;
+        if( regex.test(info.pubkey) ) {
+          tags.push(['p', info.pubkey])
+        }
+        else {
+          // console.warn(`generateTags(): Invalid pubkey: ${info.pubkey}`)
+        }
       }
 
       if(info?.supported_nips) {

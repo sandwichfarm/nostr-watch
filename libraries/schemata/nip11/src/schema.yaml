@@ -9,6 +9,7 @@ properties:
     type: "string"
   pubkey:
     type: "string"
+    format: "^(?:[0-9a-f]{64})$"
   contact:
     type: "string"
   supported_nips:

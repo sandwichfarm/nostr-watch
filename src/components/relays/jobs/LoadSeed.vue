@@ -49,6 +49,9 @@ import { RelayPool } from 'nostr'
 
 import { getAverageLatency, getMedianLatency, getMinLatency, getMaxLatency, RelayCheckerResult } from 'nostrwatch-js'
 
+//PATCH: Old method for region aggregate is fragile and just wrong, patch to just use eu-west until new version
+const REGION_STATIC = "eu-west";
+
 const localMethods = {
   LoadSeed(force, single){
     if( (!this.isExpired(this.slug, 15*60*1000) && !force) ) 
@@ -115,8 +118,8 @@ const localMethods = {
               connect: null,
               read: null,
               write: null,
-              latency: data?.latency[this.store.prefs.region]?.final ? true : false,
-              averageLatency: data?.latency[this.store.prefs.region]?.average ? true : false
+              latency: data?.latency[REGION_STATIC]?.final ? true : false,
+              averageLatency: data?.latency[REGION_STATIC]?.average ? true : false
             },
           }
 
@@ -125,7 +128,7 @@ const localMethods = {
           if(data?.info)
             result.info = data.info
 
-          const regionLatency = data?.latency?.[this.store.prefs.region]
+          const regionLatency = data?.latency?.[REGION_STATIC]
 
           result.latency = {
             average: regionLatency?.[1] ? getAverageLatency(regionLatency[1]) : null,

@@ -91,7 +91,7 @@
             </div>
           </div>
 
-          <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+          <!--div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
               Use realtime geo-checking
             </label>
@@ -110,9 +110,9 @@
               </Switch>
               <p class="mt-2 text-sm text-gray-500">If disabled, geo-checking will use build-time data instead of API. Geo entires are very likely to be missing when this is disabled since this data is only updated periodically. Use this option if you use an ad-blocker or Brave Browser.</p>
             </div>
-          </div>
+          </div-->
 
-          <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
+          <!--div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
               Auto-detect Region
             </label>
@@ -131,9 +131,9 @@
               </Switch>
               <p class="mt-2 text-sm text-gray-500">If enabled, nostr.watch will use your IP to obtain geo-data and pick the best region for you.</p>
             </div>
-          </div>
+          </div-->
 
-          <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5" v-if="!store.prefs.autoDetectRegion">
+          <!--div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5" v-if="!store.prefs.autoDetectRegion">
             <label for="about" class="block text-sm font-medium text-gray-700 dark:text-gray-300 sm:mt-px sm:pt-2">
               Select region
             </label>
@@ -145,7 +145,7 @@
               </div>
               <p class="mt-2 text-sm text-gray-500">The region determines where uptime<span v-if="!store.prefs.clientSideProcessing"> and latency</span> data is pulled from</p>
             </div>
-          </div>
+          </div-->
 
           <h2 class="text-2xl pt-8 text-gray-500 dark:text-white/50 mt-4 font-extrabold">Sorting</h2>
           <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:border-t sm:border-gray-200 dark:sm:border-slate-800 sm:pt-5">

@@ -43,6 +43,7 @@ export default class Base {
   adapters = {}
   adaptersValid = ['websocket', 'info', 'geo', 'dns', 'ssl']
   config = {}
+  limits = {}
 
   constructor(url, config={}) {
     this.url = url
@@ -316,8 +317,9 @@ export default class Base {
     const result = this.produce_result(key, data)
     if(this.ignore_result(key)) return this.logger.debug(`ignoring result ${key}`)
     this.results.setMany(result)
-    const deferred = await this.promises.resolve(key, result)
+    await this.promises.resolve(key, result)
     this.on_change()
+    return this.latency.duration(key) 
   }
 
   /**
@@ -632,6 +634,26 @@ export default class Base {
   }
 
   /**
+   * on_limits
+   * Special Nostr event triggered by Adapter (NIP-22)
+   * 
+   * @private
+   * @returns null
+   */
+  on_limits(limits){
+    if(typeof limits === 'string'){
+      try {
+        limits = JSON.parse(limits)
+      }
+      catch(e) {
+        this.logger.error(`on_limits(): ${e}`)
+        return
+      }
+    }
+    this.limits = limits
+  }
+
+  /**
    * on_notice
    * Special Nostr event triggered by Adapter 
    * 
@@ -718,8 +740,12 @@ export default class Base {
    * @private
    * @returns null
    */ 
-  handle_connect_check(data){
-    this.finish('open', { data })
+  handle_connect_check(data){ 
+    const duration = this.finish('open', { data })
+    if(this.limits) {
+      const { limits } = this
+      this.results.set('limits', { duration, limits })
+    }
   }
 
   /**
@@ -754,7 +780,7 @@ export default class Base {
    * @returns null
   */
   handle_auth(challenge){
-  
+    challenge;
   }
 
   /**

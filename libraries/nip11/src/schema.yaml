@@ -18,6 +18,7 @@ properties:
     type: "string"
   pubkey:
     type: "string"
+    pattern: "^[a-f0-9]{64}$"
   contact:
     type: "string"
   supported_nips:

@@ -33,6 +33,6 @@ export default class RetryMixin {
   async decrement(key, amt=1){
     key = this.inferKey(key)
     const current = this.get(key)
-    return this.set(key, current? current - amt: -amt)
+    return this.set(key, current? current - amt: amt)
   }
 }

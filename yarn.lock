@@ -28,6 +28,15 @@
   resolved "https://registry.npmjs.org/@anywhichway/cartesian-product/-/cartesian-product-1.0.5.tgz#9b77e0b9b6dbcd3e8613fc886c721763a978e44a"
   integrity sha512-vMwd2tED87521ZFJxnI/34idEWbm3l4/ueJt0VDSJrIEdWPUtzrQ8O3da6vpYjC24RP9SAW5ymd7kOHOj0HLdw==
 
+"@apidevtools/json-schema-ref-parser@11.7.0":
+  version "11.7.0"
+  resolved "https://registry.npmjs.org/@apidevtools/json-schema-ref-parser/-/json-schema-ref-parser-11.7.0.tgz#228d72018a0e7cbee744b677eaa01a8968f302d9"
+  integrity sha512-pRrmXMCwnmrkS3MLgAIW5dXRzeTv6GLjkjb4HmxNnvAKXN1Nfzp4KmGADBQvlVUcqi+a5D+hfGDLLnd5NnYxog==
+  dependencies:
+    "@jsdevtools/ono" "^7.1.3"
+    "@types/json-schema" "^7.0.15"
+    js-yaml "^4.1.0"
+
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.12.13", "@babel/code-frame@^7.24.7":
   version "7.24.7"
   resolved "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.24.7.tgz#882fd9e09e8ee324e496bd040401c6f046ef4465"
@@ -859,6 +868,11 @@
   dependencies:
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
+
+"@jsdevtools/ono@^7.1.3":
+  version "7.1.3"
+  resolved "https://registry.npmjs.org/@jsdevtools/ono/-/ono-7.1.3.tgz#9df03bbd7c696a5c58885c34aa06da41c8543796"
+  integrity sha512-4JQNk+3mVzK3xh2rqd6RB4J46qUR19azEHBneZyTZM+c456qOrbbM/5xcR8huNCCcbVt7+UmizG6GuUvPvKUYg==
 
 "@lmdb/lmdb-darwin-arm64@2.8.5":
   version "2.8.5"
@@ -1817,6 +1831,25 @@
     "@noble/curves" "^1.1.0"
     "@noble/hashes" "^1.2.0"
 
+"@nostrwatch/nocap-dns-adapter-default@1.0.3":
+  version "1.0.3"
+  resolved "https://registry.npmjs.org/@nostrwatch/nocap-dns-adapter-default/-/nocap-dns-adapter-default-1.0.3.tgz#b02faaa821b6e9f8b7e3d31e11a625143b48862d"
+  integrity sha512-I0R+RuYq4VJ9/p/iSgzLM2pjPUXQAQ4svZmfKNKK6x5FZfT2WI/KX5mfaIuqACn0hQDd4FXGtVQDIaC2ClhFKQ==
+  dependencies:
+    cross-fetch "^4.0.0"
+
+"@nostrwatch/nocap-every-adapter-default@1.4.1":
+  version "1.4.1"
+  resolved "https://registry.npmjs.org/@nostrwatch/nocap-every-adapter-default/-/nocap-every-adapter-default-1.4.1.tgz#270892792e9d4e5aae3911b095135ff458520008"
+  integrity sha512-eH36YF8GR77rBVAa7X7nGyTG7xrvYcrLOwZKg5LPgambH0rHmONTt7vSW6rtME6bOW7/Q5U1x221bzkCWeRDPg==
+  dependencies:
+    "@nostrwatch/nocap-dns-adapter-default" "1.0.3"
+    "@nostrwatch/nocap-geo-adapter-default" "1.0.3"
+    "@nostrwatch/nocap-info-adapter-default" "1.1.0"
+    "@nostrwatch/nocap-ssl-adapter-default" "1.1.0"
+    "@nostrwatch/nocap-websocket-adapter-default" "1.3.1"
+    "@nostrwatch/nocap-websocket-browser-adapter-default" "0.0.1"
+
 "@nostrwatch/nocap-ssl-adapter-default@1.1.0":
   version "1.1.0"
   resolved "https://registry.npmjs.org/@nostrwatch/nocap-ssl-adapter-default/-/nocap-ssl-adapter-default-1.1.0.tgz#9a3ac0fa4cc573ac67ab1dc72b4d7ee18b32cc9a"
@@ -2677,7 +2710,7 @@
   dependencies:
     "@types/istanbul-lib-report" "*"
 
-"@types/json-schema@*", "@types/json-schema@^7.0.8", "@types/json-schema@^7.0.9":
+"@types/json-schema@*", "@types/json-schema@^7.0.15", "@types/json-schema@^7.0.8", "@types/json-schema@^7.0.9":
   version "7.0.15"
   resolved "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.15.tgz#596a1747233694d50f6ad8a7869fcb6f56cf5841"
   integrity sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==
@@ -5430,7 +5463,7 @@ glob-to-regexp@^0.4.1:
   resolved "https://registry.npmjs.org/glob-to-regexp/-/glob-to-regexp-0.4.1.tgz#c75297087c851b9a578bd217dd59a92f59fe546e"
   integrity sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==
 
-"glob@>= 3.1.4":
+"glob@>= 3.1.4", glob@^11.0.0:
   version "11.0.0"
   resolved "https://registry.npmjs.org/glob/-/glob-11.0.0.tgz#6031df0d7b65eaa1ccb9b29b5ced16cea658e77e"
   integrity sha512-9UiX/Bl6J2yaBbxKoEBRm4Cipxgok8kQYcOPEhScPwebu2I0HoQOuYdIO6S3hLuWoZgpDpwQZMzTFxgpkyT76g==
@@ -8273,6 +8306,14 @@ rimraf@5.0.8:
   integrity sha512-XSh0V2/yNhDEi8HwdIefD8MLgs4LQXPag/nEJWs3YUc3Upn+UHa1GyIkEg9xSSNt7HnkO5FjTvmcRzgf+8UZuw==
   dependencies:
     glob "^10.3.7"
+
+rimraf@6.0.1:
+  version "6.0.1"
+  resolved "https://registry.npmjs.org/rimraf/-/rimraf-6.0.1.tgz#ffb8ad8844dd60332ab15f52bc104bc3ed71ea4e"
+  integrity sha512-9dkvaxAsk/xNXSJzMgFqqMCuFgt2+KsOFek3TMLfo8NCPfWpBmqwyNn5Y+NX56QUYfCtsyhF3ayiboEoUmJk/A==
+  dependencies:
+    glob "^11.0.0"
+    package-json-from-dist "^1.0.0"
 
 rimraf@^2.5.2:
   version "2.7.1"

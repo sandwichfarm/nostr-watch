@@ -1,7 +1,7 @@
 {
-  "name": "@nostrwatch/nip11-schema",
-  "version": "0.0.2",
-  "main": "dist/index.js",
+  "name": "@nostrwatch/nip22-schema",
+  "version": "0.0.1",
+  "main": "index.js",
   "license": "MIT",
   "dependencies": {
     "json-loader": "0.5.7",

@@ -11,15 +11,10 @@ import Publish from '@nostrwatch/publisher'
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
-const adaptersArray = Object.values(nocapAdapters)
-
-
 export class NWWorker {
-
   $
   rcache
   pubkey
-  
   
   constructor(pubkey, $q, rcache, config){
     this.pubkey = pubkey
@@ -99,7 +94,7 @@ export class NWWorker {
     try {
       const { relay:url } = job.data 
       const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
-      await nocap.useAdapters([...adaptersArray])
+      await nocap.useAdapters([...Object.values(nocapAdapters)])
       const result = await nocap.check(this.opts.checks.enabled).catch(failure)
       return { result } 
     } 
@@ -147,7 +142,7 @@ export class NWWorker {
     this.log.debug(`after_completed(): ${result.url}`)
     await this.updateRelayCache( { ...result } )      
     await this.retry.setRetries( result.url, !error )
-    await this.setLastChecked( result.url, Date.now() )
+    await this.setLastChecked( result.url )
   }
 
   cbcall(...args){

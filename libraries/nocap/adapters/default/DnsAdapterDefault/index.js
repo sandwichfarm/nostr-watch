@@ -3,26 +3,36 @@ import fetch from 'cross-fetch'
 const IPV4 = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 const IPV6 = /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))/;
 
-
 class DnsAdapterDefault {
   constructor(parent){ 
     this.$ = parent
   }
   async check_dns(){ 
-    let result = {}, data = {}
+    let result = {}, data = {}, urlIsIp = false;
+    let Url = new URL(this.$.url)
+    const host = Url.hostname
     if(this.$.results.get('network') !== 'clearnet') {
       this.$.logger.debug('DNS check skipped for url not accessible over clearnet')
       return { status: "error", message: "Relay is not clearnet, cannot check DNS." }
     }
-    let Url = new URL(this.$.url)
-    let url = `${Url.protocol}//${Url.host}`.replace('wss://', '').replace('ws://', '').replace(/\/+$/, '');
-    const query = `https://1.1.1.1/dns-query?name=${url}`
-    const headers = { accept: 'application/dns-json' }
-    const response = await fetch( query, { headers } ).catch((e) => { result = { status: "error", message: e.message, data } })   
-    data = await response.json()
-    data.ipv4 = getIpv4(data)
-    data.ipv6 = getIpv6(data)
-    if(!data?.Answer || data.Answer.length === 0 || Object.keys(data.Answer[0]) === 0)
+    if(IPV4.test(host)) {
+      urlIsIp = true;
+      data.ipv4 = [this.$.url]
+    }
+    else if(IPV6.test(host)) {
+      urlIsIp = true;
+      data.ipv6 = []
+    }
+    if(!urlIsIp) {
+      let url = `${Url.protocol}//${Url.hostname}`.replace('wss://', '').replace('ws://', '').replace(/\/+$/, '');
+      const query = `https://1.1.1.1/dns-query?name=${url}`
+      const headers = { accept: 'application/dns-json' }
+      const response = await fetch( query, { headers } ).catch((e) => { result = { status: "error", message: e.message, data } })   
+      data = await response.json()
+      data.ipv4 = getIpv4(data)
+      data.ipv6 = getIpv6(data)
+    }
+    if(!urlIsIp && (!data?.Answer || data.Answer.length === 0 || Object.keys(data.Answer[0]) === 0) )
       result = { status: "error", message: "No DNS Answer" }
     else
       result = { 
@@ -31,7 +41,6 @@ class DnsAdapterDefault {
       }
     this.$.finish('dns', result)
   } 
-
 }
 
 const getIpv4 = (jsonData) => {

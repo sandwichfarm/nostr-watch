@@ -23,16 +23,17 @@ const IPV4 = /\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01
   async check_geo(){ 
     let endpoint 
     let ip
+    const dns = this.$.results.get('dns')?.data
     const result = { status: "success", data: {} }
     if(IPV4.test(this.$.url)) {
       ip = this.$.url.match(IPV4)[0]; 
     } 
-    else if(!this.$.results.get('dns')?.data?.ipv4?.length) {
+    else if(!dns?.length) {
       return this.$.finish('geo', result)
     }
     else {
-      const iparr = this.$.results.get('dns')?.data?.ipv4
-      ip = iparr[iparr.length-1]
+      const iparr = dns?.ipv4
+      ip = iparr[iparr?.length-1]
     }
     const apiKey = this.getApiKey();
     //todo, enable override via options

@@ -119,7 +119,7 @@ class WebsocketAdapterDefault {
         if(this.count.event > this.$.config.tooManyEventsLimit) {
           this.$.auditor.fail('SUBSCRIBE_LIMIT', {
             description: `Relay sent too many events. Requested 1 and recieved ${this.count.event}. May have recieved more, but this test was limited to ${this.$.config.tooManyEventsLimit}.`,
-            severity: 'low',
+            severity: 'medium',
             impact: ['bandwidth', 'reliability'],
             domain: 'NIP-01'
           })
@@ -141,6 +141,9 @@ class WebsocketAdapterDefault {
     }
     if(ev[0] === 'NOTICE') {
       this.$.on_notice(ev[1])
+    }
+    if(ev[0] === 'LIMITS') {
+      this.$.on_limits(ev[1])
     }
     if(ev[0] === 'AUTH') {
       this.$.on_auth(ev[1])

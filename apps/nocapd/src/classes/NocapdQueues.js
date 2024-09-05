@@ -86,7 +86,6 @@ export class NocapdQueues {
   async drain(){
     await this.queue.drain()
     return this
-    
   }
 
   async obliterate(){

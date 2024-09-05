@@ -192,26 +192,25 @@ const globalHandlers = () => {
 }
 
 async function gracefulShutdown(signal) {
-  // console.log(`Received ${signal}`);
   await stop(signal)
   process.exit(9);
 }
 
 export const Nocapd = async () => {
+  console.log('Starting Nocapd...')
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
+  console.log('Loaded config')
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
+  console.log('Loaded relaycache: ', rcache)
   await migrate(rcache)
+  console.log('Migrated relaycache: ', rcache)
   await delay(1000)
   // await maybeAnnounce()
   await maybeBootstrap()
+  console.log('Bootstrapped')
   $q = await initWorker()
   $q.worker.on('drained', populateQueue)
-  // setInterval( async () => {
-  //   const active = await $q.queue.getActive();
-  //   const jobIds = active.map(job => job.id);
-  //   console.log('Active Job IDs:', jobIds);
-  // }, 5000)
 
   globalHandlers()
   return {

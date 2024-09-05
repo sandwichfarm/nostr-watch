@@ -1,6 +1,6 @@
 {
-  "name": "@nostrwatch/nip11-schema",
-  "version": "0.0.2",
+  "name": "@nostrwatch/nip01-schema",
+  "version": "0.0.1",
   "main": "dist/index.js",
   "license": "MIT",
   "dependencies": {
@@ -14,7 +14,7 @@
     "yaml-convert": "1.0.1"
   },
   "scripts": {
-    "prebuild": "mkdir -p dist && yaml-convert --input src/schema.yaml --output src/schema.json && cp src/schema.json dist/schema.json",
+    "prebuild": "mkdir -p dist && yaml-convert --pretty true --input src/schema.yaml --output src/schema.json && cp src/schema.json dist/schema.json",
     "build": "tsc && webpack --mode development --stats verbose"
   }
 }

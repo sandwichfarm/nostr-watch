@@ -27,7 +27,7 @@
     "libraries/kit/adapters/**/*",
     "libraries/adapters/**/*",
     "libraries/validators/**/*",
-    "libraries/schemata/**/*"
+    "libraries/schemata/*"
     
   ],
   "useWorkspaces": true,

@@ -41,7 +41,6 @@ export class Publisher {
   }
 
   generateEvent(data){
-    data
     return this.tpl(30166)
   }
 

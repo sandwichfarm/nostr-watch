@@ -45,7 +45,6 @@ const setIntervals = () => {
   scheduleSyncRelays()
 }
 
-
 const initWorker = async () => {
   const connection = RedisConnectionDetails()
   log.info(`initWorker(): connecting to redis at`, connection)
@@ -57,8 +56,6 @@ const initWorker = async () => {
     .set( 'events' , ncdq.$QueueEvents )
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
-  
-
   await $q.checker.drainSmart()
   setIntervals()
   await populateQueue()
@@ -99,11 +96,14 @@ const maybeAnnounce = async () => {
     "monitor.info": "profile"
   }
   const conf = mapper(config, map)
+  console.log(conf)
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf)
   announce.generate()
+  console.log(announce.events)
+  process.exit()
   announce.sign( process.env.DAEMON_PRIVKEY )
-  await announce.publish( conf.relays ).catch(log.warn)
+  await announce.publish( conf.relays ).catch(e => { throw new Error(e) })
 }
 
 const scheduleSeconds = async (name, intervalMs, cb) => {
@@ -206,7 +206,7 @@ export const Nocapd = async () => {
   await migrate(rcache)
   console.log('Migrated relaycache: ', rcache)
   await delay(1000)
-  // await maybeAnnounce()
+  await maybeAnnounce()
   await maybeBootstrap()
   console.log('Bootstrapped')
   $q = await initWorker()

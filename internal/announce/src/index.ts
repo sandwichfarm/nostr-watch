@@ -83,6 +83,8 @@ export class AnnounceMonitor {
   generate(): any {
     const $monReg = new Kind10166()
     $monReg.generateEvent({...this.monReg})
+    console.log($monReg)
+    process.exit()
     this.events["10166"] = $monReg
 
     const $monRelays = new Kind10002()

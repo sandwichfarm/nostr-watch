@@ -13,13 +13,12 @@ import sync from "./sync.js"
 import { parseRelayList } from "./parsers.js";
 import { lastTrawledId }  from "./utils.js";
 import { parseRelayNetwork, relayId } from "@nostrwatch/utils"
-import { SyncQueue, TrawlQueue } from "@nostrwatch/controlflow"
+import { TrawlQueue } from "@nostrwatch/controlflow"
 
 const logger = new Logger('trawler')
 
 const ignore = ["wss://nostr.searx.is/"]
 
-const { $Queue:$SyncQueue, $QueueEvents:$SyncEvents } = SyncQueue()
 const { $Queue:$TrawlQueue, $QueueEvents:$TrawlEvents } = TrawlQueue()
 
 let relaysPersisted,
@@ -133,8 +132,9 @@ export const trawl = async function($job){
             delete deferPersist[ev.id]
             continue
           }
+          const foundRelays =  (await rcache.relay.get.many(cacheIds)).map( relay => relay.url )
 
-          console.log(`found ${cacheIds.length} new relays`)
+          console.log(`found ${cacheIds.length} new relays`, foundRelays)
           
           const roundtrip = { 
             requestedBy: process.env.DAEMON_PUBKEY,

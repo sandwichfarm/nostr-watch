@@ -12,6 +12,7 @@ export const ResultDefaults = {
   dns: {},
   geo: {},
   ssl: {},
+  limits: {}
 }
 
 import { Validator } from '../classes/Validator.js'

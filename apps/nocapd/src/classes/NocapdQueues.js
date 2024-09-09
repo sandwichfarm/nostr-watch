@@ -1,6 +1,7 @@
 import Logger from '@nostrwatch/logger'
 
 export class NocapdQueues {
+  
   constructor(opts){
     this.setup(opts)
     if(!this.pubkey)

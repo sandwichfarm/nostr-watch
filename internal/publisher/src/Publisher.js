@@ -6,23 +6,24 @@ const config = await loadConfig()
 
 import fs from 'fs/promises';
 
-async function writeObjectToFile(obj) {
+// async function writeObjectToFile(obj) {
 
-  let filename = obj.tags.find( tag => tag[0] === 'd' )[1].replace('wss://', '').replace('ws://', '').replace('http://', '').replace('https://', '').replace('/', '')
-  filename = `${obj.kind}-${filename}`
+//   let filename = obj.tags.find( tag => tag[0] === 'd' )[1].replace('wss://', '').replace('ws://', '').replace('http://', '').replace('https://', '').replace('/', '')
+//   filename = `${obj.kind}-${filename}`
   
-  const fileName = `./.events/${filename}.json`;
-  const jsonContent = JSON.stringify(obj, null, 2); // pretty-print JSON
+//   const fileName = `./.events/${filename}.json`;
+//   const jsonContent = JSON.stringify(obj, null, 2); // pretty-print JSON
 
-  try {
-    await fs.writeFile(fileName, jsonContent);
-  } catch (error) {
-    console.error('Error writing file:', error);
-  }
-}
-
+//   try {
+//     await fs.writeFile(fileName, jsonContent);
+//   } catch (error) {
+//     console.error('Error writing file:', error);
+//   }
+// }
 
 export class Publisher { 
+
+  event = null
 
   constructor(key){
     this.logger = new Logger(`@nostrwatch/publisher: ${key}`)
@@ -34,45 +35,56 @@ export class Publisher {
     return {
       pubkey: process.env.DAEMON_PUBKEY,
       kind: this.kind,
-      content: "",
+      content: String(""),
       tags: [],
       created_at: Math.round(Date.now()/1000)
     }
   }
 
   generateEvent(data){
-    return this.tpl(30166)
+    this.event = this._generateEvent(data)
+    return this.event
   }
 
-  generateEvents(relays){
-    const unsignedEvents = []
-    relays.forEach( relay => {
-      unsignedEvents.push(this.generateEvent(relay))
-    })
-    return unsignedEvents
-  }
-
-  signEvent(event){
-    try {
-      event.id = getEventHash(event)
-      event.sig = getSignature(event, process.env.DAEMON_PRIVKEY || "")
-      const valid = validateEvent(event) && verifySignature(event)
-      if(!valid)
-        throw new Error('generateEvent(): event does not validate')  
-      return event
-    } catch(e) {
-      this.logger.err(`signEvent(): Error: ${e}`)
-      this.logger.info(event)
+  _generateEvent(data){
+    this.logger.warn('Publisher._generateEvent() is not defined')
+    return {
+      ...this.tpl(data.kind),
+      content: data?.content || ""
     }
   }
 
-  signEvents(unsignedEvents){
-    const signedEvents = []
-    unsignedEvents.forEach( event => {
-      signedEvents.push(this.signEvent(event))
-    })
-    return signedEvents
+  // generateEvents(events){
+  //   const unsignedEvents = []
+  //   events.forEach( event => {
+  //     unsignedEvents.push(this.generateEvent(relay))
+  //   })
+  //   return unsignedEvents
+  // }
+
+  signEvent(){
+    if(!this?.event) 
+      throw new Error('signEvent(): this.event is not defined')
+    try {
+      this.event.id = getEventHash(this.event)
+      this.event.sig = getSignature(this.event, process.env.DAEMON_PRIVKEY || "")
+      const valid = validateEvent(this.event) && verifySignature(this.event)
+      if(!valid)
+        throw new Error('generateEvent(): event does not validate')  
+      return this.event
+    } catch(e) {
+      this.logger.err(`signEvent(): Error: ${e}`)
+      this.logger.info(this.event)
+    }
   }
+
+  // signEvents(unsignedEvents){
+  //   const signedEvents = []
+  //   unsignedEvents.forEach( event => {
+  //     signedEvents.push(this.signEvent(event))
+  //   })
+  //   return signedEvents
+  // }
 
   async publishEvent(signedEvent){
     const pool = new SimplePool();

@@ -13,22 +13,20 @@ export const TrawlQueue = (qopts={}) => {
   return QueueInit('TrawlQueue', qopts)
 }
 
-export const LivenessQueue = (qopts={}) => {
-  return QueueInit('LivenessQueue', qopts)
-}
-
 export const NocapdQueue = (name=null, qopts={}) => {
   name = name? name: 'NocapdQueue'
   return QueueInit(name, qopts)
 }
 
-export const SyncQueue = (qopts={}) => {
-  return QueueInit('SyncQueue', qopts)
+export const PersistQueue = (name=null, qopts={}) => {
+  name = name? name: 'PersistQueue'
+  return QueueInit(name, qopts)
 }
 
-export const RestApiQueue = (qopts={}) => {
-  return QueueInit('RestApiQueue', qopts)
-}
+//not sure?
+// export const LivenessQueue = (qopts={}) => {
+//   return QueueInit('LivenessQueue', qopts)
+// }
 
 export const QueueInit = (key, qopts={}) => {
   if($?.[key]) return $[key]
@@ -47,11 +45,9 @@ export const BullMQ = {
 }
 
 export default {
-  SyncQueue,
   TrawlQueue,
-  LivenessQueue,
   NocapdQueue,
-  RestApiQueue,
+  PersistQueue,
   QueueInit,
   BullMQ
 }

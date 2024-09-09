@@ -43,10 +43,10 @@ export class RetryManager {
   async setRetries( url, success ){
     let id 
     if(success) {
-      this.log?.debug(`${url} did not require a retry`)
+      this.log?.info(`${url} did not require a retry`)
       id = await this.rcache.retry.set(this.cacheId(url), 0)
     } else { 
-      this.log?.debug(`${url} required a retry`)
+      this.log?.info(`${url} required a retry`)
       id = await this.rcache.retry.increment(this.cacheId(url))
     }
     return id

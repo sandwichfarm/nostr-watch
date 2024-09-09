@@ -1,3 +1,4 @@
+.changeset
 .turbo
 **/node_modules
 *.wasm

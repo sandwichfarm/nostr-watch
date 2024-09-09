@@ -29,6 +29,7 @@ export class AnnounceMonitor {
   public monReg?: any;
   public monRelays: string[] = [];
   public monProfile: any;
+  private publishers: any = {}; 
 
   constructor(options: AnnounceMonitorOptions) {
     this.setup(options);
@@ -81,40 +82,45 @@ export class AnnounceMonitor {
   }
 
   generate(): any {
+    console.log('announce::generate()')
+
     const $monReg = new Kind10166()
-    this.events["10166"] = $monReg.generateEvent({...this.monReg})
+    $monReg.generateEvent({...$monReg})
+    this.publishers["10166"] = $monReg
 
     const $monRelays = new Kind10002()
     if(this.monRelays.length) {
-      this.events["10002"] = $monRelays.generateEvent([...this.monRelays])
+      $monRelays.generateEvent([...this.monRelays])
+      this.publishers["10002"] = $monRelays
     }
     
     const $monProfile = new Kind0() 
     if(Object.keys(this.monProfile).length) {
-      this.events["0"] = $monProfile.generateEvent({...this.monProfile})
+      $monProfile.generateEvent({...this.monProfile})
+      this.publishers["0"] = $monProfile
     }
-    return this.events
+
+    return this.publishers
   }
 
   sign(sk: Uint8Array): any {
-    if(!this.events) throw new Error("Event has not yet been generated (run generate() first)") 
-    Object.values(this.events).forEach( (publisher: any) => {  
-      console.log(publisher.signEvent())
-      this.events[publisher.kind] = publisher.signEvent()
+    if(!this.publishers) throw new Error("Event has not yet been generated (run generate() first)") 
+    Object.values(this.publishers).forEach( (publisher: any) => {  
+      this.publishers[publisher.kind] = publisher.signEvent()
     })
   }
 
   async publish( relays: string[] ): Promise<string[]> {
-    if(!this.events) throw new Error("Event has not yet been generated") 
+    if(!this.publishers) throw new Error("Event has not yet been generated") 
     const pubbedIds: string[] = []
     const $pool = new SimplePool()
-    const kinds = Object.keys(this.events)
+    const kinds = Object.keys(this.publishers)
     for(let i = 0; i < kinds.length; i++) {
       const kind = kinds[i]    
-      const promises = $pool.publish(relays, this.events[kind])
+      const promises = $pool.publish(relays, this.publishers[kind])
       await Promise.all(promises)
       console.log(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(relays.join(','))}`)
-      pubbedIds.push(this.events[kind].id)
+      pubbedIds.push(this.publishers[kind].id)
     }
     return pubbedIds
   }

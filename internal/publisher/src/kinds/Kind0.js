@@ -10,7 +10,7 @@ export class Kind0 extends Publisher {
     this.machine_readable = true
   }
 
-  generateEvent(data){
+  _generateEvent(data){
     let tags = []
     const content = Kind0.generateContent(data)
     
@@ -33,6 +33,8 @@ export class Kind0 extends Publisher {
       console.dir(`Kind0::generateContent(): Error: ${e}`)
       throw new Error('Was not able to stringify data for kind 0 content field.')
     }
+    if(!content)
+      content = "{}"
     return content 
   }
 

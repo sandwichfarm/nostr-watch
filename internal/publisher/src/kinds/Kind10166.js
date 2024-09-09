@@ -17,7 +17,7 @@ export class Kind10166 extends Publisher {
    * @param {Object} data The data to generate event tags from.
    * @returns {Object} The generated event.
    */
-  generateEvent(data) {
+  _generateEvent(data) {
     let tags = Kind10166.generateTags(data);
     const event = {
       ...this.tpl(),

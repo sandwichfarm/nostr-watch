@@ -11,16 +11,23 @@ import Publish from '@nostrwatch/publisher'
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
+import { Persist } from './Persist.js'
+
+let errors = 0
+
 export class NWWorker {
   $
   rcache
   pubkey
+  persist
   
   constructor(pubkey, $q, rcache, config){
     this.pubkey = pubkey
     this.$ = $q
     this.rcache = rcache
     this.config = config
+    this.persist = new Persist(config?.monitor?.slug)
+    this.persist.setWorker(this._persist_result.bind(this))
     this.setup()
     this.log.info(`${this.id()} initialized`)
   }
@@ -122,7 +129,7 @@ export class NWWorker {
       await this.on_fail( result )
     else
       await this.on_success( result )
-    await this.after_completed( result, fail )
+    await this.after_completed( result )
   }
 
   async on_success(result){
@@ -137,12 +144,33 @@ export class NWWorker {
     this.log.debug(`on_fail(): ${result.url}`)
   }
 
-  async after_completed(result, error=false){
+  async after_completed(result){
     if(this.hard_stop) return
     this.log.debug(`after_completed(): ${result.url}`)
-    await this.updateRelayCache( { ...result } )      
-    await this.retry.setRetries( result.url, !error )
-    await this.setLastChecked( result.url )
+    await this.persist.addJob(result)
+  }
+
+  async _persist_result(job){
+    const {data:result} = job
+    let err = false
+    const fail = result?.open?.data? false: true
+    const cacheError = (from, e) => err = { from, e}
+    try {
+      this.log.debug(`------${result.url}-------`)
+      await this.updateRelayCache( { ...result } ).catch( e => cacheError('updateRelayCache', e) )
+      this.log.debug('updateRelayCache')
+      await this.retry.setRetries( result.url, !fail ).catch( e => cacheError('setRetries', e) )
+      this.log.debug(`setRetries: ${result.url}: fail: ${fail}`)
+      await this.setLastChecked( result.url ).catch( e => cacheError('setLastChecked', e) )
+      this.log.debug(`setLastChecked: value = ${await this.getLastChecked(result.url)}`)
+    }
+    finally {
+      if(err)
+        this.log.error(`_persist_result() failed: ${err.from}: ${err.e.message}`)
+      else 
+        this.log.debug(`success: ${result.url}: persisted via queue`)
+    }
+    this.log.debug('------------------')
   }
 
   cbcall(...args){
@@ -340,31 +368,39 @@ export class NWWorker {
         const persist_result = async (resolve, reject) => { 
           this.log.debug(`persist_result(${key})`)
           const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data) }
-          if(key === 'ssl') _record.data = JSON.stringify({ valid_to: result[key].data.valid_to, valid_from: result[key].data.valid_from })
-          else              _record.data = JSON.stringify(result[key].data)
+          
+          if(key === 'ssl') 
+            _record.data = JSON.stringify({ valid_to: result[key].data.valid_to, valid_from: result[key].data.valid_from })
+          else              
+            _record.data = JSON.stringify(result[key].data)
+
           const _check_id = await this.rcache.check[key].insert(_record)
+          
           if(!_check_id)
             reject(new Error(`Could not persist ${_check_id} check`))
+          
           record[key] = _check_id
           resolve()
         }
         promises.push( new Promise( persist_result ) )
       }
     }
+
     await Promise.all(promises)
-    await delay(100)
     const $id = await this.rcache.relay.patch(record)
     return $id
   }
 
   async getRelays() {
     this.log.debug(`getRelays()`)
+    
     const allRelays = await this.rcache.relay.get.all();
     const onlineRelays = []
     const onlineExpiredRelays = [];
     const uncheckedRelays = [];
     let expiredRelays = [];
     let truncateLength
+    errors = 0
 
     this.relayMeta = new Map()
   
@@ -400,6 +436,9 @@ export class NWWorker {
       }
       this.relayMeta.set(relay.url, { group, retries: retries > 0 ? retries : undefined });
     }
+
+    if(errors > 0)
+      console.log('DATA INTEGRITY ERRORS', errors)
   
     expiredRelays = expiredRelays.sort((a, b) => a.retries - b.retries).map(r => r.url);
   
@@ -440,7 +479,13 @@ export class NWWorker {
       let retries = await this.retry.getRetries(url);
       retries = retries === null? 0: retries
       const expiry = retries > 0 ? this.retry.getExpiry(url) : this.expires;
-      return lastChecked < Date.now() - expiry;
+      const expired = lastChecked < Date.now() - expiry;
+      const relay = await this.rcache.relay.get.one(url);
+      if(relay.online && retries > 0) {
+        errors++
+        // console.log('isExpired():', `online?: ${relay.online}`, url, lastChecked, retries, expiry, expired)
+      }
+      return expired
   }
 
   get_truncate_length(relays){

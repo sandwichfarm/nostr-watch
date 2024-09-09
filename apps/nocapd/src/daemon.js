@@ -18,6 +18,7 @@ import { NWWorker } from './classes/Worker.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
 
 import migrate from './migrate/index.js'
+import sync from "../../trawler/src/sync.js";
 
 const PUBKEY = process.env.DAEMON_PUBKEY
 const log = new Logger('@nostrwatch/nocapd')
@@ -37,7 +38,8 @@ const checkQueue = async () => {
   if(enqueue > 0) {
     return log.debug(`checkQueue(): ${$q.queue.name}: ${enqueue} events active`)
   }
-  populateQueue()
+  log.debug(`populating queue in 5 seconds.`)
+  setTimeout(() => populateQueue(), 5000)
 }
 
 const setIntervals = () => {
@@ -84,7 +86,7 @@ const stop = async(signal) => {
 }
 
 const maybeAnnounce = async () => {
-  log.info(`maybeAnnounce()`)
+  log.debug(`maybeAnnounce()`)
   const map = {
     "publisher.kinds": "kinds",
     "nocapd.checks.options.timeout": "timeouts",
@@ -96,15 +98,17 @@ const maybeAnnounce = async () => {
     "monitor.info": "profile"
   }
   const conf = mapper(config, map)
-  console.log(conf)
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf)
-  console.log('-------')
-  console.log(announce.generate())
-  console.log('-------')
-  process.exit()
-  announce.sign( process.env.DAEMON_PRIVKEY )
-  await announce.publish( conf.relays ).catch(e => { throw new Error(e) })
+  try {
+    console.log('calling announce.generate()')
+    // console.log(announce.generate())
+    announce.generate()
+    announce.sign( process.env.DAEMON_PRIVKEY )
+  } catch (e) {
+    throw new Error(e)
+  }
+  await announce.publish( conf.relays ).catch(e => { log.warn(e.message) })
 }
 
 const scheduleSeconds = async (name, intervalMs, cb) => {
@@ -114,7 +118,7 @@ const scheduleSeconds = async (name, intervalMs, cb) => {
 
   log.info(`${name}: scheduling to fire every ${timestring(intervalMs, "s")} seconds`)
   const rule = new schedule.RecurrenceRule();
-  const _interval = timestring(intervalaaMs, "s")
+  const _interval = timestring(intervalMs, "s")
   rule.start = Date.now(); 
   rule.rule = `*/${_interval} * * * * *`; 
   return schedule.scheduleJob(rule, async () => await cb())
@@ -157,7 +161,6 @@ const syncRelaysIn = async () => {
     const relays = syncData[0].map(r => { return { url: normalizeUrl(r), online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     log.debug(`syncRelaysIn(): Persisting ${relays.length} relays`, relays)
     const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
-    log.debug(`syncRelaysIn(): Persisted ${persisted} new relays`)
     if(persisted.length === 0) return 0
     log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
     return persisted
@@ -174,6 +177,7 @@ const maybeBootstrap = async () => {
   if(rcache.relay.count.all() === 0){
     const persisted = await syncRelaysIn()
     log.info(`Boostrapped ${persisted.length} relays`)
+    return true
   }
 }
 
@@ -212,13 +216,14 @@ export const Nocapd = async () => {
   console.log('Loaded config')
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
-  console.log('Loaded relaycache: ', rcache)
   await migrate(rcache)
-  console.log('Migrated relaycache: ', rcache)
   await delay(1000)
   await maybeAnnounce()
-  await maybeBootstrap()
-  console.log('Bootstrapped')
+  if(await maybeBootstrap()) 
+    console.log('Bootstrapped')
+  else
+    await syncRelaysIn()
+  
   $q = await initWorker()
   $q.worker.on('drained', populateQueue)
 

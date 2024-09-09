@@ -10,7 +10,7 @@ export class Kind10002 extends Publisher {
     this.machine_readable = true
   }
 
-  generateEvent(data){
+  _generateEvent(data){
     let tags = Kind10002.generateTags(data)  
     const event = {
       ...this.tpl(),

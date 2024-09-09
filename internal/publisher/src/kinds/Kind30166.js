@@ -11,7 +11,7 @@ export class Kind30166 extends PublisherNocap {
     this.machine_readable = true
   }
 
-  generateEvent(check){
+  _generateEvent(check){
     let content = "{}"
     const tags = Kind30166.generateTags(check)
     const nip11 = check.info?.data

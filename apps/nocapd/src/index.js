@@ -23,7 +23,7 @@ dP    dP \`88888P' \`88888P' \`88888P8 88Y888P' \`88888P8
 const run = async () => {
   await tracePromises()
   header()
-  await showDependencies()
+  // await showDependencies()
   const $d = await daemon()
   return $d
 }

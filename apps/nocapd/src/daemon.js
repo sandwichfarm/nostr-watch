@@ -99,8 +99,9 @@ const maybeAnnounce = async () => {
   console.log(conf)
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf)
-  announce.generate()
-  console.log(announce.events)
+  console.log('-------')
+  console.log(announce.generate())
+  console.log('-------')
   process.exit()
   announce.sign( process.env.DAEMON_PRIVKEY )
   await announce.publish( conf.relays ).catch(e => { throw new Error(e) })
@@ -113,7 +114,7 @@ const scheduleSeconds = async (name, intervalMs, cb) => {
 
   log.info(`${name}: scheduling to fire every ${timestring(intervalMs, "s")} seconds`)
   const rule = new schedule.RecurrenceRule();
-  const _interval = timestring(intervalMs, "s")
+  const _interval = timestring(intervalaaMs, "s")
   rule.start = Date.now(); 
   rule.rule = `*/${_interval} * * * * *`; 
   return schedule.scheduleJob(rule, async () => await cb())
@@ -140,11 +141,20 @@ const scheduleSyncRelays = () =>{
   return scheduleSeconds(name, intervalMs, job)
 }
 
+const normalizeUrl = (url) => {
+  try {
+    const parsedUrl = new URL(url)
+    return parsedUrl.toString()
+  } catch (error) {
+    return null
+  }
+}
+
 const syncRelaysIn = async () => {
     log.debug(`syncRelaysIn()`)
     const syncData = await bootstrap('nocapd')
     log.debug(`syncRelaysIn(): found ${syncData[0].length} *maybe new* relays`)
-    const relays = syncData[0].map(r => { return { url: new URL(r).toString(), online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
+    const relays = syncData[0].map(r => { return { url: normalizeUrl(r), online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     log.debug(`syncRelaysIn(): Persisting ${relays.length} relays`, relays)
     const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
     log.debug(`syncRelaysIn(): Persisted ${persisted} new relays`)

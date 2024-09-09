@@ -23,7 +23,7 @@
     "demos/*",
     "internal/*",
     "libraries/*",
-    "libraries/nocap/adapters/**/*",
+    "libraries/nocap/adapters/**/*",  
     "libraries/kit/adapters/**/*",
     "libraries/adapters/**/*",
     "libraries/validators/**/*",

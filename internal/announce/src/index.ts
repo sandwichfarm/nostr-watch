@@ -82,21 +82,16 @@ export class AnnounceMonitor {
 
   generate(): any {
     const $monReg = new Kind10166()
-    $monReg.generateEvent({...this.monReg})
-    console.log($monReg)
-    process.exit()
-    this.events["10166"] = $monReg
+    this.events["10166"] = $monReg.generateEvent({...this.monReg})
 
     const $monRelays = new Kind10002()
     if(this.monRelays.length) {
-      $monRelays.generateEvent([...this.monRelays])
-      this.events["10002"] = $monRelays
+      this.events["10002"] = $monRelays.generateEvent([...this.monRelays])
     }
     
     const $monProfile = new Kind0() 
     if(Object.keys(this.monProfile).length) {
-      $monProfile.generateEvent({...this.monProfile})
-      this.events["0"] = $monProfile
+      this.events["0"] = $monProfile.generateEvent({...this.monProfile})
     }
     return this.events
   }

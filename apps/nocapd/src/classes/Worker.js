@@ -243,40 +243,60 @@ export class NWWorker {
     return percentage.toFixed(2) + "%";
   }
 
+
+
   async progressMessage(url, result={}, error=false){
+    
+
     this.log.debug(`progressMessage()`)
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray
+
+    let duration = 0
+    const incD = ( _d ) => duration += _d > 0? _d: 0
+
     let progress = ''
     progress += `[${chalk.bgBlack(this.calculateProgress())}] `
     progress += `${mute(this.processed++)}/${mute(this.total)}  `
     progress += `${url}: `
-    if(this.checks.includes('open'))
+
+    if(this.checks.includes('open')) {
       progress += `${result?.open?.data === true? success("online"): failure("offline")} `
-    if(this.checks.includes('read'))
+      incD(result?.open?.duration)
+    } 
+    if(this.checks.includes('read')) {
       progress += `${result?.read?.data === true? success("readable"): failure("unreadable")} ` 
-    if(this.checks.includes('write'))
-      progress += `${result?.write?.data === true? success("writable"): failure("unwritable")} `
-    if(this.checks.includes('ssl'))
-      progress += `${Object.keys(result?.ssl?.data || {}).length? success("ssl"): failure("ssl")} `
-    if(this.checks.includes('dns'))
-      progress += `${Object.keys(result?.dns?.data || {}).length? success("dns"): failure("dns")} `
-    if(this.checks.includes('geo'))
-      progress += `${Object.keys(result?.geo?.data || {}).length? success("geo"): failure("geo")} `
-    if(this.checks.includes('info'))
-      progress += `${Object.keys(result?.info?.data || {}).length? success("info"): failure("info")} `
-    
-    if(!error){
-      progress += `${(result?.open?.duration+result?.read?.duration+result?.write?.duration)/1000} seconds  `
+      incD(result?.read?.duration)
     }
-    
+    if(this.checks.includes('write')) {
+      progress += `${result?.write?.data === true? success("writable"): failure("unwritable")} `
+      incD(result?.write?.duration)
+    }
+    if(this.checks.includes('ssl')){
+      progress += `${Object.keys(result?.ssl?.data || {}).length? success("ssl"): failure("ssl")} `
+      incD(result?.ssl?.duration)
+    }
+    if(this.checks.includes('dns')){
+      progress += `${Object.keys(result?.dns?.data || {}).length? success("dns"): failure("dns")} `
+      incD(result?.dns?.duration)
+    } 
+    if(this.checks.includes('geo')){
+      progress += `${Object.keys(result?.geo?.data || {}).length? success("geo"): failure("geo")} `
+      incD(result?.geo?.duration)
+    }
+    if(this.checks.includes('info')){
+      progress += `${Object.keys(result?.info?.data || {}).length? success("info"): failure("info")} `
+      incD(result?.info?.duration)
+    }    
+    if(!error){
+      progress += `${duration/1000} seconds  `
+    }
     if(error) {
       const retries = await this.retry.getRetries(url)
       progress += `${error? chalk.gray.italic('error'): ''}  ` 
       progress += `[${retries !== null? retries: 0} retries]`
     }
-
     this.log.info(progress)       
   }
 

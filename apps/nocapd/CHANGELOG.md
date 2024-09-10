@@ -1,5 +1,13 @@
 # @nostrwatch/nocapd
 
+## 1.6.1
+
+### Patch Changes
+
+- 38f1e69: hotfix: reverse accidental regression
+- Updated dependencies [38f1e69]
+  - @nostrwatch/publisher@0.9.1
+
 ## 1.6.0
 
 ### Minor Changes

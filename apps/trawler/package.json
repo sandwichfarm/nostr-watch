@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/trawler",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "src/index.js",
   "type": "module",
   "engines": {
@@ -15,7 +15,7 @@
     "@nostrwatch/nocap": "0.6.0",
     "@nostrwatch/nostrawl": "*",
     "@nostrwatch/nwcache": "0.1.5",
-    "@nostrwatch/publisher": "0.9.0",
+    "@nostrwatch/publisher": "0.9.1",
     "@nostrwatch/seed": "0.0.5",
     "@nostrwatch/utils": "0.1.6",
     "@types/ioredis": "5.0.0",

@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.9.1
+
+### Patch Changes
+
+- 38f1e69: hotfix: reverse accidental regression
+
 ## 0.9.0
 
 ### Minor Changes

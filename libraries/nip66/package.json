@@ -13,7 +13,7 @@
     "yaml": "2.4.5"
   },
   "devDependencies": {
-    "@nostrwatch/nip66-schema": "0.0.1",
+    "@nostrwatch/nip66-schema": "*",
     "rimraf": "6.0.1",
     "ts-loader": "^9.2.6",
     "typedoc": "^0.22.15",

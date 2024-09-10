@@ -4,23 +4,6 @@ import { loadConfig, chunkArray } from '@nostrwatch/utils'
 
 const config = await loadConfig()
 
-import fs from 'fs/promises';
-
-// async function writeObjectToFile(obj) {
-
-//   let filename = obj.tags.find( tag => tag[0] === 'd' )[1].replace('wss://', '').replace('ws://', '').replace('http://', '').replace('https://', '').replace('/', '')
-//   filename = `${obj.kind}-${filename}`
-  
-//   const fileName = `./.events/${filename}.json`;
-//   const jsonContent = JSON.stringify(obj, null, 2); // pretty-print JSON
-
-//   try {
-//     await fs.writeFile(fileName, jsonContent);
-//   } catch (error) {
-//     console.error('Error writing file:', error);
-//   }
-// }
-
 export class Publisher { 
 
   event = null
@@ -129,13 +112,23 @@ export class PublisherNocap extends Publisher {
   }
 
   async one(relay){
-    if(!relay?.url) throw new Error('one(): relay must have a url property')
-    if(!config.publisher?.to_relays) throw new Error('one(): config.publisher.to_relays is not configured')
+    if(!relay?.url) 
+      throw new Error('one(): relay must have a url property')
+    if(!config.publisher?.to_relays) 
+      throw new Error('one(): config.publisher.to_relays is not configured')
     this.logger.debug(`one(): attempting to publish event for relay ${relay.url} to ${JSON.stringify(config.publisher?.to_relays)} relays`)
+    
     const unsignedEvent = this.generateEvent(relay)
     const signedEvent = this.signEvent(unsignedEvent)
-    await this.publishEvent(signedEvent)
-    this.logger.debug(`one(): published event`)
+
+    this.publishEvent(signedEvent)
+      .then( () => {
+        this.logger.debug(`one(): published event`)
+      })
+      .catch( e => {
+        this.logger.error(`one(): Error: ${e}`)
+      })
+    
   }
 
 }

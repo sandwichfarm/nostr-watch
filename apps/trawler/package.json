@@ -8,10 +8,12 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@nostr-fetch/adapter-nostr-tools": "0.13.1",
+    "@nostr-dev-kit/ndk": "2.10.0",
+    "@nostr-fetch/adapter-nostr-tools": "0.15.1",
     "@nostrwatch/controlflow": "0.5.1",
     "@nostrwatch/logger": "0.0.9",
     "@nostrwatch/nocap": "0.5.7",
+    "@nostrwatch/nostrawl": "*",
     "@nostrwatch/nwcache": "0.1.5",
     "@nostrwatch/publisher": "0.8.1",
     "@nostrwatch/seed": "0.0.5",
@@ -26,7 +28,7 @@
     "logging": "3.3.0",
     "murmurhash": "2.0.1",
     "node-schedule": "2.1.1",
-    "nostr-fetch": "0.13.1",
+    "nostr-fetch": "0.15.1",
     "nostr-tools": "1.17.0",
     "timestring": "7.0.0",
     "url-local": "2.0.0",

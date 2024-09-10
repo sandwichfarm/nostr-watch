@@ -38,7 +38,7 @@ export class Kind30166 extends PublisherNocap {
     const protocol = new URL(check.url).protocol
 
     const info = check?.info?.data || {}
-    const geo = check?.geo?.data || {}
+    const geo = check?.geo?.data || []
     const ssl = check?.ssl?.data || {}
     const dns = check?.dns?.data || {}
 
@@ -145,23 +145,82 @@ export class Kind30166 extends PublisherNocap {
       }
     }
 
-    if (geo?.isp){
-      tags.push(['L', 'host.isp'])
-      tags.push(['l', geo.isp, 'host.isp'])
+    const geoISP = (geo, tags) => {
+      if (geo?.isp){
+        tags.push(['L', 'host.isp'])
+        tags.push(['l', geo.isp, 'host.isp'])
+      }
+  
+      if (geo?.as){
+        tags.push(['L', 'host.as'])
+        tags.push(['l', geo.as, 'host.as'])
+      }
+  
+      if (geo?.asname){
+        tags.push(['L', 'host.asn'])
+        tags.push(['l', geo.asname, 'host.asn'])
+      }
+      return tags
     }
 
-    if (geo?.as){
-      tags.push(['L', 'host.as'])
-      tags.push(['l', geo.as, 'host.as'])
+    const dedupLabels = (tags) => {
+      let dedupedTags = [];
+      let keys = new Map();
+  
+      tags.forEach(item => {
+          if (item[0] === 'L') {
+              const key = item[1];
+              if (!keys.has(key)) {
+                  keys.set(key, new Set());
+                  dedupedTags.push(item);
+              }
+          } else if (item[0] === 'l') {
+              const key = item[2];
+              const value = item[1];
+              if (keys.has(key) && !keys.get(key).has(value)) {
+                  keys.get(key).add(value);
+                  dedupedTags.push(item);
+              }
+          }
+      });
+  
+      return dedupedTags;
     }
 
-    if (geo?.asname){
-      tags.push(['L', 'host.asn'])
-      tags.push(['l', geo.asname, 'host.asn'])
+    const removeLabels = (tags) => {
+      return tags.filter(t => t[0] !== 'l' && t[0] !== 'L')
     }
 
-    if(geo && geo instanceof Object) 
-      tags = [...tags, ...ngeotags(geo, {isoAsNamespace: false})];
+    const geoGTags = (geo) => {
+      const gOpts = {
+        isoAsNamespace: false,
+        geohash: true,
+        gps: false,
+        countryCode: true,
+        countryName: true,
+        regionCode: true
+      }
+      return ngeotags(geo, gOpts);
+    }
+
+    if(geo && geo instanceof Array) {
+      let ispTags = [],
+          geoTags = [];
+
+      for(const g of geo){
+        ispTags = geoISP(g, ispTags)
+        geoTags = geoGTags(g, tags)
+      }
+      
+      geoTags = [...removeLabels(geoTags), ...dedupLabels(geoTags)]
+      ispTags = dedupLabels(ispTags)
+      tags = [...tags, ...ispTags, ...geoTags]
+    }
+
+    if(tags.filter(t => t[0] === 'g').length > 9) {
+      console.log(tags)
+      process.exit()
+    }
 
     tags.push(['l', 'draft7', 'nip66.draft'])
 

@@ -90,7 +90,7 @@ export const trawl = async function($job){
   const relays = $job.data.relays.filter( relay => !ignore.includes(relay.url) )
   const pool = new SimplePool();
   const fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool));
-  const kinds = [ 2, 10002 ]
+  const kinds = [ 3, 10002 ]
 
   relays.forEach( async (relay) => {
     
@@ -132,8 +132,8 @@ export const trawl = async function($job){
             delete deferPersist[ev.id]
             continue
           }
-          const foundRelays =  (await rcache.relay.get.many(cacheIds)).map( relay => relay.url )
 
+          const foundRelays =  (await rcache.relay.get.many(cacheIds)).map( relay => relay.url )
           console.log(`found ${cacheIds.length} new relays`, foundRelays)
           
           const roundtrip = { 
@@ -145,7 +145,7 @@ export const trawl = async function($job){
           if(config?.trawler?.sync?.out?.events)
             roundtrip.syncEventsCallback = syncEventsCallback
           
-          const data = jobData(relayList, roundtrip)
+          const data = jobData(relayList, 9)
           await sync.relays.out(data)
         }
       }

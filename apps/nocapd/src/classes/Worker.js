@@ -27,7 +27,7 @@ export class NWWorker {
     this.rcache = rcache
     this.config = config
     this.persist = new Persist(config?.monitor?.slug)
-    this.persist.setWorker(this._persist_result.bind(this))
+    this.persist.setWorker(this.persist_result.bind(this))
     this.setup()
     this.log.info(`${this.id()} initialized`)
   }
@@ -147,10 +147,16 @@ export class NWWorker {
   async after_completed(result){
     if(this.hard_stop) return
     this.log.debug(`after_completed(): ${result.url}`)
-    await this.persist.addJob(result)
+    const concurrency = this.config?.bullmq?.worker?.concurrency
+    if(!concurrency || concurrency <= 1) {
+      await this.persist_result({ data: result })
+    }
+    else {
+      await this.persist.addJob(result)
+    }
   }
-
-  async _persist_result(job){
+  
+  async persist_result(job){
     const {data:result} = job
     let err = false
     const fail = result?.open?.data? false: true
@@ -166,7 +172,7 @@ export class NWWorker {
     }
     finally {
       if(err)
-        this.log.error(`_persist_result() failed: ${err.from}: ${err.e.message}`)
+        this.log.error(`persist_result() failed: ${err.from}: ${err.e.message}`)
       else 
         this.log.debug(`success: ${result.url}: persisted via queue`)
     }
@@ -242,8 +248,6 @@ export class NWWorker {
     let percentage = (this.processed / this.total) * 100;
     return percentage.toFixed(2) + "%";
   }
-
-
 
   async progressMessage(url, result={}, error=false){
     

@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "11.7.0",
-    "@nostrwatch/nip01-schema": "0.0.1"
+    "@nostrwatch/nip01-schema": "*"
   },
   "scripts": {
     "clean": "rimraf dist/*",

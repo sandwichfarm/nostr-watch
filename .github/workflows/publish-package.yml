@@ -12,49 +12,7 @@ on:
       - '.github/workflows/publish-package.yml'
 
 jobs:
-  versioning:
-    runs-on: ubuntu-latest
-    outputs:
-      should_publish: ${{ steps.publish_check.outputs.should_publish }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Check for Changeset Version Bump
-        id: publish_check
-        run: |
-          # Check if there are changesets that need version bumping
-          if yarn changeset status; then
-            echo "should_publish=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_publish=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Version Packages with Changeset
-        if: steps.publish_check.outputs.should_publish == 'true'
-        run: yarn changeset version
-
-      - name: Commit Version Changes
-        if: steps.publish_check.outputs.should_publish == 'true'
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add .
-          git commit -m "Version bumped by Changesets"
-          git push origin next
-
   publish:
-    needs: versioning 
-    if: needs.versioning.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false 

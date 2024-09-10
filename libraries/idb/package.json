@@ -1,12 +1,12 @@
 {
   "name": "@nostrwatch/idb",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "src/index.ts",
   "license": "MIT",
   "type": "module",
   "dependencies": {
     "@nostr-dev-kit/ndk": "2.8.2",
-    "@nostrwatch/kit": "0.0.1",
+    "@nostrwatch/kit": "0.0.2",
     "dexie": "4.0.8",
     "dexie-observable": "4.0.1-beta.13",
     "dexie-syncable": "4.0.1-beta.13",

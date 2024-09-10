@@ -1,7 +1,6 @@
 import "websocket-polyfill";
 
 import schedule from 'node-schedule'
-import Deferred from 'promise-deferred'
 
 import timestring from 'timestring'
 import chalk from 'chalk'
@@ -18,7 +17,6 @@ import { NWWorker } from './classes/Worker.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
 
 import migrate from './migrate/index.js'
-import sync from "../../trawler/src/sync.js";
 
 const PUBKEY = process.env.DAEMON_PUBKEY
 const log = new Logger('@nostrwatch/nocapd')

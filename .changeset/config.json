@@ -1,11 +1,11 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.0.3/schema.json",
-  "changelog": "@changesets/cli/changelog",
+  "changelog": ["@changesets/cli/changelog", {"repo": "sandwichfarm/nostr-watch"}],
   "commit": false,
   "fixed": [],
   "linked": [],
-  "access": "restricted",
-  "baseBranch": "main",
+  "access": "public",
+  "baseBranch": "next",
   "updateInternalDependencies": "patch",
   "ignore": []
 }

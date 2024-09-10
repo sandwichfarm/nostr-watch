@@ -1,5 +1,17 @@
 # @nostrwatch/nocap-geo-adapter-default
 
+## 1.0.6
+
+### Patch Changes
+
+- 00693ff: nocapd is faster
+
+## 1.0.5
+
+### Patch Changes
+
+- 00693ff: nocapd is faster
+
 ## 1.0.4
 
 ### Patch Changes

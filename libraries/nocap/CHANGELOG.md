@@ -1,5 +1,23 @@
 # @nostrwatch/nocap
 
+## 0.5.6
+
+### Patch Changes
+
+- 00693ff: nocapd is faster
+- Updated dependencies [00693ff]
+  - @nostrwatch/nocap-every-adapter-default@1.4.5
+  - @nostrwatch/logger@0.0.9
+
+## 0.5.5
+
+### Patch Changes
+
+- 00693ff: nocapd is faster
+- Updated dependencies [00693ff]
+  - @nostrwatch/nocap-every-adapter-default@1.4.4
+  - @nostrwatch/logger@0.0.8
+
 ## 0.5.4
 
 ### Patch Changes

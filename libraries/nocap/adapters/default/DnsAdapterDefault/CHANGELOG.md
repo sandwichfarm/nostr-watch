@@ -1,5 +1,17 @@
 # @nostrwatch/nocap-dns-adapter-default
 
+## 1.1.3
+
+### Patch Changes
+
+- 00693ff: nocapd is faster
+
+## 1.1.2
+
+### Patch Changes
+
+- 00693ff: nocapd is faster
+
 ## 1.1.1
 
 ### Patch Changes

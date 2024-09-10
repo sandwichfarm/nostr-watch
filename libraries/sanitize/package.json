@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/sanitize",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "sanitize nostr kind 2/10002 relay lists",
   "main": "dist/index.js",
   "scripts": {

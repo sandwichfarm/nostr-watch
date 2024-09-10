@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/kit",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "NIP-66 relay discoverability via NDK",
   "main": "src/index.ts",
   "type": "module",

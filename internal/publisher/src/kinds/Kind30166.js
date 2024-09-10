@@ -216,12 +216,7 @@ export class Kind30166 extends PublisherNocap {
       ispTags = dedupLabels(ispTags)
       tags = [...tags, ...ispTags, ...geoTags]
     }
-
-    if(tags.filter(t => t[0] === 'g').length > 9) {
-      console.log(tags)
-      process.exit()
-    }
-
+    
     tags.push(['l', 'draft7', 'nip66.draft'])
 
     return tags

@@ -18,6 +18,8 @@ jobs:
       should_publish: ${{ steps.publish_check.outputs.should_publish }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -31,7 +33,7 @@ jobs:
         id: publish_check
         run: |
           # Check if there are changesets that need version bumping
-          if yarn changeset status --since="${{ github.ref_name }}"; then
+          if yarn changeset status; then
             echo "should_publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
@@ -39,8 +41,7 @@ jobs:
 
       - name: Version Packages with Changeset
         if: steps.publish_check.outputs.should_publish == 'true'
-        run: |
-          yarn changeset version
+        run: yarn changeset version
 
       - name: Commit Version Changes
         if: steps.publish_check.outputs.should_publish == 'true'

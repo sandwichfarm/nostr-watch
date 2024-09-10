@@ -51,6 +51,7 @@ jobs:
           git commit -m "Version bumped by Changesets"
           git push origin next
   publish:
+    needs: versioning 
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false 

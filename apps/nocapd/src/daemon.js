@@ -155,12 +155,14 @@ const normalizeUrl = (url) => {
 }
 
 const syncRelaysIn = async () => {
+    if($q?.queue) await $q.queue.pause()
     log.debug(`syncRelaysIn()`)
     const syncData = await bootstrap('nocapd')
     log.debug(`syncRelaysIn(): found ${syncData[0].length} *maybe new* relays`)
     const relays = syncData[0].map(r => { return { url: normalizeUrl(r), online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
     log.debug(`syncRelaysIn(): Persisting ${relays.length} relays`, relays)
     const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
+    if($q?.queue) await $q.queue.resume()
     if(persisted.length === 0) return 0
     log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
     return persisted
@@ -173,11 +175,14 @@ const queueOpts = () => {
 }
 
 const maybeBootstrap = async () => {
-  log.info(`Bootstrapping...`)
   if(rcache.relay.count.all() === 0){
+    log.info(`Bootstrapping...`)
     const persisted = await syncRelaysIn()
     log.info(`Boostrapped ${persisted.length} relays`)
     return true
+  } else {
+    log.info(`Already bootstrapped.`)
+    return false
   }
 }
 
@@ -221,8 +226,8 @@ export const Nocapd = async () => {
   await maybeAnnounce()
   if(await maybeBootstrap()) 
     console.log('Bootstrapped')
-  else
-    await syncRelaysIn()
+  // else
+  //   await syncRelaysIn()
   
   $q = await initWorker()
   $q.worker.on('drained', populateQueue)

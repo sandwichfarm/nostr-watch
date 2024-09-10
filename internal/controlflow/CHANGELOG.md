@@ -1,5 +1,11 @@
 # @nostrwatch/controlflow
 
+## 0.5.1
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+
 ## 0.5.0
 
 ### Minor Changes

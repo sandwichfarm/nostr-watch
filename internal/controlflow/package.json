@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/controlflow",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Provides exports for application control flow",
   "main": "index.js",
   "type": "module",

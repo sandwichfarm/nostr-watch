@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-websocket-adapter-default
 
+## 1.3.5
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+
 ## 1.3.4
 
 ### Patch Changes

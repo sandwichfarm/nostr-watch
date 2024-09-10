@@ -1,5 +1,13 @@
 # @nostrwatch/nocap
 
+## 0.5.7
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+- Updated dependencies [32d8b25]
+  - @nostrwatch/nocap-every-adapter-default@1.4.6
+
 ## 0.5.6
 
 ### Patch Changes

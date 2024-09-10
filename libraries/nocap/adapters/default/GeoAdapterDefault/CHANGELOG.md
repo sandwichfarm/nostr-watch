@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-geo-adapter-default
 
+## 1.0.7
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+
 ## 1.0.6
 
 ### Patch Changes

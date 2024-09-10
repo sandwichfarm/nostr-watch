@@ -1,5 +1,18 @@
 # @nostrwatch/nocap-every-adapter-default
 
+## 1.4.6
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+- Updated dependencies [32d8b25]
+  - @nostrwatch/nocap-websocket-browser-adapter-default@0.0.5
+  - @nostrwatch/nocap-websocket-adapter-default@1.3.5
+  - @nostrwatch/nocap-info-adapter-default@1.1.4
+  - @nostrwatch/nocap-dns-adapter-default@1.1.4
+  - @nostrwatch/nocap-geo-adapter-default@1.0.7
+  - @nostrwatch/nocap-ssl-adapter-default@1.4.5
+
 ## 1.4.5
 
 ### Patch Changes

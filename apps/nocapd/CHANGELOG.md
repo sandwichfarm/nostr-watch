@@ -1,5 +1,17 @@
 # @nostrwatch/nocapd
 
+## 1.5.1
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+- Updated dependencies [32d8b25]
+  - @nostrwatch/nocap-every-adapter-default@1.4.6
+  - @nostrwatch/controlflow@0.5.1
+  - @nostrwatch/publisher@0.8.1
+  - @nostrwatch/announce@0.4.1
+  - @nostrwatch/nocap@0.5.7
+
 ## 1.5.0
 
 ### Minor Changes

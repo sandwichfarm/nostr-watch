@@ -1,5 +1,11 @@
 # @nostrwatch/announce
 
+## 0.4.1
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+
 ## 0.4.0
 
 ### Minor Changes

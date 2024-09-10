@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-ssl-adapter-default
 
+## 1.4.5
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+
 ## 1.4.4
 
 ### Patch Changes

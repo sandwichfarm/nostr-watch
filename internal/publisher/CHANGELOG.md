@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.8.1
+
+### Patch Changes
+
+- 32d8b25: tinkering with changesets.
+
 ## 0.8.0
 
 ### Minor Changes

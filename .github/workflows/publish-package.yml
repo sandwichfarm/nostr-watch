@@ -27,13 +27,24 @@ jobs:
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Get Base Branch
+        id: get_base_branch
+        run: |
+          BASE_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+          echo "base_branch=$BASE_BRANCH" >> "$GITHUB_OUTPUT"
+
       - name: Check for Changeset Version Bump
         id: publish_check
         run: |
-          # Check if any packages need to be version bumped
-          if yarn changeset status; then
-            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          BASE_BRANCH="${{ steps.get_base_branch.outputs.base_branch }}"
+          if git show-ref --verify --quiet "refs/heads/$BASE_BRANCH"; then
+            if yarn changeset status --since=$BASE_BRANCH; then
+              echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            fi
           else
+            echo "Base branch not found."
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -50,6 +61,7 @@ jobs:
           git add .
           git commit -m "Version bumped by Changesets"
           git push origin next
+
   publish:
     needs: versioning 
     runs-on: ubuntu-latest

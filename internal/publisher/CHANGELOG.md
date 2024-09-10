@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.9.0
+
+### Minor Changes
+
+- 462a82e: support multiple geohashes for geo dns confs
+
 ## 0.8.1
 
 ### Patch Changes

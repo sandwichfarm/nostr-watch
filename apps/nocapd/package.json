@@ -1,7 +1,7 @@
 {
   "name": "@nostrwatch/nocapd",
   "type": "module",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
@@ -9,10 +9,10 @@
     "@nostrwatch/announce": "0.4.1",
     "@nostrwatch/controlflow": "0.5.1",
     "@nostrwatch/logger": "0.0.9",
-    "@nostrwatch/nocap": "0.5.7",
-    "@nostrwatch/nocap-every-adapter-default": "1.4.6",
+    "@nostrwatch/nocap": "0.6.0",
+    "@nostrwatch/nocap-every-adapter-default": "1.5.0",
     "@nostrwatch/nwcache": "0.1.5",
-    "@nostrwatch/publisher": "0.8.1",
+    "@nostrwatch/publisher": "0.9.0",
     "@nostrwatch/seed": "0.0.5",
     "@nostrwatch/utils": "0.1.6",
     "bluebird": "3.7.2",

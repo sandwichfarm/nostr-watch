@@ -1,5 +1,18 @@
 # @nostrwatch/nocapd
 
+## 1.6.0
+
+### Minor Changes
+
+- 462a82e: support multiple geohashes for geo dns confs
+
+### Patch Changes
+
+- Updated dependencies [462a82e]
+  - @nostrwatch/nocap-every-adapter-default@1.5.0
+  - @nostrwatch/publisher@0.9.0
+  - @nostrwatch/nocap@0.6.0
+
 ## 1.5.1
 
 ### Patch Changes

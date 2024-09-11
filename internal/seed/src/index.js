@@ -40,7 +40,7 @@ export const bootstrap = async (caller) => {
     api = await relaysOnlineFromApi(opts)
 
   if(opts.sources.includes('events'))
-    events = await relaysFromEvents(opts)
+    events = await relaysFromEvents(opts, caller)
 
   const uniques = new Set([...configseed[0], ...staticseed[0], ...nwcache[0], ...api[0], ...events[0]])
 
@@ -51,7 +51,7 @@ export const bootstrap = async (caller) => {
 
 const emptyResponse = () => [[], Date.now()]
 
-export const relaysFromEvents = async (opts) => {
+export const relaysFromEvents = async (opts, caller) => {
   if(!opts?.options?.events?.pubkeys)
     throw new Error(`No pubkeys specified at 'config.${caller}.seed.options.events.pubkeys'`)
   if(!opts?.options?.events?.relays)

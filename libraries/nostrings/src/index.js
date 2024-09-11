@@ -1,10 +1,10 @@
 import Logger from '@nostrwatch/logger'
 
-const logger = new Logger('sanitizers')
+const logger = new Logger('@nostrwatch/nostrings')
 
 const BLOCK_HOSTNAMES = [];
 
-export const normalizeRelays = (relays) => {
+export const sanitize = (relays) => {
   if(!relays?.length)
     return console.log('!relays?.length', relays)
   relays = maybeSplitRelayList(relays)
@@ -97,77 +97,4 @@ export const normalizeRelayUrl = (relay) => {
   return ""
 }
 
-
-
-// export const sanitizeRelayList = (relays) => {
-
-//   const listFilters = [
-//     'relaysFilterInvalid',
-//     'relaysFilterBlocked',
-//     'relaysFilterRobotsTxtDisallowed'
-//   ]
-
-//   listFilters.forEach(listFilter => {
-//    relays = listFilter(relays) 
-//   });
-
-//   return relays
-// }
-
-// export const relaysFilterInvalid = (relays) => {
-//   let invalids = 0;
-//   const re = /^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$/;
-//   const validRelays = relays.filter(relay => {
-//     try {
-//       const test = URL.parse(relay);
-//       if (
-//         test && 
-//         (test.protocol === 'wss:' || test.protocol === 'ws:') && 
-//         re.test(test.hostname) &&
-//         !test.hostname.includes('https:') &&
-//         !test.hostname.includes('http:') && 
-//         test.hostname.includes('.')
-//       ) {
-//         return true;
-//       }
-//       invalids++;
-//       return false;
-//     } catch(e) {
-//       invalids++;
-//       return false;
-//     }
-//   });
-//   return validRelays;
-// }
-
-// export const relaysFilterDuplicates = (relays) => {
-//   const hostnameMap = new Map();
-//   return relays.filter(url => {
-//     try { 
-//       const hostname = URL.parse(url).hostname;
-//       if (hostname && !hostnameMap.has(hostname)) {
-//         hostnameMap.set(hostname, true);
-//         return true;
-//       }
-//       return false;
-//     } catch(e) {
-//       return false;
-//     }
-//   });
-// }
-
-// export const relaysFilterPortDuplicates = (relays) => {
-//   const relaysMap = new Map(relays.map(relay => [URL.parse(relay)?.hostname, relay]));
-//   return Array.from(relaysMap.values());
-// }
-
-// export const relaysFilterRobotsTxtDisallowed = (relays) => {
-//   const disallowed = cache.get('disallowed') || [];
-//   return relays.filter(relay => !disallowed.includes(relay));
-// }
-
-// export const relaysFilterBlocked = (relays) => {
-//   return relays.filter(relay => !BLOCK_HOSTNAMES.some(hostname => relay.includes(hostname)));
-// }
-
-export default normalizeRelays
+export default sanitize

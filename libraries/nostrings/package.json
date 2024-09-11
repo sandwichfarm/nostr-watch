@@ -1,0 +1,31 @@
+{
+  "name": "@nostrwatch/nostrings",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "library of functions for sanitizing and normalizing relay urls",
+  "main": "dist/index.js",
+  "repository": "https://github.com/sandwichfarm/nostr-watch",
+  "author": "sandwich.farm",
+  "license": "MIT",
+   "scripts": {
+    "build": "tsc",                 // Build the TypeScript code
+    "test": "vitest",               // Run tests with vitest
+    "test:watch": "vitest --watch", // Run tests in watch mode
+    "test:coverage": "vitest run --coverage",  // Run tests with coverage
+    "lint": "eslint 'src/**/*.ts'", // Lint the code using ESLint
+    "lint:fix": "eslint 'src/**/*.ts' --fix", // Automatically fix linting issues
+    "clean": "rm -rf dist",         // Clean the dist folder (use rimraf for cross-platform)
+    "build:clean": "npm run clean && npm run build" // Clean and then build
+  },
+  "dependencies": {
+    "@nostrwatch/logger": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",         // Adjust version based on your needs
+    "vitest": "^0.31.0",
+    "eslint": "^8.0.0",             // Linter (optional, but recommended)
+    "@typescript-eslint/parser": "^5.0.0",  // ESLint parser for TypeScript
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@types/node": "^18.0.0"        // Node.js types
+  }
+}

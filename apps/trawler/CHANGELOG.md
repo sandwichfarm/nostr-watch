@@ -1,5 +1,18 @@
 # @nostrwatch/trawler
 
+## 0.2.0
+
+### Minor Changes
+
+- 75a585e: nostrings + nocapd improvements
+
+### Patch Changes
+
+- Updated dependencies [75a585e]
+  - @nostrwatch/nostrings@0.1.0
+  - @nostrwatch/nocap@0.7.1
+  - @nostrwatch/seed@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

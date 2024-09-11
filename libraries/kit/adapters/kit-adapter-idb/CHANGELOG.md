@@ -1,5 +1,13 @@
 # @nostrwatch/kit-adapter-idb
 
+## 0.0.6
+
+### Patch Changes
+
+- 75a585e: nostrings + nocapd improvements
+- Updated dependencies [75a585e]
+  - @nostrwatch/idb@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes

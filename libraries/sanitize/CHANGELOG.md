@@ -1,5 +1,11 @@
 # @nostrwatch/sanitize
 
+## 0.0.5
+
+### Patch Changes
+
+- 75a585e: nostrings + nocapd improvements
+
 ## 0.0.4
 
 ### Patch Changes

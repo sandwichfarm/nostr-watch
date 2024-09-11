@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/trawler",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "src/index.js",
   "type": "module",
   "engines": {
@@ -12,12 +12,12 @@
     "@nostr-fetch/adapter-nostr-tools": "0.15.1",
     "@nostrwatch/controlflow": "0.5.1",
     "@nostrwatch/logger": "0.0.9",
-    "@nostrwatch/nocap": "0.7.0",
+    "@nostrwatch/nocap": "0.7.1",
     "@nostrwatch/nostrawl": "*",
     "@nostrwatch/nwcache": "0.2.0",
     "@nostrwatch/publisher": "0.10.0",
-    "@nostrwatch/nostrings": "0.0.1",
-    "@nostrwatch/seed": "0.1.0",
+    "@nostrwatch/nostrings": "0.1.0",
+    "@nostrwatch/seed": "0.1.1",
     "@nostrwatch/utils": "0.1.7",
     "@types/ioredis": "5.0.0",
     "bullmq": "4.13.3",

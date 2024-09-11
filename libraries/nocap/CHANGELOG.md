@@ -1,5 +1,13 @@
 # @nostrwatch/nocap
 
+## 0.7.1
+
+### Patch Changes
+
+- 75a585e: nostrings + nocapd improvements
+- Updated dependencies [75a585e]
+  - @nostrwatch/nocap-every-adapter-default@1.6.1
+
 ## 0.7.0
 
 ### Minor Changes

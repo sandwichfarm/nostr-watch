@@ -1,5 +1,11 @@
 # @nostrwatch/nip11
 
+## 0.1.1
+
+### Patch Changes
+
+- 75a585e: nostrings + nocapd improvements
+
 ## 0.1.0
 
 ### Minor Changes

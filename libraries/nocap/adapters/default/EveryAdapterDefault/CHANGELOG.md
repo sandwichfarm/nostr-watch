@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-every-adapter-default
 
+## 1.6.1
+
+### Patch Changes
+
+- 75a585e: nostrings + nocapd improvements
+
 ## 1.6.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @nostrwatch/idb
 
+## 0.0.6
+
+### Patch Changes
+
+- 75a585e: nostrings + nocapd improvements
+
 ## 0.0.5
 
 ### Patch Changes

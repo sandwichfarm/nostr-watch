@@ -13,6 +13,8 @@ import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
 import { Persist } from './Persist.js'
 
+import util from 'util'
+
 let errors = 0
 
 export class NWWorker {
@@ -147,7 +149,7 @@ export class NWWorker {
   async after_completed(result){
     if(this.hard_stop) return
     this.log.debug(`after_completed(): ${result.url}`)
-    const concurrency = this.config?.bullmq?.worker?.concurrency
+    const concurrency = this.config?.nocapd?.bullmq?.worker?.concurrency
     if(!concurrency || concurrency <= 1) {
       await this.persist_result({ data: result })
     }

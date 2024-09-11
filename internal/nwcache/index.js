@@ -25,9 +25,9 @@ if (typeof window !== 'undefined') {
   });
 }
 
-class DbWrapper {
-  constructor(dbPath, opts={}){
-    this.$ = withExtensions(open(dbPath, opts));
+export class DbWrapper {
+  constructor(db){
+    this.$ = withExtensions(db);
     this.$ = defineSchemas(this.$);
     this.initialized = false
     this.schemas = schemas
@@ -51,22 +51,38 @@ let db
 export { RelayRecord } from './defaults.js'
 export { ParseSelect } from "./utils.js";
 
-export default (dbPath, opts={}) => {
-  if(!db) {
-    db = new DbWrapper(dbPath, opts)
+export const initializeDb = (_db) => {
+  if(_db.initialized) return _db
+  _db.addHelpers(ServiceMixin)
+  _db.addHelpers(RelayMixin)
+  _db.addHelpers(RetryMixin)
+  _db.addHelpers(ChecksMixin)
+  _db.addHelpers(InfoMixin)
+  _db.addHelpers(CacheTimeMixin)
+  _db.addHelpers(StatMixin)
+  _db.addHelpers(NoteMixin)
+  _db.initialized = true
+  return _db
+}
+
+export const openDb = ( path, opts ) => {
+  return open(path, opts)
+} 
+
+export default (_lmdb, opts={}) => {
+
+  if(!db?.initialized && typeof _lmdb === 'string')
+    _lmdb = openDb(_lmdb, opts)
+
+  if(!db?.initialized) {
+    db = new DbWrapper(_lmdb)
     if(!db?.$)
       throw new Error("Failed to initialize LMDB database")
   }
-  if(db.initialized) return db
-  db.addHelpers(ServiceMixin)
-  db.addHelpers(RelayMixin)
-  db.addHelpers(RetryMixin)
-  db.addHelpers(ChecksMixin)
-  db.addHelpers(InfoMixin)
-  db.addHelpers(CacheTimeMixin)
-  db.addHelpers(StatMixin)
-  db.addHelpers(NoteMixin)
-  db.initialized = true
+
+  db = initializeDb(db)
+  
   return db
+  
 }
 

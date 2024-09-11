@@ -37,10 +37,11 @@ export class Kind30166 extends PublisherNocap {
   static generateTags(check){
     const protocol = new URL(check.url).protocol
 
-    const info = check?.info?.data || {}
-    const geo = check?.geo?.data || []
-    const ssl = check?.ssl?.data || {}
-    const dns = check?.dns?.data || {}
+
+    const info = check?.info?.data
+    const geo = check?.geo?.data
+    const ssl = check?.ssl?.data
+    const dns = check?.dns?.data
 
     const open = check?.open?.duration
     const read = check?.read?.duration
@@ -121,27 +122,31 @@ export class Kind30166 extends PublisherNocap {
       }
     }
 
-    if (ssl && protocol === 'wss:') {
-      const validFrom = new Date(ssl.valid_from).getTime()
-      const validTo = new Date(ssl.valid_to).getTime()
-      const current = validFrom < Date.now() && validTo > Date.now()
-      tags.push(['R', current  ? 'ssl' : '!ssl'])
-    }
-    else if(protocol !== 'wss:') {
-      tags.push(['R', '!ssl'])
-    }
-
-    if (dns?.ipv4?.length){
-      tags.push(['L', 'dns.ipv4'])
-      for(const ipv4 of dns.ipv4){
-        tags.push(['l', ipv4, 'dns.ipv4'])
+    if(ssl) {
+      if (protocol === 'wss:') {
+        const validFrom = new Date(ssl.valid_from).getTime()
+        const validTo = new Date(ssl.valid_to).getTime()
+        const current = validFrom < Date.now() && validTo > Date.now()
+        tags.push(['R', current  ? 'ssl' : '!ssl'])
+      }
+      else {
+        tags.push(['R', '!ssl'])
       }
     }
 
-    if (dns?.ipv6?.length){
-      tags.push(['L', 'dns.ipv6'])
-      for(const ipv6 of dns.ipv6){
-        tags.push(['l', ipv6, 'dns.ipv6'])
+    if(dns) {
+      if (dns?.ipv4?.length){
+        tags.push(['L', 'dns.ipv4'])
+        for(const ipv4 of dns.ipv4){
+          tags.push(['l', ipv4, 'dns.ipv4'])
+        }
+      }
+  
+      if (dns?.ipv6?.length){
+        tags.push(['L', 'dns.ipv6'])
+        for(const ipv6 of dns.ipv6){
+          tags.push(['l', ipv6, 'dns.ipv6'])
+        }
       }
     }
 

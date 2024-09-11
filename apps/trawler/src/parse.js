@@ -1,4 +1,4 @@
-import { normalizeRelays } from './sanitizers.js'
+import sanitize from './sanitize.js'
 
 export const parseRelayList = (note) => {
   let parsed
@@ -12,7 +12,7 @@ export const parseRelayList = (note) => {
   else if(note.kind === 2) 
     parsed = parseRelayFromKind2(note)
   
-  return normalizeRelays(parsed)
+  return parsed?.length? sanitize(parsed): []
 }
 
 export const parseRelayFromKind2 = (note) => {

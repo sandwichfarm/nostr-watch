@@ -6,7 +6,7 @@
     "prerelease": "./scripts/prerelease.sh",
     "release": "yarn prerelease && ./scripts/release.sh",
     "dry-prerelease": "./scripts/prerelease.sh --dry-run",
-    "dev:setup": "node ./scripts/dev.js",
+    "dev:setup": "node ./scripts/dev-link-deps.js",
     "packages:update": "node ./scripts/upkg.js",
     "deploy:nocapd@all": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney",
     "deploy:nocapd@amsterdam": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/amsterdam",

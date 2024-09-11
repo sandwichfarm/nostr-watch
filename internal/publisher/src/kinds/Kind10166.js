@@ -28,11 +28,7 @@ export class Kind10166 extends Publisher {
     return event;
   }
 
-  /**
-   * Generates tags from provided data, including geolocation tags if present.
-   * @param {Object} data The data to generate tags from.
-   * @returns {Array<Array<string|number>>} The generated tags.
-   */
+
   static generateTags(data) {
     const geoOpts = {};
     let tags = [];

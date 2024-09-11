@@ -55,6 +55,7 @@ const schedules = () => {
   schedule.scheduleJob( msToCronTime(checkEveryMs), maybeCheckRelays )
 }
 
+
 export default async () => {
   return new Promise( async (resolve) => {
     header()

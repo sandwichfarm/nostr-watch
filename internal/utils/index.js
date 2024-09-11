@@ -10,6 +10,11 @@ export { loadConfig, extractConfig } from './config.js'
 let { DAEMON_PUBKEY } = process?.env || {};
 DAEMON_PUBKEY = DAEMON_PUBKEY? DAEMON_PUBKEY : 'WARNING_DAEMON_PUBKEY_UNSET';
 
+if(typeof process !== 'undefined' && process?.env && process.env instanceof Object){
+  console.log('env dump:')
+  Object.keys(process.env).forEach( key => { console.log( key, process.env[key]) })
+}
+
 export { DAEMON_PUBKEY }
 export const isBrowser = () => (typeof window !== 'undefined' && typeof document !== 'undefined')
 export const parseRelayNetwork = network.parseRelayNetwork

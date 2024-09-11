@@ -1,21 +1,20 @@
 import _timestring from "timestring";
 import WebSocket from 'ws';
 
-export const delay = async (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
-export const timestringSeconds = (str) => Math.round(_timestring(str)/1000)
+// import { env } from '@nostrwatch/utils'
 
 export const lastTrawledId = (relay) => `LastTrawled:${relay}`
-
 export const retryId = (relay) => `Trawler:${relay}`
-
 export const lastPublishedId = (relay) => `LastPublished:${relay}`
+export const excludeKnownRelays = (known, discovered) => {
+  return discovered.filter( relay => !known.includes(relay) )
+}
 
-export const excludeKnownRelays = (known, discovered) => discovered.filter( relay => !known.includes(relay) )
-
+// Function to check if a single queue is empty
 export const isQueueEmpty = async function(queue) {
     const counts = await queue.getJobCounts("active");
     return counts.active === 0;
+    // return counts.active === 0 && counts.delayed === 0 && counts.completed === 0 && counts.failed === 0;
 };
 
 export const areAllQueuesEmpty = async function(queues) {
@@ -67,7 +66,7 @@ export const countItemsInObjectOfArrays = function(objectOfArrays) {
   return counts;
 }
 
-
+export const timestringSeconds = (str) => Math.round(_timestring(str)/1000)
 
 export const checkOnline = async function(relay, timeout = 10000) {
   return new Promise(resolve => {
@@ -85,3 +84,4 @@ export const checkOnline = async function(relay, timeout = 10000) {
   })
 }
 
+export const delay = async (ms) => new Promise(resolve => setTimeout(resolve, ms))

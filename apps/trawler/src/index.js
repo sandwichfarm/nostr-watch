@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import dotenv from 'dotenv'
+dotenv.config()
+
 import daemon from './daemon.js';
 import Logger from '@nostrwatch/logger'
 

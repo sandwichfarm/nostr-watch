@@ -25,10 +25,13 @@ class NoteGetters {
   }
 
   one(noteid){
+    //is event
     if(noteid?.id)
       noteid = noteid.id
+    //is note id
     if(!noteid.includes('Note@'))
       noteid = noteId(noteid)
+    //is otherwise an id
     return this.db.$.get(noteid)
   }
 

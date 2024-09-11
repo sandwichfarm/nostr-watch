@@ -71,16 +71,17 @@ const normalizeRelayUrls = (relays) => {
 }
 
 const normalizeRelayUrl = (relay) => {
+  let url = ""
   try {
-    const url = new URL(relay)
+    url = new URL(relay)
     url.hash = ''
     url.search = ''
-    return url.toString()
+    url = url.toString()
   }
   catch(e) {
     logger.warn(`Failed to normalize relay ${relay}`)
-    return ""
   }
+  return url  
 }
 
 export const sanitizeRelayUrl = (relay) => {

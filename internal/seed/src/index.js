@@ -6,6 +6,8 @@ import Logger from "@nostrwatch/logger"
 import { fetch } from "cross-fetch"
 import config from "./config.js"
 
+const DEFAULT_RELAYS = [ "wss://relay.nostr.watch", "wss://history.nostr.watch", "wss://relaypag.es" ]
+
 const STATIC_SEED_FILE = new URL('seed.yaml', import.meta.url);
 
 const logger = new Logger('@nostrwatch/seed')
@@ -31,8 +33,8 @@ export const bootstrap = async (caller) => {
   if(opts.sources.includes('static'))
     staticseed = await relaysFromStaticSeed(opts)
 
-  if(opts.sources.includes('nwcache'))
-    nwcache = await relaysOnlineFromCache(opts)
+  if(opts.sources.includes('cache'))
+    nwcache = await relaysFromCache(opts)
 
   if(opts.sources.includes('api'))
     api = await relaysOnlineFromApi(opts)
@@ -67,9 +69,9 @@ export const relaysFromEvents = async (opts) => {
 
   const fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool));
 
-  const kinds = [ 30066 ]
-  const authors = opts.options.events.pubkeys
-  const fetchFromRelays = opts.options.events.relays
+  const kinds = [ 30166 ]
+  const authors = opts.options.events?.pubkeys || []
+  const fetchFromRelays = opts.options.events.relays || DEFAULT_RELAYS
 
   const events = await fetcher.fetchAllEvents(
     fetchFromRelays,
@@ -87,10 +89,32 @@ export const relaysFromEvents = async (opts) => {
   return [[...new Set(relays)], newest]
 }
 
-export const relaysOnlineFromCache = async (opts) => {
-  const { default: nwcache } = await import("@nostrwatch/nwcache")
-  const $nwcache = nwcache(process.env.NWCACHE_PATH)
-  return [ $nwcache.relay.get.online('url').map( relay => relay.url ), Date.now() ]
+export const relaysFromCache = async (opts) => {
+  const cacheOpts = opts?.options?.cache
+  if(!cacheOpts?.path) throw new Error("relaysFromCache(): No cache path specified in opts (opts.cache.path)")
+  // const { default: nwcache } = await import("@nostrwatch/nwcache")
+  const { openDb, DbWrapper, initializeDb } = await import("@nostrwatch/nwcache")
+  
+  let lmdb = openDb(cacheOpts.path, { maxDbs: 10 })
+  let cache = new DbWrapper(lmdb)
+  cache = initializeDb(cache)
+
+  let result 
+  if(cacheOpts?.onlineOnly) {
+    result = await cache.relay.get.online('url')
+  }
+  else {
+    result = await cache.relay.get.all()
+  }
+
+  result = result.map( relay => relay.url )
+
+  cache.$.close()
+  cache = null
+  
+  console.log(cacheOpts.path, result.length)
+
+  return [ result, Date.now() ]
 }
 
 export const relaysFromStaticSeed = async (opts) => {

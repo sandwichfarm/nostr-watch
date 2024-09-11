@@ -1,5 +1,5 @@
 import { PersistQueue, BullMQ } from '@nostrwatch/controlflow'
-import { RedisConnectionDetails } from "@nostrwatch/utils"
+import { delay, RedisConnectionDetails } from "@nostrwatch/utils"
 
 const JOB_OPTS = {
   removeOnComplete: true, 
@@ -16,25 +16,30 @@ export class Persist {
   $ = null
   key
   worker = () => {}
-  workerFn = () => {}
+  workerFn = () => { console.log('workerFn has not been set') }
 
   constructor(slug){
     this.key = `persist6/${slug}`
     this.$ = PersistQueue(this.key)
     this.worker = new BullMQ.Worker(this.key, this.work.bind(this), { concurrency: 1, connection: RedisConnectionDetails() } )
+    this.$.$Queue.resume()
   }
 
   async addJob(result){
-    // console.log(`persist: added ${result.url}`)
+    // console.log(`persist: ADD JOB ${result.url}`)
     return this.$.$Queue.add( 'persist', result, JOB_OPTS )
   }
 
   setWorker(fn){
-    this.workerFn = fn
+    if(fn instanceof Function)
+      this.workerFn = fn
   }
 
   async work(jd) {
-    await this.workerFn(jd).catch(e => { throw new Error(e) })
+    // console.log(`persist: BEGIN`)
+    await this.workerFn(jd).catch(e => { this.log.error(e.message) })
+    await delay(1)
+    // console.log(`persist: SUCCESS`)
   }
 
 }

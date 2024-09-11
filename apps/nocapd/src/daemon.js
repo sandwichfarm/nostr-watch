@@ -16,36 +16,40 @@ import { parseRelayNetwork, delay, loadConfig, RedisConnectionDetails } from "@n
 import { NWWorker } from './classes/Worker.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
 
+import util from 'util'
+
 import migrate from './migrate/index.js'
 
 const PUBKEY = process.env.DAEMON_PUBKEY
 const log = new Logger('@nostrwatch/nocapd')
 
-let rcache
-let config 
-let $q
+let rcache,
+    config, 
+    $q,
+    jobs
 
-const populateQueue = async () => { 
+const populateJobQueue = async () => { 
   await $q.checker.populator() 
   await $q.checker.resetProgressCounts()
 }
 
-const checkQueue = async () => {
-  const counts = await $q.checker.counts()
+const maybePopulateJobs = async (queue) => {
+  const counts = await queue.counts()
   const enqueue = counts.prioritized + counts.active
   if(enqueue > 0) {
-    return log.debug(`checkQueue(): ${$q.queue.name}: ${enqueue} events active`)
+    return log.debug(`maybePopulateJobs(): ${$q.queue.name}: ${enqueue} events active`)
   }
-  log.debug(`populating queue in 5 seconds.`)
-  setTimeout(() => populateQueue(), 5000)
+  await populateJobQueue()
 }
 
-const setIntervals = () => {
-  schedulePopulator()
-  scheduleSyncRelays()
+const setSchedules = async () => {
+  const relayPopulator = await scheduleRelayPopulator()
+  const jobPopulator = await scheduleJobPopulator()
+  return { relayPopulator, jobPopulator }
 }
 
 const initWorker = async () => {
+
   const connection = RedisConnectionDetails()
   log.info(`initWorker(): connecting to redis at`, connection)
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
@@ -57,8 +61,16 @@ const initWorker = async () => {
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
   await $q.checker.drainSmart()
-  setIntervals()
-  await populateQueue()
+
+  jobs = await setSchedules()
+
+  // console.log(util.inspect($q.checker.persist.$, {showHidden: false, depth: null, colors: true}))
+  // console.log($q.checker.persist.$)
+  // process.exit()
+
+  // await populateJobQueue()
+  await maybePopulateJobs($q.checker)
+
   $q.resume()
   log.info(`initialized: ${$q.queue.name}`)
   return $q
@@ -68,12 +80,12 @@ const stop = async(signal) => {
   log.info(`Received ${signal}`);
   log.info(`Gracefully shutting down...`)
   // $q.worker.hard_stop = true
+  log.info(`shutdown progress: cancel jobs`)
+  Object.keys(jobs).forEach( key => jobs[key].cancel() )
   log.info(`shutdown progress: schedule.gracefulShutdown()`)
-  schedule.gracefulShutdown()
-  log.info(`shutdown progress: $q.worker.pause()`)
-  $q.worker.pause()
-  log.info(`shutdown progress: $q.queue.pause()`)
-  $q.queue.pause()
+  await schedule.gracefulShutdown()
+  log.info(`shutdown progress: queue/workers pause()`)
+  pause('stop()')
   log.info(`shutdown progress: close lmdb`)
   rcache.$.close()
   log.info(`shutdown progress: $q.queue.drain()`)
@@ -99,8 +111,7 @@ const maybeAnnounce = async () => {
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf)
   try {
-    console.log('calling announce.generate()')
-    // console.log(announce.generate())
+    log.debug('announce.generate()')
     announce.generate()
     announce.sign( process.env.DAEMON_PRIVKEY )
   } catch (e) {
@@ -109,38 +120,58 @@ const maybeAnnounce = async () => {
   await announce.publish( conf.relays ).catch(e => { log.warn(e.message) })
 }
 
-const scheduleSeconds = async (name, intervalMs, cb) => {
-  const active = await $q.queue.getActive();
-  const jobIds = active.map(job => job.id);
-  // console.log('Active Job IDs:', jobIds);
+function secondsToCron(seconds) {
+  if (seconds < 0) {
+      throw new Error("Seconds value must be non-negative.");
+  }
 
-  log.info(`${name}: scheduling to fire every ${timestring(intervalMs, "s")} seconds`)
+  // Calculate time units
+  let sec = seconds % 60;
+  let minutes = Math.floor(seconds / 60) % 60;
+  let hours = Math.floor(seconds / 3600) % 24;
+
+  // Build cron parts
+  let cronSeconds = sec ? `*/${sec}` : "0";
+  let cronMinutes = minutes ? `*/${minutes}` : "*";
+  let cronHours = hours ? `*/${hours}` : "*";
+
+  // Return cron format: seconds, minutes, hours, day-of-month, month, day-of-week
+  return `${cronSeconds} ${cronMinutes} ${cronHours} * * *`;
+}
+
+
+const scheduleSeconds = async (name, seconds, cb) => {
+  if(seconds instanceof String || seconds < 1) {
+    throw new Error(`scheduleSeconds(): ${name} must be a NUMBER greater-than 0 in SECONDS!`)
+  }
+
+  log.info(`${name}: scheduling to fire every ${seconds} seconds`)
   const rule = new schedule.RecurrenceRule();
-  const _interval = timestring(intervalMs, "s")
   rule.start = Date.now(); 
-  rule.rule = `*/${_interval} * * * * *`; 
+  rule.rule = secondsToCron(seconds); 
   return schedule.scheduleJob(rule, async () => await cb())
 }
 
-const schedulePopulator = () =>{
-  const name = "checkQueue()"
-  const intervalMs = $q.checker.interval
+const scheduleJobPopulator = () =>{
+  const name = "maybePopulateJobs()"
+  const seconds = Math.round($q.checker.interval/1000)
   const job = async () => { 
-    log.info(chalk.grey.italic(`=== scheduled population check for ${$q.queue.name} every ${timestring(intervalMs, "s")} seconds ===`))
-    await checkQueue()
+    log.info(chalk.grey.italic(`=== scheduled population check for ${$q.queue.name} every ${seconds} seconds ===`))
+    await maybePopulateJobs($q.checker)
   }
-  return scheduleSeconds(name, intervalMs, job)
+  return scheduleSeconds(name, seconds, job)
 }
 
-const scheduleSyncRelays = () =>{
-  const name = "scheduleSyncRelays()"
-  if(!config?.nocapd?.seed?.options?.events) return
-  const intervalMs = config.nocapd.seed.options.events.interval
-  log.info(`syncRelaysIn(): scheduling to fire every ${timestring(intervalMs, "s")} seconds`)
+const scheduleRelayPopulator = () =>{
+  const name = "scheduleRelayPopulator()"
+  const seedOpts = config?.nocapd?.seed
+  if(!seedOpts || !config?.nocapd?.seed?.sources?.length) return
+  const seconds = timestring(seedOpts.interval, "s")
   const job = async () => {
-    await syncRelaysIn() 
+    log.debug(`Scheduled: populateRelays()`)
+    await populateRelays() 
   }
-  return scheduleSeconds(name, intervalMs, job)
+  return scheduleSeconds(name, seconds, job)
 }
 
 const normalizeUrl = (url) => {
@@ -152,16 +183,43 @@ const normalizeUrl = (url) => {
   }
 }
 
-const syncRelaysIn = async () => {
-    if($q?.queue) await $q.queue.pause()
-    log.debug(`syncRelaysIn()`)
+const pause = async (caller = "unknown") => {
+  log.info(`${caller} pausing: all queues/workers`)
+  await $q.queue.pause()
+  await $q.worker.pause()
+  await $q.checker.persist.$.$Queue.pause()
+  await $q.checker.persist.worker.pause()
+  await delay(1000)
+  log.info(`${caller} paused: all queues/workers`)
+}
+
+const resume = async (caller = "unknown") => {
+  log.info(`${caller} resuming: all queues/workers`)
+  await $q.queue.resume()
+  await $q.worker.resume()
+  await $q.checker.persist.$.$Queue.resume()
+  await $q.checker.persist.worker.resume()
+  await delay(1000)
+  log.info(`${caller} resumed: all queues/workers`)
+}
+
+const populateRelays = async () => {
+    if($q?.queue) await pause('populateRelays()')
+
+    log.debug(`populateRelays(): begin`)
     const syncData = await bootstrap('nocapd')
-    log.debug(`syncRelaysIn(): found ${syncData[0].length} *maybe new* relays`)
-    const relays = syncData[0].map(r => { return { url: normalizeUrl(r), online: null, network: parseRelayNetwork(r), info: "", dns: "", geo: "", ssl: "" } })
-    log.debug(`syncRelaysIn(): Persisting ${relays.length} relays`, relays)
+    await delay(1)
+    
+    log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
+    const relays = syncData[0].map(r => { return { url: normalizeUrl(r), online: null, network: parseRelayNetwork(r) } })
+
+    log.debug(`populateRelays(): Persisting ${relays.length} relays`, relays)
     const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
-    if($q?.queue) await $q.queue.resume()
+    
+    if($q?.queue) await resume('populateRelays()')
+
     if(persisted.length === 0) return 0
+
     log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
     return persisted
 }
@@ -175,7 +233,7 @@ const queueOpts = () => {
 const maybeBootstrap = async () => {
   if(rcache.relay.count.all() === 0){
     log.info(`Bootstrapping...`)
-    const persisted = await syncRelaysIn()
+    const persisted = await populateRelays()
     log.info(`Boostrapped ${persisted.length} relays`)
     return true
   } else {
@@ -192,11 +250,11 @@ const globalHandlers = () => {
   });
 
   process.on('uncaughtException', async (error) => {
-    console.error('Uncaught Exception:', error);
+    log.error('Uncaught Exception:', error);
   });
   
   process.on('unhandledRejection', async (reason, promise) => {
-    console.error('Unhandled Rejection:', promise.catch(console.error));
+    log.error('Unhandled Rejection:', promise.catch(console.error));
   });  
 
   $q.worker.on('error', async (err) => {
@@ -214,21 +272,21 @@ async function gracefulShutdown(signal) {
 }
 
 export const Nocapd = async () => {
-  console.log('Starting Nocapd...')
+  log.info('Starting Nocapd...')
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
-  console.log('Loaded config')
+  log.info('Loaded config')
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
   await migrate(rcache)
   await delay(1000)
   await maybeAnnounce()
   if(await maybeBootstrap()) 
-    console.log('Bootstrapped')
+    log.info('Bootstrapped')
   // else
-  //   await syncRelaysIn()
+  //   await populateRelays()
   
   $q = await initWorker()
-  $q.worker.on('drained', populateQueue)
+  // $q.worker.on('drained', populateJobQueue)
 
   globalHandlers()
   return {

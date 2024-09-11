@@ -26,10 +26,6 @@ const kv = await relaydb.cachetime.get.allIds()
 
 const chunks = chunkArray(kv, 100)
 
-console.log(chunks)
-process.exit()
-
-
   let count = 0
   for(const chunk of chunks){
     console.log('CHUNKS', chunks.length)

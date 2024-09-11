@@ -7,7 +7,7 @@ import {
   normalizeRelayUrlAcc,
   normalizeRelayUrls,
   normalizeRelayUrl
-} from './relay-urls';  // Adjust this import to your actual file path
+} from './relay-urls.js';  // Adjust this import to your actual file path
 
 describe('sanitize', () => {
   it('should correct a wire array of mishaps', () => {

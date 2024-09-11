@@ -175,7 +175,6 @@ export const isLocal = (_url: string): boolean | null => {
  * @returns {boolean} - Returns true if the URL is in an IP range reserved for local networks, otherwise false.
  */
 export const isLocalNet = (urlString: string): boolean => {
-  // Regular expressions for matching local network IP ranges
   const localIpRanges = [
     /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,    // 127.0.0.0/8 - Loopback addresses
     /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,     // 10.0.0.0/8 - Private network

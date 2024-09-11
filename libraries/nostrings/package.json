@@ -7,25 +7,26 @@
   "repository": "https://github.com/sandwichfarm/nostr-watch",
   "author": "sandwich.farm",
   "license": "MIT",
-   "scripts": {
-    "build": "tsc",                 
-    "test": "vitest",               
-    "test:watch": "vitest --watch", 
-    "test:coverage": "vitest run --coverage", 
-    "lint": "eslint 'src/**/*.ts'", 
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "yarn build",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint 'src/**/*.ts' --fix",
-    "clean": "rm -rf dist",         
-    "build:clean": "npm run clean && npm run build" 
+    "clean": "rm -rf dist",
+    "build:clean": "yarn clean && yarn build"
   },
   "dependencies": {
-    "@nostrwatch/logger": "*"
+    "@nostrwatch/logger": "0.0.9"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",        
+    "typescript": "^5.0.0",
     "vitest": "^0.31.0",
-    "eslint": "^8.0.0",            
-    "@typescript-eslint/parser": "^5.0.0",  
+    "eslint": "^8.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "@types/node": "^18.0.0" 
+    "@types/node": "^18.0.0"
   }
 }

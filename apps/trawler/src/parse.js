@@ -1,4 +1,4 @@
-import sanitize from './sanitize.js'
+import nostrings from '@nostrwatch/nostrings'
 
 export const parseRelayList = (note) => {
   let parsed
@@ -12,7 +12,7 @@ export const parseRelayList = (note) => {
   else if(note.kind === 2) 
     parsed = parseRelayFromKind2(note)
   
-  return parsed?.length? sanitize(parsed): []
+  return parsed?.length? nostrings(parsed): []
 }
 
 export const parseRelayFromKind2 = (note) => {

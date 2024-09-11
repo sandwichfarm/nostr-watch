@@ -111,8 +111,6 @@ export const relaysFromCache = async (opts) => {
 
   cache.$.close()
   cache = null
-  
-  console.log(cacheOpts.path, result.length)
 
   return [ result, Date.now() ]
 }

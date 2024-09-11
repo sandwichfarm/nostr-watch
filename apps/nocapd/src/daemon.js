@@ -14,6 +14,7 @@ import { bootstrap } from '@nostrwatch/seed'
 import { parseRelayNetwork, delay, loadConfig, RedisConnectionDetails } from "@nostrwatch/utils"
 
 import { NWWorker } from './classes/Worker.js'
+import { ShortBus } from './classes/ShortBus.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
 
 import util from 'util'
@@ -26,6 +27,7 @@ const log = new Logger('@nostrwatch/nocapd')
 let rcache,
     config, 
     $q,
+    bus,
     jobs
 
 const populateJobQueue = async () => { 
@@ -48,17 +50,22 @@ const setSchedules = async () => {
   return { relayPopulator, jobPopulator }
 }
 
-const initWorker = async () => {
+const initBus = () => {
+  bus = new ShortBus(config?.monitor?.slug)
+}
 
+const initQueue = async () => {
+  
   const connection = RedisConnectionDetails()
-  log.info(`initWorker(): connecting to redis at`, connection)
+  log.info(`initQueue(): connecting to redis at`, connection)
   const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
+
   $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('@nostrwatch/nocapd:queue-control'), redis: connection })
   await $q
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
-    .set( 'checker', new NWWorker(PUBKEY, $q, rcache, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
+    .set( 'checker', new NWWorker(PUBKEY, $q, rcache, bus, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
   await $q.checker.drainSmart()
 
@@ -73,7 +80,7 @@ const initWorker = async () => {
 
   $q.resume()
   log.info(`initialized: ${$q.queue.name}`)
-  return $q
+  
 }
 
 const stop = async(signal) => {
@@ -162,11 +169,20 @@ const scheduleJobPopulator = () =>{
   return scheduleSeconds(name, seconds, job)
 }
 
+const relayPopulatorOnTheShortBus = () => {
+  bus.setWorker('relay-import', persistRelays)
+}
+
+const relayCheckerOnTheShortBus = () => {
+  bus.setWorker($q.checker.key, $q.checker.persist_result.bind($q.checker))
+}
+
 const scheduleRelayPopulator = () =>{
   const name = "scheduleRelayPopulator()"
   const seedOpts = config?.nocapd?.seed
   if(!seedOpts || !config?.nocapd?.seed?.sources?.length) return
   const seconds = timestring(seedOpts.interval, "s")
+  
   const job = async () => {
     log.debug(`Scheduled: populateRelays()`)
     await populateRelays() 
@@ -187,8 +203,8 @@ const pause = async (caller = "unknown") => {
   log.info(`${caller} pausing: all queues/workers`)
   await $q.queue.pause()
   await $q.worker.pause()
-  await $q.checker.persist.$.$Queue.pause()
-  await $q.checker.persist.worker.pause()
+  await bus.$.$Queue.pause()
+  await bus.worker.pause()
   await delay(1000)
   log.info(`${caller} paused: all queues/workers`)
 }
@@ -197,15 +213,13 @@ const resume = async (caller = "unknown") => {
   log.info(`${caller} resuming: all queues/workers`)
   await $q.queue.resume()
   await $q.worker.resume()
-  await $q.checker.persist.$.$Queue.resume()
-  await $q.checker.persist.worker.resume()
+  await bus.$.$Queue.resume()
+  await bus.worker.resume()
   await delay(1000)
   log.info(`${caller} resumed: all queues/workers`)
 }
 
 const populateRelays = async () => {
-    if($q?.queue) await pause('populateRelays()')
-
     log.debug(`populateRelays(): begin`)
     const syncData = await bootstrap('nocapd')
     await delay(1)
@@ -213,15 +227,19 @@ const populateRelays = async () => {
     log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
     const relays = syncData[0].map(r => { return { url: normalizeUrl(r), online: null, network: parseRelayNetwork(r) } })
 
-    log.debug(`populateRelays(): Persisting ${relays.length} relays`, relays)
-    const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
-    
-    if($q?.queue) await resume('populateRelays()')
+    bus.addJob({ relays, type: 'relay-import' })
+}
 
-    if(persisted.length === 0) return 0
+const persistRelays = async (job) => {
+  log.debug('persistRelays(): begin')
 
-    log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
-    return persisted
+  const { relays } = job.data
+  log.debug(`populateRelays(): Persisting ${relays.length} relays`, relays)
+  const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
+
+  if(persisted.length === 0) return 0
+  
+  log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
 }
 
 const queueOpts = () => {
@@ -282,11 +300,12 @@ export const Nocapd = async () => {
   await maybeAnnounce()
   if(await maybeBootstrap()) 
     log.info('Bootstrapped')
-  // else
-  //   await populateRelays()
   
-  $q = await initWorker()
-  // $q.worker.on('drained', populateJobQueue)
+  initBus()
+  await initQueue()
+
+  relayPopulatorOnTheShortBus()
+  relayCheckerOnTheShortBus()
 
   globalHandlers()
   return {

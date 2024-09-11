@@ -11,27 +11,25 @@ import Publish from '@nostrwatch/publisher'
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
-import { Persist } from './Persist.js'
-
 import util from 'util'
 
 let errors = 0
 
 export class NWWorker {
+  key = 'relay-check'
   $
   rcache
   pubkey
-  persist
+  bus
   
-  constructor(pubkey, $q, rcache, config){
+  constructor(pubkey, $q, rcache, bus, config){
     this.pubkey = pubkey
     this.$ = $q
     this.rcache = rcache
     this.config = config
-    this.persist = new Persist(config?.monitor?.slug)
-    this.persist.setWorker(this.persist_result.bind(this))
     this.setup()
     this.log.info(`${this.id()} initialized`)
+    this.bus = bus
   }
 
   setup(){
@@ -151,15 +149,16 @@ export class NWWorker {
     this.log.debug(`after_completed(): ${result.url}`)
     const concurrency = this.config?.nocapd?.bullmq?.worker?.concurrency
     if(!concurrency || concurrency <= 1) {
-      await this.persist_result({ data: result })
+      await this.bus_result({ data: { result, type: this.key }})
     }
     else {
-      await this.persist.addJob(result)
+      await this.bus.addJob({ result, type: this.key })
     }
   }
   
   async persist_result(job){
-    const {data:result} = job
+    const {result} = job.data
+    this.log.debug(`inside persist_result()`)
     let err = false
     const fail = result?.open?.data? false: true
     const cacheError = (from, e) => err = { from, e}
@@ -464,7 +463,7 @@ export class NWWorker {
     }
 
     if(errors > 0)
-      console.log('DATA INTEGRITY ERRORS', errors)
+      this.log.debug(`DATA INTEGRITY ERRORS #: ${errors}`)
   
     expiredRelays = expiredRelays.sort((a, b) => a.retries - b.retries).map(r => r.url);
   

@@ -18,6 +18,9 @@ jobs:
       fail-fast: false 
       matrix:
         include:
+          - package: 'nostrings'
+            nodeVersion: '20'
+            typescript: 'true'
           - package: 'announce'
             nodeVersion: '20'
             typescript: 'true'

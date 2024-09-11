@@ -149,7 +149,7 @@ export class NWWorker {
     this.log.debug(`after_completed(): ${result.url}`)
     const concurrency = this.config?.nocapd?.bullmq?.worker?.concurrency
     if(!concurrency || concurrency <= 1) {
-      await this.bus_result({ data: { result, type: this.key }})
+      await this.persist_result({ data: { result, type: this.key }})
     }
     else {
       await this.bus.addJob({ result, type: this.key })

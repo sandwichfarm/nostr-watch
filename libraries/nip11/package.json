@@ -1,7 +1,7 @@
 {
   "name": "@nostrwatch/nip11",
   "type": "module",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "main": "dist/bundle.js",
   "license": "MIT",
   "dependencies": {

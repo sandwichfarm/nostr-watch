@@ -1,5 +1,16 @@
 # @nostrwatch/nocap
 
+## 0.7.0
+
+### Minor Changes
+
+- d0adc3d: trawler/nocapd refactor
+
+### Patch Changes
+
+- Updated dependencies [d0adc3d]
+  - @nostrwatch/nocap-every-adapter-default@1.6.0
+
 ## 0.6.0
 
 ### Minor Changes

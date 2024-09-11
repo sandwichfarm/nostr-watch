@@ -1,5 +1,11 @@
 # @nostrwatch/seed
 
+## 0.1.0
+
+### Minor Changes
+
+- d0adc3d: trawler/nocapd refactor
+
 ## 0.0.5
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @nostrwatch/nwcache
 
+## 0.2.0
+
+### Minor Changes
+
+- d0adc3d: trawler/nocapd refactor
+
 ## 0.1.5
 
 ### Patch Changes

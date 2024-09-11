@@ -1,11 +1,11 @@
 {
   "name": "@nostrwatch/kit-adapter-idb",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "src/index.js",
   "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@nostrwatch/idb": "0.0.4",
+    "@nostrwatch/idb": "0.0.5",
     "@nostrwatch/kit": "0.0.4",
     "murmurhash": "2.0.1",
     "promise-deferred": "2.0.4",

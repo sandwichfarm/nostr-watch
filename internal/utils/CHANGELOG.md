@@ -1,5 +1,11 @@
 # @nostrwatch/utils
 
+## 0.1.7
+
+### Patch Changes
+
+- d0adc3d: trawler/nocapd refactor
+
 ## 0.1.6
 
 ### Patch Changes

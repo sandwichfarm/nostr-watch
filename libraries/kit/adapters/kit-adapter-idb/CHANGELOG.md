@@ -1,5 +1,13 @@
 # @nostrwatch/kit-adapter-idb
 
+## 0.0.5
+
+### Patch Changes
+
+- d0adc3d: trawler/nocapd refactor
+- Updated dependencies [d0adc3d]
+  - @nostrwatch/idb@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes

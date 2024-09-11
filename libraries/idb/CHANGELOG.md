@@ -1,5 +1,11 @@
 # @nostrwatch/idb
 
+## 0.0.5
+
+### Patch Changes
+
+- d0adc3d: trawler/nocapd refactor
+
 ## 0.0.4
 
 ### Patch Changes

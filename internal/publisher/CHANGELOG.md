@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.10.0
+
+### Minor Changes
+
+- d0adc3d: trawler/nocapd refactor
+
 ## 0.9.1
 
 ### Patch Changes

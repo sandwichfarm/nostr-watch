@@ -7,19 +7,25 @@ import {
   normalizeRelayUrlAcc,
   normalizeRelayUrls,
   normalizeRelayUrl
-} from './yourSanitizeModule';  // Adjust this import to your actual file path
+} from './relay-urls';  // Adjust this import to your actual file path
 
 describe('sanitize', () => {
-  it('should sanitize and normalize relay URLs', () => {
-    const relays = ['wss://relay.example.com', '  wss://RELAY.EXAMPLE.COM ', 'wss://invalid.relay'];
+  it('should correct a wire array of mishaps', () => {
+    const relays = ['wss://relay.example.com', '  wss://RELAY.EXAMPLE.COM ', 'wss://RELAY.EXAMPLE.COM./', '  wss://RELAY.EXAMPLE.COM./#ok ', 'wss://relay1.example.com, wss://relay2.example.com'];
     const result = sanitize(relays);
-    expect(result).toEqual(['wss://relay.example.com']);
+    expect(result).toEqual(['wss://relay.example.com/', 'wss://relay1.example.com/', 'wss://relay2.example.com/']);
   });
 
   it('should return undefined if input is empty', () => {
     const relays: string[] = [];
     const result = sanitize(relays);
     expect(result).toBeUndefined();
+  });
+
+  it('should deduplicate relay URLs', () => {
+    const relays: string[] = ['wss://relay.example.com', '  wss://RELAY.EXAMPLE.COM ', 'wss://RELAY.EXAMPLE.COM'];
+    const result = sanitize(relays);
+    expect(result).toEqual(['wss://relay.example.com/']);
   });
 });
 
@@ -45,9 +51,9 @@ describe('sanitizeRelayUrl', () => {
   });
 
   it('should return empty string if the URL is invalid', () => {
-    const relay = 'invalid-url';
+    const relay = ' wss://relay.example.com/(blob_hash), wss://another.relay  ';
     const result = sanitizeRelayUrl(relay);
-    expect(result).toBe('');
+    expect(result).toBe('wss://relay.example.com/');
   });
 });
 
@@ -76,7 +82,7 @@ describe('normalizeRelayUrlAcc', () => {
     const acc: string[] = [];
     const relay = 'wss://relay.example.com';
     const result = normalizeRelayUrlAcc(acc, relay);
-    expect(result).toEqual(['wss://relay.example.com']);
+    expect(result).toEqual(['wss://relay.example.com/']);
   });
 
   it('should skip adding empty normalized relay URLs', () => {
@@ -91,7 +97,7 @@ describe('normalizeRelayUrls', () => {
   it('should normalize an array of relay URLs', () => {
     const relays = ['wss://relay1.example.com', 'wss://RELAY2.EXAMPLE.COM'];
     const result = normalizeRelayUrls(relays);
-    expect(result).toEqual(['wss://relay1.example.com', 'wss://relay2.example.com']);
+    expect(result).toEqual(['wss://relay1.example.com/', 'wss://relay2.example.com/']);
   });
 });
 
@@ -99,7 +105,7 @@ describe('normalizeRelayUrl', () => {
   it('should normalize a relay URL by stripping hash and search parameters', () => {
     const relay = 'wss://relay.example.com/path?query=1#section';
     const result = normalizeRelayUrl(relay);
-    expect(result).toBe('wss://relay.example.com/');
+    expect(result).toBe('wss://relay.example.com/path');
   });
 
   it('should return empty string for invalid relay URL', () => {

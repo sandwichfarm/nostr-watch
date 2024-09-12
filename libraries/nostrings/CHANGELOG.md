@@ -1,5 +1,11 @@
 # @nostrwatch/nostrings
 
+## 0.2.0
+
+### Minor Changes
+
+- 296aac0: concurrency fix for constrained environments
+
 ## 0.1.0
 
 ### Minor Changes

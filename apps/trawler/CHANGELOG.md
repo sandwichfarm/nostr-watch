@@ -1,5 +1,16 @@
 # @nostrwatch/trawler
 
+## 0.3.0
+
+### Minor Changes
+
+- 296aac0: concurrency fix for constrained environments
+
+### Patch Changes
+
+- Updated dependencies [296aac0]
+  - @nostrwatch/nostrings@0.2.0
+
 ## 0.2.0
 
 ### Minor Changes

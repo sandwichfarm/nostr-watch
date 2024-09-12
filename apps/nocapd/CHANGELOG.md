@@ -1,5 +1,11 @@
 # @nostrwatch/nocapd
 
+## 1.9.0
+
+### Minor Changes
+
+- 296aac0: concurrency fix for constrained environments
+
 ## 1.8.0
 
 ### Minor Changes

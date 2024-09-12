@@ -12,7 +12,7 @@ export const parseRelayList = (note) => {
   else if(note.kind === 2) 
     parsed = parseRelayFromKind2(note)
   
-  return parsed?.length? nostrings(parsed): []
+  return parsed?.length? nostrings.sanitize.relayUrls(parsed): []
 }
 
 export const parseRelayFromKind2 = (note) => {

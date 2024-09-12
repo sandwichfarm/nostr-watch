@@ -1,12 +1,18 @@
 {
   "name": "@nostrwatch/redis",
+  "type": "module",
   "version": "0.0.4",
   "main": "index.js",
   "license": "MIT",
+  "scripts": {
+    "launch": "node index.js"
+  },
   "dependencies": {
     "@bull-board/api": "5.9.2",
     "@bull-board/fastify": "5.9.2",
+    "@bull-board/ui": "5.21.5",
     "bullmq": "4.14.2",
+    "dotenv": "16.4.5",
     "fastify": "4.24.3"
   }
 }

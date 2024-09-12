@@ -28,7 +28,8 @@ let rcache,
     config, 
     $q,
     bus,
-    jobs
+    jobs,
+    concurrency = 1
 
 const populateJobQueue = async () => { 
   await $q.checker.populator() 
@@ -51,14 +52,15 @@ const setSchedules = async () => {
 }
 
 const initBus = () => {
-  bus = new ShortBus(config?.monitor?.slug)
+  if(concurrency > 1) {
+    bus = new ShortBus(config?.monitor?.slug)
+  }
 }
 
 const initQueue = async () => {
   
   const connection = RedisConnectionDetails()
   log.info(`initQueue(): connecting to redis at`, connection)
-  const concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
 
   $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('@nostrwatch/nocapd:queue-control'), redis: connection })
@@ -170,11 +172,15 @@ const scheduleJobPopulator = () =>{
 }
 
 const relayPopulatorOnTheShortBus = () => {
-  bus.setWorker('relay-import', persistRelays)
+  if(concurrency > 1) {
+    bus.setWorker('relay-import', persistRelays)
+  }
 }
 
 const relayCheckerOnTheShortBus = () => {
-  bus.setWorker($q.checker.key, $q.checker.persist_result.bind($q.checker))
+  if(concurrency > 1) {
+    bus.setWorker($q.checker.key, $q.checker.persist_result.bind($q.checker))
+  }
 }
 
 const scheduleRelayPopulator = () =>{
@@ -203,8 +209,10 @@ const pause = async (caller = "unknown") => {
   log.info(`${caller} pausing: all queues/workers`)
   await $q.queue.pause()
   await $q.worker.pause()
-  await bus.$.$Queue.pause()
-  await bus.worker.pause()
+  if(concurrency > 1) {
+    await bus.$.$Queue.pause()
+    await bus.worker.pause()
+  }
   await delay(1000)
   log.info(`${caller} paused: all queues/workers`)
 }
@@ -213,8 +221,10 @@ const resume = async (caller = "unknown") => {
   log.info(`${caller} resuming: all queues/workers`)
   await $q.queue.resume()
   await $q.worker.resume()
-  await bus.$.$Queue.resume()
-  await bus.worker.resume()
+  if(concurrency > 1) {
+    await bus.$.$Queue.resume()
+    await bus.worker.resume()
+  }
   await delay(1000)
   log.info(`${caller} resumed: all queues/workers`)
 }
@@ -227,7 +237,13 @@ const populateRelays = async () => {
     log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
     const relays = syncData[0].map(r => { return { url: normalizeUrl(r), online: null, network: parseRelayNetwork(r) } })
 
-    bus.addJob({ relays, type: 'relay-import' })
+    if(concurrency > 1){
+      bus.addJob({ relays, type: 'relay-import' })
+    }
+    else {
+      await persistRelays({ data: { relays } })
+    }
+    
 }
 
 const persistRelays = async (job) => {
@@ -292,6 +308,7 @@ async function gracefulShutdown(signal) {
 export const Nocapd = async () => {
   log.info('Starting Nocapd...')
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
+  concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   log.info('Loaded config')
   await delay(2000)
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')

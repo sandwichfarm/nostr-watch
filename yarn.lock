@@ -311,6 +311,13 @@
   resolved "https://registry.npmjs.org/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@bull-board/api@5.21.5":
+  version "5.21.5"
+  resolved "https://registry.npmjs.org/@bull-board/api/-/api-5.21.5.tgz#6c190dc4f3230366d88e34f565a5ec4fd82f3edc"
+  integrity sha512-EhAM+VtA9vnIivLQaAJpJ8jhEErtKndL+Ka8hPmRnEM9HLDXpdDcA+CdEtfE3tYIT2Zex/WmtxiINkOd6JxzZQ==
+  dependencies:
+    redis-info "^3.0.8"
+
 "@bull-board/api@5.9.2":
   version "5.9.2"
   resolved "https://registry.npmjs.org/@bull-board/api/-/api-5.9.2.tgz#410ed7fc3876c1494073c2b8edc63517bc2aac56"
@@ -328,6 +335,13 @@
     "@fastify/static" "^6.11.2"
     "@fastify/view" "^8.1.0"
     ejs "^3.1.9"
+
+"@bull-board/ui@5.21.5":
+  version "5.21.5"
+  resolved "https://registry.npmjs.org/@bull-board/ui/-/ui-5.21.5.tgz#80b568d0e6d06cfd4e68c64948493a8cd0b9fc66"
+  integrity sha512-b5TGE/8jhyFEWyNPivhNG0qNZE4mdNbnVSwaKkTCcnSXPSxqjdGoTSAFkugJ3+I8sFka+Uc3nh/suWbRuryQkA==
+  dependencies:
+    "@bull-board/api" "5.21.5"
 
 "@bull-board/ui@5.9.2":
   version "5.9.2"
@@ -5257,7 +5271,7 @@ dotenv@16.3.1:
   resolved "https://registry.npmjs.org/dotenv/-/dotenv-16.3.1.tgz#369034de7d7e5b120972693352a3bf112172cc3e"
   integrity sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==
 
-dotenv@^16.4.4, dotenv@~16.4.5:
+dotenv@16.4.5, dotenv@^16.4.4, dotenv@~16.4.5:
   version "16.4.5"
   resolved "https://registry.npmjs.org/dotenv/-/dotenv-16.4.5.tgz#cdd3b3b604cb327e286b4762e13502f717cb099f"
   integrity sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==

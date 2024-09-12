@@ -1,5 +1,11 @@
 # @nostrwatch/nocapd
 
+## 1.9.1
+
+### Patch Changes
+
+- de9c900: clean out the queue a bit
+
 ## 1.9.0
 
 ### Minor Changes

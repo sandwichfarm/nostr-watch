@@ -49,9 +49,9 @@ export class NWWorker {
     }
   
     this.jobOpts = {
-      removeOnComplete: false,
+      removeOnComplete: true,
       removeOnFail: {
-        age: timestring('10m', 's')
+        age: timestring('2m', 's')
       }
     }
   
@@ -149,10 +149,10 @@ export class NWWorker {
     this.log.debug(`after_completed(): ${result.url}`)
     const concurrency = this.config?.nocapd?.bullmq?.worker?.concurrency
     if(!concurrency || concurrency <= 1) {
-      await this.persist_result({ data: { result, type: this.key }})
+      this.persist_result({ data: { result, type: this.key }})
     }
     else {
-      await this.bus.addJob({ result, type: this.key })
+      this.bus.addJob({ result, type: this.key })
     }
   }
   

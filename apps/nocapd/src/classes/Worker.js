@@ -149,8 +149,8 @@ export class NWWorker {
     else {
       publish30166 = new Publish.Kind30166(process.env.DAEMON_PUBKEY)
     }
-    const id = await publish30166.one( result ).catch(this.log.error.bind(this.log))  
-    log.debug(`on_success(): ${result.url} published ${result?.parent? 'child of '+result.parent: ''}: ${id}`)  
+    const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
+    log.debug(`on_success(): ${result.url} published${result?.parent? ' child of '+result.parent: ''}: ${id}`)  
   }
 
   async on_fail(result){
@@ -449,6 +449,7 @@ export class NWWorker {
     this.relayMeta = new Map()
   
     for (const relay of allRelays) {
+      if (relay.ignore === true) continue;
       if(!this.qualifyNetwork(relay.url)) continue
       const lastChecked = await this.rcache.cachetime.get.one(this.cacheId(relay.url));
       const retries = await this.retry.getRetries(relay.url);

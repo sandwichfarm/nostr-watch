@@ -13,7 +13,7 @@ export class Kind30166 extends PublisherNocap {
 
   _generateEvent(check){
     let content = "{}"
-    const tags = Kind30166.generateTags(check)
+    const tags = this.generateTags(check)
     const nip11 = check.info?.data
 
     if(nip11) {
@@ -34,7 +34,7 @@ export class Kind30166 extends PublisherNocap {
     return event
   }
 
-  static generateTags(check){
+  generateTags(check){
     const protocol = new URL(check.url).protocol
 
     const info = check?.info?.data

@@ -123,17 +123,19 @@ export const relayHostnameDedup = async ( result, cache ) => {
     const isSameAsYoungerRelative = foundAtIndex > index
 
     //the eldest is the root, and the NIP11 data is the same as current segment.
-    const case1 = eldestIsRoot && ( eldestHasHash && isSameAsEldest )
+    const case1 = eldestIsRoot && eldestHasHash && isSameAsEldest
 
     //the eldest is the root, and the NIP11 data is the same as any other relay in the hostname group.
-    const case2 = eldestIsRoot && ( infoHash && isSameAsAnyRelative ) 
+    const case2 = eldestIsRoot && infoHash && isSameAsAnyRelative
 
     //the eldest is not the root, and the NIP11 data is the same as both an older and younger relative.
-    const case3 = !eldestIsRoot && ( isSameAsOlderRelative && isSameAsYoungerRelative )
+    const case3 = !eldestIsRoot && isSameAsOlderRelative && isSameAsYoungerRelative
+
+    const case4 = eldestIsRoot && eldestHasHash && !infoHash
 
     //set ignore to true, this will prevent the tests from running next time around.
-    if( case1 || case2 || case3 ) {
-      log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}]`)
+    if( case1 || case2 || case3 || case4 ) {
+      log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}]`)
       result.ignore = true
     }
   }

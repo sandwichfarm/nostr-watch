@@ -50,12 +50,12 @@ export class Publisher {
   //   return unsignedEvents
   // }
 
-  signEvent(){
+  signEvent(privateKey){
     if(!this?.event) 
       throw new Error('signEvent(): this.event is not defined')
     try {
       this.event.id = getEventHash(this.event)
-      this.event.sig = getSignature(this.event, process.env.DAEMON_PRIVKEY || "")
+      this.event.sig = getSignature(this.event, privateKey || process.env.DAEMON_PRIVKEY)
       const valid = validateEvent(this.event) && verifySignature(this.event)
       if(!valid)
         throw new Error('generateEvent(): event does not validate')  
@@ -100,7 +100,7 @@ export class PublisherNocap extends Publisher {
     this.logger = new Logger('publisher[nocap]')
   }
 
-  async many(relays){
+  async many(relays, privateKey){
     this.logger.debug(`many(): attempting to publish ${relays.length} events to ${JSON.stringify(config.publisher.to_relays)} relays`)
     if(!(relays instanceof Array)) throw new Error('many(): relays must be an array')
     const relaysChunks = chunkArray(relays, 50)
@@ -109,14 +109,14 @@ export class PublisherNocap extends Publisher {
       let signedEvents = []
       this.logger.debug(`publishEvents(): publishing ${chunk.length} events from chunk ${count++}/${relaysChunks.length}`)
       for ( const relay of chunk ) {
-        const unsignedEvent = this.generateEvent(relay)
-        signedEvents.push(this.signEvent(unsignedEvent))
+        this.generateEvent(relay)
+        signedEvents.push(this.signEvent(privateKey))
       }
       await this.publishEvents(signedEvents).catch( e => { this.logger.error(`PublisherNocap::many(): Error: ${e}`) })
     }
   }
 
-  async one(relay){
+  async one(relay, privateKey){
     if(!relay?.url) 
       throw new Error('one(): relay must have a url property')
     if(!config.publisher?.to_relays) 
@@ -124,8 +124,8 @@ export class PublisherNocap extends Publisher {
     
     this.logger.debug(`one(): attempting to publish event for relay ${relay.url} to ${JSON.stringify(config.publisher?.to_relays)} relays`)
     
-    const unsignedEvent = this.generateEvent(relay)
-    const signedEvent = this.signEvent(unsignedEvent)
+    this.generateEvent(relay)
+    const signedEvent = this.signEvent(privateKey)
 
     await this.publishEvent(signedEvent)
       .then( () => {

@@ -1,4 +1,4 @@
-import { Kind30166 } from './kind30166.js';  
+import { Kind30166 } from './Kind30166.js';  
 
 export class Kind30166Child extends Kind30166 { 
   constructor(pubkey){

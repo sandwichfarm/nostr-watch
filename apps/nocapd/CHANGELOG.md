@@ -1,5 +1,13 @@
 # @nostrwatch/nocapd
 
+## 1.10.1
+
+### Patch Changes
+
+- 737cec0: hotfix: incorrect import
+- Updated dependencies [737cec0]
+  - @nostrwatch/publisher@0.11.1
+
 ## 1.10.0
 
 ### Minor Changes

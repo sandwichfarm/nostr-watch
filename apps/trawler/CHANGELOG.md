@@ -1,5 +1,12 @@
 # @nostrwatch/trawler
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [737cec0]
+  - @nostrwatch/publisher@0.11.1
+
 ## 0.3.1
 
 ### Patch Changes

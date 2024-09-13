@@ -67,9 +67,9 @@ const initQueue = async () => {
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
   await $q.checker.drainSmart()
 
-  await pause()
-  await $q.obliterate()
-  await resume()
+  // await pause()
+  // await $q.obliterate()
+  // await resume()
 
   jobs = await setSchedules()
 

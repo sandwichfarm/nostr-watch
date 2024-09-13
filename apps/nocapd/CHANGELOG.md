@@ -1,5 +1,11 @@
 # @nostrwatch/nocapd
 
+## 1.10.3
+
+### Patch Changes
+
+- 16f6f3a: hotfix: cache corruption from bytearray in ssl
+
 ## 1.10.2
 
 ### Patch Changes

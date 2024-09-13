@@ -417,7 +417,7 @@ export class NWWorker {
           const check_id = await this.rcache.check[key].insert(check_record).catch( e => this.log.error(`Could not persist ${url} to ${key} check: ${e}`))
           
           if(!check_id)
-            reject(new Error(`Could not persist ${_check_id} check`))
+            reject(new Error(`Could not persist ${check_id} check`))
 
           record[key] = check_id
           resolve()
@@ -561,6 +561,6 @@ const sslData = (data) => {
   result.pem_encoded = data?.pemEncoded
   result.subjectaltname = data?.subjectaltname
   result.fingerprint256 = data?.fingerprint256
-  result.pubkey = data?.pubkey.toString()
+  result.pubkey = data?.pubkey.toString('hex')
   return result
 }

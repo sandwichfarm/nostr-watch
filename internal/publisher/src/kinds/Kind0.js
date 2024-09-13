@@ -1,6 +1,6 @@
-import { Publisher } from '../Publisher.js'
+import { Event } from '../Event.js'
 
-export class Kind0 extends Publisher {
+export class Kind0 extends Event {
   constructor(pubkey){
     const KIND = 0
     super(KIND, pubkey)

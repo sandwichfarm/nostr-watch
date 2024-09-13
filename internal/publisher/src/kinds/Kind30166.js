@@ -1,7 +1,8 @@
-import { PublisherNocap } from '../Publisher.js'
+import { Event } from '../Event.js'
 import ngeotags from 'nostr-geotags';
 
-export class Kind30166 extends PublisherNocap { 
+export class Kind30166 extends Event { 
+  
   constructor(pubkey){
     const KIND = 30166
     super(KIND, pubkey)

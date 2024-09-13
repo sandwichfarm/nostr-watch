@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 
 import { verifyEvent, finalizeEvent, SimplePool, Event } from "nostr-tools";
-import { Kind10166, Kind0, Kind10002 } from "@nostrwatch/publisher";
+import { Publisher, Kind10166, Kind0, Kind10002 } from "@nostrwatch/publisher";
 // import Logger from "@nostrwatch/logger";
 
 // const log = new Logger('@nostrwatch/announce')
@@ -29,12 +29,13 @@ export class AnnounceMonitor {
   public monReg?: any;
   public monRelays: string[] = [];
   public monProfile: any;
-  private publishers: any = {}; 
+  private publisher: Publisher;
   private pubkey: string | null = null;
 
   constructor(options: AnnounceMonitorOptions, pubkey: string) {
     this.setup(options);
     this.pubkey = pubkey
+    this.publisher = new Publisher(pubkey)
   }
 
   setup(options: AnnounceMonitorOptions): void {
@@ -84,46 +85,44 @@ export class AnnounceMonitor {
   }
 
   generate(): any {
-    console.log('announce::generate()')
+    console.log('announce::generate()', this.pubkey)
 
     const $monReg = new Kind10166(this.pubkey)
     $monReg.generateEvent({...$monReg})
-    this.publishers["10166"] = $monReg
+    this.events["10166"] = $monReg
 
     const $monRelays = new Kind10002(this.pubkey)
     if(this.monRelays.length) {
       $monRelays.generateEvent([...this.monRelays])
-      this.publishers["10002"] = $monRelays
+      this.events["10002"] = $monRelays
     }
     
     const $monProfile = new Kind0(this.pubkey) 
     if(Object.keys(this.monProfile).length) {
       $monProfile.generateEvent({...this.monProfile})
-      this.publishers["0"] = $monProfile
+      this.events["0"] = $monProfile
     }
 
-    return this.publishers
+    return this.events
   }
 
   sign(sk: Uint8Array): any {
-    if(!this.publishers) throw new Error("Event has not yet been generated (run generate() first)") 
-    Object.values(this.publishers).forEach( (publisher: any) => {  
-      this.publishers[publisher.kind] = publisher.signEvent()
+    if(!this.events) throw new Error("Event has not yet been generated (run generate() first)") 
+    Object.values(this.events).forEach( (event: any) => {  
+      this.events[event.kind] = event.signEvent()
     })
   }
 
   async publish( relays: string[] ): Promise<string[]> {
-    if(!this.publishers) throw new Error("Event has not yet been generated") 
+    if(!this.events) throw new Error("Event has not yet been generated") 
     const pubbedIds: string[] = []
-    const $pool = new SimplePool()
-    const kinds = Object.keys(this.publishers)
+    const kinds = Object.keys(this.events)
     for(let i = 0; i < kinds.length; i++) {
       const kind = kinds[i]    
-      const promises = $pool.publish(relays, this.publishers[kind])
-      await Promise.all(promises)
-      console.log(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(relays.join(','))}`)
-      pubbedIds.push(this.publishers[kind].id)
-    }
+      await Promise.any(this.publisher.publishEvent(relays, this.events[kind].event()))
+      console.log(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(relays.join(','))}`)  
+      pubbedIds.push(this.events[kind].id)
+    }    
     return pubbedIds
   }
 

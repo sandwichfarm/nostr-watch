@@ -30,6 +30,8 @@ let rcache,
 const populateJobQueue = async () => { 
   await $q.checker.populator() 
   await $q.checker.resetProgressCounts()
+  // await $q.checker.syncQueue()
+  // await $q.checker.drainSmart()
 }
 
 const maybePopulateJobs = async (queue) => {
@@ -60,22 +62,22 @@ const initQueue = async () => {
   const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
 
   $q = new NocapdQueues({ pubkey: PUBKEY, logger: new Logger('@nostrwatch/nocapd:queue-control'), redis: connection })
+
   await $q
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, bus, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
-  await $q.checker.drainSmart()
 
-  // await pause()
-  // await $q.obliterate()
-  // await resume()
+  await pause('initQueue()')
+  
+  await $q.checker.syncQueue()
+  await $q.checker.drainSmart()
+  await $q.drain()
 
   jobs = await setSchedules()
 
-  await maybePopulateJobs($q.checker)
-
-  $q.resume()
+  await maybePopulateJobs($q.checker)  
   log.info(`initialized: ${$q.queue.name}`)
 }
 
@@ -114,7 +116,7 @@ const maybeAnnounce = async () => {
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf, process.env.DAEMON_PUBKEY)
   try {
-    log.debug('announce.generate()')
+    log.debug(`announce.generate(): ${process.env.DAEMON_PUBKEY}`)
     announce.generate()
     announce.sign( process.env.DAEMON_PRIVKEY )
   } catch (e) {
@@ -180,6 +182,7 @@ const scheduleRelayPopulator = () =>{
   const seconds = timestring(seedOpts.interval, "s")
   
   const job = async () => {
+    log.error(`active jobs: ${(await $q.checker.getActiveJobs()).map( j => j.id )}`)
     log.debug(`Scheduled: populateRelays()`)
     await populateRelays() 
   }
@@ -234,6 +237,7 @@ const populateRelays = async ( skipJob = false ) => {
     const syncData = await bootstrap('nocapd')
     
     log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
+    
     const relays = syncData[0].map( url => new Relay({ url }) )
 
     if(concurrency > 1 && !skipJob){
@@ -255,7 +259,7 @@ const persistRelays = async (job) => {
 
 const queueOpts = () => {
   return {
-    lockDuration: 2*60*1000
+    lockDuration: 30*1000
   }
 }
 
@@ -300,17 +304,14 @@ async function gracefulShutdown(signal) {
 }
 
 export const Nocapd = async () => {
-  
-
   log.info('Starting Nocapd...')
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
   log.info('Loaded config')
   
-  const pageSize = config?.lmdb?.pageSize || 4096
+  const lmdbOpts = config?.lmdb ?? {}
   concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
-  rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb', { pageSize })
-  
-  await delay(2000)
+  rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb', lmdbOpts)
+  await delay(5000)
   await migrate(rcache)
 
   await maybeAnnounce()
@@ -324,6 +325,9 @@ export const Nocapd = async () => {
   relayCheckerOnTheShortBus()
 
   globalHandlers()
+
+  delay(2000)
+  await resume('initQueue()')
   return {
     $q,
     stop

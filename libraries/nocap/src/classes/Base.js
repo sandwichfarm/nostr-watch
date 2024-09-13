@@ -264,6 +264,7 @@ export default class Base {
    */
   async start(key){
     this.logger.debug(`${key}: start()`)
+    if(!this.isWebsocketKey(key)) this.terminate()
     const checkDeferred = await this.addDeferred(key, this.maybe_timeout(key))
     // checkDeferred.catch(this.logger.debug)
 
@@ -315,7 +316,7 @@ export default class Base {
   async finish(key, data={}){
     this.logger.debug(`${key}: finish()`)
     // this.current = null
-    this.latency.finish(key)
+    this.latency.finish(key) 
     const result = this.produce_result(key, data)
     if(this.ignore_result(key)) return this.logger.debug(`ignoring result ${key}`)
     this.results.setMany(result)
@@ -668,8 +669,8 @@ export default class Base {
     this.logger.debug(notice)
     this.track('relay', 'notice', notice)
     this.cbcall('notice')
-    if(this?.adapters?.websocket?.handle_notice)
-      this.adapters.websocket.handle_notice(notice)
+    // if(this?.adapters?.websocket?.handle_notice)
+    //   this.adapters.websocket.handle_notice(notice)
   }
 
   /**
@@ -712,7 +713,11 @@ export default class Base {
     this.handle_auth(challenge)
   }
 
-    /**
+  forced_finish(key, data){
+    this.finish(this.current, data)
+  }
+
+  /**
    * on_check_error
    * nocap specific Event triggered by Check.finish
    * 

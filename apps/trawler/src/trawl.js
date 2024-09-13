@@ -101,9 +101,7 @@ export const trawl = async () => {
   logger.debug('trawl(): config [nostrawl]')
   trawler
     .on_worker('progress', async (job, progress) => {
-      const relays = await $cache.relay.get.all()
-      logger.info(`strings found: ${(await $cache.relay.get.all()).length} | session stats [accepted/rejected]: ${progress.found}/${progress.rejected} | lifetime total: ${progress.total}]`)
-      // logger.info(`[@${progress.last_timestamp}] ${progress.found} events found and ${progress.rejected} events rejected from  ${progress.relay} [${progress.total} total]`)
+      logger.info(`[@${progress.last_timestamp}] ${progress.found} events found and ${progress.rejected} events rejected from  ${progress.relay} [${progress.total} total]`)
     })
     .on_queue('drained', () => {
       logger.info(`queue is empty`)

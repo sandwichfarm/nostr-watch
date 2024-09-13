@@ -1,6 +1,6 @@
-import { Publisher } from '../Publisher.js'
+import { Event } from '../Event.js'
 
-export class Kind1066 extends Publisher {
+export class Kind1066 extends Event {
   constructor(){
     const KIND = 1066
     super()
@@ -11,7 +11,7 @@ export class Kind1066 extends Publisher {
 export class Kind1066 extends Publisher {
   constructor(){
     const KIND = 1066
-    super(KIND)
+    super(KIND, pubkey)
     this.kind = KIND
     this.discoverable = { pubkey: true }
     this.human_readable = false

@@ -1,12 +1,13 @@
 import hash from 'object-hash'
 import timestring from 'timestring'
 import chalk from 'chalk';
+import deferred from 'promise-deferred'; 
 
 import { RetryManager } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
 
 import { parseRelayNetwork, delay, lastCheckedId, parseUrl } from '@nostrwatch/utils'
-import Publish from '@nostrwatch/publisher'
+import { Kind30166, Kind30166Child, Publisher } from '@nostrwatch/publisher'
 
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
@@ -30,6 +31,7 @@ export class NWWorker {
     this.setup()
     this.log.info(`${this.id()} initialized`)
     this.bus = bus
+    this.publisher = new Publisher(this.pubkey, this.config.publisher?.to_relays)
   }
 
   setup(){
@@ -49,8 +51,8 @@ export class NWWorker {
     }
   
     this.jobOpts = {
-      attempts: 3,
-      timeout: 1000*60*1.5,
+      attempts: 1,
+      timeout: 1000*30,
       removeOnComplete: true,
       removeOnFail: {
         age: timestring('2m', 's')
@@ -97,21 +99,71 @@ export class NWWorker {
     await this.addRelayJobs(relays)
   }
 
+  async syncQueue(){
+    await this.cleanCompletedJobs() 
+    await this.populateActivePendingJobs()
+  }
+
+  async populateActivePendingJobs(){
+    let jobs = [...(await this.$.queue.getJobs(['active']))]
+        jobs = [...jobs, ...(await this.$.queue.getJobs(['waiting']))]
+
+    jobs.forEach( job => {
+      this.jobs[job.id] = job
+    })
+  }
+
+  async getActiveJobs(){
+    return await this.$.queue.getJobs(['active'])
+  }
+
+  async getCompletedJobs(){
+    return await this.$.queue.getJobs(['completed'])
+  }
+
+  async cleanCompletedJobs() {
+    const jobs = await this.getCompletedJobs()
+    jobs.forEach( job => {
+      job.remove()
+    })
+  }
+
   async work(job){
     this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
     const failure = (err) => { this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+    let result = {}
     try {
       const { relay:url } = job.data 
       const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
       await nocap.useAdapters([...Object.values(nocapAdapters)])
-      const result = await nocap.check(this.opts.checks.enabled).catch(failure)
+      result = await nocap.check(this.opts.checks.enabled).catch(failure)
       return { result } 
     } 
     catch(err) {
       failure(new Error(`Failure inside work() block: ${err}`))
       return { result: { url: job.data.relay, open: { data: false }} }
     }
+    // const promise = new deferred()
+
+    // this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
+    // // const failure = (err) => { reject(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+
+    // const { relay:url } = job.data 
+    // const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
+    // await nocap.useAdapters([...Object.values(nocapAdapters)]).catch(promise.reject)
+    // await nocap.check(this.opts.checks.enabled)
+    //   .then( result => promise.resolve( result ) )
+    //   .catch( err => { 
+    //     this.log.debug(`work(): catch block: ${err}`)
+    //     promise.reject({ result: { url: job.data.relay, open: { data: false }} })
+    //   })
+
+    // return promise
   }
+
+  async on_failed(job, err){
+    this.log.warn(`on_failed(): ${job.id}: ${err}`)
+  }   
 
   async on_error(job, err){
     if(this.hard_stop) return
@@ -123,7 +175,7 @@ export class NWWorker {
     if(this.hard_stop) return
     this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
     let { result } = rvalue
-    if(!result?.url) return console.error(`url was empty:`, job.id)
+    if(!result?.url) return this.log.error(`url was empty: ${job.id} ${result}`)
     let fail = result?.open?.data? false: true
     this.progressMessage(result.url, result, fail)
     delete this.jobs[job.id]
@@ -143,15 +195,18 @@ export class NWWorker {
     log.debug(`on_success(): ${result.url}`)
     if(result.ignore) return log.warn(`on_success(): ${result.url} was ignored. Not checking and not publishing events.`)
 
-    let publish30166
+    let k30166
     if(result?.parent){
-      publish30166 = new Publish.Kind30166Child(process.env.DAEMON_PUBKEY)
+      k30166 = new Kind30166Child(process.env.DAEMON_PUBKEY)
       log.debug(`on_success(): ${result.url} is a child of ${result.parent}`)
     }
     else {
-      publish30166 = new Publish.Kind30166(process.env.DAEMON_PUBKEY)
+      k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
     }
-    const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
+    // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
+    k30166.generateEvent( result )
+    k30166.signEvent( process.env.DAEMON_PRIVKEY )
+    const id = await this.publisher.publishEvent( k30166.json() )
     log.debug(`on_success(): ${result.url} published${result?.parent? ' child of '+result.parent: ''}: ${id}`)  
   }
 
@@ -227,8 +282,13 @@ export class NWWorker {
       const expired = await this.isExpired(url, timestring(job.timestamp, "ms"))
       if(!expired && online) return 
       this.log.debug(`drainSmart(): removing expired job: ${url}: online? ${online}, expired? ${this.isExpired(url, timestring(job.timestamp, "ms"))}`)
-      delete this.jobs[job.id]
-      expiredJobs.push(job.remove().catch(e => this.log.debug(`drainSmart(): Could not remove job: ${job.id}: Error:`, e)))
+      expiredJobs.push(
+        job.remove()
+          .then( () => {
+            delete this.jobs[job.id]
+            this.log.debug(`drainSmart(): Job removed ${job.id}`)
+          })
+          .catch(e => this.log.debug(`drainSmart(): Could not remove job: ${job.id}: Error:`, e)))
     })
     await Promise.all(expiredJobs).catch(e => this.log.debug(`drainSmart(): Promise.all(expiredJobs): Error: `, e))
   }
@@ -403,8 +463,8 @@ export class NWWorker {
     record.url = url
     record.online = result?.open?.data? true: false
     record.ignore = result?.ignore? true: false
-    record.parent = result?.parent
-    record.checked_at = result.checked_at
+    record.parent = result?.parent? result.parent: null
+    record.checked_at = result?.checked_at > 0? result.checked_at: Date.now()
     record.rtt = result?.open?.duration? result.open.duration: -1;
 
     for( const key of ['info', 'dns', 'geo', 'ssl'] ){
@@ -414,7 +474,7 @@ export class NWWorker {
           
           this.log.debug(`persist_result(${key})`)
           const checked_at = result.checked_at
-          const data = (key === 'ssl' && result.ssl.duration > 0)? JSON.stringify(sslData(result?.ssl?.data)): JSON.stringify( result[key].data )
+          const data = (key === 'ssl' && result.ssl.duration > 0)? JSON.stringify(sslData(result?.ssl?.data ?? {})): JSON.stringify( result[key].data ?? {} )
           const check_record = { url, relay_id, checked_at, data, hash: hash( result[key].data) }
           const check_id = await this.rcache.check[key].insert(check_record).catch( e => this.log.error(`Could not persist ${url} to ${key} check: ${e}`))
           
@@ -458,10 +518,10 @@ export class NWWorker {
       const isExpired = lastChecked? await this.isExpired(relay.url, lastChecked): true;
       const isOnline = relay?.online === true;
 
-      this.log.debug(`getRelays() relay: ${relay.url}: lastChecked(): ${lastChecked}`)
-      this.log.debug(`getRelays() relay: ${relay.url}: retries(): ${retries}`)
-      this.log.debug(`getRelays() relay: ${relay.url}: isExpired(): ${isExpired}`)
-      this.log.debug(`getRelays() relay: ${relay.url}: isOnline(): ${isOnline}`)
+      // this.log.debug(`getRelays() relay: ${relay.url}: lastChecked(): ${lastChecked}`)
+      // this.log.debug(`getRelays() relay: ${relay.url}: retries(): ${retries}`)
+      // this.log.debug(`getRelays() relay: ${relay.url}: isExpired(): ${isExpired}`)
+      // this.log.debug(`getRelays() relay: ${relay.url}: isOnline(): ${isOnline}`)
 
       if(isOnline) 
         onlineRelays.push(relay.url);
@@ -560,9 +620,9 @@ const sslData = (data) => {
   const result = {}
   result.valid_from = data?.valid_from
   result.valid_to = data?.valid_to
-  // result.pem_encoded = data?.pemEncoded
-  // result.subjectaltname = data?.subjectaltname
   result.fingerprint = data?.fingerprint
   // result.pubkey = data?.pubkey?.toString('hex')
+  // result.pem_encoded = data?.pemEncoded
+  // result.subjectaltname = data?.subjectaltname
   return result
 }

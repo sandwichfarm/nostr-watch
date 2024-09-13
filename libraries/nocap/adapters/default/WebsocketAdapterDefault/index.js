@@ -114,8 +114,15 @@ class WebsocketAdapterDefault {
       return this.$.websocket_hard_fail(err)
     }
     if(!ev || !(ev instanceof Array) || !ev.length) return
+    this.$.logger.debug(`${this.$.url}: WebsocketAdapterDefault.handle_nostr_event(): ${ev[0]}`)
+    
+    if(ev[0] !== 'EVENT') {
+      this.$.logger.debug(`${this.$.url}: WebsocketAdapterDefault.handle_nostr_event(): ${ev[0]}: ${ev[1]}`)
+    }
+
     if(ev[0] === 'EVENT') {
       if(this.count.event > 0) {
+        this.$.logger.debug(`${this.$.url}: WebsocketAdapterDefault.handle_nostr_event(): ${ev[0]}: event # ${this.count.event}/${this.$.config.tooManyEventsLimit}`)
         if(this.count.event > this.$.config.tooManyEventsLimit) {
           this.$.auditor.fail('SUBSCRIBE_LIMIT', {
             description: `Relay sent too many events. Requested 1 and recieved ${this.count.event}. May have recieved more, but this test was limited to ${this.$.config.tooManyEventsLimit}.`,
@@ -131,7 +138,6 @@ class WebsocketAdapterDefault {
       this.count.event++
       if(this.$.subid('read') === ev[1])
         this.$.on_event(ev[1], ev[2])
-      
     }
     if(ev[0] === 'EOSE') {
       this.$.on_eose(ev[1])
@@ -140,6 +146,9 @@ class WebsocketAdapterDefault {
       this.$.on_ok(ev[1])
     }
     if(ev[0] === 'NOTICE') {
+      if(this.$.current === 'write'){
+        return this.$.forced_finish({ data: false, duration: -1, status: "error", error: ev[1] })
+      }
       this.$.on_notice(ev[1])
     }
     if(ev[0] === 'LIMITS') {

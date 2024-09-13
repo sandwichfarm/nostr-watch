@@ -1,11 +1,11 @@
+import { Event } from '../Event.js'
 import { getEventHash } from 'nostr-tools';
-import { Publisher } from '../Publisher.js';
 import ngeotags from 'nostr-geotags';
 
 /**
  * Represents a specific kind of publisher with additional tagging capabilities.
  */
-export class Kind10166 extends Publisher {
+export class Kind10166 extends Event {
   constructor(pubkey) {
     const KIND = 10166;
     super(KIND, pubkey);

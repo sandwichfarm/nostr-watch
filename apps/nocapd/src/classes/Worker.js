@@ -49,6 +49,8 @@ export class NWWorker {
     }
   
     this.jobOpts = {
+      attempts: 3,
+      timeout: 1000*60*1.5,
       removeOnComplete: true,
       removeOnFail: {
         age: timestring('2m', 's')
@@ -412,7 +414,7 @@ export class NWWorker {
           
           this.log.debug(`persist_result(${key})`)
           const checked_at = result.checked_at
-          const data = (key === 'ssl')? JSON.stringify(sslData(result?.ssl?.data)): JSON.stringify( result[key].data)
+          const data = (key === 'ssl' && result.ssl.duration > 0)? JSON.stringify(sslData(result?.ssl?.data)): JSON.stringify( result[key].data )
           const check_record = { url, relay_id, checked_at, data, hash: hash( result[key].data) }
           const check_id = await this.rcache.check[key].insert(check_record).catch( e => this.log.error(`Could not persist ${url} to ${key} check: ${e}`))
           
@@ -556,11 +558,11 @@ const evaluateMaxRelays = (evaluate, relays) => {
 
 const sslData = (data) => {
   const result = {}
-  result.issuer = data?.issuer
-  result.subject = data?.subject
-  result.pem_encoded = data?.pemEncoded
-  result.subjectaltname = data?.subjectaltname
-  result.fingerprint256 = data?.fingerprint256
-  result.pubkey = data?.pubkey.toString('hex')
+  result.valid_from = data?.valid_from
+  result.valid_to = data?.valid_to
+  // result.pem_encoded = data?.pemEncoded
+  // result.subjectaltname = data?.subjectaltname
+  result.fingerprint = data?.fingerprint
+  // result.pubkey = data?.pubkey?.toString('hex')
   return result
 }

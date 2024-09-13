@@ -67,6 +67,10 @@ const initQueue = async () => {
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
   await $q.checker.drainSmart()
 
+  await pause()
+  await $q.obliterate()
+  await resume()
+
   jobs = await setSchedules()
 
   await maybePopulateJobs($q.checker)
@@ -296,19 +300,22 @@ async function gracefulShutdown(signal) {
 }
 
 export const Nocapd = async () => {
+  
+
   log.info('Starting Nocapd...')
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
-  concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   log.info('Loaded config')
-  await delay(2000)
-  rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb')
-  await migrate(rcache)
-  await delay(1000)
-  await maybeAnnounce()
   
+  const pageSize = config?.lmdb?.pageSize || 4096
+  concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
+  rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb', { pageSize })
+  
+  await delay(2000)
+  await migrate(rcache)
+
+  await maybeAnnounce()
   if(await maybeBootstrap()) 
     log.info('Bootstrapped')
-
 
   initBus()
   await initQueue()

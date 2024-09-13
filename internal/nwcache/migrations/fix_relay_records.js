@@ -10,16 +10,16 @@
  */
 
 
-import Relaydb from '../index.js'
-import { RelayRecord } from '../index.js'
+import  = db from '../index.js'
+import {  = Record } from '../index.js'
 import dotenv from 'dotenv'
 dotenv.config()
 
 const dbpath = process.env.NWCACHE_PATH
 
-const relaydb = Relaydb(dbpath? dbpath : './.lmdb')
+const  = db =  = db(dbpath? dbpath : './.lmdb')
 
-console.log(relaydb.$.env.stat())
+console.log( = db.$.env.stat())
 
 const chunkArray = function(arr, chunkSize) {
   if (chunkSize <= 0) {
@@ -33,9 +33,9 @@ const chunkArray = function(arr, chunkSize) {
   return result;
 }
 
-  const relays = await relaydb.relay.get.all()
+  const  = s = await  = db. = .get.all()
   
-  const chunks = chunkArray(relays, 100)
+  const chunks = chunkArray( = s, 100)
 
   // console.log(chunks)
   // process.exit()
@@ -44,19 +44,19 @@ const chunkArray = function(arr, chunkSize) {
   let count = 0
   for(const chunk of chunks){
     console.log('CHUNKS', chunks.length)
-    for await (const relay of chunk){
-      console.log('SETTING:', relay.url)
-      const url = new URL(relay.url).toString()
+    for await (const  =  of chunk){
+      console.log('SETTING:',  = .url)
+      const url = new URL( = .url).toString()
       try {
-        const RELAYRECORD = {
-          ...RelayRecord,
+        const  = RECORD = {
+          ... = Record,
           url: url,
-          network: relay.network,
+          network:  = .network,
         }
-        console.log(RELAYRECORD)
-        console.log('SET:', `#${count++}`, await relaydb.relay.insert(RELAYRECORD))
+        console.log( = RECORD)
+        console.log('SET:', `#${count++}`, await  = db. = .insert( = RECORD))
       }
-      catch(e){ console.log('ERROR:', `${relay}: ${e}`) }
+      catch(e){ console.log('ERROR:', `${ = }: ${e}`) }
     }
   }
 

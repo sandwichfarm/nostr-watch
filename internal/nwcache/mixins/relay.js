@@ -2,16 +2,17 @@ import { schemas } from "../schemas.js"
 import { operators, IDS } from "lmdb-oql";
 import { relayId, ParseSelect, helperHandler } from "../utils.js"
 
-const { Relay, RelayCheckWebsocket, RelayCheckInfo } = schemas
-const { $eq, $gte, $and, $isNuall, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches } = operators
+const { Relay, RelayCheckWebsocket } = schemas
+const { $eq, $neq, $gte, $and, $isNull, $isDefined, $type, $isUndefined, $includes, $in, $nin, $matches, $isTruthy } = operators
 
 import Logger from "@nostrwatch/logger" 
 
 const logger = new Logger('lmdb:relay')
 
-import { RelayRecord } from "../defaults.js"
+// import { RelayRecord } from "../defaults.js"
 
-const parseSelect = ParseSelect(RelayRecord, "Relay")
+// const parseSelect = ParseSelect(RelayRecord, "Relay")
+const parseSelect = Relay.parseSelect()
 
 import { ResultInterface as ResultType } from "@nostrwatch/nocap";
 
@@ -251,9 +252,17 @@ const relay_get = (db) => {
       const result = this.all(IDS).flat()
       return result || []
     },
+    children(select=null) {
+      select = parseSelect(select)
+      return [...db.$.select(select).from( Relay ).where({ Relay: { parent: $isTruthy()}})] || []
+    },
+    ignored(select=null) {
+      select = parseSelect(select)
+      return [...db.$.select(select).from( Relay ).where({ Relay: { ignored: $isTruthy() } })] || []
+    },
     online(select=null) {
       select = parseSelect(select)
-      return [...db.$.select(select).from( Relay, RelayCheckWebsocket ).where({ Relay: { online: true } })] || []
+      return [...db.$.select(select).from( Relay, RelayCheckWebsocket ).where({ Relay: { online: $eq(true) } })] || []
     },
     network(network, select=null) {
       select = parseSelect(select)

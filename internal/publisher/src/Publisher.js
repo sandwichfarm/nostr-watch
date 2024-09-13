@@ -7,21 +7,27 @@ const config = await loadConfig()
 export class Publisher { 
 
   event = null
+  pubkey = null
 
-  constructor(key){
+  constructor(key, pubkey){
     this.logger = new Logger(`@nostrwatch/publisher: ${key}`)
+    this.pubkey = pubkey
   }
 
-  tpl(){
+  tpl(data){
     if(typeof this?.kind === 'undefined' || this.kind === null)
       throw new Error('tpl(): this.kind must be defined')
-    return {
-      pubkey: process.env.DAEMON_PUBKEY,
-      kind: this.kind,
-      content: String(""),
-      tags: [],
-      created_at: Math.round(Date.now()/1000)
-    }
+
+    if(!this.pubkey)
+      throw new Error('DAEMON_PUBKEY must be defined')
+
+    const pubkey = this.pubkey  
+    const kind = this?.kind ?? 1
+    const created_at = data?.checked_at? data.checked_at: Math.round(Date.now()/1000)
+    const content = data?.content ?? String("")
+    const tags = data?.tags ?? []
+
+    return { pubkey, kind, created_at, tags, content }
   }
 
   generateEvent(data){
@@ -32,8 +38,7 @@ export class Publisher {
   _generateEvent(data){
     this.logger.warn('Publisher._generateEvent() is not defined')
     return {
-      ...this.tpl(data.kind),
-      content: data?.content || ""
+      ...this.tpl(data)
     }
   }
 
@@ -90,8 +95,8 @@ export class Publisher {
 
 export class PublisherNocap extends Publisher {
   
-  constructor(key="generic"){
-    super(key)
+  constructor(key="generic", pubkey){
+    super(key, pubkey)
     this.logger = new Logger('publisher[nocap]')
   }
 
@@ -116,12 +121,13 @@ export class PublisherNocap extends Publisher {
       throw new Error('one(): relay must have a url property')
     if(!config.publisher?.to_relays) 
       throw new Error('one(): config.publisher.to_relays is not configured')
+    
     this.logger.debug(`one(): attempting to publish event for relay ${relay.url} to ${JSON.stringify(config.publisher?.to_relays)} relays`)
     
     const unsignedEvent = this.generateEvent(relay)
     const signedEvent = this.signEvent(unsignedEvent)
 
-    this.publishEvent(signedEvent)
+    await this.publishEvent(signedEvent)
       .then( () => {
         this.logger.debug(`one(): published event`)
       })
@@ -129,6 +135,7 @@ export class PublisherNocap extends Publisher {
         this.logger.error(`one(): Error: ${e}`)
       })
     
+    return signedEvent.id
   }
 
 }

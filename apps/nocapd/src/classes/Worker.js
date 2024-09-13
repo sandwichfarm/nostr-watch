@@ -5,13 +5,13 @@ import chalk from 'chalk';
 import { RetryManager } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
 
-import { parseRelayNetwork, delay, lastCheckedId } from '@nostrwatch/utils'
+import { parseRelayNetwork, delay, lastCheckedId, parseUrl } from '@nostrwatch/utils'
 import Publish from '@nostrwatch/publisher'
 
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
-import util from 'util'
+import { relayHostnameDedup } from '../hostnames.js';
 
 let errors = 0
 
@@ -120,23 +120,37 @@ export class NWWorker {
   async on_completed(job, rvalue){
     if(this.hard_stop) return
     this.log.debug(`on_completed(): ${job.id}: ${JSON.stringify(rvalue)}`)
-    const { result } = rvalue
+    let { result } = rvalue
     if(!result?.url) return console.error(`url was empty:`, job.id)
     let fail = result?.open?.data? false: true
     this.progressMessage(result.url, result, fail)
     delete this.jobs[job.id]
-    if(fail)
+    if(fail) {
       await this.on_fail( result )
-    else
+    }
+    else {
+      result = await relayHostnameDedup( result, this.rcache ).catch(console.error)
       await this.on_success( result )
+    }
     await this.after_completed( result )
   }
 
   async on_success(result){
+    const log = new Logger(`@nostrwatch/nocapd:hostname`)
     if(this.hard_stop) return
-    this.log.debug(`on_success(): ${result.url}`)
-    const publish30166 = new Publish.Kind30166()
-    await publish30166.one( result ).catch(this.log.error.bind(this.log))  
+    log.debug(`on_success(): ${result.url}`)
+    if(result.ignore) return log.warn(`on_success(): ${result.url} was ignored. Not checking and not publishing events.`)
+
+    let publish30166
+    if(result?.parent){
+      publish30166 = new Publish.Kind30166Child(process.env.DAEMON_PUBKEY)
+      log.debug(`on_success(): ${result.url} is a child of ${result.parent}`)
+    }
+    else {
+      publish30166 = new Publish.Kind30166(process.env.DAEMON_PUBKEY)
+    }
+    const id = await publish30166.one( result ).catch(this.log.error.bind(this.log))  
+    log.debug(`on_success(): ${result.url} published ${result?.parent? 'child of '+result.parent: ''}: ${id}`)  
   }
 
   async on_fail(result){
@@ -386,25 +400,26 @@ export class NWWorker {
 
     record.url = url
     record.online = result?.open?.data? true: false
+    record.ignore = result?.ignore? true: false
+    record.parent = result?.parent
+    record.checked_at = result.checked_at
+    record.rtt = result?.open?.duration? result.open.duration: -1;
 
     for( const key of ['info', 'dns', 'geo', 'ssl'] ){
       const resultHasKey = result?.[key]?.data && Object.keys(result[key].data)?.length > 0
       if(resultHasKey){
         const persist_result = async (resolve, reject) => { 
+          
           this.log.debug(`persist_result(${key})`)
-          const _record = { url: url, relay_id, updated_at: Date.now(), hash: hash(result[key].data) }
+          const checked_at = result.checked_at
+          const data = JSON.stringify( result[key].data)
+          const check_record = { url, relay_id, checked_at, data, hash: hash( result[key].data) }
+          const check_id = await this.rcache.check[key].insert(check_record)
           
-          if(key === 'ssl') 
-            _record.data = JSON.stringify({ valid_to: result[key].data.valid_to, valid_from: result[key].data.valid_from })
-          else              
-            _record.data = JSON.stringify(result[key].data)
-
-          const _check_id = await this.rcache.check[key].insert(_record)
-          
-          if(!_check_id)
+          if(!check_id)
             reject(new Error(`Could not persist ${_check_id} check`))
-          
-          record[key] = _check_id
+
+          record[key] = check_id
           resolve()
         }
         promises.push( new Promise( persist_result ) )
@@ -423,6 +438,10 @@ export class NWWorker {
     const onlineRelays = []
     const onlineExpiredRelays = [];
     const uncheckedRelays = [];
+    const ignoredRelays = allRelays.filter(r => r.ignore === true);
+    const relaysWithParents = allRelays.filter(r => typeof r.parent === 'string' && r.parent.length > 0);
+    const relaysAreParents = Array.from(new Set(relaysWithParents.map(r => r.parent)));
+
     let expiredRelays = [];
     let truncateLength
     errors = 0
@@ -431,22 +450,18 @@ export class NWWorker {
   
     for (const relay of allRelays) {
       if(!this.qualifyNetwork(relay.url)) continue
-
-      this.log.debug(`getRelays() relay: ${relay.url}`)
-
       const lastChecked = await this.rcache.cachetime.get.one(this.cacheId(relay.url));
-      this.log.debug(`getRelays() relay: ${relay.url}: lastChecked(): ${lastChecked}`)
-      
       const retries = await this.retry.getRetries(relay.url);
-      this.log.debug(`getRelays() relay: ${relay.url}: retries(): ${retries}`)
-      
       const isExpired = lastChecked? await this.isExpired(relay.url, lastChecked): true;
-      this.log.debug(`getRelays() relay: ${relay.url}: isExpired(): ${isExpired}`)
-      
       const isOnline = relay?.online === true;
+
+      this.log.debug(`getRelays() relay: ${relay.url}: lastChecked(): ${lastChecked}`)
+      this.log.debug(`getRelays() relay: ${relay.url}: retries(): ${retries}`)
+      this.log.debug(`getRelays() relay: ${relay.url}: isExpired(): ${isExpired}`)
       this.log.debug(`getRelays() relay: ${relay.url}: isOnline(): ${isOnline}`)
 
-      if(isOnline) onlineRelays.push(relay.url);
+      if(isOnline) 
+        onlineRelays.push(relay.url);
   
       let group = '';
       if (isOnline && isExpired) {
@@ -467,7 +482,7 @@ export class NWWorker {
   
     expiredRelays = expiredRelays.sort((a, b) => a.retries - b.retries).map(r => r.url);
   
-    await this.store_cache_counts(allRelays.length, onlineRelays.length, onlineExpiredRelays.length, expiredRelays.length, uncheckedRelays.length)
+    await this.store_cache_counts(allRelays.length, onlineRelays.length, onlineExpiredRelays.length, expiredRelays.length, uncheckedRelays.length, ignoredRelays.length, relaysWithParents.length, relaysAreParents.length)
   
     const deduped = [...new Set([...onlineExpiredRelays, ...uncheckedRelays, ...expiredRelays])];
     const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));
@@ -479,8 +494,8 @@ export class NWWorker {
     return relaysFiltered   
   }
 
-  async store_cache_counts(allRelays, online, onlineExpired, expired, unchecked){
-      this.cache_counts = { allRelays, online, onlineExpired, expired, unchecked }
+  async store_cache_counts( allRelays, online, onlineExpired, expired, unchecked, ignoredRelays, relaysWithParents, relaysAreParents ){
+      this.cache_counts = { allRelays, online, onlineExpired, expired, unchecked, ignoredRelays, relaysWithParents, relaysAreParents }
   }
 
   show_cache_counts(){
@@ -490,7 +505,11 @@ export class NWWorker {
       cacheMessage += `online & expired: ${this.cache_counts.onlineExpired}  -  `
       cacheMessage += `expired: ${this.cache_counts.expired}  -  `
       cacheMessage += `unchecked: ${this.cache_counts.unchecked}  -  `
-      cacheMessage += `total: ${this.cache_counts.allRelays} ===`
+      cacheMessage += `total: ${this.cache_counts.allRelays}  `
+      cacheMessage += `|  ignored: ${this.cache_counts.ignoredRelays} -  `
+      cacheMessage += `with parents: ${this.cache_counts.relaysWithParents} -  `
+      cacheMessage += `parents: ${this.cache_counts.relaysAreParents} ===`
+
       this.log.info(chalk.blue.bold(cacheMessage));
     })
   }

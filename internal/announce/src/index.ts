@@ -30,9 +30,11 @@ export class AnnounceMonitor {
   public monRelays: string[] = [];
   public monProfile: any;
   private publishers: any = {}; 
+  private pubkey: string | null = null;
 
-  constructor(options: AnnounceMonitorOptions) {
+  constructor(options: AnnounceMonitorOptions, pubkey: string) {
     this.setup(options);
+    this.pubkey = pubkey
   }
 
   setup(options: AnnounceMonitorOptions): void {
@@ -84,17 +86,17 @@ export class AnnounceMonitor {
   generate(): any {
     console.log('announce::generate()')
 
-    const $monReg = new Kind10166()
+    const $monReg = new Kind10166(this.pubkey)
     $monReg.generateEvent({...$monReg})
     this.publishers["10166"] = $monReg
 
-    const $monRelays = new Kind10002()
+    const $monRelays = new Kind10002(this.pubkey)
     if(this.monRelays.length) {
       $monRelays.generateEvent([...this.monRelays])
       this.publishers["10002"] = $monRelays
     }
     
-    const $monProfile = new Kind0() 
+    const $monProfile = new Kind0(this.pubkey) 
     if(Object.keys(this.monProfile).length) {
       $monProfile.generateEvent({...this.monProfile})
       this.publishers["0"] = $monProfile

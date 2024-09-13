@@ -1,9 +1,9 @@
 import { Publisher } from '../Publisher.js'
 
 export class Kind10002 extends Publisher {
-  constructor(){
+  constructor(pubkey){
     const KIND = 10002
-    super(KIND)
+    super(KIND, pubkey)
     this.kind = KIND
     this.discoverable = { pubkey: true }
     this.human_readable = false

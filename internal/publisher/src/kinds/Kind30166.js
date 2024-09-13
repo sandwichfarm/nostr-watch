@@ -2,9 +2,9 @@ import { PublisherNocap } from '../Publisher.js'
 import ngeotags from 'nostr-geotags';
 
 export class Kind30166 extends PublisherNocap { 
-  constructor(){
+  constructor(pubkey){
     const KIND = 30166
-    super(KIND)
+    super(KIND, pubkey)
     this.kind = KIND
     this.discoverable = {tags: ['d', 'n', 'l', 'N', 's', 't', 'R']}
     this.human_readable = false
@@ -36,7 +36,6 @@ export class Kind30166 extends PublisherNocap {
 
   static generateTags(check){
     const protocol = new URL(check.url).protocol
-
 
     const info = check?.info?.data
     const geo = check?.geo?.data

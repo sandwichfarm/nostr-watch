@@ -1,3 +1,5 @@
+import { performance } from 'perf_hooks';
+
 export class LatencyHelper {
   constructor($Session){
     this.setup()
@@ -20,13 +22,13 @@ export class LatencyHelper {
   start(key){
     if(!this.begin?.[this.session()])
       this.begin[this.session()] = {}
-    this.begin[this.session()][key] = Date.now()
+    this.begin[this.session()][key] = performance.now()
   }
 
   finish(key){
     if(!this.end?.[this.session()])
       this.end[this.session()] = {}
-    this.end[this.session()][key] = Date.now()
+    this.end[this.session()][key] = performance.now()
   }
 
   duration(key){

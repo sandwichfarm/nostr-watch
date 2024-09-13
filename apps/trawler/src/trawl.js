@@ -93,6 +93,7 @@ const after_cacheOpen = (trawlerCache) => {
 }
 
 export const trawl = async () => {
+
   logger.debug('trawl(): setup')
   await setup()
   logger.debug('trawl(): init [nostrawl]')
@@ -100,6 +101,7 @@ export const trawl = async () => {
   logger.debug('trawl(): config [nostrawl]')
   trawler
     .on_worker('progress', async (job, progress) => {
+      const relays = await $cache.relay.get.all()
       logger.info(`strings found: ${(await $cache.relay.get.all()).length} | session stats [accepted/rejected]: ${progress.found}/${progress.rejected} | lifetime total: ${progress.total}]`)
       // logger.info(`[@${progress.last_timestamp}] ${progress.found} events found and ${progress.rejected} events rejected from  ${progress.relay} [${progress.total} total]`)
     })
@@ -108,6 +110,7 @@ export const trawl = async () => {
     })
     .on_worker('completed', (job) => {
       logger.info(`job #${job.id} completed`)
+ 
     })
   logger.debug('trawl(): run [nostrawl]')
   trawler.run()

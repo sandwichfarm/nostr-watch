@@ -13,6 +13,8 @@ import NoteMixin from "./mixins/note.js";
 
 import Logger from "@nostrwatch/logger" 
 
+export const Schemas = schemas
+
 let open;
 
 if (typeof window !== 'undefined') {
@@ -48,7 +50,7 @@ export class DbWrapper {
 
 let db
 
-export { RelayRecord } from './defaults.js'
+// export { RelayRecord } from './defaults.js'
 export { ParseSelect } from "./utils.js";
 
 export const initializeDb = (_db) => {

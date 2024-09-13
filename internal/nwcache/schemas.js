@@ -1,9 +1,25 @@
-export class Relay {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
+//Complex Schemas
+import { 
+    Relay, 
+    RelayCheckSsl, 
+    RelayCheckDns, 
+    RelayCheckInfo, 
+    RelayCheckGeo, 
+    RelayCheckWebsocket 
+} from './schemas/index.js'
 
+export { 
+    Relay, 
+    RelayCheckSsl, 
+    RelayCheckDns, 
+    RelayCheckInfo, 
+    RelayCheckGeo, 
+    RelayCheckWebsocket 
+} from './schemas/index.js'
+
+console.log('RelayCheckDns', RelayCheckDns)
+
+//KV Schemas
 export class Retry {
     constructor(config={}) {
         Object.assign(this,config);
@@ -16,7 +32,6 @@ export class CacheTime {
     }
 }
 
-
 export class Service {
     constructor(config={}) {
         Object.assign(this,config);
@@ -24,36 +39,6 @@ export class Service {
 }
 
 export class Note {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
-
-export class RelayCheckWebsocket {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
-
-export class RelayCheckInfo {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
-
-export class RelayCheckDns {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
-
-export class RelayCheckGeo {
-    constructor(config={}) {
-        Object.assign(this,config);
-    }
-}
-
-export class RelayCheckSsl {
     constructor(config={}) {
         Object.assign(this,config);
     }

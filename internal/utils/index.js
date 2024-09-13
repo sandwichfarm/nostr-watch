@@ -40,6 +40,15 @@ export const RedisConnectionDetails = () => {
   return redis
 }
 
+export const parseUrl = (url) => {
+  try {
+    const parsedUrl = new URL(url)
+    return parsedUrl
+  } catch (error) {
+    return null
+  }
+}
+
 
 export const shuffleArray = (array) => {
   let currentIndex = array.length;

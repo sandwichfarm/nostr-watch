@@ -1,7 +1,5 @@
 import "websocket-polyfill";
-
 import schedule from 'node-schedule'
-
 import timestring from 'timestring'
 import chalk from 'chalk'
 import mapper from 'object-mapper'
@@ -9,15 +7,13 @@ import mapper from 'object-mapper'
 import { AnnounceMonitor } from '@nostrwatch/announce'
 import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
-import relaycache from '@nostrwatch/nwcache'
+import relaycache, { Schemas } from '@nostrwatch/nwcache'
 import { bootstrap } from '@nostrwatch/seed'
-import { parseRelayNetwork, delay, loadConfig, RedisConnectionDetails } from "@nostrwatch/utils"
+import { parseRelayNetwork, delay, loadConfig, RedisConnectionDetails, parseUrl } from "@nostrwatch/utils"
 
 import { NWWorker } from './classes/Worker.js'
 import { ShortBus } from './classes/ShortBus.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
-
-import util from 'util'
 
 import migrate from './migrate/index.js'
 
@@ -73,16 +69,10 @@ const initQueue = async () => {
 
   jobs = await setSchedules()
 
-  // console.log(util.inspect($q.checker.persist.$, {showHidden: false, depth: null, colors: true}))
-  // console.log($q.checker.persist.$)
-  // process.exit()
-
-  // await populateJobQueue()
   await maybePopulateJobs($q.checker)
 
   $q.resume()
   log.info(`initialized: ${$q.queue.name}`)
-  
 }
 
 const stop = async(signal) => {
@@ -118,7 +108,7 @@ const maybeAnnounce = async () => {
   }
   const conf = mapper(config, map)
   conf.frequency = timestring(conf.frequency, 's').toString()
-  const announce = new AnnounceMonitor(conf)
+  const announce = new AnnounceMonitor(conf, process.env.DAEMON_PUBKEY)
   try {
     log.debug('announce.generate()')
     announce.generate()
@@ -134,20 +124,16 @@ function secondsToCron(seconds) {
       throw new Error("Seconds value must be non-negative.");
   }
 
-  // Calculate time units
-  let sec = seconds % 60;
+  let sec = seconds % 60; 
   let minutes = Math.floor(seconds / 60) % 60;
   let hours = Math.floor(seconds / 3600) % 24;
 
-  // Build cron parts
   let cronSeconds = sec ? `*/${sec}` : "0";
   let cronMinutes = minutes ? `*/${minutes}` : "*";
   let cronHours = hours ? `*/${hours}` : "*";
 
-  // Return cron format: seconds, minutes, hours, day-of-month, month, day-of-week
   return `${cronSeconds} ${cronMinutes} ${cronHours} * * *`;
 }
-
 
 const scheduleSeconds = async (name, seconds, cb) => {
   if(seconds instanceof String || seconds < 1) {
@@ -196,15 +182,6 @@ const scheduleRelayPopulator = () =>{
   return scheduleSeconds(name, seconds, job)
 }
 
-const normalizeUrl = (url) => {
-  try {
-    const parsedUrl = new URL(url)
-    return parsedUrl.toString()
-  } catch (error) {
-    return null
-  }
-}
-
 const pause = async (caller = "unknown") => {
   log.info(`${caller} pausing: all queues/workers`)
   await $q.queue.pause()
@@ -229,32 +206,46 @@ const resume = async (caller = "unknown") => {
   log.info(`${caller} resumed: all queues/workers`)
 }
 
-const populateRelays = async () => {
+
+const normalizeUrl = (url) => {
+  return parseUrl(r).toString()
+}
+
+// const generateRelayRecord = (r) => {
+//   const $u = parseUrl(r),
+//         url = $u.toString(),
+//         protocol = $u.protocol,
+//         hostname = $u.hostname,
+//         network = parseRelayNetwork(url)
+
+//   return { url, protocol, hostname, network } 
+// }
+
+
+
+const populateRelays = async ( skipJob = false ) => {
     log.debug(`populateRelays(): begin`)
+
+    const { Relay } = Schemas
     const syncData = await bootstrap('nocapd')
-    await delay(1)
     
     log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
-    const relays = syncData[0].map(r => { return { url: normalizeUrl(r), online: null, network: parseRelayNetwork(r) } })
+    const relays = syncData[0].map( url => new Relay({ url }) )
 
-    if(concurrency > 1){
+    if(concurrency > 1 && !skipJob){
       bus.addJob({ relays, type: 'relay-import' })
     }
     else {
-      await persistRelays({ data: { relays } })
+      await persistRelays({ data: { relays } }).catch(e => log.error(e))
     }
     
 }
 
 const persistRelays = async (job) => {
-  log.debug('persistRelays(): begin')
-
-  const { relays } = job.data
-  log.debug(`populateRelays(): Persisting ${relays.length} relays`, relays)
+  let { relays } = job.data
+  // relays = relayListHostnameDedup(relays, rcache)
   const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
-
   if(persisted.length === 0) return 0
-  
   log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
 }
 
@@ -267,8 +258,7 @@ const queueOpts = () => {
 const maybeBootstrap = async () => {
   if(rcache.relay.count.all() === 0){
     log.info(`Bootstrapping...`)
-    const persisted = await populateRelays()
-    log.info(`Boostrapped ${persisted.length} relays`)
+    await populateRelays( true )
     return true
   } else {
     log.info(`Already bootstrapped.`)
@@ -315,9 +305,11 @@ export const Nocapd = async () => {
   await migrate(rcache)
   await delay(1000)
   await maybeAnnounce()
+  
   if(await maybeBootstrap()) 
     log.info('Bootstrapped')
-  
+
+
   initBus()
   await initQueue()
 

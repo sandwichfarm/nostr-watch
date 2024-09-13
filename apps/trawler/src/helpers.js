@@ -29,7 +29,8 @@ export const relaysFromRelayList = async ( ev ) => {
     return {
       url: relay,
       network: parseRelayNetwork(relay),
-      online: null
+      online: null,
+      ignore: false
     }
   })
   return relayList

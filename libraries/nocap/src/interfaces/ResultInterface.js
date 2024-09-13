@@ -1,6 +1,10 @@
 export const ResultDefaults = {
   url: "",
   network: "",
+  hostname: "",
+  protocol: "",
+  parent: null,
+  ignore: false,
   adapters: [],
   checked_at: -1, 
   checked_by: "",
@@ -21,7 +25,7 @@ export class ResultInterface extends Validator {
   constructor(){
     super()
     Object.assign(this, ResultDefaults)
-    this.header_keys = ['url', 'network', 'adapters', 'checked_at', 'checked_by']
+    this.header_keys = ['url', 'network', 'hostname', 'protocol', 'parent', 'ignore', 'adapters', 'checked_at', 'checked_by']
     this.defaults = Object.freeze(ResultDefaults)
   }
 

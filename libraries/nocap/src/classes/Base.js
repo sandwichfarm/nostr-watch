@@ -46,7 +46,9 @@ export default class Base {
   limits = {}
 
   constructor(url, config={}) {
-    this.url = url
+    this._url = new URL(url)
+    this.url = this._url.toString()
+    
     this._init(config)
     this.logger.debug(`constructor(${url}, ${JSON.stringify(this.config)})`)
   }
@@ -68,10 +70,12 @@ export default class Base {
     this.count = new Counter(this.session, [...this.checks])
   }
 
-
   _init_results(){
     this.results.set('url', this.url)
     this.results.set('network', parseRelayNetwork(this.url))
+    this.results.set('hostname', this._url.hostname)
+    this.results.set('protocol', this._url.protocol)
+    this.results.set('parent', null)
   }
 
   _init_checks(){
@@ -171,7 +175,6 @@ export default class Base {
   async _check(key){ 
     if(!this.can_check(key)) return
     this.logger.debug(`${key}: check()`)
-    // this.defaultAdapters()
     await this.start(key).catch( err => this.logger.debug(err) )
     const result = await this.promises.get(key).promise
     this.logger.debug(`${key}: check(): resolved`)
@@ -180,7 +183,6 @@ export default class Base {
     }
     return result
   } 
-
 
   /**
    * can_check
@@ -361,6 +363,9 @@ export default class Base {
     const adapter_name = this.adapters[adapter_key].constructor.name 
     result.url = this.results.get('url')
     result.network = this.results.get('network')
+    result.hostname = this.results.get('hostname')
+    result.protocol = this.results.get('protocol')
+    result.parent = this.results.get('parent')
     result.adapters = [ ...new Set( this.results.get('adapters').concat([adapter_name]) ) ]
     result.checked_at = Date.now()
     result.checked_by = this.config.checked_by
@@ -439,7 +444,6 @@ export default class Base {
         else
           return rejectPrecheck({ status: "error", message: `Cannot check ${key}, websocket connection could not be established` })
       }
-
 
       //Websocket is open, key is open, reject precheck and directly resolve check deferred promise with cached result to bypass starting the open check.
       if(keyIsOpen && this.isConnected()) {

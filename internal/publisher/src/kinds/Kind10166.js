@@ -6,9 +6,9 @@ import ngeotags from 'nostr-geotags';
  * Represents a specific kind of publisher with additional tagging capabilities.
  */
 export class Kind10166 extends Publisher {
-  constructor() {
+  constructor(pubkey) {
     const KIND = 10166;
-    super(KIND);
+    super(KIND, pubkey);
     this.kind = KIND;
   }
 

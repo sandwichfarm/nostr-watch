@@ -412,7 +412,7 @@ export class NWWorker {
           
           this.log.debug(`persist_result(${key})`)
           const checked_at = result.checked_at
-          const data = JSON.stringify( result[key].data)
+          const data = (key === 'ssl')? JSON.stringify(sslData(result?.ssl?.data)): JSON.stringify( result[key].data)
           const check_record = { url, relay_id, checked_at, data, hash: hash( result[key].data) }
           const check_id = await this.rcache.check[key].insert(check_record).catch( e => this.log.error(`Could not persist ${url} to ${key} check: ${e}`))
           
@@ -552,4 +552,15 @@ const evaluateMaxRelays = (evaluate, relays) => {
   catch(e){
     this.log.err(`Error evaluating this.opts.checks.options.max -> "${this?.opts?.checks?.options?.max} || "is undefined"": ${e?.message || "error undefined"}`)
   }
+}
+
+const sslData = (data) => {
+  const result = {}
+  result.issuer = data?.issuer
+  result.subject = data?.subject
+  result.pem_encoded = data?.pemEncoded
+  result.subjectaltname = data?.subjectaltname
+  result.fingerprint256 = data?.fingerprint256
+  result.pubkey = data?.pubkey.toString()
+  return result
 }

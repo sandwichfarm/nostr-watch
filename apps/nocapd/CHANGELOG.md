@@ -1,5 +1,13 @@
 # @nostrwatch/nocapd
 
+## 1.10.2
+
+### Patch Changes
+
+- 31b9fb1: hotfix: round performance timings
+- Updated dependencies [31b9fb1]
+  - @nostrwatch/publisher@0.11.2
+
 ## 1.10.1
 
 ### Patch Changes

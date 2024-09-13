@@ -1,7 +1,7 @@
 {
   "name": "@nostrwatch/nocapd",
   "type": "module",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
@@ -12,7 +12,7 @@
     "@nostrwatch/nocap": "0.8.0",
     "@nostrwatch/nocap-every-adapter-default": "1.6.1",
     "@nostrwatch/nwcache": "0.3.0",
-    "@nostrwatch/publisher": "0.11.1",
+    "@nostrwatch/publisher": "0.11.2",
     "@nostrwatch/seed": "0.1.1",
     "@nostrwatch/utils": "0.1.8",
     "bluebird": "3.7.2",

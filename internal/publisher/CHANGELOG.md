@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.11.2
+
+### Patch Changes
+
+- 31b9fb1: hotfix: round performance timings
+
 ## 0.11.1
 
 ### Patch Changes

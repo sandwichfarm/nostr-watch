@@ -414,7 +414,7 @@ export class NWWorker {
           const checked_at = result.checked_at
           const data = JSON.stringify( result[key].data)
           const check_record = { url, relay_id, checked_at, data, hash: hash( result[key].data) }
-          const check_id = await this.rcache.check[key].insert(check_record)
+          const check_id = await this.rcache.check[key].insert(check_record).catch( e => this.log.error(`Could not persist ${url} to ${key} check: ${e}`))
           
           if(!check_id)
             reject(new Error(`Could not persist ${_check_id} check`))

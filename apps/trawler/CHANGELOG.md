@@ -1,5 +1,17 @@
 # @nostrwatch/trawler
 
+## 0.3.1
+
+### Patch Changes
+
+- af3fb46: non-destructive sanitize/dedup with hierarchal relay detection mechanism
+- Updated dependencies [af3fb46]
+  - @nostrwatch/nwcache@0.3.0
+  - @nostrwatch/publisher@0.11.0
+  - @nostrwatch/nocap@0.8.0
+  - @nostrwatch/utils@0.1.8
+  - @nostrwatch/nostrings@0.2.1
+
 ## 0.3.0
 
 ### Minor Changes

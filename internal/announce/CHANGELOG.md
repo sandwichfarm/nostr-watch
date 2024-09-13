@@ -1,5 +1,11 @@
 # @nostrwatch/announce
 
+## 0.4.2
+
+### Patch Changes
+
+- af3fb46: non-destructive sanitize/dedup with hierarchal relay detection mechanism
+
 ## 0.4.1
 
 ### Patch Changes

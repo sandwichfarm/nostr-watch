@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.11.0
+
+### Minor Changes
+
+- af3fb46: non-destructive sanitize/dedup with hierarchal relay detection mechanism
+
 ## 0.10.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @nostrwatch/nocap
 
+## 0.8.0
+
+### Minor Changes
+
+- af3fb46: non-destructive sanitize/dedup with hierarchal relay detection mechanism
+
 ## 0.7.1
 
 ### Patch Changes

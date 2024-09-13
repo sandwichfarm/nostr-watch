@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.12.0
+
+### Minor Changes
+
+- 8ca31d7: improve websocket handling, improve event handling, eliminate another ws attack vectro
+
 ## 0.11.2
 
 ### Patch Changes

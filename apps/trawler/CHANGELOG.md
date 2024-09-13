@@ -1,5 +1,17 @@
 # @nostrwatch/trawler
 
+## 0.4.0
+
+### Minor Changes
+
+- 8ca31d7: improve websocket handling, improve event handling, eliminate another ws attack vectro
+
+### Patch Changes
+
+- Updated dependencies [8ca31d7]
+  - @nostrwatch/publisher@0.12.0
+  - @nostrwatch/nocap@0.9.0
+
 ## 0.3.3
 
 ### Patch Changes

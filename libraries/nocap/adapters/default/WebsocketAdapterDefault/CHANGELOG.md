@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-websocket-adapter-default
 
+## 1.4.0
+
+### Minor Changes
+
+- 8ca31d7: improve websocket handling, improve event handling, eliminate another ws attack vectro
+
 ## 1.3.5
 
 ### Patch Changes

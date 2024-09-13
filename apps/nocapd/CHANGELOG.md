@@ -1,5 +1,19 @@
 # @nostrwatch/nocapd
 
+## 1.11.0
+
+### Minor Changes
+
+- 8ca31d7: improve websocket handling, improve event handling, eliminate another ws attack vectro
+
+### Patch Changes
+
+- Updated dependencies [8ca31d7]
+  - @nostrwatch/publisher@0.12.0
+  - @nostrwatch/nocap@0.9.0
+  - @nostrwatch/announce@0.4.3
+  - @nostrwatch/nocap-every-adapter-default@1.6.2
+
 ## 1.10.3
 
 ### Patch Changes

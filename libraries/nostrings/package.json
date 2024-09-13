@@ -19,7 +19,7 @@
     "build:clean": "yarn clean && yarn build"
   },
   "dependencies": {
-    "@nostrwatch/logger": "*"
+    "@nostrwatch/logger": "0.0.9"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

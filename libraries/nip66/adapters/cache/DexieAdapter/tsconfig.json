@@ -16,11 +16,11 @@
     "resolveJsonModule": true,
     "baseUrl": "./",
     "paths": {
-      "@adapters/*": ["adapters/*"],
-      "@models/*": ["src/models/*"],
-      "@interfaces/*": ["src/interfaces/*"],
-      "@services/*": ["src/interfaces/*"],
-      "@workers/*": ["src/workers/*"]
+      "@base/*": ["../../../src/*"],
+      "@baseInterfaces/*": ["../../../src/interfaces/*"],
+      "@baseModels/*": ["../../../src/models/*"],
+      "@baseServices/*": ["../../../src/services/*"],
+      "@baseWorkers/*": ["../../../src/workers/*"],
     }
   },
   "include": ["src/**/*", "adapters/**/*"],

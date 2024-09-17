@@ -1,0 +1,48 @@
+{
+  "name": "@nostrwatch/nip66-cacheadapter-localstorage",
+  "version": "0.0.1",
+  "description": "LocalStorage adapter for @nostrwatch/nip66",
+  "main": "dist/server/bundle.js",
+  "browser": "dist/browser/bundle.js",
+  "types": "dist/types/index.d.ts",
+  "scripts": {
+    "build": "npm run clean && webpack --config ../../webpack.config.js --env target=browser",
+    "build:server": "webpack --config ../../webpack.config.js --env target=server",
+    "clean": "rm -rf dist",
+    "test": "jest",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "nostr",
+    "NIP-66",
+    "adapter",
+    "cache",
+    "LocalStorage"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.4.4",
+    "worker-loader": "^3.0.8",
+    "webpack-node-externals": "^3.0.0",
+    "eslint": "^8.46.0",
+    "prettier": "^3.0.0",
+    "jest": "^29.6.1"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sandwichfarm/nostrwatch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sandwichfarm/nostrwatch/issues"
+  },
+  "homepage": "https://github.com/sandwichfarm/nostr-watch/tree/next/libraries/nip66/adapters/cache/LocalStorageAdapter/#readme"
+}

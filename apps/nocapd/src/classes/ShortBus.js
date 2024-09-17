@@ -3,6 +3,7 @@ import { PersistQueue, BullMQ } from '@nostrwatch/controlflow'
 import { delay, RedisConnectionDetails } from "@nostrwatch/utils"
 
 const JOB_OPTS = {
+  delay: 1,
   removeOnComplete: true, 
   removeOnFail: true,
   attempts: 3,

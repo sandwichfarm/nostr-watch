@@ -48,7 +48,7 @@ const IPV4 = /\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01
     
     const result = { status: "success", data: [] }
     const dns = this.$.results.get('dns')?.data
-    const hasDns = dns?.ipv4.length || dns?.ipv6.length
+    const hasDns = dns?.ipv4?.length || dns?.ipv6?.length
     
     this.$.logger.debug(`geo has dns: ${hasDns} - ${JSON.stringify(dns)}`)
 

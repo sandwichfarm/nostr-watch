@@ -143,22 +143,6 @@ export class NWWorker {
       failure(new Error(`Failure inside work() block: ${err}`))
       return { result: { url: job.data.relay, open: { data: false }} }
     }
-    // const promise = new deferred()
-
-    // this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
-    // // const failure = (err) => { reject(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
-
-    // const { relay:url } = job.data 
-    // const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
-    // await nocap.useAdapters([...Object.values(nocapAdapters)]).catch(promise.reject)
-    // await nocap.check(this.opts.checks.enabled)
-    //   .then( result => promise.resolve( result ) )
-    //   .catch( err => { 
-    //     this.log.debug(`work(): catch block: ${err}`)
-    //     promise.reject({ result: { url: job.data.relay, open: { data: false }} })
-    //   })
-
-    // return promise
   }
 
   async on_failed(job, err){
@@ -166,7 +150,6 @@ export class NWWorker {
   }   
 
   async on_error(job, err){
-    if(this.hard_stop) return
     this.log.debug(`on_error(): ${job.id}: ${err}`)
     await this.on_fail( job )
   }
@@ -311,12 +294,12 @@ export class NWWorker {
     await Promise.allSettled(jobs)
   }
   
-  async addRelayJob(jdata){
-    this.log.debug(`Adding job for ${jdata.relay} with ${this.opts.checks.enabled} nocap checks: ${JSON.stringify(jdata.relay)}`)
-    const jobId = this.jobId(jdata.relay)
-    const priority = this.getPriority(jdata.relay)
+  async addRelayJob(job){
+    this.log.debug(`Adding job for ${job.relay} with ${this.opts.checks.enabled} nocap checks: ${JSON.stringify(job.relay)}`)
+    const jobId = this.jobId(job.relay)
+    const priority = this.getPriority(job.relay)
     const jobOpts = this.updateJobOpts({ priority })
-    return this.$.queue.add( this.id(), jdata, { jobId, ...jobOpts})
+    return this.$.queue.add( this.id(), job, { jobId, ...jobOpts})
   }
 
   calculateProgress() {
@@ -327,8 +310,6 @@ export class NWWorker {
   }
 
   async progressMessage(url, result={}, error=false){
-    
-
     this.log.debug(`progressMessage()`)
     const failure = chalk.red;
     const success = chalk.bold.green;

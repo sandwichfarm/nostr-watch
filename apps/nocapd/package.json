@@ -29,7 +29,7 @@
     "nostr-tools": "^1.3.0"
   },
   "scripts": {
-    "launch": "NODE_DEBUG=bull node src/index.js",
+    "launch": "node src/index.js",
     "trace": "node --trace-warnings src/index.js",
     "debug": "DEBUG=* node --trace-warnings src/index.js",
     "docker:build@debug": "docker build -t nostrwatch/nocapd:latest -f Dockerfile.debug ."

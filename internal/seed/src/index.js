@@ -86,30 +86,41 @@ export const relaysFromEvents = async (opts, caller) => {
     if(!relay) continue
     relays.push(relay)
   }
+
+  fetcher.shutdown()
+
   return [[...new Set(relays)], newest]
 }
 
 export const relaysFromCache = async (opts) => {
   const cacheOpts = opts?.options?.cache
   if(!cacheOpts?.path) throw new Error("relaysFromCache(): No cache path specified in opts (opts.cache.path)")
-  // const { default: nwcache } = await import("@nostrwatch/nwcache")
-  const { openDb, DbWrapper, initializeDb } = await import("@nostrwatch/nwcache")
   
-  let lmdb = openDb(cacheOpts.path, { maxDbs: 10 })
-  let cache = new DbWrapper(lmdb)
-  cache = initializeDb(cache)
+  const { openDb, DbWrapper, initializeDb } = await import("@nostrwatch/nwcache")
 
   let result 
-  if(cacheOpts?.onlineOnly) {
-    result = await cache.relay.get.online('url')
+  let cache
+  
+  try {
+    let lmdb = openDb(cacheOpts.path, { maxDbs: 10 })
+    cache = new DbWrapper(lmdb)
+    cache = initializeDb(cache)
+
+    if(cacheOpts?.onlineOnly) {
+      result = await cache.relay.get.online('url')
+    }
+    else {
+      result = await cache.relay.get.all()
+    }
+  
+    result = result.map( relay => relay.url )
+  
+    cache.$.close()
   }
-  else {
-    result = await cache.relay.get.all()
+  catch(e){
+    logger.err(e)
   }
 
-  result = result.map( relay => relay.url )
-
-  cache.$.close()
   cache = null
 
   return [ result, Date.now() ]

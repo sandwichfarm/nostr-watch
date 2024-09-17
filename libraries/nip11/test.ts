@@ -1,5 +1,0 @@
-import { Nip11 } from './src/index';
-
-const json = "{\"name\":\"nostr-relay-nestjs\",\"version\":\"2.1.1\",\"description\":\"A high-performance nostr relay, using PostgreSQL\",\"pubkey\":\"8125b911ed0e94dbe3008a0be48cfe5cd0c0b05923cfff917ae7e87da8400883\",\"contact\":\"codytseng98@gmail.com\",\"software\":\"git+https://github.com/CodyTseng/nostr-relay-nestjs\",\"git_commit_sha\":\"bbc4722\",\"supported_nips\":[1,2,4,11,13,22,26,28,40,42],\"limitation\":{\"max_message_length\":131072,\"max_subscriptions\":20,\"max_filters\":10,\"max_limit\":1000,\"max_subid_length\":128,\"max_event_tags\":2000,\"max_content_length\":102400,\"min_pow_difficulty\":0,\"auth_required\":false,\"payment_required\":false,\"restricted_writes\":false},\"retention\":[{\"time\":null}]}"
-
-console.log(Nip11.fromJSON(json))

@@ -28,10 +28,11 @@ let rcache,
     concurrency = 1
 
 const populateJobQueue = async () => { 
+  const activeJobs = (await $q.checker.getActiveJobs()).map( j => j.id )
+  if(activeJobs.length > 0)
+    log.warn(`active jobs: ${activeJobs}`)
   await $q.checker.populator() 
   await $q.checker.resetProgressCounts()
-  // await $q.checker.syncQueue()
-  // await $q.checker.drainSmart()
 }
 
 const maybePopulateJobs = async (queue) => {
@@ -67,7 +68,7 @@ const initQueue = async () => {
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
     .set( 'checker', new NWWorker(PUBKEY, $q, rcache, bus, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
-    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.route_work.bind($q), { concurrency, connection, ...queueOpts() } ) )
+    .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.checker.work.bind($q.checker), { concurrency, connection, ...queueOpts() } ) )
 
   await pause('initQueue()')
   
@@ -182,7 +183,6 @@ const scheduleRelayPopulator = () =>{
   const seconds = timestring(seedOpts.interval, "s")
   
   const job = async () => {
-    log.error(`active jobs: ${(await $q.checker.getActiveJobs()).map( j => j.id )}`)
     log.debug(`Scheduled: populateRelays()`)
     await populateRelays() 
   }
@@ -218,23 +218,11 @@ const normalizeUrl = (url) => {
   return parseUrl(r).toString()
 }
 
-// const generateRelayRecord = (r) => {
-//   const $u = parseUrl(r),
-//         url = $u.toString(),
-//         protocol = $u.protocol,
-//         hostname = $u.hostname,
-//         network = parseRelayNetwork(url)
-
-//   return { url, protocol, hostname, network } 
-// }
-
-
-
 const populateRelays = async ( skipJob = false ) => {
     log.debug(`populateRelays(): begin`)
 
     const { Relay } = Schemas
-    const syncData = await bootstrap('nocapd')
+    const syncData = await bootstrap('nocapd').catch(log.error)
     
     log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
     
@@ -307,16 +295,21 @@ export const Nocapd = async () => {
   log.info('Starting Nocapd...')
   config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
   log.info('Loaded config')
-  
   const lmdbOpts = config?.lmdb ?? {}
   concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb', lmdbOpts)
+  log.info('Loaded cache...')
   await delay(5000)
   await migrate(rcache)
+  log.info('ran migrations...')
 
   await maybeAnnounce()
-  if(await maybeBootstrap()) 
-    log.info('Bootstrapped')
+  log.info('announced...')
+
+  await populateRelays( true )
+  
+  // if(await maybeBootstrap()) 
+  //   log.info('Bootstrapped')
 
   initBus()
   await initQueue()

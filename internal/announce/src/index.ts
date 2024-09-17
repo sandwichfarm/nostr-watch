@@ -33,6 +33,7 @@ export class AnnounceMonitor {
   private pubkey: string | null = null;
 
   constructor(options: AnnounceMonitorOptions, pubkey: string) {
+    console.log('announce::constructor()', pubkey)
     this.setup(options);
     this.pubkey = pubkey
     this.publisher = new Publisher(pubkey)

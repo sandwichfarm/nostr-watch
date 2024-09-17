@@ -549,10 +549,11 @@ export class NWWorker {
       cacheMessage += `online & expired: ${this.cache_counts.onlineExpired}  -  `
       cacheMessage += `expired: ${this.cache_counts.expired}  -  `
       cacheMessage += `unchecked: ${this.cache_counts.unchecked}  -  `
-      cacheMessage += `total: ${this.cache_counts.allRelays}  `
-      cacheMessage += `|  ignored: ${this.cache_counts.ignoredRelays} -  `
-      cacheMessage += `with parents: ${this.cache_counts.relaysWithParents} -  `
-      cacheMessage += `parents: ${this.cache_counts.relaysAreParents} ===`
+      cacheMessage += `total: ${this.cache_counts.allRelays}  |   `
+      cacheMessage += `ignored: ${this.cache_counts.ignoredRelays} -  `
+      cacheMessage += `parents: ${this.cache_counts.relaysAreParents} -  `
+      cacheMessage += `children: ${this.cache_counts.relaysWithParents} ===`
+      
 
       this.log.info(chalk.blue.bold(cacheMessage));
     })

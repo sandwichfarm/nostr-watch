@@ -31,8 +31,8 @@ const populateJobQueue = async () => {
   const activeJobs = (await $q.checker.getActiveJobs()).map( j => j.id )
   if(activeJobs.length > 0)
     log.warn(`active jobs: ${activeJobs}`)
-  await $q.checker.populator() 
-  await $q.checker.resetProgressCounts()
+  await $q.checker.populator().catch(log.error)
+  await $q.checker.resetProgressCounts().catch(log.error)
 }
 
 const maybePopulateJobs = async (queue) => {
@@ -184,7 +184,7 @@ const scheduleRelayPopulator = () =>{
   
   const job = async () => {
     log.debug(`Scheduled: populateRelays()`)
-    await populateRelays() 
+    await populateRelays().catch(log.error)
   }
   return scheduleSeconds(name, seconds, job)
 }

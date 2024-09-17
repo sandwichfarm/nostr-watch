@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-geo-adapter-default
 
+## 1.1.1
+
+### Patch Changes
+
+- 73083b3: nocapd improvements, fixed some uncaught errors in nocap adapters, improved nostrings
+
 ## 1.1.0
 
 ### Minor Changes

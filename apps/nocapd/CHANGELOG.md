@@ -1,5 +1,19 @@
 # @nostrwatch/nocapd
 
+## 1.12.0
+
+### Minor Changes
+
+- 73083b3: nocapd improvements, fixed some uncaught errors in nocap adapters, improved nostrings
+
+### Patch Changes
+
+- Updated dependencies [73083b3]
+  - @nostrwatch/nwcache@0.4.0
+  - @nostrwatch/nocap-every-adapter-default@1.6.3
+  - @nostrwatch/seed@0.1.2
+  - @nostrwatch/nocap@0.9.1
+
 ## 1.11.0
 
 ### Minor Changes

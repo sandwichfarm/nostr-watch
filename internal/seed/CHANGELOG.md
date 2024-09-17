@@ -1,5 +1,11 @@
 # @nostrwatch/seed
 
+## 0.1.2
+
+### Patch Changes
+
+- 73083b3: nocapd improvements, fixed some uncaught errors in nocap adapters, improved nostrings
+
 ## 0.1.1
 
 ### Patch Changes

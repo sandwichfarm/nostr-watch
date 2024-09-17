@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-dns-adapter-default
 
+## 1.1.5
+
+### Patch Changes
+
+- 73083b3: nocapd improvements, fixed some uncaught errors in nocap adapters, improved nostrings
+
 ## 1.1.4
 
 ### Patch Changes

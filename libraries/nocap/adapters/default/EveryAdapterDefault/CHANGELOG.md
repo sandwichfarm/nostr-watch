@@ -1,5 +1,14 @@
 # @nostrwatch/nocap-every-adapter-default
 
+## 1.6.3
+
+### Patch Changes
+
+- 73083b3: nocapd improvements, fixed some uncaught errors in nocap adapters, improved nostrings
+- Updated dependencies [73083b3]
+  - @nostrwatch/nocap-dns-adapter-default@1.1.5
+  - @nostrwatch/nocap-geo-adapter-default@1.1.1
+
 ## 1.6.2
 
 ### Patch Changes

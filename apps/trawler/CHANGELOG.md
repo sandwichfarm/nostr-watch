@@ -1,5 +1,19 @@
 # @nostrwatch/trawler
 
+## 0.5.0
+
+### Minor Changes
+
+- 73083b3: nocapd improvements, fixed some uncaught errors in nocap adapters, improved nostrings
+
+### Patch Changes
+
+- Updated dependencies [73083b3]
+  - @nostrwatch/nwcache@0.4.0
+  - @nostrwatch/nostrings@0.2.2
+  - @nostrwatch/seed@0.1.2
+  - @nostrwatch/nocap@0.9.1
+
 ## 0.4.0
 
 ### Minor Changes

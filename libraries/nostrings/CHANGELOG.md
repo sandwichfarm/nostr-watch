@@ -1,5 +1,11 @@
 # @nostrwatch/nostrings
 
+## 0.2.2
+
+### Patch Changes
+
+- 73083b3: nocapd improvements, fixed some uncaught errors in nocap adapters, improved nostrings
+
 ## 0.2.1
 
 ### Patch Changes

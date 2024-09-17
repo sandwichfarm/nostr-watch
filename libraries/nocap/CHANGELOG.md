@@ -1,5 +1,12 @@
 # @nostrwatch/nocap
 
+## 0.9.1
+
+### Patch Changes
+
+- Updated dependencies [73083b3]
+  - @nostrwatch/nocap-every-adapter-default@1.6.3
+
 ## 0.9.0
 
 ### Minor Changes

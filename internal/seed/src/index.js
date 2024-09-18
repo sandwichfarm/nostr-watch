@@ -6,6 +6,8 @@ import Logger from "@nostrwatch/logger"
 import { fetch } from "cross-fetch"
 import config from "./config.js"
 
+let cache
+
 const DEFAULT_RELAYS = [ "wss://relay.nostr.watch", "wss://history.nostr.watch", "wss://relaypag.es" ]
 
 const STATIC_SEED_FILE = new URL('seed.yaml', import.meta.url);
@@ -99,12 +101,15 @@ export const relaysFromCache = async (opts) => {
   const { openDb, DbWrapper, initializeDb } = await import("@nostrwatch/nwcache")
 
   let result 
-  let cache
+  cache
   
   try {
-    let lmdb = openDb(cacheOpts.path, { maxDbs: 10 })
-    cache = new DbWrapper(lmdb)
-    cache = initializeDb(cache)
+    let lmdb
+    if(!cache) {
+      lmdb = openDb(cacheOpts.path, { maxDbs: 10 })
+      cache = new DbWrapper(lmdb)
+      cache = initializeDb(cache)
+    } 
 
     if(cacheOpts?.onlineOnly) {
       result = await cache.relay.get.online('url')
@@ -114,14 +119,10 @@ export const relaysFromCache = async (opts) => {
     }
   
     result = result.map( relay => relay.url )
-  
-    cache.$.close()
   }
   catch(e){
     logger.err(e)
   }
-
-  cache = null
 
   return [ result, Date.now() ]
 }

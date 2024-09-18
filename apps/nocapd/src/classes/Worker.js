@@ -14,6 +14,8 @@ import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
 import { relayHostnameDedup } from '../hostnames.js';
 
+const TIMEOUT = 2*60*1000
+
 let errors = 0
 
 export class NWWorker {
@@ -49,13 +51,14 @@ export class NWWorker {
       timeout: this.timeout,
       checked_by: this.pubkey
     }
-  
+
     this.jobOpts = {
       attempts: 1,
-      timeout: 1000*30,
-      removeOnComplete: true,
+      removeOnComplete: {
+        age: timestring(this.config.nocapd.checks.options.expires, 's')
+      },
       removeOnFail: {
-        age: timestring('2m', 's')
+        age: timestring('10m', 's')
       }
     }
   
@@ -133,10 +136,12 @@ export class NWWorker {
     const failure = (err) => { this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     let result = {}
     try {
+      const timeout = this.setTimeout( () => { throw new Error(`Job Timedout: ${job.id} after ${TIMEOUT/1000}s`), TIMEOUT })
       const { relay:url } = job.data 
       const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
       await nocap.useAdapters([...Object.values(nocapAdapters)])
       result = await nocap.check(this.opts.checks.enabled).catch(failure)
+      clearTimeout(timeout)
       return { result } 
     } 
     catch(err) {

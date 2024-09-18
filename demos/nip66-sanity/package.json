@@ -1,0 +1,10 @@
+{
+  "name": "@nostrwatch/sanity",
+  "packageManager": "yarn@4.5.0",
+  "type": "module",
+  "dependencies": {
+    "@nostrwatch/nocap": "workspace:^",
+    "nostr-tools": "^2.9.4",
+    "ws": "^8.18.0"
+  }
+}

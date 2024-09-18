@@ -1,8 +1,9 @@
-export interface Monitor {
-  id: string;
-  eventId: string;
+export interface IMonitor {
+  id: string; 
+  eventId: string; 
   frequency: number;
-  lastActive: number;
+  lastActive?: number;
   geohash?: string;
+  geocode?: string[];
   checks?: string[];
 }

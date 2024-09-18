@@ -1,0 +1,16 @@
+{
+  "type": "array",
+  "items": [
+    { "const": "OK" },
+    { "type": "string", "description": "event_id" },
+    { "type": "boolean", "description": "true if accepted by the relay, false otherwise" },
+    {
+      "type": "string",
+      "description": "response message",
+      "pattern": "^$|^[a-zA-Z0-9_-]+: .+"
+    }
+  ],
+  "minItems": 4,
+  "maxItems": 4,
+  "additionalItems": false
+}

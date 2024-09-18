@@ -105,7 +105,7 @@ export const sanitizeRelayUrl = (relay: string): string => {
     return decodeURI(relay)
       .toLowerCase()
       .trim()
-      .replace(/[\s\t]+/, '') // Consolidate whitespace and tab removal
+      .replace(/[\s\t|]+/, '') // Consolidate whitespace and tab removal
       .replace(/\/+$/, '') // Remove trailing slashes
       .replace(/\.(?=\/|$)/, '')  // Remove trailing dots, if they are before a slash or end of string
       .replace('(blob_hash)', '')
@@ -148,36 +148,6 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
   return true;
 };
 
-
-// export const qualifyRelayUrl = (relay: string): boolean => {
-//   if (/^(wss:\/\/)(.*)(:\/\/)(.*)$/.test(relay)) {
-//     // multiple protocols
-//     return false;
-//   }
-
-//   if (!relay.startsWith('wss://') && !relay.startsWith('ws://')) {
-//     return false;
-//   }
-
-//   if (relay.match(/localhost|\.local|[\n\r]|\[object object\]/)) {
-//     return false;
-//   }
-
-//   if (relay.includes('http://') || relay.includes('https://')) {
-//     return false;
-//   }
-
-//   if (relay.match(/(127\.)\d{0,3}(\.)\d{0,3}(\.)\d{0,3}|(192\.168|10\.)\d{1,3}(\.)\d{1,3}/)) {
-//     return false;
-//   }
-
-//   if (/(npub)[A-z0-9]{0,60}/.test(relay)) {
-//     return false;
-//   }
-
-//   return true;
-// };
-
 /**
  * Accumulates normalized relay URLs into an array.
  * 
@@ -214,6 +184,7 @@ export const normalizeRelayUrl = (relay: string): string => {
     const url = new URL(relay);
     url.hash = '';
     url.search = '';
+    url.username = '';
     return url.toString();
   } catch (e: any) {
     logger.warn(`Failed to normalize relay ${relay}: ${e.message}`);

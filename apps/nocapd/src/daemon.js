@@ -123,7 +123,7 @@ const maybeAnnounce = async () => {
   } catch (e) {
     throw new Error(e)
   }
-  await announce.publish( conf.relays ).catch(e => { log.warn(e.message) })
+  await announce.publish().catch(e => { log.warn(e.message) })
 }
 
 function secondsToCron(seconds) {
@@ -222,9 +222,11 @@ const populateRelays = async ( skipJob = false ) => {
     log.debug(`populateRelays(): begin`)
 
     const { Relay } = Schemas
-    const syncData = await bootstrap('nocapd').catch(log.error)
+    const syncData = await bootstrap('nocapd').catch( () => log.warn('bootstrap() failed') );
+
+    if(!syncData?.[0]) return log.error(`populateRelays(): no relays found in bootstrap data`)
     
-    log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
+    log.debug(`populateRelays(): found ${syncData?.[0].length} *maybe new* relays`)
     
     const relays = syncData[0].map( url => new Relay({ url }) )
 
@@ -247,7 +249,7 @@ const persistRelays = async (job) => {
 
 const queueOpts = () => {
   return {
-    lockDuration: 30*1000
+    lockDuration: 5*60*1000
   }
 }
 
@@ -271,12 +273,14 @@ const globalHandlers = () => {
 
   process.on('uncaughtException', async (error) => {
     log.error('Uncaught Exception:', error);
+    gracefulShutdown('uncaughtException')
   });
   
   process.on('unhandledRejection', async (reason, promise) => {
     log.error('Unhandled Rejection:', promise.catch(console.error));
+    gracefulShutdown('unhandledRejection')
   });  
-
+  
   $q.worker.on('error', async (err) => {
     console.error('Worker Error: ', err);
     if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
@@ -303,13 +307,7 @@ export const Nocapd = async () => {
   await migrate(rcache)
   log.info('ran migrations...')
 
-  await maybeAnnounce()
-  log.info('announced...')
-
   await populateRelays( true )
-  
-  // if(await maybeBootstrap()) 
-  //   log.info('Bootstrapped')
 
   initBus()
   await initQueue()

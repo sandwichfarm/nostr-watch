@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NEG-MSG Message",
+  "type": "array",
+  "minItems": 3,
+  "maxItems": 3,
+  "items": [
+    {
+      "const": "NEG-MSG"
+    },
+    {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Subscription ID as a string of digits."
+    },
+    {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]+$",
+      "description": "Hex-encoded Negentropy binary message."
+    }
+  ],
+  "additionalItems": false
+}

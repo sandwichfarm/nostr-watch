@@ -17,11 +17,7 @@ export const Schemas = schemas
 
 let open;
 
-if (typeof window !== 'undefined') {
-  await import('lmdb-indexeddb').then(module => {
-    open = module.open;
-  });
-} else {
+if (typeof window === 'undefined') {
   await import('lmdb').then(module => {
     open = module.open;
   });

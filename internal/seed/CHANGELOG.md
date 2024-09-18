@@ -1,5 +1,11 @@
 # @nostrwatch/seed
 
+## 0.1.3
+
+### Patch Changes
+
+- e0d996b: concurrency, race condition and lmdb fixes
+
 ## 0.1.2
 
 ### Patch Changes

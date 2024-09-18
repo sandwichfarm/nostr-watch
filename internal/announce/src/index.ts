@@ -2,9 +2,8 @@ import chalk from 'chalk'
 
 import { verifyEvent, finalizeEvent, SimplePool, Event } from "nostr-tools";
 import { Publisher, Kind10166, Kind0, Kind10002 } from "@nostrwatch/publisher";
-// import Logger from "@nostrwatch/logger";
-
-// const log = new Logger('@nostrwatch/announce')
+import Logger from "@nostrwatch/logger";
+const log = new Logger('@nostrwatch/announce')
 
 const NIP66_MONITOR_REGISTER = 10166;
 
@@ -33,10 +32,10 @@ export class AnnounceMonitor {
   private pubkey: string | null = null;
 
   constructor(options: AnnounceMonitorOptions, pubkey: string) {
-    console.log('announce::constructor()', pubkey)
+    log.debug(`announce::constructor(): ${pubkey}`)
     this.setup(options);
     this.pubkey = pubkey
-    this.publisher = new Publisher(pubkey)
+    this.publisher = new Publisher(pubkey, this.monRelays)
   }
 
   setup(options: AnnounceMonitorOptions): void {
@@ -86,7 +85,7 @@ export class AnnounceMonitor {
   }
 
   generate(): any {
-    console.log('announce::generate()', this.pubkey)
+    log.debug(`announce::generate(): ${this.pubkey}`)
 
     const $monReg = new Kind10166(this.pubkey)
     $monReg.generateEvent({...$monReg})
@@ -114,14 +113,19 @@ export class AnnounceMonitor {
     })
   }
 
-  async publish( relays: string[] ): Promise<string[]> {
+  async publish(): Promise<string[]> {
     if(!this.events) throw new Error("Event has not yet been generated") 
     const pubbedIds: string[] = []
     const kinds = Object.keys(this.events)
     for(let i = 0; i < kinds.length; i++) {
       const kind = kinds[i]    
-      await Promise.any(this.publisher.publishEvent(relays, this.events[kind].event()))
-      console.log(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(relays.join(','))}`)  
+      try {
+        await Promise.any( this.publisher.publishEvent(this.events[kind]) )
+      }
+      catch(e){
+        log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(this.monRelays.join(','))}`)
+      }   
+      log.info(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(this.monRelays.join(','))}`)  
       pubbedIds.push(this.events[kind].id)
     }    
     return pubbedIds

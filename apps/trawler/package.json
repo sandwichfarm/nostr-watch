@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/trawler",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "main": "src/index.js",
   "type": "module",
   "engines": {
@@ -10,15 +10,15 @@
   "dependencies": {
     "@nostr-dev-kit/ndk": "2.10.0",
     "@nostr-fetch/adapter-nostr-tools": "0.15.1",
-    "@nostrwatch/controlflow": "0.5.1",
-    "@nostrwatch/logger": "0.0.9",
-    "@nostrwatch/nocap": "0.9.1",
+    "@nostrwatch/controlflow": "*",
+    "@nostrwatch/logger": "*",
+    "@nostrwatch/nocap": "*",
     "@nostrwatch/nostrawl": "*",
-    "@nostrwatch/nwcache": "0.4.0",
-    "@nostrwatch/publisher": "0.12.0",
-    "@nostrwatch/nostrings": "0.2.2",
-    "@nostrwatch/seed": "0.1.2",
-    "@nostrwatch/utils": "0.1.8",
+    "@nostrwatch/nostrings": "*",
+    "@nostrwatch/nwcache": "*",
+    "@nostrwatch/publisher": "*",
+    "@nostrwatch/seed": "*",
+    "@nostrwatch/utils": "*",
     "@types/ioredis": "5.0.0",
     "bullmq": "4.13.3",
     "chalk": "^5.3.0",
@@ -34,7 +34,7 @@
     "timestring": "7.0.0",
     "url-local": "2.0.0",
     "websocket-polyfill": "0.0.3",
-    "ws": "8.14.2"
+    "ws": "8.17.1"
   },
   "scripts": {
     "launch": "node src/index.js",

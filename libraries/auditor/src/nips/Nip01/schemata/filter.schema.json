@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+      "description": "A list of event ids in lowercase hex"
+    },
+    "authors": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+      "description": "A list of lowercase pubkeys, matching the pubkey of an event"
+    },
+    "kinds": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "description": "A list of kind numbers"
+    },
+    "since": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "An integer Unix timestamp in seconds, where events must have created_at >= since"
+    },
+    "until": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "An integer Unix timestamp in seconds, where events must have created_at <= until"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The maximum number of events relays SHOULD return in the initial query"
+    }
+  },
+  "patternProperties": {
+    "^#[a-zA-Z]$": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "A list of tag values, where specific tags (#e, #p) have designated meanings"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,9 @@
+{
+  "type": "array",
+  "items": [
+    { "const": "AUTH" },
+    { "$ref": "../../Nip01/schemata/Note.schema.json" }
+  ],
+  "minItems": 2,
+  "maxItems": 2
+}

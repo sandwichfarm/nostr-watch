@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM"],
+    "declaration": true,
+    "declarationDir": "dist/types",
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist/node",
+    "rootDir": "src",
+    "strict": true,
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": false,
+    "resolveJsonModule": true,
+    "baseUrl": "./",
+    "paths": {
+      "@noble/*": ["node_modules/@noble/*"]
+    }
+  },
+  "include": ["src/**/*", "node_modules", "node_modules/@noble/**/*.ts"],
+  "exclude": ["dist", "node_modules/@noble/**/*.*"]
+}

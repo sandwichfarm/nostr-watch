@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "esnext",
+    "lib": ["ES6"],
+    "outDir": "./dist/server",
+    "sourceMap": true,
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "declarationDir": "./dist/server/types",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmitHelpers": true,
+    "importHelpers": true,
+    "baseUrl": ".", 
+    "paths": {
+      "#src/*": ["src/*"],
+      "#utils/*": ["src/utils/*"],
+      "#base/*": ["src/base/*"],
+      "#protocol/*": ["src/protocol/*"],
+      "#types/*": ["src/types/*"],
+      "#interfaces/*": ["src/interfaces/*"],
+      "#nips/*": ["src/nips/*"]
+    }
+  },
+  "include": ["src/index.ts", "src/**/*.ts", "src/nips/*/index.ts"],
+  "exclude": ["node_modules", "dist"],
+
+}

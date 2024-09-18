@@ -9,7 +9,7 @@ export const populateRelays = async ( monitorPubkey: string): Promise<number> =>
     if(!relay) return
     if(relay) {
       if(relay.lastSeen > mostRecent) mostRecent = relay.lastSeen
-      console.log(`adding relay ${relay.relay}`)
+      // console.log(`adding relay ${relay.relay}`)
       await relayDb.relays.put(relay)
     }
   })

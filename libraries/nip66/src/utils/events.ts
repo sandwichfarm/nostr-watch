@@ -1,6 +1,6 @@
-import { NostrEvent } from "@models/NostrEvent";
+import { IEvent } from "@models/Event";
 
-export const getUrlFromEvent = (event: NostrEvent): string | undefined => {
+export const getUrlFromEvent = (event: IEvent): string | undefined => {
   let relay: string | undefined;
   try {
     relay = new URL(event.tags.find( t => t[0] === 'd')?.[1] ?? "").toString()
@@ -11,6 +11,6 @@ export const getUrlFromEvent = (event: NostrEvent): string | undefined => {
   return relay
 }
 
-export const getNetworkFromEvent = (event: NostrEvent): string | undefined => {
+export const getNetworkFromEvent = (event: IEvent): string | undefined => {
   return event.tags.find( t => t[0] === 'n')?.[1]
 }

@@ -1,0 +1,9 @@
+{
+  "type": "array",
+  "items": [
+    { "const": "AUTH" },
+    { "type": "string", "description": "challenge string from the relay" }
+  ],
+  "minItems": 2,
+  "maxItems": 2
+}

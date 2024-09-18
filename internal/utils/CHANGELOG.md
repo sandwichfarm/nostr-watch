@@ -1,5 +1,11 @@
 # @nostrwatch/utils
 
+## 0.1.9
+
+### Patch Changes
+
+- e0d996b: concurrency, race condition and lmdb fixes
+
 ## 0.1.8
 
 ### Patch Changes

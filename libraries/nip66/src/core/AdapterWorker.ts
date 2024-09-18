@@ -1,0 +1,232 @@
+
+import { IEvent, IWorkerCommand, IWorkerGlobalScope } from "../interfaces";
+import { NostrEvent } from "nostr-tools";
+import { Workers } from "./Workers";
+import { AdapterMessage } from "./Adapter";
+
+export enum WorkerContext {
+  MainThread = 0,
+  Worker = 1,
+  DedicatedWorker = 2
+}
+
+export interface AdapterWorkerMessage extends AdapterMessage {}
+
+export interface AdapterWorkerCommand extends AdapterWorkerMessage {
+  command?: string;
+    channelPort?: MessagePort
+    mainThread?: IWorkerGlobalScope;
+}
+
+export enum AdapterWorkerResultType {
+  "events" = "events",
+  "event" = "event",
+}
+
+export interface AdapterWorkerResult extends AdapterWorkerMessage {
+  result?: ArrayBuffer;
+  resultType?: AdapterWorkerResultType;
+}
+
+export interface WorkerOptions {
+  mainThread?: IWorkerGlobalScope;
+  channelPort?: MessagePort;
+}
+
+export class AdapterWorker {
+
+  private _context?: WorkerContext
+  private _mainThread?: IWorkerGlobalScope;
+  private _channelPort?: MessagePort;
+  // private _sharedWorkerPort?: MessagePort;
+
+  constructor( options?: WorkerOptions ){
+    if(!options) return 
+    //console.log('AdapterWorker', options)
+    this.setContext(options)
+    //console.log('mainThread?:', this.mainThread)
+    this.setupHandlers()
+  }
+
+  get context(): WorkerContext | undefined {  
+    return this._context
+  }
+
+  get mainThread(): IWorkerGlobalScope | undefined {
+    return this._mainThread;
+  }
+
+  set channel( port: MessagePort ){
+    this._channelPort = port
+  }
+
+  get channel(): MessagePort | undefined {
+    return this._channelPort
+  }
+
+  setContext(options?: WorkerOptions){
+    if(!options) { 
+      options = {
+        mainThread: this?.mainThread,
+        channelPort: this?.channel,
+        // sharedWorkerPort: this?.sharedWorker
+      }
+    }
+    if( options?.mainThread ) {
+      this._context = WorkerContext.Worker
+      this._mainThread = options.mainThread
+    }
+    if( options?.channelPort ) {
+      this._context = WorkerContext.Worker
+      this._channelPort = options.channelPort
+    }
+    //console.log(this.constructor.name, 'context:', this._context)
+  }
+
+  //overload this.
+  async setup(command: AdapterWorkerMessage): Promise<void>{
+    console.warn(`${this.constructor.name} setup() method not implemented`)
+  }
+
+  async _setup(command: AdapterWorkerMessage): Promise<void>{
+    console.warn(`Adapter\'s Worker _setup() method not implemented`)
+  }
+
+  async __setup(command: AdapterWorkerMessage): Promise<void>{
+    //console.log('AdapterWorker.__setup', command)
+    const { channelPort } = command
+    if(channelPort) {
+      //console.log(`[Worker:${this.constructor.name}] channelPort:`, channelPort)
+      this.channel = channelPort
+      this.setupChannelHandlers()
+    }
+    await this._setup(command)
+    return this.setup(command)
+  }
+
+  setupChannelHandlers(){
+    if(!this.channel) return console.warn('channel not defined')
+
+    this.channel.onmessage = (message: MessageEvent) => {
+      const command = message.data as AdapterWorkerMessage;
+      //console.log(`[Worker:${this.constructor.name}] channel.onmessage`, command)
+      this.listenPingPong('channel', command)
+      this.onChannelMessage(command);
+    }
+
+    //console.log('setupChannelHandlers', this.channel)
+    this.channel.onmessageerror = this.onMessageError
+  }
+
+  setupHandlers(){
+    if(!this?.mainThread) return console.warn('mainThread not defined')
+    this.mainThread.onmessage = async (message: MessageEvent) => {
+      const command = message.data as AdapterWorkerMessage;
+      //console.log(`[Worker:${this.constructor.name}] mainthread.onmessage`, command)
+      this.listenPingPong('mainthread', command)
+      if(command.type === 'setup'){
+        await this.__setup(command)
+        return
+      }
+      this.onMainThreadMessage(command);
+    }
+    //console.log('', )
+  }
+
+  // postMessage( command: AdapterWorkerMessage, where: WorkerContext = WorkerContext.MainThread ) {
+    // switch(where as WorkerContext){
+    //   case WorkerContext.MainThread:
+    //     this.postMessageAdapter(command)
+    //     break;
+    //   case WorkerContext.Worker:
+    //     this.postMessageWorker(command)
+    //     break;
+    //   case WorkerContext.DedicatedWorker:
+    //     this.postMessageDedicatedWorker(command)
+    //     break;
+    // }
+  // }
+
+  postMessageAdapter( command: AdapterWorkerMessage, transfer?: Transferable[] ): void {
+    if(!this?.mainThread) return console.warn(`cannot send message to mainThread: undefined`)
+    this.mainThread.postMessage( command, transfer )
+  }
+
+  postMessageChannel( command: AdapterWorkerMessage, transfer?: Transferable[]  ): void {
+    if(!this?.channel) return console.warn(`cannot send message through message channel: undefined`)
+    if(transfer) {
+      return this.channel.postMessage( command, transfer )
+    }
+    this.channel.postMessage( command )
+  }
+
+  // postMessageDedicatedWorker( command: AdapterWorkerMessage ){
+  //   if(!this.sharedWorker) return
+  //   this.sharedWorker.postMessage( command )
+  // }
+
+  // overloads
+  async onMainThreadMessage(command: AdapterWorkerMessage): Promise<void>{ return console.warn(`onMainThreadMessage not overloaded by adapter, so the following is going nowhere fast:`, command)  }
+  async onChannelMessage(command: AdapterWorkerMessage): Promise<void>{ return console.warn(`onChannelMessage not overloaded by adapter, so the following is going nowhere fast:`, command) }
+  async onMessageError(){}
+  async onError(){}
+
+  // postMessageAdapter( response: IMainThreadResponse ){
+  //   if(!this?.mainThread) return
+  //   this.mainThread.postMessage( response )
+  // }
+
+  // postMessageWorker( response: IMainThreadResponse ){
+  //   if(!this.channel) return
+  //   this.channel.postMessage( response )
+  // }
+
+  // postMessageDedicatedWorker( response: IMainThreadResponse ){
+  //   if(!this.sharedWorker) return
+  //   this.sharedWorker.postMessage( response
+  // }
+
+  encode (json: IEvent[] | IEvent): ArrayBuffer {
+    return Workers.encodeNostrEventArrayAsBuffer(json)
+  }
+
+  decode (arrayBuffer: ArrayBuffer): IEvent[] | IEvent {
+    return Workers.decodeNostrEventArrayFromBuffer(arrayBuffer)
+  }
+
+
+  /*sanity check*/
+
+  private pingChannel(){
+    //console.log(`[Worker:${this.constructor.name}] o/o SEND: PING -> channel`)
+    this.postMessageChannel({ type: 'ping' })
+  }
+
+  private pongMainThread(){
+    //console.log(`[Worker:${this.constructor.name}] o/o SEND: PONG -> mainthread`)
+    this.postMessageAdapter({ type: 'pong', })
+  }
+
+  private pongChannel(){
+    //console.log(`[Worker:${this.constructor.name}] o/o SEND: PONG -> channel`)
+    this.postMessageChannel({ type: 'pong' })
+  }
+
+  private listenPingPong(from: 'channel' | 'mainthread', command: AdapterWorkerMessage): void {
+    if(command.type === 'ping') {
+      //console.log(`[Worker:${this.constructor.name}] o/o RECIEVE: PING <- ${from}`)
+      if(from === 'mainthread'){
+        this.pingChannel()
+        this.pongMainThread()
+      }
+      if(from === 'channel'){
+        this.pongChannel()
+      }
+      return
+    }
+    if(command.type === 'pong') {
+      //console.log(`[Worker:${this.constructor.name}] o/o RECIEVE: PONG <- ${from}`)
+    }
+  }
+
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NEG-ERR Message",
+  "type": "array",
+  "minItems": 3,
+  "maxItems": 4,
+  "items": [
+    {
+      "const": "NEG-ERR"
+    },
+    {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Subscription ID as a string of digits."
+    },
+    {
+      "type": "string",
+      "enum": ["RESULTS_TOO_BIG", "CLOSED"],
+      "description": "Reason code for the error."
+    },
+    {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Optional maximum number of records that can be processed."
+    }
+  ],
+  "additionalItems": false
+}

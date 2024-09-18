@@ -1,5 +1,17 @@
 # @nostrwatch/announce
 
+## 0.4.5
+
+### Patch Changes
+
+- e0d996b: concurrency, race condition and lmdb fixes
+
+## 0.4.4
+
+### Patch Changes
+
+- f7101a0: hotfix hanging jobs + publisher issues
+
 ## 0.4.3
 
 ### Patch Changes

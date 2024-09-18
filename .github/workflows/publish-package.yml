@@ -26,32 +26,45 @@ jobs:
             typescript: 'true'
           - package: 'logger'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'seed'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'utils'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nwcache'
             nodeVersion: '20'
           - package: 'controlflow'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'publisher'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap-websocket-adapter-default'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap-websocket-browser-adapter-default'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap-info-adapter-default'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap-dns-adapter-default'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap-geo-adapter-default'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap-ssl-adapter-default'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap-every-adapter-default'
             nodeVersion: '20'
+            typescript: 'true'
             
     steps:
       - uses: actions/checkout@v4
@@ -80,11 +93,11 @@ jobs:
           cd "${{ steps.find_package.outputs.the_path }}"
           yarn install
 
-      - name: Pre-Publish
+      - name: Build Typescript
         if: matrix.typescript == 'true'
         run: |
           cd "${{ steps.find_package.outputs.the_path }}"
-          yarn prepublish
+          yarn build
 
       - name: Publish Package
         id: publish

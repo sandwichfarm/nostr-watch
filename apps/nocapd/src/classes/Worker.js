@@ -7,12 +7,16 @@ import { RetryManager } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
 
 import { parseRelayNetwork, delay, lastCheckedId, parseUrl } from '@nostrwatch/utils'
-import { Kind30166, Kind30166Child, Publisher } from '@nostrwatch/publisher'
+import { Kind30166 } from '@nostrwatch/nocap-nip66'
+import { Publisher } from '@nostrwatch/publisher'
+import PublisherWsAdapter from '@nostrwatch/publisher-nostrtools'
 
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
 
 import { relayHostnameDedup } from '../hostnames.js';
+
+const TIMEOUT = 2*60*1000
 
 let errors = 0
 
@@ -31,7 +35,8 @@ export class NWWorker {
     this.setup()
     this.log.info(`${this.id()} initialized`)
     this.bus = bus
-    this.publisher = new Publisher(this.pubkey, this.config.publisher?.to_relays)
+    const wsAdapter = new PublisherWsAdapter()
+    this.publisher = new Publisher(this.pubkey, this.config.publisher?.to_relays, { wsAdapter })
   }
 
   setup(){
@@ -49,13 +54,14 @@ export class NWWorker {
       timeout: this.timeout,
       checked_by: this.pubkey
     }
-  
+
     this.jobOpts = {
       attempts: 1,
-      timeout: 1000*30,
-      removeOnComplete: true,
+      removeOnComplete: {
+        age: timestring(this.config.nocapd.checks.options.expires, 's')
+      },
       removeOnFail: {
-        age: timestring('2m', 's')
+        age: timestring('10m', 's')
       }
     }
   
@@ -76,7 +82,7 @@ export class NWWorker {
     this.opts = this.config.nocapd
     this.checks = this.opts?.checks?.enabled.includes('all')? Nocap.checksSupported(): this.opts?.checks?.enabled
     this.checkOpts = this.opts?.checks?.options || {}
-    this.timeout = this.setTimeout(this.checkOpts?.timeout)
+    this.timeout = this.setWorkerTimeouts(this.checkOpts?.timeout)
     this.priority = this.checkOpts?.priority? this.checkOpts.priority: 10
     this.expires = this.checkOpts?.expires? timestring(this.checkOpts.expires, 'ms'): 60*60*1000
     this.interval = this.checkOpts?.interval? timestring(this.checkOpts.interval, 'ms'): 60*1000
@@ -133,14 +139,19 @@ export class NWWorker {
     const failure = (err) => { this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     let result = {}
     try {
+      const timeout = setTimeout(  //needed to prevent hanging jobs
+        () => { throw new Error(`Job Timeout: ${job.id} after ${TIMEOUT/1000}s`) }, 
+        TIMEOUT
+      )
       const { relay:url } = job.data 
       const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
       await nocap.useAdapters([...Object.values(nocapAdapters)])
       result = await nocap.check(this.opts.checks.enabled).catch(failure)
+      clearTimeout(timeout) //don't forget to clear!
       return { result } 
     } 
     catch(err) {
-      failure(new Error(`Failure inside work() block: ${err}`))
+      this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`)
       return { result: { url: job.data.relay, open: { data: false }} }
     }
   }
@@ -178,14 +189,16 @@ export class NWWorker {
     log.debug(`on_success(): ${result.url}`)
     if(result.ignore) return log.warn(`on_success(): ${result.url} was ignored. Not checking and not publishing events.`)
 
-    let k30166
-    if(result?.parent){
-      k30166 = new Kind30166Child(process.env.DAEMON_PUBKEY)
-      log.debug(`on_success(): ${result.url} is a child of ${result.parent}`)
-    }
-    else {
-      k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
-    }
+
+    const k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
+    // let k30166
+    // if(result?.parent){
+    //   k30166 = new Kind30166Child(process.env.DAEMON_PUBKEY)
+    //   log.debug(`on_success(): ${result.url} is a child of ${result.parent}`)
+    // }
+    // else {
+    //   k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
+    // }
     // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
     k30166.generateEvent( result )
     k30166.signEvent( process.env.DAEMON_PRIVKEY )
@@ -386,7 +399,7 @@ export class NWWorker {
     return `${this.id()}:${relay}`
   }
 
-  setTimeout(config){
+  setWorkerTimeouts(config){
     if(config instanceof Object){
       return this.timeout = {...this.timeout, ...config}
     }

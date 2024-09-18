@@ -1,4 +1,4 @@
-import { noteId } from '@nostrwatch/utils'
+import { noteId } from '../utils.js'
 import { operators, IDS } from "lmdb-oql";
 import { Note } from '../schemas.js'
 

@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "32-byte lowercase hex-encoded sha256 hash of the serialized event data"
+    },
+    "pubkey": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "32-byte lowercase hex-encoded public key of the event creator"
+    },
+    "created_at": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix timestamp in seconds"
+    },
+    "kind": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 65535,
+      "description": "Integer between 0 and 65535"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "Arbitrary string within the tag array"
+        },
+        "minItems": 1
+      },
+      "description": "Array of arrays, each containing arbitrary strings as tags"
+    },
+    "content": {
+      "type": "string",
+      "description": "Arbitrary string content of the event"
+    },
+    "sig": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{128}$",
+      "description": "64-byte lowercase hex-encoded signature of the sha256 hash of the serialized event data (same as 'id' field)"
+    }
+  },
+  "required": ["id", "pubkey", "created_at", "kind", "tags", "content", "sig"],
+  "additionalProperties": false
+}

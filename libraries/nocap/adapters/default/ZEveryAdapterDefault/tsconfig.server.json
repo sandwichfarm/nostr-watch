@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "esnext",
+    "lib": ["ES6"],
+    "outDir": "./dist/server",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationDir": "./dist/server/types",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmitHelpers": true,
+    "importHelpers": true,
+    "baseUrl": ".", 
+    "paths": {
+      "@nostrwatch/*": ["node_modules/@nostrwatch/*/src"],
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "resolveFullExtension": ".js"
+  }
+}

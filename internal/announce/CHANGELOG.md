@@ -1,5 +1,11 @@
 # @nostrwatch/announce
 
+## 0.4.4
+
+### Patch Changes
+
+- f7101a0: hotfix hanging jobs + publisher issues
+
 ## 0.4.3
 
 ### Patch Changes

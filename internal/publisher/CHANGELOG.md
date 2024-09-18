@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.12.1
+
+### Patch Changes
+
+- f7101a0: hotfix hanging jobs + publisher issues
+
 ## 0.12.0
 
 ### Minor Changes

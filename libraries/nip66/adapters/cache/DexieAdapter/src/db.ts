@@ -1,4 +1,5 @@
 import Dexie from 'dexie';
+import { IEvent, IMonitor, IRelay, ICheck, INip11, IGeocode } from './models/index'
 
 export const defaults = <T>(): { [K in keyof T]: T[K] | null } => {
   const defaultObject = {} as { [K in keyof T]: T[K] | null };
@@ -35,12 +36,11 @@ export default ( dbName: string = 'relays', version: number = 1 ) => {
 
   return {
     db,
-    events: db.table('events'),
-    monitors: db.table('monitors'),
-    relays: db.table('relays'),
-    checks: db.table('checks'),
-    nip11s: db.table('nip11s'),
-    geocodes: db.table('geocodes'),
-    ssls: db.table('ssls')
+    events: db.table('events') as Dexie.Table<IEvent, string>,
+    monitors: db.table('monitors') as Dexie.Table<IMonitor, string>,
+    relays: db.table('relays') as Dexie.Table<IRelay, string>,
+    checks: db.table('checks') as Dexie.Table<ICheck, string>,
+    nip11s: db.table('nip11s') as Dexie.Table<INip11, string>,
+    geocodes: db.table('geocodes') as Dexie.Table<IGeocode, string>
   };
 }

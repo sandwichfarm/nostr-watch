@@ -5,10 +5,14 @@ import { Monitor } from '../models/Monitor';
 import { NostrEvent } from '@models/NostrEvent';
 
 export class MonitorService {
-  constructor(private cacheAdapter: ICacheAdapter) {}
+  constructor(private cacheAdapter: ICacheAdapter, private websocketAdapter: ICacheAdapter) {}
 
-  populateMonitors(): void {}
+  async populateMonitors(): void {
+    const monitors = await this.websocketAdapter.fetchMonitors()
+  }
+
   async _fetchMonitors(): Promise<NostrEvent[] | undefined> { return }
+
   async _determineMonitorLiveness(): Promise<boolean> { return false }
   
   async getActive(): Promise<Monitor[]> { 

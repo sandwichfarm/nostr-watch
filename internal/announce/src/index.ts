@@ -120,7 +120,7 @@ export class AnnounceMonitor {
     const kinds = Object.keys(this.events)
     for(let i = 0; i < kinds.length; i++) {
       const kind = kinds[i]    
-      await Promise.any(this.publisher.publishEvent(relays, this.events[kind].event()))
+      await Promise.any(this.publisher.publishEvent(relays, this.events[kind]))
       console.log(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(relays.join(','))}`)  
       pubbedIds.push(this.events[kind].id)
     }    

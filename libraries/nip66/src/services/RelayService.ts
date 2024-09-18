@@ -1,10 +1,10 @@
 // src/services/RelayService.ts
 
 import { ICacheAdapter } from '../interfaces/ICacheAdapter';
-import { Event } from '../models/NostrEvent';
+import { NostrEvent } from '../models/NostrEvent';
 
 export class RelayService {
-  constructor(private cacheAdapter: ICacheAdapter) {}
+  constructor(private cacheAdapter: ICacheAdapter, private websocketAdapter: ICacheAdapter) {}
 
   /**
    * Fetches recent 30166 events for active monitors based on their frequency.
@@ -72,8 +72,6 @@ export class RelayService {
     if (criteria.livenessStatus) {
       return await this.cacheAdapter.findRelaysByLiveness(criteria.livenessStatus);
     }
-
-
     return await this.cacheAdapter.relays.toArray();
   }
 }

@@ -1,8 +1,8 @@
 // src/nostrwatch-publisher.d.ts
 declare module '@nostrwatch/publisher' {
   export class Publisher {
-    constructor(pubkey: string | null);
-    publishEvent(relays: string[], event: any): Promise<any>[];
+    constructor(pubkey: string | null, relays: string[]);
+    publishEvent(event: any): Promise<any>[];
   }
 
   export class Kind10166 {

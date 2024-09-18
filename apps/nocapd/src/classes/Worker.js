@@ -79,7 +79,7 @@ export class NWWorker {
     this.opts = this.config.nocapd
     this.checks = this.opts?.checks?.enabled.includes('all')? Nocap.checksSupported(): this.opts?.checks?.enabled
     this.checkOpts = this.opts?.checks?.options || {}
-    this.timeout = this.setTimeout(this.checkOpts?.timeout)
+    this.timeout = this.setWorkerTimeouts(this.checkOpts?.timeout)
     this.priority = this.checkOpts?.priority? this.checkOpts.priority: 10
     this.expires = this.checkOpts?.expires? timestring(this.checkOpts.expires, 'ms'): 60*60*1000
     this.interval = this.checkOpts?.interval? timestring(this.checkOpts.interval, 'ms'): 60*1000
@@ -136,16 +136,19 @@ export class NWWorker {
     const failure = (err) => { this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     let result = {}
     try {
-      const timeout = this.setTimeout( () => { throw new Error(`Job Timedout: ${job.id} after ${TIMEOUT/1000}s`), TIMEOUT })
+      const timeout = setTimeout(  //needed to prevent hanging jobs
+        () => { throw new Error(`Job Timeout: ${job.id} after ${TIMEOUT/1000}s`) }, 
+        TIMEOUT
+      )
       const { relay:url } = job.data 
       const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
       await nocap.useAdapters([...Object.values(nocapAdapters)])
       result = await nocap.check(this.opts.checks.enabled).catch(failure)
-      clearTimeout(timeout)
+      clearTimeout(timeout) //don't forget to clear!
       return { result } 
     } 
     catch(err) {
-      failure(new Error(`Failure inside work() block: ${err}`))
+      this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`)
       return { result: { url: job.data.relay, open: { data: false }} }
     }
   }
@@ -391,7 +394,7 @@ export class NWWorker {
     return `${this.id()}:${relay}`
   }
 
-  setTimeout(config){
+  setWorkerTimeouts(config){
     if(config instanceof Object){
       return this.timeout = {...this.timeout, ...config}
     }

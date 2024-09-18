@@ -15,18 +15,18 @@ export class Publisher {
   }
 
   async publishEvent(signedEvent){
-    return this.ws.publish(signedEvent)
+    return this.ws.publish(signedEvent).catch( e => { this.logger.warn(`Publisher::publishEvent(): Error: ${e}`) })
   }
 
   async publishEvents(signedEvents){
     let publishes = []
     for await ( const signedEvent of signedEvents ) {
-      publishes.push( await this.publishEvent(signedEvent) )
+      const pub = await this.publishEvent(signedEvent).catch( this.logger.warn )
+      publishes.push( pub )
     }
     return publishes
   }
 }
-
 
 export class PublisherNocap extends Publisher {
   

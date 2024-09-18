@@ -123,7 +123,7 @@ const maybeAnnounce = async () => {
   } catch (e) {
     throw new Error(e)
   }
-  await announce.publish( conf.relays ).catch(e => { log.warn(e.message) })
+  await announce.publish().catch(e => { log.warn(e.message) })
 }
 
 function secondsToCron(seconds) {
@@ -222,7 +222,7 @@ const populateRelays = async ( skipJob = false ) => {
     log.debug(`populateRelays(): begin`)
 
     const { Relay } = Schemas
-    const syncData = await bootstrap('nocapd').catch(log.error)
+    const syncData = await bootstrap('nocapd').catch( () => log.warn('bootstrap() failed') )
     
     log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
     
@@ -303,8 +303,8 @@ export const Nocapd = async () => {
   await migrate(rcache)
   log.info('ran migrations...')
 
-  await maybeAnnounce()
-  log.info('announced...')
+  // await maybeAnnounce()
+  // log.info('announced...')
 
   await populateRelays( true )
   

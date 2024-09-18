@@ -186,6 +186,7 @@ export default async ( nostrEvent: NostrEvent ): Promise<IdbReadyRelayData> => {
   if($event.kind === NDKKind.RelayMeta) {
     res = await relayMetaToIdb($event as NDKRelayMeta)
   }
+  
   if($event.kind === NDKKind.RelayDiscovery) {
     res = await relayDiscoveryToIdb($event as NDKRelayDiscovery)
   }

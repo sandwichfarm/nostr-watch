@@ -4,17 +4,15 @@ import { extractGeoCodes } from '@base/utils/geo';
 
 import { type GeoCodesObjectRaw, ISO3166Format, ISO3166Type, RawGeoCode, RawGeoCodes } from '@base/types/TGeo';
 
-import { IRelay, ICheck, IEvent, INip11, ISsl, IGeoCode } from '../models/';
+import { IRelay, ICheck, IEvent, INip11, IGeoCode } from '../models/';
 import { defaults } from '../db';
 
 export type IdbReadyRelayData = { 
+  event?: IEvent,
   relay?: IRelay, 
   check?: ICheck,
-  event?: IEvent,
   nip11?: INip11,
   geocodes?: IGeoCode[],
-  // geohashes?: IGeoHash[],
-  ssl?: ISsl
 }
 
 export const transform30166 = async (_event: NostrEvent): Promise<IdbReadyRelayData> => {  
@@ -33,14 +31,12 @@ export const transform30166 = async (_event: NostrEvent): Promise<IdbReadyRelayD
   const parsedCheck = k30166ToICheck(relay, network, event)
   const parsedRelay = n66IEventToIRelay(relay, network, event)
   const parsedNip11 = await n66IEventToNip11(relay, event)
-  // const parsedGeohashes = n66IEventToIGeoHashes(event)
   const parsedGeocodes = n66IEventToIGeoCodes(event)
 
   if(event) res.event = event
   if(parsedCheck) res.check = parsedCheck
   if(parsedRelay) res.relay = parsedRelay
   if(parsedNip11) res.nip11 = parsedNip11
-  // if(geohashes) res.geocodes = geohashes
   if(parsedGeocodes) res.geocodes = parsedGeocodes
 
   return res

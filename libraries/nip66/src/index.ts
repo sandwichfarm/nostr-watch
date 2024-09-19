@@ -1,6 +1,6 @@
-import Base from './Base';
+import Base from './core/Base';
 
-import Workers from './Workers';
+import { Workers } from './core/Workers';
 
 export { 
   Workers

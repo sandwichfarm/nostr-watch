@@ -2,7 +2,7 @@ import { NostrEvent } from '@base/models/NostrEvent';
 import { getUrlFromEvent, getNetworkFromEvent } from '@base/utils/events';
 import { extractGeoCodes } from '@base/utils/geo';
 
-import { type GeoCodesObjectRaw, ISO3166Format, ISO3166Type, RawGeoCode, RawGeoCodes } from '@base/types/TGeo';
+import { type GeoCodesObjectRaw, ISO3166Format, ISO3166Type, RawGeoCode, RawGeoCodes } from '@base/types/TISO13166';
 
 import { IRelay, ICheck, IEvent, INip11, IGeoCode } from '../models/';
 import { RelayDb } from '../db';

@@ -27,6 +27,16 @@
     "webpack-node-externals": "^3.0.0",
     "worker-loader": "^3.0.8"
   },
+  "scripts": {
+    "build": "npm run clean && webpack --config webpack.config.js",
+    "build:browser": "webpack --config webpack.config.js --env target=browser",
+    "build:server": "webpack --config webpack.config.js --env target=server",
+    "clean": "rm -rf dist",
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,md}'",
+    "test": "jest",
+    "prepare": "npm run build"
+  },
   "dependencies": {
     "jwt-encode": "1.0.1",
     "nostr-tools": "2.7.2"

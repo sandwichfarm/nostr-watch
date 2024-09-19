@@ -1,13 +1,6 @@
-import Dexie, { Table, Middleware, DBCoreTable, DBCoreMutateRequest, DBCoreGetRequest, DBCoreMutateResponse } from 'dexie';
+import Dexie, { Table } from 'dexie';
+
 import { IEvent, IMonitor, IRelay, ICheck, INip11, IGeocode } from './models/index'
-// import nostrEventToRelayDb from './transform';
-import { parseRelayNetwork } from '@nostrwatch/utils';
-
-
-import * as fastq from "fastq";
-import type { queueAsPromised } from "fastq";
-
-const queue: queueAsPromised<()=>{}> = fastq.promise(worker, 1)
 
 export class RelayDb extends Dexie {
   static NAME: string = 'RelayDb'
@@ -19,7 +12,7 @@ export class RelayDb extends Dexie {
   checks!: Table<ICheck, string>;
   pastChecks!: Table<ICheck, string>;
   nip11s!: Table<INip11, string>;
-  geocodes!: Table<IGeoCode, number>;
+  geocodes!: Table<IGeocode, number>;
 
   static indices: Record<string, string> = {
     events: `id, pubkey, kind, createdAt`,
@@ -82,10 +75,10 @@ export class RelayDb extends Dexie {
   }
 
   async removeMonitor( monitorPubkey: string ): Promise<void | undefined> {
+    await this.events.where({ pubkey: monitorPubkey }).delete();
     await this.monitors.where({ id: monitorPubkey }).delete();
     await this.checks.where({ monitorPubkey }).delete();
     await this.pastChecks.where({ monitorPubkey }).delete();
-    await this.events.where({ pubkey: monitorPubkey }).delete();
   }
 
   // CHECKS 

@@ -3,7 +3,7 @@ import { ICacheAdapterSharedWorkerCommand } from "@interfaces/ICacheAdapterShare
 import { Filter } from "nostr-tools";
 import { AdapterWebsocketSharedWorker, AdapterWebsocketSharedWorkerCommand } from "@base/core/AdapterWebsocketSharedWorker";
 
-export interface CacheSharedWorkerOptions {
+export interface CacheSharedWorkerOptions extends  {
   mainThread: MessagePort;
 }
 

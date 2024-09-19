@@ -1,5 +1,5 @@
 import { NostrEvent } from "@models/NostrEvent"
-import { GeoCodesObjectRaw, ISO3166Type } from "src/types/TGeo"
+import { GeoCodesObjectRaw, ISO3166Type } from "src/types/TISO13166"
 
 export const extractGeoCodesByType = ( event: NostrEvent, type: ISO3166Type ): (string | number)[] => {
   return event.tags

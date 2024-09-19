@@ -1,63 +1,78 @@
-import { CacheAdapter } from '@base/core/CacheAdapter';
-import { NostrEvent } from '@base/models/NostrEvent';
-import { ICacheAdapter, GeohashOptions } from '@base/interfaces/ICacheAdapter';
+//base 
+import { CacheAdapter, ICacheAdapter } from '@core/CacheAdapter';
+import { NostrEvent } from '@models/NostrEvent';
 
-import { IEvent, IMonitor, IRelay, ICheck, INip11, IGeocode } from './models/index'
-
-import { RelayDb } from './db';
-
-import { Queue, Task } from './Queue';
-
+//adapter
+import { DexieQueue, DexieTask } from './DexieQueue';
+import DexieTaskWorker from './DexieQueueWorker';
 import { transform30166 } from './processing/relay.transform';
+import { IEvent } from './models/index'
+import { RelayDb } from './db';
 
 class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   readonly slug: string = 'dexie'
 
-  private $: any;
-  private queue = new Queue();
+  private idb: any;
+  private queue: DexieQueue;
 
   constructor(dbName: string = 'Relays') {
     super()
-    this.$ = new RelayDb( dbName) ;
+    this.idb = new RelayDb( dbName) ;
+    this.queue = new DexieQueue( async (task: DexieTask) => DexieTaskWorker( this.idb , task ) )
   }
 
-  async setEventTask( events: NostrEvent[] ){
-    await this.queue.add({ events })
+  async addEventsToQueue( events: NostrEvent[] ){
+    await this.queue.add({ goal: "processEvents", events })
   }
 
-  async bulkEventAdder(task: Task){
-    const { events } = task
-    for(const event of events){
-      await this.setEvent(event.id, event)
+  async dexieTaskWorker(task: DexieTask){
+    const { id, count, goal, events } = task
+    if(goal === "processEvents"){
+      for(const event of events){
+        await this.setEvent(event.id, event)
+      }
     }
   }
 
+  async setEvents(events: NostrEvent[]): Promise<void> {
+    for(const event of events){
+      await this.addEventsToQueue([event])
+    }
+  }
+
+  async setEvent(id: string, event: NostrEvent): Promise<void> {
+    try {
+      await this.idb.events.put(event);
+      if(event.kind === 30166){
+        await this.idb.addCheck(event).catch(console.warn)
+      }
+      if(event.kind === 10166){
+        await this.idb.addMonitor(event).catch(console.warn)
+      }
+    } catch (error) {
+      console.error(`DexieAdapter setEvent error for id ${id}:`, error);
+      throw error;
+    }
+  }
+  
   async addRelayEvent( event: NostrEvent ){
     const errors = []
     const catchErrors = (error: any) => { errors.push(error) }
     const { check, nip11, geocodes } = await transform30166(event)
-    this.$.addCheck(check).catch(catchErrors)
-    this.$.addGeocodes(geocodes).catch(catchErrors)
+    this.idb.addCheck(check).catch(catchErrors)
+    this.idb.addGeocodes(geocodes).catch(catchErrors)
   }
 
   async removeRelayEvent( eventId: string ){
     const errors = []
-    await this.$.removeCheck(eventId).catch((error: any) => { errors.push(error) })
-  }
-
-  async removeRelay(relay: string){
-
-  }
-
-  async processMonitorEvent( event: NostrEvent ){
-
+    await this.idb.removeCheck(eventId).catch((error: any) => { errors.push(error) })
   }
 
   /*events*/
   async getEvent(id: string): Promise<IEvent | null> {
     try {
-      const event = await this.$.events.get(id);
+      const event = await this.idb.events.get(id);
       return event || null;
     } catch (error) {
       console.error(`DexieAdapter getEvent error for id ${id}:`, error);
@@ -65,36 +80,9 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
     }
   }
 
-  async setEvent(id: string, event: NostrEvent): Promise<void> {
-    try {
-      await this.$.events.put(event);
-      if(event.kind === 30166){
-        this.processRelayEvent(event)
-      }
-      if(event.kind === 10166){
-        this.processMonitorEvent(event)
-      }
-    } catch (error) {
-      console.error(`DexieAdapter setEvent error for id ${id}:`, error);
-      throw error;
-    }
-  }
-
-  async setEvents(events: NostrEvent[]): Promise<void> {
-    for(const event of events){
-      await this.setEventTask([event])
-    }
-    // try {
-    //   await this.$.events.bulkPut(events);
-    // } catch (error) {
-    //   console.error('DexieAdapter setEvents error:', error);
-    //   throw error;
-    // }
-  }
-
   async deleteEvents(ids: string[]): Promise<void> {
     try {
-      await this.$.events.bulkDelete(ids);
+      await this.idb.events.bulkDelete(ids);
     } catch (error) {
       console.error('DexieAdapter deleteEvents error:', error);
       throw error;
@@ -103,7 +91,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   async eventExists(id: string): Promise<boolean> {
     try {
-      const event = await this.$.events.get(id);
+      const event = await this.idb.events.get(id);
       return !!event;
     } catch (error) {
       console.error(`DexieAdapter eventExists error for id ${id}:`, error);
@@ -113,7 +101,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   async clearEvents(): Promise<void> {
     try {
-      await this.$.events.clear();
+      await this.idb.events.clear();
     } catch (error) {
       console.error('DexieAdapter clearEvents error:', error);
       throw error;
@@ -131,7 +119,6 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   async getRelay(id: string): Promise<NostrEvent | null> { return null }
   async getRelaysWithIds(eventIds: string[]): Promise<NostrEvent[] | null> { return null }
   async getRelaysWithMonitorIds(eventIds: string[]): Promise<NostrEvent[] | null> { return null }
-  async setRelay(relay: any): Promise<void> {}
   async deleteRelay(id: string): Promise<void> {}
   async clearRelays(): Promise<void> {}
 
@@ -152,7 +139,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   // async setEvent(id: string, event: Event): Promise<void> {
   //   try {
-  //     await this.db.transaction('rw', this.events, this.monitors, this.relays, async () => {
+  //     await this.idb.transaction('rw', this.events, this.monitors, this.relays, async () => {
   //       await this.events.put(event);
   //       if (event.kind === 10166) {
   //         const monitor = this.extractMonitorData(event);
@@ -174,7 +161,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   // async deleteEvent(id: string): Promise<void> {
   //   try {
-  //     await this.db.transaction('rw', this.events, this.monitors, this.relays, async () => {
+  //     await this.idb.transaction('rw', this.events, this.monitors, this.relays, async () => {
   //       await this.events.delete(id);
   //       const monitorsToDelete = await this.monitors.where('eventId').equals(id).toArray();
   //       for (const monitor of monitorsToDelete) {
@@ -191,7 +178,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   // async clearEvents(): Promise<void> {
   //   try {
-  //     await this.db.transaction('rw', this.events, this.monitors, this.relays, async () => {
+  //     await this.idb.transaction('rw', this.events, this.monitors, this.relays, async () => {
   //       await this.events.clear();
   //       await this.monitors.clear();
   //       await this.relays.clear();
@@ -223,7 +210,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   // async deleteMonitor(id: string): Promise<void> {
   //   try {
-  //     await this.db.transaction('rw', this.monitors, this.relays, async () => {
+  //     await this.idb.transaction('rw', this.monitors, this.relays, async () => {
   //       await this.monitors.delete(id);
   //       // Delete associated relays
   //       await this.relays.where('monitorId').equals(id).delete();
@@ -236,7 +223,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   // async clearMonitors(): Promise<void> {
   //   try {
-  //     await this.db.transaction('rw', this.monitors, this.relays, async () => {
+  //     await this.idb.transaction('rw', this.monitors, this.relays, async () => {
   //       await this.monitors.clear();
   //       await this.relays.clear();
   //     });

@@ -17,6 +17,7 @@
     "baseUrl": "./",
     "paths": {
       "@adapters/*": ["adapters/*"],
+      "@core/*": ["src/core/*"],
       "@base/*": ["src/*"],
       "@models/*": ["src/models/*"],
       "@interfaces/*": ["src/interfaces/*"],

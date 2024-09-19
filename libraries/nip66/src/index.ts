@@ -1,10 +1,9 @@
 import Base from './Base';
 
-import Workers, { WorkerPayload } from './Workers';
+import Workers from './Workers';
 
 export { 
-  Workers, 
-  type WorkerPayload 
+  Workers
 };
 
 export default Base 

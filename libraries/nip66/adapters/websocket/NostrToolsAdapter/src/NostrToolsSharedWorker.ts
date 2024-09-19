@@ -1,19 +1,19 @@
 import { AdapterSharedWorker } from "@base/AdapterSharedWorker"
 import { ICacheAdapterSharedWorkerCommand } from "@interfaces/ICacheAdapterSharedWorkerCommand";
+import { Filter } from "nostr-tools";
+import { AdapterWebsocketSharedWorker, AdapterWebsocketSharedWorkerCommand } from "@base/core/AdapterWebsocketSharedWorker";
 
 export interface CacheSharedWorkerOptions {
   mainThread: MessagePort;
 }
 
-interface DexieSharedWorkerCommand extends ICacheAdapterSharedWorkerCommand{
-  type: "setup" | "subscribeManyAndCache" | "subscribeManyAndReturn";
+interface DexieSharedWorkerCommand extends AdapterWebsocketSharedWorkerCommand {
   filters: Filter[]
-  token?: string,
 }
 
-export class NostrToolsSharedWorker extends AdapterSharedWorker {
+export class NostrToolsSharedWorker extends AdapterWebsocketSharedWorker {
 
-  constructor( options: CacheSharedWorkerOptions, ){
+  constructor( options: CacheSharedWorkerOptions ){
     super(options)
   }
 

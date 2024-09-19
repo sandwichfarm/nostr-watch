@@ -1,13 +1,13 @@
 import { Adapter } from './Adapter'
 
-export class CacheAdapter extends Adapter {
+export class WebsocketAdapter extends Adapter {
 
   get dedicatedWorker(): Worker | undefined {
-    return this.workers?.cacheDedicated
+    return this.workers?.websocketDedicated
   }
 
   get sharedWorker(): SharedWorker | undefined {
-    return this.workers?.cacheShared
+    return this.workers?.websocketShared
   }
   
 }

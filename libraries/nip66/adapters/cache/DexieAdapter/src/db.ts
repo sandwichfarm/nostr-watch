@@ -43,9 +43,8 @@ export class RelayDb extends Dexie {
     ssls: `&relay, monitorPubkey, hash, nid`
   };
 
-  constructor() {
-    super(RelayDb.NAME);
-
+  constructor(dbName: string = RelayDb.NAME) {
+    super(dbName);
     try {
       this.version(this.VERSION).stores(RelayDb.indices);
     } catch (error) {
@@ -245,6 +244,8 @@ export class RelayDb extends Dexie {
     return req
   }
 
+}
+
   async handleChecksAfterMutate(req: DBCoreMutateRequest) {
     // if (req.type === 'add' || req.type === 'put') {
     //   for (const check of req.values) {
@@ -279,11 +280,11 @@ export class RelayDb extends Dexie {
   }
 }
 
-const db: RelayDb = new RelayDb();
+// const db: RelayDb = new RelayDb();
 
-db.open()
+// db.open()
 
-export default db;
+// export default db;
 
 
 

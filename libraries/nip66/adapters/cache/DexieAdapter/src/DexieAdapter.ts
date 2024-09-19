@@ -1,14 +1,12 @@
-import Dexie, { type Table } from 'dexie';
-
-import { Adapter } from '@base/Adapter';
+import { CacheAdapter } from '@base/core/CacheAdapter';
 import { NostrEvent } from '@base/models/NostrEvent';
 import { ICacheAdapter, GeohashOptions } from '@base/interfaces/ICacheAdapter';
 
 import { IEvent, IMonitor, IRelay, ICheck, INip11, IGeocode } from './models/index'
 
-import Db from './db';
+import { RelayDb } from './db';
 
-class DexieAdapter extends Adapter implements ICacheAdapter {
+class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   readonly slug: string = 'dexie'
 
@@ -16,12 +14,7 @@ class DexieAdapter extends Adapter implements ICacheAdapter {
 
   constructor(dbName: string = 'Relays') {
     super()
-    this.$ = Db(dbName);
-  }
-
-  get sharedWorker(): SharedWorker | undefined {
-    if(!this._sharedWorker) return undefined;
-    return this._sharedWorker;
+    this.$ = new RelayDb( dbName) ;
   }
 
   /*events*/

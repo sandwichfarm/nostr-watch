@@ -1,13 +1,13 @@
-import { IWorkerCommand, IWebSocketAdapter, ICacheAdapter } from '../interfaces';
+import { IWebSocketAdapter, ICacheAdapter } from '../interfaces';
 import { NostrEvent } from '../models/NostrEvent';
 
-export interface WorkerPayload {
-  type: string;
-  cachePort?: MessagePort;
-  websocketPort?: MessagePort;
-}
+// export interface WorkerPayload {
+//   type: string;
+//   cachePort?: MessagePort;
+//   websocketPort?: MessagePort;
+// }
 
-export default class {
+export class Workers {
   private _websocketShared?: SharedWorker;
   private _cacheShared?: SharedWorker;
 
@@ -18,7 +18,7 @@ export default class {
 
   constructor(WebSocketAdapter: IWebSocketAdapter, CacheAdapter: ICacheAdapter){
     this.setupSharedWorkers(WebSocketAdapter, CacheAdapter)
-    this.setupWorkers(WebSocketAdapter, CacheAdapter) 
+    // this.setupWorkers(WebSocketAdapter, CacheAdapter) 
   }
 
   get websocketShared(): SharedWorker | undefined {
@@ -29,11 +29,11 @@ export default class {
     return this._cacheShared;
   }
 
-  get websocket(): Worker | undefined {
+  get websocketDedicated(): Worker | undefined {
     return this._websocket;
   }
 
-  get cache(): Worker | undefined {
+  get cacheDedicated(): Worker | undefined {
     return this._cache;
   }
 
@@ -50,6 +50,20 @@ export default class {
 
     this._websocketShared.port.postMessage({type: 'setup', channelPort: this.channel.port1}, [this.channel.port1]);
     this._cacheShared.port.postMessage({type: 'setup', channelPort: this.channel.port2}, [this.channel.port2]);
+  }
+
+  static encodeNostrEventArrayAsBuffer (json: NostrEvent[]): ArrayBufferLike {
+    const jsonString = JSON.stringify(json);
+    const encoder = new TextEncoder();
+    const uint8Array = encoder.encode(jsonString);
+    return uint8Array.buffer;
+  }
+
+  static decodeNostrEventArrayFromBuffer (arrayBuffer: ArrayBufferLike): NostrEvent[] {
+    const decoder = new TextDecoder();
+    const jsonString = decoder.decode(new Uint8Array(arrayBuffer));
+    const nostrEvents: NostrEvent[] = JSON.parse(jsonString)
+    return nostrEvents;
   }
 
   // setupWorkers(WebSocketAdapter: IWebSocketAdapter, CacheAdapter: ICacheAdapter){
@@ -79,17 +93,5 @@ export default class {
   //   this._cache.postMessage(payload, transferrable);
   // }
 
-  static encodeNostrEventArrayAsBuffer (json: NostrEvent[]): ArrayBufferLike {
-    const jsonString = JSON.stringify(json);
-    const encoder = new TextEncoder();
-    const uint8Array = encoder.encode(jsonString);
-    return uint8Array.buffer;
-  }
 
-  static decodeNostrEventArrayFromBuffer (arrayBuffer: ArrayBufferLike): NostrEvent[] {
-    const decoder = new TextDecoder();
-    const jsonString = decoder.decode(new Uint8Array(arrayBuffer));
-    const nostrEvents: NostrEvent[] = JSON.parse(jsonString)
-    return nostrEvents;
-  }
 }

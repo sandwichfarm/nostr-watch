@@ -1,26 +1,34 @@
+import type { Workers } from './Workers';
+
+export interface IAdapter {
+  worker?: SharedWorker | Worker; 
+
+  newWorker(): Worker;
+  newSharedWorker(): SharedWorker;  
+}
+
 interface WorkerPaths {
   workerPath: string;
   sharedWorkerPath: string;
 }
 
+type WorkersArgument = {
+  worker?: Worker;
+  sharedWorker?: SharedWorker;
+};
+
+
 export class Adapter {
   static slug: string; 
 
-  protected _worker?: Worker;
-  protected _sharedWorker?: SharedWorker;
+  private _workers?: Workers
 
-  set _workers(workers: { worker: Worker, sharedWorker: SharedWorker }) {
-    const { worker, sharedWorker } = workers;
-    this._worker = worker;
-    this._sharedWorker = sharedWorker;
+  set workers(workers: Workers) {
+    this._workers = workers;
   }
 
-  get worker(): Worker | undefined {
-    return this._worker;
-  }
-
-  get sharedWorker(): SharedWorker | undefined {
-    return this._sharedWorker;
+  get workers(): Workers | undefined {
+    return this._workers;
   }
 
   static newWorker(): Worker {

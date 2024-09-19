@@ -1,12 +1,12 @@
 import { IWebSocketAdapter, IWebsocketAdapterCallbacks } from '@base/interfaces/IWebsocketAdapter';
-import { Adapter } from '@base/Adapter';
+import { WebsocketAdapter } from '@base/core/WebsocketAdapter';
 import { INostrEvent } from '@base/interfaces/INostrEvent';
 
 import { SimplePool, type Filter } from 'nostr-tools';
 
 import jwtEncode from 'jwt-encode'
 
-export class NostrToolsAdapter extends Adapter implements IWebSocketAdapter {
+export class NostrToolsAdapter extends WebsocketAdapter implements IWebSocketAdapter {
   static slug = "nostrtools"
   private relays?: string[];
   private _pool?: SimplePool;

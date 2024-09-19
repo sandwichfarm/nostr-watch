@@ -1,21 +1,16 @@
-import { AdapterSharedWorker } from "@base/core/AdapterSharedWorker"
-import { ICacheAdapterSharedWorkerCommand } from "@base/interfaces/ICacheAdapterSharedWorkerCommand";
+import { AdapterSharedWorker, SharedWorkerOptions } from "@base/core/AdapterSharedWorker"
+import { AdapterSharedWorkerCommand } from "./AdapterSharedWorker";
 
-export interface CacheSharedWorkerOptions {
-  mainThreadPort: MessagePort;
-  channelPort?: MessagePort;
-  sharedWorkerPort?: MessagePort; 
-}
+// export interface CacheSharedWorkerOptions extends SharedWorkerOptions {}
 
-export interface AdapterCacheSharedWorkerCommand extends ICacheAdapterSharedWorkerCommand {
+export interface AdapterCacheSharedWorkerCommand extends AdapterSharedWorkerCommand {
   type: "setup" | "bulkAddRelays" | "bulkAddMonitors";
-  dbName: string,
   eventsBuffer: ArrayBufferLike;
 }
 
 export class AdapterCacheSharedWorker extends AdapterSharedWorker {
 
-  constructor( options: CacheSharedWorkerOptions, ){
+  constructor( options?: SharedWorkerOptions ){
     super(options)
   }
 
@@ -26,24 +21,6 @@ export class AdapterCacheSharedWorker extends AdapterSharedWorker {
   async bulkAddMonitors(){}
 
   //end: overloads
-
-  _setup(command: AdapterCacheSharedWorkerCommand){
-    const { channelPort } = command
-    if(channelPort) {
-      this.channel = channelPort
-      this.setupChannelHandlers()
-    }
-    this.setup(command)
-  }
-
-  setupChannelHandlers(){
-    if(!this.channel) return
-    this.channel.onmessage = (message: MessageEvent) => {
-      const command = message.data as AdapterCacheSharedWorkerCommand;
-      this.onMessage(command)
-    }
-    this.channel.onmessageerror = this.onMessageError
-  }
   
   onMessage(command: AdapterCacheSharedWorkerCommand){
     const { type } = command

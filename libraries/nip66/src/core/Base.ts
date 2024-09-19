@@ -27,19 +27,16 @@ export default class {
   useAdapter(adapter: ICacheAdapter | IWebSocketAdapter){
     if(adapter instanceof IWebSocketAdapter){
       this.websocketAdapter = adapter as IWebSocketAdapter
-    } else if(adapter instanceof ICacheAdapter){
+    } 
+    if(adapter instanceof ICacheAdapter){
       this.cacheAdapter = adapter as ICacheAdapter
     }
   }
 
   setupWorkers(){
-    const { websocket, cache, websocketShared, cacheShared, channel } = new N66Workers(this.websocketAdapter, this.cacheAdapter)
-    if(websocket && websocketShared){
-      this.websocketAdapter.workers = { worker: websocket, sharedWorker: websocketShared }
-    }
-    if(cache && cacheShared){
-      this.cacheAdapter.workers = { worker: cache, sharedWorker: cacheShared }
-    }
+    const workers = new N66Workers(this.websocketAdapter, this.cacheAdapter)
+    this.websocketAdapter.workers = workers
+    this.cacheAdapter.workers = workers
   }
 
   setupServices(){

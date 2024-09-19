@@ -1,8 +1,8 @@
 import Dexie, { Table, Middleware, DBCoreTable, DBCoreMutateRequest, DBCoreGetRequest, DBCoreMutateResponse } from 'dexie';
 import { IEvent, IMonitor, IRelay, ICheck, INip11, IGeocode } from './models/index'
-import nostrEventToRelayDb from './transform';
-import { NDKRelayMeta } from '@nostr-dev-kit/ndk';
-import { IGeoCode } from 'src/shared/tables';
+// import nostrEventToRelayDb from './transform';
+import { parseRelayNetwork } from '@nostrwatch/utils';
+
 
 import * as fastq from "fastq";
 import type { queueAsPromised } from "fastq";
@@ -13,6 +13,7 @@ export class RelayDb extends Dexie {
   static NAME: string = 'RelayDb'
   readonly VERSION: number = 1;
 
+  monitors!: Table<IMonitor, string>;
   events!: Table<IEvent, string>;
   relays!: Table<IRelay, string>;
   checks!: Table<ICheck, string>;
@@ -21,15 +22,15 @@ export class RelayDb extends Dexie {
   geocodes!: Table<IGeoCode, number>;
 
   static indices: Record<string, string> = {
-    events: `id, pubkey, tags, kind, createdAt`,
+    events: `id, pubkey, kind, createdAt`,
     monitors: '&id, eventId, frequency, lastActive, geohash',
-    relays: '&relay, last_seen',
-    checks: `[relay+monitorPubkey], [software+version], 
+    relays: '&relay, lastSeen',
+    checks: `[monitorPubkey+relay], [software+version], 
       nid,
-      relay, monitorPubkey, operatorPubkey,
+      relay, monitorPubkey,
       network, 
       relayType,
-      open, 
+      rtt, 
       paymentRequired, authRequired,
       validTo,
       ipv4, isp,
@@ -38,9 +39,9 @@ export class RelayDb extends Dexie {
       *supportedNips,
       createdAt`,
     pastChecks: `&relay, monitorPubkey, nid`,
-    nip11s: `[relay+monitorPubkey], monitorPubkey, hash`,
+    nip11s: `[relay+monitorPubkey+hash], relay, monitorPubkey, hash`,
     geocodes: `&code, [type+format+length], [type+format+type],[type+format], type, format, length`,
-    ssls: `&relay, monitorPubkey, hash, nid`
+    ssls: `&relay, monitorPubkey, hash, nids`
   };
 
   constructor(dbName: string = RelayDb.NAME) {
@@ -64,28 +65,6 @@ export class RelayDb extends Dexie {
     }).catch((err) => {
       console.error("Failed to open db: " + err.stack || err);
     });
-
-    this.use({
-      stack: 'dbcore',
-      create: (downlevelDatabase) => {
-        return {
-          ...downlevelDatabase,
-          table: (name) => {
-            const downlevelTable = downlevelDatabase.table(name);
-            return {
-              ...downlevelTable,
-              mutate: async (req) => {
-                req = this.beforeMutate(name, req)
-                return downlevelTable.mutate(req).then(res => {
-                  const myResponse = {...res};
-                  return this.afterMutate(name, req)
-                });
-              }
-            };
-          }
-        };
-      }
-    });
   }
 
   static defaults<T>(): { [K in keyof T]: T[K] | null } {
@@ -96,197 +75,89 @@ export class RelayDb extends Dexie {
     return defaultObject;
   }
 
-  async beforeMutate(tableName: string, req: DBCoreMutateRequest): Promise<DBCoreMutateRequest> {
-    // console.log(`beforeMutate called for table ${tableName} with request:`, req);
-    try {
-      if (tableName === 'checks') {
-        req = await this.handleChecksBeforeMutate(req).catch(console.error);
-      }
-      if (tableName === 'relays') {
-        req = await this.handleRelaysBeforeMutate(req).catch(console.error);
-      }
-    } catch (error) {
-      console.error(`Error in beforeMutate for table ${tableName}:`, error);
-    }
-    return req
+  // MONITORS
+
+  async addMonitor( monitor: IMonitor ): Promise<void | undefined> {
+    await this.monitors.put(monitor);
   }
 
-  async afterMutate(tableName: string, req: DBCoreMutateRequest) {
-    // console.log(`afterMutate called for table ${tableName} with request:`, req);
-    try {
-      if (tableName === 'events') {
-        // console.log('Handling events ');
-        await this.handleEventsAfterMutate(req);
-      }
-      if (tableName === 'checks') {
-        await this.handleChecksAfterMutate(req);
-      }
-      if (tableName === 'relays') {
-        await this.handleRelaysAfterMutate(req);
-      }
-    } catch (error) {
-      console.error(`Error in afterMutate for table ${tableName}:`, error);
-    }
+  async removeMonitor( monitorPubkey: string ): Promise<void | undefined> {
+    await this.monitors.where({ id: monitorPubkey }).delete();
+    await this.checks.where({ monitorPubkey }).delete();
+    await this.pastChecks.where({ monitorPubkey }).delete();
+    await this.events.where({ pubkey: monitorPubkey }).delete();
   }
 
+  // CHECKS 
 
-  async handleEventsAfterMutate(req: DBCoreMutateRequest) {
-    if (req.type === 'add' || req.type === 'put') {
-      for (const event of req.values) {
-        // const { event: NostrEvent } = event;
-        // const { check, relay, nip11, geocodes, ssl } = await nostrEventToRelayDb(nostrEvent);
-        // if (relay) queue.push( (): void => { this.relays.add(relay).catch( () => console.warn(`${relay.relay} already exists`)) })
-        // if (check) queue.push( (): void => { this.checks.put(check) })
-        // Dexie.waitFor(async () => {
-        //   const promises = [];
-          
-        //   // if (nip11) promises.push(this.nip11s.put(nip11));
-        //   // if (geocodes?.length) promises.push(this.geocodes.bulkPut(geocodes).catch(devnull));
-        //   // if (ssl) promises.push(this.ssls.put(ssl));
-        //   await Promise.all(promises);
-        // });
-      }
-    }
-
-    if (req.type === 'delete') {
-      for (const key of req.keys) {
-        const oldEvent = await this.events.get(key);
-        if (!oldEvent) return;
-        const { event: nostrEvent } = oldEvent;
-        const { check } = await nostrEventToRelayDb(nostrEvent);
-
-        Dexie.waitFor(async () => {
-          const promises = [];
-          if (check) {
-            const { nid } = check;
-            promises.push(this.checks.delete(nid));
-            promises.push(this.pastChecks.delete(nid));
-          }
-          await Promise.all(promises);
-        });
-      }
-    }
-  }
-  async handleRelaysBeforeMutate(req: DBCoreMutateRequest): Promise<DBCoreMutateRequest> {
-    // if (req.type === 'add' || req.type === 'put') {
-    //   for (const relay of req.values) {
-    //     const { relay: relayKey, lastSeen } = relay;
-    //     const transaction = Dexie.currentTransaction;
-    //     if (transaction) {
-    //       const existingRelay = await this.relays.get(relayKey);
-    //       if (existingRelay && existingRelay.lastSeen < lastSeen) {
-    //         req.values = req.values.map(value => ({
-    //           ...value,
-    //           createdAt: lastSeen
-    //         }));
-    //       }
-    //     } else {
-    //       console.error('No current transaction found for handleRelaysAfterMutate');
-    //     }
-    //   }
-    // }
-    return req
-  }
-
-  async handleRelaysAfterMutate(req: DBCoreMutateRequest) {
-    // if (req.type === 'add' || req.type === 'put') {
-    //   for (const relay of req.values) {
-    //     const { relay: relayKey, lastSeen } = relay;
-    //     const transaction = Dexie.currentTransaction;
-    //     if (transaction) {
-    //       transaction.on('complete', async () => {
-    //         const existingRelay = await this.relays.get(relayKey);
-    //         if (existingRelay && existingRelay.lastSeen < lastSeen) {
-    //           await this.relays.where({ relay: relayKey }).modify({ lastSeen });
-    //         }
-    //       });
-    //     } else {
-    //       console.error('No current transaction found for handleRelaysAfterMutate');
-    //     }
-    //   }
-    // }
-
-    if (req.type === 'delete') {
-      const transaction = Dexie.currentTransaction;
-
-      if (transaction) {
-        transaction.on('complete', async () => {
-          for (const key of req.keys) {
-            const promises = [];
-            promises.push(this.checks.where({ relay: key }).delete());
-            promises.push(this.pastChecks.where({ relay: key }).delete());
-            promises.push(this.globalRtts.where({ relay: key }).delete());
-            promises.push(this.events.where({ relay: key }).delete());
-            await Promise.all(promises);
-          }
-        });
-      } else {
-        console.error('No current transaction found for handleRelaysAfterMutate delete');
-      }
-    }
-  }
-
-  handleChecksBeforeMutate(req: DBCoreMutateRequest): DBCoreMutateRequest {
-    if (req.type === 'add' || req.type === 'put') {
-      queue.push( async () => {
-        for (const check of req.values) {
-          const { createdAt: lastSeen, relay, monitorPubkey, nid } = check;
-          const checksToProcess = await this.checks
-                .where({ relay, monitorPubkey })
-                .and(existingCheck => existingCheck.nid !== check.nid)
-                .toArray();
-          await Promise.all(checksToProcess.map(async (existingCheck) => { 
-              await this.checks.delete(existingCheck.nid)
-            })
-          );
-        }
+  async addCheck( check: ICheck, relayRecord: IRelay ): Promise<void | undefined> {
+    const { createdAt, relay, monitorPubkey, nid } = check;
+    const existingChecks = await this.checks
+          .where({ relay, monitorPubkey })
+          .and(existingCheck => existingCheck.nid !== check.nid)
+          .toArray();
+    await Promise.all(existingChecks.map(async (existingCheck) => {
+        await this.pastChecks.add(existingCheck)
       })
-    return req
-  }
-
-}
-
-  async handleChecksAfterMutate(req: DBCoreMutateRequest) {
-    // if (req.type === 'add' || req.type === 'put') {
-    //   for (const check of req.values) {
-    //     const transaction = Dexie.currentTransaction;
-    //     const { createdAt: lastSeen, relay, monitorPubkey, nid } = check;
-    //     if (transaction) {
-    //       transaction.on('complete', async () => {
-    //         const lastSeenExisting = (await this.relays.get(relay))?.lastSeen
-    //         if(lastSeenExisting && (lastSeen > lastSeenExisting) ) await this.relays.where({ relay }).modify({ lastSeen });
-    //       });
-    //     } else {
-    //       console.error('No current transaction found for handleChecksAfterMutate');
-    //     }
-    //   }
-    // }
-
-    if (req.type === 'delete') {
-      const transaction = Dexie.currentTransaction;
-
-      if (transaction) {
-        transaction.on('complete', async () => {
-          for (const key of req.keys) {
-            const oldCheck = await this.checks.get(key);
-            if (!oldCheck) return;
-            await this.pastChecks.put(oldCheck);
-          }
-        });
-      } else {
-        console.error('No current transaction found for handleChecksAfterMutate delete');
+    );
+    await Promise.all(existingChecks.map(async (existingCheck) => { 
+        await this.checks.where({ nid: existingCheck.nid }).delete()
+      })
+    );
+    const existingRelay = await this.relays.get(relay);
+    if(!existingRelay) {
+      await this.relays.put(relayRecord);
+    }
+    else {
+      const checkIsNewer = existingRelay.lastSeen < createdAt;
+      if (checkIsNewer) {
+        existingRelay.lastSeen = createdAt;
+        await this.relays.put(existingRelay);
       }
     }
   }
+  
+  async removeCheck( check: ICheck ): Promise<void | undefined> {
+    const { relay, monitorPubkey, nid } = check;
+    const existingCheck = await this.checks.get(nid);
+    if(!existingCheck) return;
+    await this.pastChecks.add(existingCheck);
+    await this.checks.delete(nid);
+  }
+
+  // RELAYS
+
+  async removeRelay( relay: string ): Promise<void | undefined> {
+    await this.relays.delete(relay);
+  }
+
+  async addNip11(nip11: INip11): Promise<void | undefined> {
+    await this.nip11s.put(nip11);
+  }
+
+  async removeNip11( params:{ relay?: string, monitorPukey: string, hash: string }): Promise<void | undefined> {
+    await this.nip11s.where(params).delete();
+  }
+
+  async removeNip11ByRelay(relay: string): Promise<void | undefined> {
+    await this.nip11s.where({ relay }).delete();
+  }
+
+  async removeNip11ByMonitorPubkey(monitorPubkey: string): Promise<void | undefined> {
+    await this.nip11s.where({ monitorPubkey }).delete();
+  }
+
+  async removeNip11ByHash(hash: string): Promise<void | undefined> {
+    await this.nip11s.where({ hash }).delete();
+  }
+
+  async addGeocodes(geocodes: IGeocode[]): Promise<void> {
+    if(!geocodes.length) return;
+    for(const geocode of geocodes){
+      this.geocodes.add(geocode).catch(console.warn)
+    }
+  }
 }
-
-// const db: RelayDb = new RelayDb();
-
-// db.open()
-
-// export default db;
-
-
 
 
 

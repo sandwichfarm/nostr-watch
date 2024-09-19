@@ -5,7 +5,7 @@ import { extractGeoCodes } from '@base/utils/geo';
 import { type GeoCodesObjectRaw, ISO3166Format, ISO3166Type, RawGeoCode, RawGeoCodes } from '@base/types/TGeo';
 
 import { IRelay, ICheck, IEvent, INip11, IGeoCode } from '../models/';
-import { defaults } from '../db';
+import { RelayDb } from '../db';
 
 export type IdbReadyRelayData = { 
   event?: IEvent,
@@ -62,7 +62,7 @@ export const k30166ToICheck = (relay: string, network: string, event: IEvent): I
 
   const relayCheck: ICheck = { monitorPubkey, createdAt }
 
-  return {...defaults<ICheck>(), ...relayCheck}
+  return {...RelayDb.defaults<ICheck>(), ...relayCheck}
 }
 
 
@@ -74,7 +74,7 @@ export const n66IEventToIRelay = (relay: string, network: string, event: IEvent)
     lastSeen: lastSeen as number,
     network
   }
-  return {...defaults<IRelay>(), ...irelay}
+  return {...RelayDb.defaults<IRelay>(), ...irelay}
 }
 
 const n66IEventToNip11 = async (relay: string, event: IEvent): Promise<INip11 | undefined> => {
@@ -107,7 +107,7 @@ const n66IEventToNip11 = async (relay: string, event: IEvent): Promise<INip11 | 
     hash,
     json, 
   }
-  return {...defaults<INip11>(), ...inip11}
+  return {...RelayDb.defaults<INip11>(), ...inip11}
 }
 
 export const geocodeTransform = ( event: NostrEvent ): IGeoCode[] => {
@@ -180,6 +180,4 @@ export const hashObject = async (obj: Record<string, any>): Promise<string> => {
   return hashHex;
 }
 
-export default async ( event: NostrEvent ): Promise<IdbReadyRelayData> => {\
-  return k30166ToIdb(event as NostrEvent)
-}
+export default transform30166;

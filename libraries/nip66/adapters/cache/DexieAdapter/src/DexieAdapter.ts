@@ -6,15 +6,52 @@ import { IEvent, IMonitor, IRelay, ICheck, INip11, IGeocode } from './models/ind
 
 import { RelayDb } from './db';
 
+import { Queue, Task } from './Queue';
+
+import { transform30166 } from './processing/relay.transform';
+
 class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   readonly slug: string = 'dexie'
 
   private $: any;
+  private queue = new Queue();
 
   constructor(dbName: string = 'Relays') {
     super()
     this.$ = new RelayDb( dbName) ;
+  }
+
+  async setEventTask( events: NostrEvent[] ){
+    await this.queue.add({ events })
+  }
+
+  async bulkEventAdder(task: Task){
+    const { events } = task
+    for(const event of events){
+      await this.setEvent(event.id, event)
+    }
+  }
+
+  async addRelayEvent( event: NostrEvent ){
+    const errors = []
+    const catchErrors = (error: any) => { errors.push(error) }
+    const { check, nip11, geocodes } = await transform30166(event)
+    this.$.addCheck(check).catch(catchErrors)
+    this.$.addGeocodes(geocodes).catch(catchErrors)
+  }
+
+  async removeRelayEvent( eventId: string ){
+    const errors = []
+    await this.$.removeCheck(eventId).catch((error: any) => { errors.push(error) })
+  }
+
+  async removeRelay(relay: string){
+
+  }
+
+  async processMonitorEvent( event: NostrEvent ){
+
   }
 
   /*events*/
@@ -28,9 +65,15 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
     }
   }
 
-  async setEvent(id: string, event: Event): Promise<void> {
+  async setEvent(id: string, event: NostrEvent): Promise<void> {
     try {
       await this.$.events.put(event);
+      if(event.kind === 30166){
+        this.processRelayEvent(event)
+      }
+      if(event.kind === 10166){
+        this.processMonitorEvent(event)
+      }
     } catch (error) {
       console.error(`DexieAdapter setEvent error for id ${id}:`, error);
       throw error;
@@ -38,12 +81,15 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   }
 
   async setEvents(events: NostrEvent[]): Promise<void> {
-    try {
-      await this.$.events.bulkPut(events);
-    } catch (error) {
-      console.error('DexieAdapter setEvents error:', error);
-      throw error;
+    for(const event of events){
+      await this.setEventTask([event])
     }
+    // try {
+    //   await this.$.events.bulkPut(events);
+    // } catch (error) {
+    //   console.error('DexieAdapter setEvents error:', error);
+    //   throw error;
+    // }
   }
 
   async deleteEvents(ids: string[]): Promise<void> {

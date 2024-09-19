@@ -4,7 +4,7 @@ import { INostrEvent } from '@base/interfaces/INostrEvent';
 
 import { SimplePool, type Filter } from 'nostr-tools';
 
-import jwtEncode from 'jwt-encode'
+import hashObject from 'jwt-encode'
 
 export class NostrToolsAdapter extends WebsocketAdapter implements IWebSocketAdapter {
   static slug = "nostrtools"
@@ -32,7 +32,7 @@ export class NostrToolsAdapter extends WebsocketAdapter implements IWebSocketAda
     }
   }
 
-  subscribe(filters: Filter[], subId: string = jwtEncode(filters, this._salt)): string | undefined {
+  subscribe(filters: Filter[], subId: string = hashObject(filters, this._salt)): string | undefined {
     if(this._validateRequest()) return undefined
     const params: any = {}
     if(this.callbacks?.onEvent) {

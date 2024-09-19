@@ -2,6 +2,7 @@ import type { Workers } from './Workers';
 
 export interface IAdapter {
   worker?: SharedWorker | Worker; 
+  workers?: Workers;
 
   newWorker(): Worker;
   newSharedWorker(): SharedWorker;  
@@ -12,14 +13,14 @@ interface WorkerPaths {
   sharedWorkerPath: string;
 }
 
-type WorkersArgument = {
-  worker?: Worker;
-  sharedWorker?: SharedWorker;
-};
-
+// type WorkersArgument = {
+//   worker?: Worker;
+//   sharedWorker?: SharedWorker;
+// };
 
 export class Adapter {
   static slug: string; 
+  static metaUrl: string;
 
   private _workers?: Workers
 
@@ -40,25 +41,28 @@ export class Adapter {
   }
 
   static get workerPaths(): WorkerPaths {
-    return this.generatePaths(this.slug);
+    return this.generatePaths(this.slug, this.metaUrl);
   }
 
   newWorker(): Worker {
-    return new Worker(this._getWorkerPaths().workerPath, {type: 'module'});
+    return new Worker(this._workerPaths().workerPath, {type: 'module'});
   }
 
   newSharedWorker(): SharedWorker {
-    return new SharedWorker(this._getWorkerPaths().sharedWorkerPath, {type: 'module'});
+    return new SharedWorker(this._workerPaths().sharedWorkerPath, {type: 'module'});
   }
 
-  private _getWorkerPaths(): WorkerPaths {
-    return (this.constructor as typeof Adapter).generatePaths((this.constructor as typeof Adapter).slug); 
+  private _workerPaths(): WorkerPaths {
+    const slug = (this.constructor as typeof Adapter).slug;
+    const metaUrl = (this.constructor as typeof Adapter).metaUrl;
+
+    return (this.constructor as typeof Adapter).generatePaths(slug, metaUrl); 
   }
 
-  static generatePaths(slug: string): WorkerPaths {
+  static generatePaths(slug: string, metaUrl: string): WorkerPaths {
     return {
-      workerPath: `./workers/${slug}.worker.js`,
-      sharedWorkerPath: `./workers/${slug}.shared.worker.js`,
+      workerPath: new URL(`./workers/${slug}.worker.js`, metaUrl).toString(),
+      sharedWorkerPath: new URL(`./workers/${slug}.shared.worker.js`, metaUrl).toString(),
     };
   }
 }

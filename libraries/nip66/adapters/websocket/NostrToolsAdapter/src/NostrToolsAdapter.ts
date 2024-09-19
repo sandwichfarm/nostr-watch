@@ -39,10 +39,10 @@ export class NostrToolsAdapter extends WebsocketAdapter implements IWebSocketAda
       params.onevent = (event: Event) => (this.callbacks?.onEvent as unknown as Function)(event as unknown as INostrEvent)
     }
     if(this.callbacks?.onEose) {
-      params.oneose = () => (this.callbacks as unknown as Function)?.onEose()
+      params.oneose = () => (this.callbacks?.onEose as unknown as Function)()
     }
     if(this.callbacks?.onClose) {
-      params.onclose = () => (this.callbacks as unknown as Function)?.onClose()
+      params.onclose = () => (this.callbacks?.onClose as Function)()
     }
     const sub = (this.pool as SimplePool).subscribeMany(
       this.relays as string[],

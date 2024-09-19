@@ -1,10 +1,9 @@
 //base 
-import { CacheAdapter, ICacheAdapter } from '@core/CacheAdapter';
+import { CacheAdapter, GeohashOptions, ICacheAdapter } from '@core/CacheAdapter';
 import { NostrEvent } from '@models/NostrEvent';
 
 //adapter
 import { DexieQueue, DexieTask } from './DexieQueue';
-import DexieTaskWorker from './DexieQueueWorker';
 import { transform30166 } from './processing/relay.transform';
 import { IEvent } from './models/index'
 import { RelayDb } from './db';
@@ -12,6 +11,7 @@ import { RelayDb } from './db';
 class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   readonly slug: string = 'dexie'
+  readonly metaUrl: string = import.meta.url
 
   private idb: any;
   private queue: DexieQueue;
@@ -19,7 +19,11 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   constructor(dbName: string = 'Relays') {
     super()
     this.idb = new RelayDb( dbName) ;
-    this.queue = new DexieQueue( async (task: DexieTask) => DexieTaskWorker( this.idb , task ) )
+    this.queue = new DexieQueue( this.dexieTaskWorker.bind(this) )
+  }
+
+  async getRelays(): Promise<NostrEvent[]> {
+    return []
   }
 
   async addEventsToQueue( events: NostrEvent[] ){
@@ -55,6 +59,10 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
       throw error;
     }
   }
+
+  async deleteEvent(id: string): Promise<void> {
+    
+  }
   
   async addRelayEvent( event: NostrEvent ){
     const errors = []
@@ -70,9 +78,9 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   }
 
   /*events*/
-  async getEvent(id: string): Promise<IEvent | null> {
+  async getEvent(id: string): Promise<NostrEvent | null> {
     try {
-      const event = await this.idb.events.get(id);
+      const event = await this.idb.events.get(id) as NostrEvent;
       return event || null;
     } catch (error) {
       console.error(`DexieAdapter getEvent error for id ${id}:`, error);
@@ -111,7 +119,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   // Basic CRUD operations for monitors`
   async getMonitor(eventId: string): Promise<NostrEvent | null> { return null }
   async getMonitorsWithIds(eventIds: string[]): Promise<NostrEvent[]> { return [] }
-  async setMonitor(monitor: Monitor): Promise<void> {}
+  async setMonitor(monitor: NostrEvent): Promise<void> {}
   async deleteMonitor(id: string): Promise<void> {}
   async clearMonitors(): Promise<void> {}
 
@@ -123,19 +131,19 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   async clearRelays(): Promise<void> {}
 
   // // Advanced Queries: Monitors
-  // async findMonitorsByGeohash(geohash: string, options?: GeohashOptions): Promise<IMonitor[]> { return [] }
-  // async sortMonitorsByDistance(geohash: string): Promise<IMonitor[]> { return [] }
-  // async findMonitorsByChecks(checks: string[]): Promise<IMonitor[]> { return [] }
+  async findMonitorsByGeohash(geohash: string, options?: GeohashOptions): Promise<NostrEvent[]> { return [] }
+  async sortMonitorsByDistance(geohash: string): Promise<NostrEvent[]> { return [] }
+  async findMonitorsByChecks(checks: string[]): Promise<NostrEvent[]> { return [] }
 
-  // // Advanced Queries: Relays
-  // async findRelaysByNIPs(nips: string[], condition: 'AND' | 'OR'): Promise<IRelay[]> { return [] }
-  // async findRelaysByISP(isp: string): Promise <IRelay[]> { return [] }
-  // async findRelaysByIP(ip: string): Promise<IRelay[]> { return [] }
-  // async findRelaysByCountryCode(countryCode: string): Promise<IRelay[]> { return [] }
-  // async findRelaysByOwner(ownerPubkey: string): Promise<IRelay[]> { return [] }
-  // async findRelaysByNetwork(network: string): Promise<IRelay[]> { return [] }
-  // async findRelaysByRTTOpen(rttOpen: number): Promise<any[]> { return [] }
-  // async findRelaysByLiveness(livenessStatus: 'online' | 'offline' | 'dead'): Promise<any[]> { return [] }
+  // Advanced Queries: Relays
+  async findRelaysByNIPs(nips: string[], condition: 'AND' | 'OR'): Promise<NostrEvent[]> { return [] }
+  async findRelaysByISP(isp: string): Promise <NostrEvent[]> { return [] }
+  async findRelaysByIP(ip: string): Promise<NostrEvent[]> { return [] }
+  async findRelaysByCountryCode(countryCode: string): Promise<NostrEvent[]> { return [] }
+  async findRelaysByOwner(ownerPubkey: string): Promise<NostrEvent[]> { return [] }
+  async findRelaysByNetwork(network: string): Promise<NostrEvent[]> { return [] }
+  async findRelaysByRTTOpen(rttOpen: number): Promise<any[]> { return [] }
+  async findRelaysByLiveness(livenessStatus: 'online' | 'offline' | 'dead'): Promise<any[]> { return [] }
 
   // async setEvent(id: string, event: Event): Promise<void> {
   //   try {
@@ -309,13 +317,13 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   //  * Sorts monitors by distance from a specific geohash.
   //  * @param geohash The geohash to compare against.
   //  */
-  // async sortMonitorsByDistance(geohash: string): Promise<Monitor[]> {
+  // async sortMonitorsByDistance(geohash: string): Promise<NostrEvents[]> {
   //   try {
-  //     const allMonitors = await this.monitors.where('geohash').isNotNull().toArray();
+  //     const allMonitors = await this.idb.monitors.where('geohash').isNotNull().toArray();
 
   //     // Calculate distances
-  //     const monitorsWithDistance = allMonitors.map((monitor) => {
-  //       const distance = this.computeGeohashDistance(geohash, monitor.geohash || '');
+  //     const monitorsWithDistance = allMonitors.map((monitor: NostrEvent) => {
+  //       const distance = this.computeGeohashDistance(geohash, monitor.tags.find(t => t[0] === 'g')?.[1] || '');
   //       return { monitor, distance };
   //     });
 

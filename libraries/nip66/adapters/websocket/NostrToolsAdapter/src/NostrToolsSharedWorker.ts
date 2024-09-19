@@ -1,13 +1,14 @@
-import { AdapterSharedWorker } from "@base/AdapterSharedWorker"
-import { ICacheAdapterSharedWorkerCommand } from "@interfaces/ICacheAdapterSharedWorkerCommand";
 import { Filter } from "nostr-tools";
-import { AdapterWebsocketSharedWorker, AdapterWebsocketSharedWorkerCommand } from "@base/core/AdapterWebsocketSharedWorker";
 
-export interface CacheSharedWorkerOptions extends  {
+import { SharedWorkerOptions} from "@core/AdapterSharedWorker";
+import { AdapterWebsocketSharedWorker, AdapterWebsocketSharedWorkerCommand } from "@base/core/AdapterWebsocketSharedWorker";
+import { ICacheAdapterSharedWorkerCommand } from "@interfaces/ICacheAdapterSharedWorkerCommand";
+
+export interface CacheSharedWorkerOptions extends SharedWorkerOptions {
   mainThread: MessagePort;
 }
 
-interface DexieSharedWorkerCommand extends AdapterWebsocketSharedWorkerCommand {
+export interface NostrToolsWorkerCommand extends AdapterWebsocketSharedWorkerCommand {
   filters: Filter[]
 }
 

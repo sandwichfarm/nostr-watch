@@ -1,24 +1,23 @@
-import Workers from "@base/core/Workers";
-import { AdapterSharedWorker, CacheSharedWorkerOptions } from "@base/core/AdapterSharedWorker"
-import { AdapterCacheSharedWorkerCommand } from "@base/core/AdapterCacheSharedWorker";
+import { AdapterSharedWorker, SharedWorkerOptions } from "@core/AdapterSharedWorker"
+import { AdapterCacheSharedWorkerCommand } from "@core/AdapterCacheSharedWorker";
 
-import Db from './db';
+import { RelayDb } from './db';
 
 interface DexieSharedWorkerCommand extends AdapterCacheSharedWorkerCommand {
   dbName: string
 }
 
 export class DexieSharedWorker extends AdapterSharedWorker {
-  $: any
+  idb: any
 
-  constructor( options: CacheSharedWorkerOptions, ){
+  constructor( options: SharedWorkerOptions, ){
     super(options)
   }
 
   setup(command: DexieSharedWorkerCommand){
     const { dbName } = command
-    this.$ = Db(dbName);
-    this.$.db.open()
+    this.idb = new RelayDb(dbName);
+    this.idb.open()
   }
 
   private async bulkAddRelays(command: DexieSharedWorkerCommand){

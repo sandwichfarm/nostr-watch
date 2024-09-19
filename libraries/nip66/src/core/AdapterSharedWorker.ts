@@ -1,7 +1,4 @@
-import { NostrEvent } from "@base/models/NostrEvent";
-
 import { ICacheAdapterSharedWorkerCommand } from "@base/interfaces/ICacheAdapterSharedWorkerCommand";
-import { IMainThreadResponse } from "@base/interfaces/IMainThreadResponse";
 
 import { IWorkerCommand } from "../interfaces";
 
@@ -16,7 +13,6 @@ export interface AdapterSharedWorkerCommand extends IWorkerCommand {
   mainThreadPort?: MessagePort;
   sharedWorkerPort?: MessagePort;
 }
-
 
 export interface SharedWorkerOptions {
   mainThreadPort?: MessagePort;
@@ -77,7 +73,7 @@ export class AdapterSharedWorker {
       this._channelPort = options.channelPort
     }
     else if( options?.sharedWorkerPort) {
-      this._context = WorkerContext.DedicatedWorker
+      this._context = WorkerContext.MainThread
       this._sharedWorkerPort = options.sharedWorkerPort
     }
     console.log(this.constructor.name, 'context:', this._context)
@@ -97,26 +93,57 @@ export class AdapterSharedWorker {
   setupChannelHandlers(){
     if(!this.channel) return
     this.channel.onmessage = (message: MessageEvent) => {
-      const command = message.data as AdapterCacheSharedWorkerCommand;
+      const command = message.data as ICacheAdapterSharedWorkerCommand;
       this.onMessage(command)
     }
     this.channel.onmessageerror = this.onMessageError
   }
 
-  postMessageMainThread( response: IMainThreadResponse ){
+  postMessage( command: AdapterSharedWorkerCommand, where: WorkerContext = WorkerContext.MainThread ) {
+    switch(where as WorkerContext){
+      case WorkerContext.MainThread:
+        this.postMessageMainThread(command)
+        break;
+      case WorkerContext.SharedWorker:
+        this.postMessageSharedWorker(command)
+        break;
+      case WorkerContext.DedicatedWorker:
+        this.postMessageDedicatedWorker(command)
+        break;
+    }
+  }
+
+  postMessageMainThread( command: AdapterSharedWorkerCommand ){
     if(!this?.mainThread) return
-    this.mainThread.postMessage( response )
+    this.mainThread.postMessage( command )
   }
 
-  postMessageSharedWorker( response: IMainThreadResponse ){
+  postMessageSharedWorker( command: AdapterSharedWorkerCommand ){
     if(!this.channel) return
-    this.channel.postMessage( response )
+    this.channel.postMessage( command )
   }
 
-  postMessageDedicatedWorker( response: IMainThreadResponse ){
+  postMessageDedicatedWorker( command: AdapterSharedWorkerCommand ){
     if(!this.sharedWorker) return
-    this.sharedWorker.postMessage( response
+    this.sharedWorker.postMessage( command )
   }
+
+
+
+  // postMessageMainThread( response: IMainThreadResponse ){
+  //   if(!this?.mainThread) return
+  //   this.mainThread.postMessage( response )
+  // }
+
+  // postMessageSharedWorker( response: IMainThreadResponse ){
+  //   if(!this.channel) return
+  //   this.channel.postMessage( response )
+  // }
+
+  // postMessageDedicatedWorker( response: IMainThreadResponse ){
+  //   if(!this.sharedWorker) return
+  //   this.sharedWorker.postMessage( response
+  // }
   
   onMessage(command: ICacheAdapterSharedWorkerCommand){}
   onMessageError(){}

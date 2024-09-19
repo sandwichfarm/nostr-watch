@@ -1,5 +1,7 @@
-import { IWebSocketAdapter, ICacheAdapter } from '../interfaces';
-import { NostrEvent } from '../models/NostrEvent';
+import { ICacheAdapter } from '@core/CacheAdapter';
+import { IWebSocketAdapter } from '@core/WebsocketAdapter';
+
+import { NostrEvent } from '@models/NostrEvent';
 
 // export interface WorkerPayload {
 //   type: string;

@@ -1,9 +1,7 @@
-import { Adapter } from './Adapter'
+import { Adapter, IAdapter } from './Adapter'
 
 
 import { NostrEvent } from '@models/NostrEvent';
-import { Monitor } from '@models/Monitor';
-import { IAdapter } from '@interfaces/IAdapter';
 
 export interface GeohashOptions {
   maxDistance?: number; 
@@ -18,22 +16,22 @@ export interface ICacheAdapter extends IAdapter {
   clearEvents(): Promise<void>;
 
   // Basic CRUD operations for monitors
-  getMonitor(id: string): Promise<Monitor | null>;
-  setMonitor(monitor: Monitor): Promise<void>;
+  getMonitor(id: string): Promise<NostrEvent | null>;
+  setMonitor(monitor: NostrEvent): Promise<void>;
   deleteMonitor(id: string): Promise<void>;
   clearMonitors(): Promise<void>;
 
   // Basic CRUD operations for relays
   getRelay(id: string): Promise<any | null>;
-  setRelay(relay: any): Promise<void>;
+  getRelays(): Promise<NostrEvent[]>;
   deleteRelay(id: string): Promise<void>;
   clearRelays(): Promise<void>;
 
   // NIP-66 Specific Query Methods
-  findMonitorsByGeohash(geohash: string, options?: GeohashOptions): Promise<Monitor[]>;
-  sortMonitorsByDistance(geohash: string): Promise<Monitor[]>;
-  findMonitorsByChecks(checks: string[]): Promise<Monitor[]>;
-  
+  findMonitorsByGeohash(geohash: string, options?: GeohashOptions): Promise<NostrEvent[]>;
+  sortMonitorsByDistance(geohash: string): Promise<NostrEvent[]>;
+  findMonitorsByChecks(checks: string[]): Promise<NostrEvent[]>;
+
   findRelaysByNIPs(nips: string[], condition: 'AND' | 'OR'): Promise<any[]>;
   findRelaysByISP(isp: string): Promise<any[]>;
   findRelaysByIP(ip: string): Promise<any[]>;

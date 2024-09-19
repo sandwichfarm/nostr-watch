@@ -21,7 +21,7 @@
       "@base/*": ["src/*"],
       "@models/*": ["src/models/*"],
       "@interfaces/*": ["src/interfaces/*"],
-      "@services/*": ["src/interfaces/*"],
+      "@services/*": ["src/services/*"],
       "@workers/*": ["src/workers/*"]
     }
   },

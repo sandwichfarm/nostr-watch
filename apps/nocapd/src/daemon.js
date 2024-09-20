@@ -222,9 +222,11 @@ const populateRelays = async ( skipJob = false ) => {
     log.debug(`populateRelays(): begin`)
 
     const { Relay } = Schemas
-    const syncData = await bootstrap('nocapd').catch( () => log.warn('bootstrap() failed') )
+    const syncData = await bootstrap('nocapd').catch( () => log.warn('bootstrap() failed') );
+
+    if(!syncData?.[0]) return log.error(`populateRelays(): no relays found in bootstrap data`)
     
-    log.debug(`populateRelays(): found ${syncData[0].length} *maybe new* relays`)
+    log.debug(`populateRelays(): found ${syncData?.[0].length} *maybe new* relays`)
     
     const relays = syncData[0].map( url => new Relay({ url }) )
 

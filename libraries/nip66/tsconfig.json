@@ -2,8 +2,9 @@
   "compilerOptions": {
     "target": "ES5",
     "module": "ESNext",
-    "declaration": false,
-    "declarationMap": false,
+    "declarationDir": "dist/types",
+    "declaration": true,
+    "declarationMap": true,
     "emitDeclarationOnly": false,
     "sourceMap": true,
     "strict": true,

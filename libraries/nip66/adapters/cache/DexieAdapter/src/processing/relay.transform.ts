@@ -1,7 +1,7 @@
 import { IRelay, ICheck, IEvent, INip11, IGeocode } from '../models/';
 import { RelayDb } from '../db';
 
-import type { 
+import { 
   INostrEvent, 
   GeoCodesObjectRaw, 
   ISO3166Format, 

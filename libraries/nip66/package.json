@@ -42,10 +42,10 @@
       "require": "./dist/lib/utils/index.js",
       "types": "./dist/types/utils/index.d.ts"
     },
-    "./cacheSharedWorkerFactor": {
-      "import": "./dist/browser/factory/cache.shared.worker.js",
-      "require": "./dist/lib/actory/cache.shared.worker.js",
-      "types": "./dist/types/actory/cache.shared.worker.d.ts"
+    "./cacheSharedWorkerFactory": {
+      "import": "./dist/lib/factory/cache.shared.worker.js",
+      "require": "./dist/lib/factory/cache.shared.worker.js",
+      "types": "./dist/types/factory/cache.shared.worker.d.ts"
     }
   },
   "dependencies": {

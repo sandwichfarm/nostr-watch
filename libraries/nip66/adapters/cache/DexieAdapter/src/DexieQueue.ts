@@ -1,7 +1,7 @@
 'use strict'
 
-import type { INostrEvent } from "@nostrwatch/nip66/interfaces/INostrEvent";
-import { Queue, QueueTask, type QueueWorker } from "@nostrwatch/nip66/core/Queue";  
+import type { INostrEvent } from "@nostrwatch/nip66/interfaces";
+import { Queue, QueueTask, type QueueWorker } from "@nostrwatch/nip66/core";  
 
 const DEFAULT_CONCURRENCY = 1
 

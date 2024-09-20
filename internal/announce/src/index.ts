@@ -32,7 +32,7 @@ export class AnnounceMonitor {
   private pubkey: string | null = null;
 
   constructor(options: AnnounceMonitorOptions, pubkey: string) {
-    log.debug('announce::constructor()', pubkey)
+    log.debug(`announce::constructor(): ${pubkey}`)
     this.setup(options);
     this.pubkey = pubkey
     this.publisher = new Publisher(pubkey, this.monRelays)
@@ -85,7 +85,7 @@ export class AnnounceMonitor {
   }
 
   generate(): any {
-    log.debug('announce::generate()', this.pubkey)
+    log.debug(`announce::generate(): ${this.pubkey}`)
 
     const $monReg = new Kind10166(this.pubkey)
     $monReg.generateEvent({...$monReg})

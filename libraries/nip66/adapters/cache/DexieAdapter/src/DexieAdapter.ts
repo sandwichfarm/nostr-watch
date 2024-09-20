@@ -1,6 +1,6 @@
 //base 
-import { CacheAdapter, GeohashOptions, ICacheAdapter } from '@nostrwatch/nip66/core/CacheAdapter';
-import { INostrEvent } from '@nostrwatch/nip66/interfaces/INostrEvent';
+import { CacheAdapter, GeohashOptions, ICacheAdapter } from '@nostrwatch/nip66/core';
+import { INostrEvent } from '@nostrwatch/nip66/interfaces';
 
 //adapter
 import { DexieQueue, DexieTask } from './DexieQueue';

@@ -14,60 +14,46 @@
   ],
   "author": "Your Name",
   "license": "MIT",
-
   "files": [
     "dist"
   ],
-  "main": "dist/server/bundle.js",
+  "main": "dist/lib/index.js",
   "browser": "dist/browser/bundle.js",
   "types": "dist/types/index.d.ts",
+  
   "exports": {
     ".": {
       "import": "./dist/browser/bundle.js",
-      "require": "./dist/server/bundle.js"
+      "require": "./dist/lib/index.js",
+      "types": "./dist/types/index.d.ts" 
     },
-
     "./core": {
-      "import": {
-        "types": "./dist/core/index.d.ts",
-        "default": "./dist/core/index.js"
-      },
-      "require": {
-        "types": "./dist/core/index.d.ts",
-        "default": "./dist/core/index.js"
-      }
+      "import": "./dist/browser/core/index.js",
+      "require": "./dist/lib/index.js",
+      "types": "./dist/types/core/index.d.ts"
     },
-
     "./interfaces": {
-      "import": {
-        "types": "./dist/interfaces/index.d.ts",
-        "default": "./dist/interfaces/index.js"
-      },
-      "require": {
-        "types": "./dist/interfaces/index.d.ts",
-        "default": "./dist/interfaces/index.js"
-      }
+      "import": "./dist/browser/interfaces/index.js",
+      "require": "./dist/lib/interfaces/index.js",
+      "types": "./dist/types/interfaces/index.d.ts"
     },
-  
     "./utils": {
-      "import": {
-        "types": "./dist/utils/index.d.ts",
-        "default": "./dist/utils/index.js"
-      },
-      "require": {
-        "types": "./dist/utils/index.d.ts",
-        "default": "./dist/utils/index.js"
-      }
+      "import": "./dist/browser/utils/index.js",
+      "require": "./dist/lib/utils/index.js",
+      "types": "./dist/types/utils/index.d.ts"
+    },
+    "./factory/cacheSharedWorker": {
+      "import": "./dist/browser/factory/cache.shared.worker.js",
+      "require": "./dist/lib/actory/cache.shared.worker.js",
+      "types": "./dist/types/actory/cache.shared.worker.d.ts"
     }
-    
   },
-  
-
   "dependencies": {
     "jwt-encode": "1.0.1",
     "nostr-tools": "2.7.2"
   },
   "devDependencies": {
+    "@types/webpack-env": "1.18.5",
     "eslint": "^8.46.0",
     "node-polyfill-webpack-plugin": "4.0.0",
     "prettier": "^3.0.0",
@@ -81,19 +67,17 @@
     "worker-loader": "^3.0.8"
   },
   "peerDependencies": {},
-
-
   "scripts": {
-    "build": "webpack --config webpack.config.js",
+    "clean": "rm -rf dist/lib dist/browser dist/server dist/types",
+    "build": "yarn clean && yarn build:types && yarn build:browser",
+    "build:types": "tsc -p tsconfig.browser.json",
     "build:browser": "webpack --config webpack.config.js --env target=browser",
     "build:server": "webpack --config webpack.config.js --env target=server",
-    "clean": "rm -rf dist",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,md}'",
     "test": "jest",
     "prepare": "yarn build"
   },
-
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sandwichfarm/nostr-watch.git"

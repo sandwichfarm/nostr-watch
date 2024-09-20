@@ -21,33 +21,35 @@ const config = (env) => {
     return {
       name: 'browser',
       target: 'web',
-      mode: 'production',
       entry: './src/index.ts',
       output: {
         path: path.resolve(__dirname, 'dist/browser'),
-        filename: '[name].[contenthash].js',
+        filename: 'bundle.js',
         chunkFilename: '[name].[contenthash].js',
         library: {
-          name: '@nostrwatch/nip66',
+          name: 'NIP66Library',
           type: 'umd',
         },
         clean: true,
       },
-      stats: {
-        all: false,
-        modules: true,
-        reasons: true,
-        chunks: true,
-        chunkModules: true,
-        chunkOrigins: true,
-      },
       resolve: {
+        extensions: ['.ts', '.tsx', '.js'],
+        alias,
         modules: [
           path.resolve(__dirname, 'node_modules'),
           path.resolve(__dirname, '../../node_modules'),
         ],
-        extensions: ['.ts', '.tsx', '.js'],
-        alias
+        fallback: { 
+          "fs": false,
+          "tls": false,
+          "net": false,
+          "path": false,
+          "zlib": false,
+          "http": false,
+          "https": false,
+          "stream": require.resolve("stream-browserify"),
+          "crypto": require.resolve("crypto-browserify") 
+        }
       },
       module: {
         rules: [
@@ -57,7 +59,7 @@ const config = (env) => {
               {
                 loader: 'worker-loader',
                 options: {
-                  filename: '[name].js',
+                  filename: '[name].[contenthash].js',
                 },
               },
               'ts-loader',
@@ -74,15 +76,16 @@ const config = (env) => {
         new NodePolyfillPlugin(),
         new BundleAnalyzerPlugin({
           analyzerMode: 'static',
-          openAnalyzer: true,
-        })
+          openAnalyzer: false,
+          reportFilename: 'bundle-report.html',
+        }),
       ],
       optimization: {
         splitChunks: {
-          chunks: 'all', 
-          minSize: 20000, 
+          chunks: 'all',
+          minSize: 20000,
           maxSize: 240000,
-          automaticNameDelimiter: '-', 
+          automaticNameDelimiter: '-',
           cacheGroups: {
             vendors: {
               test: /[\\/]node_modules[\\/]/,
@@ -98,7 +101,7 @@ const config = (env) => {
             },
           },
         },
-        runtimeChunk: 'single',
+        // runtimeChunk: 'multiple',
         minimize: true,
         minimizer: [
           new TerserPlugin({
@@ -115,9 +118,19 @@ const config = (env) => {
           }),
         ],
       },
-      devtool: 'cheap-source-map'
+      devtool: 'cheap-source-map',
+      mode: 'production',
+      stats: {
+        all: false,
+        modules: true,
+        reasons: true,
+        chunks: true,
+        chunkModules: true,
+        chunkOrigins: true,
+      },
     };
   }
+  
 
   if (env && env.target === 'server') {
     return {

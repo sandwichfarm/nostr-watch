@@ -1,6 +1,4 @@
 import { Adapter, IAdapter } from './Adapter'
-
-
 import { INostrEvent } from '@interfaces/INostrEvent';
 
 export interface GeohashOptions {

@@ -1,5 +1,4 @@
-import { AdapterSharedWorker, SharedWorkerOptions } from "@core/AdapterSharedWorker"
-import { AdapterCacheSharedWorkerCommand } from "@core/AdapterCacheSharedWorker";
+import { AdapterSharedWorker, SharedWorkerOptions, AdapterCacheSharedWorkerCommand } from "@nostrwatch/nip66/core"
 
 import { RelayDb, type IRelayDb } from './db';
 

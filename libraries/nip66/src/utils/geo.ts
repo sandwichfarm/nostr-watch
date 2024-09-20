@@ -1,5 +1,5 @@
 import { INostrEvent } from "@interfaces/INostrEvent"
-import { GeoCodesObjectRaw, ISO3166Type } from "@base/types/TISO13166"
+import { GeoCodesObjectRaw, ISO3166Type } from "@base/interfaces/TISO13166"
 
 export const extractGeoCodesByType = ( event: INostrEvent, type: ISO3166Type ): (string | number)[] => {
   return event.tags

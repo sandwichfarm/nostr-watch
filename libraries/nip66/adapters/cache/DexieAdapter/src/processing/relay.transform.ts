@@ -1,11 +1,20 @@
-import { INostrEvent } from '@nostrwatch/nip66/interfaces/INostrEvent';
-import { getUrlFromEvent, getNetworkFromEvent } from '@nostrwatch/nip66/utils/events';
-import { extractGeoCodes } from '@nostrwatch/nip66/utils/geo';
-
-import { type GeoCodesObjectRaw, ISO3166Format, ISO3166Type, RawGeoCode, RawGeoCodes } from '@nostrwatch/nip66/types/TISO13166';
-
 import { IRelay, ICheck, IEvent, INip11, IGeocode } from '../models/';
 import { RelayDb } from '../db';
+
+import type { 
+  INostrEvent, 
+  GeoCodesObjectRaw, 
+  ISO3166Format, 
+  ISO3166Type, 
+  RawGeoCode, 
+  RawGeoCodes 
+} from '@nostrwatch/nip66/interfaces';
+
+import { 
+  getUrlFromEvent, 
+  getNetworkFromEvent, 
+  extractGeoCodes 
+} from '@nostrwatch/nip66/utils';
 
 export type IdbReadyRelayData = { 
   event?: IEvent,

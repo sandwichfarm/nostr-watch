@@ -2,8 +2,8 @@
 
 import { DexieSharedWorker } from '../DexieSharedWorker';
 
-import CacheSharedWorkerFactory from '@nostrwatch/nip66/factory/cache.shared.worker';
-import { ISharedWorkerGlobalScope } from "@nostrwatch/nip66/interfaces/ISharedWorkerGlobalScope";
+import { ISharedWorkerGlobalScope } from "@nostrwatch/nip66/interfaces";
+import CacheSharedWorkerFactory from '@nostrwatch/nip66/factory/cacheSharedWorker';
 
 const $self = this as unknown as ISharedWorkerGlobalScope;
 

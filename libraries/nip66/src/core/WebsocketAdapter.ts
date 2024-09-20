@@ -1,12 +1,12 @@
 import type { Filter } from 'nostr-tools';
 
-import { Adapter, IAdapter } from './Adapter'
-import { NostrEvent } from '@base/models/NostrEvent';
+import { Adapter, type IAdapter } from './Adapter'
+import type { INostrEvent } from '@interfaces/INostrEvent';
 
 export interface IWebsocketAdapterCallbacks {
   onNotice?: (notice: any) => void
   onOk?: (status: any) => void
-  onEvent?: (event: NostrEvent) => void
+  onEvent?: (event: INostrEvent) => void
   onLimits?: (limits: Record<string, any>) => void
   onEose?: () => void
   onClose?: () => void

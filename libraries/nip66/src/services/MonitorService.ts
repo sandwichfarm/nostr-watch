@@ -5,7 +5,7 @@ import { IWebsocketAdapter } from '@base/core/WebsocketAdapter';
 import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 
 // import { Monitor } from '@base/models/Monitor';
-// import { NostrEvent } from '@base/models/NostrEvent';
+// import { INostrEvent } from '@base/models/INostrEvent';
 
 export class MonitorService {
 
@@ -21,7 +21,7 @@ export class MonitorService {
   //   const monitors = await this.websocketAdapter.fetchMonitors()
   // }
 
-  // async _fetchMonitors(): Promise<NostrEvent[] | undefined> { return }
+  // async _fetchMonitors(): Promise<INostrEvent[] | undefined> { return }
 
   // async _determineMonitorLiveness(): Promise<boolean> { return false }
   

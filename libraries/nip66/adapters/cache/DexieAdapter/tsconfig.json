@@ -14,14 +14,6 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "baseUrl": "./",
-    "paths": {
-      "@base/*": ["../../../src/*"],
-      "@baseInterfaces/*": ["../../../src/interfaces/*"],
-      "@baseModels/*": ["../../../src/models/*"],
-      "@baseServices/*": ["../../../src/services/*"],
-      "@baseWorkers/*": ["../../../src/workers/*"],
-    }
   },
   "include": ["src/**/*", "adapters/**/*"],
   "exclude": ["node_modules", "dist"]

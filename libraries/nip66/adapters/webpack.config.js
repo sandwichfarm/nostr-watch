@@ -21,12 +21,11 @@ const config = (env) => {
     return {
       name: 'browser',
       target: 'web',
-      mode: 'production',
       entry: './src/index.ts',
       output: {
         path: path.resolve(__dirname, 'dist/browser'),
         filename: '[name].[contenthash].js',
-        chunkFilename: '[name].[contenthash].js',
+        chunkFilename: '[name].[contenthash].js', // Ensure unique chunk filenames
         library: {
           name: '@nostrwatch/nip66',
           type: 'umd',
@@ -43,8 +42,8 @@ const config = (env) => {
       },
       resolve: {
         modules: [
-          path.resolve(__dirname, 'node_modules'),
-          path.resolve(__dirname, '../../node_modules'),
+          path.resolve(__dirname, 'node_modules'), // Local node_modules
+          path.resolve(__dirname, '../../node_modules'), // Monorepo root node_modules
         ],
         extensions: ['.ts', '.tsx', '.js'],
         alias
@@ -73,16 +72,16 @@ const config = (env) => {
       plugins: [
         new NodePolyfillPlugin(),
         new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          openAnalyzer: true,
+          analyzerMode: 'static', // Generates a static HTML report
+          openAnalyzer: true, // Open the report automatically
         })
       ],
       optimization: {
         splitChunks: {
-          chunks: 'all', 
-          minSize: 20000, 
-          maxSize: 240000,
-          automaticNameDelimiter: '-', 
+          chunks: 'all', // Ensure all types of chunks (initial and async) are considered
+          minSize: 20000, // Minimum size for a chunk to be generated
+          maxSize: 240000, // Maximum size before a chunk is split further
+          automaticNameDelimiter: '-', // Delimiter for generated chunk names
           cacheGroups: {
             vendors: {
               test: /[\\/]node_modules[\\/]/,
@@ -92,13 +91,13 @@ const config = (env) => {
               reuseExistingChunk: true,
             },
             default: {
-              minChunks: 2,
+              minChunks: 2, // Minimum number of chunks that must share a module before splitting
               priority: -20,
               reuseExistingChunk: true,
             },
           },
         },
-        runtimeChunk: 'single',
+        runtimeChunk: 'single', // Create a single runtime chunk for all chunks
         minimize: true,
         minimizer: [
           new TerserPlugin({
@@ -115,7 +114,8 @@ const config = (env) => {
           }),
         ],
       },
-      devtool: 'cheap-source-map'
+      devtool: 'cheap-source-map',
+      mode: 'production',
     };
   }
 

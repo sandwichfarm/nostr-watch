@@ -1,7 +1,7 @@
 import { ICacheAdapter } from '@core/CacheAdapter';
 import { IWebsocketAdapter } from '@core/WebsocketAdapter';
 
-import { NostrEvent } from '@models/NostrEvent';
+import { INostrEvent } from '@interfaces/INostrEvent';
 
 // export interface WorkerPayload {
 //   type: string;
@@ -54,17 +54,17 @@ export class Workers {
     this._cacheShared.port.postMessage({type: 'setup', channelPort: this.channel.port2}, [this.channel.port2]);
   }
 
-  static encodeNostrEventArrayAsBuffer (json: NostrEvent[]): ArrayBufferLike {
+  static encodeNostrEventArrayAsBuffer (json: INostrEvent[]): ArrayBufferLike {
     const jsonString = JSON.stringify(json);
     const encoder = new TextEncoder();
     const uint8Array = encoder.encode(jsonString);
     return uint8Array.buffer;
   }
 
-  static decodeNostrEventArrayFromBuffer (arrayBuffer: ArrayBufferLike): NostrEvent[] {
+  static decodeNostrEventArrayFromBuffer (arrayBuffer: ArrayBufferLike): INostrEvent[] {
     const decoder = new TextDecoder();
     const jsonString = decoder.decode(new Uint8Array(arrayBuffer));
-    const nostrEvents: NostrEvent[] = JSON.parse(jsonString)
+    const nostrEvents: INostrEvent[] = JSON.parse(jsonString)
     return nostrEvents;
   }
 

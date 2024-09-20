@@ -3,9 +3,7 @@
 import { IWebsocketAdapter } from '@core/WebsocketAdapter';
 import { ICacheAdapter } from '@core/CacheAdapter';
 import { IAdaptersArgument } from '@interfaces/IAdaptersArgument';
-// import { NostrEvent } from '../models/NostrEvent';
-
-
+// import { INostrEvent } from '../models/INostrEvent';
 
 export class RelayService {
   

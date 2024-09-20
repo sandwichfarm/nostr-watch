@@ -1,6 +1,6 @@
 // // src/interfaces/ICacheAdapter.ts
 
-// import { Event } from '../models/NostrEvent';
+// import { Event } from '../models/INostrEvent';
 // import { Monitor } from '../models/Monitor';
 // import { IAdapter } from './IAdapter';
 

@@ -1,8 +1,9 @@
 /// <reference lib="webworker" />
 
-import CacheSharedWorkerFactory from '@base/factory/cache.shared.worker';
 import { DexieSharedWorker } from '../DexieSharedWorker';
-import { ISharedWorkerGlobalScope } from "@base/interfaces/ISharedWorkerGlobalScope";
+
+import CacheSharedWorkerFactory from '@nostrwatch/nip66/factory/cache.shared.worker';
+import { ISharedWorkerGlobalScope } from "@nostrwatch/nip66/interfaces/ISharedWorkerGlobalScope";
 
 const $self = this as unknown as ISharedWorkerGlobalScope;
 

@@ -1,9 +1,7 @@
 'use strict'
 
-import * as fastq from "fastq";
-import type { queueAsPromised } from "fastq";
-import { NostrEvent } from "@base/models/NostrEvent";
-import { Queue, QueueTask, type QueueWorker } from "@base/core/Queue";  
+import type { INostrEvent } from "@nostrwatch/nip66/interfaces/INostrEvent";
+import { Queue, QueueTask, type QueueWorker } from "@nostrwatch/nip66/core/Queue";  
 
 const DEFAULT_CONCURRENCY = 1
 
@@ -11,7 +9,7 @@ export interface DexieTask extends QueueTask {
   goal: string;
   id?: string;
   count?: number;
-  events: NostrEvent[];
+  events: INostrEvent[];
 }
 
 export type DexieWorker = (arg: DexieTask) => Promise<void>

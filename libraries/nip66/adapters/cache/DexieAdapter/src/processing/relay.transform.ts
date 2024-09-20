@@ -1,8 +1,8 @@
-import { NostrEvent } from '@base/models/NostrEvent';
-import { getUrlFromEvent, getNetworkFromEvent } from '@base/utils/events';
-import { extractGeoCodes } from '@base/utils/geo';
+import { INostrEvent } from '@nostrwatch/nip66/interfaces/INostrEvent';
+import { getUrlFromEvent, getNetworkFromEvent } from '@nostrwatch/nip66/utils/events';
+import { extractGeoCodes } from '@nostrwatch/nip66/utils/geo';
 
-import { type GeoCodesObjectRaw, ISO3166Format, ISO3166Type, RawGeoCode, RawGeoCodes } from '@base/types/TISO13166';
+import { type GeoCodesObjectRaw, ISO3166Format, ISO3166Type, RawGeoCode, RawGeoCodes } from '@nostrwatch/nip66/types/TISO13166';
 
 import { IRelay, ICheck, IEvent, INip11, IGeocode } from '../models/';
 import { RelayDb } from '../db';
@@ -15,13 +15,13 @@ export type IdbReadyRelayData = {
   geocodes?: IGeocode[],
 }
 
-export const transform30166 = async (_event: NostrEvent): Promise<IdbReadyRelayData> => {  
+export const transform30166 = async (_event: INostrEvent): Promise<IdbReadyRelayData> => {  
   const res: IdbReadyRelayData = {}
 
   const eventRecord = k30166ToIEvent(_event)
 
-  const relay: string | undefined = getUrlFromEvent(eventRecord as NostrEvent)
-  const network: string | undefined = getNetworkFromEvent(eventRecord as NostrEvent)
+  const relay: string | undefined = getUrlFromEvent(eventRecord as INostrEvent)
+  const network: string | undefined = getNetworkFromEvent(eventRecord as INostrEvent)
 
   if(!relay || !network) {
     console.error(`Event did not contain relay or network: ${eventRecord.id}, relay: ${relay}, network: ${network}`)
@@ -42,7 +42,7 @@ export const transform30166 = async (_event: NostrEvent): Promise<IdbReadyRelayD
   return res
 }
 
-export const k30166ToIEvent = (_event: NostrEvent): IEvent => {
+export const k30166ToIEvent = (_event: INostrEvent): IEvent => {
   const { pubkey, created_at, id, kind, tags, content, signature } = _event;
   const event: IEvent = {
     id,
@@ -110,7 +110,7 @@ const n66IEventToNip11 = async (relay: string, event: IEvent): Promise<INip11 | 
 }
 
 export const geocodeTransform = ( event: IEvent ): IGeocode[] => {
-  const codes: GeoCodesObjectRaw = extractGeoCodes(event)
+  const codes: GeoCodesObjectRaw = extractGeoCodes(event as INostrEvent)
   const cc = parseGeocodes(codes.countryCode, ISO3166Type.CountryCode)
   const rc = parseGeocodes(codes.countryCode, ISO3166Type.RegionCode)
   const res: IGeocode[] = []

@@ -1,4 +1,4 @@
-import { ICacheAdapterSharedWorkerCommand } from '../interfaces/ICacheAdapterSharedWorkerCommand';
+import { ICacheAdapterSharedWorkerCommand } from '@interfaces/ICacheAdapterSharedWorkerCommand';
 
 export default (_AdapterSharedWorker_: any) => {
   return async (event: MessageEvent) => {

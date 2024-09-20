@@ -2,9 +2,6 @@
   "name": "@nostrwatch/nip66",
   "version": "0.0.1",
   "description": "A NIP-66 implementation written in typescript.",
-  "main": "dist/server/bundle.js",
-  "browser": "dist/browser/bundle.js",
-  "types": "dist/types/index.d.ts",
   "keywords": [
     "nostr",
     "NIP-66",
@@ -17,6 +14,55 @@
   ],
   "author": "Your Name",
   "license": "MIT",
+
+  "files": [
+    "dist"
+  ],
+  "main": "dist/server/bundle.js",
+  "browser": "dist/browser/bundle.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/browser/bundle.js",
+      "require": "./dist/server/bundle.js"
+    },
+
+    "./core": {
+      "import": {
+        "types": "./dist/core/index.d.ts",
+        "default": "./dist/core/index.js"
+      },
+      "require": {
+        "types": "./dist/core/index.d.ts",
+        "default": "./dist/core/index.js"
+      }
+    },
+
+    "./interfaces": {
+      "import": {
+        "types": "./dist/interfaces/index.d.ts",
+        "default": "./dist/interfaces/index.js"
+      },
+      "require": {
+        "types": "./dist/interfaces/index.d.ts",
+        "default": "./dist/interfaces/index.js"
+      }
+    },
+  
+    "./utils": {
+      "import": {
+        "types": "./dist/utils/index.d.ts",
+        "default": "./dist/utils/index.js"
+      },
+      "require": {
+        "types": "./dist/utils/index.d.ts",
+        "default": "./dist/utils/index.js"
+      }
+    }
+    
+  },
+  
+
   "dependencies": {
     "jwt-encode": "1.0.1",
     "nostr-tools": "2.7.2"
@@ -34,8 +80,11 @@
     "webpack-node-externals": "^3.0.0",
     "worker-loader": "^3.0.8"
   },
+  "peerDependencies": {},
+
+
   "scripts": {
-    "build": "build:browser && build:server",
+    "build": "webpack --config webpack.config.js",
     "build:browser": "webpack --config webpack.config.js --env target=browser",
     "build:server": "webpack --config webpack.config.js --env target=server",
     "clean": "rm -rf dist",
@@ -44,11 +93,7 @@
     "test": "jest",
     "prepare": "yarn build"
   },
-  "peerDependencies": {},
-  "files": [
-    "dist",
-    "adapters"
-  ],
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sandwichfarm/nostr-watch.git"

@@ -2,8 +2,8 @@
   "compilerOptions": {
     "target": "ES5",
     "module": "ESNext",
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,
+    "declarationMap": false,
     "emitDeclarationOnly": false,
     "sourceMap": true,
     "strict": true,

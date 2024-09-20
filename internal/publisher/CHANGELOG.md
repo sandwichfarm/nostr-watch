@@ -1,5 +1,11 @@
 # @nostrwatch/publisher
 
+## 0.12.2
+
+### Patch Changes
+
+- e0d996b: concurrency, race condition and lmdb fixes
+
 ## 0.12.1
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @nostrwatch/nocapd
 
+## 1.12.2
+
+### Patch Changes
+
+- e0d996b: concurrency, race condition and lmdb fixes
+- Updated dependencies [e0d996b]
+  - @nostrwatch/announce@0.4.5
+  - @nostrwatch/publisher@0.12.2
+  - @nostrwatch/seed@0.1.3
+  - @nostrwatch/utils@0.1.9
+
 ## 1.12.1
 
 ### Patch Changes

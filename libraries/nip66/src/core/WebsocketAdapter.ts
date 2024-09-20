@@ -1,4 +1,4 @@
-import { type Filter } from 'nostr-tools';
+import type { Filter } from 'nostr-tools';
 
 import { Adapter, IAdapter } from './Adapter'
 import { NostrEvent } from '@base/models/NostrEvent';

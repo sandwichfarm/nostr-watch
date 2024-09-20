@@ -1,20 +1,18 @@
-// src/index.ts
+import type { IWebsocketAdapter } from './WebsocketAdapter';
+import type { ICacheAdapter } from './CacheAdapter';
 
-import { WebsocketAdapter, IWebsocketAdapter } from './WebsocketAdapter';
-import { CacheAdapter, ICacheAdapter } from './CacheAdapter';
+import type { RelayService as RelayServiceType } from '../services/RelayService';
+import type { MonitorService as MonitorServiceType } from '../services/MonitorService';
 
-import { RelayService } from '../services/RelayService';
-import { MonitorService } from '../services/MonitorService';
+import type { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 
-import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
-
-import { Workers } from './Workers';
-import { getInheritanceChainFromInstance } from '../utils/general';
+import type { Workers } from './Workers';
+import { getInheritanceChainFromInstance } from '../utils/classes';
 
 export default class {
 
-  private relayService?: RelayService;
-  private monitorService?: MonitorService;
+  private relayService?: RelayServiceType;
+  private monitorService?: MonitorServiceType;
 
   private websocketAdapter?: IWebsocketAdapter;  
   private cacheAdapter?: ICacheAdapter;
@@ -27,7 +25,7 @@ export default class {
     this.useAdapter(adapters.cacheAdapter)
   }
 
-  useAdapter(adapter?: ICacheAdapter | IWebsocketAdapter): void {
+  async useAdapter(adapter?: ICacheAdapter | IWebsocketAdapter): Promise<void> {
     if(!adapter) return console.warn('No adapter provided')
     if(this.isWebsocketAdapter(adapter)){
       this.websocketAdapter = adapter as IWebsocketAdapter
@@ -50,16 +48,19 @@ export default class {
     return chain.includes('CacheAdapter')
   }
 
-  setupWorkers(){
+  async setupWorkers(){
     if(!this?.websocketAdapter || !this?.cacheAdapter) return 
-    const workers = new Workers(this.websocketAdapter, this.cacheAdapter)
+    const { Workers } = await import(/* webpackChunkName: "workers-core" */ './Workers')
+    const workers: Workers = new Workers(this.websocketAdapter, this.cacheAdapter)
     this.websocketAdapter.workers = workers
     this.cacheAdapter.workers = workers
   }
 
-  setupServices(){
+  async setupServices(){
     if(!this?.websocketAdapter || !this?.cacheAdapter) return 
     const { cacheAdapter, websocketAdapter } = this
+    const { RelayService } = await import(/* webpackChunkName: "relay-service" */ '../services/RelayService')
+    const { MonitorService } = await import(/* webpackChunkName: "monitor-service" */ '../services/MonitorService')
     this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
     this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
   }
@@ -68,8 +69,8 @@ export default class {
    * Initializes the library by connecting to relays and setting up subscriptions.
    */
   async init() {
-    this.setupWorkers()
-    this.setupServices()
+    await this.setupWorkers()
+    await this.setupServices()
   }
 
   get wsWorker(): SharedWorker | Worker | undefined {

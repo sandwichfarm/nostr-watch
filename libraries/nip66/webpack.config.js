@@ -2,6 +2,8 @@ const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin")
 const TerserPlugin = require('terser-webpack-plugin');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+
 
 const alias = {
   '@adapters': path.resolve(__dirname, 'adapters'),
@@ -22,7 +24,8 @@ const config = (env) => {
       entry: './src/index.ts',
       output: {
         path: path.resolve(__dirname, 'dist/browser'),
-        filename: 'bundle.[name].js',
+        filename: '[name].[contenthash].js',
+        chunkFilename: '[name].[contenthash].js',
         library: {
           name: 'NIP66Library',
           type: 'umd',
@@ -55,11 +58,15 @@ const config = (env) => {
         ],
       },
       plugins: [
-        new NodePolyfillPlugin()
+        new NodePolyfillPlugin(),
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static', // Generates a static HTML report
+          openAnalyzer: true, // Open the report automatically
+        })
       ],
       optimization: {
         splitChunks: {
-          chunks: 'all',  // Split all types of chunks
+          chunks: 'all',
           minSize: 20000,
           maxSize: 240000,
           minChunks: 1,
@@ -67,6 +74,15 @@ const config = (env) => {
           maxInitialRequests: 30,
           automaticNameDelimiter: '~',
           cacheGroups: {
+            default: {
+              name(module, chunks, cacheGroupKey) {
+                const moduleFileName = module.identifier().split('/').reduceRight(item => item);
+                return `${cacheGroupKey}-${moduleFileName}`;
+              },
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
             vendors: {
               test: /[\\/]node_modules[\\/]/,
               name(module, chunks, cacheGroupKey) {
@@ -74,6 +90,7 @@ const config = (env) => {
                 return `${cacheGroupKey}-${moduleFileName}`;
               },
               priority: -10,
+              reuseExistingChunk: true,
             },
           },
         },

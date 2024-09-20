@@ -1,7 +1,8 @@
 import { WebsocketAdapter, IWebsocketAdapter, IWebsocketAdapterCallbacks } from '@base/core/WebsocketAdapter';
 import { INostrEvent } from '@base/interfaces/INostrEvent';
 
-import { SimplePool, type Filter } from 'nostr-tools';
+import { SimplePool } from 'nostr-tools';
+import type { Filter } from 'nostr-tools';
 
 import hashObject from 'jwt-encode'
 

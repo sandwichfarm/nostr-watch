@@ -4,5 +4,5 @@ export interface INip11 {
   hash: string | null;
   json: Record<string, any> | null;
   nid?: string | null;
-  createdAt: number;
+  created_at: number;
 }

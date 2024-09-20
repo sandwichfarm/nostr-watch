@@ -1,7 +1,7 @@
 import { type Filter } from 'nostr-tools';
 
-import { Adapter, IAdapter } from '@base/core/Adapter'
-import { NostrEvent } from '@models/NostrEvent';
+import { Adapter, IAdapter } from './Adapter'
+import { NostrEvent } from '@base/models/NostrEvent';
 
 export interface IWebsocketAdapterCallbacks {
   onNotice?: (notice: any) => void
@@ -12,7 +12,7 @@ export interface IWebsocketAdapterCallbacks {
   onClose?: () => void
 }
 
-export interface IWebSocketAdapter  extends IAdapter {
+export interface IWebsocketAdapter  extends IAdapter {
   connect(url: string): Promise<void>;
   subscribe(filters: Filter[], subId?: string): void;
   unsubscribe(event: any): void;

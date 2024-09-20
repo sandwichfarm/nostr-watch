@@ -2,7 +2,7 @@ export interface IRelay {
   relay: string;
   lastSeen: number;
   network: string;
-  createdAt: number;
+  created_at: number;
   ignore: boolean;
   score?: number | null;
 }

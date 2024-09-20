@@ -1,30 +1,32 @@
 import { AdapterSharedWorker, SharedWorkerOptions } from "@core/AdapterSharedWorker"
 import { AdapterCacheSharedWorkerCommand } from "@core/AdapterCacheSharedWorker";
 
-import { RelayDb } from './db';
+import { RelayDb, type IRelayDb } from './db';
 
 interface DexieSharedWorkerCommand extends AdapterCacheSharedWorkerCommand {
   dbName: string
 }
 
 export class DexieSharedWorker extends AdapterSharedWorker {
-  idb: any
+  idb: IRelayDb | undefined;
 
   constructor( options: SharedWorkerOptions, ){
     super(options)
   }
 
-  setup(command: DexieSharedWorkerCommand){
-    const { dbName } = command
+  //overload.
+  async setup(command: DexieSharedWorkerCommand){
+    //Adapter Specific Setup
+    const { dbName, channelPort } = command
     this.idb = new RelayDb(dbName);
-    this.idb.open()
+    await this.idb.init()
   }
 
-  private async bulkAddRelays(command: DexieSharedWorkerCommand){
+  protected async bulkAddRelays(command: DexieSharedWorkerCommand){
     `${command}`
   }
 
-  private async bulkAddMonitors(command: DexieSharedWorkerCommand){
+  protected async bulkAddMonitors(command: DexieSharedWorkerCommand){
     `${command}`
   }
 

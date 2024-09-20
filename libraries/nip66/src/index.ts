@@ -1,9 +1,7 @@
 import Base from './core/Base';
 
-import { Workers } from './core/Workers';
+export * from './core/index'
+export * from './models/index'
+export * from './services/index'
 
-export { 
-  Workers
-};
-
-export default Base 
+export default Base

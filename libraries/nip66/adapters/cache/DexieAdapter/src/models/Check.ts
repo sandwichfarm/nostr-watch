@@ -6,7 +6,7 @@ export interface ICheckBase {
 }
 
 export interface ICheckMeta {
-  createdAt: number;
+  created_at: number;
 
   network?: string | null;
   rtt?: number | null;

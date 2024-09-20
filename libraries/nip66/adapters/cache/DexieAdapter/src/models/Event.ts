@@ -5,5 +5,5 @@ export interface IEvent {
   tags: string[][];
   content: string;
   signature: string;
-  createdAt: number | null;
+  created_at: number | null;
 }

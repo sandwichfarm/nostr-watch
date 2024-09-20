@@ -1,15 +1,18 @@
 // src/services/MonitorService.ts
 
-import { ICacheAdapter } from '../interfaces/ICacheAdapter';
-import { Monitor } from '../models/Monitor';
-import { NostrEvent } from '@models/NostrEvent';
+import { ICacheAdapter } from '@base/core/CacheAdapter';
+import { IWebsocketAdapter } from '@base/core/WebsocketAdapter';
+import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
+
+// import { Monitor } from '@base/models/Monitor';
+// import { NostrEvent } from '@base/models/NostrEvent';
 
 export class MonitorService {
 
   private cacheAdapter: ICacheAdapter
-  private websocketAdapter: IWebSocketAdapter
+  private websocketAdapter: IWebsocketAdapter
 
-  constructor( adapters: AdaptersArgument ) {
+  constructor( adapters: IAdaptersArgument ) {
     this.cacheAdapter = adapters.cacheAdapter
     this.websocketAdapter = adapters.websocketAdapter
   }

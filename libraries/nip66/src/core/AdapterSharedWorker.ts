@@ -79,6 +79,7 @@ export class AdapterSharedWorker {
     console.log(this.constructor.name, 'context:', this._context)
   }
 
+  //overload this.
   setup(command: AdapterSharedWorkerCommand){}
 
   _setup(command: AdapterSharedWorkerCommand){

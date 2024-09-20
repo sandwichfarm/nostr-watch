@@ -1,5 +1,7 @@
-import { AdapterSharedWorker, SharedWorkerOptions } from "@base/core/AdapterSharedWorker"
+import { AdapterSharedWorker, SharedWorkerOptions } from "./AdapterSharedWorker"
 import { AdapterSharedWorkerCommand } from "./AdapterSharedWorker";
+import { Workers } from "./Workers";
+import { NostrEvent } from "@base/models/NostrEvent";
 
 // export interface CacheSharedWorkerOptions extends SharedWorkerOptions {}
 
@@ -17,8 +19,8 @@ export class AdapterCacheSharedWorker extends AdapterSharedWorker {
   //begin: overloads
   
   setup(command: AdapterCacheSharedWorkerCommand){}
-  async bulkAddRelays(){}
-  async bulkAddMonitors(){}
+  async bulkAddRelays(events: NostrEvent[]){}
+  async bulkAddMonitors(command: NostrEvent[]){}
 
   //end: overloads
   

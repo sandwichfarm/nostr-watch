@@ -1,6 +1,3 @@
-import { NDKEventGeoCoded, NostrEvent, NDKEvent, NDKTag, NDKKind, NDKRelayMeta, NDKRelayDiscovery } from '@nostr-dev-kit/ndk';
-import { ISO3166Type, ISO3166Format, GeoCodesObjectRaw } from './types';
-import { IGeoCode } from './shared/tables';
 import { Table } from 'dexie';
 
 export const hashObject = async (obj: Record<string, any>): Promise<string> => {

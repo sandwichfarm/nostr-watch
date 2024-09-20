@@ -2,7 +2,6 @@
 
 import * as fastq from "fastq";
 import type { queueAsPromised } from "fastq";
-import { NostrEvent } from "../../../../src/models/NostrEvent";
 
 const DEFAULT_CONCURRENCY = 1
 

@@ -1,19 +1,18 @@
 // src/services/RelayService.ts
 
-import { IWebSocketAdapter, ICacheAdapter } from '@interfaces/index';
-import { NostrEvent } from '../models/NostrEvent';
+import { IWebsocketAdapter } from '@core/WebsocketAdapter';
+import { ICacheAdapter } from '@core/CacheAdapter';
+import { IAdaptersArgument } from '@interfaces/IAdaptersArgument';
+// import { NostrEvent } from '../models/NostrEvent';
 
-export interface AdaptersArgument {
-  cacheAdapter: ICacheAdapter;
-  websocketAdapter: IWebSocketAdapter;
-}
+
 
 export class RelayService {
   
   private cacheAdapter: ICacheAdapter
-  private websocketAdapter: IWebSocketAdapter
+  private websocketAdapter: IWebsocketAdapter
 
-  constructor( adapters: AdaptersArgument ) {
+  constructor( adapters: IAdaptersArgument ) {
     this.cacheAdapter = adapters.cacheAdapter
     this.websocketAdapter = adapters.websocketAdapter
   }
@@ -84,6 +83,7 @@ export class RelayService {
     if (criteria.livenessStatus) {
       return await this.cacheAdapter.findRelaysByLiveness(criteria.livenessStatus);
     }
-    return await this.cacheAdapter.relays.toArray();
+    return [];
+    // return await this.cacheAdapter.relays.toArray();
   }
 }

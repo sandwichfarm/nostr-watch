@@ -1,4 +1,4 @@
-import { AdapterSharedWorker, AdapterSharedWorkerCommand, SharedWorkerOptions } from "@base/core/AdapterSharedWorker"
+import { AdapterSharedWorker, AdapterSharedWorkerCommand, SharedWorkerOptions } from "./AdapterSharedWorker"
 import { Filter } from "nostr-tools";
 
 export interface AdapterWebsocketSharedWorkerCommand extends AdapterSharedWorkerCommand {
@@ -6,7 +6,7 @@ export interface AdapterWebsocketSharedWorkerCommand extends AdapterSharedWorker
   filters: Filter[];
   token?: string,
 }
-a
+
 export class AdapterWebsocketSharedWorker extends AdapterSharedWorker {
 
   constructor( options?: SharedWorkerOptions ){
@@ -37,11 +37,13 @@ export class AdapterWebsocketSharedWorker extends AdapterSharedWorker {
 
   private async _subscribeManyAndCache(command: AdapterWebsocketSharedWorkerCommand){
     const { filters, token } = command
+    if(!token) return
     return this.subscribeManyAndCache(filters, token)
   }
 
   private async _subscribeManyAndReturn(command: AdapterWebsocketSharedWorkerCommand){
     const { filters, token } = command
+    if(!token) return
     return this.subscribeManyAndReturn(filters, token)
   }
   

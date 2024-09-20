@@ -1,5 +1,5 @@
 import { ICacheAdapter } from '@core/CacheAdapter';
-import { IWebSocketAdapter } from '@core/WebsocketAdapter';
+import { IWebsocketAdapter } from '@core/WebsocketAdapter';
 
 import { NostrEvent } from '@models/NostrEvent';
 
@@ -18,9 +18,9 @@ export class Workers {
   private _websocket?: Worker;
   private _cache?: Worker;
 
-  constructor(WebSocketAdapter: IWebSocketAdapter, CacheAdapter: ICacheAdapter){
-    this.setupSharedWorkers(WebSocketAdapter, CacheAdapter)
-    // this.setupWorkers(WebSocketAdapter, CacheAdapter) 
+  constructor(WebsocketAdapter: IWebsocketAdapter, CacheAdapter: ICacheAdapter){
+    this.setupSharedWorkers(WebsocketAdapter, CacheAdapter)
+    // this.setupWorkers(WebsocketAdapter, CacheAdapter) 
   }
 
   get websocketShared(): SharedWorker | undefined {
@@ -43,8 +43,8 @@ export class Workers {
     return this._channel;
   }
 
-  setupSharedWorkers(WebSocketAdapter: IWebSocketAdapter, CacheAdapter: ICacheAdapter){
-    this._websocketShared = WebSocketAdapter.newSharedWorker() as SharedWorker
+  setupSharedWorkers(WebsocketAdapter: IWebsocketAdapter, CacheAdapter: ICacheAdapter){
+    this._websocketShared = WebsocketAdapter.newSharedWorker() as SharedWorker
     this._cacheShared = CacheAdapter.newSharedWorker() as SharedWorker
 
     this._websocketShared.port.start()
@@ -68,8 +68,8 @@ export class Workers {
     return nostrEvents;
   }
 
-  // setupWorkers(WebSocketAdapter: IWebSocketAdapter, CacheAdapter: ICacheAdapter){
-  //   this.setupSharedWorkers(WebSocketAdapter, CacheAdapter)
+  // setupWorkers(WebsocketAdapter: IWebsocketAdapter, CacheAdapter: ICacheAdapter){
+  //   this.setupSharedWorkers(WebsocketAdapter, CacheAdapter)
 
   //   const payload: IWorkerCommand = { type: 'setup'}
   //   const transferrable: Transferable[]  = []
@@ -88,7 +88,7 @@ export class Workers {
   //     throw new Error('Could not setup workers')
   //   }
   
-  //   this._websocket = WebSocketAdapter.newWorker() as Worker;
+  //   this._websocket = WebsocketAdapter.newWorker() as Worker;
   //   this._websocket.postMessage(payload, transferrable);
   
   //   this._cache = CacheAdapter.newWorker() as Worker;

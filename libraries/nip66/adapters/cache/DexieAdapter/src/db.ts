@@ -2,7 +2,36 @@ import Dexie, { Table } from 'dexie';
 
 import { IEvent, IMonitor, IRelay, ICheck, INip11, IGeocode } from './models/index'
 
-export class RelayDb extends Dexie {
+
+export interface IRelayDb {
+  monitors: Table<IMonitor, string>;
+  events: Table<IEvent, string>;
+  relays: Table<IRelay, string>;
+  checks: Table<ICheck, string>;
+  pastChecks: Table<ICheck, string>;
+  nip11s: Table<INip11, string>;
+  geocodes: Table<IGeocode, number>;
+
+  init(): Promise<Table<any, any, any>[]>;
+
+  addMonitor(monitor: IMonitor): Promise<void | undefined>;
+  removeMonitor(monitorPubkey: string): Promise<void | undefined>;
+  
+  addCheck(check: ICheck, relayRecord: IRelay): Promise<void | undefined>;
+  removeCheck(check: ICheck): Promise<void | undefined>;
+
+  removeRelay(relay: string): Promise<void | undefined>;
+
+  addNip11(nip11: INip11): Promise<void | undefined>;
+  removeNip11(params: { relay?: string, monitorPukey: string, hash: string }): Promise<void | undefined>;
+  removeNip11ByRelay(relay: string): Promise<void | undefined>;
+  removeNip11ByMonitorPubkey(monitorPubkey: string): Promise<void | undefined>;
+  removeNip11ByHash(hash: string): Promise<void | undefined>;
+
+  addGeocodes(geocodes: IGeocode[]): Promise<void>;
+}
+
+export class RelayDb extends Dexie implements IRelayDb {
   static NAME: string = 'RelayDb'
   readonly VERSION: number = 1;
 
@@ -15,7 +44,7 @@ export class RelayDb extends Dexie {
   geocodes!: Table<IGeocode, number>;
 
   static indices: Record<string, string> = {
-    events: `id, pubkey, kind, createdAt`,
+    events: `id, pubkey, kind, created_at`,
     monitors: '&id, eventId, frequency, lastActive, geohash',
     relays: '&relay, lastSeen',
     checks: `[monitorPubkey+relay], [software+version], 
@@ -30,7 +59,7 @@ export class RelayDb extends Dexie {
       *geohash,
       *geocode, 
       *supportedNips,
-      createdAt`,
+      created_at`,
     pastChecks: `&relay, monitorPubkey, nid`,
     nip11s: `[relay+monitorPubkey+hash], relay, monitorPubkey, hash`,
     geocodes: `&code, [type+format+length], [type+format+type],[type+format], type, format, length`,
@@ -51,13 +80,22 @@ export class RelayDb extends Dexie {
       //   }
       // });
     }
+  }
 
-    this.open().then(() => {
-      console.log('Database opened successfully');
-      console.log('Tables:', this.tables.map(table => table.name));
-    }).catch((err) => {
-      console.error("Failed to open db: " + err.stack || err);
-    });
+  async init(): Promise<Table<any, any, any>[]> {
+    return new Promise( (resolve, reject) => {
+      this.open()
+        .then(() => {
+          const tables = this.tables
+          console.log('Database opened successfully');
+          console.log('Tables:', tables.map(table => table.name));
+          resolve(tables);
+        })
+        .catch((err) => {
+          console.error("Failed to open db: " + err.stack || err);
+          reject(err)
+        });
+    })
   }
 
   static defaults<T>(): { [K in keyof T]: T[K] | null } {
@@ -84,7 +122,7 @@ export class RelayDb extends Dexie {
   // CHECKS 
 
   async addCheck( check: ICheck, relayRecord: IRelay ): Promise<void | undefined> {
-    const { createdAt, relay, monitorPubkey, nid } = check;
+    const { created_at, relay, monitorPubkey } = check;
     const existingChecks = await this.checks
           .where({ relay, monitorPubkey })
           .and(existingCheck => existingCheck.nid !== check.nid)
@@ -102,9 +140,9 @@ export class RelayDb extends Dexie {
       await this.relays.put(relayRecord);
     }
     else {
-      const checkIsNewer = existingRelay.lastSeen < createdAt;
+      const checkIsNewer = existingRelay.lastSeen < created_at;
       if (checkIsNewer) {
-        existingRelay.lastSeen = createdAt;
+        existingRelay.lastSeen = created_at;
         await this.relays.put(existingRelay);
       }
     }
@@ -173,7 +211,7 @@ export class RelayDb extends Dexie {
 //   const db = new Dexie(dbName);
   
 //   db.version(version).stores({
-//     events: `id, pubkey, tags, kind, createdAt`,
+//     events: `id, pubkey, tags, kind, created_at`,
 //     monitors: '&id, eventId, frequency, lastActive, geohash',
 //     relays: '&relay, last_seen',
 //     checks: `[relay+monitorPubkey], [software+version], 
@@ -188,7 +226,7 @@ export class RelayDb extends Dexie {
 //       *geohash,
 //       *geocode, 
 //       *supportedNips,
-//       createdAt`,
+//       created_at`,
 //     nip11s: `[relay+monitorPubkey], monitorPubkey, hash`,
 //     geocodes: `&code, [type+format+length], [type+format+type],[type+format], type, format, length`,
 //     ssls: `&relay, monitorPubkey, hash, nid`

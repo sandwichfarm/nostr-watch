@@ -6,7 +6,10 @@ import { CacheAdapter, ICacheAdapter } from './CacheAdapter';
 import { RelayService } from '../services/RelayService';
 import { MonitorService } from '../services/MonitorService';
 
+import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
+
 import { Workers } from './Workers';
+import { getInheritanceChainFromInstance } from '../utils/general';
 
 export default class {
 
@@ -17,18 +20,34 @@ export default class {
   private cacheAdapter?: ICacheAdapter;
 
   constructor(
+    private adapters: IAdaptersArgument,
     private relayUrls: string[]
   ) {
-
+    this.useAdapter(adapters.websocketAdapter)
+    this.useAdapter(adapters.cacheAdapter)
   }
 
-  useAdapter(adapter: ICacheAdapter | IWebsocketAdapter){
-    if(adapter instanceof WebsocketAdapter){
+  useAdapter(adapter?: ICacheAdapter | IWebsocketAdapter): void {
+    if(!adapter) return console.warn('No adapter provided')
+    if(this.isWebsocketAdapter(adapter)){
       this.websocketAdapter = adapter as IWebsocketAdapter
+      return
     } 
-    if(adapter instanceof CacheAdapter){
+    if(this.isCacheAdapter(adapter)){
       this.cacheAdapter = adapter as ICacheAdapter
+      return
     }
+    console.warn(`Adapter not recognized: ${adapter.constructor.name} [should be instance of WebsocketAdapter or CacheAdapter]`)
+  }
+
+  isWebsocketAdapter(adapter: ICacheAdapter | IWebsocketAdapter): boolean {
+    const chain = getInheritanceChainFromInstance(adapter)
+    return chain.includes('WebsocketAdapter')
+  }
+
+  isCacheAdapter(adapter: ICacheAdapter | IWebsocketAdapter): boolean {
+    const chain = getInheritanceChainFromInstance(adapter)
+    return chain.includes('CacheAdapter')
   }
 
   setupWorkers(){
@@ -41,18 +60,16 @@ export default class {
   setupServices(){
     if(!this?.websocketAdapter || !this?.cacheAdapter) return 
     const { cacheAdapter, websocketAdapter } = this
-    this.relayService = new RelayService({cacheAdapter, websocketAdapter});
-    this.monitorService = new MonitorService({cacheAdapter, websocketAdapter});
+    this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
+    this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
   }
   
   /**
    * Initializes the library by connecting to relays and setting up subscriptions.
    */
-  async initialize() {
-    // if( !this.relayService || !this.monitorService ) return
-    // await this?.relayService?.initialize(this.relayUrls);
-    // await this?.monitorService?.initialize(this.relayUrls);
-    // Additional initialization steps if needed
+  async init() {
+    this.setupWorkers()
+    this.setupServices()
   }
 
   get wsWorker(): SharedWorker | Worker | undefined {

@@ -17,9 +17,15 @@
   ],
   "author": "Your Name",
   "license": "MIT",
+  "dependencies": {
+    "jwt-encode": "1.0.1",
+    "nostr-tools": "2.7.2"
+  },
   "devDependencies": {
+    "node-polyfill-webpack-plugin": "4.0.0",
     "eslint": "^8.46.0",
     "prettier": "^3.0.0",
+    "terser-webpack-plugin": "5.3.10",
     "ts-loader": "^9.4.4",
     "typescript": "^5.0.0",
     "webpack": "^5.88.2",
@@ -28,19 +34,16 @@
     "worker-loader": "^3.0.8"
   },
   "scripts": {
-    "build": "npm run clean && webpack --config webpack.config.js",
+    "build": "webpack --config webpack.config.js",
     "build:browser": "webpack --config webpack.config.js --env target=browser",
     "build:server": "webpack --config webpack.config.js --env target=server",
     "clean": "rm -rf dist",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,md}'",
     "test": "jest",
-    "prepare": "npm run build"
+    "prepare": "build"
   },
-  "dependencies": {
-    "jwt-encode": "1.0.1",
-    "nostr-tools": "2.7.2"
-  },
+
   "peerDependencies": {},
   "files": [
     "dist",

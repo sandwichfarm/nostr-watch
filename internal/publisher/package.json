@@ -1,14 +1,48 @@
 {
   "name": "@nostrwatch/publisher",
   "version": "0.12.2",
-  "type": "module",
   "description": "Library for publishing nostr.watch relay status and publisher registration events",
-  "main": "index.js",
   "repository": "http://github.com/sandwichfarm/nostr-watch",
   "author": "sandwich <dskvr@no-reply.github.com> ",
   "license": "MIT",
+  "main": "dist/node/index.js",
+  "browser": "dist/browser/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "build:browser": "webpack --config webpack.config.js --env target=web",
+    "build:node": "webpack --config webpack.config.js --env target=node",
+    "test": "vitest",
+    "lint": "eslint . --ext .ts",
+    "clean": "rimraf dist",
+    "prepare": "yarn clean && yarn build"
+  },
+  "keywords": [
+    "nostr",
+    "publisher"
+  ],
   "dependencies": {
-    "nostr-geotags": "^0.7.1",
-    "nostr-tools": "1.17.0"
+    "@nostrwatch/logger": "*",
+    "nostr-tools": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "node-polyfill-webpack-plugin": "4.0.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.0",
+    "ts-loader": "^9.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^0.34.1",
+    "webpack": "5.94.0",
+    "webpack-cli": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

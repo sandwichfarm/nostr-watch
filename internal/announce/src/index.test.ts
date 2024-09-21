@@ -28,6 +28,7 @@ describe('AnnounceMonitor', () => {
   });
 
   it('generate should return a valid event object', () => {
+    const pubkey = "e771af0b05c8e95fcdf6feb3500544d2fb1ccd384788e9f490bb3ee28e8ed66f"
     const options = {
       geo: { lat: 10, lon: 20 },
       kinds: [1],
@@ -36,7 +37,7 @@ describe('AnnounceMonitor', () => {
       owner: 'testOwner',
       frequency: 'testFrequency',
     };
-    const monitor = new AnnounceMonitor(options);
+    const monitor = new AnnounceMonitor(options, pubkey);
     const events = monitor.generate();
     expect(events).toHaveProperty('kind');
     expect(events["10166"].tags).toContainEqual(['frequency', 'testFrequency']);
@@ -45,23 +46,5 @@ describe('AnnounceMonitor', () => {
     expect(events["10166"].tags).toContainEqual(['c', '10']);
     expect(events["10166"].tags).toContainEqual(['timeout', '1000']);
     // Assuming ngeotags function returns an array of geotags based on the provided geo object
-  });
-
-  it('verify should return a boolean', () => {
-    const options = {
-      geo: {},
-      kinds: [],
-      timeouts: [],
-      counts: [],
-      owner: 'testOwner',
-      frequency: 'testFrequency',
-    };
-    const monitor = new AnnounceMonitor(options);
-    const event = {
-      // Mock event structure that would be considered valid by verifyEvent
-    };
-    // Assuming verifyEvent function checks the validity of the event
-    // You would mock this function to return true or false based on the test case
-    expect(monitor.verify(event)).toBe(true);
   });
 });

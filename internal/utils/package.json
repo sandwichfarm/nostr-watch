@@ -1,10 +1,45 @@
 {
   "name": "@nostrwatch/utils",
   "version": "0.1.9",
-  "type": "module",
-  "main": "index.js",
   "license": "MIT",
+  "type": "module",
+
+  "main": "dist/server/index.js",
+  "browser": "dist/web/index.js",
+  "types": "dist/server/index.d.ts",
+  "scripts": {
+    "build": "yarn clean && yarn build:server && yarn build:web",
+    "build:server": "webpack --config webpack.server.config.cjs",
+    "build:web": "webpack --config webpack.web.config.cjs",
+    "dev:server": "webpack --config webpack.server.config.cjs --watch",
+    "dev:web": "webpack --config webpack.web.config.cjs --watch",
+    "test": "vitest",
+    "lint": "eslint . --ext .ts",
+    "clean": "rimraf dist",
+    "prepare": "yarn clean && yarn build"
+  },
   "dependencies": {
+    "@nostrwatch/logger": "*",
     "dotenv": "16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "node-polyfill-webpack-plugin": "4.0.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.0",
+    "ts-loader": "^9.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^0.34.1",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

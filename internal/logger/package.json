@@ -1,10 +1,52 @@
 {
   "name": "@nostrwatch/logger",
   "version": "0.0.9",
+  "description": "A logging wrapper",
   "type": "module",
-  "main": "index.js",
+
+  "main": "dist/server/index.js",
+  "browser": "dist/web/index.js",
+  "types": "dist/server/index.d.ts",
+
+  "scripts": {
+    "build": "yarn clean && yarn build:server && yarn build:web",
+    "build:server": "webpack --config webpack.server.config.cjs",
+    "build:web": "webpack --config webpack.web.config.cjs",
+    "dev:server": "webpack --config webpack.server.config.cjs --watch",
+    "dev:web": "webpack --config webpack.web.config.cjs --watch",
+    "test": "vitest",
+    "lint": "eslint . --ext .ts",
+    "clean": "rimraf dist",
+    "prepare": "yarn clean && yarn build"
+  },
+  "keywords": [
+    "logger",
+    "logging"
+  ],
+  "author": "Your Name <your.email@example.com>",
   "license": "MIT",
   "dependencies": {
-    "logging": "^3.3.0"
+    "logging": "3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "8.6.0",
+    "@typescript-eslint/parser": "8.6.0",
+    "eslint": "9.11.0",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-prettier": "5.2.1",
+    "prettier": "3.3.3",
+    "rimraf": "^5.0.0",
+    "ts-loader": "^9.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^0.34.1",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

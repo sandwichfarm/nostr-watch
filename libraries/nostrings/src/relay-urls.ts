@@ -105,7 +105,7 @@ export const sanitizeRelayUrl = (relay: string): string => {
     return decodeURI(relay)
       .toLowerCase()
       .trim()
-      .replace(/[\s\t]+/, '') // Consolidate whitespace and tab removal
+      .replace(/[\s\t|]+/, '') // Consolidate whitespace and tab removal
       .replace(/\/+$/, '') // Remove trailing slashes
       .replace(/\.(?=\/|$)/, '')  // Remove trailing dots, if they are before a slash or end of string
       .replace('(blob_hash)', '')
@@ -147,7 +147,6 @@ export const qualifyRelayUrl = (maybeRelay: string): boolean => {
 
   return true;
 };
-
 
 // export const qualifyRelayUrl = (relay: string): boolean => {
 //   if (/^(wss:\/\/)(.*)(:\/\/)(.*)$/.test(relay)) {

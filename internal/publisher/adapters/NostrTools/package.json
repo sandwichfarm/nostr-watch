@@ -1,0 +1,38 @@
+{
+  "name": "@nostrwatch/publisher-nostrtools",
+  "version": "0.1.0",
+  "description": "WebSocket adapter for @nostrwatch/publisher using nostr-tools",
+  "main": "dist/node/index.js",
+  "browser": "dist/browser/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "test": "vitest",
+    "lint": "eslint . --ext .ts",
+    "clean": "rimraf dist",
+    "prepare": "yarn clean && yarn build"
+  },
+  "keywords": ["nostr", "publisher", "adapter", "nostr-tools"],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "dependencies": {
+    "nostr-tools": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0",
+    "ts-loader": "^9.0.0",
+    "vitest": "^0.34.1",
+    "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.0"
+  },
+  "files": ["dist/**/*"],
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

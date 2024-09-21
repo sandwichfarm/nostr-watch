@@ -26,16 +26,21 @@ jobs:
             typescript: 'true'
           - package: 'logger'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'seed'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'utils'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nwcache'
             nodeVersion: '20'
           - package: 'controlflow'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'publisher'
             nodeVersion: '20'
+            typescript: 'true'
           - package: 'nocap'
             nodeVersion: '20'
           - package: 'nocap-websocket-adapter-default'
@@ -80,11 +85,11 @@ jobs:
           cd "${{ steps.find_package.outputs.the_path }}"
           yarn install
 
-      - name: Pre-Publish
+      - name: Build Typescript
         if: matrix.typescript == 'true'
         run: |
           cd "${{ steps.find_package.outputs.the_path }}"
-          yarn prepublish
+          yarn build
 
       - name: Publish Package
         id: publish

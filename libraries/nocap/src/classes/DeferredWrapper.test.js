@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { DeferredWrapper } from './DeferredWrapper.js'
+import { DeferredWrapper } from './DeferredWrapper'
 import Deferred from 'promise-deferred'
-import { SessionHelper } from './SessionHelper.js'
-import { TimeoutHelper } from './TimeoutHelper.js'
+import { SessionHelper } from './SessionHelper'
+import { TimeoutHelper } from './TimeoutHelper'
 
 describe('DeferredWrapper', () => {
   const url = "wss://test.nostr.watch"

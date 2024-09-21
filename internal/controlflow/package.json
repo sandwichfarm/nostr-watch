@@ -2,7 +2,14 @@
   "name": "@nostrwatch/controlflow",
   "version": "0.5.1",
   "description": "Provides exports for application control flow",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "lint": "eslint 'src/**/*.ts'",
+    "test": "jest"
+  },
   "type": "module",
   "license": "MIT",
   "dependencies": {

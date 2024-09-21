@@ -6,7 +6,6 @@ import cacheInit from '@nostrwatch/nwcache'
 import { bootstrap } from '@nostrwatch/seed'
 
 import { addRelaysToCache, relaysFromRelayList } from './helpers.js'
-import { DAEMON_PUBKEY } from '@nostrwatch/utils'
 
 const kinds = [2, 3, 10002, 30002],
       filters = { kinds },

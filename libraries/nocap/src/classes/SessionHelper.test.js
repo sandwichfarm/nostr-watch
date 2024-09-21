@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { SessionHelper } from './SessionHelper.js'
+import { SessionHelper } from './SessionHelper'
 import murmurhash from 'murmurhash'
-import { random } from '../utils.js'
+import { random } from '../utils'
 
 describe('SessionHelper', () => {
   let sessionHelper;

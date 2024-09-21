@@ -27,7 +27,7 @@
   "author": "Your Name <your.email@example.com>",
   "license": "MIT",
   "dependencies": {
-    "@nostrwatch/logger": "0.0.9",
+    "@nostrwatch/logger": "*",
     "nostr-geotags": "0.7.1",
     "nostr-tools": "2.7.2"
   },

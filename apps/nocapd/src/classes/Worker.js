@@ -8,6 +8,7 @@ import Logger from '@nostrwatch/logger'
 
 import { parseRelayNetwork, delay, lastCheckedId, parseUrl } from '@nostrwatch/utils'
 import { Kind30166, Kind30166Child, Publisher } from '@nostrwatch/publisher'
+import PublisherWsAdapter from '@nostrwatch/publisher-nostrtools'
 
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
@@ -33,7 +34,8 @@ export class NWWorker {
     this.setup()
     this.log.info(`${this.id()} initialized`)
     this.bus = bus
-    this.publisher = new Publisher(this.pubkey, this.config.publisher?.to_relays)
+    const wsAdapter = new PublisherWsAdapter()
+    this.publisher = new Publisher(this.pubkey, this.config.publisher?.to_relays, { wsAdapter })
   }
 
   setup(){

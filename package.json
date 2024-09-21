@@ -27,6 +27,7 @@
     "apps/*",
     "demos/*",
     "internal/*",
+    "internal/publisher/adapters/**/*",
     "libraries/*",
     "libraries/nocap/adapters/**/*",
     "libraries/kit/adapters/**/*",

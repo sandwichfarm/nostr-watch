@@ -1,12 +1,12 @@
-import Nocap from "./classes/Base.js";
+import Nocap from "./classes/Base";
 
-import { ConfigInterface } from "./interfaces/ConfigInterface.js";
-import { ResultInterface } from "./interfaces/ResultInterface.js";
+import { ConfigInterface } from "./interfaces/ConfigInterface";
+import { ResultInterface } from "./interfaces/ResultInterface";
 
-import { DeferredWrapper } from "./classes/DeferredWrapper.js";
-import { LatencyHelper } from "./classes/LatencyHelper.js";
-import { SessionHelper } from "./classes/SessionHelper.js";
-import { TimeoutHelper } from "./classes/TimeoutHelper.js";
+import { DeferredWrapper } from "./classes/DeferredWrapper";
+import { LatencyHelper } from "./classes/LatencyHelper";
+import { SessionHelper } from "./classes/SessionHelper";
+import { TimeoutHelper } from "./classes/TimeoutHelper";
 
 export {
   Nocap,

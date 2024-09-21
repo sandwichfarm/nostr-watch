@@ -14,7 +14,7 @@ Presently reworking many parts of the stack to make it easier to maintain, contr
 
 # Stack
 
-## daemons 
+## agents 
 - **trawler** - finds new relays to monitor
 - **nocapd** - monitors relays and publishes NIP-66 events
 

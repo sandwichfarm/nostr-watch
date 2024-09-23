@@ -1142,30 +1142,6 @@ export default class Base {
     return type;
   }
 
-  // /**
-  //  * set
-  //  * Sets a value for a given key in the instance
-  //  * 
-  //  * @public
-  //  * @param {string} key - The key to set
-  //  * @param {*} value - The value to set for the key
-  //  */
-  // set(key: string, value: any): void {
-  //   this[key] = value;
-  // }
-
-  // /**
-  //  * get
-  //  * Retrieves the value of a given key from the instance
-  //  * 
-  //  * @public
-  //  * @param {string} key - The key to retrieve the value for
-  //  * @returns {*} - The value of the specified key
-  //  */
-  // get(key: string): any {
-  //   return this[key];
-  // }
-
   /**
    * throw
    * returns a rejected promise with a provided error as the reason. 
@@ -1177,17 +1153,6 @@ export default class Base {
   throw(error: Error): Promise<never> {
     return Promise.reject(error);
   }
-
-  // /**
-  //  * is_browser
-  //  * Returns true if in a browser environment
-  //  * 
-  //  * @private
-  //  * @returns {boolean}
-  //  */
-  // is_browser(): boolean {
-  //   return typeof window !== 'undefined' && typeof document !== 'undefined';
-  // }  
 
   /**
    * checksSupported

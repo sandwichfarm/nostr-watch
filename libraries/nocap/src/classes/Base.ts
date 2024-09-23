@@ -247,7 +247,7 @@ export default class Base {
    */
   maybe_timeout(key: keyof IConfig["timeout"]): any {
     return (resolve: Function, reject: Function) => {
-      const message = `${key}: check timed out (after ${this?.config?.timeout?.[key]}ms}`;
+      const message = `${key}: check timed out (after ${this?.config?.timeout?.[key as keyof IConfig["timeout"]]}ms}`;
       this?.logger?.debug(message);
       const data = this.isWebsocketKey(key) ? false : {};
       if (key === 'open' && this?.config?.rejectOnConnectFailure) {
@@ -1071,10 +1071,8 @@ export default class Base {
 
     this.adapters[adapterKey] = new Adapter(this);  // Pass the current instance
   }
-
-
-
-    /**
+  
+  /**
    * useAdapters
    * Initializes and uses provided adapters
    * 

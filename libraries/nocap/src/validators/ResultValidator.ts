@@ -3,7 +3,7 @@ import { CheckKey, DurationCheckKey, StrictCheckKey } from '../types/CheckTypes'
 import { IConfig } from './ConfigValidator';
 
 export interface IResultData {
-  data: null | boolean | Record<string, any>;
+  data: null | boolean | any[] | Record<string, any>;
   duration: number;
   status?: string;
   message?: string;

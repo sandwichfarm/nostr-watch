@@ -295,7 +295,8 @@ export default class Base {
         this?.logger?.debug(`${key}: precheck resolved`);
         this?.latency?.start(key);
         this?.logger?.debug(`${key}:  this.adapters[${adapter}][${this.checkKey(key)}]()`);
-        await adapterMethod.call(this).catch((e: any) => this?.logger?.err(`${key}: ${e.message}`));
+        // await adapterMethod.call(this).catch((e: any) => this?.logger?.err(`${key}: ${e.message}`));
+        await adapterMethod.call(this)
       })
       .catch((precheck) => {
         let reason: string;
@@ -1119,43 +1120,43 @@ on_event(subid: string, ev: any): void {
     }
   }
 
-  /**
-   * defaultAdapterKeys
-   * Retrieves the default keys for adapters
-   * 
-   * @private
-   * @returns - The array of default adapter keys
-   */
-  async defaultAdapterKeys(EveryDefaultAdapter: IEveryAdapterDefault): Promise<string[]> {
-    return Object.keys(EveryDefaultAdapter);
-  }
+  // /**
+  //  * defaultAdapterKeys
+  //  * Retrieves the default keys for adapters
+  //  * 
+  //  * @private
+  //  * @returns - The array of default adapter keys
+  //  */
+  // async defaultAdapterKeys(EveryDefaultAdapter: IEveryAdapterDefault): Promise<string[]> {
+  //   return Object.keys(EveryDefaultAdapter);
+  // }
 
-  /**
-   * Initializes the default adapters
-   * 
-   * @private
-   * @returns The initialized adapters
-   */
-  async defaultAdapters(): Promise<Record<string, IAdapter>> {
-    this.logger?.debug('defaultAdapters()');
+  // /**
+  //  * Initializes the default adapters
+  //  * 
+  //  * @private
+  //  * @returns The initialized adapters
+  //  */
+  // async defaultAdapters(): Promise<Record<string, IAdapter>> {
+  //   this.logger?.debug('defaultAdapters()');
     
-    if (this.adaptersInitialized) return this.adapters;
+  //   if (this.adaptersInitialized) return this.adapters;
     
-    const EveryDefaultAdapterModule = await import('@nostrwatch/nocap-every-adapter-default') as IEveryAdapterDefault;
-    const keys = await this.defaultAdapterKeys(EveryDefaultAdapterModule);
+  //   const EveryDefaultAdapterModule = await import('@nostrwatch/nocap-every-adapter-default') as IEveryAdapterDefault;
+  //   const keys = await this.defaultAdapterKeys(EveryDefaultAdapterModule);
     
-    for (const adapterKey of keys) {
-      const adapterType = this.getAdapterType(adapterKey);
+  //   for (const adapterKey of keys) {
+  //     const adapterType = this.getAdapterType(adapterKey);
       
-      if (!this.adapters[adapterType]) {
-        const AdapterClass = EveryDefaultAdapterModule[adapterKey];
-        this.adapters[adapterType] = new AdapterClass(this);
-      }
-    }
+  //     if (!this.adapters[adapterType]) {
+  //       const AdapterClass = EveryDefaultAdapterModule[adapterKey];
+  //       this.adapters[adapterType] = new AdapterClass(this);
+  //     }
+  //   }
     
-    this.adaptersInitialized = true;
-    return this.adapters;
-  }
+  //   this.adaptersInitialized = true;
+  //   return this.adapters;
+  // }
 
   /**
    * getAdapterType

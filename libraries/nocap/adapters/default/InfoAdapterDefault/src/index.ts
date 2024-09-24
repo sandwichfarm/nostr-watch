@@ -22,7 +22,7 @@ export class InfoAdapterDefault extends AbstractAdapter implements IAdapter {
 
   initialize(): void {}
 
-  async check_info(): Promise<IResultData> {
+  async check_info() {
     let result: IResultData = { data: null, duration: -1, status: "error", message: "Unknown error" };
     let data: Record<string, any> = {};
     

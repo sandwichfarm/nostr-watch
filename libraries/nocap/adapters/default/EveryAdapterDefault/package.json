@@ -31,6 +31,7 @@
   },
 
   "devDependencies": {
+
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
     "@types/promise-deferred": "2.0.5",
     "@vitest/ui": "0.34.6",

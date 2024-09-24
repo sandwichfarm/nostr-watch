@@ -1,5 +1,6 @@
 const path = require('path');
 const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'development',
@@ -15,10 +16,21 @@ module.exports = {
     outputModule: true 
   },
   plugins: [
-    new NodePolyfillPlugin()
+    new NodePolyfillPlugin(),
+    new webpack.IgnorePlugin({
+      resourceRegExp: /^node:(url|module)$/,
+    }),
+    new webpack.ProvidePlugin({
+      performance: ['window', 'performance'],
+    }),
   ],
   resolve: {
-    extensions: ['.ts', '.js']
+    extensions: ['.ts', '.js'],
+    fallback: {
+      "url": false,
+      "module": false,
+      "perf_hooks": false
+    }
   },
   module: {
     rules: [
@@ -30,7 +42,7 @@ module.exports = {
             configFile: 'tsconfig.web.json'
           }
         },
-        exclude: /node_modules/,
+        exclude: /node_modules/
       }
     ]
   },

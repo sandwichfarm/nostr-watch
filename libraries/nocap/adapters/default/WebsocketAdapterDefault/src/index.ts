@@ -1,0 +1,150 @@
+import WebSocketNode from 'ws';
+import {
+  AbstractAdapter,
+  type IResult,
+  type Nocap as Base, 
+  type IAdapter,
+  IResultData
+} from '@nostrwatch/nocap';
+
+class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
+  private $: Base;
+  count: { event: number };
+
+  constructor(parent: Base) {
+    super(parent)
+    this.count = { event: 0 };
+  }
+
+  async check_open(): Promise<void> {
+    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
+    try {
+      this.base.set('ws', new WebSocketNode(this.base.url));
+      this.bind_events();
+    } catch (error) {
+      console.error('Error in check_open:', error);
+      throw error;
+    }
+  }
+
+  async check_read(): Promise<void> {
+    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_read()`);
+    if (!this.base.isConnected()) {
+      throw new Error('WebSocket is not connected');
+    }
+    const event = JSON.stringify(['REQ', this.base.subid('read'), { limit: 1, kinds: [1] }]);
+    this.base.ws.send(event);
+  }
+
+  async check_write(): Promise<void> {
+    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_write()`);
+    if (!this.base.isConnected()) {
+      throw new Error('WebSocket is not connected');
+    }
+    const ev = JSON.stringify(['EVENT', this.base.config?.event_sample || this.base.SAMPLE_EVENT]);
+    this.base.ws.send(ev);
+  }
+
+  bind_events(): void {
+    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.bind_events()`);
+    try {
+      this.base.ws.on('open', (e: Event) => {
+        this.base.on_open(e);
+        this.count.event++;
+      });
+      this.base.ws.on('message', (ev: any) => {
+        this.handle_nostr_event(ev);
+      });
+      this.base.ws.on('close', (e: Event) => {
+        this.base.on_close(e);
+      });
+      this.base.ws.on('error', (...args: any[]) => {
+        this.base.on_error(...args);
+      });
+    } catch (e) {
+      this.base.logger?.warn(e);
+    }
+  }
+
+  handle_nostr_event(buffer: any): void {
+    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event()`);
+    let ev: any;
+    try {
+      ev = JSON.parse(buffer.toString());
+    } catch (e) {
+      const err = `${this.base.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`;
+      this.base.logger?.err(err);
+      this.base.auditor.fail('INVALID_JSON', {
+        description: 'Relay responded to subscription with invalid JSON.',
+        severity: 'high',
+        impact: ['reliability'],
+        domain: 'NIP-01'
+      });
+      return this.base.websocket_hard_fail(err);
+    }
+
+    if (!ev || !(ev instanceof Array) || !ev.length) return;
+    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event(): ${ev[0]}`);
+
+    switch (ev[0]) {
+      case 'EVENT':
+        if (this.count.event > this.base.config.tooManyEventsLimit) {
+          this.base.auditor.fail('SUBSCRIBE_LIMIT', {
+            description: `Relay sent too many events. Requested 1 and received ${this.count.event}.`,
+            severity: 'medium',
+            impact: ['bandwidth', 'reliability'],
+            domain: 'NIP-01'
+          });
+          this.base.handle_eose();
+        }
+        this.count.event++;
+        if (this.base.subid('read') === ev[1]) this.base.on_event(ev[1], ev[2]);
+        break;
+
+      case 'EOSE':
+        this.base.on_eose(ev[1]);
+        break;
+
+      case 'OK':
+        this.base.on_ok(ev[1]);
+        break;
+
+      case 'NOTICE':
+        if (this.base.current === 'write') {
+          return this.base.forced_finish({
+            data: false,
+            duration: -1,
+            status: 'error',
+            error: ev[1]
+          });
+        }
+        this.base.on_notice(ev[1]);
+        break;
+
+      case 'LIMITS':
+        this.base.on_limits(ev[1]);
+        break;
+
+      case 'AUTH':
+        this.base.on_auth(ev[1]);
+        break;
+
+      default:
+        this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event(): Unknown event type ${ev[0]}`);
+    }
+  }
+
+  terminate(): void {
+    if (!this.base.isConnected()) return;
+    this.base?.logger?.debug('WebsocketAdapterDefault.terminate()');
+    this.base?.ws?.terminate();
+  }
+
+  close(): void {
+    if (!this.base.isConnected()) return;
+    this.base?.logger?.debug('WebsocketAdapterDefault.close()');
+    this.base?.ws?.close();
+  }
+}
+
+export default WebsocketAdapterDefault;

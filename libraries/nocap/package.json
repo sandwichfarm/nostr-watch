@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@nostrwatch/logger": "*",
-    "@nostrwatch/nocap-every-adapter-default": "*",
     "fetch-h2": "3.0.2",
     "get-ssl-certificate": "2.3.3",
     "jest": "29.7.0",

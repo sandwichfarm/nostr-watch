@@ -22,16 +22,20 @@ module.exports = {
     outputModule: true 
   },
   plugins: [
-    // new NodePolyfillPlugin(),
-    // new webpack.IgnorePlugin({
-    //   resourceRegExp: /^node:(url|module)$/,  // Ignore node:url and node:module imports
-    // }),
-    // new webpack.DefinePlugin({
-    //   'process.env.IP_API_KEY': JSON.stringify(process.env.IP_API_KEY || '')
-    // })
+    new NodePolyfillPlugin(),
+    new webpack.IgnorePlugin({
+      resourceRegExp: /^node:(url|module)$/,  // Ignore node:url and node:module imports
+    }),
+    new webpack.DefinePlugin({
+      'process.env.IP_API_KEY': JSON.stringify(process.env.IP_API_KEY || '')
+    })
   ],
   resolve: {
-    extensions: ['.ts', '.js']
+    extensions: ['.ts', '.js'],
+    fallback: {
+      "url": false, 
+      "module": false
+    }
   },
   module: {
     rules: [

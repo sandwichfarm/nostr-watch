@@ -26,7 +26,6 @@ describe('Transform Class', () => {
     }
 
     generateTags(check: any): string[][] {
-      // Minimal implementation for testing
       return [['tag1', 'value1'], ['tag2', 'value2']];
     }
   }

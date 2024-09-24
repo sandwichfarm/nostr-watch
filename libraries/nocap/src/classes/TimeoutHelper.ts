@@ -1,6 +1,8 @@
+import { Timeout } from "../types";
+
 export class TimeoutHelper {
   session: any;
-  timeouts: Record<string, Record<string, NodeJS.Timeout>>;
+  timeouts: Record<string, Record<string, Timeout>>;
 
   constructor($session: any) {
     this.session = $session;
@@ -15,7 +17,7 @@ export class TimeoutHelper {
     this.setup();
   }
 
-  get(key: string): NodeJS.Timeout | undefined {
+  get(key: string): Timeout | undefined {
     return this.timeouts[this.session.get()]?.[key];
   }
 

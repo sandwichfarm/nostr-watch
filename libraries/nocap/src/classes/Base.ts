@@ -13,9 +13,14 @@ import { DeferredWrapper } from "./DeferredWrapper";
 import { Counter } from "./Counter";
 import { Auditor } from "./Auditor";
 
+import { IAdapterConstructor } from '../interfaces/IAdapterConstructor';
+import { AdapterKeys, IAdapter, IAdapterMethods } from '../interfaces/IAdapter';
+import { IEveryAdapterDefault } from '../interfaces/IEveryAdapterDefault'; // Define this as needed
+import { CheckKey, CheckMethodKey, PreCheckKey, StrictCheckKey } from '../types/CheckTypes';
+
 import SAMPLE_EVENT from "../data/sample_event";
-import { ResolveIdFunction } from 'vitest';
 import { isBrowser } from '@nostrwatch/utils';
+import { AbstractAdapter } from './AbstractAdapter';
 
 export default class Base {
   ws: WebSocket | null = null;
@@ -29,12 +34,14 @@ export default class Base {
   checks = Base.checksSupported();
   enableCheckLog: boolean = false;
   logdata: Record<string, any> = {};
-  checksRequested: string[] = [];
+  checksRequested: CheckKey[] = [];
   checksIgnoreOutput: string[] = [];
   checksCustom: Record<string, any> = {};
+  
+  adapters: Record<string, IAdapter> = {};
   adaptersInitialized = false;
-  adapters: Record<string, any> = {};
   adaptersValid = ['websocket', 'info', 'geo', 'dns', 'ssl'];
+
   config?: ConfigValidatorInterface;
   limits: Record<string, any> = {};
   logger?: Logger;
@@ -52,17 +59,8 @@ export default class Base {
   constructor(url: string, config: object = {}) {
     this._url = new URL(url);
     this.url = this._url.toString();
-    this._init(config);
-    this?.logger?.debug(`constructor(${url}, ${JSON.stringify(this.config)})`);
-  }
 
-  _init(config: object): void {
-    this._init_instances(config);
-    this._init_results();
-    this._init_checks();
-  }
-
-  _init_instances(config: object): void {
+    /*instances*/
     this.config = new ConfigValidator(config);
     this.results = new ResultValidator();
     this.session = new SessionHelper(this.url);
@@ -71,20 +69,18 @@ export default class Base {
     this.promises = new DeferredWrapper(this.session, this.timeouts);
     this.logger = new Logger(`@nostrwatch/nocap: ${this.url}`, this?.config?.logLevel);
     this.count = new Counter(this.session, [...this.checks]);
-  }
-
-  _init_results(): void {
+    /*results*/
     this?.results?.set('url', this.url);
     this?.results?.set('network', parseRelayNetwork(this.url));
     this?.results?.set('hostname', this._url.hostname);
     this?.results?.set('protocol', this._url.protocol);
     this?.results?.set('parent', null);
-  }
-
-  _init_checks(): void {
+    /*checks*/  
     if (this?.config?.get('removeFromResult')) {
       this.checksIgnoreOutput = [...this.checksIgnoreOutput, ...this?.config?.get('removeFromResult')];
     }
+
+    this?.logger?.debug(`constructor(${url}, ${JSON.stringify(this.config)})`);
   }
 
   evaluate_requested_checks(): void {
@@ -109,9 +105,9 @@ export default class Base {
 
   order_requested_checks(): void {
     const idealOrder = Base.checksSupported();
-    this.checksRequested.sort((a, b) => {
-      let indexA = idealOrder.indexOf(a);
-      let indexB = idealOrder.indexOf(b);
+    this.checksRequested.sort((a: CheckKey, b: CheckKey) => {
+      let indexA = idealOrder.indexOf(a as CheckKey);
+      let indexB = idealOrder.indexOf(b as CheckKey);
 
       if (indexA === -1) indexA = Infinity;
       if (indexB === -1) indexB = Infinity;
@@ -130,7 +126,7 @@ export default class Base {
    * @param {boolean} headers - Whether to include headers in result (default: true)
    * @returns {Promise<*>} - The result of the checks
    */
-  async check(keys: string | string[], headers = true): Promise<any> {
+  async check(keys: CheckKey | CheckKey[], headers = true): Promise<any> {
     this.keys = keys;
     let result: IResult | Record<string, any> | undefined;
     if (!this?.session?.initial) {
@@ -153,7 +149,7 @@ export default class Base {
       if (this.hard_fail === true) continue;
       this?.logger?.debug(`${key}: check(${keys}): setting current and running this._check()`);
       this.current = key;
-      await this._check(key as keyof IResult);
+      await this._check(key as StrictCheckKey)
       this?.logger?.debug(`${key}: check(${keys}): this._check() resolved`);
     }
 
@@ -187,7 +183,7 @@ export default class Base {
    * @param {string} key - The key to perform the check on
    * @returns {Promise<*>} - The result of the check
    */
-  async _check(key: keyof IResult): Promise<any> {
+  async _check(key: StrictCheckKey): Promise<any> {
     if (!this.can_check(key)) return;
     this?.logger?.debug(`${key}: check()`);
     await this.start(key).catch((err) => this?.logger?.debug(err));
@@ -221,6 +217,7 @@ export default class Base {
     }
     return true;
   }
+
   /**
    * isActive
    * Checks if this instance is presently active.
@@ -234,8 +231,6 @@ export default class Base {
   isActive(): boolean {
     return this.current === null ? false : true;
   }
-
-
 
   /**
    * maybe_timeout
@@ -258,6 +253,14 @@ export default class Base {
     };
   }
 
+  checkKey(key: CheckKey): CheckMethodKey{
+    return `check_${key}`
+  }
+
+  precheckKey(key: CheckKey): PreCheckKey {
+    return `precheck_${key}`
+  }
+
   /**
    * start
    * Creates deferred promise for check (key), validates check (key), validates adapter for given check (key), performs a precheck, handles pre-check results, calls check in the corresponding adapter and returns the deferred's promise. 
@@ -267,26 +270,35 @@ export default class Base {
    * @param {string} key - The key to start the check for
    * @returns {Promise<*>} - The promise for the started check
    */
-  async start(key: string): Promise<any> {
-    this?.logger?.debug(`${key}: start()`);
-    if (!this.isWebsocketKey(key)) this.terminate();
-    const checkDeferred = await this.addDeferred(key as keyof IConfig["timeout"], this.maybe_timeout(key as keyof IConfig["timeout"]));
-
-    const adapter = this.routeAdapter(key);
-
+  async start(key: CheckKey): Promise<any> {
     if (typeof key !== 'string') throw new Error('Key must be string');
+    if (!this.isWebsocketKey(key)) this.terminate();
 
-    if (!this?.adapters?.[adapter]?.[`check_${key}`]) throw new Error(`check_${key} method not found in ${adapter} Adapter`);
+    this?.logger?.debug(`${key}: start()`);
+
+    const checkDeferred = await this.addDeferred(key as keyof IConfig["timeout"], this.maybe_timeout(key as keyof IConfig["timeout"]));
+    const adapterKey = this.routeAdapter(key);
+    const adapter = this?.adapters?.[adapterKey]
+    
+    const adapterMethodName: AdapterKeys = this.checkKey(key)
+    if (!(adapterMethodName in AbstractAdapter.prototype)) {
+      return this.throw(new Error(`start(${key}): ${adapterMethodName} not found in ${adapterKey} Adapter`));
+    }
+
+    const adapterMethod = (AbstractAdapter.prototype as any)[adapterMethodName];
+    if(typeof adapterMethod !== 'function'){
+      return this.throw(new Error(`start(${key}): ${adapterMethodName} is not a function`));
+    }
 
     this.precheck(key)
       .then(async () => {
         this?.logger?.debug(`${key}: precheck resolved`);
         this?.latency?.start(key);
-        this?.logger?.debug(`${key}:  this.adapters[${adapter}][check_${key}]()`);
-        await this.adapters[adapter][`check_${key}`]().catch((e: any) => this?.logger?.err(`${key}: ${e.message}`));
+        this?.logger?.debug(`${key}:  this.adapters[${adapter}][${this.checkKey(key)}]()`);
+        await adapterMethod.call(this).catch((e: any) => this?.logger?.err(`${key}: ${e.message}`));
       })
       .catch((precheck) => {
-        let reason;
+        let reason: string;
         if (key === 'open' && precheck.status == "error" && precheck?.result) {
           reason = `${key}: Precheck found that open check was already fulfilled, returning cached result`;
           checkDeferred.resolve(precheck.result);
@@ -395,8 +407,8 @@ export default class Base {
    * @param {string} key - The key to precheck
    * @returns {Promise<*>} - The promise of the precheck
    */
-  async precheck(key: string): Promise<any> {    
-    const precheckDeferred = await this.addDeferred(`precheck_${key as keyof IConfig["timeout"]}`)
+  async precheck(key: CheckKey): Promise<any> {    
+    const precheckDeferred = await this.addDeferred(this.precheckKey(key));
     const needsWebsocket = this.isWebsocketKey(key)
     const keyIsOpen = key === 'open'
     const resolvePrecheck = precheckDeferred.resolve
@@ -622,25 +634,29 @@ export default class Base {
    * @private
    * @returns null
    */ 
-
-  
   on_close(): void {
     this.cbcall('close');
     this.track('relay', 'close', undefined);
     this.handle_close();
   }
 
-  /**
-   * on_event
-   * Special Nostr event triggered by Adapter
-   * 
-   * @private
-   * @returns null
-   */
-  on_event(subid: string, ev: any): void {
-    this.track('relay', 'event', ev.id);
-    this.adapters.websocket?.handle_event(subid, ev);
-  }
+/**
+ * on_event
+ * Special Nostr event triggered by Adapter
+ * 
+ * @private
+ * @returns null
+ */
+on_event(subid: string, ev: any): void {
+  this.track('relay', 'event', ev.id);
+
+  // Cast `this.adapters.websocket` as IAdapter to ensure TypeScript knows it's an instance
+  const handler = (this.adapters?.websocket as IAdapter)?.handle_event;
+
+  if (!handler) return;
+
+  handler(subid, ev);
+}
 
   /**
    * on_limits
@@ -763,7 +779,8 @@ export default class Base {
    * @returns null
    */ 
   handle_read_check(data: any): void {
-    if (this.adapters.websocket.count.event === 1) {
+    const eventCount = this.adapters?.websocket?.count?.event
+    if (eventCount === 1) {
       this.auditor.pass("SUBSCRIBE_LIMIT");
     }
     this.unsubscribe(this.subid('read'));
@@ -909,24 +926,26 @@ export default class Base {
       this.logdata = {}
   }
 
-  /**
-   * maybeExecuteAdapterMethod
-   * If adapter method exists, call it and return it's result, otherwise returnn provided altFn result 
-   * 
-   * @private
-   * @param {string} [session] - The session to clear tracked data for
-   */
-  maybeExecuteAdapterMethod(adapter: string, methodname: string, altFn = (...args: any) => {}, ...args: any[]): any {
-    if (this.adapters?.[adapter]?.[methodname]) {
-      return this.adapters[adapter][methodname](...args);
-    } else {
-      try {
-        return altFn(...args);
-      } catch (err) {
-        throw new Error(`${adapter} adapter: Provided alternative function: Threw error using default method: ${err}, the respective adapter should probably define this method instead`);
+    /**
+     * maybeExecuteAdapterMethod
+     * If adapter method exists, call it and return it's result, otherwise returnn provided altFn result 
+     * 
+     * @private
+     * @param {string} [session] - The session to clear tracked data for
+     */
+    maybeExecuteAdapterMethod(adapter: string, methodname: string, altFn = (...args: any) => {}, ...args: any[]): any {
+      const method = this.adapters[adapter]?.[methodname as keyof IAdapterMethods]
+      if (method) {
+        // @ts-ignore: Ignore the tuple type error for dynamic methods.
+        return method(...args);
+      } else {
+        try {
+          return altFn(...args);
+        } catch (err) {
+          throw new Error(`${adapter} adapter: Provided alternative function: Threw error using default method: ${err}, the respective adapter should probably define this method instead`);
+        }
       }
     }
-  }
 
   /**
    * maybeExecuteAdapterMethod
@@ -1026,7 +1045,8 @@ export default class Base {
     const existingDeferred = this?.promises?.exists(key)
     if(existingDeferred) 
       return this?.promises?.get(key).promise
-    return this?.promises?.add(key, (this.config as IConfig).timeout[key], cb)
+    const timeoutMs: number = (this.config as IConfig).timeout[key as keyof IConfig["timeout"]]
+    return this?.promises?.add(key, timeoutMs, cb)  
   }
 
   /**
@@ -1061,31 +1081,40 @@ export default class Base {
    * @async
    * @param Adapter - The Adapter class to use
    */
-  async useAdapter(Adapter: { new(arg: Base): any }): Promise<void> {
+  async useAdapter(Adapter: IAdapterConstructor): Promise<void> {
     const name = Adapter.name;
     const adapterKey = this.getAdapterType(name);
     
     if (this.adapters?.[adapterKey]) {
-      throw new Error(`${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.adapters?.[adapterKey].name}`);
+      throw new Error(`${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.getAdapterName(this.adapters?.[adapterKey])}`);
     }
 
     this.adapters[adapterKey] = new Adapter(this);  // Pass the current instance
   }
+
+
+  getAdapterName(adapterClass: IAdapter): string {
+    return adapterClass.constructor.name
+  }
   
   /**
-   * useAdapters
    * Initializes and uses provided adapters
    * 
    * @public
    * @async
-   * @param Adapter - The Adapter class to use
+   * @param Adapters - An array of Adapter classes to initialize
    */
-  async useAdapters(Adapters: { new(arg: typeof this): any }[]): Promise<void> {
+  async useAdapters(Adapters: IAdapterConstructor[]): Promise<void> {
     for (const Adapter of Adapters) {
       const name = Adapter.name;
       const adapterKey = this.getAdapterType(name);
-      if (this.adapters?.[adapterKey])
-        throw new Error(`${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.adapters[adapterKey].name}`);
+
+      if (this.adapters[adapterKey]) {
+        throw new Error(
+          `${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.adapters[adapterKey].constructor.name}`
+        );
+      }
+
       this.adapters[adapterKey] = new Adapter(this);
     }
   }
@@ -1097,28 +1126,33 @@ export default class Base {
    * @private
    * @returns - The array of default adapter keys
    */
-  async defaultAdapterKeys(EveryDefaultAdapter: any): Promise<string[]> {
+  async defaultAdapterKeys(EveryDefaultAdapter: IEveryAdapterDefault): Promise<string[]> {
     return Object.keys(EveryDefaultAdapter);
   }
 
   /**
-   * defaultAdapters
    * Initializes the default adapters
    * 
    * @private
-   * @returns {Object} - The initialized adapters
+   * @returns The initialized adapters
    */
-  async defaultAdapters(): Promise<Record<string, any>> {
-    this?.logger?.debug(`defaultAdapters()`);
+  async defaultAdapters(): Promise<Record<string, IAdapter>> {
+    this.logger?.debug('defaultAdapters()');
+    
     if (this.adaptersInitialized) return this.adapters;
-    const EveryDefaultAdapter = await import('@nostrwatch/nocap-every-adapter-default')
-    const keys = await this.defaultAdapterKeys(EveryDefaultAdapter)
-    keys.forEach(adapterKey => {
+    
+    const EveryDefaultAdapterModule = await import('@nostrwatch/nocap-every-adapter-default') as IEveryAdapterDefault;
+    const keys = await this.defaultAdapterKeys(EveryDefaultAdapterModule);
+    
+    for (const adapterKey of keys) {
       const adapterType = this.getAdapterType(adapterKey);
-      if (!this.adapters?.[adapterType]) {
-        this.useAdapter(EveryDefaultAdapter[adapterKey]);
+      
+      if (!this.adapters[adapterType]) {
+        const AdapterClass = EveryDefaultAdapterModule[adapterKey];
+        this.adapters[adapterType] = new AdapterClass(this);
       }
-    });
+    }
+    
     this.adaptersInitialized = true;
     return this.adapters;
   }
@@ -1160,7 +1194,7 @@ export default class Base {
    * @static
    * @returns {string[]}
    */
-  static checksSupported(): string[] {
+  static checksSupported(): CheckKey[] {
     return ['open', 'read', 'write', 'ssl', 'dns', 'geo', 'info'];
   }
 

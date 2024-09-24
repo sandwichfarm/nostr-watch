@@ -2,8 +2,25 @@
   "name": "@nostrwatch/nocap-every-adapter-default",
   "version": "1.6.3",
   "type": "module",
-  "main": "index.js",
   "license": "MIT",
+
+  "main": "dist/server/index.js",
+  "browser": "dist/web/index.js",
+  "types": "dist/server/index.d.ts",
+
+  "scripts": {
+    "build": "yarn clean && yarn build:server && yarn build:web",
+    "build:server": "webpack --config webpack.server.config.cjs",
+    "build:web": "webpack --config webpack.web.config.cjs",
+    "dev:server": "webpack --config webpack.server.config.cjs --watch",
+    "dev:web": "webpack --config webpack.web.config.cjs --watch",
+    "clean": "rimraf dist",
+    "prepare": "yarn clean && yarn build",
+    "lint": "eslint . --ext .ts",
+    "test": "vitest",
+    "test-ui": "vitest --ui --testTimeout=15000"
+  },
+
   "dependencies": {
     "@nostrwatch/nocap-dns-adapter-default": "*",
     "@nostrwatch/nocap-geo-adapter-default": "*",
@@ -11,5 +28,17 @@
     "@nostrwatch/nocap-ssl-adapter-default": "*",
     "@nostrwatch/nocap-websocket-adapter-default": "*",
     "@nostrwatch/nocap-websocket-browser-adapter-default": "*"
+  },
+
+  "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "7.23.3",
+    "@types/promise-deferred": "2.0.5",
+    "@vitest/ui": "0.34.6",
+    "vitest": "0.34.6",
+    "vitest-nostr": "0.4.1"
+  },
+
+  "peerDependencies": {
+    "vitest": "^0.32.0"
   }
 }

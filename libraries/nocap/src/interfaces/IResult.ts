@@ -1,0 +1,1 @@
+export type { IResult } from '../validators/ResultValidator';

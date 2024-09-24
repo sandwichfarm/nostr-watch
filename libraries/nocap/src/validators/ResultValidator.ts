@@ -1,32 +1,41 @@
 import { Validator, IValidator } from '../classes/Validator';
+import { CheckKey, DurationCheckKey, StrictCheckKey } from '../types/CheckTypes';
 import { IConfig } from './ConfigValidator';
 
 export interface IResultData {
-  data: boolean | Record<string, any>;
+  data: null | boolean | Record<string, any>;
   duration: number;
   status?: string;
   message?: string;
 }
 
-export interface IResult {
+type IResultCheck = IStrictKeyCheck & IDurationKeyCheck;
+
+type IStrictKeyCheck = {
+  [K in CheckKey]?: IResultData;
+}
+
+type IDurationKeyCheck = {
+  [K in DurationCheckKey]?: number;
+}
+
+export interface IResult extends IResultCheck {
   url: string;
-  network: string;
-  hostname: string;
-  protocol: string;
-  parent: any | null;
-  ignore: boolean;
-  adapters: string[];
-  checked_at: number;
-  checked_by: string;
-  audit: any[];
-  open: Record<string, any>;
-  read: Record<string, any>;
-  write: Record<string, any>;
-  info: Record<string, any>;
-  dns: Record<string, any>;
-  geo: Record<string, any>;
-  ssl: Record<string, any>;
-  limits: Record<string, any>;
+  network?: string;
+  hostname?: string;
+  protocol?: string;
+  parent?:any | null;
+  ignore?: boolean;
+  adapters?: string[];
+  checked_at?: number;
+  checked_by?: string;
+  audit?: any[];
+  limits?: Record<string, any>;
+}
+
+const defaultResultData = { 
+  data: null, 
+  duration: -1 
 }
 
 export const ResultDefaults: IResult = {
@@ -40,13 +49,13 @@ export const ResultDefaults: IResult = {
   checked_at: -1,
   checked_by: "",
   audit: [],
-  open: {},
-  read: {},
-  write: {},
-  info: {},
-  dns: {},
-  geo: {},
-  ssl: {},
+  open: defaultResultData,
+  read: defaultResultData,
+  write: defaultResultData,
+  info: defaultResultData,
+  dns: defaultResultData,
+  geo: defaultResultData,
+  ssl: defaultResultData,
   limits: {},
 };
 
@@ -92,8 +101,9 @@ export class ResultValidator extends Validator implements ResultValidatorInterfa
     if (!remove.length) return;
     const result = { ...this.defaults }; 
     for (const key of remove) {
-      delete result[key as keyof IConfig["timeout"]]; 
-      delete result[`${key as keyof IConfig["timeout"]}_duration`];
+      const durationKey: DurationCheckKey = `${key as StrictCheckKey}_duration`;
+      delete result[key as StrictCheckKey]; 
+      delete result[durationKey];
     }
     return result;
   }

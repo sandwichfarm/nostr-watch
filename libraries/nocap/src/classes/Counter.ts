@@ -1,7 +1,16 @@
+export interface ICount {
+  [key: string]: number;
+
+}
+
+export type ICounts = {
+  [key: string]: ICount;
+}
+
 export class Counter {
   checks: Record<string, string[]>;  // Update checks type
   $session: any;
-  counts: Record<string, Record<string, number>>;
+  counts: ICounts;
 
   constructor($session: any, checks: string[]) {
     this.checks = {};  // Initialize as an empty object instead of an array
@@ -54,7 +63,7 @@ export class Counter {
   total(): number {
     this.setup();
     return this.checks[this.session()].reduce(
-      (total: number, check: string) => total + this.get(check),
+      (total: number, check: string) => total + this.get(check as string),
       0
     );
   }

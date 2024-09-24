@@ -1,5 +1,6 @@
 import Deferred from 'promise-deferred';
 import Logger from "@nostrwatch/logger";
+import { Timeout } from '../types';
 
 export class DeferredWrapper {
   promises: Record<string, Record<string, InstanceType<typeof Deferred>>>; 

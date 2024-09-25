@@ -1,5 +1,5 @@
 
-import nip66 from '../src/index';
+import N66 from '../src/index';
 import NostrToolsAdapter from 'adapters/websocket/NostrToolsAdapter/src';
 import IndexedDbAdapter from 'adapters/cache/IndexedDbAdapter/src';
 
@@ -12,7 +12,9 @@ const relayUrls = [
   'wss://history.nostr.watch'
 ];
 
-const nip66 = new NIP66Library(websocketAdapter, cacheAdapter, relayUrls);
+const adapters = { websocketAdapter, cacheAdapter };
+
+const nip66 = new N66(adapters, relayUrls);
 
 nip66.initialize().then(async () => {
   console.log('NIP-66 Library initialized for browser.');

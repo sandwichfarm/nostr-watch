@@ -1,7 +1,7 @@
 export interface ISsl {
   nid: string;
   relay: string; 
-  createdAt: number;
+  created_at: number;
   monitorPubkey: string;
   hash: string;
   cert: string;

@@ -1,7 +1,7 @@
 {
-  "name": "@nostrwatch/nip66-cacheadapter-workerrelay",
+  "name": "@nostrwatch/nip66-websocketadapter-nostrtools",
   "version": "0.0.1",
-  "description": "@snort/worker-relay adapter for @nostrwatch/nip66",
+  "description": "nostr-tools adapter for @nostrwatch/nip66",
   "main": "dist/server/bundle.js",
   "browser": "dist/browser/bundle.js",
   "types": "dist/types/index.d.ts",
@@ -16,22 +16,25 @@
     "nostr",
     "NIP-66",
     "adapter",
-    "Dexie"
+    "cache",
+    "LocalStorage"
   ],
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
+    "eslint": "^8.46.0",
+    "jest": "^29.6.1",
+    "prettier": "^3.0.0",
+    "ts-loader": "^9.4.4",
     "typescript": "^5.0.0",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.4.4",
-    "worker-loader": "^3.0.8",
     "webpack-node-externals": "^3.0.0",
-    "eslint": "^8.46.0",
-    "prettier": "^3.0.0",
-    "jest": "^29.6.1"
+    "worker-loader": "^3.0.8"
   },
-  "dependencies": {},
+  "dependencies": {
+    "nostr-tools": "2.7.2"
+  },
   "peerDependencies": {},
   "files": [
     "dist"
@@ -43,5 +46,5 @@
   "bugs": {
     "url": "https://github.com/sandwichfarm/nostrwatch/issues"
   },
-  "homepage": "https://github.com/sandwichfarm/nostr-watch/tree/next/libraries/nip66/adapters/cache/DexieAdapter/#readme"
+  "homepage": "https://github.com/sandwichfarm/nostr-watch/tree/next/libraries/nip66/adapters/websocket/NostrToolsAdapter/#readme"
 }

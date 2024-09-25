@@ -1,6 +1,6 @@
 export interface IMonitor {
-  id: string;
-  eventId: string;
+  id: string; //pubkey 
+  eventId: string; //10166 id
   frequency: number;
   lastActive: number;
   geohash?: string;

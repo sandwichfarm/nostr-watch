@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES5",
     "module": "ESNext",
-    "lib": ["ES2020", "DOM"],
+    "declarationDir": "dist/types",
     "declaration": true,
     "declarationMap": true,
+    "emitDeclarationOnly": false,
     "sourceMap": true,
-    "outDir": "dist",
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -16,13 +16,14 @@
     "resolveJsonModule": true,
     "baseUrl": "./",
     "paths": {
-      "@adapters/*": ["adapters/*"],
+      "@base/*": ["src/*"],
+      "@core/*": ["src/core/*"],
       "@models/*": ["src/models/*"],
       "@interfaces/*": ["src/interfaces/*"],
-      "@services/*": ["src/interfaces/*"],
+      "@services/*": ["src/services/*"],
       "@workers/*": ["src/workers/*"]
     }
   },
-  "include": ["src/**/*", "adapters/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "adapters"]
 }

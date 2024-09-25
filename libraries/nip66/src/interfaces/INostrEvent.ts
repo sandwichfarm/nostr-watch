@@ -1,4 +1,4 @@
-export interface NostrEvent {
+export interface INostrEvent {
   id: string;
   kind: number;
   pubkey: string;

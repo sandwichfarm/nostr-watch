@@ -1,7 +1,13 @@
-import { NDKEventGeoCoded, NostrEvent, NDKEvent, NDKTag, NDKKind, NDKRelayMeta, NDKRelayDiscovery } from '@nostr-dev-kit/ndk';
-import { ISO3166Type, ISO3166Format, GeoCodesObjectRaw } from './types';
-import { IGeoCode } from './shared/tables';
-import { Table } from 'dexie';
+import type { Table } from 'dexie';
+
+export const hashObject = async (obj: Record<string, any>): Promise<string> => {
+  const canonicalJson = JSON.stringify(obj, Object.keys(obj).sort());
+  const buffer = new TextEncoder().encode(canonicalJson);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
 
 export const nHoursAgo = (hrs: number): number => Math.floor((Date.now() - hrs * 60 * 60 * 1000) / 1000);
 
@@ -26,7 +32,6 @@ export const allOf = <T>(table: Table<T, any>, multiValueProp: keyof T & string,
 
 export const hashString = async (input: string) => {
   if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
-      // Browser environment
       const encoder = new TextEncoder();
       const data = encoder.encode(input);
       const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -34,7 +39,6 @@ export const hashString = async (input: string) => {
       const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
       return hashHex;
   } else if (typeof require === 'function') {
-      // Node.js environment
       const crypto = require('crypto');
       return crypto.createHash('sha256').update(input, 'utf8').digest('hex');
   } else {

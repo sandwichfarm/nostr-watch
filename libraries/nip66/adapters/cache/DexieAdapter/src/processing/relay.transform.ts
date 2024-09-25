@@ -1,59 +1,63 @@
-import { NostrEvent } from '@base/models/NostrEvent';
-import { getUrlFromEvent, getNetworkFromEvent } from '@base/utils/events';
-import { extractGeoCodes } from '@base/utils/geo';
+import { IRelay, ICheck, IEvent, INip11, IGeocode } from '../models/';
+import { RelayDb } from '../db';
 
-import { type GeoCodesObjectRaw, ISO3166Format, ISO3166Type, RawGeoCode, RawGeoCodes } from '@base/types/TGeo';
+import { 
+  INostrEvent, 
+  GeoCodesObjectRaw, 
+  ISO3166Format, 
+  ISO3166Type, 
+  RawGeoCode, 
+  RawGeoCodes 
+} from '@nostrwatch/nip66/interfaces';
 
-import { IRelay, ICheck, IEvent, INip11, ISsl, IGeoCode } from '../models/';
-import { defaults } from '../db';
+import { 
+  getUrlFromEvent, 
+  getNetworkFromEvent, 
+  extractGeoCodes 
+} from '@nostrwatch/nip66/utils';
 
 export type IdbReadyRelayData = { 
+  event?: IEvent,
   relay?: IRelay, 
   check?: ICheck,
-  event?: IEvent,
   nip11?: INip11,
-  geocodes?: IGeoCode[],
-  // geohashes?: IGeoHash[],
-  ssl?: ISsl
+  geocodes?: IGeocode[],
 }
 
-export const transform30166 = async (_event: NostrEvent): Promise<IdbReadyRelayData> => {  
+export const transform30166 = async (_event: INostrEvent): Promise<IdbReadyRelayData> => {  
   const res: IdbReadyRelayData = {}
 
-  const event = k30166ToIEvent(_event)
+  const eventRecord = k30166ToIEvent(_event)
 
-  const relay: string | undefined = getUrlFromEvent(event)
-  const network: string | undefined = getNetworkFromEvent(event)
+  const relay: string | undefined = getUrlFromEvent(eventRecord as INostrEvent)
+  const network: string | undefined = getNetworkFromEvent(eventRecord as INostrEvent)
 
   if(!relay || !network) {
-    console.error(`Event did not contain relay or network: ${event.id}, relay: ${relay}, network: ${network}`)
+    console.error(`Event did not contain relay or network: ${eventRecord.id}, relay: ${relay}, network: ${network}`)
     return res;
   }
 
-  const parsedCheck = k30166ToICheck(relay, network, event)
-  const parsedRelay = n66IEventToIRelay(relay, network, event)
-  const parsedNip11 = await n66IEventToNip11(relay, event)
-  // const parsedGeohashes = n66IEventToIGeoHashes(event)
-  const parsedGeocodes = n66IEventToIGeoCodes(event)
+  const parsedCheck = k30166ToICheck(relay, network, eventRecord)
+  const parsedRelay = n66IEventToIRelay(relay, network, eventRecord)
+  const parsedNip11 = await n66IEventToNip11(relay, eventRecord)
+  const parsedGeocodes = n66IEventToIGeocodes(eventRecord)
 
-  if(event) res.event = event
+  if(eventRecord) res.event = eventRecord
   if(parsedCheck) res.check = parsedCheck
   if(parsedRelay) res.relay = parsedRelay
   if(parsedNip11) res.nip11 = parsedNip11
-  // if(geohashes) res.geocodes = geohashes
   if(parsedGeocodes) res.geocodes = parsedGeocodes
 
   return res
 }
 
-export const k30166ToIEvent = (_event: NostrEvent): IEvent => {
+export const k30166ToIEvent = (_event: INostrEvent): IEvent => {
   const { pubkey, created_at, id, kind, tags, content, signature } = _event;
-  const createdAt = created_at as number;
   const event: IEvent = {
     id,
     kind,
     pubkey,
-    createdAt,
+    created_at,
     tags,
     content,
     signature
@@ -62,29 +66,29 @@ export const k30166ToIEvent = (_event: NostrEvent): IEvent => {
 }
 
 export const k30166ToICheck = (relay: string, network: string, event: IEvent): ICheck => {
-  const { pubkey:monitorPubkey, createdAt } = event;
+  const { pubkey:monitorPubkey, created_at } = event;
 
-  const relayCheck: ICheck = { monitorPubkey, createdAt }
+  const relayCheck = { monitorPubkey, created_at: created_at as number }
 
-  return {...defaults<ICheck>(), ...relayCheck}
+  return {...RelayDb.defaults<ICheck>(), ...relayCheck} as ICheck
 }
 
 
 export const n66IEventToIRelay = (relay: string, network: string, event: IEvent): IRelay | undefined => {
-  const { pubkey, createdAt:lastSeen } = event;
+  const { pubkey, created_at:lastSeen } = event;
 
-  const irelay: IRelay = {
+  const _relay = {
     relay,
     lastSeen: lastSeen as number,
     network
   }
-  return {...defaults<IRelay>(), ...irelay}
+  return {...RelayDb.defaults<IRelay>(), ..._relay} as IRelay
 }
 
 const n66IEventToNip11 = async (relay: string, event: IEvent): Promise<INip11 | undefined> => {
-  const { pubkey:monitorPubkey, id:nid, createdAt } = event;
+  const { pubkey:monitorPubkey, id:nid, created_at } = event;
 
-  if(!createdAt) return
+  if(!created_at) return
   let json
   try {
     json = JSON.parse(event.content)
@@ -107,25 +111,25 @@ const n66IEventToNip11 = async (relay: string, event: IEvent): Promise<INip11 | 
     relay,
     nid,
     monitorPubkey,
-    createdAt,
+    created_at,
     hash,
     json, 
   }
-  return {...defaults<INip11>(), ...inip11}
+  return {...RelayDb.defaults<INip11>(), ...inip11}
 }
 
-export const geocodeTransform = ( event: NostrEvent ): IGeoCode[] => {
-  const codes: GeoCodesObjectRaw = extractGeoCodes(event)
+export const geocodeTransform = ( event: IEvent ): IGeocode[] => {
+  const codes: GeoCodesObjectRaw = extractGeoCodes(event as INostrEvent)
   const cc = parseGeocodes(codes.countryCode, ISO3166Type.CountryCode)
   const rc = parseGeocodes(codes.countryCode, ISO3166Type.RegionCode)
-  const res: IGeoCode[] = []
+  const res: IGeocode[] = []
   if(cc) res.push(...cc)
   if(rc) res.push(...rc)
   return res;
 }
 
-export const parseGeocodes = (codes: RawGeoCodes, type: ISO3166Type): IGeoCode[] | undefined => {
-  const geocodeEntries: IGeoCode[] = [];
+export const parseGeocodes = (codes: RawGeoCodes, type: ISO3166Type): IGeocode[] | undefined => {
+  const geocodeEntries: IGeocode[] = [];
   if(!codes) return
   (codes as RawGeoCodes).forEach( (code: RawGeoCode) => { 
     geocodeEntries.push( parseGeocode(type, code) ) 
@@ -133,9 +137,10 @@ export const parseGeocodes = (codes: RawGeoCodes, type: ISO3166Type): IGeoCode[]
   return geocodeEntries
 }
 
-export const parseGeocode = (type: ISO3166Type, code: RawGeoCode): IGeoCode => {
+export const parseGeocode = (type: ISO3166Type, code: RawGeoCode): IGeocode => {
   const isNumeric = !isNaN(Number(code))
   const ignoreLength = isNumeric || type === ISO3166Type.RegionCode? true: false
+  if(typeof code !== 'string') code = String(code)
   return {
     code, 
     type: type,
@@ -145,7 +150,7 @@ export const parseGeocode = (type: ISO3166Type, code: RawGeoCode): IGeoCode => {
 }
 
 // const n66IEventToSsl = async (event: IEvent): Promise<ISsl | undefined> => {
-//   const { pubkey:monitorPubkey, id:nid, created_at:createdAt } = event;
+//   const { pubkey:monitorPubkey, id:nid, created_at:created_at } = event;
 
 //   const relay = getUrlFromEvent(event)
 
@@ -159,7 +164,7 @@ export const parseGeocode = (type: ISO3166Type, code: RawGeoCode): IGeoCode => {
 
 //   const ssl: ISsl = {
 //     nid,
-//     createdAt,
+//     created_at,
 //     relay,
 //     monitorPubkey,
 //     hash,
@@ -169,7 +174,7 @@ export const parseGeocode = (type: ISO3166Type, code: RawGeoCode): IGeoCode => {
 //   return ssl
 // }
 
-const n66IEventToIGeoCodes = (event: NostrEvent): IGeoCode[] => {
+const n66IEventToIGeocodes = (event: IEvent): IGeocode[] => {
   const codes = geocodeTransform(event)
   return codes
 }
@@ -184,6 +189,4 @@ export const hashObject = async (obj: Record<string, any>): Promise<string> => {
   return hashHex;
 }
 
-export default async ( event: NostrEvent ): Promise<IdbReadyRelayData> => {\
-  return k30166ToIdb(event as NostrEvent)
-}
+export default transform30166;

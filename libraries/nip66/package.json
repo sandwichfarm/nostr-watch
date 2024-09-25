@@ -2,19 +2,6 @@
   "name": "@nostrwatch/nip66",
   "version": "0.0.1",
   "description": "A NIP-66 implementation written in typescript.",
-  "main": "dist/server/bundle.js",
-  "browser": "dist/browser/bundle.js",
-  "types": "dist/types/index.d.ts",
-  "scripts": {
-    "build": "npm run clean && webpack --config webpack.config.js",
-    "build:browser": "webpack --config webpack.config.js --env target=browser",
-    "build:server": "webpack --config webpack.config.js --env target=server",
-    "clean": "rm -rf dist",
-    "lint": "eslint 'src/**/*.{ts,tsx}'",
-    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,md}'",
-    "test": "jest",
-    "prepare": "npm run build"
-  },
   "keywords": [
     "nostr",
     "NIP-66",
@@ -27,24 +14,70 @@
   ],
   "author": "Your Name",
   "license": "MIT",
-  "devDependencies": {
-    "typescript": "^5.0.0",
-    "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.4.4",
-    "worker-loader": "^3.0.8",
-    "webpack-node-externals": "^3.0.0",
-    "eslint": "^8.46.0",
-    "prettier": "^3.0.0"
+  "files": [
+    "dist"
+  ],
+  "main": "dist/lib/index.js",
+  "browser": "dist/browser/bundle.js",
+  "types": "dist/types/index.d.ts",
+  
+  "exports": {
+    ".": {
+      "import": "./dist/browser/bundle.js",
+      "require": "./dist/lib/index.js",
+      "types": "./dist/types/index.d.ts" 
+    },
+    "./core": {
+      "import": "./dist/browser/core/index.js",
+      "require": "./dist/lib/index.js",
+      "types": "./dist/types/core/index.d.ts"
+    },
+    "./interfaces": {
+      "import": "./dist/browser/interfaces/index.js",
+      "require": "./dist/lib/interfaces/index.js",
+      "types": "./dist/types/interfaces/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/browser/utils/index.js",
+      "require": "./dist/lib/utils/index.js",
+      "types": "./dist/types/utils/index.d.ts"
+    },
+    "./cacheSharedWorkerFactory": {
+      "import": "./dist/lib/factory/cache.shared.worker.js",
+      "require": "./dist/lib/factory/cache.shared.worker.js",
+      "types": "./dist/types/factory/cache.shared.worker.d.ts"
+    }
   },
   "dependencies": {
-    "nostr-tools": "^1.0.0"
+    "jwt-encode": "1.0.1",
+    "nostr-tools": "2.7.2"
+  },
+  "devDependencies": {
+    "@types/webpack-env": "1.18.5",
+    "eslint": "^8.46.0",
+    "node-polyfill-webpack-plugin": "4.0.0",
+    "prettier": "^3.0.0",
+    "terser-webpack-plugin": "5.3.10",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.0.0",
+    "webpack": "^5.88.2",
+    "webpack-bundle-analyzer": "4.10.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0",
+    "worker-loader": "^3.0.8"
   },
   "peerDependencies": {},
-  "files": [
-    "dist",
-    "adapters"
-  ],
+  "scripts": {
+    "clean": "rm -rf dist/lib dist/browser dist/server dist/types",
+    "build": "yarn clean && yarn build:types && yarn build:browser",
+    "build:types": "tsc -p tsconfig.browser.json",
+    "build:browser": "webpack --config webpack.config.js --env target=browser",
+    "build:server": "webpack --config webpack.config.js --env target=server",
+    "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,md}'",
+    "test": "jest",
+    "prepare": "yarn build"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sandwichfarm/nostr-watch.git"

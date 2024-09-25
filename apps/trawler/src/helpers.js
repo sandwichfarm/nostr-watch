@@ -14,11 +14,6 @@ export const addRelaysToCache = async (rcache, relayList) => {
   return ids.filter(id => id !== undefined)
 }
 
-// export const determineSince = async (cache, relay) => {
-//   const cacheSince = await cache.cachetime.get.one( lastTrawledId(relay) )
-//   return cacheSince || 0
-// }
-
 export const relaysFromRelayList = async ( ev ) => {
   let relayList = parseRelayList(ev)
           

@@ -6,7 +6,6 @@ import cacheInit from '@nostrwatch/nwcache'
 import { bootstrap } from '@nostrwatch/seed'
 
 import { addRelaysToCache, relaysFromRelayList } from './helpers.js'
-import { DAEMON_PUBKEY } from '@nostrwatch/utils'
 
 const kinds = [2, 3, 10002, 30002],
       filters = { kinds },
@@ -18,7 +17,7 @@ let   RELAYS_SCRAPE = [],
 let options = { 
   filters,
   adapter: 'bullmq',
-  queueName: `trawler/ur9dsiojfkldsjfkklds`,
+  queueName: `trawler/1`,
   repeatWhenComplete: true,
   restDuration: 1000*60*5,
   strictTimestamps: true,
@@ -42,6 +41,7 @@ let options = {
 
 if(process?.env?.NWCACHE_PATH){
   options = { ...options, cache: { path: process.env.NWCACHE_PATH } }
+  console.log(options)
 }
 
 const setup = async () => {

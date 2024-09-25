@@ -1,5 +1,16 @@
 # @nostrwatch/nocapd
 
+## 1.13.0
+
+### Minor Changes
+
+- a718902: relay urls with usernames were slipping through, migrations and fix sanitizer
+
+### Patch Changes
+
+- Updated dependencies [a718902]
+  - @nostrwatch/nwcache@0.5.0
+
 ## 1.12.2
 
 ### Patch Changes

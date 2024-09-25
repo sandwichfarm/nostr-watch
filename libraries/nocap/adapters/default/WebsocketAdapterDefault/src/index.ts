@@ -11,12 +11,13 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   constructor(parent: Base) {
     super(parent)
     this.count = { event: 0 };
+    
   }
 
   initialize(): void {}
 
   async check_open(): Promise<void> {
-    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
+    this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
     try {
       this.base.ws = new WebSocket(this.base.url);
       this.bind_events();
@@ -27,7 +28,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   }
 
   async check_read(): Promise<void> {
-    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_read()`);
+    this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_read()`);
     if (!this.base.isConnected()) {
       throw new Error('WebSocket is not connected');
     }
@@ -36,7 +37,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   }
 
   async check_write(): Promise<void> {
-    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_write()`);
+    this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_write()`);
     if (!this.base.isConnected()) {
       throw new Error('WebSocket is not connected');
     }
@@ -45,7 +46,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   }
 
   bind_events(): void {
-    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.bind_events()`);
+    this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.bind_events()`);
     try {
       this.base.ws?.on('open', (e: Event) => {
         this.base.on_open(e);
@@ -61,18 +62,18 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         this.base.on_error(error);
       });
     } catch (e) {
-      this.base.logger?.warn(e);
+      this.base?.logger?.warn(e);
     }
   }
 
   handle_nostr_event(buffer: any): void {
-    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event()`);
+    this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event()`);
     let ev: any;
     try {
       ev = JSON.parse(buffer.toString());
     } catch (e) {
       const err = `${this.base.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`;
-      this.base.logger?.err(err);
+      this.base?.logger?.err(err);
       this.base.auditor.fail('INVALID_JSON', {
         description: 'Relay responded to subscription with invalid JSON.',
         severity: 'high',
@@ -83,7 +84,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
     }
 
     if (!ev || !(ev instanceof Array) || !ev.length) return;
-    this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event(): ${ev[0]}`);
+    this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event(): ${ev[0]}`);
 
     switch (ev[0]) {
       case 'EVENT':
@@ -129,7 +130,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         break;
 
       default:
-        this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event(): Unknown event type ${ev[0]}`);
+        this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event(): Unknown event type ${ev[0]}`);
     }
   }
 

@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ES2020",
-    "lib": ["ES2020"],
+    "target": "ES6",
+    "module": "ES6",
+    "lib": ["ES6"],
     "sourceMap": true,
     "outDir": "./dist/server",
     "declarationDir": "./dist/types",
@@ -16,6 +16,6 @@
     "skipLibCheck": true,
     "strictPropertyInitialization": false
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "include": ["src/**/*", "src/classes/**/*"],
+  "exclude": ["node_modules", "dist", "src/**/*test.ts"]
 }

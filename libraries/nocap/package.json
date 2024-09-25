@@ -9,8 +9,10 @@
   "types": "dist/types/index.d.ts",
   "scripts": {
     "build": "yarn clean && yarn build:server && yarn build:web",
+    "build:adapters": "./scripts/build-adapters.sh",
     "build:server": "webpack --config webpack.server.config.cjs",
     "build:web": "webpack --config webpack.web.config.cjs",
+    "dev:next": "tsc-watch --noClear -p ./tsconfig.next.json",
     "dev:server": "webpack --config webpack.server.config.cjs --watch",
     "dev:web": "webpack --config webpack.web.config.cjs --watch",
     "clean": "rimraf dist",
@@ -35,6 +37,7 @@
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
     "@types/promise-deferred": "2.0.5",
     "@vitest/ui": "0.34.6",
+    "tsc-watch": "6.2.0",
     "vitest": "0.34.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "0.2.2"

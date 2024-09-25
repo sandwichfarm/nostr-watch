@@ -80,7 +80,7 @@ export default class Base {
       this.checksIgnoreOutput = [...this.checksIgnoreOutput, ...this?.config?.get('removeFromResult')];
     }
 
-    this?.logger?.debug(`constructor(${url}, ${JSON.stringify(this.config)})`);
+    this.logger.debug(`constructor(${url}, ${JSON.stringify(this.config)})`);
   }
 
   evaluate_requested_checks(): void {
@@ -147,14 +147,14 @@ export default class Base {
     this.evaluate_requested_checks();
     for await (const key of this.checksRequested) {
       if (this.hard_fail === true) continue;
-      this?.logger?.debug(`${key}: check(${keys}): setting current and running this._check()`);
+      this.logger.debug(`${key}: check(${keys}): setting current and running this._check()`);
       this.current = key;
       await this._check(key as StrictCheckKey)
-      this?.logger?.debug(`${key}: check(${keys}): this._check() resolved`);
+      this.logger.debug(`${key}: check(${keys}): this._check() resolved`);
     }
 
     this.terminate();
-    this?.logger?.debug(`${this.previous}: websocket terminated, returning result`);
+    this.logger.debug(`${this.previous}: websocket terminated, returning result`);
 
     result = this?.results?.raw(this.checksRequested, this.checksIgnoreOutput);
     return headers ? result : this?.results?.cleanResult(keys, result);
@@ -185,13 +185,13 @@ export default class Base {
    */
   async _check(key: StrictCheckKey): Promise<any> {
     if (!this.can_check(key)) return;
-    this?.logger?.debug(`${key}: check()`);
-    await this.start(key).catch((err) => this?.logger?.debug(err));
+    this.logger.debug(`${key}: check()`);
+    await this.start(key).catch((err) => this.logger.debug(err));
     const resolved = (await this?.promises?.get(key).promise) as IResult
     let result: IResult = this.results?.cleanResult(key, resolved) as IResult;
     if(resolved){
       result = resolved
-      this?.logger?.debug(`${key}: check(): resolved`);
+      this.logger.debug(`${key}: check(): resolved`);
       if (result?.[key]?.status === "error") {
         this.on_check_error(key, result);
       }
@@ -212,7 +212,7 @@ export default class Base {
    */
   can_check(key: string): boolean {
     if (isBrowser() && key === 'ssl') {
-      this?.logger?.warn('Cannot check SSL from browser');
+      this.logger.warn('Cannot check SSL from browser');
       return false;
     }
     return true;
@@ -243,7 +243,7 @@ export default class Base {
   maybe_timeout(key: keyof IConfig["timeout"]): any {
     return (resolve: Function, reject: Function) => {
       const message = `${key}: check timed out (after ${this?.config?.timeout?.[key as keyof IConfig["timeout"]]}ms}`;
-      this?.logger?.debug(message);
+      this.logger.debug(message);
       const data = this.isWebsocketKey(key) ? false : {};
       if (key === 'open' && this?.config?.rejectOnConnectFailure) {
         return reject({ data, duration: -1, status: "error", message });
@@ -274,28 +274,29 @@ export default class Base {
     if (typeof key !== 'string') throw new Error('Key must be string');
     if (!this.isWebsocketKey(key)) this.terminate();
 
-    this?.logger?.debug(`${key}: start()`);
-
+    this.logger.debug(`${key}: start()`);
+ 
     const checkDeferred = await this.addDeferred(key as keyof IConfig["timeout"], this.maybe_timeout(key as keyof IConfig["timeout"]));
     const adapterKey = this.routeAdapter(key);
     const adapter = this?.adapters?.[adapterKey]
     
     const adapterMethodName: AdapterKeys = this.checkKey(key)
-    if (!(adapterMethodName in AbstractAdapter.prototype)) {
+    
+    if (!adapter?.[adapterMethodName]) {
       return this.throw(new Error(`start(${key}): ${adapterMethodName} not found in ${adapterKey} Adapter`));
     }
+    this.logger.debug(`method exists: ${adapterMethodName}`)
 
-    const adapterMethod = (AbstractAdapter.prototype as any)[adapterMethodName];
-    if(typeof adapterMethod !== 'function'){
+    if(typeof adapter?.[adapterMethodName] !== 'function'){
       return this.throw(new Error(`start(${key}): ${adapterMethodName} is not a function`));
     }
 
     this.precheck(key)
       .then(async () => {
-        this?.logger?.debug(`${key}: precheck resolved`);
-        this?.latency?.start(key);
-        this?.logger?.debug(`${key}:  this.adapters[${adapter}][${this.checkKey(key)}]()`);
-        await adapterMethod.call(this)
+        this.logger.debug(`${key}: precheck resolved`);
+        this.latency.start(key);
+        this.logger.debug(`${key}:  this.adapters[${adapter}][${this.checkKey(key)}]()`);
+        await adapter?.[adapterMethodName]?.call(adapter)
       })
       .catch((precheck) => {
         let reason: string;
@@ -308,7 +309,8 @@ export default class Base {
         } else {
           reason = `start(): precheck rejection for ${key} should not ever get here: ${JSON.stringify(precheck)}`;
         }
-        this?.logger?.debug(reason);
+        console.log(precheck)
+        this.logger.debug(`reason: ${reason}`);
       });
     return checkDeferred.promise;
   }
@@ -323,15 +325,15 @@ export default class Base {
    * @param {Object} data - The data associated with the check
    */
   async finish(key: string, data: any): Promise<number | void> {
-    this?.logger?.debug(`${key}: finish()`);
-    this?.latency?.finish(key);
+    this.logger.debug(`${key}: finish()`);
+    this.latency.finish(key);
     const result = this.produce_result(key, data);
     if (this.ignore_result(key)) 
-      return this?.logger?.debug(`ignoring result ${key}`);
+      return this.logger.debug(`ignoring result ${key}`);
     this?.results?.setMany(result);
     await this?.promises?.resolve(key, result);
     this.on_change();
-    return this?.latency?.duration(key);
+    return this.latency.duration(key);
   }
 
   /**
@@ -355,7 +357,7 @@ export default class Base {
       reason = 'already fulfilled';
     }
     if (!ignore) return false;
-    this?.logger?.warn(`Ignoring ${key} check because the promise was ${reason} when finish() was called`);
+    this.logger.warn(`Ignoring ${key} check because the promise was ${reason} when finish() was called`);
     return true;
   }
 
@@ -381,7 +383,7 @@ export default class Base {
     result.adapters = [...new Set(this?.results?.get('adapters').concat([adapter_name]))];
     result.checked_at = Date.now();
     result.checked_by = this?.config?.checked_by;
-    if (!data?.duration) data.duration = this?.latency?.duration(key) as number;
+    if (!data?.duration) data.duration = this.latency.duration(key) as number;
     result[key] = { ...data };
     return result;
   }
@@ -417,7 +419,7 @@ export default class Base {
     const connectAttempted = this?.promises?.exists('open') && reflection && reflection.state.isPending
 
     const waitForConnection = async (): Promise<void> => {
-      this?.logger?.debug(`${key}: waitForConnection()`)
+      this.logger.debug(`${key}: waitForConnection()`)
       if(this.isConnected())
         return resolvePrecheck()
       if(this.isConnecting())
@@ -427,29 +429,29 @@ export default class Base {
     }
 
     const prechecker = async (): Promise<void> => {
-      this?.logger?.debug(`${key}: prechecker(): needs websocket: ${needsWebsocket}, key is open: ${keyIsOpen}, connectAttempted: ${connectAttempted}`)
+      this.logger.debug(`${key}: prechecker(): needs websocket: ${needsWebsocket}, key is open: ${keyIsOpen}, connectAttempted: ${connectAttempted}`)
 
       //Doesn't need websocket. Resolve precheck immediately.
       if( !needsWebsocket ){  
-        this?.logger?.debug(`${key}: prechecker(): doesn't need websocket. Continue to ${key} check`)
+        this.logger.debug(`${key}: prechecker(): doesn't need websocket. Continue to ${key} check`)
         return resolvePrecheck()
       }
 
       //Websocket is open, and key is not open, resolve precheck
       if( keyIsOpen && !this.isConnected() ) {  
-        this?.logger?.debug(`${key}: prechecker(): websocket is not open, and key is open. Continue to check.`)
+        this.logger.debug(`${key}: prechecker(): websocket is not open, and key is open. Continue to check.`)
         return resolvePrecheck()
       }
 
       //Websocket is open, and key is not open, resolve precheck
       if( !keyIsOpen && this.isConnected() ) {  
-        this?.logger?.debug(`${key}: prechecker(): websocket is open, key is not open. Continue to check.`)
+        this.logger.debug(`${key}: prechecker(): websocket is open, key is not open. Continue to check.`)
         return resolvePrecheck()
       }
 
       //Websocket is connecting
       if( this.isConnecting() ) {
-        this?.logger?.debug(`${key}: prechecker(): websocket is connecting`)
+        this.logger.debug(`${key}: prechecker(): websocket is connecting`)
         await waitForConnection()
         if( this.isConnected() ) 
           return resolvePrecheck()
@@ -459,17 +461,17 @@ export default class Base {
 
       //Websocket is open, key is open, reject precheck and directly resolve check deferred promise with cached result to bypass starting the open check.
       if(keyIsOpen && this.isConnected()) {
-        this?.logger?.debug(`${key}: prechecker(): websocket is open, key is open`)
-        // this?.logger?.debug(`precheck(${key}):prechecker():websocket is open, key is open`)
+        this.logger.debug(`${key}: prechecker(): websocket is open, key is open`)
+        // this.logger.debug(`precheck(${key}):prechecker():websocket is open, key is open`)
         rejectPrecheck({ status: "error", message: 'Cannot check open because websocket is already connected, returning cached result'})
       }
       //Websocket is not connected, key is not open
       if( !keyIsOpen && !this.isConnected()) {
-        this?.logger?.debug(`${key}: prechecker(): websocket is not connected, key is not open`)
+        this.logger.debug(`${key}: prechecker(): websocket is not connected, key is not open`)
         return rejectPrecheck({ status: "error", message: `Cannot check ${key}, no active websocket connection to relay` })
       } 
 
-      this?.logger?.debug(`${key}: Made it here without resolving or rejecting precheck. You missed something.`)
+      this.logger.debug(`${key}: Made it here without resolving or rejecting precheck. You missed something.`)
     }
     await prechecker()
     return precheckDeferred.promise
@@ -531,9 +533,9 @@ export default class Base {
    * @param {string} key - The name of the check that invoked the closure
    */
   close(key = ""): void {
-    this?.logger?.debug(`${key}: close()`)
+    this.logger.debug(`${key}: close()`)
     if( !this.isConnected() || this.isClosing() || this.isClosed()) return
-    this?.logger?.debug(`${key}: close(): closing`)
+    this.logger.debug(`${key}: close(): closing`)
     this.maybeExecuteAdapterMethod(
       'websocket', 
       'close',
@@ -550,9 +552,9 @@ export default class Base {
    * @param {string} key - The name of the check that invoked the termination
    */
   terminate(key = ""): void {
-    this?.logger?.debug(`${key}: terminate()`)
+    this.logger.debug(`${key}: terminate()`)
     if(!this.isConnected() && !this.isClosing()) return 
-    this?.logger?.debug(`${key}: terminate(): terminating!`)
+    this.logger.debug(`${key}: terminate(): terminating!`)
     this.maybeExecuteAdapterMethod(
       'websocket', 
       'terminate',
@@ -622,7 +624,7 @@ export default class Base {
    */
   handle_error(err: Error): void {
     if (this.hard_fail) return;
-    this?.logger?.debug(`handle_error(): ${err}`);
+    this.logger.debug(`handle_error(): ${err}`);
     this.websocket_hard_fail(err);
   }
   
@@ -670,7 +672,7 @@ on_event(subid: string, ev: any): void {
       try {
         limits = JSON.parse(limits) as object;
       } catch (e) {
-        this?.logger?.error(`on_limits(): ${e}`);
+        this.logger.error(`on_limits(): ${e}`);
         return;
       }
     }
@@ -685,7 +687,7 @@ on_event(subid: string, ev: any): void {
    * @returns null
    */
   on_notice(notice: any): void {
-    this?.logger?.debug(notice);
+    this.logger.debug(notice);
     this.track('relay', 'notice', notice);
     this.cbcall('notice');
   }
@@ -740,7 +742,7 @@ on_event(subid: string, ev: any): void {
    * @returns null
    */
   on_check_error(key: string, err: any): void {
-    this?.logger?.debug(`${key}: on_check_error(): ${err}`)
+    this.logger.debug(`${key}: on_check_error(): ${err}`)
     this.cbcall('error', key, err)
     this.track(key, 'error', err)
     if(key === 'open' && this?.config?.failAllChecksOnConnectFailure)
@@ -794,7 +796,7 @@ on_event(subid: string, ev: any): void {
    * @returns null
    */
   handle_write_check(data: any): void {
-    this?.logger?.debug('handle_write_checked()');
+    this.logger.debug('handle_write_checked()');
     this.finish('write', { data });
   }
 
@@ -815,7 +817,7 @@ on_event(subid: string, ev: any): void {
    * @returns null
    */
   handle_ok(ok: any): void {
-    this?.logger?.debug(`handle_ok(): ${ok}`);
+    this.logger.debug(`handle_ok(): ${ok}`);
     this.handle_write_check(true);
   }
 
@@ -846,7 +848,7 @@ on_event(subid: string, ev: any): void {
    */
   websocket_hard_fail(err: any | Record<string, any>): void {
     // if(this.hard_fail || this.current === null) return
-    this?.logger?.debug(`${this.current}: websocket_hard_fail(): ${this.url}`)
+    this.logger.debug(`${this.current}: websocket_hard_fail(): ${this.url}`)
     const wschecks = ['open', 'read', 'write']
     this.checksRequested.forEach(key => { 
       let message: string;
@@ -865,7 +867,7 @@ on_event(subid: string, ev: any): void {
     })
     const promise = this?.promises?.get(this?.current ?? "")
     if(!promise) 
-      return this?.logger?.warn(`${this.current}: websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
+      return this.logger.warn(`${this.current}: websocket_hard_fail(): No promise found for ${this.current} check on ${this.url}`)
     this.hard_fail = true
     promise.resolve(promise)
     this.previous = this.current
@@ -934,10 +936,10 @@ on_event(subid: string, ev: any): void {
      * @param {string} [session] - The session to clear tracked data for
      */
     maybeExecuteAdapterMethod(adapter: string, methodname: string, altFn = (...args: any) => {}, ...args: any[]): any {
-      const method = this.adapters[adapter]?.[methodname as keyof IAdapterMethods]
-      if (method) {
+      const a = this.adapters[adapter]
+      if (a?.[methodname as keyof IAdapterMethods]) {
         // @ts-ignore: Ignore the tuple type error for dynamic methods.
-        return method(...args);
+        return a?.[methodname as keyof IAdapterMethods](...args);
       } else {
         try {
           return altFn(...args);
@@ -1041,7 +1043,7 @@ on_event(subid: string, ev: any): void {
    * @returns The promise of the deferred
    */
   async addDeferred(key: string, cb = () => {}): Promise<any> {
-    this?.logger?.debug(`addDeferred('${key}')`)
+    this.logger.debug(`addDeferred('${key}')`)
     const existingDeferred = this?.promises?.exists(key)
     if(existingDeferred) 
       return this?.promises?.get(key).promise
@@ -1089,7 +1091,7 @@ on_event(subid: string, ev: any): void {
       throw new Error(`${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.getAdapterName(this.adapters?.[adapterKey])}`);
     }
 
-    this.adapters[adapterKey] = new Adapter(this);  // Pass the current instance
+    this.adapters[adapterKey] = new Adapter(this as Base); 
   }
 
 

@@ -295,7 +295,6 @@ export default class Base {
         this?.logger?.debug(`${key}: precheck resolved`);
         this?.latency?.start(key);
         this?.logger?.debug(`${key}:  this.adapters[${adapter}][${this.checkKey(key)}]()`);
-        // await adapterMethod.call(this).catch((e: any) => this?.logger?.err(`${key}: ${e.message}`));
         await adapterMethod.call(this)
       })
       .catch((precheck) => {

@@ -1,4 +1,5 @@
 import { Validator, IValidator } from '../classes/Validator';
+import SampleEvent, { NostrEvent } from '../data/sample_event';
 
 export interface IConfig {
   logLevel: string;
@@ -26,6 +27,7 @@ export interface IConfig {
   failAllChecksOnConnectFailure: boolean;
   rejectOnConnectFailure: boolean;
   websocketAlwaysTerminate: boolean;
+  event_sample: NostrEvent;
 }
 
 export const ConfigDefaults: IConfig = {
@@ -54,6 +56,7 @@ export const ConfigDefaults: IConfig = {
   failAllChecksOnConnectFailure: true,
   rejectOnConnectFailure: false,
   websocketAlwaysTerminate: true,
+  event_sample: SampleEvent
 };
 
 export interface ConfigValidatorInterface extends IValidator, IConfig {
@@ -84,6 +87,7 @@ export class ConfigValidator extends Validator implements ConfigValidatorInterfa
   failAllChecksOnConnectFailure!: boolean;
   rejectOnConnectFailure!: boolean;
   websocketAlwaysTerminate!: boolean;
+  event_sample: NostrEvent;
 
   defaults: Readonly<IConfig>;
 

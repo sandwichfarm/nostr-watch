@@ -2,9 +2,11 @@
   "name": "@nostrwatch/nocap",
   "version": "0.9.1",
   "license": "MIT",
+  "type": "module",
+  "entry": "src/index.ts",
   "main": "dist/server/index.js",
   "browser": "dist/web/index.js",
-  "types": "dist/server/index.d.ts",
+  "types": "dist/types/index.d.ts",
   "scripts": {
     "build": "yarn clean && yarn build:server && yarn build:web",
     "build:server": "webpack --config webpack.server.config.cjs",
@@ -19,6 +21,7 @@
   },
   "dependencies": {
     "@nostrwatch/logger": "*",
+    "@nostrwatch/nocap-every-adapter-default": "*",
     "fetch-h2": "3.0.2",
     "get-ssl-certificate": "2.3.3",
     "jest": "29.7.0",

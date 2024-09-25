@@ -8,6 +8,7 @@
     "strict": true,
     "esModuleInterop": true,
     "declaration": true,
+    "declarationDir": "./dist/types",
     "emitDeclarationOnly": false,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
@@ -16,5 +17,5 @@
     "strictPropertyInitialization": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "exclude": ["node_modules", "dist", "tests", "*.map"]
 }

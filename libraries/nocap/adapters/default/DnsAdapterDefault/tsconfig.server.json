@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "declaration": true,
     "emitDeclarationOnly": false,
+    "declarationDir": "./dist/types",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true, 

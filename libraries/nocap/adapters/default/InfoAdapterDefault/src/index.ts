@@ -1,7 +1,7 @@
 import fetch from 'cross-fetch';
 import { 
   AbstractAdapter, 
-  type IResultData, 
+  type IResultData,
   type IAdapter,
   type Nocap as Base
 } from '@nostrwatch/nocap';
@@ -22,7 +22,7 @@ export class InfoAdapterDefault extends AbstractAdapter implements IAdapter {
 
   initialize(): void {}
 
-  async check_info() {
+  async check_info(): Promise<void> {
     let result: IResultData = { data: null, duration: -1, status: "error", message: "Unknown error" };
     let data: Record<string, any> = {};
     
@@ -57,8 +57,10 @@ export class InfoAdapterDefault extends AbstractAdapter implements IAdapter {
     } catch (e) {
       result = error((e as Error).message, data);
     }
-
+    
     this.base.finish('info', result);
-    return result;
+    return 
   }
 }
+
+export default InfoAdapterDefault;

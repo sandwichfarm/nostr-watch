@@ -1,14 +1,11 @@
-import WebSocketNode from 'ws';
+import WebSocket from 'ws';
 import {
   AbstractAdapter,
-  type IResult,
   type Nocap as Base, 
   type IAdapter,
-  IResultData
 } from '@nostrwatch/nocap';
 
 class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
-  private $: Base;
   count: { event: number };
 
   constructor(parent: Base) {
@@ -16,10 +13,12 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
     this.count = { event: 0 };
   }
 
+  initialize(): void {}
+
   async check_open(): Promise<void> {
     this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
     try {
-      this.base.set('ws', new WebSocketNode(this.base.url));
+      this.base.ws = new WebSocket(this.base.url);
       this.bind_events();
     } catch (error) {
       console.error('Error in check_open:', error);
@@ -33,7 +32,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
       throw new Error('WebSocket is not connected');
     }
     const event = JSON.stringify(['REQ', this.base.subid('read'), { limit: 1, kinds: [1] }]);
-    this.base.ws.send(event);
+    this.base.ws?.send(event);
   }
 
   async check_write(): Promise<void> {
@@ -42,24 +41,24 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
       throw new Error('WebSocket is not connected');
     }
     const ev = JSON.stringify(['EVENT', this.base.config?.event_sample || this.base.SAMPLE_EVENT]);
-    this.base.ws.send(ev);
+    this.base.ws?.send(ev);
   }
 
   bind_events(): void {
     this.base.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.bind_events()`);
     try {
-      this.base.ws.on('open', (e: Event) => {
+      this.base.ws?.on('open', (e: Event) => {
         this.base.on_open(e);
         this.count.event++;
       });
-      this.base.ws.on('message', (ev: any) => {
+      this.base.ws?.on('message', (ev: any) => {
         this.handle_nostr_event(ev);
       });
-      this.base.ws.on('close', (e: Event) => {
-        this.base.on_close(e);
+      this.base.ws?.on('close', (e: Event) => {
+        this.base.on_close();
       });
-      this.base.ws.on('error', (...args: any[]) => {
-        this.base.on_error(...args);
+      this.base.ws?.on('error', (error: Error) => {
+        this.base.on_error(error);
       });
     } catch (e) {
       this.base.logger?.warn(e);
@@ -111,11 +110,11 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
 
       case 'NOTICE':
         if (this.base.current === 'write') {
-          return this.base.forced_finish({
+          return this.base.forced_finish(this.base.current, {
             data: false,
             duration: -1,
             status: 'error',
-            error: ev[1]
+            message: ev[1]
           });
         }
         this.base.on_notice(ev[1]);

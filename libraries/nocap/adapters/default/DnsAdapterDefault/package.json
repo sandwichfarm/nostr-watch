@@ -6,11 +6,11 @@
 
   "main": "dist/server/index.js",
   "browser": "dist/web/index.js",
-  "types": "dist/server/index.d.ts",
+  "types": "dist/types/index.d.ts",
 
   "scripts": {
     "build": "yarn clean && yarn build:server && yarn build:web",
-    "build:server": "webpack --config webpack.server.config.cjs",
+    "build:server": "tsc --project tsconfig.server.json",
     "build:web": "webpack --config webpack.web.config.cjs",
     "dev:server": "webpack --config webpack.server.config.cjs --watch",
     "dev:web": "webpack --config webpack.web.config.cjs --watch",

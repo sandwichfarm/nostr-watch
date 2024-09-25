@@ -38,7 +38,7 @@ export class DnsAdapterDefault extends AbstractAdapter implements IAdapter {
     // Any initialization logic if necessary
   }
 
-  async check_dns(): Promise<IResultData> { 
+  async check_dns(): Promise<void> { 
     let result: IResultData = { data: null, duration: -1, status: "error", message: "Unknown error" };
     let data: Record<string, any> = {};
     let urlIsIp = false;
@@ -50,7 +50,8 @@ export class DnsAdapterDefault extends AbstractAdapter implements IAdapter {
 
       if(network !== 'clearnet') {
         this.base.logger?.debug('DNS check skipped for URL not accessible over clearnet');
-        return { ...resultTpl, status: "error", message: "Relay is not clearnet, cannot check DNS." };
+        const result = { ...resultTpl, status: "error", message: "Relay is not clearnet, cannot check DNS." };
+        this.base.finish('dns', result);
       }
 
       if(IPV4.test(host)) {
@@ -91,7 +92,9 @@ export class DnsAdapterDefault extends AbstractAdapter implements IAdapter {
     }
 
     this.base.finish('dns', result);
-    return result;
+    return
   } 
 
 }
+
+export default DnsAdapterDefault;

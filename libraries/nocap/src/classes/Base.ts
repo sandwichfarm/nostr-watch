@@ -42,15 +42,15 @@ export default class Base {
   adaptersInitialized = false;
   adaptersValid = ['websocket', 'info', 'geo', 'dns', 'ssl'];
 
-  config?: ConfigValidatorInterface;
+  config: ConfigValidatorInterface;
   limits: Record<string, any> = {};
-  logger?: Logger;
-  session?: SessionHelper;
-  timeouts?: TimeoutHelper;
-  latency?: LatencyHelper;
-  promises?: DeferredWrapper;
-  count?: Counter;
-  results?: ResultValidator;
+  logger: Logger;
+  session: SessionHelper;
+  timeouts: TimeoutHelper;
+  latency: LatencyHelper;
+  promises: DeferredWrapper;
+  count: Counter;
+  results: ResultValidator;
   _url: URL;
   url: string;
   

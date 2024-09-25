@@ -1,37 +1,40 @@
 import { AbstractAdapter, type IResultData, type IAdapter, type Nocap as Base } from '@nostrwatch/nocap';
+import { isBrowser } from '@nostrwatch/utils';
 
 const resultTpl: IResultData = { data: {}, duration: -1 };
 
 export class SslAdapterDefault extends AbstractAdapter implements IAdapter {
-  private $: Base;
 
   constructor(parent: Base) {
     super(parent);
-    this.$ = parent;
   }
 
   initialize(): void {}
 
-  async check_ssl(): Promise<IResultData> {
-    if (typeof window !== 'undefined') {
+  async check_ssl(): Promise<void> {
+
+    if (isBrowser()) {
+      const message = 'Cannot check SSL from browser.'
       console.warn('Cannot check SSL from browser.');
-      return resultTpl;
+      this.base.finish('ssl', { ...resultTpl, status: "error", message });
+      return
     }
 
     let result: IResultData | undefined;
     let data: Record<string, any> = {};
-    const url = new URL(this.$.url);
+    const url = new URL(this.base.url);
     const hostname = url.hostname;
-    const timeout = this.$.config?.timeout?.ssl || 1000;
+    const timeout = this.base.config?.timeout?.ssl || 1000;
 
     if (url.protocol === 'ws:') {
-      this.$.logger?.warn('Cannot check SSL for unsecured websocket.');
-      return { 
+      const message = "Cannot check SSL for unsecured websocket."
+      this.base.logger?.warn(message);
+      this.base.finish('ssl', { 
         ...resultTpl,  
         status: "error", 
-        message: "Cannot check SSL for unsecured websocket.", 
-      }
-      // return this.$.finish('ssl', );
+        message 
+      });
+      return 
     }
 
     let sslCertificate: any;
@@ -74,7 +77,7 @@ export class SslAdapterDefault extends AbstractAdapter implements IAdapter {
       result = { ...resultTpl, status: "success", data };
     }
 
-    this.$.finish('ssl', result);
+    this.base.finish('ssl', result);
   }
 
   sslCheckerOptions(port?: string | number): { method: string, port: string | number } {

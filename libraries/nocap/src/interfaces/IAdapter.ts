@@ -10,14 +10,14 @@ export type TAdapterCount = {
 }
 
 export interface IAdapterMethods {
-  check_all?(): Promise<IResultData>;
-  check_open?(): Promise<IResultData>;
-  check_read?(): Promise<IResultData>;
-  check_write?(): Promise<IResultData>;
-  check_ssl?(): Promise<IResultData>;
-  check_dns?(): Promise<IResultData>;
-  check_geo?(): Promise<IResultData>;
-  check_info?(): Promise<IResultData>;
+  check_all?(): Promise<void>;
+  check_open?(): Promise<void>;
+  check_read?(): Promise<void>;
+  check_write?(): Promise<void>;
+  check_ssl?(): Promise<void>;
+  check_dns?(): Promise<void>;
+  check_geo?(): Promise<void>;
+  check_info?(): Promise<void>;
 
   handle_event?(subid: string, ev: any): void;
   handle_error?(error: Error): void;
@@ -30,7 +30,7 @@ export interface IAdapterMethods {
 }
 
 export interface IAdapter extends IAdapterMethods {
-  readonly base: Base
+  readonly base: Base;
   count?: TAdapterCount;
 
   initialize(): void;

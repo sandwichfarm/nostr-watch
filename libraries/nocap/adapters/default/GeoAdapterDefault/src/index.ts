@@ -54,7 +54,7 @@
       }
     }
 
-    async check_geo(): Promise<IResultData> {
+    async check_geo(): Promise<void> {
       const result: IResultData = { ...resultTpl, status: "success", data: new Array() };
       const dns = this.base?.results?.get('dns')?.data;
       const hasDns = dns?.ipv4?.length || dns?.ipv6?.length;
@@ -72,8 +72,8 @@
       } else if (!hasDns) {
         result.status = "error";
         result.message = "No DNS data available";
-        return result;
-        // return this.base.finish('geo', result);
+        await this.base.finish('geo', result);
+        return 
       } else {
         const ips = [...(dns?.ipv4 || []), ...(dns?.ipv6 || [])];
         for (const ip of ips) {
@@ -85,8 +85,8 @@
       }
 
       this?.base?.logger?.debug(`geo result: ${JSON.stringify(result)}`); 
-      this.base.finish('geo', result);
-      return result;
+      await this.base.finish('geo', result);
+      return
     }
   }
 

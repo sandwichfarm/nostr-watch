@@ -1,4 +1,4 @@
-export type { IAdapter }  from './IAdapter';
+export type { IAdapter } from './IAdapter';
 export type { IAdapterConstructor } from './IAdapterConstructor';
 
 export type { IEveryAdapterDefault } from './IEveryAdapterDefault';

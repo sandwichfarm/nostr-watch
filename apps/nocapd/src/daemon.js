@@ -249,7 +249,7 @@ const persistRelays = async (job) => {
 
 const queueOpts = () => {
   return {
-    lockDuration: 30*1000
+    lockDuration: 5*60*1000
   }
 }
 

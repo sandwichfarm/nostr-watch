@@ -4,6 +4,7 @@ import { nostrawl } from 'nostrawl'
 import Logger from '@nostrwatch/logger'
 import cacheInit from '@nostrwatch/nwcache'
 import { bootstrap } from '@nostrwatch/seed'
+import Migrations from './migrate.js'
 
 import { addRelaysToCache, relaysFromRelayList } from './helpers.js'
 
@@ -80,9 +81,10 @@ const validator = ($trawler, event) => {
   return noteIsUnknown? ACCEPT: REJECT
 }
 
-const after_cacheOpen = (trawlerCache) => {
+const after_cacheOpen = async (trawlerCache) => {
   logger.info('after_cacheOpen(): adding nw extensions to nostrawl cache')
   $cache = cacheInit(trawlerCache)
+  await Migrations($cache)
 }
 
 export const trawl = async () => {

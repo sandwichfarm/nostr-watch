@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-geo-adapter-default
 
+## 1.2.0
+
+### Minor Changes
+
+- 3711c6e: fixed hanging job
+
 ## 1.1.1
 
 ### Patch Changes

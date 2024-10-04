@@ -1,5 +1,11 @@
 # @nostrwatch/trawler
 
+## 0.6.1
+
+### Patch Changes
+
+- @nostrwatch/nocap@0.9.2
+
 ## 0.6.0
 
 ### Minor Changes

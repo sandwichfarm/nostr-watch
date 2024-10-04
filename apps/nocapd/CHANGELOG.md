@@ -1,5 +1,17 @@
 # @nostrwatch/nocapd
 
+## 1.14.0
+
+### Minor Changes
+
+- 3711c6e: fixed hanging job
+
+### Patch Changes
+
+- Updated dependencies [3711c6e]
+  - @nostrwatch/nocap-every-adapter-default@1.7.0
+  - @nostrwatch/nocap@0.9.2
+
 ## 1.13.0
 
 ### Minor Changes

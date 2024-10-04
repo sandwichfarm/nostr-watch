@@ -1,5 +1,17 @@
 # @nostrwatch/nocap-every-adapter-default
 
+## 1.7.0
+
+### Minor Changes
+
+- 3711c6e: fixed hanging job
+
+### Patch Changes
+
+- Updated dependencies [3711c6e]
+  - @nostrwatch/nocap-info-adapter-default@1.2.0
+  - @nostrwatch/nocap-geo-adapter-default@1.2.0
+
 ## 1.6.3
 
 ### Patch Changes

@@ -30,7 +30,7 @@
   },
   "scripts": {
     "launch": "node src/index.js",
-    "trace": "node --trace-warnings src/index.js",
+    "trace": "node --trace-warnings --trace-uncaught src/index.js",
     "debug": "DEBUG=* node --trace-warnings src/index.js",
     "docker:build@debug": "docker build -t nostrwatch/nocapd:latest -f Dockerfile.debug ."
   },

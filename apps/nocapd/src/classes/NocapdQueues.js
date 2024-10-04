@@ -47,22 +47,22 @@ export class NocapdQueues {
   }
 
   async pause(){
-    await this.queue.pause()
+    await this.queue.pause().catch(console.error)
     return this
   }
 
   async resume(){
-    await this.queue.resume()
+    await this.queue.resume().catch(console.error)
     return this
   }
 
   async drain(){
-    await this.queue.drain()
+    await this.queue.drain().catch(console.error)
     return this
   }
 
   async obliterate(){
-    await this.queue.obliterate()
+    await this.queue.obliterate().catch(console.error)
     return this
   }
 }

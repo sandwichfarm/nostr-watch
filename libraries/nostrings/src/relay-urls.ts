@@ -216,7 +216,7 @@ export const normalizeRelayUrl = (relay: string): string => {
     url.search = '';
     return url.toString();
   } catch (e: any) {
-    logger.warn(`Failed to normalize relay ${relay}: ${e.message}`);
+    logger.warn(`Failed to normalize relay "${relay}": ${e.message}`);
     return '';
   }
 };

@@ -45,6 +45,9 @@ export default class Base {
   config = {}
   limits = {}
 
+  controller = new AbortController()
+  signal = this.controller.signal
+
   constructor(url, config={}) {
     this._url = new URL(url)
     this.url = this._url.toString()
@@ -244,6 +247,9 @@ export default class Base {
       const message = `${key}: check timed out (after ${this.config.timeout[key]}ms}` 
       this.logger.debug(message)
       const data = this.isWebsocketKey(key)? false: {}
+      if(this.doesAdapterUse(key, 'AbortController')){
+        this.controller.abort()
+      }
       if(key === 'open' && this.config.rejectOnConnectFailure){
         return reject({ data, duration: -1, status: "error", message})
       }
@@ -544,6 +550,11 @@ export default class Base {
       'terminate',
       () => this.ws.terminate()
     )
+  }
+
+  abort(){
+    this.controller.abort();
+    this.terminate();
   }
 
   /**
@@ -1136,6 +1147,21 @@ export default class Base {
     if(typeof type === 'undefined')
       throw new Error(`Adapter ${adapterName} is not a valid adapter`)
     return type
+  }
+
+  /**
+   * doesAdapterUse
+   * Helper that checks an adapter's "uses" property for a given key.
+   * 
+   * @private
+   * @param {string} checkKey - The key of the adpater to check
+   * @param {string} useKey - The key to check if the adapter uses
+   * @returns {boolean} - True if the adapter uses the key, false otherwise
+   */
+  doesAdapterUse(checkKey, useKey){
+    const adapter = this.routeAdapter(checkKey)
+    const $adapter = this.adapters[adapter]
+    return $adapter?.uses?.includes(useKey)
   }
 
   /**

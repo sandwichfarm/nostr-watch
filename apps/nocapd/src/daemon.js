@@ -271,12 +271,13 @@ const globalHandlers = () => {
     process.on(signal, async () => await gracefulShutdown(signal));
   });
 
-  process.on('uncaughtException', async (error) => {
-    log.error('Uncaught Exception:', error);
+  process.on('uncaughtException', async (err) => {
+    log.error('!! Uncaught Exception:', err);
+    // log.error('Uncaught Exception:', err.stack);
   });
   
   process.on('unhandledRejection', async (reason, promise) => {
-    log.error('Unhandled Rejection:', promise.catch(console.error));
+    log.error('!! Unhandled Rejection:', promise.catch(console.error));
   });  
 
   $q.worker.on('error', async (err) => {
@@ -295,7 +296,7 @@ async function gracefulShutdown(signal) {
 
 export const Nocapd = async () => {
   log.info('Starting Nocapd...')
-  config = await loadConfig().catch( (err) => { log.err(err); process.exit() } )
+  config = await loadConfig().catch( (err) => { log.err(err); process.exit(9) } )
   log.info('Loaded config')
   const lmdbOpts = config?.lmdb ?? {}
   concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
@@ -305,13 +306,7 @@ export const Nocapd = async () => {
   await migrate(rcache)
   log.info('ran migrations...')
 
-  // await maybeAnnounce()
-  // log.info('announced...')
-
   await populateRelays( true )
-  
-  // if(await maybeBootstrap()) 
-  //   log.info('Bootstrapped')
 
   initBus()
   await initQueue()

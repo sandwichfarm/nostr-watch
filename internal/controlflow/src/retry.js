@@ -1,5 +1,4 @@
-import relaycache from '@nostrwatch/nwcache'
-import { capitalize, loadConfig } from "@nostrwatch/utils"
+import { capitalize } from "@nostrwatch/utils"
 
 export class RetryManager {
 

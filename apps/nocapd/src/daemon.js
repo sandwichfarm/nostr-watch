@@ -296,7 +296,7 @@ async function gracefulShutdown(signal) {
 
 export const Nocapd = async () => {
   log.info('Starting Nocapd...')
-  config = await loadConfig().catch( (err) => { log.err(err); process.exit(9) } )
+  config = await loadConfig().catch( (err) => { log.error(err); process.exit(9) } )
   log.info('Loaded config')
   const lmdbOpts = config?.lmdb ?? {}
   concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1

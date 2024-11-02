@@ -4,13 +4,16 @@ const url = 'https://api.nostr.watch/v1/nip/1';
 
 const results = []
 
+import { shuffleArray } from '../dist/server/utils/array.js';
+
+
 try {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`HTTP error! Status: ${response.status}`);
   }
 
-  const relays = await response.json();
+  const relays = shuffleArray(await response.json());
 
   if (Array.isArray(relays)) {
     for (const relay of relays) {

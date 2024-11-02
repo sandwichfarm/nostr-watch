@@ -7,6 +7,7 @@ import { Nip01ClientMessageGenerator } from '../index.js';
 import { Nip01Filter, Note, RelayEventMessage } from '../interfaces/index.js';
 import { KindIngestor } from "../ingestors/KindIngestor.js";
 import { SingleTagIngestor } from "../ingestors/SingleTagIngestor.js";
+import { truncate } from "#src/utils/string.js";
 
 export class FilterTags extends SuiteTest implements ISuiteTest {
   readonly slug: string = 'FilterTags';
@@ -20,20 +21,10 @@ export class FilterTags extends SuiteTest implements ISuiteTest {
     super(suite, new SingleTagIngestor());
   }
 
-  async prepare() {
+  get filters(): Nip01Filter[] {
     const tag: string[] = this.ingestor.poop() as string[];
     const filter = { [`#${tag[0]}`]: [tag[1]]  } as Partial<Nip01Filter>
-    // console.log('filter', filter)
-    const filters: Nip01Filter[] = [{ ...filter, limit: this.limit }];
-    const message = Nip01ClientMessageGenerator.REQ(this.subId, filters);
-    this.socket.send(message);
-    while(this.socket.CONNECTED){
-      await new Promise(resolve => setTimeout(resolve, 500));
-    };
-  }
-
-  onMessageOk(){
-    // this.suite.logCode('behavior', 'should not return ok', false);
+    return [{ ...filter, limit: this.limit }];
   }
 
   onMessageEvent(message: RelayEventMessage){
@@ -44,14 +35,14 @@ export class FilterTags extends SuiteTest implements ISuiteTest {
 
   test({behavior, conditions}){
     conditions.toBeOk(this.singleLetterTagsReturned.length > 0, 'sample data size is sufficient for test');
-
+    const numTagsReturned = this.singleLetterTagsReturned.length
     const returnedOnlyTagsRequested = this.singleLetterTagsReturned.some((item: string[]) => {
       const key = this.ingestor.poop()[0] 
       const value = this.ingestor.poop()[1]
       return item[0] === key && item[1] === value
     });
-    behavior.toBeOk(returnedOnlyTagsRequested, `returned only requested tags: ${this.singleLetterTagsReturned}`); 
-    behavior.toEqual(this.singleLetterTagsReturned.length, 1, 'returned only one event');
+    behavior.toBeOk(returnedOnlyTagsRequested, `returned only requested tags: ${truncate(JSON.stringify(this.singleLetterTagsReturned))}`); 
+    behavior.toEqual(numTagsReturned, 1, 'returned only one event');
   }
 }
 

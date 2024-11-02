@@ -33,11 +33,12 @@ export class FilterLimit extends SuiteTest implements ISuiteTest {
   totalEvents: number = 0;
   maxEvents: number = 10;
 
-  limit: number = 1
-  filters: Nip01Filter[] = [{ limit: this.limit }]
-
   constructor(suite: ISuite) {
     super(suite);
+  }
+
+  get filters(): Nip01Filter[] {
+    return [{ limit: this.limit }];
   }
 
   test(){

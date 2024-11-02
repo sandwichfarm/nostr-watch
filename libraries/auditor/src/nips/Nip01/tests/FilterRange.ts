@@ -11,18 +11,17 @@ export class FilterRange extends SuiteTest implements ISuiteTest {
   maxEvents: number = 15;
   timestampsReturned: number[] = [];
   range: { since: number, until: number } | null = null;
-  filters: Nip01Filter[] = [{ ...this.range, limit: 10 }];
+  limit: number = 10;
 
   constructor(suite: ISuite) {
     super(suite, new RangeIngestor());
   }
 
-  async prepare() {
+  get filters(): Nip01Filter[] {
     this.range = this.selectRangeFromSample(this.ingestor.poop());
-    this.REQ(this.filters);
-    await this.testable();
+    return [{ ...this.range, limit: this.limit }];
   }
-
+  
   onMessageEvent(message: RelayEventMessage){
     const note = message[2];
     this.timestampsReturned.push(note.created_at);
@@ -30,8 +29,8 @@ export class FilterRange extends SuiteTest implements ISuiteTest {
 
   test({behavior, conditions}){
     conditions.toBeOk(this?.range?.since && this?.range?.until && this.range.since != this.range.until, 'sample data to be sufficient')
-    
-    behavior.toEqual(this.timestampsReturned.length, 10, 'returned 10 events');
+
+    behavior.toEqual(this.timestampsReturned.length, this.limit, 'returned number of events requested [${this.limit}]');
     behavior.toBeOk(this.timestampsReturned.length > 0, 'returned at least one event');
     behavior.toBeOk(this.withinRange(), 'return only events within range')
   }

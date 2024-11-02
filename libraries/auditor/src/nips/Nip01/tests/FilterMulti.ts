@@ -9,13 +9,16 @@ export class FilterMulti extends SuiteTest implements ISuiteTest {
   readonly slug: string = 'FilterMulti';
   
   limit: number = 1
-  filters: Nip01Filter[] = [
-    { until: Math.round(Date.now()/1000)-120, limit: this.limit },
-    { until: Math.round(Date.now()/1000)-60, limit: this.limit }
-  ];
 
   constructor(suite: ISuite, ) {
     super(suite);
+  }
+
+  get filters(): Nip01Filter[] {
+    return [
+      { until: Math.round(Date.now()/1000)-120, limit: this.limit },
+      { until: Math.round(Date.now()/1000)-60, limit: this.limit }
+    ];
   }
 
   test({behavior}){

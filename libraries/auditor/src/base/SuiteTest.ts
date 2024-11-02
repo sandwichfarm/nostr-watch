@@ -88,13 +88,16 @@ export abstract class SuiteTest implements ISuiteTest {
   maxEvents: number = 20;
   totalEvents: number = 0;
   completeOn: CompleteOnTypeArray = ['maxEvents', 'EOSE'];
-  filters: Nip01Filter[] = [];
 
   constructor(suite: ISuite, ingestor?: Ingestor) {
     this.suite = suite;
     if(ingestor) this.registerIngestor(ingestor);
     this.logger.registerLogger('pass', 'info', chalk.green.bold);
     this.logger.registerLogger('fail', 'info', chalk.redBright.bold);
+  }
+
+  get filters(): Nip01Filter[] {
+    return [];
   }
 
   // expect(condition: () => boolean, message: string) {

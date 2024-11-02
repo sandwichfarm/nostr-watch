@@ -13,10 +13,12 @@ export class FilterKinds extends SuiteTest implements ISuiteTest {
   maxEvents: number = 15;
   limit: number = 5
 
-  filters: Nip01Filter[] = [{ kinds: this.ingestor.poop(), limit: this.limit }];
-
   constructor(suite: ISuite) {
     super(suite, new KindIngestor());
+  }
+
+  get filters(): Nip01Filter[] {
+    return [{ kinds: this.ingestor.poop(), limit: this.limit }];
   }
 
   onMessageEvent(message: RelayEventMessage){

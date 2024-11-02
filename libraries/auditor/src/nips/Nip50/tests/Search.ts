@@ -15,22 +15,21 @@ export class Search extends SuiteTest implements ISuiteTest {
   contents: string[] = [];
   searches: string[] = [];
   completeOn: CompleteOnTypeArray = ['off'];
-  filters: Nip50Filter[] = [];
-
+  
   constructor(suite: ISuite) {
     super(suite, new ContentIngestor());
   }
 
-  async prepare() {
+  get filters(): Nip50Filter[] {
+    const filters: Nip50Filter[] = [];
     this.searches = this.ingestor.poop()
     if(this.searches.length > 5){
       this.searches.length = 5;
     }
     for(const search of this.searches){
-      this.filters.push({ search, limit:1 });
+      filters.push({ search, limit:1 });
     }
-    this.REQ(this.filters)
-    await this.testable();
+    return filters
   }
 
   onMessageEvent(message: RelayEventMessage){

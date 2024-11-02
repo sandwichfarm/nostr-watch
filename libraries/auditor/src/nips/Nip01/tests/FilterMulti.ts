@@ -3,7 +3,7 @@ import { CompleteOnTypeArray, ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
 import { ISuite } from '#base/Suite.js';
 
 import { Nip01ClientMessageGenerator } from '../index.js';
-import { Nip01Filter, Note, RelayEventMessage } from '../interfaces/index.js';
+import { INip01Filter, Note, RelayEventMessage } from '../interfaces/index.js';
 
 export class FilterMulti extends SuiteTest implements ISuiteTest {
   readonly slug: string = 'FilterMulti';
@@ -14,7 +14,7 @@ export class FilterMulti extends SuiteTest implements ISuiteTest {
     super(suite);
   }
 
-  get filters(): Nip01Filter[] {
+  get filters(): INip01Filter[] {
     return [
       { until: Math.round(Date.now()/1000)-120, limit: this.limit },
       { until: Math.round(Date.now()/1000)-60, limit: this.limit }

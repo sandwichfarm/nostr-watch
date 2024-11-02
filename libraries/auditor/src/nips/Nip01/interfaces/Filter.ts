@@ -1,4 +1,4 @@
-export interface Nip01Filter {
+export interface INip01Filter {
   ids?: string[];
   authors?: string[];
   kinds?: number[];

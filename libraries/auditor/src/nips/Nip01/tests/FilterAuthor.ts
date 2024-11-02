@@ -1,7 +1,7 @@
 import { ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
 import { ISuite } from '#base/Suite.js';
 
-import { Nip01Filter, Note, RelayEventMessage } from '../interfaces/index.js';
+import { INip01Filter, Note, RelayEventMessage } from '../interfaces/index.js';
 import { is64CharHex } from '#src/utils/nostr.js';
 import { AuthorIngestor } from '../ingestors/AuthorIngestor.js';
 
@@ -17,7 +17,7 @@ export class FilterAuthor extends SuiteTest implements ISuiteTest {
     super(suite, new AuthorIngestor());
   }
 
-  get filters(): Nip01Filter[] {
+  get filters(): INip01Filter[] {
     this.author = this.ingestor.poop()[0]
     return [{ authors: [ this.author ], limit: this.limit }];
   }

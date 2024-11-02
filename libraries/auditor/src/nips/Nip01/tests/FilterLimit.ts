@@ -2,7 +2,7 @@
 import { ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
 import { ISuite } from '#base/Suite.js';
 
-import { Nip01Filter } from '../interfaces/index.js';
+import { INip01Filter } from '../interfaces/index.js';
 
 export class FilterLimit extends SuiteTest implements ISuiteTest {
   readonly slug: string = 'FilterLimit';
@@ -15,7 +15,7 @@ export class FilterLimit extends SuiteTest implements ISuiteTest {
     super(suite);
   }
 
-  get filters(): Nip01Filter[] {
+  get filters(): INip01Filter[] {
     return [{ limit: this.limit }]
   }
 

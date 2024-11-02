@@ -3,10 +3,10 @@ import { CompleteOnTypeArray, ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
 import { ISuite } from '#base/Suite.js';
 
 import { Nip01ClientMessageGenerator } from '#nips/Nip01/index.js';
-import { Nip01Filter, Note, RelayEventMessage } from '#nips/Nip01/interfaces/index.js';
+import { INip01Filter, Note, RelayEventMessage } from '#nips/Nip01/interfaces/index.js';
 import { ContentIngestor } from '../ingestors/ContentIngestor.js';
 
-export interface Nip50Filter extends Nip01Filter {
+export interface Nip50Filter extends INip01Filter {
   search: string;
 }
 

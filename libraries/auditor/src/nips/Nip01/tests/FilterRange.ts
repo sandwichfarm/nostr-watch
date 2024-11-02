@@ -2,7 +2,7 @@
 import { ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
 import { ISuite } from '#base/Suite.js';
 ;
-import { Nip01Filter, RelayEventMessage } from '../interfaces/index.js';
+import { INip01Filter, RelayEventMessage } from '../interfaces/index.js';
 import { RangeIngestor } from "../ingestors/RangeIngestor.js";
 
 export class FilterRange extends SuiteTest implements ISuiteTest {
@@ -17,7 +17,7 @@ export class FilterRange extends SuiteTest implements ISuiteTest {
     super(suite, new RangeIngestor());
   }
 
-  get filters(): Nip01Filter[] {
+  get filters(): INip01Filter[] {
     this.range = this.selectRangeFromSample(this.ingestor.poop());
     return [{ ...this.range, limit: this.limit }];
   }

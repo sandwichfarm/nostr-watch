@@ -7,7 +7,7 @@ import type { ISuite } from '#base/Suite.js';
 import schemata from './schemata/index.js';
 
 import type { 
-  Nip01Filter, 
+  INip01Filter, 
   RelayEoseMessage, 
   RelayEventMessage, 
   RelayNoticeMessage, 
@@ -26,7 +26,7 @@ export class Nip01ClientMessageGenerator {
     return Buffer.from(JSON.stringify(['EVENT', note] as ClientEventMessage));
   }
 
-  static REQ<T extends Nip01Filter>(subscriptionId: string, filters: T[]): Buffer {
+  static REQ<T extends INip01Filter>(subscriptionId: string, filters: T[]): Buffer {
     return Buffer.from(JSON.stringify(['REQ', subscriptionId, ...filters] as ClientReqMessageBase));
   }
 

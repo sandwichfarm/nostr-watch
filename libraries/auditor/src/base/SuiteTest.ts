@@ -14,7 +14,7 @@ import { RelayEventMessage } from "#src/nips/Nip01/interfaces/RelayEventMessage.
 
 import { Expect } from "./Expect.js";
 
-import { Nip01Filter } from "#src/nips/Nip01/interfaces/Filter.js";
+import { INip01Filter } from "#src/nips/Nip01/interfaces/Filter.js";
 import { Note } from "#src/nips/Nip01/interfaces/Note.js";
 import chalk from "chalk";
 
@@ -96,7 +96,7 @@ export abstract class SuiteTest implements ISuiteTest {
     this.logger.registerLogger('fail', 'info', chalk.redBright.bold);
   }
 
-  get filters(): Nip01Filter[] {
+  get filters(): INip01Filter[] {
     return [];
   }
 
@@ -124,7 +124,7 @@ export abstract class SuiteTest implements ISuiteTest {
     this.socket.send(Nip01ClientMessageGenerator.EVENT(event));
   }
 
-  REQ(filters: Nip01Filter[]) {
+  REQ(filters: INip01Filter[]) {
     this.socket.send(Nip01ClientMessageGenerator.REQ(this.subId, filters));
   }
 

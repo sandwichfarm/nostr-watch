@@ -2,7 +2,6 @@ import { WebSocketWrapper as WebSocket } from './WebSocketWrapper.js';
 import { ISuiteResult, Suite } from "./Suite";
 import { Resulter } from './Resulter.js';
 import Logger from '#base/Logger.js'
-import { ISuiteTest, ISuiteTestResult } from './SuiteTest.js';
 
 type SuiteSet = Set<string>;
 

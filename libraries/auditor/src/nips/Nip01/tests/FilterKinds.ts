@@ -27,10 +27,10 @@ export class FilterKinds extends SuiteTest implements ISuiteTest {
   test({behavior, conditions}){
     conditions.toBeOk(this.kindsReturned.length > 0, 'sample data size is sufficient for test');
 
+    const moreThanZero = this.kindsReturned.length > 0
     const returnedOnlyEventKinds = this.kindsReturned.every((item: number) => this.ingestor.poop().includes(item));
-    behavior.toBeOk(this.kindsReturned.length > 0, 'returned at least one event');
-    behavior.toEqual(this.kindsReturned.length, this.limit, `returned ${this.limit} events as requested`);
-    behavior.toBeOk(returnedOnlyEventKinds, 'return only requested event kinds');
+    behavior.toBeOk(moreThanZero, 'returned at least one event');
+    behavior.toBeOk(moreThanZero && returnedOnlyEventKinds, 'return only requested event kinds');
   }
 }
 

@@ -2,6 +2,10 @@ import assert from 'power-assert';
 import Logger from './Logger.js';
 import chalk from 'chalk';
 
+export interface IAssertWrapOptions {
+  verbose?: boolean;
+}
+
 export interface IExpectResult {
   message: string;
   pass: boolean;
@@ -12,14 +16,18 @@ export class AssertWrap {
   private _result: IExpectResult[] = [];
   private _passed: string[] = [];
   private _failed: string[] = [];
+  private _verbose: boolean = false;
   private logger = new Logger('@nostrwatch/auditor:AssertWrap', {
     showTimer: false,
     showNamespace: false
   });
 
-  constructor(){
-    this.logger.registerLogger('pass', 'info', chalk.green.bold)
-    this.logger.registerLogger('fail', 'info', chalk.redBright.bold)
+  constructor(options: IAssertWrapOptions = {}) {
+    if(options?.verbose !== undefined) this._verbose = options.verbose;
+    if(this._verbose) {
+      this.logger.registerLogger('pass', 'info', chalk.green.bold)
+      this.logger.registerLogger('fail', 'info', chalk.redBright.bold)
+    }
   }
 
   get result(): IExpectResult[] {
@@ -59,12 +67,12 @@ export class AssertWrap {
           Reflect.apply(target, thisArg, argumentsList);
           const result: IExpectResult = { message, pass: true };
           this.result = result;
-          this.logger.custom(`pass`, `${message}`, 3);
+          if(this._verbose) this.logger.custom(`pass`, `${message}`, 3);
         } catch (error) {
           error = this.extractErrorDetails(error);
           const result: IExpectResult = { message, pass: false, error };
           this.result = result
-          this.logger.custom(`fail`, `${message}`, 3);
+          if(this._verbose) this.logger.custom(`fail`, `${message}`, 3);
         }
       },
     });
@@ -85,8 +93,8 @@ export class AssertWrap {
 }
 
 export class Expect { 
+  conditions: AssertWrap = new AssertWrap()
   message: AssertWrap = new AssertWrap()
   json: AssertWrap = new AssertWrap()
-  behavior: AssertWrap = new AssertWrap()
-  conditions: AssertWrap = new AssertWrap()
+  behavior: AssertWrap = new AssertWrap({ verbose: true })
 }

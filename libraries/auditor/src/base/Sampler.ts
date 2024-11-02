@@ -8,7 +8,7 @@ import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/index.js";
 import type { Note, RelayEventMessage } from "#src/nips/Nip01/interfaces/index.js";
 import { generateSubId } from "#utils/nostr.js";  
 
-import Logger from "@nostrwatch/logger";  
+import Logger from "#base/Logger.js";  
 
 export class Sampler {
   private ws: WebSocket;

@@ -3346,11 +3346,13 @@ __metadata:
   dependencies:
     "@apidevtools/json-schema-ref-parser": "npm:^11.7.2"
     "@awalgawe/esbuild-typescript-paths-plugin": "npm:^1.0.1"
-    "@nostrwatch/logger": "workspace:*"
+    "@types/chalk": "npm:^2.2.4"
+    "@types/debug": "npm:^4.1.12"
     "@types/path-browserify": "npm:^1"
     "@types/power-assert": "npm:^1.5.12"
     "@types/ws": "npm:^8"
     ajv: "npm:^8.17.1"
+    chalk: "npm:^5.3.0"
     chokidar-cli: "npm:^3.0.0"
     cross-fetch: "npm:^4.0.0"
     esbuild: "npm:^0.24.0"
@@ -5902,6 +5904,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/chalk@npm:^2.2.4":
+  version: 2.2.4
+  resolution: "@types/chalk@npm:2.2.4"
+  dependencies:
+    chalk: "npm:*"
+  checksum: 10c0/77541a759f1038f28549dca6e63cbd4af19c765d7d2e2797b35469e88429960f59959074cd18bcc2cf7ba1f27028d077d9f6594e5bdd08ba7cf469a32b640884
+  languageName: node
+  linkType: hard
+
 "@types/cookie@npm:^0.6.0":
   version: 0.6.0
   resolution: "@types/cookie@npm:0.6.0"
@@ -5909,7 +5920,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/debug@npm:4.1.12":
+"@types/debug@npm:4.1.12, @types/debug@npm:^4.1.12":
   version: 4.1.12
   resolution: "@types/debug@npm:4.1.12"
   dependencies:
@@ -8422,7 +8433,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:5.3.0, chalk@npm:^5.3.0":
+"chalk@npm:*, chalk@npm:5.3.0, chalk@npm:^5.3.0":
   version: 5.3.0
   resolution: "chalk@npm:5.3.0"
   checksum: 10c0/8297d436b2c0f95801103ff2ef67268d362021b8210daf8ddbe349695333eb3610a71122172ff3b0272f1ef2cf7cc2c41fdaa4715f52e49ffe04c56340feed09

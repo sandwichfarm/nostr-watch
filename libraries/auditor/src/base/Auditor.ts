@@ -1,7 +1,7 @@
 import { WebSocketWrapper as WebSocket } from './WebSocketWrapper.js';
 import { ISuiteResult, Suite } from "./Suite";
 import { Resulter } from './Resulter.js';
-import Logger from '@nostrwatch/logger'
+import Logger from '#base/Logger.js'
 import { ISuiteTest, ISuiteTestResult } from './SuiteTest.js';
 
 type SuiteSet = Set<string>;
@@ -37,7 +37,10 @@ export class Auditor {
   private _conf: IAuditorConf = defaultAuditorConf;
   protected ws?: WebSocket;
   protected resulter: Resulter = new Resulter(defaultResult);
-  private logger: Logger = new Logger('@nostrwatch/auditor');
+  private logger: Logger = new Logger('@nostrwatch/auditor', {
+    showTimer: false,
+    showNamespace: false
+  });
 
   constructor(conf?: IAuditorConf) {
     if(conf) this._conf = conf;

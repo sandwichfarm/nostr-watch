@@ -1,4 +1,6 @@
 import assert from 'power-assert';
+import Logger from './Logger.js';
+import chalk from 'chalk';
 
 export interface IExpectResult {
   message: string;
@@ -6,10 +8,19 @@ export interface IExpectResult {
   error?: Record<string, string | boolean>;
 }
 
-export class AssertionWrapper {
+export class AssertWrap {
   private _result: IExpectResult[] = [];
   private _passed: string[] = [];
   private _failed: string[] = [];
+  private logger = new Logger('@nostrwatch/auditor:AssertWrap', {
+    showTimer: false,
+    showNamespace: false
+  });
+
+  constructor(){
+    this.logger.registerLogger('pass', 'info', chalk.green.bold)
+    this.logger.registerLogger('fail', 'info', chalk.redBright.bold)
+  }
 
   get result(): IExpectResult[] {
       return this._result;
@@ -48,12 +59,12 @@ export class AssertionWrapper {
           Reflect.apply(target, thisArg, argumentsList);
           const result: IExpectResult = { message, pass: true };
           this.result = result;
-          console.log("PASSED:",  message);
+          this.logger.custom(`pass`, `${message}`, 3);
         } catch (error) {
           error = this.extractErrorDetails(error);
           const result: IExpectResult = { message, pass: false, error };
           this.result = result
-          console.error("FAILED:", message, error );
+          this.logger.custom(`fail`, `${message}`, 3);
         }
       },
     });
@@ -74,8 +85,8 @@ export class AssertionWrapper {
 }
 
 export class Expect { 
-  message: AssertionWrapper = new AssertionWrapper()
-  json: AssertionWrapper = new AssertionWrapper()
-  behavior: AssertionWrapper = new AssertionWrapper()
-  conditions: AssertionWrapper = new AssertionWrapper()
+  message: AssertWrap = new AssertWrap()
+  json: AssertWrap = new AssertWrap()
+  behavior: AssertWrap = new AssertWrap()
+  conditions: AssertWrap = new AssertWrap()
 }

@@ -8,7 +8,7 @@ import { generateSubId } from "#src/utils/nostr.js";
 import { ISuiteCodeTypes } from "./Suite.js";
 import { WebSocketWrapper as WebSocket } from "./WebSocketWrapper.js";
 
-import Logger from '@nostrwatch/logger';
+import Logger from '#base/Logger.js';
 import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/index.js";
 import { RelayEventMessage } from "#src/nips/Nip01/interfaces/RelayEventMessage.js";
 
@@ -16,6 +16,7 @@ import { Expect } from "./Expect.js";
 
 import { Nip01Filter } from "#src/nips/Nip01/interfaces/Filter.js";
 import { Note } from "#src/nips/Nip01/interfaces/Note.js";
+import chalk from "chalk";
 
 export type CompleteOnType = "off" | "maxEvents" | "EOSE";
 export type CompleteOnTypeArray = [CompleteOnType, ...CompleteOnType[]];
@@ -64,7 +65,10 @@ export const defaultSuiteTestResult: ISuiteTestResult = {
 export abstract class SuiteTest implements ISuiteTest {
   readonly slug: string = 'unset';
   
-  private logger: Logger = new Logger('@nostrwatch/auditor'); 
+  private logger: Logger = new Logger('@nostrwatch/auditor', {
+    showTimer: false,
+    showNamespace: false
+  }); 
   private _expect: Expect = new Expect();
 
   protected suite: ISuite;
@@ -72,8 +76,6 @@ export abstract class SuiteTest implements ISuiteTest {
   protected resulter: SuiteTestResulter = new SuiteTestResulter(defaultSuiteTestResult);
   protected sampler?: Sampler;
   protected ingestor: Ingestor;
-
-  
 
   protected subId: string = generateSubId();  
 
@@ -91,6 +93,8 @@ export abstract class SuiteTest implements ISuiteTest {
   constructor(suite: ISuite, ingestor?: Ingestor) {
     this.suite = suite;
     if(ingestor) this.registerIngestor(ingestor);
+    this.logger.registerLogger('pass', 'info', chalk.green.bold);
+    this.logger.registerLogger('fail', 'info', chalk.redBright.bold);
   }
 
   // expect(condition: () => boolean, message: string) {
@@ -146,6 +150,7 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   async run() {
+    this.logger.info(`BEGIN: ${this.slug}`, 2);
     if(this.sampler !== undefined) {
       await this.sampler.sample();
     }
@@ -194,12 +199,12 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   timeoutFinish() {
-    this.logger.debug(`${this.slug} timed out`);
+    this.logger.debug(`${this.slug} timed out`, 2);
     clearTimeout(this.timeout);
   }
 
   private finish(): void {
-    this.logger.debug(`testKey: ${this.suite.testKey}`);
+    this.logger.debug(`testKey: ${this.suite.testKey}`, 2);
     const codes = this.suite.collectCodes();
     const passed = this.passed(codes);
     const failed = this.failed(codes);
@@ -218,7 +223,7 @@ export abstract class SuiteTest implements ISuiteTest {
       ...codes
     } as ISuiteTestResult;
 
-    this.logger.info(`Auditor: ${this.suite.slug}: ${this.slug}: ${pass? 'pass': 'fail'}`);
+    this.logger.custom(pass? 'pass': 'fail', `${this.slug}`, 2);
     
     this.resulter.set(result as ISuiteTestResult);
   }
@@ -277,7 +282,7 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   test(methods: Expect) {
-    this.logger.warn(`${this.slug} complete method was not implemented.`);
+    this.logger.warn(`${this.slug} complete method was not implemented.`, 1);
   }
 
   _onMessageEvent(message: RelayEventMessage): boolean  {

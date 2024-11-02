@@ -9,9 +9,11 @@ import { SchemaValidator } from "./SchemaValidator.js";
 import { SuiteResulter } from "./Resulter.js";
 import type { ISuiteTest, ISuiteTestResult } from "./SuiteTest.js";
 
-import { capitalize } from '#utils/string.js';
+import { capitalize, truncate } from '#utils/string.js';
 import { Expect } from './Expect.js';
 import { INip01RelayMessage } from '#src/nips/Nip01/interfaces/INip01RelayMessage.js';
+
+import Logger from './Logger.js';
 
 export type INipTesterCodes = Record<string, boolean | null>
 
@@ -67,8 +69,11 @@ export interface ISuite {
 
 export abstract class Suite implements ISuite {
   private readonly testsDirectory: string = './tests';
-
   private expect: Expect;
+  private logger: Logger = new Logger('@nostrwatch/auditor:Suite', {
+    showTimer: false,
+    showNamespace: false
+  });
 
   public readonly slug: string = "NipXX";
 
@@ -161,6 +166,7 @@ export abstract class Suite implements ISuite {
   }
 
   public async test(): Promise<ISuiteResult> {
+    this.logger.info(`BEGIN: ${this.slug} Suite`, 1);
     await this.ready();
     for(const test of Object.entries(this.testers)) {
       const [testName, suiteTest] = test;
@@ -209,7 +215,7 @@ export abstract class Suite implements ISuite {
 
   protected validateMessage(message: INip01RelayMessage): void {
     const key = message?.[0] ?? "unset"
-    this.expect.message.toBeOk(this?.messageValidators?.[key]?.validate, `message ${key} is valid: ${JSON.stringify(message)}`);
+    this.expect.message.toBeOk(this?.messageValidators?.[key]?.validate, `message ${key} is valid: ${truncate(JSON.stringify(message))}`);
     // if(this?.messageValidators?.[key]?.validate) {
     //   this.logCode('message', key, this.messageValidators[key].validate(message));   
     // }

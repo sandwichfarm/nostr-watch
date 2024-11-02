@@ -1,6 +1,7 @@
 import { Nip01ClientMessageGenerator } from "#src/nips/Nip01";
 import { WebSocket } from "ws";
-import Logger from '@nostrwatch/logger';
+import Logger from '#base/Logger.js';
+import { INip01RelayMessage } from "#src/nips/Nip01/interfaces";
 
 export class WebSocketWrapper {
   ws: WebSocket
@@ -85,8 +86,10 @@ export class WebSocketWrapper {
     this.ws.close();
   }
 
-  send(data: Nip01ClientMessageGenerator) {
-    this.ws.send(data.toString());
+  send(data: INip01RelayMessage | Buffer) {
+    if(data instanceof Buffer) this.ws.send(data.toString());
+    else this.ws.send(JSON.stringify(data));
+    
   }
 
   get CONNECTED(): boolean {

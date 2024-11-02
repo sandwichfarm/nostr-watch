@@ -50,7 +50,7 @@ export class FilterTags extends SuiteTest implements ISuiteTest {
       const value = this.ingestor.poop()[1]
       return item[0] === key && item[1] === value
     });
-    behavior.toBeOk(returnedOnlyTagsRequested, `returned only requested event kinds: ${this.singleLetterTagsReturned}`); 
+    behavior.toBeOk(returnedOnlyTagsRequested, `returned only requested tags: ${this.singleLetterTagsReturned}`); 
     behavior.toEqual(this.singleLetterTagsReturned.length, 1, 'returned only one event');
   }
 }

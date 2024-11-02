@@ -100,15 +100,6 @@ export abstract class SuiteTest implements ISuiteTest {
     return [];
   }
 
-  // expect(condition: () => boolean, message: string) {
-  //   try {
-  //       this._assert(condition(), message);
-  //       console.log("Assertion passed:", message);
-  //   } catch (error) {
-  //       console.error("Assertion failed:", message);
-  //   }
-  // }
-
   get socket(): WebSocket {
     return this.suite.socket; 
   }

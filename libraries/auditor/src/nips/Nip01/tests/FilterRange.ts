@@ -30,7 +30,7 @@ export class FilterRange extends SuiteTest implements ISuiteTest {
   test({behavior, conditions}){
     conditions.toBeOk(this?.range?.since && this?.range?.until && this.range.since != this.range.until, 'sample data to be sufficient')
 
-    behavior.toEqual(this.timestampsReturned.length, this.limit, 'returned number of events requested [${this.limit}]');
+    behavior.toEqual(this.timestampsReturned.length, this.limit, `returned number of events requested`);
     behavior.toBeOk(this.timestampsReturned.length > 0, 'returned at least one event');
     behavior.toBeOk(this.withinRange(), 'return only events within range')
   }

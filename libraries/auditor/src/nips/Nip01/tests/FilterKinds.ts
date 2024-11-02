@@ -14,7 +14,8 @@ export class FilterKinds extends SuiteTest implements ISuiteTest {
   limit: number = 5
 
   constructor(suite: ISuite) {
-    super(suite, new KindIngestor());
+    super(suite);
+    this.registerIngestor(this.ingestor);
   }
 
   get filters(): Nip01Filter[] {
@@ -28,7 +29,6 @@ export class FilterKinds extends SuiteTest implements ISuiteTest {
 
   test({behavior, conditions}){
     conditions.toBeOk(this.kindsReturned.length > 0, 'sample data size is sufficient for test');
-
     const moreThanZero = this.kindsReturned.length > 0
     const returnedOnlyEventKinds = this.kindsReturned.every((item: number) => this.ingestor.poop().includes(item));
     behavior.toBeOk(moreThanZero, 'returned at least one event');

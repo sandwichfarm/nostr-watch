@@ -12,7 +12,7 @@ export class ValidateSchema extends SuiteTest implements ISuiteTest {
   searches: string[] = [];
 
   constructor(suite: ISuite) {
-    super(suite, new ContentIngestor());
+    super(suite);
   }
 
   async prepare() {

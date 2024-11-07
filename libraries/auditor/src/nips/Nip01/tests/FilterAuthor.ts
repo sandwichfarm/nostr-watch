@@ -14,7 +14,8 @@ export class FilterAuthor extends SuiteTest implements ISuiteTest {
   limit: number = 1;
 
   constructor(suite: ISuite) {
-    super(suite, new AuthorIngestor());
+    super(suite);
+    this.registerIngestor(new AuthorIngestor());
   }
 
   get filters(): INip01Filter[] {

@@ -17,7 +17,8 @@ export class Search extends SuiteTest implements ISuiteTest {
   completeOn: CompleteOnTypeArray = ['off'];
   
   constructor(suite: ISuite) {
-    super(suite, new ContentIngestor());
+    super(suite);
+    this.registerIngestor(new ContentIngestor());
   }
 
   get filters(): Nip50Filter[] {

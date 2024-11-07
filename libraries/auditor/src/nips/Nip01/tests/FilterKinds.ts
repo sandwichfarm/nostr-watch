@@ -15,7 +15,7 @@ export class FilterKinds extends SuiteTest implements ISuiteTest {
 
   constructor(suite: ISuite) {
     super(suite);
-    this.registerIngestor(this.ingestor);
+    this.registerIngestor(new KindIngestor());
   }
 
   get filters(): INip01Filter[] {

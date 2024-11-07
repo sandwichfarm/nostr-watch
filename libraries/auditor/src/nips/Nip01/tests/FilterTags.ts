@@ -18,7 +18,8 @@ export class FilterTags extends SuiteTest implements ISuiteTest {
   limit: number = 1;
 
   constructor(suite: ISuite) {
-    super(suite, new SingleTagIngestor());
+    super(suite);
+    this.registerIngestor(new SingleTagIngestor());
   }
 
   get filters(): INip01Filter[] {

@@ -18,7 +18,7 @@ let   RELAYS_SCRAPE = [],
 let options = { 
   filters,
   adapter: 'bullmq',
-  queueName: `trawler/1`,
+  queueName: `trawler/2`,
   repeatWhenComplete: true,
   restDuration: 1000*60*5,
   strictTimestamps: true,
@@ -41,7 +41,7 @@ let options = {
 }
 
 if(process?.env?.NWCACHE_PATH){
-  options = { ...options, cache: { path: process.env.NWCACHE_PATH } }
+  options = { ...options, cache: { path: './cache/nostrawl' } }
   console.log(options)
 }
 
@@ -73,12 +73,13 @@ const parser = async ($trawler, event) => {
 const validator = ($trawler, event) => {
   const REJECT = false 
   const ACCEPT = true
-
+  
   if(!kinds.includes(event.kind)) {
     return REJECT
   }
+
   const noteIsUnknown = $trawler.cache.get(`has:${event.id}`) === undefined
-  return noteIsUnknown? ACCEPT: REJECT
+  return noteIsUnknown? ACCEPT: REJECT  
 }
 
 const after_cacheOpen = async (trawlerCache) => {

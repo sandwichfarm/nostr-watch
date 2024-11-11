@@ -72,6 +72,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   populate(filters: Filter[]): void {
+    console.log(`[WebsocketAdapter:${this.constructor.name}] populate`, filters)
     const { kinds } = filters[0]
     if(kinds?.includes(10166)) {
       this.command('toWorker', 'subscribeAndCacheAndReturn', filters)

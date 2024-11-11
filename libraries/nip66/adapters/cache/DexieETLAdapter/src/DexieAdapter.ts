@@ -11,7 +11,6 @@ import {
   CheckResultKeys, 
   defaultCheckResultKeys, 
   defaultRelayResultKeys, 
-  // GeohashOptions, 
   GetCheckParameters, 
   ICacheAdapter, 
   MonitorResult, 
@@ -24,7 +23,6 @@ import {
 } from '@nostrwatch/nip66/core';
 
 //adapter
-import { DexieQueue, DexieTask } from './DexieQueue';
 import { RelayDb } from './db';
 
 // @ts-ignore: No default export error
@@ -36,14 +34,11 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   readonly metaUrl: string = import.meta.url
 
   private _idb: any;
-  // private queue: DexieQueue;
 
   constructor(isMainThread: boolean = true) {
     super()
     this._idb = new RelayDb();
     
-    // this.queue = new DexieQueue( this.dexieTaskWorker.bind(this) )
-    //console.log('metaurl', this.metaUrl) 
     if(isMainThread) {
       this.bindWorkerHandlers()
     }
@@ -65,30 +60,6 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
   async newWorker(): Promise<Worker> {
     return DexieWorker();
   }
-
-  // async newSharedWorker(): Promise<SharedWorker> {
-  //   // const source = `import("${DexieAdapter.generatePaths(this.slug, this.metaUrl).sharedWorkerPath}").then(({ default }) => default())`;
-  //   // return new SharedWorker('data:application/javascript;base64,' + btoa(source));
-  //   // const blob = await fetch(new URL('./workers/dexie.shared.worker.ts', import.meta.url))
-  //   //   .then((response) => response.blob());
-  //   // var url = URL.createObjectURL(blob);
-  //   // return new SharedWorker(url);
-  //   // return new _SharedWorker()
-  //   return new DexieWorker({ type: 'module' });
-  // }
-
-  // async addEventsToQueue( events: IEvent[] ){
-  //   await this.queue.add({ goal: "processEvents", events })
-  // }
-
-  // async dexieTaskWorker(task: DexieTask){
-  //   const { id, count, goal, events } = task
-  //   if(goal === "processEvents"){
-  //     for(const event of events){
-  //       await this.addEvent(event.id, event).catch(console.warn)
-  //     }
-  //   }
-  // }
 
   // EVENT: SINGULAR
   async addEvent(event: IEvent): Promise<void> {
@@ -146,7 +117,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   /*events*/
   // Basic CRUD operations for monitors`
-  async addMonitor(monitor: IEvent): Promise<void> { 
+  async addMonitor(monitor: IMonitor): Promise<void> { 
     return new Promise((resolve, reject) => {
       this.idb.monitors.add(monitor)
         .then(() => resolve(void 0))
@@ -154,7 +125,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
     })
   }
 
-  async putMonitor(monitor: IEvent): Promise<void> { 
+  async putMonitor(monitor: IMonitor): Promise<void> { 
     return new Promise((resolve, reject) => {
       this.idb.monitors.put(monitor)
         .then(() => resolve(void 0))
@@ -164,6 +135,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   async patchMonitor(monitor: Partial<IMonitor>): Promise<void> { 
     return new Promise((resolve, reject) => {
+      if(!monitor?.id) return resolve(void 0)
       this.idb.monitors.update(monitor.id, monitor)
         .then(() => resolve(void 0))
         .catch(reject)
@@ -180,7 +152,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
       return result;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       this.idb.monitors.where(params).toArray()
         .then((monitors: IMonitor[]) => {
           for(const monitor of monitors){
@@ -202,9 +174,9 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
           this.idb.events
             .where('pubkey').equals(pubkey)
             .and( (event: IEvent) => {
-              kinds.includes(event.kind) 
+              return kinds.includes(event.kind) 
             })
-        const events: IEvent[] = collection.toArray()
+        const events: IEvent[] = await collection.toArray()
         for(const event of events){
           if(event.kind === 10166){
             result.registration = event
@@ -357,7 +329,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
       return result;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       this.idb.relays.where(params).toArray()
         .then((relays: IRelay[]) => {
           for(const relay of relays){
@@ -369,8 +341,12 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
         })
         .catch(reject)
       if(resultKeys.includes('checkRecords') || resultKeys.includes('checks')) {
-        this.idb.checks.where('relay').anyof(Object.values(result).map(r => r.record.relay)).toArray()  
-          .then((events: IEvent[]) => {
+        this.idb.checks
+          .where('relay')
+          .anyOf(Object.values(result).map(r => r.record.relay))
+          .toArray()  
+          .then(async (checks: ICheck[]) => {
+            const events: IEvent[] = await this.idb.events.where('id').anyOf(checks.map( c => c.nid)).toArray()
             for(const event of events){
               const relay = event.tags.find(t => t[0] === 'd')?.[1]
               if( !relay ) {
@@ -389,7 +365,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
           .catch(reject)
       }
       if(resultKeys.includes('checks')) {
-        const events = this.idb.events.toArray()
+        const events: IEvent[] = await this.idb.events.toArray()
         for(const event of events){
           const relay = event.tags.find((t: string[]) => t[0] === 'd')?.[1]
           if( !relay ) {
@@ -468,7 +444,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
     return new Promise((resolve, reject) => {
       this.idb.checks.where(params).first()
-        .then((check: IEvent) => {
+        .then((check?: ICheck) => {
           result.record = check
         })
         .catch(reject)
@@ -508,7 +484,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
       delete params.rtt
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       this.idb.checks
         .where(params)
         .filter((check: ICheck) => this.ltgt(check, lt, gt))
@@ -525,7 +501,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
         })
         .catch(reject)
       if(resultKeys.includes('check')) {
-        const checks = this.idb.checks.where('nid').anyOf(Array.from(ids)).toArray()
+        const checks = await this.idb.checks.where('nid').anyOf(Array.from(ids)).toArray()
         for(const check of checks){
           result[check.nid].check = check
         }
@@ -560,21 +536,22 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
     return results.every(Boolean);
   }
 
-  async deleteCheck(checkParameters: GetCheckParameters): Promise<void> {
+  async deleteCheck(check: ICheck): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.idb.deleteCheck(checkParameters)
+      this.idb.deleteCheck(check)
         .then(() => resolve(void 0))
         .catch(reject)
     })
   }
 
-  async deleteChecks(checkParameters: GetCheckParameters): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.idb.deleteChecks(checkParameters)
-        .then(() => resolve(void 0))
-        .catch(reject)
-    })
-  }
+  // async deleteChecks(checks: ICheck[]): Promise<void> {
+    // return new Promise((resolve, reject) => {
+    //   this.idb.deleteChecks(checks)
+    //     .then(() => resolve(void 0))
+    //     .catch(reject)
+    // })
+  //   return void 0;
+  // }
 
   async clearChecks(): Promise<void> {
     try {

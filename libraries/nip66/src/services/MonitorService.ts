@@ -45,12 +45,12 @@ export class MonitorService {
   }
 
   async bootstrap(): Promise<void> {  
-    //console.log('MonitorService bootstrap')
+    console.log('MonitorService bootstrap')
     this.populateMonitors();
   }
 
   populateMonitors(): void {
-    //console.log('populateMonitors')
+    console.log('populateMonitors')
     this.populateRegistrations();
     // this.populateRelayLists(); 
     // this.populateProfiles();  
@@ -124,8 +124,8 @@ export class MonitorService {
 
   async updateCacheMonitorActive(pubkey: string, lastActive: number): Promise<void> { 
     const monitor = { pubkey, lastActive }
-    if(!this.cacheAdapter?.patchMonitor) return console.warn('CacheAdapter does not support patchMonitor');
-    await this.cacheAdapter.patchMonitor(monitor);
+    // if(!this.cacheAdapter?.patchMonitor) return console.warn('CacheAdapter does not support patchMonitor');
+    // await this.cacheAdapter.patchMonitor(monitor);
   }
 
   // async _fetchMonitors(): Promise<IEvent[] | undefined> { return }

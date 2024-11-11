@@ -125,18 +125,19 @@ export interface ICacheAdapter extends IAdapter {
 
   // C 
     addEvent(event: IEvent): Promise<void>;
+    addEvents(events: IEvent[]): Promise<void>;
     putEvent(event: IEvent): Promise<void>;
 
   // R
-    getEvent(id: string): Promise<IEvent | null>;
-    eventExists?(id: string): Promise<boolean>;
+    // getEvent(id: string): Promise<IEvent | null>;
+    // eventExists?(id: string): Promise<boolean>;
 
   // U 
     // Events are immutable, no updates
 
   // D
-    deleteEvent(id: string): Promise<void>;
-    clearEvents(): Promise<void>;
+    // deleteEvent(id: string): Promise<void>;
+    // clearEvents(): Promise<void>;
   
   /* end: EVENTS */
 
@@ -147,35 +148,35 @@ export interface ICacheAdapter extends IAdapter {
    */
 
   // C 
-    addMonitor(monitor: IEvent): Promise<void>;
-    putMonitor(monitor: IEvent): Promise<void>;
+    // addMonitor(monitor: IEvent): Promise<void>;
+    // putMonitor(monitor: IEvent): Promise<void>;
 
   // R
-    getMonitor(params: GetMonitorParameters, resultKeys: MonitorResultKeys): Promise<MonitorResult | null>;
-      getMonitorRecord?(params: GetMonitorParameters): Promise<IMonitor>;
-      getMonitorRegistration?(params: GetMonitorParameters): Promise<IEvent>;
-      getMonitorProfile?(params: GetMonitorParameters): Promise<IEvent>;
-      getMonitorRelayList?(params: GetMonitorParameters): Promise<IEvent>;
-    getMonitors(params: GetMonitorsParameters, resultKeys: MonitorResultKeys): Promise<MonitorsResult>;
-      getMonitorsRecords?(params: GetMonitorsParameters): Promise<IMonitor[]>;
-      getMonitorsRegistrations?(params: GetMonitorsParameters): Promise<IEvent[]>;
-      getMonitorsProfiles?(params: GetMonitorsParameters): Promise<IEvent[]>;
-      getMonitorsRelayLists?(params: GetMonitorsParameters): Promise<IEvent[]>;
-      //
-      getMonitorsByChecks?(checks: string[]): Promise<IEvent[]>;
-      getMonitorsByDistance?(targetGeohash: string, options: GeohashOptions): Promise<IEvent[]>;
-      getMonitorsByFrequency?(frequency: number, operator: ">" | "<"): Promise<IEvent[]>;
-    ensureMonitorExists?(id: string): Promise<boolean>;
-    ensureMonitorActive?(id: string): Promise<boolean>;
+    // getMonitor(params: GetMonitorParameters, resultKeys: MonitorResultKeys): Promise<MonitorResult | null>;
+    //   getMonitorRecord?(params: GetMonitorParameters): Promise<IMonitor>;
+    //   getMonitorRegistration?(params: GetMonitorParameters): Promise<IEvent>;
+    //   getMonitorProfile?(params: GetMonitorParameters): Promise<IEvent>;
+    //   getMonitorRelayList?(params: GetMonitorParameters): Promise<IEvent>;
+    // getMonitors(params: GetMonitorsParameters, resultKeys: MonitorResultKeys): Promise<MonitorsResult>;
+    //   getMonitorsRecords?(params: GetMonitorsParameters): Promise<IMonitor[]>;
+    //   getMonitorsRegistrations?(params: GetMonitorsParameters): Promise<IEvent[]>;
+    //   getMonitorsProfiles?(params: GetMonitorsParameters): Promise<IEvent[]>;
+    //   getMonitorsRelayLists?(params: GetMonitorsParameters): Promise<IEvent[]>;
+    //   //
+    //   getMonitorsByChecks?(checks: string[]): Promise<IEvent[]>;
+    //   getMonitorsByDistance?(targetGeohash: string, options: GeohashOptions): Promise<IEvent[]>;
+    //   getMonitorsByFrequency?(frequency: number, operator: ">" | "<"): Promise<IEvent[]>;
+    // ensureMonitorExists?(id: string): Promise<boolean>;
+    // ensureMonitorActive?(id: string): Promise<boolean>;
 
   // U
-    patchMonitor?(monitor: Partial<IMonitor>): Promise<void>;
-    updateMonitor?(monitor: IMonitor): Promise<void>; //alias for putMonitor
+    // patchMonitor?(monitor: Partial<IMonitor>): Promise<void>;
+    // updateMonitor?(monitor: IMonitor): Promise<void>; 
 
   // D
-    deleteMonitor(id: string): Promise<void>;
-    deleteMonitors(ids: string[]): Promise<void>;
-    clearMonitors(): Promise<void>;
+    // deleteMonitor(id: string): Promise<void>;
+    // deleteMonitors(ids: string[]): Promise<void>;
+    // clearMonitors(): Promise<void>;
 
   /* end: MONITORS */
 
@@ -186,28 +187,28 @@ export interface ICacheAdapter extends IAdapter {
    */
 
   // C
-    addRelay(relay: IRelay): Promise<void>;
-    putRelay(relay: IRelay): Promise<void>;
+    // addRelay(relay: IRelay): Promise<void>;
+    // putRelay(relay: IRelay): Promise<void>;
     
   // R
     //methods
-    getRelay(relay: string, resultKeys: RelayResultKeys): Promise<RelayResult | null>;
-      getRelayRecord?(relay: string, resultKeys: RelayResultKeys): Promise<IRelay>;
-      getRelayCheckRecords?(relay: string, resultKeys: RelayResultKeys): Promise<ICheck[]>;
-      getRelayCheckEvents?(relay: string, resultKeys: RelayResultKeys): Promise<IEvent[]>
-    getRelays(params: GetRelaysParameters, resultKeys: RelayResultKeys): Promise<RelaysResult>;
-      getRelaysRecords?(params: GetRelaysParameters): Promise<IRelay[]>;
-      getRelaysCheckRecords?(params: GetRelaysParameters): Promise<ICheck[][]>;
-      getRelaysCheckEvents?(params: GetRelaysParameters): Promise<IEvent[][]>;
+    // getRelay(relay: string, resultKeys: RelayResultKeys): Promise<RelayResult | null>;
+    //   getRelayRecord?(relay: string, resultKeys: RelayResultKeys): Promise<IRelay>;
+    //   getRelayCheckRecords?(relay: string, resultKeys: RelayResultKeys): Promise<ICheck[]>;
+    //   getRelayCheckEvents?(relay: string, resultKeys: RelayResultKeys): Promise<IEvent[]>
+    // getRelays(params: GetRelaysParameters, resultKeys: RelayResultKeys): Promise<RelaysResult>;
+    //   getRelaysRecords?(params: GetRelaysParameters): Promise<IRelay[]>;
+    //   getRelaysCheckRecords?(params: GetRelaysParameters): Promise<ICheck[][]>;
+    //   getRelaysCheckEvents?(params: GetRelaysParameters): Promise<IEvent[][]>;
 
   // U
     patchRelay?(relay: Partial<IRelay>): Promise<void>;
     updateRelay?(relay: IRelay): Promise<void>; //alias for patchRelay
 
   // D
-    deleteRelay(id: string): Promise<void>;
-    deleteRelays(relays: string[]): Promise<void>;
-    clearRelays(): Promise<void>;
+    // deleteRelay(id: string): Promise<void>;
+    // deleteRelays(relays: string[]): Promise<void>;
+    // clearRelays(): Promise<void>;
 
   /* end: RELAYS */
 
@@ -218,24 +219,24 @@ export interface ICacheAdapter extends IAdapter {
    */
 
   // C  
-    addCheck(check: IEvent): Promise<void>;
-    putCheck(check: IEvent): Promise<void>;
+    // addCheck(check: IEvent): Promise<void>;
+    // putCheck(check: IEvent): Promise<void>;
 
   // R
-    getCheck(checkParameters: GetCheckParameters, resultKeys: CheckResultKeys): Promise<CheckResult | null>;
-      getCheckRecord?(checkParameters: GetCheckParameters): Promise<ICheck>;
-      getCheckEvent?(checkParameters: GetCheckParameters): Promise<IEvent>;
-    getChecks(checksParameters: GetChecksParameters, resultKeys: CheckResultKeys): Promise<ChecksResult>;
-      getChecksRecords?(checksParameters: GetChecksParameters): Promise<ICheck[]>;
-      getChecksEvents?(checksParameters: GetChecksParameters): Promise<IEvent[]>;
+    // getCheck(checkParameters: GetCheckParameters, resultKeys: CheckResultKeys): Promise<CheckResult | null>;
+    //   getCheckRecord?(checkParameters: GetCheckParameters): Promise<ICheck>;
+    //   getCheckEvent?(checkParameters: GetCheckParameters): Promise<IEvent>;
+    // getChecks(checksParameters: GetChecksParameters, resultKeys: CheckResultKeys): Promise<ChecksResult>;
+    //   getChecksRecords?(checksParameters: GetChecksParameters): Promise<ICheck[]>;
+    //   getChecksEvents?(checksParameters: GetChecksParameters): Promise<IEvent[]>;
 
   // U
     //Checks don't have updates, they are immutable
   
   // D
-    deleteCheck(checkParameters: GetCheckParameters): Promise<void>;
-    deleteChecks(checksParameters: GetChecksParameters): Promise<void>;
-    clearChecks(): Promise<void>;
+    // deleteCheck(check: ICheck): Promise<void>;
+    // deleteChecks(checks: ICheck[]): Promise<void>;
+    // clearChecks(): Promise<void>;
 
   /* end: CHECKS */
 }
@@ -614,14 +615,14 @@ class CacheAdapterMethods {
   // D
 
   //@overload
-  async deleteCheck(checkParameters: GetCheckParameters): Promise<void> {
+  async deleteCheck(check: ICheck): Promise<void> {
     return void 0;
   }
 
   //@overload
-  async deleteChecks(checksParameters: GetChecksParameters): Promise<void> {
-    return void 0;
-  }
+  // async deleteChecks(checks: ICheck[]): Promise<void> {
+  //   return void 0;
+  // }
 
   //@overload
   async clearChecks(): Promise<void> {

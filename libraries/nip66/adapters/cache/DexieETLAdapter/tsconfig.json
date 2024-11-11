@@ -20,6 +20,6 @@
     "baseUrl": "./",
     "paths": {}
   },
-  "include": ["src/**/*", "node_modules"],
-  "exclude": ["dist", "adapters/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["dist", "adapters/**/*", "node_modules"]
 }

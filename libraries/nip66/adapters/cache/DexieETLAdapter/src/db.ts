@@ -4,7 +4,7 @@ import { IEvent, IMonitor, IRelay, ICheck, INip11, IGeocode } from '@nostrwatch/
 import { transform30166, transform10166,  } from '@nostrwatch/nip66/transform';
 import { delay } from '@nostrwatch/utils';
 import PQueue from 'p-queue';
-import TransformEvent from 'node_modules/@nostrwatch/nip66/src/transform/TransformEvent';
+import { TransformEvent } from '@nostrwatch/nip66/transform';
 
 const devnull = () => {}
 
@@ -215,10 +215,10 @@ export class RelayDb extends Dexie implements IRelayDb {
 
     //populate relays first.
     this.queue.add( async() => {
-      const updated = await this.relays.update(relay, existing => {
-        if (existing.lastSeen < created_at) {
+      const updated = await this.relays.update(relay, (existing: IRelay) => {
+        if (existing && existing.lastSeen < created_at) {
           existing.lastSeen = created_at;
-          return existing;
+          return true;
         }
       });
       if (!updated) {

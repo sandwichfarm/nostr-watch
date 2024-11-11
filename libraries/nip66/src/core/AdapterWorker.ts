@@ -38,7 +38,8 @@ export class AdapterWorker {
   private _context?: WorkerContext
   private _mainThread?: IWorkerGlobalScope;
   private _channelPort?: MessagePort;
-  // private _sharedWorkerPort?: MessagePort;
+
+  useWorker: boolean = true;
 
   constructor( options?: WorkerOptions ){
     if(!options) return 

@@ -13,6 +13,8 @@ export interface AdapterCacheWorkerResult extends AdapterWorkerCommand {
 }
 
 export interface IAdapterCacheWorker {
+  useWorker: boolean;
+  
   setup(command: AdapterCacheWorkerCommand): void;
   addEvent(events: IEvent): Promise<void>;
   addEvents(events: IEvent[]): Promise<void>;
@@ -60,7 +62,6 @@ export class AdapterCacheWorker extends AdapterWorker {
     else {
       await this.addEvent(event)
     }
-    // this.addToQueue(command)
   }
 
   async onMainThreadMessage(command: AdapterCacheWorkerCommand): Promise<void> {

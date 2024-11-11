@@ -25,6 +25,7 @@
     "build:types": "tsc --emitDeclarationOnly",
     "dev": "node build.js",
     "clean": "rm -rf dist",
+    "clean:source": "find src -name \"*.d.ts\" -type f -delete && find src -name \"*.d.ts.map\" -type f -delete",
     "test": "jest",
     "prepare": "yarn build"
   },

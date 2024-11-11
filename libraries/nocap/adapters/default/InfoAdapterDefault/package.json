@@ -34,7 +34,7 @@
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "@sandwichfarm/torfetch": "https://github.com/sandwichfarm/tor-fetch.git#95c4cc7afbcc6786557e7bc6b6efb020865a197f",
+    "@sandwichfarm/torfetch": "https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277",
     "ajv": "8.17.1",
     "cross-fetch": "4.0.0",
     "tor-request": "^3.1.0"

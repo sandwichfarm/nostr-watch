@@ -1,7 +1,7 @@
 import esbuild from 'esbuild';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import glob from 'glob';
+import * as glob from 'glob';
 import { clean } from 'esbuild-plugin-clean';
 import inlineWorkerPlugin from 'esbuild-plugin-inline-worker';
 import { polyfillNode } from "esbuild-plugin-polyfill-node";

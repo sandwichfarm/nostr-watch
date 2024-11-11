@@ -15,6 +15,8 @@ import {
 import { IEvent } from "@base/models";
 
 export interface IAdapterWebsocketWorker {
+  useWorker: boolean;
+
   setup(command: AdapterWebsocketWorkerCommand): Promise<void>;
   subscribeAndCache(filters: Filter[] | Filter): Promise<void>;
   subscribeAndReturn(filters: Filter[] | Filter): Promise<void | IEvent[]>;
@@ -151,17 +153,17 @@ export class AdapterWebsocketWorker extends AdapterWorker {
             continue;
           }
           //console.log(`AdapterWebsocketWorker: adding check subscription for ${authors} with kinds 0 and 10002`)
-          this.addToQueue({ 
-            type: 'subscribeAndCacheAndReturn', 
-            filters: [{ authors, kinds: [0, 10002] }]
-          })
+          // this.addToQueue({ 
+          //   type: 'subscribeAndCacheAndReturn', 
+          //   filters: [{ authors, kinds: [0, 10002] }]
+          // })
           //console.log(`AdapterWebsocketWorker: adding check subscription for ${authors} since ${since}, with kinds 30166`)
-          this.addToQueue({ 
-            type: 'subscribeAndCacheAndReturn', 
-            filters: [
-              { authors, since, kinds: [30166] },
-            ] 
-          })
+          // this.addToQueue({ 
+          //   type: 'subscribeAndCacheAndReturn', 
+          //   filters: [
+          //     { authors, since, kinds: [30166] },
+          //   ] 
+          // })
         }
       })
     };

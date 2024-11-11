@@ -5,7 +5,7 @@ import { IEvent } from "@nostrwatch/nip66/interfaces";
 import { applyMixins } from '@nostrwatch/nip66/utils'
 import { NostrToolsMethods } from './NostrToolsMethods'
 import { Filter } from "nostr-tools";
-import { AdapterWorkerResultType } from "node_modules/@nostrwatch/nip66/src/core";
+import { AdapterWorkerResultType } from "@nostrwatch/nip66/core";
 
 interface NostrToolsWorkerCommand extends AdapterWebsocketWorkerCommand {}
 
@@ -36,7 +36,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
 
   //begin: adapter helper methods
   async subscribeAndCache(filters: Filter[] | Filter){
-    //console.log('NostrToolsWorker: subscribeAndCache', filters)
+    console.log('NostrToolsWorker: subscribeAndCache', filters)
     const callbacks = {
       onevent: (event: IEvent) => {
         this.command('toChannel', AdapterWorkerResultType.event, event)
@@ -46,7 +46,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   async subscribeAndReturn(filters: Filter[] | Filter): Promise<void | IEvent[]>{
-    //console.log('NostrToolsWorker: subscribeAndReturnToAdapter', filters) 
+    console.log('NostrToolsWorker: subscribeAndReturnToAdapter', filters) 
     const callbacks = {
       onevent: (event: IEvent) => {
         this.command('toAdapter', AdapterWorkerResultType.event, event)
@@ -56,7 +56,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   async subscribeAndCacheAndReturn(filters: Filter[] | Filter): Promise<void | IEvent[]>{
-    //console.log('NostrToolsWorker: subscribeAndCacheAndReturnToAdapter', filters)
+    console.log('NostrToolsWorker: subscribeAndCacheAndReturnToAdapter', filters)
     const callbacks = {
       onevent: (event: IEvent) => {
         this.command('toChannel', AdapterWorkerResultType.event, event)
@@ -67,7 +67,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   async subscribeAndCacheAndKeepOpen(filters: Filter[] | Filter): Promise<void>{
-    //console.log('NostrToolsWorker: subscribeAndCache', filters)
+    console.log('NostrToolsWorker: subscribeAndCache', filters)
     const keepAlive = true
     const callbacks = {
       onevent: (event: IEvent) => {
@@ -84,23 +84,24 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   async fetchAndCache(filters: Filter[] | Filter): Promise<void>{
-    //console.log('NostrToolsWorker: fetchAndCache', filters)
+    console.log('NostrToolsWorker: fetchAndCache', filters)
     const events = await this.fetch(filters)
     this.command('toChannel', AdapterWorkerResultType.events, events)
   }
 
   async fetchAndReturn(filters: Filter[] | Filter): Promise<void | IEvent[]>{
-    //console.log('NostrToolsWorker: fetchAndReturnToAdapter', filters)
+    console.log('NostrToolsWorker: fetchAndReturnToAdapter', filters)
     const events = await this.fetch(filters)
     this.command('toAdapter', AdapterWorkerResultType.events, events)
     return events
   }
 
   async fetchAndCacheAndReturn(filters: Filter[] | Filter): Promise<void | IEvent[]>{
-    //console.log('NostrToolsWorker: fetchAndCacheAndReturnToAdapter', filters)
+    console.log('NostrToolsWorker: fetchAndCacheAndReturnToAdapter', filters)
     const events = await this.fetch(filters)
     this.command('toChannel', AdapterWorkerResultType.events, events)
     this.command('toAdapter', AdapterWorkerResultType.events, events)
+    
     return events
   }
 }

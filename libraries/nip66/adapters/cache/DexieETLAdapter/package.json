@@ -26,7 +26,8 @@
     "build:types": "tsc --emitDeclarationOnly",
     "dev": "node build.js",
     "clean": "rm -rf dist",
-    "test": "jest",
+    "clean:source": "find src -name \"*.d.ts\" -type f -delete && find src -name \"*.d.ts.map\" -type f -delete",
+    "test": "vitest",
     "prepare": "yarn build"
   },
   "devDependencies": {
@@ -45,6 +46,7 @@
     "get-port": "7.1.0",
     "jest": "^29.6.1",
     "prettier": "^3.0.0",
+    "rimraf": "^6.0.1",
     "rollup-plugin-cleandir": "3.0.0",
     "rollup-plugin-copy": "3.5.0",
     "rollup-plugin-livereload": "2.0.5",

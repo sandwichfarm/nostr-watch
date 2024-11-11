@@ -11,6 +11,8 @@ export interface AdapterMessage {
 export interface IAdapter {
   worker?: SharedWorker | Worker; 
   workers?: Workers;
+  useWorker: boolean;
+
   newWorker(): Promise<Worker>;
 
   bindWorkerHandlers(): void;
@@ -35,6 +37,8 @@ export class Adapter {
   static metaUrl: string;
 
   private _workers?: Workers
+
+  useWorker: boolean = true;
 
   set workers(workers: Workers) {
     this._workers = workers;

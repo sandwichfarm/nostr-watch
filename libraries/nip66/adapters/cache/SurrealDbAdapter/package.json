@@ -1,0 +1,53 @@
+{
+  "name": "@nostrwatch/nip66-cacheadapter-surrealdb",
+  "type": "module",
+  "packageManager": "yarn@4.5.0",
+  "keywords": [
+    "nostr",
+    "NIP-66",
+    "adapter",
+    "cache",
+    "LocalStorage"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/browser/index.js"
+    }
+  },
+  "files": [
+    "dist/types",
+    "dist/browser",
+    "dist/browser/index_bg.wasm"
+  ],
+  "scripts": {
+    "build": "yarn clean && yarn build:types && node build.js && yarn clean:source",
+    "build:types": "tsc --emitDeclarationOnly",
+    "dev": "node build.js",
+    "clean": "rm -rf dist",
+    "clean:source": "find src -name \"*.d.ts\" -type f -delete && find src -name \"*.d.ts.map\" -type f -delete",
+    "test": "jest",
+    "prepare": "yarn build"
+  },
+  "dependencies": {
+    "@nostrwatch/nip66": "workspace:^",
+    "surrealdb": "^1.0.6"
+  },
+  "devDependencies": {
+    "@jgoz/esbuild-plugin-livereload": "^2.1.2",
+    "@surrealdb/wasm": "^1.0.2",
+    "esbuild": "^0.24.0",
+    "esbuild-plugin-clean": "^1.0.1",
+    "esbuild-plugin-inline-worker": "^0.1.1",
+    "esbuild-plugin-polyfill-node": "^0.3.0",
+    "esbuild-plugin-tsc": "^0.4.0",
+    "get-port": "^7.1.0",
+    "glob": "^11.0.0",
+    "rimraf": "^6.0.1",
+    "tsc": "^2.0.4",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  },
+  "peerDependencies": {
+    "@surrealdb/wasm": "*"
+  }
+}

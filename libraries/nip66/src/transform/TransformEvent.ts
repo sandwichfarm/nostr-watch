@@ -2,7 +2,7 @@ import { IEvent } from "@base/models"
 import { IEventEncoded } from "@base/models/EventEncoded"
 import { decodeByteArrayToJson, encodeJsonToByteArray } from "@base/utils/encoding"
 
-export default ( event: IEvent | IEventEncoded ): IEvent | IEventEncoded => {
+export const TransformEvent = ( event: IEvent | IEventEncoded ): IEvent | IEventEncoded => {
   //@ts-ignore
   if(event?.encoded){
     return decode(event as IEventEncoded)

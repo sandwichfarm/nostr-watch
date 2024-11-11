@@ -16,132 +16,41 @@
   "author": "bread@sandwich.farm",
   "license": "MIT",
   "exports": {
-    ".": [
-      {
-        "node": {
-          "import": "./dist/server/index.esm.js",
-          "require": "./dist/server/index.cjs.js"
-        }
-      },
-      {
-        "browser": {
-          "import": "./dist/browser/index.esm.js"
-        }
-      },
-      {
-        "import": "./dist/browser/index.esm.js",
-        "require": "./dist/server/index.cjs.js",
-        "types": "./dist/types/index.d.ts"
-      }
-    ],
-    "./core": [
-      {
-        "node": {
-          "import": "./dist/server/core/index.esm.js",
-          "require": "./dist/server/core/index.cjs.js"
-        }
-      },
-      {
-        "browser": {
-          "import": "./dist/browser/core/index.esm.js"
-        }
-      },
-      {
-        "import": "./dist/browser/core/index.esm.js",
-        "require": "./dist/server/core/index.cjs.js",
-        "types": "./dist/types/core/index.d.ts"
-      }
-    ],
-    "./interfaces": [
-      {
-        "node": {
-          "import": "./dist/server/interfaces/index.esm.js",
-          "require": "./dist/server/interfaces/index.cjs.js"
-        }
-      },
-      {
-        "browser": {
-          "import": "./dist/browser/interfaces/index.esm.js"
-        }
-      },
-      {
-        "import": "./dist/browser/interfaces/index.esm.js",
-        "require": "./dist/server/interfaces/index.cjs.js",
-        "types": "./dist/types/interfaces/index.d.ts"
-      }
-    ],
-    "./transform": [
-      {
-        "node": {
-          "import": "./dist/server/transform/index.esm.js",
-          "require": "./dist/server/transform/index.cjs.js"
-        }
-      },
-      {
-        "browser": {
-          "import": "./dist/browser/transform/index.esm.js"
-        }
-      },
-      {
-        "import": "./dist/browser/transform/index.esm.js",
-        "require": "./dist/server/transform/index.cjs.js",
-        "types": "./dist/types/transform/index.d.ts"
-      }
-    ],
-    "./models": [
-      {
-        "node": {
-          "import": "./dist/server/models/index.esm.js",
-          "require": "./dist/server/models/index.cjs.js"
-        }
-      },
-      {
-        "browser": {
-          "import": "./dist/browser/models/index.esm.js"
-        }
-      },
-      {
-        "import": "./dist/browser/models/index.esm.js",
-        "require": "./dist/server/models/index.cjs.js",
-        "types": "./dist/types/models/index.d.ts"
-      }
-    ],
-    "./utils": [
-      {
-        "node": {
-          "import": "./dist/server/utils/index.esm.js",
-          "require": "./dist/server/utils/index.cjs.js"
-        }
-      },
-      {
-        "browser": {
-          "import": "./dist/browser/utils/index.esm.js"
-        }
-      },
-      {
-        "import": "./dist/browser/utils/index.esm.js",
-        "require": "./dist/server/utils/index.cjs.js",
-        "types": "./dist/types/utils/index.d.ts"
-      }
-    ],
-    "./factoryWorker": [
-      {
-        "node": {
-          "import": "./dist/browser/factory/index.esm.js",
-          "require": "./dist/server/factory/index.cjs.js"
-        }
-      },
-      {
-        "browser": {
-          "import": "./dist/browser/factory/index.esm.js"
-        }
-      },
-      {
-        "import": "./dist/browser/factory/index.esm.js",
-        "require": "./dist/server/factory/index.cjs.js",
-        "types": "./dist/types/factory/index.d.ts"
-      }
-    ]
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/browser/index.esm.js",
+      "require": "./dist/server/index.cjs.js"
+    },
+    "./core": {
+      "types": "./dist/types/core/index.d.ts",
+      "import": "./dist/browser/core/index.esm.js",
+      "require": "./dist/server/core/index.cjs.js"
+    },
+    "./interfaces": {
+      "types": "./dist/types/interfaces/index.d.ts",
+      "import": "./dist/browser/interfaces/index.esm.js",
+      "require": "./dist/server/interfaces/index.cjs.js"
+    },
+    "./transform": {
+      "types": "./dist/types/transform/index.d.ts",
+      "import": "./dist/browser/transform/index.esm.js",
+      "require": "./dist/server/transform/index.cjs.js"
+    },
+    "./models": {
+      "types": "./dist/types/models/index.d.ts",
+      "import": "./dist/browser/models/index.esm.js",
+      "require": "./dist/server/models/index.cjs.js"
+    },
+    "./utils": {
+      "types": "./dist/types/utils/index.d.ts",
+      "import": "./dist/browser/utils/index.esm.js",
+      "require": "./dist/server/utils/index.cjs.js"
+    },
+    "./factoryWorker": {
+      "types": "./dist/types/factory/index.d.ts",
+      "import": "./dist/browser/factory/index.esm.js",
+      "require": "./dist/server/factory/index.cjs.js"
+    }
   },
   "dependencies": {
     "@nostrwatch/utils": "*",
@@ -186,6 +95,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist",
+    "clean:source": "find src -name \"*.d.ts\" -type f -delete && find src -name \"*.d.ts.map\" -type f -delete",
     "rollup": "rollup -c",
     "dev": "rollup -c --watch",
     "build": "yarn clean && yarn build:types && rollup -c",

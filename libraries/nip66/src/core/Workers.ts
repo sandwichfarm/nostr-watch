@@ -51,25 +51,17 @@ export class Workers {
     return this._channel;
   }
 
-  // async setupSharedWorkers(adapters: IAdaptersArgument){
-  //   //console.log('setupSharedWorkers', adapters)
-  //   this._cacheShared = (await adapters.cacheAdapter.newSharedWorker()) as SharedWorker
-  //   this._websocketShared = (await adapters.websocketAdapter.newSharedWorker()) as SharedWorker
-
-  //   this._websocketShared.port.start()
-  //   this._cacheShared.port.start()
-
-  //   this._websocketShared.port.postMessage({type: 'setup', channelPort: this.channel.port1}, [this.channel.port1]);
-  //   this._cacheShared.port.postMessage({type: 'setup', channelPort: this.channel.port2}, [this.channel.port2]);
-  // }
-
   async setupWorkers(adapters: IAdaptersArgument){
-    //console.log('setupWorkers', adapters)
-    this._cache = (await adapters.cacheAdapter.newWorker()) as Worker
-    this._websocket = (await adapters.websocketAdapter.newWorker()) as Worker
-
-    this.websocketDedicated?.postMessage({type: 'setup', channelPort: this.channel.port1}, [this.channel.port1]);
-    this.cacheDedicated?.postMessage({type: 'setup', channelPort: this.channel.port2}, [this.channel.port2]);
+    if(adapters.cacheAdapter.useWorker){
+      this._cache = (await adapters.cacheAdapter.newWorker()) as Worker
+    }
+    if(adapters.websocketAdapter.useWorker){
+      this._websocket = (await adapters.websocketAdapter.newWorker()) as Worker
+    }
+    if(adapters.cacheAdapter.useWorker && adapters.websocketAdapter.useWorker){
+      this.websocketDedicated?.postMessage({type: 'setup', channelPort: this.channel.port1}, [this.channel.port1]);
+      this.cacheDedicated?.postMessage({type: 'setup', channelPort: this.channel.port2}, [this.channel.port2]);  
+    }
     this._ready = true;
   }
 

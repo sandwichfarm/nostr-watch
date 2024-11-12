@@ -70,6 +70,9 @@
 		"tslib": "^2.4.1",
 		"typescript": "^5.0.0",
 		"vite": "^5.0.11",
+		"vite-plugin-copy": "^0.1.6",
+		"vite-plugin-top-level-await": "^1.4.4",
+		"vite-plugin-wasm": "^3.3.0",
 		"vitest": "^2.0.0"
 	},
 	"svelte": "./dist/index.js",

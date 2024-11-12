@@ -4,7 +4,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 export default defineConfig({
   plugins: [sveltekit()],
   optimizeDeps: {
-    exclude: ["@surrealdb/wasm"],
+    exclude: ["@nostrwatch/nip66-cacheadapter-surrealdb"],
     esbuildOptions: {
         target: "esnext",
     },
@@ -18,7 +18,8 @@ export default defineConfig({
     fs: {
       allow: [
         searchForWorkspaceRoot(process.cwd()),
-        '/Users/sandwich/Develop/nostr-watch/libraries/nip66/adapters/cache/SurrealDbAdapter/node_modules/@surrealdb/wasm/dist/surreal/index_bg.wasm'
+        '*'
+        // '/Users/sandwich/Develop/nostr-watch/libraries/nip66/adapters/cache/SurrealDbAdapter/node_modules/@surrealdb/wasm/dist/surreal/index_bg.wasm'
       ],
     },
   },

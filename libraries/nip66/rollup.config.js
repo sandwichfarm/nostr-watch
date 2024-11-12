@@ -33,7 +33,7 @@ function onwarn(warning, warn) {
   warn(warning);
 }
 
-import glob from 'glob'
+import * as glob from 'glob'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

@@ -23,6 +23,8 @@ export interface IAdapter {
   onMessage(command: IAdapterWorkerCommand): void;
   onError(error: any): void;
 
+  ready(): Promise<void>;
+
   ping(): void;
 }
 
@@ -49,6 +51,8 @@ export class Adapter {
   get workers(): Workers | undefined {
     return this._workers;
   }
+
+  async ready(): Promise<void> {}
 
   private _bindWorkerHandlers(): void {
     //console.log('bindWorkerHandlers()')

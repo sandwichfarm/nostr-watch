@@ -21,6 +21,8 @@ export interface AdapterWorkerCommand extends AdapterWorkerMessage {
 export enum AdapterWorkerResultType {
   "events" = "events",
   "event" = "event",
+  "record" = "record",
+  "records" = "records",
 }
 
 export interface AdapterWorkerResult extends AdapterWorkerMessage {

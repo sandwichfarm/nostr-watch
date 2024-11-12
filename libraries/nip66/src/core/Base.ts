@@ -72,6 +72,14 @@ export default class {
   async init() {
     await this.setupWorkers()
     await this.setupServices()
+    await this.adaptersReady()
+  }
+
+  async adaptersReady(){
+    if(this?.cacheAdapter)
+      await this?.cacheAdapter.ready()
+    if(this?.websocketAdapter)
+      await this?.websocketAdapter.ready()
   }
 
   async setupWorkers(){

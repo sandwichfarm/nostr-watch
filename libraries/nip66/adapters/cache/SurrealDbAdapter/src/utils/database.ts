@@ -5,7 +5,7 @@ import nip11Model from '../db/schema/Nip11';
 import relayModel from '../db/schema/Relay';
 import sslModel from '../db/schema/Ssl';
 import checkModel from '../db/schema/Check';
-import Surreal, { AnyAuth } from 'surrealdb';
+import Surreal, { AnyAuth, QueryResult } from 'surrealdb';
 
 const models = [
   eventModel,
@@ -17,33 +17,31 @@ const models = [
   checkModel,
 ];
 
-export async function initDb(RelayDb: Surreal, namespace: string, database: string) {
+export interface IndexInfo {
+  name: string;
+}
+
+export interface TableInfo {
+  indexes: IndexInfo[]; 
+}
+
+export async function initDb(db: Surreal, namespace: string, database: string) {
 
   try {
     console.log('Initializing the database');
 
-    console.log(`Connecting to SurrealDb with namespace ${namespace} and database ${database}`);
-
-    await RelayDb.use({namespace, database})
-
-    // const token = await RelayDb.signin({
-    //   scope: 'admin',
-    //   user: 'root',
-    //   pass: 'root',
-    // } as AnyAuth);
-
-    // console.log('Signed in with token:', token);
+    await db.use({namespace, database})
 
     for (const model of models) {
-      await createTableSchema(RelayDb, model);
+      await createTableSchema(db, model);
     }
 
     for (const model of models) {
-      await defineRelationships(RelayDb, model);
+      await defineRelationships(db, model);
     }
 
     for (const model of models) {
-      await defineIndices(RelayDb, model);
+      await defineIndices(db, model);
     }
 
     console.log('All models have been set up successfully!');
@@ -52,14 +50,14 @@ export async function initDb(RelayDb: Surreal, namespace: string, database: stri
   }
 }
 
-async function createTableSchema(RelayDb: Surreal, model: any) {
+async function createTableSchema(db: Surreal, model: any) {
   const { name, version, schema } = model;
 
-  const tableExists = await checkTableExists(RelayDb, name);
+  const tableExists = await checkTableExists(db, name);
 
   if (!tableExists) {
     console.log(`Creating table schema for ${name}`);
-    await RelayDb.query(`
+    await db.query(`
       ${schema}
 
       -- Store the schema version
@@ -73,27 +71,47 @@ async function createTableSchema(RelayDb: Surreal, model: any) {
   }
 }
 
-async function defineRelationships(RelayDb: Surreal, model: any) {
+async function defineRelationships(db: Surreal, model: any) {
   const { name, relationships } = model;
 
   if (relationships.trim()) {
     console.log(`Defining relationships for ${name}`);
-    await RelayDb.query(relationships);
+    await db.query(relationships);
   }
 }
 
-async function defineIndices(RelayDb: Surreal, model: any) {
+async function defineIndices(db: Surreal, model: { name: string; indices: string }) {
   const { name, indices } = model;
 
-  if (indices.trim()) {
-    console.log(`Defining indices for ${name}`);
-    await RelayDb.query(indices);
+  if (!indices.trim()) {
+    return;
+  }
+
+  try {
+    const existingIndexesResult = (await db.query(`INFO FOR TABLE ${name}`)) as any[];
+    const firstResult = existingIndexesResult[0];
+    const existingIndexes = Object.values(firstResult.indexes) || [];
+    const indexDefinitions = indices.split('\n').filter((index: string) => {
+      const match = index.match(/DEFINE INDEX (\w+) ON/);
+      return match && !existingIndexes.includes(match[1]);
+    });
+
+    for (const index of indexDefinitions) {
+      console.log(`Defining index: ${index}`);
+      await db.query(index);
+    }
+  } catch (error: any) {
+    if (error?.message && error?.message.includes("already exists")) {
+      console.log(`Index already exists for table ${name}. Skipping index creation.`);
+    } else {
+      console.error(`Failed to define indices for table ${name}:`, error);
+    }
   }
 }
 
-async function checkTableExists(RelayDb: Surreal, tableName: string): Promise<boolean> {
+async function checkTableExists(db: Surreal, tableName: string): Promise<boolean> {
   try {
-    const result = await RelayDb.query(`INFO FOR TABLE ${tableName}`);
+    const result = await db.query(`INFO FOR TABLE ${tableName}`);
     return result.length > 0;
   } catch (e) {
     return false;

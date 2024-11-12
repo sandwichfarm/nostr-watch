@@ -6,6 +6,7 @@ import { polyfillNode } from "esbuild-plugin-polyfill-node";
 import { livereloadPlugin } from '@jgoz/esbuild-plugin-livereload';
 import esbuildPluginTsc from 'esbuild-plugin-tsc';
 import getPort from 'get-port';
+import { copy } from 'esbuild-plugin-copy';
 
 const production = process.env.NODE_ENV === 'production';
 
@@ -19,6 +20,14 @@ export async function buildWithWatch() {
   const commonPlugins = [
     clean({
       patterns: ['./dist'],
+    }),
+    copy({
+      resolveFrom: '.',
+      assets: {
+        from: ['./node_modules/@surrealdb/wasm/dist/surreal/index_bg.wasm'],
+        to: ['./dist/browser/index_bg.wasm'],
+      },
+      watch: true,
     }),
     esbuildPluginTsc({
       force: true,
@@ -44,14 +53,15 @@ export async function buildWithWatch() {
     conditions: ['browser'],
     format: 'esm',
     sourcemap: true,
-    minify: production,
+    minify: false,
     splitting: true,
     target: ['esnext'],
     plugins: commonPlugins,
-    external: ["@surrealdb/wasm"],
+    // external: ["@surrealdb/wasm"],
     loader: {
       '.ts': 'ts',
       '.js': 'js',
+      '.wasm': 'file'
     },
   };
 

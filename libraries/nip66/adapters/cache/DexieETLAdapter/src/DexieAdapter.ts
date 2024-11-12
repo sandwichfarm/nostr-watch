@@ -72,6 +72,19 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
     })
   }
 
+  async addEvents(events: IEvent[]): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const promises: Promise<void>[] = []
+      for(const event of events){
+        promises.push(this.addEvent(event))
+      }
+      Promise.allSettled(promises)
+        .then(() => resolve(void 0))
+        .catch(reject)
+    })
+  }
+
+
   async putEvent(event: IEvent): Promise<void> {
     console.warn('cannot putEvent because there are affects and event is immutable', event)
     return this.addEvent(event)

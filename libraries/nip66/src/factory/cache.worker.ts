@@ -1,6 +1,6 @@
-import { AdapterCacheWorker, AdapterWorker, CacheAdapter } from '@base/core';
-import { IWorkerGlobalScope } from '@base/interfaces';
-import { IAdapterWorkerCommand } from '@interfaces/IAdapterWorkerCommand';
+import { AdapterWorker } from '@base/core';
+import type { IWorkerGlobalScope } from '@interfaces/index';
+import type { IAdapterWorkerCommand } from '@interfaces/IAdapterWorkerCommand';
 
 export interface ICacheAdapterWorker {
   onMessage: (command: IAdapterWorkerCommand) => void;

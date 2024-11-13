@@ -13,6 +13,8 @@
 
 	import { DataTable } from '@careswitch/svelte-data-table';
 
+	import Surreal from 'surrealdb';
+
 	import { 
 		nip11s, 
 		geocodes, 
@@ -122,7 +124,6 @@
 
         return null;
       });
-
     return filters.filter((filter) => filter !== null) as Filter[];
   });
 }
@@ -153,7 +154,158 @@
 		};
 		n66 = new N66(adapters);
 		await n66.init();
+
+		monitors.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'monitor' }))[0].map(m => {
+			delete m.id;
+			return m
+		}));
+
+		checks.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'check' }))[0].map(m => {
+			delete m.id;
+			return m
+		}));
+
+		// relays.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'relay' }))[0].map(m => {
+		// 	delete m.id;
+		// 	return m
+		// }));
+
+
+		// nip11s.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'nip11' }))[0].map(m => {
+		// 	delete m.id;
+		// 	return m
+		// }));
+
+
+		// events.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'event' }))[0].map(m => {
+		// 	m.id = m.id.id;
+		// 	return m
+		// }));
+
+		// geocodes.set((await n66.cacheAdapter.db.store.query(`SELECT * 	FROM type::table($tb);`, { tb: 'geocode' }))[0].map(m => {
+		// 	delete m.id;
+		// 	console.log(geocode)
+		// 	return m
+		// }));
+		
 		n66.monitorService.bootstrap()	
+
+		const queryUuid = await n66.cacheAdapter.db.store.live(
+			"monitor",
+			( action, result ) => {
+				if (action === 'CLOSE') return;
+				monitors.update((monitors) => {
+					delete result.id;
+					const monitor = result;
+					if (action === 'CREATE') {
+						monitors.push(monitor);
+					} else if (action === 'DELETE') {
+						const index = monitors.findIndex((m) => m.pubkey === monitor.pubkey);
+						monitors.splice(index, 1);
+					}
+					return monitors;
+				});
+			}
+		)
+
+
+		n66.cacheAdapter.db.store.live(
+			"check",
+			( action, result ) => {
+				if (action == 'CLOSE') return;
+				checks.update((checks) => {
+					delete result.id;
+					const check = result;
+					if (action == 'CREATE') {
+						checks.push(check);
+					} else if (action == 'DELETE') {
+						const index = checks.findIndex((c) => c.nid === check.nid);
+						checks.splice(index, 1);
+					}
+					return checks;
+				});
+			}
+		)
+
+		n66.cacheAdapter.db.store.live(
+			"relay",
+			( action, result ) => {
+				if (action === 'CLOSE') return;
+				relays.update((relays) => {
+					delete result.id;
+					const relay = result;
+					if (action === 'CREATE') {
+						relays.push(relay);
+					} else if (action === 'UPDATE') {
+						const index = relays.findIndex((r) => r.relay === relay.relay );
+						relays[index] = relay;
+					} else if (action === 'DELETE') {
+						const index = relays.findIndex((r) => r.relay === relay.relay );
+						relays.splice(index, 1);
+					}
+					return relays;
+				});
+			}
+		)
+
+		// n66.cacheAdapter.db.store.live(
+		// 	"nip11",
+		// 	( action, result ) => {
+		// 		if (action === 'CLOSE') return;
+		// 		nip11s.update((nip11s) => {
+		// 			delete result.id;
+		// 			const nip11 = result;
+		// 			if (action === 'CREATE') {
+		// 				nip11s.set(nip11.relay, nip11);
+		// 			} else if (action === 'UPDATE') {
+		// 				nip11s.set(nip11.relay, nip11);
+		// 			} else if (action === 'DELETE') {
+		// 				nip11s.delete(nip11.relay);
+		// 			}
+		// 			return nip11s;
+		// 		});
+		// 	}
+		// )
+
+		// n66.cacheAdapter.db.store.live(
+		// 	"geocode",
+		// 	( action, result ) => {
+		// 		if (action === 'CLOSE') return;
+		// 		geocodes.update((geocodes) => {
+		// 			delete result.id;
+		// 			const geocode = result;
+		// 			if (action === 'CREATE') {
+		// 				geocodes.push(geocode);
+		// 			} else if (action === 'DELETE') {
+		// 				const index = geocodes.findIndex((g) => g.code === geocode.code);
+		// 				geocodes.splice(index, 1);
+		// 			}
+		// 			return geocodes;
+		// 		});
+		// 	}
+		// )
+
+		n66.cacheAdapter.db.store.live(
+			"event",
+			( action, result ) => {
+				if (action === 'CLOSE') return;
+				events.update((events) => {
+					result.id = result.id.id
+					const event = result;
+					if (action === 'CREATE') {
+						events.push(event);
+					} else if (action === 'UPDATE') {
+						const index = events.findIndex((e) => e.id === event.id);
+						events[index] = event;
+					} else if (action === 'DELETE') {
+						const index = events.findIndex((e) => e.id === event.id);
+						events.splice(index, 1);
+					}
+					return events;
+				});
+			}
+		)
+
 		// subscribe to liveQuery results and update writable stores
 		// subscriptions = [
 		// 	liveQuery(() => n66.cacheAdapter.db.events.toArray()).subscribe((data) => {
@@ -231,8 +383,8 @@
 <h1>Monitors</h1>
 {#if $monitors.length > 0}
 	<p>{$monitors.length}</p>
-	{#each $monitors as monitor (monitor.id)}
-		<p>{monitor.id} [{$monitorChecksCount[monitor.id]}]</p>
+	{#each $monitors as monitor (monitor.pubkey)}
+		<p>{monitor.pubkey} [{$monitorChecksCount[monitor.pubkey]}]</p>
 	{/each}
 {/if}
 

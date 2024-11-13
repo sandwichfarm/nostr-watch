@@ -1,4 +1,4 @@
-export interface ISsl {
+export type ISsl = {
   nid: string;
   relay: string; 
   created_at: number;

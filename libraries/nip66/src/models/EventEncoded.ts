@@ -1,4 +1,4 @@
-export interface IEventEncoded {
+export type IEventEncoded = {
   id: string;
   pubkey: string;
   kind: number;

@@ -5,7 +5,7 @@ const name = 'monitor';
 const schema = `
 DEFINE TABLE monitor SCHEMAFULL;
 
-DEFINE FIELD id          ON monitor TYPE string ASSERT $value != NONE;
+DEFINE FIELD pubkey      ON monitor TYPE string ASSERT $value != NONE;
 DEFINE FIELD eventId     ON monitor TYPE string;
 DEFINE FIELD frequency   ON monitor TYPE int;
 DEFINE FIELD lastActive  ON monitor TYPE int;
@@ -19,7 +19,7 @@ const relationships = `
 `;
 
 const indices = `
-DEFINE INDEX idx_monitor_id         ON monitor FIELDS id UNIQUE;
+DEFINE INDEX idx_monitor_pubkey     ON monitor FIELDS pubkey UNIQUE;
 DEFINE INDEX idx_monitor_eventId    ON monitor FIELDS eventId;
 DEFINE INDEX idx_monitor_lastActive ON monitor FIELDS lastActive;
 DEFINE INDEX idx_monitor_geohash    ON monitor FIELDS geohash;

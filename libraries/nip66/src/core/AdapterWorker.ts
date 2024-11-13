@@ -41,8 +41,6 @@ export class AdapterWorker {
   private _mainThread?: IWorkerGlobalScope;
   private _channelPort?: MessagePort;
 
-  useWorker: boolean = true;
-
   constructor( options?: WorkerOptions ){
     if(!options) return 
     //console.log('AdapterWorker', options)
@@ -149,6 +147,25 @@ export class AdapterWorker {
     //     break;
     // }
   // }
+
+  command(destination: string | string[], resultType: AdapterWorkerResultType, result: any){
+    //console.log('AdapterWebsocketWorker: command', destination, resultType, result)
+    result = this.encode(result) as ArrayBuffer
+    const message: AdapterWorkerMessage = {
+      type: 'result',
+      resultType,
+      result
+    }
+    const transferable = result as Transferable
+    if(destination.includes('toChannel')){
+      const resultTypeCap = resultType.charAt(0).toUpperCase() + resultType.slice(1)
+      message.type = resultTypeCap
+      this.postMessageChannel( message, [transferable] )
+    } 
+    if(destination.includes('toAdapter')){  
+      this.postMessageAdapter( message, [transferable] )
+    }
+  }
 
   postMessageAdapter( command: AdapterWorkerMessage, transfer?: Transferable[] ): void {
     if(!this?.mainThread) return console.warn(`cannot send message to mainThread: undefined`)

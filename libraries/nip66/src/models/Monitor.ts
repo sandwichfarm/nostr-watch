@@ -1,5 +1,5 @@
-export interface IMonitor {
-  id: string; 
+export type IMonitor = {
+  pubkey: string; 
   eventId: string; 
   frequency: number;
   lastActive?: number;

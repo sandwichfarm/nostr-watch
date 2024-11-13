@@ -1,4 +1,4 @@
-export interface INip11 {
+export type INip11 = {
   relay: string;
   monitorPubkey: string;
   hash: string | null;

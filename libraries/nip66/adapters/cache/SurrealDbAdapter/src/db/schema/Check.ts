@@ -6,46 +6,30 @@ const name = "Checks"
 
 const schema =`
 -- Primary Key (Using nid as the unique identifier)
-DEFINE FIELD event               ON check TYPE string ASSERT $value != NONE;
-DEFINE INDEX idx_check_event     ON check FIELDS event UNIQUE;
+DEFINE FIELD nid               ON check TYPE record(event);
 
 -- Base Fields
-DEFINE FIELD relay            ON check TYPE record(relay) ASSERT $value != NONE;
-DEFINE FIELD monitorPubkey    ON check TYPE record(monitor) ASSERT $value != NONE;
-DEFINE FIELD created_at       ON check TYPE int ASSERT $value != NONE;
+DEFINE FIELD relay            ON check TYPE record(relay);
+DEFINE FIELD monitorPubkey    ON check TYPE record(monitor);
+DEFINE FIELD created_at       ON check TYPE int;
 
 -- Meta Fields
 DEFINE FIELD network          ON check TYPE string;
 DEFINE FIELD rtt              ON check TYPE int;
 
-DEFINE FIELD operatorPubkey   ON check TYPE string;
-DEFINE FIELD supportedNips    ON check TYPE array;
-DEFINE FIELD software         ON check TYPE string;
-DEFINE FIELD version          ON check TYPE string;
+DEFINE FIELD operatorPubkey   ON check TYPE option<string>;
 
-DEFINE FIELD paymentRequired  ON check TYPE bool;
-DEFINE FIELD authRequired     ON check TYPE bool;
-DEFINE FIELD powRequired      ON check TYPE int;
+DEFINE FIELD geohash          ON check TYPE option<array>;
+DEFINE FIELD geocode          ON check TYPE option<array>;
 
-DEFINE FIELD geohash          ON check TYPE array;
-DEFINE FIELD geocode          ON check TYPE array;
-
-DEFINE FIELD isp              ON check TYPE string;
-DEFINE FIELD as               ON check TYPE string;
-DEFINE FIELD asname           ON check TYPE string;
-
-DEFINE FIELD ipv4             ON check TYPE array;
-DEFINE FIELD ipv6             ON check TYPE array;
-
-DEFINE FIELD sslValidTo       ON check TYPE int;
-DEFINE FIELD sslIssuer        ON check TYPE string;
+DEFINE FIELD as               ON check TYPE option<string>;
 `
 
 const relationships = ``
 
 const indices = `
 -- Unique Index on 'event  ' (event)
-DEFINE INDEX idx_check_event          ON check FIELDS event UNIQUE;
+DEFINE INDEX idx_check_nid            ON check FIELDS event UNIQUE;
 
 -- Index on 'relay' field
 DEFINE INDEX idx_check_relay          ON check FIELDS relay;

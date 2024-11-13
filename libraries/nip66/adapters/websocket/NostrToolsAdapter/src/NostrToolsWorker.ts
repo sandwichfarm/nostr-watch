@@ -26,13 +26,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     this.relays = options?.relays ? options.relays : defaultRelays
   }
 
-  //begin: overload
-  async setup(command: NostrToolsWorkerCommand): Promise<void> {
-    //console.log('NostrToolsWorker: setup', command)
-  }
-  // async onMainThreadMessage(command: NostrToolsWorkerCommand): Promise<void> {"no need"}
-  // async onChannelMessage(command: NostrToolsWorkerCommand): Promise<void> {"no need"}
-  //end: overload
+  async setup(command: NostrToolsWorkerCommand): Promise<void> {}
 
   //begin: adapter helper methods
   async subscribeAndCache(filters: Filter[] | Filter){

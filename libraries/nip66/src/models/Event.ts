@@ -1,4 +1,4 @@
-export interface IEvent {
+export type IEvent = {
   id: string;
   pubkey: string;
   kind: number;

@@ -12,9 +12,9 @@ export interface IWebsocketAdapterCallbacks {
   onClose?: () => void
 }
 
-export interface IWebsocketAdapter extends IAdapter {
-  populate(filters: Filter[]): void;
-}
+// export interface IWebsocketAdapter extends IAdapter {
+//   populate(filters: Filter[]): void;
+// }
 
 export interface IWebsocketAdapterMethods {
   connect(): Promise<void>;
@@ -23,6 +23,7 @@ export interface IWebsocketAdapterMethods {
   disconnect(): void;
   terminate(): void;
   abort(): void;
+  populate(filters: Filter[]): void;
 }
 
 export interface IWebsocketAdapter extends IWebsocketAdapterMethods, IAdapter {}

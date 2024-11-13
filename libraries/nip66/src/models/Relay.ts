@@ -1,4 +1,4 @@
-export interface IRelay {
+export type IRelay = {
   relay: string;
   lastSeen: number;
   network: string;

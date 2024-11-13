@@ -84,6 +84,7 @@
 		"@nostrwatch/nip66-cacheadapter-surrealdb": "workspace:^",
 		"@nostrwatch/nip66-wsadapter-nostrtools": "workspace:^",
 		"@surrealdb/wasm": "^1.0.2",
-		"dexie": "^4.0.8"
+		"dexie": "^4.0.8",
+		"surrealdb": "^1.0.6"
 	}
 }

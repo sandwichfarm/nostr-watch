@@ -13,7 +13,6 @@ export interface AdapterCacheWorkerResult extends AdapterWorkerResult {
 }
 
 export interface IAdapterCacheWorker {
-  useWorker: boolean;
   
   setup(command: AdapterCacheWorkerCommand): void;
   addEvent(events: IEvent): Promise<void>;

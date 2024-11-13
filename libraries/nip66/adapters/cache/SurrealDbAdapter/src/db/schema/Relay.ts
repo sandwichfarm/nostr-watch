@@ -5,7 +5,7 @@ const name = 'relay';
 const schema = `
 DEFINE TABLE relay SCHEMAFULL;
 
-DEFINE FIELD id          ON relay TYPE string ASSERT $value != NONE;
+DEFINE FIELD relay       ON relay TYPE string ASSERT $value != NONE;
 DEFINE FIELD lastSeen    ON relay TYPE int;
 DEFINE FIELD network     ON relay TYPE string;
 DEFINE FIELD created_at  ON relay TYPE int;
@@ -19,10 +19,9 @@ const relationships = `
 `;
 
 const indices = `
-DEFINE INDEX idx_relay_id        ON relay FIELDS id UNIQUE;
-DEFINE INDEX idx_relay_lastSeen  ON relay FIELDS lastSeen;
-DEFINE INDEX idx_relay_network   ON relay FIELDS network;
-DEFINE INDEX idx_relay_ignore    ON relay FIELDS ignore;
+DEFINE INDEX idx_relay_relay     ON relay COLUMNS relay UNIQUE;
+DEFINE INDEX idx_relay_lastSeen  ON relay COLUMNS lastSeen;
+DEFINE INDEX idx_relay_network   ON relay COLUMNS network;
 `;
 
 export default {

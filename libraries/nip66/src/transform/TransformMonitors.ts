@@ -33,7 +33,7 @@ export const k10166ToIEvent = (_event: IEvent): IEvent => {
 }
 
 export const n66IEventToIMonitor = (event: IEvent): IMonitor => {
-  const { pubkey:id, id:eventId } = event;
+  const { pubkey, id:eventId } = event;
 
   const frequency: number = getFrequency(event);
   const checks: string[] | null = getChecks(event)
@@ -41,7 +41,7 @@ export const n66IEventToIMonitor = (event: IEvent): IMonitor => {
   const geocode = iGeocodeToArray(geocodeTransform(event))
 
   const monitor = { 
-    id,
+    pubkey,
     eventId,
     checks,
     frequency,

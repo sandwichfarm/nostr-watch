@@ -1,5 +1,5 @@
 
-export interface IGeocode {
+export type IGeocode = {
   code: string;
   type: string;
   format: string;

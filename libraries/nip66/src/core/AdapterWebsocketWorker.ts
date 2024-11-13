@@ -8,14 +8,11 @@ import {
 import { 
   AdapterWorker, 
   AdapterWorkerCommand, 
-  AdapterWorkerMessage, 
-  AdapterWorkerResultType, 
   WorkerOptions 
 } from "./AdapterWorker"
 import { IEvent } from "@base/models";
 
 export interface IAdapterWebsocketWorker {
-  useWorker: boolean;
 
   setup(command: AdapterWebsocketWorkerCommand): Promise<void>;
   subscribeAndCache(filters: Filter[] | Filter): Promise<void>;
@@ -52,25 +49,6 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     }
     if( !this.relays.length  ){
       console.warn('AdapterWebsocketWorker: cannot connect to relays, length is 0')
-    }
-  }
-
-  command(destination: string | string[], resultType: AdapterWorkerResultType, result: any){
-    //console.log('AdapterWebsocketWorker: command', destination, resultType, result)
-    result = this.encode(result) as ArrayBuffer
-    const message: AdapterWorkerMessage = {
-      type: 'result',
-      resultType,
-      result
-    }
-    const transferable = result as Transferable
-    if(destination.includes('toChannel')){
-      const resultTypeCap = resultType.charAt(0).toUpperCase() + resultType.slice(1)
-      message.type = `cache${resultTypeCap}`
-      this.postMessageChannel( message, [transferable] )
-    } 
-    if(destination.includes('toAdapter')){  
-      this.postMessageAdapter( message, [transferable] )
     }
   }
 
@@ -152,18 +130,18 @@ export class AdapterWebsocketWorker extends AdapterWorker {
             console.warn('AdapterWebsocketWorker: error parsing frequency:', frequency, error)
             continue;
           }
-          //console.log(`AdapterWebsocketWorker: adding check subscription for ${authors} with kinds 0 and 10002`)
-          // this.addToQueue({ 
-          //   type: 'subscribeAndCacheAndReturn', 
-          //   filters: [{ authors, kinds: [0, 10002] }]
-          // })
-          //console.log(`AdapterWebsocketWorker: adding check subscription for ${authors} since ${since}, with kinds 30166`)
-          // this.addToQueue({ 
-          //   type: 'subscribeAndCacheAndReturn', 
-          //   filters: [
-          //     { authors, since, kinds: [30166] },
-          //   ] 
-          // })
+          // console.log(`AdapterWebsocketWorker: adding check subscription for ${authors} with kinds 0 and 10002`)
+          this.addToQueue({ 
+            type: 'subscribeAndCache', 
+            filters: [{ authors, kinds: [0, 10002] }]
+          })
+          // console.log(`AdapterWebsocketWorker: adding check subscription for ${authors} since ${since}, with kinds 30166`)
+          this.addToQueue({ 
+            type: 'subscribeAndCache', 
+            filters: [
+              { authors, since, kinds: [30166] },
+            ] 
+          })
         }
       })
     };

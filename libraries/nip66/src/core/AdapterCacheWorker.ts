@@ -5,7 +5,7 @@ import { Workers } from "./Workers";
 import type { IEvent } from "@models/Event";
 
 export interface AdapterCacheWorkerCommand extends AdapterWorkerCommand {
-  type: "setup" | "cacheEvent" | "cacheEvents";
+  type: "setup" | "cacheEvent" | "cacheEvents" | "complete";
 }
 
 export interface AdapterCacheWorkerResult extends AdapterWorkerResult {
@@ -40,7 +40,6 @@ export class AdapterCacheWorker extends AdapterWorker {
     this.queue.add(async () => {
       const { result } = command
       if(!result) return console.warn('result is not defined')
-      // console.log('result type:', typeof result)
       const event = this.decode(result)
       if(event instanceof Array) {
         await this.addEvents(event)
@@ -52,11 +51,9 @@ export class AdapterCacheWorker extends AdapterWorker {
   }
 
   async onMessage(command: AdapterCacheWorkerCommand): Promise<void>{
-    // console.log(`[AdapterCacheWorker] onMessage: ${command.type}`)
-    const { result } = command
-    if(!result) return console.warn('result is not defined')
-    // console.log('result type:', typeof result)
-    // console.log(command)
+    const { type, result } = command
+    if(type === 'complete') return;
+    if(!result) return console.warn('result is not defined', command)
     const event = this.decode(result)
     if(event instanceof Array) {
       await this.addEvents(event)

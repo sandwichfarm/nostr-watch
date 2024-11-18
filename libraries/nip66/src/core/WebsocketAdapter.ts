@@ -19,14 +19,15 @@ export interface IWebsocketAdapterCallbacks {
   onClose?: () => void
 }
 
-export interface WebsocketAdapterSubscribeOptions {
+export interface WebsocketAdapterOptions {
  keepAlive: boolean,
  returnResults: boolean,
  cache: boolean,
- stream: boolean
+ stream: boolean,
+ batch?: number
 }
 
-export const defaultSubscribeOptions: WebsocketAdapterSubscribeOptions = {
+export const defaultWebsocketAdapterOptions: WebsocketAdapterOptions = {
   keepAlive: false,
   returnResults: false,
   cache: true,
@@ -45,7 +46,7 @@ export interface WebsocketRequestHeader {
 
 export type WebsocketRequestBody = {
   filters: Filter[],
-  options: WebsocketAdapterSubscribeOptions,
+  options: WebsocketAdapterOptions,
   hash?: string,
   relays?: string[],
 }
@@ -58,7 +59,7 @@ export const defaultWebsocketRequestHeader: WebsocketRequestHeader = {
 
 export const defaultWebsocketRequestBody: WebsocketRequestBody = {
   filters: [],
-  options: defaultSubscribeOptions,
+  options: defaultWebsocketAdapterOptions,
   hash: '',
   relays: []
 }
@@ -174,10 +175,18 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       const responseHandler = (message: WebsocketResponseBody) => {
         // console.log(`[WebsocketAdapter:${this.constructor.name}] responseHandler triggered for hash ${hash}`)
         let { result, type } = message
-        if(type.includes('event')){
-          if(result instanceof Array){
-            return resolve(result)
+        if(type === 'events') {
+          console.log('events', result.length)
+          for(let event of result){
+            if(callbacks?.onevent){
+              callbacks.onevent(event)
+            }
+            else {
+              results.push(...event)
+            }
           }
+        }
+        if(type === 'event'){
           if(callbacks?.onevent){
             callbacks.onevent(result)
           }

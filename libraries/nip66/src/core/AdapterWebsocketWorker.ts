@@ -1,4 +1,3 @@
-import { Filter } from "nostr-tools";
 import PQueue from 'p-queue';
 
 import { 
@@ -12,7 +11,7 @@ import {
   WorkerOptions 
 } from "./AdapterWorker"
 import { IEvent } from "@base/models";
-import { defaultSubscribeOptions, defaultWebsocketRequest, defaultWebsocketRequestBody, SubscribeHandlers, WebsocketAdapterFetchOptions, WebsocketAdapterSubscribeOptions, WebsocketRequest, WebsocketRequestBody } from "./WebsocketAdapter";
+import { defaultWebsocketAdapterOptions, defaultWebsocketRequest, defaultWebsocketRequestBody, SubscribeHandlers, WebsocketAdapterFetchOptions, WebsocketAdapterOptions, WebsocketRequest, WebsocketRequestBody } from "./WebsocketAdapter";
 
 export enum ResponseType {
   event = 'event',
@@ -61,6 +60,7 @@ export interface IAdapterWebsocketWorker {
 export class AdapterWebsocketWorker extends AdapterWorker {
   protected relays: string[] = ['wss://relaypag.es/', 'wss://relay.nostr.watch/']
   private queue: PQueue = new PQueue({concurrency: 1})
+  private batchQueue: IEvent[] = []
 
   constructor( options?: WorkerOptions ){
     console.log ('AdapterWebsocketWorker', options)
@@ -122,13 +122,17 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   async subscribe( request: WebsocketRequestBody = defaultWebsocketRequestBody ){
     console.log(`AdapterWebsocketWorker: subscribe`, request)
     const { hash, options } = request
-    const { stream } = options ?? defaultSubscribeOptions;
+    const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
+    const { onevent, oneose } = this.requestCallbacks(request);
     if(stream){
-      callbacks = this.requestCallbacks(request);
+      callbacks = { onevent }
     }
     const result = await this._subscribe(request, callbacks)
-    if(!stream){
+    if(stream){
+      oneose?.()
+    }
+    else {
       console.log(`AdapterWebsocketWorker: subscribe: preparing async response`)
       console.log('AdapterWebsocketWorker: response', request, result)
       this.requestAsyncReponse(request, result as IEvent[])
@@ -141,16 +145,20 @@ export class AdapterWebsocketWorker extends AdapterWorker {
 
   async fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody){
     console.log(`AdapterWebsocketWorker: fetch`, request)
-    const { hash, options } = request
-    const { stream } = options ?? defaultSubscribeOptions;
+    const { options } = request
+    const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
+    const { onevent, oneose } = this.requestCallbacks(request);
     if(stream){
-      callbacks = this.requestCallbacks(request);
+      callbacks = { onevent }
     }
-    console.log('AdapterWebsocketWorker: fetch: calling this._fetch')
+    // console.log('AdapterWebsocketWorker: fetch: calling this._fetch')
     const result = await this._fetch(request, callbacks)
-    console.log('AdapterWebsocketWorker: fetch: result', result)
-    if(!stream){
+    // console.log('AdapterWebsocketWorker: fetch: result', result)
+    if(stream){
+      oneose?.()
+    }
+    else {
       console.log(`AdapterWebsocketWorker: fetch: preparing async response`)
       this.requestAsyncReponse(request, result as IEvent[])
     }
@@ -191,11 +199,31 @@ export class AdapterWebsocketWorker extends AdapterWorker {
 
   requestCallbacks(request: WebsocketRequestBody = defaultWebsocketRequestBody): SubscribeHandlers {
     const { options, hash } = request
+    let { batch } = options
+    let response: WebsocketResponseBody;
     const onevent = (event: unknown) => {
-      const response = {
-        type: ResponseType.event, 
-        result: event as IEvent,
-        hash: hash as string
+      // if(batch){
+      //   if(this.batchQueue.length < (batch as number)) {
+      //     console.log('batching', batch, this.batchQueue.length)
+      //     this.batchQueue.push(event as IEvent);
+      //     return;
+      //   }
+      //   else {
+      //     console.log('sending batch', batch, this.batchQueue.length)
+      //     const result = [...this.batchQueue.splice(0, batch)]
+      //     response = {
+      //       type: ResponseType.events, 
+      //       result,
+      //       hash: hash as string
+      //     }
+      //   }
+      // }
+      if(!response){
+        response = {
+          type: ResponseType.event, 
+          result: event as IEvent,
+          hash: hash as string
+        }
       }
       const { cache, returnResults } = options
       if(cache) {
@@ -207,7 +235,24 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     }
     const oneose = () => {
       const { cache, returnResults } = options
-      const args = {
+      const { batch } = options
+      let args: WebsocketResponseBody;
+      // if(this.batchQueue.length > 0){
+      //   console.log(`sending remainder: ${this.batchQueue.length}`)
+      //   const result = this.batchQueue.splice(0, batch)
+      //   args = {
+      //     type: ResponseType.events, 
+      //     result,
+      //     hash: hash as string
+      //   }
+      //   if(cache) {
+      //     this.respond({ to: 'cache', args })
+      //   }
+      //   if(returnResults){
+      //     this.respond({ to: 'adapter', args })
+      //   }
+      // }
+      args = {
         type: ResponseType.complete,
         result: null,
         hash: hash as string

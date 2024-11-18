@@ -6,364 +6,267 @@ import { IWebsocketAdapter, SubscribeHandlers } from '@base/core/WebsocketAdapte
 import { IEvent } from '@base/interfaces';
 import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 import { ICheck, IMonitor } from '@base/models';
-import { k30166ToICheck, n66IEventToIMonitor } from '@base/transform';
+import { k30166ToICheck } from '@base/transform';
 import { Filter } from 'nostr-tools';
+import { MonitorManager } from '../managers/MonitorManager';
 
-export type MonitorPriorities = MonitorPriority[]
+export type MonitorPriorities = MonitorPriority[];
 
-export enum MonitorPriority { 
-  Follows   = "FOLLOWS",
-  Wot       = "WOT",
-  Checks    = "CHECKS",
-  Geohash   = "GEOHASH",
-  Country   = "COUNTRY",
-  Network   = "NETWORK"
+export enum MonitorPriority {
+  Follows = 'FOLLOWS',
+  Wot = 'WOT',
+  Checks = 'CHECKS',
+  Geohash = 'GEOHASH',
+  Country = 'COUNTRY',
+  Network = 'NETWORK',
 }
 
 export const DEFAULT_ANON_MONITOR_PRIORITIES: MonitorPriorities = [
   MonitorPriority.Network,
   MonitorPriority.Checks,
-  MonitorPriority.Geohash
-]
+  MonitorPriority.Geohash,
+];
 
 export const DEFAULT_AUTHED_MONITOR_PRIORITIES: MonitorPriorities = [
   MonitorPriority.Follows,
   MonitorPriority.Wot,
-  MonitorPriority.Checks
-]
-
-export type PrioritizedMonitors = {
-  primary?: IMonitor,
-  secondary?: IMonitor,
-  tertiary?: IMonitor
-  quaternary?: IMonitor
-}
+  MonitorPriority.Checks,
+];
 
 export interface IGroupedRelays {
   userMeta?: string[];
   nip66?: string[];
 }
 
-export interface IMonitorsMap extends Map<string, IMonitorResult> {}
-
-export interface IMonitorResult {
-  priority: number;
-  registration: IMonitor,
-  profile: any,
-  relays: string[]
-}
-
-export const defaultMonitorResult: IMonitorResult = {
-  priority: 0,
-  registration: {} as IMonitor,
-  profile: {},
-  relays: []
-}
-
 export type IServiceHook = (...args: any[]) => void | undefined | any;
 export type TServiceHooks = Record<string, IServiceHook>;
 
 export class MonitorService {
+  private cacheAdapter: ICacheAdapter;
+  private websocketAdapter: IWebsocketAdapter;
+  private monitorManager: MonitorManager;
+  private _hooks: TServiceHooks = {};
+  private _groupedRelays: IGroupedRelays = {};
+  private subscriber: Subscriber = new Subscriber();
 
-  private cacheAdapter: ICacheAdapter
-  private websocketAdapter: IWebsocketAdapter
-  private _monitors: IMonitorsMap = new Map()
-  private _hooks: TServiceHooks = {}
-  private _groupedRelays: IGroupedRelays = {}
-  private subscriber: Subscriber = new Subscriber()
-
-  constructor( adapters: IAdaptersArgument ) {
-    this.cacheAdapter = adapters.cacheAdapter
-    this.websocketAdapter = adapters.websocketAdapter
+  constructor(adapters: IAdaptersArgument) {
+    this.cacheAdapter = adapters.cacheAdapter;
+    this.websocketAdapter = adapters.websocketAdapter;
+    this.monitorManager = MonitorManager.getInstance();
   }
 
   async init(): Promise<void> {
-    if(this?.cacheAdapter?.init)
-      await this?.cacheAdapter?.init()
+    if (this?.cacheAdapter?.init) await this?.cacheAdapter?.init();
   }
 
-  async bootstrap(): Promise<void> {  
-    console.log('MonitorService bootstrap')
+  async bootstrap(): Promise<void> {
+    console.log('MonitorService bootstrap');
     this.bootstrapMonitors();
   }
 
   get hook() {
-    return this._hooks
+    return this._hooks;
   }
 
-  get monitors(): IMonitorsMap {
-    return this._monitors
+  get monitors() {
+    return this.monitorManager.getMonitorsMap();
   }
 
-  get monitorsArray(): IMonitorResult[] {
-    return Array.from(this._monitors).map(r => r[1]).sort((a, b) => b.priority - a.priority)
+  get monitorsArray() {
+    return this.monitorManager.getMonitorsArray();
   }
 
-  get primary(): IMonitorResult | undefined {
-    return this.monitorsArray!.find((monitor) => monitor.priority === 1)
+  get primary() {
+    return this.monitorManager.primary;
   }
 
-  get secondary(): IMonitorResult | undefined {
-    return this.monitorsArray!.find((monitor) => monitor.priority === 2)
+  get secondary() {
+    return this.monitorManager.secondary;
   }
 
-  get tertiary(): IMonitorResult | undefined {
-    return this.monitorsArray!.find((monitor) => monitor.priority === 3)
+  get tertiary() {
+    return this.monitorManager.tertiary;
   }
 
-  get quaternary(): IMonitorResult | undefined {
-    return this.monitorsArray!.find((monitor) => monitor.priority === 4)
+  get quaternary() {
+    return this.monitorManager.quaternary;
   }
 
   get nip66Relays(): string[] | undefined {
-    return this._groupedRelays?.nip66
+    return this._groupedRelays?.nip66;
   }
 
   get userMetaRelays(): string[] | undefined {
-    return this._groupedRelays?.userMeta
+    return this._groupedRelays?.userMeta;
   }
 
   addHook(name: string, hook: IServiceHook): void {
-    this._hooks[name] = hook
+    this._hooks[name] = hook;
+    this.monitorManager.addHook(name, hook);
   }
 
   addRelay(to: keyof IGroupedRelays, relay: string): void {
-    if(!this._groupedRelays?.[to])
-      this._groupedRelays[to] = []
+    if (!this._groupedRelays?.[to]) this._groupedRelays[to] = [];
     this._groupedRelays?.[to].push(relay);
   }
 
   removeRelay(from: keyof IGroupedRelays, relay: string): void {
-    if(!this._groupedRelays?.[from]) return;
+    if (!this._groupedRelays?.[from]) return;
     this._groupedRelays[from] = this._groupedRelays[from].filter((r) => r !== relay);
   }
 
-  private addMonitorRegistration(event: IEvent): void {
-    let monitor = this.monitors.get(event.pubkey)
-    if(!monitor) {
-      monitor = structuredClone(defaultMonitorResult);
-    }
-    let registration = n66IEventToIMonitor(event);
-    console.log(`MonitorService: addMonitorRegistration:`, registration)
-    monitor.registration = registration;
-    // if(this.hook?.beforeAddRegistration) {
-    //   registration = this.hook?.beforeAddRegistration?.(registration)
-    // }
-    this.monitors.set(event.pubkey, monitor)
-    // this.hook?.afterAddRegistration?.(registration)
-  }
-
-  private addMonitorProfile(event: IEvent): void {
-    try {
-      const monitor = this.monitors.get(event.pubkey)
-      if(!monitor) return console.warn('MonitorService addMonitorRelays: monitor not found')
-      let profile = JSON.parse(event.content);
-      if(this.hook?.beforeAddProfile) {
-        profile = this.hook?.beforeAddProfile(profile)
-      }
-      monitor.profile = profile
-      this.monitors.set(event.pubkey, monitor)
-      this.hook?.afterAddProfile?.(profile)
-    }
-    catch(e) {
-      console.warn('MonitorService addMonitorProfile error:', e)
-    }
-  }
-
-  private addMonitorRelays(event: IEvent): void {
-    try {
-      const monitor = this.monitors.get(event.pubkey)
-      if(!monitor) return console.warn('MonitorService addMonitorRelays: monitor not found')
-      let relays = event.tags.filter(t=>t[0] === 'r').map(t=>new URL(t[1]).toString());
-      relays = relays ?? []
-      if(this.hook?.beforeAddRelays) {
-        relays = this.hook?.beforeAddRelays(relays)
-      }
-      monitor.relays = relays;
-      this.monitors.set(event.pubkey, monitor)
-      this.hook?.afterAddRelays?.(relays)
-    }
-    catch(e) {
-      console.warn('MonitorService addMonitorProfile error:', e)
-    }
-  }
-
   async sync(): Promise<void> {
-    const begin = Date.now()
+    const begin = Date.now();
     const filters: Filter[] = this.getMonitorCheckFilters();
     const hash = this.subscriber.request(filters);
-    const eventIds = new Set()
+    const eventIds = new Set();
     const onevent = (event: IEvent) => {
-      if(eventIds.has(event.id)) return;
-      eventIds.add(event.id)
+      if (eventIds.has(event.id)) return;
+      eventIds.add(event.id);
       this.hook?.onMonitorCheckEvent?.(event);
-    }
+    };
 
-    const callbacks: SubscribeHandlers = { onevent }
-    this.websocketAdapter.subscribe({
-      relays: this.nip66Relays,
-      filters,
-      options: {
-        cache: true,
-        returnResults: true,
-        keepAlive: false,
-        stream: true
-      }
-    },
-    callbacks);
+    const callbacks: SubscribeHandlers = { onevent };
+    this.websocketAdapter.subscribe(
+      {
+        relays: this.nip66Relays,
+        filters,
+        options: {
+          cache: true,
+          returnResults: true,
+          keepAlive: false,
+          stream: true,
+        },
+      },
+      callbacks
+    );
 
     this.cacheAdapter.REQ(filters).then((events) => {
-      console.log(`MonitorService sync: cache events: ${events.length}, took: ${(Date.now()-begin)/1000} seconds`)
-      for(const event of events){
-        if(eventIds.has(event.id)) continue;
-        onevent(event)
+      console.log(
+        `MonitorService sync: cache events: ${events.length}, took: ${(Date.now() - begin) / 1000} seconds`
+      );
+      for (const event of events) {
+        if (eventIds.has(event.id)) continue;
+        onevent(event);
       }
-    })
-
+    });
   }
 
   async bootstrapMonitors(): Promise<void> {
-    console.log('bootstrapMonitors')
+    console.log('bootstrapMonitors');
     await this.bootstrapMonitorRegistrations();
+    console.log(this.monitorManager.getMonitorsMap())
     await this.bootstrapMonitorData();
     await this.ensureMonitorsActive();
-    await this.prioritizeMonitors();
+    this.prioritizeMonitors();
     await this.bootstrapMonitorChecks();
   }
 
   async bootstrapMonitorRegistrations(): Promise<void> {
-    console.log('bootstrapMonitorRegistrations')
+    console.log('bootstrapMonitorRegistrations');
     const callbacks = {
       onevent: (Event10166: IEvent) => {
-        console.log('bootstrapMonitorRegistrations: Event10166', Event10166.id)
-        this.addMonitorRegistration(Event10166)
-      }
-    }
-    console.log('bootstrapMonitorRegistrations: awaiting bootstrap')
-    await this.websocketAdapter.bootstrap(
-      [{ kinds: [10166] }],
-      this.nip66Relays,
-      callbacks
-    );
-    console.log('bootstrapMonitorRegistrations: done')
+        console.log('bootstrapMonitorRegistrations: Event10166', Event10166.pubkey);
+        this.monitorManager.handleEvent(Event10166);
+      },
+    };
+    console.log('bootstrapMonitorRegistrations: awaiting bootstrap');
+    await this.websocketAdapter.bootstrap([{ kinds: [10166] }], this.nip66Relays, callbacks);
+    console.log('bootstrapMonitorRegistrations: done');
   }
 
-  async bootstrapMonitorData(): Promise<void>  { 
-    console.log('bootstrapMonitorData')
-    const monitors = [...this.monitorsArray.map(m => m.registration)];
-    const authors = monitors.map( (monitor: IMonitor) => monitor.pubkey )
-    authors.length = authors.length > 4? 4: authors.length
+  async bootstrapMonitorData(): Promise<void> {
+    console.log('bootstrapMonitorData');
+    const monitors = [...this.monitorsArray.map((m) => m.registration)];
+    const authors = monitors.map((monitor: IMonitor) => monitor.pubkey);
+    authors.length = authors.length > 4 ? 4 : authors.length;
     const onevent = (event: IEvent) => {
-      const { kind} = event;
-      if(kind === 0) {
-        this.addMonitorProfile(event)
-      }
-      if(kind === 10002) {
-        this.addMonitorRelays(event)
-      }
-    }
-    const callbacks = { onevent}
+      this.monitorManager.handleEvent(event);
+    };
+    const callbacks = { onevent };
     await this.websocketAdapter.bootstrap(
-      [{
+      [
+        {
           authors,
-          kinds: [0, 10002]
-      }],
+          kinds: [0, 10002],
+        },
+      ],
       this.userMetaRelays,
       callbacks
-    )
+    );
   }
 
   async ensureMonitorsActive(): Promise<void> {
-    console.log('ensureMonitorsActive')
-    const monitors = this.monitorsArray.map( (monitor) => [monitor.registration.pubkey, monitor.registration.frequency] as [ string, number ] )
+    console.log('ensureMonitorsActive');
+    const monitors = this.monitorsArray.map((monitor) => [
+      monitor.registration.pubkey,
+      monitor.registration.frequency,
+    ] as [string, number]);
     const filters: Filter[] = [];
     const events: IEvent[] = [];
     monitors.forEach(async ([monitorPubkey, monitorFrequency]) => {
-      if(!monitorPubkey) return;
-      monitorFrequency = monitorFrequency || 60*60;
-      console.log(`ensureMonitorsActive: ${monitorPubkey}`, monitorFrequency)
+      if (!monitorPubkey) return;
+      monitorFrequency = monitorFrequency || 60 * 60;
+      console.log(`ensureMonitorsActive: ${monitorPubkey}`, monitorFrequency);
       const limit = 1;
       const kinds = [30166];
-      const since = Math.round(Date.now()/1000)-monitorFrequency;
+      const since = Math.round(Date.now() / 1000) - monitorFrequency;
       const authors = [monitorPubkey];
-      filters.push({ limit, kinds, since, authors })
+      filters.push({ limit, kinds, since, authors });
     });
     const onevent = (event: IEvent) => {
-      events.push(event)
-    }
-    const callbacks: SubscribeHandlers = { onevent }
+      events.push(event);
+    };
+    const callbacks: SubscribeHandlers = { onevent };
     const relays = this.nip66Relays;
-    await this.websocketAdapter.subscribe({
+    await this.websocketAdapter.subscribe(
+      {
         relays,
         filters,
         options: {
           cache: false,
           returnResults: true,
           keepAlive: false,
-          stream: false
-        }
+          stream: false,
+        },
       },
       callbacks
-    );  
-    console.log(`ensureMonitorsActive: events: ${events.length}`)
-    for(const event of events){
+    );
+    console.log(`ensureMonitorsActive: events: ${events.length} from ${filters.length} filters`);
+    for (const event of events) {
       const { pubkey, created_at } = event;
-      const monitor = this.monitors.get(pubkey)
-      console.log(`ensureMonitorsActive: monitor exists: ${monitor?.registration?.pubkey}`)
-      if(monitor?.registration) {
+      const monitor = this.monitors.get(pubkey);
+      console.log(`ensureMonitorsActive: monitor exists: ${monitor?.registration?.pubkey}`);
+      if (monitor?.registration) {
         const lastActiveOld = monitor.registration.lastActive;
         const lastActiveNew = created_at as number;
-        const updateWithNew = !lastActiveOld || lastActiveNew > lastActiveOld
-        monitor.registration.lastActive = updateWithNew? lastActiveNew: lastActiveOld;
-        this.monitors.set(pubkey, monitor)
+        const updateWithNew = !lastActiveOld || lastActiveNew > lastActiveOld;
+        monitor.registration.lastActive = updateWithNew ? lastActiveNew : lastActiveOld;
+        // Update the monitor in the manager
+        this.monitorManager.getMonitorsMap().set(pubkey, monitor);
       }
-    } 
+    }
   }
 
-  async prioritizeMonitors(priority: MonitorPriority = MonitorPriority.Checks ): Promise<void> { 
-    const goodMonitors: IMonitorResult[] = this.monitorsArray.filter((monitor) => {
-      if(!monitor?.registration?.lastActive) return false;
-      if(!monitor?.registration?.checks?.length) return false;
-      if(!monitor?.profile) return false;
-      if(!monitor?.relays) return false;
-      return monitor.registration.lastActive > 0
-    });
-    const scores: Record<string, number> = {}
-    goodMonitors.forEach((monitor) => {
-      let score = 0;
-      if(!monitor?.registration?.pubkey) return;
-      if(monitor?.registration) score++;
-      if(monitor?.registration?.checks?.length) score += monitor?.registration?.checks?.length;
-      if(monitor?.profile) score++;
-      if(monitor?.relays) score++;
-      console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`)
-      scores[monitor.registration.pubkey] = score;
-    })
-    goodMonitors.sort((a, b) => {
-      const scoreA = scores?.[a.registration.pubkey] || 0;
-      const scoreB = scores?.[b.registration.pubkey] || 0;
-      return scoreB - scoreA;
-    });
-    console.log(`prioritizeMonitors: monitors sorted:`, goodMonitors )
-    goodMonitors.forEach((sortedMonitor, index) => {
-      sortedMonitor.priority = index + 1;
-    });
+  prioritizeMonitors(): void {
+    this.monitorManager.prioritizeMonitors();
   }
 
   getMonitorCheckFilters(): Filter[] {
-    if(!this.monitorsArray.length) {
-      console.warn('MonitorService getMonitorCheckFilters: no monitors')
-      return []
+    if (!this.monitorsArray.length) {
+      console.warn('MonitorService getMonitorCheckFilters: no monitors');
+      return [];
     }
+    console.log(`total monitors in array: ${this.monitorsArray.length}`)
     const monitors = this.monitorsArray.slice(0, 4);
     const filters: Filter[] = [];
-    monitors.forEach( (monitor) => {
+    monitors.forEach((monitor) => {
       const authors = [monitor.registration.pubkey];
       const frequency = monitor.registration.frequency;
-      const since = Math.round(Date.now()/1000)-frequency;
+      const since = Math.round(Date.now() / 1000) - frequency;
       filters.push({ authors, since, kinds: [30166] });
     });
-    return filters
+    return filters;
   }
 
   async bootstrapChecksFromWebsocket(): Promise<IEvent[] | boolean | undefined> {
@@ -372,45 +275,47 @@ export class MonitorService {
     const onevent = (event: IEvent) => {
       count++;
       this?.hook?.onMonitorCheckEvent?.(event);
-      if(this?.hook?.onMonitorCheck) {
+      if (this?.hook?.onMonitorCheck) {
         const check: ICheck = k30166ToICheck(event);
         this?.hook?.onMonitorCheck?.(check);
       }
-    }
-    const callbacks: SubscribeHandlers = { onevent }
+    };
+    const callbacks: SubscribeHandlers = { onevent };
     const relays = this.nip66Relays;
-    const result: IEvent[] | boolean = await this.websocketAdapter.fetch({
+    const result: IEvent[] | boolean = await this.websocketAdapter.fetch(
+      {
         relays,
         filters,
         options: {
           cache: true,
           returnResults: true,
           keepAlive: false,
-          stream: true
-        }
+          stream: true,
+          // batch: 8
+        },
       },
       callbacks
     );
     return result;
   }
 
-  async bootstrapMonitorChecks(): Promise<void> { 
-    console.log('bootstrapMonitorChecks')
+  async bootstrapMonitorChecks(): Promise<void> {
+    console.log('bootstrapMonitorChecks');
     const result = await this.bootstrapChecksFromWebsocket();
-    if(result instanceof Array){
-      for(const event of result){
+    if (result instanceof Array) {
+      for (const event of result) {
         const { pubkey, content } = event;
-        const monitor = this.monitors.get(pubkey)
-        if(monitor) {
-          monitor.registration.checks = JSON.parse(content)
-          this.monitors.set(pubkey, monitor)
+        const monitor = this.monitors.get(pubkey);
+        if (monitor) {
+          monitor.registration.checks = JSON.parse(content);
+          this.monitorManager.getMonitorsMap().set(pubkey, monitor);
         }
-      } 
+      }
     }
   }
 
   async getActiveMonitors(): Promise<string[]> {
-    const monitors: string[] = []
-    return monitors
+    const monitors: string[] = [];
+    return monitors;
   }
 }

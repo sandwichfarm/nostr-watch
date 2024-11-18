@@ -89,7 +89,8 @@ export class Sync {
     await this.services.monitors.ensureMonitorsActive()
     await Promise.allSettled([
       this.services.monitors.bootstrapMonitorData(),
-      this.services.monitors.prioritizeMonitors(MonitorPriority.Checks)
+      // this.services.monitors.prioritizeMonitors(MonitorPriority.Checks)
+      this.services.monitors.prioritizeMonitors()
     ])
   }
 

@@ -5,8 +5,10 @@ import { handleMsg, insertBatch, WorkerState } from "./worker-utils";
 const state: WorkerState = {
   self: self as DedicatedWorkerGlobalScope | SharedWorkerGlobalScope,
   relay: undefined,
+  eventWriteQueue: [],
   insertBatchSize: 10,
-  eventWriteQueue: []
+  insertBatchEvery: 1000,
+  lastBatch: 0,
 }
 
 try {

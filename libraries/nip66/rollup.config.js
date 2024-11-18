@@ -33,7 +33,7 @@ function onwarn(warning, warn) {
   warn(warning);
 }
 
-import * as glob from 'glob'
+import glob from 'glob'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -99,51 +99,6 @@ export default [
     treeshake: true,
     input,
     output: {
-      dir: 'dist/server',
-      format: 'cjs',
-      sourcemap: true,
-      preserveModules: true,
-      preserveModulesRoot: 'src',
-      entryFileNames: '[name].cjs.js',
-      exports: 'auto'
-    },
-    external: [],
-    plugins: [
-      ...commonPlugins,
-      ...serverPlugins
-    ],
-    watch: {
-      exclude: 'node_modules/**',
-      clearScreen: false
-    },
-    onwarn
-  }, 
-  {
-    treeshake: true,
-    input,
-    output: {
-      dir: 'dist/server',
-      format: 'esm',
-      sourcemap: true,
-      preserveModules: true,
-      preserveModulesRoot: 'src',
-      entryFileNames: '[name].esm.js'
-    },
-    external: [],
-    plugins: [
-      ...commonPlugins,
-      ...serverPlugins
-    ],
-    watch: {
-      exclude: 'node_modules/**',
-      clearScreen: false
-    },
-    onwarn
-  },
-  {
-    treeshake: true,
-    input,
-    output: {
       dir: 'dist/browser',
       format: 'esm',
       sourcemap: true,
@@ -178,6 +133,51 @@ export default [
     plugins: [
       ...commonPlugins,
       ...browserPlugins
+    ],
+    watch: {
+      exclude: 'node_modules/**',
+      clearScreen: false
+    },
+    onwarn
+  },
+  {
+    treeshake: true,
+    input,
+    output: {
+      dir: 'dist/server',
+      format: 'cjs',
+      sourcemap: true,
+      preserveModules: true,
+      preserveModulesRoot: 'src',
+      entryFileNames: '[name].cjs.js',
+      exports: 'auto'
+    },
+    external: [],
+    plugins: [
+      ...commonPlugins,
+      ...serverPlugins
+    ],
+    watch: {
+      exclude: 'node_modules/**',
+      clearScreen: false
+    },
+    onwarn
+  }, 
+  {
+    treeshake: true,
+    input,
+    output: {
+      dir: 'dist/server',
+      format: 'esm',
+      sourcemap: true,
+      preserveModules: true,
+      preserveModulesRoot: 'src',
+      entryFileNames: '[name].esm.js'
+    },
+    external: [],
+    plugins: [
+      ...commonPlugins,
+      ...serverPlugins
     ],
     watch: {
       exclude: 'node_modules/**',

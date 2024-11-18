@@ -24,10 +24,10 @@ import { IEvent } from '../../../../dist/types/models';
 export class SurrealDbAdapter extends CacheAdapter implements ICacheAdapter {
 
     readonly slug: string = 'surreal'
-    readonly metaUrl: string = import.meta.url
     readonly batchSize: number = 10;
 
     private batch: IEvent[] = [];
+
   
     private _db?: RelayDb;
 
@@ -42,7 +42,7 @@ export class SurrealDbAdapter extends CacheAdapter implements ICacheAdapter {
       }
     } 
 
-    async newWorker(): Promise<Worker> {
+    async newWorker(channelPort: MessagePort): Promise<Worker> {
       return SurrealWorker();
     }
 

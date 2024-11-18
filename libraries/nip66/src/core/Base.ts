@@ -106,6 +106,15 @@ export default class {
     this.monitorService.init()
   }
 
+  get cache(): ICacheAdapter | undefined {
+    return this.cacheAdapter;
+  }
+
+
+  get websocket(): IWebsocketAdapter | undefined {
+    return this.websocketAdapter;
+  }
+
   get wsWorker(): Worker | undefined {
     return this?.websocketAdapter?.workers?.websocketDedicated;
   }

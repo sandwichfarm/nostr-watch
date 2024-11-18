@@ -1,26 +1,22 @@
 import { IWebsocketAdapterMethods, IWebsocketAdapterCallbacks } from '@nostrwatch/nip66/core'
 import { IEvent } from '@nostrwatch/nip66/interfaces';
 
-import { NostrFetcher, type FetchFilter } from 'nostr-fetch';
+import { NostrEvent, NostrFetcher, type FetchFilter } from 'nostr-fetch';
 import { simplePoolAdapter } from '@nostr-fetch/adapter-nostr-tools-v2'
 import { SimplePool } from 'nostr-tools';
 import type { Filter } from 'nostr-tools';
 import { isForInStatement } from 'typescript';
 import { SubCloser } from 'nostr-tools/abstract-pool';
+import { defaultSubscribeOptions, defaultWebsocketRequestBody, WebsocketAdapterResult, WebsocketAdapterSubscribeOptions, WebsocketRequestBody } from 'node_modules/@nostrwatch/nip66/src/core';
 
-//10166: 1
-//0,10002: 10
-//30166: 20
 
 export interface NostrToolsSubscribeParams {
-  //reqd
+  relays?: Set<string>
   filters: Filter[] | Filter
   stream?: boolean 
-  keepAlive?: boolean 
-  //nt callbacks
+  keepAlive?: boolean
   callbacks?: SubscribeHandlers
   signal?: AbortSignal
-  //following are ignored if callbacks are provided
 }
 
 const nostrToolsSubscribeParams: NostrToolsSubscribeParams = {
@@ -45,7 +41,6 @@ export class NostrToolsMethods implements IWebsocketAdapterMethods {
   protected _signal: AbortSignal = this._controller.signal;
   protected _signalIsInternal: boolean = true;  
 
-  // accessors
   get pool(): SimplePool | undefined {  
     return this._pool;
   }
@@ -63,183 +58,121 @@ export class NostrToolsMethods implements IWebsocketAdapterMethods {
   }
 
   async connect(): Promise<void> {
-    console.log('NostrToolsMethods: connect')  
     if(this?.pool)
-      return console.warn('[NostrToolsAdapter] Error connecting: pool already exists')  
+      return console.warn('[NostrToolsAdapter] Error connecting: pool  exists')  
     this._pool = new SimplePool();
     this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(new SimplePool()))
   }
 
-  async subscribe( filters: Filter[] | Filter): Promise<void>{
-    console.log('NostrToolsMethods: subscribe', filters)
-    if(!(filters instanceof Array)){
-      filters = [filters]
-    }
-    this._subscribe({filters})
-  }
-  
-  //low-level subscription handler with various return methods.
-  async _subscribe(params: NostrToolsSubscribeParams): Promise<IEvent[] | void> {
-    if(params?.keepAlive){
-      return this._subscribeKeepAlive(params);
-    }
-    else {
-      return this._subscribeArchive(params);
-    }
-  }
-
-  async _subscribeKeepAlive(params: NostrToolsSubscribeParams): Promise<IEvent[] | void> {
-    let { filters, callbacks, stream, signal } = { ...nostrToolsSubscribeParams, ...params };
-    callbacks = callbacks ?? {} as SubscribeHandlers;
-    
-    const { kinds } = filters as Filter;
-
-    let handler: SubCloser | undefined;
-
-    if(!(filters instanceof Array)){
-      filters = [filters]
-    }
-
-    if(signal){
-      this._signal = signal;
-      this._signalIsInternal = false;
-    }
-
-    const setHandler = async () => {
-      const _h: SubCloser | void = await this._subscribeMany(filters, callbacks) as SubCloser;
-      if(!_h) return
-      handler = _h;
-    }
-
-    if(!callbacks?.oneose){
-      callbacks.oneose = () => {}
-    }
-
-    if(!callbacks?.onclose){
-      callbacks.onclose = async () => {
-        await setHandler()
+  async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
+    console.log('NostrToolsMethods: _subscribe', request)
+    return new Promise(async (resolve, reject) => {
+      let { filters, relays, options } = request;
+      const { stream } = options ?? defaultSubscribeOptions;
+      const effectiveRelays = relays ?? this.relays;
+      const result: IEvent[] = [];
+      let count: number = 0;
+      if (!effectiveRelays || effectiveRelays.length === 0) {
+        throw new Error('No relays available for subscription.');
       }
-    }
-
-    await setHandler()
-  }
-
-  private async _subscribeMany(filters: Filter[], handlers: SubscribeHandlers): Promise<SubCloser | void> { 
-    let { onevent, oneose, onclose } = handlers ?? {};
-    if(!this?.pool) {
-      await this.connect()
-      if(!this?.pool) 
-        return console.warn('NostrToolsWorker subscribe: no pool available');
-    }
-    if(!this?.relays) return console.warn('NostrToolsWorker subscribe: no relays available');
-    if(!onevent) return console.warn('NostrToolsWorker onevent: no callback provided');
-
-    this.pool.subscribeMany(
-      [...this.relays],
-      filters,
-      {
-        onevent,
-        oneose,
-        onclose,
-      }
-    )
-  }
-
-  async _subscribeArchive(params: NostrToolsSubscribeParams): Promise<IEvent[] | void> {
-    console.log(`NostrToolsMethods: _subscribeArchive`, params)
-    let { filters, callbacks, stream, signal } = { ...nostrToolsSubscribeParams, ...params };
-    const { onevent, oneose, onclose } = callbacks ?? {};
-    const { kinds } = filters as Filter;
-
-    if(!(filters instanceof Array)){
-      filters = [filters]
-    }
-
-    if(signal){
-      this._signal = signal;
-      this._signalIsInternal = false;
-    }
-  
-    const fetches: Promise<IEvent[]>[] = [];
-  
-    if (!this?.fetcher || !this?.pool) await this.connect()
-    if (!this?.relays) return console.warn('NostrToolsWorker subscribe: no relays available');
-
-    for (let filter of filters) {
-      const fetch: Promise<IEvent[]> = new Promise(async (resolve, reject) => {
-        try {
-          const events = new Set<IEvent>();
-          const since = filter?.since ?? undefined;
-          const until = filter?.until ?? undefined;
-  
-          const range: Record<string, number> = {};
-          if (since) range['since'] = since;
-          if (until) range['until'] = until;
-    
-          delete filter.since;
-          delete filter.until;
-    
-          Object.keys(filter).forEach((key: string) => filter[key as keyof typeof filter] === undefined && delete filter[key as keyof typeof filter]);
-    
-          const cleanedFilter: FetchFilter = { ...filter } as FetchFilter;
-    
-          const postIter = (this.fetcher as NostrFetcher).allEventsIterator(
-            this.relays as string[],
-            cleanedFilter,
-            range,
-            { skipFilterMatching: true, signal }
-          );
-    
-          if (!onevent) return console.warn('NostrToolsWorker onevent: no callback provided');
-    
-          for await (const ev of postIter) {
-            if (stream) {
-              onevent(ev as IEvent);
-            } 
-            events.add(ev as IEvent);
-          }
-          const result = Array.from(events) as IEvent[];
-  
-          resolve(result);
+      filters = Array.isArray(filters) ? filters : [filters];
+      await this.connect();
+      
+      const onevent = (event: IEvent) => {
+        if(stream){
+          callbacks!.onevent?.(event);
+          count++
         }
-        finally {
-          this.fetcher?.shutdown()
+        else {
+          result.push(event);
+        }
+      }
+      const onclose = () => {
+        callbacks?.onclose?.();
+      }
+      const oneose = () => {
+        if(stream){
+          resolve(count > 0)
+        }
+        else {
+          resolve(result)
+        }
+        callbacks?.oneose?.();
+      }
+      console.log('NostrToolsMethods: _subscribe: this.pool.subscribeMany', effectiveRelays, filters)
+      this.pool!.subscribeMany(
+        effectiveRelays,
+        filters,
+        { onevent, oneose, onclose }
+      );
+    });
+  }
+
+  async _fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
+    let { filters, relays, options } = request;
+    const { stream } = options ?? defaultSubscribeOptions;
+    const effectiveRelays = relays ?? this.relays;
+    if (!effectiveRelays || effectiveRelays.length === 0) {
+      throw new Error('No relays available for fetching.');
+    }
+    filters = Array.isArray(filters) ? filters : [filters];
+    await this.connect();
+    const fetchPromises: Promise<IEvent[] | boolean>[] = [];
+    for (let filter of filters) {
+      const { since, until, ...remainingFilter } = filter;
+      const range: Record<string, number> = {};
+      if (since) range['since'] = since;
+      if (until) range['until'] = until;
+      delete filter.since 
+      delete filter.until
+      const fetchPromise = new Promise<IEvent[] | boolean>(async (resolve) => {
+        let count = 0;
+        const events = new Set<IEvent>();
+        const onevent = (event: IEvent) => {
+          events.add(event as IEvent);
+          if(stream){
+            count++;
+            callbacks!.onevent?.(event);
+          }
+        }
+        const onclose = () => {
+          callbacks?.onclose?.();
+        }
+        const oneose = () => {
+          resolve(Array.from(events));
+          callbacks?.oneose?.();
+          this.fetcher?.shutdown();
+        }
+        try {
+          const iterator = this.fetcher!.allEventsIterator(
+            effectiveRelays,
+            remainingFilter as FetchFilter,
+            range,
+            { signal: this.signal }
+          );
+          for await (const event of iterator) {
+            onevent(event as IEvent);
+          }
+          if(stream) {
+            resolve(count > 0)
+          }
+          else {
+            resolve(Array.from(events));
+          }
+          
+          oneose();
+        } catch (error) {
+          console.warn('Error during fetch:', error);
+          resolve([]);
         }
       });
-      
-      fetches.push(fetch);
+      fetchPromises.push(fetchPromise);
     }
-
-    const result: IEvent[] = (await Promise.all(fetches)).flat();
-
-    // if(oneose) {
-    //   oneose(Array.from(result));
-    // }
-    console.log(`!!! Result: ${result.length} events`)
-
-    return result
+    const result = (await Promise.all(fetchPromises)).flat();
+    return options?.stream? result.length > 0: result;
   }
 
-  async fetch(filters: Filter[] | Filter): Promise<IEvent[]>{
-    if(!(filters instanceof Array)){
-      filters = [filters]
-    }
-    return this._fetch({filters}) as Promise<IEvent[]>
-  }
-  
-  //return events
-  async _fetch(params: NostrToolsSubscribeParams): Promise<IEvent[] | void>{
-    const fetchParams = {
-      stream: false
-    }
-    if(params?.callbacks?.oneose){
-      delete params.callbacks?.oneose  
-    }
-    return this._subscribe({...params, ...fetchParams});
-  }
-
-  unsubscribe(subId?: string): void {
-    //using nostrfetch so no subid or unsubscribe, but we can abort and shutdown!
+  unsubscribe(hash?: string): void {
     this.terminate();
   }
 
@@ -267,7 +200,6 @@ export class NostrToolsMethods implements IWebsocketAdapterMethods {
     if(!this._validateRequest()) return
     this.abort();
     this.fetcher?.shutdown();
-    this.close();
   }
 
   async getEvents(filter: Filter): Promise<IEvent[] | undefined> {

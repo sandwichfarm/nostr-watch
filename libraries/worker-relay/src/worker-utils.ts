@@ -15,43 +15,81 @@ import {
 
 import { getForYouFeed } from "./forYouFeed";
 
+let processed = 0
+
 export interface InitAargs {
   databasePath: string;
   insertBatchSize?: number;
+  channelPort?: MessagePort;
 }
 
 export interface WorkerState {
   self: DedicatedWorkerGlobalScope | SharedWorkerGlobalScope;
   relay: RelayHandler | undefined;
-  insertBatchSize: number;
   eventWriteQueue: Array<NostrEvent>;
+  messageChannel?: MessagePort;
+
+  insertBatchSize: number;
+  insertBatchEvery: number;
+  lastBatch: number;
+}
+
+export const defaultWorkerState = {
+  self: self as DedicatedWorkerGlobalScope | SharedWorkerGlobalScope,
+  relay: undefined,
+  eventWriteQueue: [],
+  insertBatchSize: 10,
+  insertBatchEvery: 1000,
+  lastBatch: 0,
 }
 
 export async function insertBatch(state: WorkerState) {
   if (state.eventWriteQueue.length > 0) {
     const start = unixNowMs();
-    const timeLimit = 1000;
+    const timeLimit = state.insertBatchEvery;
     if (state.relay) {
       while (state.eventWriteQueue.length > 0) {
+        const totalEvents = state.eventWriteQueue.length;
+        const hasRemainder = totalEvents % state.insertBatchSize > 0;
+        const expired = unixNowMs() - state.lastBatch > state.insertBatchEvery;
+        const expiredWithRemainder = expired && hasRemainder;
         if (unixNowMs() - start >= timeLimit) {
           break;
+        }
+        if(!expiredWithRemainder && totalEvents < state.insertBatchSize){
+          break;
+        }
+        else if(expiredWithRemainder) {
+          console.log('expired with remainder.')
         }
         const batch = state.eventWriteQueue.splice(0, state.insertBatchSize);
         state.eventWriteQueue = state.eventWriteQueue.slice(batch.length);
         state.relay.eventBatch(batch);
+        state.lastBatch = Date.now();
+        processed++
       }
     }
+    console.log("batches processed:", processed);
   }
   setTimeout(() => insertBatch(state), 100);
 }
 
+export const messageChannelInit = (state: WorkerState, channelPort: MessagePort) => {
+  state.messageChannel = channelPort
+}
+
 export const relayInit = async (state: WorkerState, args: InitAargs) => {
+  console.log("Relay init", args)
   state.insertBatchSize = args.insertBatchSize ?? 10;
   try {
     if ("WebAssembly" in state.self) {
       state.relay = new SqliteRelay();
     } else {
       state.relay = new InMemoryRelay();
+    }
+    if(args.channelPort) {
+      console.log("Channel port init")
+      messageChannelInit(state, args.channelPort)
     }
     await state.relay.init(args.databasePath);
   } catch (e) {
@@ -104,6 +142,10 @@ export const relayDelete = (state: WorkerState, req: ReqCommand): string[] => {
     results.push(...c);
   }
   return results
+}
+
+export const relayWipe = async (state: WorkerState) => {
+  await state.relay!.wipe();
 }
 
 export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: MessagePort) => {
@@ -174,7 +216,7 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
         break;
       }
       case "wipe": {
-        await state.relay!.wipe();
+        await relayWipe(state);
         reply(msg.id, true);
         break;
       }

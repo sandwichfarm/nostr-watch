@@ -3,8 +3,7 @@ import {
   WorkerOptions, 
   AdapterCacheWorkerCommand, 
   AdapterCacheWorker, 
-  IAdapterCacheWorker, 
-  AdapterWorkerMessage
+  IAdapterCacheWorker
 } from "@nostrwatch/nip66/core"
 
 import { IEvent } from "@nostrwatch/nip66/interfaces";

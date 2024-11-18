@@ -24,7 +24,7 @@ export class WorkerRelayInterface {
    * Interface wrapper for worker relay
    * @param scriptPath Path to worker script or Worker script object
    */
-  constructor(scriptPath?: string | URL | Worker) {
+  constructor(scriptPath?: string | URL | Worker, channelPort?: MessagePort) {
     if (scriptPath instanceof Worker) {
       this.#worker = scriptPath;
     } else {
@@ -45,6 +45,9 @@ export class WorkerRelayInterface {
         this.#commandQueue.delete(cmd.id);
       }
     };
+    if(channelPort) {
+      this.#worker.postMessage({ type: "setup", channelPort }, [channelPort]);
+    }
   }
 
   get worker() {

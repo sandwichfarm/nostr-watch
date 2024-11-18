@@ -45,7 +45,7 @@ export class AdapterWorker {
     if(!options) return 
     //console.log('AdapterWorker', options)
     this.setContext(options)
-    //console.log('mainThread?:', this.mainThread)
+    console.log('mainThread?:', this.mainThread)
     this.setupHandlers()
   }
 
@@ -66,6 +66,7 @@ export class AdapterWorker {
   }
 
   setContext(options?: WorkerOptions){
+    console.log('AdapterWorker.setContext', this?.constructor?.name,options)  
     if(!options) { 
       options = {
         mainThread: this?.mainThread,
@@ -94,10 +95,10 @@ export class AdapterWorker {
   }
 
   async __setup(command: AdapterWorkerMessage): Promise<void>{
-    //console.log('AdapterWorker.__setup', command)
+    console.log('AdapterWorker.__setup', command)
     const { channelPort } = command
     if(channelPort) {
-      //console.log(`[Worker:${this.constructor.name}] channelPort:`, channelPort)
+      console.log(`[Worker:${this.constructor.name}] channelPort:`, channelPort)
       this.channel = channelPort
       this.setupChannelHandlers()
     }
@@ -107,10 +108,9 @@ export class AdapterWorker {
 
   setupChannelHandlers(){
     if(!this.channel) return console.warn('channel not defined')
-
     this.channel.onmessage = (message: MessageEvent) => {
       const command = message.data as AdapterWorkerMessage;
-      //console.log(`[Worker:${this.constructor.name}] channel.onmessage`, command)
+      console.log(`[Worker:${this.constructor.name}] channel.onmessage`, command)
       this.listenPingPong('channel', command)
       this.onChannelMessage(command);
     }
@@ -120,6 +120,7 @@ export class AdapterWorker {
   }
 
   setupHandlers(){
+    console.log('AdapterWorker: setupHandlers()')
     if(!this?.mainThread) return console.warn('mainThread not defined')
     this.mainThread.onmessage = async (message: MessageEvent) => {
       const command = message.data as AdapterWorkerMessage;

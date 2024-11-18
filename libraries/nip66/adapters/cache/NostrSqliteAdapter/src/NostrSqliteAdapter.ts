@@ -1,14 +1,15 @@
 /// <reference types="vite/types/importMeta.d.ts" />
 
-import { AdapterCacheWorker, AdapterCacheWorkerCommand, IAdapterCacheWorker } from "@nostrwatch/nip66/core";
+import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAdapter } from "@nostrwatch/nip66/core";
 import { IEvent } from "@nostrwatch/nip66/models";
 //@ts-ignore: Vite worker import
-import { NostrSqliteWorker } from "./NostrSqliteWorker?worker";
+// import NostrSqliteWorker from "./workers/nostrsqlite.worker";
 import { WorkerRelayInterface } from "@nostrwatch/worker-relay"
 import { ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist/types";
 import { generateSubId, randomInRange } from "./utils";
+import { NostrEvent } from "nostr-tools";
 
-export interface INostrSqliteAdapter extends IAdapterCacheWorker {
+export interface INostrSqliteAdapter extends ICacheAdapter {
     REQ(filters: ReqFilter[]): Promise<IEvent[]>;
     COUNT(filters: ReqFilter[]): Promise<number>;
     DELETE(filters: ReqFilter[]): Promise<string[]>;
@@ -17,7 +18,7 @@ export interface INostrSqliteAdapter extends IAdapterCacheWorker {
     WIPE(): Promise<boolean>;
 }
 
-export class NostrSqliteAdapter extends AdapterCacheWorker implements INostrSqliteAdapter {
+export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdapter {
     private _relay?: WorkerRelayInterface;
     private _ready: boolean = false;
 
@@ -30,8 +31,10 @@ export class NostrSqliteAdapter extends AdapterCacheWorker implements INostrSqli
         this.relay.worker.terminate()
     }
 
+    setup(){}
+
     /**
-     * overload defaults because WorkerRelayInterface handles it.
+     * overload defaults with inop because WorkerRelayInterface handles it.
     */
     bindWorkerHandlers() {}
     async onMessage(command: AdapterCacheWorkerCommand): Promise<void> { return void 0; }
@@ -50,16 +53,20 @@ export class NostrSqliteAdapter extends AdapterCacheWorker implements INostrSqli
         return generateSubId(randomInRange(11, 24))
     }
 
-    newWorker(): Worker {
-        const worker: Worker | URL = import.meta.env.DEV
-            ? new URL("@nostrwatch/nip66-cacheadapter-nostrsqlite/dist/nostrsqlite.worker.js", import.meta.url)
-            : new NostrSqliteWorker();
+   async newWorker(): Promise<Worker> {
+        let worker;
+        if(import.meta.env.DEV){
+            /* @vite-ignore */
+            worker = new URL("./workers/nostrsqlite.worker.js", import.meta.url)
+        }
+        else {
+            const NostrSqliteWorker = (await import("./workers/nostrsqlite.worker.js?worker")).default;
+            worker = new NostrSqliteWorker();
+        }
         this.relay = new WorkerRelayInterface(worker);
         this._ready = true
         return this.relay.worker; 
     }
-    
-    async init(): Promise<void> {}
 
     async ready(): Promise<void> {
         while(!this._ready) {
@@ -67,11 +74,28 @@ export class NostrSqliteAdapter extends AdapterCacheWorker implements INostrSqli
         }
     }
 
-    async setup(command: any): Promise<void> {}
+    async addEvent(event: IEvent): Promise<void> {
+        this.EVENT(event);
+    }
+
+    async addEvents(events: IEvent[]): Promise<void> {
+        for(const event of events) {
+            this.EVENT(event)
+        }
+    }
+
+    async putEvent(event: IEvent): Promise<void> {
+        this.addEvent(event)
+    }
+
+    async EVENT(event: IEvent): Promise<void> {
+        await this.relay.event(event as unknown as NostrEvent)
+    }
 
     async REQ(filters: ReqFilter[]): Promise<IEvent[]> {
         const message: ReqCommand = ['REQ', this.subId, ...filters];
-        return (this.relay.query(message) as unknown as Promise<IEvent[]>);
+        let results = (await this.relay.query(message)) as unknown as IEvent[]
+        return results
     }
 
     async COUNT(filters: ReqFilter[]): Promise<number> {

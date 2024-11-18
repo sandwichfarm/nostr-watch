@@ -19,7 +19,6 @@ export interface IAdapterCacheWorker {
   addEvents(events: IEvent[]): Promise<void>;
 }
 
-
 export class AdapterCacheWorker extends AdapterWorker {
 
   private queue: PQueue = new PQueue({concurrency: 20})
@@ -41,6 +40,7 @@ export class AdapterCacheWorker extends AdapterWorker {
     this.queue.add(async () => {
       const { result } = command
       if(!result) return console.warn('result is not defined')
+      console.log('result type:', typeof result)
       const event = this.decode(result)
       if(event instanceof Array) {
         await this.addEvents(event)
@@ -52,8 +52,11 @@ export class AdapterCacheWorker extends AdapterWorker {
   }
 
   async onMessage(command: AdapterCacheWorkerCommand): Promise<void>{
+    // console.log(`[AdapterCacheWorker] onMessage: ${command.type}`)
     const { result } = command
     if(!result) return console.warn('result is not defined')
+    console.log('result type:', typeof result)
+    console.log(command)
     const event = this.decode(result)
     if(event instanceof Array) {
       await this.addEvents(event)
@@ -71,23 +74,5 @@ export class AdapterCacheWorker extends AdapterWorker {
     //console.log('AdapterCacheWorker: onChannelMessage', command)
     this.onMessage(command)
   }
-
-
-
-
-
-  // private async _bulkAddRelays(command: AdapterCacheWorkerCommand): Promise<void> {
-  //   const { eventsBuffer } = command
-  //   if(!eventsBuffer) return console.warn('eventsBuffer is not defined')
-  //   const events = Workers.decodeNostrEventArrayFromBuffer(eventsBuffer)
-  //   await this.bulkAddRelays(events)
-  // }
-
-  // private async _bulkAddMonitors(command: AdapterCacheWorkerCommand): Promise<void> {
-  //   const { eventsBuffer } = command
-  //   if(!eventsBuffer) return console.warn('eventsBuffer is not defined')
-  //   const events = Workers.decodeNostrEventArrayFromBuffer(eventsBuffer)
-  //   await this.bulkAddMonitors(events)
-  // }
   
  }

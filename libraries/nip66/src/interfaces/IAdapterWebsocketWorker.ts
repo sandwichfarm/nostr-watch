@@ -5,11 +5,11 @@ export interface AdapterWebsocketWorkerOptions {
   connectToRelays: string[]
 }
 
-export type AdapterWebsocketWorkerCommandTypes = "subscribeAndCache" | "subscribeAndReturn" | "subscribeAndCacheAndReturn"
+export type AdapterWebsocketWorkerCommandTypes = "subscribe" | "fetch"
 
 export interface AdapterWebsocketWorkerCommand extends AdapterWorkerCommand {
-  type: AdapterWebsocketWorkerCommandTypes;
+  type: AdapterWebsocketWorkerCommandTypes
+  hash: string,
   filters: Filter[];
   options?: AdapterWebsocketWorkerOptions
-  token?: string; 
 }

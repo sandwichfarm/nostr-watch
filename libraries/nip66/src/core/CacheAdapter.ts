@@ -6,7 +6,6 @@ export interface GeohashOptions {
   minResults?: number;
 }
 
-
 /******
  * 
  * CHECK
@@ -243,8 +242,11 @@ export interface ICacheAdapter extends IAdapter {
 
 export class CacheAdapter extends Adapter {
   static type = 'CacheAdapter';
-  static slug: string; 
-  static metaUrl: string;
+  readonly slug: string = 'CacheAdapter:unset'; 
+
+  constructor() {
+    super()
+  }
 
   get dedicatedWorker(): Worker | undefined {
     return this.workers?.cacheDedicated
@@ -261,7 +263,7 @@ export class CacheAdapter extends Adapter {
   }
 
   ping(): void {
-    //console.log(`[CacheAdapter:${this.constructor.name}] o/o SEND: PING -> cacheWorker`)
+    ////console.log(`[CacheAdapter:${this.constructor.name}] o/o SEND: PING -> cacheWorker`)
     this.workers?.cacheDedicated?.postMessage({type: 'ping'})
   }
 }
@@ -412,8 +414,8 @@ class CacheAdapterMethods {
   // U
   //@built-in:helper
   async patchMonitor(monitor: Partial<IMonitor>): Promise<void> {
-    if(!monitor?.id) return console.warn('Error patching monitor: no id provided', monitor)
-    const existingRecord = (await this.getMonitor({ monitorPubkey: monitor.id }, ['record']))?.record
+    if(!monitor?.pubkey) return console.warn('Error patching monitor: no id provided', monitor)
+    const existingRecord = (await this.getMonitor({ monitorPubkey: monitor.pubkey }, ['record']))?.record
     if(!existingRecord) return console.warn('Error patching monitor: no record found', monitor)
     const monitorRecord: IMonitor = {...existingRecord, ...monitor } as IMonitor
     return this.putMonitor(monitorRecord)
@@ -421,7 +423,7 @@ class CacheAdapterMethods {
 
   //@built-in:helper
   async updateMonitor(monitor: IMonitor): Promise<void> {
-    if(!(await this.ensureMonitorExists(monitor.id))) return console.warn('Error updating monitor: record not found', monitor)
+    if(!(await this.ensureMonitorExists(monitor.pubkey))) return console.warn('Error updating monitor: record not found', monitor)
     return this.putMonitor(monitor)
   }
 

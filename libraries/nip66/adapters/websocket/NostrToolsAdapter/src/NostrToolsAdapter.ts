@@ -16,10 +16,10 @@ export class NostrToolsAdapter extends WebsocketAdapter {
     this.connect();
   }
 
-  async newWorker(): Promise<Worker> {
+  async newWorker(channelPort: MessagePort): Promise<Worker> {
     return NostrToolsWorker();
   }
 }
 
-export interface NostrToolsAdapter extends NostrToolsMethods {}
-applyMixins(NostrToolsAdapter, [NostrToolsMethods]);
+// export interface NostrToolsAdapter extends NostrToolsMethods {}
+// applyMixins(NostrToolsAdapter, [NostrToolsMethods]);

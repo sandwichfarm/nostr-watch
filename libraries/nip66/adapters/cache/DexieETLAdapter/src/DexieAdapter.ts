@@ -31,7 +31,6 @@ import DexieWorker from './workers/dexie.worker'
 class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   readonly slug: string = 'dexie'
-  readonly metaUrl: string = import.meta.url
 
   private _idb: any;
 

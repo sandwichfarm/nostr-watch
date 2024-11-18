@@ -28,7 +28,7 @@ export interface TableInfo {
 export async function initDb(db: Surreal, namespace: string, database: string) {
 
   try {
-    console.log('Initializing the database');
+    //console.log('Initializing the database');
 
     await db.use({namespace, database})
 
@@ -44,7 +44,7 @@ export async function initDb(db: Surreal, namespace: string, database: string) {
       await defineIndices(db, model);
     }
 
-    console.log('All models have been set up successfully!');
+    //console.log('All models have been set up successfully!');
   } catch (e) {
     console.error('Failed to initialize the database:', e);
   }
@@ -56,10 +56,9 @@ async function createTableSchema(db: Surreal, model: any) {
   const tableExists = await checkTableExists(db, name);
 
   if (!tableExists) {
-    console.log(`Creating table schema for ${name}`);
+    //console.log(`Creating table schema for ${name}`);
     await db.query(`
       ${schema}
-
       -- Store the schema version
       DEFINE TABLE ${name}_schema_version SCHEMALESS;
       DEFINE FIELD version ON ${name}_schema_version TYPE int;
@@ -67,7 +66,7 @@ async function createTableSchema(db: Surreal, model: any) {
       INSERT INTO ${name}_schema_version (version) VALUES (${version});
     `);
   } else {
-    console.log(`Table ${name} already exists.`);
+    //console.log(`Table ${name} already exists.`);
   }
 }
 
@@ -75,7 +74,7 @@ async function defineRelationships(db: Surreal, model: any) {
   const { name, relationships } = model;
 
   if (relationships.trim()) {
-    console.log(`Defining relationships for ${name}`);
+    //console.log(`Defining relationships for ${name}`);
     await db.query(relationships);
   }
 }
@@ -97,12 +96,12 @@ async function defineIndices(db: Surreal, model: { name: string; indices: string
     });
 
     for (const index of indexDefinitions) {
-      console.log(`Defining index: ${index}`);
+      //console.log(`Defining index: ${index}`);
       await db.query(index);
     }
   } catch (error: any) {
     if (error?.message && error?.message.includes("already exists")) {
-      console.log(`Index already exists for table ${name}. Skipping index creation.`);
+      //console.log(`Index already exists for table ${name}. Skipping index creation.`);
     } else {
       console.error(`Failed to define indices for table ${name}:`, error);
     }

@@ -149,6 +149,11 @@ export default class {
     this.websocketAdapter?.ping()
   }
 
+  REQ(filters: any): void {
+    this.cacheAdapter?.REQ(filters)
+    // this.websocketAdapter?.REQ(filters)
+  }
+
   // async getOfflineRelaysByMonitor(){
 
   // }

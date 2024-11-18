@@ -40,7 +40,7 @@ export class AdapterCacheWorker extends AdapterWorker {
     this.queue.add(async () => {
       const { result } = command
       if(!result) return console.warn('result is not defined')
-      console.log('result type:', typeof result)
+      // console.log('result type:', typeof result)
       const event = this.decode(result)
       if(event instanceof Array) {
         await this.addEvents(event)
@@ -55,8 +55,8 @@ export class AdapterCacheWorker extends AdapterWorker {
     // console.log(`[AdapterCacheWorker] onMessage: ${command.type}`)
     const { result } = command
     if(!result) return console.warn('result is not defined')
-    console.log('result type:', typeof result)
-    console.log(command)
+    // console.log('result type:', typeof result)
+    // console.log(command)
     const event = this.decode(result)
     if(event instanceof Array) {
       await this.addEvents(event)

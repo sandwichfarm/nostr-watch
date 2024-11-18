@@ -1,5 +1,6 @@
 import { IEvent, IMonitor, modelDefaults } from '@models/index';
 import { geocodeTransform, iGeocodeToArray } from './TransformRelays';
+import { isGeohash } from '@base/utils';
 
 export type IdbReadyMonitorData = { 
   event?: IEvent;
@@ -65,16 +66,14 @@ const getFrequency = (event: IEvent): number => {
 }
 
 const getGeohash = (event: IEvent): string | null => {
-  return event.tags.reduce((longest, t) => {
+  const geohashes = event.tags.filter( t => t[0] === 'g' && isGeohash(t[1]) )
+  return geohashes.reduce((longest, t) => {
     const key = t[0];
     const value = t[1];
-    const isGeohash = key === 'g';
-
-    if (isGeohash && value.length > (longest?.length || 0)) {
+    if (value.length > (longest?.length || 0)) {
       return value;
     }
-
-    return longest;
+    return longest
   }, null as string | null);
 };
 

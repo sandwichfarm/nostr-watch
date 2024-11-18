@@ -116,6 +116,13 @@ export const defaultRelayResultKeys: RelayResultKeys = ['record']
 export interface ICacheAdapter extends IAdapter {
   init?(): Promise<void>;
 
+  REQ(filters: any[]): Promise<IEvent[]>;
+  COUNT(filters: any[]): Promise<number>;
+  DELETE(filters: any[]): Promise<string[]>;
+  DUMP(): Promise<Uint8Array>;
+  CLOSE(subId: string): Promise<boolean>;
+  WIPE(): Promise<boolean>;
+
   /***********
    * 
    * EVENTS

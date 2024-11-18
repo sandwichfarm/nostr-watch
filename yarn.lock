@@ -3743,6 +3743,7 @@ __metadata:
     bits-ui: "npm:^0.21.12"
     clsx: "npm:^2.1.1"
     dexie: "npm:^4.0.8"
+    nostr-tools: "npm:^2.10.3"
     postcss: "npm:^8.4.38"
     prettier: "npm:^3.1.1"
     prettier-plugin-svelte: "npm:^3.1.2"
@@ -16139,6 +16140,29 @@ __metadata:
     typescript:
       optional: true
   checksum: 10c0/66872704b3748c85e195a7f58425b204088b4432d5ff2d6c196988332e5cea6af543dd9b4f26523c42676960c9cc227ee207d056767f8cd70a479774094778af
+  languageName: node
+  linkType: hard
+
+"nostr-tools@npm:^2.10.3":
+  version: 2.10.3
+  resolution: "nostr-tools@npm:2.10.3"
+  dependencies:
+    "@noble/ciphers": "npm:^0.5.1"
+    "@noble/curves": "npm:1.2.0"
+    "@noble/hashes": "npm:1.3.1"
+    "@scure/base": "npm:1.1.1"
+    "@scure/bip32": "npm:1.3.1"
+    "@scure/bip39": "npm:1.2.1"
+    nostr-wasm: "npm:v0.1.0"
+  peerDependencies:
+    typescript: ">=5.0.0"
+  dependenciesMeta:
+    nostr-wasm:
+      optional: true
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/9a326bbf2631d7a68abd1b8a5b13fc3fc0e041fa2885c4c424c61939dfe2753f866b9a5eda7be2d3044d6531f24064e4f68d6c9d0e26fc2b1b730f983befddd2
   languageName: node
   linkType: hard
 

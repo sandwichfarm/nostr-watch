@@ -18,18 +18,12 @@ export const normalizeUrl = (url: string) => {
   return parsedUrl.toString();
 };
 
-// export const applyMixins = (derivedCtor: any, constructors: any[]) => {
-//   constructors.forEach((baseCtor) => {
-//     Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
-//       Object.defineProperty(
-//         derivedCtor.prototype,
-//         name,
-//         Object.getOwnPropertyDescriptor(baseCtor.prototype, name) ||
-//           Object.create(null)
-//       );
-//     });
-//   });
-// }
+export const isGeohash = (input: string): boolean => {
+  // Geohashes are usually between 1 and 12 characters long and only use base32 (no a, i, l, o).
+  const geohashRegex = /^[0-9a-z]{1,20}$/;
+  return geohashRegex.test(input);
+  return true;
+}
 
 export const applyMixins = (derivedCtor: any, baseCtors: any[]) => {
   baseCtors.forEach((baseCtor) => {

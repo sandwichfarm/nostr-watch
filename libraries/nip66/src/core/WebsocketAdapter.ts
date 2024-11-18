@@ -74,13 +74,13 @@ export interface WebsocketAdapterFetchOptions {
 
 export interface IWebsocketAdapterMethods {
   connect(): Promise<void>;
-  subscribe(args: WebsocketRequestBody, callbacks: SubscribeHandlers): Promise<IEvent[] | boolean>;
+  subscribe(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
   fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
   unsubscribe(subId?: string): void;
   disconnect(): void;
   terminate(): void;
   abort(): void;
-  populate(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
+  bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
 }
 
 export interface IWebsocketAdapter extends IWebsocketAdapterMethods, IAdapter {}
@@ -119,14 +119,14 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   onMessage(response: WebsocketResponseBody): void {
-    console.log(`[WebsocketAdapter:${this.constructor.name}] i/i RECEIVE: ${response.type} <- websocketWorker`, response)
+    // console.log(`[WebsocketAdapter:${this.constructor.name}] i/i RECEIVE: ${response.type} <- websocketWorker`, response)
     const { hash } = response
     response.result = this.decode(response.result)
     // if(!response?.result) return console.warn(`[WebsocketAdapter] Error: no result found in response`)
-    console.log(`[WebsocketAdapter]:${this.constructor.name}] ${hash} is valid: ${hash && this.subscriptions.has(hash)}`, response)
-    if(hash && this.subscriptions.has(hash)){
+    // console.log(`[WebsocketAdapter]:${this.constructor.name}] ${hash} is valid: ${hash && this.subscriptions.has(hash)}`, response)
+    // if(hash && this.subscriptions.has(hash)){
       this.emitter.emit(hash, response)
-    }
+    // }
   } 
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{
@@ -169,10 +169,10 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   async response(hash: string, callbacks?: SubscribeHandlers): Promise<boolean | any[]>{
     return new Promise( resolve => {
-      console.log(`[WebsocketAdapter:${this.constructor.name}] waiting for response on hash: ${hash}`)
+      // console.log(`[WebsocketAdapter:${this.constructor.name}] waiting for response on hash: ${hash}`)
       const results: any[] = []
       const responseHandler = (message: WebsocketResponseBody) => {
-        console.log(`[WebsocketAdapter:${this.constructor.name}] responseHandler triggered for hash ${hash}`)
+        // console.log(`[WebsocketAdapter:${this.constructor.name}] responseHandler triggered for hash ${hash}`)
         let { result, type } = message
         if(type.includes('event')){
           if(result instanceof Array){
@@ -193,15 +193,13 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           else {
             resolve(results)
           }
-          this.emitter.off(hash, responseHandler)
-          this.subscriptions.delete(hash)
         }
       }
       this.emitter.on(hash, responseHandler)
     });
   }
 
-  populate(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
+  bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
     console.log(`[WebsocketAdapter:${this.constructor.name}] populate`, filters)
     const { kinds } = filters[0]
     const hash = this.request({

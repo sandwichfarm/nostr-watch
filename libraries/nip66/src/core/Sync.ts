@@ -85,17 +85,17 @@ export class Sync {
 
   async _stage_seed_monitors(): Promise<void> {
     this.stage = SyncStage.SeedMonitors
-    await this.services.monitors.populateMonitors()
+    await this.services.monitors.bootstrapMonitors()
     await this.services.monitors.ensureMonitorsActive()
     await Promise.allSettled([
-      this.services.monitors.populateMonitorData(),
+      this.services.monitors.bootstrapMonitorData(),
       this.services.monitors.prioritizeMonitors(MonitorPriority.Checks)
     ])
   }
 
   async _stage_seed_relays(): Promise<void> {
     this.stage = SyncStage.SeedRelays
-    await this.services.monitors.populateMonitorChecks()
+    await this.services.monitors.bootstrapMonitorChecks()
   }
 
   async _stage_seed_meta(): Promise<void> {

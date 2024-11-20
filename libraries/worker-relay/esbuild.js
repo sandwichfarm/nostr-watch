@@ -4,7 +4,7 @@ import { wasmLoader } from 'esbuild-plugin-wasm'
 esbuild.build({
   entryPoints: ['src/worker.ts'],
   bundle: true,
-  minify: true,
+  minify: false,
   sourcemap: true,
   outdir: 'dist/esm',
   format: 'esm',

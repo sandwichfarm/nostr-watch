@@ -1,5 +1,3 @@
-import PQueue from 'p-queue';
-
 import { 
   AdapterWebsocketWorkerCommand,
 } from "@base/interfaces/IAdapterWebsocketWorker";
@@ -12,6 +10,7 @@ import {
 } from "./AdapterWorker"
 import { IEvent } from "@base/models";
 import { defaultWebsocketAdapterOptions, defaultWebsocketRequest, defaultWebsocketRequestBody, SubscribeHandlers, WebsocketAdapterFetchOptions, WebsocketAdapterOptions, WebsocketRequest, WebsocketRequestBody } from "./WebsocketAdapter";
+import { Batcher } from "./Batcher";
 
 export enum ResponseType {
   event = 'event',
@@ -59,12 +58,17 @@ export interface IAdapterWebsocketWorker {
 
 export class AdapterWebsocketWorker extends AdapterWorker {
   protected relays: string[] = ['wss://relaypag.es/', 'wss://relay.nostr.watch/']
-  private queue: PQueue = new PQueue({concurrency: 1})
   private batchQueue: IEvent[] = []
+  private batcher: Batcher<IEvent, WebsocketRequestBody>;
 
   constructor( options?: WorkerOptions ){
     console.log ('AdapterWebsocketWorker', options)
     super(options)
+    this.batcher = new Batcher<IEvent, WebsocketRequestBody>({
+      maxLength: 500,
+      timeout: 10000,
+      callback: this.batchResponse.bind(this)
+    })
   }
 
   async _setup(command: AdapterWorkerCommand): Promise<void>{
@@ -103,7 +107,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     console.warn('AdapterWebsocketWorker: onMessage: did not match any command')
   }
 
-  respond(response: WebsocketResponse = defaultWebsocketResponse){
+  send(response: WebsocketResponse = defaultWebsocketResponse){
     const { to, args } = response
     let sent = 0
     if(to === 'adapter'){
@@ -116,7 +120,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       this.channel.postMessage(args)
       sent++
     }
-    if(!sent) console.warn('AdapterWebsocketWorker: respond: did not send to any destination')
+    if(!sent) console.warn('AdapterWebsocketWorker: send: did not send to any destination')
   }
 
   async subscribe( request: WebsocketRequestBody = defaultWebsocketRequestBody ){
@@ -124,15 +128,11 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     const { hash, options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
-    const { onevent, oneose } = this.requestCallbacks(request);
     if(stream){
-      callbacks = { onevent }
+      callbacks = this.requestCallbacks(request);
     }
     const result = await this._subscribe(request, callbacks)
-    if(stream){
-      oneose?.()
-    }
-    else {
+    if(!stream){
       console.log(`AdapterWebsocketWorker: subscribe: preparing async response`)
       console.log('AdapterWebsocketWorker: response', request, result)
       this.requestAsyncReponse(request, result as IEvent[])
@@ -145,20 +145,16 @@ export class AdapterWebsocketWorker extends AdapterWorker {
 
   async fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody){
     console.log(`AdapterWebsocketWorker: fetch`, request)
-    const { options } = request
+    const { hash, options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
-    const { onevent, oneose } = this.requestCallbacks(request);
     if(stream){
-      callbacks = { onevent }
+      callbacks = this.requestCallbacks(request);
     }
-    // console.log('AdapterWebsocketWorker: fetch: calling this._fetch')
+    console.log('AdapterWebsocketWorker: fetch: calling this._fetch')
     const result = await this._fetch(request, callbacks)
-    // console.log('AdapterWebsocketWorker: fetch: result', result)
-    if(stream){
-      oneose?.()
-    }
-    else {
+    console.log('AdapterWebsocketWorker: fetch: result', result)
+    if(!stream){
       console.log(`AdapterWebsocketWorker: fetch: preparing async response`)
       this.requestAsyncReponse(request, result as IEvent[])
     }
@@ -166,6 +162,50 @@ export class AdapterWebsocketWorker extends AdapterWorker {
 
   async _fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
     throw new Error(`${this.constructor.name}:_fetch() not implemented!`)
+  }
+
+  
+
+  respond(type: ResponseType, request: WebsocketRequestBody, result?: IEvent | IEvent[]){
+    const { hash, options } = request;
+    const { cache, returnResults } = options;
+    const response = {
+      type, 
+      result,
+      hash: hash as string
+    }
+    if(cache) {
+      this.send({to: 'cache', args: response})
+    }
+    if(returnResults){
+      this.send({to: 'adapter', args: response})
+    }
+  }
+
+  batchResponse(events: IEvent[], state?: WebsocketRequestBody, id?: string){
+    console.log(`AdapterWebsocketWorker: batchResponse: ${id}`, events.length)
+    if(!state) throw new Error('AdapterWebsocketWorker: batchResponse: state is undefined')
+    this.respond(ResponseType.events, state, events)
+  }
+
+  requestCallbacks(request: WebsocketRequestBody = defaultWebsocketRequestBody): SubscribeHandlers {
+    const { options, hash } = request
+    const { batch } = options
+    const onevent = (event: unknown) => {
+      let result: IEvent | IEvent[];
+      if(typeof batch === 'number') {
+        const state = !this.batcher.hasState(hash) ? request : undefined
+        this.batcher.add(event as IEvent, hash, state)
+      }
+      else {
+        result = event as IEvent;
+        this.respond(ResponseType.event, request, event as IEvent)
+      }
+    }
+    const oneose = () => {
+      this.respond(ResponseType.complete, request)
+    }
+    return { onevent, oneose }
   }
 
   requestAsyncReponse(request: WebsocketRequestBody, result: IEvent[]){
@@ -178,10 +218,10 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       hash: hash as string
     }
     if(cache === true) {
-      this.respond({to: 'cache', args})
+      this.send({to: 'cache', args})
     }
     if(returnResults === true){
-      this.respond({to: 'adapter', args})
+      this.send({to: 'adapter', args})
     }
     //complete message.
     args = {
@@ -190,82 +230,13 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       type: ResponseType.complete,
     }
     if(cache === true) {
-      this.respond({to: 'cache', args})
+      this.send({to: 'cache', args})
     }
     if(returnResults === true){
-      this.respond({to: 'adapter', args})
+      this.send({to: 'adapter', args})
     }
   }
 
-  requestCallbacks(request: WebsocketRequestBody = defaultWebsocketRequestBody): SubscribeHandlers {
-    const { options, hash } = request
-    let { batch } = options
-    let response: WebsocketResponseBody;
-    const onevent = (event: unknown) => {
-      // if(batch){
-      //   if(this.batchQueue.length < (batch as number)) {
-      //     console.log('batching', batch, this.batchQueue.length)
-      //     this.batchQueue.push(event as IEvent);
-      //     return;
-      //   }
-      //   else {
-      //     console.log('sending batch', batch, this.batchQueue.length)
-      //     const result = [...this.batchQueue.splice(0, batch)]
-      //     response = {
-      //       type: ResponseType.events, 
-      //       result,
-      //       hash: hash as string
-      //     }
-      //   }
-      // }
-      if(!response){
-        response = {
-          type: ResponseType.event, 
-          result: event as IEvent,
-          hash: hash as string
-        }
-      }
-      const { cache, returnResults } = options
-      if(cache) {
-        this.respond({to: 'cache', args: response})
-      }
-      if(returnResults){
-        this.respond({to: 'adapter', args: response})
-      }
-    }
-    const oneose = () => {
-      const { cache, returnResults } = options
-      const { batch } = options
-      let args: WebsocketResponseBody;
-      // if(this.batchQueue.length > 0){
-      //   console.log(`sending remainder: ${this.batchQueue.length}`)
-      //   const result = this.batchQueue.splice(0, batch)
-      //   args = {
-      //     type: ResponseType.events, 
-      //     result,
-      //     hash: hash as string
-      //   }
-      //   if(cache) {
-      //     this.respond({ to: 'cache', args })
-      //   }
-      //   if(returnResults){
-      //     this.respond({ to: 'adapter', args })
-      //   }
-      // }
-      args = {
-        type: ResponseType.complete,
-        result: null,
-        hash: hash as string
-      }
-      if(cache) {
-        this.respond({ to: 'cache', args })
-      }
-      if(returnResults){
-        this.respond({ to: 'adapter', args })
-      }
-    }
-    return { onevent, oneose }
-  }
   private _getUniquePubkeys(events: IEvent[]): string[] {
     return Array.from(new Set(events.map(event => event.pubkey)))
   }

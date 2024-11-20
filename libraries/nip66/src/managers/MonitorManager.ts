@@ -22,43 +22,56 @@ export class MonitorManager {
     return MonitorManager.instance;
   }
 
-  getMonitorsMap(): Map<string, Monitor> {
+  get monitorsMap(): Map<string, Monitor> {
     return this.monitors;
   }
 
-  getMonitorsArray(): Monitor[] {
-    return Array.from(this.monitors.values()).sort((a, b) => b.priority - a.priority);
+  get monitorsArray(): Monitor[] {
+    return Array.from(this.monitors.values());
+  }
+
+  get activeMonitors(): Monitor[] {
+    return this.monitorsArray.filter((monitor) => monitor.lastActive > 0 && monitor.priority >= 0);
+  }
+
+  get sortedMonitors(): Monitor[] {
+    const sortedMonitors = this.activeMonitors.sort((a, b) => a.priority - b.priority);
+    return sortedMonitors
   }
 
   get primary(): Monitor | undefined {
-    return this.getMonitorsArray().find((monitor) => monitor.priority === 1);
+    return this.monitorsArray.find((monitor) => monitor.priority === 1);
   }
 
   get secondary(): Monitor | undefined {
-    return this.getMonitorsArray().find((monitor) => monitor.priority === 2);
+    return this.monitorsArray.find((monitor) => monitor.priority === 2);
   }
 
   get tertiary(): Monitor | undefined {
-    return this.getMonitorsArray().find((monitor) => monitor.priority === 3);
+    return this.monitorsArray.find((monitor) => monitor.priority === 3);
   }
 
   get quaternary(): Monitor | undefined {
-    return this.getMonitorsArray().find((monitor) => monitor.priority === 4);
-  }
-
-  addHook(name: string, hook: IServiceHook): void {
-    this.hooks[name] = hook;
+    return this.monitorsArray.find((monitor) => monitor.priority === 4);
   }
 
   get hook() {
     return this.hooks;
   }
 
+  addHook(name: string, hook: IServiceHook): void {
+    this.hooks[name] = hook;
+  }
+
   handleEvent(event: IEvent): void {
     const { kind, pubkey } = event;
     let monitor = this.monitors.get(pubkey);
-    if (!monitor) {
-      monitor = new Monitor();
+    if (!monitor && kind === 10166) {
+      monitor = new Monitor(event);
+      this.monitors.set(pubkey, monitor);
+      console.log(`created new monitor for pubkey: ${pubkey}`);
+    } else if(!monitor) {
+      throw new Error(`Monitor not found for pubkey: ${pubkey}`);
     }
     if (kind === 10166) {
       monitor.addRegistration(event);
@@ -73,7 +86,7 @@ export class MonitorManager {
   }
 
   prioritizeMonitors(): void {
-    const goodMonitors = this.getMonitorsArray().filter((monitor) => {
+    const goodMonitors = this.monitorsArray.filter((monitor) => {
       if (!monitor?.registration?.lastActive) return false;
       if (!monitor?.registration?.checks?.length) return false;
       if (!monitor?.profile) return false;

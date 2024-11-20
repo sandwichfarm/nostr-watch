@@ -4,3 +4,6 @@ export * from "./monitors.js";
 export * from "./relays.js";
 export * from "./nip11s.js";
 export * from "./geocodes.js";
+export * from "./versions.js";
+export * from "./isps.js";
+export * from "./softwares.js";

@@ -1,3 +1,5 @@
-import { writable, type Writable } from "svelte/store";
+import { writable, derived, type Writable } from "svelte/store";
 
-export const events: Writable<any[]> = writable([]);
+export const events: Writable<Map<string, any>> = writable(new Map());
+
+export const eventsArray = derived(events, ($events) => Array.from($events.values()));

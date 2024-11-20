@@ -14,3 +14,16 @@ export const getUrlFromEvent = (event: IEvent): string | undefined => {
 export const getNetworkFromEvent = (event: IEvent): string | undefined => {
   return event.tags.find( t => t[0] === 'n')?.[1]
 }
+
+export const isPRE = (ev: IEvent): boolean => {
+  return ev.kind >= 30000 && ev.kind < 40000
+}
+
+export const isRE = (ev: IEvent): boolean => {
+  const legacyReplaceableKinds = [0, 3, 41];
+  return (ev.kind >= 10000 && ev.kind < 20000) || legacyReplaceableKinds.includes(ev.kind)
+}
+
+export const isEphemeral = (ev: IEvent): boolean => {
+  return ev.kind >= 20000 && ev.kind < 30000
+}

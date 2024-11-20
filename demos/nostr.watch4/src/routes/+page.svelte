@@ -11,19 +11,17 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { derived, type Readable } from 'svelte/store';
 
-	import { transform30166 } from '@nostrwatch/nip66/transform';
-	import type { ICheck, IRelay, INip11, IGeocode } from '@nostrwatch/nip66/models';
-
 	import { DataTable } from '@careswitch/svelte-data-table';
-
-	import Surreal from 'surrealdb';
 
 	import { 
 		nip11s, 
 		geocodes, 
-		events, 
+		events, eventsArray,
 		relays, 
-		checks, pastChecks, relayChecks, relayAggregates,
+		checks, 
+		pastChecks, relayChecks, relayAggregates,
+		softwares, versions,
+		isps,
 		monitors, monitorChecksCount
 	} from '$lib/stores/index.js';
 	import type Check from 'svelte-radix/Check.svelte';
@@ -60,14 +58,12 @@
 				return { data: [], columns: [] };
 			}
 
-			// Construct columns
 			const columns: TableColumn[] = Object.keys($relayAggregates[0]).map((key) => ({
 				id: key,
 				key: key,
 				name: key.charAt(0).toUpperCase() + key.slice(1),
 			}));
 
-			// Format data using provided formatters
 			const data = $relayAggregates.map((item) => {
 				const formattedItem = { ...item };
 				for (const key in formatters) {
@@ -142,11 +138,15 @@
 	let tableInstance: DataTable<any> | null = null;
 	let subscriptions: typeof Subscription[] = [];
 
+	let val: string='';
+	let timer: ReturnType<typeof setTimeout>;
+	const debounce = <T>(value: T, time: number = 750, callback = () => {}) => {
+		clearTimeout(timer);
+		timer = setTimeout(callback, time);
+	}
+
 	onMount(async () => {
 		if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-
-		// const Dexie = await import('dexie');
-		// liveQuery = Dexie.liveQuery;
 		N66 = (await import('@nostrwatch/nip66')).default;
 		console.log(await import('@nostrwatch/nip66-cacheadapter-nostrsqlite'))
 		NostrSqliteAdapter = (await import('@nostrwatch/nip66-cacheadapter-nostrsqlite')).default;
@@ -160,229 +160,53 @@
 		n66 = new N66(adapters);
 		await n66.init();
 
-		await n66.monitorService.bootstrapMonitorRegistrations();
-		await n66.monitorService.bootstrapMonitorData();
-    	await n66.monitorService.ensureMonitorsActive();
-    	await n66.monitorService.prioritizeMonitors();
-		const _events = await n66.cacheAdapter.REQ([{ kinds: [30166] }])
-		console.log(_events.length)
-		events.set(_events);
+		const eventAddr = ( event: any ) => {
+			let { pubkey, kind } = event;
+			pubkey = pubkey.slice(0,13);
+			const relay = event.tags.find(t => t[0] === 'd')?.[1]
+			if(pubkey && relay && kind) {
+				const key = `${pubkey}:${kind}:${relay}`
+				return `${pubkey}:${kind}:${relay}`;
+			}
+		}
 
-		n66.monitorService.addHook('onMonitorCheckEvent', (event: any) => {
-
-			// transform30166(event).then((transformed: any) => {
-			// 	const { check, relay, nip11, event, geocodes } = transformed
-
-			// 	checks.update( (checks: ICheck[]) => { 
-			// 		checks.push(check) 
-			// 		return checks
-			// 	});
-
-			// 	relays.update( (relays: Map<string, IRelay>) => { 
-			// 		relays.set(relay.relay, relay) 
-			// 		return relays
-			// 	});
-
-				// nip11s.update( (nip11s: Map<string, INip11>) => { 
-				// 	nip11s.set(nip11.relay, nip11) 
-				// 	return nip11s
-				// });
-
-				// geocodes.update( (geocodes: IGeocode[]) => { 
-				// 	geocodes.push(geocodes) 
-				// 	return geocodes
-				// });	
-			// });
-			
-			events.update((events) => {
-				events.push(event);
-				return events;
+		n66.on('event', (event: any) => {
+			console.log('Svelte Received event:', event.id);
+			events.update((map) => {
+				const addr = eventAddr(event);
+				if (!addr) return;
+				const existing = map.get(addr);
+				if (existing && existing.id === event.id) return;
+				if (existing && existing.created_at > event.created_at) return;
+				map.set(addr, event);
+				return map;
 			});
 		});
 
+		n66.on('events', (_events: any) => {
+			console.log('Svelte Received events:', _events.length);
+			let set = 0;
 
-		// monitors.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'monitor' }))[0].map(m => {
-		// 	delete m.id;
-		// 	return m
-		// }));
+			events.update((map) => {
+				_events.forEach((event: any) => {
+					const addr = eventAddr(event);
+					if (!addr) return;
 
-		// checks.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'check' }))[0].map(m => {
-		// 	delete m.id;
-		// 	return m
-		// }));
+					const existing = map.get(addr);
+					if (existing && existing.id === event.id) return;
+					if (existing && existing.created_at > event.created_at) return;
 
-		// relays.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'relay' }))[0].map(m => {
-		// 	delete m.id;
-		// 	return m
-		// }));
+					set++;
+					map.set(addr, event);
+				});
 
+				return map;
+			});
 
-		// nip11s.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'nip11' }))[0].map(m => {
-		// 	delete m.id;
-		// 	return m
-		// }));
+			console.log(`Set ${set}/${_events.length} events`);
+		});
 
-
-		// events.set((await n66.cacheAdapter.db.store.query(`SELECT * FROM type::table($tb);`, { tb: 'event' }))[0].map(m => {
-		// 	m.id = m.id.id;
-		// 	return m
-		// }));
-
-		// geocodes.set((await n66.cacheAdapter.db.store.query(`SELECT * 	FROM type::table($tb);`, { tb: 'geocode' }))[0].map(m => {
-		// 	delete m.id;
-		// 	console.log(geocode)
-		// 	return m
-		// }));
-		
-		n66.monitorService.bootstrap()	
-
-		// const queryUuid = await n66.cacheAdapter.db.store.live(
-		// 	"monitor",
-		// 	( action, result ) => {
-		// 		if (action === 'CLOSE') return;
-		// 		monitors.update((monitors) => {
-		// 			delete result.id;
-		// 			const monitor = result;
-		// 			if (action === 'CREATE') {
-		// 				monitors.push(monitor);
-		// 			} else if (action === 'DELETE') {
-		// 				const index = monitors.findIndex((m) => m.pubkey === monitor.pubkey);
-		// 				monitors.splice(index, 1);
-		// 			}
-		// 			return monitors;
-		// 		});
-		// 	}
-		// )
-
-
-		// n66.cacheAdapter.db.store.live(
-		// 	"check",
-		// 	( action, result ) => {
-		// 		if (action == 'CLOSE') return;
-		// 		checks.update((checks) => {
-		// 			delete result.id;
-		// 			const check = result;
-		// 			if (action == 'CREATE') {
-		// 				checks.push(check);
-		// 			} else if (action == 'DELETE') {
-		// 				const index = checks.findIndex((c) => c.nid === check.nid);
-		// 				checks.splice(index, 1);
-		// 			}
-		// 			return checks;
-		// 		});
-		// 	}
-		// )
-
-		// n66.cacheAdapter.db.store.live(
-		// 	"relay",
-		// 	( action, result ) => {
-		// 		if (action === 'CLOSE') return;
-		// 		relays.update((relays) => {
-		// 			delete result.id;
-		// 			const relay = result;
-		// 			if (action === 'CREATE') {
-		// 				relays.push(relay);
-		// 			} else if (action === 'UPDATE') {
-		// 				const index = relays.findIndex((r) => r.relay === relay.relay );
-		// 				relays[index] = relay;
-		// 			} else if (action === 'DELETE') {
-		// 				const index = relays.findIndex((r) => r.relay === relay.relay );
-		// 				relays.splice(index, 1);
-		// 			}
-		// 			return relays;
-		// 		});
-		// 	}
-		// )
-
-		// n66.cacheAdapter.db.store.live(
-		// 	"nip11",
-		// 	( action, result ) => {
-		// 		if (action === 'CLOSE') return;
-		// 		nip11s.update((nip11s) => {
-		// 			delete result.id;
-		// 			const nip11 = result;
-		// 			if (action === 'CREATE') {
-		// 				nip11s.set(nip11.relay, nip11);
-		// 			} else if (action === 'UPDATE') {
-		// 				nip11s.set(nip11.relay, nip11);
-		// 			} else if (action === 'DELETE') {
-		// 				nip11s.delete(nip11.relay);
-		// 			}
-		// 			return nip11s;
-		// 		});
-		// 	}
-		// )
-
-		// n66.cacheAdapter.db.store.live(
-		// 	"geocode",
-		// 	( action, result ) => {
-		// 		if (action === 'CLOSE') return;
-		// 		geocodes.update((geocodes) => {
-		// 			delete result.id;
-		// 			const geocode = result;
-		// 			if (acti	on === 'CREATE') {
-		// 				geocodes.push(geocode);
-		// 			} else if (action === 'DELETE') {
-		// 				const index = geocodes.findIndex((g) => g.code === geocode.code);
-		// 				geocodes.splice(index, 1);
-		// 			}
-		// 			return geocodes;
-		// 		});
-		// 	}
-		// )
-
-		// n66.cacheAdapter.db.store.live(
-		// 	"event",
-		// 	( action, result ) => {
-		// 		if (action === 'CLOSE') return;
-		// 		events.update((events) => {
-		// 			result.id = result.id.id
-		// 			const event = result;
-		// 			if (action === 'CREATE') {
-		// 				events.push(event);
-		// 			} else if (action === 'UPDATE') {
-		// 				const index = events.findIndex((e) => e.id === event.id);
-		// 				events[index] = event;
-		// 			} else if (action === 'DELETE') {
-		// 				const index = events.findIndex((e) => e.id === event.id);
-		// 				events.splice(index, 1);
-		// 			}
-		// 			return events;
-		// 		});
-		// 	}
-		// )
-
-		// subscribe to liveQuery results and update writable stores
-		// subscriptions = [
-		// 	liveQuery(() => n66.cacheAdapter.db.events.toArray()).subscribe((data) => {
-		// 		events.set(data);
-		// 	}),
-		// 	liveQuery(() => n66.cacheAdapter.db.relays.where('lastSeen').above((Date.now() / 1000) - 60 * 60 * 1).toArray()).subscribe((data) => {
-		// 		relays.set(data);
-		// 	}),
-		// 	liveQuery(() => n66.cacheAdapter.db.monitors.toArray()).subscribe((data) => {
-		// 		monitors.set(data);	
-		// 	}),
-		// 	liveQuery(() => n66.cacheAdapter.db.checks.toArray()).subscribe((data) => {
-		// 		checks.set(data);
-		// 	}),
-		// 	liveQuery(() => n66.cacheAdapter.db.pastChecks.toArray()).subscribe((data) => {
-		// 		pastChecks.set(data);
-		// 	}),
-		// 	liveQuery(() => n66.cacheAdapter.db.nip11s.toArray()).subscribe((data) => {
-		// 		for(const nip11 of data) {
-		// 			nip11s.update((map: Map<string, INip11>) => {
-		// 				map.set(nip11.relay, nip11 as INip11);
-		// 				return map;
-		// 			});
-		// 		}
-		// 	}),
-		// 	liveQuery(() => n66.cacheAdapter.db.geocodes.toArray()).subscribe((data) => {
-		// 		geocodes.set(data);
-		// 	})
-		// ];
-
-		
+		await n66.monitorService.bootstrap();
 	});
 
 	onDestroy(() => {
@@ -423,15 +247,29 @@
 	<p>{JSON.stringify($geocodes.filter(gc => gc.format === 'alpha' && gc.length === 2).map(gc => gc.code))}</p>
 
 	<h2>Events</h2>
-	<p>{$events.length}</p>
+	<p>{$eventsArray.length}</p>
+
+	<h2>Softwares</h2>
+	<p>{$softwares.length}</p>
+
+	<h2>Versions</h2>
+	<p>{$versions.length}</p>
+
+	<h2>ISPs</h2>
+	<p>{$isps.length}</p>
 </main>
 
 <h1>Monitors</h1>
+{JSON.stringify($monitors)}
 {#if $monitors.length > 0}
-	<p>{$monitors.length}</p>
-	{#each $monitors as monitor (monitor.pubkey)}
-		<p>{monitor.pubkey} [{$monitorChecksCount[monitor.pubkey]}]</p>
-	{/each}
+  <p>{$monitors.length}</p>
+  {#each $monitors as monitor (monitor?.registration?.pubkey)}
+    <p>
+      {monitor?.registration?.pubkey} [{monitor?.relays?.length || 0}]
+    </p>
+  {/each}
+{:else}
+  <p>No monitors found.</p>
 {/if}
 
 {#if $tableData.data.length && tableInstance !== null}

@@ -2,16 +2,16 @@ import { derived } from "svelte/store";
 import type { INip11 } from "@nostrwatch/nip66/models"
 import { deterministicHash } from "@nostrwatch/nip66/utils";
 
-import { events } from './events.js'; 
+import { eventsArray } from './events.js'; 
 
-export const nip11s = derived(events, ($events) => {
-  if (!$events || $events.length === 0) {
+export const nip11s = derived(eventsArray, ($eventsArray) => {
+  if (!$eventsArray || $eventsArray.length === 0) {
     return new Map();
   }
 
   const nip11Map = new Map();
 
-  $events.forEach((event) => {
+  $eventsArray.forEach((event) => {
     const relayTag = event.tags.find((tag) => tag[0] === 'd');
     if (!relayTag || !relayTag[1]) return;
 

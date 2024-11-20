@@ -1,12 +1,13 @@
+export * from './Adapter'
+export * from './AdapterCacheWorker';
+export * from './AdapterWebsocketWorker';
+export * from './AdapterWorker';
+
 export * from './Base';
+export * from './Batcher';
+export * from './CacheAdapter'
 
 export * from './Workers';
 export * from './Queue'
 
-export * from './Adapter'
-export * from './WebsocketAdapter'
-export * from './CacheAdapter'
-
-export * from './AdapterWorker';
-export * from './AdapterCacheWorker';
-export * from './AdapterWebsocketWorker';
+export * from './WebsocketAdapter';

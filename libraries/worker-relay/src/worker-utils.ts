@@ -59,17 +59,14 @@ export async function insertBatch(state: WorkerState) {
         if(!expiredWithRemainder && totalEvents < state.insertBatchSize){
           break;
         }
-        else if(expiredWithRemainder) {
-          console.log('expired with remainder.')
-        }
         const batch = state.eventWriteQueue.splice(0, state.insertBatchSize);
         state.eventWriteQueue = state.eventWriteQueue.slice(batch.length);
         state.relay.eventBatch(batch);
         state.lastBatch = Date.now();
+        // console.log("batches processed:", processed);
         processed++
       }
     }
-    console.log("batches processed:", processed);
   }
   setTimeout(() => insertBatch(state), 100);
 }

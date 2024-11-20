@@ -151,7 +151,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           else {
             resolve(Array.from(events));
           }
-          // callbacks?.oneose?.();
+          callbacks?.oneose?.();
           this.fetcher?.shutdown();
         }
         try {

@@ -87,6 +87,7 @@
 		"@surrealdb/wasm": "^1.0.2",
 		"dexie": "^4.0.8",
 		"nostr-tools": "^2.10.3",
-		"surrealdb": "^1.0.6"
+		"surrealdb": "^1.0.6",
+		"vite-plugin-compression": "^0.5.1"
 	}
 }

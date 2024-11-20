@@ -86,7 +86,7 @@ export class Workers {
   }
 
   static encodeNostrEventArrayAsBuffer (json: IEvent[] | IEvent): ArrayBuffer {
-    if(json instanceof ArrayBuffer) return json;
+    if(json instanceof ArrayBuffer) return json as unknown as ArrayBuffer;
     const jsonString = JSON.stringify(json);
     const encoder = new TextEncoder();
     const uint8Array = encoder.encode(jsonString);

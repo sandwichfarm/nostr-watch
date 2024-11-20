@@ -7,11 +7,14 @@ import type { MonitorService as MonitorServiceType } from '../services/MonitorSe
 import type { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 
 import type { Workers } from './Workers';
+import { EventEmitter } from 'tseep';
 // import { getInheritanceChainFromInstance } from '../utils/classes';
 
 type AnyAdapter = IWebsocketAdapter | ICacheAdapter;
 
 export default class {
+
+  private emitter: EventEmitter = new EventEmitter();
 
   public relayService?: RelayServiceType;
   public monitorService?: MonitorServiceType;
@@ -35,6 +38,18 @@ export default class {
 
   get relays(): RelayServiceType | undefined {
     return this.relayService;
+  }
+
+  on(event: string, listener: (...args: any[]) => void): void {
+    this.emitter.on(event, listener);
+  }
+
+  once(event: string, listener: (...args: any[]) => void): void {
+    this.emitter.once(event, listener);
+  }
+
+  off(event: string, listener: (...args: any[]) => void): void {
+    this.emitter.off(event, listener);
   }
 
   async useAdapter(adapter?: ICacheAdapter | IWebsocketAdapter): Promise<void> {
@@ -100,8 +115,8 @@ export default class {
     const { cacheAdapter, websocketAdapter } = this
     const { RelayService } = await import('../services/RelayService')
     const { MonitorService } = await import('../services/MonitorService')
-    this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
-    this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
+    this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument, this.emitter);
+    this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument, this.emitter);
     
     this.monitorService.init()
   }
@@ -129,6 +144,14 @@ export default class {
 
   get cacheSharedWorker(): SharedWorker | undefined {
     return this?.cacheAdapter?.workers?.cacheShared;
+  }
+
+  async bootstrap(){
+    this.monitorService?.bootstrap();
+    //seed
+    //desync
+    //sync
+    //idle
   }
 
   async bootstrapMonitors(){

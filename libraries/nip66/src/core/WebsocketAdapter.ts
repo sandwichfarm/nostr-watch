@@ -7,6 +7,7 @@ import { defaultWebsocketResponseBody, WebsocketResponseBody } from './AdapterWe
 
 export interface SubscribeHandlers {
   onevent?: (event: any) => void
+  onevents?: (events: any[]) => void
   oneose?: () => void
   onclose?: () => void
 }
@@ -90,6 +91,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   static type = 'WebsocketAdapter';
   readonly slug: string = 'WebsocketAdapter:unset';
   private _subscriptions: Set<string> = new Set()
+  private _hashData: Record<string, any> = {}
 
   get worker(): Worker | undefined {
     return this.workers?.websocketDedicated
@@ -154,6 +156,11 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
     return result;
   } 
 
+  setHashData(hash: string, key: string, value: any): void {
+    if(!this._hashData[hash]) this._hashData[hash] = {}
+    this._hashData[hash][key] = value
+  }
+
   request(message: Partial<WebsocketRequest> = defaultWebsocketRequest): string {
     if(!message?.args) throw new Error('No args found in message')
     const hash = deterministicHash(message?.args?.filters ?? {})
@@ -170,13 +177,14 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   async response(hash: string, callbacks?: SubscribeHandlers): Promise<boolean | any[]>{
     return new Promise( resolve => {
-      // console.log(`[WebsocketAdapter:${this.constructor.name}] waiting for response on hash: ${hash}`)
       const results: any[] = []
       const responseHandler = (message: WebsocketResponseBody) => {
-        // console.log(`[WebsocketAdapter:${this.constructor.name}] responseHandler triggered for hash ${hash}`)
         let { result, type } = message
         if(type === 'events') {
-          console.log('events', result.length)
+          if(callbacks?.onevents){
+            callbacks.onevents(result)
+            return
+          }
           for(let event of result){
             if(callbacks?.onevent){
               callbacks.onevent(event)

@@ -12,7 +12,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
         messageChannel: undefined,
 
         insertBatchEvery: 1000,
-        insertBatchSize: 10,
+        insertBatchSize: 25,
         lastBatch: 0
     }
     relay = relayHandler;
@@ -31,7 +31,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     async setup(command: AdapterWorkerMessage){ 
         //console.log(`NostrSqliteWorker: setup()`,  command)
         const conf: InitAargs = {
-            databasePath: "relay.1.db",
+            databasePath: "relay.43432.db",
             insertBatchSize: this.state.insertBatchSize
         }
         await relayInit(this.state, conf).catch( async () => {
@@ -83,14 +83,16 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     }
     
     async addEvent(nostrEvent: IEvent) {
-        //console.log(`NostrSqliteWorker: Over MessageChannel: addEvent() -> ${nostrEvent.id}`)
+        // console.log(`NostrSqliteWorker: Over MessageChannel: addEvent() -> ${nostrEvent.id}`)
         relayEvent(this.state, nostrEvent)
     }
     
     async addEvents(nostrEvents: IEvent[]) {
-        for(const event of nostrEvents){
-            this.addEvent(event)
-        }
+        console.log(`NostrSqliteWorker: Over MessageChannel: relay.eventBatch() -> ${nostrEvents.length}`)
+        this?.state?.relay?.eventBatch?.(nostrEvents)
+        // for(const event of nostrEvents){
+        //     this.addEvent(event)
+        // }
     }
 }
 

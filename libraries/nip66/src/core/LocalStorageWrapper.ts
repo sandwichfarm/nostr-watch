@@ -1,15 +1,3 @@
-let localStorage: Storage | undefined;
-
-(async () => {
-  if (typeof window === "undefined") {
-    const { LocalStorage } = await import('node-localstorage');
-    localStorage = new LocalStorage('./@nostrwatch/nip66');
-  } else {
-    // Use the browser's localStorage
-    localStorage = window.localStorage;
-  }
-})
-
 export class LocalStorageWrapper {
   private _prefix: string
 
@@ -44,8 +32,8 @@ export class LocalStorageWrapper {
     if(!localStorage) throw new Error('No localStorage found')
     key = this.formatKey(key)
     const item = localStorage.getItem(key)
-    if(item === '' || null) return _default;
-    return item?.split(':')[1]
+    if(item === '' || item === null) return _default;
+    return item
   }
 
   removeItem(key:  string | string[]): void {

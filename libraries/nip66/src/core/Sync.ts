@@ -85,7 +85,7 @@ export class Sync {
 
   async _stage_seed_monitors(): Promise<void> {
     this.stage = SyncStage.SeedMonitors
-    await this.services.monitors.bootstrapMonitors()
+    await this.services.monitors.bootstrap()
     await this.services.monitors.ensureMonitorsActive()
     await Promise.allSettled([
       this.services.monitors.bootstrapMonitorData(),

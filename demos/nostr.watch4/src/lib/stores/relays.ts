@@ -1,42 +1,38 @@
-// import { writable, type Writable } from "svelte/store";
-
-
-// import type { IRelay } from "@nostrwatch/nip66/models";
-
-// export const relays: Writable<Map<string, IRelay>> = writable(new Map<string, IRelay>());
-
-
 import { derived } from 'svelte/store';
-import { events } from './events.js'; // Adjust the import path as necessary
+import { eventsArray } from './events.js';
 
-export const relays = derived(events, ($events) => {
+export const relays = derived(eventsArray, ($eventsArray) => {
     const relayMap = new Map();
 
-    $events.forEach((event) => {
-        // Extract relay URL from the 'd' tag
+    $eventsArray.forEach((event) => {
         const dTag = event.tags.find((tag) => tag[0] === 'd');
         if (!dTag || !dTag[1]) return;
 
         const relayUrl = new URL(dTag[1]).toString();
 
-        // Get network from the 'n' tag
-        const nTag = event.tags.find((tag) => tag[0] === 'n');
-        const network = nTag ? nTag[1] : null;
+        const networkValue = event.tags.find((tag) => tag[0] === 'n')?.[1];
+        const network = networkValue ? networkValue : null;
 
-        // Create the relay object
-        const relay = {
-        relay: relayUrl,
-        lastSeen: event.created_at,
-        network,
-        created_at: event.created_at,
-        ignore: false,
-        score: null,
-        };
+        const seenBy = event.pubkey
 
-        // Add to the map to ensure uniqueness
-        relayMap.set(relayUrl, relay);
+        if (relayMap.has(relayUrl)) {
+            let existingRelay = relayMap.get(relayUrl);
+            if (event.created_at > existingRelay.lastSeen) {
+                existingRelay.lastSeen = event.created_at;
+            }
+            existingRelay.seenTimes += 1;
+            existingRelay.seenBy.add(seenBy);
+            relayMap.set(relayUrl, existingRelay);
+        } else {
+            relayMap.set(relayUrl, {
+                relay: relayUrl,
+                lastSeen: event.created_at,
+                network,
+                seenTimes: 1,
+                seenBy: new Set()
+            });
+        }
     });
 
-    // Return an array of unique relays
     return Array.from(relayMap.values());
 });

@@ -13,7 +13,6 @@ export interface AdapterCacheWorkerResult extends AdapterWorkerResult {
 }
 
 export interface IAdapterCacheWorker {
-  
   setup(command: AdapterCacheWorkerCommand): void;
   addEvent(events: IEvent): Promise<void>;
   addEvents(events: IEvent[]): Promise<void>;
@@ -51,6 +50,7 @@ export class AdapterCacheWorker extends AdapterWorker {
   }
 
   async onMessage(command: AdapterCacheWorkerCommand): Promise<void>{
+    console.log('AdapterCacheWorker: onMessage', command)
     const { type, result } = command
     if(type === 'complete') return;
     if(!result) return console.warn('result is not defined', command)

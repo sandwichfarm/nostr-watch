@@ -46,15 +46,19 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['as', 'asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['relay', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'version']
-export const filtersShow: DataKeys = ['network', 'paymentRequired', 'authRequired', 'isp', 'software', 'version']
+export const columnsShow: DataKeys = ['relay', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
+export const filtersShow: DataKeys = ['network', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode']
 
 export const humanReadableNames: NameFormatter = {
+    network: 'Network',
+    supportedNips: 'NIPs',
+    software: 'Software',
     relay: 'Relay',
     rttNormalized: 'Speed',
-    countryCode: 'Country',
+    geocode: 'Country',
     paymentRequired: 'Payment',
     authRequired: 'Auth',
+    isp: 'ISP'
 };
 
 export const formatters: Formatters = {}
@@ -73,7 +77,7 @@ export const tableFormatters: Formatters = {
     supportedNips: (nips) => {
         let output = '';
         for(const nip of nips) {
-            output += `<span class="p-1 mr-1 inline">${nip}</span>`;
+            output += `<span class="p-1 mr-1 inline text-xs">${nip}</span>`;
         }
         return output;
     },
@@ -98,18 +102,32 @@ export const filterFormatters: Formatters = {
         if(!code) return '🌐';
         return countryCodeToFlagEmoji(code);
     },
-    paymentRequired: (r) => {
-        const text = r? 'yes': 'no'
-        const style = r? '': 'text-opacity-50'
-        return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
-    },	
-    authRequired: (r) => {
-        const text = r? 'yes': 'no'
-        const style = r? '': 'text-opacity-50'
-        return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
+    supportedNips: (nip) => {
+        return formatNip(nip)
     },
+    // paymentRequired: (r) => {
+    //     const text = r? 'yes': 'no'
+    //     const style = r? '': 'text-opacity-50'
+    //     return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
+    // },	
+    // authRequired: (r) => {
+    //     const text = r? 'yes': 'no'
+    //     const style = r? '': 'text-opacity-50'
+    //     return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
+    // },
     software: (software) => {
         if(typeof software !== 'string') return '-';
         return makeSoftwareReadable(software);
     }
+}
+
+
+function formatNip(number: number | string): string {
+    if (typeof number === 'string') {
+        number = parseInt(number);
+    }
+    if (number > 0 || number <= 9) {
+        number = number.toString().padStart(2, '0')
+    }
+    return `NIP-${number}`;
 }

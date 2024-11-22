@@ -7,16 +7,8 @@
 	import { Nip66Event } from '@nostrwatch/nip66/models';
 
 	import { 
-		nip11s, 
-		geocodes, 
 		events,
-		relays, 
-		softwares, versions,
-		isps,
-		monitors, monitorsMap, monitorChecksCount,
-
-		eventsArray
-
+		monitorsMap
 	} from '$lib/stores/index.js';
 
 	import { isParameterizedReplaceableKind, isReplaceableKind } from 'nostr-tools/kinds';
@@ -103,30 +95,29 @@
 				});
 			});
 
-			n66.on('event', (event: any) => {
-				console.log('Svelte Received event:', event.id);
-				events.update((map) => {
-					if(!map) return;
-					const key = eventKey(event)
-					if (!key) return;
-					const existing = map.get(key);
-					if (existing && existing.id === event.id) return;
-					if (existing && existing.created_at > event.created_at) return;
-					
-					map.set(key, new Nip66Event(event));
-					return map;
-				});
-			});
+			// n66.on('event', (event: any) => {
+			// 	console.log('Svelte Received event:', event.id);
+			// 	events.update((map) => {
+			// 		const key = eventKey(event);
+			// 		if (!key) return map;
+			// 		const existing = map.get(key);
+			// 		if (existing && existing.id === event.id) return map; // Explicitly return the existing map
+			// 		if (existing && existing.created_at > event.created_at) return map; // Explicitly return the existing map
+			// 		map.set(key, new Nip66Event(event));
+			// 		return map;
+			// 	});
+			// });
 
 			n66.on('events', (_events: any) => {
 				console.log('Svelte Received events:', _events.length);
 				let set = 0;
 
 				events.update((map) => {
-					if(!map) return map;
+					console.log('onevents map', map)
 					_events.forEach((event: any) => {
 						const key = eventKey(event);
 						if (!key) return;
+
 						const existing = map.get(key);
 						if (existing && existing.id === event.id) return;
 						if (existing && existing.created_at > event.created_at) return;

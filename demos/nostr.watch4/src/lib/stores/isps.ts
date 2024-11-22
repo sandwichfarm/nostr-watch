@@ -1,6 +1,5 @@
 import { derived } from 'svelte/store';
 import { eventsArray } from './events.js'; 
-import { stringify } from 'postcss';
 import { StateManager } from '@nostrwatch/nip66';
 
 export type StoreIsp = {

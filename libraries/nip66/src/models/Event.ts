@@ -165,10 +165,10 @@ export class Nip66Event extends NostEvent {
     return this.tags.find((tag: NostrTag) => tag[0] === 'p')?.[1] || null;
   }
 
-  get supportedNips(): number[] | null {
+  get supportedNips(): string[] | null {
     return this.tags
       .filter((tag: NostrTag) => tag[0] === 'N')
-      .map((tag: NostrTag) => parseInt(tag[1])) || null;
+      .map((tag: NostrTag) => tag[1]) || null;
   }
 
   get software(): string | null {

@@ -1,3 +1,3 @@
 import { writable } from 'svelte/store';
 
-export const resultsPerPage = writable(20);
+export const resultsPerPage = writable(50);

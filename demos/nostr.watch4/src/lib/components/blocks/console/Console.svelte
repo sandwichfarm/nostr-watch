@@ -168,7 +168,7 @@
 		<Input
 			type="text"
 			placeholder="Search"
-			class="md:ml-auto md:max-w-[200px]"
+			class="md:ml-auto md:max-w-[300px] inline-block float-right"
 			bind:value={tableInstance.globalFilter}
     	/>
 		<DataTableShowResults />
@@ -182,8 +182,8 @@
 								class="flex items-center"
 								onclick={() => { if(tableInstance) tableInstance?.toggleSort(column.id) }}
 								disabled={!tableInstance?.isSortable(column.id)}
-							>
-								{column.name}
+								>
+								{humanReadableNames[column.id] ?? column.name}
 								{#if tableInstance?.isSortable(column.id)}
 									<span class="ml-2">
 										{#if tableInstance?.getSortState(column.id) === 'asc'}

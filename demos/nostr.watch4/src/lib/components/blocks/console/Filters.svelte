@@ -3,34 +3,40 @@
     import { Input } from '$lib/components/ui/input/index.js';
     import { Button } from '$lib/components/ui/button2/index.js';
     import MiniSearch from 'minisearch';
-	import { softwares } from '$lib/stores/softwares.js';
-	import { filterFormatters } from './config.js';
+    import { Accordion } from 'radix-svelte';
+    import type { Writable } from 'svelte/store';
 
-    export let tableData;
+    import { filterFormatters } from './config.js';
+    import Badge from '$lib/components/ui/badge/badge.svelte';
+
+    // **Props Passed to the Component**
+    export let tableData: Writable<{ data: any[] }>;
     export let filtersInclude: string[];
     export let humanReadableNames: Record<string, string>;
     export let filterOverrides: Record<string, { type: 'search' | 'badge', miniSearchOptions?: any }> = {};
     export let maxBadgeLength: number = 10;
-    export let filters; // Writable store passed from the parent component
-    
-    import { Accordion } from 'radix-svelte';
+    export let filters: Writable<Record<string, any>>; // Writable store passed from the parent component
+
+    // **Accordion States**
     let rootValue;
-	let rootType = "single";
-	let rootDisabled: boolean;
-	let itemValue: string;
-	let contentTransition: boolean = true;
+    let rootType: "single" | "multiple" = "multiple"; // Allows multiple accordion items to be open
+    let rootDisabled: boolean = false;
+    let contentTransition: boolean = true;
 
-
+    // **Filter Conditions for Number Filters**
     type FilterCondition = '=' | '<' | '>' | '!=';
 
+    // **Base Interface for All Filters**
     interface ConsoleFilterBase {
         key: string;
-        humanReadableName?: string;
+        humanReadableName: string;
         showAll?: boolean;
         searchTerm?: string;
         filteredDistinctValues?: string[];
+        mode: 'AND' | 'OR' | 'UNIQUE'; // Modes based on filter type
     }
 
+    // **Specific Filter Types**
     interface BooleanFilter extends ConsoleFilterBase {
         type: 'boolean';
     }
@@ -38,35 +44,30 @@
     interface NumberFilter extends ConsoleFilterBase {
         type: 'number';
         conditions: FilterCondition[];
+        inputValues: Record<FilterCondition, number | null>; // Stores input values for conditions
     }
 
     interface StringFilter extends ConsoleFilterBase {
         type: 'string';
         distinctValues: string[];
-        showAll?: boolean;
-        searchTerm?: string;
-        filteredDistinctValues?: string[];
     }
 
-    interface ConsoleFilterBase {
-        key: string;
-        humanReadableName?: string;
-        showAll?: boolean;
-        searchTerm?: string;
-        filteredDistinctValues?: string[];
-        mode: 'AND' | 'OR'; // Added mode property
+    interface ArrayFilter extends ConsoleFilterBase {
+        type: 'array';
+        distinctValues: string[];
     }
 
-
-    type ConsoleFilter = BooleanFilter | NumberFilter | StringFilter;
+    type ConsoleFilter = BooleanFilter | NumberFilter | StringFilter | ArrayFilter;
 
     let relayFilters: ConsoleFilter[] = [];
 
+    // **Initialize relayFilters Whenever tableData or filtersInclude Changes**
     $: {
         const data = get(tableData).data;
         relayFilters = createRelayFilters(data, filtersInclude, humanReadableNames);
     }
 
+    // **Function to Create Filters Based on Data**
     function createRelayFilters(
         data: any[],
         filtersInclude: string[],
@@ -81,6 +82,7 @@
             .filter((filter): filter is ConsoleFilter => filter !== null);
     }
 
+    // **Function to Create a Single Filter Based on Key and Data**
     function createFilter(
         key: string,
         data: any[],
@@ -89,26 +91,38 @@
         const firstValue = data.find((item) => item[key] !== null && item[key] !== undefined)?.[key];
         const humanReadableName = humanReadableNames[key] ?? key;
 
-        let mode: 'AND' | 'OR' = 'OR'; // Default mode
+        let mode: 'AND' | 'OR' | 'UNIQUE' = 'OR'; // Default mode
 
+        // **Determine Mode Based on Filter Type**
         if (typeof firstValue === 'boolean') {
-            mode = 'OR'; // Boolean filters must use OR
+            mode = 'UNIQUE'; // Boolean filters allow only one selection
         }
 
+        if (Array.isArray(firstValue)) {
+            mode = 'AND'; // Array filters typically use AND
+        }
+
+        // **Return the Appropriate Filter Object**
         if (typeof firstValue === 'boolean') {
             return {
                 key,
                 humanReadableName,
                 type: 'boolean',
-                mode, // Set mode
+                mode,
             };
         } else if (typeof firstValue === 'number') {
             return {
                 key,
                 humanReadableName,
                 type: 'number',
-                conditions: ['=', '<', '>'],
-                mode, // Set mode
+                conditions: ['=', '<', '>', '!='],
+                inputValues: {
+                    '=': null,
+                    '<': null,
+                    '>': null,
+                    '!=': null,
+                },
+                mode,
             };
         } else if (typeof firstValue === 'string') {
             const distinctValues = Array.from(new Set(data.map((item) => item[key]).filter((val) => typeof val === 'string')));
@@ -120,38 +134,62 @@
                 showAll: false,
                 searchTerm: '',
                 filteredDistinctValues: distinctValues,
-                mode, // Set mode
+                mode,
+            };
+        } else if (Array.isArray(firstValue)) {
+            const distinctValues = Array.from(
+                new Set(
+                    data
+                        .flatMap((item) => item[key])
+                        .filter((val) => typeof val === 'string')
+                )
+            );
+            return {
+                key,
+                humanReadableName,
+                type: 'array',
+                distinctValues,
+                showAll: false,
+                searchTerm: '',
+                filteredDistinctValues: distinctValues,
+                mode,
             };
         }
 
         return null;
     }
 
-
     let miniSearchInstances: Record<string, MiniSearch> = {};
 
+    // **Initialize MiniSearch for Search-Enabled Filters**
     function initializeMiniSearch(filterKey: string, data: any[], options: any) {
         if (!miniSearchInstances[filterKey]) {
             const miniSearch = new MiniSearch({
                 fields: [filterKey],
                 storeFields: [filterKey],
                 ...options
-
             });
-            miniSearch.addAll(data);
+            // Prepare data for MiniSearch
+            const miniSearchData = data.map(item => ({
+                id: item.id || JSON.stringify(item), // Ensure each document has a unique ID
+                [filterKey]: Array.isArray(item[filterKey]) ? item[filterKey].join(' ') : item[filterKey]
+            }));
+            miniSearch.addAll(miniSearchData);
             miniSearchInstances[filterKey] = miniSearch;
         }
     }
 
+    // **Toggle Show All for Filters with Many Options**
     function toggleShowAllBadges(filterKey: string) {
         relayFilters = relayFilters.map(filter => {
-            if (filter.key === filterKey && 'distinctValues' in filter) {
+            if (filter.key === filterKey && 'showAll' in filter) {
                 return { ...filter, showAll: !filter.showAll };
             }
             return filter;
         });
     }
 
+    // **Apply a Filter Value Based on Its Type and Mode**
     function applyFilter(filterKey: string, value: any) {
         const filter = relayFilters.find(f => f.key === filterKey);
         if (!filter) return;
@@ -162,47 +200,78 @@
             const existingFilter = currentFilters[filterKey];
 
             if (filter.type === 'boolean') {
-                // Boolean filters use OR logic (single selection)
+                // Boolean filters use UNIQUE logic (only one can be selected)
                 if (existingFilter === value) {
                     const { [filterKey]: _, ...rest } = currentFilters;
                     return rest;
                 } else {
                     return { ...currentFilters, [filterKey]: value };
                 }
-            }
-
-            if (mode === 'OR') {
-                // OR mode allows only one selection
-                if (existingFilter === value) {
-                    const { [filterKey]: _, ...rest } = currentFilters;
-                    return rest;
-                } else {
-                    return { ...currentFilters, [filterKey]: [value] };
-                }
-            } else if (mode === 'AND') {
-                // AND mode allows multiple selections
-                if (Array.isArray(existingFilter)) {
-                    const index = existingFilter.indexOf(value);
-                    if (index === -1) {
-                        return { ...currentFilters, [filterKey]: [...existingFilter, value] };
+            } else if (filter.type === 'string' || filter.type === 'array') {
+                if (mode === 'OR') {
+                    // OR mode allows multiple selections
+                    if (Array.isArray(existingFilter)) {
+                        if (existingFilter.includes(value)) {
+                            // Deselect the value
+                            const newValues = existingFilter.filter(v => v !== value);
+                            if (newValues.length === 0) {
+                                const { [filterKey]: _, ...rest } = currentFilters;
+                                return rest;
+                            }
+                            return { ...currentFilters, [filterKey]: newValues };
+                        } else {
+                            // Select the value
+                            return { ...currentFilters, [filterKey]: [...existingFilter, value] };
+                        }
                     } else {
-                        const newValues = [...existingFilter];
-                        newValues.splice(index, 1);
-                        if (newValues.length === 0) {
+                        // Initialize with the new value
+                        return { ...currentFilters, [filterKey]: [value] };
+                    }
+                } else if (mode === 'AND') {
+                    // AND mode requires all selected values to be present
+                    if (Array.isArray(existingFilter)) {
+                        if (existingFilter.includes(value)) {
+                            // Deselect the value
+                            const newValues = existingFilter.filter(v => v !== value);
+                            if (newValues.length === 0) {
+                                const { [filterKey]: _, ...rest } = currentFilters;
+                                return rest;
+                            }
+                            return { ...currentFilters, [filterKey]: newValues };
+                        } else {
+                            // Select the value
+                            return { ...currentFilters, [filterKey]: [...existingFilter, value] };
+                        }
+                    } else {
+                        // Initialize with the new value
+                        return { ...currentFilters, [filterKey]: [value] };
+                    }
+                } else if (mode === 'UNIQUE') {
+                    if (filter.type === 'array') {
+                        // For array filters in UNIQUE mode, maintain filterValue as an array
+                        if (Array.isArray(existingFilter) && existingFilter.includes(value)) {
+                            // Deselect the value
                             const { [filterKey]: _, ...rest } = currentFilters;
                             return rest;
+                        } else {
+                            // Select the new value, replacing any existing selections
+                            return { ...currentFilters, [filterKey]: [value] };
                         }
-                        return { ...currentFilters, [filterKey]: newValues };
-                    }
-                } else if (existingFilter !== undefined) {
-                    if (existingFilter === value) {
-                        const { [filterKey]: _, ...rest } = currentFilters;
-                        return rest;
                     } else {
-                        return { ...currentFilters, [filterKey]: [existingFilter, value] };
+                        // For string filters in UNIQUE mode, filterValue can be a single value or an array with one value
+                        if (existingFilter === value) {
+                            const { [filterKey]: _, ...rest } = currentFilters;
+                            return rest;
+                        } else {
+                            return { ...currentFilters, [filterKey]: value };
+                        }
                     }
-                } else {
-                    return { ...currentFilters, [filterKey]: [value] };
+                }
+            } else if (filter.type === 'number') {
+                // Number filters can have specific logic based on conditions
+                // This example assumes exact match; extend as needed
+                if (typeof value === 'number') {
+                    return { ...currentFilters, [filterKey]: value };
                 }
             }
 
@@ -210,28 +279,32 @@
         });
     }
 
-
-    function setFilterMode(filterKey: string, mode: 'AND' | 'OR') {
+    // **Set the Mode for a Specific Filter Group**
+    function setFilterMode(filterKey: string, mode: 'AND' | 'OR' | 'UNIQUE') {
         relayFilters = relayFilters.map(filter => {
             if (filter.key === filterKey && filter.type !== 'boolean') {
                 return { ...filter, mode };
             }
             return filter;
         });
-        // Optionally, clear existing selections if switching to OR mode
-        if (mode === 'OR') {
+
+        // If switching to UNIQUE mode, ensure only one selection is active
+        if (mode === 'UNIQUE') {
             filters.update(currentFilters => {
                 const existingFilter = currentFilters[filterKey];
-                if (Array.isArray(existingFilter) && existingFilter.length > 1) {
+                if (Array.isArray(existingFilter)) {
                     // Keep only the first selection
-                    return { ...currentFilters, [filterKey]: [existingFilter[0]] };
+                    return { ...currentFilters, [filterKey]: existingFilter.length > 0 ? [existingFilter[0]] : [] };
+                } else if (typeof existingFilter === 'string') {
+                    // Already a single value
+                    return currentFilters;
                 }
                 return currentFilters;
             });
         }
     }
 
-
+    // **Clear a Specific Filter Group**
     function clearFilter(filterKey: string) {
         filters.update(currentFilters => {
             const { [filterKey]: _, ...rest } = currentFilters;
@@ -239,42 +312,121 @@
         });
     }
 
-    function isSelected(filterKey: string, value: any) {
-        const filterValues = get(filters)[filterKey];
-        if (typeof filterValues === 'function') {
-            return false;
-        }
-        return filterValues && filterValues.includes(value);
-    }
+    // **Check if a Filter Value is Selected**
+    // Removed isSelected() function to implement reactive selection via inline expressions
 
+    // **Clear All Filters**
     function clearAllFilters() {
         filters.set({});
     }
 
+    // **Format Filter Values Using Provided Formatters**
     const format = (key: string, values: string[]) => {
-        return values.map((value: string) => filterFormatters?.[key]?.(value) || value)
+        return values.map((value: string) => filterFormatters?.[key]?.(value) || value);
     }
 
+    // **Reactive Statement to Track Active Filters**
     $: activeFilters = $filters;
+
+    // **Button Styling (Classes Only, No Styles Added)**
     $: buttonClass = `mb-2 mr-2 text-sm font-bold py-0 px-1`;
-    $: buttonClassSelected = ``;
+    $: buttonClassSelected = `bg-blue-500 text-white`;
+    
+    // **Reactive Statement to Compute Filtered Data**
+    $: filteredData = $tableData.data.filter(item => {
+        return Object.entries(activeFilters).every(([key, filterValue]) => {
+            const filter = relayFilters.find(f => f.key === key);
+            if (!filter) return true;
+
+            const itemValue = item[key];
+
+            // **Boolean Filters**
+            if (filter.type === 'boolean') {
+                return itemValue === filterValue;
+            }
+
+            // **Number Filters**
+            if (filter.type === 'number') {
+                if (typeof filterValue === 'number') {
+                    // Exact match; extend logic as needed
+                    return itemValue === filterValue;
+                }
+                return true; // If no filter is applied
+            }
+
+            // **String Filters**
+            if (filter.type === 'string') {
+                if (filter.mode === 'OR' || filter.mode === 'UNIQUE') {
+                    if (Array.isArray(filterValue)) {
+                        return filterValue.includes(itemValue);
+                    } else {
+                        return itemValue === filterValue;
+                    }
+                } else if (filter.mode === 'AND') {
+                    // Typically not applicable for string filters unless itemValue is an array
+                    if (Array.isArray(filterValue) && Array.isArray(itemValue)) {
+                        return filterValue.every(val => itemValue.includes(val));
+                    }
+                }
+            }
+
+            // **Array Filters**
+            if (filter.type === 'array') {
+                if (!Array.isArray(itemValue)) {
+                    console.warn(`Expected itemValue to be an array for key "${key}", but got:`, itemValue);
+                    return false; // Exclude items with invalid itemValue
+                }
+                if (filter.mode === 'OR') {
+                    // At least one selected value is present
+                    return (filterValue as string[]).some(val => itemValue.includes(val));
+                } else if (filter.mode === 'AND') {
+                    // All selected values must be present
+                    return (filterValue as string[]).every(val => itemValue.includes(val));
+                } else if (filter.mode === 'UNIQUE') {
+                    // Exactly one selected value must be present
+                    return (filterValue as string[]).length === 1 && itemValue.includes(filterValue[0]);
+                }
+            }
+
+            return true;
+        });
+    });
+
+    // **Watch and Log Filter Changes for Debugging**
+    $: {
+        console.log('Active Filters:', activeFilters);
+        console.log('Filtered Data Count:', filteredData.length);
+    }
 </script>
-<br /><br /><br /><br />
 
+<!-- IMPORTANT: SPACER -->
+<div class="h-20"></div>    
 
-{#if Object.keys(activeFilters).length > 0}
-    <div class="active-filters">
-        <h4>Active Filters:</h4>
+<!-- **Clear All Filters Button** -->
+<Button size="small" variant="destructive" on:click={clearAllFilters} class="{buttonClass} ml-2" disabled={Object.keys(activeFilters).length > 0 ? false : true}>
+    {#if Object.keys(activeFilters).length > 0}
+        Clear {Object.keys(activeFilters).length} Filters
+    {:else}
+        No Filters Applied
+    {/if}
+</Button>
+
+<!-- **Active Filters Display** -->
+{#if false && Object.keys(activeFilters).length > 0}
+    <div class="active-filters p-2">
+        <h5>Active Filters:</h5>
         <div class="active-filters-list">
             {#each Object.entries(activeFilters) as [key, value]}
-                <div class="active-filter">
+                <Badge class="mb-1 mr-1 px-1 py-1 text-xs" size="small" variant="secondary">
                     {#if typeof value === 'function'}
                         [Custom Filter]
-                    {:else}
+                    {:else if Array.isArray(value)}
                         {format(key, value).join(', ')}
+                    {:else}
+                        {format(key, [value]).join(', ')}
                     {/if}
-                    <Button size="small" variant="link" on:click={() => clearFilter(key)}>✕</Button>
-                </div>
+                    <Button size="small" class="ml-1" variant="link" on:click={() => clearFilter(key)}>✕</Button>
+                </Badge>
             {/each}
         </div>
         <Button size="small" variant="destructive" on:click={clearAllFilters} class="{buttonClass}">
@@ -283,7 +435,7 @@
     </div>
 {/if}
 
-<!-- <div class="max-w-[90%] text-wrap flex-wrap"> -->
+<!-- **Filters Accordion** -->
 <Accordion.Root
     class="overflow-x-hidden"
     bind:value={rootValue}
@@ -291,7 +443,6 @@
     disabled={rootDisabled} >
 
     {#each relayFilters as filter (filter.key)}
-        <!-- <div class="filter-block"> -->
         <Accordion.Item class="accordion-item max-h-none overflow-x-auto" value={filter.key}>
             <Accordion.Header class="py-2 px-2 border-b-2">
                 <Accordion.Trigger>
@@ -299,36 +450,50 @@
                 </Accordion.Trigger>
             </Accordion.Header>
             <Accordion.Content class="py-1 px-2" transition={contentTransition}>
-                <div class="max-w-[90%]">
-                    {#if filterOverrides[filter.key]?.type === 'search'}
-                        <div class="max-w-[100px]">
-                            <Input
-                                class="inline-block"
-                                type="text"
-                                placeholder={`Search ${filter.humanReadableName}`}
-                                on:input={(e) => {
-                                    if (e.target instanceof HTMLInputElement) {
-                                        const searchTerm = e.target.value;
-                                        initializeMiniSearch(filter.key, get(tableData).data, filterOverrides[filter.key]?.miniSearchOptions);
-                                        const miniSearch = miniSearchInstances[filter.key];
-                                        const results = miniSearch.search(searchTerm);
-                                        const matchedValues = results.map(result => result[filter.key]);
-                                        filters.update(currentFilters => ({ ...currentFilters, [filter.key]: matchedValues }));
+                <!-- **Search Input (if enabled)** -->
+                {#if filterOverrides[filter.key]?.type === 'search'}
+                    <div class="w-max-[100px] mb-2">
+                        <Input
+                            type="text"
+                            placeholder={`Search ${filter.humanReadableName}`}
+                            on:input={(e) => {
+                                if (e.target instanceof HTMLInputElement) {
+                                    const searchTerm = e.target.value;
+                                    initializeMiniSearch(filter.key, get(tableData).data, filterOverrides[filter.key]?.miniSearchOptions);
+                                    const miniSearch = miniSearchInstances[filter.key];
+                                    const results = miniSearch.search(searchTerm);
+                                    const matchedValues = results.map(result => result[filter.key]).filter(v => v !== undefined);
+                                    if (filter.mode === 'UNIQUE') {
+                                        // For UNIQUE mode, only one selection is allowed
+                                        filters.update(currentFilters => ({
+                                            ...currentFilters,
+                                            [filter.key]: matchedValues.length > 0 ? [matchedValues[0]] : []
+                                        }));
+                                    } else {
+                                        // For OR and AND modes
+                                        filters.update(currentFilters => ({
+                                            ...currentFilters,
+                                            [filter.key]: matchedValues
+                                        }));
                                     }
-                                }}
-                            />
-                        </div>
-                    {/if}
-                </div>
-                <div class="filter-mode-toggle">
+                                }
+                            }}
+                        />
+                    </div>
+                {/if}
+
+                <!-- **Filter Mode Toggle Buttons** -->
+                <div class="filter-mode-toggle mb-2">
                     {#if filter.type !== 'boolean'}
-                        <Button size="small"
-                            variant="secondary"
-                            class="{buttonClass} {filter.mode === 'AND' ? 'active' : ''}"
-                            on:click={() => setFilterMode(filter.key, 'AND')}
-                        >
-                            AND
-                        </Button>
+                        {#if filter.type === 'array'}
+                            <Button size="small"
+                                variant="secondary"
+                                class="{buttonClass} {filter.mode === 'AND' ? 'active' : ''}"
+                                on:click={() => setFilterMode(filter.key, 'AND')}
+                            >
+                                AND
+                            </Button>
+                        {/if}
                         <Button size="small"
                             variant="secondary"
                             class="{buttonClass} {filter.mode === 'OR' ? 'active' : ''}"
@@ -336,42 +501,36 @@
                         >
                             OR
                         </Button>
+                        <Button size="small"
+                            variant="secondary"
+                            class="{buttonClass} {filter.mode === 'UNIQUE' ? 'active' : ''}"
+                            on:click={() => setFilterMode(filter.key, 'UNIQUE')}
+                        >
+                            UNIQUE
+                        </Button>
                     {/if}
                 </div>
 
+                <!-- **Filter Options** -->
                 <div class="filter-options">
                     {#if filter.type === 'boolean'}
                         <Button size="small" 
                             variant="secondary" 
                             on:click={() => applyFilter(filter.key, true)} 
-                            class="{ isSelected(filter.key, true) ? buttonClassSelected : '' }"
+                            class="{ ($filters[filter.key] === true) ? buttonClassSelected : '' }"
                             >
                             Yes
                         </Button>
                         <Button size="small" 
                             variant="secondary" 
                             on:click={() => applyFilter(filter.key, false)} 
-                            class="{ isSelected(filter.key, false) ? buttonClassSelected : '' }">
+                            class="{ ($filters[filter.key] === false) ? buttonClassSelected : '' }">
                             No
                         </Button>
                     {:else if filter.type === 'string'}
                         {#if filterOverrides[filter.key]?.type !== 'search'}
-                            <!-- <Input
-                                type="text"
-                                placeholder={`Search ${filter.humanReadableName}`}
-                                on:input={(e) => {
-                                    if (e.target instanceof HTMLInputElement) {
-                                        const searchTerm = e.target.value;
-                                        initializeMiniSearch(filter.key, get(tableData).data, filterOverrides[filter.key]?.miniSearchOptions);
-                                        const miniSearch = miniSearchInstances[filter.key];
-                                        const results = miniSearch.search(searchTerm);
-                                        const matchedValues = results.map(result => result[filter.key]);
-                                        filters.update(currentFilters => ({ ...currentFilters, [filter.key]: matchedValues }));
-                                    }
-                                }}
-                            />
-                        {:else} -->
-                            <div class="w-max-[100px]">
+                            <!-- **Search Input for Non-Search Overrides** -->
+                            <div class="w-max-[100px] mb-2">
                                 <Input
                                     type="text"
                                     placeholder={`Search ${filter.humanReadableName}`}
@@ -382,12 +541,55 @@
                                     }}
                                 />
                             </div>
+                            <!-- **Display Filter Buttons** -->
                             {#if filter.filteredDistinctValues.length > 0}
                                 {#each filter.filteredDistinctValues.slice(0, filter.showAll ? undefined : maxBadgeLength) as value (value)}
                                     <Button size="small"
                                         variant="secondary"
                                         on:click={() => applyFilter(filter.key, value)}
-                                        class="{buttonClass} { isSelected(filter.key, value) ? buttonClassSelected : '' }">
+                                        class="{buttonClass} { 
+                                            (Array.isArray($filters[filter.key]) && $filters[filter.key].includes(value)) ||
+                                            ($filters[filter.key] === value)
+                                                ? buttonClassSelected 
+                                                : '' 
+                                        }">
+                                        {filterFormatters?.[filter.key]?.(value) || value}
+                                    </Button>
+                                {/each}
+                                {#if filter.filteredDistinctValues.length > maxBadgeLength}
+                                    <a href="#" on:click|preventDefault={() => toggleShowAllBadges(filter.key)} class="more-link">
+                                        {filter.showAll ? 'Less' : 'More'}
+                                    </a>
+                                {/if}
+                            {:else}
+                                <div>No options found.</div>
+                            {/if}
+                        {/if}
+                    {:else if filter.type === 'array'}
+                        {#if filterOverrides[filter.key]?.type !== 'search'}
+                            <!-- **Search Input for Array Filters** -->
+                            <div class="w-max-[100px] mb-2">
+                                <Input
+                                    type="text"
+                                    placeholder={`Search ${filter.humanReadableName}`}
+                                    bind:value={filter.searchTerm}
+                                    on:input={(e) => {
+                                        filter.searchTerm = e.target.value;
+                                        filter.filteredDistinctValues = filter.distinctValues.filter(val => val.toLowerCase().includes(filter.searchTerm.toLowerCase()));
+                                    }}
+                                />
+                            </div>
+                            <!-- **Display Array Filter Buttons** -->
+                            {#if filter.filteredDistinctValues.length > 0}
+                                {#each filter.filteredDistinctValues.slice(0, filter.showAll ? undefined : maxBadgeLength) as value (value)}
+                                    <Button size="small"
+                                        variant="secondary"
+                                        on:click={() => applyFilter(filter.key, value)}
+                                        class="{buttonClass} { 
+                                            (Array.isArray($filters[filter.key]) && $filters[filter.key].includes(value)) 
+                                                ? buttonClassSelected 
+                                                : '' 
+                                        }">
                                         {filterFormatters?.[filter.key]?.(value) || value}
                                     </Button>
                                 {/each}
@@ -401,7 +603,7 @@
                             {/if}
                         {/if}
                     {:else if filter.type === 'number'}
-                        {#each filter.conditions || [] as condition}
+                        {#each filter.conditions as condition}
                             <div class="number-filter-option">
                                 <Input
                                     type="number"
@@ -410,18 +612,23 @@
                                         if (e.target instanceof HTMLInputElement) {
                                             const inputValue = parseFloat(e.target.value);
                                             if (!isNaN(inputValue)) {
+                                                // Update the filter condition
                                                 filters.update(currentFilters => ({
                                                     ...currentFilters,
-                                                    [filter.key]: (value) => {
-                                                        if (condition === '=') return value === inputValue;
-                                                        if (condition === '<') return value < inputValue;
-                                                        if (condition === '>') return value > inputValue;
-                                                        if (condition === '!=') return value !== inputValue;
-                                                        return true;
+                                                    [filter.key]: {
+                                                        ...currentFilters[filter.key],
+                                                        [condition]: inputValue
                                                     }
                                                 }));
                                             } else {
-                                                clearFilter(filter.key);
+                                                // Clear the specific condition if input is invalid
+                                                filters.update(currentFilters => {
+                                                    if (currentFilters[filter.key]) {
+                                                        const { [condition]: _, ...rest } = currentFilters[filter.key];
+                                                        return { ...currentFilters, [filter.key]: rest };
+                                                    }
+                                                    return currentFilters;
+                                                });
                                             }
                                         }
                                     }}
@@ -429,6 +636,7 @@
                             </div>
                         {/each}
                     {/if}
+                    <!-- **Clear Button for Each Filter Group** -->
                     <Button size="small" on:click={() => clearFilter(filter.key)} class="{buttonClass}" variant="destructive">
                         Clear
                     </Button>
@@ -437,74 +645,3 @@
         </Accordion.Item>
     {/each}
 </Accordion.Root>
-<!-- </div> -->
-
-<style>
- /* .filters-container {
-    @apply flex flex-wrap gap-4 py-4;
-}
-.filter-block {
-    @apply border-none rounded-lg p-4 min-w-[200px];
-}
-.filter-title {
-    @apply mb-2 font-bold;
-}
-.filter-options > button {
-    @apply mr-2 mb-2;
-} */
-
-/* .clickable-badge {
-    @apply text-xs p-1 mt-1;
-}
-
-.clickable-badge:hover {
-    @apply bg-red-200;
-}
-.clickable-badge
-.clear-filter-badge {
-    @apply cursor-pointer p-2 bg-red-200;
-}
-.clear-all-filters {
-    @apply mt-4 bg-red-300;
-} */
-.more-link {
-    @apply cursor-pointer text-blue-500 underline mt-2;
-}
-.active-filters {
-    @apply mt-4;
-}
-.active-filters-list {
-    @apply flex flex-wrap gap-2;
-}
-.active-filter {
-    @apply p-2 rounded flex items-center gap-2;
-}
-.filter-mode-toggle Button.active {
-    @apply bg-blue-500 text-white;
-}
-/* button {
-    @apply text-sm font-bold p-1 mt-1;
-} */
-
-
-/* .contents {
-    --line-color: theme('colors.gray.300');
-
-    :global(.accordion-item) {
-        @apply mt-px overflow-hidden first:mt-0 first:rounded-t last:rounded-b 
-        focus-within:relative focus-within:z-10 focus-within:ring-2 focus-within:ring-black;
-    }
-
-    :global(.accordion-trigger) {
-        @apply flex h-12 flex-1  cursor-pointer items-center
-        justify-between bg-white px-5 text-base font-medium leading-none shadow-[0_1px_0]
-        shadow-[--line-color] outline-none hover:bg-gray-200;
-    }
-
-    :global(.accordion-content) {
-        @apply overflow-hidden bg-gray-100 text-sm text-gray-900;
-    }
-} */
-
-</style>
-

@@ -3,12 +3,12 @@
 import dotenv from 'dotenv'
 dotenv.config()
 
-import daemon from './daemon.js';
+import agent from './agent.js';
 import Logger from '@nostrwatch/logger'
 
 const logger = new Logger('root')
 
 logger.debug('Current Directory', process.cwd())
 
-const $ = daemon()
-$.catch(logger.err);
+const $ = agent()
+$.catch(logger.error);

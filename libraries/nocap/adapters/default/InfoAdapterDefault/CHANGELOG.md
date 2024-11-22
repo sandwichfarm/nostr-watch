@@ -1,5 +1,11 @@
 # @nostrwatch/nocap-info-adapter-default
 
+## 1.2.0
+
+### Minor Changes
+
+- 3711c6e: fixed hanging job
+
 ## 1.1.4
 
 ### Patch Changes

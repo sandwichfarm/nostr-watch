@@ -1,5 +1,16 @@
 # @nostrwatch/nwcache
 
+## 0.5.0
+
+### Minor Changes
+
+- a718902: relay urls with usernames were slipping through, migrations and fix sanitizer
+
+### Patch Changes
+
+- Updated dependencies [a718902]
+  - @nostrwatch/nostrings@0.3.0
+
 ## 0.4.0
 
 ### Minor Changes

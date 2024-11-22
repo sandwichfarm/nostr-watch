@@ -1,5 +1,26 @@
 # @nostrwatch/trawler
 
+<<<<<<< HEAD
+=======
+## 0.6.1
+
+### Patch Changes
+
+- @nostrwatch/nocap@0.9.2
+
+## 0.6.0
+
+### Minor Changes
+
+- a718902: relay urls with usernames were slipping through, migrations and fix sanitizer
+
+### Patch Changes
+
+- Updated dependencies [a718902]
+  - @nostrwatch/nostrings@0.3.0
+  - @nostrwatch/nwcache@0.5.0
+
+>>>>>>> next
 ## 0.5.2
 
 ### Patch Changes

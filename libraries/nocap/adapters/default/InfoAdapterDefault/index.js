@@ -2,16 +2,17 @@ import fetch from 'cross-fetch'
 // import Ajv from 'ajv'
 
 class InfoAdapterDefault {
+  uses = ['AbortController']
+
   constructor(parent){
     this.$ = parent
+
     // this.ajv = new Ajv()
   }
 
   async check_info(){
     let result, data = {}
-    const controller = new AbortController(),
-          { signal } = controller,
-          url = new URL(this.$.url),
+    const url = new URL(this.$.url),
           headers = {"Accept": "application/nostr+json"},
           method = 'GET'
 
@@ -30,8 +31,23 @@ class InfoAdapterDefault {
 
     try 
     {
-      const response = await fetch(url.toString(), { method, headers, signal })
-      data = await response.json()
+      await fetch(url.toString(), { method, headers, signal: this.$.controller.signal })
+        .then(async (response) => { 
+          if(!response.ok) 
+          {
+            this.$.logger.debug(`check_info(): fetch error: ${e.message}`)
+            result = { status: "error", message: e.message, data }
+          }
+          else {
+            this.$.logger.debug(`check_info(): response status: ${response}`)
+            data = await response.json()
+          }
+          return response
+        })
+        .catch((e) => {
+          this.$.logger.debug(`check_info(): fetch error: ${e.message}`)
+          result = { status: "error", message: e.message, data }
+        })
     }
 
     catch(e) 

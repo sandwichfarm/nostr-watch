@@ -4,6 +4,7 @@ import { nostrawl } from 'nostrawl'
 import Logger from '@nostrwatch/logger'
 import cacheInit from '@nostrwatch/nwcache'
 import { bootstrap } from '@nostrwatch/seed'
+import Migrations from './migrate.js'
 
 import { addRelaysToCache, relaysFromRelayList } from './helpers.js'
 
@@ -17,7 +18,7 @@ let   RELAYS_SCRAPE = [],
 let options = { 
   filters,
   adapter: 'bullmq',
-  queueName: `trawler/ur9dsiojfkldsjfkklds`,
+  queueName: `trawler/2`,
   repeatWhenComplete: true,
   restDuration: 1000*60*5,
   strictTimestamps: true,
@@ -40,7 +41,8 @@ let options = {
 }
 
 if(process?.env?.NWCACHE_PATH){
-  options = { ...options, cache: { path: process.env.NWCACHE_PATH } }
+  options = { ...options, cache: { path: './cache/nostrawl' } }
+  console.log(options)
 }
 
 const setup = async () => {
@@ -71,17 +73,19 @@ const parser = async ($trawler, event) => {
 const validator = ($trawler, event) => {
   const REJECT = false 
   const ACCEPT = true
-
+  
   if(!kinds.includes(event.kind)) {
     return REJECT
   }
+
   const noteIsUnknown = $trawler.cache.get(`has:${event.id}`) === undefined
-  return noteIsUnknown? ACCEPT: REJECT
+  return noteIsUnknown? ACCEPT: REJECT  
 }
 
-const after_cacheOpen = (trawlerCache) => {
+const after_cacheOpen = async (trawlerCache) => {
   logger.info('after_cacheOpen(): adding nw extensions to nostrawl cache')
   $cache = cacheInit(trawlerCache)
+  await Migrations($cache)
 }
 
 export const trawl = async () => {

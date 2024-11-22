@@ -101,18 +101,18 @@ export class NWWorker {
 
   async populator(){
     this.log.debug(`populator()`)
-    const relays = await this.getRelays()
-    await this.addRelayJobs(relays)
+    const relays = await this.getRelays().catch(console.error)
+    await this.addRelayJobs(relays).catch(console.error)
   }
 
   async syncQueue(){
-    await this.cleanCompletedJobs() 
-    await this.populateActivePendingJobs()
+    await this.cleanCompletedJobs().catch(console.error)
+    await this.populateActivePendingJobs().catch(console.error)
   }
 
   async populateActivePendingJobs(){
-    let jobs = [...(await this.$.queue.getJobs(['active']))]
-        jobs = [...jobs, ...(await this.$.queue.getJobs(['waiting']))]
+    let jobs = [...(await this.$.queue.getJobs(['active']).catch(console.error) )]
+        jobs = [...jobs, ...(await this.$.queue.getJobs(['waiting']).catch(console.error) )]
 
     jobs.forEach( job => {
       this.jobs[job.id] = job
@@ -120,39 +120,48 @@ export class NWWorker {
   }
 
   async getActiveJobs(){
-    return await this.$.queue.getJobs(['active'])
+    return await this.$.queue.getJobs(['active']).catch(console.error)
   }
 
   async getCompletedJobs(){
-    return await this.$.queue.getJobs(['completed'])
+    return await this.$.queue.getJobs(['completed']).catch(console.error)
   }
 
   async cleanCompletedJobs() {
-    const jobs = await this.getCompletedJobs()
+    const jobs = await this.getCompletedJobs().catch(console.error)
     jobs.forEach( job => {
       job.remove()
     })
   }
 
   async work(job){
+    let timeout;
     this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
-    const failure = (err) => { this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+    const failure = (err) => { this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
     let result = {}
     try {
-      const timeout = setTimeout(  //needed to prevent hanging jobs
-        () => { throw new Error(`Job Timeout: ${job.id} after ${TIMEOUT/1000}s`) }, 
+      let nocap
+      timeout = setTimeout(//needed to prevent hanging jobs
+        () => { 
+          const message = `Job Timeout: ${job.id} after ${TIMEOUT/1000}s`
+          console.log(message)
+          throw Error(message) 
+        }, 
         TIMEOUT
-      )
+      );
       const { relay:url } = job.data 
-      const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
-      await nocap.useAdapters([...Object.values(nocapAdapters)])
+      nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
+      await nocap.useAdapters([...Object.values(nocapAdapters)]).catch(failure)
       result = await nocap.check(this.opts.checks.enabled).catch(failure)
       clearTimeout(timeout) //don't forget to clear!
       return { result } 
     } 
     catch(err) {
-      this.log.err(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`)
+      this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`)
       return { result: { url: job.data.relay, open: { data: false }} }
+    }
+    finally {
+      clearTimeout(timeout)
     }
   }
 
@@ -174,13 +183,13 @@ export class NWWorker {
     this.progressMessage(result.url, result, fail)
     delete this.jobs[job.id]
     if(fail) {
-      await this.on_fail( result )
+      await this.on_fail( result ).catch(console.error)
     }
     else {
       result = await relayHostnameDedup( result, this.rcache ).catch(console.error)
-      await this.on_success( result )
+      await this.on_success( result ).catch(console.error)
     }
-    await this.after_completed( result )
+    await this.after_completed( result ).catch(console.error)
   }
 
   async on_success(result){
@@ -202,7 +211,7 @@ export class NWWorker {
     // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
     k30166.generateEvent( result )
     k30166.signEvent( process.env.DAEMON_PRIVKEY )
-    const id = await this.publisher.publishEvent( k30166.json() )
+    const id = await this.publisher.publishEvent( k30166.json() ).catch(console.error)
     log.debug(`on_success(): ${result.url} published${result?.parent? ' child of '+result.parent: ''}: ${id}`)  
   }
 
@@ -258,7 +267,7 @@ export class NWWorker {
   }
 
   async resetProgressCounts(){
-    const c = await this.counts()
+    const c = await this.counts().catch(console.error)
     this.total = c.prioritized + c.active
     this.processed = 1
     this.log.debug(`total jobs: ${this.total}`)
@@ -275,7 +284,7 @@ export class NWWorker {
       }
       const $relay = this.rcache.relay.get.one(url)
       const online = $relay?.online === true
-      const expired = await this.isExpired(url, timestring(job.timestamp, "ms"))
+      const expired = await this.isExpired(url, timestring(job.timestamp, "ms")).catch(console.error)
       if(!expired && online) return 
       this.log.debug(`drainSmart(): removing expired job: ${url}: online? ${online}, expired? ${this.isExpired(url, timestring(job.timestamp, "ms"))}`)
       expiredJobs.push(
@@ -291,7 +300,7 @@ export class NWWorker {
   
   async addRelayJobs(relays){
     this.log.debug(`addRelayJobs(): for ${relays.length} relays`)
-    await this.drainSmart()
+    await this.drainSmart().catch(console.error)
     for(const relay of relays){
       let job = this.jobs?.[this.jobId(relay)]
       if(job) {
@@ -299,12 +308,12 @@ export class NWWorker {
                 .then(  () => this.log.debug(`job removed: ${this.jobId(relay)}`))
                 .catch( e => this.log.debug(`Could not remove job: ${relay}: Error:`, e))
       }
-      job = await this.addRelayJob({ relay })
+      job = await this.addRelayJob({ relay }).catch(console.error)
       this.jobs[job.id] = job
     }
     const jobs = Object.values(this.jobs)
     if(jobs.length === 0) return 
-    await Promise.allSettled(jobs)
+    await Promise.allSettled(jobs).catch(console.error)
   }
   
   async addRelayJob(job){
@@ -368,7 +377,7 @@ export class NWWorker {
       progress += `${duration/1000} seconds  `
     }
     if(error) {
-      const retries = await this.retry.getRetries(url)
+      const retries = this.retry.getRetries(url)
       progress += `${error? chalk.gray.italic('error'): ''}  ` 
       progress += `[${retries !== null? retries: 0} retries]`
     }
@@ -380,7 +389,7 @@ export class NWWorker {
   }
 
   async counts(){
-    const counts = await this.$.queue.getJobCounts()
+    const counts = await this.$.queue.getJobCounts().catch(console.error)
     this.log.info(chalk.magenta.bold(`=== [queue stats] active: ${counts.active} - completed: ${ counts.completed }  -  failed: ${counts.failed}  -  prioritized: ${counts.prioritized}  -  delayed: ${counts.delayed}  -  waiting: ${counts.waiting}  -  paused: ${counts.paused}  -  total: ${counts.completed} / ${counts.active} + ${counts.waiting + counts.prioritized} ===`))
     this.show_cache_counts()
     return counts
@@ -607,7 +616,7 @@ const evaluateMaxRelays = (evaluate, relays) => {
     return parseInt( eval( evaluate ) )
   }
   catch(e){
-    this.log.err(`Error evaluating this.opts.checks.options.max -> "${this?.opts?.checks?.options?.max} || "is undefined"": ${e?.message || "error undefined"}`)
+    this.log.error(`Error evaluating this.opts.checks.options.max -> "${this?.opts?.checks?.options?.max} || "is undefined"": ${e?.message || "error undefined"}`)
   }
 }
 

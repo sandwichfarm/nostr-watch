@@ -1,1 +1,0 @@
-# nip66-sanity

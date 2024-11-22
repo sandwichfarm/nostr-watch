@@ -54,6 +54,8 @@
   },
   "dependencies": {
     "@nostrwatch/utils": "*",
+    "@pabra/logger": "^1.2.0",
+    "jsurl2": "^2.2.0",
     "jwt-encode": "1.0.1",
     "minisearch": "^7.1.0",
     "node-localstorage": "^3.0.5",

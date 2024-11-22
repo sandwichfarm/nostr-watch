@@ -1,5 +1,6 @@
 import { ICheck, IEvent, IMonitor, IRelay } from '@base/models';
 import { Adapter, IAdapter } from './Adapter'
+import { StateManager } from '@base/managers/StateManager';
 
 export interface GeohashOptions {
   maxDistance?: number; 
@@ -253,6 +254,9 @@ export class CacheAdapter extends Adapter {
 
   constructor() {
     super()
+    StateManager.on('destroy', () => {
+      this.dedicatedWorker?.terminate()
+    })
   }
 
   get dedicatedWorker(): Worker | undefined {
@@ -263,7 +267,7 @@ export class CacheAdapter extends Adapter {
     return this.workers?.cacheShared
   }
 
-  bindWorkerHandlers(): void {
+  protected bindWorkerHandlers(): void {
     if(!this?.workers?.cacheDedicated) return console.warn('[CacheAdapter] Error binding worker handlers: no worker found')
     this.workers.cacheDedicated.onmessage = this._onMessage.bind(this);
     this.workers.cacheDedicated.onerror = this._onError.bind(this)

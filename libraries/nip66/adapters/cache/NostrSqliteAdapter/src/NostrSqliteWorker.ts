@@ -16,7 +16,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
         lastBatch: 0
     }
     relay = relayHandler;
-    private batcher: ReturnType<typeof setTimeout> = setTimeout(() => { insertBatch(this.state) }, 500)
+    private batcher: ReturnType<typeof setTimeout> = setTimeout(() => { insertBatch(this.state) }, 1000)
     
     constructor( options: WorkerOptions ){
         super(options)
@@ -29,15 +29,17 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     }
     
     async setup(command: AdapterWorkerMessage){ 
+        
         //console.log(`NostrSqliteWorker: setup()`,  command)
         const conf: InitAargs = {
-            databasePath: "relay.43432.db",
+            databasePath: "relay.db",
             insertBatchSize: this.state.insertBatchSize
         }
         await relayInit(this.state, conf).catch( async () => {
             await relayWipe(this.state)
             this.setup(command);
         })
+        // await relayWipe(this.state)
         if(command?.channelPort){
             this.state.messageChannel = command.channelPort
             this.setupChannelHandlers()

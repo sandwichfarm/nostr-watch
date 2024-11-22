@@ -2,16 +2,36 @@
 
 import { IEvent } from '@base/interfaces';
 import { Monitor } from '../models/Monitor';
-import { Filter } from 'nostr-tools';
 
-export type IServiceHook = (...args: any[]) => void | undefined | any;
-export type TServiceHooks = Record<string, IServiceHook>;
+export type MonitorPriorities = MonitorPriority[];
+
+export enum MonitorPriority {
+  Follows = 'FOLLOWS',
+  Wot = 'WOT',
+  Checks = 'CHECKS',
+  LoadSpeed = 'LOADSPEED',
+  Geohash = 'GEOHASH',
+  Country = 'COUNTRY',
+  Network = 'NETWORK',
+}
+
+export const DEFAULT_ANON_MONITOR_PRIORITIES: MonitorPriorities = [
+  MonitorPriority.Network,
+  MonitorPriority.Checks,
+  MonitorPriority.Geohash,
+];
+
+export const DEFAULT_AUTHED_MONITOR_PRIORITIES: MonitorPriorities = [
+  MonitorPriority.Follows,
+  MonitorPriority.Wot,
+  MonitorPriority.Checks,
+];
+
 
 export class MonitorManager {
   private static instance: MonitorManager;
 
   private monitors: Map<string, Monitor> = new Map();
-  private hooks: TServiceHooks = {};
 
   private constructor() {}
 
@@ -55,12 +75,15 @@ export class MonitorManager {
     return this.monitorsArray.find((monitor) => monitor.priority === 4);
   }
 
-  get hook() {
-    return this.hooks;
-  }
-
-  addHook(name: string, hook: IServiceHook): void {
-    this.hooks[name] = hook;
+  get qualified(): Monitor[] {
+    const qualified = this.monitorsArray.filter((monitor) => {
+      if (!monitor?.registration?.lastActive) return false;
+      if (!monitor?.registration?.checks?.length) return false;
+      if (!monitor?.profile) return false;
+      if (!monitor?.relays) return false;
+      return monitor.registration.lastActive > 0;
+    });
+    return qualified;
   }
 
   handleEvent(event: IEvent): void {
@@ -76,25 +99,30 @@ export class MonitorManager {
     if (kind === 10166) {
       monitor.addRegistration(event);
     } else if (kind === 0) {
-      monitor.addProfile(event, this.hooks);
+      monitor.addProfile(event);
     } else if (kind === 10002) {
-      monitor.addRelays(event, this.hooks);
+      monitor.addRelays(event);
     }
     this.monitors.set(pubkey, monitor);
     console.log(`did stuff for ${pubkey}`)
     console.log(`total monitors: ${this.monitors.size}`);
   }
 
-  prioritizeMonitors(): void {
-    const goodMonitors = this.monitorsArray.filter((monitor) => {
-      if (!monitor?.registration?.lastActive) return false;
-      if (!monitor?.registration?.checks?.length) return false;
-      if (!monitor?.profile) return false;
-      if (!monitor?.relays) return false;
-      return monitor.registration.lastActive > 0;
-    });
+  sortMonitors(priority: MonitorPriority = MonitorPriority.Checks, apply: boolean = false): Monitor[] {
+    let sortedMonitors: Monitor[] = [];
+    switch (priority) {
+      case MonitorPriority.LoadSpeed:
+        return this.sortByNumberOfChecks('ASC');
+      case MonitorPriority.Checks:
+      default:
+        return this.sortByNumberOfChecks();
+    }
+  }
+
+  sortByNumberOfChecks(order: 'ASC' | 'DESC' = 'DESC'): Monitor[] {
+    const qualifiedMonitors = this.qualified
     const scores: Record<string, number> = {};
-    goodMonitors.forEach((monitor) => {
+    qualifiedMonitors.forEach((monitor) => {
       let score = 0;
       if (!monitor?.registration?.pubkey) return;
       if (monitor?.registration) score++;
@@ -104,13 +132,18 @@ export class MonitorManager {
       console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`);
       scores[monitor.registration.pubkey] = score;
     });
-    goodMonitors.sort((a, b) => {
+    qualifiedMonitors.sort((a, b) => {
       const scoreA = scores?.[a.registration.pubkey] || 0;
       const scoreB = scores?.[b.registration.pubkey] || 0;
+      if(order === 'ASC') return scoreA - scoreB;
       return scoreB - scoreA;
     });
-    console.log(`prioritizeMonitors: monitors sorted:`, goodMonitors);
-    goodMonitors.forEach((sortedMonitor, index) => {
+    return qualifiedMonitors;
+  }
+
+  prioritizeMonitors(priority: MonitorPriority = MonitorPriority.Checks): void {
+    const monitors = this.sortMonitors(priority);
+    monitors.forEach((sortedMonitor, index) => {
       sortedMonitor.priority = index + 1;
     });
   }

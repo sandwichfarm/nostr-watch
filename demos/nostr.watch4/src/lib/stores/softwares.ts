@@ -1,13 +1,19 @@
 import { derived } from 'svelte/store';
-import { checks } from './checks.js'; 
+import { eventsArray } from './events.js'; 
+import { throttledDerived } from '$lib/utils/stores.js';
+import { StateManager } from '@nostrwatch/nip66';
 
-export const softwares = derived(checks, ($checks) => {
+export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
   const software = new Set();
 
-  $checks.forEach((check) => {
+  $eventsArray.forEach((check) => {
     if(check?.software)
         software.add(check.software);
   });
 
-  return Array.from(software);
+  const softwares = Array.from(software).sort()
+
+  StateManager.set('aggregate:softwares', softwares);
+
+  return softwares;
 });

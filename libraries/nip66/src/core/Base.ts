@@ -7,14 +7,12 @@ import type { MonitorService as MonitorServiceType } from '../services/MonitorSe
 import type { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 
 import type { Workers } from './Workers';
-import { EventEmitter } from 'tseep';
+import { StateManager } from '@base/managers/StateManager';
 // import { getInheritanceChainFromInstance } from '../utils/classes';
 
 type AnyAdapter = IWebsocketAdapter | ICacheAdapter;
 
 export default class {
-
-  private emitter: EventEmitter = new EventEmitter();
 
   public relayService?: RelayServiceType;
   public monitorService?: MonitorServiceType;
@@ -41,15 +39,19 @@ export default class {
   }
 
   on(event: string, listener: (...args: any[]) => void): void {
-    this.emitter.on(event, listener);
+    StateManager.on(event, listener);
   }
 
   once(event: string, listener: (...args: any[]) => void): void {
-    this.emitter.once(event, listener);
+    StateManager.once(event, listener);
   }
 
   off(event: string, listener: (...args: any[]) => void): void {
-    this.emitter.off(event, listener);
+    StateManager.off(event, listener);
+  }
+
+  destroy(): void {
+    StateManager.emit('destroy');
   }
 
   async useAdapter(adapter?: ICacheAdapter | IWebsocketAdapter): Promise<void> {
@@ -115,16 +117,19 @@ export default class {
     const { cacheAdapter, websocketAdapter } = this
     const { RelayService } = await import('../services/RelayService')
     const { MonitorService } = await import('../services/MonitorService')
-    this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument, this.emitter);
-    this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument, this.emitter);
+    this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
+    this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
     
     this.monitorService.init()
   }
 
+  get state(): StateManager {
+    return StateManager;
+  } 
+
   get cache(): ICacheAdapter | undefined {
     return this.cacheAdapter;
   }
-
 
   get websocket(): IWebsocketAdapter | undefined {
     return this.websocketAdapter;

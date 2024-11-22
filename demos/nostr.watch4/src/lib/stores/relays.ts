@@ -1,5 +1,6 @@
 import { derived } from 'svelte/store';
 import { eventsArray } from './events.js';
+import { StateManager } from '@nostrwatch/nip66';
 
 export const relays = derived(eventsArray, ($eventsArray) => {
     const relayMap = new Map();
@@ -34,5 +35,9 @@ export const relays = derived(eventsArray, ($eventsArray) => {
         }
     });
 
-    return Array.from(relayMap.values());
+    const relaysArr = Array.from(relayMap.values());
+
+    StateManager.set('aggregate:relays', relaysArr);
+
+    return relaysArr;
 });

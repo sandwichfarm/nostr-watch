@@ -14,7 +14,6 @@ import { SurrealDbMethods } from './SurrealDbMethods';
 
 //@ts-ignore: it's an import.
 import SurrealWorker from './workers/surreal.worker?worker&inline'
-import { SurrealDbWorkerResult } from './SurrealDbWorker.fml';
 import { IEvent } from '../../../../dist/types/models';
 
 // export interface SurrealDbAdapterWorkerMessage extends AdapterWorkerMessage {

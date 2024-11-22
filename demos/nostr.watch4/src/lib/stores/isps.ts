@@ -1,12 +1,20 @@
 import { derived } from 'svelte/store';
-import { checks } from './checks.js'; 
+import { eventsArray } from './events.js'; 
+import { stringify } from 'postcss';
+import { StateManager } from '@nostrwatch/nip66';
 
-export const isps = derived(checks, ($checks) => {
-    const versions = new Set();
+export type StoreIsp = {
+    title: string;
+    as: string;
+    asname: string;
+}
 
-    $checks.forEach((check) => {
-        versions.add(check.version);
+export const isps = derived(eventsArray, ($eventsArray) => {
+    const isps: Map<string, StoreIsp> = new Map()
+    $eventsArray.forEach((event) => {
+        if(event?.asname)
+            isps.set(event?.asname, {title: event.isp, as: event.as, asname: event.asname});
     });
-
-    return Array.from(versions);
+    StateManager.set('aggregate:isps', Array.from(isps.values()));
+    return Array.from(isps.values());
 });

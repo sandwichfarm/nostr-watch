@@ -1,5 +1,5 @@
 export * from './_'
-export type { IEvent } from './Event';
+export { type IEvent, Nip66Event } from './Event';
 export type { IMonitor } from './Monitor';
 export type { IRelay } from './Relay';
 export type { IGeohash } from './Geohash';

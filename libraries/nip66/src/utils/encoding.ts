@@ -9,3 +9,8 @@ export const decodeByteArrayToJson = (byteArray: Uint8Array): any => {
   const jsonString = decoder.decode(byteArray);
   return JSON.parse(jsonString);
 }
+
+export const encodeJsonToUrlSafe = async (json: any) => {
+  const JSURL = (await import('jsurl2'))?.default;
+  return JSURL.stringify(json);
+}

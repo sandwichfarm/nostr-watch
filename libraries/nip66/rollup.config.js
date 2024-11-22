@@ -42,8 +42,6 @@ const production = !process.env.ROLLUP_WATCH
 
 const input = glob.sync('src/**/index.ts')
 
-//console.log('inputs', input)
-
 const aliases = alias({
   entries: [
     { find: '@adapters', replacement: path.resolve(__dirname, 'adapters') },

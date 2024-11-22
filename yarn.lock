@@ -3740,15 +3740,19 @@ __metadata:
     "@sveltejs/kit": "npm:^2.0.0"
     "@sveltejs/package": "npm:^2.0.0"
     "@sveltejs/vite-plugin-svelte": "npm:^4.0.0-next.6"
-    bits-ui: "npm:^0.21.12"
+    bits-ui: "npm:^0.21.16"
     clsx: "npm:^2.1.1"
+    country-code-to-flag-emoji: "npm:^1.3.3"
     dexie: "npm:^4.0.8"
+    minisearch: "npm:^7.1.0"
     nostr-tools: "npm:^2.10.3"
+    paneforge: "npm:^0.0.6"
     postcss: "npm:^8.4.38"
     prettier: "npm:^3.1.1"
     prettier-plugin-svelte: "npm:^3.1.2"
     prettier-plugin-tailwindcss: "npm:^0.6.4"
     publint: "npm:^0.2.0"
+    radix-svelte: "npm:^0.9.0"
     surrealdb: "npm:^1.0.6"
     svelte: "npm:^5.0.0-next.1"
     svelte-check: "npm:^3.6.0"
@@ -4124,6 +4128,7 @@ __metadata:
   resolution: "@nostrwatch/nip66@workspace:libraries/nip66"
   dependencies:
     "@nostrwatch/utils": "npm:*"
+    "@pabra/logger": "npm:^1.2.0"
     "@rollup/plugin-alias": "npm:5.1.1"
     "@rollup/plugin-commonjs": "npm:28.0.0"
     "@rollup/plugin-node-resolve": "npm:15.3.0"
@@ -4134,6 +4139,7 @@ __metadata:
     "@types/node-localstorage": "npm:^1.3.3"
     eslint: "npm:^8.46.0"
     get-port: "npm:7.1.0"
+    jsurl2: "npm:^2.2.0"
     jwt-encode: "npm:1.0.1"
     minisearch: "npm:^7.1.0"
     node-localstorage: "npm:^3.0.5"
@@ -4837,6 +4843,15 @@ __metadata:
     tslib: "npm:^2.3.0"
     yargs-parser: "npm:21.1.1"
   checksum: 10c0/158cf6ad5c6860c104d024014066e1c9a130e0e95465548147aaaff51c11ef5eb055e8c630d982bbefb4039eaf6fb178a60376ff297424f8eb4fc9300e73a7c6
+  languageName: node
+  linkType: hard
+
+"@pabra/logger@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@pabra/logger@npm:1.2.0"
+  dependencies:
+    fast-safe-stringify: "npm:^2.1.1"
+  checksum: 10c0/29b0d7b17ec8fd733edc4b876634128c50e80c35eb41742d924eca657d79722d88fc4158b96b02344ffe7852c1ab10d9c78043697c4bd144431abb99f9e2b4dd
   languageName: node
   linkType: hard
 
@@ -8752,7 +8767,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bits-ui@npm:^0.21.12":
+"bits-ui@npm:^0.21.12, bits-ui@npm:^0.21.16":
   version: 0.21.16
   resolution: "bits-ui@npm:0.21.16"
   dependencies:
@@ -9750,6 +9765,13 @@ __metadata:
   version: 2.0.1
   resolution: "corser@npm:2.0.1"
   checksum: 10c0/1f319a752a560342dd22d936e5a4c158bfcbc332524ef5b05a7277236dad8b0b2868fd5cf818559f29954ec4d777d82e797fccd76601fcfe431610e4143c8acc
+  languageName: node
+  linkType: hard
+
+"country-code-to-flag-emoji@npm:^1.3.3":
+  version: 1.3.3
+  resolution: "country-code-to-flag-emoji@npm:1.3.3"
+  checksum: 10c0/6541b9b5c74d468799fe2b3df8226bed8a87f8f91f1f434eb25a955673f8d3c4e343da51d4563dc7e2caedec41b3a37a80129604817ee5a6992b1b3935cc2a8f
   languageName: node
   linkType: hard
 
@@ -11969,6 +11991,13 @@ __metadata:
   version: 3.5.0
   resolution: "fast-redact@npm:3.5.0"
   checksum: 10c0/7e2ce4aad6e7535e0775bf12bd3e4f2e53d8051d8b630e0fa9e67f68cb0b0e6070d2f7a94b1d0522ef07e32f7c7cda5755e2b677a6538f1e9070ca053c42343a
+  languageName: node
+  linkType: hard
+
+"fast-safe-stringify@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "fast-safe-stringify@npm:2.1.1"
+  checksum: 10c0/d90ec1c963394919828872f21edaa3ad6f1dddd288d2bd4e977027afff09f5db40f94e39536d4646f7e01761d704d72d51dce5af1b93717f3489ef808f5f4e4d
   languageName: node
   linkType: hard
 
@@ -14576,6 +14605,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsurl2@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "jsurl2@npm:2.2.0"
+  checksum: 10c0/188c5793bda68b9c5d2a502655ff180234ae6d54a7ce1f15fe7ece0786847633fc101ce16563560861eb1f4586b3ff98a01945b2130d89d757422843c278f654
+  languageName: node
+  linkType: hard
+
 "jwt-encode@npm:1.0.1":
   version: 1.0.1
   resolution: "jwt-encode@npm:1.0.1"
@@ -16790,6 +16826,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"paneforge@npm:^0.0.6":
+  version: 0.0.6
+  resolution: "paneforge@npm:0.0.6"
+  dependencies:
+    nanoid: "npm:^5.0.4"
+  peerDependencies:
+    svelte: ^4.0.0 || ^5.0.0-next.1
+  checksum: 10c0/88e47c9ce91bec647162fae5d9a45b93438978dcab8a2236a503c2572db0e0173ee8130bf845f227d03505edfabc991f88db493a821732578060181a6d7c9c9b
+  languageName: node
+  linkType: hard
+
 "parent-module@npm:^1.0.0":
   version: 1.0.1
   resolution: "parent-module@npm:1.0.1"
@@ -17762,6 +17809,18 @@ __metadata:
   version: 4.0.4
   resolution: "quick-format-unescaped@npm:4.0.4"
   checksum: 10c0/fe5acc6f775b172ca5b4373df26f7e4fd347975578199e7d74b2ae4077f0af05baa27d231de1e80e8f72d88275ccc6028568a7a8c9ee5e7368ace0e18eff93a4
+  languageName: node
+  linkType: hard
+
+"radix-svelte@npm:^0.9.0":
+  version: 0.9.0
+  resolution: "radix-svelte@npm:0.9.0"
+  dependencies:
+    "@floating-ui/core": "npm:^1.3.1"
+    "@floating-ui/dom": "npm:^1.4.5"
+  peerDependencies:
+    svelte: ^4.1.1
+  checksum: 10c0/88707a258e09076e3c25facc0bd261ffd2f2ee79d9281ac08787aedfac97e8fc1838f613faaa04627c0837eb94b316e44807d631753743e5009629b144c16dbb
   languageName: node
   linkType: hard
 

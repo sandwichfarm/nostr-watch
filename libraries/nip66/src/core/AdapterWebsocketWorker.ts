@@ -65,7 +65,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     console.log ('AdapterWebsocketWorker', options)
     super(options)
     this.batcher = new Batcher<IEvent, WebsocketRequestBody>({
-      maxLength: 500,
+      maxLength: 100, 
       timeout: 10000,
       callback: this.batchResponse.bind(this)
     })

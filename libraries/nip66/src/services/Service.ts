@@ -12,12 +12,10 @@ export interface FetchOptions extends WebsocketRequestBody {}
 export class Service {
   protected cacheAdapter: ICacheAdapter;
   protected websocketAdapter: IWebsocketAdapter;
-  emitter: EventEmitter;
 
-  constructor(adapters: IAdaptersArgument, emitter: EventEmitter) {
+  constructor(adapters: IAdaptersArgument) {
     this.cacheAdapter = adapters.cacheAdapter;
     this.websocketAdapter = adapters.websocketAdapter;
-    this.emitter = emitter;
   }
 
   async modifyCacheFilters(filters: Filter[]): Promise<Filter[]> {

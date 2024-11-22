@@ -71,11 +71,9 @@ export async function buildWithWatch() {
       // Using context for watch mode
       const mainContext = await esbuild.context(mainBuildOptions);
       await mainContext.watch();
-      //console.log(`Watching for changes... Livereload on port ${livereloadPort}`);
     } else {
       // Regular build for production
       await esbuild.build(mainBuildOptions);
-      //console.log('Build completed.');
     }
   } catch (error) {
     console.error('Build failed:', error);

@@ -1,7 +1,9 @@
 import { IEvent } from '@base/interfaces';
+import { StateManager } from '@base/managers/StateManager';
 import { SyncRange, SyncRangeParameter, SyncStateManager } from '@base/managers/SyncStateManager';
 import { n66IEventToIMonitor } from '@base/transform';
 import { Filter } from 'nostr-tools';
+import { EventEmitter } from 'tseep';
 
 export type IMonitor = {
   pubkey: string; 
@@ -25,6 +27,7 @@ export class Monitor {
   profile: any;
   relays: string[];
   state: SyncStateManager;
+  private _forgiveness: number = 1;
 
   constructor(event: IEvent) {
     if(event.kind !== 10166) throw new Error('Needs to be instantiated with a Monitor Registration event [kind: 10166');
@@ -50,22 +53,6 @@ export class Monitor {
 
   set lastSyncUntil(rangeParameter: SyncRangeParameter) {
     this.state.lastSyncUntil = rangeParameter;
-  }
-
-  getLastSyncSince(kind: number): number {
-    return this.state.getLastSyncSince(kind);
-  }
-
-  getLastSyncUntil(kind: number): number | undefined {
-    return this.state.getLastSyncUntil(kind);
-  }
-
-  getLastSync(kind: number): SyncRange {
-    return this.state.getLastSync(kind);  
-  }
-
-  setLastSync(kind: number, rangeKey: 'since' | 'until', value: number): void {
-    this.state.setLastSync(kind, rangeKey, value);
   }
 
   get pubkey(): string {
@@ -98,33 +85,46 @@ export class Monitor {
     return { kinds, since, authors };
   }
 
-  addRegistration(event: IEvent): void {
-    this.registration = {...defaultMonitor, ...n66IEventToIMonitor(event)};
-    console.log(`Monitor: addRegistration:`, this.registration);
+  getLastSyncSince(kind: number): number {
+    return this.state.getLastSyncSince(kind);
   }
 
-  addProfile(event: IEvent, hook?: any): void {
+  getLastSyncUntil(kind: number): number | undefined {
+    return this.state.getLastSyncUntil(kind);
+  }
+
+  getLastSync(kind: number): SyncRange {
+    return this.state.getLastSync(kind);  
+  }
+
+  setLastSync(kind: number, rangeKey: 'since' | 'until', value: number): void {
+    this.state.setLastSync(kind, rangeKey, value);
+  }
+
+  addRegistration(event: IEvent): void {
+    this.registration = {...defaultMonitor, ...n66IEventToIMonitor(event)};
+    StateManager.emit('monitor:update:registration', {pubkey: this.pubkey, value: this.registration});
+    StateManager.emit('monitor:update', this);
+  }
+
+  addProfile(event: IEvent): void {
     try {
       let profile = JSON.parse(event.content);
-      if (hook?.beforeAddProfile) {
-        profile = hook.beforeAddProfile(profile);
-      }
       this.profile = profile;
-      hook?.afterAddProfile?.(profile);
     } catch (e) {
       console.warn('Monitor addProfile error:', e);
     }
+    StateManager.emit('monitor:update:profile', {pubkey: this.pubkey, value: this.profile});
+    StateManager.emit('monitor:update', this);
   }
 
-  addRelays(event: IEvent, hook?: any): void {
+  addRelays(event: IEvent): void {
     try {
       let relays = event.tags.filter((t) => t[0] === 'r').map((t) => new URL(t[1]).toString());
       relays = relays ?? [];
-      if (hook?.beforeAddRelays) {
-        relays = hook.beforeAddRelays(relays);
-      }
       this.relays = relays;
-      hook?.afterAddRelays?.(relays);
+      StateManager.emit('monitor:update:relays', {pubkey: this.pubkey, value: this.relays});
+      StateManager.emit('monitor:update', this);
     } catch (e) {
       console.warn('Monitor addRelays error:', e);
     }

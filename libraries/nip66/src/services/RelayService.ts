@@ -6,7 +6,7 @@ import { Service } from './Service';
 
 export class RelayService extends Service {
 
-  constructor( adapters: IAdaptersArgument, emitter: EventEmitter ){
-    super(adapters, emitter)
+  constructor( adapters: IAdaptersArgument ){
+    super(adapters)
   }
 }

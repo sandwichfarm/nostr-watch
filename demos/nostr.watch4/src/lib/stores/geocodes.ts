@@ -1,25 +1,18 @@
-import { derived } from 'svelte/store';
-import { events } from './events.js'; 
+import { eventsArray } from './events.js'; 
+import { throttledDerived } from '$lib/utils/stores.js';
+import { StateManager } from '@nostrwatch/nip66'
 
-export const geocodes = derived(events, ($events) => {
-  const codes = new Set();
+export const geocodes = throttledDerived(
+  eventsArray, 
+  ($eventsArray) => {
+    if(!$eventsArray.length) return [];
+    const codes = new Set();
 
-  $events.forEach((event) => {
-    event.tags.forEach((tag: string[]) => {
-        if (tag[0] === 'l' && tag[2].toLowerCase().includes('country'))  {
-            codes.add(tag[1]);
-        }
-    })
-  });
+    $eventsArray.forEach((event) => {
+      codes.add(event.geocode);
+    });
 
-  return Array.from(codes).map((code) => {
-    code = String(code).trim()
-    const isNumber = !isNaN(Number(code)) && code !== ''
-    return {
-        code,
-        type: 'ISO-3166-1',
-        format: isNumber? 'numeric' : 'alpha',
-        length: isNumber? undefined: (code as unknown as string).length
-    }
-  });
-});
+    return Array.from(codes);
+  },
+  1000
+);

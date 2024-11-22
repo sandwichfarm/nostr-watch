@@ -34,7 +34,7 @@
   //   //   }
   //   // );
   //   // const subs = await mm.subscribeToMonitors()
-  //   // console.log('subs', subs)
+  //   // //console.log('subs', subs)
   //   // // setInterval(populateChecks , 3000)
   // })
 

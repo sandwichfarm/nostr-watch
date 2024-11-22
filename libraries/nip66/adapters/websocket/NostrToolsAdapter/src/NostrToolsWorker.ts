@@ -162,7 +162,6 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             { signal: this.signal }
           );
           for await (const event of iterator) {
-            // console.log(`NostrToolsWorker: _fetch: event`, event.id)
             onevent(event as IEvent);
           }
           oneose();

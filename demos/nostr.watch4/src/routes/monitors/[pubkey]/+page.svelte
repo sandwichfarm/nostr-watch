@@ -32,11 +32,11 @@
     
     onMount(async () => {
         N66 = (await import('@nostrwatch/nip66')).default;
-		console.log(await import('@nostrwatch/nip66-cacheadapter-nostrsqlite'))
+		//console.log(await import('@nostrwatch/nip66-cacheadapter-nostrsqlite'))
 		NostrSqliteAdapter = (await import('@nostrwatch/nip66-cacheadapter-nostrsqlite')).default;
 		NostrToolsAdapter = (await import('@nostrwatch/nip66-wsadapter-nostrtools')).default;
 
-		console.log('Initializing...');
+		//console.log('Initializing...');
 		const adapters = {
 			cacheAdapter: new NostrSqliteAdapter(),
 			websocketAdapter: new NostrToolsAdapter()

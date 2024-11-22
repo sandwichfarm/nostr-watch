@@ -1,3 +1,4 @@
+
 export class Debounce<T = void> {
     private timer: ReturnType<typeof setTimeout> | null = null;
   

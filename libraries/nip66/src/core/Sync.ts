@@ -1,4 +1,5 @@
-import { MonitorPriority, MonitorService, RelayService } from "@base/services";
+import { MonitorService, RelayService } from "@base/services";
+import { MonitorPriority } from "@base/managers/MonitorManager";
 import { LocalStorageWrapper } from "./LocalStorageWrapper";
 
 const LOCALSTORAGE_PREFIX = 'sync'

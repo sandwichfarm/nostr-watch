@@ -6,7 +6,8 @@ export default defineConfig({
   optimizeDeps: {
     exclude: [
       "@nostrwatch/worker-relay",
-      "@nostrwatch/nip66-cacheadapter-nostrsqlite"
+      "@nostrwatch/nip66-cacheadapter-nostrsqlite",
+      "@sqlite.org/sqlite-wasm"
     ],
     esbuildOptions: {
       target: "esnext",

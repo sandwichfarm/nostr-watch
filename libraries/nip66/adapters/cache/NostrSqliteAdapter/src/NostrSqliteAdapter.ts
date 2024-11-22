@@ -24,7 +24,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
 
     constructor() {
         super()
-        console.log('NostrSqliteAdapter constructor')
+        // console.log('NostrSqliteAdapter constructor')
     }
 
     destroy(){
@@ -93,10 +93,10 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     }
 
     async REQ(filters: ReqFilter[]): Promise<IEvent[]> {
-        console.log(filters)
+        // console.log(filters)
         const message: ReqCommand = ['REQ', this.subId, ...filters];
         let results = (await this.relay.query(message)) as unknown as IEvent[]
-        console.log(`results: ${results.length}`)
+        // console.log(`results: ${results.length}`)
         return results
     }
 

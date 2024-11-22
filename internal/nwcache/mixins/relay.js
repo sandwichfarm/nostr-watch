@@ -14,8 +14,6 @@ const logger = new Logger('lmdb:relay')
 // const parseSelect = ParseSelect(RelayRecord, "Relay")
 const parseSelect = Relay.parseSelect()
 
-import { ResultInterface as ResultType } from "@nostrwatch/nocap";
-
 export default class RelayMixin {
   constructor(db) {
     this.db = db;

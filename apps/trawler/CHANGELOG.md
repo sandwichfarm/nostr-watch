@@ -1,5 +1,7 @@
 # @nostrwatch/trawler
 
+<<<<<<< HEAD
+=======
 ## 0.6.1
 
 ### Patch Changes
@@ -18,6 +20,7 @@
   - @nostrwatch/nostrings@0.3.0
   - @nostrwatch/nwcache@0.5.0
 
+>>>>>>> next
 ## 0.5.2
 
 ### Patch Changes

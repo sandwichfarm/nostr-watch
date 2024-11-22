@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "module": "ESNext",
+    "lib": ["ES6", "DOM"],
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "./dist/web",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "bundler", 
+    "types": ["node"],
+    "allowSyntheticDefaultImports": true,
+    "strictPropertyInitialization": false,
+    "noEmitHelpers": true,
+    "importHelpers": true,
+    "baseUrl": ".", 
+    "paths": {
+      "@nostrwatch/*": ["node_modules/@nostrwatch/*/src"],
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.*"]
+}

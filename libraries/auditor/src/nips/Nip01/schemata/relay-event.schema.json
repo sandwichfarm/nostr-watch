@@ -1,0 +1,11 @@
+{
+  "$id": "relay-event.schema.json",
+  "type": "array",
+  "items": [
+    { "const": "EVENT" },
+    { "type": "string", "description": "subscription_id" },
+    { "$ref": "note.schema.json" }
+  ],
+  "minItems": 3,
+  "maxItems": 3
+}

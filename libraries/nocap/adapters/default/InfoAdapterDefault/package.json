@@ -2,10 +2,55 @@
   "name": "@nostrwatch/nocap-info-adapter-default",
   "version": "1.2.0",
   "type": "module",
-  "main": "index.js",
   "license": "MIT",
+  "main": "dist/server/cjs/index.cjs.js",
+  "module": "dist/server/index.js",
+  "types": "dist/server/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/server/index.js",
+      "require": "./dist/server/cjs/index.cjs.js",
+      "types": "./dist/server/types/index.d.ts"
+    },
+    "./web": {
+      "import": "./dist/web/index.esm.js",
+      "types": "./dist/web/types/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "yarn clean && yarn transpile && rollup -c && yarn transpile:alias",
+    "build:server": "yarn clean && yarn transpile:server && rollup -c && yarn transpile:alias",
+    "clean": "rimraf dist",
+    "transpile": "yarn transpile:server && yarn transpile:web",
+    "transpile:web": "tsc -p tsconfig.web.json",
+    "transpile:server": "tsc -p tsconfig.server.json",
+    "transpile:alias": "yarn transpile:server:alias",
+    "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
+    "build:adapters": "./scripts/build-adapters.sh",
+    "dev": "rollup -c -w",
+    "prepare": "yarn clean && yarn build",
+    "lint": "eslint . --ext .ts",
+    "test": "vitest",
+    "test-ui": "vitest --ui --testTimeout=15000"
+  },
   "dependencies": {
+    "@sandwichfarm/torfetch": "https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277",
     "ajv": "8.17.1",
-    "cross-fetch": "4.0.0"
+    "cross-fetch": "4.0.0",
+    "tor-request": "^3.1.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "7.23.3",
+    "@nostrwatch/nocap": "*",
+    "@types/promise-deferred": "2.0.5",
+    "@types/request": "^2.48.12",
+    "@vitest/ui": "0.34.6",
+    "node-polyfill-webpack-plugin": "4.0.0",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.24.0",
+    "rollup-plugin-copy": "^3.5.0",
+    "tsc-alias": "^1.8.10",
+    "vitest": "0.34.6",
+    "vitest-nostr": "0.4.1"
   }
 }

@@ -1,25 +1,41 @@
+import N66 from '@nostrwatch/nip66'
 
-import nip66 from '../src/index';
-import NostrToolsAdapter from 'adapters/websocket/NostrToolsAdapter/src';
-import IndexedDbAdapter from 'adapters/cache/IndexedDbAdapter/src';
+import DexieAdapter from '@nostrwatch/nip66-cacheadapter-dexie'
 
-const websocketAdapter = new NostrToolsAdapter();
-const cacheAdapter = new IndexedDbAdapter();
+const n66 = new N66()
 
-const relayUrls = [
-  'wss://relay.nostr.watch',
-  'wss://relaypag.es',
-  'wss://history.nostr.watch'
-];
+// Initialize the library
+n66.init()
+  .then(() => {
+    //console.log('NIP-66 initialized successfully.')
+  })
+  .catch(err => {
+    console.error('Initialization failed:', err)
+  })
 
-const nip66 = new NIP66Library(websocketAdapter, cacheAdapter, relayUrls);
+//console.log('DexieAdapter:', DexieAdapter)
+// import N66 from '@nostrwatch/nip66';
+// import NostrToolsAdapter from 'adapters/websocket/NostrToolsAdapter/src/index';
 
-nip66.initialize().then(async () => {
-  console.log('NIP-66 Library initialized for browser.');
-  const closestMonitor = await nip66.findMonitorClosestToGeohash(
-    'u4pruydqqvj'
-  );
-  console.log('Closest Monitor:', closestMonitor);
-  const relaysByISP = await nip66.findRelaysByISP('ISP1');
-  console.log('Relays by ISP:', relaysByISP);
-});
+// const websocketAdapter = new NostrToolsAdapter();
+// const cacheAdapter = new IndexedDbAdapter();
+
+// const relayUrls = [
+//   'wss://relay.nostr.watch',
+//   'wss://relaypag.es',
+//   'wss://history.nostr.watch'
+// ];
+
+// const adapters = { websocketAdapter, cacheAdapter };
+
+// const nip66 = new N66(adapters, relayUrls);
+
+// nip66.initialize().then(async () => {
+//   //console.log('NIP-66 Library initialized for browser.');
+//   const closestMonitor = await nip66.findMonitorClosestToGeohash(
+//     'u4pruydqqvj'
+//   );
+//   //console.log('Closest Monitor:', closestMonitor);
+//   const relaysByISP = await nip66.findRelaysByISP('ISP1');
+//   //console.log('Relays by ISP:', relaysByISP);
+// });

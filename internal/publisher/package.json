@@ -1,14 +1,83 @@
 {
   "name": "@nostrwatch/publisher",
   "version": "0.12.2",
-  "type": "module",
   "description": "Library for publishing nostr.watch relay status and publisher registration events",
-  "main": "index.js",
   "repository": "http://github.com/sandwichfarm/nostr-watch",
   "author": "sandwich <dskvr@no-reply.github.com> ",
   "license": "MIT",
+  "type": "module",
+  "entry": "src/index.ts",
+  "main": "dist/server/cjs/index.cjs.js",
+  "module": "dist/server/index.js",
+  "types": "dist/server/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/server/index.js",
+      "require": "./dist/server/cjs/index.cjs.js",
+      "types": "./dist/server/types/index.d.ts"
+    },
+    "./web": {
+      "import": "./dist/web/index.esm.js",
+      "types": "./dist/web/types/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "yarn clean && yarn transpile && rollup -c && yarn transpile:alias",
+    "build:all": "yarn build && yarn build:adapters",
+    "build:server": "yarn clean && yarn transpile:server && rollup -c && yarn transpile:alias",
+    "clean": "rimraf dist",
+    "transpile": "yarn transpile:server && yarn transpile:web",
+    "transpile:web": "tsc -p tsconfig.web.json",
+    "transpile:server": "tsc -p tsconfig.server.json",
+    "transpile:alias": "yarn transpile:server:alias",
+    "transpile:server:alias": "yarn tsc-alias -p tsconfig.server.json",
+    "build:adapters": "./scripts/build-adapters.sh",
+    "prepare": "yarn clean && yarn build",
+    "lint": "eslint . --ext .ts",
+    "test": "vitest",
+    "test-ui": "vitest --ui --testTimeout=15000"
+  },
+  "keywords": [
+    "nostr",
+    "publisher"
+  ],
   "dependencies": {
+    "@nostrwatch/logger": "workspace:*",
+    "@nostrwatch/publisher-nostrtools": "workspace:^",
+    "@nostrwatch/utils": "workspace:^",
     "nostr-geotags": "^0.7.1",
-    "nostr-tools": "1.17.0"
+    "nostr-tools": "^1.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-alias": "^5.1.1",
+    "@rollup/plugin-commonjs": "^28.0.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-replace": "^6.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@types/node": "^20.0.0",
+    "@web/rollup-plugin-import-meta-assets": "^2.2.1",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.0",
+    "rollup": "^4.24.0",
+    "rollup-plugin-livereload": "^2.0.5",
+    "rollup-plugin-polyfill-node": "^0.13.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "ts-loader": "^9.0.0",
+    "tsc": "^2.0.4",
+    "tsc-alias": "^1.8.10",
+    "tslib": "^2.7.0",
+    "typescript": "^5.6.2",
+    "vitest": "^0.34.1"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

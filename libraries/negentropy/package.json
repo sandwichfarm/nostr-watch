@@ -1,0 +1,15 @@
+{
+  "name": "@nostrwatch/negentropy-utils",
+  "packageManager": "yarn@4.5.1",
+  "scripts": {
+    "build": "npm run build:node && npm run build:browser",
+    "build:node": "esbuild src/index.ts --bundle --platform=node --target=node14 --outfile=dist/index.node.js --format=cjs --sourcemap",
+    "build:browser": "esbuild src/index.ts --bundle --platform=browser --target=es2020 --outfile=dist/index.browser.js --format=esm --sourcemap"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}

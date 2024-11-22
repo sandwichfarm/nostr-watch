@@ -249,7 +249,7 @@ const persistRelays = async (job) => {
 
 const queueOpts = () => {
   return {
-    lockDuration: 30*1000
+    lockDuration: 5*60*1000
   }
 }
 
@@ -271,15 +271,16 @@ const globalHandlers = () => {
     process.on(signal, async () => await gracefulShutdown(signal));
   });
 
-  process.on('uncaughtException', async (err) => {
-    log.error('!! Uncaught Exception:', err);
-    // log.error('Uncaught Exception:', err.stack);
+  process.on('uncaughtException', async (error) => {
+    log.error('Uncaught Exception:', error);
+    gracefulShutdown('uncaughtException')
   });
   
   process.on('unhandledRejection', async (reason, promise) => {
-    log.error('!! Unhandled Rejection:', promise.catch(console.error));
+    log.error('Unhandled Rejection:', promise.catch(console.error));
+    gracefulShutdown('unhandledRejection')
   });  
-
+  
   $q.worker.on('error', async (err) => {
     console.error('Worker Error: ', err);
     if(err?.code === 'EAI_AGAIN' || JSON.stringify(err).includes('EAI_AGAIN')){
@@ -296,7 +297,7 @@ async function gracefulShutdown(signal) {
 
 export const Nocapd = async () => {
   log.info('Starting Nocapd...')
-  config = await loadConfig().catch( (err) => { log.err(err); process.exit(9) } )
+  config = await loadConfig().catch( (err) => { log.error(err); process.exit(9) } )
   log.info('Loaded config')
   const lmdbOpts = config?.lmdb ?? {}
   concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1

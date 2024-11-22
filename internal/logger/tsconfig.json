@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES5",
+    "module": "ESNext",
+    "lib": ["es2020", "dom"],
+    "types": ["node"],
+    "declaration": true,
+    "declarationDir": "dist/types",
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist/node",
+    "rootDir": "src",
+    "strict": true,
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": false,
+    "resolveJsonModule": true,
+    "baseUrl": "./",
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

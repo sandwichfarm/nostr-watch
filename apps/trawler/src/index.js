@@ -11,4 +11,4 @@ const logger = new Logger('root')
 logger.debug('Current Directory', process.cwd())
 
 const $ = agent()
-$.catch(logger.err);
+$.catch(logger.error);

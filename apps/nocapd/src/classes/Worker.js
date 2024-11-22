@@ -7,7 +7,9 @@ import { RetryManager } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
 
 import { parseRelayNetwork, delay, lastCheckedId, parseUrl } from '@nostrwatch/utils'
-import { Kind30166, Kind30166Child, Publisher } from '@nostrwatch/publisher'
+import { Kind30166 } from '@nostrwatch/nocap-nip66'
+import { Publisher } from '@nostrwatch/publisher'
+import PublisherWsAdapter from '@nostrwatch/publisher-nostrtools'
 
 import { Nocap } from "@nostrwatch/nocap"
 import nocapAdapters from "@nostrwatch/nocap-every-adapter-default"
@@ -33,7 +35,8 @@ export class NWWorker {
     this.setup()
     this.log.info(`${this.id()} initialized`)
     this.bus = bus
-    this.publisher = new Publisher(this.pubkey, this.config.publisher?.to_relays)
+    const wsAdapter = new PublisherWsAdapter()
+    this.publisher = new Publisher(this.pubkey, this.config.publisher?.to_relays, { wsAdapter })
   }
 
   setup(){
@@ -195,14 +198,16 @@ export class NWWorker {
     log.debug(`on_success(): ${result.url}`)
     if(result.ignore) return log.warn(`on_success(): ${result.url} was ignored. Not checking and not publishing events.`)
 
-    let k30166
-    if(result?.parent){
-      k30166 = new Kind30166Child(process.env.DAEMON_PUBKEY)
-      log.debug(`on_success(): ${result.url} is a child of ${result.parent}`)
-    }
-    else {
-      k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
-    }
+
+    const k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
+    // let k30166
+    // if(result?.parent){
+    //   k30166 = new Kind30166Child(process.env.DAEMON_PUBKEY)
+    //   log.debug(`on_success(): ${result.url} is a child of ${result.parent}`)
+    // }
+    // else {
+    //   k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
+    // }
     // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
     k30166.generateEvent( result )
     k30166.signEvent( process.env.DAEMON_PRIVKEY )

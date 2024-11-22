@@ -1,0 +1,9 @@
+{
+  "type": "array",
+  "items": [
+    { "const": "EVENT" },
+    { "$ref": "./note.schema.json" }
+  ],
+  "minItems": 2,
+  "maxItems": 2
+}

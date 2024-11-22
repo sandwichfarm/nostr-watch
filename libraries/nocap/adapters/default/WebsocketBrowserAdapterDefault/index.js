@@ -89,7 +89,7 @@ class WebsocketAdapterDefault {
     } 
     catch(e){
       const err = `${this.$.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`
-      this.$.logger.err(err)
+      this.$.logger.err(e)
       return this.$.websocket_hard_fail(err)
     }
     if(!ev || !(ev instanceof Array) || !ev.length) return

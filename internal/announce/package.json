@@ -8,11 +8,13 @@
     "build": "tsc",
     "test": "vitest",
     "test-ui": "vitest --ui",
-    "prepublish": "yarn build"
+    "prepare": "yarn build"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@nostrwatch/logger": "workspace:^",
+    "@nostrwatch/utils": "workspace:^",
     "nostr-tools": "2.1.4"
   },
   "devDependencies": {

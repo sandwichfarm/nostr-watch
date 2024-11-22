@@ -1,0 +1,15 @@
+{
+  "type": "array",
+  "items": [
+    { "const": "CLOSED" },
+    { "type": "string", "description": "subscription_id" },
+    {
+      "type": "string",
+      "description": "response message",
+      "pattern": "^[a-zA-Z0-9_-]+: .+"
+    }
+  ],
+  "minItems": 3,
+  "maxItems": 3,
+  "additionalItems": false
+}

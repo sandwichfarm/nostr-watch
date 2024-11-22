@@ -104,7 +104,7 @@ class WebsocketAdapterDefault {
     } 
     catch(e){
       const err = `${this.$.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`
-      this.$.logger.err(err)
+      this.$.logger.err(e)
       this.$.auditor.fail('INVALID_JSON', {
         description: 'Relay responded to subscription with invalid JSON.',
         severity: 'high',

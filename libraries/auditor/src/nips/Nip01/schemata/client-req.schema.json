@@ -1,0 +1,10 @@
+{
+  "type": "array",
+  "items": [
+    { "const": "REQ" },
+    { "type": "string", "description": "subscription_id" },
+    { "$ref": "./filter.schema.json" }
+  ],
+  "minItems": 3,
+  "additionalItems": { "$ref": "#/definitions/filter" }
+}

@@ -1,0 +1,1 @@
+export { IEvent } from '@models/Event';  

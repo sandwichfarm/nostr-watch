@@ -1,0 +1,124 @@
+/// <reference types="vite/types/importMeta.d.ts" />
+
+import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAdapter } from "@nostrwatch/nip66/core";
+import { IEvent } from "@nostrwatch/nip66/models";
+//@ts-ignore: Vite worker import
+// import NostrSqliteWorker from "./workers/nostrsqlite.worker";
+import { WorkerRelayInterface } from "@nostrwatch/worker-relay"
+import { ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist/types";
+import { generateSubId, randomInRange } from "./utils";
+import { NostrEvent } from "nostr-tools";
+
+export interface INostrSqliteAdapter extends ICacheAdapter {
+    REQ(filters: ReqFilter[]): Promise<IEvent[]>;
+    COUNT(filters: ReqFilter[]): Promise<number>;
+    DELETE(filters: ReqFilter[]): Promise<string[]>;
+    DUMP(): Promise<Uint8Array>;
+    CLOSE(subId: string): Promise<boolean>;
+    WIPE(): Promise<boolean>;
+}
+
+export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdapter {
+    private _relay?: WorkerRelayInterface;
+    private _ready: boolean = false;
+
+    constructor() {
+        super()
+        // console.log('NostrSqliteAdapter constructor')
+    }
+
+    destroy(){
+        this.relay.worker.terminate()
+    }
+
+    setup(){}
+
+    /**
+     * overload defaults with inop because WorkerRelayInterface handles it.
+    */
+    bindWorkerHandlers() {}
+    async onMessage(command: AdapterCacheWorkerCommand): Promise<void> { return void 0; }
+    /** */
+
+    private set relay(relay: WorkerRelayInterface) {
+        this._relay = relay;
+    }
+
+    get relay(): WorkerRelayInterface {
+        if(!this._relay) throw new Error('relay is not defined')
+        return this._relay;
+    }
+
+    get subId(): string {
+        return generateSubId(randomInRange(11, 24))
+    }
+
+   async newWorker(): Promise<Worker> {
+        let worker;
+        if(import.meta.env.DEV){
+            /* @vite-ignore */
+            worker = new URL("./workers/nostrsqlite.worker.js", import.meta.url)
+        }
+        else {
+            const NostrSqliteWorker = (await import("./workers/nostrsqlite.worker.js?worker")).default;
+            worker = new NostrSqliteWorker();
+        }
+        this.relay = new WorkerRelayInterface(worker);
+        this._ready = true
+        return this.relay.worker; 
+    }
+
+    async ready(): Promise<void> {
+        while(!this._ready) {
+            await new Promise(resolve => setTimeout(resolve, 100))
+        }
+    }
+
+    async addEvent(event: IEvent): Promise<void> {
+        this.EVENT(event);
+    }
+
+    async addEvents(events: IEvent[]): Promise<void> {
+        for(const event of events) {
+            this.EVENT(event)
+        }
+    }
+
+    async putEvent(event: IEvent): Promise<void> {
+        this.addEvent(event)
+    }
+
+    async EVENT(event: IEvent): Promise<void> {
+        await this.relay.event(event as unknown as NostrEvent)
+    }
+
+    async REQ(filters: ReqFilter[]): Promise<IEvent[]> {
+        // console.log(filters)
+        const message: ReqCommand = ['REQ', this.subId, ...filters];
+        let results = (await this.relay.query(message)) as unknown as IEvent[]
+        // console.log(`results: ${results.length}`)
+        return results
+    }
+
+    async COUNT(filters: ReqFilter[]): Promise<number> {
+        const message: ReqCommand = ['REQ', this.subId, ...filters];
+        return this.relay.count(message);
+    }
+
+    async DELETE(filters: ReqFilter[]): Promise<string[]> {
+        const message: ReqCommand = ['REQ', this.subId, ...filters];
+        return this.relay.delete(message);
+    }
+
+    async DUMP(): Promise<Uint8Array> {
+        return this.relay.dump();
+    }
+
+    async CLOSE(subId: string): Promise<boolean> {
+        return this.relay.close(subId);
+    }
+
+    async WIPE(): Promise<boolean> {
+        return this.relay.wipe();
+    }
+}

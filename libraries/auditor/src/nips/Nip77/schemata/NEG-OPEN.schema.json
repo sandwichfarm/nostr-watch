@@ -1,0 +1,33 @@
+
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NEG-OPEN Message",
+  "type": "array",
+  "minItems": 4,
+  "maxItems": 4,
+  "items": [
+    {
+      "const": "NEG-OPEN"
+    },
+    {
+      "type": "string",
+      "pattern": "^[0-9]+$",
+      "description": "Subscription ID as a string of digits."
+    },
+    {
+      "$ref": "#/definitions/filter"
+    },
+    {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]+$",
+      "description": "Hex-encoded initial Negentropy binary message."
+    }
+  ],
+  "definitions": {
+    "filter": {
+      "type": "object",
+      "description": "Filter criteria as defined in NIP-01.",
+      "additionalProperties": true
+    }
+  }
+}

@@ -141,7 +141,7 @@ export const relayHostnameDedup = async ( result, cache ) => {
   }
   //if target relay is below 0 something has gone terribly wrong. 
   else {
-    log.error(`CRITICAL ERROR! relayHostnameDedup(): ${mURL} not found in hostnameGroup`)
+    log.error(`CRITICAL ERROR! relayHostnameDedup(): ${mURL} not found in orderedFamily ${JSON.strinigify(orderedFamily)}`)
   }
   return result
 }

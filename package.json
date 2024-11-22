@@ -18,7 +18,7 @@
     "deploy:nocapd@siliconvalley": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/siliconvalley",
     "nukecache@all": "ansible-playbook .ansible/nocapd/nuke-cache.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney"
   },
-  "packageManager": "yarn@1.22.22",
+  "packageManager": "yarn@4.5.1",
   "devDependencies": {
     "@changesets/cli": "2.27.8",
     "yarn": "^1.22.0"
@@ -27,13 +27,19 @@
     "apps/*",
     "demos/*",
     "internal/*",
+    "internal/publisher/adapters/**/*",
     "libraries/*",
     "libraries/nocap/adapters/**/*",
     "libraries/kit/adapters/**/*",
+    "libraries/nip66/adapters/cache/**/*",
+    "libraries/nip66/adapters/websocket/**/*",
     "libraries/adapters/**/*",
     "libraries/validators/**/*",
     "libraries/schemata/*"
   ],
+  "gitHooks": {
+    "post-checkout": "cd \"$(git rev-parse --show-toplevel)\" && yarn cache clean && yarn install && yarn dev:setup"
+  },
   "useWorkspaces": true,
   "main": "index.js",
   "repository": "git@github.com:sandwichfarm/nostr-watch.git",

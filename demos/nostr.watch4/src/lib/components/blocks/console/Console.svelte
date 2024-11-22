@@ -164,7 +164,8 @@
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
 	<Resizable.Pane defaultSize={75}>
 	{#if tableInstance !== null}
-      <main class="p-4 shadow-md">
+	  <div class="h-11"></div>
+      <div class="px-4 shadow-md my-10">
 		<Input
 			type="text"
 			placeholder="Search"
@@ -220,7 +221,7 @@
 		</Table.Root>
 		<DataTableShowResults />
 		<DataTablePaginator {tableInstance} />
-	</main>
+	</div>
 	{/if}
 	</Resizable.Pane>
 	<Resizable.Handle withHandle />

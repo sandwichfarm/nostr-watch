@@ -64,6 +64,9 @@ export const humanReadableNames: NameFormatter = {
 export const formatters: Formatters = {}
 
 export const tableFormatters: Formatters = {
+    relay: (relay) => {
+        return truncateWithEllipsis(relay, 44);
+    },
     geocode: (code) => {
         if(!code) return '🌐';
         return countryCodeToFlagEmoji(code);
@@ -93,7 +96,8 @@ export const tableFormatters: Formatters = {
     },
     software: (software) => {
         if(typeof software !== 'string') return '-';
-        return makeSoftwareReadable(software);
+        software = makeSoftwareReadable(software);
+        return truncateWithEllipsis(software, 33);
     },
 }
 
@@ -130,4 +134,11 @@ function formatNip(number: number | string): string {
         number = number.toString().padStart(2, '0')
     }
     return `NIP-${number}`;
+}
+
+function truncateWithEllipsis(text: string, maxLength: number): string {
+    if (text.length > maxLength) {
+        return text.slice(0, maxLength) + '...';
+    }
+    return text;
 }

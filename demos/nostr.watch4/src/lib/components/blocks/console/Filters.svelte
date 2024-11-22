@@ -312,9 +312,6 @@
         });
     }
 
-    // **Check if a Filter Value is Selected**
-    // Removed isSelected() function to implement reactive selection via inline expressions
-
     // **Clear All Filters**
     function clearAllFilters() {
         filters.set({});
@@ -332,6 +329,35 @@
     $: buttonClass = `mb-2 mr-2 text-sm font-bold py-0 px-1`;
     $: buttonClassSelected = `bg-blue-500 text-white`;
     
+    // **Helper Function to Format Active Filters List**
+    function formatFiltersList(filter: ConsoleFilter): string {
+        const filterValue = activeFilters[filter.key];
+        if (!filterValue) return '';
+        
+        if (filter.type === 'boolean') {
+            return filterValue ? 'Yes' : 'No';
+        }
+        
+        if (filter.mode === 'OR' || filter.mode === 'AND') {
+            const separator = filter.mode === 'AND' ? ' AND ' : ' OR ';
+            if (Array.isArray(filterValue)) {
+                return filterValue.map(val => format(filter.key, [val])[0]).join(separator);
+            } else {
+                return format(filter.key, [filterValue])[0];
+            }
+        }
+        
+        if (filter.mode === 'UNIQUE') {
+            if (Array.isArray(filterValue)) {
+                return filterValue.length > 0 ? format(filter.key, [filterValue[0]])[0] : '';
+            } else {
+                return format(filter.key, [filterValue])[0];
+            }
+        }
+        
+        return '';
+    }
+
     // **Reactive Statement to Compute Filtered Data**
     $: filteredData = $tableData.data.filter(item => {
         return Object.entries(activeFilters).every(([key, filterValue]) => {
@@ -403,7 +429,13 @@
 <div class="h-20"></div>    
 
 <!-- **Clear All Filters Button** -->
-<Button size="small" variant="destructive" on:click={clearAllFilters} class="{buttonClass} ml-2" disabled={Object.keys(activeFilters).length > 0 ? false : true}>
+<Button 
+    size="small" 
+    variant="destructive" 
+    on:click={clearAllFilters} 
+    class="{buttonClass} ml-2" 
+    disabled={Object.keys(activeFilters).length > 0 ? false : true}
+>
     {#if Object.keys(activeFilters).length > 0}
         Clear {Object.keys(activeFilters).length} Filters
     {:else}
@@ -440,13 +472,45 @@
     class="overflow-x-hidden"
     bind:value={rootValue}
     type={rootType}
-    disabled={rootDisabled} >
+    disabled={rootDisabled} 
+>
 
     {#each relayFilters as filter (filter.key)}
         <Accordion.Item class="accordion-item max-h-none overflow-x-auto" value={filter.key}>
             <Accordion.Header class="py-2 px-2 border-b-2">
                 <Accordion.Trigger>
-                    <h3>{filter.humanReadableName}</h3>
+                    <!-- **Modified Accordion Trigger Layout** -->
+                    <div class="flex items-center w-full text-sm">
+                        <!-- Filter Title -->
+                        <span class="flex-shrink-0 overflow-hidden text-ellipsis">{filter.humanReadableName}</span>
+                        
+                        {#if activeFilters[filter.key]}
+                            <!-- Badge with Count -->
+                            <Badge class="ml-2 text-xs py-0.5 px-2 rounded-full">{Array.isArray(activeFilters[filter.key]) ? activeFilters[filter.key].length : 1}</Badge>
+                            
+                            <!-- List of Active Filters -->
+                            <span class="ml-2 text-xs opacity-30">
+                                {#if filter.mode === 'AND' || filter.mode === 'OR'}
+                                    {#if Array.isArray(activeFilters[filter.key])}
+                                        {#each activeFilters[filter.key] as value, index}
+                                            {#if index > 0}
+                                                {filter.mode === 'AND' ? ' AND ' : ' OR '}
+                                            {/if}
+                                            {format(filter.key, [value])}
+                                        {/each}
+                                    {:else}
+                                        {format(filter.key, [activeFilters[filter.key]])}
+                                    {/if}
+                                {:else if filter.mode === 'UNIQUE'}
+                                    {#if Array.isArray(activeFilters[filter.key]) && activeFilters[filter.key].length > 0}
+                                        {format(filter.key, [activeFilters[filter.key][0]])}
+                                    {:else if typeof activeFilters[filter.key] === 'string'}
+                                        {format(filter.key, [activeFilters[filter.key]])}
+                                    {/if}
+                                {/if}
+                            </span>
+                        {/if}
+                    </div>
                 </Accordion.Trigger>
             </Accordion.Header>
             <Accordion.Content class="py-1 px-2" transition={contentTransition}>

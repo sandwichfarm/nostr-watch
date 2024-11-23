@@ -1,8 +1,5 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-
-  import NDKSvelte from '@nostr-dev-kit/ndk-svelte';
-  import NDKCacheAdapterDexie from "@nostr-dev-kit/ndk-cache-dexie";
   import { readable, writable, type Writable } from "svelte/store"
   // import { checksStore } from "$lib/stores"
   import Time from "svelte-time";

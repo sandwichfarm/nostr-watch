@@ -94,8 +94,8 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   private _subscriptions: Set<string> = new Set()
   private _hashData: Record<string, any> = {}
 
-  constructor() {
-    super()
+  constructor(worker?: Worker | URL) {
+    super(worker)
     StateManager.on('destroy', () => {
       this.worker?.terminate()
     })
@@ -119,7 +119,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   abort(): void {}
   unsubscribe(subId?: string): void {}
 
-  newWorker(channelPort: MessagePort): Promise<Worker> {
+  newWorker(): Promise<Worker> {
     throw new Error('Method not implemented.');
   }
 

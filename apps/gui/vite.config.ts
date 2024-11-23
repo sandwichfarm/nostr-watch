@@ -1,12 +1,15 @@
-import { defineConfig, searchForWorkspaceRoot } from 'vite';
+import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
-import compression from 'vite-plugin-compression';
+import path from 'path';
 
 export default defineConfig({
+  build: {
+    assetsInlineLimit: 0,
+  },
   optimizeDeps: {
     exclude: [
       "@nostrwatch/worker-relay",
-      "@nostrwatch/nip66-cacheadapter-nostrsqlite",
+      // "@nostrwatch/nip66-cacheadapter-nostrsqlite",
       "@sqlite.org/sqlite-wasm"
     ],
     esbuildOptions: {
@@ -27,16 +30,25 @@ export default defineConfig({
       strict: false,
     },
   },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@dist': path.resolve(__dirname, './dist'),
+      '@components': path.resolve(__dirname, './src/components'),
+      // '@nostrwatch/nip66-cacheadapter-nostrsqlite': path.resolve(__dirname, 'node_modules/@nostrwatch/nip66-cacheadapter-nostrsqlite/dist/browser'),
+    },
+  },
   plugins: [
     sveltekit(),
+    // Uncomment if you need to compress .wasm files
     // compression({
-    //   filter: /\.(wasm)$/ // Apply compression only to .wasm files
+    //   filter: /\.(wasm)$/
     // }),
     {
       name: 'worker-headers',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          const requestUrl = (req as { url?: string }).url;
+          const requestUrl = req.url;
           if (!requestUrl?.includes('livereload.js')) {
             res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
             res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');

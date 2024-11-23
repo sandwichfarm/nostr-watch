@@ -40,6 +40,9 @@
   "gitHooks": {
     "post-checkout": "cd \"$(git rev-parse --show-toplevel)\" && yarn cache clean && yarn install && yarn dev:setup"
   },
+  "resolutions": {
+    "crypto-browserify": "3.12.0"
+  },
   "useWorkspaces": true,
   "main": "index.js",
   "repository": "git@github.com:sandwichfarm/nostr-watch.git",

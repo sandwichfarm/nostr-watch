@@ -47,7 +47,7 @@ const config = (env) => {
           http: false,
           https: false,
           stream: require.resolve('stream-browserify'),
-          crypto: require.resolve('crypto-browserify')
+          // crypto: require.resolve('crypto-browserify')
         }
       },
       module: {

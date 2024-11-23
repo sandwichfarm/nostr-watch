@@ -3,6 +3,7 @@
 
 	import Stats from '$lib/components/blocks/Stats.svelte';
 	import Console from '$lib/components/blocks/console/Console.svelte';
+	import nostrSqlLiteWorker from '@nostrwatch/nip66-cacheadapter-nostrsqlite/dist/browser/workers/nostrsqlite.worker.js?worker';
 	
 	import { Nip66Event } from '@nostrwatch/nip66/models';
 
@@ -12,6 +13,8 @@
 	} from '$lib/stores/index.js';
 
 	import { isParameterizedReplaceableKind, isReplaceableKind } from 'nostr-tools/kinds';
+
+	export const prerender = true;
 
 	let N66: any,
 			NostrSqliteAdapter: any,
@@ -43,9 +46,12 @@
 			NostrSqliteAdapter = (await import('@nostrwatch/nip66-cacheadapter-nostrsqlite')).default;
 			NostrToolsAdapter = (await import('@nostrwatch/nip66-wsadapter-nostrtools')).default;
 
-			//console.log('Initializing...');
+			const worker = import.meta.env.DEV
+				? new URL("@nostrwatch/nip66-cacheadapter-nostrsqlite/dist/browser/workers/nostrsqlite.worker.js?worker", import.meta.url)
+				: new nostrSqlLiteWorker();
+
 			const adapters = {
-				cacheAdapter: new NostrSqliteAdapter(),
+				cacheAdapter: new NostrSqliteAdapter(worker),
 				websocketAdapter: new NostrToolsAdapter()
 			};
 			n66 = new N66(adapters);

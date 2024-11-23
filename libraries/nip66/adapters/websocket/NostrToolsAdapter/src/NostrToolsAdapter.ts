@@ -16,7 +16,7 @@ export class NostrToolsAdapter extends WebsocketAdapter {
     this.connect();
   }
 
-  async newWorker(channelPort: MessagePort): Promise<Worker> {
+  async newWorker(): Promise<Worker> {
     return NostrToolsWorker();
   }
 }

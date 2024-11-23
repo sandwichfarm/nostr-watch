@@ -61,10 +61,10 @@ export class Workers {
 
   async setupWorkers(adapters: IAdaptersArgument){
     if(adapters.cacheAdapter.useWorker){
-      this.cacheDedicated = (await adapters.cacheAdapter.newWorker(this.channel.port2)) as Worker
+      this.cacheDedicated = (await adapters.cacheAdapter.newWorker()) as Worker
     }
     if(adapters.websocketAdapter.useWorker){
-      this.websocketDedicated = (await adapters.websocketAdapter.newWorker(this.channel.port1)) as Worker
+      this.websocketDedicated = (await adapters.websocketAdapter.newWorker()) as Worker
     }
     if(adapters.cacheAdapter.useWorker && adapters.websocketAdapter.useWorker){
       if(this.cacheDedicated?.postMessage){

@@ -18,7 +18,7 @@ export interface IAdapter {
   workers?: Workers;
   useWorker: boolean;
 
-  newWorker(channelPort: MessagePort): Promise<Worker>;
+  newWorker(): Promise<Worker>;
 
   // bindWorkerHandlers(): void;
   // _onMessage(event: MessageEvent): void;
@@ -44,12 +44,28 @@ export abstract class Adapter {
   private _ls: LocalStorageWrapper;
   private _workers?: Workers
 
-  protected _worker?: Worker | SharedWorker;
+  private _overloadWorker?: Worker;
 
   useWorker: boolean = true;
 
-  constructor() {
+  constructor( worker?: Worker | URL ) {
+    if (worker instanceof Worker) {
+      this.overloadWorker = worker;
+    } else if(worker instanceof URL) {
+      this.overloadWorker = new Worker(worker, { type: "module" });
+    }
     this._ls = new LocalStorageWrapper(['nip66', this.slug])
+  }
+
+  async newWorker(): Promise<any> {
+    if(this?._overloadWorker) {
+      return this._overloadWorker;
+    }
+    throw new Error('Method not implemented.');
+  }
+
+  set overloadWorker(worker: Worker) {
+    this._overloadWorker = worker;
   }
 
   get localStorage(): LocalStorageWrapper {
@@ -95,7 +111,7 @@ export abstract class Adapter {
   onMessage(message: AdapterWorkerMessage): void {} 
   onError(): void {}
 
-  async newWorker(channelPort: MessagePort): Promise<any> {}
+
 
   encode (json: IEvent[] | IEvent ): ArrayBuffer {
     return Workers.encodeNostrEventArrayAsBuffer(json)

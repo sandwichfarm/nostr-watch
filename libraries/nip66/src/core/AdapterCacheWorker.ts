@@ -1,7 +1,6 @@
 import PQueue from "p-queue";
 import { AdapterWorker, AdapterWorkerResult, WorkerOptions } from "./AdapterWorker"
 import { AdapterWorkerCommand } from "./AdapterWorker";
-import { Workers } from "./Workers";
 import type { IEvent } from "@models/Event";
 
 export interface AdapterCacheWorkerCommand extends AdapterWorkerCommand {

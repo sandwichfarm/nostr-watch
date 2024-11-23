@@ -100,16 +100,18 @@ export default class {
   }
 
   async setupWorkers(){
-    if(!this?.adapters?.websocketAdapter || !this?.adapters?.cacheAdapter) return 
+    // if(!this?.adapters?.websocketAdapter || !this?.adapters?.cacheAdapter) return console.warn('No adapters provided')
     const { Workers } = await import('./Workers')
     const workers: Workers = new Workers(this.adapters)
     
     //TODO: Replace with emitter
-    while(!workers.ready){ await new Promise(resolve => setTimeout(resolve, 1)) }
+    while(!workers.ready){ await new Promise(resolve => setTimeout(resolve, 100)) }
 
     //console.log('workers ready', workers)
-    this.adapters.cacheAdapter.workers = workers
-    this.adapters.websocketAdapter.workers = workers
+    if(this?.adapters?.cacheAdapter)
+      this.adapters.cacheAdapter.workers = workers
+    if(this?.adapters?.websocketAdapter)
+      this.adapters.websocketAdapter.workers = workers
   }
 
   async setupServices(){

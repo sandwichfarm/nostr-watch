@@ -6,6 +6,8 @@ import alias from 'esbuild-plugin-alias';
 import workerPlugin from '@chialab/esbuild-plugin-worker';
 import esbuildPluginTsc from 'esbuild-plugin-tsc';
 import inlineWorkerPlugin from 'esbuild-plugin-inline-worker';
+import { polyfillNode } from "esbuild-plugin-polyfill-node";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,11 +22,15 @@ export async function buildWithWatch() {
         { find: 'node:module', replacement: path.resolve(__dirname, 'src/shims/node-module-shim.js') },
       ],
     }),
+    polyfillNode({}),
     esbuildPluginTsc({ force: true })
   ];
 
   const browserBuildOptions = {
-    entryPoints: ['src/index.ts', 'src/workers/nostrsqlite.worker.ts'],
+    entryPoints: [
+      path.resolve(__dirname, 'src/index.ts'),
+      path.resolve(__dirname, 'src/workers/nostrsqlite.worker.ts')
+    ],
     outdir: 'dist/browser',
     bundle: true,
     platform: 'browser',
@@ -32,13 +38,18 @@ export async function buildWithWatch() {
     format: 'esm',
     sourcemap: true,
     minify: production,
-    plugins: commonPlugins,
+    plugins: commonPlugins.concat([
+      // workerPlugin({
+      //   // output: 'workers',
+      // }),
+    ]),
     external: ['@nostrwatch/worker-relay'],
     loader: {
       '.ts': 'ts',
-      '.js': 'js'
+      '.js': 'js',
+      '.wasm': 'file',
     },
-    resolveExtensions: ['.ts', '.js'],
+    resolveExtensions: ['.ts'],
   };
 
   try {

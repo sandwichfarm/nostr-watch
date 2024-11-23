@@ -1,0 +1,9 @@
+[build]
+  base = "apps/gui"
+  command = "yarn install && yarn run build"
+  publish = "packages/gui/.netlify_build"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

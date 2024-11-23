@@ -44,6 +44,21 @@ export class LoadStage {
     get status(): StageStatus {
         return this._status;
     }
+
+    begin(){
+        this._status = StageStatus.Begin;
+        StateManager.emit('status', this);
+    }
+
+    process() {
+        this._status = StageStatus.Processing;
+        StateManager.emit('status', this);
+    }
+
+    end() {
+        this._status = StageStatus.End;
+        StateManager.emit('status', this);
+    }
 }
 
 
@@ -58,10 +73,11 @@ export class LoadStageManager {
     };
     
     begin(stage: LoadStage) {
+        stage.begin();
         this.subjects[stage.subject] = stage;  
     }
 
-    update(stage: LoadStage) {
-        
+    finish(stage: LoadStage) {
+
     }
 }

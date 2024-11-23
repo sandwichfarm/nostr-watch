@@ -6,6 +6,6 @@
     "@nostrwatch/nocap": "workspace:^",
     "@nostrwatch/nocap-every-adapter-default": "workspace:^",
     "@nostrwatch/nocap-websocket-adapter-default": "workspace:^",
-    "@sandwichfarm/torfetch": "https://github.com/sandwichfarm/torfetch.git#400a186fe29af9d74ec032b791f1795d3c4988c7"
+    "@sandwichfarm/torfetch": "https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277"
   }
 }

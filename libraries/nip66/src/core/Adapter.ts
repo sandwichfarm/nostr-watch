@@ -44,7 +44,7 @@ export abstract class Adapter {
   private _ls: LocalStorageWrapper;
   private _workers?: Workers
 
-  private _overloadWorker?: Worker;
+  protected _overloadWorker?: Worker;
 
   useWorker: boolean = true;
 
@@ -58,13 +58,17 @@ export abstract class Adapter {
   }
 
   async newWorker(): Promise<any> {
-    if(this?._overloadWorker) {
-      return this._overloadWorker;
+    if(this?.overloadWorker) {
+      return this.overloadWorker;
     }
     throw new Error('Method not implemented.');
   }
 
-  set overloadWorker(worker: Worker) {
+  get overloadWorker(): Worker | undefined {
+    return this._overloadWorker;
+  }
+
+  private set overloadWorker(worker: Worker) {
     this._overloadWorker = worker;
   }
 
@@ -88,6 +92,7 @@ export abstract class Adapter {
   }
 
   protected _onMessage(event: MessageEvent): void {
+    console.log(`[Adapter:${this.constructor.name}] i/i RECV: <- worker`, event.data)
     const message = event.data as AdapterMessage;
     this.listenPong(message)
     this.onMessage(message);

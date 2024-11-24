@@ -3,38 +3,39 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    mainFields: ['module', 'main'],
+    preserveSymlinks: false,
+  },
+  worker: {
+    plugins: [
+      sveltekit()
+    ]
+  },
   build: {
     assetsInlineLimit: 0,
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name && assetInfo.name.endsWith('.worker.js')) {
+            return 'workers/[name][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        }
+      },
+      plugins: [
+        {
+          name: 'debug-build',
+          writeBundle() {
+            console.log('Build completed. Check output in the dist directory.');
+          },
+        }
+      ]
+    },
   },
   optimizeDeps: {
-    exclude: [
-      "@nostrwatch/worker-relay",
-      // "@nostrwatch/nip66-cacheadapter-nostrsqlite",
-      "@sqlite.org/sqlite-wasm"
-    ],
     esbuildOptions: {
       target: "esnext",
-    },
-  },
-  esbuild: {
-    supported: {
-      "top-level-await": true,
-    },
-  },
-  server: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-    fs: {
-      strict: false,
-    },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@dist': path.resolve(__dirname, './dist'),
-      '@components': path.resolve(__dirname, './src/components'),
     },
   },
   plugins: [

@@ -1,6 +1,6 @@
 import { Transport } from './Transport';
 
-export class WebSocketTransport implements Transport {
+export class BrowserWebSocketTransport implements Transport {
   private websocket: WebSocket;
 
   constructor(websocket: WebSocket) {
@@ -12,13 +12,8 @@ export class WebSocketTransport implements Transport {
   }
 
   onMessage(callback: (message: string) => void): void {
-    this.websocket.on('message', (data: WebSocket.Data) => {
-      // Assuming data is a string or Buffer
-      if (typeof data === 'string') {
-        callback(data);
-      } else if (data instanceof Buffer) {
-        callback(data.toString());
-      }
-    });
+    this.websocket.onmessage = (event: MessageEvent) => {
+      callback(event.data);
+    };
   }
 }

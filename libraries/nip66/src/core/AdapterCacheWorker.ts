@@ -67,7 +67,7 @@ export class AdapterCacheWorker extends AdapterWorker {
   }
 
   async onChannelMessage(command: AdapterCacheWorkerCommand): Promise<void>  {
-    //console.log('AdapterCacheWorker: onChannelMessage', command)
+    console.log('AdapterCacheWorker: onChannelMessage', command)
     this.onMessage(command)
   }
   

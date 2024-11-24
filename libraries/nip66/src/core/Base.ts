@@ -61,15 +61,15 @@ export default class {
     if(typeof adapter === 'function') {
       return console.warn('Adapter should be an instantiated CacheAdapter or WebsocketAdapter')
     }
-    //console.log(adapter.constructor.name, this.isWebsocketAdapter(adapter), this.isCacheAdapter(adapter))
+    console.log(adapter.constructor.name, this.isWebsocketAdapter(adapter), this.isCacheAdapter(adapter))
 
     if(this.isCacheAdapter(adapter)){
-      //console.log('isCacheAdapter', adapter)
+      console.log('isCacheAdapter', adapter)
       this.cacheAdapter = adapter as ICacheAdapter
       return
     }
     if(this.isWebsocketAdapter(adapter)){
-      //console.log('isWebsocketAdapter', adapter)
+      console.log('isWebsocketAdapter', adapter)
       this.websocketAdapter = adapter as IWebsocketAdapter
       return
     } 
@@ -77,19 +77,22 @@ export default class {
   }
 
   isCacheAdapter(adapter: AnyAdapter): boolean {
-    //console.log(adapter, (adapter.constructor as any).type )
+    console.log(adapter, (adapter.constructor as any).type )
     return (adapter.constructor as any).type === 'CacheAdapter';
   }
 
   isWebsocketAdapter(adapter: AnyAdapter): boolean {
-    //console.log(adapter, (adapter.constructor as any).type )
+    console.log(adapter, (adapter.constructor as any).type )
     return (adapter.constructor as any).type === 'WebsocketAdapter';
   }
   
   async init() {
     await this.setupWorkers()
+    console.log(`[Base] Workers ready`)
     await this.setupServices()
+    console.log(`[Base] Services ready`)
     await this.adaptersReady()
+    console.log(`[Base] Adapters ready`)
   }
 
   async adaptersReady(){
@@ -107,7 +110,7 @@ export default class {
     //TODO: Replace with emitter
     while(!workers.ready){ await new Promise(resolve => setTimeout(resolve, 100)) }
 
-    //console.log('workers ready', workers)
+    console.log('workers ready', workers)
     if(this?.adapters?.cacheAdapter)
       this.adapters.cacheAdapter.workers = workers
     if(this?.adapters?.websocketAdapter)

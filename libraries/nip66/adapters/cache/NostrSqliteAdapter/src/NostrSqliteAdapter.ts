@@ -2,14 +2,11 @@
 
 import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAdapter } from "@nostrwatch/nip66/core";
 import { IEvent } from "@nostrwatch/nip66/models";
-//@ts-ignore: Vite worker import
-// import NostrSqliteWorker from "./workers/nostrsqlite.worker";
+
 import { WorkerRelayInterface } from "@nostrwatch/worker-relay"
-import { ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist/types";
+import { ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist/types"; 
 import { generateSubId, randomInRange } from "./utils";
 import { NostrEvent } from "nostr-tools";
-
-// import NostrSqliteWorker from "./workers/nostrsqlite.worker?worker";
 
 export interface INostrSqliteAdapter extends ICacheAdapter {
     REQ(filters: ReqFilter[]): Promise<IEvent[]>;
@@ -55,6 +52,38 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         return generateSubId(randomInRange(11, 24))
     }
 
+    async newWorker(): Promise<Worker> {
+        let worker;
+        if(this.overloadWorker) {
+            console.log(`NostrSqliteAdapter: using overloadWorker`)
+            worker = this.overloadWorker
+        }
+        else if(import.meta.env.DEV) {
+            console.log(`NostrSqliteAdapter: Instantiated new worker with URL in DEV mode`)
+             /* @vite-ignore */
+            worker = new Worker(new URL('./workers/nostrsqlite.worker.js', import.meta.url), { type: 'module' });
+        } else {
+            console.log(`NostrSqliteAdapter: Instantiated new worker with URL in PROD mode`)
+            worker = new Worker(
+                new URL("./workers/nostrsqlite.worker.js", import.meta.url),
+                { type: 'module' }
+            );
+        }
+        console.log('NostrSqliteAdapter: newWorker', worker)
+        if(!(worker instanceof Worker)) throw new Error('NostrSqliteAdapter: Worker is not a Worker instance')
+        this.relay = new WorkerRelayInterface(worker);
+        this._ready = true
+        return this.relay.worker; 
+    }
+
+    async ready(): Promise<void> {
+        console.log('NostrSqlLite: awaiting ready')
+        while(!this._ready) {
+            await new Promise(resolve => setTimeout(resolve, 100))
+        }
+        console.log('NostrSqlLite: ready')
+    } 
+
 //    async newWorker(): Promise<Worker> {
         // let worker;
         // if (import.meta.env.DEV) {
@@ -72,11 +101,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         // return this.relay.worker; 
     // }
 
-    async ready(): Promise<void> {
-        while(!this._ready) {
-            await new Promise(resolve => setTimeout(resolve, 100))
-        }
-    }
+
 
     async addEvent(event: IEvent): Promise<void> {
         this.EVENT(event);

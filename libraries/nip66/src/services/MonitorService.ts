@@ -147,7 +147,9 @@ export class MonitorService extends Service {
       }
     };
     
+    console.log('sync: args', args);
     const results = await this._fetch(args, { ...callbacks, onevent });
+    console.log('sync: results', results);
   
     const updateMonitors = () => {
       for (const [pubkey, sinceMap] of Array.from(since.entries())) {
@@ -193,20 +195,20 @@ export class MonitorService extends Service {
     return filters.map((filter) => {
       const { authors, kinds, since:requestedSince, until:requestedUntil } = filter;
       for(const pubkey of authors || []) {
-        //console.log(`modifyCacheFilters: pubkey: ${pubkey}`);
+        console.log(`modifyCacheFilters: pubkey: ${pubkey}`);
         const monitor = this.monitors.get(pubkey);
         for(const kind of kinds || []) {
-          //console.log(`modifyCacheFilters: kind: ${kind}`);
+          console.log(`modifyCacheFilters: kind: ${kind}`);
           const cachedRange = monitor?.getLastSync(kind);
-          //console.log(`modifyCacheFilters: cachedRange: ${JSON.stringify(cachedRange)}`);
+          console.log(`modifyCacheFilters: cachedRange: ${JSON.stringify(cachedRange)}`);
           if(cachedRange?.since){
             if(requestedSince && cachedRange.since < requestedSince) {
-              //console.log(`modifyCacheFilters: since before: ${filter.since} since after: ${cachedRange.since} requested: ${requestedSince} `);
+              console.log(`modifyCacheFilters: since before: ${filter.since} since after: ${cachedRange.since} requested: ${requestedSince} `);
               // filter.since = cachedRange.since;
             }
           }
           else {
-            //console.log(`modifyCacheFilters: no cached range for kind: ${kind}`);
+            console.log(`modifyCacheFilters: no cached range for kind: ${kind}`);
           }
         }
       }
@@ -218,19 +220,19 @@ export class MonitorService extends Service {
     return filters.map((filter) => {
       const { authors, kinds, since:requestedSince, until:requestedUntil } = filter;
       for(const pubkey of authors || []) {
-        //console.log(`modifyWebsocketFilters: pubkey: ${pubkey}`);
+        console.log(`modifyWebsocketFilters: pubkey: ${pubkey}`);
         const monitor = this.monitors.get(pubkey);
         for(const kind of kinds || []) {
-          //console.log(`modifyWebsocketFilters: kind: ${kind}`);
+          console.log(`modifyWebsocketFilters: kind: ${kind}`);
           const cachedRange = monitor?.getLastSync(kind);
-          //console.log(`modifyWebsocketFilters: cachedRange: ${JSON.stringify(cachedRange)}`);
+          console.log(`modifyWebsocketFilters: cachedRange: ${JSON.stringify(cachedRange)}`);
           if(cachedRange?.until){
             if(requestedSince && cachedRange.until > requestedSince) {
-              //console.log(`modifyWebsocketFilters: since before: ${filter.since} since after: ${cachedRange.until} requested: ${requestedSince} `);
+              console.log(`modifyWebsocketFilters: since before: ${filter.since} since after: ${cachedRange.until} requested: ${requestedSince} `);
               // filter.since = cachedRange.until;
             }
             else {
-              //console.log(`modifyWebsocketFilters: since unchanged`);
+              console.log(`modifyWebsocketFilters: since unchanged`);
             }
           }
         }
@@ -240,11 +242,17 @@ export class MonitorService extends Service {
   }
 
   async bootstrap(): Promise<void> {
+    console.log('bootstrap');
     await this.bootstrapMonitorRegistrations();
+    console.log('bootstrapMonitorRegistrations complete');
     await this.bootstrapMonitorData();
+    console.log('bootstrapMonitorData complete');
     await this.ensureMonitorsActive();
+    console.log('ensureMonitorsActive complete');
     this.prioritizeMonitors();
+    console.log('prioritizeMonitors complete');
     await this.bootstrapMonitorChecks();
+    console.log('bootstrapMonitorChecks complete');
   }
 
   async bootstrapMonitorRegistrations(): Promise<void> {
@@ -268,7 +276,7 @@ export class MonitorService extends Service {
   }
 
   async bootstrapMonitorData(): Promise<void> {
-    //console.log('bootstrapMonitorData');
+    console.log('bootstrapMonitorData');
     const monitors = [...this.monitorsArray.map((m) => m.registration)];
     const authors = monitors.map((monitor: IMonitor) => monitor.pubkey);
     authors.length = authors.length > 4 ? 4 : authors.length;
@@ -461,7 +469,7 @@ export class MonitorService extends Service {
       console.warn('MonitorService getMonitorPubkeys: no monitors');
       return [];
     }
-    //console.log(`total monitors in array: ${this.sortedMonitors.length}`)
+    console.log(`total monitors in array: ${this.sortedMonitors.length}`)
     return this.sortedMonitors.map((monitor) => monitor.registration.pubkey);
   }
 

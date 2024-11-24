@@ -20,7 +20,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     
     constructor( options: WorkerOptions ){
         super(options)
-        //console.log('NostrSqliteWorker constructor')
+        console.log('NostrSqliteWorker constructor')
         this.setupHandlers()
     }
 
@@ -30,7 +30,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     
     async setup(command: AdapterWorkerMessage){ 
         
-        //console.log(`NostrSqliteWorker: setup()`,  command)
+        console.log(`NostrSqliteWorker: setup()`,  command)
         const conf: InitAargs = {
             databasePath: "relay.db",
             insertBatchSize: this.state.insertBatchSize
@@ -44,16 +44,16 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
             this.state.messageChannel = command.channelPort
             this.setupChannelHandlers()
         }
-        //console.log(this.channel)
+        console.log(this.channel)
     }
 
     setupHandlers(){
-        //console.log('NostrSqliteWorker: setupHandlers()')
+        console.log('NostrSqliteWorker: setupHandlers()')
         if(!this?.mainThread) return console.warn('NostrSqliteWorker: mainThread not defined')
         this.mainThread.onmessage = async (message: MessageEvent) => {
-          //console.log(`NostrSqliteWorker: From Main Thread:`, message.data)
+          console.log(`NostrSqliteWorker: From Main Thread:`, message.data)
           if(message.data.type === 'setup'){
-            //console.log('NostrSqliteWorker: setup()')
+            console.log('NostrSqliteWorker: setup()')
             await this.__setup(message.data)
             return
           }
@@ -63,7 +63,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
         }
         if(this.state?.messageChannel){
             this.state.messageChannel.onmessage = async (message: MessageEvent) => {
-                //console.log(`NostrSqliteWorker: Over MessageChannel: ${message.data.cmd} -> ${message.data.args}`)
+                console.log(`NostrSqliteWorker: Over MessageChannel: ${message.data.cmd} -> ${message.data.args}`)
                 this.relay(this.state, message)
             }
         }
@@ -80,7 +80,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
       }
 
     fromMainThread(ev: MessageEvent) {
-        //console.log(`CacheWorker: From Main Thread:`, ev)
+        console.log(`CacheWorker: From Main Thread:`, ev)
         this.relay(this.state, ev)
     }
     

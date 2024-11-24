@@ -7,6 +7,6 @@ import { CacheWorker, ICacheAdapterWorker } from '@nostrwatch/nip66/factoryWorke
 
 const $self = self as unknown as IWorkerGlobalScope
 
-// console.log(`NostrSqliteWorker: Worker loaded.`)
+console.log(`NostrSqliteWorker: Worker loaded.`)
 
 const worker: ICacheAdapterWorker = CacheWorker(NostrSqliteWorker, $self)

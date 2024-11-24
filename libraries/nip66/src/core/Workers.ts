@@ -62,21 +62,27 @@ export class Workers {
   async setupWorkers(adapters: IAdaptersArgument){
     if(adapters.cacheAdapter.useWorker){
       this.cacheDedicated = (await adapters.cacheAdapter.newWorker()) as Worker
+      console.log('cacheAdapter.newWorker()', this.cacheDedicated)
     }
     if(adapters.websocketAdapter.useWorker){
       this.websocketDedicated = (await adapters.websocketAdapter.newWorker()) as Worker
+      console.log('websocketAdapter.newWorker()', this.websocketDedicated)
     }
     if(adapters.cacheAdapter.useWorker && adapters.websocketAdapter.useWorker){
+      const cacheAdapterChannelPort = this.channel.port2;
+      const websocketAdapterChannelPort = this.channel.port1;
       if(this.cacheDedicated?.postMessage){
-        const message = {type: 'setup', channelPort: this.channel.port2}
-        console.log(`[Workers] setupWorkers() -> cacheDedicated.postMessage()`, message)
-        this.cacheDedicated.postMessage(message, [this.channel.port2]);  
+        const message = {type: 'setup', channelPort: cacheAdapterChannelPort}
+        console.log(`[Workers] setupWorkers() -> cacheDedicated.postMessage()`, this.cacheDedicated, message)
+        this.cacheDedicated.postMessage(message, [cacheAdapterChannelPort]);  
       }
       else {
         console.warn('Cache Worker not defined')
       }
       if(this.websocketDedicated?.postMessage){
-        this.websocketDedicated?.postMessage({type: 'setup', channelPort: this.channel.port1}, [this.channel.port1]);
+        const message = {type: 'setup', channelPort: websocketAdapterChannelPort}
+        console.log(`[Workers] setupWorkers() -> websocketDedicated.postMessage()`, message)
+        this.websocketDedicated?.postMessage(message, [websocketAdapterChannelPort]);
       }
       else {
         console.warn('Websocket Worker not defined')

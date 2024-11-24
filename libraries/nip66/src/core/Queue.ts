@@ -46,7 +46,7 @@ export class Queue<T extends QueueTask> {
    */
   protected saturated(): void {
     // Implement logic for when concurrency limit is reached
-    //console.log('Queue is saturated.');
+    console.log('Queue is saturated.');
   }
 
   /**
@@ -54,7 +54,7 @@ export class Queue<T extends QueueTask> {
    */
   protected drain(): void {
     // Implement logic for when the last job is assigned
-    //console.log('All jobs have been assigned.');
+    console.log('All jobs have been assigned.');
   }
 
   /**
@@ -62,7 +62,7 @@ export class Queue<T extends QueueTask> {
    */
   protected empty(): void {
     // Implement logic for when the queue is empty
-    //console.log('Queue is empty.');
+    console.log('Queue is empty.');
   }
 
   // Expose all PQueue methods to the wrapper

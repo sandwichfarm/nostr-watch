@@ -3,8 +3,7 @@
 
 	import Stats from '$lib/components/blocks/Stats.svelte';
 	import Console from '$lib/components/blocks/console/Console.svelte';
-	import nostrSqlLiteWorker from '@nostrwatch/nip66-cacheadapter-nostrsqlite/dist/browser/workers/nostrsqlite.worker.js?worker';
-	
+	// import NostrSqlLiteWorker from '@nostrwatch/nip66-cacheadapter-nostrsqlite/worker?worker';
 	import { Nip66Event } from '@nostrwatch/nip66/models';
 
 	import { 
@@ -12,7 +11,7 @@
 		monitorsMap
 	} from '$lib/stores/index.js';
 
-	import { isParameterizedReplaceableKind, isReplaceableKind } from 'nostr-tools/kinds';
+	import { isParameterizedReplaceableKind, isReplaceableKind, Metadata } from 'nostr-tools/kinds';
 
 	export const prerender = true;
 
@@ -38,29 +37,29 @@
 		n66?.destroy();
 	});
 
+	/* vite-ignore */
+	// const worker = new Worker(new URL("@nostrwatch/nip66-cacheadapter-nostrsqlite/worker", import.meta.url))
+
 	onMount(async () => {
 		const load = async () => {
 			if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 			N66 = (await import('@nostrwatch/nip66')).default;
-			//console.log(await import('@nostrwatch/nip66-cacheadapter-nostrsqlite'))
 			NostrSqliteAdapter = (await import('@nostrwatch/nip66-cacheadapter-nostrsqlite')).default;
 			NostrToolsAdapter = (await import('@nostrwatch/nip66-wsadapter-nostrtools')).default;
+// 
+			// 
 
-			const worker = import.meta.env.DEV
-				? new URL("@nostrwatch/nip66-cacheadapter-nostrsqlite/dist/browser/workers/nostrsqlite.worker.js?worker", import.meta.url)
-				: new nostrSqlLiteWorker();
-
+			// const worker = import.meta.env.DEV
+  			// 	? new NostrSqlLiteWorker()
+  			// 	: new Worker(new URL("@nostrwatch/nip66-cacheadapter-nostrsqlite/worker", import.meta.url))
+			// const worker = new Worker(new URL('@nostrwatch/nip66-cacheadapter-nostrsqlite/dist/browser/workers/nostrsqlite.worker.js?worker', import.meta.url), { type: 'module' });
 			const adapters = {
-				cacheAdapter: new NostrSqliteAdapter(worker),
+				cacheAdapter: new NostrSqliteAdapter(),
 				websocketAdapter: new NostrToolsAdapter()
 			};
 			n66 = new N66(adapters);
 			await n66.init();
-
-			//console.log(`state stats:`, n66.state.stats)
-			setInterval(() => {
-				//console.log(`state stats:`, n66.state.stats)
-			}, 5000);	
+			console.log('n66 initialized');
 
 			const eventAddr = ( event: any ) => {
 				let { pubkey, kind } = event;

@@ -1,0 +1,50 @@
+name: Build & Deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env: 
+  VUE_APP_IP_API_KEY: ${{ vars.VUE_APP_IP_API_KEY }}
+    
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+
+      - name: Checkout 
+        uses: actions/checkout@v2
+      
+      - name: Yarn Install
+        run: yarn install
+        
+      - name: ENV_VARS 
+        run: echo "VUE_APP_IP_API_KEY=$VUE_APP_IP_API_KEY" >> .env
+
+      - name: Docker Build & tag
+        run: |
+          yarn docker:build
+          yarn docker:tag
+
+      - name: Configure doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Login to doctl registry
+        run: doctl registry login -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Docker Deploy
+        run: yarn docker:push
+
+      - name: Pull new image and restart
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{secrets.SSH_DEPLOY_HOST}}
+          key: ${{secrets.SSH_DEPLOY_KEY}} 
+          username: ${{secrets.SSH_DEPLOY_USERNAME}} 
+          script: |
+            docker pull registry.digitalocean.com/sandwich-farm/nostr-relay-status:latest
+            docker-compose stop
+            docker-compose up -d

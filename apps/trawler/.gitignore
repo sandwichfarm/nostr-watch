@@ -1,0 +1,9 @@
+node_modules 
+*.config.yaml
+docker-compose.yaml
+lmdb
+lmdb.bak
+cache
+.env*
+!.env.sample
+config*

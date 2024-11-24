@@ -1,0 +1,157 @@
+name: GH Release and NPM Publish
+on:
+  workflow_dispatch: 
+  push:
+    branches:
+      - 'next'
+    paths:
+      - 'libraries/**'
+      - 'internal/**'
+      - 'scripts/**'
+      - 'package.json'
+      - '.github/workflows/publish-package.yml'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false 
+      matrix:
+        include:
+          - package: 'nostrings'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'announce'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'logger'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'seed'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'utils'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nwcache'
+            nodeVersion: '20'
+          - package: 'controlflow'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'publisher'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nocap'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nocap-websocket-adapter-default'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nocap-websocket-browser-adapter-default'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nocap-info-adapter-default'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nocap-dns-adapter-default'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nocap-geo-adapter-default'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nocap-ssl-adapter-default'
+            nodeVersion: '20'
+            typescript: 'true'
+          - package: 'nocap-every-adapter-default'
+            nodeVersion: '20'
+            typescript: 'true'
+            
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.nodeVersion }}
+
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Bootstrap Packages
+        run: yarn workspaces run bootstrap
+        if: github.workspace == 'true'
+
+      - name: Find Package
+        id: find_package
+        run: |
+          PKG_PATH=$(./scripts/wf/get-path-package.sh "${{ matrix.package }}")
+          echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Install Package
+        id: install_package
+        run: |
+          cd "${{ steps.find_package.outputs.the_path }}"
+          yarn install
+
+      - name: Build Typescript
+        if: matrix.typescript == 'true'
+        run: |
+          cd "${{ steps.find_package.outputs.the_path }}"
+          yarn build
+
+      - name: Publish Package
+        id: publish
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: ${{ steps.find_package.outputs.the_path }}/package.json
+          strategy: all
+          access: public
+
+      - name: Set Meta
+        id: meta
+        run: |
+          RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"
+          echo "RELEASE SLUG: $RELEASE_SLUG" >> .fml
+          echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
+
+      - name: Check for Tag
+        id: slug_exists
+        run: |
+          git fetch --tags
+          TAG="${{ steps.meta.outputs.release_slug}}"
+          if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
+            echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_slug_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Archive Subdirectory
+        if: steps.slug_exists.outputs.release_slug_exists != 'true'
+        id: archive
+        run: |
+          zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
+
+      - name: Create Release ${{ steps.meta.outputs.release_slug }}
+        if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != 'true' && steps.slug_exists.outputs.release_slug_exists != 'true'
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.meta.outputs.release_slug }}
+          release_name: ${{ steps.meta.outputs.release_slug }}
+          body: ""
+          draft: false
+          prerelease: true
+
+      - name: Upload Release Asset ${{ steps.meta.outputs.release_slug }}.zip
+        if: steps.slug_exists.outputs.release_slug_exists != 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ steps.meta.outputs.release_slug}}.zip
+          asset_name: ${{ steps.meta.outputs.release_slug}}.zip
+          asset_content_type: application/zip

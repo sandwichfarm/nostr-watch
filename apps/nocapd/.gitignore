@@ -1,0 +1,7 @@
+node_modules
+config.y*ml
+.events
+.env*
+deploy.theship.sh
+docker-compose.theship.yaml
+*.tar

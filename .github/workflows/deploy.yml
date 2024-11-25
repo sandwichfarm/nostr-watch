@@ -3,7 +3,9 @@ name: Deploy GUI
 on:
   push:
     branches:
-      - main
+      - next
+    paths:
+      - 'apps/gui/**'
 
 jobs:
   deploy:

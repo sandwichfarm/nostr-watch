@@ -3,7 +3,6 @@
 
 	import Stats from '$lib/components/blocks/Stats.svelte';
 	import Console from '$lib/components/blocks/console/Console.svelte';
-	// import NostrSqlLiteWorker from '@nostrwatch/nip66-cacheadapter-nostrsqlite/worker?worker';
 	import { Nip66Event } from '@nostrwatch/nip66/models';
 
 	import { 
@@ -37,9 +36,6 @@
 		n66?.destroy();
 	});
 
-	/* vite-ignore */
-	// const worker = new Worker(new URL("@nostrwatch/nip66-cacheadapter-nostrsqlite/worker", import.meta.url))
-
 	onMount(async () => {
 		const load = async () => {
 			if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
@@ -47,12 +43,6 @@
 			NostrSqliteAdapter = (await import('@nostrwatch/nip66-cacheadapter-nostrsqlite')).default;
 			NostrToolsAdapter = (await import('@nostrwatch/nip66-wsadapter-nostrtools')).default;
 // 
-			// 
-
-			// const worker = import.meta.env.DEV
-  			// 	? new NostrSqlLiteWorker()
-  			// 	: new Worker(new URL("@nostrwatch/nip66-cacheadapter-nostrsqlite/worker", import.meta.url))
-			// const worker = new Worker(new URL('@nostrwatch/nip66-cacheadapter-nostrsqlite/dist/browser/workers/nostrsqlite.worker.js?worker', import.meta.url), { type: 'module' });
 			const adapters = {
 				cacheAdapter: new NostrSqliteAdapter(),
 				websocketAdapter: new NostrToolsAdapter()

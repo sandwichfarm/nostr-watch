@@ -2783,6 +2783,7 @@ __metadata:
   resolution: "@nostrwatch/monorepo@workspace:."
   dependencies:
     "@changesets/cli": "npm:2.27.8"
+    gh-pages: "npm:^6.2.0"
     yarn: "npm:^1.22.0"
   languageName: unknown
   linkType: soft

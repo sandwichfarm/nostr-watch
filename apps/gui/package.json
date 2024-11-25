@@ -21,7 +21,6 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build -c vite.production.js",
-		"deploy": "gh-pages -d build -t true",
 		"preview": "yarn serve dist",
 		"package": "svelte-kit sync && svelte-package && publint",
 		"release": "changeset publish",

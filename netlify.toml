@@ -1,7 +1,7 @@
 [build]
   base = "apps/gui"
-  command = "yarn install && yarn run build"
-  publish = "packages/gui/.netlify_build"
+  command = "yarn && yarn workspace @nostrwatch/gui build"
+  publish = "apps/gui/.netlify_build"
 
 [[redirects]]
   from = "/*"

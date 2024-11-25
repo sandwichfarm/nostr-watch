@@ -45,4 +45,4 @@ jobs:
 
       - name: Upload Build
         run: |
-          scp -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI)HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
+          scp -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI)_OST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}

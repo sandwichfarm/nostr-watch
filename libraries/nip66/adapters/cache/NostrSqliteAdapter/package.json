@@ -40,7 +40,7 @@
     "vite-plugin-node-polyfills": "^0.22.0"
   },
   "scripts": {
-    "build": "yarn clean && tsc && yarn build:esm",
+    "build": "yarn clean && yarn build:esm",
     "build:esm": "node esbuild.js",
     "dev": "node esbuild.js",
     "clean": "rm -rf dist",

@@ -1,9 +1,0 @@
-[build]
-  base = "."
-  command = "./scripts/deploy/gui.sh"
-  publish = "apps/gui/dist"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

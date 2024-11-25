@@ -1,50 +1,52 @@
-name: Build & Deploy
+name: Deploy GUI
+
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches:
+      - main
 
-env: 
-  VUE_APP_IP_API_KEY: ${{ vars.VUE_APP_IP_API_KEY }}
-    
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: Production
+
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Checkout 
-        uses: actions/checkout@v2
-      
-      - name: Yarn Install
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+
+      - name: Install deps
         run: yarn install
-        
-      - name: ENV_VARS 
-        run: echo "VUE_APP_IP_API_KEY=$VUE_APP_IP_API_KEY" >> .env
 
-      - name: Docker Build & tag
+      - name: Run alpha deploy
+        run: ./scripts/deploy/gui.sh
+
+      - name: Get package version
+        id: get_version
         run: |
-          yarn docker:build
-          yarn docker:tag
+          VERSION=$(jq -r '.version' ./apps/gui/package.json)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
-      - name: Configure doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: Prepare Directories
+        env:
+          HOST_IP: ${{ secrets.HOST_IP }}
+          HOST_USER: ${{ secrets.HOST_USER }}
+        run: |
+          VERSION=${{ env.VERSION }}
+          echo "Deploying version $VERSION"
+          ssh -i ${{ secrets.SSH_KEY }} -o StrictHostKeyChecking=no ${{ secrets.HOST_USER }}@${{ secrets.HOST_IP }} << EOF
+          set -e
+          mkdir -p /var/www/html/${VERSION}
+          rm -rf /var/www/html/latest
+          ln -s /var/www/html/${VERSION} /var/www/html/latest
+          EOF
 
-      - name: Login to doctl registry
-        run: doctl registry login -t ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-      - name: Docker Deploy
-        run: yarn docker:push
-
-      - name: Pull new image and restart
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{secrets.SSH_DEPLOY_HOST}}
-          key: ${{secrets.SSH_DEPLOY_KEY}} 
-          username: ${{secrets.SSH_DEPLOY_USERNAME}} 
-          script: |
-            docker pull registry.digitalocean.com/sandwich-farm/nostr-relay-status:latest
-            docker-compose stop
-            docker-compose up -d
+      - name: Upload Build
+        env:
+          HOST_IP: ${{ secrets.HOST_IP }}
+          HOST_USER: ${{ secrets.HOST_USER }}
+        run: |
+          scp -i ${{ secrets.SSH_KEY }} -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.HOST_USER }}@${{ secrets.HOST_IP }}:/var/www/html/${{ env.VERSION }}

@@ -22,6 +22,7 @@
       "@noble/*": ["node_modules/@noble/*"]
     }
   },
-  "include": ["src/**/*", "node_modules", "node_modules/@noble/**/*.ts"],
-  "exclude": ["dist", "node_modules/@noble/**/*.*"]
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules", "../../../src"],
+  "files": ["./src/index.ts"]
 }

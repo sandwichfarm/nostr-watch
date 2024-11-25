@@ -1,6 +1,6 @@
 import { 
   AdapterWebsocketWorkerCommand 
-} from "@base/interfaces/IAdapterWebsocketWorker";
+} from "@base/core";
 
 import { 
   Queue

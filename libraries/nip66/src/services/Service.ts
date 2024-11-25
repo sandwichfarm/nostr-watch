@@ -1,5 +1,6 @@
 import { IEvent } from "@base/interfaces";
-import { defaultWebsocketAdapterOptions, ICacheAdapter, IWebsocketAdapter, SubscribeHandlers, WebsocketRequestBody, type WebsocketAdapterOptions } from "@base/core";
+import type { ICacheAdapter, IWebsocketAdapter, SubscribeHandlers, WebsocketRequestBody,  WebsocketAdapterOptions } from "@base/core";
+import { defaultWebsocketAdapterOptions } from "@base/core";
 import { IAdaptersArgument } from "@base/interfaces/IAdaptersArgument";
 import { Filter } from "nostr-tools";
 import { EventEmitter } from "tseep";
@@ -35,7 +36,7 @@ export class Service {
   
     const generateId = (event: IEvent): string | undefined => {
       if (isPRE(event)) {
-        const dtagv = event.tags.find(t => t[0] === 'd')?.[1];
+        const dtagv = event.tags.find((t: string[]) => t[0] === 'd')?.[1];
         return dtagv ? `${event.pubkey}:${event.kind}:${dtagv}` : undefined;
       }
       return isRE(event) ? `${event.pubkey}:${event.kind}` : event.id;

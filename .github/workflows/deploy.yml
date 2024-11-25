@@ -20,9 +20,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '22'
+          cache: 'yarn'
 
       - name: Install deps
-        run: yarn install
+        run: yarn
 
       - name: Run alpha deploy
         run: ./scripts/deploy/gui.sh

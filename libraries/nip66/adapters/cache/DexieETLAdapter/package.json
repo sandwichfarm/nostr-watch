@@ -61,7 +61,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@nostrwatch/nip66": "*",
+    "@nostrwatch/nip66": "workspace:^",
     "dexie": "4.0.8",
     "fastq": "1.17.1",
     "queue": "7.0.0"

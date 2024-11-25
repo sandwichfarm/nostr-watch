@@ -58,8 +58,7 @@ export async function buildWithWatch() {
 
   const browserBuildOptions = {
     entryPoints: ['src/index.ts'],
-    external: ['fs', 'path', 'node-localstorage', 'worker_threads'],
-    
+    external: ['fs', 'path', 'node-localstorage', 'worker_threads', '@nostrwatch/nip66'],
     outdir: 'dist/browser',
     bundle: true,
     platform: 'browser',
@@ -72,6 +71,7 @@ export async function buildWithWatch() {
 
   const nodeBuildOptions = {
     entryPoints: ['src/index.ts'],
+    external: ['@nostrwatch/nip66'],
     outdir: 'dist/node',
     bundle: true,
     platform: 'node',

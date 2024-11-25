@@ -1,6 +1,7 @@
-import {  WorkerOptions, AdapterWorkerResult, AdapterWebsocketWorker, IAdapterWebsocketWorker, AdapterWebsocketWorkerCommand } from "@nostrwatch/nip66/core"
+import {  WorkerOptions, AdapterWorkerResult, AdapterWebsocketWorker, IAdapterWebsocketWorker, SubscribeHandlers } from "@nostrwatch/nip66/core"
 
 import { IEvent } from "@nostrwatch/nip66/interfaces";
+import { AdapterWebsocketWorkerCommand } from "@nostrwatch/nip66/core";
 
 import { Filter } from "nostr-tools";
 
@@ -11,7 +12,6 @@ import { simplePoolAdapter } from '@nostr-fetch/adapter-nostr-tools-v2'
 import { SimplePool } from 'nostr-tools';
 import { SubCloser } from 'nostr-tools/abstract-pool';
 import { defaultWebsocketAdapterOptions, defaultWebsocketRequestBody, WebsocketAdapterResult, WebsocketAdapterOptions, WebsocketRequestBody } from 'node_modules/@nostrwatch/nip66/src/core';
-import { SubscribeHandlers } from "./NostrToolsMethods";
 
 interface NostrToolsWorkerCommand extends AdapterWebsocketWorkerCommand {}
 

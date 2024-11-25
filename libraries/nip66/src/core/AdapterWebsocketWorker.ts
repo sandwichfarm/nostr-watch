@@ -1,10 +1,7 @@
+import { Filter } from "nostr-tools";
 import { 
-  AdapterWebsocketWorkerCommand,
-} from "@base/interfaces/IAdapterWebsocketWorker";
-
-import { 
+  AdapterWorkerCommand,
   AdapterWorker, 
-  AdapterWorkerCommand, 
   AdapterWorkerResultType, 
   WorkerOptions 
 } from "./AdapterWorker"
@@ -16,6 +13,19 @@ export enum ResponseType {
   event = 'event',
   events = 'events',
   complete = 'complete'
+}
+
+export interface AdapterWebsocketWorkerOptions {
+  connectToRelays: string[]
+}
+
+export type AdapterWebsocketWorkerCommandTypes = "subscribe" | "fetch"
+
+export interface AdapterWebsocketWorkerCommand extends AdapterWorkerCommand {
+  type: AdapterWebsocketWorkerCommandTypes
+  hash: string,
+  filters: Filter[];
+  options?: AdapterWebsocketWorkerOptions
 }
 
 interface WebsocketResponse extends WebsocketResponseHeaders {

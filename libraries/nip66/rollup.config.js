@@ -104,7 +104,11 @@ export default [
       preserveModulesRoot: 'src',
       entryFileNames: '[name].esm.js'
     },
-    external: [],
+    external: [
+      '@nostrwatch/nip66',
+      '@base/*',
+      '@models/*',
+    ],
     plugins: [
       ...commonPlugins,
       ...browserPlugins

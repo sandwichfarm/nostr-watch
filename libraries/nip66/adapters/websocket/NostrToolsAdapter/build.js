@@ -16,8 +16,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const production = process.env.NODE_ENV === 'production';
+const watchMode = process.argv.includes('--watch');
 
-export async function buildWithWatch() {
+export async function build() {
   const livereloadPortBrowser = await getPort({ port: [53101, 53102] });
   const livereloadPortNode = await getPort({ port: [53103, 53104] });
 
@@ -83,17 +84,27 @@ export async function buildWithWatch() {
   };
 
   try {
-    const browserContext = await esbuild.context(browserBuildOptions);
-    // const nodeContext = await esbuild.context(nodeBuildOptions);
-
-    await browserContext.watch();
-    // await nodeContext.watch();
-
-    console.log('Watching for changes...');
+    if (watchMode) {
+      console.log('Watch mode enabled...');
+      const browserContext = await esbuild.context(browserBuildOptions);
+      await browserContext.watch();
+    } else {
+      console.log('Building...');
+      await Promise.all([
+        esbuild.build(browserBuildOptions),
+        esbuild.build(nodeBuildOptions),
+      ]);
+      console.log('Build completed successfully!');
+    }
   } catch (error) {
     console.error('Build failed:', error);
     process.exit(1);
   }
 }
 
-buildWithWatch();
+process.on('SIGINT', () => {
+  console.log('Terminating process...');
+  process.exit(0);
+});
+
+build();

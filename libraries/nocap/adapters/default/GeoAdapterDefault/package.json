@@ -36,6 +36,7 @@
     "cross-fetch": "^4.0.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
     "@nostrwatch/nocap": "*",
     "@rollup/plugin-commonjs": "^28.0.0",
@@ -52,7 +53,9 @@
     "tslib": "^2.7.0",
     "typescript": "^5.6.2",
     "vitest": "0.34.6",
-    "vitest-nostr": "0.4.1"
+    "vitest-nostr": "0.4.1",
+    "vitest-websocket-mock": "^0.4.0",
+    "webpack": "^5.96.1"
   },
   "peerDependencies": {
     "vitest": "^0.32.0"

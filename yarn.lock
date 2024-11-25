@@ -2579,25 +2579,36 @@ __metadata:
     "@awalgawe/esbuild-typescript-paths-plugin": "npm:^1.0.1"
     "@types/chalk": "npm:^2.2.4"
     "@types/debug": "npm:^4.1.12"
+    "@types/events": "npm:^3"
     "@types/path-browserify": "npm:^1"
     "@types/power-assert": "npm:^1.5.12"
     "@types/ws": "npm:^8"
     ajv: "npm:^8.17.1"
+    browserify-zlib: "npm:^0.2.0"
+    buffer: "npm:^6.0.3"
     chalk: "npm:^5.3.0"
     chokidar-cli: "npm:^3.0.0"
     cross-fetch: "npm:^4.0.0"
+    crypto-browserify: "npm:^3.12.1"
     esbuild: "npm:^0.24.0"
     esbuild-plugin-alias-path: "npm:^2.0.2"
     esbuild-plugin-node-polyfills: "npm:^1.0.2"
     esbuild-plugin-polyfill-node: "npm:^0.3.0"
     esbuild-ts-paths: "npm:^1.1.3"
+    events: "npm:^3.3.0"
     globby: "npm:^14.0.2"
+    https-browserify: "npm:^1.0.0"
+    os-browserify: "npm:^0.3.0"
     path-browserify: "npm:^1.0.1"
     power-assert: "npm:^1.6.1"
+    process: "npm:^0.11.10"
+    stream-browserify: "npm:^3.0.0"
+    stream-http: "npm:^3.2.0"
     tsc-alias: "npm:^1.8.10"
     tseep: "npm:^1.3.1"
     typescript: "npm:^5.6.3"
     url: "npm:^0.11.4"
+    util: "npm:^0.12.5"
     uvu: "npm:^0.5.6"
     ws: "npm:^8.18.0"
   languageName: unknown
@@ -2709,6 +2720,7 @@ __metadata:
     "@types/node": "npm:20.14.8"
     murmurhash: "npm:2.0.1"
     promise-deferred: "npm:2.0.4"
+    vite: "npm:^5.4.11"
     vite-plugin-worker: "npm:1.0.5"
     web-worker: "npm:1.3.0"
   languageName: unknown
@@ -2868,6 +2880,7 @@ __metadata:
     prettier: "npm:^3.0.0"
     queue: "npm:7.0.0"
     rimraf: "npm:^6.0.1"
+    rollup: "npm:^4.27.4"
     rollup-plugin-cleandir: "npm:3.0.0"
     rollup-plugin-copy: "npm:3.5.0"
     rollup-plugin-livereload: "npm:2.0.5"
@@ -2928,6 +2941,7 @@ __metadata:
     rollup-plugin-circular-dependencies: "npm:^1.1.2"
     surrealdb: "npm:^1.0.6"
     tsc: "npm:^2.0.4"
+    tslib: "npm:^2.8.1"
     typescript: "npm:^5.6.3"
     vite: "npm:^5.4.11"
     vite-plugin-node-polyfills: "npm:^0.22.0"
@@ -2984,6 +2998,7 @@ __metadata:
     nostr-fetch: "npm:^0.16.0"
     nostr-tools: "npm:^2.7.2"
     prettier: "npm:^3.0.0"
+    rollup: "npm:^4.27.4"
     rollup-plugin-copy: "npm:3.5.0"
     rollup-plugin-livereload: "npm:2.0.5"
     rollup-plugin-node-polyfills: "npm:0.2.1"
@@ -3016,7 +3031,6 @@ __metadata:
     jwt-encode: "npm:1.0.1"
     minisearch: "npm:^7.1.0"
     node-localstorage: "npm:^3.0.5"
-    node-polyfill-webpack-plugin: "npm:4.0.0"
     nostr-tools: "npm:2.7.2"
     p-queue: "npm:8.0.1"
     prettier: "npm:^3.0.0"
@@ -3041,6 +3055,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@nostrwatch/nocap-dns-adapter-default@workspace:libraries/nocap/adapters/default/DnsAdapterDefault"
   dependencies:
+    "@babel/core": "npm:^7.26.0"
     "@babel/plugin-transform-modules-commonjs": "npm:7.23.3"
     "@nostrwatch/nocap": "npm:*"
     "@types/promise-deferred": "npm:2.0.5"
@@ -3050,6 +3065,8 @@ __metadata:
     tsc-alias: "npm:^1.8.10"
     vitest: "npm:0.34.6"
     vitest-nostr: "npm:0.4.1"
+    vitest-websocket-mock: "npm:^0.4.0"
+    webpack: "npm:^5.96.1"
   peerDependencies:
     vitest: ^0.32.0
   languageName: unknown
@@ -3073,6 +3090,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@nostrwatch/nocap-every-adapter-default@workspace:libraries/nocap/adapters/default/ZEveryAdapterDefault"
   dependencies:
+    "@babel/core": "npm:^7.26.0"
     "@babel/plugin-transform-modules-commonjs": "npm:7.23.3"
     "@nostrwatch/nocap-dns-adapter-default": "npm:*"
     "@nostrwatch/nocap-geo-adapter-default": "npm:*"
@@ -3096,6 +3114,7 @@ __metadata:
     typescript: "npm:^5.6.2"
     vitest: "npm:0.34.6"
     vitest-nostr: "npm:0.4.1"
+    vitest-websocket-mock: "npm:^0.4.0"
     webpack: "npm:^5.95.0"
     webpack-cli: "npm:^5.1.4"
   peerDependencies:
@@ -3107,6 +3126,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@nostrwatch/nocap-geo-adapter-default@workspace:libraries/nocap/adapters/default/GeoAdapterDefault"
   dependencies:
+    "@babel/core": "npm:^7.26.0"
     "@babel/plugin-transform-modules-commonjs": "npm:7.23.3"
     "@nostrwatch/nocap": "npm:*"
     "@rollup/plugin-commonjs": "npm:^28.0.0"
@@ -3125,6 +3145,8 @@ __metadata:
     typescript: "npm:^5.6.2"
     vitest: "npm:0.34.6"
     vitest-nostr: "npm:0.4.1"
+    vitest-websocket-mock: "npm:^0.4.0"
+    webpack: "npm:^5.96.1"
   peerDependencies:
     vitest: ^0.32.0
   languageName: unknown
@@ -3134,6 +3156,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@nostrwatch/nocap-info-adapter-default@workspace:libraries/nocap/adapters/default/InfoAdapterDefault"
   dependencies:
+    "@babel/core": "npm:^7.26.0"
     "@babel/plugin-transform-modules-commonjs": "npm:7.23.3"
     "@nostrwatch/nocap": "npm:*"
     "@sandwichfarm/torfetch": "https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277"
@@ -3150,6 +3173,8 @@ __metadata:
     tsc-alias: "npm:^1.8.10"
     vitest: "npm:0.34.6"
     vitest-nostr: "npm:0.4.1"
+    vitest-websocket-mock: "npm:^0.4.0"
+    webpack: "npm:^5.96.1"
   languageName: unknown
   linkType: soft
 
@@ -3179,6 +3204,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@nostrwatch/nocap-ssl-adapter-default@workspace:libraries/nocap/adapters/default/SslAdapterDefault"
   dependencies:
+    "@babel/core": "npm:^7.26.0"
     "@babel/plugin-transform-modules-commonjs": "npm:7.23.3"
     "@nostrwatch/nocap": "npm:*"
     "@nostrwatch/nocap-every-adapter-default": "workspace:^"
@@ -3203,6 +3229,8 @@ __metadata:
     typescript: "npm:^5.6.2"
     vitest: "npm:0.34.6"
     vitest-nostr: "npm:0.4.1"
+    vitest-websocket-mock: "npm:^0.4.0"
+    webpack: "npm:^5.96.1"
     workspace: "npm:^0.0.1-preview.1"
     yarn: "npm:^1.22.22"
   languageName: unknown
@@ -3212,6 +3240,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@nostrwatch/nocap-websocket-adapter-default@workspace:libraries/nocap/adapters/default/WebsocketAdapterDefault"
   dependencies:
+    "@babel/core": "npm:^7.26.0"
     "@babel/plugin-transform-modules-commonjs": "npm:7.23.3"
     "@nostrwatch/nocap": "workspace:^"
     "@nostrwatch/nocap-dns-adapter-default": "npm:*"
@@ -3235,6 +3264,8 @@ __metadata:
     typescript: "npm:^5.6.2"
     vitest: "npm:0.34.6"
     vitest-nostr: "npm:0.4.1"
+    vitest-websocket-mock: "npm:^0.4.0"
+    webpack: "npm:^5.96.1"
     websocket-polyfill: "npm:^0.0.3"
     ws: "npm:8.18.0"
   languageName: unknown
@@ -4935,6 +4966,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/events@npm:^3":
+  version: 3.0.3
+  resolution: "@types/events@npm:3.0.3"
+  checksum: 10c0/3a56f8c51eb4ebc0d05dcadca0c6636c816acc10216ce36c976fad11e54a01f4bb979a07211355686015884753b37f17d74bfdc7aaf4ebb027c1e8a501c7b21d
+  languageName: node
+  linkType: hard
+
 "@types/fs-extra@npm:^8.0.1":
   version: 8.1.5
   resolution: "@types/fs-extra@npm:8.1.5"
@@ -6011,7 +6049,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/utils@npm:2.1.5":
+"@vitest/utils@npm:2.1.5, @vitest/utils@npm:^2.0.3":
   version: 2.1.5
   resolution: "@vitest/utils@npm:2.1.5"
   dependencies:
@@ -16877,7 +16915,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rollup@npm:^4.13.0, rollup@npm:^4.20.0, rollup@npm:^4.24.0":
+"rollup@npm:^4.13.0, rollup@npm:^4.20.0, rollup@npm:^4.24.0, rollup@npm:^4.27.4":
   version: 4.27.4
   resolution: "rollup@npm:4.27.4"
   dependencies:
@@ -18837,7 +18875,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.0.0, tslib@npm:^2.0.3, tslib@npm:^2.3.0, tslib@npm:^2.4.0, tslib@npm:^2.4.1, tslib@npm:^2.6.2, tslib@npm:^2.7.0, tslib@npm:^2.8.0":
+"tslib@npm:^2.0.0, tslib@npm:^2.0.3, tslib@npm:^2.3.0, tslib@npm:^2.4.0, tslib@npm:^2.4.1, tslib@npm:^2.6.2, tslib@npm:^2.7.0, tslib@npm:^2.8.0, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62
@@ -19913,6 +19951,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"vitest-websocket-mock@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "vitest-websocket-mock@npm:0.4.0"
+  dependencies:
+    "@vitest/utils": "npm:^2.0.3"
+    mock-socket: "npm:^9.2.1"
+  peerDependencies:
+    vitest: ">=2"
+  checksum: 10c0/c12d8c30903a54273c2d5432cc63d9e457415073a58669c4bb1355b24a68bd45579a116b303ef7f308399f399a1c59fcb256c85423e54920f5832442d43b1f6f
+  languageName: node
+  linkType: hard
+
 "vitest@npm:0.34.6, vitest@npm:^0.34.1":
   version: 0.34.6
   resolution: "vitest@npm:0.34.6"
@@ -20358,7 +20408,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"webpack@npm:^5.0.0, webpack@npm:^5.95.0":
+"webpack@npm:^5.0.0, webpack@npm:^5.95.0, webpack@npm:^5.96.1":
   version: 5.96.1
   resolution: "webpack@npm:5.96.1"
   dependencies:

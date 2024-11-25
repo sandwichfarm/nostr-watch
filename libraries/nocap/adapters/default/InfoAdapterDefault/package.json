@@ -40,6 +40,7 @@
     "tor-request": "^3.1.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
     "@nostrwatch/nocap": "*",
     "@types/promise-deferred": "2.0.5",
@@ -51,6 +52,8 @@
     "rollup-plugin-copy": "^3.5.0",
     "tsc-alias": "^1.8.10",
     "vitest": "0.34.6",
-    "vitest-nostr": "0.4.1"
+    "vitest-nostr": "0.4.1",
+    "vitest-websocket-mock": "^0.4.0",
+    "webpack": "^5.96.1"
   }
 }

@@ -39,6 +39,7 @@
     "ssl-checker": "2.0.8"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
     "@nostrwatch/nocap": "*",
     "@nostrwatch/nocap-every-adapter-default": "workspace:^",
@@ -60,6 +61,8 @@
     "typescript": "^5.6.2",
     "vitest": "0.34.6",
     "vitest-nostr": "0.4.1",
+    "vitest-websocket-mock": "^0.4.0",
+    "webpack": "^5.96.1",
     "workspace": "^0.0.1-preview.1",
     "yarn": "^1.22.22"
   }

@@ -1,6 +1,7 @@
 name: Deploy GUI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - next

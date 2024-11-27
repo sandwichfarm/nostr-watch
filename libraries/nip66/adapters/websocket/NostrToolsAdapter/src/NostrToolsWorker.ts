@@ -70,7 +70,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     console.log('NostrToolsWorker: _subscribe', request)
     return new Promise(async (resolve, reject) => {
       let { filters, relays, options } = request;
-      const { stream } = options ?? defaultWebsocketAdapterOptions;
+      const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
       const effectiveRelays = relays ?? this.relays;
       const result: IEvent[] = [];
       let count: number = 0;
@@ -93,13 +93,15 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
         callbacks?.onclose?.();
       }
       const oneose = () => {
+        callbacks?.oneose?.();
+        if(keepAlive) return;
         if(stream){
           resolve(count > 0)
         }
         else {
           resolve(result)
         }
-        callbacks?.oneose?.();
+        
       }
       console.log('NostrToolsWorker: _subscribe: this.pool.subscribeMany', effectiveRelays, filters)
       this.pool!.subscribeMany(

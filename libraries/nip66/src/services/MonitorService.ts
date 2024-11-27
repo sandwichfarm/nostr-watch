@@ -6,7 +6,6 @@ import { defaultWebsocketAdapterOptions, IWebsocketAdapter, SubscribeHandlers, W
 import { IEvent } from '@base/interfaces';
 import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 import { ICheck, IMonitor } from '@base/models';
-import { k30166ToICheck } from '@base/transform';
 import { Filter } from 'nostr-tools';
 import { MonitorManager } from '../managers/MonitorManager';
 import { Monitor } from '@base/models/Monitor';
@@ -102,93 +101,46 @@ export class MonitorService extends Service {
   }
   
   async sync(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
-    type Kind = number;
-    type Pubkey = string;
-    type Timestamp = number;
-  
-    let since: Map<Pubkey, Map<Kind, Timestamp>> = new Map();
-    let until: Map<Pubkey, Map<Kind, Timestamp>> = new Map();
-  
-    const getOrInitNestedMap = (outerMap: Map<Pubkey, Map<Kind, Timestamp>>, pubkey: Pubkey): Map<Kind, Timestamp> => {
-      if (!outerMap.has(pubkey)) {
-        outerMap.set(pubkey, new Map());
-      }
-      return outerMap.get(pubkey)!;
-    };
-  
-    const onevent = (event: IEvent) => {
-      callbacks?.onevent?.(event);
-      if (!event?.created_at) return;
-    
-      const createdAt = event.created_at;
-      const pubkey = event.pubkey;
-      const kind = event.kind;
-    
-      const sinceMap = getOrInitNestedMap(since, pubkey);
-      const untilMap = getOrInitNestedMap(until, pubkey);
-    
-      // Update "since"
-      if (!sinceMap.has(kind) || sinceMap.get(kind)! > createdAt) {
-        sinceMap.set(kind, createdAt);
-      }
-    
-      // Update "until"
-      if (!untilMap.has(kind) || untilMap.get(kind)! < createdAt) {
-        untilMap.set(kind, createdAt);
-      }
-    
-      // Validate logic: `since` must always be <= `until`
-      const currentSince = sinceMap.get(kind)!;
-      const currentUntil = untilMap.get(kind)!;
-      if (currentSince > currentUntil) {
-        console.error(
-          `Invalid state detected: since (${currentSince}) > until (${currentUntil}) for pubkey: ${pubkey}, kind: ${kind}`
-        );
-      }
-    };
-    
-    console.log('sync: args', args);
-    const results = await this._fetch(args, { ...callbacks, onevent });
-    console.log('sync: results', results);
-  
-    const updateMonitors = () => {
-      for (const [pubkey, sinceMap] of Array.from(since.entries())) {
-        const monitor = this.monitors.get(pubkey);
-        if (!monitor) {
-          console.error(`Monitor not found for pubkey: ${pubkey}`);
-          continue;
-        }
-    
-        const untilMap = until.get(pubkey);
-        if (!untilMap) {
-          console.warn(`No "until" map found for pubkey: ${pubkey}`);
-          continue;
-        }
-    
-        for (const [kind, sinceTimestamp] of Array.from(sinceMap.entries())) {
-          const untilTimestamp = untilMap.get(kind);
-          if (typeof untilTimestamp === 'undefined') {
-            console.warn(`No "until" timestamp for kind: ${kind} under pubkey: ${pubkey}`);
-            continue;
-          }
-    
-          // Validate before setting sync
-          if (sinceTimestamp > untilTimestamp) {
-            console.error(
-              `Invalid sync state: since (${sinceTimestamp}) > until (${untilTimestamp}) for pubkey: ${pubkey}, kind: ${kind}`
-            );
-            continue;
-          }
-    
-          monitor.setLastSync(kind, 'since', sinceTimestamp);
-          monitor.setLastSync(kind, 'until', untilTimestamp);
-        }
-      }
-    };    
-  
-    updateMonitors();
-  
+    let index = 0
+    const onevent = (event: IEvent) => callbacks?.onevent?.(event);
+    const onevents = (events: IEvent[]) => callbacks?.onevents?.(events);
+    const oneose = () => { 
+      this.updateCheckpoint(args?.filters![index]); 
+      index++;
+      callbacks?.oneose?.();
+    }
+    args.sync = true;
+    const results = await this._fetch(args, { onevents, oneose, onevent });
+    this.updateCheckpoints(args?.filters || []);
+    console.log(`sync complete: ${results.length} events`);
     return results;
+  }
+
+  updateCheckpoint(filter: Filter): void {
+    const { authors, kinds, since, until } = filter;
+    console.log(`updateCheckpoints: authors: ${authors} kinds: ${kinds} since: ${since} until: ${until}`);
+    for(const pubkey of authors! || []){
+      const monitor = this.monitors.get(pubkey);
+      if (!monitor) {
+        console.error(`Monitor not found for pubkey: ${pubkey}`);
+        continue;
+      }
+      for(const kind of kinds! || []){
+        if(since){
+          monitor.setLastSync(kind, 'since', since);
+        }
+        if(until){
+          monitor.setLastSync(kind, 'until', until);
+        } 
+      }
+    }
+  }
+
+  updateCheckpoints(filters: Filter[]): void {
+    console.log(`updateCheckpoints`, filters.length);
+    for (const filter of Array.from(filters)) {
+      this.updateCheckpoint(filter)
+    }    
   }
 
   async modifyCacheFilters(filters: Filter[]): Promise<Filter[]> {
@@ -204,7 +156,7 @@ export class MonitorService extends Service {
           if(cachedRange?.since){
             if(requestedSince && cachedRange.since < requestedSince) {
               console.log(`modifyCacheFilters: since before: ${filter.since} since after: ${cachedRange.since} requested: ${requestedSince} `);
-              // filter.since = cachedRange.since;
+              filter.since = cachedRange.since;
             }
           }
           else {
@@ -229,7 +181,7 @@ export class MonitorService extends Service {
           if(cachedRange?.until){
             if(requestedSince && cachedRange.until > requestedSince) {
               console.log(`modifyWebsocketFilters: since before: ${filter.since} since after: ${cachedRange.until} requested: ${requestedSince} `);
-              // filter.since = cachedRange.until;
+              filter.since = cachedRange.until;
             }
             else {
               console.log(`modifyWebsocketFilters: since unchanged`);
@@ -260,7 +212,7 @@ export class MonitorService extends Service {
         if(event.kind !== 10166) return;
         this.monitorManager.handleEvent(event);
     }
-    const result = await this.sync(
+    const result = await this.fetch(
       {
         filters: [{kinds: [10166]}], 
         relays: this.nip66Relays, 
@@ -272,7 +224,8 @@ export class MonitorService extends Service {
         }
       }, 
       { onevent } );
-    StateManager.emit(`bootstrap:monitorRegistrations`, { complete: true, status: "success", count: result?.length || 0 });
+
+    // StateManager.emit(`bootstrap:monitorRegistrations`, { complete: true, status: "success" || 0 });
   }
 
   async bootstrapMonitorData(): Promise<void> {
@@ -281,7 +234,7 @@ export class MonitorService extends Service {
     const authors = monitors.map((monitor: IMonitor) => monitor.pubkey);
     authors.length = authors.length > 4 ? 4 : authors.length;
     const onevent = this.monitorManager.handleEvent.bind(this.monitorManager);
-    const result = await this.sync(
+    const result = await this.fetch(
       {
         filters: [{
           authors,
@@ -391,8 +344,9 @@ export class MonitorService extends Service {
     }
     const monitors = this.sortedMonitors.slice(0, 3);
     let filters: Filter[] = [];
+    const until = Math.round(Date.now()/1000);
     monitors.forEach((monitor) => {
-      filters.push(monitor.checkFilter);
+      filters.push({...monitor.checkFilter, until});
     });
     return filters;
   }
@@ -418,6 +372,29 @@ export class MonitorService extends Service {
     }
     const result: IEvent[] | boolean | undefined = await this.sync( { relays, filters, options }, { onevent, onevents } );
     return result;
+  }
+
+  async modifyReturnedEvents(events: IEvent[]): Promise<IEvent[]> {
+    return events;
+    // return this.removeStaleChecks(events);  
+  }
+
+  async removeStaleChecks(events: IEvent[]): Promise<IEvent[]> {
+    const monitors = Array.from(this.monitors.values());
+    const deleteFilters: Filter[] = []
+    let timelyChecks: IEvent[] = []
+    for(const monitor of monitors){
+      const {pubkey, frequency} = monitor.registration;
+      if(!frequency) {
+        continue;
+      }
+      const until = monitor.isOnlineAfter;
+      deleteFilters.push({ authors: [ pubkey ], until })
+      this.cacheAdapter.DELETE(deleteFilters)
+      const onlineRelays = await monitor.returnOnlineRelays(events.filter(event => event.pubkey === monitor.pubkey));
+      timelyChecks = [...timelyChecks, ...onlineRelays]
+    }
+    return timelyChecks;
   }
 
   async getMonitor(pubkey: string): Promise<Monitor | undefined> {

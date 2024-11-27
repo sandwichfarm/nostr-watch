@@ -8,7 +8,6 @@ import type { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 
 import type { Workers } from './Workers';
 import { StateManager } from '@base/managers/StateManager';
-// import { getInheritanceChainFromInstance } from '../utils/classes';
 
 type AnyAdapter = IWebsocketAdapter | ICacheAdapter;
 
@@ -124,7 +123,6 @@ export default class {
     const { MonitorService } = await import('../services/MonitorService')
     this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
     this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
-    
     this.monitorService.init()
   }
 

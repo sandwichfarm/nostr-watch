@@ -1,13 +1,22 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { get } from 'svelte/store';
     import { Input } from '$lib/components/ui/input/index.js';
     import { Button } from '$lib/components/ui/button2/index.js';
     import MiniSearch from 'minisearch';
     import { Accordion } from 'radix-svelte';
-    import type { Writable } from 'svelte/store';
+    import { writable, derived, type Writable } from 'svelte/store';
 
-    import { filterFormatters } from './config.js';
+    import { filterFormatters as _filterFormatters } from './config.js';
     import Badge from '$lib/components/ui/badge/badge.svelte';
+
+    import {
+        type ConsoleFilter,
+        createRelayFilters,
+        createFilter
+    } from '$lib/utils/filter-dom.js'; // Importing from the shared module
+
+    import { debounce } from 'lodash'; // Ensure lodash is installed
 
     // **Props Passed to the Component**
     export let tableData: Writable<{ data: any[] }>;
@@ -23,143 +32,194 @@
     let rootDisabled: boolean = false;
     let contentTransition: boolean = true;
 
-    // **Filter Conditions for Number Filters**
-    type FilterCondition = '=' | '<' | '>' | '!=';
+    // **Inverted Index**
+    type RecordData = { id: string; [key: string]: any };
+    type InvertedIndex = {
+        [filterKey: string]: {
+            [option: string]: Set<string>;
+        };
+    };
+    const invertedIndex: InvertedIndex = {};
 
-    // **Base Interface for All Filters**
-    interface ConsoleFilterBase {
-        key: string;
-        humanReadableName: string;
-        showAll?: boolean;
-        searchTerm?: string;
-        filteredDistinctValues?: string[];
-        mode: 'AND' | 'OR' | 'UNIQUE'; // Modes based on filter type
-    }
+    // **Relay Filters**
+    const relayFilters: Writable<ConsoleFilter[]> = writable([]);
 
-    // **Specific Filter Types**
-    interface BooleanFilter extends ConsoleFilterBase {
-        type: 'boolean';
-    }
+    // **Show All State per Filter Group**
+    const showAllFilters = writable<Record<string, boolean>>({});
 
-    interface NumberFilter extends ConsoleFilterBase {
-        type: 'number';
-        conditions: FilterCondition[];
-        inputValues: Record<FilterCondition, number | null>; // Stores input values for conditions
-    }
+    // **Disabled Filters Store**
+    const disabledFilters: Writable<Record<string, Set<string>>> = writable({});
 
-    interface StringFilter extends ConsoleFilterBase {
-        type: 'string';
-        distinctValues: string[];
-    }
+    // **Active Filters**
+    $: activeFilters = $filters;
 
-    interface ArrayFilter extends ConsoleFilterBase {
-        type: 'array';
-        distinctValues: string[];
-    }
-
-    type ConsoleFilter = BooleanFilter | NumberFilter | StringFilter | ArrayFilter;
-
-    let relayFilters: ConsoleFilter[] = [];
-
-    // **Initialize relayFilters Whenever tableData or filtersInclude Changes**
-    $: {
-        const data = get(tableData).data;
-        relayFilters = createRelayFilters(data, filtersInclude, humanReadableNames);
-    }
-
-    // **Function to Create Filters Based on Data**
-    function createRelayFilters(
-        data: any[],
-        filtersInclude: string[],
-        humanReadableNames: Record<string, string>
-    ): ConsoleFilter[] {
-        if (data.length === 0) {
-            return [];
-        }
-        return Object.keys(data[0])
-            .filter((key) => filtersInclude.includes(key))
-            .map((key) => createFilter(key, data, humanReadableNames))
-            .filter((filter): filter is ConsoleFilter => filter !== null);
-    }
-
-    // **Function to Create a Single Filter Based on Key and Data**
-    function createFilter(
-        key: string,
-        data: any[],
-        humanReadableNames: Record<string, string>
-    ): ConsoleFilter | null {
-        const firstValue = data.find((item) => item[key] !== null && item[key] !== undefined)?.[key];
-        const humanReadableName = humanReadableNames[key] ?? key;
-
-        let mode: 'AND' | 'OR' | 'UNIQUE' = 'OR'; // Default mode
-
-        // **Determine Mode Based on Filter Type**
-        if (typeof firstValue === 'boolean') {
-            mode = 'UNIQUE'; // Boolean filters allow only one selection
-        }
-
-        if (Array.isArray(firstValue)) {
-            mode = 'AND'; // Array filters typically use AND
-        }
-
-        // **Return the Appropriate Filter Object**
-        if (typeof firstValue === 'boolean') {
-            return {
-                key,
-                humanReadableName,
-                type: 'boolean',
-                mode,
-            };
-        } else if (typeof firstValue === 'number') {
-            return {
-                key,
-                humanReadableName,
-                type: 'number',
-                conditions: ['=', '<', '>', '!='],
-                inputValues: {
-                    '=': null,
-                    '<': null,
-                    '>': null,
-                    '!=': null,
-                },
-                mode,
-            };
-        } else if (typeof firstValue === 'string') {
-            const distinctValues = Array.from(new Set(data.map((item) => item[key]).filter((val) => typeof val === 'string')));
-            return {
-                key,
-                humanReadableName,
-                type: 'string',
-                distinctValues,
-                showAll: false,
-                searchTerm: '',
-                filteredDistinctValues: distinctValues,
-                mode,
-            };
-        } else if (Array.isArray(firstValue)) {
-            const distinctValues = Array.from(
-                new Set(
-                    data
-                        .flatMap((item) => item[key])
-                        .filter((val) => typeof val === 'string')
-                )
-            );
-            return {
-                key,
-                humanReadableName,
-                type: 'array',
-                distinctValues,
-                showAll: false,
-                searchTerm: '',
-                filteredDistinctValues: distinctValues,
-                mode,
-            };
-        }
-
-        return null;
-    }
-
+    // **MiniSearch Instances**
     let miniSearchInstances: Record<string, MiniSearch> = {};
+
+    // **Helper Function for Intersection**
+    function intersection(setA: Set<string>, setB: Set<string>): Set<string> {
+        const _intersection = new Set<string>();
+        for (const elem of setA) {
+            if (setB.has(elem)) {
+                _intersection.add(elem);
+            }
+        }
+        return _intersection;
+    }
+
+    // **Initialize relayFilters and Inverted Index Once on Mount**
+    onMount(() => {
+        const data = get(tableData).data;
+        buildInvertedIndex(data, filtersInclude);
+        const initialFilters = createRelayFilters(data, filtersInclude, humanReadableNames);
+        relayFilters.set(initialFilters);
+
+        // Initialize showAllFilters
+        const initialShowAll: Record<string, boolean> = {};
+        initialFilters.forEach(filter => {
+            initialShowAll[filter.key] = false;
+        });
+        showAllFilters.set(initialShowAll);
+
+        // Initialize disabledFilters
+        updateDisabledFilters(get(filters));
+    });
+
+    // **Build Inverted Index**
+    function buildInvertedIndex(data: RecordData[], filtersInclude: string[]) {
+        filtersInclude.forEach(filterKey => {
+            invertedIndex[filterKey] = {};
+            data.forEach(record => {
+                const value = record[filterKey];
+                if (value !== undefined && value !== null) {
+                    const values = Array.isArray(value) ? value : [value];
+                    values.forEach(val => {
+                        const option = String(val).toLowerCase();
+                        if (!invertedIndex[filterKey][option]) {
+                            invertedIndex[filterKey][option] = new Set();
+                        }
+                        invertedIndex[filterKey][option].add(record.id);
+                    });
+                }
+            });
+        });
+    }
+
+    // **Compute Active Record IDs Based on Active Filters**
+    function computeActiveRecordIDs(activeFilters: Record<string, any>): Set<string> {
+        let activeRecordIDs: Set<string> | null = null;
+
+        // Iterate over each filter block
+        $relayFilters.forEach(filter => {
+            const filterKey = filter.key;
+            const filterMode = filter.mode || 'AND'; // Default to 'AND' if mode is not set
+            const filterValue = activeFilters[filterKey];
+
+            if (filterValue === undefined || filterValue === null) {
+                // No active filters in this block
+                return;
+            }
+
+            let filterRecordIDs: Set<string> = new Set();
+
+            if (filter.type === 'boolean' || filter.type === 'string' || filter.type === 'array') {
+                const options = Array.isArray(filterValue) ? filterValue : [filterValue];
+                options.forEach(option => {
+                    const normalizedOption = String(option).toLowerCase();
+                    const optionRecordIDs = invertedIndex[filterKey]?.[normalizedOption];
+                    if (optionRecordIDs) {
+                        optionRecordIDs.forEach(id => filterRecordIDs.add(id));
+                    }
+                });
+            } else if (filter.type === 'number') {
+                // Handle number filters based on conditions (extend as needed)
+                // Example: exact match
+                const value = filterValue;
+                const optionRecordIDs = invertedIndex[filterKey]?.[String(value).toLowerCase()];
+                if (optionRecordIDs) {
+                    optionRecordIDs.forEach(id => filterRecordIDs.add(id));
+                }
+            }
+
+            if (filterMode === 'OR' || filterMode === 'UNIQUE') {
+                // Union within the "OR" or "UNIQUE" block
+                if (activeRecordIDs === null) {
+                    activeRecordIDs = new Set(filterRecordIDs);
+                } else {
+                    activeRecordIDs = intersection(activeRecordIDs, filterRecordIDs);
+                }
+            } else if (filterMode === 'AND') {
+                // Intersection across all "AND" blocks
+                if (activeRecordIDs === null) {
+                    activeRecordIDs = new Set(filterRecordIDs);
+                } else {
+                    activeRecordIDs = intersection(activeRecordIDs, filterRecordIDs);
+                }
+            }
+        });
+
+        return activeRecordIDs || new Set(get(tableData).data.map(record => record.id));
+    }
+
+    // **Update Disabled Filters Based on Active Filters**
+    function updateDisabledFilters(activeFilters: Record<string, any>) {
+        const activeRecordIDs = computeActiveRecordIDs(activeFilters);
+        const newDisabledFilters: Record<string, Set<string>> = {};
+
+        $relayFilters.forEach(filter => {
+            const filterKey = filter.key;
+            const filterMode = filter.mode || 'AND';
+            const filterValue = activeFilters[filter.key];
+
+            newDisabledFilters[filterKey] = new Set();
+
+            Object.keys(invertedIndex[filterKey]).forEach(option => {
+                const normalizedOption = String(option).toLowerCase();
+                const optionRecordIDs = invertedIndex[filterKey][option];
+
+                let isDisabled = false;
+
+                if (filterMode === 'OR' || filterMode === 'UNIQUE') {
+                    // Simulate selecting this option
+                    const tempActiveFilters = { ...activeFilters };
+
+                    if (filterMode === 'UNIQUE') {
+                        // Ensure only this option is selected
+                        tempActiveFilters[filterKey] = [option];
+                    } else if (filterMode === 'OR') {
+                        if (Array.isArray(tempActiveFilters[filterKey])) {
+                            if (!tempActiveFilters[filterKey].includes(option)) {
+                                tempActiveFilters[filterKey].push(option);
+                            }
+                        } else {
+                            tempActiveFilters[filterKey] = [option];
+                        }
+                    }
+
+                    const tempActiveRecordIDs = computeActiveRecordIDs(tempActiveFilters);
+
+                    // Check if selecting this option would result in at least one record
+                    const hasIntersection = [...optionRecordIDs].some(id => tempActiveRecordIDs.has(id));
+
+                    if (!hasIntersection) {
+                        isDisabled = true;
+                    }
+                } else {
+                    // In "AND" mode, use the standard disabled logic
+                    const hasIntersection = [...optionRecordIDs].some(id => activeRecordIDs.has(id));
+                    if (!hasIntersection) {
+                        isDisabled = true;
+                    }
+                }
+
+                if (isDisabled) {
+                    newDisabledFilters[filterKey].add(normalizedOption);
+                }
+            });
+        });
+
+        disabledFilters.set(newDisabledFilters);
+    }
 
     // **Initialize MiniSearch for Search-Enabled Filters**
     function initializeMiniSearch(filterKey: string, data: any[], options: any) {
@@ -171,27 +231,52 @@
             });
             // Prepare data for MiniSearch
             const miniSearchData = data.map(item => ({
-                id: item.id || JSON.stringify(item), // Ensure each document has a unique ID
+                id: item.id || JSON.stringify(item),
                 [filterKey]: Array.isArray(item[filterKey]) ? item[filterKey].join(' ') : item[filterKey]
             }));
             miniSearch.addAll(miniSearchData);
             miniSearchInstances[filterKey] = miniSearch;
+            console.log(`Initialized MiniSearch for ${filterKey}`);
         }
     }
 
+    // **Handle Search Input with Debounce**
+    const handleSearchInput = debounce((filterKey: string, searchTerm: string) => {
+        initializeMiniSearch(filterKey, get(tableData).data, filterOverrides[filterKey]?.miniSearchOptions);
+        const miniSearch = miniSearchInstances[filterKey];
+        const results = miniSearch.search(searchTerm);
+        const matchedValues = results.map(result => result[filterKey]).filter(v => v !== undefined);
+
+        const filter = $relayFilters.find(f => f.key === filterKey);
+        if (filter) {
+            if (filterOverrides[filterKey]?.type === 'search') {
+                if (filter.mode === 'UNIQUE') {
+                    // For UNIQUE mode, only one selection is allowed
+                    filters.update(currentFilters => ({
+                        ...currentFilters,
+                        [filter.key]: matchedValues.length > 0 ? [matchedValues[0]] : []
+                    }));
+                } else {
+                    // For OR and AND modes
+                    filters.update(currentFilters => ({
+                        ...currentFilters,
+                        [filter.key]: matchedValues
+                    }));
+                }
+            }
+        }
+    }, 300); // 300ms debounce
+
     // **Toggle Show All for Filters with Many Options**
     function toggleShowAllBadges(filterKey: string) {
-        relayFilters = relayFilters.map(filter => {
-            if (filter.key === filterKey && 'showAll' in filter) {
-                return { ...filter, showAll: !filter.showAll };
-            }
-            return filter;
+        showAllFilters.update(currentShowAll => {
+            return { ...currentShowAll, [filterKey]: !currentShowAll[filterKey] };
         });
     }
 
     // **Apply a Filter Value Based on Its Type and Mode**
     function applyFilter(filterKey: string, value: any) {
-        const filter = relayFilters.find(f => f.key === filterKey);
+        const filter = $relayFilters.find(f => f.key === filterKey);
         if (!filter) return;
 
         const mode = filter.mode;
@@ -209,7 +294,7 @@
                 }
             } else if (filter.type === 'string' || filter.type === 'array') {
                 if (mode === 'OR') {
-                    // OR mode allows multiple selections
+                    // OR mode allows multiple selections (union)
                     if (Array.isArray(existingFilter)) {
                         if (existingFilter.includes(value)) {
                             // Deselect the value
@@ -228,7 +313,7 @@
                         return { ...currentFilters, [filterKey]: [value] };
                     }
                 } else if (mode === 'AND') {
-                    // AND mode requires all selected values to be present
+                    // AND mode requires all selected values to be present (intersection)
                     if (Array.isArray(existingFilter)) {
                         if (existingFilter.includes(value)) {
                             // Deselect the value
@@ -281,12 +366,16 @@
 
     // **Set the Mode for a Specific Filter Group**
     function setFilterMode(filterKey: string, mode: 'AND' | 'OR' | 'UNIQUE') {
-        relayFilters = relayFilters.map(filter => {
-            if (filter.key === filterKey && filter.type !== 'boolean') {
-                return { ...filter, mode };
-            }
-            return filter;
+        relayFilters.update(currentFilters => {
+            return currentFilters.map(filter => {
+                if (filter.key === filterKey && filter.type !== 'boolean') {
+                    return { ...filter, mode };
+                }
+                return filter;
+            });
         });
+
+        console.log(`Set mode for ${filterKey} to ${mode}:`, $relayFilters.find(f => f.key === filterKey));
 
         // If switching to UNIQUE mode, ensure only one selection is active
         if (mode === 'UNIQUE') {
@@ -304,125 +393,46 @@
         }
     }
 
-    // **Clear a Specific Filter Group**
-    function clearFilter(filterKey: string) {
+    // **Clear a Specific Filter Group or Individual Value**
+    function clearFilter(filterKey: string, value?: any) {
         filters.update(currentFilters => {
-            const { [filterKey]: _, ...rest } = currentFilters;
-            return rest;
+            const existingFilter = currentFilters[filterKey];
+            if (value !== undefined) {
+                if (Array.isArray(existingFilter)) {
+                    const newValues = existingFilter.filter(v => v !== value);
+                    if (newValues.length > 0) {
+                        return { ...currentFilters, [filterKey]: newValues };
+                    }
+                } else if (existingFilter === value) {
+                    const { [filterKey]: _, ...rest } = currentFilters;
+                    return rest;
+                }
+            } else {
+                // Clear the entire filter group
+                const { [filterKey]: _, ...rest } = currentFilters;
+                return rest;
+            }
+            return currentFilters;
         });
+        console.log(`Cleared filter for ${filterKey}${value !== undefined ? `: ${value}` : '.'}`);
     }
 
     // **Clear All Filters**
     function clearAllFilters() {
         filters.set({});
+        console.log('Cleared all filters.');
     }
 
     // **Format Filter Values Using Provided Formatters**
+    export let filterFormatters: Record<string, (value: any) => string> = _filterFormatters;
+
     const format = (key: string, values: string[]) => {
         return values.map((value: string) => filterFormatters?.[key]?.(value) || value);
     }
 
-    // **Reactive Statement to Track Active Filters**
-    $: activeFilters = $filters;
-
-    // **Button Styling (Classes Only, No Styles Added)**
-    $: buttonClass = `mb-2 mr-2 text-sm font-bold py-0 px-1`;
-    $: buttonClassSelected = `bg-blue-500 text-white`;
-    
-    // **Helper Function to Format Active Filters List**
-    function formatFiltersList(filter: ConsoleFilter): string {
-        const filterValue = activeFilters[filter.key];
-        if (!filterValue) return '';
-        
-        if (filter.type === 'boolean') {
-            return filterValue ? 'Yes' : 'No';
-        }
-        
-        if (filter.mode === 'OR' || filter.mode === 'AND') {
-            const separator = filter.mode === 'AND' ? ' AND ' : ' OR ';
-            if (Array.isArray(filterValue)) {
-                return filterValue.map(val => format(filter.key, [val])[0]).join(separator);
-            } else {
-                return format(filter.key, [filterValue])[0];
-            }
-        }
-        
-        if (filter.mode === 'UNIQUE') {
-            if (Array.isArray(filterValue)) {
-                return filterValue.length > 0 ? format(filter.key, [filterValue[0]])[0] : '';
-            } else {
-                return format(filter.key, [filterValue])[0];
-            }
-        }
-        
-        return '';
-    }
-
-    // **Reactive Statement to Compute Filtered Data**
-    $: filteredData = $tableData.data.filter(item => {
-        return Object.entries(activeFilters).every(([key, filterValue]) => {
-            const filter = relayFilters.find(f => f.key === key);
-            if (!filter) return true;
-
-            const itemValue = item[key];
-
-            // **Boolean Filters**
-            if (filter.type === 'boolean') {
-                return itemValue === filterValue;
-            }
-
-            // **Number Filters**
-            if (filter.type === 'number') {
-                if (typeof filterValue === 'number') {
-                    // Exact match; extend logic as needed
-                    return itemValue === filterValue;
-                }
-                return true; // If no filter is applied
-            }
-
-            // **String Filters**
-            if (filter.type === 'string') {
-                if (filter.mode === 'OR' || filter.mode === 'UNIQUE') {
-                    if (Array.isArray(filterValue)) {
-                        return filterValue.includes(itemValue);
-                    } else {
-                        return itemValue === filterValue;
-                    }
-                } else if (filter.mode === 'AND') {
-                    // Typically not applicable for string filters unless itemValue is an array
-                    if (Array.isArray(filterValue) && Array.isArray(itemValue)) {
-                        return filterValue.every(val => itemValue.includes(val));
-                    }
-                }
-            }
-
-            // **Array Filters**
-            if (filter.type === 'array') {
-                if (!Array.isArray(itemValue)) {
-                    console.warn(`Expected itemValue to be an array for key "${key}", but got:`, itemValue);
-                    return false; // Exclude items with invalid itemValue
-                }
-                if (filter.mode === 'OR') {
-                    // At least one selected value is present
-                    return (filterValue as string[]).some(val => itemValue.includes(val));
-                } else if (filter.mode === 'AND') {
-                    // All selected values must be present
-                    return (filterValue as string[]).every(val => itemValue.includes(val));
-                } else if (filter.mode === 'UNIQUE') {
-                    // Exactly one selected value must be present
-                    return (filterValue as string[]).length === 1 && itemValue.includes(filterValue[0]);
-                }
-            }
-
-            return true;
-        });
-    });
-
-    // **Watch and Log Filter Changes for Debugging**
-    $: {
-        console.log('Active Filters:', activeFilters);
-        console.log('Filtered Data Count:', filteredData.length);
-    }
+    // **Reactive Statements for Styling Classes**
+    $: buttonClass = 'mb-2 mr-2 text-sm font-bold py-0 px-1';
+    $: buttonClassSelected = 'bg-blue-500 text-white';
 </script>
 
 <!-- IMPORTANT: SPACER -->
@@ -443,8 +453,8 @@
     {/if}
 </Button>
 
-<!-- **Active Filters Display** -->
-{#if false && Object.keys(activeFilters).length > 0}
+<!-- **Active Filters Display (Enabled)** -->
+{#if Object.keys(activeFilters).length > 0}
     <div class="active-filters p-2">
         <h5>Active Filters:</h5>
         <div class="active-filters-list">
@@ -474,12 +484,11 @@
     type={rootType}
     disabled={rootDisabled} 
 >
-
-    {#each relayFilters as filter (filter.key)}
+    {#each $relayFilters as filter (filter.key)}
         <Accordion.Item class="accordion-item max-h-none overflow-x-auto" value={filter.key}>
             <Accordion.Header class="py-2 px-2 border-b-2">
                 <Accordion.Trigger>
-                    <!-- **Modified Accordion Trigger Layout** -->
+                    <!-- **Accordion Trigger Layout with Active Filters Badge and List** -->
                     <div class="flex items-center w-full text-sm">
                         <!-- Filter Title -->
                         <span class="flex-shrink-0 overflow-hidden text-ellipsis">{filter.humanReadableName}</span>
@@ -489,23 +498,35 @@
                             <Badge class="ml-2 text-xs py-0.5 px-2 rounded-full">{Array.isArray(activeFilters[filter.key]) ? activeFilters[filter.key].length : 1}</Badge>
                             
                             <!-- List of Active Filters -->
-                            <span class="ml-2 text-xs opacity-30">
+                            <span class="ml-2 text-xs opacity-70">
                                 {#if filter.mode === 'AND' || filter.mode === 'OR'}
                                     {#if Array.isArray(activeFilters[filter.key])}
                                         {#each activeFilters[filter.key] as value, index}
                                             {#if index > 0}
                                                 {filter.mode === 'AND' ? ' AND ' : ' OR '}
                                             {/if}
-                                            {format(filter.key, [value])}
+                                            <span class="inline-flex items-center">
+                                                {format(filter.key, [value])}
+                                                <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, value)}>✕</Button>
+                                            </span>
                                         {/each}
                                     {:else}
-                                        {format(filter.key, [activeFilters[filter.key]])}
+                                        <span class="inline-flex items-center">
+                                            {format(filter.key, [activeFilters[filter.key]])}
+                                            <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key])}>✕</Button>
+                                        </span>
                                     {/if}
                                 {:else if filter.mode === 'UNIQUE'}
                                     {#if Array.isArray(activeFilters[filter.key]) && activeFilters[filter.key].length > 0}
-                                        {format(filter.key, [activeFilters[filter.key][0]])}
+                                        <span class="inline-flex items-center">
+                                            {format(filter.key, [activeFilters[filter.key][0]])}
+                                            <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key][0])}>✕</Button>
+                                        </span>
                                     {:else if typeof activeFilters[filter.key] === 'string'}
-                                        {format(filter.key, [activeFilters[filter.key]])}
+                                        <span class="inline-flex items-center">
+                                            {format(filter.key, [activeFilters[filter.key]])}
+                                            <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key])}>✕</Button>
+                                        </span>
                                     {/if}
                                 {/if}
                             </span>
@@ -523,23 +544,7 @@
                             on:input={(e) => {
                                 if (e.target instanceof HTMLInputElement) {
                                     const searchTerm = e.target.value;
-                                    initializeMiniSearch(filter.key, get(tableData).data, filterOverrides[filter.key]?.miniSearchOptions);
-                                    const miniSearch = miniSearchInstances[filter.key];
-                                    const results = miniSearch.search(searchTerm);
-                                    const matchedValues = results.map(result => result[filter.key]).filter(v => v !== undefined);
-                                    if (filter.mode === 'UNIQUE') {
-                                        // For UNIQUE mode, only one selection is allowed
-                                        filters.update(currentFilters => ({
-                                            ...currentFilters,
-                                            [filter.key]: matchedValues.length > 0 ? [matchedValues[0]] : []
-                                        }));
-                                    } else {
-                                        // For OR and AND modes
-                                        filters.update(currentFilters => ({
-                                            ...currentFilters,
-                                            [filter.key]: matchedValues
-                                        }));
-                                    }
+                                    handleSearchInput(filter.key, searchTerm);
                                 }
                             }}
                         />
@@ -578,22 +583,26 @@
                 <!-- **Filter Options** -->
                 <div class="filter-options">
                     {#if filter.type === 'boolean'}
+                        <!-- Boolean Filters -->
                         <Button size="small" 
                             variant="secondary" 
                             on:click={() => applyFilter(filter.key, true)} 
                             class="{ ($filters[filter.key] === true) ? buttonClassSelected : '' }"
+                            disabled={$disabledFilters[filter.key]?.has('true')}
                             >
                             Yes
                         </Button>
                         <Button size="small" 
                             variant="secondary" 
                             on:click={() => applyFilter(filter.key, false)} 
-                            class="{ ($filters[filter.key] === false) ? buttonClassSelected : '' }">
+                            class="{ ($filters[filter.key] === false) ? buttonClassSelected : '' }"
+                            disabled={$disabledFilters[filter.key]?.has('false')}
+                            >
                             No
                         </Button>
                     {:else if filter.type === 'string'}
                         {#if filterOverrides[filter.key]?.type !== 'search'}
-                            <!-- **Search Input for Non-Search Overrides** -->
+                            <!-- Search Input for Non-Search Overrides -->
                             <div class="w-max-[100px] mb-2">
                                 <Input
                                     type="text"
@@ -602,12 +611,13 @@
                                     on:input={(e) => {
                                         filter.searchTerm = e.target.value;
                                         filter.filteredDistinctValues = filter.distinctValues.filter(val => val.toLowerCase().includes(filter.searchTerm.toLowerCase()));
+                                        console.log(`Filter [${filter.key}] searchTerm updated to:`, filter.searchTerm);
                                     }}
                                 />
                             </div>
-                            <!-- **Display Filter Buttons** -->
+                            <!-- Display Filter Buttons -->
                             {#if filter.filteredDistinctValues.length > 0}
-                                {#each filter.filteredDistinctValues.slice(0, filter.showAll ? undefined : maxBadgeLength) as value (value)}
+                                {#each filter.filteredDistinctValues.slice(0, $showAllFilters[filter.key] ? undefined : maxBadgeLength) as value (value)}
                                     <Button size="small"
                                         variant="secondary"
                                         on:click={() => applyFilter(filter.key, value)}
@@ -616,13 +626,19 @@
                                             ($filters[filter.key] === value)
                                                 ? buttonClassSelected 
                                                 : '' 
-                                        }">
+                                        }"
+                                        disabled={$disabledFilters[filter.key]?.has(String(value).toLowerCase())}
+                                    >
                                         {filterFormatters?.[filter.key]?.(value) || value}
                                     </Button>
                                 {/each}
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
                                     <a href="#" on:click|preventDefault={() => toggleShowAllBadges(filter.key)} class="more-link">
-                                        {filter.showAll ? 'Less' : 'More'}
+                                        {#if $showAllFilters[filter.key]}
+                                            Less
+                                        {:else}
+                                            More
+                                        {/if}
                                     </a>
                                 {/if}
                             {:else}
@@ -631,7 +647,7 @@
                         {/if}
                     {:else if filter.type === 'array'}
                         {#if filterOverrides[filter.key]?.type !== 'search'}
-                            <!-- **Search Input for Array Filters** -->
+                            <!-- Search Input for Array Filters -->
                             <div class="w-max-[100px] mb-2">
                                 <Input
                                     type="text"
@@ -640,12 +656,13 @@
                                     on:input={(e) => {
                                         filter.searchTerm = e.target.value;
                                         filter.filteredDistinctValues = filter.distinctValues.filter(val => val.toLowerCase().includes(filter.searchTerm.toLowerCase()));
+                                        console.log(`Filter [${filter.key}] searchTerm updated to:`, filter.searchTerm);
                                     }}
                                 />
                             </div>
-                            <!-- **Display Array Filter Buttons** -->
+                            <!-- Display Array Filter Buttons -->
                             {#if filter.filteredDistinctValues.length > 0}
-                                {#each filter.filteredDistinctValues.slice(0, filter.showAll ? undefined : maxBadgeLength) as value (value)}
+                                {#each filter.filteredDistinctValues.slice(0, $showAllFilters[filter.key] ? undefined : maxBadgeLength) as value (value)}
                                     <Button size="small"
                                         variant="secondary"
                                         on:click={() => applyFilter(filter.key, value)}
@@ -653,13 +670,19 @@
                                             (Array.isArray($filters[filter.key]) && $filters[filter.key].includes(value)) 
                                                 ? buttonClassSelected 
                                                 : '' 
-                                        }">
+                                        }"
+                                        disabled={$disabledFilters[filter.key]?.has(String(value).toLowerCase())}
+                                    >
                                         {filterFormatters?.[filter.key]?.(value) || value}
                                     </Button>
                                 {/each}
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
                                     <a href="#" on:click|preventDefault={() => toggleShowAllBadges(filter.key)} class="more-link">
-                                        {filter.showAll ? 'Less' : 'More'}
+                                        {#if $showAllFilters[filter.key]}
+                                            Less
+                                        {:else}
+                                            More
+                                        {/if}
                                     </a>
                                 {/if}
                             {:else}
@@ -684,6 +707,7 @@
                                                         [condition]: inputValue
                                                     }
                                                 }));
+                                                console.log(`Filter [${filter.key}] condition [${condition}] set to:`, inputValue);
                                             } else {
                                                 // Clear the specific condition if input is invalid
                                                 filters.update(currentFilters => {
@@ -693,6 +717,7 @@
                                                     }
                                                     return currentFilters;
                                                 });
+                                                console.log(`Filter [${filter.key}] condition [${condition}] cleared.`);
                                             }
                                         }
                                     }}
@@ -700,7 +725,7 @@
                             </div>
                         {/each}
                     {/if}
-                    <!-- **Clear Button for Each Filter Group** -->
+                    <!-- Clear Button for Each Filter Group -->
                     <Button size="small" on:click={() => clearFilter(filter.key)} class="{buttonClass}" variant="destructive">
                         Clear
                     </Button>
@@ -709,3 +734,48 @@
         </Accordion.Item>
     {/each}
 </Accordion.Root>
+
+<style>
+    .active-filters {
+        margin-bottom: 1rem;
+    }
+    .active-filters-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .active-filter {
+        background-color: #e0e0e0;
+        padding: 0.5rem;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    /* Optional: Add styles for filter buttons */
+    .filter-mode-toggle button.active {
+        /* Example active state styles */
+        background-color: #3182ce;
+        color: white;
+    }
+    /* Optional: Style the more-link */
+    .more-link {
+        color: #3182ce;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+    .more-link:hover {
+        text-decoration: none;
+    }
+    /* Style for clear buttons inside badges */
+    .active-filters-list .badge button {
+        padding: 0;
+        margin-left: 0.25rem;
+        font-size: 0.75rem;
+    }
+    /* Disabled buttons styling */
+    button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>

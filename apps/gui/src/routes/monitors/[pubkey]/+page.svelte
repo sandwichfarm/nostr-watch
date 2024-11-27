@@ -5,6 +5,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
     import { Batcher } from '@nostrwatch/nip66/core';
+    import { eventKey } from '$lib/utils/event-keys';
     
     let data = [];
     let loading = true;

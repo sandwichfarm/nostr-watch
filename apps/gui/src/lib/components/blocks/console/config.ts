@@ -46,7 +46,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['as', 'asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['relay', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
+export const columnsShow: DataKeys = ['relay', 'lastSeen', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
 export const filtersShow: DataKeys = ['network', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode']
 
 export const humanReadableNames: NameFormatter = {

@@ -4,13 +4,18 @@
 	import Stats from '$lib/components/blocks/Stats.svelte';
 	import Console from '$lib/components/blocks/console/Console.svelte';
 	import { Nip66Event } from '@nostrwatch/nip66/models';
+	import routineRemoveStaleChecks from '$lib/routines/remove-stale-checks-from-store';
+	import { eventKey } from '$lib/utils/event-keys.js';
+
+	import { nip66 } from '$lib/stores/nip66.js';
 
 	import { 
 		events,
-		monitorsMap
+		monitorsMap,
+		eventsArray
 	} from '$lib/stores/index.js';
 
-	import { isParameterizedReplaceableKind, isReplaceableKind, Metadata } from 'nostr-tools/kinds';
+	
 
 	export const prerender = true;
 
@@ -19,8 +24,6 @@
 			NostrToolsAdapter: any,
 			liveQuery: any,
 			Subscription: any;
-
-	let n66: any;
 
 	let subscriptions: typeof Subscription[] = [];
 
@@ -31,53 +34,20 @@
 		timer = setTimeout(callback, time);
 	}
 
-	onDestroy(() => {
-		clearTimeout(timer);
-		n66?.destroy();
-	});
-
 	onMount(async () => {
 		const load = async () => {
 			if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 			N66 = (await import('@nostrwatch/nip66')).default;
 			NostrSqliteAdapter = (await import('@nostrwatch/nip66-cacheadapter-nostrsqlite')).default;
 			NostrToolsAdapter = (await import('@nostrwatch/nip66-wsadapter-nostrtools')).default;
-// 
 			const adapters = {
 				cacheAdapter: new NostrSqliteAdapter(),
 				websocketAdapter: new NostrToolsAdapter()
 			};
-			n66 = new N66(adapters);
-			await n66.init();
-			console.log('n66 initialized');
-
-			const eventAddr = ( event: any ) => {
-				let { pubkey, kind } = event;
-				pubkey = pubkey.slice(0,16);
-				if(isParameterizedReplaceableKind(kind)) {
-					const relay = event.tags.find(t => t[0] === 'd')?.[1]
-					const key = `${pubkey}:${kind}:${relay}`
-					return `${pubkey}:${kind}:${relay}`;
-				}
-				else if(isReplaceableKind(kind)) {
-					const key = `${pubkey}:${kind}`
-					return `${pubkey}:${kind}`;
-				}
-			}
-
-			const eventKey = (event: any) =>{
-				if(isReplaceableKind(event.kind)) {
-					return eventAddr(event);
-				}
-				else if(isParameterizedReplaceableKind(event.kind)){
-					return eventAddr(event);
-				}
-				else {
-					return event.id
-				}
-			}
-
-			n66.on('monitor:update', (monitor: any) => {
+			nip66.set(new N66(adapters));
+			await $nip66.init();
+			console.log('nip66 initialized');
+			$nip66.on('monitor:update', (monitor: any) => {
 				//console.log('Svelte Received monitor:', monitor.registration.pubkey);
 				monitorsMap.update((monitorsMap) => {
 					const existing = monitorsMap.get(monitor.registration.pubkey);
@@ -89,24 +59,9 @@
 					return monitorsMap;
 				});
 			});
-
-			// n66.on('event', (event: any) => {
-			// 	console.log('Svelte Received event:', event.id);
-			// 	events.update((map) => {
-			// 		const key = eventKey(event);
-			// 		if (!key) return map;
-			// 		const existing = map.get(key);
-			// 		if (existing && existing.id === event.id) return map; // Explicitly return the existing map
-			// 		if (existing && existing.created_at > event.created_at) return map; // Explicitly return the existing map
-			// 		map.set(key, new Nip66Event(event));
-			// 		return map;
-			// 	});
-			// });
-
-			n66.on('events', (_events: any) => {
+			$nip66.on('events', (_events: any) => {
 				console.log('Svelte Received events:', _events.length);
 				let set = 0;
-
 				events.update((map) => {
 					console.log('onevents map', map)
 					_events.forEach((event: any) => {
@@ -123,17 +78,25 @@
 
 					return map;
 				});
-
-				//console.log(`Set ${set}/${_events.length} events`);
 			});
-
-			await n66.monitorService.bootstrap();
+			await $nip66.monitorService.bootstrap();
+			$nip66.on('event', (event: any) => {
+				console.log('Svelte Received event:', event.id);
+				const key = eventKey(event);
+				if (!key) return map;
+				const existing = $events.get(key);
+				if (existing && existing.id === event.id) return map; // Explicitly return the existing map
+				if (existing && existing.created_at > event.created_at) return map; // Explicitly return the existing map
+				$events.set(key, new Nip66Event(event));
+				return map;
+			});			
 		};
 		load()
 	});
 
 	onDestroy(() => {
-		subscriptions.forEach(sub => sub.unsubscribe());
+		clearTimeout(timer);
+		$nip66?.destroy();
 	});
 </script>
 

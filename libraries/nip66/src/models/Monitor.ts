@@ -1,9 +1,16 @@
-import { IEvent } from '@base/interfaces';
+import { type IEvent } from '@base/models';
 import { StateManager } from '@base/managers/StateManager';
 import { SyncRange, SyncRangeParameter, SyncStateManager } from '@base/managers/SyncStateManager';
 import { n66IEventToIMonitor } from '@base/transform';
 import { Filter } from 'nostr-tools';
 import { EventEmitter } from 'tseep';
+
+export type IRelaysByLiveness = {
+  online: IEvent[],
+  offline: IEvent[],
+  dead: IEvent[],
+}
+
 
 export type IMonitor = {
   pubkey: string; 
@@ -27,10 +34,11 @@ export class Monitor {
   profile: any;
   relays: string[];
   state: SyncStateManager;
-  private _forgiveness: number = 1;
+  deadThreshold: number = 60*60*24*30;  
+  private _frequencyForgivenessMultiplier: number = 4;
 
   constructor(event: IEvent) {
-    if(event.kind !== 10166) throw new Error('Needs to be instantiated with a Monitor Registration event [kind: 10166');
+    if(event?.kind !== 10166) throw new Error('Needs to be instantiated with a Monitor Registration event [kind: 10166');
     this.priority = 0;
     this.registration = {} as IMonitor;
     this.profile = {};
@@ -65,7 +73,7 @@ export class Monitor {
 
   get frequency(): number {
     const f = this.registration.frequency
-    return (f || 60*60*12) * 24
+    return (f || 60*60*12) * this._frequencyForgivenessMultiplier
   }
 
   get geohash(): string {
@@ -77,12 +85,75 @@ export class Monitor {
   }
 
   get checkFilter(): Filter {
-    const frequency = this?.frequency;
-    console.log(`ensureMonitorsActive: ${this?.pubkey}`, frequency);
+    // console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
     const kinds = [30166];
-    const since = Math.round(Date.now() / 1000) - frequency;
+    const since = Math.round(Date.now() / 1000) - this?.frequency;
+    const until = Math.round(Date.now() / 1000);
     const authors = [this.pubkey];
-    return { kinds, since, authors };
+    return { kinds, since, until, authors };
+  }
+
+  get isDeadBefore(): number {
+    return Math.round(Date.now() / 1000) - this.deadThreshold;
+  }
+
+  get isOnlineAfter(): number {
+    return Math.round(Date.now() / 1000) - this.frequency;
+  }
+
+  get isOfflineBetween(): [number, number] {
+    return [this.isDeadBefore, this.isOnlineAfter];
+  }
+
+  relayIsOffline(event: IEvent): boolean {
+    const timestamp = (event.created_at as number);
+    return timestamp < this.isOnlineAfter;
+  }
+
+  relayIsOnline(event: IEvent): boolean {
+    console.assert(this !== undefined, '`this` is undefined in relayIsOnline!');
+    console.assert(this.isOnlineAfter !== undefined, '`this.isOnlineAfter` is undefined!');
+    const timestamp = (event.created_at as number);
+    return timestamp >= this.isOnlineAfter;
+  }
+
+  relayIsDead(event: IEvent): boolean {
+    const timestamp = (event.created_at as number);
+    return timestamp < this.isDeadBefore;
+  }
+
+  async returnOnlineRelays(events: IEvent[]): Promise<IEvent[]> {
+    return events.filter(this.relayIsOnline.bind(this));
+  }
+
+  async returnOfflineRelays(events: IEvent[]): Promise<IEvent[]> {
+    return events.filter(this.relayIsOffline.bind(this));
+  }
+
+  async returnDeadRelays(events: IEvent[]): Promise<IEvent[]> {
+    return events.filter(this.relayIsDead.bind(this));
+  }
+  
+  async relaysByLiveness(events: IEvent[]): Promise<IRelaysByLiveness> {
+    const results: IRelaysByLiveness = {
+      online: [],
+      offline: [],
+      dead: [],
+    };
+    if(!this?.frequency) {
+      results.online = events;
+      return results;
+    }
+    events.forEach((event) => {
+      if(this.relayIsOnline(event)) {
+        results.online.push(event);
+      } else if(this.relayIsOffline(event)) {
+        results.offline.push(event);
+      } else if(this.relayIsDead(event)) {
+        results.dead.push(event);
+      }
+    });
+    return results;
   }
 
   getLastSyncSince(kind: number): number {

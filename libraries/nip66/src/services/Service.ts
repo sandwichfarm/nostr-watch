@@ -8,7 +8,9 @@ import { isPRE, isRE } from "@base/utils";
 
 type EventHandler = (event: IEvent) => any;
 
-export interface FetchOptions extends WebsocketRequestBody {}
+export interface FetchOptions extends WebsocketRequestBody {
+  sync?: boolean;
+}
 
 export class Service {
   protected cacheAdapter: ICacheAdapter;
@@ -30,7 +32,8 @@ export class Service {
   }
 
   async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
-    const { filters, relays, options } = args;
+    const { relays, options, sync } = args;
+    let { filters } = args
     
     const events = new Map<string, IEvent>();
   
@@ -48,9 +51,13 @@ export class Service {
       events.set(id, event);
       return true;
     };
+
+    if(sync){
+      filters = await this.modifyCacheFilters(filters)
+    }
   
-    // Check cache
-    const cacheEvents = await this.cacheAdapter.REQ(await this.modifyCacheFilters(filters));
+    // Fetch from cache
+    const cacheEvents = await this.cacheAdapter.REQ(filters);
     if (callbacks?.onevents) callbacks.onevents(cacheEvents);
     if (callbacks?.onevent) {
       for (const event of cacheEvents) {
@@ -78,12 +85,16 @@ export class Service {
         if (newEvents.length > 0) callbacks.onevents!(newEvents);
       };
     }
+
+    if(sync){
+      filters = await this.modifyWebsocketFilters(filters)
+    }
   
-    // Check relays
+    // Fetch from relays
     const websocketEvents: IEvent[] = await this.websocketAdapter.fetch(
       {
         relays: relays || [],
-        filters: await this.modifyWebsocketFilters(filters),
+        filters,
         options: options || defaultWebsocketAdapterOptions,
       },
       _callbacks
@@ -92,7 +103,15 @@ export class Service {
     if(websocketEvents instanceof Array) {
       websocketEvents.forEach(maybeAddEventToMap);
     }
-    return Array.from(events.values());
+
+    const finalEvents = Array.from(events.values());
+
+    return this.modifyReturnedEvents(finalEvents);
+  }
+
+  async modifyReturnedEvents(events: IEvent[]): Promise<IEvent[]> {
+    console.warn('modifyReturnedEvents not implemented');
+    return events;
   }
   
 }

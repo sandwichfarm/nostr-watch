@@ -3026,6 +3026,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@nostrwatch/nip66@workspace:libraries/nip66"
   dependencies:
+    "@nostrwatch/nocap": "workspace:^"
     "@nostrwatch/utils": "workspace:^"
     "@pabra/logger": "npm:^1.2.0"
     "@rollup/plugin-alias": "npm:5.1.1"

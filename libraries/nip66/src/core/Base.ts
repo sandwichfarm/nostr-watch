@@ -19,6 +19,8 @@ export default class {
   private websocketAdapter?: IWebsocketAdapter;  
   private cacheAdapter?: ICacheAdapter;
 
+  private _initialized: boolean = false;  
+
   constructor(
     private adapters: IAdaptersArgument,
     private relayUrls: string[]
@@ -37,6 +39,14 @@ export default class {
     return this.relayService;
   }
 
+  private set initialized(value: boolean) {
+    this._initialized = value;
+  }
+
+  get initialized(): boolean {
+    return this._initialized;
+  }
+
   on(event: string, listener: (...args: any[]) => void): void {
     StateManager.on(event, listener);
   }
@@ -52,6 +62,8 @@ export default class {
   destroy(): void {
     StateManager.emit('destroy');
   }
+
+  
 
   async useAdapter(adapter?: ICacheAdapter | IWebsocketAdapter): Promise<void> {
     if(!adapter) {
@@ -92,6 +104,7 @@ export default class {
     console.log(`[Base] Services ready`)
     await this.adaptersReady()
     console.log(`[Base] Adapters ready`)
+    this.initialized = true;
   }
 
   async adaptersReady(){

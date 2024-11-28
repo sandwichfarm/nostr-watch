@@ -82,7 +82,6 @@ export interface IWebsocketAdapterMethods {
   unsubscribe(subId?: string): void;
   disconnect(): void;
   terminate(): void;
-  abort(): void;
   bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
 }
 
@@ -116,7 +115,6 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   async connect(): Promise<void> {}
   disconnect(): void {}
   terminate(): void {}
-  abort(): void {}
   unsubscribe(subId?: string): void {}
 
   newWorker(): Promise<Worker> {

@@ -135,7 +135,7 @@
             unsubscribe();
             if (tableInstance) {
                 console.log('Destroying DataTable instance on component unmount.');
-                tableInstance.destroy();
+                // tableInstance.destroy();
                 tableInstance = null;
             }
         };

@@ -27,8 +27,6 @@ export interface MonitorFetchOptions extends WebsocketRequestBody {
 export class MonitorService extends Service {
   private monitorManager: MonitorManager;
   private _groupedRelays: IGroupedRelays = {};
-  private subscriber: Subscriber = new Subscriber();
-  private queue: PQueue = new PQueue({ concurrency: 1 });
 
   constructor(adapters: IAdaptersArgument) {
     super(adapters)
@@ -193,16 +191,21 @@ export class MonitorService extends Service {
     });
   }
 
-  async bootstrap(): Promise<void> {
-    console.log('bootstrap');
+  async bootstrapMonitors(): Promise<void> {
+    console.log('bootstrapMonitors'); 
     await this.bootstrapMonitorRegistrations();
     console.log('bootstrapMonitorRegistrations complete');
-    await this.bootstrapMonitorData();
-    console.log('bootstrapMonitorData complete');
+    await this.bootstrapMonitorMeta();
+    console.log('bootstrapMonitorMeta complete');
     await this.ensureMonitorsActive();
     console.log('ensureMonitorsActive complete');
     this.prioritizeMonitors();
     console.log('prioritizeMonitors complete');
+  }
+
+  async bootstrap(): Promise<void> {
+    console.log('bootstrap');
+    await this.bootstrapMonitors();
     await this.bootstrapMonitorChecks();
     console.log('bootstrapMonitorChecks complete');
   }
@@ -228,8 +231,8 @@ export class MonitorService extends Service {
     // StateManager.emit(`bootstrap:monitorRegistrations`, { complete: true, status: "success" || 0 });
   }
 
-  async bootstrapMonitorData(): Promise<void> {
-    console.log('bootstrapMonitorData');
+  async bootstrapMonitorMeta(): Promise<void> {
+    console.log('bootstrapMonitorMeta');
     const monitors = [...this.monitorsArray.map((m) => m.registration)];
     const authors = monitors.map((monitor: IMonitor) => monitor.pubkey);
     authors.length = authors.length > 4 ? 4 : authors.length;

@@ -53,6 +53,7 @@
     }
   },
   "dependencies": {
+    "@nostrwatch/nocap": "workspace:^",
     "@nostrwatch/utils": "workspace:^",
     "@pabra/logger": "^1.2.0",
     "jsurl2": "^2.2.0",

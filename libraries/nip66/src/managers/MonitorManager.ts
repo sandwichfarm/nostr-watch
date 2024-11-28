@@ -27,7 +27,6 @@ export const DEFAULT_AUTHED_MONITOR_PRIORITIES: MonitorPriorities = [
   MonitorPriority.Checks,
 ];
 
-
 export class MonitorManager {
   private static instance: MonitorManager;
 

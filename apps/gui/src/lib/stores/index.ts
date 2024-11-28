@@ -7,3 +7,4 @@ export * from "./geocodes.js";
 export * from "./versions.js";
 export * from "./isps.js";
 export * from "./softwares.js";
+export * from "./nip66.js";

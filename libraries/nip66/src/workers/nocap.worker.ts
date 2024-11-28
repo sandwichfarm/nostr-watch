@@ -1,0 +1,1 @@
+import Nocap from "@nostrwatch/nocap";

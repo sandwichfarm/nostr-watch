@@ -1,9 +1,14 @@
+<script lang="ts">
+    import { page } from '$app/stores';
+</script>
+
 <header id="site-header">
     <h1>nostr.watch</h1>
     <nav>
-        <a href="">home</a>
+        <a href="/">home</a>
         <a href="">console</a>
         <a href="">monitors</a>
+        <a href="/preferences">preferences</a>
     </nav>
 </header>
 

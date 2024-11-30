@@ -1,5 +1,6 @@
+/// <reference lib="webworker" />
 
-import { IEvent, IWorkerCommand, IWorkerGlobalScope } from "../interfaces";
+import { IEvent, ISharedWorkerGlobalScope, IWorkerCommand, IWorkerGlobalScope } from "../interfaces";
 import { NostrEvent } from "nostr-tools";
 import { Workers } from "./Workers";
 import { AdapterMessage } from "./Adapter";
@@ -14,8 +15,8 @@ export interface AdapterWorkerMessage extends AdapterMessage {}
 
 export interface AdapterWorkerCommand extends AdapterWorkerMessage {
   command?: string;
-    channelPort?: MessagePort
-    mainThread?: IWorkerGlobalScope;
+  channelPort?: MessagePort
+  mainThread?: IWorkerGlobalScope | ISharedWorkerGlobalScope;
 }
 
 export enum AdapterWorkerResultType {
@@ -31,29 +32,23 @@ export interface AdapterWorkerResult extends AdapterWorkerMessage {
 }
 
 export interface WorkerOptions {
-  mainThread?: IWorkerGlobalScope;
+  mainThread?: IWorkerGlobalScope | ISharedWorkerGlobalScope;
   channelPort?: MessagePort;
 }
 
 export class AdapterWorker {
 
-  private _context?: WorkerContext
-  private _mainThread?: IWorkerGlobalScope;
+  private _mainThread?: IWorkerGlobalScope | ISharedWorkerGlobalScope;
   private _channelPort?: MessagePort;
 
   constructor( options?: WorkerOptions ){
     if(!options) return 
     console.log('AdapterWorker', options)
-    this.setContext(options)
-    // console.log('mainThread?:', this.mainThread)
+    this._mainThread = options?.mainThread
+    this._channelPort = options?.channelPort
     this.setupHandlers()
   }
-
-  get context(): WorkerContext | undefined {  
-    return this._context
-  }
-
-  get mainThread(): IWorkerGlobalScope | undefined {
+  get mainThread(): IWorkerGlobalScope | ISharedWorkerGlobalScope | undefined {
     return this._mainThread;
   }
 
@@ -63,26 +58,6 @@ export class AdapterWorker {
 
   get channel(): MessagePort | undefined {
     return this._channelPort
-  }
-
-  setContext(options?: WorkerOptions){
-    console.log('AdapterWorker.setContext', this?.constructor?.name,options)  
-    if(!options) { 
-      options = {
-        mainThread: this?.mainThread,
-        channelPort: this?.channel,
-        // sharedWorkerPort: this?.sharedWorker
-      }
-    }
-    if( options?.mainThread ) {
-      this._context = WorkerContext.Worker
-      this._mainThread = options.mainThread
-    }
-    if( options?.channelPort ) {
-      this._context = WorkerContext.Worker
-      this._channelPort = options.channelPort
-    }
-    console.log(this.constructor.name, 'context:', this._context)
   }
 
   //overload this.
@@ -122,7 +97,7 @@ export class AdapterWorker {
   setupHandlers(){
     console.log('AdapterWorker: setupHandlers()')
     if(!this?.mainThread) return console.warn('mainThread not defined')
-    this.mainThread.onmessage = async (message: MessageEvent) => {
+    const onmessage = async (message: MessageEvent) => {
       const command = message.data as AdapterWorkerMessage;
       console.log(`[Worker:${this.constructor.name}] mainthread.onmessage`, command)
       this.listenPingPong('mainthread', command)
@@ -132,22 +107,15 @@ export class AdapterWorker {
       }
       this.onMainThreadMessage(command);
     }
-    console.log('', )
+    if(this.mainThread instanceof DedicatedWorkerGlobalScope){
+      console.log('Running in DedicatedWorkerGlobalScope');
+      (this.mainThread as IWorkerGlobalScope).onmessage = onmessage
+    }
+    else if(this.mainThread instanceof SharedWorkerGlobalScope){
+      (this.mainThread as ISharedWorkerGlobalScope).port.onmessage = onmessage
+    }
   }
 
-  // postMessage( command: AdapterWorkerMessage, where: WorkerContext = WorkerContext.MainThread ) {
-    // switch(where as WorkerContext){
-    //   case WorkerContext.MainThread:
-    //     this.postMessageAdapter(command)
-    //     break;
-    //   case WorkerContext.Worker:
-    //     this.postMessageWorker(command)
-    //     break;
-    //   case WorkerContext.DedicatedWorker:
-    //     this.postMessageDedicatedWorker(command)
-    //     break;
-    // }
-  // }
 
   command(destination: string | string[], resultType: AdapterWorkerResultType, result: any){
     console.log('AdapterWebsocketWorker: command', destination, resultType, result)

@@ -54,7 +54,7 @@ export class MonitorManager {
   }
 
   get sortedMonitors(): Monitor[] {
-    const sortedMonitors = this.activeMonitors.sort((a, b) => a.priority - b.priority);
+    const sortedMonitors = MonitorManager.sortMonitorsByPriority(this.activeMonitors);
     return sortedMonitors
   }
 
@@ -145,5 +145,9 @@ export class MonitorManager {
     monitors.forEach((sortedMonitor, index) => {
       sortedMonitor.priority = index + 1;
     });
+  }
+
+  static sortMonitorsByPriority(monitors: Monitor[]): Monitor[] {
+    return monitors.sort((a, b) => a.priority - b.priority);
   }
 }

@@ -27,7 +27,9 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     }
 
     destroy(){
-        this.relay.worker.terminate()
+        if(this.relay.worker instanceof Worker){
+            this.relay.worker.terminate()
+        }
     }
 
     setup(){}
@@ -52,7 +54,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         return generateSubId(randomInRange(11, 24))
     }
 
-    async newWorker(): Promise<Worker> {
+    async newWorker(): Promise<Worker | SharedWorker> {
         let worker;
         if(this.overloadWorker) {
             console.log(`NostrSqliteAdapter: using overloadWorker`)
@@ -70,7 +72,10 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
             );
         }
         console.log('NostrSqliteAdapter: newWorker', worker)
-        if(!(worker instanceof Worker)) throw new Error('NostrSqliteAdapter: Worker is not a Worker instance')
+        // if(!(worker instanceof Worker) && !(worker instanceof SharedWorker)) throw new Error('NostrSqliteAdapter: Worker is not a Worker or SharedWorker instance')
+        if(worker instanceof SharedWorker) {
+            worker.port.start()
+        }
         this.relay = new WorkerRelayInterface(worker);
         this._ready = true
         return this.relay.worker; 
@@ -83,25 +88,6 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         }
         console.log('NostrSqlLite: ready')
     } 
-
-//    async newWorker(): Promise<Worker> {
-        // let worker;
-        // if (import.meta.env.DEV) {
-        // /* @vite-ignore */
-        //     worker = new Worker(new URL('./workers/nostrsqlite.worker.js', import.meta.url), { type: 'module' });
-        //     // worker = new URL("./workers/nostrsqlite.worker.js", import.meta.url)
-        // } else {
-        //     worker = new Worker(
-        //         new URL("./workers/nostrsqlite.worker.js", import.meta.url),
-        //         { type: 'module' }
-        //     );
-        // }
-        // this.relay = new WorkerRelayInterface(worker);
-        // this._ready = true
-        // return this.relay.worker; 
-    // }
-
-
 
     async addEvent(event: IEvent): Promise<void> {
         this.EVENT(event);

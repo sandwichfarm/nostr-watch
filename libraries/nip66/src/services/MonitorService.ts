@@ -241,7 +241,8 @@ export class MonitorService extends Service {
       {
         filters: [{
           authors,
-          kinds: [0, 10002]
+          kinds: [0, 10002],
+          limit: authors.length*10
         }], 
         relays: this.userMetaRelays,
         options: {
@@ -306,12 +307,12 @@ export class MonitorService extends Service {
       callbacks
     );
     for (const event of events) {
-      const { pubkey } = event;
+      const { pubkey, created_at } = event;
       const monitor = this.monitors.get(pubkey);
       if (monitor?.registration) {
-        monitor.lastActive = event.created_at as number;
-        this.monitors.set(pubkey, monitor);
-      }
+        if(created_at)
+          monitor.lastActive = created_at;
+        }
     }
   }
 
@@ -345,7 +346,7 @@ export class MonitorService extends Service {
       console.warn('MonitorService getMonitorCheckFilters: no monitors');
       return [];
     }
-    const monitors = this.sortedMonitors.slice(0, 3);
+    const monitors = this.sortedMonitors.slice(0, 12);
     let filters: Filter[] = [];
     const until = Math.round(Date.now()/1000);
     monitors.forEach((monitor) => {

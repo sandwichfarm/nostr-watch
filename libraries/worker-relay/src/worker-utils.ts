@@ -147,12 +147,19 @@ export const relayWipe = async (state: WorkerState) => {
 
 export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: MessagePort) => {
   async function reply<T>(id: string, obj?: T) {
-    const _port = (port ?? state.self) as MessagePort | DedicatedWorkerGlobalScope;
-    _port.postMessage({
-      id,
-      cmd: "reply",
-      args: obj,
-    } as WorkerMessage<T>);
+    const _port = (port ?? state.self) as MessagePort | DedicatedWorkerGlobalScope | SharedWorkerGlobalScope;
+    const message =  {
+        id,
+        cmd: "reply",
+        args: obj,
+      } as WorkerMessage<T>
+    if(_port instanceof DedicatedWorkerGlobalScope){
+      _port.postMessage(message);
+    }
+    else if (_port instanceof SharedWorkerGlobalScope) {
+      _port.port.postMessage(message);
+    }
+    
   }
 
   const msg = ev.data as WorkerMessage<any>;

@@ -41,7 +41,7 @@ export class SurrealDbAdapter extends CacheAdapter implements ICacheAdapter {
       }
     } 
 
-    async newWorker(channelPort: MessagePort): Promise<Worker> {
+    async newWorker(channelPort: MessagePort): Promise<Worker | SharedWorker> {
       return SurrealWorker();
     }
 

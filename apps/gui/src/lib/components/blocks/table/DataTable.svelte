@@ -1,5 +1,3 @@
-<!-- src/lib/components/blocks/console/Console.svelte -->
-
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { get, writable, derived } from 'svelte/store';
@@ -7,7 +5,7 @@
     import * as Resizable from '$lib/components/ui/resizable';
     import Filters from './Filters.svelte'; 
     import { relayAggregates } from '$lib/stores/checks.js';
-    import { columnsDisable, columnsShow, filtersDisable, filtersShow, humanReadableNames, formatters, tableFormatters, filterFormatters } from './config';
+    // import  from './config.js';
     import DataTableShowResults from '$lib/components/partials/DataTableShowResults.svelte';
     import DataTablePaginator from '$lib/components/partials/DataTablePaginator.svelte';
     import { Debounce } from '$lib/utils/debounce';
@@ -18,6 +16,12 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
 
+    export let data: any;
+    export let config: any;
+    export let enableFilters: boolean = true;
+
+    const { columnsDisable, columnsShow, filtersDisable, filtersShow, humanReadableNames, formatters, tableFormatters, filterFormatters } = config
+
 	const maxBadgeLength: number = 20;
 
     // **Stores and Reactive Variables**
@@ -27,9 +31,9 @@
     $: columnsInclude = [ ...columnsShow.filter(f => !columnsDisable.includes(f)) ];
 
     const tableData = derived(
-        [relayAggregates],
-        ([ $relayAggregates ]) => {
-            if (!$relayAggregates || $relayAggregates.length === 0) {
+        [data],
+        ([ $data ]) => {
+            if (!$data || $data.length === 0) {
                 return { data: [], columns: [] };
             }
 
@@ -43,7 +47,7 @@
                 name: humanReadableNames[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
-            const data = $relayAggregates.map((item) => {
+            const data = $data.map((item) => {
                 const formattedItem = { ...item };
                 for (const key in formatters) {
                     if (Object.prototype.hasOwnProperty.call(formattedItem, key)) {
@@ -224,15 +228,15 @@
     <Resizable.Handle withHandle />
     <!-- **Filters Pane** -->
     <Resizable.Pane defaultSize={25}>
-        {#if tableInstance !== null}
-            <!-- **Filters Component** -->
+        {#if tableInstance !== null && enableFilters}
             <Filters 
-                tableData={tableData} 
-                filters={filters} 
-                filtersInclude={filtersInclude} 
-                humanReadableNames={humanReadableNames} 
-                filterFormatters={filterFormatters} 
-                maxBadgeLength={maxBadgeLength}
+                {tableData} 
+                {filters} 
+                {filtersInclude} 
+                {humanReadableNames} 
+                {filterFormatters} 
+                {maxBadgeLength}
+                {config}
             />
         {/if}
     </Resizable.Pane>

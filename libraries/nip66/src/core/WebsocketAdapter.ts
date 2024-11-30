@@ -93,19 +93,16 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   private _subscriptions: Set<string> = new Set()
   private _hashData: Record<string, any> = {}
 
-  constructor(worker?: Worker | URL) {
+  constructor(worker?: Worker | SharedWorker | URL) {
     super(worker)
     StateManager.on('destroy', () => {
-      this.worker?.terminate()
+      if(this.worker instanceof Worker)
+        this.worker?.terminate()
     })
   }
 
-  get worker(): Worker | undefined {
-    return this.workers?.websocketDedicated
-  }
-
-  get sharedWorker(): SharedWorker | undefined {
-    return this.workers?.websocketShared
+  get worker(): Worker | SharedWorker | undefined {
+    return this.workers?.websocket
   }
 
   get subscriptions(): Set<string> {
@@ -117,14 +114,15 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   terminate(): void {}
   unsubscribe(subId?: string): void {}
 
-  newWorker(): Promise<Worker> {
+  newWorker(): Promise<Worker | SharedWorker> {
     throw new Error('Method not implemented.');
   }
 
   protected bindWorkerHandlers(): void {
-    if(!this?.workers?.websocketDedicated) return console.warn('[WebsocketAdapter] Error binding worker handlers: no worker found')
-    this.workers.websocketDedicated.onmessage = this._onMessage.bind(this);
-    this.workers.websocketDedicated.onerror = this._onError.bind(this)
+    if(!this?.workers?.websocket) return console.warn('[WebsocketAdapter] Error binding worker handlers: no worker found')
+    if(this.workers.websocket instanceof Worker)
+      this.workers.websocket.onmessage = this._onMessage.bind(this);
+    this.workers.websocket.onerror = this._onError.bind(this)
   }
 
   onMessage(response: WebsocketResponseBody): void {
@@ -180,7 +178,10 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
     }
     console.log(`[WebsocketAdapter:${this.constructor.name}] o/o SEND: ${message.use} -> websocketWorker`)
     this.subscriptions.add(hash)
-    this.worker.postMessage(message)
+    if(this.worker instanceof Worker)
+      this.worker.postMessage(message)
+    else if(this.worker instanceof SharedWorker)
+      this.worker.port.postMessage(message)
     return hash
   }
 
@@ -253,7 +254,13 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   ping(): void {
     console.log(`[WebsocketAdapter:${this.constructor.name}] o/o SEND: PING -> websocketWorker`)
-    this.workers?.websocketDedicated?.postMessage({type: 'ping'})
+    if(this.worker instanceof Worker) {
+      (this.workers?.websocket as Worker)?.postMessage({type: 'ping'})
+    }
+    else if(this.worker instanceof SharedWorker) {
+      (this.workers?.websocket as SharedWorker)?.port.postMessage({type: 'ping'})
+    }
+      
   }
   
 }

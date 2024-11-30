@@ -8,8 +8,8 @@ export class Workers {
 
   private _channel: MessageChannel = new MessageChannel();
 
-  private _websocket?: Worker;
-  private _cache?: Worker;
+  private _websocket?: Worker | SharedWorker;
+  private _cache?: Worker | SharedWorker;
 
   private _ready: boolean = false;
 
@@ -22,36 +22,28 @@ export class Workers {
   }
 
   get websocketWorkers(): Partial<Workers> {
-    const { websocketShared, websocketDedicated, channel } = this;
-    return { websocketShared, websocketDedicated, channel };
+    const { websocket, channel } = this;
+    return { websocket, channel };
   }
 
   get cacheWorkers(): Partial<Workers> {
-    const { cacheShared, cacheDedicated, channel } = this;
-    return { cacheShared, cacheDedicated, channel };
+    const { cache, channel } = this;
+    return { cache, channel };
   }
 
-  get websocketShared(): SharedWorker | undefined {
-    return this._websocketShared;
-  }
-
-  get cacheShared(): SharedWorker | undefined {
-    return this._cacheShared;
-  }
-
-  get websocketDedicated(): Worker | undefined {
+  get websocket(): Worker | SharedWorker | undefined {
     return this._websocket;
   }
 
-  set websocketDedicated(worker: Worker | undefined){
+  set websocket(worker: Worker | SharedWorker | undefined){
     this._websocket = worker;
   }
 
-  get cacheDedicated(): Worker | undefined {
+  get cache(): Worker | SharedWorker | undefined {
     return this._cache;
   }
 
-  set cacheDedicated(worker: Worker | undefined){
+  set cache(worker: Worker | SharedWorker | undefined){
     this._cache = worker;
   }
 
@@ -61,28 +53,41 @@ export class Workers {
 
   async setupWorkers(adapters: IAdaptersArgument){
     if(adapters.cacheAdapter.useWorker){
-      this.cacheDedicated = (await adapters.cacheAdapter.newWorker()) as Worker
-      console.log('cacheAdapter.newWorker()', this.cacheDedicated)
+      this.cache = (await adapters.cacheAdapter.newWorker()) as Worker | SharedWorker
+      console.log('cacheAdapter.newWorker()', this.cache)
     }
     if(adapters.websocketAdapter.useWorker){
-      this.websocketDedicated = (await adapters.websocketAdapter.newWorker()) as Worker
-      console.log('websocketAdapter.newWorker()', this.websocketDedicated)
+      this.websocket = (await adapters.websocketAdapter.newWorker()) as Worker | SharedWorker
+      console.log('websocketAdapter.newWorker()', this.websocket)
     }
     if(adapters.cacheAdapter.useWorker && adapters.websocketAdapter.useWorker){
       const cacheAdapterChannelPort = this.channel.port2;
       const websocketAdapterChannelPort = this.channel.port1;
-      if(this.cacheDedicated?.postMessage){
+      if(this.cache instanceof Worker || this.cache instanceof SharedWorker){
         const message = {type: 'setup', channelPort: cacheAdapterChannelPort}
-        console.log(`[Workers] setupWorkers() -> cacheDedicated.postMessage()`, this.cacheDedicated, message)
-        this.cacheDedicated.postMessage(message, [cacheAdapterChannelPort]);  
+        if(this.cache instanceof Worker) {
+          console.log(`[Workers] setupWorkers() -> cache.postMessage() to Worker`, this.cache, message)
+          this.cache.postMessage(message, [cacheAdapterChannelPort]);  
+        }
+        else if (this.cache instanceof SharedWorker) {
+          console.log(`[Workers] setupWorkers() -> cache.port.postMessage() to SharedWorker`, this.cache, message)
+          this.cache.port.postMessage(message, [cacheAdapterChannelPort]);
+        }
+        
       }
       else {
         console.warn('Cache Worker not defined')
       }
-      if(this.websocketDedicated?.postMessage){
+      if(this.websocket instanceof Worker || this.websocket instanceof SharedWorker){
         const message = {type: 'setup', channelPort: websocketAdapterChannelPort}
-        console.log(`[Workers] setupWorkers() -> websocketDedicated.postMessage()`, message)
-        this.websocketDedicated?.postMessage(message, [websocketAdapterChannelPort]);
+        if(this.websocket instanceof Worker) {
+          console.log(`[Workers] setupWorkers() [websocket] -> websocket.postMessage() to Worker`, message)
+          this.websocket.postMessage(message, [websocketAdapterChannelPort]);
+        }
+        else if(this.websocket instanceof SharedWorker) {
+          console.log(`[Workers] setupWorkers() [websocket] -> websocket.port.postMessage() to SharedWorker`, message)
+          this.websocket.port.postMessage(message, [websocketAdapterChannelPort]);
+        }
       }
       else {
         console.warn('Websocket Worker not defined')

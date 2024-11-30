@@ -6,8 +6,8 @@
     <h1>nostr.watch</h1>
     <nav>
         <a href="/">home</a>
-        <a href="">console</a>
-        <a href="">monitors</a>
+        <a href="/relays">relays</a>
+        <a href="/monitors">monitors</a>
         <a href="/preferences">preferences</a>
     </nav>
 </header>

@@ -7,7 +7,7 @@
     import { Accordion } from 'radix-svelte';
     import { writable, derived, type Writable } from 'svelte/store';
 
-    import { filterFormatters as _filterFormatters } from './config.js';
+    
     import Badge from '$lib/components/ui/badge/badge.svelte';
 
     import {
@@ -25,6 +25,9 @@
     export let filterOverrides: Record<string, { type: 'search' | 'badge', miniSearchOptions?: any }> = {};
     export let maxBadgeLength: number = 10;
     export let filters: Writable<Record<string, any>>; // Writable store passed from the parent component
+    export let config: any;
+
+    const { filterFormatters:_filterFormatters } = config;
 
     // **Accordion States**
     let rootValue;

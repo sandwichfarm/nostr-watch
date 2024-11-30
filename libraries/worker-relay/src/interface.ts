@@ -14,7 +14,7 @@ export interface InitAargs {
 }
 
 export class WorkerRelayInterface {
-  #worker: Worker;
+  #worker: Worker | SharedWorker;
   #commandQueue: Map<string, (v: unknown, ports: ReadonlyArray<MessagePort>) => void> = new Map();
 
   // Command timeout
@@ -24,8 +24,8 @@ export class WorkerRelayInterface {
    * Interface wrapper for worker relay
    * @param scriptPath Path to worker script or Worker script object
    */
-  constructor(scriptPath?: string | URL | Worker, channelPort?: MessagePort) {
-    if (scriptPath instanceof Worker) {
+  constructor(scriptPath?: string | URL | Worker | SharedWorker, channelPort?: MessagePort) {
+    if (scriptPath instanceof Worker || scriptPath instanceof SharedWorker) {
       this.#worker = scriptPath;
     } else {
       const sp = scriptPath ? scriptPath : new URL("@nostrwatch/worker-relay/dist/esm/worker.mjs", import.meta.url);
@@ -34,10 +34,13 @@ export class WorkerRelayInterface {
     this.#worker.onerror = e => {
       console.error(e.message, e);
     };
-    this.#worker.onmessageerror = e => {
-      console.error(e);
-    };
-    this.#worker.onmessage = e => {
+    if(this.#worker instanceof Worker) {
+      this.#worker.onmessageerror = e => {
+        console.error(e);
+      };
+    }
+
+    const onmessage = (e: MessageEvent) => {
       const cmd = e.data as WorkerMessage<any>;
       if (cmd.cmd === "reply") {
         const q = this.#commandQueue.get(cmd.id);
@@ -45,8 +48,19 @@ export class WorkerRelayInterface {
         this.#commandQueue.delete(cmd.id);
       }
     };
+    if(this.#worker instanceof Worker) {
+      this.#worker.onmessage = onmessage; 
+    }
+    else if(this.#worker instanceof SharedWorker) {
+      this.#worker.port.onmessage = onmessage;
+    }
     if(channelPort) {
-      this.#worker.postMessage({ type: "setup", channelPort }, [channelPort]);
+      if(this.#worker instanceof Worker) {
+        this.#worker.postMessage({ type: "setup", channelPort }, [channelPort]);
+      }
+      else if(this.#worker instanceof SharedWorker) {
+        this.#worker.port.postMessage({ type: "setup", channelPort }, [channelPort]);
+      }
     }
   }
 
@@ -110,7 +124,12 @@ export class WorkerRelayInterface {
       args,
     } as WorkerMessage<T>;
     return await new Promise<R>((resolve, reject) => {
-      this.#worker.postMessage(msg);
+      if(this.#worker instanceof Worker) {
+        this.#worker.postMessage(msg);
+      }
+      else if(this.#worker instanceof SharedWorker) {
+        this.#worker.port.postMessage(msg);
+      }
       const t = setTimeout(() => {
         this.#commandQueue.delete(id);
         reject(new Error("Timeout"));

@@ -112,7 +112,7 @@ export const bootstrap = async (_instance?: Nip66) => {
     const nip66Instance = await instance(_instance);
     bindBootstrapEmitters(nip66Instance);
     await nip66Instance.monitorService.bootstrap();
-    bindLiveSubscriptionEmitters(nip66Instance);
+    // bindLiveSubscriptionEmitters(nip66Instance);
 };
 
 export const destroy = () => {

@@ -18,7 +18,7 @@ export interface IAdapter {
   workers?: Workers;
   useWorker: boolean;
 
-  newWorker(): Promise<Worker>;
+  newWorker(): Promise<Worker | SharedWorker>;
 
   // bindWorkerHandlers(): void;
   // _onMessage(event: MessageEvent): void;
@@ -44,15 +44,20 @@ export abstract class Adapter {
   private _ls: LocalStorageWrapper;
   private _workers?: Workers
 
-  protected _overloadWorker?: Worker;
+  protected _overloadWorker?: Worker | SharedWorker;
 
   useWorker: boolean = true;
 
-  constructor( worker?: Worker | URL ) {
+  constructor( worker?: Worker | SharedWorker | URL, shared?: boolean ) {
     if (worker instanceof Worker) {
       this.overloadWorker = worker;
     } else if(worker instanceof URL) {
-      this.overloadWorker = new Worker(worker, { type: "module" });
+      if(shared) {
+        this.overloadWorker = new SharedWorker(worker, { type: "module" });
+      }
+      else {
+        this.overloadWorker = new Worker(worker, { type: "module" });
+      }
     }
     this._ls = new LocalStorageWrapper(['nip66', this.slug])
   }
@@ -64,11 +69,11 @@ export abstract class Adapter {
     throw new Error('Method not implemented.');
   }
 
-  get overloadWorker(): Worker | undefined {
+  get overloadWorker(): Worker | SharedWorker | undefined {
     return this._overloadWorker;
   }
 
-  private set overloadWorker(worker: Worker) {
+  private set overloadWorker(worker: Worker | SharedWorker) {
     this._overloadWorker = worker;
   }
 

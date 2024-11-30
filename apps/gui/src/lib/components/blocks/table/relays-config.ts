@@ -24,7 +24,6 @@ class SpeedGroupResolver {
 }
 
 const speedGroupResolver = new SpeedGroupResolver();
-  
 
 export type NameFormatter = Record<string, string>;
 
@@ -47,10 +46,10 @@ export const columnsDisable: DataKeys = ['as', 'asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
 export const columnsShow: DataKeys = ['relay', 'lastSeen', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
-export const filtersShow: DataKeys = ['network', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode']
+export const filtersShow: DataKeys = ['networks', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode']
 
 export const humanReadableNames: NameFormatter = {
-    network: 'Network',
+    networks: 'Network',
     supportedNips: 'NIPs',
     software: 'Software',
     relay: 'Relay',
@@ -141,4 +140,15 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
         return text.slice(0, maxLength) + '...';
     }
     return text;
+}
+
+export default {
+    humanReadableNames,
+    formatters,
+    tableFormatters,
+    filterFormatters,
+    columnsDisable,
+    filtersDisable,
+    columnsShow,
+    filtersShow
 }

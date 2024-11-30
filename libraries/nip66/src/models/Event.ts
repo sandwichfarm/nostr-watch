@@ -61,7 +61,7 @@ export const transformCheck = (event: any) => {
   const monitorPubkey = event.pubkey;
   const created_at = event.created_at;
 
-  const network = event.tags.find((tag: NostrTag) => tag[0] === 'n')?.[1] || null;
+  const networks = event.tags.find((tag: NostrTag) => tag[0] === 'n')?.[1] || null;
   const rttOpen = parseInt(event.tags.find((tag: NostrTag) => tag[0] === 'rtt-open')?.[1]) || null;
   const rttWrite = parseInt(event.tags.find((tag: NostrTag) => tag[0] === 'rtt-write')?.[1]) || null;
   const rtt = rttOpen || rttWrite || null;
@@ -93,7 +93,7 @@ export const transformCheck = (event: any) => {
     relay,
     monitorPubkey,
     created_at,
-    network,
+    networks,
     rtt,
     operatorPubkey,
     supportedNips,
@@ -120,7 +120,7 @@ export class Nip66Event extends NostEvent {
       'relay', 
       'monitorPubkey', 
       'created_at', 
-      'network', 
+      'networks', 
       'rtt', 
       'operatorPubkey', 
       'supportedNips', 
@@ -152,8 +152,8 @@ export class Nip66Event extends NostEvent {
     return this.json.created_at;
   }
 
-  get network(): string | null {
-    return this.tags.find((tag: NostrTag) => tag[0] === 'n')?.[1] || null;
+  get networks(): string[] | null {
+    return this.tags.filter((tag: NostrTag) => tag[0] === 'n').map((tag: NostrTag) => tag[1]) || null;
   }
 
   get rtt(): number | null {
@@ -166,13 +166,15 @@ export class Nip66Event extends NostEvent {
   }
 
   get supportedNips(): string[] | null {
-    return this.tags
-      .filter((tag: NostrTag) => tag[0] === 'N')
-      .map((tag: NostrTag) => tag[1]) || null;
+    const nips = 
+      this.tags
+        .filter((tag: NostrTag) => tag[0] === 'N')
+        .map((tag: NostrTag) => tag[1]) || null;
+    return Array.from(new Set(nips));
   }
 
   get software(): string | null {
-    return this.tags.find((tag: NostrTag) => tag[0] === 's')?.[1] || null;
+    return this.tags.find((tag: NostrTag) => tag[0] === 's')?.[1]?.toLowerCase() || null;
   }
 
   get version(): string | null {

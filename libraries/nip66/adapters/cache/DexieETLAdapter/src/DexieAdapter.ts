@@ -56,7 +56,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
     return this._idb;
   }
 
-  async newWorker(): Promise<Worker> {
+  async newWorker(): Promise<Worker | SharedWorker> {
     return DexieWorker();
   }
 
@@ -147,8 +147,8 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   async patchMonitor(monitor: Partial<IMonitor>): Promise<void> { 
     return new Promise((resolve, reject) => {
-      if(!monitor?.id) return resolve(void 0)
-      this.idb.monitors.update(monitor.id, monitor)
+      if(!monitor?.pubkey) return resolve(void 0)
+      this.idb.monitors.update(monitor.pubkey, monitor)
         .then(() => resolve(void 0))
         .catch(reject)
     })

@@ -151,20 +151,11 @@ export default class {
     return this.websocketAdapter;
   }
 
-  get wsWorker(): Worker | undefined {
-    return this?.websocketAdapter?.workers?.websocketDedicated;
+  get wsWorker(): Worker | SharedWorker | undefined {
+    return this?.websocketAdapter?.workers?.websocket;
   }
-
-  get wsSharedWorker(): SharedWorker | undefined {  
-    return this?.websocketAdapter?.workers?.websocketShared;
-  }
-
   get cacheWorker():  SharedWorker | Worker | undefined {
-    return this?.cacheAdapter?.workers?.cacheDedicated;
-  }
-
-  get cacheSharedWorker(): SharedWorker | undefined {
-    return this?.cacheAdapter?.workers?.cacheShared;
+    return this?.cacheAdapter?.workers?.cache;
   }
 
   async bootstrap(){

@@ -136,29 +136,33 @@ export class CacheAdapter extends Adapter {
   static type = 'CacheAdapter';
   readonly slug: string = 'CacheAdapter:unset'; 
 
-  constructor(worker?: Worker | URL) {  
+  constructor(worker?: Worker | SharedWorker | URL) {  
     super(worker)
     StateManager.on('destroy', () => {
-      this.dedicatedWorker?.terminate()
+      if(this.worker instanceof Worker)
+        this.worker?.terminate()
     })
   }
 
-  get dedicatedWorker(): Worker | undefined {
-    return this.workers?.cacheDedicated
+  get worker(): Worker | SharedWorker | undefined {
+    return this.workers?.cache
   }
 
-  get sharedWorker(): SharedWorker | undefined {
-    return this.workers?.cacheShared
-  }
 
   protected bindWorkerHandlers(): void {
-    if(!this?.workers?.cacheDedicated) return console.warn('[CacheAdapter] Error binding worker handlers: no worker found')
-    this.workers.cacheDedicated.onmessage = this._onMessage.bind(this);
-    this.workers.cacheDedicated.onerror = this._onError.bind(this)
+    if(!this?.workers?.cache) return console.warn('[CacheAdapter] Error binding worker handlers: no worker found')
+    if(this.workers.cache instanceof Worker)
+      this.workers.cache.onmessage = this._onMessage.bind(this);
+    else if(this.workers.cache instanceof SharedWorker)
+      this.workers.cache.port.onmessage = this._onMessage.bind(this);
+    this.workers.cache.onerror = this._onError.bind(this)
   }
 
   ping(): void {
     console.log(`[CacheAdapter:${this.constructor.name}] o/o SEND: PING -> cacheWorker`)
-    this.workers?.cacheDedicated?.postMessage({type: 'ping'})
+    if(this.workers?.cache instanceof Worker)
+      this.workers?.cache?.postMessage({type: 'ping'})
+    else if (this.workers?.cache instanceof SharedWorker)
+      this.workers?.cache?.port.postMessage({type: 'ping'})
   }
 }

@@ -2668,6 +2668,7 @@ __metadata:
     svelte-preprocess: "npm:^6.0.3"
     svelte-radix: "npm:^1.1.0"
     svelte-time: "npm:^0.9.0"
+    svelte-timeago: "npm:^0.1.2"
     tailwind-merge: "npm:^2.4.0"
     tailwind-variants: "npm:^0.2.1"
     tailwindcss: "npm:^3.4.4"
@@ -18201,6 +18202,13 @@ __metadata:
   dependencies:
     dayjs: "npm:^1.11.10"
   checksum: 10c0/16a0ba5c6192e0f1000de2de381de1e4b1b178e595293fb86d95dcee45e32b147a6900c6a4191a2a99ae1e1517a01ccbfdb5ca765ace8224922d714ce180c5b4
+  languageName: node
+  linkType: hard
+
+"svelte-timeago@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "svelte-timeago@npm:0.1.2"
+  checksum: 10c0/f9a599bc695fc180ec3d6a0d6655d007561c05dd3113574ac41e516c5683bdbbe9e76a27e26e3e392dbdd19da93d11310c23f078a0b78956624ad55e901b32c8
   languageName: node
   linkType: hard
 

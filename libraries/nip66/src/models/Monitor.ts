@@ -48,7 +48,14 @@ export class Monitor {
   }
 
   set lastActive(value: number) {
-    this.registration.lastActive = value ? value : -1;
+    if(!this.registration.lastActive || value > this.registration.lastActive){
+      this.registration.lastActive = value;
+      this.emitUpdate();
+    }   
+  }
+
+  get checks(): string[] {
+    return this.registration.checks || [];
   }
 
   get lastActive(): number {
@@ -174,8 +181,7 @@ export class Monitor {
 
   addRegistration(event: IEvent): void {
     this.registration = {...defaultMonitor, ...n66IEventToIMonitor(event)};
-    StateManager.emit('monitor:update:registration', {pubkey: this.pubkey, value: this.registration});
-    StateManager.emit('monitor:update', this);
+    this.emitUpdate('registration', this.registration)
   }
 
   addProfile(event: IEvent): void {
@@ -185,8 +191,7 @@ export class Monitor {
     } catch (e) {
       console.warn('Monitor addProfile error:', e);
     }
-    StateManager.emit('monitor:update:profile', {pubkey: this.pubkey, value: this.profile});
-    StateManager.emit('monitor:update', this);
+    this.emitUpdate('profile', this.profile);
   }
 
   addRelays(event: IEvent): void {
@@ -194,10 +199,17 @@ export class Monitor {
       let relays = event.tags.filter((t) => t[0] === 'r').map((t) => new URL(t[1]).toString());
       relays = relays ?? [];
       this.relays = relays;
-      StateManager.emit('monitor:update:relays', {pubkey: this.pubkey, value: this.relays});
-      StateManager.emit('monitor:update', this);
+      this.emitUpdate('relays', this.relays);
     } catch (e) {
       console.warn('Monitor addRelays error:', e);
     }
+  }
+
+  private emitUpdate(key?: string, value?: any): void {
+    if(key && value) {
+      StateManager.emit(`monitor:update:${key}`, {pubkey: this.pubkey, value});
+    }
+    
+    StateManager.emit('monitor:update', this);
   }
 }

@@ -1,22 +1,34 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-
-	import Stats from '$lib/components/blocks/Stats.svelte';
-	import Console from '$lib/components/blocks/console/Console.svelte';
-
-	import { bootstrapMonitorData, destroy } from '$lib/utils/lifecycle.js';
+    import Stats from '$lib/components/blocks/Stats.svelte';
+    import DataTable from '$lib/components/blocks/table/DataTable.svelte';
+	
+    import { monitors, monitorRows } from '$lib/stores/monitors.js';
 	export const prerender = true;
+
+    import config from '$lib/components/blocks/table/monitors-config.js';
 
 	let val: string='';
 
-	onMount(() => {
+	onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-        bootstrapMonitorData();
     });
-	onDestroy(destroy);
 </script>
+<!-- <main class="mt-20 pt-10"> -->
+    {#if $monitors.length}
+        <DataTable data={monitorRows} {config} />
+        <!-- <ul>
+        {#each $monitors as monitor (monitor?.registration?.pubkey)}
+            {#if monitor?.lastActive && monitor.lastActive > 0}
+            <li>
+                <MonitorDataRow {monitor} />
+            </li>
+            {/if}
+        
+        {/each}
+    </ul> -->
 
-<main>
-	<Stats />
-	<Console />
-</main>
+    {/if}
+<!-- </main> -->
+
+<Stats />

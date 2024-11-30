@@ -5,96 +5,106 @@ import type { IEvent } from '@nostrwatch/nip66/interfaces'
 import { handleMsg as relayHandler, insertBatch, WorkerState, relayInit, messageChannelInit, relayEvent, InitAargs, relayWipe } from '@nostrwatch/worker-relay/dist/worker-utils'
 
 export class NostrSqliteWorker extends AdapterCacheWorker {
-    state: WorkerState = {
-        self: this.mainThread as DedicatedWorkerGlobalScope,
+    state: WorkerState =  {
+        self: self as SharedWorkerGlobalScope | DedicatedWorkerGlobalScope,
         eventWriteQueue: [],
         relay: undefined,
         messageChannel: undefined,
-
         insertBatchEvery: 1000,
         insertBatchSize: 25,
-        lastBatch: 0
-    }
+        lastBatch: 0,
+    };
     relay = relayHandler;
-    private batcher: ReturnType<typeof setTimeout> = setTimeout(() => { insertBatch(this.state) }, 1000)
-    
-    constructor( options: WorkerOptions ){
-        super(options)
-        console.log('NostrSqliteWorker constructor')
-        this.setupHandlers()
+
+    private batcher: ReturnType<typeof setTimeout> = setTimeout(() => insertBatch(this.state), this.state.insertBatchEvery);
+
+    constructor(options: WorkerOptions) {
+        super(options);
+        console.log('NostrSqliteWorker', this.state)
+        console.log('NostrSqliteWorker constructor');
+        this._setupHandlers()
     }
 
-    destroy(){
-        clearTimeout(this.batcher)
+    destroy() {
+        clearTimeout(this.batcher);
+        if (this.state.messageChannel) {
+            this.state.messageChannel.close();
+        }
+        console.log('NostrSqliteWorker destroyed');
     }
-    
-    async setup(command: AdapterWorkerMessage){ 
-        
-        console.log(`NostrSqliteWorker: setup()`,  command)
+
+    async setup(command: AdapterWorkerMessage) {
+        console.log(`NostrSqliteWorker: setup()`, command);
         const conf: InitAargs = {
             databasePath: "relay.db",
-            insertBatchSize: this.state.insertBatchSize
+            insertBatchSize: this.state.insertBatchSize,
+        };
+
+        try {
+            await relayInit(this.state, conf);
+        } catch (err) {
+            console.error('Setup failed, retrying with wipe:', err);
+            await relayWipe(this.state);
+            await this.setup(command);
         }
-        await relayInit(this.state, conf).catch( async () => {
-            await relayWipe(this.state)
-            this.setup(command);
-        })
-        // await relayWipe(this.state)
-        if(command?.channelPort){
-            this.state.messageChannel = command.channelPort
-            this.setupChannelHandlers()
+
+        if (command?.channelPort) {
+            this.state.messageChannel = command.channelPort;
+            this.setupChannelHandlers();
         }
-        console.log(this.channel)
     }
 
-    setupHandlers(){
-        console.log('NostrSqliteWorker: setupHandlers()')
-        if(!this?.mainThread) return console.warn('NostrSqliteWorker: mainThread not defined')
-        this.mainThread.onmessage = async (message: MessageEvent) => {
-          console.log(`NostrSqliteWorker: From Main Thread:`, message.data)
-          if(message.data.type === 'setup'){
-            console.log('NostrSqliteWorker: setup()')
-            await this.__setup(message.data)
-            return
-          }
-          else {
-            this.fromMainThread(message);
-          }
-        }
-        if(this.state?.messageChannel){
-            this.state.messageChannel.onmessage = async (message: MessageEvent) => {
-                console.log(`NostrSqliteWorker: Over MessageChannel: ${message.data.cmd} -> ${message.data.args}`)
-                this.relay(this.state, message)
+    //do nothing.
+    setupHandlers(){}
+
+    _setupHandlers() {
+        this.state.self = typeof SharedWorkerGlobalScope !== 'undefined' && this.mainThread instanceof SharedWorkerGlobalScope 
+            ? this.mainThread as SharedWorkerGlobalScope 
+            : this.mainThread as DedicatedWorkerGlobalScope;
+    
+        const onmessage = async (message: MessageEvent) => {
+            console.log(`NostrSqliteWorker: Received:`, message.data);
+            if (message.data.type === 'setup') {
+                await this.setup(message.data);
+            } else {
+                this.fromMainThread(message);
             }
+        };
+
+        if (this.state.self instanceof DedicatedWorkerGlobalScope) {
+            console.log('Running in DedicatedWorkerGlobalScope');
+            this.state.self.onmessage = onmessage;
+        } else if (this.state.self instanceof SharedWorkerGlobalScope) {
+            console.log('Running in SharedWorkerGlobalScope');
+            this.state.self.onconnect = (event: MessageEvent) => {
+                const port = event.ports[0];
+                port.onmessage = onmessage;
+            };
         }
-        
     }
 
-    setupChannelHandlers(){
-        if(!this.state.messageChannel) return console.warn('channel not defined')
+    setupChannelHandlers() {
+        if (!this.state.messageChannel) return console.warn('Channel not defined');
         this.state.messageChannel.onmessage = (message: MessageEvent) => {
-          const command = message.data as AdapterCacheWorkerCommand;
-          this.onChannelMessage(command);
-        }
-        this.state.messageChannel.onmessageerror = this.onMessageError
-      }
+            const command = message.data as AdapterCacheWorkerCommand;
+            this.onChannelMessage(command);
+        };
+        this.state.messageChannel.onmessageerror = this.onMessageError;
+    }
 
     fromMainThread(ev: MessageEvent) {
-        console.log(`CacheWorker: From Main Thread:`, ev)
-        this.relay(this.state, ev)
+        console.log(`CacheWorker: From Main Thread:`, ev);
+        if(this.state.relay) 
+        this.relay(this.state, ev);
     }
-    
+
     async addEvent(nostrEvent: IEvent) {
-        // console.log(`NostrSqliteWorker: Over MessageChannel: addEvent() -> ${nostrEvent.id}`)
-        relayEvent(this.state, nostrEvent)
+        relayEvent(this.state, nostrEvent);
     }
-    
+
     async addEvents(nostrEvents: IEvent[]) {
-        console.log(`NostrSqliteWorker: Over MessageChannel: relay.eventBatch() -> ${nostrEvents.length}`)
-        this?.state?.relay?.eventBatch?.(nostrEvents)
-        // for(const event of nostrEvents){
-        //     this.addEvent(event)
-        // }
+        console.log(`NostrSqliteWorker: relay.eventBatch() -> ${nostrEvents.length}`);
+        this?.state?.relay?.eventBatch?.(nostrEvents);
     }
 }
 

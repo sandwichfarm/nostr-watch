@@ -2,4 +2,4 @@
 
 # @nostrwatch/gui
 
-Interface for @nostrwatch stack and https://nostr.watch
+NIP-66 client

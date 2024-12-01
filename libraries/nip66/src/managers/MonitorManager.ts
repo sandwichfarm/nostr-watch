@@ -53,6 +53,10 @@ export class MonitorManager {
     return this.monitorsArray.filter((monitor) => monitor.lastActive > 0 && monitor.priority >= 0);
   }
 
+  get enabledMonitors(): Monitor[] {  
+    return this.monitorsArray.filter((monitor) => monitor.enabled);
+  }
+
   get sortedMonitors(): Monitor[] {
     const sortedMonitors = MonitorManager.sortMonitorsByPriority(this.activeMonitors);
     return sortedMonitors
@@ -83,6 +87,14 @@ export class MonitorManager {
       return monitor.registration.lastActive > 0;
     });
     return qualified;
+  }
+
+  loadMonitors(monitors: any[]) {
+    monitors.forEach((monitor) => {
+      const { pubkey } = monitor.registration;
+      if(!pubkey) return;
+      this.monitors.set(pubkey, Monitor.fromJson(monitor));
+    });
   }
 
   handleEvent(event: IEvent): void {

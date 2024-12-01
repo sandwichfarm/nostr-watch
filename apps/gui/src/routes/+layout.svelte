@@ -14,6 +14,8 @@
             goto('/mobile'); // Redirect to the mobile-specific template
         }
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+        
+        if($page.url.pathname.includes('/note/')) return console.log('Skipping bootstrap');
         const bootstrap = (await import('$lib/utils/lifecycle')).bootstrap;
         bootstrap()
 

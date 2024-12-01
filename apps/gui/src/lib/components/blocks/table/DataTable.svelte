@@ -4,25 +4,25 @@
     import { DataTable } from '@careswitch/svelte-data-table';
     import * as Resizable from '$lib/components/ui/resizable';
     import Filters from './Filters.svelte'; 
-    import { relayAggregates } from '$lib/stores/checks.js';
-    // import  from './config.js';
     import DataTableShowResults from '$lib/components/partials/DataTableShowResults.svelte';
     import DataTablePaginator from '$lib/components/partials/DataTablePaginator.svelte';
-    import { Debounce } from '$lib/utils/debounce';
     import { resultsPerPage } from '$lib/stores/datatable-settings';
     import { applyFilters, createRelayFilters, type ConsoleFilter } from '$lib/utils/filter-dom.js';
     import { Input } from '$lib/components/ui/input/index.js';
-    import { Button } from '$lib/components/ui/button/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
 
     export let data: any;
     export let config: any;
     export let enableFilters: boolean = true;
+    export let actionsComponent;
 
-    const { columnsDisable, columnsShow, filtersDisable, filtersShow, humanReadableNames, formatters, tableFormatters, filterFormatters } = config
+    const { columnsDisable, columnsShow, filtersDisable, filtersShow, humanReadableNames, formatters, tableFormatters, filterFormatters, tableRowStyler } = config
 
 	const maxBadgeLength: number = 20;
+
+    
+
 
     // **Stores and Reactive Variables**
     const filters = writable({});
@@ -60,6 +60,7 @@
             return { data, columns };
         }
     );
+    
 
     const filteredTableData = derived(
         [tableData, filters],
@@ -89,9 +90,25 @@
         globalFilter = value;
         if (tableInstance) {
             tableInstance.globalFilter = value;
-            tableInstance.refresh(); // Assuming 'refresh' re-renders the table
+            // tableInstance.refresh(); // Assuming 'refresh' re-renders the table
         }
     }
+
+    const rowStyles = derived(
+        tableData,
+        ($tableData) => {
+            if (!$tableData.data || !$tableData.columns || $tableData.columns.length === 0 || !tableRowStyler) {
+                return new Map();   
+            }
+
+
+            const map: Map<string, string> = new Map();
+            $tableData.data.forEach((row: any) => {
+                map.set(row.id, tableRowStyler(row));
+            });
+            return map
+        }
+    );
 
     // **DataTable Subscription**
     onMount(() => {
@@ -194,11 +211,14 @@
                                     </button>
                                 </Table.Head>
                             {/each}
+                            {#if actionsComponent}
+                            <svelte:component this={actionsComponent} view='head' />
+                            {/if}
                         </Table.Row>
                     </Table.Header>
                     <Table.Body>
                         {#each tableInstance?.rows as row (row.id)}
-                            <Table.Row>
+                            <Table.Row class="{$rowStyles.get(row.pubkey)}">
                                 {#each tableInstance?.columns as column (column.id)}
                                     {#if column.id === 'status'}
                                         <Table.Cell>
@@ -207,9 +227,18 @@
                                             </Badge>
                                         </Table.Cell>
                                     {:else}
-                                        <Table.Cell>{@html tableFormatters?.[column.key] ? tableFormatters[column.key](row[column.key]) : row[column.key]}</Table.Cell>
+                                        <Table.Cell>
+                                            {#if tableFormatters?.[column.key]}
+                                                {@html tableFormatters[column.key](row[column.key], row)}
+                                            {:else}
+                                                {@html row[column.key]}
+                                            {/if}    
+                                        </Table.Cell>
                                     {/if}
                                 {/each}
+                                        {#if actionsComponent}
+                                        <svelte:component this={actionsComponent} data={row} />
+                                        {/if}
                             </Table.Row>
                         {/each}
                     </Table.Body>

@@ -11,7 +11,6 @@ export type IRelaysByLiveness = {
   dead: IEvent[],
 }
 
-
 export type IMonitor = {
   pubkey: string; 
   eventId: string; 
@@ -29,22 +28,36 @@ const defaultMonitor: IMonitor = {
 }
 
 export class Monitor {
+  enabled: boolean = false;   
   priority: number = -1;
   registration: IMonitor;
   profile: any;
   relays: string[];
   state: SyncStateManager;
   deadThreshold: number = 60*60*24*30;  
+  
   private _frequencyForgivenessMultiplier: number = 4;
 
-  constructor(event: IEvent) {
-    if(event?.kind !== 10166) throw new Error('Needs to be instantiated with a Monitor Registration event [kind: 10166');
+  constructor(event?: IEvent) {
+    // if(event?.kind !== 10166) throw new Error('Needs to be instantiated with a Monitor Registration event [kind: 10166');
     this.priority = 0;
     this.registration = {} as IMonitor;
     this.profile = {};
     this.relays = [];
-    this.addRegistration(event);
+    if(event){
+      this.addRegistration(event);
+    }
     this.state = new SyncStateManager(this.pubkey)
+  }
+
+  static fromJson(monitorJson: any): Monitor {
+    const monitor = new Monitor();
+    monitor.registration = monitorJson.registration ?? {};
+    monitor.profile = monitorJson.profile ?? {};  
+    monitor.relays = monitorJson.relays ?? [];
+    monitor.enabled = monitorJson.enabled ?? false;
+    monitor.priority = monitorJson?.priority ?? 0;
+    return monitor;
   }
 
   set lastActive(value: number) {
@@ -110,6 +123,16 @@ export class Monitor {
 
   get isOfflineBetween(): [number, number] {
     return [this.isDeadBefore, this.isOnlineAfter];
+  }
+
+  enable(): void {
+    this.enabled = true;
+    this.emitUpdate();
+  }
+
+  disable(): void {
+    this.enabled = false;
+    this.emitUpdate();
   }
 
   relayIsOffline(event: IEvent): boolean {
@@ -185,11 +208,11 @@ export class Monitor {
   }
 
   addProfile(event: IEvent): void {
+    console.log(`EVENT ${event.kind}`, event.pubkey)
     try {
-      let profile = JSON.parse(event.content);
-      this.profile = profile;
+      this.profile = JSON.parse(event.content);
     } catch (e) {
-      console.warn('Monitor addProfile error:', e);
+      console.error('Monitor addProfile error:', e);
     }
     this.emitUpdate('profile', this.profile);
   }
@@ -203,13 +226,13 @@ export class Monitor {
     } catch (e) {
       console.warn('Monitor addRelays error:', e);
     }
+    
   }
 
   private emitUpdate(key?: string, value?: any): void {
     if(key && value) {
       StateManager.emit(`monitor:update:${key}`, {pubkey: this.pubkey, value});
     }
-    
     StateManager.emit('monitor:update', this);
   }
 }

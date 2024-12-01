@@ -38,6 +38,9 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   constructor( options: NostrToolsWorkerOptions ){
     console.log('NostrToolsWorker: constructor', options)
     super(options)
+    const pool = new SimplePool();
+    this._pool = pool
+    this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool))
     this.relays = options?.relays ? options.relays : defaultRelays
   }
 
@@ -62,14 +65,15 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   async connect(): Promise<void> {
     if(this?.pool)
       return console.warn('[NostrToolsAdapter] Error connecting: pool  exists')  
-    this._pool = new SimplePool();
-    this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(new SimplePool()))
+    const pool = new SimplePool();
+    this._pool = pool
+    this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool))
   }
 
   async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
     console.log('NostrToolsWorker: _subscribe', request)
     return new Promise(async (resolve, reject) => {
-      let { filters, relays, options } = request;
+      let { filters, relays, options, hash } = request;
       const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
       const effectiveRelays = relays ?? this.relays;
       const result: IEvent[] = [];
@@ -91,6 +95,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
       }
       const onclose = () => {
         callbacks?.onclose?.();
+        this.subs.delete(hash as string);
       }
       const oneose = () => {
         callbacks?.oneose?.();
@@ -101,24 +106,26 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
         else {
           resolve(result)
         }
-        
       }
       console.log('NostrToolsWorker: _subscribe: this.pool.subscribeMany', effectiveRelays, filters)
-      this.pool!.subscribeMany(
+      const closer = this.pool!.subscribeMany(
         effectiveRelays,
         filters,
         { onevent, oneose, onclose }
       );
+      this.subs.set(hash as string, closer.close.bind(closer));
     });
   }
 
   async _fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
-    let { filters, relays, options } = request;
+    if(!this.fetcher) throw new Error('No fetcher available');
+    let { filters, relays, options, hash } = request;
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     const effectiveRelays = relays ?? this.relays;
     if (!effectiveRelays || effectiveRelays.length === 0) {
       throw new Error('No relays available for fetching.');
     }
+    this.subs.set(hash as string, this.fetcher.shutdown.bind(this.fetcher));
     filters = Array.isArray(filters) ? filters : [filters];
     await this.connect();
     const events = []
@@ -143,9 +150,6 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             callbacks!.onevent?.(event);
           }
         }
-        const onclose = () => {
-          callbacks?.onclose?.();
-        }
         const oneose = () => {
           if(stream) {
             resolve(count > 0)
@@ -154,7 +158,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             resolve(Array.from(events));
           }
           callbacks?.oneose?.();
-          this.fetcher?.shutdown();
+          // this.fetcher?.shutdown();
         }
         try {
           const iterator = this.fetcher!.allEventsIterator(
@@ -174,14 +178,25 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
       }));
       console.log(`NostrToolsWorker: _fetch #${count}: complete`)
       count++
-      // fetchPromises.push(fetchPromise);
     }
+    callbacks?.onclose?.();
+    this.subs.delete(hash as string);
     const result = events.flat();
     return options?.stream? result.length > 0: result;
   }
 
+  closeSubscription(hash?: string): void {}
+
   unsubscribe(hash?: string): void {
-    this.terminate();
+    if(!hash) return
+    if(!this.subs.has(hash as string)) return
+    const closer = this.subs.get(hash as string);
+    if(typeof closer === 'function') {
+      closer();
+    }
+    if(typeof closer?.close === 'function') {
+      closer.close();
+    }
   }
 
   disconnect(): void {
@@ -190,13 +205,10 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   abort(): void {
-    if(this._signalIsInternal){
-      this._controller.abort();
-      this._controller = new AbortController();
-      this._signal = this._controller.signal;
-    }
-    else {
-      console.warn('Abort signal is not internal. Cannot abort, abort provided signal instead'); ;
+    for(const closer of this.subs.values()){
+      if(typeof closer === 'function') {
+        closer();
+      }
     }
   }
 

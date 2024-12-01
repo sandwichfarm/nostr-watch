@@ -19,7 +19,9 @@ export const monitors = throttledDerived(
   monitorsMap, 
   ($monitorsMap) => {
     const arr = Array.from($monitorsMap.values());
-    StateManager.set('cache:monitors', arr);
+    if(arr.length){
+      StateManager.set('cache:monitors', arr);  
+    }
     return arr;
   },
   10
@@ -44,6 +46,7 @@ export const monitorRows = derived(
       row.frequency = monitor?.registration?.frequency ?? null
       row.lastActive = monitor?.registration?.lastActive ?? null
       row.relays = monitor.relays ?? null
+      row.enabled = monitor.enabled ?? false
       const reportingOnline = get(monitorChecksCount)
       row.reportingOnline = reportingOnline?.[monitor.registration.pubkey] ?? 0
       return row;

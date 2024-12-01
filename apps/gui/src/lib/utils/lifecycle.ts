@@ -1,11 +1,19 @@
 import { get, type Updater } from 'svelte/store';
 
-import Nip66 from '@nostrwatch/nip66';
+import Nip66, { StateManager } from '@nostrwatch/nip66';
 
 import { Nip66Event } from '@nostrwatch/nip66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
 import { nip66, events, monitorsMap } from '$lib/stores/index.js';
+
+export const loadFromCache = (nip66Instance: Nip66) => {
+    const monitors = StateManager.get('cache:monitors')
+    console.log('Loading monitors from cache:', monitors);
+    if(monitors) {
+        nip66Instance.monitorService.loadMonitors(monitors);
+    }
+}
 
 export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
     if (!nip66Instance || typeof nip66Instance.on !== 'function') {
@@ -22,6 +30,16 @@ export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
             return monitorsMap;
         });
     });
+
+    const wtf = new Set()
+
+    nip66Instance.on('monitor:update:profile', (monitor: any) => {
+        wtf.add(monitor.pubkey)
+        // console.log(`EVENT 0 [from emitter]`, monitor.pubkey)
+        console.log(`EVENT 0 ${wtf.size} unique pubkeys`)
+    });
+
+    
 
     nip66Instance.on('events', (_events: any) => {
         console.log('Svelte Received events:', _events.length);
@@ -90,6 +108,8 @@ export const instance = async (instance?: Nip66): Promise<Nip66> => {
     else {
         console.log('nip66 already initialized');
     }
+
+    loadFromCache(nip66Instance);
 
     nip66.set(nip66Instance);
     return nip66Instance;

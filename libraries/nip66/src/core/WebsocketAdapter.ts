@@ -141,6 +141,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{
     if(callbacks && Object.keys(callbacks).length > 0) {
+      console.log('result', 'streaming')
       args.options.stream = true
     }
     const hash = this.request({
@@ -190,34 +191,42 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       const results: any[] = []
       const responseHandler = (message: WebsocketResponseBody) => {
         let { result, type } = message
+        console.log('result:type', type)
         if(type === 'events') {
           if(callbacks?.onevents){
+            console.log('result:events', 'callback:onevents')
             callbacks.onevents(result)
             return
           }
           for(let event of result){
             if(callbacks?.onevent){
+              console.log('result:events', 'callback:onevent')
               callbacks.onevent(event)
             }
             else {
-              results.push(...event)
+              console.log('result:events', 'push')
+              results.push(event)
             }
           }
         }
         else if(type === 'event'){
           if(callbacks?.onevent){
+            console.log('result', 'callback')
             callbacks.onevent(result)
           }
           else {
+            console.log('result', 'push')
             results.push(result)  
           }
         }
         else if(type == 'complete'){
           console.log('[WebsocketAdapter] complete')
           if(callbacks?.onevent){
+            console.log('result:complete', 'resolve: true')
             resolve(true)
           }
           else {
+            console.log('result:complete', `resolve: ${results.length} events`)
             resolve(results)
           }
           // this.subscriptions.delete(hash)

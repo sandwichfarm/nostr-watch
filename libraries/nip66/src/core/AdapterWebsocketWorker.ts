@@ -238,6 +238,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       ...defaultWebsocketResponseBody,
       result: result.length > 0,
       type: ResponseType.complete,
+      hash: hash as string
     }
     if(cache === true) {
       this.send({to: 'cache', args})

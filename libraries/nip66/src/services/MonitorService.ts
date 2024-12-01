@@ -35,6 +35,7 @@ export class MonitorService extends Service {
     this.addRelay('nip66', 'wss://relaypag.es');
     this.addRelay('userMeta', 'wss://purplepag.es');
     this.addRelay('userMeta', 'wss://user.kindpag.es');
+    this.addRelay('userMeta', 'wss://relay.nostr.band');
   }
 
   async init(): Promise<void> {
@@ -45,12 +46,20 @@ export class MonitorService extends Service {
     return this.monitorManager.monitorsMap;
   }
 
+  loadMonitors(monitorsArray: any[] ) {
+    this.monitorManager.loadMonitors(monitorsArray);
+  }
+
   get monitorsArray() {
     return this.monitorManager.monitorsArray;
   }
 
   get sortedMonitors() {
     return this.monitorManager.sortedMonitors;
+  }
+
+  get enabledMonitors() {
+    return this.monitorManager.enabledMonitors;
   }
 
   get activeMonitors() {
@@ -94,7 +103,14 @@ export class MonitorService extends Service {
   async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
     const { filters, relays, options } = args;
     const message: WebsocketRequestBody = { filters, relays, options };
-    const result = await this.websocketAdapter.fetch(message, callbacks);
+    const result = await this._fetch(message, callbacks);
+    return result;
+  }
+
+  async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+    const { filters, relays, options } = args;
+    const message: WebsocketRequestBody = { filters, relays, options };
+    const result = await this.websocketAdapter.subscribe(message, callbacks);
     return result;
   }
   
@@ -235,24 +251,21 @@ export class MonitorService extends Service {
     console.log('bootstrapMonitorMeta');
     const monitors = [...this.monitorsArray.map((m) => m.registration)];
     const authors = monitors.map((monitor: IMonitor) => monitor.pubkey);
-    authors.length = authors.length > 4 ? 4 : authors.length;
     const onevent = this.monitorManager.handleEvent.bind(this.monitorManager);
+    const onevents = (events: IEvent[]) => { events.forEach(onevent) };
+    const filters = authors.map(author => ({ authors: [author], kinds: [0, 10002] }))
     const result = await this.fetch(
       {
-        filters: [{
-          authors,
-          kinds: [0, 10002],
-          limit: authors.length*10
-        }], 
+        filters, 
         relays: this.userMetaRelays,
         options: {
           cache: true,
           returnResults: true,
           keepAlive: false,
-          stream: true,
+          stream: true
         }
       }, 
-      { onevent } );
+      { onevent, onevents } );
   }
 
   async isMonitorActive(pubkey: string): Promise<boolean> {
@@ -342,11 +355,11 @@ export class MonitorService extends Service {
   }
 
   getMonitorCheckFilters(): Filter[] {
-    if (!this.sortedMonitors.length) {
+    if (!this.enabledMonitors.length) {
       console.warn('MonitorService getMonitorCheckFilters: no monitors');
       return [];
     }
-    const monitors = this.sortedMonitors.slice(0, 12);
+    const monitors = this.enabledMonitors;
     let filters: Filter[] = [];
     const until = Math.round(Date.now()/1000);
     monitors.forEach((monitor) => {

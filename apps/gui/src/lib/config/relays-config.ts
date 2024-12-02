@@ -1,6 +1,7 @@
 import countryCodeToFlagEmoji from 'country-code-to-flag-emoji'
 import { relaySpeedGroupResolver, SpeedGroupBars, SpeedGroupColors, SpeedGroups } from '$lib/stores/checks.js';
 import { makeSoftwareReadable } from '$lib/synonyms/software.js';
+import { formatRelayUrl } from '$lib/utils/routing.js';
 
 type Resolver = (input: any) => any
 
@@ -64,7 +65,8 @@ export const formatters: Formatters = {}
 
 export const tableFormatters: Formatters = {
     relay: (relay) => {
-        return truncateWithEllipsis(relay, 44);
+        const truncated = truncateWithEllipsis(relay, 44);
+        return `<a href="/relays/${formatRelayUrl(relay)}">${truncated}</a>`;
     },
     geocode: (code) => {
         if(!code) return '🌐';

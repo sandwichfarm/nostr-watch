@@ -110,8 +110,10 @@ export default class {
   async adaptersReady(){
     if(this?.cacheAdapter)
       await this?.cacheAdapter.ready()
+    console.log(`[Base] CacheAdapter ready`)
     if(this?.websocketAdapter)
       await this?.websocketAdapter.ready()
+    console.log(`[Base] WebsocketAdapter ready`)
   }
 
   async setupWorkers(){
@@ -136,7 +138,7 @@ export default class {
     const { MonitorService } = await import('../services/MonitorService')
     this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
     this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
-    this.monitorService.init()
+    await this.monitorService.ready()
   }
 
   get state(): StateManager {

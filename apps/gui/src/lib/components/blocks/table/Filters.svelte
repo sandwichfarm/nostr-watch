@@ -429,8 +429,28 @@
     // **Format Filter Values Using Provided Formatters**
     export let filterFormatters: Record<string, (value: any) => string> = _filterFormatters;
 
-    const format = (key: string, values: string[]) => {
-        return values.map((value: string) => filterFormatters?.[key]?.(value) || value);
+    const format = (key: string, values: string[], html: boolean = true) => {
+        if(!html) {
+            let hasHtml = false;
+            const formatted = values.map((value: string) => filterFormatters?.[key]?.(value) || value)
+            formatted.forEach(value => {
+                if (containsHTML(value)) {
+                    hasHtml = true;
+                }
+            });
+            return hasHtml? values: formatted;
+        }
+        else {
+            return values.map((value: string) => filterFormatters?.[key]?.(value) || value);
+        }
+    }
+
+    function containsHTML(input: string) {
+        if (!input || input.indexOf('<') === -1 || input.indexOf('>') === -1) {
+            return false;
+        }
+        const htmlRegex = /<\/?[a-z][\s\S]*>/i;
+        return htmlRegex.test(input);
     }
 
     // **Reactive Statements for Styling Classes**
@@ -457,7 +477,7 @@
 </Button>
 
 <!-- **Active Filters Display (Enabled)** -->
-{#if Object.keys(activeFilters).length > 0}
+{#if false && Object.keys(activeFilters).length > 0}
     <div class="active-filters p-2">
         <h5>Active Filters:</h5>
         <div class="active-filters-list">
@@ -509,25 +529,25 @@
                                                 {filter.mode === 'AND' ? ' AND ' : ' OR '}
                                             {/if}
                                             <span class="inline-flex items-center">
-                                                {format(filter.key, [value])}
+                                                {format(filter.key, [value], false)}
                                                 <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, value)}>✕</Button>
                                             </span>
                                         {/each}
                                     {:else}
                                         <span class="inline-flex items-center">
-                                            {format(filter.key, [activeFilters[filter.key]])}
+                                            {format(filter.key, [activeFilters[filter.key]], false)}
                                             <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key])}>✕</Button>
                                         </span>
                                     {/if}
                                 {:else if filter.mode === 'UNIQUE'}
                                     {#if Array.isArray(activeFilters[filter.key]) && activeFilters[filter.key].length > 0}
                                         <span class="inline-flex items-center">
-                                            {format(filter.key, [activeFilters[filter.key][0]])}
+                                            {format(filter.key, [activeFilters[filter.key][0]], false)}
                                             <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key][0])}>✕</Button>
                                         </span>
                                     {:else if typeof activeFilters[filter.key] === 'string'}
                                         <span class="inline-flex items-center">
-                                            {format(filter.key, [activeFilters[filter.key]])}
+                                            {format(filter.key, [activeFilters[filter.key]], false)}
                                             <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key])}>✕</Button>
                                         </span>
                                     {/if}
@@ -632,7 +652,7 @@
                                         }"
                                         disabled={$disabledFilters[filter.key]?.has(String(value).toLowerCase())}
                                     >
-                                        {filterFormatters?.[filter.key]?.(value) || value}
+                                        {@html filterFormatters?.[filter.key]?.(value) || value}
                                     </Button>
                                 {/each}
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}

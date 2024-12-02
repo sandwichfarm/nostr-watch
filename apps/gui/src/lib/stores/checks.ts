@@ -1,5 +1,4 @@
-import type { Readable } from "svelte/motion";
-import { derived, writable, type Writable } from "svelte/store";
+import { derived, writable, type Writable, type Readable } from "svelte/store";
 
 interface Check {
   relay: string;
@@ -10,6 +9,7 @@ interface Check {
 import { eventsArray } from './events.js';
 
 import type { Nip66Event } from '@nostrwatch/nip66/models';
+import { StateManager } from "@nostrwatch/nip66";
 
 export const transformCheck = (event: any) => {
   const nid = event.id;
@@ -114,18 +114,28 @@ export const relayChecks: Readable<
   const globalMax = Math.max(...averageValues);
   const range = globalMax - globalMin || 1;
 
-  Object.keys(countMap).forEach(relay => {
+  Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66Event) => {
       nip66Event.keys.forEach((key: string) => {
-        if (!(key in acc)) {
-          acc[key as string] = nip66Event[key];
-        } else if (nip66Event[key] !== null && nip66Event[key] !== undefined) {
-          acc[key] = nip66Event[key];
+        const value = nip66Event[key];
+        
+        const isNonNull = value !== null && value !== undefined;
+  
+        const isArray = Array.isArray(value);
+        const isAccArray = Array.isArray(acc[key]);
+        if (isArray) {
+          acc[key] = isAccArray
+            ? [...new Set([...acc[key], ...value])]
+            : value;
+        } else if (!isArray && isNonNull) {
+          acc[key] = value;
         }
       });
+  
       return acc;
     }, {});
   });
+  
 
   Object.keys(relayAverages).forEach((relay) => {
     const avg = relayAverages[relay];
@@ -145,6 +155,25 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
   }));
 });
 
+
+export const relaysForMiniSearch: Readable<any[]> = derived(relayAggregates, ($relayAggregates) => {
+  let ag = $relayAggregates.map((item, index) => {
+    const { relay, isp, operatorPubkey, supportedNips, lastSeen }  = item
+    return { 
+      ...{ relay, isp, operatorPubkey, supportedNips, lastSeen },
+      id: index,
+    }
+  });
+  if(ag.length) {
+    StateManager.set('relays:minisearch', ag);
+  }
+  else {
+    ag = StateManager.get('relays:minisearch');
+  }
+  
+  return ag || [];
+});
+
 export enum SpeedGroups {
   LightningFast = 100,
   Swift = 80,
@@ -161,11 +190,9 @@ export const relaySpeedGroupResolver: Readable<(value: number) => SpeedGroups> =
       .filter((value): value is number => typeof value === 'number')
       .sort((a, b) => a - b);
     
-    //console.log('normalizedRTTs', normalizedRTTs);
 
     const total = normalizedRTTs.length;
     if (total === 0) {
-      //console.log('No RTTs to normalize');
       return () => SpeedGroups.Mid;
       
     }

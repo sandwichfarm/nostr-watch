@@ -46,6 +46,8 @@ export abstract class Adapter {
 
   protected _overloadWorker?: Worker | SharedWorker;
 
+  protected _ready: boolean = false;
+
   useWorker: boolean = true;
 
   constructor( worker?: Worker | SharedWorker | URL, shared?: boolean ) {
@@ -90,7 +92,9 @@ export abstract class Adapter {
     return this._workers;
   }
 
-  async ready(): Promise<void> {}
+  async ready(): Promise<void> {
+    return;
+  }
 
   private _bindWorkerHandlers(): void {
     this.bindWorkerHandlers()

@@ -90,6 +90,7 @@
 		"@nostrwatch/nip66": "workspace:^",
 		"@nostrwatch/nip66-cacheadapter-nostrsqlite": "workspace:^",
 		"@nostrwatch/nip66-wsadapter-nostrtools": "workspace:^",
+		"@unovis/svelte": "^1.4.5",
 		"country-code-to-flag-emoji": "^1.3.3",
 		"dexie": "^4.0.8",
 		"lodash": "^4.17.21",

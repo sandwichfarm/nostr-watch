@@ -8,6 +8,11 @@ import { isPRE, isRE } from "@base/utils";
 
 type EventHandler = (event: IEvent) => any;
 
+export interface IGroupedRelays {
+  userMeta?: string[];
+  nip66?: string[];
+}
+
 export interface FetchOptions extends WebsocketRequestBody {
   sync?: boolean;
 }
@@ -15,10 +20,26 @@ export interface FetchOptions extends WebsocketRequestBody {
 export class Service {
   protected cacheAdapter: ICacheAdapter;
   protected websocketAdapter: IWebsocketAdapter;
+  protected _groupedRelays: IGroupedRelays = {};
+  protected _ready: boolean = false;
 
   constructor(adapters: IAdaptersArgument) {
     this.cacheAdapter = adapters.cacheAdapter;
     this.websocketAdapter = adapters.websocketAdapter;
+  }
+
+  get nip66Relays(): string[] {
+    return this._groupedRelays?.nip66 || [];
+  }
+
+  get userMetaRelays(): string[]{
+    return this._groupedRelays?.userMeta || [];
+  }
+
+  async ready(): Promise<void> {
+    while (!this._ready) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   }
 
   async modifyCacheFilters(filters: Filter[]): Promise<Filter[]> {
@@ -29,6 +50,13 @@ export class Service {
   async modifyWebsocketFilters(filters: Filter[]): Promise<Filter[]> {
     console.warn('modifyWebsocketFilters not implemented');
     return filters;
+  }
+
+  async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+    const { filters, relays, options } = args;
+    const message: WebsocketRequestBody = { filters, relays, options };
+    const result = await this.websocketAdapter.subscribe(message, callbacks);
+    return result;
   }
 
   async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
@@ -112,6 +140,16 @@ export class Service {
   async modifyReturnedEvents(events: IEvent[]): Promise<IEvent[]> {
     console.warn('modifyReturnedEvents not implemented');
     return events;
+  }
+
+  addRelay(to: keyof IGroupedRelays, relay: string): void {
+    if (!this._groupedRelays?.[to]) this._groupedRelays[to] = [];
+    this._groupedRelays?.[to].push(relay);
+  }
+
+  removeRelay(from: keyof IGroupedRelays, relay: string): void {
+    if (!this._groupedRelays?.[from]) return;
+    this._groupedRelays[from] = this._groupedRelays[from].filter((r) => r !== relay);
   }
   
 }

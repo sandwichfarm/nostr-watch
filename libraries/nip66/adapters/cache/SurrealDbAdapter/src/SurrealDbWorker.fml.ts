@@ -41,7 +41,7 @@ export interface SurrealDbWorkerResult extends AdapterCacheWorkerResult {
 export class SurrealDbWorker extends AdapterCacheWorker implements IAdapterCacheWorker {
     private _db?: RelayDb;
     private _uuids: Record<TableName, Uuid> = {} as Record<TableName, Uuid>;
-    private _ready: boolean = false;
+    protected _ready: boolean = false;
     private _unprocessed: IEvent[] = [];
 
     constructor( options: WorkerOptions ){

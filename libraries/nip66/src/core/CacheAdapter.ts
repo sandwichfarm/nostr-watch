@@ -142,12 +142,16 @@ export class CacheAdapter extends Adapter {
       if(this.worker instanceof Worker)
         this.worker?.terminate()
     })
+    this.init();
   }
 
   get worker(): Worker | SharedWorker | undefined {
     return this.workers?.cache
   }
 
+  async init(): Promise<void> {
+    this._ready = true;
+  }
 
   protected bindWorkerHandlers(): void {
     if(!this?.workers?.cache) return console.warn('[CacheAdapter] Error binding worker handlers: no worker found')

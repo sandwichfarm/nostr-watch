@@ -5,6 +5,7 @@ import { PFP } from '$lib/utils/pfp.js';
 import { mount } from 'svelte';
 import ToggleEnableMonitor from '$lib/components/partials/ToggleEnableMonitor.svelte';
 import { get } from 'svelte/store';
+import { formatSeconds } from '$lib/utils/time.js';
 
 type Resolver = (input: any) => any
 
@@ -50,7 +51,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['pubkey', 'priority', 'name', 'reportingOnline', 'lastActive', 'checks']
+export const columnsShow: DataKeys = ['pubkey', 'frequency', 'name', 'reportingOnline', 'lastActive', 'checks']
 export const filtersShow: DataKeys = ['pubkey', 'geohash', 'relays']
 
 export const humanReadableNames: NameFormatter = {
@@ -69,6 +70,9 @@ export const humanReadableNames: NameFormatter = {
 export const formatters: Formatters = {}
 
 export const tableFormatters: Formatters = {
+    frequency: (frequency) => {
+        return formatSeconds(frequency)
+    },
     lastActive: (lastActive) => {
         if(lastActive < 0) {
             return ''
@@ -122,7 +126,7 @@ export const filterFormatters: Formatters = {
         let monitor: Monitor = {};
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
         let profile: string = '<div class="flex">';
-        profile += '<div class="flex-shrink-0 mr-2">'
+        profile += '<div class="flex-grow-0 mr-2">'
         if(monitor?.profile?.photo){
             profile += `
             <span class="rounded-full overflow-hidden">

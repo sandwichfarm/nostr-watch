@@ -19,7 +19,7 @@ export interface INostrSqliteAdapter extends ICacheAdapter {
 
 export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdapter {
     private _relay?: WorkerRelayInterface;
-    private _ready: boolean = false;
+    protected _ready: boolean = false;
 
     constructor(worker?: Worker | URL) {
         super(worker)

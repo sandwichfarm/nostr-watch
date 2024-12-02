@@ -50,7 +50,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['pubkey', 'enabled', 'name', 'reportingOnline', 'lastActive', 'checks']
+export const columnsShow: DataKeys = ['pubkey', 'priority', 'name', 'reportingOnline', 'lastActive', 'checks']
 export const filtersShow: DataKeys = ['pubkey', 'geohash', 'relays']
 
 export const humanReadableNames: NameFormatter = {

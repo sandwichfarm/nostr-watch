@@ -2,13 +2,13 @@
 	import { onMount, onDestroy } from 'svelte';
     import Stats from '$lib/components/blocks/Stats.svelte';
     import DataTable from '$lib/components/blocks/table/DataTable.svelte';
-    import MonitorsActions from '$lib/components/blocks/table/MonitorActions.svelte';
+    import MonitorsActions from '$lib/components/partials/MonitorActions.svelte';
     import * as Alert from "$lib/components/ui/alert/index.js";
 	
-    import { monitors, monitorRows } from '$lib/stores/monitors.js';
+    import { monitorsSorted, monitorRows } from '$lib/stores/monitors.js';
 	export const prerender = true;
 
-    import config from '$lib/components/blocks/table/monitors-config.js';
+    import config from '$lib/config/monitors-config.js';
 
 	let val: string='';
 
@@ -24,7 +24,7 @@
     $: warnHasMoreThanRecommendedMonitors = countEnabledMonitors > 8;
 </script>
 <!-- <main class="mt-20 pt-10"> -->
-    {#if $monitors.length}
+    {#if $monitorsSorted.length}
     <br /> <br /> <br /> <br /> <br /> <br /> 
         {#if criticalHasNoMonitorsEnabled}
             <Alert.Root class="mb-2">

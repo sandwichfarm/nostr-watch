@@ -1,4 +1,3 @@
-// src/managers/MonitorManager.ts
 
 import { IEvent } from '@base/interfaces';
 import { Monitor } from '../models/Monitor';
@@ -123,34 +122,62 @@ export class MonitorManager {
     let sortedMonitors: Monitor[] = [];
     switch (priority) {
       case MonitorPriority.LoadSpeed:
-        return this.sortByNumberOfChecks('ASC');
+        return this.sort('ASC');
       case MonitorPriority.Checks:
       default:
-        return this.sortByNumberOfChecks();
+        return this.sort();
     }
   }
 
-  sortByNumberOfChecks(order: 'ASC' | 'DESC' = 'DESC'): Monitor[] {
-    const qualifiedMonitors = this.qualified
+  sort(order: 'ASC' | 'DESC' = 'DESC'): Monitor[] {
     const scores: Record<string, number> = {};
-    qualifiedMonitors.forEach((monitor) => {
+    const monitors = [...this.monitorsArray]
+    monitors.forEach((monitor) => {
       let score = 0;
       if (!monitor?.registration?.pubkey) return;
       if (monitor?.registration) score++;
-      if (monitor?.registration?.checks?.length) score += monitor?.registration?.checks?.length;
+      if (monitor?.registration?.checks?.length) score += new Set(monitor?.registration?.checks || []).size;
       if (monitor?.profile) score++;
       if (monitor?.relays) score++;
+      if(monitor?.lastActive === 0) score = 0;
       console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`);
       scores[monitor.registration.pubkey] = score;
     });
-    qualifiedMonitors.sort((a, b) => {
+  
+    monitors.sort((a, b) => {
+      const isEnabledA = a.enabled === true;
+      const isEnabledB = b.enabled === true;
+    
+      const checksA = a?.registration?.checks?.length || 0;
+      const checksB = b?.registration?.checks?.length || 0;
+      
+      const onlineA = a?.reportedOnline || 0;
+      const onlineB = b?.reportedOnline || 0;
+    
+      const lastActiveA = a?.lastActive || 0;
+      const lastActiveB = b?.lastActive || 0;
+
+      if (lastActiveB === 0 && lastActiveA !== 0) return -1;
+      if (lastActiveA === 0 && lastActiveB !== 0) return 1;
+    
+      if (isEnabledA && !isEnabledB) return -1;
+      if (!isEnabledA && isEnabledB) return 1;
+
+      if (checksA !== checksB) return checksB - checksA;
+
+      if (onlineA !== onlineB) return onlineB - onlineA;
+    
+      if (lastActiveA !== lastActiveB) return lastActiveB - lastActiveA;
+    
       const scoreA = scores?.[a.registration.pubkey] || 0;
       const scoreB = scores?.[b.registration.pubkey] || 0;
-      if(order === 'ASC') return scoreA - scoreB;
+      if (order === 'ASC') return scoreA - scoreB;
       return scoreB - scoreA;
     });
-    return qualifiedMonitors;
+    
+    return monitors;    
   }
+  
 
   prioritizeMonitors(priority: MonitorPriority = MonitorPriority.Checks): void {
     const monitors = this.sortMonitors(priority);

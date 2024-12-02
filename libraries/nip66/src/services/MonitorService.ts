@@ -33,6 +33,7 @@ export class MonitorService extends Service {
     this.monitorManager = MonitorManager.getInstance();
     this.addRelay('nip66', 'wss://relay.nostr.watch');
     this.addRelay('nip66', 'wss://relaypag.es');
+    this.addRelay('nip66', 'wss://monitorlizard.nostr1.com/')
     this.addRelay('userMeta', 'wss://purplepag.es');
     this.addRelay('userMeta', 'wss://user.kindpag.es');
     this.addRelay('userMeta', 'wss://relay.nostr.band');
@@ -116,21 +117,36 @@ export class MonitorService extends Service {
   
   async sync(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     let index = 0
-    const onevent = (event: IEvent) => callbacks?.onevent?.(event);
-    const onevents = (events: IEvent[]) => callbacks?.onevents?.(events);
+    let checkCounts = new Map();
+    const updateCounts = (events: IEvent[]) => {
+      for(const event of events){
+        const { pubkey, kind } = event;
+        const key = `${pubkey}:${kind}`;
+        const count = checkCounts.get(key) || 0;
+        checkCounts.set(key, count + 1);
+      }
+    }
+    const onevent = (event: IEvent) => { 
+      updateCounts([event]);
+      callbacks?.onevent?.(event)
+    };
+    const onevents = (events: IEvent[]) => {
+      updateCounts(events);
+      callbacks?.onevents?.(events);
+    }
     const oneose = () => { 
-      this.updateCheckpoint(args?.filters![index]); 
+      this.updateCheckpoint(args?.filters![index], checkCounts); 
       index++;
       callbacks?.oneose?.();
     }
     args.sync = true;
     const results = await this._fetch(args, { onevents, oneose, onevent });
-    this.updateCheckpoints(args?.filters || []);
+    // this.updateCheckpoints(args?.filters || [], checkCounts);
     console.log(`sync complete: ${results.length} events`);
     return results;
   }
 
-  updateCheckpoint(filter: Filter): void {
+  updateCheckpoint(filter: Filter, counts: Map<string, number>): void {
     const { authors, kinds, since, until } = filter;
     console.log(`updateCheckpoints: authors: ${authors} kinds: ${kinds} since: ${since} until: ${until}`);
     for(const pubkey of authors! || []){
@@ -140,20 +156,24 @@ export class MonitorService extends Service {
         continue;
       }
       for(const kind of kinds! || []){
-        if(since){
-          monitor.setLastSync(kind, 'since', since);
+        const key = `${pubkey}:${kind}`;
+        const count = counts.get(key) || 0;
+        if(count > 0){
+          if(since){
+            monitor.setLastSync(kind, 'since', since);
+          }
+          if(until){
+            monitor.setLastSync(kind, 'until', until);
+          } 
         }
-        if(until){
-          monitor.setLastSync(kind, 'until', until);
-        } 
       }
     }
   }
 
-  updateCheckpoints(filters: Filter[]): void {
+  updateCheckpoints(filters: Filter[], counts: Map<string, number>): void {
     console.log(`updateCheckpoints`, filters.length);
     for (const filter of Array.from(filters)) {
-      this.updateCheckpoint(filter)
+      this.updateCheckpoint(filter, counts)
     }    
   }
 
@@ -355,11 +375,7 @@ export class MonitorService extends Service {
   }
 
   getMonitorCheckFilters(): Filter[] {
-    if (!this.enabledMonitors.length) {
-      console.warn('MonitorService getMonitorCheckFilters: no monitors');
-      return [];
-    }
-    const monitors = this.enabledMonitors;
+    const monitors = this.enabledMonitors?.length > 0? this.enabledMonitors: this.sortedMonitors;
     let filters: Filter[] = [];
     const until = Math.round(Date.now()/1000);
     monitors.forEach((monitor) => {

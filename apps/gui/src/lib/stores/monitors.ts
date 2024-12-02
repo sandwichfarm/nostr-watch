@@ -15,7 +15,8 @@ export type Monitor = {
 
 export const monitorsMap: Writable<Map<string, any>> = writable(new Map());
 
-export const monitors = throttledDerived(
+export const monitors = derived(
+// export const monitors = throttledDerived(
   monitorsMap, 
   ($monitorsMap) => {
     const arr = Array.from($monitorsMap.values());
@@ -23,15 +24,34 @@ export const monitors = throttledDerived(
       StateManager.set('cache:monitors', arr);  
     }
     return arr;
-  },
-  10
+  }
+  // 10
 )
 
+export const monitorsSorted = derived(
+  monitors,
+  ($monitors) => {
+    return MonitorManager.sortMonitorsByPriority($monitors);
+  }
+);
+
+export const monitorChecksCount = derived(
+  eventsArray, 
+  ($eventsArray) => {
+    const countMap: Record<string, number> = {};
+    $eventsArray.forEach((event: any) => {
+      countMap[event.pubkey] = (countMap?.[event.pubkey] || 0) + 1;
+    });
+    console.log('monitor counts', countMap)
+    return countMap;
+  }
+);
+
+
 export const monitorRows = derived(
-  monitorsMap,
-  ($monitorsMap) => {
-    const $monitors = Array.from($monitorsMap.values());
-    return $monitors.map((monitor: Monitor) => {
+  [monitorsSorted, monitorChecksCount],
+  ([$monitorsSorted, $monitorChecksCount]) => {
+    return $monitorsSorted.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
       row.id = monitor.registration.pubkey;
       row.pubkey = monitor.registration.pubkey;
@@ -47,28 +67,11 @@ export const monitorRows = derived(
       row.lastActive = monitor?.registration?.lastActive ?? null
       row.relays = monitor.relays ?? null
       row.enabled = monitor.enabled ?? false
-      const reportingOnline = get(monitorChecksCount)
-      row.reportingOnline = reportingOnline?.[monitor.registration.pubkey] ?? 0
+      row.priority = monitor.priority ?? 0
+      row.reportingOnline = $monitorChecksCount?.[monitor.registration.pubkey] ?? 0
       return row;
     })
   }
 );
 
-export const prioritizedMonitors = derived(
-  monitors,
-  ($monitors) => {
-    return MonitorManager.sortMonitorsByPriority($monitors);
-  }
-);
 
-export const monitorChecksCount = throttledDerived(
-  eventsArray, 
-  ($eventsArray) => {
-    const countMap: Record<string, number> = {};
-    $eventsArray.forEach((event: any) => {
-      countMap[event.pubkey] = (countMap?.[event.pubkey] || 0) + 1;
-    });
-    return countMap;
-  },
-  5000
-);

@@ -34,6 +34,7 @@ export class Monitor {
   profile: any;
   relays: string[];
   state: SyncStateManager;
+  reportedOnline: number = 0;
   deadThreshold: number = 60*60*24*30;  
   
   private _frequencyForgivenessMultiplier: number = 4;

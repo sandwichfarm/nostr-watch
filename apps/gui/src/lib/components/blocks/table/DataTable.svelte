@@ -100,7 +100,8 @@
             if (!$tableData.data || !$tableData.columns || $tableData.columns.length === 0 || !tableRowStyler) {
                 return new Map();   
             }
-
+            
+            
 
             const map: Map<string, string> = new Map();
             $tableData.data.forEach((row: any) => {

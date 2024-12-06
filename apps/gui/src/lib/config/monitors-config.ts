@@ -5,7 +5,8 @@ import { PFP } from '$lib/utils/pfp.js';
 import { mount } from 'svelte';
 import ToggleEnableMonitor from '$lib/components/partials/ToggleEnableMonitor.svelte';
 import { get } from 'svelte/store';
-import { formatSeconds } from '$lib/utils/time.js';
+import { formatSeconds, timeAgo } from '$lib/utils/time.js';
+import { validNip05s } from '$lib/stores/nip05s.js';
 
 type Resolver = (input: any) => any
 
@@ -51,7 +52,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['pubkey', 'frequency', 'name', 'reportingOnline', 'lastActive', 'checks']
+export const columnsShow: DataKeys = ['pubkey', 'nip05', 'frequency', 'name', 'reportingOnline', 'lastActive', 'checks']
 export const filtersShow: DataKeys = ['pubkey', 'geohash', 'relays']
 
 export const humanReadableNames: NameFormatter = {
@@ -78,6 +79,13 @@ export const tableFormatters: Formatters = {
             return ''
         }
         return timeAgo(lastActive*1000)
+    },
+    nip05: (nip05, row) => {
+        if(!nip05) return '';
+        const $validNip05s = get(validNip05s)
+        const entry = $validNip05s.find( e => e.pubkey = row.pubkey && e.nip05 === nip05)
+        if(!entry) return `<span class="text-red-500 text-sm'}">${nip05}</span>`
+        return `<span class="${entry.valid? 'text-green-500': 'text-red-500'} text-sm">${nip05}</span>`
     },
     pubkey: (pubkey) => {
         let monitor: Monitor = {};
@@ -195,8 +203,8 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableRowStyler = (row: Record<string, any>) => {
     console.log('tableRowStyler', row)
     return {
-        'bg-green-400 bg-opacity-5': row.enabled === true && row.lastActive > 0,
-        'opacity-20': row.lastActive < 0
+        'bg-green-400 bg-opacity-5': row.enabled === true && row.active > 0,
+        'opacity-20': !row.active
     }
 }
 
@@ -211,27 +219,3 @@ export default {
     filtersShow,
     tableRowStyler
 }
-
-function timeAgo(timestamp: Date | number): string {
-    const now = new Date();
-    const time = typeof timestamp === 'number' ? new Date(timestamp) : timestamp;
-    const seconds = Math.floor((now.getTime() - time.getTime()) / 1000);
-  
-    const intervals: { [key: string]: number } = {
-      year: 60 * 60 * 24 * 365,
-      month: 60 * 60 * 24 * 30,
-      day: 60 * 60 * 24,
-      hour: 60 * 60,
-      minute: 60,
-      second: 1,
-    };
-  
-    for (const key in intervals) {
-      const interval = Math.floor(seconds / intervals[key]);
-      if (interval >= 1) {
-        return `${interval} ${key}${interval > 1 ? 's' : ''} ago`;
-      }
-    }
-  
-    return 'just now';
-  }  

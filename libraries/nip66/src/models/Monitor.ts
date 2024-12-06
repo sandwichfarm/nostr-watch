@@ -4,6 +4,20 @@ import { SyncRange, SyncRangeParameter, SyncStateManager } from '@base/managers/
 import { n66IEventToIMonitor } from '@base/transform';
 import { Filter } from 'nostr-tools';
 import { EventEmitter } from 'tseep';
+import { Geocoded } from './Geocoded';
+import { NostrEvent } from './Event';
+import { MonitorRegistration } from './MonitorRegistration';
+import { MonitorCached } from '@base/managers/MonitorManager';
+import { PubkeyProfile } from './PubkeyProfile';
+import { PubkeyRelays } from './PubkeyRelays';
+import { ProfileBadges } from 'nostr-tools/kinds';
+
+
+export enum RelayLiveness {
+  Online = 'ONLINE',
+  Offline = 'OFFLINE',
+  Dead = 'DEAD',
+}
 
 export type IRelaysByLiveness = {
   online: IEvent[],
@@ -30,79 +44,134 @@ const defaultMonitor: IMonitor = {
 export class Monitor {
   enabled: boolean = false;   
   priority: number = -1;
-  registration: IMonitor;
-  profile: any;
-  relays: string[];
-  state: SyncStateManager;
+  _registration?: MonitorRegistration;
+  _profile?: PubkeyProfile
+  _relays?: PubkeyRelays;
+  state?: SyncStateManager;
   reportedOnline: number = 0;
   deadThreshold: number = 60*60*24*30;  
   
-  private _frequencyForgivenessMultiplier: number = 4;
+  private _lastActive: number = -1;
+  private _frequencyMutiplier: number = 4;
 
-  constructor(event?: IEvent) {
-    // if(event?.kind !== 10166) throw new Error('Needs to be instantiated with a Monitor Registration event [kind: 10166');
-    this.priority = 0;
-    this.registration = {} as IMonitor;
-    this.profile = {};
-    this.relays = [];
-    if(event){
-      this.addRegistration(event);
-    }
+  constructor(event: IEvent) {
+    if(event.kind !== 10166) throw new Error('Monitor must be created from a 10166 event');
+    this.addRegistration(event);
     this.state = new SyncStateManager(this.pubkey)
   }
 
-  static fromJson(monitorJson: any): Monitor {
-    const monitor = new Monitor();
-    monitor.registration = monitorJson.registration ?? {};
-    monitor.profile = monitorJson.profile ?? {};  
-    monitor.relays = monitorJson.relays ?? [];
-    monitor.enabled = monitorJson.enabled ?? false;
-    monitor.priority = monitorJson?.priority ?? 0;
+  static fromCache(cached: MonitorCached): Monitor | undefined {
+    if(!cached?.registration) {
+      console.warn('Monitor.fromCache() called without valid registration event');
+      return 
+    }
+    const monitor = new Monitor(cached.registration);
+    if(cached?.profile){
+      monitor.addProfile(cached.profile);
+    }
+    if(cached?.relays){
+      monitor.addRelays(cached.relays)
+    }
+    monitor.enabled = cached.enabled ?? false;
+    monitor.priority = cached?.priority ?? 0;
+    monitor.lastActive = cached?.lastActive ?? -1;
+    console.log('mntr?', monitor)
     return monitor;
   }
 
-  set lastActive(value: number) {
-    if(!this.registration.lastActive || value > this.registration.lastActive){
-      this.registration.lastActive = value;
-      this.emitUpdate();
-    }   
+  toCache(): MonitorCached {
+    const cache: MonitorCached = {
+      pubkey: this.pubkey,
+      registration: this.registration?.json,
+      profile: this.profile?.json,
+      relays: this._relays?.json,
+      enabled: this.enabled,
+      priority: this.priority,
+      lastActive: this.lastActive
+    }
+    console.log('monitor cache', cache)
+    return cache
+  }
+
+  get active(): boolean {
+    if(this.lastActive < 0) return false;
+    return Math.round(Date.now()/1000)-this.frequency < this.lastActive;
+  }
+
+  get registration(): MonitorRegistration | undefined {
+    return this._registration;
+  }
+
+  private set registration(value: MonitorRegistration) {
+    this._registration = value;
+  }
+
+  get profile(): PubkeyProfile | undefined {
+    return this._profile;
+  }
+
+  private set profile(value: PubkeyProfile | undefined) {
+    this._profile = value;
+  }
+
+  get relays(): string[] {
+    return this._relays?.relays || [];
+  }
+
+  private set relays(event: IEvent) {
+    this._relays = new PubkeyRelays(event);
   }
 
   get checks(): string[] {
-    return this.registration.checks || [];
+    return this.registration?.checks || [];
+  }
+
+  set lastActive(value: number) {
+    if(!this.lastActive || value > this.lastActive) {
+      this._lastActive = value;
+      this.emitUpdate('lastActive', value); 
+    }
   }
 
   get lastActive(): number {
-    return this.registration.lastActive || -1;
+    return this._lastActive;
   }
 
   set lastSyncSince(rangeParameter: SyncRangeParameter) {
+    if(!this?.state) this.state = new SyncStateManager(this.pubkey)
     this.state.lastSyncSince = rangeParameter;
   }
 
   set lastSyncUntil(rangeParameter: SyncRangeParameter) {
+    if(!this?.state) this.state = new SyncStateManager(this.pubkey)
     this.state.lastSyncUntil = rangeParameter;
   }
 
   get pubkey(): string {
-    return this.registration.pubkey;
+    return this.registration?.pubkey as string;
   }
 
   get eventId(): string {
-    return this.registration.eventId;
+    return this.registration?.id as string;
+  }
+
+  get frequencyMultiplier(): number {
+    return this._frequencyMutiplier;
+  }
+
+  private set frequencyMultiplier(value: number) {
+    this.emitUpdate();
+    this._frequencyMutiplier = value;
   }
 
   get frequency(): number {
-    const f = this.registration.frequency
-    return (f || 60*60*12) * this._frequencyForgivenessMultiplier
+    const f = this.registration?.frequency;
+    console.log('mntr', 'frequency', f, f || 60*60*12, this.frequencyMultiplier);
+    return (f || 60*60*12) * this.frequencyMultiplier
   }
 
-  get geohash(): string {
-    return this.registration.geohash || '';
-  }
-
-  get geocode(): string[] {
-    return this.registration.geocode || [];
+  get geocode(): string | null {
+    return this.registration?.geocode || null;
   }
 
   get checkFilter(): Filter {
@@ -119,6 +188,7 @@ export class Monitor {
   }
 
   get isOnlineAfter(): number {
+    console.log('mntr', Math.round(Date.now() / 1000), this.frequency)
     return Math.round(Date.now() / 1000) - this.frequency;
   }
 
@@ -136,14 +206,21 @@ export class Monitor {
     this.emitUpdate();
   }
 
+  relayIs(event: IEvent): RelayLiveness {
+    if(this.relayIsOnline(event)) return RelayLiveness.Online;
+    if(this.relayIsDead(event)) return RelayLiveness.Dead;
+    return RelayLiveness.Offline;
+  }
+
   relayIsOffline(event: IEvent): boolean {
     const timestamp = (event.created_at as number);
     return timestamp < this.isOnlineAfter;
   }
 
   relayIsOnline(event: IEvent): boolean {
-    console.assert(this !== undefined, '`this` is undefined in relayIsOnline!');
-    console.assert(this.isOnlineAfter !== undefined, '`this.isOnlineAfter` is undefined!');
+    // console.assert(this !== undefined, '`this` is undefined in relayIsOnline!');
+    // console.assert(this.isOnlineAfter !== undefined, '`this.isOnlineAfter` is undefined!');
+    console.log('mntr', event.created_at, this.isOnlineAfter, (event.created_at as number) >= this.isOnlineAfter)
     const timestamp = (event.created_at as number);
     return timestamp >= this.isOnlineAfter;
   }
@@ -188,46 +265,38 @@ export class Monitor {
   }
 
   getLastSyncSince(kind: number): number {
+    if(!this?.state) this.state = new SyncStateManager(this.pubkey)
     return this.state.getLastSyncSince(kind);
   }
 
   getLastSyncUntil(kind: number): number | undefined {
+    if(!this?.state) this.state = new SyncStateManager(this.pubkey)
     return this.state.getLastSyncUntil(kind);
   }
 
   getLastSync(kind: number): SyncRange {
+    if(!this?.state) this.state = new SyncStateManager(this.pubkey)
     return this.state.getLastSync(kind);  
   }
 
   setLastSync(kind: number, rangeKey: 'since' | 'until', value: number): void {
+    if(!this?.state) this.state = new SyncStateManager(this.pubkey)
     this.state.setLastSync(kind, rangeKey, value);
   }
 
   addRegistration(event: IEvent): void {
-    this.registration = {...defaultMonitor, ...n66IEventToIMonitor(event)};
+    this._registration = new MonitorRegistration(event);
     this.emitUpdate('registration', this.registration)
   }
 
   addProfile(event: IEvent): void {
-    console.log(`EVENT ${event.kind}`, event.pubkey)
-    try {
-      this.profile = JSON.parse(event.content);
-    } catch (e) {
-      console.error('Monitor addProfile error:', e);
-    }
+    this._profile = new PubkeyProfile(event);
     this.emitUpdate('profile', this.profile);
   }
 
   addRelays(event: IEvent): void {
-    try {
-      let relays = event.tags.filter((t) => t[0] === 'r').map((t) => new URL(t[1]).toString());
-      relays = relays ?? [];
-      this.relays = relays;
-      this.emitUpdate('relays', this.relays);
-    } catch (e) {
-      console.warn('Monitor addRelays error:', e);
-    }
-    
+    this._relays = new PubkeyRelays(event);
+    this.emitUpdate('relays', this.relays);
   }
 
   private emitUpdate(key?: string, value?: any): void {

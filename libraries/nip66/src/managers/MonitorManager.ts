@@ -1,8 +1,19 @@
 
 import { IEvent } from '@base/interfaces';
 import { Monitor } from '../models/Monitor';
+import { NostrEvent } from '@base/models';
 
 export type MonitorPriorities = MonitorPriority[];
+
+export type MonitorCached = {
+  pubkey: string,
+  registration?: IEvent,
+  profile?: IEvent,
+  relays?: IEvent,
+  priority: number,
+  enabled: boolean,
+  lastActive?: number
+}
 
 export enum MonitorPriority {
   Follows = 'FOLLOWS',
@@ -44,16 +55,16 @@ export class MonitorManager {
     return this.monitors;
   }
 
-  get monitorsArray(): Monitor[] {
+  get array(): Monitor[] {
     return Array.from(this.monitors.values());
   }
 
   get activeMonitors(): Monitor[] {
-    return this.monitorsArray.filter((monitor) => monitor.lastActive > 0 && monitor.priority >= 0);
+    return this.array.filter((monitor) => monitor.lastActive > 0 && monitor.priority >= 0);
   }
 
   get enabledMonitors(): Monitor[] {  
-    return this.monitorsArray.filter((monitor) => monitor.enabled);
+    return this.array.filter((monitor) => monitor.enabled);
   }
 
   get sortedMonitors(): Monitor[] {
@@ -62,37 +73,37 @@ export class MonitorManager {
   }
 
   get primary(): Monitor | undefined {
-    return this.monitorsArray.find((monitor) => monitor.priority === 1);
+    return this.array.find((monitor) => monitor.priority === 1);
   }
 
   get secondary(): Monitor | undefined {
-    return this.monitorsArray.find((monitor) => monitor.priority === 2);
+    return this.array.find((monitor) => monitor.priority === 2);
   }
 
   get tertiary(): Monitor | undefined {
-    return this.monitorsArray.find((monitor) => monitor.priority === 3);
+    return this.array.find((monitor) => monitor.priority === 3);
   }
 
   get quaternary(): Monitor | undefined {
-    return this.monitorsArray.find((monitor) => monitor.priority === 4);
+    return this.array.find((monitor) => monitor.priority === 4);
   }
 
   get qualified(): Monitor[] {
-    const qualified = this.monitorsArray.filter((monitor) => {
-      if (!monitor?.registration?.lastActive) return false;
+    const qualified = this.array.filter((monitor) => {
+      if (!monitor?.lastActive) return false;
       if (!monitor?.registration?.checks?.length) return false;
       if (!monitor?.profile) return false;
       if (!monitor?.relays) return false;
-      return monitor.registration.lastActive > 0;
+      return monitor.lastActive > 0;
     });
     return qualified;
   }
 
-  loadMonitors(monitors: any[]) {
+  loadMonitors(monitors: MonitorCached[]) {
     monitors.forEach((monitor) => {
-      const { pubkey } = monitor.registration;
-      if(!pubkey) return;
-      this.monitors.set(pubkey, Monitor.fromJson(monitor));
+      if(monitor?.registration) {
+        this.monitors.set(monitor.pubkey, Monitor.fromCache(monitor) as Monitor);  
+      }
     });
   }
 
@@ -104,7 +115,8 @@ export class MonitorManager {
       this.monitors.set(pubkey, monitor);
       console.log(`created new monitor for pubkey: ${pubkey}`);
     } else if(!monitor) {
-      throw new Error(`Monitor not found for pubkey: ${pubkey}`);
+      console.warn(`Monitor not found for pubkey: ${pubkey}`);
+      return;
     }
     if (kind === 10166) {
       monitor.addRegistration(event);
@@ -131,7 +143,7 @@ export class MonitorManager {
 
   sort(order: 'ASC' | 'DESC' = 'DESC'): Monitor[] {
     const scores: Record<string, number> = {};
-    const monitors = [...this.monitorsArray]
+    const monitors = [...this.array]
     monitors.forEach((monitor) => {
       let score = 0;
       if (!monitor?.registration?.pubkey) return;
@@ -139,7 +151,7 @@ export class MonitorManager {
       if (monitor?.registration?.checks?.length) score += new Set(monitor?.registration?.checks || []).size;
       if (monitor?.profile) score++;
       if (monitor?.relays) score++;
-      if(monitor?.lastActive === 0) score = 0;
+      if(!monitor.active) score = 0;
       console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`);
       scores[monitor.registration.pubkey] = score;
     });
@@ -157,8 +169,8 @@ export class MonitorManager {
       const lastActiveA = a?.lastActive || 0;
       const lastActiveB = b?.lastActive || 0;
 
-      if (lastActiveB === 0 && lastActiveA !== 0) return -1;
-      if (lastActiveA === 0 && lastActiveB !== 0) return 1;
+      if (a.active && !b.active) return -1;
+      if (b.active && !a.active) return 1;
     
       if (isEnabledA && !isEnabledB) return -1;
       if (!isEnabledA && isEnabledB) return 1;
@@ -167,10 +179,10 @@ export class MonitorManager {
 
       if (onlineA !== onlineB) return onlineB - onlineA;
     
-      if (lastActiveA !== lastActiveB) return lastActiveB - lastActiveA;
+      if (lastActiveA !== lastActiveB) return lastActiveA - lastActiveB;
     
-      const scoreA = scores?.[a.registration.pubkey] || 0;
-      const scoreB = scores?.[b.registration.pubkey] || 0;
+      const scoreA = scores?.[a.registration?.pubkey as string] || 0;
+      const scoreB = scores?.[b.registration?.pubkey as string] || 0;
       if (order === 'ASC') return scoreA - scoreB;
       return scoreB - scoreA;
     });

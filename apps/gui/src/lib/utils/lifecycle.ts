@@ -2,49 +2,42 @@ import { get, type Updater } from 'svelte/store';
 
 import Nip66, { StateManager } from '@nostrwatch/nip66';
 
-import { Nip66Event } from '@nostrwatch/nip66/models';
+import { Nip66Event, type IEvent } from '@nostrwatch/nip66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
 import { nip66, events, monitorsMap } from '$lib/stores/index.js';
+import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
-export const loadFromCache = (nip66Instance: Nip66) => {
-    const monitors = StateManager.get('cache:monitors')
-    console.log('Loading monitors from cache:', monitors);
-    if(monitors) {
-        nip66Instance.monitorService.loadMonitors(monitors);
-    }
-}
+import type { Monitor } from "@nostrwatch/nip66/models"
+import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
 
 export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
+    const $nip05Service = get(nip05Service)
+    
     if (!nip66Instance || typeof nip66Instance.on !== 'function') {
         throw new Error('Invalid nip66Instance: missing `on` method.');
     }
 
-    nip66Instance.on('monitor:update', (monitor: any) => {
+    nip66Instance.on('monitor:update', (monitor: Monitor) => {
         monitorsMap.update((monitorsMap) => {
-            const existing = monitorsMap.get(monitor.registration.pubkey);
+            const existing = monitorsMap.get(monitor.pubkey);
             if (existing && existing.registration.created_at > monitor.registration.created_at) {
                 return monitorsMap;
             }
-            monitorsMap.set(monitor.registration.pubkey, monitor);
+            const { pubkey } = monitor
+            const nip05 = monitor?.profile?.nip05;
+            monitorsMap.set(pubkey, monitor);
+            if(nip05 && !$nip05Service.find(pubkey, nip05)){
+                $nip05Service.check(pubkey, nip05)
+            }
             return monitorsMap;
         });
-    });
-
-    const wtf = new Set()
-
-    nip66Instance.on('monitor:update:profile', (monitor: any) => {
-        wtf.add(monitor.pubkey)
-        // console.log(`EVENT 0 [from emitter]`, monitor.pubkey)
-        console.log(`EVENT 0 ${wtf.size} unique pubkeys`)
-    });
-
-    
+    });    
 
     nip66Instance.on('events', (_events: any) => {
         console.log('Svelte Received events:', _events.length);
         events.update((map) => {
-            _events.forEach((event: any) => {
+            _events.forEach((event: IEvent) => {
                 const key = eventKey(event);
                 if (!key) return;
                 const existing = map.get(key);
@@ -81,12 +74,12 @@ export const instance = async (instance?: Nip66): Promise<Nip66> => {
         throw new Error('Window or navigator not available.');
     }
 
-    if (instance && instance instanceof Nip66) {
+    if (instance && instance instanceof Nip66 && instance.initialized) {
         console.log('nip66 instance exists.');
         return instance;
     }
 
-    let nip66Instance: Nip66 | null = get(nip66);
+    let nip66Instance: Nip66 | null = instance || get(nip66);
 
     if (!nip66Instance) {
         const N66 = (await import('@nostrwatch/nip66')).default,
@@ -109,12 +102,19 @@ export const instance = async (instance?: Nip66): Promise<Nip66> => {
         console.log('nip66 already initialized');
     }
 
-    loadFromCache(nip66Instance);
+    loadMonitorsFromCache(nip66Instance);
 
     nip66.set(nip66Instance);
     return nip66Instance;
 };
 
+export const loadMonitorsFromCache = (nip66Instance: Nip66) => {
+    const monitors = StateManager.get('cache:monitors')
+    console.log('Loading monitors from cache:', monitors);
+    if(monitors) {
+        nip66Instance.monitorService.loadMonitors(monitors);
+    }
+}
 
 export const bootstrapMonitorData = async (_instance?: Nip66) => {
     const nip66Instance = await instance(_instance);
@@ -129,9 +129,11 @@ export const bootstrapMonitorChecks = async (_instance?: Nip66) => {
 }
 
 export const bootstrap = async (_instance?: Nip66) => {
+    // if(!shouldSync()) return 
     const nip66Instance = await instance(_instance);
     bindBootstrapEmitters(nip66Instance);
     await nip66Instance.monitorService.bootstrap();
+    updateLastSync()
     // bindLiveSubscriptionEmitters(nip66Instance);
 };
 

@@ -8,8 +8,17 @@ import type { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 
 import type { Workers } from './Workers';
 import { StateManager } from '@base/managers/StateManager';
+import { UserService } from '@base/services/UserService';
+import { NocapService } from '@base/services/NocapService';
 
 type AnyAdapter = IWebsocketAdapter | ICacheAdapter;
+
+export type Nip66Services = { 
+  monitors?: MonitorServiceType, 
+  relay?: RelayServiceType,
+  user?: UserService,
+  nocap?: NocapService
+} 
 
 export default class {
 
@@ -31,12 +40,25 @@ export default class {
       this.useAdapter(adapters.cacheAdapter)
   }
 
+  get services(): Nip66Services {
+    return {
+      monitors: this.monitorService,
+      relay: this.relayService
+    }
+  }
+
   get monitors(): MonitorServiceType | undefined {
     return this.monitorService;
   }
 
   get relays(): RelayServiceType | undefined {
     return this.relayService;
+  }
+
+  async ready(): Promise<void> {
+    while(!this.initialized){
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
   }
 
   private set initialized(value: boolean) {
@@ -62,8 +84,6 @@ export default class {
   destroy(): void {
     StateManager.emit('destroy');
   }
-
-  
 
   async useAdapter(adapter?: ICacheAdapter | IWebsocketAdapter): Promise<void> {
     if(!adapter) {
@@ -136,9 +156,10 @@ export default class {
     const { cacheAdapter, websocketAdapter } = this
     const { RelayService } = await import('../services/RelayService')
     const { MonitorService } = await import('../services/MonitorService')
-    this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
     this.monitorService = new MonitorService({cacheAdapter, websocketAdapter} as IAdaptersArgument);
-    await this.monitorService.ready()
+    this.relayService = new RelayService({cacheAdapter, websocketAdapter} as IAdaptersArgument, this.monitorService);
+    await this.monitorService.ready();
+    await this.relayService.ready();
   }
 
   get state(): StateManager {

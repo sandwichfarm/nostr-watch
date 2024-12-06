@@ -10,6 +10,9 @@ const check = (pubkey: string, value: Nip05) => {
 
 self.onmessage = ({ data }) => {
     const { pubkey, nip05 } = data;
-    const result = check(pubkey, nip05);
-    self.postMessage({pubkey, nip05, result}); 
+    const valid = check(pubkey, nip05)
+    if(valid instanceof Promise) {
+        return valid.then( (valid: boolean) => self.postMessage({pubkey, nip05, valid}) )
+    }
+    self.postMessage({pubkey, nip05, valid})
 }

@@ -59,6 +59,11 @@ export class Service {
     return result;
   }
 
+  async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+    console.warn('Service.fetch() not implemented');
+    return this._fetch(args, callbacks);
+  }
+
   async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     const { relays, options, sync } = args;
     let { filters } = args
@@ -84,9 +89,18 @@ export class Service {
       filters = await this.modifyCacheFilters(filters)
     }
   
-    // Fetch from cache
     const cacheEvents = await this.cacheAdapter.REQ(filters);
-    if (callbacks?.onevents) callbacks.onevents(cacheEvents);
+    const highestTimestampPerPubkey = cacheEvents.reduce((acc, event) => {
+      const timestamp = event.created_at as number;
+      if (!acc.has(event.pubkey) || acc.get(event.pubkey)! < timestamp) {
+        acc.set(event.pubkey, timestamp);
+      }
+      return acc;
+    }, new Map())
+
+    if (callbacks?.onevents) {
+      callbacks.onevents(cacheEvents);
+    }
     if (callbacks?.onevent) {
       for (const event of cacheEvents) {
         callbacks.onevent(event);
@@ -95,7 +109,6 @@ export class Service {
   
     cacheEvents.forEach(maybeAddEventToMap);
   
-    // Prepare relay callbacks
     const _callbacks: SubscribeHandlers = {};
   
     if (callbacks?.onevent) {
@@ -115,10 +128,13 @@ export class Service {
     }
 
     if(sync){
-      filters = await this.modifyWebsocketFilters(filters)
+      filters = filters.map((filter: Filter) => {
+        filter.since = highestTimestampPerPubkey.get(filter.authors?.[0]) || filter.since;
+        filter.until = Math.round(Date.now() / 1000);
+        return filter;
+      })
     }
   
-    // Fetch from relays
     const websocketEvents: IEvent[] = await this.websocketAdapter.fetch(
       {
         relays: relays || [],

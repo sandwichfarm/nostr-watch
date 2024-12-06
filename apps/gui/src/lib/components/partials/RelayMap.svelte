@@ -3,18 +3,20 @@
     import Geolocation from 'svelte-geolocation'
     import { VisSingleContainer, VisTopoJSONMap } from '@unovis/svelte'
     import type { ColorAccessor } from '@unovis/svelte'
-    import { WorldMapTopoJSON } from '@unovis/ts/maps'
     import { writable, type Writable } from 'svelte/store';
-
     import { MapPointLabelPosition, type MapData, type MapLink } from '@unovis/ts'
+    import { WorldMapTopoJSON } from '@unovis/ts/maps'
+    import type { Monitor, Nip66Event } from '@nostrwatch/nip66/models';
+	  import { StateManager } from '@nostrwatch/nip66';
+    
+    export let relay: string;
+    export let monitors: Monitor[];
+    export let checks: Nip66Event[];
+    export let aggregate: any;
+
+    let ready: boolean = false;
 
     type DD = { lat: number; lon: number }
-
-    
-    import type { MyRelayPage } from '$lib/core/MRP';
-  
-    import crosshair from '$lib/assets/images/crosshair.svg';
-    import Badge from '$lib/components/ui/badge/badge.svelte';
   
     interface LinkDatum {
       color?: string;
@@ -45,13 +47,10 @@
       width?: number;
       cursor?: string;
     }
-  
-    // type ColorAccessor<LinkDatum> = ((d: LinkDatum) => string | null) | string;
-  
-    // const MRP: Writable<MyRelayPage> = getContext(MY_RELAY_PAGE);
-    const relayMapPoint: Writable<MapPoint> = writable({});
-    const currentUserPoint: Writable<MapPoint> = writable(undefined);
-    const currentUserLink: Writable<MapLink> = writable(undefined);
+
+    const relayMapPoint: Writable<MapPoint> = writable();
+    const currentUserPoint: Writable<MapPoint> = writable();
+    const currentUserLink: Writable<MapLink> = writable();
     const monitorMapPoints: Writable<MapPoint[]> = writable([]);
     const monitorLinks: Writable<MapLink[]> = writable([]);
     const hasMonitorData = writable(false);
@@ -61,8 +60,6 @@
     
     let getPosition = false;
     let coords: [number, number] | [] = [];
-    export let key: string = ""
-    export let id: string = ""
   
     const pointLabel = (d: MapPoint) => d?.label
     const pointLabelPosition = (d: MapPoint): MapPointLabelPosition => d.position || MapPointLabelPosition.Bottom
@@ -71,24 +68,27 @@
       return d?.color ?? 'gray'
     }
   
-    const setRelayMapPoint = async(): void => {
-      if(!$MRP?.dd?.lat) return 
-      hasMonitorData.set(true)
+    const setRelayMapPoint = async(): Promise<void> => {
+      if(!aggregate?.dd?.lat) return 
       relayMapPoint.set({ 
         id: 'relay', 
-        latitude: $MRP.dd.lat, 
-        longitude: $MRP.dd.lon, 
+        latitude: aggregate.dd.lat, 
+        longitude: aggregate.dd.lon, 
         color: 'blue',
         position: MapPointLabelPosition.Center
       })
     }
   
-    const setMonitor = (monitor: MRPMonitor) => {
+    const setMonitor = (monitor: Monitor) => {
       const dd = monitor.dd
-      const rtt = $MRP.nostr?.monitors?.discoveryEventsFor(monitor.pubkey)?.[0]?.rttOpen || undefined
+      const monitorCheck: Nip66Event = checks.find( check => check.pubkey === monitor.pubkey )
+      const rtt = monitorCheck?.rtt || undefined
+
+      console.log('monitor data', monitor.pubkey, dd, monitorCheck, rtt)
+      if(!dd || !rtt || !monitorCheck) return console.warn(`${monitor.pubkey} could not find data...`)
   
       const point: MapPoint = { 
-        id: monitor.geohash, 
+        id: monitor.pubkey, 
         latitude: dd.lat, 
         longitude: dd.lon, 
         color: 'gray', 
@@ -111,20 +111,15 @@
       monitorLinks.set($monitorLinks)
     }
   
-    const setMonitors = async (): void => {
+    const setMonitors = async (): Promise<void> => {
       resetMonitors()
-  
-      if(!showMonitors) {
-        return console.log('no monitor points added to map')
-      }
-  
-      const monitors = $MRP.nostr?.monitors?.all
       for ( const monitor of monitors) {
         setMonitor(monitor)
       }
     }
   
-    const updateMapData = () => {
+    const updateMapData = (): void => {
+      if(!$relayMapPoint && $monitorMapPoints.length === 0) return console.warn('No point data available.')
       data.update( (d) => {
         const points = [$relayMapPoint]
         if($currentUserPoint) points.push($currentUserPoint)
@@ -134,7 +129,9 @@
         if($currentUserLink) links.push($currentUserLink)
         if($monitorLinks.length) links.push(...$monitorLinks)
   
-        const areas = []
+        const areas: any[] = []
+
+        console.log(areas, points, links)
   
         return {
           areas,
@@ -144,20 +141,19 @@
       });
     }
   
-    const resetMonitors = async (): void => {
+    const resetMonitors = async (): Promise<void> => {
       monitorMapPoints.set([])
       monitorLinks.set([])
-      updateMapData()
+      console.log(updateMapData())
     }
   
-    const setMapPoints = async (): void => {
+    const setMapPoints = async (): Promise<void> => {
       setRelayMapPoint()
-      if(monitorVis === 'always') setMonitors()
+      setMonitors()
       updateMapData()
     }
   
     const addUserLocationToMap = (e: CustomEvent): void => {
-      // if(!e?.detail?.coords) return
       const {latitude, longitude} = e.detail.coords
       currentUserPoint.set({ 
         id: 'currentUser', 
@@ -167,10 +163,11 @@
         label: 'you',
         radius: 10
       })
+      console.log(currentUserPoint)
       if($currentUserPoint.id && $relayMapPoint.id) {
         currentUserLink.set({
-          source: relayMapPoint.id,
-          target: point.id,
+          source: $relayMapPoint.id,
+          target: $currentUserPoint.id,
           color: 'black',
           cursor: 'crosshair',
           width: 10
@@ -178,37 +175,50 @@
       } 
       updateMapData()
     }
-  
-    $MRP?.$.signal.on('monitors:ready', setMapPoints)
+
+    const init = () => {
+      console.log('RelayMap Hydrated')
+      ready = true
+      setMapPoints()
+    }
+
+    StateManager.once(`${relay}:hydrated`, init)
     
     onMount( () => {
-      if($MRP.nostr.monitors.isComplete) {
-        setMapPoints()
-      }
+      // init()  
     })
-  
-    $: monitorVis = $MRP.loader.config.event.blocks?.[key]?.options?.showMonitors
-    $: showMonitors = monitorVis === 'always' || monitorVis === 'onhover'
   </script>
-  
-  <Geolocation
-    getPosition="{getPosition}"
-    let:coords
-    let:loading
-    let:success
-    let:error
-    let:notSupported
-    on:position="{(e) => addUserLocationToMap(e)}"
-  >
-  
-  </Geolocation>
-  {#if $MRP.nostr.monitors.isComplete && $MRP.nostr.monitors.monitorEvents.size && $hasMonitorData}
-  <Block class="relative pt-0" headingClass="py-5 absolute top w-full mb-2" {key}>
-    <svelte:fragment slot="title">
-      geo
-    </svelte:fragment>
-    <svelte:fragment slot="content">
-      <VisSingleContainer data={$data} style="width:100%;" class="mrp-map-light dark:mrp-map-dark">
+
+  {#if ready === true}
+
+    MAP READY
+    <!-- <Geolocation
+      getPosition="{getPosition}"
+      let:coords
+      let:loading
+      let:success
+      let:error
+      let:notSupported
+      on:position="{(e) => addUserLocationToMap(e)}"
+    >
+      {#if notSupported}
+        Your browser does not support the Geolocation API.
+      {:else}
+        {#if loading}
+          Loading...
+        {/if}
+        {#if success}
+          {JSON.stringify(coords)}
+        {/if}
+        {#if error}
+          An error occurred. {error.code} {error.message}
+        {/if}
+      {/if}
+    </Geolocation> -->
+
+    <!-- {#if monitors.length && checks.length} -->
+    <div class="relative pt-0">
+      <VisSingleContainer data={$data} class="mrp-map-light dark:mrp-map-dark">
         <VisTopoJSONMap 
           topojson={WorldMapTopoJSON} 
           disableZoom={true}
@@ -216,26 +226,11 @@
           {pointLabelTextBrightnessRatio}
         />
       </VisSingleContainer>
-      {#if showMonitors}
-      <Monitors {key} {setMonitor} {resetMonitors} {updateMapData} />
-      {/if}
-    </svelte:fragment>
-  </Block>
+    </div>
+    <!-- {/if} -->
   {/if}
   
   
-    <!-- {#if notSupported}
-      Your browser does not support the Geolocation API.
-    {:else}
-      {#if loading}
-        Loading...
-      {/if}
-      {#if success}
-        {JSON.stringify(coords)}
-      {/if}
-      {#if error}
-        An error occurred. {error.code} {error.message}
-      {/if}
-    {/if} -->
+    
   <style>
   </style>

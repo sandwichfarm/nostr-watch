@@ -89,7 +89,7 @@ export class Sync {
     await this.services.monitors.bootstrap()
     await this.services.monitors.ensureMonitorsActive()
     await Promise.allSettled([
-      this.services.monitors.bootstrapMonitorMeta(),
+      this.services.monitors.fetchMonitorMeta(),
       // this.services.monitors.prioritizeMonitors(MonitorPriority.Checks)
       this.services.monitors.prioritizeMonitors()
     ])
@@ -97,7 +97,7 @@ export class Sync {
 
   async _stage_seed_relays(): Promise<void> {
     this.stage = SyncStage.SeedRelays
-    await this.services.monitors.bootstrapMonitorChecks()
+    await this.services.monitors.fetchMonitorsChecks()
   }
 
   async _stage_seed_meta(): Promise<void> {

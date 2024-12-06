@@ -4,20 +4,25 @@
     import DataTable from '$lib/components/blocks/table/DataTable.svelte';
     import MonitorsActions from '$lib/components/partials/MonitorActions.svelte';
     import * as Alert from "$lib/components/ui/alert/index.js";
+    import { type Monitor } from "@nostrwatch/nip66/models"
 	
     import { monitorsSorted, monitorRows } from '$lib/stores/monitors.js';
 	export const prerender = true;
 
     import config from '$lib/config/monitors-config.js';
+	import { StateManager } from '@nostrwatch/nip66';
+	import { nip05s, validNip05s } from '$lib/stores/nip05s.js';
 
 	let val: string='';
+
+    StateManager.on('monitor:update:lastActive', (value: any) => { console.log('monitor:lastActive', value) })
 
 	onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
     });
 
-    $: countInactiveMonitorsEnabled = $monitorRows.filter(monitor => monitor.lastActive < 0 && monitor.enabled).length;
-    $: countEnabledMonitors = $monitorRows.filter(monitor => monitor.enabled).length;
+    $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: Monitor) => !monitor.active && monitor.enabled).length;
+    $: countEnabledMonitors = $monitorRows.filter((monitor: Monitor) => monitor.enabled).length;
     $: criticalHasNoMonitorsEnabled = countEnabledMonitors === 0;
     $: criticalInactiveMonitorsEnabled = countInactiveMonitorsEnabled > 0;
     $: warnHasLessThanRecommendedMonitors = countEnabledMonitors < 3;
@@ -61,6 +66,8 @@
                 </Alert.Description>
             </Alert.Root>
         {/if}
+
+        {JSON.stringify($nip05s, null, 2)}
 
         <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} />
         <!-- <ul>

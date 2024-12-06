@@ -4,28 +4,25 @@ import { eventsArray } from "./events.js";
 import type { IMonitor, IEvent } from "@nostrwatch/nip66/models";
 import { throttledDerived } from "$lib/utils/stores.js";
 import { MonitorManager, StateManager } from "@nostrwatch/nip66";
+import { Monitor } from '@nostrwatch/nip66/models'
+import { nip05s, validNip05s } from "./nip05s.js";
 
 
-export type Monitor = {
-  priority?: number,
-  registration?: IMonitor,
-  relays?: string[],
-  profile?: any
-}
-
-export const monitorsMap: Writable<Map<string, any>> = writable(new Map());
+export const monitorsMap: Writable<Map<string, Monitor>> = writable(new Map());
 
 export const monitors = derived(
-// export const monitors = throttledDerived(
   monitorsMap, 
   ($monitorsMap) => {
     const arr = Array.from($monitorsMap.values());
     if(arr.length){
-      StateManager.set('cache:monitors', arr);  
+      const cacheValues = arr.map(( monitor: Monitor) => {
+        console.log('before cache monitor', typeof monitor.toCache, monitor)
+        return monitor.toCache()
+      })
+      StateManager.set('cache:monitors', cacheValues);  
     }
     return arr;
   }
-  // 10
 )
 
 export const monitorsSorted = derived(
@@ -34,6 +31,14 @@ export const monitorsSorted = derived(
     return MonitorManager.sortMonitorsByPriority($monitors);
   }
 );
+
+export const monitorNip05s = derived(
+  monitors,
+  monitors => 
+    monitors
+      .filter( m => m?.profile?.nip05 )
+      .map( m => ({ pubkey: m.pubkey, nip05: m.profile.nip05 }) )
+)
 
 export const monitorChecksCount = derived(
   eventsArray, 
@@ -49,13 +54,14 @@ export const monitorChecksCount = derived(
 
 
 export const monitorRows = derived(
-  [monitorsSorted, monitorChecksCount],
-  ([$monitorsSorted, $monitorChecksCount]) => {
+  [monitorsSorted, monitorChecksCount, nip05s],
+  ([$monitorsSorted, $monitorChecksCount, $nip05s]) => {
     return $monitorsSorted.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
       row.id = monitor.registration.pubkey;
+      row.active = monitor.active;
       row.pubkey = monitor.registration.pubkey;
-      row.name = monitor.profile.name ?? null
+      row.name = monitor.profile?.name ?? null
       row.photo = monitor?.profile?.photo ?? monitor?.profile?.picture ?? null
       row.about = monitor?.profile?.about ?? null
       row.nip05 = monitor?.profile?.nip05 ?? null
@@ -64,7 +70,7 @@ export const monitorRows = derived(
       row.checks = monitor?.registration?.checks ?? null
       row.networks = monitor?.registration?.networks ?? null
       row.frequency = monitor?.registration?.frequency ?? null
-      row.lastActive = monitor?.registration?.lastActive ?? null
+      row.lastActive = monitor?.lastActive ?? null
       row.relays = monitor.relays ?? null
       row.enabled = monitor.enabled ?? false
       row.priority = monitor.priority ?? 0

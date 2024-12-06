@@ -1,8 +1,23 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import {
+    createTable,
+    Render,
+    Subscribe,
+  } from "svelte-headless-table";
+  import {
+    addPagination,
+    addSortBy,
+    addTableFilter,
+  } from "svelte-headless-table/plugins";
+  import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
+  import * as Table from "$lib/components/ui/table/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import { cn } from "$lib/components/utils.js";
 
   export let payload: any = [];
   export let searchConfig: any = {};
+  export let mode: 'compact' | 'table' = 'compact';
 
   const { searchResults, initializeIndex, performSearch, selectSuggestion } = searchConfig;
 
@@ -13,26 +28,22 @@
     keybindUsed: false,
   };
 
-  let results: any[] = [];
-  let inputElement: HTMLInputElement;
-  let unsubscribe: any;
+  type Result = {
+    relay: string;
+    operatorPubkey: string;
+    isp: string;  
+    supportedNips: string[];
+  };
 
-  $: searchResults.subscribe((res: any) => (results = res));
+  let inputElement: HTMLInputElement;
 
   onMount(() => {
-  initializeIndex(payload);
+    initializeIndex(payload);
     document.addEventListener("click", handleClickOutside);
-
-    unsubscribe = searchResults.subscribe((res: any) => {
-      results = res;
-    });
   });
 
   onDestroy(() => {
     document.removeEventListener("click", handleClickOutside);
-    if (unsubscribe) {
-      unsubscribe();
-    }
   });
 
   function handleSearch() {
@@ -41,13 +52,13 @@
       state.showSuggestions = true;
     } else {
       state.showSuggestions = false;
-      results = [];
     }
     state.selectedIndex = -1;
     state.keybindUsed = false;
   }
 
   function handleKeyDown(event: KeyboardEvent) {
+    const results = $searchResults;
     if (!state.showSuggestions) return;
 
     switch (event.key) {
@@ -70,7 +81,7 @@
         if (state.keybindUsed && state.selectedIndex >= 0 && state.selectedIndex < results.length) {
           selectSuggestion(results[state.selectedIndex], state);
         } else if (!state.keybindUsed && results.length > 0) {
-          selectSuggestion(results[0]), state;
+          selectSuggestion(results[0], state);
         }
         state.showSuggestions = false;
         state.query = "";
@@ -86,9 +97,55 @@
       state.showSuggestions = false;
     }
   }
+
+  // Setting up the table using svelte-headless-table
+  let table;
+  let columns;
+  let headerRows, pageRows, tableAttrs, tableBodyAttrs, pluginStates, rows;
+  let hasNextPage, hasPreviousPage, pageIndex;
+
+  if (mode === 'table') {
+    // Initialize the table
+    table = createTable(searchResults, {
+      sort: addSortBy({ disableMultiSort: true }),
+      page: addPagination(),
+      filter: addTableFilter({
+        includeHiddenColumns: true,
+        fn: ({ filterValue, value }) => String(value).includes(filterValue)
+      })
+    });
+
+    // Define columns
+    columns = table.createColumns([
+      table.column({
+        header: "Relay",
+        accessor: "relay",
+      }),
+      table.column({
+        header: "Operator Pubkey",
+        accessor: "operatorPubkey",
+      }),
+      table.column({
+        header: "ISP",
+        accessor: "isp",
+      }),
+      // table.column({
+      //   header: "Supported NIPs",
+      //   accessor: "supportedNips",
+      //   cell: ({ value }) => value.join(", "),
+      // }),
+    ]);
+
+    const viewModel = table.createViewModel(columns);
+
+    // Destructure the necessary variables
+    ({ headerRows, pageRows, tableAttrs, tableBodyAttrs, pluginStates, rows } = viewModel);
+
+    ({ hasNextPage, hasPreviousPage, pageIndex } = pluginStates.page);
+  }
 </script>
 
-<div class="relative m-4 w-full h-full max-w-md ">
+<div class="relative m-4 w-full h-full">
   <!-- Input Field -->
   <input
     type="text"
@@ -97,42 +154,111 @@
     on:input={handleSearch}
     on:keydown={handleKeyDown}
     placeholder="Search for relay, operator pubkey, ISP, or NIPs"
-    class="w-full p-2 border border-black/10 rounded-t-md dark:bg-white/5 dark:border-white/10 dark:text-white/60 focus:border-transparent focus:ring-0"
+    class="w-full p-2 border border-black/10 rounded-t-md dark:bg-black/5 dark:border-black/10 dark:text-white/60 focus:border-transparent focus:ring-0"
   />
-  <!-- Autosuggest Dropdown -->
-  {#if state.showSuggestions && results.length > 0}
-    <div class="shadow-md absolute top-full left-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-white/5 dark:border-white/10 ">
-      {#each results as result, index}
-        <div
-          role="option"
-          tabindex="0"
-          aria-selected={index === state.selectedIndex}
-          class={`p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
-            index === state.selectedIndex ? 'bg-gray-200 text-black dark:bg-gray-700 dark:text-white' : ''
-          }`}
-          on:click={() => {
-            selectSuggestion(result, state);
-            state.showSuggestions = false;
-            state.query = "";
-          }}
-          on:keydown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
+
+  {#if mode === 'compact'}
+    <!-- Autosuggest Dropdown -->
+    {#if state.showSuggestions && $searchResults.length > 0}
+      <div class="shadow-md absolute top-full left-0 right-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-black/5 dark:border-white/10">
+        {#each $searchResults as result, index}
+          <div
+            role="option"
+            tabindex="0"
+            aria-selected={index === state.selectedIndex}
+            class={`p-2 backdrop-blur-lg cursor-pointer hover:bg-gray-100/50 dark:hover:bg-gray-700/50 ${
+              index === state.selectedIndex ? 'bg-gray-200/50 text-black dark:bg-gray-700/50 dark:text-white' : ''
+            }`}
+            on:click={() => {
               selectSuggestion(result, state);
               state.showSuggestions = false;
               state.query = "";
-            }
-          }}
-        >
-          <strong class="text-sm"> {result.relay || "N/A"} </strong><br />
-          <small class="text-sm italic text-white/50">{result.operatorPubkey || "N/A"}</small>
-        </div>
-      {/each}
-    </div>  
+            }}
+            on:keydown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                selectSuggestion(result, state);
+                state.showSuggestions = false;
+                state.query = "";
+              }
+            }}
+          >
+            <strong class="text-sm"> {result.relay || "N/A"} </strong><br />
+            <small class="text-sm italic text-white/50">{result.operatorPubkey || "N/A"}</small>
+          </div>
+        {/each}
+      </div>  
+    {/if}
+
+    {#if state.showSuggestions && $searchResults.length === 0}
+      <div class="">
+        <div class="p-2 dark:text-white">No suggestions found.</div>
+      </div>
+    {/if}
   {/if}
 
-  {#if state.showSuggestions && results.length === 0}
-    <div class="">
-      <div class="p-2 dark:text-white">No suggestions found.</div>
+  {#if mode === 'table'}
+    <!-- Data Table -->
+    <div class="w-full mt-4">
+      <div class="rounded-md border">
+        <Table.Root {...$tableAttrs}>
+          <Table.Header>
+            {#each $headerRows as headerRow}
+              <Subscribe rowAttrs={headerRow.attrs()}>
+                <Table.Row>
+                  {#each headerRow.cells as cell (cell.id)}
+                    <Subscribe attrs={cell.attrs()} let:attrs props={cell.props()} let:props>
+                      <Table.Head {...attrs}>
+                        {#if props.sort}
+                          <Button variant="ghost" on:click={props.sort.toggle}>
+                            <Render of={cell.render()} />
+                            <ArrowUpDown
+                              class={cn(
+                                props.sort.isSorted && "text-foreground",
+                                "ml-2 h-4 w-4"
+                              )}
+                            />
+                          </Button>
+                        {:else}
+                          <Render of={cell.render()} />
+                        {/if}
+                      </Table.Head>
+                    </Subscribe>
+                  {/each}
+                </Table.Row>
+              </Subscribe>
+            {/each}
+          </Table.Header>
+          <Table.Body {...$tableBodyAttrs}>
+            {#each $pageRows as row (row.id)}
+              <Subscribe rowAttrs={row.attrs()} let:rowAttrs>
+                <Table.Row {...rowAttrs}>
+                  {#each row.cells as cell (cell.id)}
+                    <Subscribe attrs={cell.attrs()} let:attrs>
+                      <Table.Cell {...attrs}>
+                        <Render of={cell.render()} />
+                      </Table.Cell>
+                    </Subscribe>
+                  {/each}
+                </Table.Row>
+              </Subscribe>
+            {/each}
+          </Table.Body>
+        </Table.Root>
+      </div>
+      <div class="flex items-center justify-end space-x-2 py-4">
+        <Button
+          variant="outline"
+          size="sm"
+          on:click={() => ($pageIndex = $pageIndex - 1)}
+          disabled={!$hasPreviousPage}
+        >Previous</Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!$hasNextPage}
+          on:click={() => ($pageIndex = $pageIndex + 1)}
+        >Next</Button>
+      </div>
     </div>
   {/if}
 </div>

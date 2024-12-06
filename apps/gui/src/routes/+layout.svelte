@@ -4,28 +4,25 @@
     import { goto } from '$app/navigation';
     import { onMount, getContext, onDestroy } from 'svelte';
 	import Header from '$lib/components/blocks/Header.svelte';
-    import { doBootstrap as _doBootstrap } from '$lib/stores/routines.js';
+    import { doBootstrap } from '$lib/stores/routines.js';
     // import { bootstrap, destroy } from '$lib/utils/lifecycle.js';
 
     const { data, children } = $props();
-    let doBootstrap: boolean = true;
+    let unsubscribe: () => any = () => {};
 
-    let unsubscribe = page.subscribe(() => {
-        _doBootstrap.set(true);
-    });
-
-    _doBootstrap.subscribe((value) => {
+    doBootstrap.subscribe((value: boolean) => {
         const newValue = value 
-        if(doBootstrap === false && newValue === true) {
+        if($doBootstrap === false && newValue === true) {
             loadData()
         }
-        doBootstrap = value
+        doBootstrap.set(value)
+        console.log(`doBootstrap ${value}`)
     });
+
     onDestroy(unsubscribe);
 
     const loadData = async () => {
-        const bootstrap = (await import('$lib/utils/lifecycle.js')).bootstrap;
-        bootstrap()
+        (await import('$lib/utils/lifecycle.js')).bootstrap();
     }
 
     onMount(async () => {
@@ -36,10 +33,12 @@
             goto('/mobile'); // Redirect to the mobile-specific template
         }
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-        
-        if($page.url.pathname.includes('/note/')) return console.log('Skipping bootstrap');
 
-        if(!doBootstrap) return 
+        if(typeof $doBootstrap === 'undefined') {
+            doBootstrap.set(true);
+        }
+        
+        if(!$doBootstrap || ['/note/', '/relays/', '/preferences/'].includes($page.url.pathname)) return console.log('Skipping bootstrap');
         await loadData()
 
     });

@@ -135,6 +135,7 @@ export interface ICacheAdapter extends IAdapter {
 export class CacheAdapter extends Adapter {
   static type = 'CacheAdapter';
   readonly slug: string = 'CacheAdapter:unset'; 
+  protected _ready: boolean = false;
 
   constructor(worker?: Worker | SharedWorker | URL) {  
     super(worker)

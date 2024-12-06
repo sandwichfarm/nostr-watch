@@ -1,6 +1,6 @@
 <script lang="ts">;
     import { page } from '$app/stores';
-	import AutoSuggestRelays from '../partials/AutoSuggestRelays.svelte';
+	import AutoSuggestRelays from '../partials/AutoSuggestRelaysCompact.svelte';
   
     $: isHomepage = $page.url.pathname === '/';
 </script>

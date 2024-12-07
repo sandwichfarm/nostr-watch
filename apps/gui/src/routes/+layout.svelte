@@ -45,8 +45,6 @@
 </script>
 
 <Header />
-
-<br /><br /><br /><br /><br /><br /><br />
-{JSON.stringify(data)}
-
+<div id="content-wrapper" class="mt-20 block">
 {@render children()}
+</div>

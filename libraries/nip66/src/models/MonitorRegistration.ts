@@ -9,6 +9,10 @@ export class MonitorRegistration extends Geocoded {
         ];
     }
 
+    get networks(): string[] {
+        return this.tags.filter(tag => tag[0] === 'n').map(tag => tag[1]);
+    }
+
     get frequency(): number {   
         return parseInt(this.tags.find(tag => tag[0] === 'frequency')?.[1] || "0")
     }

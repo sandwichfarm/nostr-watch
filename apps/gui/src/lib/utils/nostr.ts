@@ -13,3 +13,23 @@ export const checkNip05 = async ( pubkey: string, nip05: Nip05 ) => {
     const service = get(nip05Service);
     service.check(pubkey, nip05)
 }
+
+export const isPubkey = (value: string): boolean => {
+    const hexRegex = /^[0-9a-fA-F]{64}$/;
+    return hexRegex.test(value);
+}
+
+export const isHex = (value: string): boolean => {
+    const hexRegex = /^(0x)?[0-9a-fA-F]+$/;
+    return hexRegex.test(value);
+}
+
+export const formatNip =( number: number | string): string  => {
+    if (typeof number === 'string') {
+        number = parseInt(number);
+    }
+    if (number > 0 || number <= 9) {
+        number = number.toString().padStart(2, '0')
+    }
+    return `NIP-${number}`;
+}

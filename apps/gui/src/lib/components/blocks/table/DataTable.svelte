@@ -173,7 +173,6 @@
     <!-- **Main Table Pane** -->
     <Resizable.Pane defaultSize={75}>
         {#if tableInstance !== null}
-            <div class="h-11"></div>
             <div class="px-4 shadow-md my-10">
                 <!-- **Search Input for Global Filtering** -->
                 <Input
@@ -190,6 +189,9 @@
                 <Table.Root>
                     <Table.Header>
                         <Table.Row class="sticky top-0 z-10 bg-background">
+                            {#if actionsComponent}
+                            <svelte:component this={actionsComponent} view='head' />
+                            {/if}
                             {#each tableInstance?.columns as column (column.id)}
                                 <Table.Head>
                                     <button
@@ -212,14 +214,15 @@
                                     </button>
                                 </Table.Head>
                             {/each}
-                            {#if actionsComponent}
-                            <svelte:component this={actionsComponent} view='head' />
-                            {/if}
+                           
                         </Table.Row>
                     </Table.Header>
                     <Table.Body>
                         {#each tableInstance?.rows as row (row.id)}
                             <Table.Row class="{$rowStyles.get(row.pubkey)}">
+                                {#if actionsComponent}
+                                    <svelte:component this={actionsComponent} data={row} />
+                                {/if}
                                 {#each tableInstance?.columns as column (column.id)}
                                     {#if column.id === 'status'}
                                         <Table.Cell>
@@ -237,9 +240,7 @@
                                         </Table.Cell>
                                     {/if}
                                 {/each}
-                                        {#if actionsComponent}
-                                        <svelte:component this={actionsComponent} data={row} />
-                                        {/if}
+                                        
                             </Table.Row>
                         {/each}
                     </Table.Body>

@@ -83,6 +83,7 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
 
   $checks.forEach((check) => {
     const relay = check.relay;
+
     if (!relayAverages[relay]) {
       relayAverages[relay] = 0;
       relayCounts[relay] = 0;
@@ -121,7 +122,15 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
   
         const isArray = Array.isArray(value);
         const isAccArray = Array.isArray(acc[key]);
-        if (isArray) {
+        if(key === 'created_at'){
+          if(!acc?.['lastSeen']) {
+            acc['lastSeen'] = value;
+          }
+          else if(value > acc['lastSeen']) {
+            acc['lastSeen'] = value;
+          }
+        }
+        else if (isArray) {
           acc[key] = isAccArray
             ? [...new Set([...acc[key], ...value])]
             : value;
@@ -133,7 +142,6 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
       return acc;
     }, {});
   });
-  
 
   Object.keys(relayAverages).forEach((relay) => {
     const avg = relayAverages[relay];
@@ -156,7 +164,6 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
     id: index,
   }));
 });
-
 
 export const relaysForMiniSearch: Readable<any[]> = derived(relayAggregates, ($relayAggregates) => {
   let ag = $relayAggregates.map((item, index) => {

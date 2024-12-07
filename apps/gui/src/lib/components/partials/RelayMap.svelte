@@ -210,8 +210,6 @@
   </script>
 
   {#if ready === true}
-
-    MAP READY
     <!-- <Geolocation
       getPosition="{getPosition}"
       let:coords
@@ -235,10 +233,6 @@
         {/if}
       {/if}
     </Geolocation> -->
-
-    {JSON.stringify($relayMapPoint, null, 2)} <br /> <br />
-
-    {JSON.stringify($data, null, 2)}
 
     <!-- {#if monitors.length && checks.length} -->
     <div class="relative pt-0">

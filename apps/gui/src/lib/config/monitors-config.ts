@@ -52,8 +52,8 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['pubkey', 'nip05', 'frequency', 'name', 'reportingOnline', 'lastActive', 'checks']
-export const filtersShow: DataKeys = ['pubkey', 'geohash', 'relays']
+export const columnsShow: DataKeys = ['pubkey', 'networks', 'frequency', 'reportingOnline', 'lastActive', 'checks']
+export const filtersShow: DataKeys = ['pubkey', 'geohash', 'relays', 'checks']
 
 export const humanReadableNames: NameFormatter = {
     'pubkey': 'Monitor'
@@ -182,16 +182,6 @@ export const filterFormatters: Formatters = {
     // }
 }
 
-
-function formatNip(number: number | string): string {
-    if (typeof number === 'string') {
-        number = parseInt(number);
-    }
-    if (number > 0 || number <= 9) {
-        number = number.toString().padStart(2, '0')
-    }
-    return `NIP-${number}`;
-}
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
     if (text.length > maxLength) {

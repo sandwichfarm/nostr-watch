@@ -1,3 +1,18 @@
+import { deterministicHash } from "@base/utils";
+import { nip11 } from "nostr-tools";
+
+export type Nip11PaymentsUrl = `https://${string}` | `http://${string}`
+export type Nip11SubscriptionFee = { amount: number; unit: string; period: number }
+export type Nip11SubscriptionFees = Nip11SubscriptionFee[]
+
+export interface Limitations extends nip11.Limitations {
+  pow_required?: number;
+}
+
+export interface RelayInformation extends nip11.RelayInformation {
+  limitation: Limitations;
+}
+
 export type INip11 = {
   relay: string;
   monitorPubkey: string;
@@ -5,4 +20,123 @@ export type INip11 = {
   nid?: string | null;
   created_at: number;
   json: Record<string, any> | null;
+}
+
+export class Nip11 {
+  private _json: RelayInformation;
+  private _hash: string;
+
+  constructor(nip11: RelayInformation) {
+    this._json = nip11;
+    this._hash = deterministicHash(this._json)
+  }
+
+  /**
+   * Returns the name of the relay.
+   */
+  get name(): string | undefined {
+    return this._json.name;
+  }
+
+  get pubkey(): string | undefined {
+    return this._json?.pubkey;
+  }
+
+
+  /**
+   * Returns the description of the relay.
+   */
+  get description(): string | undefined {
+    return this._json.description;
+  }
+
+  /**
+   * Returns the contact information of the relay.
+   */
+  get contact(): string | undefined {
+    return this._json.contact;
+  }
+
+  /**
+   * Returns the software used by the relay.
+   */
+  get software(): string | undefined {
+    return this._json.software;
+  }
+
+  /**
+   * Returns the version of the relay software.
+   */
+  get version(): string | undefined {
+    return this._json.version;
+  }
+
+  /**
+   * Indicates whether payment is required to use the relay.
+   */
+  get paymentRequired(): boolean {
+    return this._json.limitation?.payment_required ?? false;
+  }
+
+  /**
+   * Indicates whether authentication is required to use the relay.
+   */
+  get authRequired(): boolean {
+    return this._json.limitation?.auth_required ?? false;
+  }
+
+  /**
+   * Indicates whether proof-of-work is required to publish to relay.
+   */
+  get powRequired(): number | false {
+    return this._json.limitation?.pow_required ?? false;
+  }
+
+  /**
+   * Returns the hash associated with the relay.
+   */
+  get hash(): string | undefined {
+    return this._hash ?? undefined;
+  }
+
+  /**
+   * Returns the supported NIPs (Nostr Implementation Possibilities) by the relay.
+   */
+  get supportedNips(): number[] | undefined {
+    return this._json?.supported_nips;
+  }
+
+  /**
+   * Returns the payments URL for the relay.
+   */
+  get paymentsUrl(): Nip11PaymentsUrl | undefined {
+    return this._json?.payments_url as Nip11PaymentsUrl || undefined;
+  }
+
+  /**
+   * Returns the subscription fees for the relay.
+   */
+  get fees(): Nip11SubscriptionFees | undefined {
+    return this._json.fees?.subscription;
+  }
+
+  get maxMessageLength(): number | undefined {
+    return this._json.limitation?.max_message_length;
+  }
+
+  get maxMessageTags(): number | undefined {
+    return this._json.limitation?.max_event_tags; 
+  }
+
+  get maxSubscriptions(): number | undefined {
+    return this._json.limitation?.max_subscriptions;
+  }
+
+
+  /**
+   * Returns the entire JSON payload.
+   */
+  get json(): RelayInformation {
+    return this._json;
+  }
 }

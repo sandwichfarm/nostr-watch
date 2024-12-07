@@ -456,10 +456,7 @@
     // **Reactive Statements for Styling Classes**
     $: buttonClass = 'mb-2 mr-2 text-sm font-bold py-0 px-1';
     $: buttonClassSelected = 'bg-blue-500 text-white';
-</script>
-
-<!-- IMPORTANT: SPACER -->
-<div class="h-20"></div>    
+</script>  
 
 <!-- **Clear All Filters Button** -->
 <Button 

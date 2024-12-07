@@ -38,8 +38,10 @@ export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
         console.log('Svelte Received events:', _events.length);
         events.update((map) => {
             _events.forEach((event: IEvent) => {
+                const aTag = event.tags.find((t: string[]) => t[0] === 'a')
+                if(aTag) return;
                 const key = eventKey(event);
-                if (!key) return;
+                if(!key) return;
                 const existing = map.get(key);
                 if (existing && existing.id === event.id) return;
                 if (existing && existing.created_at > event.created_at) return;

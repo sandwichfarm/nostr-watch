@@ -64,7 +64,7 @@ export class MonitorManager {
   }
 
   get enabledMonitors(): Monitor[] {  
-    return this.array.filter((monitor) => monitor.enabled);
+    return this.sortedMonitors.filter((monitor) => monitor.enabled);
   }
 
   get sortedMonitors(): Monitor[] {
@@ -142,52 +142,60 @@ export class MonitorManager {
   }
 
   sort(order: 'ASC' | 'DESC' = 'DESC'): Monitor[] {
+    // Clone the array to avoid mutating the original
+    const monitors = [...this.array];
+
+    // Calculate scores for each monitor
     const scores: Record<string, number> = {};
-    const monitors = [...this.array]
     monitors.forEach((monitor) => {
-      let score = 0;
       if (!monitor?.registration?.pubkey) return;
-      if (monitor?.registration) score++;
-      if (monitor?.registration?.checks?.length) score += new Set(monitor?.registration?.checks || []).size;
-      if (monitor?.profile) score++;
-      if (monitor?.relays) score++;
-      if(!monitor.active) score = 0;
+
+      let score = 0;
+      if (monitor.registration) score++;
+      if (monitor.registration.checks?.length) score += new Set(monitor.registration.checks).size;
+      if (monitor.profile) score++;
+      if (monitor.relays) score++;
+      if (!monitor.active) score = 0; // Inactive monitors have a score of 0
+
       console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`);
       scores[monitor.registration.pubkey] = score;
     });
-  
+
+    // Sort monitors based on the defined criteria
     monitors.sort((a, b) => {
-      const isEnabledA = a.enabled === true;
-      const isEnabledB = b.enabled === true;
-    
-      const checksA = a?.registration?.checks?.length || 0;
-      const checksB = b?.registration?.checks?.length || 0;
-      
-      const onlineA = a?.reportedOnline || 0;
-      const onlineB = b?.reportedOnline || 0;
-    
-      const lastActiveA = a?.lastActive || 0;
-      const lastActiveB = b?.lastActive || 0;
+      // 1. Active Status: Active monitors come before inactive
+      if (a.active && !b.active) return -1; // a before b
+      if (!a.active && b.active) return 1;  // b before a
 
-      if (a.active && !b.active) return -1;
-      if (b.active && !a.active) return 1;
-    
-      if (isEnabledA && !isEnabledB) return -1;
-      if (!isEnabledA && isEnabledB) return 1;
+      // If both are active or both inactive, proceed to next criteria
 
-      if (checksA !== checksB) return checksB - checksA;
+      // 2. Enabled Status: Enabled monitors come before disabled
+      if (a.enabled && !b.enabled) return -1;
+      if (!a.enabled && b.enabled) return 1;
 
-      if (onlineA !== onlineB) return onlineB - onlineA;
-    
-      if (lastActiveA !== lastActiveB) return lastActiveA - lastActiveB;
-    
-      const scoreA = scores?.[a.registration?.pubkey as string] || 0;
-      const scoreB = scores?.[b.registration?.pubkey as string] || 0;
+      // 3. Number of Checks: More checks come first
+      const checksA = a.registration?.checks?.length || 0;
+      const checksB = b.registration?.checks?.length || 0;
+      if (checksA !== checksB) return checksB - checksA; // Descending
+
+      // 4. Reported Online: More reported online comes first
+      const onlineA = a.reportedOnline || 0;
+      const onlineB = b.reportedOnline || 0;
+      if (onlineA !== onlineB) return onlineB - onlineA; // Descending
+
+      // 5. Last Active: More recent comes first
+      const lastActiveA = a.lastActive || 0;
+      const lastActiveB = b.lastActive || 0;
+      if (lastActiveA !== lastActiveB) return lastActiveB - lastActiveA; // Descending
+
+      // 6. Score: Higher scores come first (or based on 'order')
+      const scoreA = scores[a.registration?.pubkey || ''] || 0;
+      const scoreB = scores[b.registration?.pubkey || ''] || 0;
       if (order === 'ASC') return scoreA - scoreB;
       return scoreB - scoreA;
     });
-    
-    return monitors;    
+
+    return monitors;
   }
   
 
@@ -199,6 +207,6 @@ export class MonitorManager {
   }
 
   static sortMonitorsByPriority(monitors: Monitor[]): Monitor[] {
-    return monitors.sort((a, b) => a.priority - b.priority);
+    return monitors.filter(monitor => monitor.priority >= 0).sort((a, b) => a.priority - b.priority);
   }
 }

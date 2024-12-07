@@ -2,6 +2,12 @@ import countryCodeToFlagEmoji from 'country-code-to-flag-emoji'
 import { relaySpeedGroupResolver, SpeedGroupBars, SpeedGroupColors, SpeedGroups } from '$lib/stores/checks.js';
 import { makeSoftwareReadable } from '$lib/synonyms/software.js';
 import { formatRelayUrl } from '$lib/utils/routing.js';
+import { formatNip, isPubkey } from '$lib/utils/nostr.js';
+import { timeAgo } from '$lib/utils/time.js';
+import { IconBadgeCheckGreen, IconCheckGreen, IconCheckRed } from '$lib/utils/icons.js';
+
+
+// const IconBadgeCheckGreen = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2ZDc1MDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1iYWRnZS1jaGVjayI+PHBhdGggZD0iTTMuODUgOC42MmE0IDQgMCAwIDEgNC43OC00Ljc3IDQgNCAwIDAgMSA2Ljc0IDAgNCA0IDAgMCAxIDQuNzggNC43OCA0IDQgMCAwIDEgMCA2Ljc0IDQgNCAwIDAgMS00Ljc3IDQuNzggNCA0IDAgMCAxLTYuNzUgMCA0IDQgMCAwIDEtNC43OC00Ljc3IDQgNCAwIDAgMSAwLTYuNzZaIi8+PHBhdGggZD0ibTkgMTIgMiAyIDQtNCIvPjwvc3ZnPg==`;
 
 type Resolver = (input: any) => any
 
@@ -46,8 +52,8 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['as', 'asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['relay', 'lastSeen', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
-export const filtersShow: DataKeys = ['networks', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode']
+export const columnsShow: DataKeys = ['relay', 'lastSeen', 'hasNip11', 'operatorPubkey', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
+export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
 
 export const humanReadableNames: NameFormatter = {
     networks: 'Network',
@@ -58,7 +64,9 @@ export const humanReadableNames: NameFormatter = {
     geocode: 'Country',
     paymentRequired: 'Payment',
     authRequired: 'Auth',
-    isp: 'ISP'
+    isp: 'ISP',
+    hasNip11: 'Has Nip11',
+    operatorPubkey: 'Op.'
 };
 
 export const formatters: Formatters = {}
@@ -67,6 +75,12 @@ export const tableFormatters: Formatters = {
     relay: (relay) => {
         const truncated = truncateWithEllipsis(relay, 44);
         return `<a href="/relays/${formatRelayUrl(relay)}">${truncated}</a>`;
+    },
+    lastSeen: (lastSeen) => {
+        if(lastSeen < 0) {
+            return ''
+        }
+        return `<span class="text-xs">${timeAgo(lastSeen*1000)}</span>`;
     },
     geocode: (code) => {
         if(!code) return '🌐';
@@ -94,6 +108,26 @@ export const tableFormatters: Formatters = {
         const text = r? 'yes': 'no'
         const style = r? '': 'text-opacity-50'
         return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
+    },
+    powRequired: (r) => {
+        if(!r) return ''
+        return `<span class="text-xs font-bold">${r}</span>`
+    },
+    hasNip11: (r) => {
+        if(!r) return ''
+        return `<img class="text-green" src="${IconBadgeCheckGreen}" />`
+    },
+    operatorPubkey: (pk: string): string => {
+        if(!pk) return '';
+        const valid = isPubkey(pk)
+        if(!valid) return `<span class="text-red-500 italic text-xs uppercase">invalid</span>`
+        const icon =  valid? IconCheckGreen: IconCheckRed;
+        return `<img src="${icon}" /><span class="inline-block max-w-20 overflow-hidden overflow-ellipsis">${pk}</span>`
+    },
+    operatorPubkeyValid: (value?: boolean) => {
+        if(!value) return ''
+        const icon =  value? IconCheckGreen: IconCheckRed;
+        return `<img src="${icon}" />`
     },
     software: (software) => {
         if(typeof software !== 'string') return '-';
@@ -126,16 +160,6 @@ export const filterFormatters: Formatters = {
     }
 }
 
-
-function formatNip(number: number | string): string {
-    if (typeof number === 'string') {
-        number = parseInt(number);
-    }
-    if (number > 0 || number <= 9) {
-        number = number.toString().padStart(2, '0')
-    }
-    return `NIP-${number}`;
-}
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
     if (text.length > maxLength) {

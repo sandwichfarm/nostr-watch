@@ -1,4 +1,4 @@
-import { derived, writable, type Writable } from "svelte/store";
+import { derived, writable, type Readable, type Writable } from "svelte/store";
 import { type INip11 } from "@nostrwatch/nip66/models"
 import { deterministicHash } from "@nostrwatch/nip66/utils";
 
@@ -54,7 +54,8 @@ export const nip11s = derived([eventsArray, nip11sLocal], ([$eventsArray, $nip11
     const nid = event.id;
     const created_at = event.created_at;
     if (!event?.content || event.content.length <= 2)  return 
-    const { json, hash } = processNip11(event.content)
+    const json = event.nip11.json 
+    const hash = event.nip11.hash
     if(!json || !hash) return 
     const nip11Entry: INip11 = {
       relay,

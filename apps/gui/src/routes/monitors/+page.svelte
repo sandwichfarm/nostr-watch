@@ -30,7 +30,6 @@
 </script>
 <!-- <main class="mt-20 pt-10"> -->
     {#if $monitorsSorted.length}
-    <br /> <br /> <br /> <br /> <br /> <br /> 
         {#if criticalHasNoMonitorsEnabled}
             <Alert.Root class="mb-2">
                 <Alert.Title>Critical</Alert.Title>
@@ -56,8 +55,6 @@
             </Alert.Root>
         {/if}
 
-        
-
         {#if warnHasMoreThanRecommendedMonitors}
             <Alert.Root class="mb-2">
                 <Alert.Title>Warning</Alert.Title>
@@ -66,8 +63,6 @@
                 </Alert.Description>
             </Alert.Root>
         {/if}
-
-        {JSON.stringify($nip05s, null, 2)}
 
         <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} />
         <!-- <ul>

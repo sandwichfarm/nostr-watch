@@ -151,6 +151,10 @@ export class Monitor {
     return this.registration?.pubkey as string;
   }
 
+  get networks(): string[] {
+    return this.registration?.networks || [];
+  } 
+
   get eventId(): string {
     return this.registration?.id as string;
   }

@@ -89,6 +89,20 @@ export class RelayService extends Service {
     return checks;
   }
 
+  async fetchOperatorMeta(pubkey: string): Promise<IEvent[]> {
+    const filters: Filter[] = [
+      { kinds: [0, 10002], authors: [pubkey] }
+    ]
+    const relays = this.userMetaRelays;
+    const options: WebsocketAdapterOptions = {
+      cache: true,
+      returnResults: true, 
+      keepAlive: false,
+      stream: false
+    }
+    return this._fetch( { relays, filters, options } );
+  }
+
   async monitorInstancesFromChecks(checks: Nip66Event[], type: 'map' | 'array' = 'map'): Promise<Map<string, Monitor> | Monitor[] | undefined> {
     let filters: Filter[] = []
     const metaPromises: Promise<any>[] = []

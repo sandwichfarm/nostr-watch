@@ -2,8 +2,18 @@ import { transformCheck } from "@base/transform/TransformCheck";
 import { IEvent, NostrEvent, NostrTag } from "./Event";
 import { IGeocode } from "./Geocode";
 import { Geocoded } from "./Geocoded";
+import { nip11 } from "nostr-tools";
+import { Nip11, Nip11SubscriptionFees } from "./Nip11";
+import { isPubkey } from "@base/utils/nostr";
 
 export class Nip66Event extends Geocoded implements IEvent {
+    _nip11?: Nip11 | false;
+
+    constructor(event: IEvent) {
+      super(event);
+      this.nip11 = this.content;
+    }
+
     get keys(): string[] {
       return [
         'nid', 
@@ -13,9 +23,12 @@ export class Nip66Event extends Geocoded implements IEvent {
         'networks', 
         'rtt', 
         'operatorPubkey', 
+        'operatorPubkeyValid',
         'supportedNips', 
         'software', 
         'version', 
+        'hasNip11',
+        'nip11Hash',
         'paymentRequired', 
         'authRequired', 
         'dd',
@@ -29,6 +42,46 @@ export class Nip66Event extends Geocoded implements IEvent {
         'sslValidTo', 
         'sslIssuer'
       ];
+    }
+
+    get nip11(): Nip11 | undefined  {
+      if(this._nip11 === false) return undefined;
+      if(this._nip11 instanceof Nip11) return this._nip11; 
+      return undefined;
+    }
+
+    set nip11(nip11: string) {
+      if(this.content.length > 2) {
+        try { 
+          this._nip11 = new Nip11( JSON.parse(this.content) );
+        }
+        catch(e){
+          this._nip11 = false;
+        }
+      }
+    }
+
+    get hasNip11(): boolean {
+      return this._nip11 instanceof Nip11;
+    }
+
+    get nip11Hash(): string | undefined {
+      if(this.hasNip11){
+        return (this._nip11 as Nip11)?.hash
+      }
+      return undefined;
+    }
+
+    get operatorPubkey(): string | null {
+      const fromNip11 = this.nip11?.pubkey;
+      return fromNip11? 
+        fromNip11: 
+        this.tags.find((tag: NostrTag) => tag[0] === 'p')?.[1] || null;
+    }
+
+    get operatorPubkeyValid(): boolean | undefined {
+      if(!this.operatorPubkey) return undefined;
+      return isPubkey(this.operatorPubkey);
     }
   
     get relay(): string | null {
@@ -52,41 +105,57 @@ export class Nip66Event extends Geocoded implements IEvent {
       return rtt? parseInt(rtt): null;
     }
   
-    get operatorPubkey(): string | null {
-      return this.tags.find((tag: NostrTag) => tag[0] === 'p')?.[1] || null;
-    }
-  
     get supportedNips(): string[] | null {
-      const nips = 
-        this.tags
-          .filter((tag: NostrTag) => tag[0] === 'N')
-          .map((tag: NostrTag) => tag[1]) || null;
-      return Array.from(new Set(nips));
+      const nip11Nips = this.nip11?.supportedNips?.map( n => n.toString() ) || []
+      if(nip11Nips) {
+        return Array.from(new Set( this.nip11?.supportedNips?.map( n => n.toString() ) || [] ));
+      }
+      return this.tags.filter((tag: NostrTag) => tag[0] === 'l' && tag[2] === 'nip11.supported_nips').map((tag: NostrTag) => tag[1]) || null;  
     }
   
     get software(): string | null {
-      return this.tags.find((tag: NostrTag) => tag[0] === 's')?.[1]?.toLowerCase() || null;
+      return this.nip11?.software?.toLowerCase() || null;
     }
   
     get version(): string | null {
-      return this.tags.find((tag: NostrTag) => tag[0] === 'l' && tag[2] === 'nip11.version')?.[1] || null;
+      return this.nip11?.version || null;
     }
   
     get paymentRequired(): boolean {
-      return this.tags.some((tag: NostrTag) => tag[0] === 'R' && tag[1] === 'payment') ? true : false;
+      return this.nip11?.paymentRequired || false;
     }
   
     get authRequired(): boolean {
-      return this.tags.some((tag: NostrTag) => tag[0] === 'R' && tag[1] === 'auth') ? true : false;
+      return this.nip11?.authRequired || false;
     }
   
-    get powRequired(): boolean {
-      return this.tags.some((tag: NostrTag) => tag[0] === 'R' && tag[1] === 'pow') ? true : false;
+    get powRequired(): number | boolean {
+      return this.nip11?.powRequired || false;
     }
-  
-    // get geohash(): string[] | null {
-    //   return this.tags.filter((tag: NostrTag) => tag[0] === 'g').map((tag: NostrTag) => tag[1]) || null;
-    // }
+
+    get description(): string | null {  
+      return this.nip11?.description || null;
+    }
+
+    get contact(): string | null {
+      return this.nip11?.contact || null;
+    }
+
+    get maxMessageLength(): number | null {
+      return this.nip11?.maxMessageLength || null;
+    }
+
+    get maxMessageTags(): number | null {
+      return this.nip11?.maxMessageTags || null;
+    }
+
+    get paymentsUrl(): string | null {
+      return this.nip11?.paymentsUrl || null;
+    }
+
+    get fees(): Nip11SubscriptionFees | null {
+      return this.nip11?.fees || null;
+    }
   
     get isp(): string | null {
       return this.tags.find((tag: NostrTag) => tag[0] === 'l' && tag[2].includes('isp'))?.[1] || null;

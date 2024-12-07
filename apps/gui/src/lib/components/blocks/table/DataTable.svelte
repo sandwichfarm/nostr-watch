@@ -111,50 +111,28 @@
         }
     );
 
+    const createTable = () => {
+        if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
+            tableInstance = new DataTable<any>({
+                pageSize: $resultsPerPage,
+                columns: $filteredTableData.columns,
+                data: $filteredTableData.data,
+            });
+        } else {
+            if (tableInstance) {
+                console.log('Destroying DataTable instance due to no data.');
+                tableInstance = null;
+            }
+        }
+    }
+
     // **DataTable Subscription**
     onMount(() => {
-        const unsubscribe = filteredTableData.subscribe($filteredTableData => {
-            console.log('Subscription Callback Triggered.');
-            console.log('Received new filteredTableData:', $filteredTableData);
-
-            if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
-                const currentPageSize = get(resultsPerPage);
-                if (!tableInstance) {
-                    console.log('Initializing DataTable instance.');
-                    tableInstance = new DataTable<any>({
-                        pageSize: currentPageSize,
-                        columns: $filteredTableData.columns,
-                        data: $filteredTableData.data,
-                    });
-                } else {
-                    if (typeof tableInstance.update === 'function') {
-                        console.log('Updating DataTable instance.');
-                        tableInstance.update({
-                            pageSize: currentPageSize,
-                            columns: $filteredTableData.columns,
-                            data: $filteredTableData.data,
-                        });
-                    } else {
-                        console.warn('DataTable instance does not have an update method. Re-initializing.');
-                        // tableInstance.destroy();
-                        tableInstance = new DataTable<any>({
-                            pageSize: currentPageSize,
-                            columns: $filteredTableData.columns,
-                            data: $filteredTableData.data,
-                        });
-                    }
-                }
-            } else {
-                if (tableInstance) {
-                    console.log('Destroying DataTable instance due to no data.');
-                    tableInstance.destroy();
-                    tableInstance = null;
-                }
-            }
-        });
-
+        const unsubRPP = resultsPerPage.subscribe(($resultsPerPage: number) => createTable());
+        const unsubTable = filteredTableData.subscribe($filteredTableData => createTable());
         return () => {
-            unsubscribe();
+            unsubTable();
+            unsubRPP();
             if (tableInstance) {
                 console.log('Destroying DataTable instance on component unmount.');
                 // tableInstance.destroy();

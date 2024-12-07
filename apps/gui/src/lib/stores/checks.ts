@@ -158,11 +158,20 @@ export const relayChecks: Readable<
 > = derived(eventsArray, relayCheckAggregator);
 
 export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
-  return Object.entries($relayChecks).map(([relay, item], index) => ({
+  let aggregates = Object.entries($relayChecks).map(([relay, item], index) => ({
     relay,
     ...item.aggregate,
     id: index,
   }));
+  if(!aggregates.length) {
+    const agg = StateManager.get('aggregate:complete');
+    aggregates = agg? agg: aggregates
+  }
+  else {
+    StateManager.set('aggregate:complete', aggregates)
+  }
+  
+  return aggregates 
 });
 
 export const relaysForMiniSearch: Readable<any[]> = derived(relayAggregates, ($relayAggregates) => {

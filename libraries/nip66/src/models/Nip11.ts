@@ -11,6 +11,7 @@ export interface Limitations extends nip11.Limitations {
 
 export interface RelayInformation extends nip11.RelayInformation {
   limitation: Limitations;
+  banner: string;
 }
 
 export type INip11 = {
@@ -35,61 +36,60 @@ export class Nip11 {
    * Returns the name of the relay.
    */
   get name(): string | undefined {
-    return this._json.name;
+    return this.json.name;
   }
 
   get pubkey(): string | undefined {
-    return this._json?.pubkey;
+    return this.json?.pubkey;
   }
-
 
   /**
    * Returns the description of the relay.
    */
   get description(): string | undefined {
-    return this._json.description;
+    return this.json.description;
   }
 
   /**
    * Returns the contact information of the relay.
    */
   get contact(): string | undefined {
-    return this._json.contact;
+    return this.json.contact;
   }
 
   /**
    * Returns the software used by the relay.
    */
   get software(): string | undefined {
-    return this._json.software;
+    return this.json.software;
   }
 
   /**
    * Returns the version of the relay software.
    */
   get version(): string | undefined {
-    return this._json.version;
+    return this.json.version;
   }
 
   /**
    * Indicates whether payment is required to use the relay.
    */
   get paymentRequired(): boolean {
-    return this._json.limitation?.payment_required ?? false;
+    return this.json.limitation?.payment_required ?? false;
   }
 
   /**
    * Indicates whether authentication is required to use the relay.
    */
   get authRequired(): boolean {
-    return this._json.limitation?.auth_required ?? false;
+    return this.json.limitation?.auth_required ?? false;
   }
 
   /**
    * Indicates whether proof-of-work is required to publish to relay.
    */
   get powRequired(): number | false {
-    return this._json.limitation?.pow_required ?? false;
+    return this.json.limitation?.pow_required ?? false;
   }
 
   /**
@@ -103,35 +103,42 @@ export class Nip11 {
    * Returns the supported NIPs (Nostr Implementation Possibilities) by the relay.
    */
   get supportedNips(): number[] | undefined {
-    return this._json?.supported_nips;
+    return this.json?.supported_nips;
   }
 
   /**
    * Returns the payments URL for the relay.
    */
   get paymentsUrl(): Nip11PaymentsUrl | undefined {
-    return this._json?.payments_url as Nip11PaymentsUrl || undefined;
+    return this.json?.payments_url as Nip11PaymentsUrl || undefined;
   }
 
   /**
    * Returns the subscription fees for the relay.
    */
   get fees(): Nip11SubscriptionFees | undefined {
-    return this._json.fees?.subscription;
+    return this.json.fees?.subscription;
   }
 
   get maxMessageLength(): number | undefined {
-    return this._json.limitation?.max_message_length;
+    return this.json.limitation?.max_message_length;
   }
 
   get maxMessageTags(): number | undefined {
-    return this._json.limitation?.max_event_tags; 
+    return this.json.limitation?.max_event_tags; 
   }
 
   get maxSubscriptions(): number | undefined {
-    return this._json.limitation?.max_subscriptions;
+    return this.json.limitation?.max_subscriptions;
   }
 
+  get icon(): string | undefined {
+    return this.json.icon;
+  }
+
+  get banner(): string | undefined {
+    return this.json.banner;
+  }
 
   /**
    * Returns the entire JSON payload.

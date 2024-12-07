@@ -72,9 +72,11 @@ export const humanReadableNames: NameFormatter = {
 export const formatters: Formatters = {}
 
 export const tableFormatters: Formatters = {
-    relay: (relay) => {
+    relay: (relay: string, row: any) => {
+        const { icon } = row;
         const truncated = truncateWithEllipsis(relay, 44);
-        return `<a href="/relays/${formatRelayUrl(relay)}">${truncated}</a>`;
+        const iconHtml = icon? `<img src="${icon}" class="h-6 w-6 rounded-full overflow-hidden inline-block" />`: ''
+        return `<a href="/relays/${formatRelayUrl(relay)}">${iconHtml}${truncated}</a>`;
     },
     lastSeen: (lastSeen) => {
         if(lastSeen < 0) {

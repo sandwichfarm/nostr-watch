@@ -2815,11 +2815,13 @@ __metadata:
     "@sveltejs/kit": "npm:^2.0.0"
     "@sveltejs/package": "npm:^2.0.0"
     "@sveltejs/vite-plugin-svelte": "npm:^4.0.1"
+    "@types/brotli": "npm:^1"
     "@types/gh-pages": "npm:^6"
     "@types/lodash": "npm:^4"
     "@unovis/svelte": "npm:^1.4.5"
     "@unovis/ts": "npm:^1.4.5"
     bits-ui: "npm:^0.21.16"
+    brotli: "npm:^1.3.3"
     clsx: "npm:^2.1.1"
     country-code-to-flag-emoji: "npm:^1.3.3"
     dexie: "npm:^4.0.8"
@@ -5018,6 +5020,15 @@ __metadata:
   dependencies:
     "@babel/types": "npm:^7.20.7"
   checksum: 10c0/7ba7db61a53e28cac955aa99af280d2600f15a8c056619c05b6fc911cbe02c61aa4f2823299221b23ce0cce00b294c0e5f618ec772aa3f247523c2e48cf7b888
+  languageName: node
+  linkType: hard
+
+"@types/brotli@npm:^1":
+  version: 1.3.4
+  resolution: "@types/brotli@npm:1.3.4"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/b13829301b3ee79250d3fa8b1973097837bdd040fb90c90f63f406385e62b8e06e72a41e77939c6f8118090a7c72215b0d7b4d83b1e69457616810a65a576339
   languageName: node
   linkType: hard
 
@@ -7709,7 +7720,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base64-js@npm:^1.3.1":
+"base64-js@npm:^1.1.2, base64-js@npm:^1.3.1":
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
   checksum: 10c0/f23823513b63173a001030fae4f2dabe283b99a9d324ade3ad3d148e218134676f1ee8568c877cd79ec1c53158dcf2d2ba527a97c606618928ba99dd930102bf
@@ -7850,6 +7861,15 @@ __metadata:
   version: 1.1.0
   resolution: "brorand@npm:1.1.0"
   checksum: 10c0/6f366d7c4990f82c366e3878492ba9a372a73163c09871e80d82fb4ae0d23f9f8924cb8a662330308206e6b3b76ba1d528b4601c9ef73c2166b440b2ea3b7571
+  languageName: node
+  linkType: hard
+
+"brotli@npm:^1.3.3":
+  version: 1.3.3
+  resolution: "brotli@npm:1.3.3"
+  dependencies:
+    base64-js: "npm:^1.1.2"
+  checksum: 10c0/9d24e24f8b7eabf44af034ed5f7d5530008b835f09a107a84ac060723e86dd43c6aa68958691fe5df524f59473b35f5ce2e0854aa1152c0a254d1010f51bcf22
   languageName: node
   linkType: hard
 

@@ -3,8 +3,10 @@ import { type INip11 } from "@nostrwatch/nip66/models"
 import { deterministicHash } from "@nostrwatch/nip66/utils";
 
 import { eventsArray } from './events.js'; 
-import { nip11 } from "nostr-tools";
+import { Nip11Service } from "$lib/services/Nip11Service/index.js";
 export type LocalNip11  = any
+
+export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
 
 export const nip11sLocal: Writable<Map<string, LocalNip11>> = writable(new Map())
 

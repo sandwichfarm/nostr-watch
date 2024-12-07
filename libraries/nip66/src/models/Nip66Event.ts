@@ -18,6 +18,7 @@ export class Nip66Event extends Geocoded implements IEvent {
         'version', 
         'paymentRequired', 
         'authRequired', 
+        'dd',
         'geohash', 
         'geocode', 
         'isp', 

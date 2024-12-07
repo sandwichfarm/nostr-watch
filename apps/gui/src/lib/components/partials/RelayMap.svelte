@@ -69,7 +69,8 @@
     }
   
     const setRelayMapPoint = async(): Promise<void> => {
-      if(!aggregate?.dd?.lat) return 
+      console.log('relay aggregate', aggregate)
+      if(!aggregate?.dd?.lat) return console.warn('Reglay aggregate does not have any geodata.')
       relayMapPoint.set({ 
         id: 'relay', 
         latitude: aggregate.dd.lat, 
@@ -80,11 +81,11 @@
     }
   
     const setMonitor = (monitor: Monitor) => {
-      const dd = monitor.dd
+      const { dd } = monitor.registration
       const monitorCheck: Nip66Event = checks.find( check => check.pubkey === monitor.pubkey )
       const rtt = monitorCheck?.rtt || undefined
 
-      console.log('monitor data', monitor.pubkey, dd, monitorCheck, rtt)
+      console.log('monitor data', monitor, monitor.pubkey, dd, monitorCheck, rtt)
       if(!dd || !rtt || !monitorCheck) return console.warn(`${monitor.pubkey} could not find data...`)
   
       const point: MapPoint = { 
@@ -183,6 +184,25 @@
     }
 
     StateManager.once(`${relay}:hydrated`, init)
+
+    const styles = {
+      light: {
+        '--vis-map-feature-color': '#dce3eb',
+        '--vis-map-boundary-color': '#ffffff',
+        '--vis-map-point-label-text-color-dark': '#5b5f6d',
+        '--vis-map-point-label-text-color-light': '#fff',
+        '--vis-map-point-label-font-weight': '600',
+        '--vis-map-point-label-font-size': '12px',
+        // '--vis-map-point-label-font-family': '', // Add a value if needed
+      },
+      dark: {
+        '--vis-map-feature-color': '#5b5f6d',
+        '--vis-map-boundary-color': '#2a2a2a',
+        '--vis-map-point-label-text-color-dark': '#fff',
+        '--vis-map-point-label-text-color-light': '#5b5f6d',
+      }
+    };
+
     
     onMount( () => {
       // init()  
@@ -216,9 +236,13 @@
       {/if}
     </Geolocation> -->
 
+    {JSON.stringify($relayMapPoint, null, 2)} <br /> <br />
+
+    {JSON.stringify($data, null, 2)}
+
     <!-- {#if monitors.length && checks.length} -->
     <div class="relative pt-0">
-      <VisSingleContainer data={$data} class="mrp-map-light dark:mrp-map-dark">
+      <VisSingleContainer data={$data} class="map-light dark:map-dark">
         <VisTopoJSONMap 
           topojson={WorldMapTopoJSON} 
           disableZoom={true}
@@ -232,5 +256,23 @@
   
   
     
-  <style>
+  <style lang="postcss" global>
+  .map-light {
+    @apply bg-none;
+    --vis-map-feature-color: rgba(255, 255, 255, 0.1);
+    --vis-map-boundary-color: rgba(255, 255, 255, 0.2);
+    --vis-map-point-label-text-color-dark: rgba(255, 255, 255, 0.8);
+    --vis-map-point-label-text-color-light: rgba(255, 255, 255, 0.8);
+    --vis-map-point-label-font-weight: 600;
+    --vis-map-point-label-font-size: 10px;
+  }
+
+  .map-dark {
+    @apply bg-none;
+    --vis-map-feature-color: #5b5f6d;
+    --vis-map-boundary-color: #2a2a2a;
+    --vis-map-point-label-text-color-dark: #fff;
+    --vis-map-point-label-text-color-light: #5b5f6d;
+  }
   </style>
+  

@@ -1,8 +1,9 @@
 import { writable, derived, type Writable, type Readable } from "svelte/store";
+import { type Nip66Event } from '@nostrwatch/nip66/models'
 
-export const events: Writable<Map<string, any>> = writable(new Map());
-export const eventsArray = derived(events, ($events) => Array.from($events?.values() || []));
-export const checkEventsByRelay: Readable<Map<string, any>> = derived(
+export const events: Writable<Map<string, Nip66Event>> = writable(new Map());
+export const eventsArray: Readable<Nip66Event[]> = derived(events, ($events) => Array.from($events?.values() || []));
+export const checkEventsByRelay: Readable<Map<string, Nip66Event>> = derived(
     eventsArray,
     $events => {
         const map = new Map();

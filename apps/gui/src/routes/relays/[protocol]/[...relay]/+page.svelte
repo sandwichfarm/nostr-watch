@@ -50,13 +50,13 @@
     let loading: boolean = true;
     let nip66Instance: Nip66;
 
-    const relayAggregate: Readable<any[]> = derived(checks, ($checks) => {
+    const relayAggregate: Readable<any | undefined> = derived(checks, ($checks) => {
         const aggregate = relayCheckAggregator($checks)
         return Object.entries(aggregate).map(([relay, item], index) => ({
             relay,
             ...item.aggregate,
             id: index,
-        }));
+        }))?.[0];
     });
 
     const reset = () => {
@@ -109,20 +109,16 @@
 {#if !$checks.length}
     <p>Loading...</p>
 {:else}
-    {JSON.stringify($checks)}
+    <!-- {JSON.stringify($checks)} -->
     Monitors Length: {$monitors.length} <br />
     Fresh Checks Length: {$freshChecks.length} <br />
     Existing Checks Length: {$existingChecks.length} <br />
     Derived Checks Legnth: {$checks.length} <br />
-    {#if false && $monitors.length && $checks.length}
+    {#if $monitors.length && $checks.length}
     <RelayMap relay={relayUrl} monitors={$monitors} checks={$checks} aggregate={$relayAggregate} />
     {/if}
-    {#if $relayAggregate.length}
-        <ul>
-            {#each $relayAggregate as check}
-                <li>{JSON.stringify(check)}</li>
-            {/each}
-        </ul>
+    {#if $relayAggregate}
+        {JSON.stringify($relayAggregate)}
     {:else}
         <p>No checks available.</p>
     {/if}

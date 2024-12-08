@@ -67,6 +67,10 @@ export class MonitorManager {
     return this.sortedMonitors.filter((monitor) => monitor.enabled);
   }
 
+  get disabledMonitors(): Monitor[] {  
+    return this.sortedMonitors.filter((monitor) => !monitor.enabled);
+  }
+
   get sortedMonitors(): Monitor[] {
     const sortedMonitors = MonitorManager.sortMonitorsByPriority(this.activeMonitors);
     return sortedMonitors

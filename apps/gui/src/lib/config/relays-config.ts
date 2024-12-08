@@ -57,6 +57,7 @@ export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired',
 
 export const humanReadableNames: NameFormatter = {
     networks: 'Network',
+    lastSeen: 'Last Seen',
     supportedNips: 'NIPs',
     software: 'Software',
     relay: 'Relay',
@@ -66,7 +67,8 @@ export const humanReadableNames: NameFormatter = {
     authRequired: 'Auth',
     isp: 'ISP',
     hasNip11: 'Has Nip11',
-    operatorPubkey: 'Op.'
+    operatorPubkey: 'Op.',
+    operatorPubkeyValid: 'Operator Pubkey is Valid'
 };
 
 export const formatters: Formatters = {}
@@ -75,7 +77,7 @@ export const tableFormatters: Formatters = {
     relay: (relay: string, row: any) => {
         const { icon } = row;
         const truncated = truncateWithEllipsis(relay, 44);
-        const iconHtml = icon? `<img src="${icon}" class="h-6 w-6 rounded-full overflow-hidden inline-block" />`: ''
+        const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: ''
         return `<a href="/relays/${formatRelayUrl(relay)}">${iconHtml}${truncated}</a>`;
     },
     lastSeen: (lastSeen) => {
@@ -122,9 +124,11 @@ export const tableFormatters: Formatters = {
     operatorPubkey: (pk: string): string => {
         if(!pk) return '';
         const valid = isPubkey(pk)
-        if(!valid) return `<span class="text-red-500 italic text-xs uppercase">invalid</span>`
-        const icon =  valid? IconCheckGreen: IconCheckRed;
-        return `<img src="${icon}" /><span class="inline-block max-w-20 overflow-hidden overflow-ellipsis">${pk}</span>`
+        const validationClasses = valid? 'text-green-200/50 font-bold': 'text-red-400/80 italic';
+        const notice = !valid? '⚠': ''
+        // if(!valid) return `<span class="text-red-500 italic text-xs uppercase">invalid</span>`
+        // const icon =  valid? IconCheckGreen: IconCheckRed;
+        return `<span class="inline-block max-w-20 overflow-hidden overflow-ellipsis ${validationClasses}">${notice}${pk}</span>`
     },
     operatorPubkeyValid: (value?: boolean) => {
         if(!value) return ''

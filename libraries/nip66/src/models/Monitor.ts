@@ -75,7 +75,6 @@ export class Monitor {
     monitor.enabled = cached.enabled ?? false;
     monitor.priority = cached?.priority ?? 0;
     monitor.lastActive = cached?.lastActive ?? -1;
-    console.log('mntr?', monitor)
     return monitor;
   }
 
@@ -120,6 +119,26 @@ export class Monitor {
 
   private set relays(event: IEvent) {
     this._relays = new PubkeyRelays(event);
+  }
+
+  get name(): string {
+    return this.profile?.name || '';
+  }
+
+  get photo(): string | undefined {
+    return this.profile?.photo;
+  }
+
+  get image(): string | undefined  {
+    return this.photo;
+  }
+
+  get picture(): string | undefined  {
+    return this.photo;
+  }
+  
+  get banner(): string | undefined  {
+    return this.profile?.banner;
   }
 
   get checks(): string[] {
@@ -170,7 +189,6 @@ export class Monitor {
 
   get frequency(): number {
     const f = this.registration?.frequency;
-    console.log('mntr', 'frequency', f, f || 60*60*12, this.frequencyMultiplier);
     return (f || 60*60*12) * this.frequencyMultiplier
   }
 
@@ -192,7 +210,6 @@ export class Monitor {
   }
 
   get isOnlineAfter(): number {
-    console.log('mntr', Math.round(Date.now() / 1000), this.frequency)
     return Math.round(Date.now() / 1000) - this.frequency;
   }
 
@@ -222,9 +239,6 @@ export class Monitor {
   }
 
   relayIsOnline(event: IEvent): boolean {
-    // console.assert(this !== undefined, '`this` is undefined in relayIsOnline!');
-    // console.assert(this.isOnlineAfter !== undefined, '`this.isOnlineAfter` is undefined!');
-    console.log('mntr', event.created_at, this.isOnlineAfter, (event.created_at as number) >= this.isOnlineAfter)
     const timestamp = (event.created_at as number);
     return timestamp >= this.isOnlineAfter;
   }

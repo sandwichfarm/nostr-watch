@@ -13,9 +13,14 @@ export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
     }
   });
 
-  const softwaresArray = Array.from(software).sort();
+  let softwaresArray = Array.from(software).sort();
 
-  StateManager.set('aggregate:softwares', softwaresArray);
+  if(softwaresArray.length){
+    StateManager.set('aggregate:softwares', softwaresArray);
+  }
+  else {
+    softwaresArray = StateManager.get('aggregate:softwares')
+  }
 
   return softwaresArray;
 });

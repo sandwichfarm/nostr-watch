@@ -34,7 +34,9 @@ export const ispCounts = derived(relayAggregates, ($relayAggregates) => {
         counts.set(isp, (counts.get(isp) || 0) + 1);
     });
 
-    if(!Array.from(counts.keys()).length) {
+    let countsLength = !Array.from(counts.keys()).length
+
+    if(countsLength) {
         const cachedCounts = StateManager.get('aggregate:ispCounts')
         if(cachedCounts && cachedCounts?.length) {
             for(const [isp, count] of cachedCounts){

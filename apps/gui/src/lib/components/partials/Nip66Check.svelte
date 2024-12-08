@@ -5,7 +5,7 @@
   import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 
   export let check: Nip66Event;
-  export let monitor: Monitor | undefined;
+  // export let monitor: Monitor | undefined;
 
   onMount(() => {});
 
@@ -161,7 +161,7 @@
   </Tabs.Content>
 
   <Tabs.Content value="empty">
-    <pre class="m-4 py-5 px-7 bg-white/10 rounded-lg">{JSON.stringify(check, null, 2)}</pre>
+    <pre class="m-4 py-5 px-7 bg-white/10 rounded-lg">{JSON.stringify(check.json, null, 2)}</pre>
   </Tabs.Content>
 </Tabs.Root>
 

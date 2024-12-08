@@ -56,6 +56,7 @@
     "@nostrwatch/nocap": "workspace:^",
     "@nostrwatch/utils": "workspace:^",
     "@pabra/logger": "^1.2.0",
+    "compress-json": "^3.1.0",
     "jsurl2": "^2.2.0",
     "jwt-encode": "1.0.1",
     "minisearch": "^7.1.0",

@@ -77,6 +77,10 @@ export class MonitorService extends Service {
     return this.manager.enabledMonitors;
   }
 
+  get disabledMonitors() {
+    return this.manager.disabledMonitors;
+  }
+
   get activeMonitors() {
     return this.manager.activeMonitors;
   }
@@ -213,8 +217,8 @@ export class MonitorService extends Service {
     console.log('bootstrapMonitorMeta complete');
     await this.ensureMonitorsActive();
     console.log('ensureMonitorsActive complete');
-    this.prioritizeMonitors();
-    console.log('prioritizeMonitors complete');
+    // this.prioritizeMonitors();
+    // console.log('prioritizeMonitors complete');
   }
 
   async bootstrap(): Promise<void> {
@@ -224,8 +228,33 @@ export class MonitorService extends Service {
     // }
     await this.bootstrapMonitors();
     await this.fetchMonitorsChecks();
-    
+    console.log('FETCHING DISABLED MONITORS')
+    await this.fetchMonitorsChecks({
+      cache: true,
+      returnResults: false, 
+      keepAlive: false,
+      stream: false,
+      batch: 100
+    }, false)
     console.log('bootstrapMonitorChecks complete');
+  }
+
+  async countMonitorChecksInCache(enabled?: boolean): Promise<Map<string, number>> {
+    const filters = this.getMonitorCheckFilters(enabled);
+    const result = new Map<string, number>()
+    const promises: Promise<void>[] = [];
+    for(const filter of filters){
+      const monitorPk = filter.authors?.[0];
+      if(!monitorPk) continue;
+      promises.push(
+        this.cacheAdapter.COUNT([filter])
+          .then( (count: number) => {
+            result.set(monitorPk, count)
+          })
+      )
+    }
+    await Promise.allSettled(promises);
+    return result;
   }
 
   async quickStrap(): Promise<void> {
@@ -288,8 +317,15 @@ export class MonitorService extends Service {
     return (result instanceof Array)? result.length > 0: (result as unknown as boolean)
   }
 
-  async fetchMonitorsChecks(): Promise<IEvent[] | boolean | undefined> {
-    const filters: Filter[] = this.getMonitorCheckFilters();
+  async fetchMonitorsChecks(options?: Partial<WebsocketAdapterOptions>, enabled?: boolean): Promise<IEvent[] | boolean | undefined> {
+    const filters: Filter[] = this.getMonitorCheckFilters(enabled);
+    const defaultOptions = {
+      cache: true,
+      returnResults: true, 
+      keepAlive: false,
+      stream: true,
+      batch: 100
+    }
     let count = 0;
     const onevent = (event: IEvent) => {
       count++;
@@ -300,15 +336,14 @@ export class MonitorService extends Service {
       StateManager.emit(`events`, events);
     };
     const relays = this.nip66Relays;
-    const options: WebsocketAdapterOptions = {
-      cache: true,
-      returnResults: true, 
-      keepAlive: false,
-      stream: true,
-      batch: 100
+    if(!options) {
+      options = {...defaultOptions}
     }
-    const result: IEvent[] | boolean | undefined = await this.sync( { relays, filters, options }, { onevent, onevents } );
-    StateManager.emit('bootstrap:checks:complete')
+    else {
+      options = {...defaultOptions, ...options}
+    }
+    const result: IEvent[] | boolean | undefined = await this.sync( { relays, filters, options: options as WebsocketAdapterOptions }, { onevent, onevents } );
+    // StateManager.emit('bootstrap:checks:complete')
     return result;
   }
 
@@ -387,8 +422,14 @@ export class MonitorService extends Service {
     return Array.from(filterMap.values());
   }
 
-  getMonitorCheckFilters(): Filter[] {
-    const monitors = this.enabledMonitors?.length > 0? this.enabledMonitors: this.sortedMonitors;
+  getMonitorCheckFilters(enabled?: boolean): Filter[] {
+    let monitors: Monitor[] = [];
+    if(enabled === undefined) {
+      monitors = this.enabledMonitors?.length > 0? this.enabledMonitors: this.sortedMonitors.slice(0, 3);
+    }
+    else if(typeof enabled === 'boolean') {
+      monitors = enabled? this.enabledMonitors: this.disabledMonitors;
+    }
     let filters: Filter[] = [];
     const until = Math.round(Date.now()/1000);
     monitors.forEach((monitor) => {
@@ -400,8 +441,8 @@ export class MonitorService extends Service {
   
 
   async modifyReturnedEvents(events: IEvent[]): Promise<IEvent[]> {
-    return events;
-    // return this.removeStaleChecks(events);  
+    // return events;
+    return this.removeStaleChecks(events);  
   }
 
   async removeStaleChecks(events: IEvent[]): Promise<IEvent[]> {

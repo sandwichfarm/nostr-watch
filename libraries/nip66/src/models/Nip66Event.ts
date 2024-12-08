@@ -24,6 +24,8 @@ export class Nip66Event extends Geocoded implements IEvent {
         'rtt', 
         'operatorPubkey', 
         'operatorPubkeyValid',
+        'name',
+        'description',
         'supportedNips', 
         'software', 
         'icon',
@@ -42,7 +44,8 @@ export class Nip66Event extends Geocoded implements IEvent {
         'ipv4', 
         'ipv6', 
         'sslValidTo', 
-        'sslIssuer'
+        'sslIssuer',
+        'fees'
       ];
     }
 
@@ -113,6 +116,10 @@ export class Nip66Event extends Geocoded implements IEvent {
         return Array.from(new Set( this.nip11?.supportedNips?.map( n => n.toString() ) || [] ));
       }
       return this.tags.filter((tag: NostrTag) => tag[0] === 'l' && tag[2] === 'nip11.supported_nips').map((tag: NostrTag) => tag[1]) || null;  
+    }
+
+    get name(): string | null {
+      return this.nip11?.name || null;
     }
   
     get software(): string | null {

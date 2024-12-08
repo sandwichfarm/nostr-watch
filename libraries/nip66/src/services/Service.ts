@@ -67,6 +67,7 @@ export class Service {
   async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     const { relays, options, sync } = args;
     let { filters } = args
+    let { returnResults } = options
     
     const events = new Map<string, IEvent>();
   
@@ -88,26 +89,28 @@ export class Service {
     if(sync){
       filters = await this.modifyCacheFilters(filters)
     }
-  
-    const cacheEvents = await this.cacheAdapter.REQ(filters);
-    const highestTimestampPerPubkey = cacheEvents.reduce((acc, event) => {
-      const timestamp = event.created_at as number;
-      if (!acc.has(event.pubkey) || acc.get(event.pubkey)! < timestamp) {
-        acc.set(event.pubkey, timestamp);
-      }
-      return acc;
-    }, new Map())
+    let cacheEvents: IEvent[] = [];
+    let highestTimestampPerPubkey: Map<string, number> = new Map();
+    if(returnResults) {
+      cacheEvents = await this.cacheAdapter.REQ(filters);
+      highestTimestampPerPubkey = cacheEvents.reduce((acc, event) => {
+        const timestamp = event.created_at as number;
+        if (!acc.has(event.pubkey) || acc.get(event.pubkey)! < timestamp) {
+          acc.set(event.pubkey, timestamp);
+        }
+        return acc;
+      }, new Map())
 
-    if (callbacks?.onevents) {
-      callbacks.onevents(cacheEvents);
-    }
-    if (callbacks?.onevent) {
-      for (const event of cacheEvents) {
-        callbacks.onevent(event);
+      if (callbacks?.onevents) {
+        callbacks.onevents(cacheEvents);
       }
+      if (callbacks?.onevent) {
+        for (const event of cacheEvents) {
+          callbacks.onevent(event);
+        }
+      }
+      cacheEvents.forEach(maybeAddEventToMap);
     }
-  
-    cacheEvents.forEach(maybeAddEventToMap);
   
     const _callbacks: SubscribeHandlers = {};
   
@@ -129,7 +132,9 @@ export class Service {
 
     if(sync){
       filters = filters.map((filter: Filter) => {
-        filter.since = highestTimestampPerPubkey.get(filter.authors?.[0]) || filter.since;
+        const author = filter.authors?.[0]
+        if(!author) return filter;
+        filter.since = highestTimestampPerPubkey.get(author) || filter.since;
         filter.until = Math.round(Date.now() / 1000);
         return filter;
       })
@@ -147,9 +152,7 @@ export class Service {
     if(websocketEvents instanceof Array) {
       websocketEvents.forEach(maybeAddEventToMap);
     }
-
     const finalEvents = Array.from(events.values());
-
     return this.modifyReturnedEvents(finalEvents);
   }
 

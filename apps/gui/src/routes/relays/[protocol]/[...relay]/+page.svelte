@@ -14,12 +14,16 @@
     import type Nip66 from '@nostrwatch/nip66';
 	import ProfileCompact from '$lib/components/partials/ProfileCompact.svelte';
 	import { formatNip, isHex } from '$lib/utils/nostr.js';
-	import Badge from '$lib/components/ui/badge/badge.svelte';
-    import RelaySoftware from '$lib/components/relay-single/RelaySoftware.svelte'
-    import RelayIsp from '$lib/components/relay-single/RelayIsp.svelte'
-    import RelayCountry from '$lib/components/relay-single/RelayCountry.svelte'
-	import { calculateDecentralizationScore } from '$lib/utils/scores.js';
 	import { relayScores } from '$lib/stores/score-relays-decentralization.js';
+
+    import Badge from '$lib/components/ui/badge/badge.svelte';
+    import RelaySoftware from '$lib/components/partials/relay-single/RelaySoftware.svelte'
+    import RelayIsp from '$lib/components/partials/relay-single/RelayIsp.svelte'
+    import RelayCountry from '$lib/components/partials/relay-single/RelayCountry.svelte'
+    import RelayInsights from '$lib/components/partials/relay-single/RelayInsights.svelte';
+    import RelayFees from '$lib/components/partials/relay-single/RelayFees.svelte';
+	import Nip66Check from '$lib/components/partials/Nip66Check.svelte';
+	import RelayChecks from '$lib/components/partials/relay-single/RelayChecks.svelte';
 
     export let params: { protocol: string; relay: string };
 
@@ -41,16 +45,16 @@
         ([$freshChecks, $existingChecks]) => {
             const relayMap = new Map<string, Nip66Event>();
             if($freshChecks.length) {
-                $freshChecks.forEach((event: Nip66Event) => {
-                    if (!event.relay) console.error('Invalid relay:', event);
-                    relayMap.set(event.pubkey, event);
+                $freshChecks.forEach((check: Nip66Event) => {
+                    if (!check.relay) console.error('Invalid relay:', check);
+                    relayMap.set(check.pubkey, check);
                 });
             }
             if($existingChecks.length) {
-                $existingChecks.forEach((event: Nip66Event) => {
-                    if (!event.relay) console.error('Invalid relay:', event);
-                    if (!relayMap.has(event.relay)) {
-                        relayMap.set(event.pubkey, event);
+                $existingChecks.forEach((check: Nip66Event) => {
+                    if (!check.relay) console.error('Invalid relay:', check);
+                    if (!relayMap.has(check.relay)) {
+                        relayMap.set(check.pubkey, check);
                     }
                 });
             }
@@ -63,12 +67,17 @@
     let nip66Instance: Nip66;
 
     const relayAggregate: Readable<any | undefined> = derived(checks, ($checks) => {
-        const aggregate = relayCheckAggregator($checks)
-        return Object.entries(aggregate).map(([relay, item], index) => ({
-            relay,
-            ...item.aggregate,
-            id: index,
-        }))?.[0];
+        let aggregate = relayCheckAggregator($checks)
+        if(aggregate) {
+            return Object.entries(aggregate).map(([relay, item], index) => ({
+                relay,
+                ...item.aggregate,
+                id: index,
+            }))?.[0];
+        }
+        else {
+            return $relayAggregates.find( (agg: any) => agg.relay === relayUrl )
+        }
     });
 
     const reset = () => {
@@ -126,7 +135,6 @@
 
     onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-       
         doBootstrap.set(false)
     });
 
@@ -134,10 +142,6 @@
         reset();
     });
     $: relayUrl = `${$page.params.protocol}://${$page.params.relay}`;
-    $: name = $nip11?.name ?? null
-    $: description = $nip11?.description ?? null
-    $: banner = $checks?.length? ($nip11s.get(relayUrl) || []).find( (nip11: any) => nip11?.banner ): undefined
-    $: icon = $nip11?.icon ?? null;
     $: timesSeen = $checks.length;
     $: seenBy = $checks.map( (check: any) => check.pubkey )
     $: seenByCount = $checks.map( (check: any) => check.pubkey ).length
@@ -147,11 +151,52 @@
     $: geocode = $relayAggregate?.geocode
     $: dd = $relayAggregate?.dd
     $: isp = $relayAggregate?.isp
-    $: operatorPubkey = $nip11?.pubkey && $nip11.pubkey.length && isHex($nip11.pubkey)? $nip11.pubkey: null;
-    $: supportedNips = $nip11?.supported_nips && $nip11.supported_nips.length? $nip11.supported_nips: null;
-    $: software = $nip11?.software && $nip11.software.length? $nip11.software: null;
-    $: version = $nip11?.version && $nip11.version.length? $nip11.version: null;
-    $: country = geocode
+    $: name = $nip11?.name ?? 
+        $relayAggregate?.name?
+            $relayAggregate.name:
+            null;
+    $: description = $nip11?.description ?? 
+        $relayAggregate?.description?
+            $relayAggregate.description:
+            null;
+    $: banner = $nip11?.description ?? 
+        $relayAggregate?.banner?
+            $relayAggregate.banner:
+            null;
+    $: icon = $nip11?.icon ?? 
+        $relayAggregate?.icon?
+            $relayAggregate.icon:
+            null;
+    $: operatorPubkey = 
+        $nip11?.pubkey && $nip11.pubkey.length && isHex($nip11.pubkey)? 
+            $nip11.pubkey: 
+            $relayAggregate?.operatorPubkey?
+                $relayAggregate.operatorPubkey:
+                null;
+    $: supportedNips = 
+        $nip11?.supported_nips && $nip11.supported_nips.length? 
+            $nip11?.supported_nips: 
+            $relayAggregate?.supportedNips?
+                $relayAggregate.supportedNips:
+                null;
+    $: software = 
+        $nip11?.software && $nip11.software.length? 
+            $nip11.software: 
+            $relayAggregate?.software?
+                $relayAggregate.software:
+                null;
+    $: version = 
+        $nip11?.version && $nip11.version.length? 
+            $nip11.version: 
+            $relayAggregate?.version?
+                $relayAggregate.version:
+                null;
+    $: fees = 
+        $nip11?.fees && $nip11.fees.length? 
+            $nip11.fees: 
+            $relayAggregate?.fees?
+                $relayAggregate.fees:
+                null;
     $: decentralizationScore = $relayScores.get(relayUrl) ?? -1
     $: if (relayUrl !== currentRelay) {
         loadRelayData().then(() => {
@@ -217,24 +262,20 @@
 {/if}
 
 {#if !$checks.length}
-
+    no checks
 {:else}
-    <div id=about>
-        {#if name}
-            <h2 class="border-b-2 py-1 px-3 text-md">{name}</h2>
-        {/if}
-        {#if description}
-            <p class="text-sm  py-1 px-3">{description}</p>
-        {/if}
-    </div>
+    
 
     <div>
         score: {decentralizationScore}
     </div>
 
+    <RelayChecks checks={$checks} />
     <RelaySoftware {version} {software} />
     <RelayIsp {isp} />
     <RelayCountry {geocode} />
+    <RelayInsights relayAggregate={$relayAggregate} />
+    <RelayFees {fees} />
 
     {#if $monitors.length && $checks.length}
     <RelayMap relay={relayUrl} monitors={$monitors} checks={$checks} aggregate={$relayAggregate} />

@@ -5,11 +5,15 @@ import Nip66, { StateManager } from '@nostrwatch/nip66';
 import { Nip66Event, type IEvent } from '@nostrwatch/nip66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
-import { nip66, events, monitorsMap } from '$lib/stores/index.js';
+import { nip66, events, monitorsMap, monitors } from '$lib/stores/index.js';
 import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
 import type { Monitor } from "@nostrwatch/nip66/models"
 import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
+
+let $monitorsMap: Monitor;
+
+monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap= $m )
 
 export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
     const $nip05Service = get(nip05Service)
@@ -42,6 +46,8 @@ export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
                 if(aTag) return;
                 const key = eventKey(event);
                 if(!key) return;
+                const online = $monitorsMap.get(event.pubkey)?.relayIsOnline(event)
+                if(!online) return;
                 const existing = map.get(key);
                 if (existing && existing.id === event.id) return;
                 if (existing && existing.created_at > event.created_at) return;

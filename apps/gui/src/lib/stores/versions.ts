@@ -10,7 +10,12 @@ export const versions = throttledDerived(eventsArray, ($eventsArray) => {
         if(check?.version)
             versions.add(check.version);
     });
-    const finalVersions = Array.from(versions).sort()
-    StateManager.set('aggregate:versions', finalVersions);
+    let finalVersions = Array.from(versions).sort()
+    if(finalVersions.length){
+        StateManager.set('aggregate:versions', finalVersions);
+    }
+    else {
+        finalVersions = StateManager.get('aggregate:versions')
+    }
     return finalVersions
 });

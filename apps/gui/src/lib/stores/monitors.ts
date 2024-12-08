@@ -7,19 +7,33 @@ import { MonitorManager, StateManager } from "@nostrwatch/nip66";
 import { Monitor } from '@nostrwatch/nip66/models'
 import { nip05s, validNip05s } from "./nip05s.js";
 
+export const monitorsMapFromCache = (): Map<string, Monitor>  => {
+  const monitorsArr = StateManager.get('cache:monitors');  
+  if(!monitorsArr?.length) return new Map()
+  const map: Map<string, Monitor> = new Map()
+  for(const monitor of monitorsArr) {
+    map.set(monitor.pubkey, Monitor.fromCache(monitor))
+  }
+  return map
+}
 
-export const monitorsMap: Writable<Map<string, Monitor>> = writable(new Map());
+export const monitorsMap: Writable<Map<string, Monitor>> = writable(monitorsMapFromCache());
 
 export const monitors = derived(
   monitorsMap, 
   ($monitorsMap) => {
-    const arr = Array.from($monitorsMap.values());
+    let arr = Array.from($monitorsMap.values());
     if(arr.length){
-      const cacheValues = arr.map(( monitor: Monitor) => {
-        console.log('before cache monitor', typeof monitor.toCache, monitor)
-        return monitor.toCache()
-      })
+      const cacheValues = arr.map(( monitor: Monitor) => monitor.toCache())
       StateManager.set('cache:monitors', cacheValues);  
+    }
+    else {
+      const fromCacheValues = StateManager.get('cache:monitors');  
+      if(fromCacheValues?.length) {
+        fromCacheValues.map( (cache: any) => {
+          console.log('monitor from cache', Monitor.fromCache(cache))
+        });
+      }
     }
     return arr;
   }

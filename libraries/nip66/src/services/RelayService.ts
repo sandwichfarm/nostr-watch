@@ -149,7 +149,6 @@ export class RelayService extends Service {
   static removeOldChecks (monitors: Map<string, Monitor>, checks: Nip66Event[]): Nip66Event[] {
     return checks.filter(check => {
       const monitor = monitors.get(check.pubkey);
-      console.log('mntr', monitor, monitor && monitor.relayIsOnline(check));
       if(monitor && monitor.relayIsOnline(check)) return true
       return false
     })

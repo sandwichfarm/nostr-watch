@@ -15,6 +15,12 @@ type Addr = {
   dTag: string
 }
 
+interface NostrEventExtended extends NostrEvent {
+  relays: string[] | undefined;
+}
+
+type WorkerRelayResultsType = (string | NostrEventExtended)[]
+
 export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements RelayHandler {
   #sqlite?: Sqlite3Static;
   #log = (msg: string, ...args: Array<any>) => debugLog("SqliteRelay", msg, ...args);
@@ -294,7 +300,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
   /**
    * Query relay by nostr filter
    */
-  req(id: string, req: ReqFilter) {
+  req(id: string, req: ReqFilter): WorkerRelayResultsType {
     const start = unixNowMs();
 
     const [sql, params] = this.#buildQuery(req);

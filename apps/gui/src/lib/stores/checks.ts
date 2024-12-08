@@ -1,4 +1,5 @@
 import { derived, writable, type Writable, type Readable } from "svelte/store";
+import { compress, decompress } from 'compress-json'
 
 interface Check {
   relay: string;
@@ -165,12 +166,11 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
   }));
   if(!aggregates.length) {
     const agg = StateManager.get('aggregate:complete');
-    aggregates = agg? agg: aggregates
+    aggregates = agg? decompress(agg): aggregates
   }
   else {
-    StateManager.set('aggregate:complete', aggregates)
+    StateManager.set('aggregate:complete', compress(aggregates))
   }
-  
   return aggregates 
 });
 

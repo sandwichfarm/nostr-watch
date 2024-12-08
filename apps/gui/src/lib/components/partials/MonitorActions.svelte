@@ -27,7 +27,9 @@
 
 {#if view === 'cell'}
     <Table.Cell>
+        {#if monitor?.pubkey}
         <Checkbox id="toggle-${monitor.pubkey.slice(0,21)}" bind:checked aria-labelledby="terms-label" onCheckedChange={toggleEnableMonitor} />
+        {/if}
     </Table.Cell>
 {:else}
     <Table.Head>

@@ -197,7 +197,7 @@
                     </Table.Header>
                     <Table.Body>
                         {#each tableInstance?.rows as row (row.id)}
-                            <Table.Row class="{$rowStyles.get(row.pubkey)}">
+                            <Table.Row class="{$rowStyles.get(row.pubkey)}" style="{row.banner? `background-image: ${row.banner}; background-repeat: no-repeat; background-size: cover; background-blend-mode: lighten;`: ''}">
                                 {#if actionsComponent}
                                     <svelte:component this={actionsComponent} data={row} />
                                 {/if}

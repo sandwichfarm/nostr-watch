@@ -5,6 +5,7 @@ import { relayAggregates } from './checks.js';
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/nip66';
 import { Nip66Event } from '@nostrwatch/nip66/models';
+import type { lte } from 'lodash';
 
 export const geocodes = throttledDerived(
   eventsArray, 
@@ -18,9 +19,14 @@ export const geocodes = throttledDerived(
       }
     });
 
-    const geocodesArray = Array.from(codes).sort();
+    let geocodesArray = Array.from(codes).sort();
 
-    StateManager.set('aggregate:geocodes', geocodesArray);
+    if(geocodesArray.length){
+      StateManager.set('aggregate:geocodes', geocodesArray);
+    }
+    else {
+      geocodesArray = StateManager.get('aggregate:geocodes')
+    }    
 
     return geocodesArray;
   },

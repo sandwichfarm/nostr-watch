@@ -243,9 +243,10 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     if(cache === true) {
       this.send({to: 'cache', args})
     }
-    if(returnResults === true){
+    // if(returnResults === true){
+      //always send complete?
       this.send({to: 'adapter', args})
-    }
+    // }
   }
 
   private _getUniquePubkeys(events: IEvent[]): string[] {

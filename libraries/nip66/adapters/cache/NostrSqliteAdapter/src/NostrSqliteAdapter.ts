@@ -111,7 +111,6 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         // console.log(filters)
         const message: ReqCommand = ['REQ', this.subId, ...filters];
         let results = (await this.relay.query(message)) as unknown as IEvent[]
-        // console.log(`results: ${results.length}`)
         return results
     }
 

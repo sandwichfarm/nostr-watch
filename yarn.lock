@@ -2823,6 +2823,7 @@ __metadata:
     bits-ui: "npm:^0.21.16"
     brotli: "npm:^1.3.3"
     clsx: "npm:^2.1.1"
+    compress-json: "npm:^3.1.0"
     country-code-to-flag-emoji: "npm:^1.3.3"
     dexie: "npm:^4.0.8"
     gh-pages: "npm:^6.2.0"
@@ -3218,6 +3219,7 @@ __metadata:
     "@rollup/plugin-wasm": "npm:6.2.2"
     "@surma/rollup-plugin-off-main-thread": "npm:2.2.3"
     "@types/node-localstorage": "npm:^1.3.3"
+    compress-json: "npm:^3.1.0"
     esbuild: "npm:^0.24.0"
     esbuild-plugin-alias: "npm:^0.2.1"
     esbuild-plugin-clean: "npm:^1.0.1"
@@ -8690,6 +8692,13 @@ __metadata:
   version: 1.0.1
   resolution: "commondir@npm:1.0.1"
   checksum: 10c0/33a124960e471c25ee19280c9ce31ccc19574b566dc514fe4f4ca4c34fa8b0b57cf437671f5de380e11353ea9426213fca17687dd2ef03134fea2dbc53809fd6
+  languageName: node
+  linkType: hard
+
+"compress-json@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "compress-json@npm:3.1.0"
+  checksum: 10c0/f5ae731c20d151348df6a0b709410c183b7119c02eaf6c07df68f14fa870790396bff99ce2653d0c97699749a918a22d32a0eb0ffe761279e3a81984620900a6
   languageName: node
   linkType: hard
 

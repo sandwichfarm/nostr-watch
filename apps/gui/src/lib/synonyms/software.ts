@@ -15,9 +15,9 @@ export function makeReadableSoftwareMap(items: string[]): SoftwareMap {
     return repoMap;
 }
 
-export function makeSoftwareReadable(item: string): string {
-    let urlString = item;
-    if(item.includes(' ')){
+export function makeSoftwareReadable(urlString: string): string {
+    if(!urlString) return urlString;
+    if(urlString.includes(' ')){
         return "eats/ass"
     }
     if (urlString.startsWith('git+')) {
@@ -32,13 +32,13 @@ export function makeSoftwareReadable(item: string): string {
         if (hostname.includes('git')) {
             platform = 'github';
         } else {
-            return item;
+            return urlString;
         }
 
         const pathSegments = url.pathname.split('/').filter(segment => segment.length > 0);
 
         if (pathSegments.length < 2) {
-            return item;
+            return urlString;
         }
 
         const username = pathSegments[0];
@@ -51,7 +51,7 @@ export function makeSoftwareReadable(item: string): string {
         const mappedValue = `${username}/${repo}`;
         return mappedValue
     } catch (e) {
-        return item;
+        return urlString;
     }
 }
 

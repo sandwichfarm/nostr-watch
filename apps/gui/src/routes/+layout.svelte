@@ -1,10 +1,11 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
-    import { goto } from '$app/navigation';
-    import { onMount, getContext, onDestroy } from 'svelte';
-	import Header from '$lib/components/blocks/Header.svelte';
-    import { doBootstrap } from '$lib/stores/routines.js';
+  import { goto } from '$app/navigation';
+  import { onMount, getContext, onDestroy } from 'svelte';
+  import { doBootstrap } from '$lib/stores/routines.js';
+
+  import Header from '$lib/components/blocks/Header.svelte';
     // import { bootstrap, destroy } from '$lib/utils/lifecycle.js';
 
     const { data, children } = $props();
@@ -48,3 +49,35 @@
 <div id="content-wrapper" class="mt-20 block">
 {@render children()}
 </div>
+
+<style global>
+
+:root {
+  --scrollbar-primary: black;
+  --scrollbar-secondary: rgba(255,255,255,0.2);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-secondary) var(--scrollbar-primary);
+}
+
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 15px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-primary);
+  border-radius: 5px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-secondary);
+  border-radius: 14px;
+  border: 3px solid var(--scrollbar-primary);
+}
+
+
+</style>

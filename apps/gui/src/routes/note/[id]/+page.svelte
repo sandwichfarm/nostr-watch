@@ -116,7 +116,7 @@
         {/if}
 
         <a href="/relays/{formatRelayUrl(relayUrl)}">Check out ${relayUrl}'s page for more information</a>
-       <Nip66Check check={$foundEvent} {monitor} />
+       <Nip66Check check={$foundEvent} />
     {:else}
         <p>No event found.</p>
     {/if}

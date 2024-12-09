@@ -8,16 +8,12 @@ import type { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 
 import type { Workers } from './Workers';
 import { StateManager } from '@base/managers/StateManager';
-import { UserService } from '@base/services/UserService';
-import { NocapService } from '@base/services/NocapService';
 
 type AnyAdapter = IWebsocketAdapter | ICacheAdapter;
 
 export type Nip66Services = { 
   monitors?: MonitorServiceType, 
   relay?: RelayServiceType,
-  user?: UserService,
-  nocap?: NocapService
 } 
 
 export default class {
@@ -31,13 +27,17 @@ export default class {
   private _initialized: boolean = false;  
 
   constructor(
-    private adapters: IAdaptersArgument,
-    private relayUrls: string[]
+    private _adapters: IAdaptersArgument,
+    // private relayUrls: string[]
   ) {
-    if(adapters?.websocketAdapter)
-      this.useAdapter(adapters.websocketAdapter)
-    if(adapters?.cacheAdapter)
-      this.useAdapter(adapters.cacheAdapter)
+    if(_adapters?.websocketAdapter)
+      this.useAdapter(_adapters.websocketAdapter)
+    if(_adapters?.cacheAdapter)
+      this.useAdapter(_adapters.cacheAdapter)
+  }
+
+  get adapters(): IAdaptersArgument {
+    return this._adapters;
   }
 
   get services(): Nip66Services {

@@ -117,74 +117,74 @@ export default [
       exclude: 'node_modules/**',
       clearScreen: false
     },
+    // onwarn
+  },
+  {
+    treeshake: true,
+    input,
+    output: {
+      dir: 'dist/browser',
+      format: 'amd',
+      sourcemap: true,
+      preserveModules: true,
+      preserveModulesRoot: 'src',
+      entryFileNames: '[name].amd.js',
+      exports: 'auto'
+    },
+    external: [],
+    plugins: [
+      ...commonPlugins,
+      ...browserPlugins
+    ],
+    watch: {
+      exclude: 'node_modules/**',
+      clearScreen: false
+    },
     onwarn
   },
-  // {
-  //   treeshake: true,
-  //   input,
-  //   output: {
-  //     dir: 'dist/browser',
-  //     format: 'amd',
-  //     sourcemap: true,
-  //     preserveModules: true,
-  //     preserveModulesRoot: 'src',
-  //     entryFileNames: '[name].amd.js',
-  //     exports: 'auto'
-  //   },
-  //   external: [],
-  //   plugins: [
-  //     ...commonPlugins,
-  //     ...browserPlugins
-  //   ],
-  //   watch: {
-  //     exclude: 'node_modules/**',
-  //     clearScreen: false
-  //   },
-  //   onwarn
-  // },
-  // {
-  //   treeshake: true,
-  //   input,
-  //   output: {
-  //     dir: 'dist/server',
-  //     format: 'cjs',
-  //     sourcemap: true,
-  //     preserveModules: true,
-  //     preserveModulesRoot: 'src',
-  //     entryFileNames: '[name].cjs.js',
-  //     exports: 'auto'
-  //   },
-  //   external: [],
-  //   plugins: [
-  //     ...commonPlugins,
-  //     ...serverPlugins
-  //   ],
-  //   watch: {
-  //     exclude: 'node_modules/**',
-  //     clearScreen: false
-  //   },
-  //   onwarn
-  // }, 
-  // {
-  //   treeshake: true,
-  //   input,
-  //   output: {
-  //     dir: 'dist/server',
-  //     format: 'esm',
-  //     sourcemap: true,
-  //     preserveModules: true,
-  //     preserveModulesRoot: 'src',
-  //     entryFileNames: '[name].esm.js'
-  //   },
-  //   external: [],
-  //   plugins: [
-  //     ...commonPlugins,
-  //     ...serverPlugins
-  //   ],
-  //   watch: {
-  //     exclude: 'node_modules/**',
-  //     clearScreen: false
-  //   },
-  //   onwarn
-  // }
+  {
+    treeshake: true,
+    input,
+    output: {
+      dir: 'dist/server',
+      format: 'cjs',
+      sourcemap: true,
+      preserveModules: true,
+      preserveModulesRoot: 'src',
+      entryFileNames: '[name].cjs.js',
+      exports: 'auto'
+    },
+    external: [],
+    plugins: [
+      ...commonPlugins,
+      ...serverPlugins
+    ],
+    watch: {
+      exclude: 'node_modules/**',
+      clearScreen: false
+    },
+    onwarn
+  }, 
+  {
+    treeshake: true,
+    input,
+    output: {
+      dir: 'dist/server',
+      format: 'esm',
+      sourcemap: true,
+      preserveModules: true,
+      preserveModulesRoot: 'src',
+      entryFileNames: '[name].esm.js'
+    },
+    external: [],
+    plugins: [
+      ...commonPlugins,
+      ...serverPlugins
+    ],
+    watch: {
+      exclude: 'node_modules/**',
+      clearScreen: false
+    },
+    onwarn
+  }
 ]

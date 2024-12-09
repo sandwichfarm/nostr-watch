@@ -1,8 +1,7 @@
 import { transformCheck } from "@base/transform/TransformCheck";
 import { IEvent, NostrEvent, NostrTag } from "./Event";
-import { IGeocode } from "./Geocode";
 import { Geocoded } from "./Geocoded";
-import { nip11 } from "nostr-tools";
+import { nip19 } from "nostr-tools";
 import { Nip11, Nip11SubscriptionFees } from "./Nip11";
 import { isPubkey } from "@base/utils/nostr";
 
@@ -91,6 +90,10 @@ export class Nip66Event extends Geocoded implements IEvent {
   
     get relay(): string | null {
       return this.tags.find((tag: NostrTag) => tag[0] === 'd')?.[1] || null;
+    }
+
+    get url(): string | null {
+      return this.relay;
     }
   
     get monitorPubkey(): string {
@@ -204,6 +207,11 @@ export class Nip66Event extends Geocoded implements IEvent {
 
     get banner(): string | null {
       return this.nip11?.banner || null;
+    }
+
+    get nrelay(): string | null {
+      if(!this.url) return null;
+      return nip19.nrelayEncode(this.url)
     }
   }
 

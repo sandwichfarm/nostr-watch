@@ -3,4 +3,5 @@ export { type IEvent } from './INostrEvent';
 export { type IWorkerGlobalScope } from './IWorkerGlobalScope';
 export { type ISharedWorkerGlobalScope } from './ISharedWorkerGlobalScope';
 export { type ICacheAdapterSharedWorkerCommand } from './ICacheAdapterSharedWorkerCommand';
+export { type IAdaptersArgument } from "./IAdaptersArgument";
 export * from './TISO13166';

@@ -1,24 +1,12 @@
-// src/services/MonitorService.ts
-
-import { ICacheAdapter } from '@base/core/CacheAdapter';
-import { Subscriber } from '@base/core/Subscriber';
-import { defaultWebsocketAdapterOptions, IWebsocketAdapter, SubscribeHandlers, WebsocketAdapterOptions, WebsocketRequestBody } from '@base/core/WebsocketAdapter';
+import { defaultWebsocketAdapterOptions, SubscribeHandlers, WebsocketAdapterOptions, WebsocketRequestBody } from '@base/core/WebsocketAdapter';
 import { IEvent } from '@base/interfaces';
 import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
-import { ICheck, IMonitor, Monitor } from '@base/models';
+import { Monitor } from '@base/models';
 import { Filter } from 'nostr-tools';
 import { MonitorManager } from '../managers/MonitorManager';
 import { FetchOptions, Service } from './Service';
-import PQueue from 'p-queue';
-import { SyncStateManager } from '@base/managers/SyncStateManager';
 import { StateManager } from '@base/managers/StateManager';
 import { MonitorRegistration } from '@base/models/MonitorRegistration';
-
-export interface IGroupedRelays {
-  userMeta?: string[];
-  nip66?: string[];
-}
-
 
 export interface MonitorFetchOptions extends WebsocketRequestBody {
   alwaysCheckRelay?: boolean;
@@ -55,7 +43,7 @@ export class MonitorService extends Service {
   get manager(){
     return this._manager;
   }
-
+ 
 
   get monitors() {
     return this.manager.monitorsMap;

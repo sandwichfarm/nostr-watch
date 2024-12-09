@@ -17,17 +17,25 @@
 	import { relayScores } from '$lib/stores/score-relays-decentralization.js';
 
     import Badge from '$lib/components/ui/badge/badge.svelte';
-    import RelaySoftware from '$lib/components/partials/relay-single/RelaySoftware.svelte'
-    import RelayIsp from '$lib/components/partials/relay-single/RelayIsp.svelte'
-    import RelayCountry from '$lib/components/partials/relay-single/RelayCountry.svelte'
     import RelayInsights from '$lib/components/partials/relay-single/RelayInsights.svelte';
-    import RelayFees from '$lib/components/partials/relay-single/RelayFees.svelte';
-	import Nip66Check from '$lib/components/partials/Nip66Check.svelte';
 	import RelayChecks from '$lib/components/partials/relay-single/RelayChecks.svelte';
+    import OperatorFeed from '$lib/components/partials/relay-single/OperatorFeed.svelte';
+    import * as Tabs from '$lib/components/ui/tabs';
+    import * as Card from '$lib/components/ui/card';
+	import Button from '$lib/components/ui/button/button.svelte';
+
+    import Masonry from 'svelte-bricks'
+
+	import CardChecks from '$lib/components/partials/relay-single/cards/CardChecks.svelte';
+	import CardFees from '$lib/components/partials/relay-single/cards/CardFees.svelte';
+	import CardInsights from '$lib/components/partials/relay-single/cards/CardInsights.svelte';
+	import CardGeneral from '$lib/components/partials/relay-single/cards/CardGeneral.svelte';
+	import CardMap from '$lib/components/partials/relay-single/cards/CardMap.svelte';
+	import CardNetwork from '$lib/components/partials/relay-single/cards/CardNetwork.svelte';
 
     export let params: { protocol: string; relay: string };
 
-    const nip11: Writable<Nip11.RelayInformation | null> = writable(null)
+    const nip11: Writable<Nip11.RelayInformation | undefined> = writable()
         
     const operatorProfile: Writable<PubkeyProfile | null> = writable(null)
     const operatorRelays: Writable<PubkeyRelays | null> = writable(null)
@@ -35,6 +43,13 @@
     const monitors: Writable<Monitor[]> = writable([])
 
     const freshChecks: Writable<Nip66Event[]> = writable([])
+
+    const activeTab: Writable<string> = writable('overview')
+
+    const activateTab = (tab: string) => {
+        activeTab.set(tab)
+    }
+
     
     const existingChecks: Readable<Nip66Event[]> = derived(eventsArray, $eventsArray => {
         return $eventsArray.filter( event => new URL(event.relay).toString() === new URL(relayUrl).toString() )
@@ -204,6 +219,18 @@
             console.log('load relay + load monitors')
         });
     }
+
+    $: items = [
+        'general',
+        'network',
+        'insights',
+        'checks',
+        'map',
+        'fees'
+    ]
+  
+    let [minColWidth, maxColWidth, gap] = [400, 800, 20]
+    let width:number, height: number
 </script>
 
 <header
@@ -212,8 +239,6 @@
   style={`background-image: url('${banner}');`}
 >
   <div class="absolute inset-0 bg-black opacity-50 z-0"></div>
-
-
 
   <div class="relative z-10 flex justify-between p-6 h-full">
     <div class="flex">
@@ -243,53 +268,121 @@
 </header>
 
 <div id="subheader" class="bg-white/10 px-3 py-1 block">
-    {#if $nip11}
-        {#if supportedNips}
-            <div>
-                <!-- <span class="text-xs uppercase">supported nips:</span> -->
-                {#each supportedNips as nip}
-                    <Badge variant="outline" class="mr-1 bg-black/30">{formatNip(nip)}</Badge>
-                {/each}
-            </div>
-        {/if}      
-    {/if}
+    {#if supportedNips}
+        <div>
+            <!-- <span class="text-xs uppercase">supported nips:</span> -->
+            {#each supportedNips as nip}
+                <Badge variant="outline" class="mr-1 bg-black/30">{formatNip(nip)}</Badge>
+            {/each}
+        </div>
+    {/if}      
+
 </div>
 
-{#if loading}
+<!-- {#if loading}
 <p>Loading...</p>
 {:else}
 <p>Loaded</p>
-{/if}
+{/if} -->
 
-{#if !$checks.length}
+<!-- {#if !$checks.length}
     no checks
-{:else}
+{:else} -->
+
+<main class="flex flex-wrap md:flex-nowrap mx-0 w-full">
+    <section class="flex-1 p-4 rounded shadow">
+        <Tabs.Root value="overview" class="w-full ">
+            <Tabs.List class="w-full bg-none">
+                <Tabs.Trigger value="overview" class="flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
+                <Tabs.Trigger value="checks" class="flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
+                <Tabs.Trigger value="audit" class="flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
+                <Tabs.Trigger value="feed" class="flex-grow" on:click={() => activateTab('feed')}>Feed</Tabs.Trigger>
+            </Tabs.List>
+            <Tabs.Content value="overview">
+
+                <Masonry
+                {items}
+                {minColWidth}
+                {maxColWidth}
+                {gap}
+                let:item
+                bind:width
+                bind:height
+              >
+                <div>
+                {#if item === 'map'}
+                    <CardMap relay={relayUrl} monitors={$monitors} checks={$checks} aggregate={$relayAggregate} />
+                {/if}
+                {#if item === 'network'}
+                     <CardNetwork ipv4={ipv4} ipv6={ipv6} isp={isp} />
+                {/if}
+                {#if item === 'insights'}
+                    <CardInsights relayAggregate={$relayAggregate} />
+                {/if}
+                {#if item === 'checks'}
+                    <CardChecks checks={$checks} />
+                {/if}
+                {#if item === 'general'}
+                    <CardGeneral version={version} software={software} geocode={geocode} />
+                {/if}
+                {#if item === 'fees'}
+                    <CardFees {fees} />
+                {/if}
+            </div>
+              </Masonry>
+
+            </Tabs.Content>
+            <Tabs.Content value="checks">
+                <RelayChecks checks={$checks} />
+            </Tabs.Content>
+            <Tabs.Content value="audit">
+    
+            </Tabs.Content>
+            <Tabs.Content value="feed">
+                {#if operatorPubkey && $activeTab === 'feed'}
+                    <OperatorFeed pubkey={operatorPubkey} />
+                {/if}
+            </Tabs.Content>
+        </Tabs.Root>
+    </section>
+    <!-- SIDEBAR -->
+    <!-- {#if $operatorProfile} -->
+    <!-- <aside class="w-full md:w-1/4 p-4 rounded shadow">
+        {#if operatorPubkey}
+            <OperatorFeed pubkey={operatorPubkey} />
+        {/if}
+    </aside> -->
+    <!-- {/if} -->
+  </main>
+    
+
+    
     
 
     <div>
         score: {decentralizationScore}
     </div>
 
-    <RelayChecks checks={$checks} />
-    <RelaySoftware {version} {software} />
-    <RelayIsp {isp} />
-    <RelayCountry {geocode} />
-    <RelayInsights relayAggregate={$relayAggregate} />
-    <RelayFees {fees} />
+    
 
-    {#if $monitors.length && $checks.length}
-    <RelayMap relay={relayUrl} monitors={$monitors} checks={$checks} aggregate={$relayAggregate} />
-    {/if}
+    
+    
+   
+    
     {#if $relayAggregate}
         <p>checks found</p>
     {:else}
         <p>No checks available.</p>
     {/if}
-{/if}
+<!-- {/if} -->
 
 <style lang="postcss">
     #relay-header {
         @apply px-3 py-10 bg-white/5;
+    }
+
+    #overview-container > div {
+        @apply w-1/2 border;
     }
     
 </style>

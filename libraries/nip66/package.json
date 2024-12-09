@@ -21,6 +21,11 @@
       "import": "./dist/browser/index.esm.js",
       "require": "./dist/server/index.cjs.js"
     },
+    "./*": {
+      "types": "./dist/types/*.d.ts",
+      "import": "./dist/node/*.mjs",
+      "require": "./dist/node/*.cjs"
+    },
     "./core": {
       "types": "./dist/types/core/index.d.ts",
       "import": "./dist/browser/core/index.esm.js",
@@ -50,6 +55,11 @@
       "types": "./dist/types/factory/index.d.ts",
       "import": "./dist/browser/factory/index.esm.js",
       "require": "./dist/server/factory/index.cjs.js"
+    },
+    "./services": {
+      "types": "./dist/types/services/index.d.ts",
+      "import": "./dist/browser/services/index.esm.js",
+      "require": "./dist/server/services/index.cjs.js"
     }
   },
   "dependencies": {

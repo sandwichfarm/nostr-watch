@@ -1,17 +1,11 @@
 import { type IEvent } from '@base/models';
 import { StateManager } from '@base/managers/StateManager';
 import { SyncRange, SyncRangeParameter, SyncStateManager } from '@base/managers/SyncStateManager';
-import { n66IEventToIMonitor } from '@base/transform';
 import { Filter } from 'nostr-tools';
-import { EventEmitter } from 'tseep';
-import { Geocoded } from './Geocoded';
-import { NostrEvent } from './Event';
 import { MonitorRegistration } from './MonitorRegistration';
 import { MonitorCached } from '@base/managers/MonitorManager';
 import { PubkeyProfile } from './PubkeyProfile';
 import { PubkeyRelays } from './PubkeyRelays';
-import { ProfileBadges } from 'nostr-tools/kinds';
-
 
 export enum RelayLiveness {
   Online = 'ONLINE',

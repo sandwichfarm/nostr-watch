@@ -17,6 +17,11 @@ export interface FetchOptions extends WebsocketRequestBody {
   sync?: boolean;
 }
 
+export type ServiceAdaptersTypes = {
+  cache: ICacheAdapter;
+  websocket: IWebsocketAdapter;
+}
+
 export class Service {
   protected cacheAdapter: ICacheAdapter;
   protected websocketAdapter: IWebsocketAdapter;
@@ -26,6 +31,10 @@ export class Service {
   constructor(adapters: IAdaptersArgument) {
     this.cacheAdapter = adapters.cacheAdapter;
     this.websocketAdapter = adapters.websocketAdapter;
+  }
+
+  get adapter(): ServiceAdaptersTypes {
+    return { cache: this.cacheAdapter, websocket: this.websocketAdapter };
   }
 
   get nip66Relays(): string[] {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Stats from '$lib/components/blocks/Stats.svelte';
 	import DataTable from '$lib/components/blocks/table/DataTable.svelte';
-    import tableConfig from '$lib/config/relays-config.js';
+    import tableConfig from '$lib/config/dataTable/relays.js';
 
 	import { relayAggregates } from '$lib/stores/checks.js';
 	export const prerender = true;

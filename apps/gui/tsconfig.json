@@ -11,6 +11,6 @@
 		"strict": true,
 		"module": "NodeNext",
 		"moduleResolution": "bundler",
-		"traceResolution": true
+		"baseUrl": "./"
 	}
 }

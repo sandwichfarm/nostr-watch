@@ -100,8 +100,8 @@ function replaceYoutubeLink(text: string): string {
 
     return text.replace(youtubeRegex, (match, url, domain, videoId) => {
         return `<iframe 
-                    width="560" 
-                    height="315" 
+                    width="100%" 
+                    height="auto" 
                     src="https://www.youtube.com/embed/${videoId}" 
                     frameborder="0" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 

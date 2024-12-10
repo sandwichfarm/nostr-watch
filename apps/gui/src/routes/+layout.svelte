@@ -6,6 +6,7 @@
   import { doBootstrap } from '$lib/stores/routines.js';
 
   import Header from '$lib/components/blocks/Header.svelte';
+	import { shouldSync } from '$lib/stores/app';
     // import { bootstrap, destroy } from '$lib/utils/lifecycle.js';
 
     const { data, children } = $props();
@@ -40,8 +41,7 @@
         }
         
         if(!$doBootstrap || ['/note/', '/relays/', '/preferences/'].includes($page.url.pathname)) return console.log('Skipping bootstrap');
-        await loadData()
-
+        await loadData();
     });
 </script>
 

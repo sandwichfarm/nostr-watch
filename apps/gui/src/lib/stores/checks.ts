@@ -55,19 +55,34 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
 
   Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66Event) => {
-      nip66Event.keys.forEach((key: string) => {
+      [...nip66Event.keys, 'seenTimes'].forEach((key: string) => {
         const value = nip66Event[key];
         
         const isNonNull = value !== null && value !== undefined;
   
         const isArray = Array.isArray(value);
         const isAccArray = Array.isArray(acc[key]);
-        if(key === 'created_at'){
-          if(!acc?.['lastSeen']) {
-            acc['lastSeen'] = value;
+
+        if(key === 'seenTimes') {
+          if(!acc?.seenTimes) {
+            acc.seenTimes = 1;
           }
-          else if(value > acc['lastSeen']) {
-            acc['lastSeen'] = value;
+          else {
+            acc.seenTimes += 1;
+          }
+        }
+        else if(key === 'monitorPubkey'){
+          if(!acc?.seenBy) {
+            acc.seenBy = [];
+          }
+          acc.seenBy.push(value);
+        }
+        else if(key === 'created_at'){
+          if(!acc?.lastSeen) {
+            acc.lastSeen = value;
+          }
+          else if(value > acc.lastSeen) {
+            acc.lastSeen = value;
           }
         }
         else if (isArray) {

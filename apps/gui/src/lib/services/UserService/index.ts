@@ -8,6 +8,7 @@ import type { Filter } from "nostr-tools";
 import { events } from "$lib/stores";
 
 export type UserFeedItem = {
+    user: User,
     note: NostrEvent,
     reactions: IEvent[],
     zaps: IEvent[],
@@ -70,7 +71,7 @@ export class UserService extends Service {
                 const reactions = relativesForNote.filter(rel => rel.kind === 7);
                 const zaps = relativesForNote.filter(rel => rel.kind === 9734 || rel.kind === 9321);
                 const comments = relativesForNote.filter(rel => rel.kind === 1);
-                return { note, reactions, zaps, comments };
+                return { note, reactions, zaps, comments, user };
             })
             .filter( (note: UserFeedItem | undefined) => typeof note !== 'undefined');
     }

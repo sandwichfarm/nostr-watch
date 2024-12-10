@@ -6,6 +6,7 @@ import { MonitorRegistration } from './MonitorRegistration';
 import { MonitorCached } from '@base/managers/MonitorManager';
 import { PubkeyProfile } from './PubkeyProfile';
 import { PubkeyRelays } from './PubkeyRelays';
+import { PFP } from '@base/utils/pfp';
 
 export enum RelayLiveness {
   Online = 'ONLINE',
@@ -44,6 +45,7 @@ export class Monitor {
   state?: SyncStateManager;
   reportedOnline: number = 0;
   deadThreshold: number = 60*60*24*30;  
+  _pfp?: string;
   
   private _lastActive: number = -1;
   private _frequencyMutiplier: number = 4;
@@ -119,8 +121,15 @@ export class Monitor {
     return this.profile?.name || '';
   }
 
+  get pfp(): string { 
+    if(!this._pfp) {
+      this._pfp = PFP.generate(this.pubkey)
+    }
+    return this._pfp as string;
+  }
+
   get photo(): string | undefined {
-    return this.profile?.photo;
+    return this.profile?.photo || this.pfp;
   }
 
   get image(): string | undefined  {

@@ -24,11 +24,25 @@
             replaceAmpersand: true,
         });
     })
+
+    $: isComment = noteExtended.note.isComment
+    $: user = noteExtended.user
+    $: name = user?.name || user?.pubkey
     
   </script>
 
 <section id="note-{noteExtended.note.id}" class="note px-8 py-5 rounded-lg bg-white/5 text-md block mb-3">
     <div class="text-xs text-gray-400">
+        
+            <span class="text-xs text-gray-400">
+                {name} 
+                {#if isComment}
+                commented
+                {:else}
+                posted
+                {/if}
+            </span>
+        
         {#if noteExtended.note?.created_at}
             <span class="">{timeAgo(noteExtended.note.created_at*1000)}</span>
         {/if} 

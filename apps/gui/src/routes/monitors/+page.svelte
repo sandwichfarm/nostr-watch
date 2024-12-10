@@ -6,11 +6,14 @@
     import * as Alert from "$lib/components/ui/alert/index.js";
     import { type Monitor } from "@nostrwatch/nip66/models"
 	
-    import { monitorsSorted, monitorRows } from '$lib/stores/monitors.js';
+    import { monitorsSorted, monitorRows, inactiveDisabledMonitorChecksCount } from '$lib/stores/monitors.js';
 
-    import config from '$lib/config/monitors-config.js';
+    import config from '$lib/config/dataTable/monitors.js';
 	import { StateManager } from '@nostrwatch/nip66';
 	import { nip05s, validNip05s } from '$lib/stores/nip05s.js';
+	import { nip66 } from '$lib/stores';
+    import type { Filter } from 'nostr-tools'
+	import { activeMonitorChecksCount } from '$lib/stores';
 
 	let val: string='';
 
@@ -18,10 +21,25 @@
 
 	onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+        const activeMonitors = $nip66?.services?.monitors?.activeMonitors
+        if(activeMonitors?.length){
+            console.log('activeMonitors', activeMonitors)   
+            activeMonitors.forEach(async (monitor: Monitor) => {
+                console.log('activeMonitors monitor', monitor)
+                const count = await $nip66?.services.monitors?.countMonitorChecksFromCache(monitor.pubkey)
+                activeMonitorChecksCount.update((value: Record<string, number>) => {
+                    console.log('activeMonitors monitor value', value)
+                    return {
+                        ...value,
+                        [monitor.pubkey]: count
+                    }
+                })
+            })
+        }
     });
 
-    $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: Monitor) => !monitor.active && monitor.enabled).length;
-    $: countEnabledMonitors = $monitorRows.filter((monitor: Monitor) => monitor.enabled).length;
+    $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: any) => { return !monitor.active && monitor.enabled }).length;
+    $: countEnabledMonitors = $monitorRows.filter((monitor: any) => monitor.enabled).length;
     $: criticalHasNoMonitorsEnabled = countEnabledMonitors === 0;
     $: criticalInactiveMonitorsEnabled = countInactiveMonitorsEnabled > 0;
     $: warnHasLessThanRecommendedMonitors = countEnabledMonitors < 3;

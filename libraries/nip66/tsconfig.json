@@ -18,6 +18,7 @@
     "isolatedModules": false,
     "resolveJsonModule": true,
     "baseUrl": "./",
+    // "traceResolution": true,
     "paths": {
       "@base/*": ["src/*"],
       "@core/*": ["src/core/*"],

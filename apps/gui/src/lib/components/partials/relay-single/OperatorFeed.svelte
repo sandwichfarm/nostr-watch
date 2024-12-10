@@ -1,10 +1,10 @@
 <script lang="ts">
+    import Masonry from 'svelte-bricks'
+    import { onMount } from 'svelte';
     import { User } from '$lib/models/User.js';
 	import type { UserFeed } from '$lib/services/UserService';
     import { UserService } from '$lib/services/UserService';
 	import { nip66 } from '$lib/stores';
-	import { parseNote } from '$lib/utils/notes';
-	import { onMount } from 'svelte';
 	import { get, writable, type Writable } from 'svelte/store';
     import { userService } from '$lib/stores/user.js';
 
@@ -15,6 +15,14 @@
     let user: User;
 
     const feed: Writable<UserFeed> = writable([]);
+
+    let [minColWidth, maxColWidth, gap] = [300, 500, 21]
+    let width:number, height: number
+
+    $: items = $feed.map( item => {
+        item.id = item.note.id 
+        return item;
+    });
 
     onMount( async () => {
         const instance = get(nip66);
@@ -28,7 +36,7 @@
         console.log(user)
         await user.ready();
         console.log('user feed: user', user)
-        await $userService.feed(user).then( (data: UserFeed) => {
+        await $userService.feed(user, 100).then( (data: UserFeed) => {
             console.log('user feed: data', data)    
             feed.set(data);
         });
@@ -37,14 +45,20 @@
 </script>
 
 <section id="operator-feed" class="block">
-wtf <br/>
-    <h2>Operator Feed</h2>
     {#if $userService}
-    <ul>
-        {#each $feed as noteExtended}
-            <OperatorFeedNote {noteExtended} />
-        {/each}
-    </ul>   
+    <Masonry
+                    {items}
+                    {minColWidth}
+                    {maxColWidth}
+                    {gap}
+                    let:item
+                    bind:width
+                    bind:height
+                >
+
+        <OperatorFeedNote noteExtended={item} />
+
+    </Masonry>
     {/if}
 </section>
 

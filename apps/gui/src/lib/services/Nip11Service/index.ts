@@ -2,7 +2,7 @@ import { get } from 'svelte/store';
 import type { nip11 } from 'nostr-tools';
 
 import { nip11sLocal } from '$lib/stores/nip11s.js';
-import type { INip11 } from '@nostrwatch/nip66/models';
+import { Nip11, type RelayInformation } from '@nostrwatch/nip66/models';
 import { getRelayErrorSubject, setRelayError, type RelayErrorMessages } from '$lib/stores/relay-errors.js';
 
 export type Nip11ServiceMessage = {
@@ -19,40 +19,34 @@ export class Nip11Service {
         this.worker.onmessage = this.onmessage.bind(this);
     }
 
-    find(relay: string): INip11 | undefined {
+    find(relay: string): Nip11 | undefined {
         let $nip11sLocal = get(nip11sLocal)
         return $nip11sLocal.get(relay)
     }
     
-    async check(relay: string): Promise<INip11> {
+    async check(relay: string): Promise<Nip11 | undefined> {
         this.worker.postMessage({ relay })
-        let result: Nip11ServiceMessage | undefined; 
+        let result: Nip11 | undefined; 
         let error: RelayErrorMessages | undefined
         while(!result && !error){
             result = get(nip11sLocal).get(relay)
             error = getRelayErrorSubject(relay, 'nip11')
             await new Promise( resolve => setTimeout( resolve, 200 ))
         }
-        return result ?? error;
+        return result;
     }
 
     private onmessage(message: MessageEvent<Nip11ServiceMessage>){
-        const { relay, nip11, error } = message.data;
+        const { relay, nip11:_nip11, error } = message.data;
+        if(!_nip11) return;
+        const nip11 = new Nip11(_nip11 as RelayInformation)
         if(error) {
             setRelayError(relay, 'nip11', error.message)
             return
         }
-        nip11sLocal.update((map: Map<string, INip11>) => {
-            let result: INip11[];
-            if(map.has(relay)) {
-                result = map.get(relay)
-            }
-            else {
-                result = []
-            }
+        nip11sLocal.update((map: Map<string, Nip11>) => {
             if(nip11) {
-                result.push(nip11)
-                map.set(relay, result)
+                map.set(relay, nip11)
             }
             return map;
         });

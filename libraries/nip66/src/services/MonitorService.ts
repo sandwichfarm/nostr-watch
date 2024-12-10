@@ -69,6 +69,15 @@ export class MonitorService extends Service {
     return this.manager.disabledMonitors;
   }
 
+  get disabledActiveMonitors() {
+    return this.manager.disabledActiveMonitors;
+  }
+
+  get disabledInactiveMonitors() {
+    return this.manager.disabledInactiveMonitors;
+  }
+  
+
   get activeMonitors() {
     return this.manager.activeMonitors;
   }
@@ -338,15 +347,38 @@ export class MonitorService extends Service {
     return result;
   }
 
-  async fetchMonitorChecks(pubkey: string): Promise<IEvent[]> { 
+  async countMonitorChecksFromCache(pubkey: string, _options?: Partial<WebsocketAdapterOptions>): Promise<number> { 
+    const monitor = this.monitors.get(pubkey);
+    if (!monitor) return 0;
+    const checkFilter = {...monitor.checkFilter};
+    const filters = [checkFilter];
+    return this.countFromCache(filters)
+  }
+
+  async fetchMonitorChecksFromCache(pubkey: string, _options?: Partial<WebsocketAdapterOptions>): Promise<IEvent[]> { 
+    return this.fetchMonitorChecks(pubkey, _options, 'cache');
+  }
+
+  async fetchMonitorChecksFromWebsocket(pubkey: string, _options?: Partial<WebsocketAdapterOptions>): Promise<IEvent[]> {
+    return this.fetchMonitorChecks(pubkey, _options, 'websocket');
+  }
+
+  async fetchMonitorChecks(pubkey: string, _options?: Partial<WebsocketAdapterOptions>, from?: 'cache' | 'websocket'): Promise<IEvent[]> { 
     const monitor = this.monitors.get(pubkey);
     if (!monitor) return [];
     const checkFilter = {...monitor.checkFilter};
     const filters = [checkFilter];
-    const options = defaultWebsocketAdapterOptions;
+    const options: WebsocketAdapterOptions = (_options? {...defaultWebsocketAdapterOptions, ..._options}: defaultWebsocketAdapterOptions) as WebsocketAdapterOptions;
     const relays = this.nip66Relays;
-    const result = await this.fetch({ filters, relays, options });
-    return (result as IEvent[]);
+    let result;
+    switch(from){
+      case 'cache':
+        return this.fetchFromCache(filters);
+      case 'websocket':
+        return await this.fetchFromWebsocket({ filters, relays, options });
+      default: 
+        return this.fetch({ filters, relays, options }) as Promise<IEvent[]>;
+    }
   }
 
   async ensureMonitorsActive(pubkeys?: string | string[]): Promise<void> {

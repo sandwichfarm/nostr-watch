@@ -1,12 +1,11 @@
 import { relaySpeedGroupResolver, SpeedGroupBars, SpeedGroupColors, SpeedGroups } from '$lib/stores/checks.js';
-import { monitors, monitorsMap } from '$lib/stores/monitors.js';
+import { inactiveDisabledMonitorChecksCount, monitors, monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from "@nostrwatch/nip66/models"
 import { PFP } from '$lib/utils/pfp.js';
-import { mount } from 'svelte';
-import ToggleEnableMonitor from '$lib/components/partials/ToggleEnableMonitor.svelte';
 import { get } from 'svelte/store';
 import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 import { validNip05s } from '$lib/stores/nip05s.js';
+import { activeMonitorChecksCount } from '$lib/stores';
 
 type Resolver = (input: any) => any
 
@@ -74,6 +73,11 @@ export const tableFormatters: Formatters = {
     frequency: (frequency) => {
         return formatSeconds(frequency)
     },
+    reportingOnline: (reportingOnline, {pubkey}) => {
+        if(reportingOnline > 0) return reportingOnline;
+        const count = get(activeMonitorChecksCount)?.[pubkey]
+        return count? count: 0;
+    },
     lastActive: (lastActive) => {
         if(lastActive < 0) {
             return ''
@@ -92,20 +96,11 @@ export const tableFormatters: Formatters = {
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
         let profile: string = '<div class="flex">';
         profile += '<div class="flex-shrink-0 mr-2">'
-        if(monitor?.profile?.photo){
-            profile += `
-            <span class="rounded-full overflow-hidden">
-                <img src=${monitor?.profile?.photo} alt=${monitor?.profile?.photo} class="w-20 h-24" />
+        profile += `
+            <span class="inline-block rounded-full overflow-hidden w-10 h-10">
+                <img src=${monitor.photo} alt=${monitor.photo} class="w-full h-auto" />
             </span>
             `
-        }
-        else {
-            profile += `
-            <span class="rounded-full overflow-hidden inline-block">
-                <img src=${PFP.generate(monitor.pubkey)} alt={photo} class="w-8 h-8" />
-            </span>
-            `
-        }
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){

@@ -15,13 +15,12 @@
         period?: number
     } 
 
-    
-
     $: type = Array.isArray(fees) ? 'array' : typeof fees;
+    $: keysLength = type === 'object' && fees? Object.keys(fees).length: 0;
 </script>
 
 
-{#if type === 'object'}
+{#if keysLength > 0}
 <Card.Root>
     <Card.Header>
         <Card.Title>Fee Schedule</Card.Title>  

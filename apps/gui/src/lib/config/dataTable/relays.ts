@@ -5,9 +5,15 @@ import { formatRelayUrl } from '$lib/utils/routing.js';
 import { formatNip, isPubkey } from '$lib/utils/nostr.js';
 import { timeAgo } from '$lib/utils/time.js';
 import { IconBadgeCheckGreen, IconCheckGreen, IconCheckRed } from '$lib/utils/icons.js';
+import { PFP } from '$lib/utils/pfp';
 
+import { monitorsMap } from '$lib/stores/monitors.js';
+import type { Monitor } from '@nostrwatch/nip66/models/Monitor';
 
-// const IconBadgeCheckGreen = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2ZDc1MDAiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS1iYWRnZS1jaGVjayI+PHBhdGggZD0iTTMuODUgOC42MmE0IDQgMCAwIDEgNC43OC00Ljc3IDQgNCAwIDAgMSA2Ljc0IDAgNCA0IDAgMCAxIDQuNzggNC43OCA0IDQgMCAwIDEgMCA2Ljc0IDQgNCAwIDAgMS00Ljc3IDQuNzggNCA0IDAgMCAxLTYuNzUgMCA0IDQgMCAwIDEtNC43OC00Ljc3IDQgNCAwIDAgMSAwLTYuNzZaIi8+PHBhdGggZD0ibTkgMTIgMiAyIDQtNCIvPjwvc3ZnPg==`;
+let $monitorsMap: Map<string, Monitor>;
+
+monitorsMap.subscribe(value => $monitorsMap = value)
+
 
 type Resolver = (input: any) => any
 
@@ -39,7 +45,7 @@ export type Formatters = Record<string, Formatter>;
 export type DataKeys = string[];
 
 export type Formatter = {
-    (value: any): string;
+    (value: any, value2: any): string;
 }
 
 export const normalizeKeys = (keys: DataKeys | string) => {
@@ -52,7 +58,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['as', 'asname']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['relay', 'lastSeen', 'hasNip11', 'operatorPubkey', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
+export const columnsShow: DataKeys = ['relay', 'seenTimes', 'seenBy', 'hasNip11', 'operatorPubkey', 'rttNormalized', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
 export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
 
 export const humanReadableNames: NameFormatter = {
@@ -86,6 +92,35 @@ export const tableFormatters: Formatters = {
         }
         return `<span class="text-xs">${timeAgo(lastSeen*1000)}</span>`;
     },
+    seenBy: (pubkeys: string[], row: any): string => {
+        let str = '<div class="flex items-center whitespace-nowrap">';
+        let i = 0;
+        let z = 500;
+
+        if(!pubkeys || !pubkeys.length) return '';
+    
+        const displayedPubkeys = pubkeys.slice(0, 5);
+        const extra = pubkeys.length > 5 ? pubkeys.slice(5) : [];
+    
+        displayedPubkeys.forEach((pk: string) => {
+            const monitor = $monitorsMap.get(pk);
+            if (!monitor) return;
+    
+            str += `<img src="${monitor.photo}" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
+            i++;
+            z--;
+        });
+    
+        if (extra.length) {
+            str += `<span class="text-xs inline-block relative whitespace-nowrap text-white/50">+${extra.length}</span>`;
+        }
+    
+        str += "</div>";
+    
+        return str;
+    },
+    
+    
     geocode: (code) => {
         if(!code) return '🌐';
         return countryCodeToFlagEmoji(code);
@@ -126,8 +161,6 @@ export const tableFormatters: Formatters = {
         const valid = isPubkey(pk)
         const validationClasses = valid? 'text-green-200/50 font-bold': 'text-red-400/80 italic';
         const notice = !valid? '⚠': ''
-        // if(!valid) return `<span class="text-red-500 italic text-xs uppercase">invalid</span>`
-        // const icon =  valid? IconCheckGreen: IconCheckRed;
         return `<span class="inline-block max-w-20 overflow-hidden overflow-ellipsis ${validationClasses}">${notice}${pk}</span>`
     },
     operatorPubkeyValid: (value?: boolean) => {
@@ -150,16 +183,6 @@ export const filterFormatters: Formatters = {
     supportedNips: (nip) => {
         return formatNip(nip)
     },
-    // paymentRequired: (r) => {
-    //     const text = r? 'yes': 'no'
-    //     const style = r? '': 'text-opacity-50'
-    //     return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
-    // },	
-    // authRequired: (r) => {
-    //     const text = r? 'yes': 'no'
-    //     const style = r? '': 'text-opacity-50'
-    //     return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
-    // },
     software: (software) => {
         if(typeof software !== 'string') return '-';
         return makeSoftwareReadable(software);

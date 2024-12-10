@@ -73,97 +73,104 @@ export class Service {
     return this._fetch(args, callbacks);
   }
 
-  async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
-    const { relays, options, sync } = args;
-    let { filters } = args
-    let { returnResults } = options
-    
-    const events = new Map<string, IEvent>();
-  
-    const generateId = (event: IEvent): string | undefined => {
-      if (isPRE(event)) {
-        const dtagv = event.tags.find((t: string[]) => t[0] === 'd')?.[1];
-        return dtagv ? `${event.pubkey}:${event.kind}:${dtagv}` : undefined;
-      }
-      return isRE(event) ? `${event.pubkey}:${event.kind}` : event.id;
-    };
-  
-    const maybeAddEventToMap = (event: IEvent): boolean => {
-      const id = generateId(event);
-      if (!id || events.has(id)) return false;
-      events.set(id, event);
-      return true;
-    };
+  async countFromCache(filters: Filter[]): Promise<number> {
+    return this.cacheAdapter.COUNT(filters);
+  }
 
-    if(sync){
-      filters = await this.modifyCacheFilters(filters)
-    }
-    let cacheEvents: IEvent[] = [];
-    let highestTimestampPerPubkey: Map<string, number> = new Map();
-    // if(returnResults) {
+  async fetchFromCache(filters: Filter[], callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+      let cacheEvents: IEvent[] = [];
+      let highestTimestampPerPubkey: Map<string, number> = new Map();
       cacheEvents = await this.cacheAdapter.REQ(filters);
       highestTimestampPerPubkey = cacheEvents.reduce((acc, event) => {
-        const timestamp = event.created_at as number;
-        if (!acc.has(event.pubkey) || acc.get(event.pubkey)! < timestamp) {
-          acc.set(event.pubkey, timestamp);
-        }
-        return acc;
-      }, new Map())
+          const timestamp = event.created_at as number;
+          if (!acc.has(event.pubkey) || acc.get(event.pubkey)! < timestamp) {
+              acc.set(event.pubkey, timestamp);
+          }
+          return acc;
+      }, new Map<string, number>());
 
       if (callbacks?.onevents) {
-        callbacks.onevents(cacheEvents);
+          callbacks.onevents(cacheEvents);
       }
       if (callbacks?.onevent) {
-        for (const event of cacheEvents) {
-          callbacks.onevent(event);
-        }
+          for (const event of cacheEvents) {
+              callbacks.onevent(event);
+          }
       }
-      cacheEvents.forEach(maybeAddEventToMap);
-    // }
-  
-    const _callbacks: SubscribeHandlers = {};
-  
-    if (callbacks?.onevent) {
-      _callbacks.onevent = (event: IEvent) => {
-        if (maybeAddEventToMap(event)) callbacks.onevent!(event);
-      };
-    }
-  
-    if (callbacks?.onevents) {
-      _callbacks.onevents = (batch: IEvent[]) => {
-        const newEvents = [];
-        for (const event of batch) {
-          if (maybeAddEventToMap(event)) newEvents.push(event);
-        }
-        if (newEvents.length > 0) callbacks.onevents!(newEvents);
-      };
-    }
 
-    if(sync){
-      // filters = filters.map((filter: Filter) => {
-      //   const author = filter.authors?.[0]
-      //   if(!author) return filter;
-      //   filter.since = highestTimestampPerPubkey.get(author) || filter.since;
-      //   filter.until = Math.round(Date.now() / 1000);
-      //   return filter;
-      // })
-    }
-  
+      return cacheEvents;
+  }
+
+  async fetchFromWebsocket(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    const { relays, filters, options } = args;
     const websocketEvents: IEvent[] = await this.websocketAdapter.fetch(
-      {
-        relays: relays || [],
-        filters,
-        options: options || defaultWebsocketAdapterOptions,
-      },
-      _callbacks
+        {
+            relays: relays || [],
+            filters,
+            options: options || defaultWebsocketAdapterOptions,
+        },
+        callbacks
     ) as IEvent[];
 
-    if(websocketEvents instanceof Array) {
-      websocketEvents.forEach(maybeAddEventToMap);
+    return websocketEvents instanceof Array ? websocketEvents : [];
+  }
+
+  async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    const { relays, options, sync } = args;
+    let { filters } = args;
+    let { returnResults } = options;
+
+    const events = new Map<string, IEvent>();
+
+    const generateId = (event: IEvent): string | undefined => {
+        if (isPRE(event)) {
+            const dtagv = event.tags.find((t: string[]) => t[0] === 'd')?.[1];
+            return dtagv ? `${event.pubkey}:${event.kind}:${dtagv}` : undefined;
+        }
+        return isRE(event) ? `${event.pubkey}:${event.kind}` : event.id;
+    };
+
+    const maybeAddEventToMap = (event: IEvent): boolean => {
+        const id = generateId(event);
+        if (!id || events.has(id)) return false;
+        events.set(id, event);
+        return true;
+    };
+
+    if (sync) {
+        filters = await this.modifyCacheFilters(filters);
     }
+
+    const cacheEvents = await this.fetchFromCache(filters, callbacks);
+    cacheEvents.forEach(maybeAddEventToMap);
+
+    const _callbacks: SubscribeHandlers = {};
+
+    if (callbacks?.onevent) {
+        _callbacks.onevent = (event: IEvent) => {
+            if (maybeAddEventToMap(event)) callbacks.onevent!(event);
+        };
+    }
+
+    if (callbacks?.onevents) {
+        _callbacks.onevents = (batch: IEvent[]) => {
+            const newEvents: IEvent[] = [];
+            for (const event of batch) {
+                if (maybeAddEventToMap(event)) newEvents.push(event);
+            }
+            if (newEvents.length > 0) callbacks.onevents!(newEvents);
+        };
+    }
+
+    const websocketEvents = await this.fetchFromWebsocket(args, _callbacks);
+    websocketEvents.forEach(maybeAddEventToMap);
+
     const finalEvents = Array.from(events.values());
     return this.modifyReturnedEvents(finalEvents);
   }
+
+
+
 
   async modifyReturnedEvents(events: IEvent[]): Promise<IEvent[]> {
     console.warn('modifyReturnedEvents not implemented');

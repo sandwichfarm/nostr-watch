@@ -9,14 +9,11 @@
 	import { StateManager } from '@nostrwatch/nip66';
 	import { nip11s, nip11Service, nip11sLocal } from '$lib/stores/nip11s.js';
     import { eventsArray } from '$lib/stores/events.js'
-    import RelayMap from '$lib/components/partials/RelayMap.svelte'
-	import type { nip11 as Nip11, NostrEvent } from 'nostr-tools';
     import type Nip66 from '@nostrwatch/nip66';
 	import ProfileCompact from '$lib/components/partials/ProfileCompact.svelte';
-	import { formatNip, isHex } from '$lib/utils/nostr.js';
-	import { relayScores } from '$lib/stores/score-relays-decentralization.js';
+	import { isHex } from '$lib/utils/nostr.js';
+    import { Nip11 } from '@nostrwatch/nip66/models';
 
-    import Badge from '$lib/components/ui/badge/badge.svelte';
 	import RelayChecks from '$lib/components/partials/relay-single/RelayChecks.svelte';
     import OperatorFeed from '$lib/components/partials/relay-single/OperatorFeed.svelte';
     import * as Tabs from '$lib/components/ui/tabs';
@@ -50,7 +47,7 @@
 
     
     const existingChecks: Readable<Nip66Event[]> = derived(eventsArray, $eventsArray => {
-        return $eventsArray.filter( event => new URL(event.relay).toString() === new URL(relayUrl).toString() )
+        return $eventsArray.filter( event => event?.relay && new URL(event.relay).toString() === new URL(relayUrl).toString() )
     });
 
     const checks: Readable<Nip66Event[]> = derived(
@@ -65,13 +62,13 @@
             }
             if($existingChecks.length) {
                 $existingChecks.forEach((check: Nip66Event) => {
-                    if (!check.relay) console.error('Invalid relay:', check);
+                    if (!check.relay) return console.error('Invalid relay:', check);
                     if (!relayMap.has(check.relay)) {
                         relayMap.set(check.pubkey, check);
                     }
                 });
             }
-            return Array.from(relayMap.values()).sort((a: Nip66Event, b: Nip66Event) => b.created_at - a.created_at);
+            return Array.from(relayMap.values()).sort((a: Nip66Event, b: Nip66Event) => (b.created_at as number) - (a.created_at as number));
         }
     );
 
@@ -91,32 +88,29 @@
         }
     });
 
-    const nip11Local: Writable<Nip11.RelayInformation | undefined> = writable()
-
-    const nip11: Readable<Nip11.RelayInformation | undefined> = derived(
-        [nip11Local, relayAggregate], 
-        ([$nip11Local, $relayAggregate]) => {
-            if($nip11Local) return $nip11Local
-            if($relayAggregate) return $relayAggregate.nip11
-            return undefined
+    const nip11: Readable<Nip11 | undefined> = derived(
+        [nip11sLocal, nip11s], 
+        ([$nip11sLocal, $nip11s]) => {
+            let result: Nip11 | undefined;  
+            if($nip11sLocal) result = $nip11sLocal.get(relayUrl)
+            if($nip11s) result = $nip11s.get(relayUrl)?.[0]
+            return result
         }
-    )
-
-        
+    )   
 
     const reset = () => {
         if (currentRelay === relayUrl) return;
+        activateTab('overview')
         freshChecks.set([]);
         monitors.set([])
         operatorProfile.set(null)
         operatorRelays.set(null)
-        nip11Local.set(undefined)
     };
 
     const loadRelayData = async () => {
         reset();
         nip66Instance = await instance();
-        const res = (await nip66Instance.services.relay.getRelayData(relayUrl));
+        const res = (await nip66Instance?.services?.relay?.getRelayData(relayUrl));
         if(!res) return 
         const [data, mons] = res;
         freshChecks.set(data);
@@ -130,14 +124,15 @@
     };
 
     const loadNip11 = async () => {
-        console.log('nip11', await $nip11Service.check( relayUrl ))
+        await $nip11Service.check( relayUrl )
+        console.log('nip11', )
         nip11sLocal.subscribe( ($n11s: any) => {
             if(operatorPubkey) return;
             const nip11arr = $n11s.get(relayUrl) || [];
             console.log('nip11arr', nip11arr)
             if(nip11arr?.length) {
                 for(const n11 of nip11arr){
-                    nip11Local.set(n11)
+                    nip11sLocal.set(n11)
                     if($nip11) break;
                 }
             }
@@ -198,8 +193,8 @@
                 $relayAggregate.operatorPubkey:
                 null;
     $: supportedNips = 
-        $nip11?.supported_nips && $nip11.supported_nips.length? 
-            $nip11?.supported_nips: 
+        $nip11?.supportedNips && $nip11.supportedNips.length? 
+            $nip11?.supportedNips: 
             $relayAggregate?.supportedNips?
                 $relayAggregate.supportedNips:
                 null;
@@ -222,7 +217,7 @@
                 $relayAggregate.fees:
                 null;
     $: paymentUrl = $nip11?.paymentsUrl
-    $: decentralizationScore = $relayScores.get(relayUrl) ?? -1
+    // $: decentralizationScore = $relayScores.get(relayUrl) ?? -1
     $: if (relayUrl !== currentRelay) {
         loadRelayData().then(() => {
             StateManager.emit(`${relayUrl}:hydrated`)
@@ -245,10 +240,10 @@
 
 <header
   id="relay-header"
-  class="relative bg-center bg-cover bg-no-repeat h-64"
+  class="relative bg-center bg-cover bg-no-repeat h-48"
   style={`background-image: url('${banner}');`}
 >
-  <div class="absolute inset-0 bg-black opacity-50 z-0"></div>
+  <!-- <div class="absolute inset-0 bg-black opacity-50 z-0"></div> -->
 
   <div class="relative z-10 flex justify-between p-6 h-full">
     <div class="flex">
@@ -280,25 +275,24 @@
 <main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">
     <section class="flex-1  rounded shadow">
         <Tabs.Root value="overview" class="w-full p-0">
-            <Tabs.List class="w-full rounded-none px-10">
-                <Tabs.Trigger value="overview" class="flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
-                <Tabs.Trigger value="checks" class="flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
-                <Tabs.Trigger value="audit" class="flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
-                <Tabs.Trigger value="nip11" class="flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
-                <Tabs.Trigger value="feed" class="flex-grow" on:click={() => activateTab('feed')}>Feed</Tabs.Trigger>
+            <Tabs.List class="w-full rounded-none px-10 py-7">
+                <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
+                <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
+                <Tabs.Trigger value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
+                <Tabs.Trigger value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
+                <Tabs.Trigger value="feed" class="text-lg flex-grow" on:click={() => activateTab('feed')}>Feed</Tabs.Trigger>
             </Tabs.List>
              <div class="p-4">
             <Tabs.Content value="overview">
-
                 <Masonry
-                {items}
-                {minColWidth}
-                {maxColWidth}
-                {gap}
-                let:item
-                bind:width
-                bind:height
-              >
+                    {items}
+                    {minColWidth}
+                    {maxColWidth}
+                    {gap}
+                    let:item
+                    bind:width
+                    bind:height
+                >
                 <div>
                 {#if item === 'map'}
                     <CardMap relay={relayUrl} monitors={$monitors} checks={$checks} aggregate={$relayAggregate} />
@@ -348,27 +342,6 @@
     </aside> -->
     <!-- {/if} -->
   </main>
-    
-
-    
-    
-
-    <div>
-        score: {decentralizationScore}
-    </div>
-
-    
-
-    
-    
-   
-    
-    {#if $relayAggregate}
-        <p>checks found</p>
-    {:else}
-        <p>No checks available.</p>
-    {/if}
-<!-- {/if} -->
 
 <style lang="postcss">
     #relay-header {
@@ -378,5 +351,8 @@
     #overview-container > div {
         @apply w-1/2 border;
     }
-    
+
+    .data-\[state\=active\]\:bg-background[data-state="active"] {
+        @apply !bg-black/10;
+    }
 </style>

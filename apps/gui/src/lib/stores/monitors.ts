@@ -71,29 +71,42 @@ export const monitorNip05s = derived(
       .map( m => ({ pubkey: m.pubkey, nip05: m.profile.nip05 }) )
 )
 
+export const inactiveDisabledMonitorChecksCount = writable<Record<string, number>>({});
+const inactiveDisabledMonitorChecksCountReadable = derived(
+  inactiveDisabledMonitorChecksCount,
+  (value) => value
+);
+
+export const activeMonitorChecksCount = writable<Record<string, number>>({});
+const activeMonitorChecksCountReadable = derived(
+  activeMonitorChecksCount,
+  (value) => value
+);
+
 export const monitorChecksCount = derived(
-  eventsArray, 
-  ($eventsArray) => {
+  [eventsArray],
+  ([$eventsArray]) => {
     const countMap: Record<string, number> = {};
     $eventsArray.forEach((event: any) => {
       countMap[event.pubkey] = (countMap?.[event.pubkey] || 0) + 1;
     });
-    console.log('monitor counts', countMap)
+    console.log('monitor counts', countMap);
     return countMap;
   }
 );
 
 
+
 export const monitorRows = derived(
-  [monitorsSorted, monitorChecksCount, nip05s],
-  ([$monitorsSorted, $monitorChecksCount, $nip05s]) => {
+  [monitorsSorted, activeMonitorChecksCount, monitorChecksCount, nip05s],
+  ([$monitorsSorted, $activeMonitorChecksCount, $monitorChecksCount, $nip05s]) => {
     return $monitorsSorted.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
-      row.id = monitor.registration.pubkey;
+      row.id = monitor.pubkey;
       row.active = monitor.active;
-      row.pubkey = monitor.registration.pubkey;
+      row.pubkey = monitor.pubkey;
       row.name = monitor.profile?.name ?? null
-      row.photo = monitor?.profile?.photo ?? monitor?.profile?.picture ?? null
+      row.photo = monitor.photo ?? null
       row.about = monitor?.profile?.about ?? null
       row.nip05 = monitor?.profile?.nip05 ?? null
       row.lud16 = monitor?.profile?.lud16 ?? null
@@ -105,7 +118,7 @@ export const monitorRows = derived(
       row.relays = monitor.relays ?? null
       row.enabled = monitor.enabled ?? false
       row.priority = monitor.priority ?? 0
-      row.reportingOnline = $monitorChecksCount?.[monitor.registration.pubkey] ?? 0
+      row.reportingOnline = $monitorChecksCount?.[monitor.pubkey] ?? $activeMonitorChecksCount?.[monitor.pubkey] ?? 0
       return row;
     })
   }

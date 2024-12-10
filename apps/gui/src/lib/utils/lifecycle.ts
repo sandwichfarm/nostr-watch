@@ -8,6 +8,8 @@ import { eventKey } from '$lib/utils/event-keys.js';
 import { nip66, events, monitorsMap, monitors } from '$lib/stores/index.js';
 import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
+import { addEventsToStore } from '$lib/stores/events-helpers.js';
+
 import type { Monitor } from "@nostrwatch/nip66/models"
 import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
 
@@ -40,21 +42,7 @@ export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
 
     nip66Instance.on('events', (_events: any) => {
         console.log('Svelte Received events:', _events.length);
-        events.update((map) => {
-            _events.forEach((event: IEvent) => {
-                const aTag = event.tags.find((t: string[]) => t[0] === 'a')
-                if(aTag) return;
-                const key = eventKey(event);
-                if(!key) return;
-                const online = $monitorsMap.get(event.pubkey)?.relayIsOnline(event)
-                if(!online) return;
-                const existing = map.get(key);
-                if (existing && existing.id === event.id) return;
-                if (existing && existing.created_at > event.created_at) return;
-                map.set(key, new Nip66Event(event));
-            });
-            return map;
-        });
+        addEventsToStore(_events)
     });
 };
 
@@ -137,12 +125,18 @@ export const bootstrapMonitorChecks = async (_instance?: Nip66) => {
 }
 
 export const bootstrap = async (_instance?: Nip66) => {
-    // if(!shouldSync()) return 
-    const nip66Instance = await instance(_instance);
-    bindBootstrapEmitters(nip66Instance);
-    await nip66Instance.monitorService.bootstrap();
-    updateLastSync()
-    // bindLiveSubscriptionEmitters(nip66Instance);
+    const $nip66 = await instance(_instance);
+    bindBootstrapEmitters($nip66);
+    if(shouldSync()){
+        await $nip66?.services?.monitors?.bootstrap();
+        updateLastSync()
+    }
+    else {
+        console.log('skipping full sync')
+        $nip66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
+            addEventsToStore(await $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey) || []);
+        })
+    }
 };
 
 export const destroy = () => {

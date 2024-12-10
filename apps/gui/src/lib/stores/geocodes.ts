@@ -7,13 +7,13 @@ import { StateManager } from '@nostrwatch/nip66';
 import { Nip66Event } from '@nostrwatch/nip66/models';
 import type { lte } from 'lodash';
 
-export const geocodes = throttledDerived(
-  eventsArray, 
-  ($eventsArray) => {
-    if (!$eventsArray.length) return [];
+export const geocodes = derived(
+  relayAggregates, 
+  ($relayAggregates) => {
+    if (!$relayAggregates.length) return [];
     const codes = new Set();
 
-    $eventsArray.forEach((event: Nip66Event) => {
+    $relayAggregates.forEach((event: Nip66Event) => {
       if (event.geocode) {
         codes.add(event.geocode.toLowerCase());
       }
@@ -29,8 +29,7 @@ export const geocodes = throttledDerived(
     }    
 
     return geocodesArray;
-  },
-  1000
+  }
 );
 
 export const geocodeCounts = derived(relayAggregates, ($relayAggregates) => {

@@ -9,11 +9,16 @@
         isps,
         monitors
     } from '$lib/stores/index.js';
+	import { StateManager } from '@nostrwatch/nip66';
+
+    let eventsCount = StateManager.get('count:events:checks');
 
     // Reactive variables for determining fade-in state
     $: monitorsClass = $monitors && $monitors.length > 0 ? 'faded' : '';
     $: relaysClass = $relays && Array.from($relays.values()).length > 0 ? 'faded' : '';
-    $: eventsClass = $eventsArray && $eventsArray.length > 0 ? 'faded' : '';
+    $: eventsClass = ($eventsArray && $eventsArray.length > 0) 
+        ? 'faded' : 
+        eventsCount > 0 ? 'faded' : '';
     $: nip11sClass = $nip11s && Array.from($nip11s).length > 0 ? 'faded' : '';
     $: geocodesClass = $geocodes && $geocodes.length > 0 ? 'faded' : '';
     $: softwaresClass = $softwares && $softwares.length > 0 ? 'faded' : '';
@@ -32,7 +37,7 @@
     </span>
     <span class={eventsClass}>
         <span>Checks</span>
-        <span>{$eventsArray?.length}</span>
+        <span>{$eventsArray?.length || eventsCount}</span>
     </span>
     <span class={nip11sClass}>
         <span>NIP11s</span>

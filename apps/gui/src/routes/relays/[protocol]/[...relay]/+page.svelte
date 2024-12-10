@@ -31,8 +31,9 @@
 	import CardNetwork from '$lib/components/partials/relay-single/cards/CardNetwork.svelte';
 
     export let params: { protocol: string; relay: string };
-
-    const nip11: Writable<Nip11.RelayInformation | undefined> = writable()
+    let currentRelay: string = '';
+    let loading: boolean = true;
+    let nip66Instance: Nip66;
         
     const operatorProfile: Writable<PubkeyProfile | null> = writable(null)
     const operatorRelays: Writable<PubkeyRelays | null> = writable(null)
@@ -74,9 +75,7 @@
         }
     );
 
-    let currentRelay: string = '';
-    let loading: boolean = true;
-    let nip66Instance: Nip66;
+
 
     const relayAggregate: Readable<any | undefined> = derived(checks, ($checks) => {
         let aggregate = relayCheckAggregator($checks)
@@ -92,13 +91,26 @@
         }
     });
 
+    const nip11Local: Writable<Nip11.RelayInformation | undefined> = writable()
+
+    const nip11: Readable<Nip11.RelayInformation | undefined> = derived(
+        [nip11Local, relayAggregate], 
+        ([$nip11Local, $relayAggregate]) => {
+            if($nip11Local) return $nip11Local
+            if($relayAggregate) return $relayAggregate.nip11
+            return undefined
+        }
+    )
+
+        
+
     const reset = () => {
         if (currentRelay === relayUrl) return;
         freshChecks.set([]);
         monitors.set([])
         operatorProfile.set(null)
         operatorRelays.set(null)
-        nip11.set(null)
+        nip11Local.set(undefined)
     };
 
     const loadRelayData = async () => {
@@ -125,7 +137,7 @@
             console.log('nip11arr', nip11arr)
             if(nip11arr?.length) {
                 for(const n11 of nip11arr){
-                    nip11.set(n11)
+                    nip11Local.set(n11)
                     if($nip11) break;
                 }
             }
@@ -204,11 +216,12 @@
                 $relayAggregate.version:
                 null;
     $: fees = 
-        $nip11?.fees && $nip11.fees.length? 
+        $nip11?.fees? 
             $nip11.fees: 
             $relayAggregate?.fees?
                 $relayAggregate.fees:
                 null;
+    $: paymentUrl = $nip11?.paymentsUrl
     $: decentralizationScore = $relayScores.get(relayUrl) ?? -1
     $: if (relayUrl !== currentRelay) {
         loadRelayData().then(() => {
@@ -219,14 +232,14 @@
 
     $: items = [
         'general',
+        'fees',
         'network',
         'insights',
         'checks',
-        'map',
-        'fees'
+        'map'
     ]
   
-    let [minColWidth, maxColWidth, gap] = [400, 800, 20]
+    let [minColWidth, maxColWidth, gap] = [400, 800, 21]
     let width:number, height: number
 </script>
 
@@ -264,37 +277,17 @@
   </div>
 </header>
 
-<div id="subheader" class="bg-white/10 px-3 py-1 block">
-    {#if supportedNips}
-        <div>
-            <!-- <span class="text-xs uppercase">supported nips:</span> -->
-            {#each supportedNips as nip}
-                <Badge variant="outline" class="mr-1 bg-black/30">{formatNip(nip)}</Badge>
-            {/each}
-        </div>
-    {/if}      
-
-</div>
-
-<!-- {#if loading}
-<p>Loading...</p>
-{:else}
-<p>Loaded</p>
-{/if} -->
-
-<!-- {#if !$checks.length}
-    no checks
-{:else} -->
-
-<main class="flex flex-wrap md:flex-nowrap mx-0 w-full">
-    <section class="flex-1 p-4 rounded shadow">
-        <Tabs.Root value="overview" class="w-full ">
-            <Tabs.List class="w-full bg-none">
+<main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">
+    <section class="flex-1  rounded shadow">
+        <Tabs.Root value="overview" class="w-full p-0">
+            <Tabs.List class="w-full rounded-none px-10">
                 <Tabs.Trigger value="overview" class="flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
                 <Tabs.Trigger value="checks" class="flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
                 <Tabs.Trigger value="audit" class="flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
+                <Tabs.Trigger value="nip11" class="flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
                 <Tabs.Trigger value="feed" class="flex-grow" on:click={() => activateTab('feed')}>Feed</Tabs.Trigger>
             </Tabs.List>
+             <div class="p-4">
             <Tabs.Content value="overview">
 
                 <Masonry
@@ -323,7 +316,7 @@
                     <CardGeneral version={version} software={software} geocode={geocode} />
                 {/if}
                 {#if item === 'fees'}
-                    <CardFees {fees} />
+                    <CardFees {fees} {paymentUrl} />
                 {/if}
             </div>
               </Masonry>
@@ -335,11 +328,15 @@
             <Tabs.Content value="audit">
     
             </Tabs.Content>
+            <Tabs.Content value="nip11">
+                <pre class="py-6 px-8 bg-white/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>
+            </Tabs.Content>
             <Tabs.Content value="feed">
                 {#if operatorPubkey && $activeTab === 'feed'}
                     <OperatorFeed pubkey={operatorPubkey} />
                 {/if}
             </Tabs.Content>
+            </div>
         </Tabs.Root>
     </section>
     <!-- SIDEBAR -->

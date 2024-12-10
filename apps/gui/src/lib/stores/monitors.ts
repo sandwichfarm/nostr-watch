@@ -6,14 +6,27 @@ import { throttledDerived } from "$lib/utils/stores.js";
 import { MonitorManager, StateManager } from "@nostrwatch/nip66";
 import { Monitor } from '@nostrwatch/nip66/models'
 import { nip05s, validNip05s } from "./nip05s.js";
+import { nip66 } from "./nip66.js";
+import type Nip66 from "@nostrwatch/nip66";
+
+let $nip66: Nip66;
+
+nip66.subscribe(instance => $nip66 = instance)
 
 export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   const monitorsArr = StateManager.get('cache:monitors');  
+  console.log('cached monitors', monitorsArr)
   if(!monitorsArr?.length) return new Map()
+  console.log('cached monitors: yes')
   const map: Map<string, Monitor> = new Map()
   for(const monitor of monitorsArr) {
-    map.set(monitor.pubkey, Monitor.fromCache(monitor))
+    console.log('monitor wtf', monitor?.registration)
+    const mon = Monitor.fromCache(monitor)
+    console.log('monitor from cache', mon)
+    if(!mon) continue
+    map.set(monitor.pubkey, mon)
   }
+  console.log('cached monitors map', map)
   return map
 }
 
@@ -24,15 +37,18 @@ export const monitors = derived(
   ($monitorsMap) => {
     let arr = Array.from($monitorsMap.values());
     if(arr.length){
-      const cacheValues = arr.map(( monitor: Monitor) => monitor.toCache())
-      StateManager.set('cache:monitors', cacheValues);  
+      let sorted = $nip66?.services?.monitors?.sortedMonitors
+      if(sorted !== undefined && sorted.length) {
+        StateManager.set('cache:monitors', sorted.map(( monitor: Monitor) => monitor.toCache()));
+      }
+      else {
+        StateManager.set('cache:monitors', arr.map(( monitor: Monitor) => monitor.toCache()));   
+      }
     }
     else {
       const fromCacheValues = StateManager.get('cache:monitors');  
       if(fromCacheValues?.length) {
-        fromCacheValues.map( (cache: any) => {
-          console.log('monitor from cache', Monitor.fromCache(cache))
-        });
+        arr = fromCacheValues.map( (cache: any) => Monitor.fromCache(cache) );
       }
     }
     return arr;
@@ -42,8 +58,8 @@ export const monitors = derived(
 export const monitorsSorted = derived(
   monitors,
   ($monitors) => {
-    return $monitors
-    // return MonitorManager.sortMonitorsByPriority($monitors);
+    console.log('monitors sorted', $nip66?.services?.monitors?.sortedMonitors || $monitors)
+    return $nip66?.services?.monitors?.sortedMonitors || $monitors;
   }
 );
 

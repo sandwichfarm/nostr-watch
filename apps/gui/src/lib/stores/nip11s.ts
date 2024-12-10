@@ -4,6 +4,8 @@ import { deterministicHash } from "@nostrwatch/nip66/utils";
 
 import { eventsArray } from './events.js'; 
 import { Nip11Service } from "$lib/services/Nip11Service/index.js";
+import { StateManager } from "@nostrwatch/nip66";
+import { compress, decompress } from "compress-json";
 export type LocalNip11  = any
 
 export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
@@ -27,11 +29,11 @@ const processNip11 = ( json: any ) => {
 }
 
 export const nip11s = derived([eventsArray, nip11sLocal], ([$eventsArray, $nip11sLocal]) => {
-  if (!$eventsArray || $eventsArray.length === 0) {
-    return new Map();
-  }
+  // if (!$eventsArray || $eventsArray.length === 0) {
+  //   return new Map();
+  // }
 
-  const nip11Map = new Map();
+  let nip11Map = new Map();
 
   const updateEntry = (relay: string, nip11Entry: INip11) => {
     let existing = nip11Map.get(relay);
@@ -39,6 +41,8 @@ export const nip11s = derived([eventsArray, nip11sLocal], ([$eventsArray, $nip11
     existing.push(nip11Entry)
     nip11Map.set(relay, existing);
   }
+
+  let nip66Nip11s: number = 0
 
   $eventsArray.forEach((event) => {
     const relayTag = event.tags.find((tag: string[]) => tag[0] === 'd');
@@ -53,10 +57,11 @@ export const nip11s = derived([eventsArray, nip11sLocal], ([$eventsArray, $nip11
     const monitorPubkey = event.pubkey;
     const nid = event.id;
     const created_at = event.created_at;
-    if (!event?.content || event.content.length <= 2)  return 
-    const json = event.nip11.json 
-    const hash = event.nip11.hash
+    if (!event?.content || event.content.length <= 2 || !created_at)  return 
+    const json = event?.nip11?.json 
+    const hash = event?.nip11?.hash
     if(!json || !hash) return 
+    nip66Nip11s++;
     const nip11Entry: INip11 = {
       relay,
       monitorPubkey,
@@ -84,5 +89,26 @@ export const nip11s = derived([eventsArray, nip11sLocal], ([$eventsArray, $nip11
     };
     updateEntry(relay, nip11Entry)
   }
+
+  // ( async () => {
+  let nip11Array = Array.from(nip11Map.entries())
+  console.log('cached wtf nip11Array', nip11Array)
+  if(nip11Array.length) {
+    StateManager.set('aggregate:nip11s', nip11Array)
+  }
+  if(nip66Nip11s !== 0) {
+    const cachedMap = StateManager.get('aggregate:nip11s')
+    console.log('cached nip11Map array', nip11Map)
+    if(cachedMap ){
+      nip11Map = new Map([...cachedMap]);
+      console.log('cached nip11Map', nip11Map)
+    }
+  }
+  // })()
+
   return nip11Map;
 });
+
+nip11s.subscribe(($nip11s) => {
+  
+})

@@ -1,12 +1,24 @@
 <script lang="ts">
 	import * as Table from "$lib/components/ui/table/index.js";
+	import { capitalize } from "$lib/utils/strings";
     import { formatSeconds } from "$lib/utils/time.js"
 
-    export let fees: any[] = [];
+    type FeesObject = Record<string, FeesArray[]>
+    type FeesArray = {
+        amount: number,
+        unit: string,
+        period?: number
+    } 
+
+    export let fees: any[] | Record<string, any[]> = [];
+
+    $: type = Array.isArray(fees) ? 'array' : 'object';
 </script>
 
-{#if fees?.length}
-    <h2>Fee Schedule</h2>
+{#if fees}
+    {#if type === 'object'}
+    {#each Object.entries(fees as FeesObject) as [key, keyfees]}
+    <h2>{capitalize(key)}</h2>
     <Table.Root>
         <Table.Header>
             <Table.Row>
@@ -22,7 +34,8 @@
             </Table.Row>
         </Table.Header>
         <Table.Body>
-            {#each fees as fee}
+            {#if keyfees}
+            {#each (keyfees as FeesArray[]) as fee}                
             <Table.Row>
                 <Table.Cell>
                     {fee.amount}
@@ -31,11 +44,13 @@
                     {fee.unit}
                 </Table.Cell>
                 <Table.Cell>
-                    {formatSeconds(fee.period)}
+                    {fee?.period? formatSeconds(fee?.period): ''}
                 </Table.Cell>
             </Table.Row>
             {/each}
+            {/if}
         </Table.Body>
-    </Table.Root>    
+    </Table.Root>
+    {/each}
+    {/if}
 {/if}
-

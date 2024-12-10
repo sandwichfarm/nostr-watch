@@ -37,7 +37,8 @@ export class UserService extends Service {
     }
 
     async userNotes(user: User, limit: number = 30, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
-        const filter: Filter = { authors: [user.pubkey], kinds: [1], limit };
+        const until = Math.round(Date.now() / 1000);
+        const filter: Filter = { authors: [user.pubkey], kinds: [1], limit, until};
         const options: WebsocketAdapterOptions = {
             cache: true,
             stream: false,
@@ -53,10 +54,11 @@ export class UserService extends Service {
         //     if(callbacks) callbacks?.onevent?.(event);
         // }
         let notes = (await this.subscribe(args))?.sort((a, b) => (b.created_at as number) - (a.created_at as number));
-        return notes.filter(isNotComment);
+        // return notes.filter(isNotComment);
+        return notes;
     }
 
-    async feed(user: User, limit: number = 3): Promise<UserFeedItem[]> {
+    async feed(user: User, limit: number = 1): Promise<UserFeedItem[]> {
         const { relays } = user
         const notes = await this.userNotes(user, limit)
         const relatives = await Promise.all(notes.map((note: IEvent) => this.noteRelatives(user, note)));
@@ -79,7 +81,7 @@ export class UserService extends Service {
             { kinds: [9734, 9321], '#e': [note.id] }
         ]
         console.log('user note relatives', filters)
-        const relays: string[] = [ ...(user.relays || []), 'wss://nostr.band', 'wss://relay.damus.io' ]
+        const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]
         const options: WebsocketAdapterOptions  = {
             cache: false,
             stream: true,
@@ -91,7 +93,8 @@ export class UserService extends Service {
             relays,
             options
         }
-        return this.subscribe(args)
+        const results = this.subscribe(args)
+        return results instanceof Array? results as IEvent[]: [];
     }
 
     async meta(user: User): Promise<IEvent[] | boolean | undefined> {

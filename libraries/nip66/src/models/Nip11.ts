@@ -43,6 +43,8 @@ export class Nip11 {
     return this.json?.pubkey;
   }
 
+
+
   /**
    * Returns the description of the relay.
    */
@@ -116,8 +118,8 @@ export class Nip11 {
   /**
    * Returns the subscription fees for the relay.
    */
-  get fees(): Nip11SubscriptionFees | undefined {
-    return this.json.fees?.subscription;
+  get fees():  any | undefined {
+    return this.json.fees
   }
 
   get maxMessageLength(): number | undefined {

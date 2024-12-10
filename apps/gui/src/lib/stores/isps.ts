@@ -21,8 +21,14 @@ export const isps = derived(eventsArray, ($eventsArray) => {
             });
         }
     });
-    const ispsArray = Array.from(ispsMap.values()).sort((a, b) => a.asname.localeCompare(b.asname));
-    StateManager.set('aggregate:isps', ispsArray);
+    let ispsArray = Array.from(ispsMap.values()).sort((a, b) => a.asname.localeCompare(b.asname));
+    if(ispsArray.length) {
+        StateManager.set('aggregate:isps', ispsArray);
+    }
+    else {
+        ispsArray = StateManager.get('aggregate:isps');
+    }
+    
     return ispsArray;
 });
 

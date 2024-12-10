@@ -58,7 +58,7 @@ export const nip11s = derived([eventsArray, nip11sLocal], ([$eventsArray, $nip11
   if(nip11Array.length) {
     StateManager.set('aggregate:nip11s', compress(nip11Array))
   }
-  if(nip66Nip11s !== 0) {
+  if(nip66Nip11s > 0) {
     const cachedMap = StateManager.get('aggregate:nip11s')
     if(cachedMap ){
       nip11Map = new Map(decompress(cachedMap));

@@ -160,13 +160,13 @@
   {#if mode === 'compact'}
     <!-- Autosuggest Dropdown -->
     {#if state.showSuggestions && $searchResults.length > 0}
-      <div class="shadow-md absolute top-full left-0 right-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-black/5 dark:border-white/10">
+      <div class="shadow-md absolute top-full left-0 right-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-black/60 dark:border-white/10">
         {#each $searchResults as result, index}
           <div
             role="option"
             tabindex="0"
             aria-selected={index === state.selectedIndex}
-            class={`p-2 backdrop-blur-lg cursor-pointer hover:bg-gray-100/50 dark:hover:bg-gray-700/50 ${
+            class={`m-2 p-2 backdrop-blur-lg cursor-pointer overflow-hidden overflow-ellipsis dark:hover:bg-gray-700/50 ${
               index === state.selectedIndex ? 'bg-gray-200/50 text-black dark:bg-gray-700/50 dark:text-white' : ''
             }`}
             on:click={() => {
@@ -182,7 +182,7 @@
               }
             }}
           >
-            <strong class="text-sm"> {result.relay || "N/A"} </strong><br />
+            <strong class="text-lg"> {result.relay || "N/A"} </strong><br />
             <small class="text-sm italic text-white/50">{result.operatorPubkey || "N/A"}</small>
           </div>
         {/each}

@@ -81,7 +81,7 @@ export class UserService extends Service {
             { kinds: [1, 7], '#e': [note.id], '#p': [user.pubkey] },
             { kinds: [9734, 9321], '#e': [note.id] }
         ]
-        console.log('user note relatives', filters)
+        //console.log('user note relatives', filters)
         const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]
         const options: WebsocketAdapterOptions  = {
             cache: false,
@@ -99,7 +99,7 @@ export class UserService extends Service {
     }
 
     async meta(user: User): Promise<IEvent[] | boolean | undefined> {
-        console.log('user meta relays', user, this.userMetaRelays)
+        //console.log('user meta relays', user, this.userMetaRelays)
         const filter: Filter = {authors: [user.pubkey], kinds: [0, 10002]}
         const options: WebsocketAdapterOptions  = {
             cache: false,
@@ -116,7 +116,7 @@ export class UserService extends Service {
     }
 
     async fetch(args: UserFetchArgs): Promise<IEvent[]> {
-        console.log('user ffetch', args)
+        //console.log('user ffetch', args)
         return this._fetch(args);
     }
 

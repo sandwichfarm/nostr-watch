@@ -44,10 +44,10 @@
     }
 
     .search-container {
-        @apply ml-auto mr-4 w-64;
+        @apply ml-auto mr-4 w-96 backdrop-blur-lg;
     }
 
     search {
-        @apply block;
+        @apply block backdrop-blur-lg;
     }
 </style>

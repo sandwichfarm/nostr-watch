@@ -9,13 +9,18 @@ export const updateLastSync = () => {
     const now = Math.round(Date.now()/1000)
     lastCompleteSync.set(now)
     StateManager.set('lastCompleteSync', now)
+    console.log('!!! UPDATED LAST SYNC', now)
 }
 
 export const shouldSync = () => {
     const threshold = 60*60*30
     const timestamp = get(lastCompleteSync)
     const now = Math.round(Date.now()/1000)
-    if(threshold<now-timestamp)
+    if(threshold<(now-timestamp))
         return true;
     return false; 
+}
+
+export const hasBeenBoostrapped = (): boolean => {
+    return StateManager.get('lastCompleteSync')? true: false
 }

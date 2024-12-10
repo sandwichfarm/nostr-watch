@@ -16,26 +16,30 @@
 	import { activeMonitorChecksCount } from '$lib/stores';
 
 	let val: string='';
+    let countIntVal: ReturnType<typeof setInterval>;
 
     StateManager.on('monitor:update:lastActive', (value: any) => { console.log('monitor:lastActive', value) })
 
 	onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-        const activeMonitors = $nip66?.services?.monitors?.activeMonitors
-        if(activeMonitors?.length){
-            console.log('activeMonitors', activeMonitors)   
-            activeMonitors.forEach(async (monitor: Monitor) => {
-                console.log('activeMonitors monitor', monitor)
-                const count = await $nip66?.services.monitors?.countMonitorChecksFromCache(monitor.pubkey)
-                activeMonitorChecksCount.update((value: Record<string, number>) => {
-                    console.log('activeMonitors monitor value', value)
-                    return {
-                        ...value,
-                        [monitor.pubkey]: count
-                    }
-                })
-            })
-        }
+        // countIntVal = setInterval(() => {
+        //     const activeMonitors = $nip66?.services?.monitors?.activeMonitors
+        //     if(activeMonitors?.length){
+        //         activeMonitors.forEach(async (monitor: Monitor) => {
+        //             const count = await $nip66?.services.monitors?.countMonitorChecksFromCache(monitor.pubkey)
+        //             activeMonitorChecksCount.update((value: Record<string, number>) => {
+        //                 return {
+        //                     ...value,
+        //                     [monitor.pubkey]: count
+        //                 }
+        //             })
+        //         })
+        //     }
+        // }, 30000);
+    });
+
+    onDestroy(() => {
+        clearInterval(countIntVal);
     });
 
     $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: any) => { return !monitor.active && monitor.enabled }).length;

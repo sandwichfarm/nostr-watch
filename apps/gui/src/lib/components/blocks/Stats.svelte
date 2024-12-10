@@ -10,6 +10,7 @@
         monitors
     } from '$lib/stores/index.js';
 	import { StateManager } from '@nostrwatch/nip66';
+	import { hasBeenBoostrapped } from '$lib/stores/app';
 
     let eventsCount = StateManager.get('count:events:checks');
 
@@ -25,7 +26,7 @@
     $: versionsClass = $versions && $versions.length > 0 ? 'faded' : '';
     $: ispsClass = $isps && $isps.length > 0 ? 'faded' : '';
 </script>
-
+{#if hasBeenBoostrapped() || $eventsArray.length}
 <div id="stats-bar">
     <span class={monitorsClass}>
         <span>Monitors</span>
@@ -41,7 +42,7 @@
     </span>
     <span class={nip11sClass}>
         <span>NIP11s</span>
-        <span>{Array.from($nip11s || [], ([name, value]) => ({ name, value })).length}</span>
+        <span>{Array.from($nip11s || []).length}</span>
     </span>
     <span class={geocodesClass}>
         <span>Countries</span>
@@ -60,6 +61,7 @@
         <span>{$isps?.length}</span>
     </span>
 </div>
+{/if}
 
 <style>
     @keyframes fadeIn {

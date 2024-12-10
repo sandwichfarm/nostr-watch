@@ -11,6 +11,7 @@
     import type Nip66 from '@nostrwatch/nip66';
 	import { onMount } from 'svelte';
 	import { eventKey } from '$lib/utils/event-keys';
+	import { activeMonitorChecksCount } from '$lib/stores';
 
     export let data: any;
     export let view: 'head' | 'cell' = 'cell';
@@ -41,6 +42,15 @@
             else {
                 monitor.enable()
                 addEventsToStore(await $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey) || []);
+                await $nip66?.services.monitors?.countMonitorChecksFromCache(monitor.pubkey).then( (count: number) => {
+                    activeMonitorChecksCount.update((value: Record<string, number>) => {
+                        return {
+                            ...value,
+                            [monitor.pubkey]: count
+                        }
+                    })
+                })
+
             }
             disabled.set(false);
         }
@@ -52,7 +62,7 @@
 {#if view === 'cell'}
     <Table.Cell>
         {#if monitor?.pubkey}
-        <Checkbox id="toggle-${monitor.pubkey.slice(0,21)}" bind:checked aria-labelledby="terms-label" onCheckedChange={toggleEnableMonitor} />
+        <Checkbox disabled={$disabled} id="toggle-${monitor.pubkey.slice(0,21)}" bind:checked aria-labelledby="terms-label" onCheckedChange={toggleEnableMonitor} />
         {/if}
     </Table.Cell>
 {:else}

@@ -31,13 +31,9 @@
         }
         userService.set(new UserService(instance.adapters));
         if(!$userService) return console.warn('user service does not exist.');
-        console.log('user pubkey', pubkey)
         user = $userService.userFromPubkey(pubkey);  
-        console.log(user)
         await user.ready();
-        console.log('user feed: user', user)
-        await $userService.feed(user, 100).then( (data: UserFeed) => {
-            console.log('user feed: data', data)    
+        await $userService.feed(user, 100).then( (data: UserFeed) => {  
             feed.set(data);
         });
         userService.set($userService);

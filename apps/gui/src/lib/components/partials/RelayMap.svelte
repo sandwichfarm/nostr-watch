@@ -69,7 +69,7 @@
     }
   
     const setRelayMapPoint = async(): Promise<void> => {
-      console.log('relay aggregate', aggregate)
+      //console.log('relay aggregate', aggregate)
       if(!aggregate?.dd?.lat) return console.warn('Reglay aggregate does not have any geodata.')
       relayMapPoint.set({ 
         id: 'relay', 
@@ -85,7 +85,7 @@
       const monitorCheck: Nip66Event = checks.find( check => check.pubkey === monitor.pubkey )
       const rtt = monitorCheck?.rtt || undefined
 
-      console.log('monitor data', monitor, monitor.pubkey, dd, monitorCheck, rtt)
+      //console.log('monitor data', monitor, monitor.pubkey, dd, monitorCheck, rtt)
       if(!dd || !rtt || !monitorCheck) return console.warn(`${monitor.pubkey} could not find data...`)
   
       const point: MapPoint = { 
@@ -132,7 +132,7 @@
   
         const areas: any[] = []
 
-        console.log(areas, points, links)
+        //console.log(areas, points, links)
   
         return {
           areas,
@@ -145,7 +145,7 @@
     const resetMonitors = async (): Promise<void> => {
       monitorMapPoints.set([])
       monitorLinks.set([])
-      console.log(updateMapData())
+      //console.log(updateMapData())
     }
   
     const setMapPoints = async (): Promise<void> => {
@@ -164,7 +164,7 @@
         label: 'you',
         radius: 10
       })
-      console.log(currentUserPoint)
+      //console.log(currentUserPoint)
       if($currentUserPoint.id && $relayMapPoint.id) {
         currentUserLink.set({
           source: $relayMapPoint.id,
@@ -178,7 +178,7 @@
     }
 
     const init = () => {
-      console.log('RelayMap Hydrated')
+      //console.log('RelayMap Hydrated')
       ready = true
       setMapPoints()
     }
@@ -205,38 +205,13 @@
 
     
     onMount( () => {
-      // init()  
+      init()  
     })
   </script>
 
   {#if ready === true}
-    <!-- <Geolocation
-      getPosition="{getPosition}"
-      let:coords
-      let:loading
-      let:success
-      let:error
-      let:notSupported
-      on:position="{(e) => addUserLocationToMap(e)}"
-    >
-      {#if notSupported}
-        Your browser does not support the Geolocation API.
-      {:else}
-        {#if loading}
-          Loading...
-        {/if}
-        {#if success}
-          {JSON.stringify(coords)}
-        {/if}
-        {#if error}
-          An error occurred. {error.code} {error.message}
-        {/if}
-      {/if}
-    </Geolocation> -->
-
-    <!-- {#if monitors.length && checks.length} -->
     <div class="relative pt-0">
-      <VisSingleContainer data={$data} class="map-light dark:map-dark">
+      <VisSingleContainer data={$data} class="map-light dark:map-dark w-full h-[500px]">
         <VisTopoJSONMap 
           topojson={WorldMapTopoJSON} 
           disableZoom={true}

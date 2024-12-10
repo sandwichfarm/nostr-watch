@@ -100,6 +100,8 @@ export const instance = async (instance?: Nip66): Promise<Nip66> => {
 
     loadMonitorsFromCache(nip66Instance);
 
+    await nip66Instance.ready();
+
     nip66.set(nip66Instance);
     return nip66Instance;
 };
@@ -108,14 +110,14 @@ export const loadMonitorsFromCache = (nip66Instance: Nip66) => {
     const monitors = StateManager.get('cache:monitors')
     console.log('Loading monitors from cache:', monitors);
     if(monitors) {
-        nip66Instance.monitorService.loadMonitors(monitors);
+        nip66Instance?.services?.monitors?.loadMonitors(monitors);
     }
 }
 
 export const bootstrapMonitorData = async (_instance?: Nip66) => {
     const nip66Instance = await instance(_instance);
     bindBootstrapEmitters(nip66Instance);
-    await nip66Instance.monitorService.bootstrapMonitors();
+    await nip66Instance?.services?.monitors?.bootstrapMonitors();
 }
 
 export const bootstrapMonitorChecks = async (_instance?: Nip66) => {
@@ -126,15 +128,22 @@ export const bootstrapMonitorChecks = async (_instance?: Nip66) => {
 
 export const bootstrap = async (_instance?: Nip66) => {
     const $nip66 = await instance(_instance);
+    await $nip66.ready();
+    
     bindBootstrapEmitters($nip66);
     if(shouldSync()){
-        await $nip66?.services?.monitors?.bootstrap();
-        updateLastSync()
+        $nip66?.services?.monitors?.bootstrap().then( () => updateLastSync() )
     }
     else {
+        //TODO: Send ready event from Cache Adapter Worker wait on Adapter ready.
+        // await $nip66?.adapters?.cache.ready();
+        await new Promise( (resolve) => setTimeout(resolve, 1000) ) 
         console.log('skipping full sync')
         $nip66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
-            addEventsToStore(await $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey) || []);
+            console.log('loading from cache', monitor.pubkey)
+            const fromCache = await $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey)
+            console.log('loaded from cache', fromCache)
+            addEventsToStore(fromCache || []);
         })
     }
 };

@@ -219,21 +219,23 @@ export class MonitorService extends Service {
   }
 
   async bootstrap(): Promise<void> {
-    //console.log('bootstrap');
-    // if(this.monitorsArray?.length > 0) {
-    //   await this.quickStrap();
-    // }
     await this.bootstrapMonitors();
-    await this.fetchMonitorsChecks();
-    //console.log('FETCHING DISABLED MONITORS')
-    // await this.fetchMonitorsChecks({
-    //   cache: true,
-    //   returnResults: false, 
-    //   keepAlive: false,
-    //   stream: false,
-    //   batch: 100
-    // }, false)
-    //console.log('bootstrapMonitorChecks complete');
+    await this.fetchMonitorsChecks().then( async () => {
+      console.log('!!! FETCH MONITORS CHECKS RESOLVED') 
+      // this.fetchDisabledMonitorsChecks().then( () => { 
+      //   console.log('!!! FETCH DISABLED MONITORS CHECKS RESOLVED') 
+      // });
+    });
+  }
+
+  async fetchDisabledMonitorsChecks(): Promise<IEvent[] | boolean | undefined> {
+    return this.fetchMonitorsChecks({
+      cache: true,
+      returnResults: false, 
+      keepAlive: false,
+      stream: false,
+      batch: 20
+    }, false)
   }
 
   async countMonitorChecksInCache(enabled?: boolean): Promise<Map<string, number>> {
@@ -253,13 +255,7 @@ export class MonitorService extends Service {
     await Promise.allSettled(promises);
     return result;
   }
-
-  // async quickStrap(): Promise<void> {
-  //   //console.log('quickStrap: monitorsArray.length > 0');
-  //   const res = await this.fetchMonitorsChecks();
-  //   //console.log('quickStrap: bootstrapMonitorChecks complete', res);
-  // }
-
+  
   async fetchMonitorRegistrations(): Promise<void> {
     const onevent = (event: IEvent) => {
         if(event.kind !== 10166) return;
@@ -326,12 +322,10 @@ export class MonitorService extends Service {
     let count = 0;
     const onevent = (event: IEvent) => {
       count++;
-      console.log(`MonitorService: fetchMonitorsChecks: event: ${event.kind} count: ${count}`);
       StateManager.emit(`event`, event);
       // StateManager.emit(`event:${event.kind}`, event);
     };
     const onevents = (events: IEvent[]) => {
-      console.log(`MonitorService: fetchMonitorsChecks: count: ${events.length}`);
       StateManager.emit(`events`, events);
     };
     const relays = this.nip66Relays;
@@ -341,7 +335,6 @@ export class MonitorService extends Service {
     else {
       options = {...defaultOptions, ...options}
     }
-    console.log(`MonitorService: fetchMonitorsChecks: filters: ${filters.length} relays: ${relays.length} options: ${JSON.stringify(options)}`);
     const result: IEvent[] | boolean | undefined = await this.sync( { relays, filters, options: options as WebsocketAdapterOptions }, { onevent, onevents } );
     // StateManager.emit('bootstrap:checks:complete')
     return result;
@@ -477,7 +470,7 @@ export class MonitorService extends Service {
       monitors = this.enabledMonitors?.length > 0? this.enabledMonitors: this.sortedMonitors.slice(0, 3);
     }
     else if(typeof enabled === 'boolean') {
-      monitors = enabled? this.enabledMonitors: this.disabledMonitors;
+      monitors = enabled? this.enabledMonitors: this.disabledActiveMonitors;
     }
     let filters: Filter[] = [];
     const until = Math.round(Date.now()/1000);

@@ -79,15 +79,15 @@ export class Service {
 
   async fetchFromCache(filters: Filter[], callbacks?: SubscribeHandlers): Promise<IEvent[]> {
       let cacheEvents: IEvent[] = [];
-      let highestTimestampPerPubkey: Map<string, number> = new Map();
+      // let highestTimestampPerPubkey: Map<string, number> = new Map();
       cacheEvents = await this.cacheAdapter.REQ(filters);
-      highestTimestampPerPubkey = cacheEvents.reduce((acc, event) => {
-          const timestamp = event.created_at as number;
-          if (!acc.has(event.pubkey) || acc.get(event.pubkey)! < timestamp) {
-              acc.set(event.pubkey, timestamp);
-          }
-          return acc;
-      }, new Map<string, number>());
+      // highestTimestampPerPubkey = cacheEvents.reduce((acc, event) => {
+      //     const timestamp = event.created_at as number;
+      //     if (!acc.has(event.pubkey) || acc.get(event.pubkey)! < timestamp) {
+      //         acc.set(event.pubkey, timestamp);
+      //     }
+      //     return acc;
+      // }, new Map<string, number>());
 
       if (callbacks?.onevents) {
           callbacks.onevents(cacheEvents);

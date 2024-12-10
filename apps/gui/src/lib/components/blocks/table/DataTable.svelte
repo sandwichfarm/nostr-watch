@@ -68,13 +68,8 @@
             if (!$tableData.data || !$tableData.columns || $tableData.columns.length === 0) {
                 return { data: [], columns: [] };
             }
-
             const currentRelayFilters: ConsoleFilter[] = createRelayFilters($tableData.data, filtersInclude, humanReadableNames);
-
             const filteredData = applyFilters($tableData.data, $filters, currentRelayFilters);
-
-            console.log('Filtered Data Count:', filteredData.length);
-
             return { data: filteredData, columns: $tableData.columns };
         }
     );
@@ -90,7 +85,6 @@
         globalFilter = value;
         if (tableInstance) {
             tableInstance.globalFilter = value;
-            // tableInstance.refresh(); // Assuming 'refresh' re-renders the table
         }
     }
 
@@ -100,9 +94,6 @@
             if (!$tableData.data || !$tableData.columns || $tableData.columns.length === 0 || !tableRowStyler) {
                 return new Map();   
             }
-            
-            
-
             const map: Map<string, string> = new Map();
             $tableData.data.forEach((row: any) => {
                 map.set(row.id, tableRowStyler(row));
@@ -134,8 +125,6 @@
             unsubTable();
             unsubRPP();
             if (tableInstance) {
-                console.log('Destroying DataTable instance on component unmount.');
-                // tableInstance.destroy();
                 tableInstance = null;
             }
         };

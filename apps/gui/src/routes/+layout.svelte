@@ -6,16 +6,17 @@
   import { doBootstrap } from '$lib/stores/routines.js';
 
   import Header from '$lib/components/blocks/Header.svelte';
-	import { shouldSync } from '$lib/stores/app';
     // import { bootstrap, destroy } from '$lib/utils/lifecycle.js';
 
     const { data, children } = $props();
     let unsubscribe: () => any = () => {};
 
-    doBootstrap.subscribe((value: boolean) => {
+    let busy = false
+
+    doBootstrap.subscribe(async (value: boolean) => {
         const newValue = value 
         if($doBootstrap === false && newValue === true) {
-            loadData()
+          loadData()
         }
         doBootstrap.set(value)
         console.log(`doBootstrap ${value}`)
@@ -24,7 +25,11 @@
     onDestroy(unsubscribe);
 
     const loadData = async () => {
-        (await import('$lib/utils/lifecycle.js')).bootstrap();
+      if(!busy) {
+        busy = true
+        await (await import('$lib/utils/lifecycle.js')).bootstrap();
+        busy = false
+      }
     }
 
     onMount(async () => {
@@ -41,7 +46,7 @@
         }
         
         if(!$doBootstrap || ['/note/', '/relays/', '/preferences/'].includes($page.url.pathname)) return console.log('Skipping bootstrap');
-        await loadData();
+        loadData();
     });
 </script>
 

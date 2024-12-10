@@ -44,10 +44,20 @@
     const activateTab = (tab: string) => {
         activeTab.set(tab)
     }
-
     
     const existingChecks: Readable<Nip66Event[]> = derived(eventsArray, $eventsArray => {
-        return $eventsArray.filter( event => event?.relay && new URL(event.relay).toString() === new URL(relayUrl).toString() )
+        return $eventsArray.filter( event => {
+            let result: boolean = false;
+            try {
+                result = event?.relay && new URL(event.relay).toString() === new URL(relayUrl).toString() 
+            }
+            catch(e: any){
+                return result
+            }
+            finally {
+                return result
+            }
+        })
     });
 
     const checks: Readable<Nip66Event[]> = derived(
@@ -114,8 +124,8 @@
         if(!res) return 
         const [data, mons] = res;
         freshChecks.set(data);
-        console.log('typeof total checks', typeof data,  data.length, data)
-        console.log('typeof mons', typeof mons, mons)
+        //console.log('typeof total checks', typeof data,  data.length, data)
+        //console.log('typeof mons', typeof mons, mons)
         monitors.set(Array.from(mons?.values() || new Set()))
         currentRelay = relayUrl;
         await loadNip11()
@@ -125,11 +135,11 @@
 
     const loadNip11 = async () => {
         await $nip11Service.check( relayUrl )
-        console.log('nip11', )
+        //console.log('nip11', )
         nip11sLocal.subscribe( ($n11s: any) => {
             if(operatorPubkey) return;
             const nip11arr = $n11s.get(relayUrl) || [];
-            console.log('nip11arr', nip11arr)
+            //console.log('nip11arr', nip11arr)
             if(nip11arr?.length) {
                 for(const n11 of nip11arr){
                     nip11sLocal.set(n11)
@@ -221,7 +231,7 @@
     $: if (relayUrl !== currentRelay) {
         loadRelayData().then(() => {
             StateManager.emit(`${relayUrl}:hydrated`)
-            console.log('load relay + load monitors')
+            //console.log('load relay + load monitors')
         });
     }
 
@@ -278,9 +288,9 @@
             <Tabs.List class="w-full rounded-none px-10 py-7">
                 <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
                 <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
-                <Tabs.Trigger value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
-                <Tabs.Trigger value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
-                <Tabs.Trigger value="feed" class="text-lg flex-grow" on:click={() => activateTab('feed')}>Feed</Tabs.Trigger>
+                <Tabs.Trigger disabled={$nip11? false: true}  value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
+                <Tabs.Trigger disabled={operatorPubkey? false: true} value="operator-feed" class="text-lg flex-grow" on:click={() => activateTab('operator-feed')}>Feed</Tabs.Trigger>
+                <Tabs.Trigger disabled={true} value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
             </Tabs.List>
              <div class="p-4">
             <Tabs.Content value="overview">
@@ -317,7 +327,7 @@
 
             </Tabs.Content>
             <Tabs.Content value="checks">
-                <RelayChecks checks={$checks} />
+                <RelayChecks relay={relayUrl} monitors={$monitors} checks={$checks} aggregate={$relayAggregate} />
             </Tabs.Content>
             <Tabs.Content value="audit">
     
@@ -325,8 +335,8 @@
             <Tabs.Content value="nip11">
                 <pre class="py-6 px-8 bg-white/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>
             </Tabs.Content>
-            <Tabs.Content value="feed">
-                {#if operatorPubkey && $activeTab === 'feed'}
+            <Tabs.Content value="operator-feed">
+                {#if operatorPubkey && $activeTab === 'operator-feed'}
                     <OperatorFeed pubkey={operatorPubkey} />
                 {/if}
             </Tabs.Content>

@@ -184,10 +184,10 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       result,
       hash: hash as string
     }
-    if(cache) {
+    if(cache === true) {
       this.send({to: 'cache', args: response})
     }
-    if(returnResults){
+    if(returnResults === true){
       this.send({to: 'adapter', args: response})
     }
   }

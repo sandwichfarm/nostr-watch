@@ -16,10 +16,10 @@ export class User {
         if(service){
             this.#service = service;
             this.initialize();
-            console.log('User initialized with service');
+            //console.log('User initialized with service');
         }
         else {
-            console.log('User initialized without service');
+            //console.log('User initialized without service');
             this.#ready = true;
         }
     }
@@ -31,7 +31,7 @@ export class User {
                 if( meta.kind === 0) this.#profile = new PubkeyProfile(meta);
                 if( meta.kind === 10002 ) this.#relays = new PubkeyRelays(meta);
             }
-            console.log('user initialize', metas);
+            //console.log('user initialize', metas);
             this.#ready = true;
         })
     }

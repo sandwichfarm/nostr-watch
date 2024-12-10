@@ -82,8 +82,6 @@
         }
     );
 
-
-
     const relayAggregate: Readable<any | undefined> = derived(checks, ($checks) => {
         let aggregate = relayCheckAggregator($checks)
         if(aggregate) {
@@ -180,22 +178,10 @@
     $: geocode = $relayAggregate?.geocode
     $: dd = $relayAggregate?.dd
     $: isp = $relayAggregate?.isp
-    $: name = $nip11?.name ?? 
-        $relayAggregate?.name?
-            $relayAggregate.name:
-            null;
-    $: description = $nip11?.description ?? 
-        $relayAggregate?.description?
-            $relayAggregate.description:
-            null;
-    $: banner = $nip11?.description ?? 
-        $relayAggregate?.banner?
-            $relayAggregate.banner:
-            null;
-    $: icon = $nip11?.icon ?? 
-        $relayAggregate?.icon?
-            $relayAggregate.icon:
-            null;
+    $: name = $nip11?.name? $nip11.name: null;
+    $: description = $nip11?.description? $nip11?.description:  null;
+    $: banner =  $nip11?.banner? $nip11.banner:  null;
+    $: icon = $nip11?.icon? $nip11.icon: null;
     $: operatorPubkey = 
         $nip11?.pubkey && $nip11.pubkey.length && isHex($nip11.pubkey)? 
             $nip11.pubkey: 
@@ -289,7 +275,7 @@
                 <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
                 <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
                 <Tabs.Trigger disabled={$nip11? false: true}  value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
-                <Tabs.Trigger disabled={operatorPubkey? false: true} value="operator-feed" class="text-lg flex-grow" on:click={() => activateTab('operator-feed')}>Feed</Tabs.Trigger>
+                <Tabs.Trigger disabled={operatorPubkey? false: true} value="operator-feed" class="text-lg flex-grow" on:click={() => activateTab('operator-feed')}>Operator Feed</Tabs.Trigger>
                 <Tabs.Trigger disabled={true} value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
             </Tabs.List>
              <div class="p-4">

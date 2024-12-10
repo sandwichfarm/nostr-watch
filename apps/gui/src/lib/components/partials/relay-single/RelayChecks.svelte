@@ -48,8 +48,9 @@
 <div class="flex">
     <div class="w-1/4 border-r overflow-y-auto">
         <button class="block w-full py-3 px-3 text-left {$showMap? 'bg-white/10': ''}" on:click={toggleMap}>
-            🌎 <span class="inline-block">
-                View Map
+            <span class="inline-block">
+                <span class="inline-block text-2xl mr-2">🌎</span>
+                <span class="relative -top-1"> Map</span>
             </span> 
         </button>
         {#each validChecks as check}
@@ -66,7 +67,6 @@
 
     <div class="flex-1 overflow-y-auto p-4">
         {#if $showMap}
-        map
             <RelayMap {checks} {relay} {monitors} {aggregate} />
         {:else}    
             {#if $selectedCheck}

@@ -48,7 +48,7 @@ export class SyncStateManager {
         const key = this.keyHelper.generateKey('lastSync', kind, rangeKey);
         const returnedValue = this.localStorage.getItem(key);
         const value = parseInt(returnedValue || '0');
-        console.log(`getLastSyncValue: ${key} -> ${returnedValue} === ${value}`);
+        //console.log(`getLastSyncValue: ${key} -> ${returnedValue} === ${value}`);
         return value;
     }
   }

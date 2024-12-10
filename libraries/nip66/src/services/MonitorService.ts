@@ -28,9 +28,9 @@ export class MonitorService extends Service {
   }
 
   async init(): Promise<void> {
-    console.log('MonitorService init');
+    //console.log('MonitorService init');
     await this?.cacheAdapter?.ready();
-    console.log('cacheadapter ready')
+    //console.log('cacheadapter ready')
     this._ready = true;
   }
 
@@ -111,13 +111,13 @@ export class MonitorService extends Service {
     args.sync = true;
     const results = await this._fetch(args, { onevents, oneose, onevent });
     this.updateCheckpoints(args?.filters || [], checkCounts);
-    console.log(`sync complete: ${results.length} events`);
+    //console.log(`sync complete: ${results.length} events`);
     return results;
   }
 
   updateCheckpoint(filter: Filter, counts: Map<string, number>): void {
     const { authors, kinds, since, until } = filter;
-    console.log(`updateCheckpoints: authors: ${authors} kinds: ${kinds} since: ${since} until: ${until}`);
+    //console.log(`updateCheckpoints: authors: ${authors} kinds: ${kinds} since: ${since} until: ${until}`);
     for(const pubkey of authors! || []){
       const monitor = this.monitors.get(pubkey);
       if (!monitor) {
@@ -140,7 +140,7 @@ export class MonitorService extends Service {
   }
 
   updateCheckpoints(filters: Filter[], counts: Map<string, number>): void {
-    console.log(`updateCheckpoints`, filters.length);
+    //console.log(`updateCheckpoints`, filters.length);
     for (const filter of Array.from(filters)) {
       this.updateCheckpoint(filter, counts)
     }    
@@ -150,20 +150,20 @@ export class MonitorService extends Service {
     return filters.map((filter) => {
       const { authors, kinds, since:requestedSince, until:requestedUntil } = filter;
       for(const pubkey of authors || []) {
-        console.log(`modifyCacheFilters: pubkey: ${pubkey}`);
+        //console.log(`modifyCacheFilters: pubkey: ${pubkey}`);
         const monitor = this.monitors.get(pubkey);
         for(const kind of kinds || []) {
-          console.log(`modifyCacheFilters: kind: ${kind}`);
+          //console.log(`modifyCacheFilters: kind: ${kind}`);
           const cachedRange = monitor?.getLastSync(kind);
-          console.log(`modifyCacheFilters: cachedRange: ${JSON.stringify(cachedRange)}`);
+          //console.log(`modifyCacheFilters: cachedRange: ${JSON.stringify(cachedRange)}`);
           if(cachedRange?.since){
             if(requestedSince && cachedRange.since < requestedSince) {
-              console.log(`modifyCacheFilters: since before: ${filter.since} since after: ${cachedRange.since} requested: ${requestedSince} `);
+              //console.log(`modifyCacheFilters: since before: ${filter.since} since after: ${cachedRange.since} requested: ${requestedSince} `);
               filter.since = cachedRange.since;
             }
           }
           else {
-            console.log(`modifyCacheFilters: no cached range for kind: ${kind}`);
+            //console.log(`modifyCacheFilters: no cached range for kind: ${kind}`);
           }
         }
       }
@@ -176,19 +176,19 @@ export class MonitorService extends Service {
     return filters.map((filter) => {
       const { authors, kinds, since:requestedSince, until:requestedUntil } = filter;
       for(const pubkey of authors || []) {
-        console.log(`modifyWebsocketFilters: pubkey: ${pubkey}`);
+        //console.log(`modifyWebsocketFilters: pubkey: ${pubkey}`);
         const monitor = this.monitors.get(pubkey);
         for(const kind of kinds || []) {
-          console.log(`modifyWebsocketFilters: kind: ${kind}`);
+          //console.log(`modifyWebsocketFilters: kind: ${kind}`);
           const cachedRange = monitor?.getLastSync(kind);
-          console.log(`modifyWebsocketFilters: cachedRange: ${JSON.stringify(cachedRange)}`);
+          //console.log(`modifyWebsocketFilters: cachedRange: ${JSON.stringify(cachedRange)}`);
           if(cachedRange?.until){
             if(requestedSince && cachedRange.until > requestedSince) {
-              console.log(`modifyWebsocketFilters: since before: ${filter.since} since after: ${cachedRange.until} requested: ${requestedSince} `);
+              //console.log(`modifyWebsocketFilters: since before: ${filter.since} since after: ${cachedRange.until} requested: ${requestedSince} `);
               filter.since = cachedRange.until;
             }
             else {
-              console.log(`modifyWebsocketFilters: since unchanged`);
+              //console.log(`modifyWebsocketFilters: since unchanged`);
             }
           }
         }
@@ -198,33 +198,33 @@ export class MonitorService extends Service {
   }
 
   async bootstrapMonitors(): Promise<void> {
-    console.log('bootstrapMonitors'); 
+    //console.log('bootstrapMonitors'); 
     await this.fetchMonitorRegistrations();
-    console.log('bootstrapMonitorRegistrations complete');
+    //console.log('bootstrapMonitorRegistrations complete');
     await this.fetchMonitorMeta();
-    console.log('bootstrapMonitorMeta complete');
+    //console.log('bootstrapMonitorMeta complete');
     await this.ensureMonitorsActive();
-    console.log('ensureMonitorsActive complete');
+    //console.log('ensureMonitorsActive complete');
     // this.prioritizeMonitors();
-    // console.log('prioritizeMonitors complete');
+    // //console.log('prioritizeMonitors complete');
   }
 
   async bootstrap(): Promise<void> {
-    console.log('bootstrap');
+    //console.log('bootstrap');
     // if(this.monitorsArray?.length > 0) {
     //   await this.quickStrap();
     // }
     await this.bootstrapMonitors();
     await this.fetchMonitorsChecks();
-    console.log('FETCHING DISABLED MONITORS')
-    await this.fetchMonitorsChecks({
-      cache: true,
-      returnResults: false, 
-      keepAlive: false,
-      stream: false,
-      batch: 100
-    }, false)
-    console.log('bootstrapMonitorChecks complete');
+    //console.log('FETCHING DISABLED MONITORS')
+    // await this.fetchMonitorsChecks({
+    //   cache: true,
+    //   returnResults: false, 
+    //   keepAlive: false,
+    //   stream: false,
+    //   batch: 100
+    // }, false)
+    //console.log('bootstrapMonitorChecks complete');
   }
 
   async countMonitorChecksInCache(enabled?: boolean): Promise<Map<string, number>> {
@@ -245,11 +245,11 @@ export class MonitorService extends Service {
     return result;
   }
 
-  async quickStrap(): Promise<void> {
-    console.log('quickStrap: monitorsArray.length > 0');
-    const res = await this.fetchMonitorsChecks();
-    console.log('quickStrap: bootstrapMonitorChecks complete', res);
-  }
+  // async quickStrap(): Promise<void> {
+  //   //console.log('quickStrap: monitorsArray.length > 0');
+  //   const res = await this.fetchMonitorsChecks();
+  //   //console.log('quickStrap: bootstrapMonitorChecks complete', res);
+  // }
 
   async fetchMonitorRegistrations(): Promise<void> {
     const onevent = (event: IEvent) => {
@@ -271,7 +271,7 @@ export class MonitorService extends Service {
   }
 
   async fetchMonitorMeta(): Promise<void> {
-    console.log('bootstrapMonitorMeta');
+    //console.log('bootstrapMonitorMeta');
     const monitors = [...this.array.map((m) => m.registration)].filter(registration => typeof registration !== 'undefined');
     const authors = monitors.map((monitor: MonitorRegistration) => monitor.pubkey as string);
     const onevent = this.manager.handleEvent.bind(this.manager);
@@ -317,10 +317,12 @@ export class MonitorService extends Service {
     let count = 0;
     const onevent = (event: IEvent) => {
       count++;
+      console.log(`MonitorService: fetchMonitorsChecks: event: ${event.kind} count: ${count}`);
       StateManager.emit(`event`, event);
       // StateManager.emit(`event:${event.kind}`, event);
     };
     const onevents = (events: IEvent[]) => {
+      console.log(`MonitorService: fetchMonitorsChecks: count: ${events.length}`);
       StateManager.emit(`events`, events);
     };
     const relays = this.nip66Relays;
@@ -330,6 +332,7 @@ export class MonitorService extends Service {
     else {
       options = {...defaultOptions, ...options}
     }
+    console.log(`MonitorService: fetchMonitorsChecks: filters: ${filters.length} relays: ${relays.length} options: ${JSON.stringify(options)}`);
     const result: IEvent[] | boolean | undefined = await this.sync( { relays, filters, options: options as WebsocketAdapterOptions }, { onevent, onevents } );
     // StateManager.emit('bootstrap:checks:complete')
     return result;
@@ -347,48 +350,73 @@ export class MonitorService extends Service {
   }
 
   async ensureMonitorsActive(pubkeys?: string | string[]): Promise<void> {
-    let monitors = [...this.array]
-    const until = Math.round(Date.now()/1000);
-    if(pubkeys) {
-      if(typeof pubkeys === 'string') pubkeys = [pubkeys];
+    const MAX_FILTERS = 10; //TODO: try to derive from NIP-11
+
+    let monitors = [...this.array];
+  
+    if (pubkeys) {
+      if (typeof pubkeys === 'string') pubkeys = [pubkeys];
       monitors = monitors.filter((m) => (pubkeys as string[]).includes(m.pubkey));
     }
+  
     const filters: Filter[] = [];
     const events: IEvent[] = [];
-    monitors.forEach(async (monitor) => {
-      filters.push({authors: [monitor.pubkey], limit: 1, until});
+    const until = Math.round(Date.now() / 1000);
+  
+    monitors.forEach((monitor) => {
+      filters.push({ authors: [monitor.pubkey], limit: 1, until });
     });
+  
+    const chunkArray = (arr: Filter[], size: number): Filter[][] => {
+      const chunks: Filter[][] = [];
+      for (let i = 0; i < arr.length; i += size) {
+        chunks.push(arr.slice(i, i + size));
+      }
+      return chunks;
+    };
+  
+    const filterChunks = chunkArray(filters, MAX_FILTERS);
+  
     const onevent = (event: IEvent) => {
+      console.log('MonitorService: ensureMonitorsActive:', `event: ${event.pubkey}`, `kind: ${event.kind}`);
       events.push(event);
     };
+  
     const callbacks: SubscribeHandlers = { onevent };
     const relays = this.nip66Relays;
-    await this.websocketAdapter.subscribe(
-      {
-        relays,
-        filters,
-        options: {
-          cache: false,
-          returnResults: true,
-          keepAlive: false,
-          stream: false,
+  
+    for (const filterChunk of filterChunks) {
+      await this.websocketAdapter.subscribe(
+        {
+          relays,
+          filters: filterChunk,
+          options: {
+            cache: true,
+            returnResults: true,
+            keepAlive: false,
+            stream: false,
+          },
         },
-      },
-      callbacks
-    );
+        callbacks
+      );
+    }
+
     for (const event of events) {
       const { pubkey, created_at } = event;
       const monitor = this.monitors.get(pubkey);
+      console.log('MonitorService: ensureMonitorsActive:', `pubkey: ${pubkey}`, 'monitor:', monitor);
       if (monitor?.registration) {
-        if(created_at)
-          monitor.lastActive = created_at;
-        }
+        if (created_at) monitor.lastActive = created_at;
+      }
     }
-  }
 
-  prioritizeMonitors(): void {
-    this.manager.prioritizeMonitors();
+    console.log('MonitorService: ensureMonitorsActive:', `active monitors: ${this.activeMonitors.length}`, `total monitors: ${this.array.length}`);
   }
+  
+
+  // prioritizeMonitors(): void {
+  //   this.manager.prioritizeMonitors();
+  // }
 
   optimizeFilters(filters: Filter[]): Filter[] {
     const filterMap: Map<string, Filter> = new Map();
@@ -501,7 +529,7 @@ export class MonitorService extends Service {
       console.warn('MonitorService getMonitorPubkeys: no monitors');
       return [];
     }
-    console.log(`total monitors in array: ${this.sortedMonitors.length}`)
+    //console.log(`total monitors in array: ${this.sortedMonitors.length}`)
     return this.sortedMonitors.map((monitor) => monitor.pubkey);
   }
 }

@@ -40,7 +40,7 @@ export class SurrealDbWorker extends AdapterCacheWorker implements IAdapterCache
 
     constructor( options: WorkerOptions ){
       super(options)
-      console.log('SurrealDbWorker constructor')
+      //console.log('SurrealDbWorker constructor')
     }
     async init(): Promise<void> {}
     async ready(): Promise<void> {}

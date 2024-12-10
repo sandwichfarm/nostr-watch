@@ -36,7 +36,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   protected _signalIsInternal: boolean = true;  
 
   constructor( options: NostrToolsWorkerOptions ){
-    console.log('NostrToolsWorker: constructor', options)
+    //console.log('NostrToolsWorker: constructor', options)
     super(options)
     const pool = new SimplePool();
     this._pool = pool
@@ -71,7 +71,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
-    console.log('NostrToolsWorker: _subscribe', request)
+    //console.log('NostrToolsWorker: _subscribe', request)
     return new Promise(async (resolve, reject) => {
       let { filters, relays, options, hash } = request;
       const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
@@ -107,7 +107,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           resolve(result)
         }
       }
-      console.log('NostrToolsWorker: _subscribe: this.pool.subscribeMany', effectiveRelays, filters)
+      //console.log('NostrToolsWorker: _subscribe: this.pool.subscribeMany', effectiveRelays, filters)
       const closer = this.pool!.subscribeMany(
         effectiveRelays,
         filters,
@@ -131,9 +131,9 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     const events = []
     let count = 0
     // const fetchPromises: Promise<IEvent[] | boolean>[] = [];
-    console.log(`running ${filters.length} fetches.`)
+    //console.log(`running ${filters.length} fetches.`)
     for (let filter of filters) {
-      console.log(`NostrToolsWorker: _fetch #${count}: filter`, filter)
+      //console.log(`NostrToolsWorker: _fetch #${count}: filter`, filter)
       events.push(await new Promise<IEvent[] | boolean>(async (resolve) => {
         const { since, until, ...remainingFilter } = filter;
         const range: Record<string, number> = {};
@@ -176,7 +176,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           resolve([]);
         }
       }));
-      console.log(`NostrToolsWorker: _fetch #${count}: complete`)
+      //console.log(`NostrToolsWorker: _fetch #${count}: complete`)
       count++
     }
     callbacks?.onclose?.();

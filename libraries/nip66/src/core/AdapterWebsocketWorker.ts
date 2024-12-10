@@ -72,7 +72,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   private batcher: Batcher<IEvent, WebsocketRequestBody>;
 
   constructor( options?: WorkerOptions ){
-    console.log ('AdapterWebsocketWorker', options)
+    //console.log ('AdapterWebsocketWorker', options)
     super(options)
     this.batcher = new Batcher<IEvent, WebsocketRequestBody>({
       maxLength: 100, 
@@ -104,14 +104,14 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   onMessage(request: WebsocketRequest = defaultWebsocketRequest){
-    console.log('AdapterWebsocketWorker: onMessage', request) 
+    //console.log('AdapterWebsocketWorker: onMessage', request) 
     const { use, args } = request
     if(use === 'subscribe'){
-      console.log('AdapterWebsocketWorker: onMessage: subscribe')
+      //console.log('AdapterWebsocketWorker: onMessage: subscribe')
       return this.subscribe(args)
     }
     if(use === 'fetch'){
-      console.log('AdapterWebsocketWorker: onMessage: fetch')
+      //console.log('AdapterWebsocketWorker: onMessage: fetch')
       return this.fetch(args)
     }
     console.warn('AdapterWebsocketWorker: onMessage: did not match any command')
@@ -134,7 +134,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   async subscribe( request: WebsocketRequestBody = defaultWebsocketRequestBody ){
-    console.log(`AdapterWebsocketWorker: subscribe`, request)
+    //console.log(`AdapterWebsocketWorker: subscribe`, request)
     const { hash, options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
@@ -143,8 +143,8 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     }
     const result = await this._subscribe(request, callbacks)
     if(!stream){
-      console.log(`AdapterWebsocketWorker: subscribe: preparing async response`)
-      console.log('AdapterWebsocketWorker: response', request, result)
+      //console.log(`AdapterWebsocketWorker: subscribe: preparing async response`)
+      //console.log('AdapterWebsocketWorker: response', request, result)
       this.requestAsyncReponse(request, result as IEvent[])
     }
   }
@@ -154,18 +154,18 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   async fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody){
-    console.log(`AdapterWebsocketWorker: fetch`, request)
+    //console.log(`AdapterWebsocketWorker: fetch`, request)
     const { hash, options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
     if(stream){
       callbacks = this.requestCallbacks(request);
     }
-    console.log('AdapterWebsocketWorker: fetch: calling this._fetch')
+    //console.log('AdapterWebsocketWorker: fetch: calling this._fetch')
     const result = await this._fetch(request, callbacks)
-    console.log('AdapterWebsocketWorker: fetch: result', result)
+    //console.log('AdapterWebsocketWorker: fetch: result', result)
     if(!stream){
-      console.log(`AdapterWebsocketWorker: fetch: preparing async response`)
+      //console.log(`AdapterWebsocketWorker: fetch: preparing async response`)
       this.requestAsyncReponse(request, result as IEvent[])
     }
   }
@@ -193,7 +193,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   batchResponse(events: IEvent[], state?: WebsocketRequestBody, id?: string){
-    console.log(`AdapterWebsocketWorker: batchResponse: ${id}`, events.length)
+    //console.log(`AdapterWebsocketWorker: batchResponse: ${id}`, events.length)
     if(!state) throw new Error('AdapterWebsocketWorker: batchResponse: state is undefined')
     this.respond(ResponseType.events, state, events)
   }
@@ -221,7 +221,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   requestAsyncReponse(request: WebsocketRequestBody, result: IEvent[]){
     const { hash, options } = request
     const { cache, returnResults } = options
-    console.log(`AdapterWebsocketWorker: requestAsyncReponse cache: ${cache} returnResults: ${returnResults}`)
+    //console.log(`AdapterWebsocketWorker: requestAsyncReponse cache: ${cache} returnResults: ${returnResults}`)
     let args: WebsocketResponseBody = {
       type: ResponseType.events, 
       result,

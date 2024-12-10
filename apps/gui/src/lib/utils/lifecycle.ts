@@ -11,9 +11,9 @@ import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 import type { Monitor } from "@nostrwatch/nip66/models"
 import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
 
-let $monitorsMap: Monitor;
+let $monitorsMap: Map<string, Monitor>;
 
-monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap= $m )
+monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
 
 export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
     const $nip05Service = get(nip05Service)
@@ -25,7 +25,7 @@ export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
     nip66Instance.on('monitor:update', (monitor: Monitor) => {
         monitorsMap.update((monitorsMap) => {
             const existing = monitorsMap.get(monitor.pubkey);
-            if (existing && existing.registration.created_at > monitor.registration.created_at) {
+            if (existing?.registration?.created_at && monitor?.registration?.created_at && existing.registration.created_at > monitor.registration.created_at) {
                 return monitorsMap;
             }
             const { pubkey } = monitor
@@ -64,7 +64,7 @@ export const bindLiveSubscriptionEmitters = (nip66Instance: any) => {
     }
     nip66Instance.on('event', (event: any) => {
         console.log('Svelte Received event:', event.id);
-        const key = eventKey(event);
+        const key = eventKey(egitvent);
         if (!key) return;
         events.update((currentEvents: Map<string, any>) => {
             const existing = currentEvents.get(key);

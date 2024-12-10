@@ -91,7 +91,7 @@ export class Sync {
     await Promise.allSettled([
       this.services.monitors.fetchMonitorMeta(),
       // this.services.monitors.prioritizeMonitors(MonitorPriority.Checks)
-      this.services.monitors.prioritizeMonitors()
+      // this.services.monitors.prioritizeMonitors()
     ])
   }
 

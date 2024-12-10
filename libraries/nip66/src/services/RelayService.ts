@@ -66,7 +66,7 @@ export class RelayService extends Service {
     let checks = await this.fetchRelayChecks(relay);
     if(!checks || !checks?.length) return;
     const monitors: Map<string, Monitor> | undefined = (await this.monitorInstancesFromChecks(checks)) as Map<string, Monitor>;
-    console.log('typeof monitors', typeof monitors, monitors);
+    //console.log('typeof monitors', typeof monitors, monitors);
     if(!monitors) return;
     checks = RelayService.removeOldChecks(monitors, checks);
     return [ checks, monitors ];

@@ -45,7 +45,7 @@ class DexieAdapter extends CacheAdapter implements ICacheAdapter {
 
   async init(): Promise<void> {
     await this.idb.init()
-    console.log('DexieAdapter init()')
+    //console.log('DexieAdapter init()')
   }
 
   get db(): RelayDb {

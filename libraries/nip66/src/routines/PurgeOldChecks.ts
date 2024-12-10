@@ -5,6 +5,6 @@ export class PurgeOldChecks extends Routine {
         super();
     }
     async run() {
-        console.log('PurgeOldChecks');
+        //console.log('PurgeOldChecks');
     }
 }

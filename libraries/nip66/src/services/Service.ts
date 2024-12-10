@@ -100,7 +100,7 @@ export class Service {
     }
     let cacheEvents: IEvent[] = [];
     let highestTimestampPerPubkey: Map<string, number> = new Map();
-    if(returnResults) {
+    // if(returnResults) {
       cacheEvents = await this.cacheAdapter.REQ(filters);
       highestTimestampPerPubkey = cacheEvents.reduce((acc, event) => {
         const timestamp = event.created_at as number;
@@ -119,7 +119,7 @@ export class Service {
         }
       }
       cacheEvents.forEach(maybeAddEventToMap);
-    }
+    // }
   
     const _callbacks: SubscribeHandlers = {};
   
@@ -140,13 +140,13 @@ export class Service {
     }
 
     if(sync){
-      filters = filters.map((filter: Filter) => {
-        const author = filter.authors?.[0]
-        if(!author) return filter;
-        filter.since = highestTimestampPerPubkey.get(author) || filter.since;
-        filter.until = Math.round(Date.now() / 1000);
-        return filter;
-      })
+      // filters = filters.map((filter: Filter) => {
+      //   const author = filter.authors?.[0]
+      //   if(!author) return filter;
+      //   filter.since = highestTimestampPerPubkey.get(author) || filter.since;
+      //   filter.until = Math.round(Date.now() / 1000);
+      //   return filter;
+      // })
     }
   
     const websocketEvents: IEvent[] = await this.websocketAdapter.fetch(

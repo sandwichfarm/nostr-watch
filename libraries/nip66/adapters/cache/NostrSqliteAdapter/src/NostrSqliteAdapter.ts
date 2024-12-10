@@ -23,7 +23,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
 
     constructor(worker?: Worker | URL) {
         super(worker)
-        // console.log('NostrSqliteAdapter constructor')
+        // //console.log('NostrSqliteAdapter constructor')
     }
 
     destroy(){
@@ -57,21 +57,21 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     async newWorker(): Promise<Worker | SharedWorker> {
         let worker;
         if(this.overloadWorker) {
-            console.log(`NostrSqliteAdapter: using overloadWorker`)
+            //console.log(`NostrSqliteAdapter: using overloadWorker`)
             worker = this.overloadWorker
         }
         else if(import.meta.env.DEV) {
-            console.log(`NostrSqliteAdapter: Instantiated new worker with URL in DEV mode`)
+            //console.log(`NostrSqliteAdapter: Instantiated new worker with URL in DEV mode`)
              /* @vite-ignore */
             worker = new Worker(new URL('./workers/nostrsqlite.worker.js', import.meta.url), { type: 'module' });
         } else {
-            console.log(`NostrSqliteAdapter: Instantiated new worker with URL in PROD mode`)
+            //console.log(`NostrSqliteAdapter: Instantiated new worker with URL in PROD mode`)
             worker = new Worker(
                 new URL("./workers/nostrsqlite.worker.js", import.meta.url),
                 { type: 'module' }
             );
         }
-        console.log('NostrSqliteAdapter: newWorker', worker)
+        //console.log('NostrSqliteAdapter: newWorker', worker)
         // if(!(worker instanceof Worker) && !(worker instanceof SharedWorker)) throw new Error('NostrSqliteAdapter: Worker is not a Worker or SharedWorker instance')
         if(worker instanceof SharedWorker) {
             worker.port.start()
@@ -82,11 +82,11 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     }
 
     async ready(): Promise<void> {
-        console.log('NostrSqlLite: awaiting ready')
+        //console.log('NostrSqlLite: awaiting ready')
         while(!this._ready) {
             await new Promise(resolve => setTimeout(resolve, 100))
         }
-        console.log('NostrSqlLite: ready')
+        //console.log('NostrSqlLite: ready')
     } 
 
     async addEvent(event: IEvent): Promise<void> {
@@ -108,7 +108,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     }
 
     async REQ(filters: ReqFilter[]): Promise<IEvent[]> {
-        // console.log(filters)
+        // //console.log(filters)
         const message: ReqCommand = ['REQ', this.subId, ...filters];
         let results = (await this.relay.query(message)) as unknown as IEvent[]
         return results

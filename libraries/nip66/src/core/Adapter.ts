@@ -101,7 +101,7 @@ export abstract class Adapter {
   }
 
   protected _onMessage(event: MessageEvent): void {
-    console.log(`[Adapter:${this.constructor.name}] i/i RECV: <- worker`, event.data)
+    //console.log(`[Adapter:${this.constructor.name}] i/i RECV: <- worker`, event.data)
     const message = event.data as AdapterMessage;
     this.listenPong(message)
     this.onMessage(message);
@@ -117,7 +117,7 @@ export abstract class Adapter {
 
   listenPong(command: AdapterWorkerCommand): void {
     if(command.type == 'pong') {
-      console.log(`[Adapter:${this.constructor.name}] i/i RECV: PONG <- worker`)
+      //console.log(`[Adapter:${this.constructor.name}] i/i RECV: PONG <- worker`)
     }
   }
   

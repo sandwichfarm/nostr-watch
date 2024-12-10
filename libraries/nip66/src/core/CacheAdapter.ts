@@ -164,7 +164,7 @@ export class CacheAdapter extends Adapter {
   }
 
   ping(): void {
-    console.log(`[CacheAdapter:${this.constructor.name}] o/o SEND: PING -> cacheWorker`)
+    //console.log(`[CacheAdapter:${this.constructor.name}] o/o SEND: PING -> cacheWorker`)
     if(this.workers?.cache instanceof Worker)
       this.workers?.cache?.postMessage({type: 'ping'})
     else if (this.workers?.cache instanceof SharedWorker)

@@ -7,7 +7,6 @@
     import { type Monitor } from "@nostrwatch/nip66/models"
 	
     import { monitorsSorted, monitorRows } from '$lib/stores/monitors.js';
-	export const prerender = true;
 
     import config from '$lib/config/monitors-config.js';
 	import { StateManager } from '@nostrwatch/nip66';

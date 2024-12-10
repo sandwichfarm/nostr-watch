@@ -5,6 +5,6 @@ export class PurgeInactiveMonitors extends Routine {
         super();
     }
     async run() {
-        console.log('PurgeInactiveMonitors');
+        //console.log('PurgeInactiveMonitors');
     }
 }

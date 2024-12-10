@@ -60,7 +60,7 @@ export class MonitorManager {
   }
 
   get activeMonitors(): Monitor[] {
-    return this.array.filter((monitor) => monitor.lastActive > 0 && monitor.priority >= 0);
+    return this.array.filter((monitor) => monitor.active);
   }
 
   get enabledMonitors(): Monitor[] {  
@@ -72,24 +72,7 @@ export class MonitorManager {
   }
 
   get sortedMonitors(): Monitor[] {
-    const sortedMonitors = MonitorManager.sortMonitorsByPriority(this.activeMonitors);
-    return sortedMonitors
-  }
-
-  get primary(): Monitor | undefined {
-    return this.array.find((monitor) => monitor.priority === 1);
-  }
-
-  get secondary(): Monitor | undefined {
-    return this.array.find((monitor) => monitor.priority === 2);
-  }
-
-  get tertiary(): Monitor | undefined {
-    return this.array.find((monitor) => monitor.priority === 3);
-  }
-
-  get quaternary(): Monitor | undefined {
-    return this.array.find((monitor) => monitor.priority === 4);
+    return this.sortMonitors();
   }
 
   get qualified(): Monitor[] {
@@ -117,7 +100,7 @@ export class MonitorManager {
     if (!monitor && kind === 10166) {
       monitor = new Monitor(event);
       this.monitors.set(pubkey, monitor);
-      console.log(`created new monitor for pubkey: ${pubkey}`);
+      //console.log(`created new monitor for pubkey: ${pubkey}`);
     } else if(!monitor) {
       console.warn(`Monitor not found for pubkey: ${pubkey}`);
       return;
@@ -130,8 +113,8 @@ export class MonitorManager {
       monitor.addRelays(event);
     }
     this.monitors.set(pubkey, monitor);
-    console.log(`did stuff for ${pubkey}`)
-    console.log(`total monitors: ${this.monitors.size}`);
+    //console.log(`did stuff for ${pubkey}`)
+    //console.log(`total monitors: ${this.monitors.size}`);
   }
 
   sortMonitors(priority: MonitorPriority = MonitorPriority.Checks, apply: boolean = false): Monitor[] {
@@ -161,7 +144,7 @@ export class MonitorManager {
       if (monitor.relays) score++;
       if (!monitor.active) score = 0; // Inactive monitors have a score of 0
 
-      console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`);
+      //console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`);
       scores[monitor.registration.pubkey] = score;
     });
 
@@ -203,14 +186,14 @@ export class MonitorManager {
   }
   
 
-  prioritizeMonitors(priority: MonitorPriority = MonitorPriority.Checks): void {
-    const monitors = this.sortMonitors(priority);
-    monitors.forEach((sortedMonitor, index) => {
-      sortedMonitor.priority = index + 1;
-    });
-  }
+  // prioritizeMonitors(priority: MonitorPriority = MonitorPriority.Checks): void {
+  //   const monitors = this.sortMonitors(priority);
+  //   monitors.forEach((sortedMonitor, index) => {
+  //     sortedMonitor.priority = index + 1;
+  //   });
+  // }
 
-  static sortMonitorsByPriority(monitors: Monitor[]): Monitor[] {
-    return monitors.filter(monitor => monitor.priority >= 0).sort((a, b) => a.priority - b.priority);
-  }
+  // static sortMonitorsByPriority(monitors: Monitor[]): Monitor[] {
+  //   return monitors.filter(monitor => monitor.priority >= 0).sort((a, b) => a.priority - b.priority);
+  // }
 }

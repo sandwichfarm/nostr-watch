@@ -42,7 +42,8 @@ export const monitors = derived(
 export const monitorsSorted = derived(
   monitors,
   ($monitors) => {
-    return MonitorManager.sortMonitorsByPriority($monitors);
+    return $monitors
+    // return MonitorManager.sortMonitorsByPriority($monitors);
   }
 );
 

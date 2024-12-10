@@ -20,8 +20,8 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
 
     constructor(options: WorkerOptions) {
         super(options);
-        console.log('NostrSqliteWorker', this.state)
-        console.log('NostrSqliteWorker constructor');
+        //console.log('NostrSqliteWorker', this.state)
+        //console.log('NostrSqliteWorker constructor');
         this._setupHandlers()
     }
 
@@ -30,11 +30,11 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
         if (this.state.messageChannel) {
             this.state.messageChannel.close();
         }
-        console.log('NostrSqliteWorker destroyed');
+        //console.log('NostrSqliteWorker destroyed');
     }
 
     async setup(command: AdapterWorkerMessage) {
-        console.log(`NostrSqliteWorker: setup()`, command);
+        //console.log(`NostrSqliteWorker: setup()`, command);
         const conf: InitAargs = {
             databasePath: "relay.db",
             insertBatchSize: this.state.insertBatchSize,
@@ -63,7 +63,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
             : this.mainThread as DedicatedWorkerGlobalScope;
     
         const onmessage = async (message: MessageEvent) => {
-            console.log(`NostrSqliteWorker: Received:`, message.data);
+            //console.log(`NostrSqliteWorker: Received:`, message.data);
             if (message.data.type === 'setup') {
                 await this.setup(message.data);
             } else {
@@ -72,10 +72,10 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
         };
 
         if (this.state.self instanceof DedicatedWorkerGlobalScope) {
-            console.log('Running in DedicatedWorkerGlobalScope');
+            //console.log('Running in DedicatedWorkerGlobalScope');
             this.state.self.onmessage = onmessage;
         } else if (this.state.self instanceof SharedWorkerGlobalScope) {
-            console.log('Running in SharedWorkerGlobalScope');
+            //console.log('Running in SharedWorkerGlobalScope');
             this.state.self.onconnect = (event: MessageEvent) => {
                 const port = event.ports[0];
                 port.onmessage = onmessage;
@@ -93,7 +93,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     }
 
     fromMainThread(ev: MessageEvent) {
-        console.log(`CacheWorker: From Main Thread:`, ev);
+        //console.log(`CacheWorker: From Main Thread:`, ev);
         if(this.state.relay) 
         this.relay(this.state, ev);
     }
@@ -103,7 +103,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     }
 
     async addEvents(nostrEvents: IEvent[]) {
-        console.log(`NostrSqliteWorker: relay.eventBatch() -> ${nostrEvents.length}`);
+        //console.log(`NostrSqliteWorker: relay.eventBatch() -> ${nostrEvents.length}`);
         this?.state?.relay?.eventBatch?.(nostrEvents);
     }
 }

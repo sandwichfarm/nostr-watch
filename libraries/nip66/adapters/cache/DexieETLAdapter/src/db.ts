@@ -102,8 +102,8 @@ export class RelayDb extends Dexie implements IRelayDb {
       this.open()
         .then(() => {
           const tables = this.tables
-          console.log('Database opened successfully');
-          console.log('Tables:', tables.map(table => table.name));  
+          //console.log('Database opened successfully');
+          //console.log('Tables:', tables.map(table => table.name));  
           resolve(tables);
         })
         .catch((err) => {

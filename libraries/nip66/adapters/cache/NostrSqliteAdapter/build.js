@@ -46,10 +46,10 @@ async function build() {
     if (watchMode) {
       const context = await esbuild.context(browserBuildOptions);
       await context.watch();
-      console.log('Watching for changes...');
+      //console.log('Watching for changes...');
     } else {
       await esbuild.build(browserBuildOptions);
-      console.log('Build completed successfully.');
+      //console.log('Build completed successfully.');
     }
   } catch (error) {
     console.error('Build failed:', error);
@@ -58,7 +58,7 @@ async function build() {
 }
 
 process.on('SIGINT', () => {
-  console.log('Terminating process...');
+  //console.log('Terminating process...');
   process.exit(0);
 });
 

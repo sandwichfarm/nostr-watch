@@ -17,12 +17,9 @@
 	import { relayScores } from '$lib/stores/score-relays-decentralization.js';
 
     import Badge from '$lib/components/ui/badge/badge.svelte';
-    import RelayInsights from '$lib/components/partials/relay-single/RelayInsights.svelte';
 	import RelayChecks from '$lib/components/partials/relay-single/RelayChecks.svelte';
     import OperatorFeed from '$lib/components/partials/relay-single/OperatorFeed.svelte';
     import * as Tabs from '$lib/components/ui/tabs';
-    import * as Card from '$lib/components/ui/card';
-	import Button from '$lib/components/ui/button/button.svelte';
 
     import Masonry from 'svelte-bricks'
 
@@ -73,7 +70,7 @@
                     }
                 });
             }
-            return Array.from(relayMap.values());
+            return Array.from(relayMap.values()).sort((a: Nip66Event, b: Nip66Event) => b.created_at - a.created_at);
         }
     );
 

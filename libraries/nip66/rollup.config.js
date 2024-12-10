@@ -117,7 +117,7 @@ export default [
       exclude: 'node_modules/**',
       clearScreen: false
     },
-    // onwarn
+    onwarn
   },
   {
     treeshake: true,

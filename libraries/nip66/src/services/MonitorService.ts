@@ -348,6 +348,7 @@ export class MonitorService extends Service {
 
   async ensureMonitorsActive(pubkeys?: string | string[]): Promise<void> {
     let monitors = [...this.array]
+    const until = Math.round(Date.now()/1000);
     if(pubkeys) {
       if(typeof pubkeys === 'string') pubkeys = [pubkeys];
       monitors = monitors.filter((m) => (pubkeys as string[]).includes(m.pubkey));
@@ -355,7 +356,7 @@ export class MonitorService extends Service {
     const filters: Filter[] = [];
     const events: IEvent[] = [];
     monitors.forEach(async (monitor) => {
-      filters.push({authors: [monitor.pubkey], limit: 1});
+      filters.push({authors: [monitor.pubkey], limit: 1, until});
     });
     const onevent = (event: IEvent) => {
       events.push(event);

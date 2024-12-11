@@ -30,6 +30,7 @@
 	import Stats from '$lib/components/blocks/Stats.svelte';
 	import { doAggregateCache } from '$lib/stores/app';
 	import { hasBeenBoostrapped } from '$lib/stores/app';
+	import { clickToCopy } from '$lib/utils/ux';
 	
 
     export let params: { protocol: string; relay: string };
@@ -241,10 +242,11 @@
             {/if}
         </div>
         <div class="">
-            <h1 class="text-6xl text-white">
-                {relayUrl}
+            <h1 class="copy-this relative">
+                <span class="block -mt-2 relative text-6xl py-2 px-3 text-white rounded-lg cursor-pointer hover:bg-black/50" use:clickToCopy>{relayUrl}</span>
+                <span class="copy-message">click to copy relay url</span>
             </h1>
-            <p class="text-lg italic text-white/80">{description}</p>
+            <p class="text-lg italic text-white/80 pl-3">{description}</p>
         </div>
     </div>
 
@@ -325,6 +327,14 @@
 <Stats />
 
 <style lang="postcss">
+    h1 > .copy-message {
+        @apply hidden absolute bg-black/50 text-white text-xs px-1 rounded;
+    }
+
+    h1:hover > .copy-message {
+        @apply block -top-1;
+    }
+
     #relay-header {
         @apply px-3 py-10 bg-white/5;
     }

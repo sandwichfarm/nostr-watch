@@ -12,6 +12,7 @@ import { addEventsToStore } from '$lib/stores/events-helpers.js';
 
 import type { Monitor } from "@nostrwatch/nip66/models"
 import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
+import { isSeeded } from '../stores/app';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -131,20 +132,15 @@ export const bootstrap = async (_instance?: Nip66) => {
     await $nip66.ready();
     
     bindBootstrapEmitters($nip66);
-    if(shouldSync()){
+    if( shouldSync() ){
         $nip66?.services?.monitors?.bootstrap().then( () => updateLastSync() )
     }
     else {
         //TODO: Send ready event from Cache Adapter Worker wait on Adapter ready.
         // await $nip66?.adapters?.cache.ready();
         await new Promise( (resolve) => setTimeout(resolve, 1000) ) 
-        console.log('skipping full sync')
-        $nip66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
-            console.log('loading from cache', monitor.pubkey)
-            const fromCache = await $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey)
-            console.log('loaded from cache', fromCache)
-            addEventsToStore(fromCache || []);
-        })
+        //
+        seedFromCache($nip66);
     }
 };
 
@@ -158,3 +154,27 @@ export const destroy = () => {
         return $nip66;
     });
 };
+
+export const seedFromCache = async ($nip66?: Nip66) => {
+    console.log('skipping full sync')
+    if(!$nip66) {
+        $nip66 = await instance();
+    }
+    if(!$nip66) return;
+
+    console.log('!!! begin seeding')
+
+    const promises: Promise<any>[] = [];
+
+    $nip66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
+        promises.push(new Promise( resolve => {
+            console.log('!!! begin seeding', monitor.pubkey)
+            console.log('loading from cache', monitor.pubkey)
+            $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey)
+                .then(resolve)
+        }));
+    })
+    const cachedEvents = (await Promise.all(promises)).flat();
+    addEventsToStore(cachedEvents || []);
+    isSeeded.set(true)
+}

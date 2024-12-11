@@ -10,10 +10,8 @@
 
     import config from '$lib/config/dataTable/monitors.js';
 	import { StateManager } from '@nostrwatch/nip66';
-	import { nip05s, validNip05s } from '$lib/stores/nip05s.js';
-	import { nip66 } from '$lib/stores';
-    import type { Filter } from 'nostr-tools'
-	import { activeMonitorChecksCount } from '$lib/stores';
+	import { doBootstrap } from '$lib/stores/routines';
+    import { doAggregateCache } from '$lib/stores/app';
 
 	let val: string='';
     let countIntVal: ReturnType<typeof setInterval>;
@@ -22,6 +20,8 @@
 
 	onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+		doBootstrap.set(true)
+        doAggregateCache.set(true)
         // countIntVal = setInterval(() => {
         //     const activeMonitors = $nip66?.services?.monitors?.activeMonitors
         //     if(activeMonitors?.length){

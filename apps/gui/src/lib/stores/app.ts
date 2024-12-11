@@ -9,7 +9,7 @@ export const updateLastSync = () => {
     const now = Math.round(Date.now()/1000)
     lastCompleteSync.set(now)
     StateManager.set('lastCompleteSync', now)
-    console.log('!!! UPDATED LAST SYNC', now)
+    hasBeenSeeded.set(true)
 }
 
 export const shouldSync = () => {
@@ -23,4 +23,16 @@ export const shouldSync = () => {
 
 export const hasBeenBoostrapped = (): boolean => {
     return StateManager.get('lastCompleteSync')? true: false
+}
+
+export const isSeeded: Writable<boolean> = writable(false)    
+
+export const hasBeenSeeded = (): boolean => {
+    return get(isSeeded)    
+}
+
+export const doAggregateCache: Writable<boolean> = writable(false)
+
+export const shouldAggregate = (): boolean => {
+    return !get(doAggregateCache)
 }

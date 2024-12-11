@@ -1,7 +1,8 @@
-import { derived } from 'svelte/store';
+import { derived, get } from 'svelte/store';
 import { relayAggregates } from './checks.js';
 import { StateManager } from '@nostrwatch/nip66';
 import type { Readable } from 'svelte/store';
+import { doAggregateCache } from './app.js';
 
 export type Nip = number;
 export type NipFormatted = NipFormattedLower | NipFormattedUpper
@@ -41,7 +42,7 @@ export const nipCounts = derived(relayAggregates, ($relayAggregates) => {
             }
         }
     } else {
-        StateManager.set('aggregate:nipCounts', Object.fromEntries(counts));
+        if(get(doAggregateCache)) StateManager.set('aggregate:nipCounts', Object.fromEntries(counts));
     }
 
     return counts;

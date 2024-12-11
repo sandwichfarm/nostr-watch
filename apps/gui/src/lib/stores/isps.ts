@@ -1,8 +1,9 @@
 
-import { derived } from 'svelte/store';
+import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { relayAggregates } from './checks.js'; 
 import { StateManager } from '@nostrwatch/nip66';
+import { doAggregateCache } from './app.js';
 
 export type StoreIsp = {
     title: string;
@@ -23,7 +24,7 @@ export const isps = derived(eventsArray, ($eventsArray) => {
     });
     let ispsArray = Array.from(ispsMap.values()).sort((a, b) => a.asname.localeCompare(b.asname));
     if(ispsArray.length) {
-        StateManager.set('aggregate:isps', ispsArray);
+        if(get(doAggregateCache)) StateManager.set('aggregate:isps', ispsArray);
     }
     else {
         ispsArray = StateManager.get('aggregate:isps');
@@ -50,7 +51,7 @@ export const ispCounts = derived(relayAggregates, ($relayAggregates) => {
             }
         }
     } else {
-        StateManager.set('aggregate:ispCounts', Object.fromEntries(counts));
+        if(get(doAggregateCache)) StateManager.set('aggregate:ispCounts', Object.fromEntries(counts));
     }
     
     return counts;

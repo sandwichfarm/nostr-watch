@@ -40,6 +40,6 @@ export function performSearch(query: string) {
 }
 
 export function selectSuggestion(result: SearchResult, state: any) {
-  goto(`/relays/${formatRelayUrl(result.relay)}`);
+  goto(`/reload/relays/${formatRelayUrl(result.relay)}`);
   state.showSuggestions = false;
 } 

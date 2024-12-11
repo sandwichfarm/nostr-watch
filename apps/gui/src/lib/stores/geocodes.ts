@@ -1,11 +1,12 @@
 
-import { derived } from 'svelte/store';
+import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { relayAggregates } from './checks.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/nip66';
 import { Nip66Event } from '@nostrwatch/nip66/models';
 import type { lte } from 'lodash';
+import { doAggregateCache } from './app.js';
 
 export const geocodes = derived(
   relayAggregates, 
@@ -22,7 +23,7 @@ export const geocodes = derived(
     let geocodesArray = Array.from(codes).sort();
 
     if(geocodesArray.length){
-      StateManager.set('aggregate:geocodes', geocodesArray);
+      if(get(doAggregateCache)) StateManager.set('aggregate:geocodes', geocodesArray);
     }
     else {
       geocodesArray = StateManager.get('aggregate:geocodes')
@@ -39,7 +40,7 @@ export const geocodeCounts = derived(relayAggregates, ($relayAggregates) => {
         counts.set(geocode, (counts.get(geocode) || 0) + 1);
     });
     const countsObject = Object.fromEntries(counts);
-    StateManager.set('aggregate:geocodeCounts', countsObject);
+    if(get(doAggregateCache)) StateManager.set('aggregate:geocodeCounts', countsObject);
     return counts;
 });
 

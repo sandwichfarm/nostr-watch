@@ -1,6 +1,7 @@
-import { writable, derived, type Writable, type Readable } from "svelte/store";
+import { writable, derived, type Writable, type Readable, get } from "svelte/store";
 import { Monitor, Nip66Event, type IEvent } from '@nostrwatch/nip66/models'
 import { StateManager } from "@nostrwatch/nip66";
+import { doAggregateCache } from "./app";
 
 
 export const events: Writable<Map<string, Nip66Event>> = writable(new Map());
@@ -8,7 +9,8 @@ export const eventsArray: Readable<Nip66Event[]> = derived(
     events, 
     ($events) => {
         const eventsArr = Array.from($events?.values() || []);
-        if(eventsArr.length) {
+        if(eventsArr.length && get(doAggregateCache) === true) {
+            console.log('do aggregate', get(doAggregateCache))
             StateManager.set('count:events:checks', eventsArr.length);
         }
         return eventsArr;

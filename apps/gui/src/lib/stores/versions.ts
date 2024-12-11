@@ -1,7 +1,8 @@
-import { derived } from 'svelte/store';
+import { get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/nip66';
+import { doAggregateCache } from './app.js';
 
 export const versions = throttledDerived(eventsArray, ($eventsArray) => {
     const versions = new Set();
@@ -12,7 +13,7 @@ export const versions = throttledDerived(eventsArray, ($eventsArray) => {
     });
     let finalVersions = Array.from(versions).sort()
     if(finalVersions.length){
-        StateManager.set('aggregate:versions', finalVersions);
+        if(get(doAggregateCache)) StateManager.set('aggregate:versions', finalVersions);
     }
     else {
         finalVersions = StateManager.get('aggregate:versions')

@@ -1,4 +1,4 @@
-import { derived, writable, type Writable, type Readable } from "svelte/store";
+import { derived, writable, type Writable, type Readable, get } from "svelte/store";
 import { compress, decompress } from 'compress-json'
 
 interface Check {
@@ -11,6 +11,7 @@ import { eventsArray } from './events.js';
 
 import type { Nip66Event } from '@nostrwatch/nip66/models';
 import { StateManager } from "@nostrwatch/nip66";
+import { doAggregateCache } from "./app.js";
 
 export const relayCheckAggregator = ($checks: Nip66Event[]) => {
   const countMap: Record<
@@ -123,7 +124,7 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
     aggregates = agg? decompress(agg): aggregates
   }
   else {
-    StateManager.set('aggregate:complete', compress(aggregates))
+    if(get(doAggregateCache) === true) StateManager.set('aggregate:complete', compress(aggregates))
   }
   return aggregates 
 });

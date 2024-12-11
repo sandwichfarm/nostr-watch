@@ -6,29 +6,35 @@
   import { doBootstrap } from '$lib/stores/routines.js';
 
   import Header from '$lib/components/blocks/Header.svelte';
+	import { instance, seedFromCache } from '$lib/utils/lifecycle';
+	import { get } from 'svelte/store';
+	import { eventsArray } from '$lib/stores/events';
     // import { bootstrap, destroy } from '$lib/utils/lifecycle.js';
 
     const { data, children } = $props();
-    let unsubscribe: () => any = () => {};
+    let unsubs: (() => any)[] = [];
 
-    let busy = false
+    let busy = false 
+    let doBootstrapCache = undefined;
 
-    doBootstrap.subscribe(async (value: boolean) => {
-        const newValue = value 
-        if($doBootstrap === false && newValue === true) {
+    unsubs.push(doBootstrap.subscribe(async (newValue: boolean) => {
+        if(doBootstrapCache === false && newValue === true) {
           loadData()
         }
-        doBootstrap.set(value)
-        console.log(`doBootstrap ${value}`)
-    });
+        doBootstrap.set(newValue)
+    }));
+
+    const unsubscribe = () => {
+        unsubs.forEach(unsub => unsub());
+    }
 
     onDestroy(unsubscribe);
 
     const loadData = async () => {
       if(!busy) {
         busy = true
-        await (await import('$lib/utils/lifecycle.js')).bootstrap();
-        busy = false
+        const { bootstrap } = (await import('$lib/utils/lifecycle.js'));
+        bootstrap().then( () => busy = false );
       }
     }
 
@@ -45,8 +51,14 @@
             doBootstrap.set(true);
         }
         
-        if(!$doBootstrap || ['/note/', '/relays/', '/preferences/'].includes($page.url.pathname)) return console.log('Skipping bootstrap');
-        loadData();
+        if(!$doBootstrap || ['/note/', '/relays/', '/preferences/'].includes($page.url.pathname)) {
+          console.log('!!! SEEDING FROM CACHE')
+          await seedFromCache();
+          console.log('!!! SEEDED FROM CACHE', $eventsArray.length)
+        } else {
+          loadData();
+        }
+        
     });
 </script>
 

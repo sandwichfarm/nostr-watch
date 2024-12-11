@@ -6,8 +6,8 @@
     import { derived, writable, type Readable, type Writable } from 'svelte/store';
     import { Nip66Event, PubkeyProfile, PubkeyRelays, type Monitor, type INip11} from '@nostrwatch/nip66/models';
 	import { relayAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
-	import { StateManager } from '@nostrwatch/nip66';
 	import { nip11s, nip11Service, nip11sLocal } from '$lib/stores/nip11s.js';
+    import { isSeeded } from '$lib/stores/app.js';
     import { eventsArray } from '$lib/stores/events.js'
     import type Nip66 from '@nostrwatch/nip66';
 	import ProfileCompact from '$lib/components/partials/ProfileCompact.svelte';
@@ -17,6 +17,7 @@
 	import RelayChecks from '$lib/components/partials/relay-single/RelayChecks.svelte';
     import OperatorFeed from '$lib/components/partials/relay-single/OperatorFeed.svelte';
     import * as Tabs from '$lib/components/ui/tabs';
+    import { addEventsToStore } from '$lib/stores/events-helpers';
 
     import Masonry from 'svelte-bricks'
 
@@ -26,64 +27,45 @@
 	import CardGeneral from '$lib/components/partials/relay-single/cards/CardGeneral.svelte';
 	import CardMap from '$lib/components/partials/relay-single/cards/CardMap.svelte';
 	import CardNetwork from '$lib/components/partials/relay-single/cards/CardNetwork.svelte';
+	import Stats from '$lib/components/blocks/Stats.svelte';
+	import { doAggregateCache } from '$lib/stores/app';
+	import { hasBeenBoostrapped } from '$lib/stores/app';
+	
 
     export let params: { protocol: string; relay: string };
     let currentRelay: string = '';
     let loading: boolean = true;
     let nip66Instance: Nip66;
         
-    const operatorProfile: Writable<PubkeyProfile | null> = writable(null)
-    const operatorRelays: Writable<PubkeyRelays | null> = writable(null)
-
-    const monitors: Writable<Monitor[]> = writable([])
-
-    const freshChecks: Writable<Nip66Event[]> = writable([])
-
-    const activeTab: Writable<string> = writable('overview')
+    const operatorProfile: Writable<PubkeyProfile | null> = writable(null);
+    const operatorRelays: Writable<PubkeyRelays | null> = writable(null);
+    const monitors: Writable<Monitor[]> = writable([]);
+    const activeTab: Writable<string> = writable('overview');
 
     const activateTab = (tab: string) => {
         activeTab.set(tab)
     }
-    
-    const existingChecks: Readable<Nip66Event[]> = derived(eventsArray, $eventsArray => {
-        return $eventsArray.filter( event => {
-            let result: boolean = false;
-            try {
-                result = event?.relay && new URL(event.relay).toString() === new URL(relayUrl).toString() 
-            }
-            catch(e: any){
-                return result
-            }
-            finally {
-                return result
-            }
-        })
-    });
 
-    const checks: Readable<Nip66Event[]> = derived(
-        [freshChecks, existingChecks],
-        ([$freshChecks, $existingChecks]) => {
-            const relayMap = new Map<string, Nip66Event>();
-            if($freshChecks.length) {
-                $freshChecks.forEach((check: Nip66Event) => {
-                    if (!check.relay) console.error('Invalid relay:', check);
-                    relayMap.set(check.pubkey, check);
-                });
-            }
-            if($existingChecks.length) {
-                $existingChecks.forEach((check: Nip66Event) => {
-                    if (!check.relay) return console.error('Invalid relay:', check);
-                    if (!relayMap.has(check.relay)) {
-                        relayMap.set(check.pubkey, check);
+    const checksrelay: Readable<Nip66Event[]> = derived(
+        eventsArray,
+        ($eventsArray) => {
+            const results = new Map<string, Nip66Event>();
+            if($eventsArray.length) {
+                $eventsArray.forEach((check: Nip66Event) => {
+                    if ( !check.relay ) return console.error('Invalid check:', check);
+                    if ( check.relay !== relayUrl ) return;
+                    if ( !results.has( relayUrl ) ) {
+                        results.set(check.pubkey, check);
                     }
                 });
             }
-            return Array.from(relayMap.values()).sort((a: Nip66Event, b: Nip66Event) => (b.created_at as number) - (a.created_at as number));
+            return Array.from(results.values())
+                .sort((a: Nip66Event, b: Nip66Event) => (b.created_at as number) - (a.created_at as number));
         }
     );
 
-    const relayAggregate: Readable<any | undefined> = derived(checks, ($checks) => {
-        let aggregate = relayCheckAggregator($checks)
+    const relayAggregate: Readable<any | undefined> = derived(checksrelay, ($checksrelay) => {
+        let aggregate = relayCheckAggregator($checksrelay)
         if(aggregate) {
             return Object.entries(aggregate).map(([relay, item], index) => ({
                 relay,
@@ -108,8 +90,11 @@
 
     const reset = () => {
         if (currentRelay === relayUrl) return;
+        console.log('!!! RESET')
+        loading = true;
+        currentRelay = '';
+        nip66Instance = undefined;
         activateTab('overview')
-        freshChecks.set([]);
         monitors.set([])
         operatorProfile.set(null)
         operatorRelays.set(null)
@@ -121,23 +106,19 @@
         const res = (await nip66Instance?.services?.relay?.getRelayData(relayUrl));
         if(!res) return 
         const [data, mons] = res;
-        freshChecks.set(data);
-        //console.log('typeof total checks', typeof data,  data.length, data)
-        //console.log('typeof mons', typeof mons, mons)
+        addEventsToStore(data)
         monitors.set(Array.from(mons?.values() || new Set()))
-        currentRelay = relayUrl;
         await loadNip11()
-        loadOperatorMeta()
+        await loadOperatorMeta()
         loading = false;
+        currentRelay = relayUrl;
     };
 
     const loadNip11 = async () => {
         await $nip11Service.check( relayUrl )
-        //console.log('nip11', )
         nip11sLocal.subscribe( ($n11s: any) => {
             if(operatorPubkey) return;
             const nip11arr = $n11s.get(relayUrl) || [];
-            //console.log('nip11arr', nip11arr)
             if(nip11arr?.length) {
                 for(const n11 of nip11arr){
                     nip11sLocal.set(n11)
@@ -149,7 +130,8 @@
 
     const loadOperatorMeta = async () => {
         if(!operatorPubkey) return;
-        const metas = await nip66Instance.services.relay.fetchOperatorMeta(operatorPubkey)
+        const metas = await nip66Instance?.services?.relay?.fetchOperatorMeta(operatorPubkey)
+        if(!metas) return;
         for(const meta of metas){
             if(meta.kind === 0){
                 operatorProfile.set( new PubkeyProfile(meta) )
@@ -160,18 +142,27 @@
         }
     }
 
-    onMount(() => {
+    doBootstrap.set(false)
+    doAggregateCache.set(false)
+
+    onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-        doBootstrap.set(false)
+        if(hasBeenBoostrapped()){
+            while(!$isSeeded) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } 
+        }
+        loadRelayData();
     });
 
     onDestroy(() => {
         reset();
     });
-    $: relayUrl = `${$page.params.protocol}://${$page.params.relay}`;
-    $: timesSeen = $checks.length;
-    $: seenBy = $checks.map( (check: any) => check.pubkey )
-    $: seenByCount = $checks.map( (check: any) => check.pubkey ).length
+
+    $: relayUrl = new URL(`${$page.params.protocol}://${$page.params.relay}`).toString();;
+    $: timesSeen = $checksrelay.length;
+    $: seenBy = $checksrelay.map( (check: any) => check.pubkey )
+    $: seenByCount = $checksrelay.map( (check: any) => check.pubkey ).length
     $: rttAverage = $relayAggregate?.rtt
     $: ipv4 = $relayAggregate?.ipv4
     $: ipv6 = $relayAggregate?.ipv6
@@ -185,7 +176,7 @@
     $: operatorPubkey = 
         $nip11?.pubkey && $nip11.pubkey.length && isHex($nip11.pubkey)? 
             $nip11.pubkey: 
-            $relayAggregate?.operatorPubkey?
+            $relayAggregate?.operatorPubkey && isHex($relayAggregate.operatorPubkey)?
                 $relayAggregate.operatorPubkey:
                 null;
     $: supportedNips = 
@@ -214,12 +205,11 @@
                 null;
     $: paymentUrl = $nip11?.paymentsUrl
     // $: decentralizationScore = $relayScores.get(relayUrl) ?? -1
-    $: if (relayUrl !== currentRelay) {
-        loadRelayData().then(() => {
-            StateManager.emit(`${relayUrl}:hydrated`)
-            //console.log('load relay + load monitors')
-        });
-    }
+    // $: if (relayUrl !== currentRelay && $isSeeded) {
+    //     loadRelayData()
+    //         // StateManager.emit(`${relayUrl}:hydrated`)
+    //         //console.log('load relay + load monitors')
+    // }
 
     $: items = [
         'general',
@@ -274,7 +264,7 @@
             <Tabs.List class="w-full rounded-none px-10 py-7">
                 <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
                 <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
-                <Tabs.Trigger disabled={$nip11? false: true}  value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
+                <Tabs.Trigger disabled={$nip11? false: false}  value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
                 <Tabs.Trigger disabled={operatorPubkey? false: true} value="operator-feed" class="text-lg flex-grow" on:click={() => activateTab('operator-feed')}>Operator Feed</Tabs.Trigger>
                 <Tabs.Trigger disabled={true} value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
             </Tabs.List>
@@ -291,7 +281,7 @@
                 >
                 <div>
                 {#if item === 'map'}
-                    <CardMap relay={relayUrl} monitors={$monitors} checks={$checks} aggregate={$relayAggregate} />
+                    <CardMap relay={relayUrl} monitors={$monitors} checks={$checksrelay} aggregate={$relayAggregate} />
                 {/if}
                 {#if item === 'network'}
                      <CardNetwork ipv4={ipv4} ipv6={ipv6} isp={isp} />
@@ -300,7 +290,7 @@
                     <CardInsights relayAggregate={$relayAggregate} />
                 {/if}
                 {#if item === 'checks'}
-                    <CardChecks checks={$checks} />
+                    <CardChecks checks={$checksrelay} />
                 {/if}
                 {#if item === 'general'}
                     <CardGeneral version={version} software={software} geocode={geocode} />
@@ -313,7 +303,7 @@
 
             </Tabs.Content>
             <Tabs.Content value="checks">
-                <RelayChecks relay={relayUrl} monitors={$monitors} checks={$checks} aggregate={$relayAggregate} />
+                <RelayChecks relay={relayUrl} monitors={$monitors} checks={$checksrelay} aggregate={$relayAggregate} />
             </Tabs.Content>
             <Tabs.Content value="audit">
     
@@ -329,15 +319,10 @@
             </div>
         </Tabs.Root>
     </section>
-    <!-- SIDEBAR -->
-    <!-- {#if $operatorProfile} -->
-    <!-- <aside class="w-full md:w-1/4 p-4 rounded shadow">
-        {#if operatorPubkey}
-            <OperatorFeed pubkey={operatorPubkey} />
-        {/if}
-    </aside> -->
-    <!-- {/if} -->
   </main>
+
+
+<Stats />
 
 <style lang="postcss">
     #relay-header {

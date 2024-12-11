@@ -1,8 +1,9 @@
-import { derived } from 'svelte/store';
+import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/nip66';
 import { relayAggregates } from './checks.js';
+import { doAggregateCache } from './app.js';
 
 export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
   const software = new Set();
@@ -16,7 +17,7 @@ export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
   let softwaresArray = Array.from(software).sort();
 
   if(softwaresArray.length){
-    StateManager.set('aggregate:softwares', softwaresArray);
+    if(get(doAggregateCache)) StateManager.set('aggregate:softwares', softwaresArray);
   }
   else {
     softwaresArray = StateManager.get('aggregate:softwares')

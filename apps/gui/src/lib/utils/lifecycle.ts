@@ -132,10 +132,12 @@ export const bootstrap = async (_instance?: Nip66) => {
     await $nip66.ready();
     
     bindBootstrapEmitters($nip66);
+    
     if( shouldSync() ){
         $nip66?.services?.monitors?.bootstrap().then( () => updateLastSync() )
     }
     else {
+        console.log('skipping full sync')
         //TODO: Send ready event from Cache Adapter Worker wait on Adapter ready.
         // await $nip66?.adapters?.cache.ready();
         await new Promise( (resolve) => setTimeout(resolve, 1000) ) 
@@ -156,16 +158,13 @@ export const destroy = () => {
 };
 
 export const seedFromCache = async ($nip66?: Nip66) => {
-    console.log('skipping full sync')
     if(!$nip66) {
         $nip66 = await instance();
     }
     if(!$nip66) return;
-
-    console.log('!!! begin seeding')
+    // if(get(isSeeded)) return;
 
     const promises: Promise<any>[] = [];
-
     $nip66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
         promises.push(new Promise( resolve => {
             console.log('!!! begin seeding', monitor.pubkey)

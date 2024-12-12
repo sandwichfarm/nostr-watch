@@ -5,5 +5,3 @@ import { onMount } from 'svelte';
 import { goto } from '$app/navigation';
 onMount( () => setTimeout( () => goto(`/${$page.params.path}`), 50 ) );
 </script>
-
-{$page.params.path}

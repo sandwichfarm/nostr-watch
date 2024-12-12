@@ -116,6 +116,7 @@ export const defaultRelayResultKeys: RelayResultKeys = ['record']
 
 export interface ICacheAdapter extends IAdapter {
   init?(): Promise<void>;
+  ready(): Promise<void>;
 
   REQ(filters: any[]): Promise<IEvent[]>;
   COUNT(filters: any[]): Promise<number>;
@@ -149,6 +150,8 @@ export class CacheAdapter extends Adapter {
   get worker(): Worker | SharedWorker | undefined {
     return this.workers?.cache
   }
+
+  async ready(): Promise<void> {}
 
   async init(): Promise<void> {
     this._ready = true;

@@ -68,6 +68,14 @@ export class Service {
     return result;
   }
 
+  async unsubscribe(hash: string) {
+    this.websocketAdapter.unsubscribe(hash);
+  }
+
+  async unsubscribeAll(){
+    this.websocketAdapter.unsubscribeAll();
+  }
+
   async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
     console.warn('Service.fetch() not implemented');
     return this._fetch(args, callbacks);

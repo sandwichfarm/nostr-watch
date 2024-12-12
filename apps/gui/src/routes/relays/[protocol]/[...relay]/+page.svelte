@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { page } from '$app/stores';
+    import { page, navigating } from '$app/stores';
     import { onDestroy, onMount } from 'svelte';
+
     import { doBootstrap } from '$lib/stores/routines.js';
     import { instance } from '$lib/utils/lifecycle.js';
     import { derived, writable, type Readable, type Writable } from 'svelte/store';
@@ -28,9 +29,12 @@
 	import CardMap from '$lib/components/partials/relay-single/cards/CardMap.svelte';
 	import CardNetwork from '$lib/components/partials/relay-single/cards/CardNetwork.svelte';
 	import Stats from '$lib/components/blocks/Stats.svelte';
+    import CardOperator from '$lib/components/partials/relay-single/cards/CardOperator.svelte';
+
 	import { doAggregateCache } from '$lib/stores/app';
 	import { hasBeenBoostrapped } from '$lib/stores/app';
 	import { clickToCopy } from '$lib/utils/ux';
+	
 	
 
     export let params: { protocol: string; relay: string };
@@ -146,7 +150,7 @@
     doBootstrap.set(false)
     doAggregateCache.set(false)
 
-    onMount(async () => {
+    const mount = async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         if(hasBeenBoostrapped()){
             while(!$isSeeded) {
@@ -154,7 +158,9 @@
             } 
         }
         loadRelayData();
-    });
+    }
+
+    onMount(mount);
 
     onDestroy(() => {
         reset();
@@ -214,12 +220,15 @@
 
     $: items = [
         'general',
+        'operator',
         'fees',
         'network',
         'insights',
         'checks',
         'map'
     ]
+
+    $: if($navigating) { mount() }
   
     let [minColWidth, maxColWidth, gap] = [400, 800, 21]
     let width:number, height: number
@@ -267,7 +276,7 @@
                 <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
                 <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
                 <Tabs.Trigger disabled={$nip11? false: false}  value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
-                <Tabs.Trigger disabled={operatorPubkey? false: true} value="operator-feed" class="text-lg flex-grow" on:click={() => activateTab('operator-feed')}>Operator Feed</Tabs.Trigger>
+                <Tabs.Trigger disabled={operatorPubkey && $operatorRelays?.relays?.length? false: true} value="operator-feed" class="text-lg flex-grow" on:click={() => activateTab('operator-feed')}>Operator Feed</Tabs.Trigger>
                 <Tabs.Trigger disabled={true} value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
             </Tabs.List>
              <div class="p-4">
@@ -299,6 +308,11 @@
                 {/if}
                 {#if item === 'fees'}
                     <CardFees {fees} {paymentUrl} />
+                {/if}
+                {#if item === 'operator'}
+                    {#if $operatorProfile && operatorPubkey}
+                    <CardOperator {relayUrl} pubkey={operatorPubkey} profile={$operatorProfile} />
+                    {/if}
                 {/if}
             </div>
               </Masonry>

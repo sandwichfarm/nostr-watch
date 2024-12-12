@@ -12,7 +12,10 @@ import { Batcher } from "./Batcher";
 export enum ResponseType {
   event = 'event',
   events = 'events',
-  complete = 'complete'
+  complete = 'complete',
+  unsubscribed = 'unsubscribed',
+  aborted = 'aborted',
+  terminated = 'terminated'
 }
 
 export interface AdapterWebsocketWorkerOptions {
@@ -37,7 +40,7 @@ interface WebsocketResponseHeaders {
 }
 
 export type WebsocketResponseBody = {
-  type: 'event' | 'events' | 'complete',
+  type: 'event' | 'events' | 'complete' | 'unsubscribed' | 'aborted' | 'terminated',
   result: any,
   hash: string
 }
@@ -104,37 +107,39 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   onMessage(request: WebsocketRequest = defaultWebsocketRequest){
-    //console.log('AdapterWebsocketWorker: onMessage', request) 
-    const { use, args } = request
-    if(use === 'subscribe'){
-      //console.log('AdapterWebsocketWorker: onMessage: subscribe')
+    const { action, args } = request
+    if(action === 'subscribe'){
       return this.subscribe(args)
     }
-    if(use === 'fetch'){
-      //console.log('AdapterWebsocketWorker: onMessage: fetch')
+    if(action === 'fetch'){
       return this.fetch(args)
     }
-    console.warn('AdapterWebsocketWorker: onMessage: did not match any command')
+    if(action === 'unsubscribe'){
+      return this.unsubscribe(args)
+    }
+    if(action === 'abort'){
+      return this.abort()
+    }
+    console.warn('AdapterWebsocketWorker: onMessage: did not match any command', request)
   }
 
   send(response: WebsocketResponse = defaultWebsocketResponse){
     const { to, args } = response
-    let sent = 0
+    let sent = false
     if(to === 'adapter'){
       if(!this?.mainThread) return console.warn('AdapterWebsocketWorker: mainThread not found')
       this.mainThread.postMessage(args)
-      sent++;
+      sent = true
     }
     if(to === 'cache'){
       if(!this.channel) return console.warn('AdapterWebsocketWorker: channel not found')
       this.channel.postMessage(args)
-      sent++
+      sent = true
     }
     if(!sent) console.warn('AdapterWebsocketWorker: send: did not send to any destination')
   }
 
   async subscribe( request: WebsocketRequestBody = defaultWebsocketRequestBody ){
-    //console.log(`AdapterWebsocketWorker: subscribe`, request)
     const { hash, options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
@@ -143,38 +148,36 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     }
     const result = await this._subscribe(request, callbacks)
     if(!stream){
-      //console.log(`AdapterWebsocketWorker: subscribe: preparing async response`)
-      //console.log('AdapterWebsocketWorker: response', request, result)
-      this.requestAsyncReponse(request, result as IEvent[])
+      this.requestSyncReponse(request, result as IEvent[])
     }
+    this.respond(ResponseType.complete, request)
   }
+
+  unsubscribe(args: WebsocketRequestBody){ args }
 
   async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> { 
     throw new Error(`${this.constructor.name}:_subscribe() not implemented!`)
   }
 
   async fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody){
-    //console.log(`AdapterWebsocketWorker: fetch`, request)
     const { hash, options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
     if(stream){
       callbacks = this.requestCallbacks(request);
     }
-    //console.log('AdapterWebsocketWorker: fetch: calling this._fetch')
     const result = await this._fetch(request, callbacks)
-    //console.log('AdapterWebsocketWorker: fetch: result', result)
     if(!stream){
-      //console.log(`AdapterWebsocketWorker: fetch: preparing async response`)
-      this.requestAsyncReponse(request, result as IEvent[])
+      this.requestSyncReponse(request, result as IEvent[])
     }
+    this.respond(ResponseType.complete, request)
   }
 
   async _fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
     throw new Error(`${this.constructor.name}:_fetch() not implemented!`)
   }
 
-  
+  abort(){}
 
   respond(type: ResponseType, request: WebsocketRequestBody, result?: IEvent | IEvent[]){
     const { hash, options } = request;
@@ -213,15 +216,15 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       }
     }
     const oneose = () => {
-      this.respond(ResponseType.complete, request)
+      // this.respond(ResponseType.complete, request)
     }
     return { onevent, oneose }
   }
 
-  requestAsyncReponse(request: WebsocketRequestBody, result: IEvent[]){
+  requestSyncReponse(request: WebsocketRequestBody, result: IEvent[]){
     const { hash, options } = request
     const { cache, returnResults } = options
-    //console.log(`AdapterWebsocketWorker: requestAsyncReponse cache: ${cache} returnResults: ${returnResults}`)
+    //console.log(`AdapterWebsocketWorker: requestSyncReponse cache: ${cache} returnResults: ${returnResults}`)
     let args: WebsocketResponseBody = {
       type: ResponseType.events, 
       result,

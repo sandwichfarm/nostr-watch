@@ -30,3 +30,24 @@ export const clickToCopy = (node: HTMLElement, target?: string) => {
     };
   };
   
+
+  export function observeViewport(node, options = {}) {
+    const observer = new IntersectionObserver(([entry]) => {
+        node.dispatchEvent(
+        new CustomEvent('viewportchange', {
+            detail: {
+            isIntersecting: entry.isIntersecting,
+            intersectionRatio: entry.intersectionRatio,
+            },
+        })
+        );
+    }, options);
+
+    observer.observe(node);
+
+    return {
+        destroy() {
+            observer.unobserve(node);
+        },
+    };
+}

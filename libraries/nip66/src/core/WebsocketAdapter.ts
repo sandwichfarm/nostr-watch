@@ -3,7 +3,7 @@ import type { Filter } from 'nostr-tools';
 import { Adapter, AdapterMessage, type IAdapter } from './Adapter'
 import type { IEvent } from '@models/Event';
 import { deterministicHash } from '@base/utils/hash';
-import { defaultWebsocketResponseBody, WebsocketResponseBody } from './AdapterWebsocketWorker';
+import { WebsocketResponseBody } from './AdapterWebsocketWorker';
 import { StateManager } from '@base/managers/StateManager';
 
 export interface SubscribeHandlers {
@@ -43,7 +43,7 @@ export interface WebsocketRequest extends WebsocketRequestHeader {
 export interface WebsocketRequestHeader {
   adapter: string,
   from: string,
-  use: string,
+  action: string,
 }
 
 export type WebsocketRequestBody = {
@@ -56,7 +56,7 @@ export type WebsocketRequestBody = {
 export const defaultWebsocketRequestHeader: WebsocketRequestHeader = {
   adapter: 'websocket',
   from: 'worker',
-  use: 'fetch',
+  action: 'fetch',
 }
 
 export const defaultWebsocketRequestBody: WebsocketRequestBody = {
@@ -79,7 +79,8 @@ export interface IWebsocketAdapterMethods {
   connect(): Promise<void>;
   subscribe(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
   fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
-  unsubscribe(subId?: string): void;
+  unsubscribe(hash?: string): void;
+  unsubscribeAll(): void; 
   disconnect(): void;
   terminate(): void;
   bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
@@ -112,7 +113,36 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   async connect(): Promise<void> {}
   disconnect(): void {}
   terminate(): void {}
-  unsubscribe(subId?: string): void {}
+
+  async unsubscribe(hash?: string): Promise<boolean> {
+    const unsub = this.request({
+      action: 'unsubscribe',
+      args: {
+        ...defaultWebsocketRequestBody, 
+        hash
+      }
+    })
+    return this.response(unsub) as Promise<boolean>
+  }
+
+  async unsubscribeAll(hash?: string): Promise<boolean> {
+    const hashes = [...Array.from(this.subscriptions)]
+    for(let hash of hashes){
+      await this.unsubscribe(hash)
+    }
+    return true;
+  }
+
+  async abort(): Promise<boolean> {
+    const abort = this.request({
+      action: 'abort',
+      args: { 
+        ...defaultWebsocketRequestBody,
+        hash: 'abort',
+      }
+    })
+    return this.response(abort) as Promise<boolean>
+  }
 
   newWorker(): Promise<Worker | SharedWorker> {
     throw new Error('Method not implemented.');
@@ -126,28 +156,21 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   onMessage(response: WebsocketResponseBody): void {
-    //console.log(`[WebsocketAdapter:${this.constructor.name}] i/i RECEIVE: ${response.type} <- websocketWorker`, response)
     const { hash } = response
-    // response.result = this.decode(response.result)
-    // if(!response?.result) return console.warn(`[WebsocketAdapter] Error: no result found in response`)
-    // //console.log(`[WebsocketAdapter]:${this.constructor.name}] ${hash} is valid: ${hash && this.subscriptions.has(hash)}`, response)
-    // if(hash && this.subscriptions.has(hash)){
-    StateManager.emit(hash, response)
-    //   if(hash === 'c9dc5037'){
-    //     //console.log(hash, response)
-    //   }
-    // }
+    if(hash && this.subscriptions.has(hash)){
+      StateManager.emit(hash, response)
+    }
   } 
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{
     if(callbacks && Object.keys(callbacks).length > 0) {
-      //console.log('result', 'streaming')
       args.options.stream = true
     }
     const hash = this.request({
-      use: 'subscribe',
+      action: 'subscribe',
       args
     })
+    StateManager.emit('websocket:subscription', hash)
     return this.response(hash, callbacks) as Promise<IEvent[] | boolean>
   }
 
@@ -156,11 +179,11 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       args.options.stream = true
     }
     const hash = this.request({
-      use: 'fetch',
+      action: 'fetch',
       args
     })
-    const result = this.response(hash, callbacks) as Promise<IEvent[] | boolean>
-    //console.log(`[WebsocketAdapter:${this.constructor.name}] fetch result:`, result)  
+    StateManager.emit('websocket:fetch', hash)
+    const result = this.response(hash, callbacks) as Promise<IEvent[] | boolean> 
     return result;
   } 
 
@@ -171,14 +194,18 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   request(message: Partial<WebsocketRequest> = defaultWebsocketRequest): string {
     if(!message?.args) throw new Error('No args found in message')
-    const hash = deterministicHash(message?.args?.filters ?? {})
-    message.args.hash = hash;
+    if(!message?.args?.hash) {
+      message.args.hash = deterministicHash(message?.args?.filters ?? {})  
+    }
+    const { hash } = message.args
     if(!this?.worker) {
       console.warn('[WebsocketAdapter] Error sending command: no worker found')
       return hash
     }
-    console.log(`[WebsocketAdapter:${this.constructor.name}] o/o SEND: ${message.use} -> websocketWorker`, message.args.filters)
-    this.subscriptions.add(hash)
+    console.log(`[WebsocketAdapter:${this.constructor.name}] o/o SEND: ${message.action} -> websocketWorker`, message.args.filters)
+    if(message?.args?.options?.returnResults){
+      this.subscriptions.add(hash)
+    }
     if(this.worker instanceof Worker)
       this.worker.postMessage(message)
     else if(this.worker instanceof SharedWorker)
@@ -191,50 +218,48 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       const results: any[] = []
       const responseHandler = (message: WebsocketResponseBody) => {
         let { result, type } = message
-        //console.log('result:type', type)
+        if(type === 'unsubscribed'){
+          return true
+        }
+        if(type === 'aborted'){
+          return true
+        }
         if(type === 'events') {
           if(callbacks?.onevents){
-            //console.log('result:events', 'callback:onevents')
             callbacks.onevents(result)
             return
           }
           for(let event of result){
             if(callbacks?.onevent){
-              //console.log('result:events', 'callback:onevent')
               callbacks.onevent(event)
             }
             else {
-              //console.log('result:events', 'push')
               results.push(event)
             }
           }
         }
         else if(type === 'event'){
           if(callbacks?.onevent){
-            //console.log('result', 'callback')
             callbacks.onevent(result)
           }
           else {
-            //console.log('result', 'push')
             results.push(result)  
           }
         }
         else if(type == 'complete'){
-          //console.log('[WebsocketAdapter] complete')
           if(callbacks?.onevent){
-            //console.log('result:complete', 'resolve: true')
+            console.log('result:complete', 'resolve: true')
             resolve(true)
           }
           else {
-            //console.log('result:complete', `resolve: ${results.length} events`)
+            console.log('result:complete', `resolve: ${results.length} events`, results)
             resolve(results)
           }
-          // this.subscriptions.delete(hash)
-          // StateManager.off(hash)
+          this.subscriptions.delete(hash)
+          StateManager.off(hash)
         }
         else {
           console.warn(`[WebsocketAdapter] Unknown response type: ${type}`)
-          //console.log(message)
         }
       }
       StateManager.on(hash, responseHandler)
@@ -242,10 +267,9 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
-    //console.log(`[WebsocketAdapter:${this.constructor.name}] populate`, filters)
     const { kinds } = filters[0]
     const hash = this.request({
-      use: 'fetch',
+      action: 'fetch',
       args: {
         options: {
           cache: true,
@@ -257,12 +281,10 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
         relays
       }
     })
-    //console.log(`[WebsocketAdapter:${this.constructor.name}] request hash: ${hash}`)
     return this.response(hash, callbacks)
   }
 
   ping(): void {
-    //console.log(`[WebsocketAdapter:${this.constructor.name}] o/o SEND: PING -> websocketWorker`)
     if(this.worker instanceof Worker) {
       (this.workers?.websocket as Worker)?.postMessage({type: 'ping'})
     }

@@ -6,9 +6,11 @@
   import { doBootstrap } from '$lib/stores/routines.js';
 
   import Header from '$lib/components/blocks/Header.svelte';
-	import { instance, seedFromCache } from '$lib/utils/lifecycle';
+	import { instance, bootstrap, seedFromCache } from '$lib/utils/lifecycle';
 	import { get } from 'svelte/store';
 	import { eventsArray } from '$lib/stores/events';
+  import { navigating } from '$app/stores';
+  import type Nip66 from '@nostrwatch/nip66';
     // import { bootstrap, destroy } from '$lib/utils/lifecycle.js';
 
     const { data, children } = $props();
@@ -17,26 +19,29 @@
     let busy = false 
     let doBootstrapCache = undefined;
 
-    unsubs.push(doBootstrap.subscribe(async (newValue: boolean) => {
-        if(doBootstrapCache === false && newValue === true) {
-          loadData()
-        }
-        doBootstrap.set(newValue)
-    }));
+    unsubs.push(doBootstrap.subscribe(doBootstrap.set));
 
     const unsubscribe = () => {
         unsubs.forEach(unsub => unsub());
     }
 
-    onDestroy(unsubscribe);
-
     const loadData = async () => {
-      if(!busy) {
+        if(!$doBootstrap) {
+          const n66: Nip66 = await instance()
+          await n66.ready();
+          await n66.adapters.cacheAdapter.ready();
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          console.log('!!! SEEDING FROM CACHE')
+          await seedFromCache();
+          console.log('!!! SEEDED FROM CACHE', $eventsArray.length)
+        } else if(!busy) {
         busy = true
-        const { bootstrap } = (await import('$lib/utils/lifecycle.js'));
+        
         bootstrap().then( () => busy = false );
-      }
+      }    
     }
+
+    onDestroy(unsubscribe);
 
     onMount(async () => {
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -50,15 +55,14 @@
         if(typeof $doBootstrap === 'undefined') {
             doBootstrap.set(true);
         }
-        
-        if(!$doBootstrap || ['/note/', '/relays/', '/preferences/'].includes($page.url.pathname)) {
-          console.log('!!! SEEDING FROM CACHE')
-          await seedFromCache();
-          console.log('!!! SEEDED FROM CACHE', $eventsArray.length)
-        } else {
-          loadData();
-        }
-        
+
+        loadData();
+    });
+
+    $effect(() => {
+      if ($navigating) {
+        loadData();
+      }
     });
 </script>
 
@@ -72,6 +76,10 @@
 :root {
   --scrollbar-primary: black;
   --scrollbar-secondary: rgba(255,255,255,0.2);
+}
+
+body {
+  @apply pb-10;
 }
 
 /* Firefox */

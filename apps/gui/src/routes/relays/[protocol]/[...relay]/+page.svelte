@@ -271,7 +271,7 @@
 
 <main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">
     <section class="flex-1  rounded shadow">
-        <Tabs.Root value="overview" class="w-full p-0">
+        <Tabs.Root value="{$activeTab}" class="w-full p-0">
             <Tabs.List class="w-full rounded-none px-10 py-7">
                 <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
                 <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
@@ -301,7 +301,7 @@
                     <CardInsights relayAggregate={$relayAggregate} />
                 {/if}
                 {#if item === 'checks'}
-                    <CardChecks checks={$checksrelay} />
+                    <CardChecks checks={$checksrelay} {activeTab} />
                 {/if}
                 {#if item === 'general'}
                     <CardGeneral version={version} software={software} geocode={geocode} />
@@ -322,7 +322,7 @@
                 <RelayChecks relay={relayUrl} monitors={$monitors} checks={$checksrelay} aggregate={$relayAggregate} />
             </Tabs.Content>
             <Tabs.Content value="audit">
-    
+                <!-- coming soon -->
             </Tabs.Content>
             <Tabs.Content value="nip11">
                 <pre class="py-6 px-8 bg-white/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>

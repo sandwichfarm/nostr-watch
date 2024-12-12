@@ -66,19 +66,24 @@
 {#if hasInsights}
 <Card.Root>
     <Card.Header>
-        <Card.Title>Insights</Card.Title>  
+        <Card.Title class="flex flex-nowrap">
+            <span class="flex">
+                Insights
+            </span>
+            <ToggleGroup.Root type="single" size="lg" class="ml-auto flex-shrink relative -top-3" onValueChange={(value: string) => changeBubbleType(value)}>
+                <ToggleGroup.Item value="percent" aria-label="Toggle bold">
+                %
+                </ToggleGroup.Item>
+                <ToggleGroup.Item value="count" aria-label="Toggle italic">
+                #
+                </ToggleGroup.Item>
+            </ToggleGroup.Root>     
+        </Card.Title>  
         <Card.Description></Card.Description>
     </Card.Header>  
     <Card.Content>
         
-        <ToggleGroup.Root type="single" size="lg" onValueChange={(value: string) => changeBubbleType(value)}>
-            <ToggleGroup.Item value="percent" aria-label="Toggle bold">
-            %
-            </ToggleGroup.Item>
-            <ToggleGroup.Item value="count" aria-label="Toggle italic">
-            #
-            </ToggleGroup.Item>
-        </ToggleGroup.Root>     
+        
 
         <ul id="relay-insights" class="mt-1 py-1 block text-white/90 text-xl">
             {#if software}

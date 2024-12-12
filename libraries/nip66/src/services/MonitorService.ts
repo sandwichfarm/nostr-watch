@@ -63,7 +63,7 @@ export class MonitorService extends Service {
 
   get enabledMonitors() {
     return this.manager.enabledMonitors;
-  }
+  } 
 
   get disabledMonitors() {
     return this.manager.disabledMonitors;
@@ -359,7 +359,13 @@ export class MonitorService extends Service {
   async fetchMonitorChecks(pubkey: string, _options?: Partial<WebsocketAdapterOptions>, from?: 'cache' | 'websocket'): Promise<IEvent[]> { 
     const monitor = this.monitors.get(pubkey);
     if (!monitor) return [];
-    const checkFilter = {...monitor.checkFilter};
+    let checkFilter: Filter;
+    if(from === 'cache')  {
+      checkFilter = {...monitor.checkFilterSync}
+    }
+    else {
+      checkFilter = {...monitor.checkFilter};
+    }
     const filters = [checkFilter];
     const options: WebsocketAdapterOptions = (_options? {...defaultWebsocketAdapterOptions, ..._options}: defaultWebsocketAdapterOptions) as WebsocketAdapterOptions;
     const relays = this.nip66Relays;

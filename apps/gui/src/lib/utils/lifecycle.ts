@@ -162,7 +162,7 @@ export const seedFromCache = async ($nip66?: Nip66) => {
         $nip66 = await instance();
     }
     if(!$nip66) return;
-    // if(get(isSeeded)) return;
+    if(get(isSeeded)) return ;
 
     const promises: Promise<any>[] = [];
     $nip66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {

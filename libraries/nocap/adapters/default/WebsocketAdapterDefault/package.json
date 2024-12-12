@@ -4,9 +4,6 @@
   "type": "module",
   "license": "MIT",
   "entry": "src/index.ts",
-  "main": "dist/server/cjs/index.cjs.js",
-  "module": "dist/server/index.js",
-  "types": "dist/server/types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/server/index.js",
@@ -14,7 +11,7 @@
       "types": "./dist/server/types/index.d.ts"
     },
     "./web": {
-      "import": "./dist/web/index.esm.js",
+      "import": "./dist/web/index.js",
       "types": "./dist/web/types/index.d.ts"
     }
   },

@@ -51,6 +51,7 @@ export type WebsocketRequestBody = {
   options: WebsocketAdapterOptions,
   hash?: string,
   relays?: string[],
+  priority?: number
 }
 
 export const defaultWebsocketRequestHeader: WebsocketRequestHeader = {

@@ -21,9 +21,12 @@ import { CheckKey, CheckMethodKey, PreCheckKey, StrictCheckKey } from '../types/
 import SAMPLE_EVENT from "../data/sample_event";
 import { isBrowser } from '@nostrwatch/utils';
 import { AbstractAdapter } from './AbstractAdapter';
+import { CompatibleWebSocket } from './CompatibleWebsocket';
+
+type WebSocketType = WebSocket | import('ws').WebSocket;
 
 export default class Base {
-  ws: WebSocket | null = null;
+  ws: CompatibleWebSocket | null = null;
   network?: string;
   auditor = new Auditor();
   cb: Record<string, Function> = {};
@@ -124,8 +127,8 @@ export default class Base {
    * 
    * @public
    * @async
-   * @param {(string|string[])} keys - The keys to check
-   * @param {boolean} headers - Whether to include headers in result (default: true)
+   * @param keys - The keys to check
+   * @param headers - Whether to include headers in result (default: true)
    * @returns {Promise<*>} - The result of the checks
    */
   async check(keys: CheckKey | CheckKey[], headers = true): Promise<any> {
@@ -521,7 +524,7 @@ export default class Base {
     this.maybeExecuteAdapterMethod(
       'websocket', 
       'unsubscribe', 
-      () => this.ws?.send(['CLOSE', subid]), 
+      () => this.ws?.send(JSON.stringify(['CLOSE', subid])), 
       subid
     )
   }
@@ -1239,4 +1242,3 @@ on_event(subid: string, ev: any): void {
     return Array.from(new Set(translated));
   }
 }
-

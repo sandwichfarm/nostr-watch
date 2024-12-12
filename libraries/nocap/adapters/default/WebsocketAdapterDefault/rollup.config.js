@@ -84,7 +84,7 @@ export default [
         sourceMap: true,
       }),
       nodePolyfills(),
-      terser(),
+      // terser(),
     ],
     onwarn
   },

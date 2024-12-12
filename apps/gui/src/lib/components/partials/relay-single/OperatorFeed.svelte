@@ -22,6 +22,18 @@
     let [minColWidth, maxColWidth, gap] = [300, 500, 21]
     let width:number, height: number
 
+    const lastItemId = () => {
+        return $feed[$feed.length - 1].id;
+    }
+
+    const middleItemId = () => {
+        return $feed[Math.floor($feed.length / 2)].id;
+    }
+
+    const lowItemId = (id: string): boolean => {
+        return $feed.slice(-4).map( item => item.id).includes(id);
+    }
+
     $: items = $feed.map( item => {
         item.id = item.note.id 
         if(!$until) {
@@ -72,27 +84,34 @@
     onDestroy(destroy);
 </script>
 
-<section id="operator-feed" class="block">
+<section id="operator-feed" class="block relative">
     {#if $userService}
     <Masonry
-                    {items}
-                    {minColWidth}
-                    {maxColWidth}
-                    {gap}
-                    let:item
-                    bind:width
-                    bind:height
-                >
+        {items}
+        {minColWidth}
+        {maxColWidth}
+        {gap}
+        let:item
+        bind:width
+        bind:height >
 
+        {#if lowItemId(item.id)}
+            <div 
+
+            use:observeViewport
+            on:viewportchange={(event: any) => {
+                if(event.detail.isIntersecting && $until) fetchMoreEvents();
+            }}>&nbsp;</div>
+        {/if}
+             
         <OperatorFeedNote noteExtended={item} />
-
     </Masonry>
     {/if}
-    <div 
-        use:observeViewport
-        on:viewportchange={(event: any) => {
-            if(event.detail.isIntersecting && $until) fetchMoreEvents();
-        }} >&nbsp;</div>
+    
 
+    
 </section>
+
+
+
 

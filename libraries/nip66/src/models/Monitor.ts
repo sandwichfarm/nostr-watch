@@ -208,6 +208,16 @@ export class Monitor {
     return { kinds, since, until, authors };
   }
 
+  get checkFilterSync(): Filter {
+    // //console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
+    const kinds = [30166];
+    const syncRange = this.getLastSync(30166)
+    const since = syncRange?.since || Math.round(Date.now() / 1000) - this?.frequency;
+    const until = syncRange?.until ||Math.round(Date.now() / 1000);
+    const authors = [this.pubkey];
+    return { kinds, since, until, authors };
+  }
+
   get isDeadBefore(): number {
     return Math.round(Date.now() / 1000) - this.deadThreshold;
   }

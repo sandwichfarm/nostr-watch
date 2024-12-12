@@ -30,6 +30,7 @@
 	import CardNetwork from '$lib/components/partials/relay-single/cards/CardNetwork.svelte';
 	import Stats from '$lib/components/blocks/Stats.svelte';
     import CardOperator from '$lib/components/partials/relay-single/cards/CardOperator.svelte';
+    import CardSpeed from '$lib/components/partials/relay-single/cards/CardSpeed.svelte';
 
 	import { doAggregateCache } from '$lib/stores/app';
 	import { hasBeenBoostrapped } from '$lib/stores/app';
@@ -87,9 +88,9 @@
         [nip11sLocal, nip11s], 
         ([$nip11sLocal, $nip11s]) => {
             let result: Nip11 | undefined;  
-            if($nip11sLocal) result = $nip11sLocal.get(relayUrl)
-            if($nip11s) result = $nip11s.get(relayUrl)?.[0]
-            return result
+            const localNip11 = $nip11sLocal.get(relayUrl);
+            if(localNip11) return localNip11;
+            if($nip11s) return $nip11s.get(relayUrl)?.[0];
         }
     )   
 
@@ -121,30 +122,38 @@
 
     const loadNip11 = async () => {
         await $nip11Service.check( relayUrl )
-        nip11sLocal.subscribe( ($n11s: any) => {
-            if(operatorPubkey) return;
-            const nip11arr = $n11s.get(relayUrl) || [];
-            if(nip11arr?.length) {
-                for(const n11 of nip11arr){
-                    nip11sLocal.set(n11)
-                    if($nip11) break;
-                }
-            }
-        })
+        // nip11sLocal.subscribe( ($n11s: any) => {
+        //     if(operatorPubkey) return;
+        //     const nip11arr = $n11s.get(relayUrl) || [];
+        //     if(nip11arr?.length) {
+        //         for(const n11 of nip11arr){
+        //             nip11sLocal.set(n11)
+        //             if($nip11) break;
+        //         }
+        //     }
+        // })
     }
 
     const loadOperatorMeta = async () => {
         if(!operatorPubkey) return;
-        const metas = await nip66Instance?.services?.relay?.fetchOperatorMeta(operatorPubkey)
-        if(!metas) return;
-        for(const meta of metas){
-            if(meta.kind === 0){
-                operatorProfile.set( new PubkeyProfile(meta) )
+        const onevent = (event: IEvent) => {
+            if(event.kind === 0 && !$operatorProfile) {
+                operatorProfile.set( new PubkeyProfile(event) )
             }
-            if(meta.kind === 10002){
-                operatorRelays.set( new PubkeyRelays(meta) )
+            if(event.kind === 10002 && !$operatorRelays) {
+                operatorRelays.set( new PubkeyRelays(event) )
             }
         }
+        const metas = await nip66Instance?.services?.relay?.fetchOperatorMeta(operatorPubkey, { onevent })
+        // if(!metas) return;
+        // for(const meta of metas){
+        //     if(meta.kind === 0){
+        //         operatorProfile.set( new PubkeyProfile(meta) )
+        //     }
+        //     if(meta.kind === 10002){
+        //         operatorRelays.set( new PubkeyRelays(meta) )
+        //     }
+        // }
     }
 
     doBootstrap.set(false)
@@ -211,15 +220,10 @@
                 $relayAggregate.fees:
                 null;
     $: paymentUrl = $nip11?.paymentsUrl
-    // $: decentralizationScore = $relayScores.get(relayUrl) ?? -1
-    // $: if (relayUrl !== currentRelay && $isSeeded) {
-    //     loadRelayData()
-    //         // StateManager.emit(`${relayUrl}:hydrated`)
-    //         //console.log('load relay + load monitors')
-    // }
 
     $: items = [
         'general',
+        'speed',
         'operator',
         'fees',
         'network',
@@ -314,6 +318,11 @@
                     <CardOperator {relayUrl} pubkey={operatorPubkey} profile={$operatorProfile} />
                     {/if}
                 {/if}
+                {#if item === 'speed'}
+                    {#if loading === false}
+                    <CardSpeed {relayUrl} />
+                    {/if}
+                {/if}
             </div>
               </Masonry>
 
@@ -325,6 +334,10 @@
                 <!-- coming soon -->
             </Tabs.Content>
             <Tabs.Content value="nip11">
+                {$nip11s.get(relayUrl)?.length ?? 0} NIP-11s from NIP-66 events [{$nip11s.get(relayUrl)?.[0]? true: false}] <br />
+                {#if $nip11sLocal?.get(relayUrl)}
+                    NIP-11 found locally <br />
+                {/if}
                 <pre class="py-6 px-8 bg-white/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>
             </Tabs.Content>
             <Tabs.Content value="operator-feed">

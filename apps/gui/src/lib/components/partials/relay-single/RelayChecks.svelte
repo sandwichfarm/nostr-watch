@@ -21,6 +21,7 @@
     
     export const selectedCheck: Writable<Nip66Event | null> = writable(checks[0] || null);
     const showMap: Writable<boolean> = writable(false)
+    const showLocalCheck: Writable<boolean> = writable(false)
 
     const toggleMap = () => {
         if($showMap) {
@@ -31,6 +32,20 @@
             selectedCheckCache = $selectedCheck
             selectedCheck.set(null)
             showMap.set(true)
+            if($showLocalCheck) showLocalCheck.set(false)
+        }
+    }
+
+    const toggleLocalCheck = () => {
+        if($showLocalCheck) {
+            showLocalCheck.set(false)
+            selectedCheck.set(selectedCheckCache)
+        }
+        else {
+            selectedCheckCache = $selectedCheck
+            selectedCheck.set(null)
+            showLocalCheck.set(true)
+            if($showMap) showMap.set(false)
         }
     }
 
@@ -53,9 +68,15 @@
                 <span class="relative -top-1"> Map</span>
             </span> 
         </button>
+        <button class="block w-full py-3 px-3 text-left {$showLocalCheck? 'bg-white/10': ''}" on:click={toggleLocalCheck}>
+            <span class="inline-block">
+                <span class="inline-block text-2xl mr-2">🫵</span>
+                <span class="relative -top-1"> Run check locally</span>
+            </span> 
+        </button>
         {#each validChecks as check}
             {#if check?.pubkey}
-            <button class="block w-full py-3 px-3 text-left {$selectedCheck && check.id === $selectedCheck?.id? 'bg-white/10': ''}" on:click={() => { selectedCheck.set(check); showMap.set(false) }}>
+            <button class="block w-full py-3 px-3 text-left {$selectedCheck && check.id === $selectedCheck?.id? 'bg-white/10': ''}" on:click={() => { selectedCheck.set(check); showMap.set(false); showLocalCheck.set(false) }}>
                 <img src="{$monitorsMap.get(check?.pubkey)?.photo ?? PFP.generate(check?.pubkey)}" alt="{$monitorsMap.get(check?.pubkey)?.name}'s profile photo" class="h-6 w-6 mr-2 overflow-hidden rounded-full inline-block" /> <span class="inline-block">
                     {$monitorsMap.get(check?.pubkey)?.name}
                     <span class="text-sm text-white/50 italic">{timeAgo((check.created_at as number)*1000)}</span>

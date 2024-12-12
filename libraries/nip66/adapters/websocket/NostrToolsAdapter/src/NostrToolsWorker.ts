@@ -38,6 +38,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   protected _controller: AbortController = new AbortController();
   protected _signal: AbortSignal = this._controller.signal;
   protected _signalIsInternal: boolean = true;  
+  protected _filtersQueue: Filter[] = [];
 
   constructor( options: NostrToolsWorkerOptions ){
     //console.log('NostrToolsWorker: constructor', options)
@@ -74,10 +75,11 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
+    let { filters, relays, options, hash, priority } = request;
+    priority = priority ?? 0;
     return queue.add(() => {
       console.log('!!!! NostrToolsWorker: _subscribe: queue running now')
       return new Promise(async (resolve, reject) => {
-        let { filters, relays, options, hash } = request;
         const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
         const effectiveRelays = relays ?? this.relays;
         const result: IEvent[] = [];
@@ -120,7 +122,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
         );
         this.subs.set(hash as string, closer.close.bind(closer));
       });
-    }) as Promise<IEvent[] | boolean>;
+    }, { priority }) as Promise<IEvent[] | boolean>;
   }
 
   async _fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {

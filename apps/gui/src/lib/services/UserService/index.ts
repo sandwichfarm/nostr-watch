@@ -61,7 +61,8 @@ export class UserService extends Service {
             cache: false,
             stream: false,
             returnResults: true,
-            keepAlive: false
+            keepAlive: false,
+            priority: 10
         };
         const args: UserFetchArgs = {
             filters: [filter],
@@ -107,7 +108,7 @@ export class UserService extends Service {
                     console.log('relatives', relatives) 
                     const reactions = relatives.filter(rel => rel.kind === 7);
                     const zaps = relatives.filter(rel => rel.kind === 9734 || rel.kind === 9321);
-                    const comments = relatives.filter(rel => rel.kind === 1);
+                    const comments = relatives.filter(rel => rel.kind === 1 || rel.kind === 1111);
                     return { reactions, zaps, comments};
                 }
                 return { user, note, fetchRelatives };
@@ -119,7 +120,8 @@ export class UserService extends Service {
         const { id } = note
         const filters: Filter[] = [
             { kinds: [9734, 9321], '#e': [id] },
-            { kinds: [1, 7], '#e': [id]  }
+            { kinds: [1, 7, 1111], '#e': [id]  },
+            { kinds: [1111], '#E': [id] }
         ]
         //console.log('user note relatives', filters)
         const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]

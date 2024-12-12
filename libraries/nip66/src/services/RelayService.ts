@@ -1,4 +1,4 @@
-import { IWebsocketAdapter, WebsocketAdapterOptions } from '@core/WebsocketAdapter';
+import { IWebsocketAdapter, SubscribeHandlers, WebsocketAdapterOptions } from '@core/WebsocketAdapter';
 import { ICacheAdapter } from '@core/CacheAdapter';
 import { IAdaptersArgument } from '@interfaces/IAdaptersArgument';
 import { EventEmitter } from 'tseep';
@@ -89,7 +89,7 @@ export class RelayService extends Service {
     return checks;
   }
 
-  async fetchOperatorMeta(pubkey: string): Promise<IEvent[]> {
+  async fetchOperatorMeta(pubkey: string, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     const filters: Filter[] = [
       { kinds: [0, 10002], authors: [pubkey] }
     ]
@@ -100,7 +100,10 @@ export class RelayService extends Service {
       keepAlive: false,
       stream: false
     }
-    return this._fetch( { relays, filters, options } );
+    if(callbacks){
+      options.stream = true; 
+    }
+    return this._fetch( { relays, filters, options }, callbacks );
   }
 
   async monitorInstancesFromChecks(checks: Nip66Event[], type: 'map' | 'array' = 'map'): Promise<Map<string, Monitor> | Monitor[] | undefined> {

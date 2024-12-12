@@ -8,6 +8,8 @@ import { StateManager } from "@nostrwatch/nip66";
 import { compress, decompress } from "compress-json";
 import { Nip11 } from "@nostrwatch/nip66/models";
 import { doAggregateCache, hasBeenBoostrapped, hasBeenSeeded } from "./app.js";
+import type { RelayInformation } from "@nostrwatch/nip66/models";
+import type { nip11 } from "nostr-tools";
 
 type RelayUrl = string
 
@@ -65,7 +67,9 @@ export const nip11s = derived(
 
     if( totalWithotLocal > 0 && hasBeenBoostrapped() && hasBeenSeeded() && get(doAggregateCache) === true ) {
       console.log('!!! HAS BEEN BOOTSTRAPPED AND SEEDED')
-      StateManager.set('aggregate:nip11s', compress(Array.from(nip11Map.entries())))
+      StateManager.set('aggregate:nip11s', compress(
+        Array.from(nip11Map.entries()).map(([relay, entries]) => [relay, entries.map((nip11: Nip11) => nip11.json)])
+      ));
     }
     else if( hasBeenSeeded() ){
       console.log('!!! HAS BEEN SEEDED')
@@ -73,8 +77,9 @@ export const nip11s = derived(
       console.log('cached nip11 compressed', nip11Map)
       if (cachedMap) {
         try {
-          const decompressed = decompress(cachedMap);
+          let decompressed = decompress(cachedMap);
           if (Array.isArray(decompressed)) {
+            decompressed = decompressed.map( ([relay, entries]: [string, RelayInformation[]]) => [relay, entries?.map( (nip11: RelayInformation) => new Nip11(nip11) )] )
             nip11Map = new Map(decompressed);
             console.log('nip11Map cached nip11Map', nip11Map);
           } else {

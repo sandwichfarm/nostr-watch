@@ -1,12 +1,12 @@
-import WebSocket from 'ws';
-
 import { TorWebSocket } from './tor';
 
 import {
   AbstractAdapter,
   type Nocap as Base, 
   type IAdapter,
+  CompatibleWebSocket
 } from '@nostrwatch/nocap';
+import { isBrowser } from '@nostrwatch/utils';
 
 export { TorWebSocket };
 
@@ -14,7 +14,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   count: { event: number };
 
   constructor(parent: Base) {
-    super(parent)
+    super(parent);
     this.count = { event: 0 };
   }
 
@@ -23,14 +23,13 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   async check_open(): Promise<void> {
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
     try {
-      if( this.base.network === 'clearnet') {
-        this.base.ws = new WebSocket(this.base.url);
-      }
-      else if (this.base.network === 'tor') {
+      if (this.base.network === 'clearnet') {
+        this.base.ws = new CompatibleWebSocket(this.base.url);
+      } else if (this.base.network === 'tor') {
         const torSocksProxy = 'socks5h://127.0.0.1:9050';
-        this.base.ws = TorWebSocket(this.base.url, torSocksProxy, this.base.config.timeout.open );
-      }
-      else {
+        const agent = new (require('socks-proxy-agent')).SocksProxyAgent(torSocksProxy);
+        this.base.ws = new CompatibleWebSocket(this.base.url, { agent });
+      } else {
         throw new Error('Unsupported network');
       }
       this.bind_events();
@@ -65,8 +64,8 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         this.base.on_open(e);
         this.count.event++;
       });
-      this.base.ws?.on('message', (ev: any) => {
-        this.handle_nostr_event(ev);
+      this.base.ws?.on('message', (data: any) => {
+        this.handle_nostr_event(data);
       });
       this.base.ws?.on('close', (e: Event) => {
         this.base.on_close();
@@ -91,7 +90,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         description: 'Relay responded to subscription with invalid JSON.',
         severity: 'high',
         impact: ['reliability'],
-        domain: 'NIP-01'
+        domain: 'NIP-01',
       });
       return this.base.websocket_hard_fail(err);
     }
@@ -106,7 +105,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
             description: `Relay sent too many events. Requested 1 and received ${this.count.event}.`,
             severity: 'medium',
             impact: ['bandwidth', 'reliability'],
-            domain: 'NIP-01'
+            domain: 'NIP-01',
           });
           this.base.handle_eose();
         }
@@ -128,7 +127,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
             data: false,
             duration: -1,
             status: 'error',
-            message: ev[1]
+            message: ev[1],
           });
         }
         this.base.on_notice(ev[1]);

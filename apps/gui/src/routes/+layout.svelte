@@ -27,17 +27,18 @@
 
     const loadData = async () => {
         if(!$doBootstrap) {
-          const n66: Nip66 = await instance()
-          await n66.ready();
-          await n66.adapters.cacheAdapter.ready();
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          console.log('!!! SEEDING FROM CACHE')
-          await seedFromCache();
-          console.log('!!! SEEDED FROM CACHE', $eventsArray.length)
+          ( async () => {
+            const n66: Nip66 = await instance()
+            await n66.ready();
+            await n66.adapters.cacheAdapter.ready();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log('!!! SEEDING FROM CACHE')
+            await seedFromCache();
+            console.log('!!! SEEDED FROM CACHE', $eventsArray.length)
+          })()
         } else if(!busy) {
-        busy = true
-        
-        bootstrap().then( () => busy = false );
+          busy = true
+          bootstrap().then( () => busy = false );
       }    
     }
 

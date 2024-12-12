@@ -112,6 +112,7 @@
 </section>
   
 <style global>
+    
     .note > .content {
         @apply leading-8 line-clamp-6;
     }
@@ -126,6 +127,10 @@
     .note > .content > ul > li {
         @apply list-decimal list-item mb-4 list-inside leading-6 text-lg;
         padding: 5px;
+    }
+
+    .note > .content pre {
+        display:none;
     }
 
     .note > .actions {

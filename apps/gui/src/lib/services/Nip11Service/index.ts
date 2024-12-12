@@ -1,4 +1,4 @@
-import { get } from 'svelte/store';
+import { get, type Writable } from 'svelte/store';
 import type { nip11 } from 'nostr-tools';
 
 import { nip11sLocal } from '$lib/stores/nip11s.js';
@@ -20,7 +20,7 @@ export class Nip11Service {
     }
 
     find(relay: string): Nip11 | undefined {
-        let $nip11sLocal = get(nip11sLocal)
+        let $nip11sLocal: Map<string, Nip11> = get(nip11sLocal)
         return $nip11sLocal.get(relay)
     }
     
@@ -29,7 +29,7 @@ export class Nip11Service {
         let result: Nip11 | undefined; 
         let error: RelayErrorMessages | undefined
         while(!result && !error){
-            result = get(nip11sLocal).get(relay)
+            result = (get(nip11sLocal) as Map<string, Nip11>)?.get(relay)
             error = getRelayErrorSubject(relay, 'nip11')
             await new Promise( resolve => setTimeout( resolve, 200 ))
         }

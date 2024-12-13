@@ -291,7 +291,7 @@ let width: number, height: number;
                     </span>
                 <span class="copy-message">click to copy relay url</span>
             </h1>
-            <p class="text-lg italic text-white/80 pl-3">{description}</p>
+            <p class="text-md italic text-white/80 pl-3 line-clamp-2 w-3/4">{description}</p>
         </div>
     </div>
 
@@ -311,7 +311,7 @@ let width: number, height: number;
             <Tabs.List class="w-full rounded-none px-10 py-7">
                 <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
                 <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
-                <Tabs.Trigger disabled={$nip11? false: false}  value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
+                <Tabs.Trigger disabled={$nip11? false: true}  value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
                 <Tabs.Trigger disabled={operatorPubkey && $operatorRelays?.relays?.length? false: true} value="operator-feed" class="text-lg flex-grow" on:click={() => activateTab('operator-feed')}>Operator Feed</Tabs.Trigger>
                 <Tabs.Trigger disabled={true} value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
             </Tabs.List>

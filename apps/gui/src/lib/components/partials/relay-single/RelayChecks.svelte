@@ -61,7 +61,7 @@
 {#if validChecks.length}
 <!-- <p>Reported <em>online</em> by <Badge class="rounded-full">{validChecks.length}</Badge> monitors</p> -->
 <div class="flex">
-    <div class="flex-shrink-0 w-1/4 border-r overflow-y-auto">
+    <div class=" w-1/4 border-r overflow-y-auto flex-none">
         <button class="block w-full py-3 px-3 text-left {$showMap? 'bg-white/10': ''}" on:click={toggleMap}>
             <span class="inline-block">
                 <span class="inline-block text-2xl mr-2">🌎</span>

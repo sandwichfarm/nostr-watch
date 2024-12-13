@@ -2837,6 +2837,7 @@ __metadata:
     dompurify: "npm:^3.2.3"
     gh-pages: "npm:^6.2.0"
     http-proxy-middleware: "npm:^3.0.3"
+    iso-3166: "npm:^4.3.0"
     lodash: "npm:^4.17.21"
     lucide-svelte: "npm:^0.462.0"
     marked: "npm:^15.0.3"
@@ -13419,7 +13420,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"iso-3166@npm:4.3.0":
+"iso-3166@npm:4.3.0, iso-3166@npm:^4.3.0":
   version: 4.3.0
   resolution: "iso-3166@npm:4.3.0"
   checksum: 10c0/41dd3b59db02647bacf6a879878629a3e580dd93fa800246ef98fcaa894524a463d23e803dc967d6929c088428d143cb71deacf0a1f75b37a71da40b875a8398

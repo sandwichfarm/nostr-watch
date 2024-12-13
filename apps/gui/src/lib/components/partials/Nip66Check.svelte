@@ -15,7 +15,7 @@
   $: reference = check.reference;
 </script>
 
-<div id="encoded" class="overflow-hidden overflow-ellipsis bg-white/5 py-3 px-6 rounded-md cursor-pointer font-mono" use:clickToCopy>
+<div id="encoded" class="overflow-hidden overflow-ellipsis bg-white/5 py-3 px-6 rounded-md cursor-pointer font-mono max-w-full" use:clickToCopy>
   {reference}
 </div>
 
@@ -168,11 +168,11 @@
   </Tabs.Content>
 
   <Tabs.Content value="empty">
-    <pre class="m-4 py-5 px-7 bg-white/10 rounded-lg">{JSON.stringify(check.json, null, 2)}</pre>
+    <pre class="m-4 py-5 px-7 bg-white/10 rounded-lg text-sm">{JSON.stringify(check.json, null, 2)}</pre>
   </Tabs.Content>
 </Tabs.Root>
 
-<style>
+<style lang="postcss">
   table {
     @apply w-full border-collapse;
   }
@@ -183,5 +183,10 @@
 
   th {
     @apply bg-white/10
+  }
+
+  table tbody tr td:first-child {
+    @apply w-64 text-white/50;
+
   }
 </style>

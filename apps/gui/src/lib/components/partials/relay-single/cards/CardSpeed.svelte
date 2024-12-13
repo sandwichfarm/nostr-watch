@@ -9,20 +9,23 @@
     export let relayUrl: string;
 
     const speed: Writable<number | null> = writable(null);
+    const success: Writable<boolean | null> = writable(null);
     const speedometerWidth: Writable<number> = writable(400);
 
+    let nocap: Nocap | null ;
     let container: HTMLElement | null = null;
     let resizeObserver: ResizeObserver;
 
     onMount(async () => {
-        const nocap = new Nocap(relayUrl);
+        nocap = new Nocap(relayUrl);
         nocap.on('change', (value: any) => {
             console.log('onchange value', value);
         });
         nocap.useAdapters([WebsocketAdapter]);
         const result = await nocap.check('open' as CheckKey);
         speed.set(result.open.duration);
-        console.log('nocap result', result);
+        success.set(result.open.data)
+        nocap = null;
 
         if (container) {
             resizeObserver = new ResizeObserver(entries => {
@@ -42,6 +45,7 @@
         if (resizeObserver && container) {
             resizeObserver.unobserve(container);
         }
+        nocap = null;
     });
 
     $: value = $speed ? Math.round($speed) : null;
@@ -59,6 +63,7 @@
         <Card.Title>Speed</Card.Title>
     </Card.Header>
     <Card.Content class="speedometer-container">
+        {#if $success}
         <div bind:this={container}>
             {#if value}
                 <Speedometer {value} {width} />
@@ -67,6 +72,9 @@
                 <div>connecting...</div>
             {/if}
         </div>
+        {:else}
+        Could not connect.
+        {/if}
     </Card.Content>
     <Card.Footer>
     </Card.Footer>

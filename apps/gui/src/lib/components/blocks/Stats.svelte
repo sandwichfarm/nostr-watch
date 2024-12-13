@@ -34,7 +34,7 @@
     </span>
     <span class={relaysClass}>
         <span>Relays</span>
-        <span>{Array.from($relays.values())?.length}</span>
+        <span>{Array.from($relays?.values() || [])?.length}</span>
     </span>
     <span class={eventsClass}>
         <span>Checks</span>

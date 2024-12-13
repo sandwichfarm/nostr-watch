@@ -28,7 +28,15 @@ export class AdapterCacheWorker extends AdapterWorker {
   //begin: overloads
   async setup(command: AdapterCacheWorkerCommand): Promise<void> { return void 0 }
   async addEvent(event: IEvent): Promise<void> { return void 0 }
-  async addEvents(events: IEvent[]): Promise<void> { return void 0 }    
+  async addEvents(events: IEvent[]): Promise<void> { return void 0 }  
+  
+  async abort(): Promise<boolean> {
+    return true
+  }
+
+  async shutdown(): Promise<void> {
+    return void 0
+  }
   
   //end: overloads
 

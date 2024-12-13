@@ -26,6 +26,9 @@ export interface IAdapter {
 
   ping(): void;
 
+  abort(): Promise<boolean>
+  shutdown(): Promise<void>
+
   // overloads
   onMessage(command: IAdapterWorkerCommand): void;
   onError(error: any): void;

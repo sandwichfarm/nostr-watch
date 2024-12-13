@@ -35,8 +35,6 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   protected subs: Map<string, any> = new Map();
   protected _callbacks?: IWebsocketAdapterCallbacks = {};
   protected _salt: string = 'nip66'
-  protected _controller: AbortController = new AbortController();
-  protected _signal: AbortSignal = this._controller.signal;
   protected _signalIsInternal: boolean = true;  
   protected _filtersQueue: Filter[] = [];
 
@@ -63,10 +61,6 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     return this._callbacks;
   }
 
-  get signal(): AbortSignal { 
-    return this._signal;
-  }
-
   async connect(): Promise<void> {
     if(this?.pool) return;
     const pool = new SimplePool();
@@ -91,6 +85,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
         await this.connect();
         
         const onevent = (event: IEvent) => {
+          if(this.signal.aborted) return;
           if(stream){
             callbacks!.onevent?.(event);
             count++
@@ -104,6 +99,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           this.subs.delete(hash as string);
         }
         const oneose = () => {
+          if(this.signal.aborted) return;
           callbacks?.oneose?.();
           if(keepAlive) return;
           this.subs.get(hash as string)?.(); //closer
@@ -142,6 +138,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
       // const fetchPromises: Promise<IEvent[] | boolean>[] = [];
       //console.log(`running ${filters.length} fetches.`)
       for (let filter of filters) {
+        if(this.signal.aborted) return;
         //console.log(`NostrToolsWorker: _fetch #${count}: filter`, filter)
         events.push(await new Promise<IEvent[] | boolean>(async (resolve) => {
           const { since, until, ...remainingFilter } = filter;
@@ -153,6 +150,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           let count = 0;
           const events = new Set<IEvent>();
           const onevent = (event: IEvent) => {
+            if(this.signal.aborted) return;
             events.add(event as IEvent);
             if(stream){
               count++;
@@ -160,6 +158,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             }
           }
           const oneose = () => {
+            if(this.signal.aborted) return;
             if(stream) {
               resolve(count > 0)
             }
@@ -215,6 +214,8 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   abort(): void {
+    console.log('WEBSOCKET WORKER ABORTED')
+    this.controller.abort();
     for(const closer of this.subs.values()){
       if(typeof closer === 'function') {
         closer();

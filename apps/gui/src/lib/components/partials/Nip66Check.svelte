@@ -3,6 +3,8 @@
   import { Monitor, type Nip66Event } from '@nostrwatch/nip66/models';
   import { onMount } from 'svelte';
   import { formatSeconds, timeAgo } from '$lib/utils/time.js';
+	import { clickToCopy } from "$lib/utils/ux";
+	import { nip19 } from "nostr-tools";
 
   export let check: Nip66Event;
   // export let monitor: Monitor | undefined;
@@ -10,7 +12,12 @@
   onMount(() => {});
 
   $: elapsed = timeAgo(check.created_at * 1000);
+  $: reference = check.reference;
 </script>
+
+<div id="encoded" class="overflow-hidden overflow-ellipsis bg-white/5 py-3 px-6 rounded-md cursor-pointer font-mono" use:clickToCopy>
+  {reference}
+</div>
 
 <Tabs.Root value="general-info" class="w-full">
   <Tabs.List>

@@ -12,7 +12,7 @@ import { addEventsToStore } from '$lib/stores/events-helpers.js';
 
 import type { Monitor } from "@nostrwatch/nip66/models"
 import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
-import { isSeeded } from '../stores/app';
+import { hasBeenBoostrapped, isBootstrapping, isSeeded } from '../stores/app';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -134,7 +134,12 @@ export const bootstrap = async (_instance?: Nip66) => {
     bindBootstrapEmitters($nip66);
     
     if( shouldSync() ){
-        $nip66?.services?.monitors?.bootstrap().then( () => updateLastSync() )
+        if( get(isBootstrapping) ) return console.log('!!! IS ALREADY BOOTSTRAPPING');
+        isBootstrapping.set(true)
+        $nip66?.services?.monitors?.bootstrap().then( () => {
+            isBootstrapping.set(false)
+            updateLastSync()
+        })
     }
     else {
         console.log('skipping full sync')
@@ -162,7 +167,8 @@ export const seedFromCache = async ($nip66?: Nip66) => {
         $nip66 = await instance();
     }
     if(!$nip66) return;
-    if(get(isSeeded)) return ;
+    if(get(isSeeded)) return;
+    if(!hasBeenBoostrapped()) return;
 
     const promises: Promise<any>[] = [];
     $nip66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {

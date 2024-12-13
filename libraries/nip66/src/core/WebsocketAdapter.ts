@@ -5,6 +5,7 @@ import type { IEvent } from '@models/Event';
 import { deterministicHash } from '@base/utils/hash';
 import { WebsocketResponseBody } from './AdapterWebsocketWorker';
 import { StateManager } from '@base/managers/StateManager';
+import { delay } from '@nostrwatch/utils';
 
 export interface SubscribeHandlers {
   onevent?: (event: any) => void
@@ -84,7 +85,9 @@ export interface IWebsocketAdapterMethods {
   unsubscribeAll(): void; 
   disconnect(): void;
   terminate(): void;
-  bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
+  // bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
+
+  abort(): Promise<boolean>;
 }
 
 export interface IWebsocketAdapter extends IWebsocketAdapterMethods, IAdapter {}
@@ -116,6 +119,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   terminate(): void {}
 
   async unsubscribe(hash?: string): Promise<boolean> {
+    if(hash && !this.subscriptions.has(hash)) return true;
     const unsub = this.request({
       action: 'unsubscribe',
       args: {
@@ -132,6 +136,13 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       await this.unsubscribe(hash)
     }
     return true;
+  }
+
+  async shutdown(): Promise<void> {
+    await this.unsubscribeAll();
+    await this.abort();
+    await delay(1000);
+    this.terminate()
   }
 
   async abort(): Promise<boolean> {
@@ -157,7 +168,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   onMessage(response: WebsocketResponseBody): void {
-    const { hash } = response
+    const { hash, type } = response
     if(hash && this.subscriptions.has(hash)){
       StateManager.emit(hash, response)
     }
@@ -248,6 +259,8 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           }
         }
         else if(type == 'complete'){
+          this.subscriptions.delete(hash)
+          StateManager.off(hash)
           if(callbacks?.onevent){
             console.log('result:complete', 'resolve: true')
             resolve(true)
@@ -256,8 +269,6 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
             console.log('result:complete', `resolve: ${results.length} events`, results)
             resolve(results)
           }
-          this.subscriptions.delete(hash)
-          StateManager.off(hash)
         }
         else {
           console.warn(`[WebsocketAdapter] Unknown response type: ${type}`)
@@ -267,23 +278,23 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
     });
   }
 
-  bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
-    const { kinds } = filters[0]
-    const hash = this.request({
-      action: 'fetch',
-      args: {
-        options: {
-          cache: true,
-          returnResults: true,  
-          keepAlive: true,
-          stream: true
-        },
-        filters,
-        relays
-      }
-    })
-    return this.response(hash, callbacks)
-  }
+  // bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
+  //   const { kinds } = filters[0]
+  //   const hash = this.request({
+  //     action: 'fetch',
+  //     args: {
+  //       options: {
+  //         cache: true,
+  //         returnResults: true,  
+  //         keepAlive: true,
+  //         stream: true
+  //       },
+  //       filters,
+  //       relays
+  //     }
+  //   })
+  //   return this.response(hash, callbacks)
+  // }
 
   ping(): void {
     if(this.worker instanceof Worker) {

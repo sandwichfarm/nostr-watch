@@ -67,4 +67,12 @@ export class Batcher<T, S> {
     const batch = this.batches.get(id);
     return batch?.state !== undefined;
   }
+
+  abort(): void {
+    for (const timeoutId of Array.from(this.timeoutIds.values())) {
+      clearTimeout(timeoutId);
+    }
+    this.batches.clear();
+    this.timeoutIds.clear();
+  }
 }

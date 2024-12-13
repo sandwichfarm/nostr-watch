@@ -66,13 +66,17 @@ export interface IAdapterWebsocketWorker {
   setup(command: AdapterWebsocketWorkerCommand): Promise<void>;
   subscribe( request: WebsocketRequestBody ): Promise<void>;
   fetch( request: WebsocketRequestBody ): Promise<void>;
-}
 
+  signal: AbortSignal;
+  controller: AbortController;
+}
 
 export class AdapterWebsocketWorker extends AdapterWorker {
   protected relays: string[] = ['wss://relaypag.es/', 'wss://relay.nostr.watch/']
   private batchQueue: IEvent[] = []
   private batcher: Batcher<IEvent, WebsocketRequestBody>;
+  protected _controller: AbortController = new AbortController();
+  protected _signal: AbortSignal = this._controller.signal;
 
   constructor( options?: WorkerOptions ){
     //console.log ('AdapterWebsocketWorker', options)
@@ -83,6 +87,9 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       callback: this.batchResponse.bind(this)
     })
   }
+
+  get signal(): AbortSignal { return this._signal }
+  get controller(): AbortController { return this._controller }
 
   async _setup(command: AdapterWorkerCommand): Promise<void>{
     const { options } = command
@@ -118,7 +125,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       return this.unsubscribe(args)
     }
     if(action === 'abort'){
-      return this.abort()
+      return this._abort()
     }
     console.warn('AdapterWebsocketWorker: onMessage: did not match any command', request)
   }
@@ -140,6 +147,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   async subscribe( request: WebsocketRequestBody = defaultWebsocketRequestBody ){
+    if(this.signal.aborted) this.abortControllerReset()
     const { hash, options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
@@ -160,6 +168,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   async fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody){
+    if(this.signal.aborted) this.abortControllerReset()
     const { hash, options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
@@ -177,7 +186,19 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     throw new Error(`${this.constructor.name}:_fetch() not implemented!`)
   }
 
+  _abort(){
+    this.batcher.abort()
+    this.abort()
+    return this.send({to: 'adapter', args: {type: ResponseType.complete, result: null, hash: 'abort'}})
+  }
+
+  //override.
   abort(){}
+
+  abortControllerReset(){
+    this._controller = new AbortController();
+    this._signal = this._controller.signal;
+  }
 
   respond(type: ResponseType, request: WebsocketRequestBody, result?: IEvent | IEvent[]){
     const { hash, options } = request;

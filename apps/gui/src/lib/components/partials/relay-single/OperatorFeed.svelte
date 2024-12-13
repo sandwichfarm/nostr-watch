@@ -10,6 +10,7 @@
 
     import OperatorFeedNote from './OperatorFeedNote.svelte';
 	import { observeViewport } from '$lib/utils/ux';
+	import type { Nip11 } from '@nostrwatch/nip66/models/Nip11';
 
     export let pubkey: string; 
 
@@ -62,6 +63,7 @@
 
     const destroy = async () => {
         $userService.unsubscribeAll();
+        feed.set([]);
     }
     
     const fetchMoreEvents = async () => {
@@ -85,6 +87,9 @@
 </script>
 
 <section id="operator-feed" class="block relative">
+    {#if $feed.length === 0}
+    loading
+    {/if}
     {#if $userService}
     <Masonry
         {items}
@@ -97,18 +102,21 @@
 
         {#if lowItemId(item.id)}
             <div 
-
             use:observeViewport
             on:viewportchange={(event: any) => {
                 if(event.detail.isIntersecting && $until) fetchMoreEvents();
-            }}>&nbsp;</div>
+            }}></div>
         {/if}
              
         <OperatorFeedNote noteExtended={item} />
     </Masonry>
     {/if}
     
-
+    {#if $busy}
+        <div class="mt-10 py-6 text-center text-xl bg-white/5 text-white/50 italic">
+            Spamming {user?.name? user?.name: 'the operator'}'s relays for more notes... 
+        </div>
+    {/if}
     
 </section>
 

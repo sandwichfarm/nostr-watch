@@ -6,11 +6,11 @@
     export let profile: PubkeyProfile;
 </script>
 
-<div class="flex">
-    <div class="flex-shrink-0 mr-2">
+<div class="flex flex-nowrap">
+    <div class="flex-shrink mr-2">
         {#if profile?.photo}
             <span class="overflow-hidden max-w-8 h-auto">
-                <img src={profile.photo} alt={profile.photo} class="w-8 h-8 rounded-full" />
+                <img src={profile.photo} alt={profile.photo} class="w-10 h-10 rounded-full" />
             </span>
         {:else}
             <span class="rounded-full overflow-hidden inline-block">
@@ -18,10 +18,10 @@
             </span>
         {/if}
     </div>
-    <div class="">
+    <div class="flex-grow">
         {#if profile?.name}
-            <div class="text-sm">{profile.name}</div>
+            <div class="text-md">{profile.name}</div>
         {/if}
-        <div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis">{pubkey}</div>
+        <div class="text-xs text-gray-500 block w-full overflow-hidden overflow-ellipsis">{pubkey}</div>
     </div>
 </div>

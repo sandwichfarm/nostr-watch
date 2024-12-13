@@ -4,7 +4,7 @@ import { defaultWebsocketAdapterOptions } from "@base/core";
 import { IAdaptersArgument } from "@base/interfaces/IAdaptersArgument";
 import { Filter } from "nostr-tools";
 import { EventEmitter } from "tseep";
-import { isPRE, isRE } from "@base/utils";
+import { deterministicHash, isPRE, isRE } from "@base/utils";
 
 type EventHandler = (event: IEvent) => any;
 
@@ -27,6 +27,7 @@ export class Service {
   protected websocketAdapter: IWebsocketAdapter;
   protected _groupedRelays: IGroupedRelays = {};
   protected _ready: boolean = false;
+  protected _subscriptions: Set<string> = new Set();
 
   constructor(adapters: IAdaptersArgument) {
     this.cacheAdapter = adapters.cacheAdapter;
@@ -43,6 +44,10 @@ export class Service {
 
   get userMetaRelays(): string[]{
     return this._groupedRelays?.userMeta || [];
+  }
+
+  get subscriptions(): Set<string> {
+    return this._subscriptions;
   }
 
   async ready(): Promise<void> {
@@ -62,9 +67,14 @@ export class Service {
   }
 
   async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
-    const { filters, relays, options } = args;
+    let { filters, relays, options, hash } = args;
+    if(!hash) {
+      hash = deterministicHash(args)
+    }
     const message: WebsocketRequestBody = { filters, relays, options };
+    this.subscriptions.add(hash)
     const result = await this.websocketAdapter.subscribe(message, callbacks);
+    this.subscriptions.delete(hash)
     return result;
   }
 
@@ -72,13 +82,25 @@ export class Service {
     this.websocketAdapter.unsubscribe(hash);
   }
 
+  async unsubscribeAllActive(){
+    this.subscriptions.forEach((hash) => {
+      this.unsubscribe(hash);
+    })
+  }
+
   async unsubscribeAll(){
     this.websocketAdapter.unsubscribeAll();
   }
 
   async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+    if(!args.hash) {  
+      args.hash = deterministicHash(args);
+    }
     console.warn('Service.fetch() not implemented');
-    return this._fetch(args, callbacks);
+    this.subscriptions.add(args.hash)
+    const results = await this._fetch(args, callbacks);
+    this.subscriptions.delete(args.hash)
+    return results;
   }
 
   async countFromCache(filters: Filter[]): Promise<number> {

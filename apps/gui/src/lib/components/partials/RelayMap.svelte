@@ -86,7 +86,7 @@
       const rtt = monitorCheck?.rtt || undefined
 
       //console.log('monitor data', monitor, monitor.pubkey, dd, monitorCheck, rtt)
-      if(!dd || !rtt || !monitorCheck) return console.warn(`${monitor.pubkey} could not find data...`)
+      if(!dd || !rtt || !monitorCheck) return //console.warn(`${monitor.pubkey} could not find data...`)
   
       const point: MapPoint = { 
         id: monitor.pubkey, 

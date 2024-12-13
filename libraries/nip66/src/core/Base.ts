@@ -8,6 +8,7 @@ import type { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 
 import type { Workers } from './Workers';
 import { StateManager } from '@base/managers/StateManager';
+import { delay } from '@nostrwatch/utils';
 
 type AnyAdapter = IWebsocketAdapter | ICacheAdapter;
 
@@ -55,18 +56,18 @@ export default class {
     return this.relayService;
   }
 
-  async ready(): Promise<void> {
-    while(!this.initialized){
-      await new Promise(resolve => setTimeout(resolve, 100))
-    }
-  }
-
   private set initialized(value: boolean) {
     this._initialized = value;
   }
 
   get initialized(): boolean {
     return this._initialized;
+  }
+
+  async ready(): Promise<void> {
+    while(!this.initialized){
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
   }
 
   on(event: string, listener: (...args: any[]) => void): void {
@@ -85,6 +86,23 @@ export default class {
     StateManager.emit('destroy');
   }
 
+  async boot(): Promise<void> {
+    this.init();
+    await this.ready();
+    await this.monitorService?.bootstrap();
+  }
+
+  async shutdown(): Promise<void> {
+    await this.adapters.cacheAdapter.shutdown();
+    await this.adapters.websocketAdapter.shutdown();
+  }
+
+  async restart(): Promise<void> {
+    await this.shutdown();
+    await delay(1000);
+    await this.boot();
+  }
+
   async useAdapter(adapter?: ICacheAdapter | IWebsocketAdapter): Promise<void> {
     if(!adapter) {
       return console.warn('No adapter provided')
@@ -92,15 +110,11 @@ export default class {
     if(typeof adapter === 'function') {
       return console.warn('Adapter should be an instantiated CacheAdapter or WebsocketAdapter')
     }
-    //console.log(adapter.constructor.name, this.isWebsocketAdapter(adapter), this.isCacheAdapter(adapter))
-
     if(this.isCacheAdapter(adapter)){
-      //console.log('isCacheAdapter', adapter)
       this.cacheAdapter = adapter as ICacheAdapter
       return
     }
     if(this.isWebsocketAdapter(adapter)){
-      //console.log('isWebsocketAdapter', adapter)
       this.websocketAdapter = adapter as IWebsocketAdapter
       return
     } 
@@ -108,36 +122,28 @@ export default class {
   }
 
   isCacheAdapter(adapter: AnyAdapter): boolean {
-    //console.log(adapter, (adapter.constructor as any).type )
     return (adapter.constructor as any).type === 'CacheAdapter';
   }
 
   isWebsocketAdapter(adapter: AnyAdapter): boolean {
-    //console.log(adapter, (adapter.constructor as any).type )
     return (adapter.constructor as any).type === 'WebsocketAdapter';
   }
   
   async init() {
     await this.setupWorkers()
-    //console.log(`[Base] Workers ready`)
     await this.setupServices()
-    //console.log(`[Base] Services ready`)
     await this.adaptersReady()
-    //console.log(`[Base] Adapters ready`)
     this.initialized = true;
   }
 
   async adaptersReady(){
     if(this?.cacheAdapter)
       await this?.cacheAdapter.ready()
-    //console.log(`[Base] CacheAdapter ready`)
     if(this?.websocketAdapter)
       await this?.websocketAdapter.ready()
-    //console.log(`[Base] WebsocketAdapter ready`)
   }
 
   async setupWorkers(){
-    // if(!this?.adapters?.websocketAdapter || !this?.adapters?.cacheAdapter) return console.warn('No adapters provided')
     const { Workers } = await import('./Workers')
     const workers: Workers = new Workers(this.adapters)
     
@@ -181,26 +187,9 @@ export default class {
     return this?.cacheAdapter?.workers?.cache;
   }
 
-  async bootstrap(){
-    this.monitorService?.bootstrap();
-    //seed
-    //desync
-    //sync
-    //idle
-  }
-
-  async bootstrapMonitors(){
-    // this.monitorService?.populateMonitors();
-    // this.monitorService?.checkMonitorsActive();
-  }
-
-  async populateChecksRelays(){
-    // if(!this?.monitorService) return console.warn('monitorService not initialized')
-    // const activeMonitors = await this.monitorService.getActiveMonitors()
-    // for(const monitorPubkey of activeMonitors) {
-    //   this.relayService?.getOnlineRelaysByMonitorPubkey(monitorPubkey);
-    // }
-  }
+  // async bootstrap(){
+    
+  // }
 
   ping(): void {
     this.cacheAdapter?.ping()
@@ -209,88 +198,5 @@ export default class {
 
   REQ(filters: any): void {
     this.cacheAdapter?.REQ(filters)
-    // this.websocketAdapter?.REQ(filters)
   }
-
-  // async getOfflineRelaysByMonitor(){
-
-  // }
-
-  // async getDeadRelaysByMoniitor(){
-
-  // }
-
-  // async getChecksByRelay(){
-    
-  // }  
-
-  /**
-   * Retrieves active monitors.
-   */
-  // async getActiveMonitors() {
-  //   return await this?.monitorService?.getActiveMonitors();
-  // }
-
-  /**
-   * Finds the monitor closest to a given geohash.
-   */
-  // async findMonitorClosestToGeohash(geohash: string) {
-  //   return await this?.monitorService?.findMonitorClosestToGeohash(geohash);
-  // }
-
-  /**
-   * Finds monitors conducting specific checks.
-   */
-  // async findMonitorsBySpecificChecks(checks: string[]) {
-  //   return await this?.monitorService?.findMonitorsBySpecificChecks(checks);
-  // }
-
-  /**
-   * Finds relays based on various criteria.
-   * Each method delegates to RelayService's methods.
-   */
-  // async findRelaysByNips(nips: number[], condition: 'and' | 'or' = 'and') {
-  //   return await this?.relayService?.findRelaysByNips(nips, condition);
-  // }
-
-  // async findRelaysByISP(isp: string) {
-  //   return await this?.relayService?.findRelaysByISP(isp);
-  // }
-
-  // async findRelaysByIP(ip: string) {
-  //   return await this?.relayService?.findRelaysByIP(ip);
-  // }
-
-  // async findRelaysByCountryCode(countryCode: string) {
-  //   return await this?.relayService?.findRelaysByCountryCode(countryCode);
-  // }
-
-  // async findRelaysByOwner(ownerPubkey: string) {
-  //   return await this?.relayService?.findRelaysByOwner(ownerPubkey);
-  // }
-
-  // async findRelaysByNetwork(network: string) {
-  //   return await this?.relayService?.findRelaysByNetwork(network);
-  // }
-
-  // async findRelaysByRTT(
-  //   rtt: number,
-  //   comparator: '<' | '>' | '<=' | '>=' | '=='
-  // ) {
-  //   return await this?.relayService?.findRelaysByRTT(rtt, comparator);
-  // }
-
-  // async findRelaysByLiveness(
-  //   status: 'online' | 'offline' | 'dead',
-  //   thresholds?: {
-  //     onlineThreshold?: number;
-  //     deadThreshold?: number;
-  //   }
-  // ) {
-  //   return await this?.relayService?.findRelaysByLiveness(status, thresholds);
-  // }
-
-  // async sortMonitorsByDistance(geohash: string, precision?: number) {
-  //   return await this?.relayService?.sortMonitorsByDistance(geohash, precision);
-  // }
 }

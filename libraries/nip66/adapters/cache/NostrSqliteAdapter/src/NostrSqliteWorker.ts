@@ -36,7 +36,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     async setup(command: AdapterWorkerMessage) {
         //console.log(`NostrSqliteWorker: setup()`, command);
         const conf: InitAargs = {
-            databasePath: "relay.db",
+            databasePath: "relay2.db",
             insertBatchSize: this.state.insertBatchSize,
         };
 

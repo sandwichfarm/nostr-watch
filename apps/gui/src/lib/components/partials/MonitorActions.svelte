@@ -41,7 +41,15 @@
             } 
             else {
                 monitor.enable()
-                addEventsToStore(await $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey) || []);
+                const lastSync = monitor.getLastSyncSince
+                let events: IEvent[];
+                if(monitor.getLastSyncSince(30166)) {
+                    events = await $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey) || []
+                }
+                else {
+                    events = await $nip66?.services?.monitors?.fetchMonitorChecks(monitor.pubkey, undefined, true) || [];
+                }
+                addEventsToStore(events)
                 await $nip66?.services.monitors?.countMonitorChecksFromCache(monitor.pubkey).then( (count: number) => {
                     activeMonitorChecksCount.update((value: Record<string, number>) => {
                         return {

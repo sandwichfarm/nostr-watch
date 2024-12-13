@@ -12,11 +12,14 @@ import { addEventsToStore } from '$lib/stores/events-helpers.js';
 
 import type { Monitor } from "@nostrwatch/nip66/models"
 import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
-import { hasBeenBoostrapped, isBootstrapping, isSeeded } from '../stores/app';
+import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded } from '../stores/app';
+import type { SubscribeHandlers } from '@nostrwatch/nip66/core/WebsocketAdapter';
 
 let $monitorsMap: Map<string, Monitor>;
 
 monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
+
+let $nip66: Nip66;
 
 export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
     const $nip05Service = get(nip05Service)
@@ -139,6 +142,7 @@ export const bootstrap = async (_instance?: Nip66) => {
         $nip66?.services?.monitors?.bootstrap().then( () => {
             isBootstrapping.set(false)
             updateLastSync()
+            beginLiveSync({ onevents: addEventsToStore })
         })
     }
     else {
@@ -147,12 +151,27 @@ export const bootstrap = async (_instance?: Nip66) => {
         // await $nip66?.adapters?.cache.ready();
         await new Promise( (resolve) => setTimeout(resolve, 1000) ) 
         //
-        seedFromCache($nip66);
+        seedFromCache($nip66).then( () => {
+            beginLiveSync({ onevents: addEventsToStore })
+        });
     }
-};
+    
+}
+
+export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {
+    isLivesyncing.set(true)
+    const $nip66 = await instance()
+    $nip66?.services?.monitors?.beginLiveSync(callbacks)
+}
+
+export const stopLiveSync = async (): Promise<void> => {
+    isLivesyncing.set(false)
+    const $nip66 = await instance()
+    $nip66?.services?.monitors?.stopLiveSync()
+}
 
 export const destroy = () => {
-    nip66.update(($nip66) => {
+    nip66.update(($nip66: Nip66) => {
         if ($nip66 && typeof $nip66.destroy === 'function') {
             $nip66.destroy();
         } else {
@@ -175,8 +194,7 @@ export const seedFromCache = async ($nip66?: Nip66) => {
         promises.push(new Promise( resolve => {
             console.log('!!! begin seeding', monitor.pubkey)
             console.log('loading from cache', monitor.pubkey)
-            $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey)
-                .then(resolve)
+            $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey).then(resolve)
         }));
     })
     const cachedEvents = (await Promise.all(promises)).flat();

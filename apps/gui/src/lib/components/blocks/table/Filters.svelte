@@ -653,11 +653,18 @@
                                     </Button>
                                 {/each}
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
-                                    <a href="#" on:click|preventDefault={() => toggleShowAllBadges(filter.key)} class="more-link">
+                                    <a href="#" 
+                                        on:click|preventDefault={() => toggleShowAllBadges(filter.key)} 
+                                        class="text-sm text-center relative more-link block py-2 text-white/50 bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-white/10"
+                                        >
                                         {#if $showAllFilters[filter.key]}
+                                            <span class="absolute left-2">⇈</span>
                                             Less
+                                            <span class="absolute right-2">⇈</span>
                                         {:else}
+                                            <span class="absolute left-2">⇊</span>
                                             More
+                                            <span class="absolute right-2">⇊</span>
                                         {/if}
                                     </a>
                                 {/if}
@@ -697,13 +704,20 @@
                                     </Button>
                                 {/each}
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
-                                    <a href="#" on:click|preventDefault={() => toggleShowAllBadges(filter.key)} class="more-link">
-                                        {#if $showAllFilters[filter.key]}
-                                            Less
-                                        {:else}
-                                            More
-                                        {/if}
-                                    </a>
+                                <a href="#" 
+                                on:click|preventDefault={() => toggleShowAllBadges(filter.key)} 
+                                class="text-sm text-center relative more-link block py-2 text-white/50 bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-white/10"
+                                >
+                                    {#if $showAllFilters[filter.key]}
+                                        <span class="absolute left-2">⇈</span>
+                                        Less
+                                        <span class="absolute right-2">⇈</span>
+                                    {:else}
+                                        <span class="absolute left-2">⇊</span>
+                                        More
+                                        <span class="absolute right-2">⇊</span>
+                                    {/if}
+                                </a>
                                 {/if}
                             {:else}
                                 <div>No options found.</div>
@@ -777,15 +791,6 @@
         /* Example active state styles */
         background-color: #3182ce;
         color: white;
-    }
-    /* Optional: Style the more-link */
-    .more-link {
-        color: #3182ce;
-        cursor: pointer;
-        text-decoration: underline;
-    }
-    .more-link:hover {
-        text-decoration: none;
     }
     /* Style for clear buttons inside badges */
     .active-filters-list .badge button {

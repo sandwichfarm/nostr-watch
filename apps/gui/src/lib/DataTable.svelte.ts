@@ -29,6 +29,8 @@ type TableConfig<T> = {
   initialFilters?: { [id: string]: any[] };
 };
 
+type SortStateType = { columnId: string | null; direction: SortDirection }
+
 /**
  * Represents a data table with sorting, filtering, and pagination capabilities.
  * @template T The type of data items in the table.
@@ -39,7 +41,7 @@ export class DataTable<T> {
 
   #originalData = $state<T[]>([]);
   #currentPage = $state(1);
-  #sortState = $state<{ columnId: string | null; direction: SortDirection }>({
+  #sortState = $state<SortStateType>({
     columnId: null,
     direction: null
   });
@@ -261,7 +263,12 @@ export class DataTable<T> {
     } else {
       this.#sortState = { columnId, direction: 'asc' };
     }
+    return this.#sortState
   };
+
+  setSort(sortState: SortStateType){
+    this.#sortState = sortState;
+  }
 
   /**
    * Returns the formatted value for a given row and column.

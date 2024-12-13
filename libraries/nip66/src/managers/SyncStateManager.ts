@@ -1,7 +1,7 @@
 import { LocalStorageWrapper } from "@base/core/LocalStorageWrapper";
 import { SyncKeys } from "@base/utils/SyncKeys";
 
-export type SyncRange = { since: number, until?: number } 
+export type SyncRange = { since?: number, until?: number } 
 
 export type SyncRangeParameter = {
     kind: number,
@@ -29,25 +29,31 @@ export class SyncStateManager {
         this.localStorage.setItem(key, value.toString());
     }
 
-    getLastSync(kind: number): SyncRange {
+    getLastSync(kind: number): SyncRange | undefined {
+      const since = this.getLastSyncSince(kind);
+      const until = this.getLastSyncUntil(kind);
+      if(since || until){
         return {
-          since: this.getLastSyncValue(kind, 'since'),
-          until: this.getLastSyncValue(kind, 'until'),
+          since,
+          until
         };
       }
+      return undefined;
+    }
   
-    getLastSyncSince(kind: number): number {
+    getLastSyncSince(kind: number): number | undefined {
       return this.getLastSyncValue(kind, 'since');
     }
   
-    getLastSyncUntil(kind: number): number {
+    getLastSyncUntil(kind: number): number | undefined {
       return this.getLastSyncValue(kind, 'until');
     }
   
-    getLastSyncValue(kind: number, rangeKey: 'since' | 'until'): number {
+    getLastSyncValue(kind: number, rangeKey: 'since' | 'until'): number | undefined {
         const key = this.keyHelper.generateKey('lastSync', kind, rangeKey);
         const returnedValue = this.localStorage.getItem(key);
-        const value = parseInt(returnedValue || '0');
+        if(!returnedValue) return undefined;
+        const value = parseInt(returnedValue);
         //console.log(`getLastSyncValue: ${key} -> ${returnedValue} === ${value}`);
         return value;
     }

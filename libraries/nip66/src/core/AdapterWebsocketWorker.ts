@@ -131,11 +131,13 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   send(response: WebsocketResponse = defaultWebsocketResponse){
+    console.log('send.')
     const { to, args } = response
     let sent = false
     if(to === 'adapter'){
       if(!this?.mainThread) return console.warn('AdapterWebsocketWorker: mainThread not found')
       this.mainThread.postMessage(args)
+      console.log('sent message to adapter')
       sent = true
     }
     if(to === 'cache'){
@@ -158,7 +160,10 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     if(!stream){
       this.requestSyncReponse(request, result as IEvent[])
     }
-    this.respond(ResponseType.complete, request)
+    console.log(hash, options)
+    if( !options?.keepAlive ){
+      this.respond(ResponseType.complete, request)
+    }
   }
 
   unsubscribe(args: WebsocketRequestBody){ args }
@@ -201,8 +206,10 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   respond(type: ResponseType, request: WebsocketRequestBody, result?: IEvent | IEvent[]){
+    
     const { hash, options } = request;
     const { cache, returnResults } = options;
+    
     const response = {
       type, 
       result,
@@ -212,12 +219,13 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       this.send({to: 'cache', args: response})
     }
     if(returnResults === true){
+      console.log('respond to websocket adapter', hash, result instanceof Array? result.length : result)
       this.send({to: 'adapter', args: response})
     }
   }
 
   batchResponse(events: IEvent[], state?: WebsocketRequestBody, id?: string){
-    //console.log(`AdapterWebsocketWorker: batchResponse: ${id}`, events.length)
+    console.log(`AdapterWebsocketWorker: batchResponse: ${id}`, events.length)
     if(!state) throw new Error('AdapterWebsocketWorker: batchResponse: state is undefined')
     this.respond(ResponseType.events, state, events)
   }

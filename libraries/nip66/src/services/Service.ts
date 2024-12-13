@@ -71,7 +71,7 @@ export class Service {
     if(!hash) {
       hash = deterministicHash(args)
     }
-    const message: WebsocketRequestBody = { filters, relays, options };
+    const message: WebsocketRequestBody = { filters, relays, options, hash };
     this.subscriptions.add(hash)
     const result = await this.websocketAdapter.subscribe(message, callbacks);
     this.subscriptions.delete(hash)

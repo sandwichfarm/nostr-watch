@@ -11,6 +11,7 @@
     import { Input } from '$lib/components/ui/input/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
+	import { StateManager } from '@nostrwatch/nip66';
 
     export let data: any;
     export let config: any;
@@ -20,9 +21,8 @@
     const { columnsDisable, columnsShow, filtersDisable, filtersShow, humanReadableNames, formatters, tableFormatters, filterFormatters, tableRowStyler } = config
 
 	const maxBadgeLength: number = 20;
-
     
-
+    const sortState = StateManager.get('sortState:relays') ?? undefined
 
     // **Stores and Reactive Variables**
     const filters = writable({});
@@ -102,13 +102,23 @@
         }
     );
 
+    $: {
+        if (tableInstance) {
+            (tableInstance as DataTable<any>).baseRows = $filteredTableData.data;
+            (tableInstance as DataTable<any>).pageSize = $resultsPerPage
+        }
+    }
+
     const createTable = () => {
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
-            tableInstance = new DataTable<any>({
-                pageSize: $resultsPerPage,
-                columns: $filteredTableData.columns,
-                data: $filteredTableData.data,
-            });
+            // if(tableInstance === null) {
+                tableInstance = new DataTable<any>({
+                    pageSize: $resultsPerPage,
+                    columns: $filteredTableData.columns,
+                    data: $filteredTableData.data,
+                });
+            // }
+            
         } else {
             if (tableInstance) {
                 console.log('Destroying DataTable instance due to no data.');
@@ -120,9 +130,9 @@
     // **DataTable Subscription**
     onMount(() => {
         const unsubRPP = resultsPerPage.subscribe(($resultsPerPage: number) => createTable());
-        const unsubTable = filteredTableData.subscribe($filteredTableData => createTable());
+        // const unsubTable = filteredTableData.subscribe($filteredTableData => createTable());
         return () => {
-            unsubTable();
+            // unsubTable();
             unsubRPP();
             if (tableInstance) {
                 tableInstance = null;
@@ -163,7 +173,12 @@
                                 <Table.Head>
                                     <button
                                         class="flex items-center"
-                                        on:click={() => { if(tableInstance) tableInstance.toggleSort(column.id) }}
+                                        on:click={() => { 
+                                            if(tableInstance) {
+                                                const sortState = tableInstance.toggleSort(column.id) 
+                                                StateManager.set('sortState:relays', sortState)
+                                            }
+                                        }}
                                         disabled={!tableInstance?.isSortable(column.id)}
                                     >
                                         {column.name}

@@ -159,15 +159,15 @@ export class Monitor {
     return this._lastActive;
   }
 
-  set lastSyncSince(rangeParameter: SyncRangeParameter) {
-    if(!this?.state) this.state = new SyncStateManager(this.pubkey)
-    this.state.lastSyncSince = rangeParameter;
-  }
+  // set lastSyncSince(rangeParameter: SyncRangeParameter) {
+  //   if(!this?.state) this.state = new SyncStateManager(this.pubkey)
+  //   this.state.lastSyncSince = rangeParameter;
+  // }
 
-  set lastSyncUntil(rangeParameter: SyncRangeParameter) {
-    if(!this?.state) this.state = new SyncStateManager(this.pubkey)
-    this.state.lastSyncUntil = rangeParameter;
-  }
+  // set lastSyncUntil(rangeParameter: SyncRangeParameter) {
+  //   if(!this?.state) this.state = new SyncStateManager(this.pubkey)
+  //   this.state.lastSyncUntil = rangeParameter;
+  // }
 
   get pubkey(): string {
     return this.registration?.pubkey as string;
@@ -210,12 +210,11 @@ export class Monitor {
 
   get checkFilterSync(): Filter {
     // //console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
-    const kinds = [30166];
-    const syncRange = this.getLastSync(30166)
-    const since = syncRange?.since || Math.round(Date.now() / 1000) - this?.frequency;
-    const until = syncRange?.until ||Math.round(Date.now() / 1000);
+    const kind = 30166
+    const kinds = [kind];
+    const since = this.getLastSyncSince(kind) || Math.round(Date.now() / 1000) - this?.frequency;
     const authors = [this.pubkey];
-    return { kinds, since, until, authors };
+    return { kinds, since, authors };
   }
 
   get isDeadBefore(): number {
@@ -295,7 +294,7 @@ export class Monitor {
     return results;
   }
 
-  getLastSyncSince(kind: number): number {
+  getLastSyncSince(kind: number): number | undefined {
     if(!this?.state) this.state = new SyncStateManager(this.pubkey)
     return this.state.getLastSyncSince(kind);
   }
@@ -305,7 +304,7 @@ export class Monitor {
     return this.state.getLastSyncUntil(kind);
   }
 
-  getLastSync(kind: number): SyncRange {
+  getLastSync(kind: number): SyncRange | undefined {
     if(!this?.state) this.state = new SyncStateManager(this.pubkey)
     return this.state.getLastSync(kind);  
   }

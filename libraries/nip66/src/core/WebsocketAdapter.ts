@@ -168,9 +168,13 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   onMessage(response: WebsocketResponseBody): void {
-    const { hash, type } = response
+    const { hash } = response
+    console.log('got the fucking message.', hash)
     if(hash && this.subscriptions.has(hash)){
       StateManager.emit(hash, response)
+    }
+    else {
+      console.warn(`[WebsocketAdapter] No subscription found for hash: ${hash}`)
     }
   } 
 
@@ -182,7 +186,10 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       action: 'subscribe',
       args
     })
-    StateManager.emit('websocket:subscription', hash)
+    // if(this.subscriptions.has(hash)) {
+    //   console.warn(`[WebsocketAdapter] Already subscribed to ${hash}`)
+    //   return true;
+    // }
     return this.response(hash, callbacks) as Promise<IEvent[] | boolean>
   }
 
@@ -210,14 +217,15 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       message.args.hash = deterministicHash(message?.args?.filters ?? {})  
     }
     const { hash } = message.args
+    console.log('HASH', hash)
     if(!this?.worker) {
       console.warn('[WebsocketAdapter] Error sending command: no worker found')
       return hash
     }
+    console.log('adding subscription', hash)  
+    this.subscriptions.add(hash)
+    
     console.log(`[WebsocketAdapter:${this.constructor.name}] o/o SEND: ${message.action} -> websocketWorker`, message.args.filters)
-    if(message?.args?.options?.returnResults){
-      this.subscriptions.add(hash)
-    }
     if(this.worker instanceof Worker)
       this.worker.postMessage(message)
     else if(this.worker instanceof SharedWorker)
@@ -226,9 +234,11 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   async response(hash: string, callbacks?: SubscribeHandlers): Promise<boolean | any[]>{
+    console.log('response', hash)
     return new Promise( resolve => {
       const results: any[] = []
       const responseHandler = (message: WebsocketResponseBody) => {
+        console.log('websocket adapter response handler...')
         let { result, type } = message
         if(type === 'unsubscribed'){
           return true
@@ -237,7 +247,9 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           return true
         }
         if(type === 'events') {
+          console.log(`websocket adapter: events`)
           if(callbacks?.onevents){
+            console.log(`websocket adapter: onevents(${result.length})`)
             callbacks.onevents(result)
             return
           }
@@ -259,14 +271,16 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           }
         }
         else if(type == 'complete'){
+          console.log('deleting subscription:', hash)
           this.subscriptions.delete(hash)
+          console.log('complete: removing handler.', hash)
           StateManager.off(hash)
           if(callbacks?.onevent){
-            console.log('result:complete', 'resolve: true')
+            console.log('result:complete', hash, 'resolve: true')
             resolve(true)
           }
           else {
-            console.log('result:complete', `resolve: ${results.length} events`, results)
+            console.log('result:complete', hash, `resolve: ${results.length} events`, results)
             resolve(results)
           }
         }

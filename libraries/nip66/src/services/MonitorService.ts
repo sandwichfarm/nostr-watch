@@ -1,4 +1,4 @@
-import { defaultWebsocketAdapterOptions, SubscribeHandlers, WebsocketAdapterOptions, WebsocketRequestBody } from '@base/core/WebsocketAdapter';
+import { defaultWebsocketAdapterOptions, SubscribeHandlers, WebsocketAdapterFetchOptions, WebsocketAdapterOptions, WebsocketRequestBody } from '@base/core/WebsocketAdapter';
 import { IEvent } from '@base/interfaces';
 import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 import { Monitor } from '@base/models';
@@ -89,8 +89,7 @@ export class MonitorService extends Service {
   async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
     const { filters, relays, options } = args;
     const message: WebsocketRequestBody = { filters, relays, options };
-    const result = await this._fetch(message, callbacks);
-    return result;
+    return this._fetch(message, callbacks);
   }
   
   async sync(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
@@ -356,7 +355,7 @@ export class MonitorService extends Service {
     return this.fetchMonitorChecks(pubkey, _options, 'websocket');
   }
 
-  async fetchMonitorChecks(pubkey: string, _options?: Partial<WebsocketAdapterOptions>, from?: 'cache' | 'websocket'): Promise<IEvent[]> { 
+  async fetchMonitorChecks(pubkey: string, _options?: Partial<WebsocketAdapterOptions>, from?: 'cache' | 'websocket', sync: boolean = false): Promise<IEvent[]> { 
     const monitor = this.monitors.get(pubkey);
     if (!monitor) return [];
     let checkFilter: Filter;
@@ -376,8 +375,60 @@ export class MonitorService extends Service {
       case 'websocket':
         return await this.fetchFromWebsocket({ filters, relays, options });
       default: 
-        return this.fetch({ filters, relays, options }) as Promise<IEvent[]>;
+        if(sync) {
+          return this.fetch({ filters, relays, options }) as Promise<IEvent[]>;
+        }
+        else {
+          return this.sync({ filters, relays, options }) as Promise<IEvent[]>;
+        }
+        
     }
+  }
+
+  async beginLiveSync(callbacks?: SubscribeHandlers): Promise<void> {
+    console.log('!!! beginning live sync')
+    const startedAt: number = Math.round(Date.now()/1000);
+    const filters: Filter[] = []
+    this.enabledMonitors.forEach( (monitor: Monitor ) => {
+      const lastSyncUntil = monitor.getLastSync(30166)?.until;
+      filters.push({ kinds: [30166], authors: [monitor.pubkey], since: lastSyncUntil });
+    }) 
+    const hash = 'liveSyncMonitorsChecks';
+    const relays: string[] = this.nip66Relays;
+    const options: WebsocketAdapterOptions = {
+      cache: true,
+      keepAlive: true,
+      returnResults: true,
+      stream: true,
+      batch: 50
+    }
+    let highestTimestamp: number = 0;
+    const onevents: SubscribeHandlers['onevents'] = (events: IEvent[]) => {
+      console.log('!!! liveSync: onevents', events.length)
+      const now = Math.round(Date.now()/1000)
+      events.forEach((event) => {
+        const monitor = this.monitors.get(event.pubkey);
+        const { created_at } = event;
+        if((created_at || 0) > (monitor?.getLastSyncUntil(30166) || 0)){
+          monitor?.setLastSync(30166, 'since', now-monitor.frequency);
+          monitor?.setLastSync(30166, 'until', created_at || 0);
+        }
+        if(created_at as number > highestTimestamp) {
+          highestTimestamp = created_at as number;
+        }
+      });
+      if(highestTimestamp as number > startedAt) {
+        StateManager.set('lastCompleteSync', now)
+      }
+      callbacks?.onevents?.(events);
+    }
+    console.log('HASH', hash)
+    this.subscribe({ filters, relays, options, hash }, { onevents });
+  }
+
+  async stopLiveSync(): Promise<void> {
+    console.log('!!! stopping live sync')
+    await this.unsubscribe('liveSyncMonitorsChecks');
   }
 
   async ensureMonitorsActive(pubkeys?: string | string[]): Promise<void> {
@@ -443,11 +494,6 @@ export class MonitorService extends Service {
 
     console.log('MonitorService: ensureMonitorsActive:', `active monitors: ${this.activeMonitors.length}`, `total monitors: ${this.array.length}`);
   }
-  
-
-  // prioritizeMonitors(): void {
-  //   this.manager.prioritizeMonitors();
-  // }
 
   optimizeFilters(filters: Filter[]): Filter[] {
     const filterMap: Map<string, Filter> = new Map();

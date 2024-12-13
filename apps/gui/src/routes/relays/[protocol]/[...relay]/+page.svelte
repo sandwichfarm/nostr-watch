@@ -32,7 +32,8 @@ import { addEventsToStore } from '$lib/stores/events-helpers';
 import { doAggregateCache } from '$lib/stores/app';
 import { hasBeenBoostrapped } from '$lib/stores/app';
 import { clickToCopy } from '$lib/utils/ux';
-	import { observeViewport } from '$lib/utils/ux';
+import { observeViewport } from '$lib/utils/ux';
+import { isLivesyncing } from '$lib/stores/app';
 
 const loadComponents = async () => {
     const imports = [
@@ -150,10 +151,12 @@ const reset = () => {
 const loadRelayData = async () => {
     reset();
     nip66Instance = await instance();
-    const res = (await nip66Instance?.services?.relay?.getRelayData(relayUrl));
-    if (!res) return; 
-    const [data, mons] = res;
-    addEventsToStore(data);
+    if(!$isLivesyncing) {
+        const res = (await nip66Instance?.services?.relay?.getRelayData(relayUrl));
+        if (!res) return; 
+        const [data, mons] = res;
+        addEventsToStore(data);
+    }
     monitors.set(Array.from(mons?.values() || new Set()));
     await loadNip11();
     await loadOperatorMeta();
@@ -405,5 +408,13 @@ let width: number, height: number;
 
     .data-\[state\=active\]\:bg-background[data-state="active"] {
         @apply !bg-black/10;
+    }
+
+    pre {
+        white-space: pre-wrap;       /* Since CSS 2.1 */
+        white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+        white-space: -pre-wrap;      /* Opera 4-6 */
+        white-space: -o-pre-wrap;    /* Opera 7 */
+        word-wrap: break-word;       /* Internet Explorer 5.5+ */
     }
 </style>

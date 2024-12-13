@@ -70,11 +70,15 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
 
   async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
     let { filters, relays, options, hash, priority } = request;
+    const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
     priority = priority ?? 0;
-    return queue.add(() => {
+
+    console.log('nostools worker _subscribe', hash)
+
+    const subby = async (): Promise<IEvent[] | boolean> => {
       console.log('!!!! NostrToolsWorker: _subscribe: queue running now')
       return new Promise(async (resolve, reject) => {
-        const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
+        
         const effectiveRelays = relays ?? this.relays;
         const result: IEvent[] = [];
         let count: number = 0;
@@ -95,8 +99,9 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           }
         }
         const onclose = () => {
+          console.log(`closing subscription:`, hash)
           callbacks?.onclose?.();
-          this.subs.delete(hash as string);
+          this.subs.delete(hash as string);  
         }
         const oneose = () => {
           if(this.signal.aborted) return;
@@ -116,9 +121,19 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           filters,
           { onevent, oneose, onclose }
         );
-        this.subs.set(hash as string, closer.close.bind(closer));
+        this.subs.set(hash as string, () => {
+          console.log('[websocket worker] closing subscription:', hash)
+          closer.close()
+        });
       });
-    }, { priority }) as Promise<IEvent[] | boolean>;
+    }
+    
+    if(keepAlive){
+      subby()
+    }
+    else {
+      return queue.add(subby, { priority }) as Promise<IEvent[] | boolean>;
+    }
   }
 
   async _fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {

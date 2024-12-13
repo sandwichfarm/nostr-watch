@@ -32,6 +32,7 @@ import { addEventsToStore } from '$lib/stores/events-helpers';
 import { doAggregateCache } from '$lib/stores/app';
 import { hasBeenBoostrapped } from '$lib/stores/app';
 import { clickToCopy } from '$lib/utils/ux';
+	import { observeViewport } from '$lib/utils/ux';
 
 const loadComponents = async () => {
     const imports = [
@@ -134,7 +135,7 @@ const nip11: Readable<Nip11 | undefined> = derived(
 
 const reset = () => {
     if (currentRelay === relayUrl) return;
-    nip66Instance?.services?.relay?.unsubscribeAllActive();
+    nip66Instance?.services?.relay?.unsubscribeAll();
     console.log('!!! RESET');
     loading = true;
     currentRelay = '';
@@ -180,7 +181,7 @@ const loadOperatorMeta = async () => {
 
 
 const mount = async () => {
-    await loadComponents();
+    loadComponents();
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
     if (hasBeenBoostrapped()) {
         while (!isSeeded) {
@@ -280,7 +281,14 @@ let width: number, height: number;
         </div>
         <div class="">
             <h1 class="copy-this relative">
-                <span class="block -mt-2 relative text-6xl py-2 px-3 text-white rounded-lg cursor-pointer hover:bg-black/50" use:clickToCopy>{relayUrl}</span>
+                <span 
+                    class="block -mt-2 relative text-6xl py-2 px-3 text-white rounded-lg cursor-pointer hover:bg-black/50" 
+                    use:clickToCopy 
+                    use:observeViewport
+                    aria-label="Copy relay URL to clipboard"
+                    >
+                    {relayUrl}
+                    </span>
                 <span class="copy-message">click to copy relay url</span>
             </h1>
             <p class="text-lg italic text-white/80 pl-3">{description}</p>

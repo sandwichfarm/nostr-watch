@@ -38,10 +38,10 @@
     $: items = $feed.map( item => {
         item.id = item.note.id 
         if(!$until) {
-            until.set(item.note.created_at);
+            until.set(item.note.created_at-1);
         }
         else if(item.note.created_at < $until) {
-            until.set(item.note.created_at);
+            until.set(item.note.created_at-1);
         }
         return item;
     });

@@ -100,7 +100,7 @@ export class StateManager {
 
     // Emit an event
     static emit(event: string, ...args: any[]): void {
-        // //console.log(`emitting event: ${event}`);
+        // ////console.log(`emitting event: ${event}`);
         this.incrementStat('emitter:emit');
         this._emitter.emit(event, ...args);
     }

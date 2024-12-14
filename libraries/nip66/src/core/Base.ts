@@ -150,7 +150,7 @@ export default class {
     //TODO: Replace with emitter
     while(!workers.ready){ await new Promise(resolve => setTimeout(resolve, 100)) }
 
-    //console.log('workers ready', workers)
+    ////console.log('workers ready', workers)
     if(this?.adapters?.cacheAdapter)
       this.adapters.cacheAdapter.workers = workers
     if(this?.adapters?.websocketAdapter)

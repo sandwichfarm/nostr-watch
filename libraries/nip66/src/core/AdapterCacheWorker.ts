@@ -57,7 +57,7 @@ export class AdapterCacheWorker extends AdapterWorker {
   }
 
   async onMessage(command: AdapterCacheWorkerCommand): Promise<void>{
-    //console.log('AdapterCacheWorker: onMessage', command)
+    ////console.log('AdapterCacheWorker: onMessage', command)
     const { type, result } = command
     if(type === 'complete') return;
     if(!result) return console.warn('result is not defined', command)
@@ -75,7 +75,7 @@ export class AdapterCacheWorker extends AdapterWorker {
   }
 
   async onChannelMessage(command: AdapterCacheWorkerCommand): Promise<void>  {
-    //console.log('AdapterCacheWorker: onChannelMessage', command)
+    ////console.log('AdapterCacheWorker: onChannelMessage', command)
     this.onMessage(command)
   }
   

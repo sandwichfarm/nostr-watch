@@ -8,20 +8,52 @@
 	
     import { monitorsSorted, monitorRows, inactiveDisabledMonitorChecksCount } from '$lib/stores/monitors.js';
 
-    import config from '$lib/config/dataTable/monitors.js';
+    import defaultTableConfig from '$lib/config/dataTable/monitors.js';
 	import { StateManager } from '@nostrwatch/nip66';
 	import { doBootstrap } from '$lib/stores/routines';
     import { doAggregateCache } from '$lib/stores/app';
+	import { writable, type Writable } from 'svelte/store';
+	import type { Formatters } from 'src/lib/config/dataTable/monitors';
+
+    type DataTableConfig = { 
+		columnsDisable: string[]
+        columnsShow: string[]
+        filtersDisable: string[]
+        filtersShow: string[]
+        humanReadableNames: Record<string, string>
+        formatters: Formatters
+        tableFormatters: Formatters 
+        filterFormatters: Formatters
+        tableRowStyler: (row: any) => string
+	}
 
 	let val: string='';
     let countIntVal: ReturnType<typeof setInterval>;
 
+    const tableKey: string = 'monitors'
+    const config: Writable<DataTableConfig | null> = writable(null);
+    const ready: Writable<boolean> = writable(false);
+    
+
     StateManager.on('monitor:update:lastActive', (value: any) => { console.log('monitor:lastActive', value) })
+
+    const setConfig = () => {
+		console.log('set config.')
+		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
+		if(userTableConfig) {
+			config.set({...defaultTableConfig, ...userTableConfig})
+		}
+		else {
+			config.set({...defaultTableConfig})
+		}
+		ready.set(true)
+	}
 
 	onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 		doBootstrap.set(true)
         doAggregateCache.set(true)
+        setConfig();
         // countIntVal = setInterval(() => {
         //     const activeMonitors = $nip66?.services?.monitors?.activeMonitors
         //     if(activeMonitors?.length){
@@ -49,6 +81,7 @@
     $: warnHasLessThanRecommendedMonitors = countEnabledMonitors < 3;
     $: warnHasMoreThanRecommendedMonitors = countEnabledMonitors > 8;
 </script>
+{#if $ready}
 <!-- <main class="mt-20 pt-10"> -->
     {#if $monitorsSorted.length}
         {#if criticalHasNoMonitorsEnabled}
@@ -85,7 +118,7 @@
             </Alert.Root>
         {/if}
 
-        <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} />
+        <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {tableKey} />
         <!-- <ul>
         {#each $monitors as monitor (monitor?.registration?.pubkey)}
             {#if monitor?.lastActive && monitor.lastActive > 0}
@@ -101,3 +134,5 @@
 <!-- </main> -->
 
 <Stats />
+
+{/if}

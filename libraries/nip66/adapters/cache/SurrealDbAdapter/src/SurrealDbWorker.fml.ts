@@ -46,7 +46,7 @@ export class SurrealDbWorker extends AdapterCacheWorker implements IAdapterCache
 
     constructor( options: WorkerOptions ){
       super(options)
-      //console.log('SurrealDbWorker constructor')
+      ////console.log('SurrealDbWorker constructor')
     }
 
     get db(): RelayDb {
@@ -105,7 +105,7 @@ export class SurrealDbWorker extends AdapterCacheWorker implements IAdapterCache
         this._unprocessed.push(event)
         return
       }
-      //console.log(this.db.isReady, this._unprocessed.length)
+      ////console.log(this.db.isReady, this._unprocessed.length)
     //   if(this._unprocessed.length > 0){
     //     this.addEvents(this._unprocessed)
     //   }
@@ -119,7 +119,7 @@ export class SurrealDbWorker extends AdapterCacheWorker implements IAdapterCache
     }
 
     async setup(command: SurrealDbWorkerCommand){
-        //console.log('SurrealDbWorker setup', command)
+        ////console.log('SurrealDbWorker setup', command)
         const { connectionType: type } = command 
         this._db = new RelayDb({ type });
         await this.ready()

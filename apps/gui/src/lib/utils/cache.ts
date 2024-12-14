@@ -1,7 +1,7 @@
 import type Nip66 from '@nostrwatch/nip66';
 import { get } from 'svelte/store';
-import { hasBeenBoostrapped, isBootstrapping, isSeeded } from '../stores/app';
-import { instance } from './lifecycle';
+import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded } from '../stores/app';
+import { instance, stopLiveSync } from './lifecycle';
 import { StateManager } from '@nostrwatch/nip66';
 import { events } from '../stores';
 
@@ -22,6 +22,9 @@ export const wipeCache = async () => {
 }
 
 const abortWebsocket = async () => {
+    if(get(isLivesyncing)) {
+        await stopLiveSync()
+    }
     if(get(isBootstrapping)) {
         const $nip66 = await instance();
         $nip66.adapters.websocketAdapter.unsubscribe();

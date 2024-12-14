@@ -8,46 +8,43 @@ import { isPubkey } from "@base/utils/nostr";
 export class Nip66Event extends Geocoded implements IEvent {
     _nip11?: Nip11 | false;
 
+    static keys = [
+      'id', 
+      'relay', 
+      'monitorPubkey', 
+      'created_at', 
+      'networks', 
+      'rtt', 
+      'operatorPubkey', 
+      'operatorPubkeyValid',
+      'name',
+      'description',
+      'supportedNips', 
+      'software', 
+      'icon',
+      'banner',
+      'version', 
+      'hasNip11',
+      'nip11Hash',
+      'paymentRequired', 
+      'authRequired', 
+      'dd',
+      'geohash', 
+      'geocode', 
+      'isp', 
+      'as', 
+      'asname', 
+      'ipv4', 
+      'ipv6', 
+      'sslValidTo', 
+      'sslIssuer',
+      'fees'
+    ];
+
     constructor(event: IEvent) {
       super(event);
       this.nip11 = this.content;
     }
-
-    get keys(): string[] {
-      return [
-        'nid', 
-        'relay', 
-        'monitorPubkey', 
-        'created_at', 
-        'networks', 
-        'rtt', 
-        'operatorPubkey', 
-        'operatorPubkeyValid',
-        'name',
-        'description',
-        'supportedNips', 
-        'software', 
-        'icon',
-        'banner',
-        'version', 
-        'hasNip11',
-        'nip11Hash',
-        'paymentRequired', 
-        'authRequired', 
-        'dd',
-        'geohash', 
-        'geocode', 
-        'isp', 
-        'as', 
-        'asname', 
-        'ipv4', 
-        'ipv6', 
-        'sslValidTo', 
-        'sslIssuer',
-        'fees'
-      ];
-    }
-
     get nip11(): Nip11 | undefined  {
       if(this._nip11 === false) return undefined;
       if(this._nip11 instanceof Nip11) return this._nip11; 

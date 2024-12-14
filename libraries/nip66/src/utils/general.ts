@@ -52,7 +52,7 @@ export const safeApplyMixins = (derivedCtor: any, baseCtors: any[]) => {
 
       if (!derivedCtor.prototype.hasOwnProperty(name)) {
         // Log what's being copied for debugging
-        //console.log(`Copying ${name} from ${baseCtor.name} to ${derivedCtor.name}`);
+        ////console.log(`Copying ${name} from ${baseCtor.name} to ${derivedCtor.name}`);
         
         if (descriptor) {
           // Use defineProperty to preserve method/function behavior, getters, setters, etc.
@@ -63,7 +63,7 @@ export const safeApplyMixins = (derivedCtor: any, baseCtors: any[]) => {
         }
       } else {
         // Log what is skipped due to an existing method with the same name
-        //console.log(`Skipping ${name} - already exists in ${derivedCtor.name}`);
+        ////console.log(`Skipping ${name} - already exists in ${derivedCtor.name}`);
       }
     });
   });

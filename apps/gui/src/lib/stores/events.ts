@@ -10,7 +10,6 @@ export const eventsArray: Readable<Nip66Event[]> = derived(
     ($events) => {
         const eventsArr = Array.from($events?.values() || []);
         if(eventsArr.length && get(doAggregateCache) === true) {
-            console.log('do aggregate', get(doAggregateCache))
             StateManager.set('count:events:checks', eventsArr.length);
         }
         return eventsArr;

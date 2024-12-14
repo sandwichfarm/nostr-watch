@@ -83,8 +83,8 @@ export class RelayDb {
     }
 
     async init(): Promise<void>{
-        //console.log('SurrealDb: Initializing');
-        //console.log(`connecting?`, await this.connect());
+        ////console.log('SurrealDb: Initializing');
+        ////console.log(`connecting?`, await this.connect());
         await this.bootstrap();
     }
 
@@ -94,7 +94,7 @@ export class RelayDb {
             engines: surrealdbWasmEngines(),
         });
         let connectionType;
-        //console.log(`set connection type: ${this.connectionType?.toLowerCase()}`)
+        ////console.log(`set connection type: ${this.connectionType?.toLowerCase()}`)
         switch(this.connectionType?.toLowerCase()){
             case 'indxdb':
             case 'indexeddb':
@@ -107,9 +107,9 @@ export class RelayDb {
                 break;
         }
         if(!connectionType) throw new Error('Invalid connection type');
-        //console.log(`connecting to ${connectionType}`);
+        ////console.log(`connecting to ${connectionType}`);
         await this.store.connect(connectionType);
-        // //console.log(await this.store.info())
+        // ////console.log(await this.store.info())
     }
 
     private async bootstrap(): Promise<void>{
@@ -138,7 +138,7 @@ export class RelayDb {
         await this.addEventQ(event);
         await this.addCheckQ(check, relay);
         // if (nip11) {
-        //     //console.log(nip11)
+        //     ////console.log(nip11)
         //     await this.addNip11(nip11, event.pubkey);
         // }
         // if (geocodes?.length) {
@@ -156,7 +156,7 @@ export class RelayDb {
     async addMonitor(monitor: IMonitor): Promise<void> {
         const existingMonitor = await this.store.select<IMonitor>(new RecordId('monitor', monitor.pubkey))
         if (existingMonitor) {
-            // //console.log('existing monitor', existingMonitor)
+            // ////console.log('existing monitor', existingMonitor)
             return;
         }
         const result = await this.store.insert<IMonitor>('monitor', monitor)
@@ -217,7 +217,7 @@ export class RelayDb {
     
         if(existingChecks?.length){
             const nidsToDelete = existingChecks.map((existingCheck: any) => existingCheck.nid);
-            //console.log(`nidsToDelete ${nidsToDelete.length}`, nidsToDelete);
+            ////console.log(`nidsToDelete ${nidsToDelete.length}`, nidsToDelete);
             if (nidsToDelete.length > 0) {
                 await this.store.query(`DELETE FROM check WHERE nid IN $nidsToDelete`, { nidsToDelete });
             }

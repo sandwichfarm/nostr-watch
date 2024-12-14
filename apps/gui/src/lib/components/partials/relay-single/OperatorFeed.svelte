@@ -11,6 +11,8 @@
     import OperatorFeedNote from './OperatorFeedNote.svelte';
 	import { observeViewport } from '$lib/utils/ux';
 	import type { Nip11 } from '@nostrwatch/nip66/models/Nip11';
+	import { isLivesyncing } from '$lib/stores/app';
+	import { beginLiveSync, stopLiveSync } from '$lib/utils/lifecycle';
 
     export let pubkey: string; 
 
@@ -46,7 +48,13 @@
         return item;
     });
 
+    let wasLivesyncing = false;
+
     const mount = async () => {
+        if($isLivesyncing) {
+            wasLivesyncing = true;
+            stopLiveSync()
+        }
         const instance = get(nip66);
         while(!instance || !instance.ready || !pubkey) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -64,16 +72,16 @@
     const destroy = async () => {
         $userService.unsubscribeAll();
         feed.set([]);
+        if(wasLivesyncing) {
+            beginLiveSync();
+        }
     }
     
     const fetchMoreEvents = async () => {
         if($busy) return;
         busy.set(true);
-        console.log('fetchMoreEvents()', $until);
         if(!$until) return;
-        console.log('fetchMoreEvents(): until is set');
         await $userService.feed(user, 20, $until).then( (data: UserFeed) => {
-            console.log('fetchMoreEvents(): data recieved');
             feed.update( (old: UserFeed) => {
                 return [...old, ...data]
             });

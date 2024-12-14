@@ -108,7 +108,7 @@ export class MonitorManager {
     if (!monitor && kind === 10166) {
       monitor = new Monitor(event);
       this.monitors.set(pubkey, monitor);
-      //console.log(`created new monitor for pubkey: ${pubkey}`);
+      ////console.log(`created new monitor for pubkey: ${pubkey}`);
     } else if(!monitor) {
       console.warn(`Monitor not found for pubkey: ${pubkey}`);
       return;
@@ -121,8 +121,8 @@ export class MonitorManager {
       monitor.addRelays(event);
     }
     this.monitors.set(pubkey, monitor);
-    //console.log(`did stuff for ${pubkey}`)
-    //console.log(`total monitors: ${this.monitors.size}`);
+    ////console.log(`did stuff for ${pubkey}`)
+    ////console.log(`total monitors: ${this.monitors.size}`);
   }
 
   sortMonitors(priority: MonitorPriority = MonitorPriority.Checks, apply: boolean = false): Monitor[] {
@@ -152,7 +152,7 @@ export class MonitorManager {
       if (monitor.relays) score++;
       if (!monitor.active) score = 0; // Inactive monitors have a score of 0
 
-      //console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`);
+      ////console.log(`prioritizeMonitors: ${monitor.registration.pubkey} score: ${score}`);
       scores[monitor.registration.pubkey] = score;
     });
 

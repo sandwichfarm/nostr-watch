@@ -9,7 +9,7 @@ interface Check {
 
 import { eventsArray } from './events.js';
 
-import type { Nip66Event } from '@nostrwatch/nip66/models';
+import { Nip66Event } from '@nostrwatch/nip66/models';
 import { StateManager } from "@nostrwatch/nip66";
 import { doAggregateCache } from "./app.js";
 
@@ -56,7 +56,7 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
 
   Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66Event) => {
-      [...nip66Event.keys, 'seenTimes'].forEach((key: string) => {
+      [...Nip66Event.keys, 'seenTimes'].forEach((key: string) => {
         const value = nip66Event[key];
         
         const isNonNull = value !== null && value !== undefined;

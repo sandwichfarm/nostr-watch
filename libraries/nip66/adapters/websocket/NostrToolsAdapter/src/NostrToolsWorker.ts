@@ -39,7 +39,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   protected _filtersQueue: Filter[] = [];
 
   constructor( options: NostrToolsWorkerOptions ){
-    //console.log('NostrToolsWorker: constructor', options)
+    ////console.log('NostrToolsWorker: constructor', options)
     super(options)
     const pool = new SimplePool();
     this._pool = pool
@@ -73,10 +73,10 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
     priority = priority ?? 0;
 
-    console.log('nostools worker _subscribe', hash)
+    //console.log('nostools worker _subscribe', hash)
 
     const subby = async (): Promise<IEvent[] | boolean> => {
-      console.log('!!!! NostrToolsWorker: _subscribe: queue running now')
+      //console.log('!!!! NostrToolsWorker: _subscribe: queue running now')
       return new Promise(async (resolve, reject) => {
         
         const effectiveRelays = relays ?? this.relays;
@@ -99,7 +99,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           }
         }
         const onclose = () => {
-          console.log(`closing subscription:`, hash)
+          //console.log(`closing subscription:`, hash)
           callbacks?.onclose?.();
           this.subs.delete(hash as string);  
         }
@@ -115,14 +115,14 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             resolve(result)
           }
         }
-        //console.log('NostrToolsWorker: _subscribe: this.pool.subscribeMany', effectiveRelays, filters)
+        ////console.log('NostrToolsWorker: _subscribe: this.pool.subscribeMany', effectiveRelays, filters)
         const closer = this.pool!.subscribeMany(
           effectiveRelays,
           filters,
           { onevent, oneose, onclose }
         );
         this.subs.set(hash as string, () => {
-          console.log('[websocket worker] closing subscription:', hash)
+          //console.log('[websocket worker] closing subscription:', hash)
           closer.close()
         });
       });
@@ -151,10 +151,10 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
       const events = []
       let count = 0
       // const fetchPromises: Promise<IEvent[] | boolean>[] = [];
-      //console.log(`running ${filters.length} fetches.`)
+      ////console.log(`running ${filters.length} fetches.`)
       for (let filter of filters) {
         if(this.signal.aborted) return;
-        //console.log(`NostrToolsWorker: _fetch #${count}: filter`, filter)
+        ////console.log(`NostrToolsWorker: _fetch #${count}: filter`, filter)
         events.push(await new Promise<IEvent[] | boolean>(async (resolve) => {
           const { since, until, ...remainingFilter } = filter;
           const range: Record<string, number> = {};
@@ -199,7 +199,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             resolve([]);
           }
         }));
-        //console.log(`NostrToolsWorker: _fetch #${count}: complete`)
+        ////console.log(`NostrToolsWorker: _fetch #${count}: complete`)
         count++
       }
       callbacks?.onclose?.();
@@ -229,7 +229,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   }
 
   abort(): void {
-    console.log('WEBSOCKET WORKER ABORTED')
+    //console.log('WEBSOCKET WORKER ABORTED')
     this.controller.abort();
     for(const closer of this.subs.values()){
       if(typeof closer === 'function') {

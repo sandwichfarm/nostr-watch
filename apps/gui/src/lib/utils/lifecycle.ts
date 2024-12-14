@@ -14,12 +14,20 @@ import type { Monitor } from "@nostrwatch/nip66/models"
 import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
 import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded } from '../stores/app';
 import type { SubscribeHandlers } from '@nostrwatch/nip66/core/WebsocketAdapter';
+import { Batcher } from '@nostrwatch/nip66/core';
 
 let $monitorsMap: Map<string, Monitor>;
 
 monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
 
 let $nip66: Nip66;
+
+let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
+    maxLength: 50, 
+    timeout: 30000,
+    callback: addEventsToStore
+})
+
 
 export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
     const $nip05Service = get(nip05Service)
@@ -45,7 +53,7 @@ export const bindBootstrapEmitters = (nip66Instance: Nip66) => {
     });    
 
     nip66Instance.on('events', (_events: any) => {
-        console.log('Svelte Received events:', _events.length);
+        // console.log('Svelte Received events:', _events.length);
         addEventsToStore(_events)
     });
 };
@@ -55,7 +63,7 @@ export const bindLiveSubscriptionEmitters = (nip66Instance: any) => {
         throw new Error('Invalid nip66Instance: missing `on` method.');
     }
     nip66Instance.on('event', (event: any) => {
-        console.log('Svelte Received event:', event.id);
+        // console.log('Svelte Received event:', event.id);
         const key = eventKey(egitvent);
         if (!key) return;
         events.update((currentEvents: Map<string, any>) => {
@@ -130,11 +138,18 @@ export const bootstrapMonitorChecks = async (_instance?: Nip66) => {
     await nip66Instance.monitorService.bootstrapMonitorChecks();
 }
 
+
 export const bootstrap = async (_instance?: Nip66) => {
     const $nip66 = await instance(_instance);
     await $nip66.ready();
     
     bindBootstrapEmitters($nip66);
+
+    const onevents = (events: IEvent[]) => {
+        for(const event of events){
+            liveSyncBatcher.add(event); 
+        }
+    }
     
     if( shouldSync() ){
         if( get(isBootstrapping) ) return console.log('!!! IS ALREADY BOOTSTRAPPING');
@@ -142,7 +157,7 @@ export const bootstrap = async (_instance?: Nip66) => {
         $nip66?.services?.monitors?.bootstrap().then( () => {
             isBootstrapping.set(false)
             updateLastSync()
-            beginLiveSync({ onevents: addEventsToStore })
+            beginLiveSync({ onevents })
         })
     }
     else {
@@ -152,7 +167,8 @@ export const bootstrap = async (_instance?: Nip66) => {
         await new Promise( (resolve) => setTimeout(resolve, 1000) ) 
         //
         seedFromCache($nip66).then( () => {
-            beginLiveSync({ onevents: addEventsToStore })
+            if(get(isLivesyncing)) return;
+            beginLiveSync({ onevents })
         });
     }
     

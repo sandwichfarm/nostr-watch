@@ -8,6 +8,8 @@ export * from './Batcher';
 export * from './CacheAdapter'
 
 export * from './Workers';
-export * from './Queue'
+export * from './Queue';
 
 export * from './WebsocketAdapter';
+
+export * from './Batcher';

@@ -25,7 +25,7 @@ export class DexieWorker extends AdapterCacheWorker implements IAdapterCacheWork
   }
 
   async addEvent(event: IEvent): Promise<void> {
-    //console.log('DexieWorker: _addEvent', event)
+    ////console.log('DexieWorker: _addEvent', event)
     if(!this?.idb) return console.warn('DexieWorker: idb is not defined')
     await this.idb.addRawEvent(event)
   }
@@ -39,7 +39,7 @@ export class DexieWorker extends AdapterCacheWorker implements IAdapterCacheWork
   //overload.
   async setup(command: DexieWorkerCommand){
     const { dbName } = command 
-    //console.log('DexieWorker setup', dbName)
+    ////console.log('DexieWorker setup', dbName)
     this.idb = new RelayDb(dbName); 
     await this.idb.init()
   }

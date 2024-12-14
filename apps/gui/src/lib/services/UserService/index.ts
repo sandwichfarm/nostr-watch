@@ -89,7 +89,6 @@ export class UserService extends Service {
             promises.push($nip66.adapters?.websocket?.unsubscribe(id))
         }
         await Promise.all(promises)
-        console.log('unsubscribed', this._subIds)
         this._subIds = []
     }
 
@@ -105,7 +104,6 @@ export class UserService extends Service {
                 const fetchRelatives = async (): Promise<UserFeedItemRelatives> => {
                     const fetcher = this.noteRelatives.bind(this)
                     const relatives = await fetcher(user, note)
-                    console.log('relatives', relatives) 
                     const reactions = relatives.filter(rel => rel.kind === 7);
                     const zaps = relatives.filter(rel => rel.kind === 9734 || rel.kind === 9321);
                     const comments = relatives.filter(rel => rel.kind === 1 || rel.kind === 1111);

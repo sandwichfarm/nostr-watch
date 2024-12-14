@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { get, writable, derived } from 'svelte/store';
+    import { get, writable, derived, type Writable } from 'svelte/store';
     import { DataTable } from '@careswitch/svelte-data-table';
     import * as Resizable from '$lib/components/ui/resizable';
     import Filters from './Filters.svelte'; 
@@ -12,13 +12,44 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
 	import { StateManager } from '@nostrwatch/nip66';
+	import type { Formatters } from 'src/lib/config/dataTable/monitors';
+    import TableOptions from './TableOptions.svelte';
 
+    import * as Tabs from '$lib/components/ui/tabs/index.js';
+
+    export let tableKey: string;
     export let data: any;
-    export let config: any;
+    export let config: Writable<any>;
     export let enableFilters: boolean = true;
     export let actionsComponent;
 
-    const { columnsDisable, columnsShow, filtersDisable, filtersShow, humanReadableNames, formatters, tableFormatters, filterFormatters, tableRowStyler } = config
+    let columnsDisable: string[], 
+        columnsShow: string[], 
+        filtersDisable: string[], 
+        filtersShow: string[], 
+        humanReadableNames: Record<string, string>, 
+        formatters: Formatters, 
+        tableFormatters: Formatters, 
+        filterFormatters: Formatters, 
+        tableRowStyler: (row: any) => string;
+
+    $: {
+        ({ 
+            columnsDisable, 
+            columnsShow, 
+            filtersDisable, 
+            filtersShow, 
+            humanReadableNames, 
+            formatters, 
+            tableFormatters, 
+            filterFormatters, 
+            tableRowStyler 
+        } = $config);
+    }
+
+    let keysEnable: string[];
+
+    $: keysEnable = (columnsShow && filtersShow )? Array.from(new Set([...columnsShow, ...filtersShow])) : [];
 
 	const maxBadgeLength: number = 20;
     
@@ -27,27 +58,27 @@
     // **Stores and Reactive Variables**
     const filters = writable({});
 
-    $: filtersInclude = [ ...filtersShow.filter(f => !filtersDisable.includes(f))  ];
-    $: columnsInclude = [ ...columnsShow.filter(f => !columnsDisable.includes(f)) ];
+    $: filtersInclude = [ ...$config.filtersShow.filter(f => !filtersDisable.includes(f))  ];
+    $: columnsInclude = [ ...$config.columnsShow.filter(f => !columnsDisable.includes(f)) ];
 
     const tableData = derived(
-        [data],
-        ([ $data ]) => {
+        [data, config],
+        ([ $data, $config ]) => {
             if (!$data || $data.length === 0) {
                 return { data: [], columns: [] };
             }
 
-            if(columnsInclude.length === 0) {
+            if($config.columnsShow.length === 0) {
                 return { data: [], columns: [] };
             }
 
-            const columns = columnsInclude.map((key) => ({
+            const columns = $config.columnsShow.map((key: string) => ({
                 id: key,
                 key: key,
                 name: humanReadableNames[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
-            const data = $data.map((item) => {
+            const data = $data.map((item: any) => {
                 const formattedItem = { ...item };
                 for (const key in formatters) {
                     if (Object.prototype.hasOwnProperty.call(formattedItem, key)) {
@@ -105,20 +136,18 @@
     $: {
         if (tableInstance) {
             (tableInstance as DataTable<any>).baseRows = $filteredTableData.data;
-            (tableInstance as DataTable<any>).pageSize = $resultsPerPage
         }
     }
 
-    const createTable = () => {
+    const createTable = (force: boolean = false) => {
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
-            // if(tableInstance === null) {
+            if(tableInstance === null || force){
                 tableInstance = new DataTable<any>({
                     pageSize: $resultsPerPage,
                     columns: $filteredTableData.columns,
                     data: $filteredTableData.data,
                 });
-            // }
-            
+            }
         } else {
             if (tableInstance) {
                 console.log('Destroying DataTable instance due to no data.');
@@ -129,11 +158,15 @@
 
     // **DataTable Subscription**
     onMount(() => {
-        const unsubRPP = resultsPerPage.subscribe(($resultsPerPage: number) => createTable());
         // const unsubTable = filteredTableData.subscribe($filteredTableData => createTable());
+        const unsubRPP = resultsPerPage.subscribe(($resultsPerPage: number) => createTable(true));
+        const unsubTableConfig = config.subscribe(() => { 
+            setTimeout( () => createTable(true), 10 )       
+        });
         return () => {
             // unsubTable();
             unsubRPP();
+            unsubTableConfig();
             if (tableInstance) {
                 tableInstance = null;
             }
@@ -241,17 +274,40 @@
     <Resizable.Handle withHandle />
     <!-- **Filters Pane** -->
     <Resizable.Pane defaultSize={25}>
-        {#if tableInstance !== null && enableFilters}
-            <Filters 
-                {tableData} 
-                {filters} 
-                {filtersInclude} 
-                {humanReadableNames} 
-                {filterFormatters} 
-                {maxBadgeLength}
-                {config}
-            />
-        {/if}
+        <Tabs.Root value="filters" class="w-full">
+            <Tabs.List>
+                <Tabs.Trigger value="filters">Filters</Tabs.Trigger>
+                <Tabs.Trigger value="options">Options</Tabs.Trigger>
+            </Tabs.List>
+            <Tabs.Content value="filters">
+                {#if tableInstance !== null && enableFilters}
+                    <Filters 
+                        {tableData} 
+                        {keysEnable}
+                        {filters} 
+                        {filtersInclude} 
+                        {humanReadableNames} 
+                        {filterFormatters} 
+                        {maxBadgeLength}
+                        {config}
+                    />
+                {/if}
+            </Tabs.Content>
+            <Tabs.Content value="options">
+                <Tabs.Root value="filters" class="w-full">
+                    <Tabs.List>
+                        <Tabs.Trigger value="table-options">Table</Tabs.Trigger>
+                        <Tabs.Trigger value="filter-options">Filter</Tabs.Trigger>
+                    </Tabs.List>
+                    <Tabs.Content value="table-options">
+                        <TableOptions {config} {tableKey} />
+                    </Tabs.Content>
+                    <Tabs.Content value="filter-options">
+                        filter options here.
+                    </Tabs.Content>
+                </Tabs.Root>
+            </Tabs.Content>
+        </Tabs.Root>
     </Resizable.Pane>
 </Resizable.PaneGroup>
 

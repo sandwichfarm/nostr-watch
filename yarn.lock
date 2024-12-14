@@ -2818,6 +2818,7 @@ __metadata:
     "@nostrwatch/nip66-wsadapter-nostrtools": "workspace:^"
     "@nostrwatch/nocap": "workspace:^"
     "@nostrwatch/nocap-websocket-adapter-default": "workspace:^"
+    "@nostrwatch/utils": "workspace:^"
     "@sveltejs/adapter-netlify": "npm:^4.3.6"
     "@sveltejs/adapter-static": "npm:^3.0.6"
     "@sveltejs/kit": "npm:^2.0.0"
@@ -2844,6 +2845,7 @@ __metadata:
     minisearch: "npm:^7.1.0"
     node-fetch: "npm:^3.3.2"
     nostr-tools: "npm:^2.10.3"
+    p-queue: "npm:^8.0.1"
     paneforge: "npm:^0.0.6"
     postcss: "npm:^8.4.38"
     prettier: "npm:^3.1.1"
@@ -16559,7 +16561,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"p-queue@npm:8.0.1":
+"p-queue@npm:8.0.1, p-queue@npm:^8.0.1":
   version: 8.0.1
   resolution: "p-queue@npm:8.0.1"
   dependencies:

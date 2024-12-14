@@ -84,7 +84,7 @@ export class Monitor {
       priority: this.priority,
       lastActive: this.lastActive
     }
-    //console.log('monitor cache', cache)
+    ////console.log('monitor cache', cache)
     return cache
   }
 
@@ -200,7 +200,7 @@ export class Monitor {
   }
 
   get checkFilter(): Filter {
-    // //console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
+    // ////console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
     const kinds = [30166];
     const since = Math.round(Date.now() / 1000) - this?.frequency;
     const until = Math.round(Date.now() / 1000);
@@ -209,7 +209,7 @@ export class Monitor {
   }
 
   get checkFilterSync(): Filter {
-    // //console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
+    // ////console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
     const kind = 30166
     const kinds = [kind];
     const since = this.getLastSyncSince(kind) || Math.round(Date.now() / 1000) - this?.frequency;

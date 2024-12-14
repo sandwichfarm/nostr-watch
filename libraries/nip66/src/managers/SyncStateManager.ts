@@ -54,7 +54,7 @@ export class SyncStateManager {
         const returnedValue = this.localStorage.getItem(key);
         if(!returnedValue) return undefined;
         const value = parseInt(returnedValue);
-        //console.log(`getLastSyncValue: ${key} -> ${returnedValue} === ${value}`);
+        ////console.log(`getLastSyncValue: ${key} -> ${returnedValue} === ${value}`);
         return value;
     }
   }

@@ -3,12 +3,31 @@
 	import { doBootstrap } from '$lib/stores/routines';
 	import { doAggregateCache } from '$lib/stores/app';
 	import { onMount } from 'svelte';
-	import { writable, type Writable } from 'svelte/store';
+	import { derived, writable, type Writable } from 'svelte/store';
+	import { StateManager } from '@nostrwatch/nip66';
+	import { Nip66Event } from '@nostrwatch/nip66/models';
+	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
+	import type { Formatters } from 'src/lib/config/dataTable/monitors';
 	export const prerender = true;
 
 	let Stats 
 	let DataTable
-	let tableConfig
+	let defaultTableConfig: any;
+
+	type DataTableConfig = { 
+		columnsDisable: string[]
+        columnsShow: string[]
+        filtersDisable: string[]
+        filtersShow: string[]
+        humanReadableNames: Record<string, string>
+        formatters: Formatters
+        tableFormatters: Formatters 
+        filterFormatters: Formatters
+        tableRowStyler: (row: any) => string
+	}
+	
+	const config: Writable<DataTableConfig | null> = writable(null);
+	const ready: Writable<boolean> = writable(false);
 
 	const componentsLoaded: Writable<boolean> = writable(false);
 
@@ -20,22 +39,36 @@
 		];
 
 		const results = await Promise.allSettled(imports);
-		[ Stats, DataTable, tableConfig ] = results.map(result => (result.status === 'fulfilled' ? result.value.default || result.value : null));
+		[ Stats, DataTable, defaultTableConfig ] = results.map(result => (result.status === 'fulfilled' ? result.value.default || result.value : null));
 		componentsLoaded.set(true);
+	}
+
+	const setConfig = () => {
+		console.log('set config.')
+		const userTableConfig = StateManager.get('preferences:relays:tableConfig');
+		if(userTableConfig) {
+			config.set({...defaultTableConfig, ...userTableConfig})
+		}
+		else {
+			config.set({...defaultTableConfig})
+		}
+		ready.set(true)
 	}
 
 	const mount = async ( ) => {
 		doBootstrap.set(true)
 		doAggregateCache.set(true)
-		loadComponents()
+		loadComponents().then(setConfig);
 	}
 
 	onMount(mount)
+
+    
 </script>
 
-<main>
-	{#if $componentsLoaded}
+<main> 
+	{#if $ready}
 	<Stats />
-	<DataTable data={relayAggregates} config={tableConfig} />
+	<DataTable data={relayAggregates} {config} tableKey="relays" />
 	{/if}
 </main>

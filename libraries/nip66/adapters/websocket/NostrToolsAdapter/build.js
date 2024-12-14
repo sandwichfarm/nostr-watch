@@ -85,16 +85,16 @@ export async function build() {
 
   try {
     if (watchMode) {
-      //console.log('Watch mode enabled...');
+      ////console.log('Watch mode enabled...');
       const browserContext = await esbuild.context(browserBuildOptions);
       await browserContext.watch();
     } else {
-      //console.log('Building...');
+      ////console.log('Building...');
       await Promise.all([
         esbuild.build(browserBuildOptions),
         esbuild.build(nodeBuildOptions),
       ]);
-      //console.log('Build completed successfully!');
+      ////console.log('Build completed successfully!');
     }
   } catch (error) {
     console.error('Build failed:', error);
@@ -103,7 +103,7 @@ export async function build() {
 }
 
 process.on('SIGINT', () => {
-  //console.log('Terminating process...');
+  ////console.log('Terminating process...');
   process.exit(0);
 });
 

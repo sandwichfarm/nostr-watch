@@ -91,7 +91,7 @@ export const nip11s = derived(
       }
     }
     else {
-      console.log('!!! HAS NOT BEEN BOOTSTRAPPED OR SEEDED')
+      // console.log('!!! HAS NOT BEEN BOOTSTRAPPED OR SEEDED')
     }
       
     return nip11Map;

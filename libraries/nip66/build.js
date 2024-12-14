@@ -64,7 +64,7 @@ const buildConfigs = [
     await Promise.all(
       buildConfigs.map((config) => esbuild.build(config))
     );
-    //console.log('Build completed successfully!');
+    ////console.log('Build completed successfully!');
   } catch (err) {
     console.error('Build failed:', err);
     process.exit(1);

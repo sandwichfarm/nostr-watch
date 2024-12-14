@@ -20,6 +20,7 @@
 
     // **Props Passed to the Component**
     export let tableData: Writable<{ data: any[] }>;
+    export let keysEnable: string[];
     export let filtersInclude: string[];
     export let humanReadableNames: Record<string, string>;
     export let filterOverrides: Record<string, { type: 'search' | 'badge', miniSearchOptions?: any }> = {};
@@ -454,7 +455,7 @@
     }
 
     // **Reactive Statements for Styling Classes**
-    $: buttonClass = 'mb-2 mr-2 text-sm font-bold py-0 px-1';
+    $: buttonClass = 'mb-2 text-sm font-bold py-1 px-2 mr-1';
     $: buttonClassSelected = 'bg-blue-500 text-white';
 </script>  
 
@@ -509,7 +510,7 @@
             <Accordion.Header class="py-2 px-2 border-b-2">
                 <Accordion.Trigger>
                     <!-- **Accordion Trigger Layout with Active Filters Badge and List** -->
-                    <div class="flex items-center w-full text-sm">
+                    <div class="flex items-center w-full text-sm py-3 px-2">
                         <!-- Filter Title -->
                         <span class="flex-shrink-0 overflow-hidden text-ellipsis">{filter.humanReadableName}</span>
                         
@@ -554,7 +555,7 @@
                     </div>
                 </Accordion.Trigger>
             </Accordion.Header>
-            <Accordion.Content class="py-1 px-2" transition={contentTransition}>
+            <Accordion.Content class="px-4 py-4" transition={contentTransition}>
                 <!-- **Search Input (if enabled)** -->
                 {#if filterOverrides[filter.key]?.type === 'search'}
                     <div class="w-max-[100px] mb-2">
@@ -598,7 +599,13 @@
                             UNIQUE
                         </Button>
                     {/if}
+                    <!-- Clear Button for Each Filter Group -->
+                    <Button size="small" on:click={() => clearFilter(filter.key)} class="{buttonClass}" variant="destructive">
+                        Clear
+                    </Button>
                 </div>
+
+                
 
                 <!-- **Filter Options** -->
                 <div class="filter-options">
@@ -607,7 +614,7 @@
                         <Button size="small" 
                             variant="secondary" 
                             on:click={() => applyFilter(filter.key, true)} 
-                            class="{ ($filters[filter.key] === true) ? buttonClassSelected : '' }"
+                            class="{buttonClass} { ($filters[filter.key] === true) ? buttonClassSelected : '' }"
                             disabled={$disabledFilters[filter.key]?.has('true')}
                             >
                             Yes
@@ -615,7 +622,7 @@
                         <Button size="small" 
                             variant="secondary" 
                             on:click={() => applyFilter(filter.key, false)} 
-                            class="{ ($filters[filter.key] === false) ? buttonClassSelected : '' }"
+                            class="{buttonClass}  { ($filters[filter.key] === false) ? buttonClassSelected : '' }"
                             disabled={$disabledFilters[filter.key]?.has('false')}
                             >
                             No
@@ -655,7 +662,7 @@
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
                                     <a href="#" 
                                         on:click|preventDefault={() => toggleShowAllBadges(filter.key)} 
-                                        class="text-sm text-center relative more-link block py-2 text-white/50 bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-white/10"
+                                        class="my-3 text-sm text-center relative more-link block py-2 text-white/50 bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-white/10"
                                         >
                                         {#if $showAllFilters[filter.key]}
                                             <span class="absolute left-2">⇈</span>
@@ -706,7 +713,7 @@
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
                                 <a href="#" 
                                 on:click|preventDefault={() => toggleShowAllBadges(filter.key)} 
-                                class="text-sm text-center relative more-link block py-2 text-white/50 bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-white/10"
+                                class="my-3 text-sm text-center relative more-link block py-2 text-white/50 bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-white/10"
                                 >
                                     {#if $showAllFilters[filter.key]}
                                         <span class="absolute left-2">⇈</span>
@@ -759,10 +766,7 @@
                             </div>
                         {/each}
                     {/if}
-                    <!-- Clear Button for Each Filter Group -->
-                    <Button size="small" on:click={() => clearFilter(filter.key)} class="{buttonClass}" variant="destructive">
-                        Clear
-                    </Button>
+                    
                 </div>
             </Accordion.Content>
         </Accordion.Item>

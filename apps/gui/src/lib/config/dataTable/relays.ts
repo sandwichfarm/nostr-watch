@@ -55,7 +55,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
         return keys.map(k => k.toLowerCase())
 }
 
-export const columnsDisable: DataKeys = ['as', 'asname']
+export const columnsDisable: DataKeys = ['created_at', 'monitor_pubkey']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
 export const columnsShow: DataKeys = ['relay', 'lastSeen', 'seenTimes', 'seenBy', 'hasNip11', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
@@ -82,15 +82,19 @@ export const formatters: Formatters = {}
 export const tableFormatters: Formatters = {
     relay: (relay: string, row: any) => {
         const { icon } = row;
-        const truncated = truncateWithEllipsis(relay, 44);
+        const formatted = truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '');
         const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: ''
-        return `<a href="/relays/${formatRelayUrl(relay)}">${iconHtml}${truncated}</a>`;
+        return `<a class="text-lg" href="/relays/${formatRelayUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
     lastSeen: (lastSeen) => {
         if(lastSeen < 0) {
             return ''
         }
         return `<span class="text-xs">${timeAgo(lastSeen*1000)}</span>`;
+    },
+    ipv4: (ipv4) => {
+        if(!ipv4) return '';
+        return ipv4.map(ip => `<span class="p-1 mr-1 block text-xs clear-right">${ip}</span>`).join('');
     },
     seenBy: (pubkeys: string[], row: any): string => {
         let str = '<div class="flex items-center whitespace-nowrap">';

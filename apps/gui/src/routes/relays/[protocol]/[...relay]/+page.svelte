@@ -34,6 +34,7 @@ import { hasBeenBoostrapped } from '$lib/stores/app';
 import { clickToCopy } from '$lib/utils/ux';
 import { observeViewport } from '$lib/utils/ux';
 import { isLivesyncing } from '$lib/stores/app';
+	import { beginLiveSync, stopLiveSync } from '$lib/utils/lifecycle';
 
 const loadComponents = async () => {
     const imports = [
@@ -156,8 +157,8 @@ const loadRelayData = async () => {
         if (!res) return; 
         const [data, mons] = res;
         addEventsToStore(data);
+        monitors.set(Array.from(mons?.values() || new Set()));
     }
-    monitors.set(Array.from(mons?.values() || new Set()));
     await loadNip11();
     await loadOperatorMeta();
     loading = false;
@@ -184,6 +185,11 @@ const loadOperatorMeta = async () => {
 
 
 const mount = async () => {
+    let wasLivesyncing: boolean = false;
+    if($isLivesyncing) {
+        wasLivesyncing = true;
+        stopLiveSync()
+    }
     loadComponents();
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
     if (hasBeenBoostrapped()) {
@@ -191,7 +197,11 @@ const mount = async () => {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
     }
-    loadRelayData();
+    loadRelayData().then( () => {
+        if(wasLivesyncing) {
+            beginLiveSync()
+        }
+    });
 };
 
 onMount(mount);

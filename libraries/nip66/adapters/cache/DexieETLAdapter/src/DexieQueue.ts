@@ -50,7 +50,7 @@ export class DexieQueue extends Queue<DexieTask> {
    */
   protected saturated(): void {
     // Implement logic when concurrency limit is reached
-    //console.log('Queue is saturated.');
+    ////console.log('Queue is saturated.');
   }
 
   /**
@@ -58,7 +58,7 @@ export class DexieQueue extends Queue<DexieTask> {
    */
   protected drain(): void {
     // Implement logic when the last job is assigned
-    //console.log('All jobs have been assigned.');
+    ////console.log('All jobs have been assigned.');
   }
 
   /**
@@ -66,6 +66,6 @@ export class DexieQueue extends Queue<DexieTask> {
    */
   protected empty(): void {
     // Implement logic when the queue becomes empty
-    //console.log('Queue is empty.');
+    ////console.log('Queue is empty.');
   }
 }

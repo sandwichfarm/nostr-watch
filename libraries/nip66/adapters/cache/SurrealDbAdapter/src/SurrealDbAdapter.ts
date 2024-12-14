@@ -34,7 +34,7 @@ export class SurrealDbAdapter extends CacheAdapter implements ICacheAdapter {
   
     constructor(isMainThread: boolean = true) {
       super()
-      //console.log('SurrealDbAdapter constructor')
+      ////console.log('SurrealDbAdapter constructor')
       this._db = new RelayDb({ type: 'memory' });
       if(isMainThread) {
         this.bindWorkerHandlers()

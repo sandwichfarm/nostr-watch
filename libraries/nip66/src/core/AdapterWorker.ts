@@ -43,7 +43,7 @@ export class AdapterWorker {
 
   constructor( options?: WorkerOptions ){
     if(!options) return 
-    //console.log('AdapterWorker', options)
+    ////console.log('AdapterWorker', options)
     this._mainThread = options?.mainThread
     this._channelPort = options?.channelPort
     this.setupHandlers()
@@ -70,10 +70,10 @@ export class AdapterWorker {
   }
 
   async __setup(command: AdapterWorkerMessage): Promise<void>{
-    //console.log(`${this.constructor.name}: AdapterWorker.__setup`, command)
+    ////console.log(`${this.constructor.name}: AdapterWorker.__setup`, command)
     const { channelPort } = command
     if(channelPort) {
-      //console.log(`[Worker:${this.constructor.name}] channelPort:`, channelPort)
+      ////console.log(`[Worker:${this.constructor.name}] channelPort:`, channelPort)
       this.channel = channelPort
       this.setupChannelHandlers()
     }
@@ -85,21 +85,21 @@ export class AdapterWorker {
     if(!this.channel) return console.warn('channel not defined')
     this.channel.onmessage = (message: MessageEvent) => {
       const command = message.data as AdapterWorkerMessage;
-      //console.log(`[Worker:${this.constructor.name}] channel.onmessage`, command)
+      ////console.log(`[Worker:${this.constructor.name}] channel.onmessage`, command)
       this.listenPingPong('channel', command)
       this.onChannelMessage(command);
     }
 
-    //console.log('setupChannelHandlers', this.channel)
+    ////console.log('setupChannelHandlers', this.channel)
     this.channel.onmessageerror = this.onMessageError
   }
 
   setupHandlers(){
-    //console.log('AdapterWorker: setupHandlers()')
+    ////console.log('AdapterWorker: setupHandlers()')
     if(!this?.mainThread) return console.warn('mainThread not defined')
     const onmessage = async (message: MessageEvent) => {
       const command = message.data as AdapterWorkerMessage;
-      //console.log(`[Worker:${this.constructor.name}] mainthread.onmessage`, command)
+      ////console.log(`[Worker:${this.constructor.name}] mainthread.onmessage`, command)
       this.listenPingPong('mainthread', command)
       if(command.type === 'setup'){
         await this.__setup(command)
@@ -108,7 +108,7 @@ export class AdapterWorker {
       this.onMainThreadMessage(command);
     }
     if(this.mainThread instanceof DedicatedWorkerGlobalScope){
-      //console.log('Running in DedicatedWorkerGlobalScope');
+      ////console.log('Running in DedicatedWorkerGlobalScope');
       (this.mainThread as IWorkerGlobalScope).onmessage = onmessage
     }
     else if(this.mainThread instanceof SharedWorkerGlobalScope){
@@ -118,7 +118,7 @@ export class AdapterWorker {
 
 
   command(destination: string | string[], resultType: AdapterWorkerResultType, result: any){
-    //console.log('AdapterWebsocketWorker: command', destination, resultType, result)
+    ////console.log('AdapterWebsocketWorker: command', destination, resultType, result)
     result = this.encode(result) as ArrayBuffer
     const message: AdapterWorkerMessage = {
       type: 'result',
@@ -166,23 +166,23 @@ export class AdapterWorker {
   /*sanity check*/
 
   private pingChannel(){
-    //console.log(`[Worker:${this.constructor.name}] o/o SEND: PING -> channel`)
+    ////console.log(`[Worker:${this.constructor.name}] o/o SEND: PING -> channel`)
     this.postMessageChannel({ type: 'ping' })
   }
 
   private pongMainThread(){
-    //console.log(`[Worker:${this.constructor.name}] o/o SEND: PONG -> mainthread`)
+    ////console.log(`[Worker:${this.constructor.name}] o/o SEND: PONG -> mainthread`)
     this.postMessageAdapter({ type: 'pong', })
   }
 
   private pongChannel(){
-    //console.log(`[Worker:${this.constructor.name}] o/o SEND: PONG -> channel`)
+    ////console.log(`[Worker:${this.constructor.name}] o/o SEND: PONG -> channel`)
     this.postMessageChannel({ type: 'pong' })
   }
 
   private listenPingPong(from: 'channel' | 'mainthread', command: AdapterWorkerMessage): void {
     if(command.type === 'ping') {
-      //console.log(`[Worker:${this.constructor.name}] o/o RECIEVE: PING <- ${from}`)
+      ////console.log(`[Worker:${this.constructor.name}] o/o RECIEVE: PING <- ${from}`)
       if(from === 'mainthread'){
         this.pingChannel()
         this.pongMainThread()
@@ -193,7 +193,7 @@ export class AdapterWorker {
       return
     }
     if(command.type === 'pong') {
-      //console.log(`[Worker:${this.constructor.name}] o/o RECIEVE: PONG <- ${from}`)
+      ////console.log(`[Worker:${this.constructor.name}] o/o RECIEVE: PONG <- ${from}`)
     }
   }
 

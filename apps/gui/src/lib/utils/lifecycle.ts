@@ -151,7 +151,7 @@ export const bootstrap = async (_instance?: Nip66) => {
     }
     
     if( shouldSync() ){
-        if( get(isBootstrapping) ) return console.log('!!! IS ALREADY BOOTSTRAPPING');
+        if( get(isBootstrapping) ) return;
         isBootstrapping.set(true)
         $nip66?.services?.monitors?.bootstrap().then( () => {
             isBootstrapping.set(false)
@@ -200,16 +200,16 @@ export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
     }
 }
 
-export const destroy = () => {
-    nip66.update(($nip66: Nip66) => {
-        if ($nip66 && typeof $nip66.destroy === 'function') {
-            $nip66.destroy();
-        } else {
-            console.error('nip66 instance is missing or does not have a destroy method.');
-        }
-        return $nip66;
-    });
-};
+// export const destroy = () => {
+//     nip66.update(($nip66: Nip66) => {
+//         if ($nip66 && typeof $nip66.destroy === 'function') {
+//             $nip66.destroy();
+//         } else {
+//             console.error('nip66 instance is missing or does not have a destroy method.');
+//         }
+//         return $nip66;
+//     });
+// };
 
 export const seedFromCache = async ($nip66?: Nip66) => {
     if(!$nip66) {

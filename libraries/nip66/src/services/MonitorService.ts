@@ -13,6 +13,7 @@ export interface MonitorFetchOptions extends WebsocketRequestBody {
 }
 
 export class MonitorService extends Service {
+  private readonly DEFAULT_ENABLED_MONITORS: number = 3;
   private _manager: MonitorManager;
 
   constructor(adapters: IAdaptersArgument) {
@@ -213,6 +214,7 @@ export class MonitorService extends Service {
     await this.fetchMonitorRegistrations();
     await this.fetchMonitorMeta();
     await this.ensureMonitorsActive();
+    this.maybeEnableMonitors();
   }
 
   async bootstrap(): Promise<void> {
@@ -506,6 +508,17 @@ export class MonitorService extends Service {
     }
   }
 
+  maybeEnableMonitors(): void {
+    if(this.enabledMonitors.length) {
+      return;
+    }
+    for(let i=0; i < this.DEFAULT_ENABLED_MONITORS; i++) {
+      if(this.sortedMonitors?.[i]) {
+        this.sortedMonitors[i].enabled = true;
+      }
+    }
+  }
+
   optimizeFilters(filters: Filter[]): Filter[] {
     const filterMap: Map<string, Filter> = new Map();
   
@@ -530,7 +543,7 @@ export class MonitorService extends Service {
   getMonitorCheckFilters(enabled?: boolean): Filter[] {
     let monitors: Monitor[] = [];
     if(enabled === undefined) {
-      monitors = this.enabledMonitors?.length > 0? this.enabledMonitors: this.sortedMonitors.slice(0, 3);
+      monitors = this.enabledMonitors;  
     }
     else if(typeof enabled === 'boolean') {
       monitors = enabled? this.enabledMonitors: this.disabledActiveMonitors;

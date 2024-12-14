@@ -3,7 +3,6 @@ import { get } from 'svelte/store';
 import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded } from '../stores/app';
 import { instance, stopLiveSync } from './lifecycle';
 import { StateManager } from '@nostrwatch/nip66';
-import { events } from '../stores';
 
 export interface LocalStorageUsage {
     currentSizeMB: number;
@@ -12,30 +11,27 @@ export interface LocalStorageUsage {
 }
 
 export const wipeCache = async () => {
-    await abortWebsocket();
-    await wipeState();
-    await wipeCacheAdapter();
+    const $nip66 = await instance();
+    await abortWebsocket($nip66);
+    await wipeCacheAdapter($nip66);
     await wipeEventsStore();
     await wipeAppStores();
     await wipeEventsStore();
+    $nip66.destroy();
+    await wipeState();
     StateManager.emit('wipe')
 }
 
-const abortWebsocket = async () => {
+const abortWebsocket = async ($nip66: Nip66) => {
     if(get(isLivesyncing)) {
         await stopLiveSync()
     }
-    if(get(isBootstrapping)) {
-        const $nip66 = await instance();
-        $nip66.adapters.websocketAdapter.unsubscribe();
-        $nip66.adapters.websocketAdapter.abort();
-    }
+    $nip66.adapters.websocketAdapter.unsubscribeAll();
+    $nip66.adapters.websocketAdapter.abort();
 }
 
-export const wipeCacheAdapter = async () => {
-    const instance = (await import('$lib/utils/lifecycle.js')).instance;
-    const n66: Nip66 = await instance();
-    n66.cacheAdapter.WIPE();
+export const wipeCacheAdapter = async ($nip66: Nip66) => {
+    $nip66.adapters.cacheAdapter.WIPE();
 }
 
 export const wipeState = async () => {
@@ -44,7 +40,7 @@ export const wipeState = async () => {
 }
 
 export const wipeEventsStore = async () => {
-    const events = (await import('$lib/stores/index.js')).events;
+    const { events } = (await import('$lib/stores/index.js'))
     events.set(new Map());
 }
 

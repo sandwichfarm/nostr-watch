@@ -5,6 +5,7 @@
     import { wipeCache } from '$lib/utils/cache.js';
 	import type Nip66 from '@nostrwatch/nip66'
 	import Stats from '$lib/components/blocks/Stats.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 
     let Nip66Instance: Nip66 | null;
 
@@ -13,13 +14,12 @@
         Nip66Instance = instance($nip66);
     });
 </script>
-
-
-<br /><br /><br /><br /><br /><br />
-{#if Nip66Instance !== null}
-<button on:click={wipeCache}>
-Wipe
-</button>
-{/if}
+<div class="flex py-4 px-8">
+    {#if Nip66Instance !== null}
+    <Button on:click={wipeCache} variant="destructive">
+    Wipe
+    </Button>
+    {/if}
+</div>
 
 <Stats />

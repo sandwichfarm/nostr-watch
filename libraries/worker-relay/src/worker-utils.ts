@@ -156,9 +156,9 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
     if(_port instanceof DedicatedWorkerGlobalScope){
       _port.postMessage(message);
     }
-    else if (_port instanceof SharedWorkerGlobalScope) {
-      _port.port.postMessage(message);
-    }
+    // else if (_port instanceof SharedWorkerGlobalScope) {
+    //   _port.port.postMessage(message);
+    // }
     
   }
 

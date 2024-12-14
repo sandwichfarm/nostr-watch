@@ -23,6 +23,19 @@
     export let enableFilters: boolean = true;
     export let actionsComponent;
 
+    type DataTableConfig = { 
+		columnsDisable: string[]
+        columnsShow: string[]
+        filtersDisable: string[]
+        filtersShow: string[]
+        humanReadableNames: Record<string, string>
+        formatters: Formatters
+        tableFormatters: Formatters 
+        filterFormatters: Formatters
+        tableRowStyler: (row: any) => string
+        reformatters?: { key: string, interval: number }
+	}
+
     let columnsDisable: string[], 
         columnsShow: string[], 
         filtersDisable: string[], 
@@ -31,7 +44,9 @@
         formatters: Formatters, 
         tableFormatters: Formatters, 
         filterFormatters: Formatters, 
-        tableRowStyler: (row: any) => string;
+        tableRowStyler: (row: any) => string,
+        reformatters: { key: string, interval: number }[];
+
 
     $: {
         ({ 
@@ -43,7 +58,8 @@
             formatters, 
             tableFormatters, 
             filterFormatters, 
-            tableRowStyler 
+            tableRowStyler,
+            reformatters
         } = $config);
     }
 
@@ -157,12 +173,17 @@
     }
 
     // **DataTable Subscription**
-    onMount(() => {
-        // const unsubTable = filteredTableData.subscribe($filteredTableData => createTable());
+    onMount(async () => {
+        // let unsubTable: () => void;
+        // unsubTable = filteredTableData.subscribe($filteredTableData => {
+        //     createTable()
+        // });
         const unsubRPP = resultsPerPage.subscribe(($resultsPerPage: number) => createTable(true));
-        const unsubTableConfig = config.subscribe(() => { 
-            setTimeout( () => createTable(true), 10 )       
-        });
+        const unsubTableConfig = config.subscribe( () =>  setTimeout( () => createTable(true), 10 ) );
+        while($filteredTableData.data.length === 0) {
+            await new Promise(r => setTimeout(r, 50));
+        }
+        createTable();
         return () => {
             // unsubTable();
             unsubRPP();
@@ -181,9 +202,9 @@
 <!-- **UI Layout with Resizable Panes** -->
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
     <!-- **Main Table Pane** -->
-    <Resizable.Pane defaultSize={75}>
+    <Resizable.Pane defaultSize={75} class="min-h-[100%]">
         {#if tableInstance !== null}
-            <div class="px-4 shadow-md my-10">
+            <div class="px-4 shadow-md my-4">
                 <!-- **Search Input for Global Filtering** -->
                 <Input
                     type="text"
@@ -266,18 +287,18 @@
             </div>
         {:else}
             <!-- **Loading or Empty State** -->
-            <div class="flex items-center justify-center h-full">
-                <p>No data available.</p>
+            <div class="flex h-full items-center justify-center align-middle">
+                <p>[ loading image here ]</p>
             </div>
         {/if}
     </Resizable.Pane>
     <Resizable.Handle withHandle />
     <!-- **Filters Pane** -->
     <Resizable.Pane defaultSize={25}>
-        <Tabs.Root value="filters" class="w-full">
-            <Tabs.List>
-                <Tabs.Trigger value="filters">Filters</Tabs.Trigger>
-                <Tabs.Trigger value="options">Options</Tabs.Trigger>
+        <Tabs.Root value="filters" class="w-full my-4">
+            <Tabs.List class="px-4 rounded-none w-full bg-transparent">
+                <Tabs.Trigger value="filters" class="bg-white/5">Filters</Tabs.Trigger>
+                <Tabs.Trigger value="options" class="bg-white/5">Options</Tabs.Trigger>
             </Tabs.List>
             <Tabs.Content value="filters">
                 {#if tableInstance !== null && enableFilters}
@@ -311,7 +332,7 @@
     </Resizable.Pane>
 </Resizable.PaneGroup>
 
-<style>
+<style lang="postcss" global>
     .active-filters {
         margin-bottom: 1rem;
     }
@@ -339,5 +360,9 @@
         color: #3182ce;
         cursor: pointer;
         text-decoration: underline;
+    }
+
+    body .data-[state=active]:bg-background[data-state="active"] {
+        @apply !bg-white/10;
     }
 </style>

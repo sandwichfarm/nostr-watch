@@ -309,12 +309,12 @@ let width: number, height: number;
     </div>
 
     <!-- Operator Information -->
-    {#if $operatorProfile && operatorPubkey}
+    <!-- {#if $operatorProfile && operatorPubkey}
       <div class="py-1 px-2 rounded-lg bg-white/5">
         <span class="text-xs uppercase">operated by:</span>
         <ProfileCompact pubkey={operatorPubkey} profile={$operatorProfile} />
       </div>
-    {/if}
+    {/if} -->
   </div>
 </header>
 
@@ -360,7 +360,7 @@ let width: number, height: number;
                 {/if}
                 {#if item === 'operator'}
                     {#if $operatorProfile && operatorPubkey}
-                    <CardOperator {relayUrl} pubkey={operatorPubkey} profile={$operatorProfile} />
+                    <CardOperator {relayUrl} pubkey={operatorPubkey} profile={$operatorProfile} monitors={$monitors} />
                     {/if}
                 {/if}
                 {#if item === 'speed'}

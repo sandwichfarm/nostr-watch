@@ -68,7 +68,7 @@
 </script>
 
 <Header />
-<div id="content-wrapper" class="mt-20 block">
+<div id="content-wrapper" class="mt-16 block">
 {@render children()}
 </div>
 

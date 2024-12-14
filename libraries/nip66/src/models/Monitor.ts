@@ -1,4 +1,4 @@
-import { type IEvent } from '@base/models';
+import { Nip66Event, type IEvent } from '@base/models';
 import { StateManager } from '@base/managers/StateManager';
 import { SyncRange, SyncRangeParameter, SyncStateManager } from '@base/managers/SyncStateManager';
 import { Filter } from 'nostr-tools';
@@ -200,7 +200,6 @@ export class Monitor {
   }
 
   get checkFilter(): Filter {
-    // ////console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
     const kinds = [30166];
     const since = Math.round(Date.now() / 1000) - this?.frequency;
     const until = Math.round(Date.now() / 1000);
@@ -209,12 +208,37 @@ export class Monitor {
   }
 
   get checkFilterSync(): Filter {
-    // ////console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
     const kind = 30166
     const kinds = [kind];
     const since = this.getLastSyncSince(kind) || Math.round(Date.now() / 1000) - this?.frequency;
     const authors = [this.pubkey];
     return { kinds, since, authors };
+  }
+
+  get checkFilterDead(): Filter {
+    // ////console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
+    const kinds = [30166];
+    const since = 0;
+    const until = this.isDeadBefore;
+    const authors = [this.pubkey];
+    return { kinds, since, until, authors };
+  }
+
+  get checkFilterOffline(): Filter {
+    // ////console.log(`Monitor:get checkFilter(): ${this?.pubkey}`, this?.frequency);
+    const kinds = [30166];
+    const since = this.isOfflineBetween[0];
+    const until = this.isOfflineBetween[1];
+    const authors = [this.pubkey];
+    return { kinds, since, until, authors };
+  }
+
+  get checkFilterNotOnline(): Filter {
+    const kinds = [30166];
+    const since = 0;
+    const until = this.isOnlineAfter-1;
+    const authors = [this.pubkey];
+    return { kinds, since, until, authors };
   }
 
   get isDeadBefore(): number {
@@ -292,6 +316,15 @@ export class Monitor {
       }
     });
     return results;
+  }
+
+  maybeUpdateLastActive(event: IEvent | Nip66Event): boolean {
+    if(!event?.created_at) return false;
+    if(event.created_at > this.lastActive) {
+      this.lastActive = event.created_at;
+      return true;
+    }
+    return false;
   }
 
   getLastSyncSince(kind: number): number | undefined {

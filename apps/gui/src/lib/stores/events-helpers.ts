@@ -1,30 +1,44 @@
 import { writable, derived, type Writable, type Readable } from "svelte/store";
+import type Nip66 from '@nostrwatch/nip66'
 import { Monitor, Nip66Event, type IEvent } from '@nostrwatch/nip66/models'
 import { StateManager } from "@nostrwatch/nip66";
 import { eventKey } from "$lib/utils/event-keys";
-import { monitorsMap } from "./monitors";
+import { nip66 } from "./nip66";
 import { events } from "./events";
+import PQueue from 'p-queue';
+import { delay } from '@nostrwatch/utils'
 
-let $monitorsMap: Map<string, Monitor> = new Map();
+const queue = new PQueue({concurrency: 1});
 
-monitorsMap.subscribe(value => $monitorsMap = value)
+let $nip66: Nip66 | null = null;
+nip66.subscribe(value => $nip66 = value);
+
+const getMonitor = (pubkey: string): Monitor => {
+    return $nip66?.services?.monitors?.map.get(pubkey)
+}
 
 export const addEventsToStore = (_events: IEvent[]) => {
-    events.update((map) => {
-        _events.forEach((event: IEvent) => {
-            //temporary fix for a bug in relay monitors.
-            const aTag = event.tags.find((t: string[]) => t[0] === 'a')
-            if(aTag) return;
-            //
-            const key = eventKey(event);
-            if(!key) return;
-            const online = $monitorsMap.get(event.pubkey)?.relayIsOnline(event)
-            if(!online) return;
-            const existing = map.get(key);
-            if (existing && existing.id === event.id) return;
-            if (!event?.created_at || (existing && (existing.created_at ?? 0) > event.created_at)) return;
-            map.set(key, new Nip66Event(event));
+    queue.add(async () => {
+        await delay(100)
+        events.update((map) => {
+            _events.forEach(async (event: IEvent) => {
+                //temporary fix for a bug in relay monitors.
+                const aTag = event.tags.find((t: string[]) => t[0] === 'a')
+                if(aTag) return;
+                //
+                const key = eventKey(event);
+                if(!key) return;
+                const monitor = getMonitor(event.pubkey);
+                const online = monitor?.relayIsOnline(event)
+                monitor?.maybeUpdateLastActive?.(event); 
+                if(!online) return;
+                const existing = map.get(key);
+                if (existing && existing.id === event.id) return;
+                if (!event?.created_at || (existing && (existing.created_at ?? 0) > event.created_at)) return;
+                map.set(key, new Nip66Event(event));
+                await delay(1)
+            });
+            return map;
         });
-        return map;
-    });
+    })
 }

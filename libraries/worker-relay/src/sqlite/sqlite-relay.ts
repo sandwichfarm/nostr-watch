@@ -259,7 +259,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     );
 
     const insertedEvents = db.changes();
-    console.log('INSERTED EVENTS', insertedEvents)
+    this.#log(`Inserted event ${ev.id}`);
     if (insertedEvents > 0) {
       // Insert tags
       for (const t of ev.tags.filter(a => a[0].length === 1)) {

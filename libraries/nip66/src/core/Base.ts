@@ -93,8 +93,9 @@ export default class {
   }
 
   async shutdown(): Promise<void> {
-    await this.adapters.cacheAdapter.shutdown();
-    await this.adapters.websocketAdapter.shutdown();
+    this.destroy();
+    // await this.adapters.cacheAdapter?.shutdown();
+    // await this.adapters.websocketAdapter?.shutdown();
   }
 
   async restart(): Promise<void> {

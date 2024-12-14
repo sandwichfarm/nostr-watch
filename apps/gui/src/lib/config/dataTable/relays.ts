@@ -74,7 +74,8 @@ export const humanReadableNames: NameFormatter = {
     isp: 'ISP',
     hasNip11: 'Has Nip11',
     operatorPubkey: 'Op.',
-    operatorPubkeyValid: 'Operator Pubkey is Valid'
+    operatorPubkeyValid: 'Operator Pubkey is Valid',
+    rtt: "Avg. RTT"
 };
 
 export const formatters: Formatters = {}
@@ -92,6 +93,11 @@ export const tableFormatters: Formatters = {
         }
         return `<span class="text-xs">${timeAgo(lastSeen*1000)}</span>`;
     },
+    rtt: (rtt) => {
+        const wholeNum = Math.round(rtt)
+        const rttColor = wholeNum < 500? 'text-green-400': wholeNum < 1000? 'text-orange-400/80': 'text-red-600';
+        return `<span class="text-xs font-mono font-bold ${rttColor}">${wholeNum}ms`;
+    }, 
     ipv4: (ipv4) => {
         if(!ipv4) return '';
         return ipv4.map(ip => `<span class="p-1 mr-1 block text-xs clear-right">${ip}</span>`).join('');

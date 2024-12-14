@@ -15,6 +15,6 @@
 
 {#if miniSearchData}
     <AutoSuggest mode="table" payload={miniSearchData} {searchConfig} />
-{:else}
-    <p>Loading search...</p>
+<!-- {:else} -->
+    <!-- <p>Loading search...</p> -->
 {/if}

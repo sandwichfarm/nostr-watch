@@ -146,7 +146,6 @@ export class CacheAdapter extends Adapter {
     })
     this.init();
   }
-
   get worker(): Worker | SharedWorker | undefined {
     return this.workers?.cache
   }

@@ -12,6 +12,7 @@
 	import { onMount } from 'svelte';
 	import { eventKey } from '$lib/utils/event-keys';
 	import { activeMonitorChecksCount } from '$lib/stores';
+	import { pauseLiveSync } from '$lib/utils/lifecycle';
 
     export let data: any;
     export let view: 'head' | 'cell' = 'cell';
@@ -30,6 +31,7 @@
     onMount(() => {
         toggleEnableMonitor = async () => {
             const { addEventsToStore } = await import('$lib/stores/events-helpers.js');
+            const resumer = await pauseLiveSync();
             disabled.set(true);
             if(monitor?.enabled) {
                 monitor.disable();
@@ -47,7 +49,7 @@
                     events = await $nip66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey) || []
                 }
                 else {
-                    events = await $nip66?.services?.monitors?.fetchMonitorChecks(monitor.pubkey, undefined, true) || [];
+                    events = await $nip66?.services?.monitors?.fetchMonitorChecks(monitor.pubkey, undefined, undefined, true) || [];
                 }
                 addEventsToStore(events)
                 await $nip66?.services.monitors?.countMonitorChecksFromCache(monitor.pubkey).then( (count: number) => {
@@ -58,8 +60,9 @@
                         }
                     })
                 })
-
             }
+            $nip66?.services?.monitors?.manager?.updateMonitor?.(monitor)
+            await resumer();
             disabled.set(false);
         }
     })

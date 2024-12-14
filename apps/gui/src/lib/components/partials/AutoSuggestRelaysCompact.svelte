@@ -3,18 +3,18 @@
     import { StateManager } from "@nostrwatch/nip66";
 	import AutoSuggest from "./AutoSuggest.svelte";
     import * as searchConfig from "$lib/stores/search-relays.js";
+	import { derived } from "svelte/store";
+	import type { Readable } from "svelte/store";
 
-    let bootstrapped: boolean = false;
-
-    StateManager.on('bootstrap:checks:complete', () => {
-        bootstrapped = true;
-    });
-
-    $: miniSearchData = bootstrapped? $relayAggregates: $relaysForMiniSearch?.length? $relaysForMiniSearch: null
+    let relayData: Readable<any[]> = derived([relayAggregates, relaysForMiniSearch], ([$relayAggregates, $relaysForMiniSearch]) => {
+        return  $relayAggregates.length? 
+                    $relayAggregates: 
+                    $relaysForMiniSearch?.length? 
+                        $relaysForMiniSearch:
+                        []
+    })
 </script>
 
-{#if miniSearchData}
-    <AutoSuggest payload={miniSearchData} {searchConfig} />
-{:else}
-    <p>Loading search...</p>
+{#if $relayData.length}
+    <AutoSuggest payload={$relayData} {searchConfig} />
 {/if}

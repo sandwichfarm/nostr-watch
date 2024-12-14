@@ -105,13 +105,12 @@ export const instance = async (instance?: Nip66): Promise<Nip66> => {
     if (!nip66Instance.initialized) {
         await nip66Instance.init();
         console.log('nip66 initialized');
+        loadMonitorsFromCache(nip66Instance);
     }
     else {
         console.log('nip66 already initialized');
     }
-
-    loadMonitorsFromCache(nip66Instance);
-
+    
     await nip66Instance.ready();
 
     nip66.set(nip66Instance);
@@ -184,6 +183,21 @@ export const stopLiveSync = async (): Promise<void> => {
     isLivesyncing.set(false)
     const $nip66 = await instance()
     $nip66?.services?.monitors?.stopLiveSync()
+}
+
+type LiveSyncResumer = () => Promise<void>
+
+export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
+    let wasLiveSyncing = get(isLivesyncing) 
+    const $nip66 = await instance()
+    if(wasLiveSyncing){
+        await stopLiveSync()
+    }
+    return async () => {
+        if(wasLiveSyncing){
+            beginLiveSync()
+        }
+    }
 }
 
 export const destroy = () => {

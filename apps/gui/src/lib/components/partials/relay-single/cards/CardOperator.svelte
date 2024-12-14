@@ -1,34 +1,30 @@
 
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
-    import { derived } from 'svelte/store';
+    import { derived, writable, type Writable } from 'svelte/store';
     
     import * as Card from '$lib/components/ui/card';
-	import ProfileCompact from '../../ProfileCompact.svelte';
+	import ProfileCompact from '$lib/components/partials/ProfileCompact.svelte';
 	
 	import { events, eventsArray, nip66 } from '$lib/stores';
 
 	import { formatRelayUrl } from '$lib/utils/routing';
 	import type { PubkeyProfile } from '@nostrwatch/nip66/models/PubkeyProfile';
 	import type { PubkeyRelays } from '@nostrwatch/nip66/models/PubkeyRelays';
-	import type { Nip66Event } from '@nostrwatch/nip66/models/Nip66Event';
+	import { Monitor, Nip66Event } from '@nostrwatch/nip66/models';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
+	import Nip66Check from '../../Nip66Check.svelte';
+	import type { IEvent } from '@nostrwatch/nip66/models/Event';
+    import OperatorRelays from '../OperatorRelays.svelte';
 
     export let pubkey: string;
     export let relays: PubkeyRelays;
     export let profile: PubkeyProfile;
     export let relayUrl: string;
+    export let monitors: Monitor[];
 
-    const operatorRelays = derived(eventsArray, ($eventsArray) => {
-        return $eventsArray.filter((event: Nip66Event) => {
-            return  event?.operatorPubkey 
-                    && event.operatorPubkey === pubkey 
-                    && event?.relay !== relayUrl;
-        })
-    });
+    let otherRelaysCount: number;
 
-    $: otherRelaysCount = $operatorRelays?.length ?? 0
-    $: name = profile?.name ?? undefined
 
     const mount = async () => {
         if(!$nip66) return;
@@ -39,6 +35,8 @@
 
     onMount(mount)
     onDestroy(destroy)
+
+    $: name = profile?.name ?? undefined
 </script>
 {#if pubkey}
 <Card.Root>
@@ -50,20 +48,12 @@
         {#if profile && pubkey}
         <ProfileCompact {pubkey} {profile}  />
         {/if}
-        {#if otherRelaysCount > 0}
+        <!-- {#if otherRelaysCount > 0} -->
         <div class="text-white/80 my-6">
             {name} operates <Badge class="rounded-full">{otherRelaysCount}</Badge> other relays
         </div>
-        {#each $operatorRelays as event}
-            {#if event?.relay}
-            <div>
-                <span class="inline-block mr-1 w-3 h-3 bg-green-500 rounded-full"></span>
-                <a href="/reload/relays/{formatRelayUrl(event.relay)}">
-                {event?.relay}
-            </div>
-            {/if}
-        {/each}
-        {/if}
+        <OperatorRelays {pubkey} {relayUrl} {monitors} bind:otherRelaysCount />
+        <!-- {/if} -->
     </Card.Content>
 </Card.Root>
 {/if}

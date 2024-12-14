@@ -1,7 +1,7 @@
 
 import { IEvent } from '@base/interfaces';
 import { Monitor } from '../models/Monitor';
-import { NostrEvent } from '@base/models';
+import { Nip66Event, NostrEvent } from '@base/models';
 
 export type MonitorPriorities = MonitorPriority[];
 
@@ -94,6 +94,18 @@ export class MonitorManager {
     return qualified;
   }
 
+  isRelayOnline(event: Nip66Event | IEvent): boolean {
+    return this.array.some((monitor) => monitor.relayIsOnline(event));
+  }
+
+  isRelayOffline(event: Nip66Event | IEvent): boolean {
+    return this.array.every((monitor) => monitor.relayIsOffline(event) || monitor.relayIsDead(event));
+  }
+
+  isRelayDead(event: Nip66Event | IEvent): boolean {
+    return this.array.every((monitor) => monitor.relayIsDead(event));
+  }
+
   loadMonitors(monitors: MonitorCached[]) {
     monitors.forEach((monitor) => {
       if(monitor?.registration) {
@@ -103,12 +115,13 @@ export class MonitorManager {
   }
 
   handleEvent(event: IEvent): void {
+    const acceptedKinds = [0, 10002, 10166];
     const { kind, pubkey } = event;
+    if(!acceptedKinds.includes(kind)) return
     let monitor = this.monitors.get(pubkey);
     if (!monitor && kind === 10166) {
       monitor = new Monitor(event);
       this.monitors.set(pubkey, monitor);
-      ////console.log(`created new monitor for pubkey: ${pubkey}`);
     } else if(!monitor) {
       console.warn(`Monitor not found for pubkey: ${pubkey}`);
       return;
@@ -121,8 +134,16 @@ export class MonitorManager {
       monitor.addRelays(event);
     }
     this.monitors.set(pubkey, monitor);
-    ////console.log(`did stuff for ${pubkey}`)
-    ////console.log(`total monitors: ${this.monitors.size}`);
+  }
+
+  updateMonitor(monitor: Monitor): void {
+    this.monitors.set(monitor.pubkey, monitor);
+  }
+
+  maybeUpdateLastActive(event: IEvent | Nip66Event): boolean {
+    const monitor = this.monitors.get(event.pubkey);
+    if(!monitor) return false;
+    return monitor.maybeUpdateLastActive(event);
   }
 
   sortMonitors(priority: MonitorPriority = MonitorPriority.Checks, apply: boolean = false): Monitor[] {

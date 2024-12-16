@@ -15,7 +15,17 @@ const config = {
     }),
     prerender: {
       crawl: false,
-      entries: ['/']  
+      entries: [
+        '/',
+        '/monitors',
+        '/monitors/[pubkey]',
+        '/note/[id]',
+        '/preferences',
+        '/relays',
+        '/relays/map',
+        '/relays/[protocol]/[...relay]',
+        '/reload/[...path]'
+      ]
     },
   }
 };

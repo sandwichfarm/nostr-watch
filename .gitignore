@@ -22,3 +22,4 @@ packages/kinds
 .configs
 .docker
 .svelte-kit
+scripts/deploy/gui-scp.sh

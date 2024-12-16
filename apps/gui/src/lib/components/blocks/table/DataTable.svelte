@@ -12,10 +12,11 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
 	import { StateManager } from '@nostrwatch/nip66';
-	import type { Formatters } from 'src/lib/config/dataTable/monitors';
+	import type { Formatters } from '$lib/config/dataTable/monitors';
+    
     import TableOptions from './TableOptions.svelte';
-
-    import * as Tabs from '$lib/components/ui/tabs/index.js';
+    import * as Popover from "$lib/components/ui/popover";
+    import * as Tabs from "$lib/components/ui/tabs";
 
     export let tableKey: string;
     export let data: any;
@@ -187,7 +188,6 @@
         }
         createTable();
         return () => {
-            // unsubTable();
             unsubRPP();
             unsubTableConfig();
             if (tableInstance) {
@@ -208,6 +208,7 @@
     <!-- **Main Table Pane** -->
     <Resizable.Pane defaultSize={75}>
         {#if tableInstance !== null}
+    
             <div class="px-4 shadow-md my-4">
                 <!-- **Search Input for Global Filtering** -->
                 <Input
@@ -217,8 +218,26 @@
                     bind:value={globalFilter}
                     on:input={handleGlobalFilterChange}
                 />
+
                 <DataTableShowResults />
                 <DataTablePaginator {tableInstance} />
+                <Popover.Root>
+                    <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">⚙</Popover.Trigger>
+                    <Popover.Content class="z-[5999]">
+                        <Tabs.Root value="visiblity" class="w-full">
+                            <Tabs.List>
+                                <Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>
+                                <Tabs.Trigger value="order">Order</Tabs.Trigger>
+                            </Tabs.List>
+                            <Tabs.Content value="visiblity">
+                                <TableOptions {config} {tableKey} />
+                            </Tabs.Content>
+                            <Tabs.Content value="order" class=" text-white/20">
+                                coming soon...
+                            </Tabs.Content>
+                        </Tabs.Root>
+                    </Popover.Content>
+                </Popover.Root>
 
                 <!-- **Data Table Structure** -->
                 <Table.Root>
@@ -308,42 +327,25 @@
         onResize={()=>{}} 
         bind:api={sidebarPaneApi}
         > <!----->
-        <Tabs.Root value="filters" class="w-full my-4">
-            <Tabs.List class="px-4 rounded-none w-full bg-transparent">
-                <Tabs.Trigger value="filters" class="bg-white/5">Filters</Tabs.Trigger>
-                <Tabs.Trigger value="options" class="bg-white/5">Options</Tabs.Trigger>
-            </Tabs.List>
-            <Tabs.Content value="filters">
-                {#if tableInstance !== null && enableFilters}
-                    <Filters 
-                        {tableData} 
-                        {keysEnable}
-                        {filters} 
-                        {filtersInclude} 
-                        {humanReadableNames} 
-                        {filterFormatters} 
-                        {maxBadgeLength}
-                        {config}
-                    />
-                {/if}
-            </Tabs.Content>
-            <Tabs.Content value="options">
-                <Tabs.Root value="filters" class="w-full">
-                    <Tabs.List>
-                        <Tabs.Trigger value="table-options">Table</Tabs.Trigger>
-                        <Tabs.Trigger value="filter-options">Filter</Tabs.Trigger>
-                    </Tabs.List>
-                    <Tabs.Content value="table-options">
-                        <TableOptions {config} {tableKey} />
-                    </Tabs.Content>
-                    <Tabs.Content value="filter-options">
-                        filter options here.
-                    </Tabs.Content>
-                </Tabs.Root>
-            </Tabs.Content>
-        </Tabs.Root>
+            {#if tableInstance !== null && enableFilters}
+                <Filters 
+                    {tableData} 
+                    {keysEnable}
+                    {filters} 
+                    {filtersInclude} 
+                    {humanReadableNames} 
+                    {filterFormatters} 
+                    {maxBadgeLength}
+                    {config}
+                />
+            {/if}
+          
     </Resizable.Pane>
 </Resizable.PaneGroup>
+
+
+
+
 
 <style lang="postcss" global>
     .active-filters {

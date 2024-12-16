@@ -47,14 +47,23 @@
 	}
 </script>
 
+{JSON.stringify(config.humanReadableNames)}
+
 {#each availableKeys as key}
 <li>
 	<Checkbox 
 		checked={$config.columnsShow.includes(key)} 
 		onCheckedChange={() => toggleColumnShow(key)} 
 		value={key} 
+		class="mr-2"
 	/>
-	{key}
+	{config?.humanReadableNames?.[key] || key}
 </li>
 {/each}
+
+<style lang="postcss">
+	li {
+		@apply flex text-center py-2 px-3;
+	}
+</style>
 

@@ -9,7 +9,7 @@ echo "BUILDING @nostrwatch/nocap"
 yarn workspace @nostrwatch/nocap build
 
 echo "BUILDING @nostrwatch/nocap-websocket-adapter-default"
-yarn workspace@nostrwatch/nocap-websocket-adapter-default build
+yarn workspace @nostrwatch/nocap-websocket-adapter-default build
 
 echo "BUILDING @nostrwatch/nip66"
 yarn workspace @nostrwatch/nip66 build

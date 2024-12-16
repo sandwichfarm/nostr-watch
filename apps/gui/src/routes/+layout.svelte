@@ -13,6 +13,7 @@ import { navigating } from '$app/stores';
 import type Nip66 from '@nostrwatch/nip66';
 import { destroy } from '$lib/utils/lifecycle';
 import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
+	import { delay } from '@nostrwatch/utils';
   // import { bootstrap, destroy } from '$lib/utils/lifecycle.js';
 
 const isLeader: Writable<boolean> = writable(false);
@@ -33,6 +34,7 @@ lifecycle.onReleaseLeader(async () => {
   console.log("Leader tab: ready, awaiting shutdown..."); 
   await nip66.shutdown();
   console.log("Leader tab: shutdown..."); 
+  await delay(1000);
   destroy();
   isLeader.set(false);
   console.log("Leader tab: Released.");

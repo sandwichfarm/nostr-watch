@@ -16,10 +16,8 @@ export class User {
         if(service){
             this.#service = service;
             this.initialize();
-            //console.log('User initialized with service');
         }
         else {
-            //console.log('User initialized without service');
             this.#ready = true;
         }
     }

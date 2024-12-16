@@ -6,6 +6,9 @@
 	import { derived } from "svelte/store";
 	import type { Readable } from "svelte/store";
 
+    export let maxResults: number | undefined;
+    export let autoFocus: boolean = false;  
+
     let relayData: Readable<any[]> = derived([relayAggregates, relaysForMiniSearch], ([$relayAggregates, $relaysForMiniSearch]) => {
         return  $relayAggregates.length? 
                     $relayAggregates: 
@@ -16,5 +19,5 @@
 </script>
 
 {#if $relayData.length}
-    <AutoSuggest payload={$relayData} {searchConfig} />
+    <AutoSuggest payload={$relayData} {searchConfig} {maxResults} {autoFocus} />
 {/if}

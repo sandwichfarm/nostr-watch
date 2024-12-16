@@ -5,12 +5,12 @@ import Nip66, { StateManager } from '@nostrwatch/nip66';
 import { Nip66Event, type IEvent } from '@nostrwatch/nip66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
-import { nip66, events, monitorsMap, monitors } from '$lib/stores/index.js';
+import { nip66, events, monitorsMap, monitors, eventsArray } from '$lib/stores/index.js';
 import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
 import { addEventsToStore } from '$lib/stores/events-helpers.js';
 
-import type { Monitor } from "@nostrwatch/nip66/models"
+import type { Monitor, NostrEvent } from "@nostrwatch/nip66/models"
 import { generateNip05MapKey, nip05Service } from '$lib/stores/nip05s.js';
 import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded } from '../stores/app';
 import type { SubscribeHandlers } from '@nostrwatch/nip66/core/WebsocketAdapter';
@@ -170,6 +170,8 @@ export const bootstrap = async (_instance?: Nip66) => {
             beginLiveSync({ onevents })
         });
     }
+
+    removeStaleChecksFromStore()
     
 }
 
@@ -200,16 +202,16 @@ export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
     }
 }
 
-// export const destroy = () => {
-//     nip66.update(($nip66: Nip66) => {
-//         if ($nip66 && typeof $nip66.destroy === 'function') {
-//             $nip66.destroy();
-//         } else {
-//             console.error('nip66 instance is missing or does not have a destroy method.');
-//         }
-//         return $nip66;
-//     });
-// };
+export const destroy = () => {
+    nip66.update(($nip66: Nip66) => {
+        if ($nip66 && typeof $nip66.destroy === 'function') {
+            $nip66.destroy();
+        } else {
+            console.error('nip66 instance is missing or does not have a destroy method.');
+        }
+        return $nip66;
+    });
+};
 
 export const seedFromCache = async ($nip66?: Nip66) => {
     if(!$nip66) {
@@ -230,4 +232,23 @@ export const seedFromCache = async ($nip66?: Nip66) => {
     const cachedEvents = (await Promise.all(promises)).flat();
     addEventsToStore(cachedEvents || []);
     isSeeded.set(true)
+}
+
+export const removeStaleChecksFromStore = async () => {
+    const eventsArr: IEvent[] = get(eventsArray)
+    if(!eventsArr.length) return console.log('no events to check for staleness');
+    const oldKeys: string[] = []
+    for(const check of eventsArr.filter( event => event.kind === 30166 )){
+        const monitor = $monitorsMap.get(check.pubkey);
+        if(!monitor) continue;
+        if(monitor.relayIsOnline(check)) continue;
+        oldKeys.push(eventKey(check));
+    }
+    if(oldKeys.length === 0) return console.log('no stale checks found');
+    console.log('removing stale checks:', oldKeys)
+    const $events: Map<string, NostrEvent> = get(events);
+    for(const key of oldKeys){
+        $events.delete(key);
+    }
+    events.set($events);
 }

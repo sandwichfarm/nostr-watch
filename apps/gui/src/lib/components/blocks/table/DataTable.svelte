@@ -23,6 +23,8 @@
     export let enableFilters: boolean = true;
     export let actionsComponent;
 
+    let sidebarPaneApi: Resizable.PaneApi | null = null;
+
     type DataTableConfig = { 
 		columnsDisable: string[]
         columnsShow: string[]
@@ -197,12 +199,14 @@
     function clearAllFilters() {
         filters.set({});
     }
+
+    
 </script>
 
 <!-- **UI Layout with Resizable Panes** -->
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
     <!-- **Main Table Pane** -->
-    <Resizable.Pane defaultSize={75} class="min-h-[100%]">
+    <Resizable.Pane defaultSize={75}>
         {#if tableInstance !== null}
             <div class="px-4 shadow-md my-4">
                 <!-- **Search Input for Global Filtering** -->
@@ -294,7 +298,16 @@
     </Resizable.Pane>
     <Resizable.Handle withHandle />
     <!-- **Filters Pane** -->
-    <Resizable.Pane defaultSize={25}>
+    <Resizable.Pane 
+        class="min-h-[100%]"
+        defaultSize={25} 
+        collapsedSize={10} 
+        collapsible={true}  
+        onExpand={()=>{}} 
+        onCollapse={()=>{}} 
+        onResize={()=>{}} 
+        bind:api={sidebarPaneApi}
+        > <!----->
         <Tabs.Root value="filters" class="w-full my-4">
             <Tabs.List class="px-4 rounded-none w-full bg-transparent">
                 <Tabs.Trigger value="filters" class="bg-white/5">Filters</Tabs.Trigger>

@@ -13,7 +13,8 @@ interface ITableSettings {
     //filtering
     filtersApplied: Record<string, any>;
     //pane width
-    paneWidthPercentage: number;
+    paneWidth: number;
+    paneCollapsed: boolean;
 }
 
 export class TableSettings extends Preferences<ITableSettings> {

@@ -48,7 +48,7 @@ export class Monitor {
   _pfp?: string;
   
   private _lastActive: number = -1;
-  private _frequencyMutiplier: number = 4;
+  private _frequencyMutiplier: number = 1.5;
 
   constructor(event: IEvent) {
     if(event.kind !== 10166) throw new Error('Monitor must be created from a 10166 event');

@@ -18,6 +18,8 @@
   export let payload: any = [];
   export let searchConfig: any = {};
   export let mode: 'compact' | 'table' = 'compact';
+  export let maxResults: number | undefined;
+  export let autoFocus: boolean = false;
 
   const { searchResults, initializeIndex, performSearch, selectSuggestion } = searchConfig;
 
@@ -37,9 +39,10 @@
 
   let inputElement: HTMLInputElement;
 
-  onMount(() => {
+  onMount(async () => {
     initializeIndex(payload);
-    document.addEventListener("click", handleClickOutside);
+    document.addEventListener("click", handleClickOutside); 
+    if(autoFocus) inputElement.focus();
   });
 
   onDestroy(() => {
@@ -161,7 +164,7 @@
     <!-- Autosuggest Dropdown -->
     {#if state.showSuggestions && $searchResults.length > 0}
       <div class="shadow-md absolute top-full left-0 right-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-black/60 dark:border-white/10">
-        {#each $searchResults as result, index}
+        {#each $searchResults.slice(0, maxResults || undefined) as result, index}
           <div
             role="option"
             tabindex="0"

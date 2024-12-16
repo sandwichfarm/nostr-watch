@@ -19,7 +19,8 @@ export abstract class Preferences<T extends Record<string, any> = Record<string,
      */
     set<K extends keyof T>(key: K, value: PreferenceValue<T[K]>): void {
         this._data[key] = value;
-        StateManager.set(key as string, value);
+        StateManager.emit(`preferences.${String(key)}`, value);
+        StateManager.emit(`preferences.change`, key, value);
     }
 
     /**
@@ -31,6 +32,38 @@ export abstract class Preferences<T extends Record<string, any> = Record<string,
         return this._data[key];
     }
 
+    /**
+     * Adds a handler to be called when a preference value changes.
+     * @param key - The preference key.
+     * @param handler - The handler function.
+     */
+    subscribe<K extends keyof T>(key: K, handler: (value: PreferenceValue<T[K]>) => void): void {
+        StateManager.on(`preferences.${String(key)}`, handler);
+    }
+
+    /**
+     * Removes a handler from a preference value.
+     * @param key - The preference key.
+     * @param handler - The handler function.
+     */
+    unsubscribe<K extends keyof T>(key: K, handler?: (value: PreferenceValue<T[K]>) => void): void {
+        StateManager.off(`preferences.${String(key)}`, handler);
+    }
+
+    /**
+     * Watches for any change in the data
+     */
+    watch(handler: (data: Partial<T>) => void): void {
+        StateManager.on('preferences.change', handler);
+    }
+
+    /**
+     * Stops watching for any change in the data
+     */
+    unwatch(handler?: (data: Partial<T>) => void): void {
+        StateManager.off('preferences.change', handler);
+    }
+    
     /**
      * Serializes the preferences to a JSON string.
      * Recursively serializes nested Preferences instances.

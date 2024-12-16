@@ -1,18 +1,26 @@
 <script lang="ts">;
     import { page } from '$app/stores';
 	import AutoSuggestRelays from '../partials/AutoSuggestRelaysCompact.svelte';
+    import { doBootstrap } from '$lib/stores/routines';
+	import { hasBeenBoostrapped } from '$lib/stores/app';
+    import { totalMonitors } from '$lib/stores';
   
     $: isHomepage = $page.url.pathname === '/';
+    $: isBootstrapped = hasBeenBoostrapped();
+    $: loadedEnough = hasBeenBoostrapped() || $totalMonitors.size > 1
 </script>
 
 <header id="site-header">
+    
     <h1>nostr.watch</h1>
+    {#if loadedEnough || !$doBootstrap}
     <nav>
         <a href="/">home</a>
         <a href="/relays">relays</a>
         <a href="/monitors">monitors</a>
         <a href="/preferences">preferences</a>
     </nav>
+    {/if}
     {#if !isHomepage}
     <div class="search-container">
         <search>

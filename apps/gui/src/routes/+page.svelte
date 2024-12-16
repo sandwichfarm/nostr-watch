@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import AutoSuggestRelaysCompact from '$lib/components/partials/AutoSuggestRelaysCompact.svelte';
+	import { hasBeenBoostrapped } from '$lib/stores/app';
+	import { eventsArray } from '$lib/stores';
+	import { totalMonitors } from '$lib/stores';
 
 	onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
@@ -9,13 +12,24 @@
   });
 
   $: isHomepage = $page.url.pathname === '/'
+  $: loadedEnough = hasBeenBoostrapped() || $totalMonitors.size > 1
 </script> 
 
 {#if isHomepage}
-<section class="h-[420px] bg-white/5 flex flex-col justify-center items-center">
-  <h1 class="w-full text-center text-3xl mb-4">find your relays.</h1>
-  <div class="w-full max-w-xl">
-    <AutoSuggestRelaysCompact maxResults={5} autoFocus={true} />
+
+
+  {#if loadedEnough}
+  <section class="h-[420px] bg-white/5 flex flex-col justify-center items-center">
+    <h1 class="w-full text-center text-3xl mb-4">find your relays.</h1>
+    <div class="w-full max-w-xl">
+      <AutoSuggestRelaysCompact maxResults={5} autoFocus={true} />
+    </div>
+  </section>
+  {:else}
+  <div class="flex flex-col items-center justify-center h-screen">
+    <div class="text-2xl">[ loading graphic ]</div>
+    <div class="text-lg">[ load stage and status ]</div>
   </div>
-</section>
+  {/if}
+
 {/if}

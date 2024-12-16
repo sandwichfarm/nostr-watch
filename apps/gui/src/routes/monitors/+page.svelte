@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import Stats from '$lib/components/blocks/Stats.svelte';
     import DataTable from '$lib/components/blocks/table/DataTable.svelte';
     import MonitorsActions from '$lib/components/partials/MonitorActions.svelte';
     import * as Alert from "$lib/components/ui/alert/index.js";
     import { type Monitor } from "@nostrwatch/nip66/models"
-	
+    
     import { monitorsSorted, monitorRows, inactiveDisabledMonitorChecksCount } from '$lib/stores/monitors.js';
 
     import defaultTableConfig from '$lib/config/dataTable/monitors.js';
-	import { StateManager } from '@nostrwatch/nip66';
-	import { doBootstrap } from '$lib/stores/routines';
+    import { StateManager } from '@nostrwatch/nip66';
+    import { doBootstrap } from '$lib/stores/routines';
     import { doAggregateCache } from '$lib/stores/app';
-	import { writable, type Writable } from 'svelte/store';
-	import type { Formatters } from 'src/lib/config/dataTable/monitors';
+    import { writable, type Writable } from 'svelte/store';
+    import type { Formatters } from 'src/lib/config/dataTable/monitors';
     import { nip66 } from '$lib/stores';
 
     type DataTableConfig = { 
-		columnsDisable: string[]
+        columnsDisable: string[]
         columnsShow: string[]
         filtersDisable: string[]
         filtersShow: string[]
@@ -26,9 +26,9 @@
         tableFormatters: Formatters 
         filterFormatters: Formatters
         tableRowStyler: (row: any) => string
-	}
+    }
 
-	let val: string='';
+    let val: string='';
     let countIntVal: ReturnType<typeof setInterval>;
 
     const tableKey: string = 'monitors'
@@ -39,38 +39,24 @@
     StateManager.on('monitor:update:lastActive', (value: any) => { console.log('monitor:lastActive', value) })
 
     const setConfig = () => {
-		console.log('set config.')
-		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
-		if(userTableConfig) {
-			config.set({...defaultTableConfig, ...userTableConfig})
-		}
-		else {
-			config.set({...defaultTableConfig})
-		}
-		ready.set(true)
-	}
+        console.log('set config.')
+        const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
+        if(userTableConfig) {
+            config.set({...defaultTableConfig, ...userTableConfig})
+        }
+        else {
+            config.set({...defaultTableConfig})
+        }
+        ready.set(true)
+    }
 
-	onMount(async () => {
+    onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-		doBootstrap.set(true)
+        doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
         await $nip66.ready()
         $nip66.services.monitors.ensureMonitorsActive()
-        // countIntVal = setInterval(() => {
-        //     const activeMonitors = $nip66?.services?.monitors?.activeMonitors
-        //     if(activeMonitors?.length){
-        //         activeMonitors.forEach(async (monitor: Monitor) => {
-        //             const count = await $nip66?.services.monitors?.countMonitorChecksFromCache(monitor.pubkey)
-        //             activeMonitorChecksCount.update((value: Record<string, number>) => {
-        //                 return {
-        //                     ...value,
-        //                     [monitor.pubkey]: count
-        //                 }
-        //             })
-        //         })
-        //     }
-        // }, 30000);
     });
 
     onDestroy(() => {

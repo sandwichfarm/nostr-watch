@@ -67,6 +67,14 @@ export abstract class Adapter {
     this._ls = new LocalStorageWrapper(['nip66', this.slug])
   }
 
+  async shutdown(): Promise<void> {
+    if(this.workers?.cache) {
+      if(this.workers.cache instanceof Worker){
+        this.workers?.cache?.terminate()
+      }
+    }
+  }
+
   async newWorker(): Promise<any> {
     if(this?.overloadWorker) {
       return this.overloadWorker;

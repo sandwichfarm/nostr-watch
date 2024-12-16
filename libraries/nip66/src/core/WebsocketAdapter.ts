@@ -77,7 +77,7 @@ export interface WebsocketAdapterFetchOptions {
   cache: boolean
  }
 
-export interface IWebsocketAdapterMethods {
+export interface IWebsocketAdapterMethods extends IAdapter {
   connect(): Promise<void>;
   subscribe(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
   fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
@@ -139,8 +139,12 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   async shutdown(): Promise<void> {
+    console.log('shutting down websocket adapter')
+    console.log('unsubscribing all...')
     await this.unsubscribeAll();
+    console.log('aborting...')
     await this.abort();
+    console.log('terminating worker...')
     await delay(1000);
     this.terminate()
   }

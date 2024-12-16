@@ -22,11 +22,12 @@ jobs:
           node-version: '22'
           cache: 'yarn'
 
-      - name: Install deps
-        run: yarn
+      - name: Setup Yarn
+        uses: threeal/setup-yarn-action@v2.0.0
 
       - name: Run alpha deploy
-        run: ./scripts/deploy/gui.sh
+        run: yarn workspaces foreach -ptR --from @nostrwatch/gui run build
+        # run: ./scripts/deploy/gui.sh
 
       - name: Get package version
         id: get_version

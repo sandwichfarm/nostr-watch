@@ -2,6 +2,9 @@
 echo "BUILDING @nostrwatch/utils"
 yarn workspace @nostrwatch/utils build 
 
+echo "BUILDING @nostrwatch/logger"
+yarn workspace @nostrwatch/logger build 
+
 echo "BUILDING @nostrwatch/nocap"
 yarn workspace @nostrwatch/nocap build
 

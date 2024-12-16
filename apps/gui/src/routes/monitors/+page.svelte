@@ -14,6 +14,7 @@
     import { doAggregateCache } from '$lib/stores/app';
 	import { writable, type Writable } from 'svelte/store';
 	import type { Formatters } from 'src/lib/config/dataTable/monitors';
+    import { nip66 } from '$lib/stores';
 
     type DataTableConfig = { 
 		columnsDisable: string[]
@@ -54,6 +55,8 @@
 		doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
+        await $nip66.ready()
+        $nip66.services.monitors.ensureMonitorsActive()
         // countIntVal = setInterval(() => {
         //     const activeMonitors = $nip66?.services?.monitors?.activeMonitors
         //     if(activeMonitors?.length){

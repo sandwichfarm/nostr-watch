@@ -113,8 +113,8 @@ $effect(() => {
 </div>
 {:else}
 <div class="flex flex-col items-center justify-center h-screen">
-  <div class="text-2xl">This tab is not the leader.</div>
-  <div class="text-lg">Please wait for the leader tab to be closed.</div>
+  <div class="text-2xl">Another Session Detected</div>
+  <div class="text-lg">Please wait while we terminate existing session (from another tab or window)</div>
 </div>
 {/if}
 

@@ -24,7 +24,9 @@ const config = {
         '/relays',
         '/relays/map',
         '/relays/[protocol]/[...relay]',
-        '/reload/[...path]'
+        '/reload/[...path]',
+        '/unsupported',
+        '/mobile'
       ]
     },
   }

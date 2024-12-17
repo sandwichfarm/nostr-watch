@@ -13,8 +13,8 @@ import { navigating } from '$app/stores';
 import type Nip66 from '@nostrwatch/nip66';
 import { destroy } from '$lib/utils/lifecycle';
 import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
-	import { delay } from '@nostrwatch/utils';
-  // import { bootstrap, destroy } from '$lib/utils/lifecycle.js';
+import { delay } from '@nostrwatch/utils';
+import { getBrowserInfo } from '$lib/utils/compat.js';
 
 const isLeader: Writable<boolean> = writable(false);
 
@@ -85,10 +85,16 @@ onDestroy(unsubscribe);
 onMount(async () => {
     const userAgent = navigator.userAgent || navigator.vendor || window.opera;
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(userAgent);
+    const isSafari = getBrowserInfo()?.name.toLowerCase().includes('safari')
 
     if (isMobile && $page.url.pathname !== '/mobile') {
-        goto('/mobile'); // Redirect to the mobile-specific template
+        goto('/mobile'); 
     }
+
+    if(isSafari) {
+      goto('/unsupported');
+    }
+
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 
     if(typeof $doBootstrap === 'undefined') {

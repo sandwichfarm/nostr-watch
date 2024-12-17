@@ -19,7 +19,7 @@
     "deploy:nocapd@siliconvalley": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/siliconvalley",
     "nukecache@all": "ansible-playbook .ansible/nocapd/nuke-cache.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney"
   },
-  "packageManager": "yarn@4.5.1",
+  "packageManager": "yarn@4.5.3",
   "devDependencies": {
     "@changesets/cli": "2.27.8",
     "esbuild": "^0.24.0",

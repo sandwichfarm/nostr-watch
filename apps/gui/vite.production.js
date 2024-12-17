@@ -2,6 +2,27 @@ import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'path';
 
+function patchSvelteSpeedometer() {
+  return {
+    name: 'patch-svelte-speedometer',
+    enforce: 'pre',
+    buildStart() {
+      const modulePath = path.resolve(
+        'node_modules/svelte-speedometer/dist/Speedometer.svelte'
+      );
+
+      if (fs.existsSync(modulePath)) {
+        let code = fs.readFileSync(modulePath, 'utf-8');
+        if (code.includes('$state.frozen')) {
+          code = code.replace(/\$state\.frozen/g, '$state.raw');
+          fs.writeFileSync(modulePath, code, 'utf-8');
+          console.log('Patched svelte-speedometer: replaced "$state.frozen" with "$state.raw"');
+        }
+      }
+    },
+  };
+}
+
 export default defineConfig({
   resolve: {
     mainFields: ['module', 'main'],
@@ -9,7 +30,8 @@ export default defineConfig({
   },
   worker: {
     plugins: [
-      sveltekit()
+      sveltekit(),
+      patchSvelteSpeedometer()
     ]
   },
   build: {
@@ -40,6 +62,7 @@ export default defineConfig({
   },
   plugins: [
     sveltekit(),
+    patchSvelteSpeedometer(),
     {
       name: 'worker-headers',
       configureServer(server) {

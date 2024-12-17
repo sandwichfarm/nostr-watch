@@ -29,10 +29,13 @@ jobs:
           version: 9
 
       - name: Install
-        run: pnpm install --frozen-lockfile --ignore-scripts
+        run: pnpm install --frozen-lockfile
 
-      - name: Build All Packages
-        run: pnpm -r run build
+      - name: Build Worker Relay
+        run: pnpm --filter @nostrwatch/worker-relay build 
+      
+      - name: Build GUI
+        run: pnpm --filter @nostrwatch/gui
 
       - name: Check Artifact Size
         run: du -sh libraries/**/dist internal/**/dist apps/gui/dist

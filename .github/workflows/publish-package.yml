@@ -74,6 +74,7 @@ jobs:
           - package: 'nocap-geo-adapter-default'
           - package: 'nocap-ssl-adapter-default'
           - package: 'nocap-every-adapter-default'
+          - package: 'worker-relay'
           - package: 'gui'
 
     steps:

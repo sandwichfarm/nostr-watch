@@ -58,6 +58,7 @@
     "@rollup/plugin-replace": "^5.0.0",
     "@rollup/plugin-typescript": "^10.0.0",
     "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.2",
     "@types/promise-deferred": "2.0.5",
     "@types/ws": "^8.5.12",
     "@vitest/ui": "0.34.6",

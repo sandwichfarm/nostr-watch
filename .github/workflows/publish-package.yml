@@ -1,6 +1,6 @@
 name: GH Release and NPM Publish
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
   push:
     branches:
       - 'next'
@@ -10,62 +10,50 @@ on:
       - 'scripts/**'
       - 'package.json'
       - '.github/workflows/publish-package.yml'
+      - 'apps/gui/**'
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false 
+      fail-fast: false
       matrix:
         include:
           - package: 'nostrings'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'announce'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'logger'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'seed'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'utils'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nwcache'
             nodeVersion: '20'
           - package: 'controlflow'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'publisher'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nocap'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nocap-websocket-adapter-default'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nocap-websocket-browser-adapter-default'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nocap-info-adapter-default'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nocap-dns-adapter-default'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nocap-geo-adapter-default'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nocap-ssl-adapter-default'
             nodeVersion: '20'
-            typescript: 'true'
           - package: 'nocap-every-adapter-default'
             nodeVersion: '20'
-            typescript: 'true'
-            
+          - package: 'gui'
+            nodeVersion: '20'
+
     steps:
       - uses: actions/checkout@v4
 
@@ -75,29 +63,52 @@ jobs:
           node-version: ${{ matrix.nodeVersion }}
 
       - name: Install Dependencies
-        run: pnpm run install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
-      - name: Bootstrap Packages
-        run: pnpm -r run bootstrap
-        if: github.workspace == 'true'
+      - name: Build All Packages
+        run: pnpm -r run build
+
+      # Deploy GUI steps only if the current matrix package is 'gui'
+      - name: Install jq
+        if: matrix.package == 'gui'
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Get package version (GUI)
+        if: matrix.package == 'gui'
+        id: get_version
+        run: |
+          VERSION=$(jq -r '.version' ./apps/gui/package.json)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Prepare Directories (GUI)
+        if: matrix.package == 'gui'
+        run: |
+          VERSION=${{ env.VERSION }}
+          echo "Deploying version $VERSION"
+          ssh -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+          set -e
+          mkdir -p /var/www/${VERSION}
+          rm -rf /var/www/html/
+          ln -s /var/www/${VERSION} /var/www/html
+          EOF
+
+      - name: Upload Build (GUI)
+        if: matrix.package == 'gui'
+        run: |
+          scp -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
 
       - name: Find Package
         id: find_package
         run: |
-          PKG_PATH=$(./scripts/wf/get-path-package.sh "${{ matrix.package }}")
+          # Include apps directory as well, since we now have 'gui' there
+          PKG_PATH=$(find libraries -type d -name "${{ matrix.package }}" -print -quit)
+          if [ -z "$PKG_PATH" ]; then
+            PKG_PATH=$(find internal -type d -name "${{ matrix.package }}" -print -quit)
+          fi
+          if [ -z "$PKG_PATH" ]; then
+            PKG_PATH=$(find apps -type d -name "${{ matrix.package }}" -print -quit)
+          fi
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
-
-      - name: Install Package
-        id: install_package
-        run: |
-          cd "${{ steps.find_package.outputs.the_path }}"
-          pnpm i
-
-      - name: Build Typescript
-        if: matrix.typescript == 'true'
-        run: |
-          cd "${{ steps.find_package.outputs.the_path }}"
-          pnpm run build
 
       - name: Publish Package
         id: publish
@@ -112,14 +123,13 @@ jobs:
         id: meta
         run: |
           RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"
-          echo "RELEASE SLUG: $RELEASE_SLUG" >> .fml
           echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
 
       - name: Check for Tag
         id: slug_exists
         run: |
           git fetch --tags
-          TAG="${{ steps.meta.outputs.release_slug}}"
+          TAG="${{ steps.meta.outputs.release_slug }}"
           if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
             echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"
           else
@@ -130,7 +140,7 @@ jobs:
         if: steps.slug_exists.outputs.release_slug_exists != 'true'
         id: archive
         run: |
-          zip -r "${{ steps.meta.outputs.release_slug}}.zip" "${{ steps.find_package.outputs.the_path }}"
+          zip -r "${{ steps.meta.outputs.release_slug }}.zip" "${{ steps.find_package.outputs.the_path }}"
 
       - name: Create Release ${{ steps.meta.outputs.release_slug }}
         if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != 'true' && steps.slug_exists.outputs.release_slug_exists != 'true'
@@ -152,6 +162,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ steps.meta.outputs.release_slug}}.zip
-          asset_name: ${{ steps.meta.outputs.release_slug}}.zip
+          asset_path: ./${{ steps.meta.outputs.release_slug }}.zip
+          asset_name: ${{ steps.meta.outputs.release_slug }}.zip
           asset_content_type: application/zip

@@ -104,7 +104,7 @@ jobs:
 
       - name: Publish Package
         id: publish
-        if: matrix.package != 'gui'  # Skip if the package is 'gui'
+        if: matrix.package != 'gui'
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}

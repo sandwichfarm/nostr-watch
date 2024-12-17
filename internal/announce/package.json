@@ -15,6 +15,7 @@
   "dependencies": {
     "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/utils": "workspace:^",
+    "chalk": "^5.3.0",
     "nostr-tools": "2.1.4"
   },
   "devDependencies": {

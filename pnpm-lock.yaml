@@ -437,6 +437,9 @@ importers:
       '@nostrwatch/utils':
         specifier: workspace:^
         version: link:../utils
+      chalk:
+        specifier: ^5.3.0
+        version: 5.3.0
       nostr-tools:
         specifier: 2.1.4
         version: 2.1.4(typescript@5.7.2)

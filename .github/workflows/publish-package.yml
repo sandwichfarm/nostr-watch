@@ -31,6 +31,9 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Check Artifact Size
+        run: du -sh libraries/**/dist internal/**/dist apps/gui/dist
+
       # - name: Build All Packages
       #   run: pnpm -r run build
 
@@ -40,8 +43,11 @@ jobs:
           name: built-packages
           path: |
             libraries/**/dist/
+            libraries/**/package.json
             internal/**/dist/
+            internal/**/package.json
             apps/gui/dist/
+            apps/gui/package.json
 
   publish:
     runs-on: ubuntu-latest

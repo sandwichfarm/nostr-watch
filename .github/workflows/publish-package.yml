@@ -104,12 +104,14 @@ jobs:
 
       - name: Publish Package
         id: publish
+        if: matrix.package != 'gui'  # Skip if the package is 'gui'
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: ${{ steps.find_package.outputs.the_path }}/package.json
           strategy: all
           access: public
+        
 
       - name: Set Meta
         id: meta

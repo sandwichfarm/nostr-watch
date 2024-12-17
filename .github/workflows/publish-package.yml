@@ -28,11 +28,11 @@ jobs:
         with:
           version: 9
 
-      - name: Install Dependencies
+      - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build All Packages
-        run: pnpm -r run build
+      # - name: Build All Packages
+      #   run: pnpm -r run build
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4

@@ -11,7 +11,12 @@ import livereload from 'rollup-plugin-livereload'
 import webWorkerLoader from 'rollup-plugin-web-worker-loader'
 import nodePolyfills from 'rollup-plugin-node-polyfills'
 import offMainThread from '@surma/rollup-plugin-off-main-thread'
-// import copy from 'rollup-plugin-copy';
+
+
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const glob = require('glob');
+
 
 /**
  * disallow circular deps
@@ -33,7 +38,7 @@ function onwarn(warning, warn) {
   warn(warning);
 }
 
-import * as glob from 'glob'
+
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

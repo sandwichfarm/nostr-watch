@@ -11,7 +11,7 @@
     "test": "vitest",
     "lint": "eslint . --ext .ts",
     "clean": "rimraf dist",
-    "prepare": "yarn clean && yarn build"
+    "prepare": "pnpm run clean && pnpm run build"
   },
   "keywords": [
     "nostr",

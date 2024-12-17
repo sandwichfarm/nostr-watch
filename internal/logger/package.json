@@ -22,14 +22,12 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "yarn clean && rollup -c && yarn build:types",
+    "build": "pnpm run clean && rollup -c && pnpm run build:types",
     "build:types": "tsc -p tsconfig.json --emitDeclarationOnly",
     "dev": "rollup -c --watch",
-    "dev:server": "yarn dev",
-    "dev:web": "yarn dev",
     "test": "vitest",
     "lint": "eslint . --ext .ts",
-    "prepare": "yarn clean && yarn build"
+    "prepare": "pnpm run clean && pnpm run build"
   },
   "keywords": [
     "logger",

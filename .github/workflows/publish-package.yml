@@ -75,10 +75,10 @@ jobs:
           node-version: ${{ matrix.nodeVersion }}
 
       - name: Install Dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm run install --frozen-lockfile
 
       - name: Bootstrap Packages
-        run: yarn workspaces run bootstrap
+        run: pnpm -r run bootstrap
         if: github.workspace == 'true'
 
       - name: Find Package
@@ -91,13 +91,13 @@ jobs:
         id: install_package
         run: |
           cd "${{ steps.find_package.outputs.the_path }}"
-          yarn install
+          pnpm i
 
       - name: Build Typescript
         if: matrix.typescript == 'true'
         run: |
           cd "${{ steps.find_package.outputs.the_path }}"
-          yarn build
+          pnpm run build
 
       - name: Publish Package
         id: publish

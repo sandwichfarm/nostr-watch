@@ -20,14 +20,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '22'
-          cache: 'yarn'
+          cache: 'pnpm'
 
-      - name: Setup Yarn
-        uses: threeal/setup-yarn-action@v2.0.0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Run alpha deploy
-        run: yarn workspaces foreach -ptR --from @nostrwatch/gui run build
-        # run: ./scripts/deploy/gui.sh
+        run: | 
+          # pnpm --filter @nostrwatch/gui... --workspace-concurrency=4 --parallel run build
+          pnpm --filter @nostrwatch/gui... --parallel run build
 
       - name: Get package version
         id: get_version

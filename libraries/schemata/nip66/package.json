@@ -15,14 +15,14 @@
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "11.7.0",
-    "@nostrwatch/nip01-schema": "*"
+    "@nostrwatch/nip01-schema": "workspace:^"
   },
   "scripts": {
     "clean": "rimraf dist/*",
     "deps": "node scripts/deps.js",
     "deref": "./scripts/deref.mjs ./dist/schema.json",
     "convert": "node ./scripts/convert.js",
-    "prebuild": "mkdir -p dist && yarn clean && yarn deps && yarn deref",
-    "build": "yarn prebuild && tsc && webpack --mode development --stats verbose"
+    "prebuild": "mkdir -p dist && pnpm run clean && pnpm run deps && pnpm run deref",
+    "build": "pnpm run prebuild && tsc && webpack --mode development --stats verbose"
   }
 }

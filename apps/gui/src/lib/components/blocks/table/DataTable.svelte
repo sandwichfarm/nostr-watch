@@ -17,6 +17,7 @@
     import TableOptions from './TableOptions.svelte';
     import * as Popover from "$lib/components/ui/popover";
     import * as Tabs from "$lib/components/ui/tabs";
+	import Button from '../../ui/button/button.svelte';
 
     export let tableKey: string;
     export let data: any;
@@ -24,7 +25,8 @@
     export let enableFilters: boolean = true;
     export let actionsComponent;
 
-    let sidebarPaneApi: Resizable.PaneApi | null = null;
+    export let sidebarPaneApi: Resizable.PaneApi | null = null;
+    const sidebarCollapsed = writable(StateManager.get('sidebarCollapsed') ?? false);   
 
     type DataTableConfig = { 
 		columnsDisable: string[]
@@ -200,6 +202,18 @@
         filters.set({});
     }
 
+    $: isCollapsed = $sidebarCollapsed;
+    $: activeFilters = Object.keys($filters).length;
+
+    const toggleSidebarPane = () => {
+        if(isCollapsed) {
+            sidebarPaneApi.expand()
+        }
+        else {
+            sidebarPaneApi.collapse()
+        }
+        sidebarCollapsed.set(!$sidebarCollapsed)
+    }
     
 </script>
 
@@ -320,24 +334,44 @@
     <Resizable.Pane 
         class="min-h-[100%]"
         defaultSize={25} 
-        collapsedSize={10} 
+        collapsedSize={5} 
         collapsible={true}  
         onExpand={()=>{}} 
         onCollapse={()=>{}} 
         onResize={()=>{}} 
-        bind:api={sidebarPaneApi}
+        bind:pane={sidebarPaneApi}
         > <!----->
-            {#if tableInstance !== null && enableFilters}
-                <Filters 
-                    {tableData} 
-                    {keysEnable}
-                    {filters} 
-                    {filtersInclude} 
-                    {humanReadableNames} 
-                    {filterFormatters} 
-                    {maxBadgeLength}
-                    {config}
-                />
+
+            {#if sidebarPaneApi}
+                <Button class="rounded-l-none display-inline bg-white/5 text-white/80 hover:bg-white/15 text-white/90" on:click={toggleSidebarPane()}>
+                    {#if isCollapsed}
+                    ⭅
+                    {:else}
+                    ⭆
+                    {/if}
+                </Button>    
+
+            {/if}
+
+            {#if isCollapsed}
+                {#if activeFilters > 0}
+                <Badge class="clear-left py-2 inline-block text-white/80 rounded-full" variant="destructive">
+                    {activeFilters}
+                </Badge>
+                {/if}
+            {:else}
+                {#if tableInstance !== null && enableFilters}
+                    <Filters 
+                        {tableData} 
+                        {keysEnable}
+                        {filters} 
+                        {filtersInclude} 
+                        {humanReadableNames} 
+                        {filterFormatters} 
+                        {maxBadgeLength}
+                        {config}
+                    />
+                {/if}
             {/if}
           
     </Resizable.Pane>
@@ -348,14 +382,6 @@
 
 
 <style lang="postcss" global>
-    .active-filters {
-        margin-bottom: 1rem;
-    }
-    .active-filters-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
     .active-filter {
         background-color: #e0e0e0;
         padding: 0.5rem;

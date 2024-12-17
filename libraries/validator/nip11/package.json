@@ -23,13 +23,13 @@
   },
   "scripts": {
     "json-schema": "node ./scripts/json-schema.js",
-    "qt": "yarn convert && yarn qt:types && yarn qt:ts && yarn qt:flow && yarn qt:zod",
+    "qt": "pnpm run convert && pnpm run qt:types && pnpm run qt:ts && pnpm run qt:flow && pnpm run qt:zod",
     "qt:types": "quicktype --src dist/schema.json -o src/types.ts --src-lang schema --just-types",
     "qt:ts": "quicktype -s schema ./dist/schema.json -o src/serialize.ts --lang ts",
     "qt:flow": "quicktype -s schema ./dist/schema.json -o ./packages/flow/src/index.ts --lang flow",
     "qt:zod": "quicktype -s schema ./dist/schema.json -o ./packages/zod/src/index.ts --lang typescript-zod",
     "clean": "rimraf src/**/*.js",
-    "build": "yarn clean && yarn json-schema && yarn qt && tsc && webpack --config webpack.config.mjs",
+    "build": "pnpm run clean && pnpm run json-schema && pnpm run qt && tsc && webpack --config webpack.config.mjs",
     "convert": "yaml-convert --input src/schema.yaml --output dist/schema.json",
     "test": "vitest",
     "docs": "typedoc"

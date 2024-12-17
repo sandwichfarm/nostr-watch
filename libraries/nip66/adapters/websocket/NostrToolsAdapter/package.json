@@ -21,13 +21,13 @@
     "dist"
   ],
   "scripts": {
-    "build": "yarn clean && node build.js",
+    "build": "pnpm run clean && node build.js",
     "build:types": "tsc --emitDeclarationOnly",
     "dev": "node build.js --watch",
     "clean": "rm -rf dist",
     "clean:source": "find src -name \"*.d.ts\" -type f -delete && find src -name \"*.d.ts.map\" -type f -delete",
     "test": "jest",
-    "prepare": "yarn build"
+    "prepare": "pnpm run build"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "0.2.3",

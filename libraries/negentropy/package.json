@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/negentropy-utils",
-  "packageManager": "yarn@4.5.1",
+  "packageManager": "pnpm run@4.5.1",
   "scripts": {
     "build": "npm run build:node && npm run build:browser",
     "build:node": "esbuild src/index.ts --bundle --platform=node --target=node14 --outfile=dist/index.node.js --format=cjs --sourcemap",

@@ -4,7 +4,6 @@
   "main": "src/index.js",
   "type": "module",
   "engines": {
-    "yarn": ">=1.16.0",
     "node": ">=16.0.0"
   },
   "dependencies": {

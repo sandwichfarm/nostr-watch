@@ -1,0 +1,13 @@
+packages:
+    - "apps/*"
+    - "demos/*"
+    - "internal/*"
+    - "internal/publisher/adapters/**/*"
+    - "libraries/*"
+    - "libraries/nocap/adapters/**/*"
+    - "libraries/kit/adapters/**/*"
+    - "libraries/nip66/adapters/cache/**/*"
+    - "libraries/nip66/adapters/websocket/**/*"
+    - "libraries/adapters/**/*"
+    - "libraries/validators/**/*"
+    - "libraries/schemata/*"

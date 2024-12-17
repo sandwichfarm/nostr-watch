@@ -16,10 +16,11 @@
     "rootDir": "./src",
     "baseUrl": ".", 
     "paths": {
-      "@nostrwatch/*": ["node_modules/@nostrwatch/*/src"],
+      "@nostrwatch/nocap": ["node_modules/@nostrwatch/nocap/dist/web/index.d.ts"],
+      "@nostrwatch/*": ["node_modules/@nostrwatch/*/src"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["@nostrwatch/nocap.d.ts", "src/**/*"],
   "exclude": ["node_modules", "dist"],
   "tsc-alias": {
     "resolveFullPaths": true,

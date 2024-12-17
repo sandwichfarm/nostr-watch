@@ -18,17 +18,17 @@
     }
   },
   "scripts": {
-    "build": "yarn clean && yarn transpile && rollup -c && yarn transpile:alias",
-    "build:server": "yarn clean && yarn transpile:server && rollup -c && yarn transpile:alias",
+    "build": "pnpm run clean && pnpm run transpile && rollup -c && pnpm run transpile:alias",
+    "build:server": "pnpm run clean && pnpm run transpile:server && rollup -c && pnpm run transpile:alias",
     "clean": "rimraf dist",
-    "transpile": "yarn transpile:server && yarn transpile:web",
+    "transpile": "pnpm run transpile:server && pnpm run transpile:web",
     "transpile:web": "tsc -p tsconfig.web.json",
     "transpile:server": "tsc -p tsconfig.server.json",
-    "transpile:alias": "yarn transpile:server:alias",
+    "transpile:alias": "pnpm run transpile:server:alias",
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
-    "prepare": "yarn clean && yarn build",
+    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
@@ -37,7 +37,8 @@
     "@sandwichfarm/torfetch": "https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277",
     "ajv": "8.17.1",
     "cross-fetch": "4.0.0",
-    "tor-request": "^3.1.0"
+    "tor-request": "^3.1.0",
+    "@nostrwatch/nocap": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

@@ -1,7 +1,6 @@
 import esbuild from 'esbuild';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import * as glob from 'glob';
 import { clean } from 'esbuild-plugin-clean';
 import inlineWorkerPlugin from 'esbuild-plugin-inline-worker';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
@@ -25,9 +24,7 @@ export async function build() {
   const commonPlugins = [
     clean({ patterns: ['./dist'] }),
     esbuildPluginTsc({ force: true }),
-    polyfillNode({
-      polyfills: { module: true, path: true, 'fs/promises': false },
-    }),
+    polyfillNode({ polyfills: { module: true, path: true, 'fs/promises': false } }),
     NodeModulesPolyfillPlugin(),
     NodeGlobalsPolyfillPlugin({ process: true, buffer: true }),
     inlineWorkerPlugin({
@@ -85,26 +82,34 @@ export async function build() {
 
   try {
     if (watchMode) {
-      ////console.log('Watch mode enabled...');
+      console.log('🚀 Watch mode enabled...');
       const browserContext = await esbuild.context(browserBuildOptions);
-      await browserContext.watch();
+      const nodeContext = await esbuild.context(nodeBuildOptions);
+
+      await Promise.all([
+        browserContext.watch(),
+        nodeContext.watch(),
+      ]);
+
+      process.on('SIGINT', async () => {
+        console.log('👋 Exiting watch mode...');
+        await browserContext.dispose();
+        await nodeContext.dispose();
+        process.exit(0);
+      });
     } else {
-      ////console.log('Building...');
+      console.log('🏗️ Building...');
       await Promise.all([
         esbuild.build(browserBuildOptions),
         esbuild.build(nodeBuildOptions),
       ]);
-      ////console.log('Build completed successfully!');
+      console.log('✅ Build completed successfully!');
+      process.exit(0); // Force clean exit
     }
   } catch (error) {
-    console.error('Build failed:', error);
+    console.error('❌ Build failed:', error);
     process.exit(1);
   }
 }
-
-process.on('SIGINT', () => {
-  ////console.log('Terminating process...');
-  process.exit(0);
-});
 
 build();

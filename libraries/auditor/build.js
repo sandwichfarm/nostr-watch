@@ -81,20 +81,26 @@ const serverConfig = {
 
 async function build() {
   try {
-    const browserContext = await esbuild.context(browserConfig);
-    const serverContext = await esbuild.context(serverConfig);
-
     if (isWatchMode) {
+      // Create persistent build contexts
+      const browserContext = await esbuild.context(browserConfig);
+      const serverContext = await esbuild.context(serverConfig);
+
       await Promise.all([
         browserContext.watch(),
         serverContext.watch()
       ]);
 
-      //console.log("Watching for changes in src...");
+      console.log("Watching for changes in src...");
       watchSrcDirectory();
     } else {
-      await Promise.all([browserContext.rebuild(), serverContext.rebuild()]);
-      //console.log("Build complete for both web and server targets.");
+      // Single-run builds using esbuild.build()
+      await Promise.all([
+        esbuild.build(browserConfig),
+        esbuild.build(serverConfig)
+      ]);
+
+      console.log("Build complete for both web and server targets.");
       await dereferenceSchemas();
     }
   } catch (error) {

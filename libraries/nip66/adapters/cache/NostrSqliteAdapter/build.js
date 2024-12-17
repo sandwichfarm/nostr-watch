@@ -9,7 +9,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const production = process.env.NODE_ENV === 'production';
-
 const watchMode = process.argv.includes('--watch');
 
 const commonPlugins = [
@@ -46,20 +45,20 @@ async function build() {
     if (watchMode) {
       const context = await esbuild.context(browserBuildOptions);
       await context.watch();
-      ////console.log('Watching for changes...');
+      console.log('🚀 Watching for changes...');
+      process.on('SIGINT', async () => {
+        console.log('👋 Exiting watch mode...');
+        await context.dispose(); // Clean up resources
+        process.exit(0);
+      });
     } else {
       await esbuild.build(browserBuildOptions);
-      ////console.log('Build completed successfully.');
+      console.log('✅ Build completed successfully.');
     }
   } catch (error) {
-    console.error('Build failed:', error);
+    console.error('❌ Build failed:', error);
     process.exit(1);
   }
 }
-
-process.on('SIGINT', () => {
-  ////console.log('Terminating process...');
-  process.exit(0);
-});
 
 build();

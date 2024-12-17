@@ -489,7 +489,7 @@ export class MonitorService extends Service {
           relays,
           filters: filterChunk,
           options: {
-            cache: true,
+            cache: false,
             returnResults: true,
             keepAlive: false,
             stream: false,

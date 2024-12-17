@@ -1,7 +1,7 @@
 {
   "name": "@nostrwatch/nip66-cacheadapter-nostrsqlite",
   "type": "module",
-  "packageManager": "yarn@4.5.0",
+  "packageManager": "pnpm@9.15.0",
   "main": "dist/browser/index.js",
   "files": [
     "dist/browser/index.js",
@@ -34,18 +34,17 @@
     "esbuild-plugin-tsc": "^0.4.0",
     "esbuild-plugin-wasm": "^1.1.0",
     "get-port": "^7.1.0",
-    "tsc": "^2.0.4",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
     "vite-plugin-node-polyfills": "^0.22.0"
   },
   "scripts": {
-    "build": "yarn clean && yarn build:esm",
+    "build": "pnpm run clean && pnpm run build:esm",
     "build:esm": "node build.js",
     "dev": "node build.js --watch",
     "clean": "rm -rf dist",
     "clean:source": "find src -name \"*.d.ts\" -type f -delete && find src -name \"*.d.ts.map\" -type f -delete",
     "test": "jest",
-    "prepare": "yarn build"
+    "prepare": "pnpm run build"
   }
 }

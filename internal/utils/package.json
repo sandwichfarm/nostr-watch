@@ -26,14 +26,14 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "yarn clean && rollup -c && yarn build:types",
+    "build": "pnpm run clean && rollup -c && pnpm run build:types",
     "build:types": "tsc -p tsconfig.web.json --emitDeclarationOnly",
     "dev": "rollup -c --watch",
-    "dev:server": "yarn dev",
-    "dev:web": "yarn dev",
+    "dev:server": "pnpm run dev",
+    "dev:web": "pnpm run dev",
     "test": "vitest",
     "lint": "eslint . --ext .ts",
-    "prepare": "yarn clean && yarn build"
+    "prepare": "pnpm run clean && pnpm run build"
   },
   "dependencies": {
     "dotenv": "16.3.1",

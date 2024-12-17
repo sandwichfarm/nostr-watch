@@ -21,7 +21,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build -c vite.production.js",
-		"preview": "yarn serve dist",
+		"preview": "pnpm run serve dist",
 		"package": "svelte-kit sync && svelte-package && publint",
 		"release": "changeset publish",
 		"prepublishOnly": "npm run package",

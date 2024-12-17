@@ -9,14 +9,14 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "prepublish": "yarn build",
+    "prepublish": "pnpm run build",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint 'src/**/*.ts' --fix",
     "clean": "rm -rf dist",
-    "build:clean": "yarn clean && yarn build"
+    "build:clean": "pnpm run clean && pnpm run build"
   },
   "dependencies": {
     "@nostrwatch/logger": "*"

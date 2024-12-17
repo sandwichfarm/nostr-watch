@@ -7,18 +7,19 @@
   "browser": "dist/web/index.js",
   "types": "dist/server/index.d.ts",
   "scripts": {
-    "build": "yarn clean && yarn build:server",
+    "build": "pnpm run clean && pnpm run build:server",
     "build:server": "webpack --config webpack.server.config.cjs",
     "dev:server": "webpack --config webpack.server.config.cjs --watch",
     "test": "vitest",
     "lint": "eslint . --ext .ts",
     "clean": "rimraf dist",
-    "prepare": "yarn clean && yarn build"
+    "prepare": "pnpm run clean && pnpm run build"
   },
   "dependencies": {
     "@nostr-fetch/adapter-nostr-tools": "^0.15.1",
-    "@nostrwatch/logger": "*",
-    "@nostrwatch/utils": "*",
+    "@nostrwatch/logger": "workspace:*",
+    "@nostrwatch/utils": "workspace:*",
+    "@nostrwatch/nwcache": "workspace:*",
     "cross-fetch": "^3.1.5",
     "js-yaml": "^4.1.0",
     "nostr-fetch": "^0.15.1",

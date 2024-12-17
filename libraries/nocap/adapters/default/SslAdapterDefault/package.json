@@ -18,25 +18,26 @@
     }
   },
   "scripts": {
-    "build": "yarn clean && yarn transpile && rollup -c && yarn transpile:alias",
-    "build:server": "yarn clean && yarn transpile:server && rollup -c && yarn transpile:alias",
+    "build": "pnpm run clean && pnpm run transpile && rollup -c && pnpm run transpile:alias",
+    "build:server": "pnpm run clean && pnpm run transpile:server && rollup -c && pnpm run transpile:alias",
     "clean": "rimraf dist",
-    "transpile": "yarn transpile:server && yarn transpile:web",
+    "transpile": "pnpm run transpile:server && pnpm run transpile:web",
     "transpile:web": "tsc -p tsconfig.web.json",
     "transpile:server": "tsc -p tsconfig.server.json",
-    "transpile:alias": "yarn transpile:server:alias",
+    "transpile:alias": "pnpm run transpile:server:alias",
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
-    "prepare": "yarn clean && yarn build",
+    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "@nostrwatch/utils": "workspace:^",
+    "@nostrwatch/utils": "workspace:*",
     "get-ssl-cert": "2.3.3",
-    "ssl-checker": "2.0.8"
+    "ssl-checker": "2.0.8",
+    "@nostrwatch/nocap": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -55,15 +56,12 @@
     "rollup-plugin-polyfill-node": "^0.13.0",
     "rollup-plugin-terser": "^7.0.2",
     "ts-loader": "^9.5.1",
-    "tsc": "^2.0.4",
     "tsc-alias": "^1.8.10",
     "tslib": "^2.7.0",
     "typescript": "^5.6.2",
     "vitest": "0.34.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "^0.4.0",
-    "webpack": "^5.96.1",
-    "workspace": "^0.0.1-preview.1",
-    "yarn": "^1.22.22"
+    "webpack": "^5.96.1"
   }
 }

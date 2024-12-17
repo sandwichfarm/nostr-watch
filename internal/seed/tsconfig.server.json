@@ -8,7 +8,7 @@
     "outDir": "./dist/server",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,  // Important to ensure individual modules are handled correctly
     "skipLibCheck": true

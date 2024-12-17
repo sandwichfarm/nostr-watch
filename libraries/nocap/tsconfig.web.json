@@ -9,7 +9,7 @@
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler", 
-    "types": ["node"],
+    // "types": ["node"],
     "allowSyntheticDefaultImports": true,
     "strictPropertyInitialization": false,
     "noEmitHelpers": true,

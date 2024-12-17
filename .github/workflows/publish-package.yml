@@ -39,7 +39,7 @@ jobs:
           pnpm --filter @nostrwatch/worker-relay run build:esm
       
       - name: Build GUI
-        run: pnpm --filter @nostrwatch/gui
+        run: pnpm --filter @nostrwatch/gui build
 
       - name: Check Artifact Size
         run: du -sh libraries/**/dist internal/**/dist apps/gui/dist

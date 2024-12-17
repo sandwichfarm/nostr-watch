@@ -38,7 +38,7 @@
     "@nostrwatch/nocap-ssl-adapter-default": "workspace:*",
     "@nostrwatch/nocap-websocket-adapter-default": "workspace:*",
     "websocket-polyfill": "^0.0.3",
-    "ws": "8.18.0",
+    "ws": "8.17.1",
     "@nostrwatch/nocap": "workspace:*"
   },
   "devDependencies": {

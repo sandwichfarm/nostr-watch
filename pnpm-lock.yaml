@@ -115,7 +115,7 @@ importers:
         version: 0.1.1(svelte@5.2.7)
       svelte-speedometer:
         specifier: github:dskvr/svelte-speedometer#master
-        version: https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9(svelte@5.2.7)
+        version: git+https://git@github.com:dskvr/svelte-speedometer.git#297b77226769f934e2922b3a90a6f6b832480df9(svelte@5.2.7)
       svelte-time:
         specifier: ^0.9.0
         version: 0.9.0
@@ -423,7 +423,7 @@ importers:
         version: link:../../libraries/nocap/adapters/default/WebsocketAdapterDefault
       '@sandwichfarm/torfetch':
         specifier: https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
-        version: https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277
+        version: git+https://git@github.com:sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
 
   internal/announce:
     dependencies:
@@ -969,8 +969,8 @@ importers:
         specifier: ^0.11.4
         version: 0.11.4
       ws:
-        specifier: ^8.18.0
-        version: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+        specifier: ^8.17.1
+        version: 8.17.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     devDependencies:
       '@apidevtools/json-schema-ref-parser':
         specifier: ^11.7.2
@@ -1390,8 +1390,8 @@ importers:
         specifier: 8.0.2
         version: 8.0.2
       ws:
-        specifier: 8.16.0
-        version: 8.16.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+        specifier: 8.17.1
+        version: 8.17.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     devDependencies:
       '@babel/core':
         specifier: ^7.26.0
@@ -1629,7 +1629,7 @@ importers:
         version: link:../../..
       '@sandwichfarm/torfetch':
         specifier: https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
-        version: https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277
+        version: git+https://git@github.com:sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
       ajv:
         specifier: 8.17.1
         version: 8.17.1
@@ -1789,8 +1789,8 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3
       ws:
-        specifier: 8.18.0
-        version: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+        specifier: 8.17.1
+        version: 8.17.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     devDependencies:
       '@babel/core':
         specifier: ^7.26.0
@@ -3872,8 +3872,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@sandwichfarm/torfetch@https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277':
-    resolution: {tarball: https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277}
+  '@sandwichfarm/torfetch@git+https://git@github.com:sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277':
+    resolution: {commit: df1f432dcca3de4ab56069324c47d543bd41a277, repo: git@github.com:sandwichfarm/torfetch.git, type: git}
     version: 0.1.0
 
   '@scure/base@1.1.1':
@@ -9370,8 +9370,8 @@ packages:
     peerDependencies:
       svelte: ^4.0.0
 
-  svelte-speedometer@https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9:
-    resolution: {tarball: https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9}
+  svelte-speedometer@git+https://git@github.com:dskvr/svelte-speedometer.git#297b77226769f934e2922b3a90a6f6b832480df9:
+    resolution: {commit: 297b77226769f934e2922b3a90a6f6b832480df9, repo: git@github.com:dskvr/svelte-speedometer.git, type: git}
     version: 3.0.1
     peerDependencies:
       svelte: ^5.0.0 || >=5.0.0-next
@@ -12388,7 +12388,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.27.4':
     optional: true
 
-  '@sandwichfarm/torfetch@https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277':
+  '@sandwichfarm/torfetch@git+https://git@github.com:sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277':
     dependencies:
       axios: 1.7.7
       cross-fetch: 3.1.8
@@ -18915,7 +18915,7 @@ snapshots:
       svelte: 5.2.7
       svelte-subscribe: 2.0.1(svelte@5.2.7)
 
-  svelte-speedometer@https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9(svelte@5.2.7):
+  svelte-speedometer@git+https://git@github.com:dskvr/svelte-speedometer.git#297b77226769f934e2922b3a90a6f6b832480df9(svelte@5.2.7):
     dependencies:
       d3-array: 3.2.4
       d3-color: 3.1.0

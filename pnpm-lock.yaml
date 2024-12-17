@@ -113,6 +113,9 @@ importers:
       svelte-masonry:
         specifier: ^0.1.1
         version: 0.1.1(svelte@5.2.7)
+      svelte-speedometer:
+        specifier: github:dskvr/svelte-speedometer#master
+        version: https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9(svelte@5.2.7)
       svelte-time:
         specifier: ^0.9.0
         version: 0.9.0
@@ -7540,6 +7543,9 @@ packages:
   mdn-data@2.0.30:
     resolution: {integrity: sha512-GaqWWShW4kv/G9IEucWScBx9G1/vsFZZJUO+tD26M8J8z3Kw5RDQjaoZe03YAClgeS/SWPOcb4nkFBTEi5DUEA==}
 
+  memoize-one@6.0.0:
+    resolution: {integrity: sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw==}
+
   merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
 
@@ -9363,6 +9369,12 @@ packages:
     resolution: {integrity: sha512-RpB0SurwXm4xhjvHHtjeqMmvd645FURb79GFOotScOSqnKK5vpqBgoBPGC0pp+E/eZgDSQ9rRAdn/+N4ys1mXQ==}
     peerDependencies:
       svelte: ^4.0.0
+
+  svelte-speedometer@https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9:
+    resolution: {tarball: https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9}
+    version: 3.0.1
+    peerDependencies:
+      svelte: ^5.0.0 || >=5.0.0-next
 
   svelte-subscribe@2.0.1:
     resolution: {integrity: sha512-eKXIjLxB4C7eQWPqKEdxcGfNXm2g/qJ67zmEZK/GigCZMfrTR3m7DPY93R6MX+5uoqM1FRYxl8LZ1oy4URWi2A==}
@@ -16921,6 +16933,8 @@ snapshots:
 
   mdn-data@2.0.30: {}
 
+  memoize-one@6.0.0: {}
+
   merge-stream@2.0.0: {}
 
   merge2@1.4.1: {}
@@ -18900,6 +18914,21 @@ snapshots:
     dependencies:
       svelte: 5.2.7
       svelte-subscribe: 2.0.1(svelte@5.2.7)
+
+  svelte-speedometer@https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9(svelte@5.2.7):
+    dependencies:
+      d3-array: 3.2.4
+      d3-color: 3.1.0
+      d3-ease: 3.0.1
+      d3-format: 3.1.0
+      d3-interpolate: 3.0.1
+      d3-scale: 4.0.2
+      d3-selection: 3.0.0
+      d3-shape: 3.2.0
+      d3-transition: 3.0.1(d3-selection@3.0.0)
+      lodash-es: 4.17.21
+      memoize-one: 6.0.0
+      svelte: 5.2.7
 
   svelte-subscribe@2.0.1(svelte@5.2.7):
     dependencies:

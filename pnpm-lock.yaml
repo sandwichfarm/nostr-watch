@@ -134,13 +134,13 @@ importers:
         version: 8.4.1
       '@sveltejs/adapter-netlify':
         specifier: ^4.3.6
-        version: 4.3.6(@sveltejs/kit@2.8.2(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))
+        version: 4.3.6(@sveltejs/kit@2.8.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))
       '@sveltejs/adapter-static':
         specifier: ^3.0.6
-        version: 3.0.6(@sveltejs/kit@2.8.2(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))
+        version: 3.0.6(@sveltejs/kit@2.8.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))
       '@sveltejs/kit':
-        specifier: ^2.0.0
-        version: 2.8.2(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))
+        specifier: ^2.8.3
+        version: 2.8.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))
       '@sveltejs/package':
         specifier: ^2.0.0
         version: 2.3.7(svelte@5.2.7)(typescript@5.7.2)
@@ -420,7 +420,7 @@ importers:
         version: link:../../libraries/nocap/adapters/default/WebsocketAdapterDefault
       '@sandwichfarm/torfetch':
         specifier: https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
-        version: https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277
+        version: git+https://git@github.com:sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
 
   internal/announce:
     dependencies:
@@ -1626,7 +1626,7 @@ importers:
         version: link:../../..
       '@sandwichfarm/torfetch':
         specifier: https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
-        version: https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277
+        version: git+https://git@github.com:sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
       ajv:
         specifier: 8.17.1
         version: 8.17.1
@@ -3869,8 +3869,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@sandwichfarm/torfetch@https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277':
-    resolution: {tarball: https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277}
+  '@sandwichfarm/torfetch@git+https://git@github.com:sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277':
+    resolution: {commit: df1f432dcca3de4ab56069324c47d543bd41a277, repo: git@github.com:sandwichfarm/torfetch.git, type: git}
     version: 0.1.0
 
   '@scure/base@1.1.1':
@@ -3918,8 +3918,8 @@ packages:
     peerDependencies:
       '@sveltejs/kit': ^2.0.0
 
-  '@sveltejs/kit@2.8.2':
-    resolution: {integrity: sha512-c9My0AnojYtaa96XDAcxcMUdMd3iIhWfrj6BLNtOFz55lMtA/Jima54ZLcYcvfMqei3c86fGRXYa2aIHO+vzFg==}
+  '@sveltejs/kit@2.8.3':
+    resolution: {integrity: sha512-DVBVwugfzzn0SxKA+eAmKqcZ7aHZROCHxH7/pyrOi+HLtQ721eEsctGb9MkhEuqj6q/9S/OFYdn37vdxzFPdvw==}
     engines: {node: '>=18.13'}
     hasBin: true
     peerDependencies:
@@ -12376,7 +12376,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.27.4':
     optional: true
 
-  '@sandwichfarm/torfetch@https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277':
+  '@sandwichfarm/torfetch@git+https://git@github.com:sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277':
     dependencies:
       axios: 1.7.7
       cross-fetch: 3.1.8
@@ -12424,18 +12424,18 @@ snapshots:
       magic-string: 0.25.9
       string.prototype.matchall: 4.0.11
 
-  '@sveltejs/adapter-netlify@4.3.6(@sveltejs/kit@2.8.2(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))':
+  '@sveltejs/adapter-netlify@4.3.6(@sveltejs/kit@2.8.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))':
     dependencies:
       '@iarna/toml': 2.2.5
-      '@sveltejs/kit': 2.8.2(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))
+      '@sveltejs/kit': 2.8.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))
       esbuild: 0.21.5
       set-cookie-parser: 2.7.1
 
-  '@sveltejs/adapter-static@3.0.6(@sveltejs/kit@2.8.2(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))':
+  '@sveltejs/adapter-static@3.0.6(@sveltejs/kit@2.8.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))':
     dependencies:
-      '@sveltejs/kit': 2.8.2(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))
+      '@sveltejs/kit': 2.8.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))
 
-  '@sveltejs/kit@2.8.2(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))':
+  '@sveltejs/kit@2.8.3(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)))(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))':
     dependencies:
       '@sveltejs/vite-plugin-svelte': 4.0.1(svelte@5.2.7)(vite@5.4.11(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0))
       '@types/cookie': 0.6.0

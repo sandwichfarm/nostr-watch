@@ -39,9 +39,9 @@ jobs:
         with:
           name: built-packages
           path: |
-            libraries/
-            internal/
-            apps/gui/
+            libraries/**/dist/
+            internal/**/dist/
+            apps/gui/dist/
 
   publish:
     runs-on: ubuntu-latest

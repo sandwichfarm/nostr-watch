@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'path';
+import fs from 'fs';
+import fetch from 'node-fetch';
 
 function patchSvelteSpeedometer() {
   return {

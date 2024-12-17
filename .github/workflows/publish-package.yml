@@ -28,6 +28,9 @@ jobs:
         with:
           version: 9
 
+      - name: Update Lockfile
+        run: pnpm install --no-frozen-lockfile
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 

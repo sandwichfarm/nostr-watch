@@ -32,7 +32,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Worker Relay
-        run: pnpm --filter @nostrwatch/worker-relay build 
+        run: |
+          pnpm --filter @nostrwatch/worker-relay run clean
+          pnpm --filter @nostrwatch/worker-relay run tsc
+          pnpm --filter @nostrwatch/worker-relay run copy:wasm
+          pnpm --filter @nostrwatch/worker-relay run build:esm
       
       - name: Build GUI
         run: pnpm --filter @nostrwatch/gui

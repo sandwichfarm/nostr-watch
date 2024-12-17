@@ -43,11 +43,13 @@ jobs:
           name: built-packages
           path: |
             libraries/**/dist/
+            libraries/**/src/sqlite/sqlite3.wasm
             libraries/**/package.json
             internal/**/dist/
             internal/**/package.json
             apps/gui/dist/
             apps/gui/package.json
+    
 
   publish:
     runs-on: ubuntu-latest

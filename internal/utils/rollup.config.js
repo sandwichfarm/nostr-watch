@@ -8,9 +8,10 @@ import terser from '@rollup/plugin-terser';
 import livereload from 'rollup-plugin-livereload';
 import nodePolyfills from 'rollup-plugin-polyfill-node';
 import nodeResolve from '@rollup/plugin-node-resolve';
+
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const glob = require('glob');import * as glob from 'glob';
+const glob = require('glob')
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -10,6 +10,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      glob:
+        specifier: ^11.0.0
+        version: 11.0.0
     devDependencies:
       '@changesets/cli':
         specifier: 2.27.8

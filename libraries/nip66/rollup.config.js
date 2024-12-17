@@ -7,7 +7,6 @@ import alias from '@rollup/plugin-alias'
 import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
 import livereload from 'rollup-plugin-livereload'
-// import { visualizer } from 'rollup-plugin-visualizer'
 import webWorkerLoader from 'rollup-plugin-web-worker-loader'
 import nodePolyfills from 'rollup-plugin-node-polyfills'
 import offMainThread from '@surma/rollup-plugin-off-main-thread'
@@ -17,7 +16,6 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const glob = require('glob');
 
-
 /**
  * disallow circular deps
  * @see https://rollupjs.org/configuration-options/#onwarn
@@ -25,6 +23,14 @@ const glob = require('glob');
  * @param {*} warn
  */
 function onwarn(warning, warn) {
+  if (
+    warning.plugin === 'off-main-thread' &&
+    warning.message.includes('Very few browsers support ES modules in Workers')
+  ) {
+    console.warn('Ignoring known warning from off-main-thread plugin:', warning.message);
+    return;
+  }
+
   if (
     (warning.code === 'PLUGIN_WARNING' &&
       !warning.message.includes('sourcemap')) ||
@@ -35,9 +41,9 @@ function onwarn(warning, warn) {
       throw Object.assign(new Error(), warning);
     }
   }
+
   warn(warning);
 }
-
 
 
 const __filename = fileURLToPath(import.meta.url)

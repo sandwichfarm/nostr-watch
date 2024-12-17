@@ -13,54 +13,15 @@ on:
       - 'apps/gui/**'
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - package: 'nostrings'
-            nodeVersion: '20'
-          - package: 'announce'
-            nodeVersion: '20'
-          - package: 'logger'
-            nodeVersion: '20'
-          - package: 'seed'
-            nodeVersion: '20'
-          - package: 'utils'
-            nodeVersion: '20'
-          - package: 'nwcache'
-            nodeVersion: '20'
-          - package: 'controlflow'
-            nodeVersion: '20'
-          - package: 'publisher'
-            nodeVersion: '20'
-          - package: 'nocap'
-            nodeVersion: '20'
-          - package: 'nocap-websocket-adapter-default'
-            nodeVersion: '20'
-          - package: 'nocap-websocket-browser-adapter-default'
-            nodeVersion: '20'
-          - package: 'nocap-info-adapter-default'
-            nodeVersion: '20'
-          - package: 'nocap-dns-adapter-default'
-            nodeVersion: '20'
-          - package: 'nocap-geo-adapter-default'
-            nodeVersion: '20'
-          - package: 'nocap-ssl-adapter-default'
-            nodeVersion: '20'
-          - package: 'nocap-every-adapter-default'
-            nodeVersion: '20'
-          - package: 'gui'
-            nodeVersion: '20'
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.nodeVersion }}
+          node-version: 20
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -73,45 +34,66 @@ jobs:
       - name: Build All Packages
         run: pnpm -r run build
 
-      # Deploy GUI steps only if the current matrix package is 'gui'
-      - name: Install jq
-        if: matrix.package == 'gui'
-        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-packages
+          path: |
+            libraries/
+            internal/
+            apps/gui/
 
-      - name: Get package version (GUI)
-        if: matrix.package == 'gui'
-        id: get_version
-        run: |
-          VERSION=$(jq -r '.version' ./apps/gui/package.json)
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: 'nostrings'
+          - package: 'announce'
+          - package: 'logger'
+          - package: 'seed'
+          - package: 'utils'
+          - package: 'nwcache'
+          - package: 'controlflow'
+          - package: 'publisher'
+          - package: 'nocap'
+          - package: 'nocap-websocket-adapter-default'
+          - package: 'nocap-websocket-browser-adapter-default'
+          - package: 'nocap-info-adapter-default'
+          - package: 'nocap-dns-adapter-default'
+          - package: 'nocap-geo-adapter-default'
+          - package: 'nocap-ssl-adapter-default'
+          - package: 'nocap-every-adapter-default'
+          - package: 'gui'
 
-      - name: Prepare Directories (GUI)
-        if: matrix.package == 'gui'
-        run: |
-          VERSION=${{ env.VERSION }}
-          echo "Deploying version $VERSION"
-          ssh -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
-          set -e
-          mkdir -p /var/www/${VERSION}
-          rm -rf /var/www/html/
-          ln -s /var/www/${VERSION} /var/www/html
-          EOF
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Upload Build (GUI)
-        if: matrix.package == 'gui'
-        run: |
-          scp -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: built-packages
+          path: .
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Find Package
         id: find_package
         run: |
-          PKG_PATH=$(find libraries -type d -name "${{ matrix.package }}" -print -quit)
-          if [ -z "$PKG_PATH" ]; then
-            PKG_PATH=$(find internal -type d -name "${{ matrix.package }}" -print -quit)
-          fi
-          if [ -z "$PKG_PATH" ]; then
-            PKG_PATH=$(find apps -type d -name "${{ matrix.package }}" -print -quit)
-          fi
+          PKG_PATH=$(find libraries internal apps -type d -name "${{ matrix.package }}" -print -quit)
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
 
       - name: Publish Package
@@ -129,25 +111,12 @@ jobs:
           RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"
           echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
 
-      - name: Check for Tag
-        id: slug_exists
-        run: |
-          git fetch --tags
-          TAG="${{ steps.meta.outputs.release_slug }}"
-          if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
-            echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "release_slug_exists=false" >> "$GITHUB_OUTPUT"
-
       - name: Archive Subdirectory
-        if: steps.slug_exists.outputs.release_slug_exists != 'true'
         id: archive
         run: |
           zip -r "${{ steps.meta.outputs.release_slug }}.zip" "${{ steps.find_package.outputs.the_path }}"
 
       - name: Create Release ${{ steps.meta.outputs.release_slug }}
-        if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != 'true' && steps.slug_exists.outputs.release_slug_exists != 'true'
-        id: create_release
         uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -158,8 +127,7 @@ jobs:
           draft: false
           prerelease: true
 
-      - name: Upload Release Asset ${{ steps.meta.outputs.release_slug }}.zip
-        if: steps.slug_exists.outputs.release_slug_exists != 'true'
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

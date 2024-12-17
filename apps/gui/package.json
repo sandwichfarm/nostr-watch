@@ -79,7 +79,7 @@
 		"tailwind-merge": "^2.4.0",
 		"tailwind-variants": "^0.2.1",
 		"tailwindcss": "^3.4.4",
-		"tslib": "^2.4.1",
+		"tslib": "^2.7.0",
 		"typescript": "^5.7.2",
 		"vite": "^5.0.11",
 		"vite-plugin-copy": "^0.1.6",

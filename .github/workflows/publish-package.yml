@@ -29,13 +29,13 @@ jobs:
           version: 9
 
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build All Packages
+        run: pnpm -r run build
 
       - name: Check Artifact Size
         run: du -sh libraries/**/dist internal/**/dist apps/gui/dist
-
-      # - name: Build All Packages
-      #   run: pnpm -r run build
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4

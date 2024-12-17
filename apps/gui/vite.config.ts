@@ -1,10 +1,34 @@
 import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'path';
+import fs from 'fs';
 import fetch from 'node-fetch';
+import url from 'url';
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
+
+  // Plugin to patch 'frozen' -> 'raw' in svelte-speedometer
+  function patchSvelteSpeedometer() {
+    return {
+      name: 'patch-svelte-speedometer',
+      enforce: 'pre',
+      buildStart() {
+        const modulePath = path.resolve(
+          'node_modules/svelte-speedometer/dist/Speedometer.svelte'
+        );
+
+        if (fs.existsSync(modulePath)) {
+          let code = fs.readFileSync(modulePath, 'utf-8');
+          if (code.includes('$state.frozen')) {
+            code = code.replace(/\$state\.frozen/g, '$state.raw');
+            fs.writeFileSync(modulePath, code, 'utf-8');
+            console.log('Patched svelte-speedometer: replaced "$state.frozen" with "$state.raw"');
+          }
+        }
+      },
+    };
+  }
 
   return {
     build: {
@@ -43,6 +67,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       sveltekit(),
+      patchSvelteSpeedometer(), // Add the patch plugin
       {
         name: 'image-proxy-middleware',
         configureServer(server) {
@@ -56,36 +81,7 @@ export default defineConfig(({ mode }) => {
               }
 
               const remoteUrl = `https://m.primal.net${imagePath}`;
-
-              const response = await fetch(remoteUrl, {
-                method: 'GET',
-                headers: {
-                },
-                redirect: 'follow',
-              });
-
-              if (response.status >= 300 && response.status < 400 && response.headers.get('location')) {
-                const finalUrl = response.headers.get('location');
-                const finalResponse = await fetch(finalUrl, {
-                  method: 'GET',
-                  headers: {
-                  },
-                  redirect: 'follow',
-                });
-
-                if (!finalResponse.ok) {
-                  res.statusCode = finalResponse.status;
-                  res.end(`Failed to fetch image: ${finalResponse.statusText}`);
-                  return;
-                }
-
-                res.setHeader('Access-Control-Allow-Origin', '*');
-                const contentType = finalResponse.headers.get('content-type') || 'image/jpeg';
-                res.setHeader('Content-Type', contentType);
-
-                finalResponse.body.pipe(res);
-                return;
-              }
+              const response = await fetch(remoteUrl, { method: 'GET', redirect: 'follow' });
 
               if (!response.ok) {
                 res.statusCode = response.status;
@@ -96,7 +92,6 @@ export default defineConfig(({ mode }) => {
               res.setHeader('Access-Control-Allow-Origin', '*');
               const contentType = response.headers.get('content-type') || 'image/jpeg';
               res.setHeader('Content-Type', contentType);
-
               response.body.pipe(res);
             } catch (error) {
               console.error('Error in image proxy middleware:', error);

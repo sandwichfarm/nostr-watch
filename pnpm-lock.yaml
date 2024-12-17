@@ -114,8 +114,8 @@ importers:
         specifier: ^0.1.1
         version: 0.1.1(svelte@5.2.7)
       svelte-speedometer:
-        specifier: github:dskvr/svelte-speedometer#master
-        version: https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9(svelte@5.2.7)
+        specifier: ^3.0.1
+        version: 3.0.1(svelte@5.2.7)
       svelte-time:
         specifier: ^0.9.0
         version: 0.9.0
@@ -9370,9 +9370,8 @@ packages:
     peerDependencies:
       svelte: ^4.0.0
 
-  svelte-speedometer@https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9:
-    resolution: {tarball: https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9}
-    version: 3.0.1
+  svelte-speedometer@3.0.1:
+    resolution: {integrity: sha512-iEuvNp4N1jzeThmO9fq6XBBguNvCvPpvZszsmrkx0/pjAADtS9SCBmFg0OO6lW7OZuboQNb7XCwEaQhIZ0F5Ng==}
     peerDependencies:
       svelte: ^5.0.0 || >=5.0.0-next
 
@@ -18915,7 +18914,7 @@ snapshots:
       svelte: 5.2.7
       svelte-subscribe: 2.0.1(svelte@5.2.7)
 
-  svelte-speedometer@https://codeload.github.com/dskvr/svelte-speedometer/tar.gz/297b77226769f934e2922b3a90a6f6b832480df9(svelte@5.2.7):
+  svelte-speedometer@3.0.1(svelte@5.2.7):
     dependencies:
       d3-array: 3.2.4
       d3-color: 3.1.0

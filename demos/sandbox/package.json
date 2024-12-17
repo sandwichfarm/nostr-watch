@@ -1,7 +1,6 @@
 {
   "name": "sandbox",
   "type": "module",
-  "packageManager": "pnpm@9.15.0",
   "dependencies": {
     "@nostrwatch/nocap": "workspace:^",
     "@nostrwatch/nocap-every-adapter-default": "workspace:^",

@@ -1,7 +1,6 @@
 {
   "name": "@nostrwatch/nip66-cacheadapter-nostrsqlite",
   "type": "module",
-  "packageManager": "pnpm@9.15.0",
   "main": "dist/browser/index.js",
   "files": [
     "dist/browser/index.js",

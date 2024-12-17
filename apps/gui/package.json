@@ -117,7 +117,7 @@
 		"svelte-geolocation": "^1.0.0",
 		"svelte-headless-table": "^0.18.3",
 		"svelte-masonry": "^0.1.1",
-		"svelte-speedometer": "github:dskvr/svelte-speedometer#master",
+		"svelte-speedometer": "^3.0.1",
 		"svelte-time": "^0.9.0",
 		"svelte-timeago": "^0.1.2",
 		"vite-plugin-compression": "^0.5.1",

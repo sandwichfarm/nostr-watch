@@ -106,6 +106,34 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Install jq
+        if: matrix.package == 'gui'
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Get package version (GUI)
+        if: matrix.package == 'gui'
+        id: get_version
+        run: |
+          VERSION=$(jq -r '.version' ./apps/gui/package.json)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      - name: Prepare Directories (GUI)
+        if: matrix.package == 'gui'
+        run: |
+          VERSION=${{ env.VERSION }}
+          echo "Deploying version $VERSION"
+          ssh -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+          set -e
+          mkdir -p /var/www/${VERSION}
+          rm -rf /var/www/html/
+          ln -s /var/www/${VERSION} /var/www/html
+          EOF
+
+      - name: Upload Build (GUI)
+        if: matrix.package == 'gui'
+        run: |
+          scp -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
+
       - name: Find Package
         id: find_package
         run: |

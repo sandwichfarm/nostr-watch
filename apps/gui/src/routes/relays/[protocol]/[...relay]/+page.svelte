@@ -274,7 +274,7 @@ $: items = [
 
 $: if ($navigating) { mount(); }
 
-$: showAuditTab = relayUrl && $nip11 !== undefined && $activeTab === 'audit';
+$: showAuditTab = relayUrl && $activeTab === 'audit';
 
 
 let [minColWidth, maxColWidth, gap] = [400, 800, 21];
@@ -399,11 +399,6 @@ let width: number, height: number;
             <Tabs.Content value="audit">
                 {#if showAuditTab}
                     <RelayAudits {relayUrl} {nip11}  />
-                {:else}
-                    <p>Condition failed.</p>
-                    <p>{relayUrl}</p>
-                    <p>{$nip11 !== undefined}</p>
-                    <p>{$activeTab}</p>
                 {/if}
             </Tabs.Content>
             </div>

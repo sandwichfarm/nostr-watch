@@ -3,6 +3,7 @@ import { get } from 'svelte/store';
 import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded } from '../stores/app';
 import { instance, stopLiveSync } from './lifecycle';
 import { StateManager } from '@nostrwatch/nip66';
+import { delay } from '@nostrwatch/utils';
 
 export interface LocalStorageUsage {
     currentSizeMB: number;
@@ -20,6 +21,8 @@ export const wipeCache = async () => {
     $nip66.destroy();
     await wipeState();
     StateManager.emit('wipe')
+    await delay(1000)
+    document.location = '/'
 }
 
 const abortWebsocket = async ($nip66: Nip66) => {

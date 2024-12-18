@@ -15,6 +15,7 @@ import { destroy } from '$lib/utils/lifecycle';
 import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
 import { delay } from '@nostrwatch/utils';
 import { getBrowserInfo } from '$lib/utils/compat.js';
+	import { StateManager } from '@nostrwatch/nip66';
 
 const isLeader: Writable<boolean> = writable(false);
 
@@ -91,10 +92,18 @@ onMount(async () => {
         goto('/mobile'); 
     }
 
-    if(isSafari) {
+    if(isSafari && $page.url.pathname !== '/unsupported') {
       goto('/unsupported');
     }
 
+    
+    const version = StateManager.get('version')
+    if(!version || version !== 2) { //TODO NEED A LOCAL STORAGE SCHEMA VERFSIONING SYSTEM!!!
+      console.warn('clearing LocalStorage from nostrwatch legacy')
+      StateManager.clear();
+      StateManager.set('version', 2)  
+    }
+  
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 
     if(typeof $doBootstrap === 'undefined') {
@@ -120,7 +129,7 @@ $effect(() => {
 {:else}
 <div class="flex flex-col items-center justify-center h-screen">
   <div class="text-2xl">Another Session Detected</div>
-  <div class="text-lg">Please wait while we terminate existing session (from another tab or window)</div>
+  <div class="text-lg">Please wait while the existing session is terminated.</div>
 </div>
 {/if}
 

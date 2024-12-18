@@ -9,6 +9,7 @@ import { PFP } from '$lib/utils/pfp';
 
 import { monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from '@nostrwatch/nip66/models/Monitor';
+import type { Nip11Fee } from '@nostrwatch/nip66/models/Nip11';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -58,7 +59,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['created_at', 'monitor_pubkey']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
-export const columnsShow: DataKeys = ['relay', 'lastSeen', 'seenTimes', 'seenBy', 'hasNip11', 'geocode', 'paymentRequired', 'authRequired', 'software', 'supportedNips']
+export const columnsShow: DataKeys = ['relay', 'lastSeen', 'geocode', 'paymentRequired', 'authRequired']
 export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
 
 export const humanReadableNames: NameFormatter = {
@@ -75,10 +76,29 @@ export const humanReadableNames: NameFormatter = {
     hasNip11: 'Has Nip11',
     operatorPubkey: 'Op.',
     operatorPubkeyValid: 'Operator Pubkey is Valid',
-    rtt: "Avg. RTT"
+    rtt: "Avg. RTT",
+    admissionFee: "Adm. Cost",
+    subscriptionFee: "Sub. Cost",
+    publicationFee: "Pub. Cost"
 };
 
 export const formatters: Formatters = {}
+
+const formatFee = (fees: Nip11Fee[]) => {
+    if(!fees) return ''
+    let str = '';
+    for(const fee of Object.values(fees)) {
+        // if(!['msat', 'sat'].some( u => u === fee.unit)) continue;
+        const amount = fee.unit === 'msats'?  fee.amount/1000: fee.amount;
+        str += `<span>`
+        str += `<span class="fee-amount">${amount}</span><span class="fee-unit">sats</span>`
+        if(fee?.period) {
+            str += `<span class="fee-period">/${fee.period/60/60/24} days</span>`
+        }
+        str += `</span>`
+    }
+    return str;
+}
 
 export const tableFormatters: Formatters = {
     relay: (relay: string, row: any) => {
@@ -92,6 +112,9 @@ export const tableFormatters: Formatters = {
             return ''
         }
         return `<span class="text-xs">${timeAgo(lastSeen*1000)}</span>`;
+    },
+    seenTimes: (seenTimes) => {
+        return `<span class="rounded-full bg-white/20 py-1 px-2 font-bold">${seenTimes}</span>`
     },
     rtt: (rtt) => {
         const wholeNum = Math.round(rtt)
@@ -129,11 +152,12 @@ export const tableFormatters: Formatters = {
     
         return str;
     },
-    
-    
+    subscriptionFee: formatFee,
+    publicationFee: formatFee,
+    admissionFee: formatFee,
     geocode: (code) => {
         if(!code) return '🌐';
-        return countryCodeToFlagEmoji(code);
+        return `${countryCodeToFlagEmoji(code)} ${code}`;
     },
     rttNormalized: (value) => {
         const isNumber = !isNaN(Number(value));

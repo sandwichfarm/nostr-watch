@@ -2,7 +2,7 @@ import { transformCheck } from "@base/transform/TransformCheck";
 import { IEvent, NostrEvent, NostrTag } from "./Event";
 import { Geocoded } from "./Geocoded";
 import { nip19 } from "nostr-tools";
-import { Nip11, Nip11SubscriptionFees } from "./Nip11";
+import { Nip11, Nip11Fee, Nip11Fees } from "./Nip11";
 import { isPubkey } from "@base/utils/nostr";
 
 export class Nip66Event extends Geocoded implements IEvent {
@@ -38,7 +38,10 @@ export class Nip66Event extends Geocoded implements IEvent {
       'ipv6', 
       'sslValidTo', 
       'sslIssuer',
-      'fees'
+      'fees',
+      'subscriptionFee',
+      'publicationFee',
+      'admissionFee'
     ];
 
     constructor(event: IEvent) {
@@ -162,8 +165,20 @@ export class Nip66Event extends Geocoded implements IEvent {
       return this.nip11?.paymentsUrl || null;
     }
 
-    get fees(): Nip11SubscriptionFees | null {
+    get fees(): Nip11Fees | null {
       return this.nip11?.fees || null;
+    }
+
+    get subscriptionFee(): Nip11Fee[] | null {
+      return this.fees?.subscription || null;
+    }
+
+    get publicationFee(): Nip11Fee[] | null {
+      return this.fees?.publication || null;
+    }
+
+    get admissionFee(): Nip11Fee[] | null {
+      return this.fees?.admission || null;
     }
   
     get isp(): string | null {

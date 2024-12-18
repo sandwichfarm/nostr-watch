@@ -219,7 +219,7 @@ export class MonitorService extends Service {
 
   async bootstrap(): Promise<void> {
     await this.bootstrapMonitors();
-    await this.fetchMonitorsChecks().then( async () => {
+    await this.bootstrapMonitorsChecks().then( async () => {
       //console.log('!!! FETCH MONITORS CHECKS RESOLVED') 
       // this.fetchDisabledMonitorsChecks().then( () => { 
       //   //console.log('!!! FETCH DISABLED MONITORS CHECKS RESOLVED') 
@@ -227,8 +227,26 @@ export class MonitorService extends Service {
     });
   }
 
+  async bootstrapMonitorsChecks(): Promise<IEvent[] | boolean | undefined> {  
+    StateManager.emit('activity', 'monitors/bootstrap/checks', 'begin')
+    let value = 0
+    const onevent = (event: IEvent) => {
+      this.manager.handleEvent(event);
+      value++
+      StateManager.emit('activity', 'monitors/bootstrap/checks', 'update', { value })
+    }
+    const onevents = (events: IEvent[]) => {
+      events.forEach(onevent)
+      value += events.length
+      StateManager.emit('activity', 'monitors/bootstrap/checks', 'update', { value })
+    }
+    const result = await this.syncMonitorsChecks(undefined, true, { onevent, onevents });
+    StateManager.emit('activity', 'monitors/bootstrap/checks', 'finish', result)
+    return result;
+  }
+
   async fetchDisabledMonitorsChecks(): Promise<IEvent[] | boolean | undefined> {
-    return this.fetchMonitorsChecks({
+    return this.syncMonitorsChecks({
       cache: true,
       returnResults: false, 
       keepAlive: false,
@@ -256,9 +274,13 @@ export class MonitorService extends Service {
   }
   
   async fetchMonitorRegistrations(): Promise<void> {
+    StateManager.emit('activity', 'monitors/bootstrap/registrations', 'begin')
+    let totalFound = 0
     const onevent = (event: IEvent) => {
         if(event.kind !== 10166) return;
         this.manager.handleEvent(event);
+        totalFound++
+        StateManager.emit('activity', 'monitors/bootstrap/registrations', 'update', { value: totalFound})
     }
     const result = await this.fetch(
       {
@@ -272,14 +294,24 @@ export class MonitorService extends Service {
         }
       }, 
       { onevent } );
+      StateManager.emit('activity', 'monitors/bootstrap/registrations', 'finish', result)
   }
 
   async fetchMonitorMeta(): Promise<void> {
-    ////console.log('bootstrapMonitorMeta');
+    StateManager.emit('activity', 'monitors/bootstrap/meta', 'begin')
     const monitors = [...this.array.map((m) => m.registration)].filter(registration => typeof registration !== 'undefined');
     const authors = monitors.map((monitor: MonitorRegistration) => monitor.pubkey as string);
-    const onevent = this.manager.handleEvent.bind(this.manager);
-    const onevents = (events: IEvent[]) => { events.forEach(onevent) };
+    let totalEvents = 0;
+    const onevent = ( event: IEvent ) => {
+      this.manager.handleEvent(event)
+      totalEvents++
+      StateManager.emit('activity', 'monitors/bootstrap/meta', 'update', { value: totalEvents})
+    };
+    const onevents = (events: IEvent[]) => { 
+      events.forEach(onevent) 
+      totalEvents += events.length;
+      StateManager.emit('activity', 'monitors/bootstrap/meta', 'update', { value: totalEvents});
+    };
     const filters = authors.map(author => ({ authors: [author], kinds: [0, 10002] }))
     await this.fetch(
       {
@@ -296,6 +328,7 @@ export class MonitorService extends Service {
     this.array.forEach((monitor) => {
       monitor.relays.forEach((relay:string) => this.addRelay('nip66', relay));
     });
+    StateManager.emit('activity', 'monitors/bootstrap/meta', 'finish')
   }
 
   async isMonitorActive(pubkey: string): Promise<boolean> {
@@ -309,7 +342,7 @@ export class MonitorService extends Service {
     return (result instanceof Array)? result.length > 0: (result as unknown as boolean)
   }
 
-  async fetchMonitorsChecks(options?: Partial<WebsocketAdapterOptions>, enabled?: boolean): Promise<IEvent[] | boolean | undefined> {
+  async syncMonitorsChecks(options?: Partial<WebsocketAdapterOptions>, enabled?: boolean, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
     const filters: Filter[] = this.getMonitorCheckFilters(enabled);
     const defaultOptions = {
       cache: true,
@@ -321,10 +354,13 @@ export class MonitorService extends Service {
     let count = 0;
     const onevent = (event: IEvent) => {
       count++;
+      callbacks?.onevent?.(event);
       StateManager.emit(`event`, event);
       // StateManager.emit(`event:${event.kind}`, event);
     };
     const onevents = (events: IEvent[]) => {
+      count += events.length;
+      callbacks?.onevents?.(events);
       StateManager.emit(`events`, events);
     };
     const relays = this.nip66Relays;
@@ -449,6 +485,7 @@ export class MonitorService extends Service {
   }
 
   async ensureMonitorsActive(pubkeys?: string | string[]): Promise<void> {
+    StateManager.emit('activity', 'monitors/bootstrap/ensureActive', 'begin');
     const MAX_FILTERS = 10; //TODO: try to derive from NIP-11
 
     let monitors = [...this.array];
@@ -463,7 +500,7 @@ export class MonitorService extends Service {
     const until = Math.round(Date.now() / 1000);
   
     monitors.forEach((monitor) => {
-      filters.push({ authors: [monitor.pubkey], limit: 1, until });
+      filters.push({...monitor.checkFilter, until, limit: 1});
     });
   
     const chunkArray = (arr: Filter[], size: number): Filter[][] => {
@@ -475,9 +512,13 @@ export class MonitorService extends Service {
     };
   
     const filterChunks = chunkArray(filters, MAX_FILTERS);
+
+    const activePubkeys = new Set<string>();
   
     const onevent = (event: IEvent) => {
       events.push(event);
+      activePubkeys.add(event.pubkey);
+      StateManager.emit('activity', 'monitors/bootstrap/ensureActive', 'update', { value: activePubkeys.size });
     };
   
     const callbacks: SubscribeHandlers = { onevent };
@@ -506,6 +547,8 @@ export class MonitorService extends Service {
         if (created_at) monitor.lastActive = created_at;
       }
     }
+
+    StateManager.emit('activity', 'monitors/bootstrap/ensureActive', 'finish');
   }
 
   maybeEnableMonitors(): void {

@@ -20,4 +20,6 @@
 
 {#if $relayData.length}
     <AutoSuggest payload={$relayData} {searchConfig} {maxResults} {autoFocus} />
+{:else}
+Loading index...
 {/if}

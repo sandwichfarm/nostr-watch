@@ -20,7 +20,7 @@
 	},
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build -c vite.production.js",
+		"build": "rm -rf dist && vite build -c vite.production.js",
 		"preview": "pnpm run serve dist",
 		"package": "svelte-kit sync && svelte-package && publint",
 		"release": "changeset publish",
@@ -83,6 +83,7 @@
 		"typescript": "^5.7.2",
 		"vite": "^5.0.11",
 		"vite-plugin-copy": "^0.1.6",
+		"vite-plugin-static-copy": "^2.2.0",
 		"vite-plugin-top-level-await": "^1.4.4",
 		"vite-plugin-wasm": "^3.3.0",
 		"vitest": "^2.0.0"
@@ -92,12 +93,12 @@
 	"type": "module",
 	"dependencies": {
 		"@careswitch/svelte-data-table": "^0.6.3",
+		"@nostrwatch/auditor": "workspace:*",
 		"@nostrwatch/nip66": "workspace:^",
 		"@nostrwatch/nip66-cacheadapter-nostrsqlite": "workspace:^",
 		"@nostrwatch/nip66-wsadapter-nostrtools": "workspace:^",
 		"@nostrwatch/nocap": "workspace:^",
 		"@nostrwatch/nocap-websocket-adapter-default": "workspace:^",
-		"@nostrwatch/auditor": "workspace:*",
 		"@nostrwatch/utils": "workspace:^",
 		"@unovis/svelte": "^1.4.5",
 		"@unovis/ts": "^1.4.5",

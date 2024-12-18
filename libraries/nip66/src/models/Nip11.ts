@@ -2,8 +2,12 @@ import { deterministicHash } from "@base/utils";
 import { nip11 } from "nostr-tools";
 
 export type Nip11PaymentsUrl = `https://${string}` | `http://${string}`
-export type Nip11SubscriptionFee = { amount: number; unit: string; period: number }
-export type Nip11SubscriptionFees = Nip11SubscriptionFee[]
+export type Nip11Fee = { amount: number; unit: string; period: number }
+export type Nip11Fees = {
+  admission?: Nip11Fee[];
+  publication?: Nip11Fee[];
+  subscription?: Nip11Fee[];
+}
 
 export interface Limitations extends nip11.Limitations {
   pow_required?: number;

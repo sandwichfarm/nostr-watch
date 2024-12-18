@@ -5,6 +5,7 @@
 	import { hasBeenBoostrapped } from '$lib/stores/app';
 	import { eventsArray } from '$lib/stores';
 	import { totalMonitors } from '$lib/stores';
+  import ActivityList  from "$lib/components/partials/ActivityList.svelte"
 
 	onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
@@ -27,8 +28,8 @@
   </section>
   {:else}
   <div class="flex flex-col items-center justify-center h-screen">
-    <div class="text-2xl">[ loading graphic ]</div>
-    <div class="text-lg">[ load stage and status ]</div>
+    <!-- <div class="text-2xl h-[420px] align-middle bg-white/10 mb-4">[ loading graphic ]</div> -->
+    <ActivityList />
   </div>
   {/if}
 

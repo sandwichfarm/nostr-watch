@@ -98,7 +98,9 @@
                         skipped: [],
                         failed: [],
                         errors: [],
-                        status: 'running'
+                        status: 'running',
+                        notices: [],
+                        events: []
                     });
                 }
             }
@@ -141,7 +143,9 @@
                         skipped: testResult.skipped,
                         failed: testResult.failed,
                         errors: testResult.errors,
-                        status: 'finished'
+                        status: 'finished',
+                        notices: testResult.notices,
+                        events: testResult.events
                     });
                 }
             }
@@ -207,10 +211,10 @@
     }
 </script>
 
-<div class="p-6 bg-gray-900 min-h-screen text-white">
+<div class="p-6 min-h-screen text-white">
     <div class="mb-8">
         <h2 class="text-3xl font-bold">
-            Auditing Relay: 
+            Running NIP Audit
             <a href="{relayUrl}" target="_blank" class="text-blue-400 hover:underline">{relayUrl}</a>
         </h2>
         {#if $auditResults.length === 0}
@@ -366,17 +370,7 @@
                                             {#if test.filters.length > 0}
                                                 <div>
                                                     <span class="font-semibold">Filters:</span>
-                                                    <pre>{JSON.stringify(test.filters), null, 4}</pre>
-                                                    <!-- <ul class="list-disc list-inside">
-                                                        {#each test.filters as filter, index}
-                                                            <li>
-                                                                <span class="font-medium">Filter {index + 1}:</span> 
-                                                                {#each Object.entries(filter) as [k, v], i}
-                                                                    <span class="capitalize">{k}: {Array.isArray(v) ? v.join(', ') : v}</span>{#if i < Object.entries(filter).length -1}, {/if}
-                                                                {/each}
-                                                            </li>
-                                                        {/each}
-                                                    </ul> -->
+                                                    <pre>{JSON.stringify(test.filters, null, 2)}</pre>
                                                 </div>
                                             {/if}
 

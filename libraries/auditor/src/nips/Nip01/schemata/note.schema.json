@@ -14,8 +14,9 @@
     },
     "created_at": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Unix timestamp in seconds"
+      "minimum": 1000000000,
+      "maximum": 9999999999,
+      "description": "Unix timestamp in seconds (10-digit timestamp, not in milliseconds)"
     },
     "kind": {
       "type": "integer",
@@ -45,6 +46,14 @@
       "description": "64-byte lowercase hex-encoded signature of the sha256 hash of the serialized event data (same as 'id' field)"
     }
   },
-  "required": ["id", "pubkey", "created_at", "kind", "tags", "content", "sig"],
+  "required": [
+    "id",
+    "pubkey",
+    "created_at",
+    "kind",
+    "tags",
+    "content",
+    "sig"
+  ],
   "additionalProperties": false
 }

@@ -39,7 +39,10 @@ export class Nip77RelayMessageGenerator {
 }
 
 export class Nip77 {
-  public readonly slug: string = 'Nip01';
+  
+  public get slug(): string {
+    return 'Nip77';
+  }
 
   readonly messageValidators = {
     'NEG-OPEN': new SchemaValidator<ClientNegOpenMessage>(schemata.NegOpenMessage), 

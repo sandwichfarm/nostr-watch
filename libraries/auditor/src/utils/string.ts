@@ -8,3 +8,11 @@ export function truncate(str: string, maxLength: number = 64): string {
   }
   return str.slice(0, maxLength - 3) + '...';
 }
+
+export function toCode(message: string): string {
+  return message.toUpperCase().replace(/ /g, "_")
+}
+
+export function fromCode(message: string): string {
+  return message.toLowerCase().replace(/_/g, ' ')
+}

@@ -2,9 +2,8 @@
 import { ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
 import { ISuite } from '#base/Suite.js';
 
-import { Nip01ClientMessageGenerator } from '#nips/Nip01/index.js';
-import { INip01Filter, Note, RelayEventMessage } from '#nips/Nip01/interfaces/index.js';
-import { ContentIngestor } from '../ingestors/ContentIngestor.js';
+import { RelayEventMessage } from '#nips/Nip01/interfaces/index.js';
+import type { INip11 } from '#nips/Nip11/interfaces/INip11.js';
 
 export class ValidateSchema extends SuiteTest implements ISuiteTest {
   readonly slug: string = 'ValidateSchema';
@@ -27,7 +26,7 @@ export class ValidateSchema extends SuiteTest implements ISuiteTest {
     let data = [];
     await fetch(url.toString(), { method, headers, signal })
       .then(async (response) => {
-        const nip11 = await response.json();
+        const nip11: INip11 = await response.json() as INip11;
         //console.log(nip11)
         this.suite.validateJson('NIP11', nip11);
         if(nip11?.supported_nips && this.isArrayOfNumbers(nip11.supported_nips)) {
@@ -39,7 +38,7 @@ export class ValidateSchema extends SuiteTest implements ISuiteTest {
       })
       .catch((e) => {
         //console.log('catch',  e.message)
-        this.resulter.set('reason', e.message)
+        // this.resulter.set('reason', e.message)
         this.resulter.set('pass', false)
       });
     this.data = data

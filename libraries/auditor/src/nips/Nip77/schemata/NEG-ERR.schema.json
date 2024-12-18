@@ -15,7 +15,10 @@
     },
     {
       "type": "string",
-      "enum": ["RESULTS_TOO_BIG", "CLOSED"],
+      "enum": [
+        "RESULTS_TOO_BIG",
+        "CLOSED"
+      ],
       "description": "Reason code for the error."
     },
     {

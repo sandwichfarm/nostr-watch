@@ -2,9 +2,72 @@
   "$id": "relay-event.schema.json",
   "type": "array",
   "items": [
-    { "const": "EVENT" },
-    { "type": "string", "description": "subscription_id" },
-    { "$ref": "note.schema.json" }
+    {
+      "const": "EVENT"
+    },
+    {
+      "type": "string",
+      "description": "subscription_id"
+    },
+    {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "32-byte lowercase hex-encoded sha256 hash of the serialized event data"
+        },
+        "pubkey": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "32-byte lowercase hex-encoded public key of the event creator"
+        },
+        "created_at": {
+          "type": "integer",
+          "minimum": 1000000000,
+          "maximum": 9999999999,
+          "description": "Unix timestamp in seconds (10-digit timestamp, not in milliseconds)"
+        },
+        "kind": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535,
+          "description": "Integer between 0 and 65535"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Arbitrary string within the tag array"
+            },
+            "minItems": 1
+          },
+          "description": "Array of arrays, each containing arbitrary strings as tags"
+        },
+        "content": {
+          "type": "string",
+          "description": "Arbitrary string content of the event"
+        },
+        "sig": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{128}$",
+          "description": "64-byte lowercase hex-encoded signature of the sha256 hash of the serialized event data (same as 'id' field)"
+        }
+      },
+      "required": [
+        "id",
+        "pubkey",
+        "created_at",
+        "kind",
+        "tags",
+        "content",
+        "sig"
+      ],
+      "additionalProperties": false
+    }
   ],
   "minItems": 3,
   "maxItems": 3

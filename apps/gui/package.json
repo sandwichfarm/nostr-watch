@@ -97,6 +97,7 @@
 		"@nostrwatch/nip66-wsadapter-nostrtools": "workspace:^",
 		"@nostrwatch/nocap": "workspace:^",
 		"@nostrwatch/nocap-websocket-adapter-default": "workspace:^",
+		"@nostrwatch/auditor": "workspace:*",
 		"@nostrwatch/utils": "workspace:^",
 		"@unovis/svelte": "^1.4.5",
 		"@unovis/ts": "^1.4.5",

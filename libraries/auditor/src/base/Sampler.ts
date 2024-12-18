@@ -1,25 +1,24 @@
-import type { WebSocketWrapper as WebSocket } from './WebSocketWrapper.js';
-
 import { EventEmitter } from "tseep";
 
-import { Ingestor } from "./Ingestor.js";
+import { Ingestor } from "#base/Ingestor.js";
+import Logger from "#base/Logger.js";  
+import type { WebSocketWrapper as WebSocket } from '#base/WebSocketWrapper.js';
 
-import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/index.js";
+import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/utils/generators.js";
 import type { Note, RelayEventMessage } from "#src/nips/Nip01/interfaces/index.js";
 import { generateSubId } from "#utils/nostr.js";  
-
-import Logger from "#base/Logger.js";  
 
 export class Sampler {
   private ws: WebSocket;
   private subId: string = "test";
-  private _maximumSamples: number = 200;
+  private _maximumSamples: number = 500;
   private _timeout: ReturnType<typeof setTimeout>;
   private _timeoutMs: number = 5000;
   private _totalSamples: number = 0;  
   private _abort: boolean = false;
   private signal = new EventEmitter();
   private logger: Logger = new Logger('@nostrwatch/auditor:Sampler');
+  private _ingestors: Ingestor[] = [];  
 
   constructor(ws: WebSocket, maximumSamples?: number, timeout?: number) {
     this.ws = ws;
@@ -27,21 +26,39 @@ export class Sampler {
     if(timeout) this._timeoutMs = timeout
   }
 
+  get ingestors(): Ingestor[] {
+    return this._ingestors;
+  }
+
+  get samplable() {
+    return this.ingestors.length > 0;
+  }
+
+  private set ingestor(ingestor: Ingestor) {
+    this._ingestors.push(ingestor);
+  }
+
+  async runIngestors(note: Note) {
+    for(const ingestor of this._ingestors) {
+      ingestor.feed(note);
+    }
+    await Promise.allSettled(this._ingestors.map(ingestor => ingestor.completed()));
+    this.abort()
+  }
+
   registerIngestor(ingestor: Ingestor) {
-    ingestor.registerSignal(this.signal);
-    this.signal.on('ingestor:abort', this.abort.bind(this));
-    this.signal.on('ingest', ingestor.feed.bind(ingestor));
+    this.ingestor = ingestor;
   }
 
   setupHandlers() {
-    this.ws.on('message', (msg: string) => {
-      const message = JSON.parse(msg);
+    this.ws.on('message', (msg: MessageEvent<any>) => {
+      const message = JSON.parse(msg.data);
       const type = message[0];
       switch(type) {
         case 'EVENT': {
           const note = (message as RelayEventMessage)[2] as Note;
           this._totalSamples++;
-          this.signal.emit('ingest', note);
+          this.runIngestors(note);
           break;
         }
         case 'EOSE': {
@@ -84,7 +101,7 @@ export class Sampler {
   }
   
   private sendRequest() {
-    const message = Nip01ClientMessageGenerator.REQ(this.subId, [{ limit: this._maximumSamples }]);
+    const message = Nip01ClientMessageGenerator.REQ(this.subId, [{ limit: this._maximumSamples, since: 0 }]);
     this.ws.send(message);
   }
   

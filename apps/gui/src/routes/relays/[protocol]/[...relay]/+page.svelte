@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { Auditor } from "@nostrwatch/auditor"
+    
 import { page, navigating } from '$app/stores';
 import { onDestroy, onMount } from 'svelte';
 
@@ -12,6 +14,12 @@ import { isSeeded } from '$lib/stores/app.js';
 import { eventsArray } from '$lib/stores/events.js';
 import { isHex } from '$lib/utils/nostr.js';
 import { Nip11 } from '@nostrwatch/nip66/models';
+
+import { isLivesyncing, doAggregateCache, hasBeenBoostrapped } from '$lib/stores/app';
+import { beginLiveSync, stopLiveSync } from '$lib/utils/lifecycle';
+
+import { addEventsToStore } from '$lib/stores/events-helpers';
+import { clickToCopy, observeViewport } from '$lib/utils/ux';
 
 let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default;
 let RelayChecks: typeof import('$lib/components/partials/relay-single/RelayChecks.svelte').default;
@@ -27,14 +35,10 @@ let CardNetwork: typeof import('$lib/components/partials/relay-single/cards/Card
 let Stats: typeof import('$lib/components/blocks/Stats.svelte').default;
 let CardOperator: typeof import('$lib/components/partials/relay-single/cards/CardOperator.svelte').default;
 let CardSpeed: typeof import('$lib/components/partials/relay-single/cards/CardSpeed.svelte').default;
+let RelayAudits: typeof import('$lib/components/partials/relay-single/RelayAudits.svelte').default;
 
-import { addEventsToStore } from '$lib/stores/events-helpers';
-import { doAggregateCache } from '$lib/stores/app';
-import { hasBeenBoostrapped } from '$lib/stores/app';
-import { clickToCopy } from '$lib/utils/ux';
-import { observeViewport } from '$lib/utils/ux';
-import { isLivesyncing } from '$lib/stores/app';
-	import { beginLiveSync, stopLiveSync } from '$lib/utils/lifecycle';
+
+
 
 const loadComponents = async () => {
     const imports = [
@@ -52,6 +56,7 @@ const loadComponents = async () => {
         import('$lib/components/blocks/Stats.svelte'),
         import('$lib/components/partials/relay-single/cards/CardOperator.svelte'),
         import('$lib/components/partials/relay-single/cards/CardSpeed.svelte'),
+        import('$lib/components/partials/relay-single/RelayAudits.svelte')
     ];
 
     const results = await Promise.allSettled(imports);
@@ -70,6 +75,7 @@ const loadComponents = async () => {
         Stats,
         CardOperator,
         CardSpeed,
+        RelayAudits
     ] = results.map(result => (result.status === 'fulfilled' ? result.value.default || result.value : null));
 
     componentsLoaded.set(true)
@@ -132,6 +138,7 @@ const nip11: Readable<Nip11 | undefined> = derived(
         const localNip11 = $nip11sLocal.get(relayUrl);
         if (localNip11) return localNip11;
         if ($nip11s) return $nip11s.get(relayUrl)?.[0];
+        return undefined
     }
 );   
 
@@ -269,6 +276,9 @@ $: items = [
 
 $: if ($navigating) { mount(); }
 
+$: showAuditTab = relayUrl && $nip11 !== undefined && $activeTab === 'audit';
+
+
 let [minColWidth, maxColWidth, gap] = [400, 800, 21];
 let width: number, height: number;
 </script>
@@ -320,13 +330,14 @@ let width: number, height: number;
 
 <main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">
     <section class="flex-1  rounded shadow">
+        {$activeTab}
         <Tabs.Root value="{$activeTab}" class="w-full p-0">
             <Tabs.List class="w-full rounded-none px-10 py-7">
                 <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>
                 <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activateTab('checks')}>Checks</Tabs.Trigger>
                 <Tabs.Trigger disabled={$nip11? false: true}  value="nip11" class="text-lg flex-grow" on:click={() => activateTab('nip11')}>NIP-11</Tabs.Trigger>
                 <Tabs.Trigger disabled={operatorPubkey && $operatorRelays?.relays?.length? false: true} value="operator-feed" class="text-lg flex-grow" on:click={() => activateTab('operator-feed')}>Operator Feed</Tabs.Trigger>
-                <Tabs.Trigger disabled={true} value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
+                <Tabs.Trigger value="audit" class="text-lg flex-grow" on:click={() => activateTab('audit')}>Audits</Tabs.Trigger>
             </Tabs.List>
              <div class="p-4">
             <Tabs.Content value="overview">
@@ -375,9 +386,7 @@ let width: number, height: number;
             <Tabs.Content value="checks" class="py-6">
                 <RelayChecks relay={relayUrl} monitors={$monitors} checks={$checksrelay} aggregate={$relayAggregate} />
             </Tabs.Content>
-            <Tabs.Content value="audit">
-                <!-- coming soon -->
-            </Tabs.Content>
+            
             <Tabs.Content value="nip11">
                 {$nip11s.get(relayUrl)?.length ?? 0} NIP-11s from NIP-66 events [{$nip11s.get(relayUrl)?.[0]? true: false}] <br />
                 {#if $nip11sLocal?.get(relayUrl)}
@@ -388,6 +397,16 @@ let width: number, height: number;
             <Tabs.Content value="operator-feed">
                 {#if operatorPubkey && $activeTab === 'operator-feed'}
                     <OperatorFeed pubkey={operatorPubkey} />
+                {/if}
+            </Tabs.Content>
+            <Tabs.Content value="audit">
+                {#if showAuditTab}
+                    <RelayAudits {relayUrl} {nip11}  />
+                {:else}
+                    <p>Condition failed.</p>
+                    <p>{relayUrl}</p>
+                    <p>{$nip11 !== undefined}</p>
+                    <p>{$activeTab}</p>
                 {/if}
             </Tabs.Content>
             </div>

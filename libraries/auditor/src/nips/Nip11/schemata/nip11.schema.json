@@ -32,7 +32,31 @@
     "retention": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/retent"
+        "type": "object",
+        "properties": {
+          "kinds": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              ]
+            }
+          },
+          "count": {
+            "type": "number"
+          },
+          "time": {
+            "type": "number"
+          }
+        }
       }
     },
     "relay_country": {
@@ -44,7 +68,8 @@
     "icon": {
       "anyOf": [
         {
-          "$ref": "#/$defs/saneUrl"
+          "type": "string",
+          "pattern": "^https?://"
         }
       ]
     },
@@ -63,7 +88,8 @@
     "posting_policy": {
       "anyOf": [
         {
-          "$ref": "#/$defs/saneUrl"
+          "type": "string",
+          "pattern": "^https?://"
         }
       ]
     },
@@ -114,20 +140,81 @@
     "payments_url": {
       "anyOf": [
         {
-          "$ref": "#/$defs/saneUrl"
+          "type": "string",
+          "pattern": "^https?://"
         }
       ]
     },
     "fees": {
       "properties": {
         "admission": {
-          "$ref": "#/$defs/fee"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "period": {
+                "type": "number"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
         },
         "subscription": {
-          "$ref": "#/$defs/fee"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "period": {
+                "type": "number"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
         },
         "publication": {
-          "$ref": "#/$defs/fee"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "period": {
+                "type": "number"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
         }
       }
     }

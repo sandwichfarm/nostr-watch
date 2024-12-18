@@ -3,6 +3,7 @@
 import WebSocket from 'modern-isomorphic-ws';
 import Logger from '#base/Logger.js';
 import { INip01RelayMessage } from "#src/nips/Nip01/interfaces";
+import { INip01Message } from '#src/nips/Nip01/interfaces/INip01Message';
 
 // Define WebSocketEventMap
 interface WebSocketEventMap {
@@ -126,11 +127,17 @@ export class WebSocketWrapper {
     this.ws.close();
   }
 
-  send(data: INip01RelayMessage | Buffer): void {
+  send(data: INip01Message | Buffer | string): void {
+    console.log('WebsocketWrapper send', data)
     if (data instanceof Buffer) {
-      this.ws.send(data.toString());
-    } else {
+      this.ws.send(data.toString('utf-8'));
+      console.log('WebsocketWrapper send', data.toString('utf-8'))
+    } else if (data instanceof Object) {
       this.ws.send(JSON.stringify(data));
+      console.log('WebsocketWrapper send', JSON.stringify(data))
+    } else if (typeof data === 'string') {
+      this.ws.send(data);
+      console.log('WebsocketWrapper send', data)
     }
   }
 

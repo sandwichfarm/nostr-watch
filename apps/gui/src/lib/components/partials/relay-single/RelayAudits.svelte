@@ -4,7 +4,8 @@
     import { Auditor } from "@nostrwatch/auditor";
 
     // Assume pauseLiveSync is imported from a utility module
-    import { pauseLiveSync } from '$lib/utils/lifecycle'; // Update the path as necessary
+    import { pauseLiveSync } from '$lib/utils/lifecycle.js'; // Update the path as necessary
+	import type { Note } from "nostr-tools/nip19";
 
     // Props passed to the component
     export let relayUrl: string;
@@ -22,6 +23,8 @@
         failed: any[];
         errors: any[];
         status: 'running' | 'finished';
+        notices: string[][];
+        events: Note[];
     }
 
     interface SuiteResult {
@@ -29,11 +32,15 @@
         pass: boolean;
         reason: string;
         tests: TestResult[];
+        samples: Record<string, any[]>; // Dynamic samples data
         status: 'running' | 'finished';
     }
 
     // Writable store to hold audit results as a list of suites
     const auditResults: Writable<SuiteResult[]> = writable([]);
+
+    // Reactive variable to track expanded sample sets
+    let expandedSamples: Record<string, boolean> = {};
 
     // Handler for when a suite starts
     const onSuiteStart = (suiteKey: string) => {
@@ -45,6 +52,7 @@
                     pass: false,
                     reason: '',
                     tests: [],
+                    samples: {},
                     status: 'running'
                 }];
             }
@@ -69,6 +77,7 @@
 
     // Handler for when a test within a suite starts
     const onSuiteTestStart = (suiteKey: string, testKey: string | undefined) => {
+        
         if (!testKey) {
             console.warn(`Suite Test Start emitted with undefined testKey in Suite: ${suiteKey}`);
             return;
@@ -141,6 +150,28 @@
         console.log(`Suite Test Finish: ${testKey} in Suite: ${suiteKey}`, testResult);
     };
 
+    // Handler for when samples are emitted for a suite
+    const onSuiteSamples = (suiteKey: string, samples: Record<string, any[]>) => {
+        auditResults.update(suites => {
+            const suite = suites.find(s => s.suiteKey === suiteKey);
+            if (suite) {
+                suite.samples = samples;
+            } else {
+                // If suite hasn't started yet, add it with samples
+                suites.push({
+                    suiteKey,
+                    pass: false,
+                    reason: '',
+                    tests: [],
+                    samples: samples,
+                    status: 'running'
+                });
+            }
+            return suites;
+        });
+        console.log(`Suite Samples: ${suiteKey}`, samples);
+    };
+
     onMount(async () => {
         const resumer = await pauseLiveSync();
 
@@ -159,6 +190,7 @@
         audit.on('auditor.suite:finish', (suiteKey: string, result: any) => onSuiteFinish(suiteKey, result));
         audit.on('auditor.suite.test:start', (suiteKey: string, testKey: string | undefined) => onSuiteTestStart(suiteKey, testKey));
         audit.on('auditor.suite.test:finish', (suiteKey: string, testResult: any) => onSuiteTestFinish(suiteKey, testResult));
+        audit.on('auditor.suite:samples', (suiteKey: string, samples: Record<string, any[]>) => onSuiteSamples(suiteKey, samples));
 
         // Start the audit process
         await audit.test(relayUrl).catch(err => {
@@ -167,6 +199,12 @@
 
         await resumer();
     });
+
+    // Function to toggle the expansion of a sample-set
+    function toggleSampleExpansion(suiteKey: string, sampleKey: string) {
+        const id = `${suiteKey}:${sampleKey}`;
+        expandedSamples = { ...expandedSamples, [id]: !expandedSamples[id] };
+    }
 </script>
 
 <div class="p-6 bg-gray-900 min-h-screen text-white">
@@ -208,6 +246,50 @@
                     </div>
                 {/if}
 
+                {#if Object.keys(suite.samples).length > 0}
+                    <details class="mt-4 p-4 bg-gray-700 rounded-lg">
+                        <summary class="cursor-pointer text-lg font-semibold text-blue-300 hover:underline">
+                            Samples Obtained
+                        </summary>
+                        <div class="mt-2 space-y-3">
+                            {#each Object.entries(suite.samples) as [key, value]}
+                                <div>
+                                    <span class="font-medium capitalize">{key}:</span>
+                                    {#if Array.isArray(value)}
+                                        {#if value.length === 0}
+                                            <span class="text-gray-400">No data available.</span>
+                                        {:else if typeof value[0] === 'string'}
+                                            <ul class="list-disc list-inside text-sm">
+                                                {#each (expandedSamples[`${suite.suiteKey}:${key}`] ? value : value.slice(0,5)) as item}
+                                                    <li>{item}</li>
+                                                {/each}
+                                            </ul>
+                                            {#if value.length > 5}
+                                                <button class="text-blue-400 text-sm mt-1" on:click={() => toggleSampleExpansion(suite.suiteKey, key)}>
+                                                    {expandedSamples[`${suite.suiteKey}:${key}`] ? 'Show less' : 'Show more'}
+                                                </button>
+                                            {/if}
+                                        {:else if typeof value[0] === 'number'}
+                                            <span class="text-sm">
+                                                {expandedSamples[`${suite.suiteKey}:${key}`] ? value.join(', ') : value.slice(0,5).join(', ')}
+                                                {#if value.length > 5}
+                                                    <button class="text-blue-400 text-sm ml-2" on:click={() => toggleSampleExpansion(suite.suiteKey, key)}>
+                                                        {expandedSamples[`${suite.suiteKey}:${key}`] ? 'Show less' : 'Show more'}
+                                                    </button>
+                                                {/if}
+                                            </span>
+                                        {:else}
+                                            <span class="text-sm">Unsupported data type.</span>
+                                        {/if}
+                                    {:else}
+                                        <span class="text-sm">Unsupported data type.</span>
+                                    {/if}
+                                </div>
+                            {/each}
+                        </div>
+                    </details>
+                {/if}
+
                 <div class="mt-4 space-y-4">
                     {#each suite.tests as test (test.testKey)}
                         <div class="bg-gray-700 shadow rounded-lg p-4">
@@ -239,7 +321,7 @@
                                         <div class="space-y-2">
                                             <!-- Pass Rate -->
                                             <div>
-                                                <span class="font-semibold">Pass Rate:</span> {test.passrate * 100}%
+                                                <span class="font-semibold">Pass Rate:</span> {Math.round(test.passrate * 100)}%
                                             </div>
 
                                             <!-- Passed Assertions -->
@@ -284,17 +366,32 @@
                                             {#if test.filters.length > 0}
                                                 <div>
                                                     <span class="font-semibold">Filters:</span>
-                                                    <ul class="list-disc list-inside">
+                                                    <pre>{JSON.stringify(test.filters), null, 4}</pre>
+                                                    <!-- <ul class="list-disc list-inside">
                                                         {#each test.filters as filter, index}
                                                             <li>
                                                                 <span class="font-medium">Filter {index + 1}:</span> 
-                                                                {#each Object.entries(filter) as [key, value]}
-                                                                    <span class="capitalize">{key}: {Array.isArray(value) ? value.join(', ') : value}</span> 
+                                                                {#each Object.entries(filter) as [k, v], i}
+                                                                    <span class="capitalize">{k}: {Array.isArray(v) ? v.join(', ') : v}</span>{#if i < Object.entries(filter).length -1}, {/if}
                                                                 {/each}
                                                             </li>
                                                         {/each}
-                                                    </ul>
+                                                    </ul> -->
                                                 </div>
+                                            {/if}
+
+                                             <!-- notices -->
+                                             {#if test.notices && test.notices.length > 0}
+                                             <div>
+                                                 <span class="font-semibold">Notices:</span>
+                                                 <ul class="list-disc list-inside">
+                                                     {#each test.notices as notice}
+                                                         {#if notice}
+                                                             <li>[notice[1]]</li>
+                                                         {/if}
+                                                     {/each}
+                                                 </ul>
+                                             </div>
                                             {/if}
 
                                             <!-- Errors -->
@@ -316,24 +413,46 @@
                             </div>
                         </div>
                     {/each}
-                </div>
-            </div>
-        {/each}
+                </div></div>
+            {/each}
+        </div>
     </div>
-</div>
 
-<style>
-    /* Optional: Customize scrollbar for better aesthetics */
-    pre::-webkit-scrollbar {
-        width: 8px;
-    }
+    <style>
+        /* Optional: Customize scrollbar for better aesthetics */
+        pre::-webkit-scrollbar {
+            width: 8px;
+        }
 
-    pre::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 255, 255, 0.3);
-        border-radius: 4px;
-    }
+        pre::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
 
-    pre::-webkit-scrollbar-thumb:hover {
-        background-color: rgba(255, 255, 255, 0.5);
-    }
-</style>
+        pre::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Optional: Smooth transition for details */
+        details > summary {
+            list-style: none;
+        }
+
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        /* Button styling */
+        button {
+            background: none;
+            border: none;
+            padding: 0;
+            font: inherit;
+            cursor: pointer;
+            color: #3b82f6; /* Tailwind's text-blue-400 */
+        }
+
+        button:hover {
+            text-decoration: underline;
+        }
+    </style>

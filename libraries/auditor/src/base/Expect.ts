@@ -153,8 +153,8 @@ export class Expect {
   readonly keys: Array<keyof Expect> = ['message', 'json', 'behavior']
 
   conditions: AssertWrap = new AssertWrap({ type: 'conditions', verbose: true})
-  message: AssertWrap = new AssertWrap({ type: 'message' })
-  json: AssertWrap = new AssertWrap({ type: 'json' })
+  message: AssertWrap = new AssertWrap({ type: 'message', verbose: true })
+  json: AssertWrap = new AssertWrap({ type: 'json', verbose: true })
   behavior: AssertWrap = new AssertWrap({ type: 'behavior', verbose: true })
 z
   get passed(): IExpectResults {

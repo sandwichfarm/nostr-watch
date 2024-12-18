@@ -1,6 +1,4 @@
 <script lang="ts">
-    import { Auditor } from "@nostrwatch/auditor"
-    
 import { page, navigating } from '$app/stores';
 import { onDestroy, onMount } from 'svelte';
 
@@ -330,7 +328,6 @@ let width: number, height: number;
 
 <main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">
     <section class="flex-1  rounded shadow">
-        {$activeTab}
         <Tabs.Root value="{$activeTab}" class="w-full p-0">
             <Tabs.List class="w-full rounded-none px-10 py-7">
                 <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activateTab('overview')}>Overview</Tabs.Trigger>

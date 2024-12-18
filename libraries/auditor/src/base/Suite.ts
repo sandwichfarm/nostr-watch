@@ -94,7 +94,6 @@ export abstract class Suite implements ISuite {
   });
   private _sampler: Sampler;
   private _ingestors: Ingestor[] = [];
-
   
 
   // public readonly slug: string = "NipXX";
@@ -208,13 +207,8 @@ export abstract class Suite implements ISuite {
       poops[testKey] = ingestor.poop();
     }
     this.state.set<ISuiteSampleData>('samples', poops); 
+    Emitter.emit('auditor.suite:samples', this.slug, poops);
   }
-
-  // private resetCodes(){
-  //   this.messageCodes = {};
-  //   this.jsonCodes = {};
-  //   this.behaviorCodes = {};
-  // }
 
   public async test(): Promise<ISuiteResult> {
     this.logger.info(`BEGIN: ${this.slug} Suite`, 1);
@@ -227,7 +221,7 @@ export abstract class Suite implements ISuite {
 
     for(const test of Object.entries(this.testers)) {
       const [testName, suiteTest] = test;
-      Emitter.emit('auditor.suite.test:start', this.slug);
+      Emitter.emit('auditor.suite.test:start', this.slug, testName);
       const results = await suiteTest.run();
       console.log('suite test finished', results)
       Emitter.emit('auditor.suite.test:finish', this.slug, results);
@@ -268,7 +262,7 @@ export abstract class Suite implements ISuite {
   }
 
   protected handleMessage({ data }): void {
-    const message: INip01RelayMessage = data;
+    const message: INip01RelayMessage = JSON.parse(data);
     const key = message[0];
 
     this.validateMessage(message);

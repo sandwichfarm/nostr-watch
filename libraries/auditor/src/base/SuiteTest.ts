@@ -12,15 +12,12 @@ import { WebSocketWrapper as WebSocket } from "./WebSocketWrapper.js";
 import { AssertWrap, Expect, type IExpectErrors, type IExpectResults } from "./Expect.js";
 
 import { Nip01ClientMessageGenerator } from  "#src/nips/Nip01/utils/generators.js";
-import type { INip01Filter, Note, RelayEventMessage } from "#src/nips/Nip01/interfaces/index.js";
-
-import { Emitter } from '#base/Emitter.js';
+import type { INip01Filter, Note, RelayEventMessage, RelayNoticeMessage } from "#src/nips/Nip01/interfaces/index.js";
 
 import { SuiteState } from "./SuiteState.js";
 
 export type CompleteOnType = "off" | "maxEvents" | "EOSE";
 export type CompleteOnTypeArray = [CompleteOnType, ...CompleteOnType[]];
-
 
 export interface ISuiteTestResult {
   testKey: string;
@@ -29,9 +26,10 @@ export interface ISuiteTestResult {
   passed: IExpectResults;
   failed: IExpectResults;
   skipped: IExpectResults;
-  notices: string[];
+  notices: RelayNoticeMessage[];
   filters: INip01Filter[];
   errors: IExpectErrors;
+  events: Note[];
 }
 
 export const defaultSuiteTestResult: ISuiteTestResult = {
@@ -43,7 +41,8 @@ export const defaultSuiteTestResult: ISuiteTestResult = {
   failed: [],
   notices: [],
   skipped: [],
-  errors: []
+  errors: [],
+  events: []
 }
 
 export interface ISuiteTest {
@@ -72,7 +71,7 @@ export abstract class SuiteTest implements ISuiteTest {
 
   protected subId: string = generateSubId();  
 
-  protected notices: string[] = [];
+  protected notices: RelayNoticeMessage[] = [];
   private timeout: ReturnType<typeof setTimeout> = null;
   protected timeoutMs: number = 10000;
   
@@ -233,7 +232,7 @@ export abstract class SuiteTest implements ISuiteTest {
     const { passing, passed, failed, skipped, errors } = this.expect;
     const passrate = passed.length / (passed.length + failed.length);
     const pass = passing
-    const filters = this.filters
+    const { filters, notices } = this;
     const result = {
       testKey: this.suite.testKey,
       pass,
@@ -242,7 +241,8 @@ export abstract class SuiteTest implements ISuiteTest {
       filters,
       skipped,
       failed,
-      errors
+      errors,
+      notices
     } as ISuiteTestResult;
 
     if(skipped.length) {
@@ -261,8 +261,7 @@ export abstract class SuiteTest implements ISuiteTest {
     this.socket.terminate();
   }
 
-  onNOTICE(notice: string) {
-    //console.log(notice)
+  onNOTICE(notice: RelayNoticeMessage) {
     this.notices.push(notice);
   }
 

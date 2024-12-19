@@ -1,1 +1,0 @@
-export const testsImport = () => import('src/nips/Nip50/tests/index.ts')

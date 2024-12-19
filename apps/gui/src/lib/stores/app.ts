@@ -4,6 +4,7 @@ import { readable, writable, derived, get } from "svelte/store";
 import { formatSeconds, timeAgo } from "../utils/time";
 
 
+export const unsupported: Writable<boolean> = writable(false)
 export const isLivesyncing: Writable<boolean> = writable(false)
 export const isBootstrapping: Writable<boolean> = writable(false)
 export const lastCompleteSync: Writable<number> = writable(StateManager.get('lastCompleteSync') ?? 0)

@@ -4,6 +4,7 @@
     import { doBootstrap } from '$lib/stores/routines';
 	import { hasBeenBoostrapped } from '$lib/stores/app';
     import { totalMonitors } from '$lib/stores';
+	import { unsupported } from '$lib/stores/app';
   
     $: isHomepage = $page.url.pathname === '/';
     $: isBootstrapped = hasBeenBoostrapped();
@@ -11,9 +12,8 @@
 </script>
 
 <header id="site-header">
-    
+    {#if (loadedEnough || !$doBootstrap) && !$unsupported}
     <h1>nostr.watch</h1>
-    {#if loadedEnough || !$doBootstrap}
     <nav>
         <a href="/">home</a>
         <a href="/relays">relays</a>
@@ -21,7 +21,7 @@
         <a href="/preferences">preferences</a>
     </nav>
     {/if}
-    {#if !isHomepage}
+    {#if !isHomepage && (loadedEnough || !$doBootstrap) && !$unsupported}
     <div class="search-container">
         <search>
             <AutoSuggestRelays />        

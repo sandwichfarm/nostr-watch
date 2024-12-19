@@ -15,7 +15,8 @@ import { destroy } from '$lib/utils/lifecycle';
 import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
 import { delay } from '@nostrwatch/utils';
 import { getBrowserInfo } from '$lib/utils/compat.js';
-	import { StateManager } from '@nostrwatch/nip66';
+import { StateManager } from '@nostrwatch/nip66';
+import { unsupported } from '$lib/stores/app';
 
 const isLeader: Writable<boolean> = writable(false);
 
@@ -23,6 +24,7 @@ const lifecycle = createTabLifecycle();
 
 lifecycle.onStartLeader(async () => {
   isLeader.set(true);
+  if($unsupported) return;
   await loadData(); 
   console.log('Leader tab: DB initialized.');
 });
@@ -48,6 +50,7 @@ lifecycle.onWaitForLeaderRelease(() => {
 lifecycle.onLeaderAcquired(async () => {
   console.log('Non-leader tab: Just became leader, initializing DB.');
   isLeader.set(true);
+  if($unsupported) return;
   await loadData(); 
 });
 
@@ -81,21 +84,27 @@ const loadData = async () => {
   }    
 }
 
+const checkSupport = () => {
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(userAgent);
+  const isSafari = getBrowserInfo()?.name.toLowerCase().includes('safari')
+
+  unsupported.set(isSafari || isMobile)
+
+  if (isMobile && $page.url.pathname !== '/mobile') {
+    goto('/mobile'); 
+  }
+
+  if(isSafari && $page.url.pathname !== '/unsupported') {
+    goto('/unsupported');
+  }
+}
+
 onDestroy(unsubscribe);
 
 onMount(async () => {
-    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(userAgent);
-    const isSafari = getBrowserInfo()?.name.toLowerCase().includes('safari')
-
-    if (isMobile && $page.url.pathname !== '/mobile') {
-        goto('/mobile'); 
-    }
-
-    if(isSafari && $page.url.pathname !== '/unsupported') {
-      goto('/unsupported');
-    }
-
+    
+    checkSupport()
     
     const version = StateManager.get('version')
     if(!version || version !== 2) { //TODO NEED A LOCAL STORAGE SCHEMA VERFSIONING SYSTEM!!!
@@ -116,6 +125,7 @@ onMount(async () => {
 
 $effect(() => {
   if ($navigating) {
+    checkSupport();
     loadData();
   }
 });

@@ -602,8 +602,8 @@ export class MonitorService extends Service {
   
 
   async modifyReturnedEvents(events: IEvent[]): Promise<IEvent[]> {
-    // return events;
-    return this.removeStaleChecks(events);  
+    return events;
+    // return this.removeStaleChecks(events);  
   }
 
   async removeStaleChecks(events: IEvent[]): Promise<IEvent[]> {

@@ -5,11 +5,13 @@
 
     // Assume pauseLiveSync is imported from a utility module
     import { pauseLiveSync } from '$lib/utils/lifecycle.js'; // Update the path as necessary
-	import type { Note } from "nostr-tools/nip19";
+    import type { Note } from "nostr-tools/nip19";
+	import Badge from "../../ui/badge/badge.svelte";
+	import type { Nip11 } from "@nostrwatch/nip66/models";
 
     // Props passed to the component
     export let relayUrl: string;
-    export let nip11: any;
+    export let nip11: Writable<Nip11 | undefined>;
 
     // Interfaces to define the structure of suites and tests
     interface TestResult {
@@ -183,10 +185,10 @@
         
         const audit = new Auditor();
 
-        if (nip11 && nip11.supportedNips) {
-            audit.applySupportedNips(nip11.supportedNips);
+        if ($nip11 && $nip11?.supportedNips) {
+            audit.applySupportedNips($nip11.supportedNips);
         } else {
-            console.warn('No nip11 provided or supportedNips missing; skipping supported NIPs application.');
+            await audit.detectSupportedNips()
         }
 
         // Register event listeners
@@ -211,7 +213,7 @@
     }
 </script>
 
-<div class="p-6 min-h-screen text-white">
+<div class="p-6 bg-gray-900 min-h-screen text-white">
     <div class="mb-8">
         <h2 class="text-3xl font-bold">
             Running NIP Audit
@@ -234,15 +236,28 @@
                             Suite: {suite.suiteKey}
                         </span>
                     </div>
-                    <div>
-                        {#if suite.status === 'running'}
-                            <span class="text-yellow-400 font-medium">Running...</span>
-                        {:else if suite.pass}
-                            <span class="text-green-400 font-medium">Passed</span>
-                        {:else}
-                            <span class="text-red-400 font-medium">Failed</span>
-                        {/if}
-                    </div>
+                    {#if suite.status !== 'running'}
+                        <!-- Compute metrics -->
+                        <div class="flex space-x-4">
+                            <span class="text-green-400 font-medium">
+                                Pass Rate: 
+                                {#if suite.tests.length > 0}
+                                    {Math.round((suite.tests.filter(t => t.pass).length / suite.tests.length) * 100)}%
+                                {:else}
+                                    N/A
+                                {/if}
+                            </span>
+                            <span class="text-green-400 font-medium">
+                                Passed: {suite.tests.filter(t => t.pass && t.skipped.length === 0).length}
+                            </span>
+                            <span class="text-red-400 font-medium">
+                                Failed: {suite.tests.filter(t => !t.pass && t.status === 'finished').length}
+                            </span>
+                            <span class="text-yellow-400 font-medium">
+                                Skipped: {suite.tests.filter(t => t.skipped.length > 0).length}
+                            </span>
+                        </div>
+                    {/if}
                 </div>
                 {#if suite.reason}
                     <div class="mt-2 text-sm text-gray-400">
@@ -252,7 +267,8 @@
 
                 {#if Object.keys(suite.samples).length > 0}
                     <details class="mt-4 p-4 bg-gray-700 rounded-lg">
-                        <summary class="cursor-pointer text-lg font-semibold text-blue-300 hover:underline">
+                        <summary class="cursor-pointer text-lg font-semibold text-blue-300 hover:underline {Object.values(suite.samples).flat().length > 0? 'text-green-400': 'text-red-400'}">
+                            <Badge variant="secondary">{Object.values(suite.samples).flat().length}</Badge>
                             Samples Obtained
                         </summary>
                         <div class="mt-2 space-y-3">
@@ -309,10 +325,14 @@
                                 <div>
                                     {#if test.status === 'running'}
                                         <span class="text-yellow-400 font-medium">Running...</span>
-                                    {:else if test.pass}
-                                        <span class="text-green-400 font-medium">Passed</span>
-                                    {:else}
-                                        <span class="text-red-400 font-medium">Failed</span>
+                                    {:else} 
+                                        {#if test.skipped.length > 0}
+                                            <span class="text-gray-400 font-medium">Skipped</span>
+                                        {:else if test.pass}
+                                            <span class="text-green-400 font-medium">Passed</span>
+                                        {:else}
+                                            <span class="text-red-400 font-medium">Failed</span>
+                                        {/if}
                                     {/if}
                                 </div>
                             </div>
@@ -374,18 +394,18 @@
                                                 </div>
                                             {/if}
 
-                                             <!-- notices -->
-                                             {#if test.notices && test.notices.length > 0}
-                                             <div>
-                                                 <span class="font-semibold">Notices:</span>
-                                                 <ul class="list-disc list-inside">
-                                                     {#each test.notices as notice}
-                                                         {#if notice}
-                                                             <li>[notice[1]]</li>
-                                                         {/if}
-                                                     {/each}
-                                                 </ul>
-                                             </div>
+                                            <!-- Notices -->
+                                            {#if test.notices && test.notices.length > 0}
+                                                <div>
+                                                    <span class="font-semibold">Notices:</span>
+                                                    <ul class="list-disc list-inside">
+                                                        {#each test.notices as notice}
+                                                            {#if notice && notice.length > 1}
+                                                                <li>{notice[1]}</li>
+                                                            {/if}
+                                                        {/each}
+                                                    </ul>
+                                                </div>
                                             {/if}
 
                                             <!-- Errors -->

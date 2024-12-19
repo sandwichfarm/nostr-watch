@@ -19,6 +19,8 @@ import { messageKey } from '#src/utils/nostr.js';
 
 import { Emitter } from '#base/Emitter.js';
 
+import { suiteTests } from '#src/nips/suite-test-manifest.js';
+
 export type ISuiteSampleData = Record<string, any>;
 
 export type INipTesterCodes = Record<string, boolean | null>
@@ -154,13 +156,14 @@ export abstract class Suite implements ISuite {
   }
 
   async setup(){
-    this.testsDirectory = this._calculateFilePath(import.meta.url);
     this.expect = new Expect();
-
-    console.log('this.testsDirectory', this.testsDirectory)
-    const tests: DynamicallyImportedNipTests = await import(this.testsDirectory);
-    for (const [key, cl] of Object.entries(tests)) {
-      this.testers[key] = new cl(this);
+    
+    const importFn = suiteTests?.[this.slug];
+    if(importFn) {
+      const tests: DynamicallyImportedNipTests = await importFn()
+      for (const [key, cl] of Object.entries(tests)) {
+        this.testers[key] = new cl(this);
+      }
     }
     this.signal.emit('SUITE:READY');
   }

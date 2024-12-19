@@ -8,6 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { promises as fsp } from 'fs';
 import parser from '@apidevtools/json-schema-ref-parser';
+import DynamicImport from '@rtvision/esbuild-dynamic-import';
 
 const isWatchMode = process.argv.includes('--watch');
 
@@ -80,12 +81,17 @@ const resolveDynamicImportsPlugin = {
         });
 
         build.onLoad({ filter: dynamicImportPattern }, async (args) => {
-            const source = await fsp.readFile(args.path, 'utf8');
-            const transpiled = await esbuild.transform(source, {
-                loader: 'ts',
-                sourcefile: args.path,
-            });
-            return { contents: transpiled.code, loader: 'js' };
+            try {
+                const source = await fsp.readFile(args.path, 'utf8');
+                const transpiled = await esbuild.transform(source, {
+                    loader: 'ts',
+                    sourcefile: args.path,
+                });
+                return { contents: transpiled.code, loader: 'js' };
+            } catch (error) {
+                console.error(`Error loading dynamic import ${args.path}:`, error);
+                throw error;
+            }
         });
     },
 };
@@ -104,6 +110,7 @@ function generateImportsPlugin({ pattern }) {
 async function dereferenceSchemas() {
     const schemaFiles = [];
 
+    // Phase 1: Find and copy all .schema.json files
     function findSchemaFiles(dir) {
         const files = fs.readdirSync(dir);
         for (const file of files) {
@@ -119,16 +126,25 @@ async function dereferenceSchemas() {
 
     findSchemaFiles(path.resolve('./src'));
 
+    // Phase 1: Copy all schema files to dist/server
     for (const schemaPath of schemaFiles) {
         const relativePath = path.relative(path.resolve('./src'), schemaPath);
         const outputPath = path.resolve('./dist/server', relativePath);
         const outputDir = path.dirname(outputPath);
 
         fs.mkdirSync(outputDir, { recursive: true });
-
         fs.copyFileSync(schemaPath, outputPath);
+        console.log(`Copied schema to ${outputPath}`);
+    }
 
-        await new Promise((resolve) => {
+    // Phase 2: Dereference all schemas in dist/server
+    for (const schemaPath of schemaFiles) {
+        const relativePath = path.relative(path.resolve('./src'), schemaPath);
+        const outputPath = path.resolve('./dist/server', relativePath);
+
+        console.log(`Dereferencing schema: ${outputPath}`);
+
+        await new Promise((resolve, reject) => {
             exec(`node ./scripts/derefJsonSchemas.js ${outputPath} ${outputPath}`, (error, stdout, stderr) => {
                 if (stderr) {
                     console.error(`Error processing ${outputPath}:`, stderr);
@@ -142,6 +158,7 @@ async function dereferenceSchemas() {
     }
 }
 
+
 const plugins = [
     generateImportsPlugin({
         pattern: 'src/nips/**/*/tests/*.ts',
@@ -152,6 +169,18 @@ const additionalNipModules = glob.sync('./src/nips/**/index.ts', {
     absolute: true,
 });
 
+console.log('Additional Nip Modules:', additionalNipModules);
+
+const inlineDynamicImportsPlugin = {
+    name: 'inline-dynamic-imports',
+    setup(build) {
+        build.onEnd(async (result) => {
+            console.log('Inlining dynamic imports...');
+            // Implement the inlining logic here
+        });
+    },
+};
+
 const browserConfig = {
     entryPoints: ['src/index.ts', ...additionalNipModules],
     bundle: true,
@@ -159,14 +188,19 @@ const browserConfig = {
     platform: 'browser',
     format: 'esm',
     allowOverwrite: true,
+    external: ['src/nips/*/index.js'],
     plugins: [
         babelPlugin,
         mockPlugin,
-        resolveDynamicImportsPlugin,
         polyfillNode({
             globals: { process: true, Buffer: true, global: true },
         }),
-        dereferenceJsonSchemasPlugin()
+        dereferenceJsonSchemasPlugin(),
+        DynamicImport({ 
+            changeRelativeToAbsolute: true, 
+            filter: /src\/base\/Suite.js$/ 
+        }),
+        inlineDynamicImportsPlugin, // Added plugin
     ],
 };
 
@@ -180,13 +214,37 @@ const serverConfig = {
     plugins: [
         babelPlugin,
         mockPlugin,
-        resolveDynamicImportsPlugin,
+        resolveDynamicImportsPlugin, // Now only in serverConfig
         ...plugins,
+        inlineDynamicImportsPlugin, // Added plugin
     ],
 };
 
+async function cleanDist() {
+    const distWebPath = path.resolve('./dist/web');
+    const distServerPath = path.resolve('./dist/server');
+    try {
+        if (fs.existsSync(distWebPath)) {
+            console.log('Clearing dist/web directory...');
+            await fsp.rm(distWebPath, { recursive: true, force: true });
+            console.log('dist/web directory cleared.');
+        }
+        if (fs.existsSync(distServerPath)) {
+            console.log('Clearing dist/server directory...');
+            await fsp.rm(distServerPath, { recursive: true, force: true });
+            console.log('dist/server directory cleared.');
+        }
+    } catch (error) {
+        console.error('Error clearing dist directories:', error);
+        throw error;
+    }
+}
+
 async function build() {
     try {
+        // Clean the dist/web and dist/server directories before building
+        await cleanDist();
+
         if (isWatchMode) {
             const browserContext = await esbuild.context(browserConfig);
             const serverContext = await esbuild.context(serverConfig);
@@ -199,11 +257,25 @@ async function build() {
             console.log("Watching for changes in src...");
             watchSrcDirectory();
         } else {
+            // Build browser bundle
             await esbuild.build(browserConfig);
+            console.log("Browser build completed.");
 
+            // Verify that the dynamic import file exists
+            const nip11Path = path.resolve('./dist/web/nips/Nip11/index.js');
+            if (fs.existsSync(nip11Path)) {
+                console.log(`Verified existence of ${nip11Path}`);
+            } else {
+                console.error(`Missing file: ${nip11Path}`);
+                throw new Error(`Required file ${nip11Path} is missing.`);
+            }
+
+            // Dereference schemas
             await dereferenceSchemas();
 
+            // Build server bundle
             await esbuild.build(serverConfig);
+            console.log("Server build completed.");
 
             console.log("Build complete for both web and server targets.");
         }
@@ -212,6 +284,7 @@ async function build() {
         process.exit(1);
     }
 }
+
 
 function watchSrcDirectory() {
     fs.watch('./src', { recursive: true }, (eventType, filename) => {

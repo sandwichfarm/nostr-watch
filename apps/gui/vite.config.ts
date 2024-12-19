@@ -32,12 +32,18 @@ export default defineConfig(({ mode }) => {
 
   return {
     build: {
+      minify: isProd? 'terser': false, 
       assetsInlineLimit: 0,
+      mangle: {
+        keep_classnames: /@nostrwatch\/nocap/
+      },
     },
     optimizeDeps: {
       exclude: [
         "@nostrwatch/worker-relay",
-        "@sqlite.org/sqlite-wasm"
+        "@sqlite.org/sqlite-wasm",
+        "@nostrwatch/auditor",
+        "@nostrwatch/nocap"
       ],
       esbuildOptions: {
         target: "esnext",

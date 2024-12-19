@@ -87,6 +87,7 @@ export let params: { protocol: string; relay: string };
 let currentRelay: string = '';
 let loading: boolean = true;
 let nip66Instance: Nip66;
+let nip11Ready: Writable<boolean> = writable(false)
     
 const operatorProfile: Writable<PubkeyProfile | null> = writable(null);
 const operatorRelays: Writable<PubkeyRelays | null> = writable(null);
@@ -172,6 +173,7 @@ const loadRelayData = async () => {
 
 const loadNip11 = async () => {
     await $nip11Service.check(relayUrl);
+    nip11Ready.set(true)
 };
 
 const loadOperatorMeta = async () => {
@@ -397,8 +399,10 @@ let width: number, height: number;
                 {/if}
             </Tabs.Content>
             <Tabs.Content value="audit">
-                {#if showAuditTab}
-                    <RelayAudits {relayUrl} {nip11}  />
+                {#if showAuditTab && $nip11Ready}
+                    <RelayAudits {relayUrl} {nip11} />
+                {:else}
+                    Waiting for NIP-11 to be fetched or fail to fetch.
                 {/if}
             </Tabs.Content>
             </div>

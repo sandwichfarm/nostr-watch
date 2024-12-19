@@ -6,8 +6,8 @@
   "module": "./dist/web/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
-    "require": "./dist/server/index.js",
     "import": "./dist/web/index.js",
+    "require": "./dist/server/index.js",
     "node": "./dist/server/index.js",
     "default": "./dist/web/index.js"
   },
@@ -42,6 +42,7 @@
     "@awalgawe/esbuild-typescript-paths-plugin": "^1.0.1",
     "@babel/core": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
+    "@rtvision/esbuild-dynamic-import": "^2.0.2",
     "@types/chalk": "^2.2.4",
     "@types/debug": "^4.1.12",
     "@types/events": "^3",
@@ -65,6 +66,6 @@
     "nip50": "node --no-warnings ./example/nip50.js",
     "build": "tsc && tsc-alias && node build.js",
     "dev": "tsc --watch & tsc-alias -w & node build.js --watch",
-    "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js"
+    "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js"
   }
 }

@@ -241,6 +241,9 @@ importers:
       vite-plugin-copy:
         specifier: ^0.1.6
         version: 0.1.6
+      vite-plugin-dynamic-import:
+        specifier: ^1.6.0
+        version: 1.6.0
       vite-plugin-static-copy:
         specifier: ^2.2.0
         version: 2.2.0(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0))
@@ -1042,6 +1045,9 @@ importers:
       '@babel/preset-env':
         specifier: ^7.26.0
         version: 7.26.0(@babel/core@7.26.0)
+      '@rtvision/esbuild-dynamic-import':
+        specifier: ^2.0.2
+        version: 2.0.2(esbuild@0.24.0)
       '@types/chalk':
         specifier: ^2.2.4
         version: 2.2.4
@@ -4328,6 +4334,12 @@ packages:
     resolution: {integrity: sha512-3j4jx1TppORdTAoBJRd+/wJRGCPC0ETWkXOecJ6PPZLj6SptXkrXcNqdj0oclbKML6FkQltdz7bBA3rUSirZug==}
     cpu: [x64]
     os: [win32]
+
+  '@rtvision/esbuild-dynamic-import@2.0.2':
+    resolution: {integrity: sha512-Vcgv3rNhWBiPhep1VXHv2Tk6sRXfjs52kEQIduF3hh/ibFMIk5YOuyhaX1LQkXRfwYks7YlByt4H9Ot9tPe47g==}
+    engines: {node: '>=8.0.0'}
+    peerDependencies:
+      esbuild: 0.x.x
 
   '@sandwichfarm/torfetch@https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277':
     resolution: {tarball: https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277}
@@ -10473,6 +10485,9 @@ packages:
     resolution: {integrity: sha512-bqIaefZOE2Jx8P5wJuHKL5GzCERa/pcwdUQWaocyTNXgalN2xkxXH7LmqRJ34V2OlKF2F9E/zj0zITS7U6PpUg==}
     engines: {node: '>=14.8.0'}
 
+  vite-plugin-dynamic-import@1.6.0:
+    resolution: {integrity: sha512-TM0sz70wfzTIo9YCxVFwS8OA9lNREsh+0vMHGSkWDTZ7bgd1Yjs5RV8EgB634l/91IsXJReg0xtmuQqP0mf+rg==}
+
   vite-plugin-node-polyfills@0.22.0:
     resolution: {integrity: sha512-F+G3LjiGbG8QpbH9bZ//GSBr9i1InSTkaulfUHFa9jkLqVGORFBoqc2A/Yu5Mmh1kNAbiAeKeK+6aaQUf3x0JA==}
     peerDependencies:
@@ -13464,6 +13479,12 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.27.4':
     optional: true
+
+  '@rtvision/esbuild-dynamic-import@2.0.2(esbuild@0.24.0)':
+    dependencies:
+      esbuild: 0.24.0
+      fast-glob: 3.3.2
+      tslib: 2.8.1
 
   '@sandwichfarm/torfetch@https://codeload.github.com/sandwichfarm/torfetch/tar.gz/df1f432dcca3de4ab56069324c47d543bd41a277':
     dependencies:
@@ -20931,6 +20952,13 @@ snapshots:
   vite-plugin-copy@0.1.6:
     dependencies:
       fast-glob: 3.3.2
+
+  vite-plugin-dynamic-import@1.6.0:
+    dependencies:
+      acorn: 8.14.0
+      es-module-lexer: 1.5.4
+      fast-glob: 3.3.2
+      magic-string: 0.30.14
 
   vite-plugin-node-polyfills@0.22.0(rollup@4.27.4)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0)):
     dependencies:

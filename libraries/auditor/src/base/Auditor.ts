@@ -7,7 +7,6 @@ import { Emitter } from '#base/Emitter.js';
 import { Listener } from './Emitter.js';
 import { nipManifest } from '#src/nips/manifest.js';
 
-
 type SuiteSet = Set<string>;
 
 const defaultAuditorConf: IAuditorConf = {

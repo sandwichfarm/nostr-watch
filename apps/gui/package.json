@@ -21,7 +21,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "rm -rf dist && vite build -c vite.production.js",
-		"preview": "pnpm run serve dist",
+		"preview": "serve dist",
 		"package": "svelte-kit sync && svelte-package && publint",
 		"release": "changeset publish",
 		"prepublishOnly": "npm run package",
@@ -83,6 +83,7 @@
 		"typescript": "^5.7.2",
 		"vite": "^5.0.11",
 		"vite-plugin-copy": "^0.1.6",
+		"vite-plugin-dynamic-import": "^1.6.0",
 		"vite-plugin-static-copy": "^2.2.0",
 		"vite-plugin-top-level-await": "^1.4.4",
 		"vite-plugin-wasm": "^3.3.0",

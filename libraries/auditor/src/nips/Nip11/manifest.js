@@ -1,0 +1,1 @@
+export const testsImport = () => import('src/nips/Nip11/tests/index.ts')

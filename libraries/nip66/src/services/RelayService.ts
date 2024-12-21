@@ -83,7 +83,7 @@ export class RelayService extends Service {
       keepAlive: false,
       stream: false
     }
-    const events: IEvent[] | boolean | undefined = await this._fetch( { relays, filters, options } );
+    const events: IEvent[] = await this.fetch( { relays, filters, options } );
     if(!events) return;
     const checks: Nip66Event[] = events.map((event: IEvent) => new Nip66Event(event));  
     return checks;
@@ -100,10 +100,7 @@ export class RelayService extends Service {
       keepAlive: false,
       stream: false
     }
-    if(callbacks){
-      options.stream = true; 
-    }
-    return this._fetch( { relays, filters, options }, callbacks );
+    return this.fetch( { relays, filters, options }, callbacks );
   }
 
   async monitorInstancesFromChecks(checks: Nip66Event[], type: 'map' | 'array' = 'map'): Promise<Map<string, Monitor> | Monitor[] | undefined> {

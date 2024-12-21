@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'path';
 import fs from 'fs';
-import fetch from 'node-fetch';
+import nodePolyfills from 'rollup-plugin-polyfill-node';
 
 function patchSvelteSpeedometer() {
   return {
@@ -33,11 +33,13 @@ export default defineConfig({
   worker: {
     plugins: [
       sveltekit(),
-      patchSvelteSpeedometer()
+      patchSvelteSpeedometer(),
+      nodePolyfills()
     ]
   },
   build: {
     minify: 'terser', 
+    sourcemap: true,
     assetsInlineLimit: 0,
     rollupOptions: {
       output: {
@@ -63,7 +65,10 @@ export default defineConfig({
       target: "esnext",
     },
     exclude: [
-      'svelte-speedometer'
+      'svelte-speedometer',
+      '@nostrwatch/worker-relays',
+      "@nostrwatch/auditor",
+      "@nostrwatch/nocap"
     ]
   },
   plugins: [

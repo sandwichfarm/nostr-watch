@@ -11,6 +11,9 @@
 	import Badge from "../../ui/badge/badge.svelte";
 	import type { Nip11 } from "@nostrwatch/nip66/models";
 
+    import * as Alert from "$lib/components/ui/alert/index.js";
+
+
     // Props passed to the component
     export let relayUrl: string;
     export let nip11: Writable<Nip11 | undefined>;
@@ -218,11 +221,15 @@
 </script>
 
 <div class="p-6 min-h-screen text-white">
+
+    <Alert.Root class="mb-2">
+        <Alert.Title>Notice</Alert.Title>
+        <Alert.Description>
+            The relay audit feature is alpha and very experimental. Presently, `AUTH` relays will return false negatives. Only a few NIPs presently have testing suites.
+        </Alert.Description>
+    </Alert.Root>
+
     <div class="mb-8">
-        <h2 class="text-3xl font-bold">
-            Running NIP Audit
-            <a href="{relayUrl}" target="_blank" class="text-blue-400 hover:underline">{relayUrl}</a>
-        </h2>
         {#if $auditResults.length === 0}
             <p class="text-gray-400 mt-2">No audit results yet.</p>
         {/if}

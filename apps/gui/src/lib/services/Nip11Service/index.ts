@@ -4,6 +4,7 @@ import type { nip11 } from 'nostr-tools';
 import { nip11sLocal } from '$lib/stores/nip11s.js';
 import { Nip11, type RelayInformation } from '@nostrwatch/nip66/models';
 import { getRelayErrorSubject, setRelayError, type RelayErrorMessages } from '$lib/stores/relay-errors.js';
+import { relaysErrors } from '$lib/stores/relay-errors';
 
 export type Nip11ServiceMessage = {
     relay: string,
@@ -31,16 +32,19 @@ export class Nip11Service {
         while(!result && !error){
             result = (get(nip11sLocal) as Map<string, Nip11>)?.get(relay)
             error = getRelayErrorSubject(relay, 'nip11')
+            console.log('n11s relays errors (from store in whjile loop)', get(relaysErrors), getRelayErrorSubject(relay, 'nip11'))
             await new Promise( resolve => setTimeout( resolve, 200 ))
         }
+        console.log('n11s done?!?!?')
         return result;
     }
 
     private onmessage(message: MessageEvent<Nip11ServiceMessage>){
+        console.log('N11S recieved nip11 service message', message)
         const { relay, nip11:_nip11, error } = message.data;
-        if(!_nip11) return;
         const nip11 = new Nip11(_nip11 as RelayInformation)
         if(error) {
+            console.log('N11S setting error in store', error.message)
             setRelayError(relay, 'nip11', error.message)
             return
         }

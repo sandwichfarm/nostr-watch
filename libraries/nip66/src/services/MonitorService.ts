@@ -87,7 +87,7 @@ export class MonitorService extends Service {
     this.manager.loadMonitors(monitors);
   }
 
-  async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+  async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     const { filters, relays, options } = args;
     const message: WebsocketRequestBody = { filters, relays, options };
     return this._fetch(message, callbacks);

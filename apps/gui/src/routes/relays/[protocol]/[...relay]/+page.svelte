@@ -3,11 +3,12 @@
   import { onDestroy, onMount } from 'svelte';
   import { doBootstrap } from '$lib/stores/routines.js';
   import { derived, writable, type Readable, type Writable } from 'svelte/store';
-  import { Nip66Event, PubkeyProfile, PubkeyRelays, type Monitor, type INip11 } from '@nostrwatch/nip66/models';
+  import { Nip66Event, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/nip66/models';
   import { relayAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
   import { nip11s, nip11Service, nip11sLocal } from '$lib/stores/nip11s.js';
   import { isSeeded } from '$lib/stores/app.js';
   import { eventsArray } from '$lib/stores/events.js';
+  import { relaysErrors } from '$lib/stores/relay-errors.js';
   import { isHex } from '$lib/utils/nostr.js';
   import { Nip11 } from '@nostrwatch/nip66/models';
   import { isLivesyncing, doAggregateCache, hasBeenBoostrapped } from '$lib/stores/app';
@@ -17,6 +18,7 @@
   import { Skeleton } from "$lib/components/ui/skeleton";
 	import { nip66Ready } from '$lib/stores/app';
 	import { nip66 } from '$lib/stores';
+	import { getRelayErrorSubject } from '$lib/stores/relay-errors';
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
   let RelayChecks: typeof import('$lib/components/partials/relay-single/RelayChecks.svelte').default | null = null;
@@ -69,8 +71,9 @@
   export let params: { protocol: string; relay: string };
   let currentRelay: string = '';
   let loading: boolean = true;
-  let nip11Ready: Writable<boolean> = writable(false);
-
+  
+  const nip11Ready: Writable<boolean> = writable(false);
+  const operatorMetaReady: Writable<boolean> = writable(false);
   const operatorProfile: Writable<PubkeyProfile | null> = writable(null);
   const operatorRelays: Writable<PubkeyRelays | null> = writable(null);
   const monitors: Writable<Monitor[]> = writable([]);
@@ -147,12 +150,12 @@
   };
 
   const loadNip11 = async () => {
-      await $nip11Service.check(relayUrl);
+      await $nip11Service.check(relayUrl)
       nip11Ready.set(true);
   };
 
   const loadOperatorMeta = async () => {
-      if (!operatorPubkey) return;
+      if (!operatorPubkey) return operatorMetaReady.set(true);
       const onevent = (event: IEvent) => {
           if (event.kind === 0 && !$operatorProfile) {
               operatorProfile.set(new PubkeyProfile(event));
@@ -162,6 +165,7 @@
           }
       };
       await $nip66?.services?.relay?.fetchOperatorMeta(operatorPubkey, { onevent });
+      operatorMetaReady.set(true)
   };
 
   const mount = async () => {
@@ -246,6 +250,8 @@
 
   $: showAuditTab = relayUrl && $activeTab === 'audit';
 
+  $: errors = $relaysErrors?.get(relayUrl)
+
   let [minColWidth, maxColWidth, gap] = [400, 800, 21];
   let width: number, height: number;
 </script>
@@ -290,7 +296,7 @@
           <Tabs.Trigger value="overview" class="text-lg flex-grow" on:click={() => activeTab.set('overview')}>Overview</Tabs.Trigger>
           <Tabs.Trigger value="checks" class="text-lg flex-grow" on:click={() => activeTab.set('checks')}>Checks</Tabs.Trigger>
           <Tabs.Trigger disabled={!$nip11} value="nip11" class="text-lg flex-grow" on:click={() => activeTab.set('nip11')}>NIP-11</Tabs.Trigger>
-          <Tabs.Trigger disabled={operatorPubkey && $operatorRelays?.relays?.length} value="operator-feed" class="text-lg flex-grow" on:click={() => activeTab.set('operator-feed')}>Operator Feed</Tabs.Trigger>
+          <Tabs.Trigger disabled={!(operatorPubkey && $operatorRelays?.relays?.length)} value="operator-feed" class="text-lg flex-grow" on:click={() => activeTab.set('operator-feed')}>Operator Feed</Tabs.Trigger>
           <Tabs.Trigger value="audit" class="text-lg flex-grow" on:click={() => activeTab.set('audit')}>Audits</Tabs.Trigger>
         </Tabs.List>
         <div class="p-4">
@@ -328,10 +334,19 @@
                     {/if}
                   {/if}
                   {#if item === 'nips'}
-                    {#if CardNips && $nip11 && $nip11?.supportedNips?.length}
-                      <CardNips supportedNips={$nip11.supportedNips} />
+                  
+                    {#if CardNips && supportedNips}
+                      <CardNips {supportedNips} />
                     {:else}
-                      <Skeleton class="h-40 w-full" />
+                      {#if errors?.get('nip11')?.length}
+                      <div><ul>
+                        {#each errors?.get('nip11') as nip11Error}
+                          <li>{nip11Error}</li>
+                        {/each}
+                      </ul> </div>
+                      {:else}
+                        <!-- <Skeleton class="h-40 w-full" /> -->
+                      {/if}
                     {/if}
                   {/if}
                   {#if item === 'checks'}
@@ -358,7 +373,7 @@
                   {#if item === 'operator'}
                     {#if CardOperator && $operatorProfile && operatorPubkey}
                       <CardOperator {relayUrl} pubkey={operatorPubkey} profile={$operatorProfile} monitors={$monitors} />
-                    {:else}
+                    {:else if !$operatorMetaReady}
                       <Skeleton class="h-36 w-full" />
                     {/if}
                   {/if}
@@ -381,18 +396,20 @@
           {/if}
 
           <Tabs.Content value="nip11">
-            {$nip11s.get(relayUrl)?.length ?? 0} NIP-11s from NIP-66 events [{$nip11s.get(relayUrl)?.[0] ? true : false}] <br />
-            {#if $nip11sLocal?.get(relayUrl)}
+            <!-- {$nip11s.get(relayUrl)?.length ?? 0} NIP-11s from NIP-66 events [{$nip11s.get(relayUrl)?.[0] ? true : false}] <br /> -->
+            <!-- {#if $nip11sLocal?.get(relayUrl)}
               NIP-11 found locally <br />
-            {/if}
+            {/if} -->
             <pre class="py-6 px-8 bg-white/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>
           </Tabs.Content>
 
-          {#if OperatorFeed && operatorPubkey && $activeTab === 'operator-feed'}
-            <Tabs.Content value="operator-feed">
+          
+          <Tabs.Content value="operator-feed">
+              {#if OperatorFeed && operatorPubkey && $activeTab === 'operator-feed'}
               <OperatorFeed pubkey={operatorPubkey} />
-            </Tabs.Content>
-          {/if}
+              {/if}
+          </Tabs.Content>
+          
 
           {#if RelayAudits}
             <Tabs.Content value="audit">
@@ -442,7 +459,7 @@
         word-wrap: break-word;
     }
 
-    .relay-card {
+    body .relay-card {
         @apply bg-white/5;
     }
 </style>

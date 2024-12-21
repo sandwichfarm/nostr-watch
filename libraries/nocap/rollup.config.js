@@ -5,6 +5,7 @@ import { terser } from 'rollup-plugin-terser';
 import nodePolyfills from 'rollup-plugin-polyfill-node';
 import tscAlias from 'rollup-plugin-tsc-alias';
 import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
+import inject from '@rollup/plugin-inject';
 
 const onwarn = (warning, warn) => {
   if (warning.code === 'CIRCULAR_DEPENDENCY') return;
@@ -34,7 +35,6 @@ export default [
       json({
         sourceMap: true,
       }),
-      nodePolyfills(),
       terser(),
     ],
     onwarn
@@ -48,6 +48,9 @@ export default [
       strict: false,
     },
     plugins: [
+      inject({
+        process: 'process/browser',
+      }),
       resolve({
         browser: true,
         extensions: ['.js'],

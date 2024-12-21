@@ -1,5 +1,3 @@
-import now from 'performance-now';
-
 export class LatencyHelper {
   begin: Record<string, Record<string, number>>;
   end: Record<string, Record<string, number>>;
@@ -30,7 +28,7 @@ export class LatencyHelper {
     if (!this.begin[sessionKey]) {
       this.begin[sessionKey] = {};
     }
-    this.begin[sessionKey][key] = now();
+    this.begin[sessionKey][key] = Date.now();
   }
 
   finish(key: string): void {
@@ -38,7 +36,7 @@ export class LatencyHelper {
     if (!this.end[sessionKey]) {
       this.end[sessionKey] = {};
     }
-    this.end[sessionKey][key] = now();
+    this.end[sessionKey][key] = Date.now();
   }
 
   duration(key: string): number {

@@ -292,7 +292,14 @@
                     </Table.Header>
                     <Table.Body>
                         {#each tableInstance?.rows as row (row.id)}
-                            <Table.Row class="{$rowStyles.get(row.pubkey)}" style="{row.banner? `background-image: ${row.banner}; background-repeat: no-repeat; background-size: cover; background-blend-mode: lighten;`: ''}">
+                            <Table.Row 
+                                class="{$rowStyles.get(row.pubkey)}" 
+                                style="{row.banner? 
+                                    `background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),  url('${row.banner}'); 
+                                     background-repeat: no-repeat; 
+                                     background-size: cover; `
+                                     : ''}"
+                                >
                                 {#if actionsComponent}
                                     <svelte:component this={actionsComponent} data={row} />
                                 {/if}

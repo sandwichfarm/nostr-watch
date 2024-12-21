@@ -66,7 +66,7 @@ export class Service {
     return filters;
   }
 
-  async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+  async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     let { filters, relays, options, hash } = args;
     if(!hash) {
       hash = deterministicHash(args)
@@ -75,7 +75,7 @@ export class Service {
     this.subscriptions.add(hash)
     const result = await this.websocketAdapter.subscribe(message, callbacks);
     this.subscriptions.delete(hash)
-    return result;
+    return typeof result === 'boolean'? []: result;
   }
 
   async unsubscribe(hash: string) {
@@ -92,7 +92,7 @@ export class Service {
     this.websocketAdapter.unsubscribeAll();
   }
 
-  async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+  async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     if(!args.hash) {  
       args.hash = deterministicHash(args);
     }
@@ -193,6 +193,7 @@ export class Service {
     }
 
     const websocketEvents = await this.fetchFromWebsocket(args, _callbacks);
+    console.log('fetchFromWebsocket resolved')
     websocketEvents.forEach(maybeAddEventToMap);
 
     const finalEvents = Array.from(events.values());

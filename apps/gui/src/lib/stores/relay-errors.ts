@@ -4,6 +4,7 @@ export type RelayErrorMessage = string
 export type RelayErrorMessages = RelayErrorMessage[]
 export type RelayErrors = Map<RelayErrorSubject, RelayErrorMessages>
 export type RelaysErrors = Map<string, RelayErrors>
+
 export const relaysErrors: Writable<RelaysErrors> = writable(new Map())
 
 export const getRelayErrors = (relay: string): RelayErrors | undefined => {
@@ -24,6 +25,9 @@ export const setRelayError = (relay: string, subject: RelayErrorSubject, message
     if(typeof messages === 'undefined') messages = [];
     (messages as RelayErrorMessages).push(message)
     relayErrors.set(subject, messages)
+    console.log('n11s relayErrors', relay, relayErrors)
     $relaysErrors.set(relay, relayErrors)
+    console.log('n11s relays errors', $relaysErrors)
     relaysErrors.set($relaysErrors);
+    console.log('n11s relays errors (from store)', get(relaysErrors))
 }

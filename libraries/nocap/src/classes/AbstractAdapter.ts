@@ -2,10 +2,13 @@ import { IAdapter, TAdapterCount } from '../interfaces/IAdapter';
 import Base from '../classes/Base';
 import { ICounts } from './Counter';
 
+export type AdapterType = 'websocket' | 'dns' | 'geo' | 'info' | 'ssl';
+
 export abstract class AbstractAdapter implements IAdapter {
   protected _base: Base;
+  static type: AdapterType;
   public count!: TAdapterCount;
-
+  
   constructor(base: Base) {
     this._base = base;
     this.initialize();

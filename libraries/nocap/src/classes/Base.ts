@@ -1089,14 +1089,11 @@ on_event(subid: string, ev: any): void {
    * @param Adapter - The Adapter class to use
    */
   async useAdapter(Adapter: IAdapterConstructor): Promise<void> {
-    const name = Adapter.name;
-    const adapterKey = this.getAdapterType(name);
-    
-    if (this.adapters?.[adapterKey]) {
-      throw new Error(`${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.getAdapterName(this.adapters?.[adapterKey])}`);
+    const { type } = Adapter;
+    if (this.adapters?.[type]) {
+      throw new Error(`${type.charAt(0).toUpperCase() + type.slice(1)} Adapter has already been initialized with ${this.getAdapterName(this.adapters?.[type])}`);
     }
-
-    this.adapters[adapterKey] = new Adapter(this as Base); 
+    this.adapters[type] = new Adapter(this as Base); 
   }
 
 
@@ -1125,73 +1122,14 @@ on_event(subid: string, ev: any): void {
     }
   
     for (const Adapter of adapterArray) {
-      const name = Adapter.name;
-      const adapterKey = this.getAdapterType(name);
-  
-      if (this.adapters[adapterKey]) {
+      const { type } = Adapter;
+      if (this.adapters[type]) {
         throw new Error(
-          `${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.adapters[adapterKey].constructor.name}`
+          `${type.charAt(0).toUpperCase() + type.slice(1)} Adapter has already been initialized with ${this.adapters[type].constructor.name}`
         );
       }
-  
-      this.adapters[adapterKey] = new Adapter(this);
+      this.adapters[type] = new Adapter(this);
     }
-  }
-  
-
-  // /**
-  //  * defaultAdapterKeys
-  //  * Retrieves the default keys for adapters
-  //  * 
-  //  * @private
-  //  * @returns - The array of default adapter keys
-  //  */
-  // async defaultAdapterKeys(EveryDefaultAdapter: IEveryAdapterDefault): Promise<string[]> {
-  //   return Object.keys(EveryDefaultAdapter);
-  // }
-
-  // /**
-  //  * Initializes the default adapters
-  //  * 
-  //  * @private
-  //  * @returns The initialized adapters
-  //  */
-  // async defaultAdapters(): Promise<Record<string, IAdapter>> {
-  //   this.logger?.debug('defaultAdapters()');
-    
-  //   if (this.adaptersInitialized) return this.adapters;
-    
-  //   const EveryDefaultAdapterModule = await import('@nostrwatch/nocap-every-adapter-default') as IEveryAdapterDefault;
-  //   const keys = await this.defaultAdapterKeys(EveryDefaultAdapterModule);
-    
-  //   for (const adapterKey of keys) {
-  //     const adapterType = this.getAdapterType(adapterKey);
-      
-  //     if (!this.adapters[adapterType]) {
-  //       const AdapterClass = EveryDefaultAdapterModule[adapterKey];
-  //       this.adapters[adapterType] = new AdapterClass(this);
-  //     }
-  //   }
-    
-  //   this.adaptersInitialized = true;
-  //   return this.adapters;
-  // }
-
-  /**
-   * getAdapterType
-   * Helper that determines the type of an adapter based on its class name
-   * 
-   * @private
-   * @param {string} adapterName - The name of the adapter
-   * @returns {string} - The type of the adapter
-   */
-  getAdapterType(adapterName: string): string {
-    let type: string | undefined;
-    this.adaptersValid.forEach(adapterKey => {
-      if (adapterName.toLowerCase().startsWith(adapterKey)) type = adapterKey;
-    });
-    if (typeof type === 'undefined') throw new Error(`Adapter ${adapterName} is not a valid adapter`);
-    return type;
   }
 
   /**

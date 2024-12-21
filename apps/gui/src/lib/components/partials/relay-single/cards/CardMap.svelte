@@ -10,7 +10,7 @@
 
 
 {#if monitors.length && checks.length}
-<Card.Root>
+<Card.Root class="relay-card">
     <Card.Header>
         <Card.Title>Checks Map</Card.Title>  
         <Card.Description>A map showing where monitors reported from</Card.Description>

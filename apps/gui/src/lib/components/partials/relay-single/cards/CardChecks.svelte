@@ -9,7 +9,7 @@
 </script>
 
 {#if checks.length}
-<Card.Root>
+<Card.Root class="relay-card">
     <Card.Header>
         <Card.Title>Checks</Card.Title>  
         <!-- <Card.Description>Card Description</Card.Description> -->

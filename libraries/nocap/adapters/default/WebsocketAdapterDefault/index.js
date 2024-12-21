@@ -96,11 +96,17 @@ class WebsocketAdapterDefault {
    * @private
    * @returns null
    */
-  handle_nostr_event(buffer){
+  handle_nostr_event(message: Buffer | string){
     this.$.logger.debug(`${this.$.url}: WebsocketAdapterDefault.handle_nostr_event()`)
     let ev 
     try{
-      ev = JSON.parse(buffer.toString())
+      const messageType = (message instanceof Buffer)? 'buffer': typeof buffer;
+      if(messageType === 'string') {
+        ev = JSON.parse(message)
+      }
+      else if(messageType === 'buffer') {
+        ev = JSON.parse(message.toString())
+      }
     } 
     catch(e){
       const err = `${this.$.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`

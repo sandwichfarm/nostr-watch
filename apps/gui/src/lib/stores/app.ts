@@ -2,12 +2,21 @@ import { StateManager } from "@nostrwatch/nip66";
 import type { Readable, Writable } from "svelte/store";
 import { readable, writable, derived, get } from "svelte/store";
 import { formatSeconds, timeAgo } from "../utils/time";
+import { nip66 } from "./nip66";
+import { delay } from "@nostrwatch/utils";
 
 
+export const nip66Initialized: Readable<boolean> = derived( nip66, ($nip66) => $nip66?.initialized? true: false )
 export const unsupported: Writable<boolean> = writable(false)
 export const isLivesyncing: Writable<boolean> = writable(false)
 export const isBootstrapping: Writable<boolean> = writable(false)
 export const lastCompleteSync: Writable<number> = writable(StateManager.get('lastCompleteSync') ?? 0)
+
+export const nip66Ready = async () => {
+    while(!get(nip66Initialized)) {
+        await delay(200);
+    }
+}
 
 StateManager.on('wipe', () => { lastCompleteSync.set(0) })
 

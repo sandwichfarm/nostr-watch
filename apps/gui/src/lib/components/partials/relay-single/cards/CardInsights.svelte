@@ -64,7 +64,7 @@
     $: hasInsights = usageCountSoftware || usageCountVersion || usageCountIsp || usageCountGeocode
 </script>
 {#if hasInsights}
-<Card.Root>
+<Card.Root class="relay-card">
     <Card.Header>
         <Card.Title class="flex flex-nowrap">
             <span class="flex">

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import Stats from '$lib/components/blocks/Stats.svelte';
-    import DataTable from '$lib/components/blocks/table/DataTable.svelte';
+    import Stats from '$lib/components/layout/Stats.svelte';
+    import DataTable from '$lib/components/lists/table/DataTable.svelte';
     import MonitorsActions from '$lib/components/partials/MonitorActions.svelte';
     import * as Alert from "$lib/components/ui/alert/index.js";
     import { type Monitor } from "@nostrwatch/nip66/models"
@@ -13,8 +13,9 @@
     import { doBootstrap } from '$lib/stores/routines';
     import { doAggregateCache } from '$lib/stores/app';
     import { writable, type Writable } from 'svelte/store';
-    import type { Formatters } from 'src/lib/config/dataTable/monitors';
+    import type { Formatters } from '$lib/config/dataTable/monitors';
     import { nip66 } from '$lib/stores';
+	import { nip66Ready } from '$lib/stores/app';
 
     type DataTableConfig = { 
         columnsDisable: string[]
@@ -55,8 +56,7 @@
         doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
-        await $nip66.ready()
-        $nip66.services.monitors.ensureMonitorsActive()
+        // nip66Ready().then( () => $nip66.services.monitors.ensureMonitorsActive()  )
     });
 
     onDestroy(() => {

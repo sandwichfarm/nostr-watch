@@ -39,7 +39,7 @@
     $: name = profile?.name ?? undefined
 </script>
 {#if pubkey}
-<Card.Root>
+<Card.Root class="relay-card">
     <Card.Header>
         <Card.Title>Operator</Card.Title>  
         <!-- <Card.Description>A map showing where monitors reported from</Card.Description> -->
@@ -47,13 +47,16 @@
     <Card.Content class="">
         {#if profile && pubkey}
         <ProfileCompact {pubkey} {profile}  />
+        {#if profile?.about}
+        <p class="mt-2 p-4 bg-white/5 line-clamp-6">{profile?.about}</p>
         {/if}
-        <!-- {#if otherRelaysCount > 0} -->
+        {/if}
+        {#if otherRelaysCount > 0}
         <div class="text-white/80 my-6">
             {name} operates <Badge class="rounded-full">{otherRelaysCount}</Badge> other relays
         </div>
         <OperatorRelays {pubkey} {relayUrl} {monitors} bind:otherRelaysCount />
-        <!-- {/if} -->
+        {/if}
     </Card.Content>
 </Card.Root>
 {/if}

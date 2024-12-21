@@ -31,6 +31,7 @@ export default class {
     private _adapters: IAdaptersArgument,
     // private relayUrls: string[]
   ) {
+    console.log(`Nip66 Core Initialized`)
     if(_adapters?.websocketAdapter)
       this.useAdapter(_adapters.websocketAdapter)
     if(_adapters?.cacheAdapter)
@@ -111,11 +112,11 @@ export default class {
     if(typeof adapter === 'function') {
       return console.warn('Adapter should be an instantiated CacheAdapter or WebsocketAdapter')
     }
-    if(this.isCacheAdapter(adapter)){
+    if(this.isCacheAdapter(adapter) && !this?.cacheAdapter){
       this.cacheAdapter = adapter as ICacheAdapter
       return
     }
-    if(this.isWebsocketAdapter(adapter)){
+    if(this.isWebsocketAdapter(adapter) && !this?.websocketAdapter){
       this.websocketAdapter = adapter as IWebsocketAdapter
       return
     } 

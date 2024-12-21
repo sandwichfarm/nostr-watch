@@ -33,8 +33,8 @@
 
 	const loadComponents = async () => {
 		const imports = [
-			import('$lib/components/blocks/Stats.svelte'),
-			import('$lib/components/blocks/table/DataTable.svelte'),
+			import('$lib/components/layout/Stats.svelte'),
+			import('$lib/components/lists/table/DataTable.svelte'),
 			import('$lib/config/dataTable/relays.js')
 		];
 

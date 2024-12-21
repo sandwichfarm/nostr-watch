@@ -4,7 +4,8 @@ import {
   type IResult, 
   type IAdapter,
   type Nocap as Base,
-  type IResultData
+  type IResultData,
+  AdapterType
 } from '@nostrwatch/nocap';
 
 const resultTpl: IResultData = { data: null, duration: -1 };
@@ -29,6 +30,8 @@ const error = (message: string, data: Record<string, any> = {}): IResultData => 
 };
 
 export class DnsAdapterDefault extends AbstractAdapter implements IAdapter {
+
+  static type: AdapterType = 'dns';
   
   constructor(parent: Base){ 
     super(parent);

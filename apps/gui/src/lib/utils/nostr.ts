@@ -26,11 +26,15 @@ export const isHex = (value: string): boolean => {
 }
 
 export const formatNip =( number: number | string): string  => {
+    return `NIP-${nipLeadingZero(number)}`;
+}
+
+export const nipLeadingZero =( number: number | string): string  => {
     if (typeof number === 'string') {
         number = parseInt(number);
     }
     if (number > 0 || number <= 9) {
         number = number.toString().padStart(2, '0')
     }
-    return `NIP-${number}`;
+    return typeof number === 'string'? number: number.toString()
 }

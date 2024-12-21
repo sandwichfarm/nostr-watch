@@ -48,6 +48,9 @@ export const defaultSuiteTestResult: ISuiteTestResult = {
 export interface ISuiteTest {
   slug: string;
   data: any;
+  events: Note[];
+  resulter: SuiteTestResulter;
+  addEvent(event: Note): void;
   run(): any;
   _onMessageEvent(message: RelayEventMessage): boolean;
   test(methods: Expect): void;
@@ -62,18 +65,18 @@ export abstract class SuiteTest implements ISuiteTest {
     showNamespace: false
   }); 
   private _expect: Expect = new Expect();
+  private _events: Note[] = [];
+  private timeout: ReturnType<typeof setTimeout> = null;
 
   protected suite: ISuite;
   protected result?: ISuiteTestResult;
-  protected resulter: SuiteTestResulter = new SuiteTestResulter(defaultSuiteTestResult);
   protected sampler?: Sampler;
   protected ingestor: Ingestor;
-
   protected subId: string = generateSubId();  
-
   protected notices: RelayNoticeMessage[] = [];
-  private timeout: ReturnType<typeof setTimeout> = null;
   protected timeoutMs: number = 10000;
+
+  public resulter: SuiteTestResulter = new SuiteTestResulter(defaultSuiteTestResult);
   
   testParams: Record<string, any> = {};
   data: any = {};
@@ -98,6 +101,14 @@ export abstract class SuiteTest implements ISuiteTest {
 
   get state(): SuiteState {
     return this.suite.state;
+  }
+
+  get events(): Note[] {
+    return this._events;
+  }
+
+  addEvent(event: Note) {
+    this._events.push(event);
   }
 
   protected get expect(): Expect {
@@ -194,16 +205,7 @@ export abstract class SuiteTest implements ISuiteTest {
     this.expect.evaluateConditions(true);
     await this.prepare();
     this.finish();
-    return this.resulter.result
   }
-
-  // public logCode(type: ISuiteCodeTypes, plainLanguageCode: string, result: boolean): void {
-  //   this.suite.logCode(type, plainLanguageCode, result);
-  // }
-
-  // public getCode(type: ISuiteCodeTypes, plainLanguageCode: string): boolean | null | undefined {
-  //   return this.suite.getCode(type, plainLanguageCode);
-  // }
 
   protected newSubId() {
     this.subId = generateSubId()
@@ -232,7 +234,7 @@ export abstract class SuiteTest implements ISuiteTest {
     const { passing, passed, failed, skipped, errors } = this.expect;
     const passrate = passed.length / (passed.length + failed.length);
     const pass = passing
-    const { filters, notices } = this;
+    const { filters, notices, events } = this;
     const result = {
       testKey: this.suite.testKey,
       pass,
@@ -242,7 +244,8 @@ export abstract class SuiteTest implements ISuiteTest {
       skipped,
       failed,
       errors,
-      notices
+      notices,
+      events
     } as ISuiteTestResult;
 
     if(skipped.length) {
@@ -255,13 +258,11 @@ export abstract class SuiteTest implements ISuiteTest {
     this.resulter.set(result as ISuiteTestResult);
   }
 
-  // passed(): void {}
-
   abort() {
     this.socket.terminate();
   }
 
-  onNOTICE(notice: RelayNoticeMessage) {
+  onMessageNotice(notice: RelayNoticeMessage) {
     this.notices.push(notice);
   }
 
@@ -274,12 +275,6 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   _onMessageEvent(message: RelayEventMessage): boolean  {
-    //this should fire if EOSE was not recieved. 
-    // if(this.completeOn.includes("maxEvents") && this.totalEvents >= this.maxEvents) {
-    //   this.test(this.expect);
-    //   this.conclude()
-    //   return false;
-    // }
     this.totalEvents++;
     return true;
   }

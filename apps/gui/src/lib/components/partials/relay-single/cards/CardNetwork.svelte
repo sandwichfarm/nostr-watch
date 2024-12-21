@@ -12,7 +12,7 @@
 </script>
 
 {#if isp}
-<Card.Root>
+<Card.Root class="relay-card">
     <Card.Header>
         <Card.Title>Network</Card.Title>  
         <Card.Description>Card Description</Card.Description>
@@ -51,7 +51,6 @@
         </div>
     </Card.Content>
     <Card.Footer>
-        <p>Card Footer</p>
     </Card.Footer>
 </Card.Root>
 {/if}

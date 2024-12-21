@@ -4,14 +4,15 @@ import {
   AbstractAdapter,
   type Nocap as Base, 
   type IAdapter,
-  CompatibleWebSocket
+  CompatibleWebSocket,
+  AdapterType
 } from '@nostrwatch/nocap';
-import { isBrowser } from '@nostrwatch/utils';
 
 export { TorWebSocket };
 
 class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   count: { event: number };
+  static type: AdapterType = 'websocket';
 
   constructor(parent: Base) {
     super(parent);
@@ -78,11 +79,17 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
     }
   }
 
-  handle_nostr_event(buffer: any): void {
+  handle_nostr_event(message: Buffer | string): void {
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event()`);
     let ev: any;
-    try {
-      ev = JSON.parse(buffer.toString());
+    try{
+      const messageType = (message instanceof Buffer)? 'buffer': typeof message;
+      if(messageType === 'string') {
+        ev = JSON.parse(message as string)
+      }
+      else if(messageType === 'buffer') {
+        ev = JSON.parse((message as Buffer).toString())
+      }
     } catch (e) {
       const err = `${this.base.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`;
       this.base?.logger?.err(err);

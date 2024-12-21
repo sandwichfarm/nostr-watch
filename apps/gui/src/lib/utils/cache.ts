@@ -1,6 +1,6 @@
 import type Nip66 from '@nostrwatch/nip66';
 import { get } from 'svelte/store';
-import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded } from '../stores/app';
+import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded, nip66Ready } from '../stores/app';
 import { instance, stopLiveSync } from './lifecycle';
 import { StateManager } from '@nostrwatch/nip66';
 import { delay } from '@nostrwatch/utils';
@@ -12,6 +12,7 @@ export interface LocalStorageUsage {
 }
 
 export const wipeCache = async () => {
+    await nip66Ready()
     const $nip66 = await instance();
     await abortWebsocket($nip66);
     await wipeCacheAdapter($nip66);

@@ -9,7 +9,7 @@
 </script>
 
 {#if version || geocode}
-    <Card.Root>
+    <Card.Root class="relay-card">
         <Card.Header>
             <Card.Title>General</Card.Title>  
             <Card.Description>Card Description</Card.Description>
@@ -19,7 +19,6 @@
             <RelayCountry {geocode} />
         </Card.Content>
         <Card.Footer>
-            <p>Card Footer</p>
         </Card.Footer>
     </Card.Root>
 {/if}

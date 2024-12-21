@@ -4,7 +4,7 @@
     import { instance, destroy } from '$lib/utils/lifecycle.js';
     import { wipeCache } from '$lib/utils/cache.js';
 	import type Nip66 from '@nostrwatch/nip66'
-	import Stats from '$lib/components/blocks/Stats.svelte';
+	import Stats from '$lib/components/layout/Stats.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 
     let Nip66Instance: Nip66 | null;

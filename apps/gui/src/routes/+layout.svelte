@@ -5,7 +5,7 @@ import { goto } from '$app/navigation';
 import { onMount, getContext, onDestroy } from 'svelte';
 import { doBootstrap } from '$lib/stores/routines.js';
 
-import Header from '$lib/components/blocks/Header.svelte';
+import Header from '$lib/components/layout/Header.svelte';
 import { instance, bootstrap, seedFromCache } from '$lib/utils/lifecycle';
 import { get, writable, type Writable } from 'svelte/store';
 import { eventsArray } from '$lib/stores/events';
@@ -17,10 +17,13 @@ import { delay } from '@nostrwatch/utils';
 import { getBrowserInfo } from '$lib/utils/compat.js';
 import { StateManager } from '@nostrwatch/nip66';
 import { unsupported } from '$lib/stores/app';
+import type Nip66 from '@nostrwatch/nip66'
 
 const isLeader: Writable<boolean> = writable(false);
 
 const lifecycle = createTabLifecycle();
+
+let nip66: Nip66;
 
 lifecycle.onStartLeader(async () => {
   isLeader.set(true);
@@ -31,7 +34,7 @@ lifecycle.onStartLeader(async () => {
 
 lifecycle.onReleaseLeader(async () => {
   console.log("Leader tab: Releasing..."); 
-  const nip66 = await instance();
+  nip66 = await instance();
   console.log("Leader tab: awaiting ready..."); 
   await nip66.ready();
   console.log("Leader tab: ready, awaiting shutdown..."); 
@@ -67,16 +70,15 @@ const unsubscribe = () => {
     unsubs.forEach(unsub => unsub());
 }
 
-const loadData = async () => {
+const loadData = () => {
     if(!$doBootstrap) {
       ( async () => {
-        const n66: Nip66 = await instance()
-        await n66.ready();
-        await n66.adapters.cacheAdapter.ready();
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        console.log('!!! SEEDING FROM CACHE')
+        // if(nip66) return;
+        // nip66 = await instance()
+        // await nip66.ready();
+        // await nip66.adapters.cacheAdapter.ready();
+        // await new Promise(resolve => setTimeout(resolve, 1000));
         await seedFromCache();
-        console.log('!!! SEEDED FROM CACHE', $eventsArray.length)
       })()
     } else if(!busy) {
       busy = true
@@ -105,6 +107,8 @@ onDestroy(unsubscribe);
 onMount(async () => {
     
     checkSupport()
+
+    if($unsupported) return;
     
     const version = StateManager.get('version')
     if(!version || version !== 2) { //TODO NEED A LOCAL STORAGE SCHEMA VERFSIONING SYSTEM!!!
@@ -137,9 +141,9 @@ $effect(() => {
 {@render children()}
 </div>
 {:else}
-<div class="flex flex-col items-center justify-center h-screen">
+<div class="flex flex-col items-center justify-center h-screen px-4">
   <div class="text-2xl">Another Session Detected</div>
-  <div class="text-lg">Please wait while the existing session is terminated.</div>
+  <div class="text-lg text-center">Please wait while the existing session is terminated.</div>
 </div>
 {/if}
 

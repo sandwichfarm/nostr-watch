@@ -37,6 +37,7 @@ export default defineConfig({
     ]
   },
   build: {
+    minify: 'terser', 
     assetsInlineLimit: 0,
     rollupOptions: {
       output: {
@@ -61,6 +62,9 @@ export default defineConfig({
     esbuildOptions: {
       target: "esnext",
     },
+    exclude: [
+      'svelte-speedometer'
+    ]
   },
   plugins: [
     sveltekit(),

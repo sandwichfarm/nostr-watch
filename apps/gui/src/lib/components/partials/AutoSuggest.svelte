@@ -131,12 +131,7 @@
       table.column({
         header: "ISP",
         accessor: "isp",
-      }),
-      // table.column({
-      //   header: "Supported NIPs",
-      //   accessor: "supportedNips",
-      //   cell: ({ value }) => value.join(", "),
-      // }),
+      })
     ]);
 
     const viewModel = table.createViewModel(columns);
@@ -157,7 +152,7 @@
     on:input={handleSearch}
     on:keydown={handleKeyDown}
     placeholder="Search for relay, operator pubkey, ISP, or NIPs"
-    class="w-full p-2 border border-black/10 rounded-t-md dark:bg-black/5 dark:border-black/10 dark:text-white/60 focus:border-transparent focus:ring-0"
+    class="w-full p-2 mr-4 border border-black/10 rounded-t-md dark:bg-black/5 dark:border-black/10 dark:text-white/60 focus:border-transparent focus:ring-0"
   />
 
   {#if mode === 'compact'}

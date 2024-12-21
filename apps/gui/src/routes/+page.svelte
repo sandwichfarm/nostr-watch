@@ -13,7 +13,7 @@
   });
 
   $: isHomepage = $page.url.pathname === '/'
-  $: loadedEnough = hasBeenBoostrapped() || $totalMonitors.size > 1
+  $: loadedEnough = hasBeenBoostrapped() || $totalMonitors > 1
 </script> 
 
 {#if isHomepage}

@@ -21,7 +21,7 @@
 
 
 {#if keysLength > 0}
-<Card.Root>
+<Card.Root class="relay-card">
     <Card.Header>
         <Card.Title>Fee Schedule</Card.Title>  
         <Card.Description></Card.Description>

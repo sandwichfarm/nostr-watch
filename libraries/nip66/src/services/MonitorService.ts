@@ -219,15 +219,10 @@ export class MonitorService extends Service {
 
   async bootstrap(): Promise<void> {
     await this.bootstrapMonitors();
-    await this.bootstrapMonitorsChecks().then( async () => {
-      //console.log('!!! FETCH MONITORS CHECKS RESOLVED') 
-      // this.fetchDisabledMonitorsChecks().then( () => { 
-      //   //console.log('!!! FETCH DISABLED MONITORS CHECKS RESOLVED') 
-      // });
-    });
+    await this.bootstrapMonitorsChecks();
   }
 
-  async bootstrapMonitorsChecks(): Promise<IEvent[] | boolean | undefined> {  
+  async bootstrapMonitorsChecks(options?: Partial<WebsocketAdapterOptions>): Promise<IEvent[] | boolean | undefined> {  
     StateManager.emit('activity', 'monitors/bootstrap/checks', 'begin')
     let value = 0
     const onevent = (event: IEvent) => {
@@ -240,7 +235,7 @@ export class MonitorService extends Service {
       value += events.length
       StateManager.emit('activity', 'monitors/bootstrap/checks', 'update', { value })
     }
-    const result = await this.syncMonitorsChecks(undefined, true, { onevent, onevents });
+    const result = await this.syncMonitorsChecks(options, true, { onevent, onevents });
     StateManager.emit('activity', 'monitors/bootstrap/checks', 'finish', result)
     return result;
   }

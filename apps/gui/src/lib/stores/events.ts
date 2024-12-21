@@ -16,15 +16,15 @@ export const eventsArray: Readable<Nip66Event[]> = derived(
     }
 )
 
-export const totalMonitors: Readable<Set<string>> = derived(    
+export const totalMonitors: Readable<number> = derived(    
     eventsArray,
-    ($events): Set<string> => {
+    ($events): number => {
         const monitors: Set<string> = new Set();
         $events.forEach(event => {
             if(event.kind !== 30166) return;
             monitors.add(event.pubkey);
         })
-        return monitors;
+        return monitors.size;
     }
 )
 

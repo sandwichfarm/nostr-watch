@@ -116,9 +116,8 @@ export class Auditor {
     for (const suite of suites) { 
         try {
             const Suite = await nipManifest?.[suite]?.()
-            this.logger.info(`Auditor: suite ${suite} loaded.`);
-            if(Suite) console.log('suite', Suite)
             if(!Suite) continue;
+            this.logger.info(`Auditor: suite ${suite} loaded.`);
             const $Suite = new Suite.default(this.ws as WebSocket);
             console.log('$suite', $Suite)
             if (!$Suite.pretest) {

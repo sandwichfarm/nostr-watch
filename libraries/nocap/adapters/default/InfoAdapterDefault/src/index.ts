@@ -5,7 +5,8 @@ import {
   AbstractAdapter, 
   type IResultData,
   type IAdapter,
-  type Nocap as Base
+  type Nocap as Base,
+  AdapterType
 } from '@nostrwatch/nocap';
 
 const resultTpl: IResultData = { data: null, duration: -1 };
@@ -17,6 +18,8 @@ const error = (message: string, data: Record<string, any> = {}): IResultData => 
 };
 
 export class InfoAdapterDefault extends AbstractAdapter implements IAdapter {
+
+  static type: AdapterType = 'info';
   
   constructor(parent: Base) { 
     super(parent);

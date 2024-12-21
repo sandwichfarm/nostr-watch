@@ -23,6 +23,7 @@
         });
         nocap.useAdapters([WebsocketAdapter]);
         const result = await nocap.check('open' as CheckKey);
+        console.log('speedcard result', result)
         speed.set(result.open.duration);
         success.set(result.open.data)
         nocap = null;
@@ -49,6 +50,7 @@
     });
 
     $: value = $speed ? Math.round($speed) : null;
+    $: isMaximum = (value || 0) > 3000;
     $: width = $speedometerWidth;
 </script>
 
@@ -58,16 +60,56 @@
     }
 </style>
 
-<Card.Root>
+<Card.Root class="relay-card">
     <Card.Header>
         <Card.Title>Speed</Card.Title>
     </Card.Header>
     <Card.Content class="speedometer-container">
         {#if $success}
-        <div bind:this={container}>
+        <div bind:this={container} class="text-center">
             {#if value}
-                <Speedometer {value} {width} />
-                <div>{value}ms</div>
+                <Speedometer 
+                    value={value<=3000? value: 3000} 
+                    {width} 
+                    startColor="green"
+                    endColor="red"
+                    needleColor="purple"
+                    labelFontSize="30px"
+                    currentValueText=" "
+                    valueTextFontSize="50px"
+                    textColor="#FFF"
+                    minValue="0"
+                    maxValue="3000"
+                    customSegmentLabels={[
+                        {
+                          text: "🔥 ",
+                          position: "OUTSIDE"
+                        },
+                        {
+                          text: "",
+                          position: "INSIDE"
+                        },
+                        {
+                          text: "",
+                          position: "INSIDE",
+                          color: "#555",
+                          fontSize: "19px",
+                        },
+                        {
+                          text: "",
+                          position: "INSIDE",
+                          color: "#555",
+                        },
+                        {
+                          text: "🐢",
+                          position: "OUTSIDE",
+                          color: "#555",
+                        }
+                    ]}
+                    />
+                <span class="inline-block text-white/90 font-bold text-6xl">
+                    {value}ms
+                </span>
             {:else}
                 <div>connecting...</div>
             {/if}

@@ -10,8 +10,8 @@ export interface Nip50Filter extends INip01Filter {
   search: string;
 }
 
-export class Search extends SuiteTest implements ISuiteTest {
-  readonly slug: string = 'Search';
+export class SameCaseSearch extends SuiteTest implements ISuiteTest {
+  readonly slug: string = 'SameCaseSearch';
   contentsRecievedWithTerms: string[] = [];
   searchTermsToFilter: string[] = [];
   completeOn: CompleteOnTypeArray = ['off'];
@@ -56,4 +56,4 @@ export class Search extends SuiteTest implements ISuiteTest {
   }
 }
 
-export default Search;
+export default SameCaseSearch;

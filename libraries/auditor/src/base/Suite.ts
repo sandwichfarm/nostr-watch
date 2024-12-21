@@ -96,9 +96,6 @@ export abstract class Suite implements ISuite {
   });
   private _sampler: Sampler;
   private _ingestors: Ingestor[] = [];
-  
-
-  // public readonly slug: string = "NipXX";
 
   protected ajv = new Ajv();
   protected ws: WebSocket;
@@ -225,8 +222,9 @@ export abstract class Suite implements ISuite {
     for(const test of Object.entries(this.testers)) {
       const [testName, suiteTest] = test;
       Emitter.emit('auditor.suite.test:start', this.slug, testName);
-      const results = await suiteTest.run();
-      console.log('suite test finished', results)
+      await suiteTest.run();
+      const results = suiteTest.resulter.result;
+      console.log('the results', results)
       Emitter.emit('auditor.suite.test:finish', this.slug, results);
       this.resulter.set('tests', testName, results);
       if(suiteTest?.data !== null) {
@@ -268,13 +266,22 @@ export abstract class Suite implements ISuite {
     const message: INip01RelayMessage = JSON.parse(data);
     const key = message[0];
 
+    const testInstance = this?.testers?.[this.testKey] as ISuiteTest;
+
     this.validateMessage(message);
 
     const messageArr = this.messages.get(key) ?? [];
     this.messages.set(key, [...messageArr, message]);
 
-    if(key === 'NOTICE') {
+    console.log('wtf', key, message)
+
+    if(key == 'NOTICE') {
       this.logger.custom('notice', message[1], 3);
+    }
+
+    if(key == 'EVENT'){
+      this.logger.custom('notice', `pushing event ${message[2].id}`);
+      testInstance.addEvent(message[2]);
     }
 
     let suiteHandler = (this[`onMessage${capitalize(key)}` as keyof typeof this] as unknown as MessageHandler<any>)
@@ -282,8 +289,7 @@ export abstract class Suite implements ISuite {
       suiteHandler = suiteHandler.bind(this);
       suiteHandler(message as any);
     }
-
-    const testInstance = this?.testers?.[this.testKey] as ISuiteTest;
+    
     let qualifiedTestHandler = (testInstance?.[`_onMessage${capitalize(key)}` as keyof typeof testInstance] as QualifyingMessageHandler<any>)
     let resume: boolean = true;
     if (qualifiedTestHandler) {

@@ -8,7 +8,7 @@
   
     $: isHomepage = $page.url.pathname === '/';
     $: isBootstrapped = hasBeenBoostrapped();
-    $: loadedEnough = hasBeenBoostrapped() || $totalMonitors.size > 1
+    $: loadedEnough = hasBeenBoostrapped() || $totalMonitors > 1
 </script>
 
 <header id="site-header">
@@ -24,7 +24,7 @@
     {#if !isHomepage && (loadedEnough || !$doBootstrap) && !$unsupported}
     <div class="search-container">
         <search>
-            <AutoSuggestRelays />        
+            <AutoSuggestRelays maxResults={6} />        
         </search>
     </div>
     {/if}
@@ -52,10 +52,10 @@
     }
 
     .search-container {
-        @apply ml-auto mr-4 w-96 backdrop-blur-lg;
+        @apply ml-auto mr-4 w-96;
     }
 
     search {
-        @apply block backdrop-blur-lg;
+        @apply block;
     }
 </style>

@@ -66,7 +66,6 @@ export const nip11s = derived(
     const totalWithotLocal = nip66Nip11s - localNip11s
 
     if( totalWithotLocal > 0 && hasBeenBoostrapped() && hasBeenSeeded() && get(doAggregateCache) === true ) {
-      console.log('!!! HAS BEEN BOOTSTRAPPED AND SEEDED')
       StateManager.set('aggregate:nip11s', compress(
         Array.from(nip11Map.entries()).map(([relay, entries]) => [relay, entries.map((nip11: Nip11) => nip11.json)])
       ));

@@ -24,7 +24,6 @@ self.onmessage = ({ data }) => {
         .then((nip11: nip11.RelayInformation) => {
             if(timedOut) return;
             clearTimeout(timeout)
-            console.error('CHECK CATCH RESOLVE', error)
             self.postMessage({ relay, nip11 } as Nip11ServiceMessage)
         })
         .catch((error: any) => { 

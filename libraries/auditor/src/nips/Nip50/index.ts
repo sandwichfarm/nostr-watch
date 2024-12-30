@@ -1,4 +1,4 @@
-import type { WebSocketWrapper as WebSocket } from '#base/WebSocketWrapper.js';
+import type { WebSocketWrapper as WebSocket } from '@nostrwatch/websocket';
 
 import { Suite } from '#base/Suite.js';
 import type { ISuite } from '#base/Suite.js';

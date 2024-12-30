@@ -67,7 +67,6 @@ export const bindLiveSubscriptionEmitters = () => {
         throw new Error('Invalid nip66Instance: missing `on` method.');
     }
     $nip66.on('event', (event: any) => {
-        // console.log('Svelte Received event:', event.id);
         const key = eventKey(egitvent);
         if (!key) return;
         events.update((currentEvents: Map<string, any>) => {
@@ -171,6 +170,7 @@ export const bootstrap = async () => {
             isBootstrapping.set(false)
             updateLastSync()
             beginLiveSync({ onevents })
+            removeStaleChecksFromStore()
         })
     }
     else {
@@ -179,14 +179,12 @@ export const bootstrap = async () => {
         // await $nip66?.adapters?.cache.ready();
         await new Promise( (resolve) => setTimeout(resolve, 1000) ) 
         //
-        seedFromCache($nip66).then( () => {
+        seedFromCache().then( () => {
+            removeStaleChecksFromStore()
             if(get(isLivesyncing)) return;
             beginLiveSync({ onevents })
         });
     }
-
-    removeStaleChecksFromStore()
-    
 }
 
 export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {

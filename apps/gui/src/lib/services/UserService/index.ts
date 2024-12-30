@@ -105,21 +105,20 @@ export class UserService extends Service {
                     const fetcher = this.noteRelatives.bind(this)
                     const relatives = await fetcher(user, note)
                     const reactions = relatives.filter(rel => rel.kind === 7);
-                    const zaps = relatives.filter(rel => rel.kind === 9734 || rel.kind === 9321);
+                    const zaps = relatives.filter(rel => rel.kind === 9735 || rel.kind === 9321);
                     const comments = relatives.filter(rel => rel.kind === 1 || rel.kind === 1111);
                     return { reactions, zaps, comments};
                 }
                 return { user, note, fetchRelatives };
             })
-            // .filter( (note: UserFeedItem | undefined) => typeof note !== 'undefined');
     }
 
     async noteRelatives(user: User, note: IEvent): Promise<IEvent[]> {
-        const { id } = note
+        const { id, pubkey } = note
         const filters: Filter[] = [
-            { kinds: [9734, 9321], '#e': [id] },
-            { kinds: [1, 7, 1111], '#e': [id]  },
-            { kinds: [1111], '#E': [id] }
+            { kinds: [9735, 9321], '#e': [id] }, //zaps
+            { kinds: [1, 7, 1111], '#e': [id] }, //commments, mentions
+            { kinds: [1111], '#E': [id] } //NIP-22 comments
         ]
         //console.log('user note relatives', filters)
         const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]

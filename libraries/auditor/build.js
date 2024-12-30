@@ -110,7 +110,6 @@ function generateImportsPlugin({ pattern }) {
 async function dereferenceSchemas() {
     const schemaFiles = [];
 
-    // Phase 1: Find and copy all .schema.json files
     function findSchemaFiles(dir) {
         const files = fs.readdirSync(dir);
         for (const file of files) {
@@ -126,7 +125,6 @@ async function dereferenceSchemas() {
 
     findSchemaFiles(path.resolve('./src'));
 
-    // Phase 1: Copy all schema files to dist/server
     for (const schemaPath of schemaFiles) {
         const relativePath = path.relative(path.resolve('./src'), schemaPath);
         const outputPath = path.resolve('./dist/server', relativePath);
@@ -137,7 +135,6 @@ async function dereferenceSchemas() {
         console.log(`Copied schema to ${outputPath}`);
     }
 
-    // Phase 2: Dereference all schemas in dist/server
     for (const schemaPath of schemaFiles) {
         const relativePath = path.relative(path.resolve('./src'), schemaPath);
         const outputPath = path.resolve('./dist/server', relativePath);
@@ -176,7 +173,6 @@ const inlineDynamicImportsPlugin = {
     setup(build) {
         build.onEnd(async (result) => {
             console.log('Inlining dynamic imports...');
-            // Implement the inlining logic here
         });
     },
 };
@@ -200,7 +196,7 @@ const browserConfig = {
             changeRelativeToAbsolute: true, 
             filter: /src\/base\/Suite.js$/ 
         }),
-        inlineDynamicImportsPlugin, // Added plugin
+        inlineDynamicImportsPlugin,
     ],
 };
 
@@ -214,9 +210,9 @@ const serverConfig = {
     plugins: [
         babelPlugin,
         mockPlugin,
-        resolveDynamicImportsPlugin, // Now only in serverConfig
+        resolveDynamicImportsPlugin,
         ...plugins,
-        inlineDynamicImportsPlugin, // Added plugin
+        inlineDynamicImportsPlugin,
     ],
 };
 
@@ -242,7 +238,6 @@ async function cleanDist() {
 
 async function build() {
     try {
-        // Clean the dist/web and dist/server directories before building
         await cleanDist();
 
         if (isWatchMode) {
@@ -257,11 +252,9 @@ async function build() {
             console.log("Watching for changes in src...");
             watchSrcDirectory();
         } else {
-            // Build browser bundle
             await esbuild.build(browserConfig);
             console.log("Browser build completed.");
 
-            // Verify that the dynamic import file exists
             const nip11Path = path.resolve('./dist/web/nips/Nip11/index.js');
             if (fs.existsSync(nip11Path)) {
                 console.log(`Verified existence of ${nip11Path}`);
@@ -270,10 +263,8 @@ async function build() {
                 throw new Error(`Required file ${nip11Path} is missing.`);
             }
 
-            // Dereference schemas
             await dereferenceSchemas();
 
-            // Build server bundle
             await esbuild.build(serverConfig);
             console.log("Server build completed.");
 

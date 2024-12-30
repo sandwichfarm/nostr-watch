@@ -8,6 +8,7 @@
 	import { Nip66Event } from '@nostrwatch/nip66/models';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import type { Formatters } from 'src/lib/config/dataTable/monitors';
+
 	export const prerender = true;
 
 	let Stats 

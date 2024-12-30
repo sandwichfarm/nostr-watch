@@ -7,7 +7,7 @@ import Logger from '#base/Logger.js';
 import type { ISuite, ISuiteSampleData } from "#base/Suite.js";
 import { generateSubId } from "#src/utils/nostr.js";
 
-import { WebSocketWrapper as WebSocket } from "./WebSocketWrapper.js";
+import { WebSocketWrapper as WebSocket } from "@nostrwatch/websocket";
 
 import { AssertWrap, Expect, type IExpectErrors, type IExpectResults } from "./Expect.js";
 

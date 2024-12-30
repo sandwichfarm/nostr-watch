@@ -32,10 +32,8 @@ export class Nip11Service {
         while(!result && !error){
             result = (get(nip11sLocal) as Map<string, Nip11>)?.get(relay)
             error = getRelayErrorSubject(relay, 'nip11')
-            console.log('n11s relays errors (from store in whjile loop)', get(relaysErrors), getRelayErrorSubject(relay, 'nip11'))
             await new Promise( resolve => setTimeout( resolve, 200 ))
         }
-        console.log('n11s done?!?!?')
         return result;
     }
 

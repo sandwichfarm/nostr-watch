@@ -7,6 +7,7 @@
 	import { observeViewport } from '$lib/utils/ux';
 	import { onDestroy, onMount } from 'svelte';
     import { writable, type Writable } from 'svelte/store';
+    import Bolt11 from 'light-bolt11-decoder';
   
     export let noteExtended: UserFeedItem;
 
@@ -14,7 +15,6 @@
     const _reactions: Writable<IEvent[]> = writable([]);
     const _zaps: Writable<IEvent[]> = writable([]);
     const subscriptions: Set<string> = new Set();
-
 
     const relativesFetched: Writable<boolean> = writable(false);
 
@@ -50,7 +50,6 @@
 
     }
 
-    // Assign the store directly upon component initialization
     onMount(mount)
     onDestroy(destroy)
 
@@ -58,6 +57,12 @@
     $: user = noteExtended.user
     $: name = user?.name || user?.pubkey
     $: animationClass = $relativesFetched? 'animate' : ''
+    $: bolt11s = $_zaps.map(zap => {
+            const b11 = zap.tags.find(tag => tag[0] === 'bolt11')?.[1]
+            if(!b11) return null
+            return Bolt11.decode(b11)
+        }).filter( b11 => b11 !== null )
+    $: zapSum = Math.round(bolt11s.reduce((acc, b11) => acc += parseInt(b11.sections.find( section => section?.name === 'amount')?.value || "0"), 0)/1000)
     
   </script>
 
@@ -70,10 +75,6 @@
         if(event.detail.isIntersecting) fetchRelatives(noteExtended.note.id)
     }}
     >
-    <!-- role="region"  -->
-    <!-- on:mouseover={() => fetchRelatives(noteExtended.note.id)}
-    on:focus={() => {}}
-    on:blur={() => {}} -->
     <div class="text-xs text-gray-400">
             <span class="text-xs text-gray-400">
                 {name} 
@@ -101,7 +102,7 @@
         </div>
         <div class="flex-grow">
             <a href="">⚡</a>
-            {$_zaps.length}
+            {zapSum}
         </div>
         <div class="flex-grow">
             <a href="">🗨</a>

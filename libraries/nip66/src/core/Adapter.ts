@@ -5,6 +5,7 @@ import { LocalStorageWrapper } from './LocalStorageWrapper';
 import type { IEvent } from '@base/interfaces';
 import type { IAdapterWorkerCommand } from '@base/interfaces/IAdapterWorkerCommand';
 import type { AdapterWorkerCommand, AdapterWorkerMessage } from './AdapterWorker';
+import { EventEmitter } from 'tseep';
 
 export interface AdapterMessage {
   type?: string;
@@ -14,15 +15,11 @@ export interface AdapterMessage {
 }
 
 export interface IAdapter {
-  worker?: SharedWorker | Worker; 
   workers?: Workers;
+  worker?: Worker | SharedWorker;
   useWorker: boolean;
 
   newWorker(): Promise<Worker | SharedWorker>;
-
-  // bindWorkerHandlers(): void;
-  // _onMessage(event: MessageEvent): void;
-  // _onError(error: any): void;
 
   ping(): void;
 
@@ -40,18 +37,20 @@ interface WorkerPaths {
   sharedWorkerPath: URL;
 }
 
-
 export abstract class Adapter {
   readonly slug: string = 'Adapter:unset'; 
 
   private _ls: LocalStorageWrapper;
   private _workers?: Workers
+  private _worker?: Worker | SharedWorker;
 
   protected _overloadWorker?: Worker | SharedWorker;
 
   protected _ready: boolean = false;
 
   useWorker: boolean = true;
+
+  protected emitter: EventEmitter = new EventEmitter();
 
   constructor( worker?: Worker | SharedWorker | URL, shared?: boolean ) {
     if (worker instanceof Worker) {
@@ -65,21 +64,6 @@ export abstract class Adapter {
       }
     }
     this._ls = new LocalStorageWrapper(['nip66', this.slug])
-  }
-
-  async shutdown(): Promise<void> {
-    if(this.workers?.cache) {
-      if(this.workers.cache instanceof Worker){
-        this.workers?.cache?.terminate()
-      }
-    }
-  }
-
-  async newWorker(): Promise<any> {
-    if(this?.overloadWorker) {
-      return this.overloadWorker;
-    }
-    throw new Error('Method not implemented.');
   }
 
   get overloadWorker(): Worker | SharedWorker | undefined {
@@ -103,6 +87,59 @@ export abstract class Adapter {
     return this._workers;
   }
 
+  get worker(): Worker | SharedWorker | undefined {
+    return undefined;
+  }
+
+  async healthCheck(): Promise<boolean> {
+    if(this.workers?.cache) {
+      this.ping()
+    }
+    const healthy = await this.pong();
+    return healthy;
+  }
+
+  ping(): void {
+    if(this.workers?.cache instanceof Worker) {
+      this.workers?.cache?.postMessage({ type: 'ping'})
+    }
+    else if (this.workers?.cache instanceof SharedWorker) {
+      this.workers?.cache?.port.postMessage({ type: 'ping' })
+    }
+  }
+
+  async pong(): Promise<boolean> {
+    return new Promise( resolve => {
+      const timeout = setTimeout(() => {
+        resolve(false)
+      }, 1000)
+      const listener = (event: MessageEvent) => {
+        const message = event.data as AdapterMessage;
+        if(message.type == 'pong') {
+          clearTimeout(timeout)
+          resolve(true)
+        }
+      }
+      this.emitter.once('pong', listener)
+    })
+  }
+
+  async shutdown(): Promise<void> {
+    if(this?.worker) {
+      if(this?.worker instanceof Worker){
+        this.worker?.terminate()
+      }
+    }
+    this.emitter.emit('shutdown')
+  }
+
+  async newWorker(): Promise<any> {
+    if(this?.overloadWorker) {
+      return this.overloadWorker;
+    }
+    throw new Error('Method not implemented.');
+  }
+
   async ready(): Promise<void> {
     return;
   }
@@ -112,9 +149,7 @@ export abstract class Adapter {
   }
 
   protected _onMessage(event: MessageEvent): void {
-    ////console.log(`[Adapter:${this.constructor.name}] i/i RECV: <- worker`, event.data)
     const message = event.data as AdapterMessage;
-    this.listenPong(message)
     this.onMessage(message);
   }
 
@@ -125,18 +160,10 @@ export abstract class Adapter {
   protected bindWorkerHandlers(): void {
     console.warn('bindWorkerHandlers is not implemented by class that extends Adapter')
   }
-
-  listenPong(command: AdapterWorkerCommand): void {
-    if(command.type == 'pong') {
-      ////console.log(`[Adapter:${this.constructor.name}] i/i RECV: PONG <- worker`)
-    }
-  }
   
   //overloads
   onMessage(message: AdapterWorkerMessage): void {} 
   onError(): void {}
-
-
 
   encode (json: IEvent[] | IEvent ): ArrayBuffer {
     return Workers.encodeNostrEventArrayAsBuffer(json)

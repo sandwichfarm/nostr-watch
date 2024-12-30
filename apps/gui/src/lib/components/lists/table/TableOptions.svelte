@@ -2,6 +2,8 @@
     import { Nip66Event } from "@nostrwatch/nip66/models";
 	import Checkbox from "../../ui/checkbox/checkbox.svelte";
 	import { StateManager } from "@nostrwatch/nip66";
+	import type { Writable } from "svelte/store";
+	import { capitalize } from "@nostrwatch/utils";
 
     export let tableKey: string;
     export let config: Writable<DataTableConfig | null>;
@@ -47,17 +49,15 @@
 	}
 </script>
 
-{JSON.stringify(config.humanReadableNames)}
-
 {#each availableKeys as key}
 <li>
 	<Checkbox 
-		checked={$config.columnsShow.includes(key)} 
+		checked={$config?.columnsShow.includes(key)} 
 		onCheckedChange={() => toggleColumnShow(key)} 
 		value={key} 
 		class="mr-2"
 	/>
-	{config?.humanReadableNames?.[key] || key}
+	{$config?.humanReadableNames?.[key] || capitalize(key)}
 </li>
 {/each}
 

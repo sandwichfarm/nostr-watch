@@ -15,7 +15,6 @@ let $monitorsMap: Map<string, Monitor>;
 
 monitorsMap.subscribe(value => $monitorsMap = value)
 
-
 type Resolver = (input: any) => any
 
 class SpeedGroupResolver {
@@ -56,13 +55,21 @@ export const normalizeKeys = (keys: DataKeys | string) => {
         return keys.map(k => k.toLowerCase())
 }
 
-export const columnsDisable: DataKeys = ['created_at', 'monitor_pubkey']
+export const columnsDisable: DataKeys = ['id', 'created_at', 'monitorPubkey', 'fees']
 export const filtersDisable: DataKeys = ['as', 'asname']
 
 export const columnsShow: DataKeys = ['relay', 'lastSeen', 'geocode', 'paymentRequired', 'authRequired']
 export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
 
 export const humanReadableNames: NameFormatter = {
+    dd: 'Decimal Degrees',
+    geohash: 'Geohash',
+    ipv4: 'IPv4',
+    ipv6: 'IPv6',
+    as: 'AS',
+    asname: 'AS Name',
+    seenBy: 'Seen By',
+    seenTimes: 'Seen',
     networks: 'Network',
     lastSeen: 'Last Seen',
     supportedNips: 'NIPs',

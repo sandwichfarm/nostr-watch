@@ -1,0 +1,44 @@
+{
+  "name": "@nostrwatch/websocket",
+  "type": "module",
+  "packageManager": "yarn@4.5.1",
+  "main": "./dist/server/index.js",
+  "module": "./dist/web/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    "import": "./dist/web/index.js",
+    "require": "./dist/server/index.js",
+    "node": "./dist/server/index.js",
+    "default": "./dist/web/index.js"
+  },
+  "dependencies": {
+    "@jspm/core": "^2.1.0",
+    "events": "^3.3.0",
+    "globby": "^14.0.2",
+    "https-browserify": "^1.0.0",
+    "modern-isomorphic-ws": "^1.0.5"
+  },
+  "devDependencies": {
+    "@apidevtools/json-schema-ref-parser": "^11.7.2",
+    "@awalgawe/esbuild-typescript-paths-plugin": "^1.0.1",
+    "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@rtvision/esbuild-dynamic-import": "^2.0.2",
+    "@types/debug": "^4.1.12",
+    "@types/events": "^3",
+    "@types/ws": "^8.5.13",
+    "babel-plugin-espower": "^3.0.1",
+    "babelify": "^10.0.0",
+    "esbuild": "^0.24.0",
+    "esbuild-plugin-alias-path": "^2.0.2",
+    "esbuild-plugin-polyfill-node": "^0.3.0",
+    "tsc-alias": "^1.8.10",
+    "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "nip01": "node --no-warnings ./example/nip01.js",
+    "nip50": "node --no-warnings ./example/nip50.js",
+    "build": "tsc && tsc-alias && node build.js",
+    "dev": "tsc --watch & tsc-alias -w & node build.js --watch"
+  }
+}

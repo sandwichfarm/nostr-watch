@@ -426,7 +426,7 @@ export class MonitorService extends Service {
       }
   }
 
-  async beginLiveSync(callbacks?: SubscribeHandlers): Promise<void> {
+  async beginLiveSync(callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     //console.log('!!! beginning live sync')
     const startedAt: number = Math.round(Date.now()/1000);
     const filters: Filter[] = []
@@ -471,7 +471,7 @@ export class MonitorService extends Service {
       callbacks?.onevents?.(events);
     };
     //console.log('HASH', hash)
-    this.subscribe({ filters, relays, options, hash }, { onevents });
+    return this.subscribe({ filters, relays, options, hash }, { onevents });
   }
 
   async stopLiveSync(): Promise<void> {
@@ -593,8 +593,6 @@ export class MonitorService extends Service {
     });
     return filters;
   }
-
-  
 
   async modifyReturnedEvents(events: IEvent[]): Promise<IEvent[]> {
     return events;

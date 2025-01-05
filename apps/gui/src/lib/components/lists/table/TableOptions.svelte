@@ -4,6 +4,7 @@
 	import { StateManager } from "@nostrwatch/nip66";
 	import type { Writable } from "svelte/store";
 	import { capitalize } from "@nostrwatch/utils";
+	import type { Formatters } from "src/lib/config/dataTable/monitors";
 
     export let tableKey: string;
     export let config: Writable<DataTableConfig | null>;

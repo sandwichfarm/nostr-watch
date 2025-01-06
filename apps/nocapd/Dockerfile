@@ -1,5 +1,5 @@
-# Use an official Node.js runtime as a parent image, based on Alpine
 FROM node:20-alpine
+RUN apk add --no-cache python3 py3-pip g++ make
 RUN mkdir /app
 WORKDIR /app
 COPY . .

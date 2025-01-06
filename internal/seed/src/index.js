@@ -18,7 +18,7 @@ export const bootstrap = async (caller) => {
   const opts = await extractConfig(caller, 'seed')
 
   if(!Object.keys(opts).length === 0)
-    return logger.warn(`Skipping seed because there is no seeed config`)
+    return logger.warn(`Skipping seed because there is no seed config`)
 
   if(!opts?.sources)
     return logger.warn(`No seed sources specified in 'config.${caller}.seed.sources' nor in 'config.seed.sources', cannot seed`)
@@ -111,12 +111,16 @@ export const relaysFromCache = async (opts) => {
       cache = initializeDb(cache)
     } 
 
+    logger.info(`cache initialized: fetching ${cacheOpts?.onlineOnly? 'online': 'all'} relays`)
+
     if(cacheOpts?.onlineOnly) {
       result = await cache.relay.get.online('url')
     }
     else {
       result = await cache.relay.get.all()
     }
+
+    console.log('result returned.')
   
     result = result.map( relay => relay.url )
   }

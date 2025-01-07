@@ -22,7 +22,7 @@
     "build": "pnpm run clean && pnpm run transpile && rollup -c && pnpm run transpile:alias",
     "build:all": "pnpm run build && pnpm run build:adapters",
     "build:server": "pnpm run clean && pnpm run transpile:server && rollup -c && pnpm run transpile:alias",
-    "clean": "rimraf dist",
+    "clean": "rm -fr ./dist && mkdir -p ./dist",
     "transpile": "pnpm run transpile:server && pnpm run transpile:web",
     "transpile:web": "tsc -p tsconfig.web.json",
     "transpile:server": "tsc -p tsconfig.server.json",

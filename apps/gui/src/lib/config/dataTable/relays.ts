@@ -10,6 +10,7 @@ import { PFP } from '$lib/utils/pfp';
 import { monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from '@nostrwatch/nip66/models/Monitor';
 import type { Nip11Fee } from '@nostrwatch/nip66/models/Nip11';
+import type { DD } from '@nostrwatch/nip66/models/Geocoded';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -113,6 +114,9 @@ export const tableFormatters: Formatters = {
         const formatted = truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '');
         const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: ''
         return `<a class="text-lg" href="/relays/${formatRelayUrl(relay)}">${iconHtml}${formatted}</a>`;
+    },
+    dd: (dd: DD ) => {
+        return `<span class="text-xs font-bold white/50">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`
     },
     lastSeen: (lastSeen) => {
         if(lastSeen < 0) {

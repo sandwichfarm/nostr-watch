@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "content": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "integer"
+    },
+    "id": {
+      "$ref": "#/$defs/secp256k1"
+    },
+    "kind": {
+      "type": "integer"
+    },
+    "pubkey": {
+      "$ref": "#/$defs/secp256k1"
+    },
+    "sig": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": [
+        {
+          "type": "array",
+          "items": [
+            {
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "content",
+    "created_at",
+    "id",
+    "kind",
+    "pubkey",
+    "sig",
+    "tags"
+  ],
+  "$defs": {
+    "secp256k1": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

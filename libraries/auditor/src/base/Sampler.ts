@@ -2,7 +2,7 @@ import { EventEmitter } from "tseep";
 
 import { Ingestor } from "#base/Ingestor.js";
 import Logger from "#base/Logger.js";  
-import type { WebSocketWrapper as WebSocket } from '#base/WebSocketWrapper.js';
+import type { WebSocketWrapper as WebSocket } from '@nostrwatch/websocket';
 
 import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/utils/generators.js";
 import type { Note, RelayEventMessage } from "#src/nips/Nip01/interfaces/index.js";

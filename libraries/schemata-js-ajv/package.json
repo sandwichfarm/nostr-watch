@@ -1,0 +1,17 @@
+{
+  "name": "@nostrwatch/schemata-js-ajv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@nostrwatch/schemata": "workspace:^",
+    "ajv": "^8.17.1",
+    "nostr-tools": "^2.10.4"
+  }
+}

@@ -19,6 +19,15 @@ import type {
   ClientCloseMessage
 } from './interfaces/index.js';
 
+import { 
+  noteSchema,
+  relayClosedSchema, 
+  relayEoseSchema, 
+  relayEventSchema, 
+  relayNoticeSchema, 
+  relayOkSchema 
+} from '@nostrwatch/schemata';
+
 //nip01
 export class Nip01 extends Suite implements ISuite {
 
@@ -27,15 +36,15 @@ export class Nip01 extends Suite implements ISuite {
   }
 
   public readonly messageValidators: Record<string, SchemaValidator<any>> = {
-    'EVENT': new SchemaValidator<RelayEventMessage>(schemata.RelayEventMessage),
-    'CLOSED': new SchemaValidator<RelayClosedMessage>(schemata.RelayClosedMessage),
-    'NOTICE': new SchemaValidator<RelayNoticeMessage>(schemata.RelayNoticeMessage),
-    'OK': new SchemaValidator<RelayOkMessage>(schemata.RelayOkMessage),
-    'EOSE': new SchemaValidator<RelayEoseMessage>(schemata.RelayEoseMessage)
+    'EVENT': new SchemaValidator<RelayEventMessage>(relayEventSchema),
+    'CLOSED': new SchemaValidator<RelayClosedMessage>(relayClosedSchema),
+    'NOTICE': new SchemaValidator<RelayNoticeMessage>(relayNoticeSchema),
+    'OK': new SchemaValidator<RelayOkMessage>(relayOkSchema),
+    'EOSE': new SchemaValidator<RelayEoseMessage>(relayEoseSchema)
   };
 
   public readonly jsonValidators: Record<string, SchemaValidator<any>> = {
-    'EVENT': new SchemaValidator<Note>(schemata.Note),
+    'EVENT': new SchemaValidator<Note>(noteSchema),
   };
 
   private subId: string = 'test';

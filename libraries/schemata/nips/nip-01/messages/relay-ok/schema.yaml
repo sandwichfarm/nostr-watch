@@ -1,0 +1,15 @@
+$id: 'https://schemata.nostr.watch/message/relay-ok'
+type: "array"
+items: 
+- const: "OK"
+- type: "string"
+  description: "The id of the subscription that the note is being sent in response to"
+- type: "boolean"
+  description: "true if accepted by the relay, false otherwise"
+- type: "string"
+  description: "A response message"
+  errorMessage: "response message must be a string that follows the format: '{code}: {message}'"
+  pattern: "^[a-zA-Z0-9_-]+: .+"
+minItems: 4
+maxItems: 4
+additionalItems: false

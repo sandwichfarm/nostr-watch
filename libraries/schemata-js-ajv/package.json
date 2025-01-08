@@ -2,16 +2,31 @@
   "name": "@nostrwatch/schemata-js-ajv",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/web/index.js",
+      "require": "./dist/server/index.js"
+    }
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "pnpm tsc --emitDeclarationOnly && node build.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@nostrwatch/schemata": "workspace:^",
-    "ajv": "^8.17.1",
+    "@nostrwatch/utils": "workspace:^",
     "nostr-tools": "^2.10.4"
+  },
+  "peerDependencies": {
+    "ajv": "^8.17.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2",
+    "esbuild-plugin-polyfill-node": "^0.3.0",
+    "typescript": "^5.7.2"
   }
 }

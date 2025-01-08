@@ -9,10 +9,6 @@ const isWatchMode = process.argv.includes('--watch');
 
 const plugins = [];
 
-const additionalNipModules = glob.sync('./src/nips/**/index.ts', {
-    absolute: true,
-});
-
 const browserConfig = {
     entryPoints: ['src/index.ts'],
     bundle: true,

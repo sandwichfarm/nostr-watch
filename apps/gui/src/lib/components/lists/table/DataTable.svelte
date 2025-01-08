@@ -161,13 +161,24 @@
     }
 
     const createTable = (force: boolean = false) => {
+        const config: any = {
+            pageSize: $resultsPerPage,
+            columns: $filteredTableData.columns,
+            data: $filteredTableData.data,
+        }
+
+        if(sortState) {
+            if(sortState?.columnId) {
+                config.initialSort = sortState.columnId
+            }
+            if(sortState?.direction) {
+                config.initialSortDirection = sortState.direction
+            }
+        }
+        console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, config);
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
             if(tableInstance === null || force){
-                tableInstance = new DataTable<any>({
-                    pageSize: $resultsPerPage,
-                    columns: $filteredTableData.columns,
-                    data: $filteredTableData.data,
-                });
+                tableInstance = new DataTable<any>(config);
             }
         } else {
             if (tableInstance) {
@@ -237,13 +248,13 @@
                 <DataTablePaginator {tableInstance} />
                 <Popover.Root>
                     <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">⚙</Popover.Trigger>
-                    <Popover.Content class="z-[5999]">
-                        <Tabs.Root value="visiblity" class="w-full">
+                    <Popover.Content class="z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
+                        <Tabs.Root value="visiblity" class="">
                             <Tabs.List>
                                 <Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>
                                 <Tabs.Trigger value="order">Order</Tabs.Trigger>
                             </Tabs.List>
-                            <Tabs.Content value="visiblity">
+                            <Tabs.Content value="visiblity"  class="py-4 px-8">
                                 <TableOptions {config} {tableKey} />
                             </Tabs.Content>
                             <Tabs.Content value="order" class=" text-white/20">
@@ -266,8 +277,8 @@
                                         class="flex items-center"
                                         on:click={() => { 
                                             if(tableInstance) {
-                                                const sortState = tableInstance.toggleSort(column.id) 
-                                                StateManager.set('sortState:relays', sortState)
+                                                tableInstance.toggleSort(column.id) 
+                                                StateManager.set('sortState:relays', tableInstance.sortState)
                                             }
                                         }}
                                         disabled={!tableInstance?.isSortable(column.id)}

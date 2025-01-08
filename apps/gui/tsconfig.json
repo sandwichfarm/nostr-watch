@@ -11,6 +11,9 @@
 		"strict": true,
 		"module": "NodeNext",
 		"moduleResolution": "bundler",
-		"baseUrl": "./"
+		"baseUrl": "./",
+		"paths": {
+			"@nostrwatch/*": ["../../libraries/*/dist"]
+		}
 	}
 }

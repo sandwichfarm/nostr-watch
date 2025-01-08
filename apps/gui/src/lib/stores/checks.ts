@@ -11,7 +11,7 @@ import { eventsArray } from './events.js';
 
 import { Nip66Event } from '@nostrwatch/nip66/models';
 import { StateManager } from "@nostrwatch/nip66";
-import { doAggregateCache } from "./app.js";
+import { doAggregateCache, isBootstrapping } from "./app.js";
 
 export const relayCheckAggregator = ($checks: Nip66Event[]) => {
   const countMap: Record<
@@ -119,9 +119,17 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
     ...item.aggregate,
     id: index,
   }));
-  if(!aggregates.length) {
+  const $isBootstrapping = get(isBootstrapping)
+  if(!aggregates.length || $isBootstrapping) {
     const agg = StateManager.get('aggregate:complete');
-    aggregates = agg? decompress(agg): aggregates
+    const aggDecompressed = decompress(agg)
+    if($isBootstrapping) {
+      aggregates = aggDecompressed.map((aggregate: any, index: number) => {
+        const freshy = aggregates.find( (item) => item.relay === aggregate.relay )
+        return freshy? freshy: aggregate;
+      });
+    }
+    return agg? aggDecompressed: [];
   }
   else {
     if(get(doAggregateCache) === true) StateManager.set('aggregate:complete', compress(aggregates))

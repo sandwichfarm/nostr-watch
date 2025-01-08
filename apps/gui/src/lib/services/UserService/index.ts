@@ -69,11 +69,7 @@ export class UserService extends Service {
             relays: user.relays || [],
             options
         };
-        // const onevent = (event: IEvent) => {
-        //     if(callbacks) callbacks?.onevent?.(event);
-        // }
         let notes = (await this.subscribe(args))?.sort((a, b) => (b.created_at as number) - (a.created_at as number));
-        // return notes.filter(isNotComment);
         return notes;
     }
 
@@ -96,7 +92,6 @@ export class UserService extends Service {
         const { relays } = user
         const notes = await this.userNotes(user, limit, until)
         const relatives: IEvent[][] = [[]]
-        // const relatives = await Promise.all(notes.map((note: IEvent) => this.noteRelatives(user, note)));
     
         return notes
             .map((_note: IEvent, index: number) => {
@@ -120,7 +115,6 @@ export class UserService extends Service {
             { kinds: [1, 7, 1111], '#e': [id] }, //commments, mentions
             { kinds: [1111], '#E': [id] } //NIP-22 comments
         ]
-        //console.log('user note relatives', filters)
         const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]
         const options: WebsocketAdapterOptions  = {
             cache: false,
@@ -140,7 +134,6 @@ export class UserService extends Service {
     }
 
     async meta(user: User): Promise<IEvent[] | boolean | undefined> {
-        //console.log('user meta relays', user, this.userMetaRelays)
         const filter: Filter = {authors: [user.pubkey], kinds: [0, 10002]}
         const options: WebsocketAdapterOptions  = {
             cache: false,
@@ -157,7 +150,6 @@ export class UserService extends Service {
     }
 
     async fetch(args: UserFetchArgs): Promise<IEvent[]> {
-        //console.log('user ffetch', args)
         return this._fetch(args);
     }
 

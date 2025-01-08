@@ -16,10 +16,9 @@ export class Nip05Service {
     }
 
     find(pubkey: string, nip05: Nip05): INip05Result | undefined {
+        const $nip05s: INip05Map = get(nip05s)
         const key = generateNip05MapKey(pubkey, nip05)
-        let n05s = get(nip05s)
-        let result = n05s.get(key)
-        return result
+        return $nip05s.get(key)
     }
     
     async check(pubkey: string, nip05: Nip05): Promise<INip05Result> {
@@ -27,7 +26,7 @@ export class Nip05Service {
         this.worker.postMessage({ pubkey, nip05 })
         let result: INip05Result | undefined;
         while(!result){
-            result = get(nip05s).get(key)
+            result = (get(nip05s) as INip05Map).get(key)
             await new Promise( resolve => setTimeout( resolve, 200 ))
         }
         return result;

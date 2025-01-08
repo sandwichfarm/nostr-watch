@@ -1,4 +1,4 @@
-import { deterministicHash } from '@nostrwatch/nip66/utils/hash';
+import { deterministicHash } from '@nostrwatch/nip66/utils';
 import type { NostrEvent } from 'nostr-tools';
 import { get } from 'svelte/store';
 import { EventEmitter } from 'tseep' 
@@ -41,7 +41,7 @@ export class SchemaValidationService {
             const timeout = setTimeout( () => reject({ status: 'error', hash, error: 'Request timed out, worker may have been terminated.' }), 5000)
             this.emitter.once(this.emitterKey(hash), (response: SchemaValidationServiceResponse) => {
                 clearTimeout(timeout)
-                const { result, error } = response;
+                const { error } = response;
                 if(error) {
                     reject(response)
                 }
@@ -52,6 +52,11 @@ export class SchemaValidationService {
         })
     }
 
+    private onmessage(message: MessageEvent<SchemaValidationServiceResponse>){
+        const { hash } = message.data;
+        this.emitter.emit(this.emitterKey(hash), message.data)
+    }
+
     async validate(request: SchemaValidationServiceRequest, hash?: string): Promise<SchemaValidationServiceResponse> {
         hash = hash ?? deterministicHash(request.json)
         this._subIds.add(hash)
@@ -59,12 +64,12 @@ export class SchemaValidationService {
         return this.respond(hash)
     }
     
-    async validateNip11(nip11: string): Promise<SchemaValidationServiceResponse> {
+    async validateNip11(nip11: any, hash?: string): Promise<SchemaValidationServiceResponse> {
         const request: SchemaValidationServiceRequest = { 
             type: 'nip11',
             json: nip11
         }
-        return this.validate(request)
+        return this.validate(request, hash)
     }
 
     async validateMessage(json: string, subject: string, slug: string): Promise<SchemaValidationServiceResponse> {
@@ -88,10 +93,5 @@ export class SchemaValidationService {
             hash 
         }
         return this.validate(request, hash)
-    }
-
-    private onmessage(message: MessageEvent<SchemaValidationServiceResponse>){
-        const { hash } = message.data;
-        this.emitter.emit(this.emitterKey(hash), message.data)
     }
 }

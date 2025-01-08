@@ -36,6 +36,7 @@
   let CardSpeed: typeof import('$lib/components/partials/relay-single/cards/CardSpeed.svelte').default | null = null;
   let CardNips: typeof import('$lib/components/partials/relay-single/cards/CardNips.svelte').default | null = null;
   let RelayAudits: typeof import('$lib/components/partials/relay-single/RelayAudits.svelte').default | null = null;
+  let RelayNip11: typeof import('$lib/components/partials/relay-single/RelayNip11.svelte').default | null = null;
 
   const loadComponent = async (importFunc: () => Promise<any>, setter: (component: any) => void) => {
       try {
@@ -47,11 +48,11 @@
   };
 
   const loadComponents = () => {
+      loadComponent(() => import('svelte-bricks'), (comp) => Masonry = comp);
       loadComponent(() => import('$lib/components/partials/ProfileCompact.svelte'), (comp) => ProfileCompact = comp);
       loadComponent(() => import('$lib/components/partials/relay-single/RelayChecks.svelte'), (comp) => RelayChecks = comp);
       loadComponent(() => import('$lib/components/partials/relay-single/OperatorFeed.svelte'), (comp) => OperatorFeed = comp);
       loadComponent(() => import('$lib/components/ui/tabs'), (comp) => Tabs = comp);
-      loadComponent(() => import('svelte-bricks'), (comp) => Masonry = comp);
       loadComponent(() => import('$lib/components/partials/relay-single/cards/CardChecks.svelte'), (comp) => CardChecks = comp);
       loadComponent(() => import('$lib/components/partials/relay-single/cards/CardFees.svelte'), (comp) => CardFees = comp);
       loadComponent(() => import('$lib/components/partials/relay-single/cards/CardInsights.svelte'), (comp) => CardInsights = comp);
@@ -63,6 +64,7 @@
       loadComponent(() => import('$lib/components/partials/relay-single/cards/CardSpeed.svelte'), (comp) => CardSpeed = comp);
       loadComponent(() => import('$lib/components/partials/relay-single/cards/CardNips.svelte'), (comp) => CardNips = comp);
       loadComponent(() => import('$lib/components/partials/relay-single/RelayAudits.svelte'), (comp) => RelayAudits = comp);
+      loadComponent(() => import('$lib/components/partials/relay-single/RelayNip11.svelte'), (comp) => RelayNip11 = comp);
   };
 
   doBootstrap.set(false);
@@ -389,19 +391,25 @@
             </Tabs.Content>
           {/if}
 
-          {#if Tabs && RelayChecks}
+          {#if Tabs && RelayChecks && $relayAggregate}
             <Tabs.Content value="checks" class="py-6">
               <RelayChecks relay={relayUrl} monitors={$monitors} checks={$checksrelay} aggregate={$relayAggregate} />
             </Tabs.Content>
           {/if}
 
+
+          {#if Tabs && RelayNip11 && $nip11Ready}
           <Tabs.Content value="nip11">
             <!-- {$nip11s.get(relayUrl)?.length ?? 0} NIP-11s from NIP-66 events [{$nip11s.get(relayUrl)?.[0] ? true : false}] <br /> -->
             <!-- {#if $nip11sLocal?.get(relayUrl)}
               NIP-11 found locally <br />
             {/if} -->
-            <pre class="py-6 px-8 bg-white/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>
+            <!-- <pre class="py-6 px-8 bg-white/5 rounded-lg">
+              {JSON.stringify($nip11?.json, null, 4)}
+            </pre> -->
+            <RelayNip11 {nip11} />
           </Tabs.Content>
+          {/if}
 
           
           <Tabs.Content value="operator-feed">

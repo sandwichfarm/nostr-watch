@@ -84,20 +84,6 @@ properties:
         type: number
       created_at_upper_limit:
         type: number
-    required:
-    - max_message_length
-    - max_subscriptions
-    - max_filters
-    - max_limit
-    - max_subid_length
-    - max_event_tags
-    - max_content_length
-    - min_pow_difficulty
-    - auth_required
-    - payment_required
-    - restricted_writes
-    - created_at_lower_limit
-    - created_at_upper_limit
   payments_url:
     type: string
     pattern: "^https?://"
@@ -111,23 +97,6 @@ properties:
       publication:
         $ref: "#/$defs/fee"
     additionalProperties: false
-required:
-- name
-- description
-- pubkey
-- contact
-- supported_nips
-- software
-- version
-- retention
-- relay_country
-- icon
-- language_tags
-- tags
-- posting_policy
-- limitation
-- payments_url
-- fees
 allOf:
 - if:
     properties:

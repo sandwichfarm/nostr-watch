@@ -1,11 +1,7 @@
 import { Ajv, type ErrorObject } from 'ajv';
-import addErrors from 'ajv-errors'
 
 import * as NostrSchemata from '@nostrwatch/schemata'
 import { type NostrEvent } from 'nostr-tools'
-
-const ajv = new Ajv({ allErrors: true });
-addErrors(ajv);
 
 type NostrSchemataType = typeof NostrSchemata;
 
@@ -18,6 +14,8 @@ export type SchemaValidatorResult = {
 }
 
 const validate = (schema: any, data: any): SchemaValidatorResult => {
+    const ajv = new Ajv({ allErrors: true });
+    ajv.addKeyword("errorMessage")
     const result = structuredClone(defaultResult)
     const validate = ajv.compile(schema);
     const valid = validate(data);

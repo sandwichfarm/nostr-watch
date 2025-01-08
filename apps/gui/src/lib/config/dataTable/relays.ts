@@ -116,6 +116,7 @@ export const tableFormatters: Formatters = {
         return `<a class="text-lg" href="/relays/${formatRelayUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
     dd: (dd: DD ) => {
+        if(!dd?.lat || !dd?.lon) return '';
         return `<span class="text-xs font-bold white/50">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`
     },
     lastSeen: (lastSeen) => {

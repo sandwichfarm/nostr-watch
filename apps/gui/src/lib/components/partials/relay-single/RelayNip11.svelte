@@ -27,7 +27,7 @@
     </div>
 {:else}
     <div class="bg-red-500 text-white p-4 rounded-lg">
-        <p class="text-lg font-bold">NIP-11 requires attentions</p>
+        <p class="text-lg font-bold">NIP-11 requires attention</p>
     </div>
 {/if}
 

@@ -9,8 +9,8 @@
 <div class="flex flex-nowrap">
     <div class="flex-shrink mr-2">
         {#if profile?.photo}
-            <span class="overflow-hidden max-w-8 h-auto">
-                <img src={profile.photo} alt={profile.photo} class="w-10 h-10 rounded-full" />
+            <span class="overflow-hidden">
+                <img src={profile.photo} alt={profile.photo} class="w-10 h-10 block rounded-full" />
             </span>
         {:else}
             <span class="rounded-full overflow-hidden inline-block">

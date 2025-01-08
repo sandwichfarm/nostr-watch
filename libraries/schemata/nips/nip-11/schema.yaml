@@ -24,6 +24,11 @@ properties:
       type: number
     description: "An array of NIPs that the relay supports."
     errorMessage: "Supported NIPs must be an array of numbers."
+  relay_countries:
+    type: array
+    items: 
+      - type: string 
+        pattern: "^[A-Z]{2}$"
   software:
     type: string
     description: "The software that the relay is running."
@@ -33,14 +38,19 @@ properties:
     description: "The version of the software that the relay is running."
     errorMessage: "Version must be a string."
   retention:
-    allOf:
-    - $ref: "#/$defs/retent"
-    description: "The retention policy of the relay."
-    errorMessage: "Retention must be an object with kinds, count, and time."
+    type: array
+    items: 
+    - allOf:
+      - $ref: "#/$defs/retent"
+      description: "The retention policy of the relay."
+      errorMessage: "Retention must be an object with kinds, count, and time."
   relay_country:
     type: array
     items:
       type: string
+  banner:
+    type: string
+    pattern: "^https?://"
   icon:
     type: string
     pattern: "^https?://"

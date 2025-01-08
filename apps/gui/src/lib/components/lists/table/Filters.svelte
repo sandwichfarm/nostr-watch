@@ -1,12 +1,14 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { get } from 'svelte/store';
+    import { get, type Readable } from 'svelte/store';
+    import { writable, type Writable } from 'svelte/store';
+
     import { Input } from '$lib/components/ui/input/index.js';
     import { Button } from '$lib/components/ui/button2/index.js';
     import MiniSearch from 'minisearch';
     import { Accordion } from 'radix-svelte';
-    import { writable, derived, type Writable } from 'svelte/store';
-
+    import * as Popover from "$lib/components/ui/popover";
+    import * as Tabs from "$lib/components/ui/tabs";
     
     import Badge from '$lib/components/ui/badge/badge.svelte';
 
@@ -17,9 +19,13 @@
     } from '$lib/utils/filter-dom.js'; // Importing from the shared module
 
     import { debounce } from 'lodash'; // Ensure lodash is installed
+	import FilterOptions from './FilterOptions.svelte';
+
+	
 
     // **Props Passed to the Component**
-    export let tableData: Writable<{ data: any[] }>;
+    export let tableKey: string;
+    export let tableData: Readable<{ data: any[] }>;
     export let keysEnable: string[];
     export let filtersInclude: string[];
     export let humanReadableNames: Record<string, string>;
@@ -54,6 +60,8 @@
     // **Disabled Filters Store**
     const disabledFilters: Writable<Record<string, Set<string>>> = writable({});
 
+    
+
     // **Active Filters**
     $: activeFilters = $filters;
 
@@ -71,22 +79,25 @@
         return _intersection;
     }
 
-    // **Initialize relayFilters and Inverted Index Once on Mount**
-    onMount(() => {
+    const filtersInit = () => {
         const data = get(tableData).data;
         buildInvertedIndex(data, filtersInclude);
         const initialFilters = createRelayFilters(data, filtersInclude, humanReadableNames);
         relayFilters.set(initialFilters);
-
         // Initialize showAllFilters
         const initialShowAll: Record<string, boolean> = {};
-        initialFilters.forEach(filter => {
+        initialFilters.forEach( (filter: any) => {
             initialShowAll[filter.key] = false;
         });
         showAllFilters.set(initialShowAll);
-
-        // Initialize disabledFilters
         updateDisabledFilters(get(filters));
+    }
+
+    const onFilterChange = filtersInit;
+
+    // **Initialize relayFilters and Inverted Index Once on Mount**
+    onMount(() => {
+        filtersInit();
     });
 
     // **Build Inverted Index**
@@ -473,6 +484,24 @@
         No Filters Applied
     {/if}
 </Button>
+
+<Popover.Root>
+    <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">⚙</Popover.Trigger>
+    <Popover.Content class="z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
+        <Tabs.Root value="visiblity" class="">
+            <Tabs.List>
+                <Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>
+                <Tabs.Trigger value="order">Order</Tabs.Trigger>
+            </Tabs.List>
+            <Tabs.Content value="visiblity"  class="py-4 px-8">
+                <FilterOptions {config} {tableKey} onChange={onFilterChange} />
+            </Tabs.Content>
+            <Tabs.Content value="order" class=" text-white/20">
+                coming soon...
+            </Tabs.Content>
+        </Tabs.Root>
+    </Popover.Content>
+</Popover.Root>
 
 <!-- **Active Filters Display (Enabled)** -->
 {#if false && Object.keys(activeFilters).length > 0}

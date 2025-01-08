@@ -179,7 +179,6 @@ export const bootstrap = async () => {
         await new Promise( (resolve) => setTimeout(resolve, 1000) ) 
         //
         seedFromCache().then( () => {
-            removeStaleChecksFromStore()
             if(get(isLivesyncing)) return;
             beginLiveSync({ onevents })
         });

@@ -8,11 +8,13 @@
 	import { Nip66Event } from '@nostrwatch/nip66/models';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import type { Formatters } from 'src/lib/config/dataTable/monitors';
+	import { type default as DataTableType } from '$lib/components/lists/table/DataTable.svelte';
+	import { type default as StatsType } from '$lib/components/layout/Stats.svelte';
 
 	export const prerender = true;
 
-	let Stats 
-	let DataTable
+	let Stats: StatsType;
+	let DataTable: DataTableType;
 	let defaultTableConfig: any;
 
 	type DataTableConfig = { 
@@ -24,6 +26,8 @@
         formatters: Formatters
         tableFormatters: Formatters 
         filterFormatters: Formatters
+		availableColumnKeys: string[]
+        availableFilterKeys: string[]
         tableRowStyler: (row: any) => string
 	}
 	
@@ -45,7 +49,6 @@
 	}
 
 	const setConfig = () => {
-		console.log('set config.')
 		const userTableConfig = StateManager.get('preferences:relays:tableConfig');
 		if(userTableConfig) {
 			config.set({...defaultTableConfig, ...userTableConfig})

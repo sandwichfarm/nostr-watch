@@ -21,7 +21,7 @@
 
     export let tableKey: string;
     export let data: any;
-    export let config: Writable<any>;
+    export let config: Writable<DataTableConfig>;
     export let enableFilters: boolean = true;
     export let actionsComponent;
 
@@ -37,6 +37,8 @@
         formatters: Formatters
         tableFormatters: Formatters 
         filterFormatters: Formatters
+        availableColumnKeys: string[]
+        availableFilterKeys: string[]
         tableRowStyler: (row: any) => string
         reformatters?: { key: string, interval: number }
 	}
@@ -380,6 +382,7 @@
             {:else}
                 {#if tableInstance !== null && enableFilters}
                     <Filters 
+                        {tableKey}
                         {tableData} 
                         {keysEnable}
                         {filters} 

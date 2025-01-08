@@ -3,56 +3,51 @@
     import Checkbox from "../../ui/checkbox/checkbox.svelte";
     import { StateManager } from "@nostrwatch/nip66";
     import type { Writable } from "svelte/store";
-    import { capitalize } from "@nostrwatch/utils";
+    import { capitalize, delay } from "@nostrwatch/utils";
     import type { Formatters } from "src/lib/config/dataTable/monitors";
 
     export let tableKey: string;
     export let config: Writable<DataTableConfig | null>;
+    export let onChange: (config: DataTableConfig) => void;
 
     type DataTableConfig = { 
-        columnsDisable: string[]
-        columnsShow: string[]
-        filtersDisable: string[]
-        filtersShow: string[]
         humanReadableNames: Record<string, string>
         formatters: Formatters
-        tableFormatters: Formatters 
-        filterFormatters: Formatters
-        availableColumnKeys: string[]
-        availableFilterKeys: string[]
         tableRowStyler: (row: any) => string
-    }
 
-    // $: availableColumnKeys = [
-    //     ...($config?.columnsDisable
-    //         ? Nip66Event.keys.filter(key => !$config.columnsDisable.includes(key))
-    //         : Nip66Event.keys),
-    //     "seenBy",
-    //     "lastSeen",
-    //     "seenTimes"
-    // ];
+        availableColumnKeys: string[]
+        tableFormatters: Formatters 
+        columnsDisable: string[]
+        columnsShow: string[]
+
+        availableFilterKeys: string[]
+        filtersDisable: string[]
+        filtersShow: string[]
+        filterFormatters: Formatters
+    }
 
     const toggleColumnShow = (key: string) => {
         config.update((currentConfig: DataTableConfig) => {
-            if (!currentConfig || !Array.isArray(currentConfig.columnsShow)) {
-                console.error("columnsShow is not an array");
+            if (!currentConfig || !Array.isArray(currentConfig.filtersShow)) {
+                console.error("filtersShow is not an array");
                 return currentConfig;
             }
-            let newColumnsShow: string[];
-            if (currentConfig.columnsShow.includes(key)) {
-                newColumnsShow = currentConfig.columnsShow.filter(k => k !== key);
+            let newFiltersShow: string[];
+            if (currentConfig.filtersShow.includes(key)) {
+                newFiltersShow = currentConfig.filtersShow.filter(k => k !== key);
             } else {
-                newColumnsShow = [...currentConfig.columnsShow, key];
+                newFiltersShow = [...currentConfig.filtersShow, key];
             }
-            const sortedColumnsShow = $config?.availableColumnKeys.filter(k => newColumnsShow.includes(k)) || [];
-            const newConfig = { ...currentConfig, columnsShow: sortedColumnsShow };
-            const tableConfigCache = StateManager.get(`preferences:${tableKey}:tableConfig`);
-            StateManager.set(`preferences:${tableKey}:tableConfig`, {
+            const sortedFiltersShow = $config?.availableColumnKeys.filter(k => newFiltersShow.includes(k)) || [];
+            const newConfig = { ...currentConfig, filtersShow: sortedFiltersShow };
+            const tableConfigCache = StateManager.get(`preferences:${tableKey}:filtersConfig`);
+            StateManager.set(`preferences:${tableKey}:filtersConfig`, {
                 ...tableConfigCache,
-                columnsShow: sortedColumnsShow
+                filtersShow: sortedFiltersShow
             });
             return newConfig;
         });
+        delay(100).then(() => onChange($config as DataTableConfig));
     };
 </script>
 
@@ -60,7 +55,7 @@
     {#each ($config?.availableColumnKeys || []) as key}
         <li>
             <Checkbox
-                checked={$config?.columnsShow.includes(key)}
+                checked={$config?.filtersShow.includes(key)}
                 onCheckedChange={() => toggleColumnShow(key)}
                 value={key}
                 class="mr-2"

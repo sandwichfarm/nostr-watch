@@ -26,6 +26,8 @@
         formatters: Formatters
         tableFormatters: Formatters 
         filterFormatters: Formatters
+        availableColumnKeys: string[]
+        availableFilterKeys: string[]
         tableRowStyler: (row: any) => string
     }
 

@@ -11,6 +11,7 @@ import { monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from '@nostrwatch/nip66/models/Monitor';
 import type { Nip11Fee } from '@nostrwatch/nip66/models/Nip11';
 import type { DD } from '@nostrwatch/nip66/models/Geocoded';
+import { Nip66Event } from '@nostrwatch/nip66/models';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -57,10 +58,28 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 }
 
 export const columnsDisable: DataKeys = ['id', 'created_at', 'monitorPubkey', 'fees']
-export const filtersDisable: DataKeys = ['as', 'asname']
+export const filtersDisable: DataKeys = ['relay', 'as', 'asname']
 
 export const columnsShow: DataKeys = ['relay', 'lastSeen', 'geocode', 'paymentRequired', 'authRequired']
 export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
+
+export const availableColumnKeys: string[] = [
+    ...(columnsDisable
+        ? Nip66Event.keys.filter(key => !columnsDisable.includes(key))
+        : Nip66Event.keys),
+    "seenBy",
+    "lastSeen",
+    "seenTimes"
+]
+
+export const availableFilterKeys: string[] = [
+    ...(columnsDisable
+        ? Nip66Event.keys.filter(key => !filtersDisable.includes(key))
+        : Nip66Event.keys),
+    "seenBy",
+    "lastSeen",
+    "seenTimes"
+]
 
 export const humanReadableNames: NameFormatter = {
     dd: 'Decimal Degrees',
@@ -251,5 +270,7 @@ export default {
     columnsDisable,
     filtersDisable,
     columnsShow,
-    filtersShow
+    filtersShow,
+    availableColumnKeys,
+    availableFilterKeys
 }

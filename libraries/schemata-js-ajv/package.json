@@ -19,6 +19,8 @@
   "dependencies": {
     "@nostrwatch/schemata": "workspace:^",
     "@nostrwatch/utils": "workspace:^",
+    "@types/ajv-errors": "^2.0.5",
+    "ajv-errors": "^3.0.0",
     "nostr-tools": "^2.10.4"
   },
   "peerDependencies": {

@@ -1,4 +1,4 @@
-$id: 'https://schemata.nostr.watch/message/relay-event'
+$id: 'https://schemata.nostr.watch/message/relay/event'
 type: "array"
 description: "A message sent by relays to clients in response to a client request."
 items: 

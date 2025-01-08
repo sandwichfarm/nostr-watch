@@ -1,0 +1,50 @@
+$id: "https://schemata.nostr.watch/note/kind/0/content"
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: "Metadata Event Schema"
+type: "object"
+properties:
+  name:
+    type: "string"
+    minLength: 1
+  about:
+    type: "string"
+  picture:
+    type: "string"
+    format: "uri"
+  display_name:
+    type: "string"
+    description: "An alternative, richer name. 'name' must always be set."
+  website:
+    type: "string"
+    format: "uri"
+    description: "A web URL related to the event author."
+  banner:
+    type: "string"
+    format: "uri"
+    description: "A URL to a wide picture for background display."
+  bot:
+    type: "boolean"
+    description: "Indicates if content is automated."
+  lud16: 
+    type: "string"
+    format: "email"
+  lud06: 
+    type: "string"
+
+  # deprecations
+  displayName:
+    deprecated: true
+    description: "Use 'display_name' instead."
+    errorMessage: {
+      deprecated: "Use 'display_name' instead."
+    }
+  username:
+    deprecated: true
+    description: "Use 'name' instead."
+    errorMessage: {
+      deprecated: "Use 'display_name' instead."
+    }
+  
+required:
+  - "name"
+additionalProperties: true

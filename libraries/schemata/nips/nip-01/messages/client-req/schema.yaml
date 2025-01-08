@@ -1,4 +1,4 @@
-$id: 'https://schemata.nostr.watch/message/client-req'
+$id: 'https://schemata.nostr.watch/message/client/req'
 type: "array"
 items: 
 - const: "REQ"

@@ -7,4 +7,6 @@ allOf:
     items:
       - const: "p"
       - $ref: "@/secp256k1.yaml"
-    additionalItems: true
+      - title: 'petname'
+        type: string
+    additionalItems: false

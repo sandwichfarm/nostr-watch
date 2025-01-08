@@ -1,8 +1,11 @@
 import { Ajv, type ErrorObject } from 'ajv';
+import addErrors from 'ajv-errors'
+
 import * as NostrSchemata from '@nostrwatch/schemata'
 import { type NostrEvent } from 'nostr-tools'
 
-const ajv = new Ajv();
+const ajv = new Ajv({ allErrors: true });
+addErrors(ajv);
 
 type NostrSchemataType = typeof NostrSchemata;
 

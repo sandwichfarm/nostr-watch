@@ -10,4 +10,4 @@ allOf:
         pattern: '^\d+:[a-f0-9]{64}:.+$'
       - type: string
         pattern: '^(ws://|wss://).+$'
-    additionalItems: false
+    additionalItems: true

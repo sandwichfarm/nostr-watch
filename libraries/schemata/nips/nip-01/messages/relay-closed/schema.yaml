@@ -1,4 +1,4 @@
-$id: 'https://schemata.nostr.watch/message/relay-closed'
+$id: 'https://schemata.nostr.watch/message/relay/closed'
 type: "array"
 items: 
 - const: "CLOSED"

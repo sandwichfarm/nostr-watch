@@ -1,0 +1,31 @@
+$id: "https://schemata.nostr.watch/note"
+$schema: http://json-schema.org/draft-07/schema
+type: object
+properties:
+  content:
+    type: string
+    errorMessage: "content must be a string"
+    description: "The content of the note"
+  created_at:
+    type: integer
+    errorMessage: "created_at must be a timestamp expressed in seconds (not milliseconds)"
+    description: "The timestamp of the note creation"
+  kind:
+    type: integer
+  pubkey:
+    allOf:
+    - $ref: "@/secp256k1.yaml"
+    errorMessage: "pubkey must be a secp256k1 public key"
+    description: "The public key of the note's author"
+  tags:
+    type: array
+    errorMessage: "tags must be an array of strings"
+    description: "The tags of the note"
+    items:
+    - $ref: "@/tag.yaml"
+      
+required:
+- content
+- created_at
+- kind
+- tags

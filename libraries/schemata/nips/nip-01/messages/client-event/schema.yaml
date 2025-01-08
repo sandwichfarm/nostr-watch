@@ -1,7 +1,7 @@
-$id: 'https://schemata.nostr.watch/message/client-event'
+$id: 'https://schemata.nostr.watch/message/client/event'
 type: "array"
+title: "Client Event Message"
 description: "A message for publishing a NIP-01 note to a relay"
-errorMessage: "client-event must be an array of two elements: the string 'EVENT' and a NIP-01 note"
 items: 
 - const: "EVENT"
 - allOf: 

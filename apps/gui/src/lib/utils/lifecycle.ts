@@ -32,7 +32,6 @@ let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
     callback: addEventsToStore
 })
 
-
 export const bindBootstrapEmitters = () => {
     const $nip05Service = get(nip05Service)
     

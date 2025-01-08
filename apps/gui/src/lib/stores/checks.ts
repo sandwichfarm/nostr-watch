@@ -122,14 +122,14 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
   const $isBootstrapping = get(isBootstrapping)
   if(!aggregates.length || $isBootstrapping) {
     const agg = StateManager.get('aggregate:complete');
-    const aggDecompressed = decompress(agg)
+    const aggDecompressed = agg? decompress(agg): [];
     if($isBootstrapping) {
       aggregates = aggDecompressed.map((aggregate: any, index: number) => {
         const freshy = aggregates.find( (item) => item.relay === aggregate.relay )
         return freshy? freshy: aggregate;
       });
     }
-    return agg? aggDecompressed: [];
+    return agg? aggDecompressed: aggregates? aggregates: [];
   }
   else {
     if(get(doAggregateCache) === true) StateManager.set('aggregate:complete', compress(aggregates))

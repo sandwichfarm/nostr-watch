@@ -39,7 +39,7 @@ export default defineConfig({
   },
   build: {
     minify: 'terser', 
-    sourcemap: true,
+    sourcemap: false,
     assetsInlineLimit: 0,
     rollupOptions: {
       output: {

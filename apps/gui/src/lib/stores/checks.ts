@@ -120,8 +120,8 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
     id: index,
   }));
   const $isBootstrapping = get(isBootstrapping)
-  if(!aggregates.length || $isBootstrapping) {
-    const agg = StateManager.get('aggregate:complete');
+  const agg = StateManager.get('aggregate:complete');
+  if(!aggregates.length || ($isBootstrapping && agg) ) {
     const aggDecompressed = agg? decompress(agg): [];
     if($isBootstrapping) {
       aggregates = aggDecompressed.map((aggregate: any, index: number) => {

@@ -6,9 +6,6 @@ export type FilterCondition = '=' | '<' | '>' | '!=';
 export interface ConsoleFilterBase {
     key: string;
     humanReadableName: string;
-    showAll?: boolean;
-    searchTerm?: string;
-    filteredDistinctValues?: string[];
     mode: 'AND' | 'OR' | 'UNIQUE'; // Modes based on filter type
 }
 
@@ -25,11 +22,15 @@ export interface NumberFilter extends ConsoleFilterBase {
 export interface StringFilter extends ConsoleFilterBase {
     type: 'string';
     distinctValues: string[];
+    searchTerm: string;
+    filteredDistinctValues: string[];
 }
 
 export interface ArrayFilter extends ConsoleFilterBase {
     type: 'array';
     distinctValues: string[];
+    searchTerm: string;
+    filteredDistinctValues: string[];
 }
 
 export type ConsoleFilter = BooleanFilter | NumberFilter | StringFilter | ArrayFilter;
@@ -49,10 +50,10 @@ export function createRelayFilters(
     const uniqueKeys = Array.from(new Set(filtersInclude));
 
     return uniqueKeys
-        .filter((key) => Object.prototype.hasOwnProperty.call(data[0], key))
         .map((key) => {
             const existingFilter = existingFilters.find(f => f.key === key);
-            return createFilter(key, data, humanReadableNames, existingFilter);
+            const filter = createFilter(key, data, humanReadableNames, existingFilter);
+            return filter;
         })
         .filter((filter): filter is ConsoleFilter => filter !== null);
 }
@@ -112,7 +113,6 @@ export function createFilter(
             humanReadableName,
             type: 'string',
             distinctValues,
-            showAll: false,
             searchTerm: '',
             filteredDistinctValues: distinctValues,
             mode,
@@ -130,12 +130,13 @@ export function createFilter(
             humanReadableName,
             type: 'array',
             distinctValues,
-            showAll: false,
             searchTerm: '',
             filteredDistinctValues: distinctValues,
             mode,
         };
     }
+
+    console.log(`nofilter: Filter type not supported for key "${key}"`);
 
     return null;
 }
@@ -215,11 +216,9 @@ export function applyFilters(
                 }
                 if (filter.mode === 'OR') {
                     const orResult = (filterValue as string[]).some(val => itemValue.includes(val));
-                    console.log(`Filter [${key}] OR Result:`, orResult);
                     return orResult;
                 } else if (filter.mode === 'AND') {
                     const andResult = (filterValue as string[]).every(val => itemValue.includes(val));
-                    console.log(`Filter [${key}] AND Result:`, andResult);
                     return andResult;
                 } else if (filter.mode === 'UNIQUE') {
                     const uniqueResult = (
@@ -227,7 +226,6 @@ export function applyFilters(
                         filterValue.length === 1 &&
                         itemValue.includes(filterValue[0])
                     );
-                    console.log(`Filter [${key}] UNIQUE Result:`, uniqueResult);
                     return uniqueResult;
                 }
             }

@@ -26,7 +26,7 @@
         filterFormatters: Formatters
     }
 
-    const toggleColumnShow = (key: string) => {
+    const toggleFilterShow = (key: string) => {
         config.update((currentConfig: DataTableConfig) => {
             if (!currentConfig || !Array.isArray(currentConfig.filtersShow)) {
                 console.error("filtersShow is not an array");
@@ -38,25 +38,25 @@
             } else {
                 newFiltersShow = [...currentConfig.filtersShow, key];
             }
-            const sortedFiltersShow = $config?.availableColumnKeys.filter(k => newFiltersShow.includes(k)) || [];
+            const sortedFiltersShow = $config?.availableFilterKeys.filter(k => newFiltersShow.includes(k)) || [];
             const newConfig = { ...currentConfig, filtersShow: sortedFiltersShow };
             const tableConfigCache = StateManager.get(`preferences:${tableKey}:filtersConfig`);
             StateManager.set(`preferences:${tableKey}:filtersConfig`, {
                 ...tableConfigCache,
                 filtersShow: sortedFiltersShow || []
             });
-            return newConfig;
+            return newConfig;                                       
         });
         delay(100).then(() => onChange($config as DataTableConfig));
     };
 </script>
 
 <ul class="columns">
-    {#each ($config?.availableColumnKeys || []) as key}
+    {#each ($config?.availableFilterKeys || []) as key}
         <li>
             <Checkbox
                 checked={$config?.filtersShow.includes(key)}
-                onCheckedChange={() => toggleColumnShow(key)}
+                onCheckedChange={() => toggleFilterShow(key)}
                 value={key}
                 class="mr-2"
             />

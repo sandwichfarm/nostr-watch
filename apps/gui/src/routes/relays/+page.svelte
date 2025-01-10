@@ -65,11 +65,7 @@
 		loadComponents().then(setConfig);
 	}
 
-	onMount(mount)
-
-	setInterval( () =>  console.log('config:page', $config), 1000)
-
-    
+	onMount(mount)    
 </script>
 
 <main> 

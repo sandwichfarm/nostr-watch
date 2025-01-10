@@ -58,8 +58,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 }
 
 export const columnsDisable: DataKeys = ['id', 'created_at', 'fees']
-export const filtersDisable: DataKeys = ['relay', 'as', 'asname']
-
+export const filtersDisable: DataKeys = ['relay', 'as', 'asname', 'icon', 'banner', 'created_at', 'subscriptionFee', 'publicationFee', 'admissionFee']
 export const columnsShow: DataKeys = ['relay', 'lastSeen', 'geocode', 'paymentRequired', 'authRequired']
 export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
 

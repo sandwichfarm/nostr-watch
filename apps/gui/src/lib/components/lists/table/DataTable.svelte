@@ -71,8 +71,7 @@
 
     let keysEnable: string[];
 
-
-    $: keysEnable = (columnsShow && filtersShow?.length )? Array.from(new Set([...columnsShow, ...filtersShow])) : [];
+    $: keysEnable = (columnsShow?.length && filtersShow?.length )? Array.from(new Set([...columnsShow, ...filtersShow])) : [];
 
 	const maxBadgeLength: number = 20;
     
@@ -80,8 +79,6 @@
 
     // **Stores and Reactive Variables**
     const filters = writable({});
-
-    setInterval( () =>  console.log('config;dt', $config), 1000)
     // setInterval( () =>  console.log('filtersShow', $config.filtersShow), 1000)
 
     $: filtersInclude = filtersShow?.length? [ ...$config.filtersShow.filter(f => !filtersDisable.includes(f)) ]: [];

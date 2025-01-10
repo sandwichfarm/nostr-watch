@@ -20,23 +20,33 @@
     import { debounce } from 'lodash'; // Ensure lodash is installed
 	import FilterOptions from './FilterOptions.svelte';
 
-    import type { DataTableConfig } from './DataTableTypes';
+    import type { DataTableConfig, Formatters } from './DataTableTypes';
+	import { delay } from '@nostrwatch/utils';
 
     // **Props Passed to the Component**
     export let tableKey: string;
     export let tableData: Readable<{ data: any[] }>;
     export let keysEnable: string[];
     export let filtersInclude: string[];
-    export let humanReadableNames: Record<string, string>;
     export let filterOverrides: Record<string, { type: 'search' | 'badge', miniSearchOptions?: any }> = {};
     export let maxBadgeLength: number = 10;
     export let filters: Writable<Record<string, any>>; // Writable store passed from the parent component
     export let config: any;
 
-    const { filterFormatters:_filterFormatters } = config;
+    let humanReadableNames: Record<string, string>, 
+        filterFormatters: Formatters;
+
+    $: {
+        ({
+            humanReadableNames, 
+            filterFormatters
+        } = $config);
+    }
+
+    // const { filterFormatters:_filterFormatters } = config;
 
     // **Accordion States**
-    let rootValue;
+    let rootValue: any;
     let rootType: "single" | "multiple" = "multiple"; // Allows multiple accordion items to be open
     let rootDisabled: boolean = false;
     let contentTransition: boolean = true;
@@ -48,7 +58,8 @@
             [option: string]: Set<string>;
         };
     };
-    const invertedIndex: InvertedIndex = {};
+    const _invertedIndex: InvertedIndex = {};
+    $: invertedIndex = _invertedIndex;
 
     // **Relay Filters**
     const relayFilters: Writable<ConsoleFilter[]> = writable([]);
@@ -76,8 +87,16 @@
         return _intersection;
     }
 
+    const refreshIndices = () => {
+        const { data } = $tableData;
+        if(!data) return;
+        buildInvertedIndex(data, filtersInclude);
+        updateDisabledFilters($filters)
+    }
+
     const filtersInit = () => {
-        const data = get(tableData).data;
+        const { data } = $tableData;
+        if(!data) return;
         buildInvertedIndex(data, filtersInclude);
         const initialFilters = createRelayFilters(data, filtersInclude, humanReadableNames);
         relayFilters.set(initialFilters);
@@ -86,7 +105,7 @@
             initialShowAll[filter.key] = false;
         });
         showAllFilters.set(initialShowAll);
-        updateDisabledFilters(get(filters));
+        updateDisabledFilters($filters)
     }
 
     const onFilterChange = ($config: DataTableConfig) => {
@@ -106,8 +125,10 @@
 
     // **Build Inverted Index**
     function buildInvertedIndex(data: RecordData[], filtersInclude: string[]) {
+        const begin = new Date().getTime();
+        console.log('begin buildInvertedIndex');
         filtersInclude.forEach(filterKey => {
-            invertedIndex[filterKey] = {};
+            _invertedIndex[filterKey] = {};
             data.forEach(record => {
                 const value = record[filterKey];
                 if (value !== undefined && value !== null) {
@@ -115,17 +136,20 @@
                     values.forEach(val => {
                         const option = String(val).toLowerCase();
                         if (!invertedIndex[filterKey][option]) {
-                            invertedIndex[filterKey][option] = new Set();
+                            _invertedIndex[filterKey][option] = new Set();
                         }
-                        invertedIndex[filterKey][option].add(record.id);
+                        _invertedIndex[filterKey][option].add(record.id);
                     });
                 }
             });
         });
+        console.log('end buildInvertedIndex', new Date().getTime() - begin);
     }
 
     // **Compute Active Record IDs Based on Active Filters**
     function computeActiveRecordIDs(activeFilters: Record<string, any>): Set<string> {
+        console.log('begin computeActiveRecordIDs');
+        const begin = new Date().getTime();
         let activeRecordIDs: Set<string> | null = null;
 
         // Iterate over each filter block
@@ -176,12 +200,14 @@
                 }
             }
         });
-
+        console.log('end computeActiveRecordIDs', new Date().getTime() - begin);
         return activeRecordIDs || new Set(get(tableData).data.map(record => record.id));
     }
 
     // **Update Disabled Filters Based on Active Filters**
     function updateDisabledFilters(activeFilters: Record<string, any>) {
+        const begin = new Date().getTime();
+        console.log('begin updateDisabledFilters');
         const activeRecordIDs = computeActiveRecordIDs(activeFilters);
         const newDisabledFilters: Record<string, Set<string>> = {};
 
@@ -196,7 +222,7 @@
                 const normalizedOption = String(option).toLowerCase();
                 const optionRecordIDs = invertedIndex[filterKey][option];
 
-                let isDisabled = false;
+                let isDisabled = false; 
 
                 if (filterMode === 'OR' || filterMode === 'UNIQUE') {
                     // Simulate selecting this option
@@ -236,8 +262,8 @@
                 }
             });
         });
-
-        disabledFilters.set(newDisabledFilters);
+        console.log('end updateDisabledFilters', new Date().getTime() - begin);
+        disabledFilters.set(newDisabledFilters)
     }
 
     // **Initialize MiniSearch for Search-Enabled Filters**
@@ -295,6 +321,8 @@
 
     // **Apply a Filter Value Based on Its Type and Mode**
     function applyFilter(filterKey: string, value: any) {
+        const begin = new Date().getTime();
+        console.log('begin applyFilter', filterKey, value);
         const filter = $relayFilters.find(f => f.key === filterKey);
         if (!filter) return;
 
@@ -381,6 +409,8 @@
 
             return currentFilters;
         });
+        console.log('end applyFilter', new Date().getTime() - begin);
+        debounce(refreshIndices, 20)();
     }
 
     // **Set the Mode for a Specific Filter Group**
@@ -433,6 +463,7 @@
             }
             return currentFilters;
         });
+        refreshIndices();
         console.log(`Cleared filter for ${filterKey}${value !== undefined ? `: ${value}` : '.'}`);
     }
 
@@ -440,10 +471,9 @@
     function clearAllFilters() {
         filters.set({});
         console.log('Cleared all filters.');
+        refreshIndices();
     }
 
-    // **Format Filter Values Using Provided Formatters**
-    export let filterFormatters: Record<string, (value: any) => string> = _filterFormatters;
 
     const format = (key: string, values: string[], html: boolean = true) => {
         if(!html) {
@@ -473,6 +503,8 @@
     $: buttonClass = 'mb-2 text-sm font-bold py-1 px-2 mr-1';
     $: buttonClassSelected = 'bg-blue-500 text-white';
 </script>  
+
+<!-- <pre class="absolute top-1 left-1 bg-black border border-white p-10 z-[9999]">{JSON.stringify($disabledFilters, null, 2)}</pre> -->
 
 <!-- **Clear All Filters Button** -->
 <Button 

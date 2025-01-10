@@ -107,6 +107,11 @@ properties:
       publication:
         $ref: "#/$defs/fee"
     additionalProperties: false
+
+additionalProperties:
+  not: true
+  errorMessage: "NIP-11 Relay Information Document should not have any additional properties, invalid property is ${0#}"
+  
 allOf:
 - if:
     properties:
@@ -120,6 +125,10 @@ allOf:
     - limitation
   then:
     properties:
+      payments_url:
+        errorMessage: "payments_url must be provided and must be a valid URL when payment_required is true."
+        type: string
+        pattern: "^https?://"
       fees:
         errorMessage: "A admission, subscription and/or publication member should be in fees when payment_required is true."
         anyOf:
@@ -142,7 +151,9 @@ allOf:
           required:
           - publication
     required:
+    - payments_url
     - fees
+
 "$defs":
   saneUrl:
     type: string
@@ -166,7 +177,6 @@ allOf:
       - amount
       - unit
       - period
-      - kinds
   retent:
     type: object
     properties:
@@ -182,8 +192,4 @@ allOf:
         type: number
       time:
         type: number
-    required:
-    - kinds
-    - count
-    - time
-additionalProperties: false
+      additionalProperties: false

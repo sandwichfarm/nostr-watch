@@ -125,8 +125,6 @@
 
     // **Build Inverted Index**
     function buildInvertedIndex(data: RecordData[], filtersInclude: string[]) {
-        const begin = new Date().getTime();
-        console.log('begin buildInvertedIndex');
         filtersInclude.forEach(filterKey => {
             _invertedIndex[filterKey] = {};
             data.forEach(record => {
@@ -143,13 +141,10 @@
                 }
             });
         });
-        console.log('end buildInvertedIndex', new Date().getTime() - begin);
     }
 
     // **Compute Active Record IDs Based on Active Filters**
     function computeActiveRecordIDs(activeFilters: Record<string, any>): Set<string> {
-        console.log('begin computeActiveRecordIDs');
-        const begin = new Date().getTime();
         let activeRecordIDs: Set<string> | null = null;
 
         // Iterate over each filter block
@@ -200,14 +195,11 @@
                 }
             }
         });
-        console.log('end computeActiveRecordIDs', new Date().getTime() - begin);
         return activeRecordIDs || new Set(get(tableData).data.map(record => record.id));
     }
 
     // **Update Disabled Filters Based on Active Filters**
-    function updateDisabledFilters(activeFilters: Record<string, any>) {
-        const begin = new Date().getTime();
-        console.log('begin updateDisabledFilters');
+    function updateDisabledFilters(activeFilters: Record<string, any>) {\
         const activeRecordIDs = computeActiveRecordIDs(activeFilters);
         const newDisabledFilters: Record<string, Set<string>> = {};
 
@@ -262,7 +254,6 @@
                 }
             });
         });
-        console.log('end updateDisabledFilters', new Date().getTime() - begin);
         disabledFilters.set(newDisabledFilters)
     }
 
@@ -321,8 +312,6 @@
 
     // **Apply a Filter Value Based on Its Type and Mode**
     function applyFilter(filterKey: string, value: any) {
-        const begin = new Date().getTime();
-        console.log('begin applyFilter', filterKey, value);
         const filter = $relayFilters.find(f => f.key === filterKey);
         if (!filter) return;
 
@@ -409,7 +398,6 @@
 
             return currentFilters;
         });
-        console.log('end applyFilter', new Date().getTime() - begin);
         debounce(refreshIndices, 20)();
     }
 

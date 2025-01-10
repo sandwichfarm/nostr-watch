@@ -1,20 +1,15 @@
 
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
-    import { derived, writable, type Writable } from 'svelte/store';
     
     import * as Card from '$lib/components/ui/card';
 	import ProfileCompact from '$lib/components/partials/ProfileCompact.svelte';
 	
-	import { events, eventsArray, nip66 } from '$lib/stores';
+	import { nip66 } from '$lib/stores';
 
-	import { formatRelayUrl } from '$lib/utils/routing';
-	import type { PubkeyProfile } from '@nostrwatch/nip66/models/PubkeyProfile';
-	import type { PubkeyRelays } from '@nostrwatch/nip66/models/PubkeyRelays';
+	import type { PubkeyProfile, PubkeyRelays } from '@nostrwatch/nip66/models';
 	import { Monitor, Nip66Event } from '@nostrwatch/nip66/models';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
-	import Nip66Check from '../../Nip66Check.svelte';
-	import type { IEvent } from '@nostrwatch/nip66/models/Event';
     import OperatorRelays from '../OperatorRelays.svelte';
 
     export let pubkey: string;
@@ -24,7 +19,6 @@
     export let monitors: Monitor[];
 
     let otherRelaysCount: number;
-
 
     const mount = async () => {
         if(!$nip66) return;

@@ -10,8 +10,8 @@
 	  import { StateManager } from '@nostrwatch/nip66';
     
     export let relay: string;
-    export let monitors: Monitor[];
-    export let checks: Nip66Event[];
+    export let monitors: Writable<Monitor[]>
+    export let checks: Writable<Nip66Event[]>
     export let aggregate: any;
 
     let ready: boolean = false;
@@ -81,8 +81,10 @@
     }
   
     const setMonitor = (monitor: Monitor) => {
+      if(!monitor?.registration) return;
       const { dd } = monitor.registration
-      const monitorCheck: Nip66Event = checks.find( check => check.pubkey === monitor.pubkey )
+      const monitorCheck: Nip66Event | undefined = $checks.find( check => check.pubkey === monitor.pubkey )
+      if(!monitorCheck) return //console.warn(`${monitor.pubkey} could not find check data...`)
       const rtt = monitorCheck?.rtt || undefined
 
       //console.log('monitor data', monitor, monitor.pubkey, dd, monitorCheck, rtt)
@@ -114,7 +116,7 @@
   
     const setMonitors = async (): Promise<void> => {
       resetMonitors()
-      for ( const monitor of monitors) {
+      for ( const monitor of $monitors) {
         setMonitor(monitor)
       }
     }
@@ -204,9 +206,10 @@
     };
 
     
-    onMount( () => {
-      init()  
-    })
+    onMount(init)
+
+    monitors.subscribe(init)
+    checks.subscribe(init)
   </script>
 
   {#if ready === true}

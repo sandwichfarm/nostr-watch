@@ -80,6 +80,9 @@ export class Service {
   async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     await this.ready();
     let { filters, relays, options, hash } = args;
+    if(filters) {
+      this.fetchFromCache(filters, callbacks);
+    }
     if(!hash) {
       hash = deterministicHash(args)
     }

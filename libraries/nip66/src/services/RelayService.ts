@@ -94,13 +94,15 @@ export class RelayService extends Service {
       { kinds: [0, 10002], authors: [pubkey] }
     ]
     const relays = this.userMetaRelays;
+    const priority = 1000;
     const options: WebsocketAdapterOptions = {
       cache: true,
       returnResults: true, 
       keepAlive: false,
-      stream: false
+      stream: true,
+      batch: 1,
     }
-    return this.fetch( { relays, filters, options }, callbacks );
+    return this.subscribe( { relays, filters, priority, options }, callbacks );
   }
 
   async monitorInstancesFromChecks(checks: Nip66Event[], type: 'map' | 'array' = 'map'): Promise<Map<string, Monitor> | Monitor[] | undefined> {
@@ -114,7 +116,8 @@ export class RelayService extends Service {
       cache: true,
       returnResults: true, 
       keepAlive: false,
-      stream: false
+      stream: false,
+      batch: 1
     }
     const onevent = (event: IEvent) => {
       this.monitors.manager.handleEvent(event)
@@ -128,7 +131,7 @@ export class RelayService extends Service {
         { onevent }
       )
     )}
-    await this.monitors.fetch( 
+    await this.monitors.subscribe( 
       { relays, filters, options },
       { onevent }
     )

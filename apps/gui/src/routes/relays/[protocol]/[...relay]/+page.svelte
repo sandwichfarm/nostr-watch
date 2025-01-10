@@ -138,15 +138,16 @@
   const loadRelayData = async () => {
       reset();
       await nip66Ready()
+      loadNip11().then(loadOperatorMeta)
       if (!$isLivesyncing) {
-          const res = await $nip66?.services?.relay?.getRelayData(relayUrl);
-          if (!res) return;
-          const [data, mons] = res;
-          addEventsToStore(data);
-          monitors.set(Array.from(mons?.values() || new Set()));
+          $nip66?.services?.relay?.getRelayData(relayUrl).then( (res: any) => {
+            if (!res) return;
+            const [data, mons] = res;
+            addEventsToStore(data);
+            monitors.set(Array.from(mons?.values() || new Set()));
+          })
       }
-      await loadNip11();
-      await loadOperatorMeta();
+      
       loading = false;
       currentRelay = relayUrl;
   };
@@ -157,17 +158,37 @@
   };
 
   const loadOperatorMeta = async () => {
+    console.log('loadOperatorMeta')
+    const begin = Date.now();
       if (!operatorPubkey) return operatorMetaReady.set(true);
+      let count = 0
       const onevent = (event: IEvent) => {
-          if (event.kind === 0 && !$operatorProfile) {
-              operatorProfile.set(new PubkeyProfile(event));
+        console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
+        count++;
+        if (event.kind === 0) {
+          if($operatorProfile === null) {
+            operatorProfile.set(new PubkeyProfile(event));
           }
-          if (event.kind === 10002 && !$operatorRelays) {
-              operatorRelays.set(new PubkeyRelays(event));
+          else if($operatorProfile && event?.created_at && $operatorProfile?.created_at && $operatorProfile!.created_at < event?.created_at) {
+            operatorProfile.set(new PubkeyProfile(event));
           }
+        }
+        if (event.kind === 10002 && !$operatorRelays) {
+          if($operatorRelays === null) {
+            operatorRelays.set(new PubkeyRelays(event));
+          }
+          else if($operatorRelays && event?.created_at && $operatorRelays?.created_at && $operatorRelays!.created_at < event?.created_at) {
+            operatorRelays.set(new PubkeyRelays(event));
+          }
+        }
       };
-      await $nip66?.services?.relay?.fetchOperatorMeta(operatorPubkey, { onevent });
+      const onevents = (events: IEvent[]) => events.forEach( onevent )
+      $nip66?.services?.relay?.fetchOperatorMeta(operatorPubkey, { onevent, onevents });
+      while($operatorProfile === null || $operatorRelays === null) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+      }
       operatorMetaReady.set(true)
+      console.log('loadOperatorMeta', 'done', Date.now() - begin)
   };
 
   const mount = async () => {
@@ -318,7 +339,7 @@
                 <div>
                   {#if item === 'map'}
                     {#if CardMap}
-                      <CardMap relay={relayUrl} monitors={$monitors} checks={$checksrelay} aggregate={$relayAggregate} />
+                      <CardMap relay={relayUrl} {monitors} checks={checksrelay} aggregate={$relayAggregate} />
                     {:else}
                       <Skeleton class="h-48 w-full" />
                     {/if}

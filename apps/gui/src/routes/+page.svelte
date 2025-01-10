@@ -17,8 +17,6 @@
 </script> 
 
 {#if isHomepage}
-
-
   {#if loadedEnough}
   <section class="h-[420px] bg-white/5 flex flex-col justify-center items-center">
     <h1 class="w-full text-center text-3xl mb-4">find your relays.</h1>

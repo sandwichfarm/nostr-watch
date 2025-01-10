@@ -17,7 +17,7 @@ export type Nip66Services = {
   relay?: RelayServiceType,
 } 
  
-export default class {
+export class Nip66 {
 
   public relayService?: RelayServiceType;
   public monitorService?: MonitorServiceType;
@@ -65,10 +65,11 @@ export default class {
     return this._initialized;
   }
 
-  async ready(): Promise<void> {
+  async ready(): Promise<Nip66> {
     while(!this.initialized){
       await new Promise(resolve => setTimeout(resolve, 100))
     }
+    return this;
   }
 
   on(event: string, listener: (...args: any[]) => void): void {
@@ -202,3 +203,5 @@ export default class {
     this.cacheAdapter?.REQ(filters)
   }
 }
+
+export default Nip66;

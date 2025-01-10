@@ -65,14 +65,14 @@
             formatters, 
             tableFormatters, 
             filterFormatters, 
-            tableRowStyler,
-            reformatters
+            tableRowStyler
         } = $config);
     }
 
     let keysEnable: string[];
 
-    $: keysEnable = (columnsShow && filtersShow )? Array.from(new Set([...columnsShow, ...filtersShow])) : [];
+
+    $: keysEnable = (columnsShow && filtersShow?.length )? Array.from(new Set([...columnsShow, ...filtersShow])) : [];
 
 	const maxBadgeLength: number = 20;
     
@@ -81,7 +81,10 @@
     // **Stores and Reactive Variables**
     const filters = writable({});
 
-    $: filtersInclude = [ ...$config.filtersShow.filter(f => !filtersDisable.includes(f))  ];
+    setInterval( () =>  console.log('config;dt', $config), 1000)
+    // setInterval( () =>  console.log('filtersShow', $config.filtersShow), 1000)
+
+    $: filtersInclude = filtersShow?.length? [ ...$config.filtersShow.filter(f => !filtersDisable.includes(f)) ]: [];
     $: columnsInclude = [ ...$config.columnsShow.filter(f => !columnsDisable.includes(f)) ];
 
     const tableData = derived(

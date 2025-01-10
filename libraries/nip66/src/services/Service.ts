@@ -3,14 +3,12 @@ import type { ICacheAdapter, IWebsocketAdapter, SubscribeHandlers, WebsocketRequ
 import { defaultWebsocketAdapterOptions } from "@base/core";
 import { IAdaptersArgument } from "@base/interfaces/IAdaptersArgument";
 import { Filter } from "nostr-tools";
-import { EventEmitter } from "tseep";
 import { deterministicHash, isPRE, isRE } from "@base/utils";
-
-type EventHandler = (event: IEvent) => any;
 
 export interface IGroupedRelays {
   userMeta?: string[];
   nip66?: string[];
+  appData?: string[];
 }
 
 export interface FetchOptions extends WebsocketRequestBody {
@@ -66,7 +64,21 @@ export class Service {
     return filters;
   }
 
+  async publish(args: WebsocketRequestBody): Promise<boolean> {
+    await this.ready();
+    let { hash, note, relays } = args
+    if(!note) return false;
+    if(!hash) {
+      hash = note.id.slice(0, 21)
+    }
+    this.subscriptions.add(hash)
+    await this.websocketAdapter.publish({ note, relays, hash });
+    this.subscriptions.delete(hash)
+    return false;
+  }
+
   async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    await this.ready();
     let { filters, relays, options, hash } = args;
     if(!hash) {
       hash = deterministicHash(args)
@@ -79,20 +91,24 @@ export class Service {
   }
 
   async unsubscribe(hash: string) {
+    await this.ready();
     this.websocketAdapter.unsubscribe(hash);
   }
 
   async unsubscribeAllActive(){
+    await this.ready();
     this.subscriptions.forEach((hash) => {
       this.unsubscribe(hash);
     })
   }
 
   async unsubscribeAll(){
+    await this.ready();
     this.websocketAdapter.unsubscribeAll();
   }
 
   async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    await this.ready();
     if(!args.hash) {  
       args.hash = deterministicHash(args);
     }
@@ -104,34 +120,29 @@ export class Service {
   }
 
   async countFromCache(filters: Filter[]): Promise<number> {
+    await this.ready();
     return this.cacheAdapter.COUNT(filters);
   }
 
   async fetchFromCache(filters: Filter[], callbacks?: SubscribeHandlers): Promise<IEvent[]> {
-      let cacheEvents: IEvent[] = [];
-      // let highestTimestampPerPubkey: Map<string, number> = new Map();
-      cacheEvents = await this.cacheAdapter.REQ(filters);
-      // highestTimestampPerPubkey = cacheEvents.reduce((acc, event) => {
-      //     const timestamp = event.created_at as number;
-      //     if (!acc.has(event.pubkey) || acc.get(event.pubkey)! < timestamp) {
-      //         acc.set(event.pubkey, timestamp);
-      //     }
-      //     return acc;
-      // }, new Map<string, number>());
+    await this.ready();
+    let cacheEvents: IEvent[] = [];
+    cacheEvents = await this.cacheAdapter.REQ(filters);
 
-      if (callbacks?.onevents) {
-          callbacks.onevents(cacheEvents);
-      }
-      if (callbacks?.onevent) {
-          for (const event of cacheEvents) {
-              callbacks.onevent(event);
-          }
-      }
+    if (callbacks?.onevents) {
+        callbacks.onevents(cacheEvents);
+    }
+    if (callbacks?.onevent) {
+        for (const event of cacheEvents) {
+            callbacks.onevent(event);
+        }
+    }
 
-      return cacheEvents;
+    return cacheEvents;
   }
 
   async fetchFromWebsocket(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    await this.ready();
     const { relays, filters, options } = args;
     const websocketEvents: IEvent[] = await this.websocketAdapter.fetch(
         {
@@ -146,9 +157,12 @@ export class Service {
   }
 
   async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    await this.ready();
     const { relays, options, sync } = args;
     let { filters } = args;
     let { returnResults } = options;
+
+    filters = filters ?? [];
 
     const events = new Map<string, IEvent>();
 
@@ -199,9 +213,6 @@ export class Service {
     const finalEvents = Array.from(events.values());
     return this.modifyReturnedEvents(finalEvents);
   }
-
-
-
 
   async modifyReturnedEvents(events: IEvent[]): Promise<IEvent[]> {
     console.warn('modifyReturnedEvents not implemented');

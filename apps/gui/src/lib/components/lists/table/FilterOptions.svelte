@@ -43,7 +43,7 @@
             const tableConfigCache = StateManager.get(`preferences:${tableKey}:filtersConfig`);
             StateManager.set(`preferences:${tableKey}:filtersConfig`, {
                 ...tableConfigCache,
-                filtersShow: sortedFiltersShow
+                filtersShow: sortedFiltersShow || []
             });
             return newConfig;
         });

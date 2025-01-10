@@ -7,6 +7,7 @@ const resultTpl: IResultData = { data: {}, duration: -1 };
 export class SslAdapterDefault extends AbstractAdapter implements IAdapter {
 
   static type: AdapterType = 'ssl';
+  readonly slug: string = 'SslAdapterDefault';
 
   constructor(parent: Base) {
     super(parent);

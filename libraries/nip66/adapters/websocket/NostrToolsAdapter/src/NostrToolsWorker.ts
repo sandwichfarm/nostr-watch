@@ -14,6 +14,7 @@ import { SubCloser } from 'nostr-tools/abstract-pool';
 import { defaultWebsocketAdapterOptions, defaultWebsocketRequestBody, WebsocketAdapterResult, WebsocketAdapterOptions, WebsocketRequestBody } from 'node_modules/@nostrwatch/nip66/src/core';
 
 import PQueue from "p-queue";
+import { AbstractSimplePool } from "nostr-tools/abstract-pool";
 
 const queue = new PQueue({ concurrency: 10 });
 
@@ -68,17 +69,25 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool))
   }
 
+  async _publish(request: WebsocketRequestBody = defaultWebsocketRequestBody): Promise<boolean> {
+    let { relays, note } = request;
+    relays = relays ?? this.relays;
+    if(!note) return false;
+    if(!relays.length) return false;
+    if(!this.pool) await this.connect();
+    const result = (this.pool as AbstractSimplePool).publish(relays as string[], note)
+    await Promise.any(result);
+    const success = result.filter((r: any) => r.status === 'fulfilled').length > 0;
+    return success;
+  }
+
   async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
     let { filters, relays, options, hash, priority } = request;
     const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
     priority = priority ?? 0;
 
-    //console.log('nostools worker _subscribe', hash)
-
     const subby = async (): Promise<IEvent[] | boolean> => {
-      //console.log('!!!! NostrToolsWorker: _subscribe: queue running now')
       return new Promise(async (resolve, reject) => {
-        
         const effectiveRelays = relays ?? this.relays;
         const result: IEvent[] = [];
         let count: number = 0;

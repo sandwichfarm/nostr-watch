@@ -18,7 +18,7 @@
   import { Skeleton } from "$lib/components/ui/skeleton";
 	import { nip66Ready } from '$lib/stores/app';
 	import { nip66 } from '$lib/stores';
-	import { getRelayErrorSubject } from '$lib/stores/relay-errors';
+
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
   let RelayChecks: typeof import('$lib/components/partials/relay-single/RelayChecks.svelte').default | null = null;
@@ -261,7 +261,9 @@
 <header
   id="relay-header"
   class="relative bg-center bg-cover bg-no-repeat h-48"
-  style={`background-image: url('${banner}');`}
+  style={banner? `background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)),  url('${banner}'); 
+          background-repeat: no-repeat; 
+          background-size: cover;`: ''}
 >
   <div class="relative z-10 flex justify-between p-6 h-full">
     <div class="flex">

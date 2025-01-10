@@ -1,6 +1,11 @@
 import Logger from '@nostrwatch/logger';
 const logger = new Logger('@nostrwatch/nostrings');
 
+const blocklist = [
+  'wss://echo.websocket.org',
+  'ws://echo.websocket.org',
+]
+
 interface Discriminator {
   (input: string): boolean;
 }

@@ -31,6 +31,8 @@ export interface IAdapterMethods {
 
 export interface IAdapter extends IAdapterMethods {
   readonly base: Base;
+  readonly slug: string;
+
   count?: TAdapterCount;
 
   initialize(): void;

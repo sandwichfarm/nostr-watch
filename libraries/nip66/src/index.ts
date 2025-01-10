@@ -7,5 +7,6 @@ export * from './factory/cache.shared.worker';
 export type * from './interfaces/index';
 export { Service, type FetchOptions } from './services/Service';
 
+export { Base as Nip66 };
 
 export default Base;

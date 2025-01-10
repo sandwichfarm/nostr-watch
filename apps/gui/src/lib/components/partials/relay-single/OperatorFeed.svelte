@@ -1,17 +1,22 @@
 <script lang="ts">
-    import Masonry from 'svelte-bricks'
     import { onDestroy, onMount } from 'svelte';
+    import { get, writable, type Writable } from 'svelte/store';
+
+    import Masonry from 'svelte-bricks'
+    
+    import type Nip66 from "@nostrwatch/nip66"
+    import { nip66 } from '$lib/stores';
+    import { isLivesyncing } from '$lib/stores/app';
+
+    
+    
     import { User } from '$lib/models/User.js';
 	import type { UserFeed } from '$lib/services/UserService';
     import { UserService } from '$lib/services/UserService';
-	import { nip66 } from '$lib/stores';
-	import { get, writable, type Writable } from 'svelte/store';
     import { userService } from '$lib/stores/user.js';
-
     import OperatorFeedNote from './OperatorFeedNote.svelte';
-	import { observeViewport } from '$lib/utils/ux';
-	import type { Nip11 } from '@nostrwatch/nip66/models/Nip11';
-	import { isLivesyncing } from '$lib/stores/app';
+
+    import { observeViewport } from '$lib/utils/ux';
 	import { beginLiveSync, stopLiveSync } from '$lib/utils/lifecycle';
 
     export let pubkey: string; 
@@ -55,10 +60,11 @@
             wasLivesyncing = true;
             stopLiveSync()
         }
-        const instance = get(nip66);
-        while(!instance || !instance.ready || !pubkey) {
+        const instance: Nip66 = get(nip66);
+        while(!instance || !instance.ready) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
+        if(!pubkey) return console.warn('relay operator pubkey not discovered');
         userService.set(new UserService(instance.adapters));
         if(!$userService) return console.warn('user service does not exist.');
         user = $userService.userFromPubkey(pubkey);  

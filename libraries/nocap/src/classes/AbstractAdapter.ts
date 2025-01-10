@@ -6,6 +6,8 @@ export type AdapterType = 'websocket' | 'dns' | 'geo' | 'info' | 'ssl';
 
 export abstract class AbstractAdapter implements IAdapter {
   protected _base: Base;
+  readonly slug: string = 'unset!'; 
+
   static type: AdapterType;
   public count!: TAdapterCount;
   

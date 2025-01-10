@@ -22,6 +22,7 @@
   export class GeoAdapterDefault extends AbstractAdapter implements IAdapter {
 
     static type: AdapterType = 'geo';
+    readonly slug: string = 'GeoAdapterDefault';
     
     constructor(parent: Base) { 
       super(parent);

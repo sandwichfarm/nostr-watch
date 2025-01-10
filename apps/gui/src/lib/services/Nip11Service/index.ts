@@ -31,7 +31,7 @@ export class Nip11Service {
         let error: RelayErrorMessages | undefined
         while(!result && !error){
             result = (get(nip11sLocal) as Map<string, Nip11>)?.get(relay)
-            error = getRelayErrorSubject(relay, 'nip11')
+            error = getRelayErrorSubject(relay, 'resolve', 'nip11')
             await new Promise( resolve => setTimeout( resolve, 200 ))
         }
         return result;

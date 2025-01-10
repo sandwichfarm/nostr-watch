@@ -2134,6 +2134,9 @@ importers:
         specifier: ^2.10.4
         version: 2.10.4(typescript@5.7.2)
     devDependencies:
+      '@hyrious/esbuild-plugin-commonjs':
+        specifier: ^0.2.4
+        version: 0.2.4(cjs-module-lexer@1.4.1)(esbuild@0.24.2)
       esbuild:
         specifier: ^0.24.2
         version: 0.24.2
@@ -3698,6 +3701,16 @@ packages:
   '@humanwhocodes/retry@0.3.1':
     resolution: {integrity: sha512-JBxkERygn7Bv/GbN5Rv8Ul6LVknS+5Bp6RgDC/O8gEBU/yeH5Ui5C/OlWrTb6qct7LjjfT6Re2NxB0ln0yYybA==}
     engines: {node: '>=18.18'}
+
+  '@hyrious/esbuild-plugin-commonjs@0.2.4':
+    resolution: {integrity: sha512-NKR8bsDbNP7EpM//cjoo8Bpihmc97gPpnwrggG+18iSGow6oaJpfmy3Bv+oBgPkPlxcGzC9SXh+6szoCoKFvCw==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      cjs-module-lexer: '*'
+      esbuild: '*'
+    peerDependenciesMeta:
+      cjs-module-lexer:
+        optional: true
 
   '@iarna/toml@2.2.5':
     resolution: {integrity: sha512-trnsAYxU3xnS1gPHPyU961coFyLkh4gAD/0zQ5mymY4yOZ+CYvsPqUbOFSw0aDM4y0tV7tiFxL/1XfXPNC6IPg==}
@@ -13181,6 +13194,12 @@ snapshots:
   '@humanwhocodes/object-schema@2.0.3': {}
 
   '@humanwhocodes/retry@0.3.1': {}
+
+  '@hyrious/esbuild-plugin-commonjs@0.2.4(cjs-module-lexer@1.4.1)(esbuild@0.24.2)':
+    dependencies:
+      esbuild: 0.24.2
+    optionalDependencies:
+      cjs-module-lexer: 1.4.1
 
   '@iarna/toml@2.2.5': {}
 

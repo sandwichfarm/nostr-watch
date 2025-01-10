@@ -8,8 +8,7 @@
     import MiniSearch from 'minisearch';
     import { Accordion } from 'radix-svelte';
     import * as Popover from "$lib/components/ui/popover";
-    import * as Tabs from "$lib/components/ui/tabs";
-    
+    import * as Tabs from "$lib/components/ui/tabs";    
     import Badge from '$lib/components/ui/badge/badge.svelte';
 
     import {
@@ -21,7 +20,7 @@
     import { debounce } from 'lodash'; // Ensure lodash is installed
 	import FilterOptions from './FilterOptions.svelte';
 
-	
+    import type { DataTableConfig } from './DataTableTypes';
 
     // **Props Passed to the Component**
     export let tableKey: string;
@@ -60,8 +59,6 @@
     // **Disabled Filters Store**
     const disabledFilters: Writable<Record<string, Set<string>>> = writable({});
 
-    
-
     // **Active Filters**
     $: activeFilters = $filters;
 
@@ -84,7 +81,6 @@
         buildInvertedIndex(data, filtersInclude);
         const initialFilters = createRelayFilters(data, filtersInclude, humanReadableNames);
         relayFilters.set(initialFilters);
-        // Initialize showAllFilters
         const initialShowAll: Record<string, boolean> = {};
         initialFilters.forEach( (filter: any) => {
             initialShowAll[filter.key] = false;
@@ -93,12 +89,20 @@
         updateDisabledFilters(get(filters));
     }
 
-    const onFilterChange = filtersInit;
+    const onFilterChange = ($config: DataTableConfig) => {
+        Object.entries(activeFilters).forEach( ([key]) => {
+            if(!$config?.filtersShow.includes(key)) {
+                clearFilter(key)
+            }
+        })
+        filtersInit()
+    }
 
-    // **Initialize relayFilters and Inverted Index Once on Mount**
-    onMount(() => {
-        filtersInit();
+    tableData.subscribe(() => {
+        debounce(filtersInit, 1000)()
     });
+
+    onMount(filtersInit);
 
     // **Build Inverted Index**
     function buildInvertedIndex(data: RecordData[], filtersInclude: string[]) {

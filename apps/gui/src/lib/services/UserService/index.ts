@@ -3,9 +3,8 @@ import type { IAdaptersArgument } from "@nostrwatch/nip66/interfaces"
 import { User } from "$lib/models/User.js"
 import { NostrEvent, type IEvent } from "@nostrwatch/nip66/models"
 import type { Pubkey } from "$lib/models/User.js";
-import type { SubscribeHandlers, WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/nip66/core/WebsocketAdapter";
+import type {  WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/nip66/core/WebsocketAdapter";
 import type { Filter } from "nostr-tools";
-import { events } from "$lib/stores";
 import { get } from "svelte/store";
 import { nip66 } from "$lib/stores";
 import type Nip66 from "@nostrwatch/nip66"
@@ -29,7 +28,8 @@ export interface UserFetchArgs extends FetchOptions {
     filters: Filter[];
     relays: string[],
     options: UserFetchOptions,
-    hash?: string
+    hash?: string,
+    priority?: number
 }
 
 export class UserService extends Service {
@@ -62,12 +62,12 @@ export class UserService extends Service {
             stream: false,
             returnResults: true,
             keepAlive: false,
-            priority: 10
         };
         const args: UserFetchArgs = {
             filters: [filter],
             relays: user.relays || [],
-            options
+            options,
+            priority: 10
         };
         let notes = (await this.subscribe(args))?.sort((a, b) => (b.created_at as number) - (a.created_at as number));
         return notes;
@@ -128,7 +128,8 @@ export class UserService extends Service {
             filters,
             relays,
             options,
-            hash
+            hash,
+            priority: 5
         }
         return this.subscribe(args) as Promise<IEvent[]>
     }

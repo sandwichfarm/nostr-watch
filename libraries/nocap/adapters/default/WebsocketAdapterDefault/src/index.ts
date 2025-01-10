@@ -13,6 +13,7 @@ export { TorWebSocket };
 class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   count: { event: number };
   static type: AdapterType = 'websocket';
+  readonly slug: string = 'WebsocketAdapterDefault';
 
   constructor(parent: Base) {
     super(parent);

@@ -32,6 +32,7 @@ const error = (message: string, data: Record<string, any> = {}): IResultData => 
 export class DnsAdapterDefault extends AbstractAdapter implements IAdapter {
 
   static type: AdapterType = 'dns';
+  readonly slug: string = 'DnsAdapterDefault';
   
   constructor(parent: Base){ 
     super(parent);

@@ -1,5 +1,7 @@
 import esbuild from 'esbuild';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
+import { commonjs } from "@hyrious/esbuild-plugin-commonjs";
+
 import fs from 'fs';
 import path from 'path';
 import { promises as fsp } from 'fs';
@@ -15,11 +17,17 @@ const browserConfig = {
     platform: 'browser',
     format: 'esm',
     allowOverwrite: true,
-    external: ['src/nips/*/index.js', 'ajv'],
+    external: ['src/nips/*/index.js', 'ajv', 'ajv-errors'],
     plugins: [
+        commonjs({ include: ['node_modules/**'] }),
         polyfillNode({
-            globals: { process: true, Buffer: true, global: true },
+            globals: { Buffer: true, process: true },
+            polyfills: {
+                buffer: true,
+                util: true,
+            },
         }),
+        ...plugins
     ],
 };
 

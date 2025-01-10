@@ -22,7 +22,9 @@ export class Nip66Event extends Geocoded implements IEvent {
       'supportedNips', 
       'software', 
       'icon',
+      // 'hasIcon',
       'banner',
+      // 'hasBanner',
       'version', 
       'hasNip11',
       'nip11Hash',
@@ -217,8 +219,16 @@ export class Nip66Event extends Geocoded implements IEvent {
       return this.nip11?.icon || null;
     }
 
+    get hasIcon(): boolean {
+      return !!this.icon;
+    }
+
     get banner(): string | null {
       return this.nip11?.banner || null;
+    }
+
+    get hasBanner(): boolean {
+      return !!this.banner;
     }
 
     get nrelay(): string | null {

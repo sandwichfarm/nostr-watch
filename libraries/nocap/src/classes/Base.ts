@@ -4,7 +4,7 @@ import Logger from "@nostrwatch/logger";
 import { parseRelayNetwork } from "@nostrwatch/utils";
 
 import { ConfigValidator, ConfigValidatorInterface, IConfig } from "../validators/ConfigValidator";
-import { IResult, ResultDefaults, ResultValidator, ResultValidatorInterface, type IResultData } from "../validators/ResultValidator";
+import { IResult, ResultValidator, type IResultData } from "../validators/ResultValidator";
 
 import { SessionHelper } from "./SessionHelper";
 import { TimeoutHelper } from "./TimeoutHelper";
@@ -295,9 +295,9 @@ export default class Base {
     if(typeof adapter?.[adapterMethodName] !== 'function'){
       return this.throw(new Error(`start(${key}): ${adapterMethodName} is not a function`));
     }
-
     this.precheck(key)
       .then(async () => {
+        console.log('seriously wtf fuck this.')
         this.logger.debug(`${key}: precheck resolved`);
         this.latency.start(key);
         this.logger.debug(`${key}:  this.adapters[${adapter}][${this.checkKey(key)}]()`);
@@ -379,7 +379,7 @@ export default class Base {
   produce_result(key: string, data: IResultData): Record<string, any> {
     const result: Record<string, any> = {};
     const adapter_key = this.routeAdapter(key);
-    const adapter_name = this.adapters[adapter_key].constructor.name;
+    const adapter_name = this.adapters[adapter_key].slug;
     result.url = this?.results?.get('url');
     result.network = this?.results?.get('network');
     result.hostname = this?.results?.get('hostname');

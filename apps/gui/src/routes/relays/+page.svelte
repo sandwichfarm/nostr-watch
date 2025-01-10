@@ -67,10 +67,13 @@
 
 	onMount(mount)
 
+	setInterval( () =>  console.log('config:page', $config), 1000)
+
     
 </script>
 
 <main> 
+
 	{#if $ready}
 	<Stats />
 	<DataTable data={relayAggregates} {config} tableKey="relays" />

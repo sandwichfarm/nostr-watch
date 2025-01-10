@@ -20,6 +20,7 @@ const error = (message: string, data: Record<string, any> = {}): IResultData => 
 export class InfoAdapterDefault extends AbstractAdapter implements IAdapter {
 
   static type: AdapterType = 'info';
+  readonly slug: string = 'InfoAdapterDefault';
   
   constructor(parent: Base) { 
     super(parent);

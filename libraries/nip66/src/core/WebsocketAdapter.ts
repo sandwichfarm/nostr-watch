@@ -48,8 +48,9 @@ export interface WebsocketRequestHeader {
 }
 
 export type WebsocketRequestBody = {
-  filters: Filter[],
   options: WebsocketAdapterOptions,
+  filters?: Filter[],
+  note?: IEvent,
   hash?: string,
   relays?: string[],
   priority?: number
@@ -79,13 +80,13 @@ export interface WebsocketAdapterFetchOptions {
 
 export interface IWebsocketAdapterMethods extends IAdapter {
   connect(): Promise<void>;
+  publish(args: Partial<WebsocketRequestBody>): Promise<boolean>;
   subscribe(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
   fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
   unsubscribe(hash?: string): void;
   unsubscribeAll(): void; 
   disconnect(): void;
   terminate(): void;
-  // bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>;
 
   abort(): Promise<boolean>;
 }
@@ -117,6 +118,17 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   async connect(): Promise<void> {}
   disconnect(): void {}
   terminate(): void {}
+
+  async publish(args: Partial<WebsocketRequestBody> = defaultWebsocketRequestBody): Promise<boolean> {
+    const pub = this.request({
+      action: 'publish',
+      args: {
+        ...defaultWebsocketRequestBody,
+        ...args
+      }
+    })
+    return this.response(pub) as Promise<boolean>
+  }
 
   async unsubscribe(hash?: string): Promise<boolean> {
     if(hash && !this.subscriptions.has(hash)) return true;
@@ -285,11 +297,9 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           //console.log('complete: removing handler.', hash)
           StateManager.off(hash)
           if(callbacks?.onevent){
-            //console.log('result:complete', hash, 'resolve: true')
             resolve(true)
           }
-          else {
-            //console.log('result:complete', hash, `resolve: ${results.length} events`, results)
+          else if(results){
             resolve(results)
           }
         }
@@ -300,24 +310,6 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       StateManager.on(hash, responseHandler)
     });
   }
-
-  // bootstrap(filters: Filter[], relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
-  //   const { kinds } = filters[0]
-  //   const hash = this.request({
-  //     action: 'fetch',
-  //     args: {
-  //       options: {
-  //         cache: true,
-  //         returnResults: true,  
-  //         keepAlive: true,
-  //         stream: true
-  //       },
-  //       filters,
-  //       relays
-  //     }
-  //   })
-  //   return this.response(hash, callbacks)
-  // }
 
   ping(): void {
     if(this.worker instanceof Worker) {

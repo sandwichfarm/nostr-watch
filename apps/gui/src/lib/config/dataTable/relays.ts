@@ -57,7 +57,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
         return keys.map(k => k.toLowerCase())
 }
 
-export const columnsDisable: DataKeys = ['id', 'created_at', 'monitorPubkey', 'fees']
+export const columnsDisable: DataKeys = ['id', 'created_at', 'fees']
 export const filtersDisable: DataKeys = ['relay', 'as', 'asname']
 
 export const columnsShow: DataKeys = ['relay', 'lastSeen', 'geocode', 'paymentRequired', 'authRequired']
@@ -134,6 +134,26 @@ export const tableFormatters: Formatters = {
         const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: ''
         return `<a class="text-lg" href="/relays/${formatRelayUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
+    // monitorPubkey: (pubkey) => {
+    //     let monitor: Monitor = {};
+    //     monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
+    //     let profile: string = '<div class="flex">';
+    //     profile += '<div class="flex-shrink-0 mr-2">'
+    //     profile += `
+    //         <span class="inline-block rounded-full overflow-hidden w-10 h-10">
+    //             <img src=${monitor.photo} alt=${monitor.photo} class="w-full h-auto" />
+    //         </span>
+    //         `
+    //     profile += '</div>'
+    //      profile += '<div class="">'
+    //     if(monitor?.profile?.name){
+    //         profile += `<div class="text-sm">${monitor.profile.name}</div>`
+    //     }
+    //     profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis">${monitor.pubkey}</div>`
+    //     profile += '</div>'
+    //     profile += '</div>'
+    //     return profile
+    // },
     dd: (dd: DD ) => {
         if(!dd?.lat || !dd?.lon) return '';
         return `<span class="text-xs font-bold white/50">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`

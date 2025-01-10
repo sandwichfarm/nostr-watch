@@ -13,6 +13,7 @@ export enum ResponseType {
   event = 'event',
   events = 'events',
   complete = 'complete',
+  error = 'error',
   unsubscribed = 'unsubscribed',
   aborted = 'aborted',
   terminated = 'terminated'
@@ -40,7 +41,7 @@ interface WebsocketResponseHeaders {
 }
 
 export type WebsocketResponseBody = {
-  type: 'event' | 'events' | 'complete' | 'unsubscribed' | 'aborted' | 'terminated',
+  type: 'event' | 'events' | 'error' | 'complete' | 'unsubscribed' | 'aborted' | 'terminated',
   result: any,
   hash: string
 }
@@ -66,6 +67,7 @@ export interface IAdapterWebsocketWorker {
   setup(command: AdapterWebsocketWorkerCommand): Promise<void>;
   subscribe( request: WebsocketRequestBody ): Promise<void>;
   fetch( request: WebsocketRequestBody ): Promise<void>;
+  publish( request: WebsocketRequestBody ): Promise<void>;
 
   signal: AbortSignal;
   controller: AbortController;
@@ -115,6 +117,9 @@ export class AdapterWebsocketWorker extends AdapterWorker {
 
   onMessage(request: WebsocketRequest = defaultWebsocketRequest){
     const { action, args } = request
+    if(action === 'publish'){
+      return this.publish(args)
+    }
     if(action === 'subscribe'){
       return this.subscribe(args)
     }
@@ -148,9 +153,22 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     if(!sent) console.warn('AdapterWebsocketWorker: send: did not send to any destination')
   }
 
+  async publish(request: WebsocketRequestBody = defaultWebsocketRequestBody ){
+    if(this.signal.aborted) this.abortControllerReset()
+    const success = await this._publish(request)
+    const responseType = success? ResponseType.complete : ResponseType.error
+    if(success){ 
+      this.respond(responseType, request)
+    }
+  }
+
+  async _publish(request: WebsocketRequestBody = defaultWebsocketRequestBody): Promise<boolean> {
+    throw new Error(`${this.constructor.name}:_publish() not implemented!`)
+  }
+
   async subscribe( request: WebsocketRequestBody = defaultWebsocketRequestBody ){
     if(this.signal.aborted) this.abortControllerReset()
-    const { hash, options } = request
+    const { options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
     if(stream){
@@ -160,7 +178,6 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     if(!stream){
       this.requestSyncReponse(request, result as IEvent[])
     }
-    //console.log(hash, options)
     if( !options?.keepAlive ){
       this.respond(ResponseType.complete, request)
     }

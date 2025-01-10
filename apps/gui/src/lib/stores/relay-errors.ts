@@ -1,5 +1,6 @@
 import { get, writable, type Writable } from "svelte/store";
-export type RelayErrorSubject = 'nip11'
+export type RelayErrorType = 'resolve' | 'schema'
+export type RelayErrorSubject = string;
 export type RelayErrorMessage = string
 export type RelayErrorMessages = RelayErrorMessage[]
 export type RelayErrors = Map<RelayErrorSubject, RelayErrorMessages>
@@ -11,23 +12,24 @@ export const getRelayErrors = (relay: string): RelayErrors | undefined => {
     return get(relaysErrors).get(relay)
 }
 
-export const getRelayErrorSubject = (relay: string, subject: RelayErrorSubject): RelayErrorMessages | undefined => {
+export const getRelayErrorSubject = (relay: string, type: RelayErrorType, subject: RelayErrorSubject): RelayErrorMessages | undefined => {
     const map = getRelayErrors(relay);
     if(!map) return undefined;
-    return map.get(subject) || undefined
+    return map.get(`${type}:${subject}`) || undefined
 }
 
-export const setRelayError = (relay: string, subject: RelayErrorSubject, message: RelayErrorMessage ) => {
+export const setRelayError = (relay: string, type: RelayErrorType, subject: RelayErrorSubject, message: RelayErrorMessage ) => {
     const $relaysErrors = get(relaysErrors)
     let relayErrors = $relaysErrors.get(relay)
     if(relayErrors === undefined) relayErrors = new Map();
-    let messages = getRelayErrorSubject(relay, subject);
+    let messages = getRelayErrorSubject(relay, type, subject);
     if(typeof messages === 'undefined') messages = [];
     (messages as RelayErrorMessages).push(message)
-    relayErrors.set(subject, messages)
-    console.log('n11s relayErrors', relay, relayErrors)
+
+    relayErrors.set(`${type}:${subject}`, messages)
+    console.log('relayErrors', subject, relay, relayErrors)
     $relaysErrors.set(relay, relayErrors)
-    console.log('n11s relays errors', $relaysErrors)
+    console.log('relayErrors', subject, $relaysErrors)
     relaysErrors.set($relaysErrors);
-    console.log('n11s relays errors (from store)', get(relaysErrors))
+    console.log('relayErrors (from store)', get(relaysErrors))
 }

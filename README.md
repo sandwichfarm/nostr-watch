@@ -1,4 +1,4 @@
-> @nostrwatch is in heavy development. Legacy nostr.watch is **in maintenance mode**.
+> @nostrwatch is in heavy development. Legacy nostr.watch is **deprecated and no longer maintained**.
 
 # @nostrwatch 
 A Typescript stack for monitoring, auditing, describing and validating anything related to nostr relays. `@nostrwatch` is an [OpenSats](http://opensats.org) grant recipient.

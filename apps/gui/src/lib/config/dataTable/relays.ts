@@ -108,8 +108,6 @@ export const humanReadableNames: NameFormatter = {
     publicationFee: "Pub. Cost"
 };
 
-export const formatters: Formatters = {}
-
 const formatFee = (fees: Nip11Fee[]) => {
     if(!fees) return ''
     let str = '';
@@ -283,7 +281,6 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 
 export default {
     humanReadableNames,
-    formatters,
     tableFormatters,
     filterFormatters,
     columnsDisable,

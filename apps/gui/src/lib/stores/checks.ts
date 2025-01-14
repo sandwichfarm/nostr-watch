@@ -119,6 +119,7 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
     ...item.aggregate,
     id: index,
   }));
+  console.log('relayChecks', $relayChecks?.length)
   const $isBootstrapping = get(isBootstrapping)
   const agg = StateManager.get('aggregate:complete');
   if(!aggregates.length || ($isBootstrapping && agg) ) {

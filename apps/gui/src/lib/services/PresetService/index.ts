@@ -1,7 +1,7 @@
 import { Service, type FetchOptions } from "@nostrwatch/nip66/services"
 import type { Filter } from "nostr-tools";
 import type { WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/nip66/core";
-import { DataTablePreset } from "src/lib/models/Preset";
+import { DataTablePreset } from "$lib/models/Preset";
 import type { IEvent } from "@nostrwatch/nip66/models";
 import type { IAdaptersArgument } from "@nostrwatch/nip66";
 

@@ -3,33 +3,20 @@
 	import { doBootstrap } from '$lib/stores/routines';
 	import { doAggregateCache } from '$lib/stores/app';
 	import { onMount } from 'svelte';
-	import { derived, writable, type Writable } from 'svelte/store';
+	import { writable, type Writable } from 'svelte/store';
 	import { StateManager } from '@nostrwatch/nip66';
-	import { Nip66Event } from '@nostrwatch/nip66/models';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-	import type { Formatters } from 'src/lib/config/dataTable/monitors';
 	import { type default as DataTableType } from '$lib/components/lists/table/DataTable.svelte';
 	import { type default as StatsType } from '$lib/components/layout/Stats.svelte';
+	import type { DataTableConfig } from '$lib/components/lists/table/DataTableTypes';
+	import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
+	import { default as relaysTableConfig } from '$lib/config/dataTable/relays.js';
 
 	export const prerender = true;
 
+	const tableKey: string = "relays";
+
 	let Stats: StatsType;
 	let DataTable: DataTableType;
-	let defaultTableConfig: any;
-
-	type DataTableConfig = { 
-		columnsDisable: string[]
-        columnsShow: string[]
-        filtersDisable: string[]
-        filtersShow: string[]
-        humanReadableNames: Record<string, string>
-        formatters: Formatters
-        tableFormatters: Formatters 
-        filterFormatters: Formatters
-		availableColumnKeys: string[]
-        availableFilterKeys: string[]
-        tableRowStyler: (row: any) => string
-	}
 	
 	const config: Writable<DataTableConfig | null> = writable(null);
 	const ready: Writable<boolean> = writable(false);
@@ -39,22 +26,27 @@
 	const loadComponents = async () => {
 		const imports = [
 			import('$lib/components/layout/Stats.svelte'),
-			import('$lib/components/lists/table/DataTable.svelte'),
-			import('$lib/config/dataTable/relays.js')
+			import('$lib/components/lists/table/DataTable.svelte')
 		];
 
 		const results = await Promise.allSettled(imports);
-		[ Stats, DataTable, defaultTableConfig ] = results.map(result => (result.status === 'fulfilled' ? result.value.default || result.value : null));
+		[ Stats, DataTable ] = results.map(result => (result.status === 'fulfilled' ? result.value.default || result.value : null));
 		componentsLoaded.set(true);
 	}
 
 	const setConfig = () => {
-		const userTableConfig = StateManager.get('preferences:relays:tableConfig');
+		
+		let conf = {...defaultDataTableConfig, ...relaysTableConfig}
+		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
+		
 		if(userTableConfig) {
-			config.set({...defaultTableConfig, ...userTableConfig})
+			conf = {...conf, ...userTableConfig}
+			console.log('setting config with user config', conf)
+			config.set(conf)
 		}
 		else {
-			config.set({...defaultTableConfig})
+			console.log('setting config without user config', conf)
+			config.set(conf)
 		}
 		ready.set(true)
 	}
@@ -69,9 +61,9 @@
 </script>
 
 <main> 
-
+	<!-- <pre>{JSON.stringify(relayAggregates, null ,2)}</pre> -->
 	{#if $ready}
 	<Stats />
-	<DataTable data={relayAggregates} {config} tableKey="relays" />
+	<DataTable data={relayAggregates} {config} {tableKey} />
 	{/if}
 </main>

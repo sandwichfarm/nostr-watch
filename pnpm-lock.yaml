@@ -136,8 +136,8 @@ importers:
         specifier: ^0.1.1
         version: 0.1.1(svelte@5.2.7)
       svelte-speedometer:
-        specifier: ^3.0.1
-        version: 3.0.1(svelte@5.2.7)
+        specifier: ^3.1.0
+        version: 3.1.0(svelte@5.2.7)
       svelte-time:
         specifier: ^0.9.0
         version: 0.9.0
@@ -214,6 +214,9 @@ importers:
       publint:
         specifier: ^0.2.0
         version: 0.2.12
+      rollup-plugin-node-polyfills:
+        specifier: 0.2.1
+        version: 0.2.1
       rollup-plugin-polyfill-node:
         specifier: ^0.13.0
         version: 0.13.0(rollup@4.27.4)
@@ -262,6 +265,9 @@ importers:
       vite-plugin-dynamic-import:
         specifier: ^1.6.0
         version: 1.6.0
+      vite-plugin-node-polyfills:
+        specifier: ^0.22.0
+        version: 0.22.0(rollup@4.27.4)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0))
       vite-plugin-static-copy:
         specifier: ^2.2.0
         version: 2.2.0(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0))
@@ -10466,10 +10472,10 @@ packages:
     peerDependencies:
       svelte: ^4.0.0
 
-  svelte-speedometer@3.0.1:
-    resolution: {integrity: sha512-iEuvNp4N1jzeThmO9fq6XBBguNvCvPpvZszsmrkx0/pjAADtS9SCBmFg0OO6lW7OZuboQNb7XCwEaQhIZ0F5Ng==}
+  svelte-speedometer@3.1.0:
+    resolution: {integrity: sha512-LXGItZB6X70VPbqIoxZnGr30uP9AgABc8mtdUbPwC4TFBJ7myxjj3zrztSftYsrv/YdbJYJHsQPqvV2m53nl6Q==}
     peerDependencies:
-      svelte: ^5.0.0 || >=5.0.0-next
+      svelte: ^5.14.0
 
   svelte-subscribe@2.0.1:
     resolution: {integrity: sha512-eKXIjLxB4C7eQWPqKEdxcGfNXm2g/qJ67zmEZK/GigCZMfrTR3m7DPY93R6MX+5uoqM1FRYxl8LZ1oy4URWi2A==}
@@ -21330,7 +21336,7 @@ snapshots:
       svelte: 5.2.7
       svelte-subscribe: 2.0.1(svelte@5.2.7)
 
-  svelte-speedometer@3.0.1(svelte@5.2.7):
+  svelte-speedometer@3.1.0(svelte@5.2.7):
     dependencies:
       d3-array: 3.2.4
       d3-color: 3.1.0

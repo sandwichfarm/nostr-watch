@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import { get, type Readable } from 'svelte/store';
     import { writable, type Writable } from 'svelte/store';
 
@@ -26,24 +26,16 @@
     // **Props Passed to the Component**
     export let tableKey: string;
     export let tableData: Readable<{ data: any[] }>;
-    export let keysEnable: string[];
-    export let filtersInclude: string[];
-    export let filterOverrides: Record<string, { type: 'search' | 'badge', miniSearchOptions?: any }> = {};
-    export let maxBadgeLength: number = 10;
-    export let filters: Writable<Record<string, any>>; // Writable store passed from the parent component
+    
+    export let filters: Writable<Record<string, any>>;
     export let config: any;
 
-    let humanReadableNames: Record<string, string>, 
-        filterFormatters: Formatters;
+    const maxBadgeLength: number = 21;
 
-    $: {
-        ({
-            humanReadableNames, 
-            filterFormatters
-        } = $config);
-    }
+    const filterOverrides: Record<string, { type: 'search' | 'badge', miniSearchOptions?: any }> = {};
 
-    // const { filterFormatters:_filterFormatters } = config;
+    $: keysEnable = ($config.columnsShow?.length && $config.filtersShow?.length )? Array.from(new Set([...$config.columnsShow, ...$config.filtersShow])) : []
+    $: filtersInclude = $config.filtersShow?.length? [ ...$config.filtersShow.filter(f => !$config.filtersDisable.includes(f)) ]: [];
 
     // **Accordion States**
     let rootValue: any;
@@ -98,7 +90,7 @@
         const { data } = $tableData;
         if(!data) return;
         buildInvertedIndex(data, filtersInclude);
-        const initialFilters = createRelayFilters(data, filtersInclude, humanReadableNames);
+        const initialFilters = createRelayFilters(data, filtersInclude, $config.humanReadableNames);
         relayFilters.set(initialFilters);
         const initialShowAll: Record<string, boolean> = {};
         initialFilters.forEach( (filter: any) => {
@@ -106,6 +98,8 @@
         });
         showAllFilters.set(initialShowAll);
         updateDisabledFilters($filters)
+        console.log('setting active filters', $config.activeFilters)
+        filters.set( $config.activeFilters )
     }
 
     const onFilterChange = ($config: DataTableConfig) => {
@@ -117,11 +111,14 @@
         filtersInit()
     }
 
-    tableData.subscribe(() => {
-        debounce(filtersInit, 1000)()
+    const tableDataUnsub = tableData.subscribe(() => {
+        // debounce(filtersInit, 5000)()
     });
 
     onMount(filtersInit);
+    onDestroy( () => {
+        tableDataUnsub()
+    })
 
     // **Build Inverted Index**
     function buildInvertedIndex(data: RecordData[], filtersInclude: string[]) {
@@ -478,7 +475,7 @@
     const format = (key: string, values: string[], html: boolean = true) => {
         if(!html) {
             let hasHtml = false;
-            const formatted = values.map((value: string) => filterFormatters?.[key]?.(value) || value)
+            const formatted = values.map((value: string) => $config.filterFormatters?.[key]?.(value) || value)
             formatted.forEach(value => {
                 if (containsHTML(value)) {
                     hasHtml = true;
@@ -487,7 +484,7 @@
             return hasHtml? values: formatted;
         }
         else {
-            return values.map((value: string) => filterFormatters?.[key]?.(value) || value);
+            return values.map((value: string) => $config.filterFormatters?.[key]?.(value) || value);
         }
     }
 
@@ -721,7 +718,7 @@
                                         }"
                                         disabled={$disabledFilters[filter.key]?.has(String(value).toLowerCase())}
                                     >
-                                        {@html filterFormatters?.[filter.key]?.(value) || value}
+                                        {@html $config.filterFormatters?.[filter.key]?.(value) || value}
                                     </Button>
                                 {/each}
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
@@ -772,7 +769,7 @@
                                         }"
                                         disabled={$disabledFilters[filter.key]?.has(String(value).toLowerCase())}
                                     >
-                                        {filterFormatters?.[filter.key]?.(value) || value}
+                                        {$config.filterFormatters?.[filter.key]?.(value) || value}
                                     </Button>
                                 {/each}
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}

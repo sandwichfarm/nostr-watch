@@ -1,36 +1,12 @@
 <script lang="ts">
-    import { Nip66Event } from "@nostrwatch/nip66/models";
     import Checkbox from "../../ui/checkbox/checkbox.svelte";
     import { StateManager } from "@nostrwatch/nip66";
     import type { Writable } from "svelte/store";
     import { capitalize } from "@nostrwatch/utils";
-    import type { Formatters } from "src/lib/config/dataTable/monitors";
+	import type { DataTableConfig } from "./DataTableTypes";
 
     export let tableKey: string;
     export let config: Writable<DataTableConfig | null>;
-
-    type DataTableConfig = { 
-        columnsDisable: string[]
-        columnsShow: string[]
-        filtersDisable: string[]
-        filtersShow: string[]
-        humanReadableNames: Record<string, string>
-        formatters: Formatters
-        tableFormatters: Formatters 
-        filterFormatters: Formatters
-        availableColumnKeys: string[]
-        availableFilterKeys: string[]
-        tableRowStyler: (row: any) => string
-    }
-
-    // $: availableColumnKeys = [
-    //     ...($config?.columnsDisable
-    //         ? Nip66Event.keys.filter(key => !$config.columnsDisable.includes(key))
-    //         : Nip66Event.keys),
-    //     "seenBy",
-    //     "lastSeen",
-    //     "seenTimes"
-    // ];
 
     const toggleColumnShow = (key: string) => {
         config.update((currentConfig: DataTableConfig) => {
@@ -46,9 +22,8 @@
             }
             const sortedColumnsShow = $config?.availableColumnKeys.filter(k => newColumnsShow.includes(k)) || [];
             const newConfig = { ...currentConfig, columnsShow: sortedColumnsShow };
-            const tableConfigCache = StateManager.get(`preferences:${tableKey}:tableConfig`);
             StateManager.set(`preferences:${tableKey}:tableConfig`, {
-                ...tableConfigCache,
+                ...$config,
                 columnsShow: sortedColumnsShow
             });
             return newConfig;

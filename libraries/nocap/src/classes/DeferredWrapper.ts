@@ -33,7 +33,7 @@ export class DeferredWrapper {
   }
 
   async resolve(key: string, result: any) {
-    this.logger.debug(`deferred:resolve("${key}"): has timeout: ${this.timeout.has(key)}`);
+    // this.logger.debug(`deferred:resolve("${key}"): has timeout: ${this.timeout.has(key)}`);
     if (this.timeout.has(key)) this.timeout.clear(key);
     return this.get(key).resolve(result);
   }
@@ -63,32 +63,32 @@ export class DeferredWrapper {
   }
 
   clearSessionPromises(_session?: string) {
-    const session = _session || this.session();
+    const session = _session || this.session;
     if (this.promises?.[session]) delete this.promises[session];
   }
 
   create(key: string) {
     this.setup();
-    this.promises[this.session()][key] = new Deferred();
+    this.promises[this.session][key] = new Deferred();
     return this.get(key);
   }
 
   exists(key: string) {
     this.logger.debug(`deferred:exists("${key}")`);
-    return typeof this.promises?.[this.session()]?.[key] === 'object';
+    return typeof this.promises?.[this.session]?.[key] === 'object';
   }
 
   get(key: string) {
-    const deferred = this.promises[this.session()][key];
+    const deferred = this.promises[this.session][key];
     this.logger.debug(`deferred:get("${key}"), exists: ${typeof deferred !== 'undefined'}`);
     return deferred;
   }
 
   setup() {
-    if (!this.promises?.[this.session()]) this.promises[this.session()] = {};
+    if (!this.promises?.[this.session]) this.promises[this.session] = {};
   }
 
-  session() {
+  get session() {
     return this.$session.get();
   }
 

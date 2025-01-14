@@ -116,21 +116,25 @@ export class RelayService extends Service {
       cache: true,
       returnResults: true, 
       keepAlive: false,
-      stream: false,
+      stream: true,
       batch: 1
     }
+    const monitorsProcessed = new Set()
     const onevent = (event: IEvent) => {
       this.monitors.manager.handleEvent(event)
-      if(event.kind !== 10166) return;
-      metaPromises.push(this.monitors.fetch(
-        { 
-          relays: [...this.userMetaRelays], 
-          filters: [{ authors: [event.pubkey], kinds: [0, 10002] }], 
-          options 
-        }, 
-        { onevent }
-      )
-    )}
+      if(event.kind === 10166) {
+        if(monitorsProcessed.has(event.pubkey)) return;
+        metaPromises.push(this.monitors.fetch(
+          { 
+            relays: [...this.userMetaRelays], 
+            filters: [{ authors: [event.pubkey], kinds: [0, 10002] }], 
+            options 
+          }, 
+          { onevent }
+        ))
+        monitorsProcessed.add(event.pubkey)
+      }  
+    }
     await this.monitors.subscribe( 
       { relays, filters, options },
       { onevent }

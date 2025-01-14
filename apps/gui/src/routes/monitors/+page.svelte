@@ -16,20 +16,8 @@
     import type { Formatters } from '$lib/config/dataTable/monitors';
     import { nip66 } from '$lib/stores';
 	import { nip66Ready } from '$lib/stores/app';
-
-    type DataTableConfig = { 
-        columnsDisable: string[]
-        columnsShow: string[]
-        filtersDisable: string[]
-        filtersShow: string[]
-        humanReadableNames: Record<string, string>
-        formatters: Formatters
-        tableFormatters: Formatters 
-        filterFormatters: Formatters
-        availableColumnKeys: string[]
-        availableFilterKeys: string[]
-        tableRowStyler: (row: any) => string
-    }
+	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
+    import builtInTableConfig from '$lib/config/dataTable/monitors.js'
 
     let val: string='';
     let countIntVal: ReturnType<typeof setInterval>;
@@ -37,33 +25,33 @@
     const tableKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
-    
 
     StateManager.on('monitor:update:lastActive', (value: any) => { console.log('monitor:lastActive', value) })
 
-    const setConfig = () => {
-        console.log('set config.')
-        const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
-        if(userTableConfig) {
-            config.set({...defaultTableConfig, ...userTableConfig})
-        }
-        else {
-            config.set({...defaultTableConfig})
-        }
-        ready.set(true)
-    }
+	const setConfig = () => {
+		
+		let conf = {...defaultDataTableConfig, ...builtInTableConfig}
+		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
+		
+		if(userTableConfig) {
+			conf = {...conf, ...userTableConfig}
+			console.log('setting config with user config', conf)
+			config.set(conf)
+		}
+		else {
+			console.log('setting config without user config', conf)
+			config.set(conf)
+		}
+		ready.set(true)
+	}
 
     onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
-        // nip66Ready().then( () => $nip66.services.monitors.ensureMonitorsActive()  )
     });
 
-    onDestroy(() => {
-        clearInterval(countIntVal);
-    });
 
     $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: any) => { return !monitor.active && monitor.enabled }).length;
     $: countEnabledMonitors = $monitorRows.filter((monitor: any) => monitor.enabled).length;

@@ -12,14 +12,14 @@
 	import type { Monitor } from '@nostrwatch/nip66/models/Monitor';
 	import { onMount } from 'svelte';
     
-    export let checks: Nip66Event[];
     export let relay: string;
-    export let monitors: Monitor[];
+    export let checks: Writable<Nip66Event[]>;
+    export let monitors: Writable<Monitor[]>;
     export let aggregate: any;
 
     let selectedCheckCache: Nip66Event | null = null;
     
-    export const selectedCheck: Writable<Nip66Event | null> = writable(checks[0] || null);
+    export const selectedCheck: Writable<Nip66Event | null> = writable($checks?.[0] || null);
     const showMap: Writable<boolean> = writable(false)
     const showLocalCheck: Writable<boolean> = writable(false)
 
@@ -50,12 +50,12 @@
     }
 
     onMount(() => {
-        if(checks.length) {
-            selectedCheck.set(checks[0])
+        if($checks.length) {
+            selectedCheck.set($checks[0])
         }
     })
     
-    $: validChecks = checks.filter(Boolean);
+    $: validChecks = $checks.filter(Boolean);
 </script>
 
 {#if validChecks.length}
@@ -88,7 +88,7 @@
 
     <div class="flex-1 h-full py-4 px-8">
         {#if $showMap}
-            <RelayMap {checks} {relay} {monitors} {aggregate} />
+            <RelayMap {relay} {checks} {monitors} {aggregate} />
         {:else}    
             {#if $selectedCheck}
                 <RelayCheck check={$selectedCheck} />

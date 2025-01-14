@@ -1,30 +1,13 @@
 <script lang="ts">
-    import { Nip66Event } from "@nostrwatch/nip66/models";
     import Checkbox from "../../ui/checkbox/checkbox.svelte";
     import { StateManager } from "@nostrwatch/nip66";
     import type { Writable } from "svelte/store";
     import { capitalize, delay } from "@nostrwatch/utils";
-    import type { Formatters } from "src/lib/config/dataTable/monitors";
+	import type { DataTableConfig, Formatters } from "./DataTableTypes";
 
     export let tableKey: string;
     export let config: Writable<DataTableConfig | null>;
     export let onChange: (config: DataTableConfig) => void;
-
-    type DataTableConfig = { 
-        humanReadableNames: Record<string, string>
-        formatters: Formatters
-        tableRowStyler: (row: any) => string
-
-        availableColumnKeys: string[]
-        tableFormatters: Formatters 
-        columnsDisable: string[]
-        columnsShow: string[]
-
-        availableFilterKeys: string[]
-        filtersDisable: string[]
-        filtersShow: string[]
-        filterFormatters: Formatters
-    }
 
     const toggleFilterShow = (key: string) => {
         config.update((currentConfig: DataTableConfig) => {

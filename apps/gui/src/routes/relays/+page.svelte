@@ -2,7 +2,7 @@
 	import { relayAggregates } from '$lib/stores/checks.js';
 	import { doBootstrap } from '$lib/stores/routines';
 	import { doAggregateCache } from '$lib/stores/app';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { writable, type Writable } from 'svelte/store';
 	import { StateManager } from '@nostrwatch/nip66';
 	import { type default as DataTableType } from '$lib/components/lists/table/DataTable.svelte';
@@ -10,6 +10,7 @@
 	import type { DataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { default as relaysTableConfig } from '$lib/config/dataTable/relays.js';
+	import { userService } from '$lib/stores/user';
 
 	export const prerender = true;
 
@@ -56,12 +57,12 @@
 		doAggregateCache.set(true)
 		loadComponents().then(setConfig);
 	}
-
-	onMount(mount)    
+	const destroy = () => {}
+	onMount(mount)  
+	onDestroy(destroy)  
 </script>
 
 <main> 
-	<!-- <pre>{JSON.stringify(relayAggregates, null ,2)}</pre> -->
 	{#if $ready}
 	<Stats />
 	<DataTable data={relayAggregates} {config} {tableKey} />

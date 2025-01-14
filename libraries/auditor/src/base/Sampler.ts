@@ -7,6 +7,7 @@ import type { WebSocketWrapper as WebSocket } from '@nostrwatch/websocket';
 import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/utils/generators.js";
 import type { Note, RelayEventMessage } from "#src/nips/Nip01/interfaces/index.js";
 import { generateSubId } from "#utils/nostr.js";  
+import { Emitter } from "./Emitter";
 
 export class Sampler {
   private ws: WebSocket;
@@ -16,7 +17,7 @@ export class Sampler {
   private _timeoutMs: number = 5000;
   private _totalSamples: number = 0;  
   private _abort: boolean = false;
-  private signal = new EventEmitter();
+  // private signal = new EventEmitter();
   private logger: Logger = new Logger('@nostrwatch/auditor:Sampler');
   private _ingestors: Ingestor[] = [];  
 
@@ -24,6 +25,7 @@ export class Sampler {
     this.ws = ws;
     if(maximumSamples) this._maximumSamples = maximumSamples;
     if(timeout) this._timeoutMs = timeout
+    Emitter.on('all:abort', this.abort.bind(this))
   }
 
   get ingestors(): Ingestor[] {
@@ -62,7 +64,8 @@ export class Sampler {
           break;
         }
         case 'EOSE': {
-          this.signal.emit('WS:EOSE');
+          // this.signal.emit('ws:eose');
+          Emitter.emit(`ws:eose:${this.subId}`);
           break;
         }
       }
@@ -121,12 +124,14 @@ export class Sampler {
       }, 100);
   
       const cleanup = () => {
-        this.signal.off('WS:EOSE', onEose);
+        Emitter.off(`ws:eose:${this.subId}`, onEose);
+        // this.signal.off('ws:eose', onEose);
         clearTimeout(timeout);
         clearInterval(interval);
       };
-  
-      this.signal.once('WS:EOSE', onEose);
+      
+      Emitter.once(`ws:eose:${this.subId}`, onEose);
+      // this.signal.once('ws:eose', onEose);
     });
   }
   

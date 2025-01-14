@@ -15,6 +15,7 @@ import { Nip01ClientMessageGenerator } from  "#src/nips/Nip01/utils/generators.j
 import type { INip01Filter, Note, RelayEventMessage, RelayNoticeMessage } from "#src/nips/Nip01/interfaces/index.js";
 
 import { SuiteState } from "./SuiteState.js";
+import { Emitter } from "./Emitter.js";
 
 export type CompleteOnType = "off" | "maxEvents" | "EOSE";
 export type CompleteOnTypeArray = [CompleteOnType, ...CompleteOnType[]];
@@ -89,6 +90,7 @@ export abstract class SuiteTest implements ISuiteTest {
     this.logger.registerLogger('pass', 'info', chalk.green.bold);
     this.logger.registerLogger('fail', 'info', chalk.redBright.bold);
     this.logger.registerLogger('skipped', 'info', chalk.bgGray.yellow.bold);
+    Emitter.on('all:abort', this.abort.bind(this))
   }
 
   get filters(): INip01Filter[] {

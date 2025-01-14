@@ -60,6 +60,10 @@ export class Auditor {
     return this._suites;
   }
 
+  abort(): void {
+    Emitter.emit('all:abort');
+  }
+
   addSuite(suite: string, options?: any) {
     this.suites.add(suite);
     if(options) this._conf.options[suite] = options;

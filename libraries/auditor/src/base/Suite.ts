@@ -97,7 +97,7 @@ export abstract class Suite implements ISuite {
   private _sampler: Sampler;
   private _ingestors: Ingestor[] = [];
 
-  protected ajv = new Ajv();
+  protected ajv = new Ajv({strict: false});
   protected ws: WebSocket;
   protected signal: EventEmitter = new EventEmitter();
   protected result: ISuiteResult = structuredClone(defaultSuiteResult);

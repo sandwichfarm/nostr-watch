@@ -78,23 +78,26 @@ export class Service {
   }
 
   async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
-    console.log(`Service.subscribe()`)
     await this.ready();
-    console.log(`Service: is ready`)
     let { filters, relays, options, hash } = args;
     if(!hash) {
       hash = deterministicHash(args)
-      console.log('Service.subscribe:hash', hash)
     }
-    console.log('Service add hash', hash)
     this.subscriptions.add(hash)
     if(filters) {
       this.fetchFromCache(filters, callbacks);
     }
+    if(callbacks) {
+      callbacks.onclose = (subId: string) => {
+        this.subscriptions.delete(subId)
+        callbacks?.onclose?.(subId)
+      }
+    }
     const message: WebsocketRequestBody = { filters, relays, options, hash };
     const result = await this.websocketAdapter.subscribe(message, callbacks);
-    console.log('Service delete hash', hash)
-    this.subscriptions.delete(hash)
+    if(!options?.keepAlive) {
+      this.subscriptions.delete(hash)
+    }
     return typeof result === 'boolean'? []: result;
   }
 
@@ -222,7 +225,6 @@ export class Service {
     }
 
     const websocketEvents = await this.fetchFromWebsocket(args, _callbacks);
-    console.log('fetchFromWebsocket resolved')
     websocketEvents.forEach(maybeAddEventToMap);
 
     const finalEvents = Array.from(events.values());
@@ -243,5 +245,4 @@ export class Service {
     if (!this._groupedRelays?.[from]) return;
     this._groupedRelays[from] = this._groupedRelays[from].filter((r) => r !== relay);
   }
-  
 }

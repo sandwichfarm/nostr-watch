@@ -11,7 +11,7 @@ export interface SubscribeHandlers {
   onevent?: (event: any) => void
   onevents?: (events: any[]) => void
   oneose?: () => void
-  onclose?: () => void
+  onclose?: (subId: string) => void
 }
 export interface IWebsocketAdapterCallbacks {
   onNotice?: (notice: any) => void

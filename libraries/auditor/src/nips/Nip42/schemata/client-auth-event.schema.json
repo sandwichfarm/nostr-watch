@@ -1,7 +1,13 @@
----
-type: "array"
-items: 
-- const: "AUTH"
-- $ref: "@/note.yaml"
-minItems: "2"
-maxItems: "2"
+{
+    "type": "array",
+    "items": [
+      {
+        "const": "AUTH"
+      },
+      {
+        "$ref": "../../Nip01/schemata/note.schema.json"
+      }
+    ],
+    "minItems": 2,
+    "maxItems": 2
+  }

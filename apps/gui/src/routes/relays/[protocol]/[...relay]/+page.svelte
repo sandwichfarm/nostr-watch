@@ -123,20 +123,8 @@
       }
   );
 
-  const reset = () => {
-      if (currentRelay === relayUrl) return;
-      $nip66?.services?.relay?.unsubscribeAll();
-      console.log('!!! RESET');
-      loading = true;
-      currentRelay = '';
-      activeTab.set('overview');
-      monitors.set([]);
-      operatorProfile.set(null);
-      operatorRelays.set(null);
-  };
-
   const loadRelayData = async () => {
-      reset();
+      destroy();
       await nip66Ready()
       loadNip11().then(loadOperatorMeta)
       if (!$isLivesyncing) {
@@ -192,6 +180,7 @@
   };
 
   const mount = async () => {
+      if (currentRelay === relayUrl) return;
       const resume = await pauseLiveSync()
       loadComponents();
       if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
@@ -205,23 +194,21 @@
       });
   };
 
-  onMount(mount);
+  const destroy = () => {
+      if (currentRelay === relayUrl) return;
+      $nip66?.services?.relay?.unsubscribeAll();
+      loading = true;
+      currentRelay = '';
+      monitors.set([]);
+      operatorProfile.set(null);
+      operatorRelays.set(null);
+  };
 
-  onDestroy(() => {
-      reset();
-  });
+  onMount(mount);
+  onDestroy(destroy);
 
   $: relayUrl = new URL(`${$page.params.protocol}://${$page.params.relay}`).toString();
-  $: timesSeen = $checksrelay.length;
-  $: seenBy = $checksrelay.map((check: any) => check.pubkey);
-  $: seenByCount = $checksrelay.length;
-  $: rttAverage = $relayAggregate?.rtt;
-  $: ipv4 = $relayAggregate?.ipv4;
-  $: ipv6 = $relayAggregate?.ipv6;
   $: geocode = $relayAggregate?.geocode;
-  $: dd = $relayAggregate?.dd;
-  $: isp = $relayAggregate?.isp;
-  $: name = $nip11?.name || null;
   $: description = $nip11?.description || null;
   $: banner = $nip11?.banner || null;
   $: icon = $nip11?.icon || null;

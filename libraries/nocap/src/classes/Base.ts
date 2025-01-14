@@ -297,7 +297,6 @@ export default class Base {
     }
     this.precheck(key)
       .then(async () => {
-        console.log('seriously wtf fuck this.')
         this.logger.debug(`${key}: precheck resolved`);
         this.latency.start(key);
         this.logger.debug(`${key}:  this.adapters[${adapter}][${this.checkKey(key)}]()`);

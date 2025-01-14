@@ -151,14 +151,11 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   async shutdown(): Promise<void> {
-    console.log('shutting down websocket adapter')
-    console.log('unsubscribing all...')
     await this.unsubscribeAll();
-    console.log('aborting...')
     await this.abort();
-    console.log('terminating worker...')
     await delay(1000);
     this.terminate()
+    await delay(100);
   }
 
   async abort(): Promise<boolean> {
@@ -195,13 +192,15 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   } 
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{
+    let { hash } = args
     if(callbacks && Object.keys(callbacks).length > 0) {
       args.options.stream = true
     }
-    const hash = this.request({
+    const hash_ = this.request({
       action: 'subscribe',
       args
     })
+    if(!hash) hash = hash_
     if(this.subscriptions.has(hash)) {
       console.warn(`[WebsocketAdapter] Already subscribed to ${hash}`)
       return true;
@@ -238,15 +237,10 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       message.args.hash = deterministicHash(message?.args?.filters ?? {})  
     }
     const { hash } = message.args
-    //console.log('HASH', hash)
     if(!this?.worker) {
       console.warn('[WebsocketAdapter] Error sending command: no worker found')
       return hash
-    }
-    //console.log('adding subscription', hash)  
-    
-    
-    //console.log(`[WebsocketAdapter:${this.constructor.name}] o/o SEND: ${message.action} -> websocketWorker`, message.args.filters)
+    }    
     if(this.worker instanceof Worker)
       this.worker.postMessage(message)
     else if(this.worker instanceof SharedWorker)
@@ -255,11 +249,9 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   async response(hash: string, callbacks?: SubscribeHandlers): Promise<boolean | any[]>{
-    //console.log('response', hash)
     return new Promise( resolve => {
       const results: any[] = []
       const responseHandler = (message: WebsocketResponseBody) => {
-        //console.log('websocket adapter response handler...')
         let { result, type } = message
         if(type === 'unsubscribed'){
           return true
@@ -268,9 +260,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           return true
         }
         if(type === 'events') {
-          //console.log(`websocket adapter: events`)
           if(callbacks?.onevents){
-            //console.log(`websocket adapter: onevents(${result.length})`)
             callbacks.onevents(result)
             return
           }
@@ -292,9 +282,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           }
         }
         else if(type == 'complete'){
-          //console.log('deleting subscription:', hash)
           this.subscriptions.delete(hash)
-          //console.log('complete: removing handler.', hash)
           StateManager.off(hash)
           if(callbacks?.onevent){
             resolve(true)

@@ -206,8 +206,6 @@
 
 </script>
 
-<pre>{JSON.stringify(Object.keys($config.tableFormatters).length, null, 2)}</pre>
-
 <!-- **UI Layout with Resizable Panes** -->
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
     <!-- **Main Table Pane** -->

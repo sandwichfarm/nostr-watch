@@ -40,6 +40,7 @@ export class UserService extends Service {
         super(adapters)
         this.addRelay('userMeta', 'wss://purplepag.es')
         this.addRelay('userMeta', 'wss://user.kindpag.es')
+        this._ready = true;
     }
 
     get subIds(): string[] {
@@ -73,26 +74,20 @@ export class UserService extends Service {
         return notes;
     }
 
-    async unsubscribe(hash?: string): Promise<void> {
-        const $nip66: Nip66 = get(nip66)
-        await $nip66.adapters?.websocket?.unsubscribe(hash)
-    }
+    // async unsubscribe(hash?: string): Promise<void> {
+    //     const $nip66: Nip66 = get(nip66)
+    //     await $nip66.adapters?.websocket?.unsubscribe(hash)
+    // }
 
-    async unsubscribeAll(): Promise<void> {
-        const $nip66: Nip66 = get(nip66)
-        const promises: Promise<boolean>[] = []
-        for(const id of this._subIds) {
-            promises.push($nip66.adapters?.websocket?.unsubscribe(id))
-        }
-        await Promise.all(promises)
-        this._subIds = []
-    }
+    // async unsubscribeAll(): Promise<void> {
+    //     const $nip66: Nip66 = get(nip66)
+    //     const promises: Promise<boolean>[] = []
+    //     this.unsubscribeMany(this._subIds)
+    // }
 
     async feed(user: User, limit: number = 1, until?: number): Promise<UserFeedItem[]> {
         const { relays } = user
         const notes = await this.userNotes(user, limit, until)
-        const relatives: IEvent[][] = [[]]
-    
         return notes
             .map((_note: IEvent, index: number) => {
                 const note = new NostrEvent(_note, { relays: relays ?? [] })
@@ -102,7 +97,7 @@ export class UserService extends Service {
                     const reactions = relatives.filter(rel => rel.kind === 7);
                     const zaps = relatives.filter(rel => rel.kind === 9735 || rel.kind === 9321);
                     const comments = relatives.filter(rel => rel.kind === 1 || rel.kind === 1111);
-                    return { reactions, zaps, comments};
+                    return { reactions, zaps, comments };
                 }
                 return { user, note, fetchRelatives };
             })

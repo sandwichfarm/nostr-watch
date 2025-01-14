@@ -78,17 +78,22 @@ export class Service {
   }
 
   async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    console.log(`Service.subscribe()`)
     await this.ready();
+    console.log(`Service: is ready`)
     let { filters, relays, options, hash } = args;
+    if(!hash) {
+      hash = deterministicHash(args)
+      console.log('Service.subscribe:hash', hash)
+    }
+    console.log('Service add hash', hash)
+    this.subscriptions.add(hash)
     if(filters) {
       this.fetchFromCache(filters, callbacks);
     }
-    if(!hash) {
-      hash = deterministicHash(args)
-    }
     const message: WebsocketRequestBody = { filters, relays, options, hash };
-    this.subscriptions.add(hash)
     const result = await this.websocketAdapter.subscribe(message, callbacks);
+    console.log('Service delete hash', hash)
     this.subscriptions.delete(hash)
     return typeof result === 'boolean'? []: result;
   }
@@ -96,6 +101,13 @@ export class Service {
   async unsubscribe(hash: string) {
     await this.ready();
     this.websocketAdapter.unsubscribe(hash);
+  }
+
+  async unsubscribeMany(hashes: string[]) {
+    await this.ready();
+    hashes.forEach((hash) => {
+      this.unsubscribe(hash);
+    })
   }
 
   async unsubscribeAllActive(){

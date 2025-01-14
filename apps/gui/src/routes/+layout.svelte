@@ -33,6 +33,10 @@
   
   let idleDetector: IdleDetector | null = null;
   let nip66: Nip66;
+
+  import process from 'process/browser';
+  window.process = process;
+
   
   function handleIdle() {
     console.log('User is idle. Performing idle actions...');

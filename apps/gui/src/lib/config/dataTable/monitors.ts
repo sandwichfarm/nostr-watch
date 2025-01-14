@@ -67,8 +67,6 @@ export const humanReadableNames: NameFormatter = {
     // isp: 'ISP'
 };
 
-export const formatters: Formatters = {}
-
 export const tableFormatters: Formatters = {
     frequency: (frequency) => {
         return formatSeconds(frequency)
@@ -194,7 +192,6 @@ export const tableRowStyler = (row: Record<string, any>) => {
 
 export default {
     humanReadableNames,
-    formatters,
     tableFormatters,
     filterFormatters,
     columnsDisable,

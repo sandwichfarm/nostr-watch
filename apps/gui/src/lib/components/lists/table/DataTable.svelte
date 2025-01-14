@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { get, writable, derived, type Writable } from 'svelte/store';
+    import { get, writable, derived, type Writable, type Readable } from 'svelte/store';
     import { DataTable } from '@careswitch/svelte-data-table';
     import * as Resizable from '$lib/components/ui/resizable';
     import Filters from './Filters.svelte'; 
@@ -12,7 +12,6 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
 	import { StateManager } from '@nostrwatch/nip66';
-	import type { Formatters } from '$lib/config/dataTable/monitors';
     
     import TableOptions from './TableOptions.svelte';
     import * as Popover from "$lib/components/ui/popover";
@@ -21,7 +20,7 @@
 	import type { DataTableConfig } from './DataTableTypes';
 
     export let tableKey: string;
-    export let data: any;
+    export let data: Readable<any[]>;
     export let config: Writable<DataTableConfig>;
     export let enableFilters: boolean = true;
     export let actionsComponent;
@@ -35,7 +34,6 @@
     
     // **Stores and Reactive Variables**
     const filters = writable({});
-    // setInterval( () =>  console.log('filtersShow', $config.filtersShow), 1000)
 
     const tableData = derived(
         [data, config],
@@ -51,20 +49,22 @@
             const columns = $config.columnsShow.map((key: string) => ({
                 id: key,
                 key: key,
-                name: $config.humanReadableNames[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
+                name: $config.humanReadableNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
-            const data = $data.map((item: any) => {
-                const formattedItem = { ...item };
-                for (const key in $config.formatters) {
-                    if (Object.prototype.hasOwnProperty.call(formattedItem, key)) {
-                        formattedItem[key] = $config.formatters[key](formattedItem[key]);
-                    }
-                }
-                return formattedItem;
-            });
+            console.log('columns', columns.length);    
 
-            return { data, columns };
+            // const data_ = $data.map((item: any) => {
+            //     const formattedItem = { ...item };
+            //     for (const key in $config.tableFormatters) {
+            //         if (Object.prototype.hasOwnProperty.call(formattedItem, key)) {
+            //             formattedItem[key] = $config.tableFormatters[key](formattedItem[key], formattedItem);
+            //         }
+            //     }
+            //     return formattedItem;
+            // });
+
+            return { data: $data, columns };
         }
     );
     
@@ -116,13 +116,7 @@
     }
 
     const createTable = (force: boolean = false) => {
-        // const config: any = {
-        //     pageSize: resultsPerPage,
-        //     columns: $filteredTableData.columns,
-        //     data: $filteredTableData.data,
-        // }
-
-        const _config: any = {
+        const tableInstanceConfig: any = {
             pageSize: $config.pageSize,
             columns: $filteredTableData.columns,
             data: $filteredTableData.data,
@@ -130,16 +124,16 @@
 
         if($config?.sortState) {
             if($config.sortState?.columnId) {
-                _config.initialSort = $config.sortState.columnId
+                tableInstanceConfig.initialSort = $config.sortState.columnId
             }
             if($config.sortState?.direction) {
-                _config.initialSortDirection = $config.sortState.direction
+                tableInstanceConfig.initialSortDirection = $config.sortState.direction
             }
         }
-        console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, _config);
+        console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, tableInstanceConfig);
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
             if(tableInstance === null || force){
-                tableInstance = new DataTable<any>(_config);
+                tableInstance = new DataTable<any>(tableInstanceConfig);
             }
         } else {
             if (tableInstance) {
@@ -149,16 +143,20 @@
         }
     }
 
-    const updateConfig = (newConfig: DataTableConfig) => {
-        StateManager.set(`preferences:${tableKey}:tableConfig`, newConfig);
+    const cachableConfig = (config: DataTableConfig) => {
+        const cachable: Partial<DataTableConfig> = { ...config };
+        delete cachable.tableFormatters;
+        delete cachable.filterFormatters;
+        delete cachable.tableRowStyler;
+        return cachable;
     }
 
     // **DataTable Subscription**
     onMount(async (): Promise<any> => {
-        const unsubConfig = config.subscribe( (_config: DataTableConfig) => {
-            updateConfig(_config)
-            if(resultsPerPage !== _config.pageSize) {
-                resultsPerPage = _config.pageSize;
+        const unsubConfig = config.subscribe( (newConfig: DataTableConfig) => {
+            StateManager.set(`preferences:${tableKey}:tableConfig`, cachableConfig(newConfig));
+            if(resultsPerPage !== newConfig.pageSize) {
+                resultsPerPage = newConfig.pageSize;
             }
         })
         const unsubTableConfig = config.subscribe( () =>  setTimeout( () => createTable(true), 10 ) );
@@ -166,6 +164,9 @@
             await new Promise(r => setTimeout(r, 50));
         }
         createTable();
+        if($config.sidebarCollapsed){
+            sidebarPaneApi?.collapse();
+        }
         return () => {
             unsubConfig();
             unsubTableConfig();
@@ -173,6 +174,14 @@
                 tableInstance = null;
             }
         };
+    });
+
+    filters.subscribe((newFilters: any) => {
+        console.log('Filters updated', newFilters);
+        config.update( (currentConfig: DataTableConfig) => {
+            currentConfig.activeFilters = newFilters;
+            return currentConfig;
+        });
     });
 
     function clearAllFilters() {
@@ -194,17 +203,16 @@
             return currentConfig;
         })
     }
+
 </script>
 
-<pre>{JSON.stringify($config, null ,2)}</pre>
-<pre>{JSON.stringify(data, null ,2)}</pre>
+<pre>{JSON.stringify(Object.keys($config.tableFormatters).length, null, 2)}</pre>
 
 <!-- **UI Layout with Resizable Panes** -->
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
     <!-- **Main Table Pane** -->
     <Resizable.Pane defaultSize={75}>
         {#if tableInstance !== null}
-    
             <div class="px-4 shadow-md my-4">
                 <!-- **Search Input for Global Filtering** -->
                 <Input

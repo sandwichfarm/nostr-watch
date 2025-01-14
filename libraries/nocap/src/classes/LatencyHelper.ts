@@ -19,12 +19,12 @@ export class LatencyHelper {
     this.setup();
   }
 
-  session(): string {
+  get session(): string {
     return this.$session.get();
   }
 
   start(key: string): void {
-    const sessionKey = this.session();
+    const sessionKey = this.session;
     if (!this.begin[sessionKey]) {
       this.begin[sessionKey] = {};
     }
@@ -32,7 +32,7 @@ export class LatencyHelper {
   }
 
   finish(key: string): void {
-    const sessionKey = this.session();
+    const sessionKey = this.session;
     if (!this.end[sessionKey]) {
       this.end[sessionKey] = {};
     }
@@ -40,7 +40,7 @@ export class LatencyHelper {
   }
 
   duration(key: string): number {
-    const sessionKey = this.session();
+    const sessionKey = this.session;
     return this.end[sessionKey][key] - this.begin[sessionKey][key];
   }
 }

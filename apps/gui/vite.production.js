@@ -1,29 +1,6 @@
 import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
-import path from 'path';
-import fs from 'fs';
-import nodePolyfills from 'rollup-plugin-polyfill-node';
-
-function patchSvelteSpeedometer() {
-  return {
-    name: 'patch-svelte-speedometer',
-    enforce: 'pre',
-    buildStart() {
-      const modulePath = path.resolve(
-        'node_modules/svelte-speedometer/dist/Speedometer.svelte'
-      );
-
-      if (fs.existsSync(modulePath)) {
-        let code = fs.readFileSync(modulePath, 'utf-8');
-        if (code.includes('$state.frozen')) {
-          code = code.replace(/\$state\.frozen/g, '$state.raw');
-          fs.writeFileSync(modulePath, code, 'utf-8');
-          console.log('Patched svelte-speedometer: replaced "$state.frozen" with "$state.raw"');
-        }
-      }
-    },
-  };
-}
+import nodePolyfills from 'rollup-plugin-node-polyfills';
 
 export default defineConfig({
   resolve: {
@@ -33,12 +10,11 @@ export default defineConfig({
   worker: {
     plugins: [
       sveltekit(),
-      patchSvelteSpeedometer(),
-      nodePolyfills()
+      nodePolyfills({ })
     ]
   },
   build: {
-    minify: 'terser', 
+    minify: "terser", 
     sourcemap: false,
     assetsInlineLimit: 0,
     rollupOptions: {
@@ -65,27 +41,15 @@ export default defineConfig({
       target: "esnext",
     },
     exclude: [
-      'svelte-speedometer',
-      '@nostrwatch/worker-relays',
+      '@nostrwatch/worker-relay',
+      "@sqlite.org/sqlite-wasm",
       "@nostrwatch/auditor",
-      "@nostrwatch/nocap"
+      "@nostrwatch/nocap",
+      "promise-deferred"
     ]
   },
   plugins: [
     sveltekit(),
-    patchSvelteSpeedometer(),
-    {
-      name: 'worker-headers',
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          const requestUrl = req.url;
-          if (!requestUrl?.includes('livereload.js')) {
-            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-          }
-          next();
-        });
-      },
-    },
+    nodePolyfills()
   ],
 });

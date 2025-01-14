@@ -5,6 +5,6 @@ export const formatRelayUrl = (inputUrl: string): string => {
       const everythingElse = inputUrl.split('://')[1];
       return `${protocol}/${everythingElse}`;
     } catch (error) {
-      throw new Error("Invalid URL");
+      console.warn(`Failed to format relay url: ${inputUrl}`);
     }
 }

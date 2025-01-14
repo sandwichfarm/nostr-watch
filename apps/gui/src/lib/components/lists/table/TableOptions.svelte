@@ -1,10 +1,8 @@
 <script lang="ts">
-    import { Nip66Event } from "@nostrwatch/nip66/models";
     import Checkbox from "../../ui/checkbox/checkbox.svelte";
     import { StateManager } from "@nostrwatch/nip66";
     import type { Writable } from "svelte/store";
     import { capitalize } from "@nostrwatch/utils";
-    import type { Formatters } from "$lib/config/dataTable/monitors";
 	import type { DataTableConfig } from "./DataTableTypes";
 
     export let tableKey: string;
@@ -24,7 +22,6 @@
             }
             const sortedColumnsShow = $config?.availableColumnKeys.filter(k => newColumnsShow.includes(k)) || [];
             const newConfig = { ...currentConfig, columnsShow: sortedColumnsShow };
-            // const tableConfigCache = StateManager.get(`preferences:${tableKey}:tableConfig`) || $config;
             StateManager.set(`preferences:${tableKey}:tableConfig`, {
                 ...$config,
                 columnsShow: sortedColumnsShow

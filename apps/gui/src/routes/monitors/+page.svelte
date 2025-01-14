@@ -16,8 +16,8 @@
     import type { Formatters } from '$lib/config/dataTable/monitors';
     import { nip66 } from '$lib/stores';
 	import { nip66Ready } from '$lib/stores/app';
-	import type { DataTableConfig } from '$lib/components/lists/table/DataTableTypes';
-    import builtInTableConfig from '$lib/config/dataTable/relays.js'
+	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
+    import builtInTableConfig from '$lib/config/dataTable/monitors.js'
 
     let val: string='';
     let countIntVal: ReturnType<typeof setInterval>;
@@ -25,17 +25,22 @@
     const tableKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
-    
 
     StateManager.on('monitor:update:lastActive', (value: any) => { console.log('monitor:lastActive', value) })
 
 	const setConfig = () => {
-		const userTableConfig = StateManager.get('preferences:relays:tableConfig');
+		
+		let conf = {...defaultDataTableConfig, ...builtInTableConfig}
+		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
+		
 		if(userTableConfig) {
-			config.set({...builtInTableConfig, ...defaultTableConfig, ...userTableConfig})
+			conf = {...conf, ...userTableConfig}
+			console.log('setting config with user config', conf)
+			config.set(conf)
 		}
 		else {
-			config.set({...builtInTableConfig, ...defaultTableConfig})
+			console.log('setting config without user config', conf)
+			config.set(conf)
 		}
 		ready.set(true)
 	}

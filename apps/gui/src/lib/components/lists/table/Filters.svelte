@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import { get, type Readable } from 'svelte/store';
     import { writable, type Writable } from 'svelte/store';
 
@@ -27,7 +27,7 @@
     export let tableKey: string;
     export let tableData: Readable<{ data: any[] }>;
     
-    export let filters: Writable<Record<string, any>>; // Writable store passed from the parent component
+    export let filters: Writable<Record<string, any>>;
     export let config: any;
 
     const maxBadgeLength: number = 21;
@@ -98,6 +98,8 @@
         });
         showAllFilters.set(initialShowAll);
         updateDisabledFilters($filters)
+        console.log('setting active filters', $config.activeFilters)
+        filters.set( $config.activeFilters )
     }
 
     const onFilterChange = ($config: DataTableConfig) => {
@@ -109,11 +111,14 @@
         filtersInit()
     }
 
-    tableData.subscribe(() => {
-        debounce(filtersInit, 1000)()
+    const tableDataUnsub = tableData.subscribe(() => {
+        // debounce(filtersInit, 5000)()
     });
 
     onMount(filtersInit);
+    onDestroy( () => {
+        tableDataUnsub()
+    })
 
     // **Build Inverted Index**
     function buildInvertedIndex(data: RecordData[], filtersInclude: string[]) {

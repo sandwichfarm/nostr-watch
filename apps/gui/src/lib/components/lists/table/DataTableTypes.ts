@@ -12,30 +12,30 @@ export type SortState = {
 }
 
 export type DataTableConfig = { 
-    humanReadableNames: Record<string, string>
-    formatters: Formatters
-    tableRowStyler: (row: any) => string
+    humanReadableNames: Record<string, string>;
+    tableRowStyler: (row: any) => string;
 
-    availableColumnKeys: string[]
-    tableFormatters: Formatters
-    columnsDisable: string[]
-    columnsShow: string[]
+    availableColumnKeys: string[];
+    tableFormatters: Formatters;
+    columnsDisable: string[];
+    columnsShow: string[];
 
-    availableFilterKeys: string[]
-    filtersDisable: string[]
-    filtersShow: string[]
-    filterFormatters: Formatters
+    availableFilterKeys: string[];
+    filtersDisable: string[];
+    filtersShow: string[];
+    filterFormatters: Formatters;
 
-    sidebarCollapsed: boolean
-    sortState: SortState
+    activeFilters: Record<string, any>;
 
-    maxBadgeLength: number
-    pageSize: number
+    sidebarCollapsed: boolean;
+    sortState: SortState;
+
+    maxBadgeLength: number;
+    pageSize: number;
 }
 
-export const defaultDataTableConfig = {
+export const defaultDataTableConfig: DataTableConfig = {
     humanReadableNames: {},
-    formatters: {},
     tableRowStyler: () => '',
 
     availableColumnKeys: [],
@@ -49,7 +49,9 @@ export const defaultDataTableConfig = {
     filterFormatters: {},
 
     sidebarCollapsed: false,
-    sortState: { columnId: '', direction: 'DESC' },
+    sortState: { columnId: '', direction: 'desc' },
+
+    activeFilters: {},
 
     maxBadgeLength: 0,
     pageSize: 50

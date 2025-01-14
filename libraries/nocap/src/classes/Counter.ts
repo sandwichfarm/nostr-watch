@@ -32,52 +32,52 @@ export class Counter {
 
   add(check: string, count: number): void {
     this.setup();
-    if (!this.checks[this.session()].includes(check)) {
+    if (!this.checks[this.session].includes(check)) {
       throw new Error(`Invalid check ${check}`);
     }
-    if (!this.counts[this.session()][check]) {
-      this.counts[this.session()][check] = 0;
+    if (!this.counts[this.session][check]) {
+      this.counts[this.session][check] = 0;
     }
-    this.counts[this.session()][check] += count;
+    this.counts[this.session][check] += count;
   }
 
   subtract(check: string, count: number): void {
     this.setup();
-    if (!this.checks[this.session()].includes(check)) {
+    if (!this.checks[this.session].includes(check)) {
       throw new Error(`Invalid check ${check}`);
     }
-    if (!this.counts[this.session()][check]) {
-      this.counts[this.session()][check] = 0;
+    if (!this.counts[this.session][check]) {
+      this.counts[this.session][check] = 0;
     }
-    this.counts[this.session()][check] -= count;
+    this.counts[this.session][check] -= count;
   }
 
   get(check: string): number {
     this.setup();
-    if (!this.checks[this.session()].includes(check)) {
+    if (!this.checks[this.session].includes(check)) {
       throw new Error(`Invalid check ${check}`);
     }
-    return this.counts[this.session()][check];
+    return this.counts[this.session][check];
   }
 
   total(): number {
     this.setup();
-    return this.checks[this.session()].reduce(
+    return this.checks[this.session].reduce(
       (total: number, check: string) => total + this.get(check as string),
       0
     );
   }
 
-  session(): string {
+  get session(): string {
     return this.$session.get();
   }
 
   setup(): void {
-    if (!this.checks[this.session()]) {
-      this.checks[this.session()] = [];
+    if (!this.checks[this.session]) {
+      this.checks[this.session] = [];
     }
-    if (!this.counts[this.session()]) {
-      this.counts[this.session()] = {};
+    if (!this.counts[this.session]) {
+      this.counts[this.session] = {};
     }
   }
 }

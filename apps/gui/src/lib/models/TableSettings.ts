@@ -6,7 +6,7 @@ interface ITableSettings {
     columnsFilterable: string[];
     //current sort
     sortColumnKey: string;
-    sortDirection: 'ASC' | 'DESC';
+    sortDirection: 'asc' | 'desc';
     //visibility
     columnsShow: string[];
     filtersShow: string[];

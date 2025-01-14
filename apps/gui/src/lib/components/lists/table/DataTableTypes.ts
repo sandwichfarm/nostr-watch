@@ -6,6 +6,11 @@ export type Formatter = {
     (value: any, value2?: any): any;
 }
 
+export type SortState = {
+    columnId: string | null
+    direction: 'asc' | 'desc' | null
+}
+
 export type DataTableConfig = { 
     humanReadableNames: Record<string, string>
     formatters: Formatters
@@ -20,4 +25,32 @@ export type DataTableConfig = {
     filtersDisable: string[]
     filtersShow: string[]
     filterFormatters: Formatters
+
+    sidebarCollapsed: boolean
+    sortState: SortState
+
+    maxBadgeLength: number
+    pageSize: number
+}
+
+export const defaultDataTableConfig = {
+    humanReadableNames: {},
+    formatters: {},
+    tableRowStyler: () => '',
+
+    availableColumnKeys: [],
+    tableFormatters: {},
+    columnsDisable: [],
+    columnsShow: [],
+
+    availableFilterKeys: [],
+    filtersDisable: [],
+    filtersShow: [],
+    filterFormatters: {},
+
+    sidebarCollapsed: false,
+    sortState: { columnId: '', direction: 'DESC' },
+
+    maxBadgeLength: 0,
+    pageSize: 50
 }

@@ -1,5 +1,3 @@
-// src/lib/utils/filter-dom.ts
-
 // **Filter Types and Interfaces**
 export type FilterCondition = '=' | '<' | '>' | '!=';
 

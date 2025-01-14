@@ -416,7 +416,7 @@
 
           {#if Tabs && RelayChecks && $relayAggregate}
             <Tabs.Content value="checks" class="py-6">
-              <RelayChecks relay={relayUrl} monitors={$monitors} checks={$checksrelay} aggregate={$relayAggregate} />
+              <RelayChecks relay={relayUrl} {monitors} checks={checksrelay} aggregate={$relayAggregate} />
             </Tabs.Content>
           {/if}
 

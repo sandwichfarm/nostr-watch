@@ -6,7 +6,7 @@
     import Filters from './Filters.svelte'; 
     import DataTableShowResults from '$lib/components/partials/DataTableShowResults.svelte';
     import DataTablePaginator from '$lib/components/partials/DataTablePaginator.svelte';
-    import { resultsPerPage } from '$lib/stores/datatable-settings';
+    // import { resultsPerPage } from '$lib/stores/datatable-settings';
     import { applyFilters, createRelayFilters, type ConsoleFilter } from '$lib/utils/filter-dom.js';
     import { Input } from '$lib/components/ui/input/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
@@ -18,6 +18,7 @@
     import * as Popover from "$lib/components/ui/popover";
     import * as Tabs from "$lib/components/ui/tabs";
 	import Button from '../../ui/button/button.svelte';
+	import type { DataTableConfig } from './DataTableTypes';
 
     export let tableKey: string;
     export let data: any;
@@ -26,63 +27,15 @@
     export let actionsComponent;
 
     export let sidebarPaneApi: Resizable.PaneApi | null = null;
-    const sidebarCollapsed = writable(StateManager.get('sidebarCollapsed') ?? false);   
-
-    type DataTableConfig = { 
-		columnsDisable: string[]
-        columnsShow: string[]
-        filtersDisable: string[]
-        filtersShow: string[]
-        humanReadableNames: Record<string, string>
-        formatters: Formatters
-        tableFormatters: Formatters 
-        filterFormatters: Formatters
-        availableColumnKeys: string[]
-        availableFilterKeys: string[]
-        tableRowStyler: (row: any) => string
-        reformatters?: { key: string, interval: number }
-	}
-
-    let columnsDisable: string[], 
-        columnsShow: string[], 
-        filtersDisable: string[], 
-        filtersShow: string[], 
-        humanReadableNames: Record<string, string>, 
-        formatters: Formatters, 
-        tableFormatters: Formatters, 
-        filterFormatters: Formatters, 
-        tableRowStyler: (row: any) => string,
-        reformatters: { key: string, interval: number }[];
-
-
-    $: {
-        ({ 
-            columnsDisable, 
-            columnsShow, 
-            filtersDisable, 
-            filtersShow, 
-            humanReadableNames, 
-            formatters, 
-            tableFormatters, 
-            filterFormatters, 
-            tableRowStyler
-        } = $config);
-    }
-
+    
+    let resultsPerPage: number = $config?.pageSize || 50; 
     let keysEnable: string[];
 
-    $: keysEnable = (columnsShow?.length && filtersShow?.length )? Array.from(new Set([...columnsShow, ...filtersShow])) : [];
-
-	const maxBadgeLength: number = 20;
+    $: keysEnable = ($config.columnsShow?.length && $config.filtersShow?.length )? Array.from(new Set([...$config.columnsShow, ...$config.filtersShow])) : [];
     
-    const sortState = StateManager.get('sortState:relays') ?? undefined
-
     // **Stores and Reactive Variables**
     const filters = writable({});
     // setInterval( () =>  console.log('filtersShow', $config.filtersShow), 1000)
-
-    $: filtersInclude = filtersShow?.length? [ ...$config.filtersShow.filter(f => !filtersDisable.includes(f)) ]: [];
-    $: columnsInclude = [ ...$config.columnsShow.filter(f => !columnsDisable.includes(f)) ];
 
     const tableData = derived(
         [data, config],
@@ -98,14 +51,14 @@
             const columns = $config.columnsShow.map((key: string) => ({
                 id: key,
                 key: key,
-                name: humanReadableNames[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
+                name: $config.humanReadableNames[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
             const data = $data.map((item: any) => {
                 const formattedItem = { ...item };
-                for (const key in formatters) {
+                for (const key in $config.formatters) {
                     if (Object.prototype.hasOwnProperty.call(formattedItem, key)) {
-                        formattedItem[key] = formatters[key](formattedItem[key]);
+                        formattedItem[key] = $config.formatters[key](formattedItem[key]);
                     }
                 }
                 return formattedItem;
@@ -122,7 +75,7 @@
             if (!$tableData.data || !$tableData.columns || $tableData.columns.length === 0) {
                 return { data: [], columns: [] };
             }
-            const currentRelayFilters: ConsoleFilter[] = createRelayFilters($tableData.data, filtersInclude, humanReadableNames);
+            const currentRelayFilters: ConsoleFilter[] = createRelayFilters($tableData.data, $config.filtersShow, $config.humanReadableNames);
             const filteredData = applyFilters($tableData.data, $filters, currentRelayFilters);
             return { data: filteredData, columns: $tableData.columns };
         }
@@ -145,12 +98,12 @@
     const rowStyles = derived(
         tableData,
         ($tableData) => {
-            if (!$tableData.data || !$tableData.columns || $tableData.columns.length === 0 || !tableRowStyler) {
+            if (!$tableData.data || !$tableData.columns || $tableData.columns.length === 0 || !$config.tableRowStyler) {
                 return new Map();   
             }
             const map: Map<string, string> = new Map();
             $tableData.data.forEach((row: any) => {
-                map.set(row.id, tableRowStyler(row));
+                map.set(row.id, $config.tableRowStyler(row));
             });
             return map
         }
@@ -163,24 +116,30 @@
     }
 
     const createTable = (force: boolean = false) => {
-        const config: any = {
-            pageSize: $resultsPerPage,
+        // const config: any = {
+        //     pageSize: resultsPerPage,
+        //     columns: $filteredTableData.columns,
+        //     data: $filteredTableData.data,
+        // }
+
+        const _config: any = {
+            pageSize: $config.pageSize,
             columns: $filteredTableData.columns,
             data: $filteredTableData.data,
         }
 
-        if(sortState) {
-            if(sortState?.columnId) {
-                config.initialSort = sortState.columnId
+        if($config?.sortState) {
+            if($config.sortState?.columnId) {
+                _config.initialSort = $config.sortState.columnId
             }
-            if(sortState?.direction) {
-                config.initialSortDirection = sortState.direction
+            if($config.sortState?.direction) {
+                _config.initialSortDirection = $config.sortState.direction
             }
         }
-        console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, config);
+        console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, _config);
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
             if(tableInstance === null || force){
-                tableInstance = new DataTable<any>(config);
+                tableInstance = new DataTable<any>(_config);
             }
         } else {
             if (tableInstance) {
@@ -190,20 +149,25 @@
         }
     }
 
+    const updateConfig = (newConfig: DataTableConfig) => {
+        StateManager.set(`preferences:${tableKey}:tableConfig`, newConfig);
+    }
+
     // **DataTable Subscription**
-    onMount(async () => {
-        // let unsubTable: () => void;
-        // unsubTable = filteredTableData.subscribe($filteredTableData => {
-        //     createTable()
-        // });
-        const unsubRPP = resultsPerPage.subscribe(($resultsPerPage: number) => createTable(true));
+    onMount(async (): Promise<any> => {
+        const unsubConfig = config.subscribe( (_config: DataTableConfig) => {
+            updateConfig(_config)
+            if(resultsPerPage !== _config.pageSize) {
+                resultsPerPage = _config.pageSize;
+            }
+        })
         const unsubTableConfig = config.subscribe( () =>  setTimeout( () => createTable(true), 10 ) );
         while($filteredTableData.data.length === 0) {
             await new Promise(r => setTimeout(r, 50));
         }
         createTable();
         return () => {
-            unsubRPP();
+            unsubConfig();
             unsubTableConfig();
             if (tableInstance) {
                 tableInstance = null;
@@ -215,7 +179,7 @@
         filters.set({});
     }
 
-    $: isCollapsed = $sidebarCollapsed;
+    $: isCollapsed = $config?.sidebarCollapsed || false;
     $: activeFilters = Object.keys($filters).length;
 
     const toggleSidebarPane = () => {
@@ -225,10 +189,15 @@
         else {
             sidebarPaneApi.collapse()
         }
-        sidebarCollapsed.set(!$sidebarCollapsed)
+        config.update( (currentConfig: DataTableConfig) => {
+            currentConfig.sidebarCollapsed = !isCollapsed;
+            return currentConfig;
+        })
     }
-    
 </script>
+
+<pre>{JSON.stringify($config, null ,2)}</pre>
+<pre>{JSON.stringify(data, null ,2)}</pre>
 
 <!-- **UI Layout with Resizable Panes** -->
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
@@ -280,7 +249,12 @@
                                         on:click={() => { 
                                             if(tableInstance) {
                                                 tableInstance.toggleSort(column.id) 
-                                                StateManager.set('sortState:relays', tableInstance.sortState)
+                                                config.update( (currentConfig: DataTableConfig) => {
+                                                    if(tableInstance?.sortState){
+                                                        currentConfig.sortState = tableInstance.sortState
+                                                    }
+                                                    return currentConfig;
+                                                })
                                             }
                                         }}
                                         disabled={!tableInstance?.isSortable(column.id)}
@@ -325,8 +299,8 @@
                                         </Table.Cell>
                                     {:else}
                                         <Table.Cell>
-                                            {#if tableFormatters?.[column.key]}
-                                                {@html tableFormatters[column.key](row[column.key], row)}
+                                            {#if $config.tableFormatters?.[column.key]}
+                                                {@html $config.tableFormatters[column.key](row[column.key], row)}
                                             {:else}
                                                 {@html row[column.key]}
                                             {/if}    
@@ -384,12 +358,7 @@
                     <Filters 
                         {tableKey}
                         {tableData} 
-                        {keysEnable}
                         {filters} 
-                        {filtersInclude} 
-                        {humanReadableNames} 
-                        {filterFormatters} 
-                        {maxBadgeLength}
                         {config}
                     />
                 {/if}

@@ -1,5 +1,7 @@
 <script lang="ts">
   import '../app.css';
+  import process from 'process/browser';
+
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
@@ -15,18 +17,14 @@
   import { delay } from '@nostrwatch/utils';
   import { getBrowserInfo } from '$lib/utils/compat.js';
   import { StateManager } from '@nostrwatch/nip66';
-  import { unsupported } from '$lib/stores/app';
+  import { unsupported, appState, tabState, type TabStateType } from '$lib/stores/app';
   import { IdleDetector } from '$lib/utils/idle.js';
-  
+
+  window.process = process;
+
   const IDLE_TIMEOUT_MS = 60 * 1000;
   
-  const isLeader: Writable<boolean> = writable(false);
-  const isIdle: Writable<boolean> = writable(false);
-  
-  let isLeaderValue = false;
-  let isIdleValue = false;
   let isReady = false;
-  
   let busy = false;
   
   const lifecycle = createTabLifecycle();
@@ -34,105 +32,97 @@
   let idleDetector: IdleDetector | null = null;
   let nip66: Nip66;
 
-  import process from 'process/browser';
-  window.process = process;
-
-  
   function handleIdle() {
-    //console.log('User is idle. Performing idle actions...');
-    isIdle.set(true);
+    console.log('User is idle. Performing idle actions...');
+    setTabState('idle');
     lifecycle.releaseLeadership();
   }
   
-  function handleActive() {
-    //console.log('User is active again.');
-    isIdle.set(false);
-    lifecycle.acquireLeadership();
-    idleDetector?.reset?.();
+  async function handleActive() {
+    try {
+      console.log('User is active again.');
+      setTabState('follower');
+      await lifecycle.acquireLeadership();
+      if (get(unsupported)) return;
+      setTabState('leader');
+      await boot();
+      idleDetector?.reset?.();
+    } catch (error) {
+      console.error('Error in handleActive:', error);
+      setTabState('follower');
+    }
   }
   
   lifecycle.onStartLeader(async () => {
-    //console.log('[Lifecycle] onStartLeader triggered');
-    isLeader.set(true);
+    console.log('[Lifecycle] onStartLeader triggered');
     if (get(unsupported)) return;
-    
+    setTabState('leader');
     try {
       await boot(); 
-      //console.log('Leader tab: DB initialized.');
+      console.log('Leader tab: DB initialized.');
     } catch (error) {
       console.error('[Lifecycle] Error in onStartLeader:', error);
     }
   });
   
   lifecycle.onLeaderAcquired(async () => {
-    //console.log('Non-leader tab: Just became leader, initializing DB.');
-    isLeader.set(true);
+    console.log('Non-leader tab: Just became leader, initializing DB.');
     if (get(unsupported)) return;
-    
+    setTabState('leader');
     try {
       await boot(); 
-      //console.log('Leader tab: DB initialized.');
+      console.log('Leader tab: DB initialized.');
     } catch (error) {
       console.error('[Lifecycle] Error in onLeaderAcquired:', error);
     }
   });
   
   lifecycle.onReleaseLeader(async () => {
-    //console.log('[Lifecycle] onReleaseLeader triggered'); 
+    console.log('[Lifecycle] onReleaseLeader triggered'); 
     try {
-      //console.log("Leader tab: Releasing...");
       nip66 = await instance();
-      //console.log("Leader tab: awaiting ready...");
       await nip66.ready();
-      //console.log("Leader tab: ready, awaiting shutdown...");
       await nip66.shutdown();
-      //console.log("Leader tab: shutdown...");
       await delay(1000);
       destroy();
-      //console.log("Leader tab: Released.");
-      isLeader.set(false);
+      console.log("Leader tab: Released.");
+      setTabState('follower');
     } catch (error) {
       console.error('[Lifecycle] Error in onReleaseLeader:', error);
+      setTabState('follower'); 
     }
   });
   
   lifecycle.onWaitForLeaderRelease(() => {
-    //console.log('Non-leader tab: Waiting for DB to be released by leader...');
+    console.log('Non-leader tab: Waiting for DB to be released by leader...');
   });
   
   let unsubs: (() => any)[] = [];
   
-  const isLeaderUnsub = isLeader.subscribe(value => {
-    isLeaderValue = value;
-    if (isReady === false) {
-      isReady = true;
+  const appStateUnsub = tabState.subscribe(value => {
+    if (value !== undefined) {
+      if (!isReady) isReady = true;
     }
   });
-  const isIdleUnsub = isIdle.subscribe(value => {
-    isIdleValue = value;
-    if (isReady === false) {
-      isReady = true;
-    }
-  });
-
-  unsubs.push(isLeaderUnsub, isIdleUnsub);
+  
+  unsubs.push(appStateUnsub);
   
   const unsubscribe = () => {
     unsubs.forEach(unsub => unsub());
-    isLeaderUnsub();
-    isIdleUnsub();
     if (idleDetector) {
       idleDetector.destroy();
       idleDetector = null;
-      //console.log('IdleDetector destroyed on component cleanup.');
+      console.log('IdleDetector destroyed on component cleanup.');
     }
   };
   
   async function boot() {
+    appState.set('booting');
     if (!get(doBootstrap)) {
       try {
         await seedFromCache();
-        //console.log('Data seeded from cache.');
+        appState.set('running');
+        console.log('Data seeded from cache.');
       } catch (error) {
         console.error('Error seeding from cache:', error);
       }
@@ -140,7 +130,8 @@
       busy = true;
       try {
         await bootstrap();
-        //console.log('Bootstrap completed.');
+        appState.set('running');
+        console.log('Bootstrap completed.');
       } catch (error) {
         console.error('Error during bootstrap:', error);
       } finally {
@@ -155,19 +146,24 @@
     const browserInfo = getBrowserInfo();
     const isSafari = browserInfo?.name.toLowerCase().includes('safari');
   
-    unsupported.set(isSafari || isMobile);
+    if (isSafari || isMobile) {
+      unsupported.set(true);
   
-    if (isMobile && page.url.pathname !== '/mobile') {
-      goto('/mobile'); 
-    }
+      if (isMobile && page.url.pathname !== '/mobile') {
+        goto('/mobile'); 
+      }
   
-    if (isSafari && page.url.pathname !== '/unsupported') {
-      goto('/unsupported');
+      if (isSafari && page.url.pathname !== '/unsupported') {
+        goto('/unsupported');
+      }
+    } else {
+      unsupported.set(false);
     }
   }
   
   onDestroy(() => {
     unsubscribe();
+    console.log('Component destroyed. Cleaned up subscriptions and resources.');
   });
   
   onMount(async () => {
@@ -194,34 +190,48 @@
         onIdle: handleIdle,
         onActive: handleActive,
       });
-      //console.log('IdleDetector initialized on component mount.');
+      console.log('IdleDetector initialized on component mount.');
     }
   
     lifecycle.acquireLeadership();
   });
   
   $: if (navigating) {
-    //console.log('Navigation detected. Rechecking support and loading data.');
+    console.log('Navigation detected. Rechecking support and loading data.');
     checkSupport();
     boot();
   };
+
+  // Helper function to set app state with logging
+  function setTabState(newState: TabStateType) {
+    tabState.update(current => {
+      console.log(`TabState changing from ${current} to ${newState}`);
+      return newState;
+    });
+  }
 </script>
 
+
 {#if isReady}
-  {#if isLeaderValue}
+  {#if $tabState === 'idle'}
+    <!-- Idle State -->
+    <div class="flex flex-col items-center justify-center h-screen px-4">
+      <div class="text-2xl">Zzz</div>
+    </div>
+  {:else if $tabState === 'leader'}
+    <!-- Leader State -->
     <Header />
     <div id="content-wrapper" class="mt-16 block">
       <slot />
     </div>
-  {:else if !isIdleValue}
+  {:else if $tabState === 'follower'}
+    <!-- Follower State -->
     <div class="flex flex-col items-center justify-center h-screen px-4">
       <div class="text-2xl">Another Session Detected</div>
       <div class="text-lg text-center">Please wait while the existing session is terminated.</div>
     </div>
-  {:else if isIdleValue}
-    <div class="flex flex-col items-center justify-center h-screen px-4">
-      <div class="text-2xl">Zzz</div>
-    </div>
+  {:else if $tabState === 'unsupported'}
+    <!-- Unsupported State handled by navigation -->
   {/if}
 {/if}
 

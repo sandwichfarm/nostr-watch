@@ -5,7 +5,11 @@ import { formatSeconds, timeAgo } from "../utils/time";
 import { nip66 } from "./nip66";
 import { delay } from "@nostrwatch/utils";
 
+export type AppStateType = 'booting' | 'running' | 'sleeping' | 'shutdown'
+export const appState: Writable<AppStateType> = writable()
 
+export type TabStateType = 'idle' | 'leader' | 'follower' | 'unsupported';
+export const tabState: Writable<TabStateType> = writable('follower');
 export const nip66Initialized: Readable<boolean> = derived( nip66, ($nip66) => $nip66?.initialized? true: false )
 export const unsupported: Writable<boolean> = writable(false)
 export const isLivesyncing: Writable<boolean> = writable(false)
@@ -32,7 +36,7 @@ export const shouldSync = () => {
     const threshold = 15*1
     const timestamp = get(lastCompleteSync)
     const now = Math.round(Date.now()/1000)
-    console.log('should snyc?', threshold<(now-timestamp), formatSeconds(threshold), timeAgo(now*1000), timeAgo(timestamp*1000))
+    console.log('should sync?', threshold<(now-timestamp), formatSeconds(threshold), timeAgo(now*1000), timeAgo(timestamp*1000))
     if(threshold<(now-timestamp))
         return true;
     return false; 
@@ -53,3 +57,4 @@ export const doAggregateCache: Writable<boolean> = writable(false)
 export const shouldAggregate = (): boolean => {
     return !get(doAggregateCache)
 }
+

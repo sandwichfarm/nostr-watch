@@ -122,8 +122,6 @@
 
     // **Build Inverted Index**
     function buildInvertedIndex(data: RecordData[], filtersInclude: string[]) {
-        // const begin = new Date().getTime();
-        // //console.log('begin buildInvertedIndex');
         filtersInclude.forEach(filterKey => {
             _invertedIndex[filterKey] = {};
             data.forEach(record => {
@@ -140,7 +138,6 @@
                 }
             });
         });
-        // //console.log('end buildInvertedIndex', new Date().getTime() - begin);
     }
 
     // **Compute Active Record IDs Based on Active Filters**
@@ -318,8 +315,6 @@
 
     // **Apply a Filter Value Based on Its Type and Mode**
     function applyFilter(filterKey: string, value: any) {
-        // const begin = new Date().getTime();
-        // //console.log('begin applyFilter', filterKey, value);
         const filter = $relayFilters.find(f => f.key === filterKey);
         if (!filter) return;
 
@@ -338,10 +333,9 @@
                 }
             } else if (filter.type === 'string' || filter.type === 'array') {
                 if (mode === 'OR') {
-                    // OR mode allows multiple selections (union)
+                    // union
                     if (Array.isArray(existingFilter)) {
                         if (existingFilter.includes(value)) {
-                            // Deselect the value
                             const newValues = existingFilter.filter(v => v !== value);
                             if (newValues.length === 0) {
                                 const { [filterKey]: _, ...rest } = currentFilters;
@@ -349,7 +343,6 @@
                             }
                             return { ...currentFilters, [filterKey]: newValues };
                         } else {
-                            // Select the value
                             return { ...currentFilters, [filterKey]: [...existingFilter, value] };
                         }
                     } else {
@@ -357,7 +350,7 @@
                         return { ...currentFilters, [filterKey]: [value] };
                     }
                 } else if (mode === 'AND') {
-                    // AND mode requires all selected values to be present (intersection)
+                    // intersection
                     if (Array.isArray(existingFilter)) {
                         if (existingFilter.includes(value)) {
                             // Deselect the value

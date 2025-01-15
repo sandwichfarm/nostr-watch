@@ -136,7 +136,7 @@ export const bootstrapMonitorData = async () => {
     if(!$nip66){
         $nip66 = await instance();
     }
-    bindBootstrapEmitters($nip66);
+    bindBootstrapEmitters();
     await $nip66?.services?.monitors?.bootstrapMonitors();
 }
 
@@ -147,7 +147,6 @@ export const bootstrapMonitorChecks = async () => {
     bindBootstrapEmitters();
     await $nip66?.services?.monitors?.syncMonitorsChecks();
 }
-
 
 export const bootstrap = async () => {
     console.log('bootstrap')
@@ -163,7 +162,6 @@ export const bootstrap = async () => {
             liveSyncBatcher.add(event); 
         }
     }
-    
     if( shouldSync() ){
         if( get(isBootstrapping) ) return;
         isBootstrapping.set(true)
@@ -175,17 +173,15 @@ export const bootstrap = async () => {
         })
     }
     else {
-        //console.log('skipping full sync')
-        //TODO: Send ready event from Cache Adapter Worker wait on Adapter ready.
-        // await $nip66?.adapters?.cache.ready();
-        await new Promise( (resolve) => setTimeout(resolve, 1000) ) 
-        //
+        await new Promise( (resolve) => setTimeout(resolve, 1000) )         
         seedFromCache().then( () => {
             if(get(isLivesyncing)) return;
             beginLiveSync({ onevents })
         });
     }
 }
+
+type LiveSyncResumer = () => Promise<void>
 
 export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {
     isLivesyncing.set(true)
@@ -202,8 +198,6 @@ export const stopLiveSync = async (): Promise<void> => {
     }
     $nip66?.services?.monitors?.stopLiveSync()
 }
-
-type LiveSyncResumer = () => Promise<void>
 
 export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
     console.log('Lifecycle:pauseLiveSync')

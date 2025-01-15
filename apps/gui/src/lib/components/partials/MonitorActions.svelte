@@ -46,8 +46,6 @@
             } 
             else {
                 monitor.enable()
-                // const lastSync = monitor.getLastSyncSince(30166)
-
                 const options = {
                     filters: [ monitor.checkFilter ],
                     options: {

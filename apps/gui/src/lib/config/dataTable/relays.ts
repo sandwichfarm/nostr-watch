@@ -8,10 +8,10 @@ import { IconBadgeCheckGreen, IconCheckGreen, IconCheckRed } from '$lib/utils/ic
 import { PFP } from '$lib/utils/pfp';
 
 import { monitorsMap } from '$lib/stores/monitors.js';
-import type { Monitor } from '@nostrwatch/nip66/models/Monitor';
-import type { Nip11Fee } from '@nostrwatch/nip66/models/Nip11';
-import type { DD } from '@nostrwatch/nip66/models/Geocoded';
-import { Nip66Event } from '@nostrwatch/nip66/models';
+import type { Monitor } from '@nostrwatch/route66/models/Monitor';
+import type { Nip11Fee } from '@nostrwatch/route66/models/Nip11';
+import type { DD } from '@nostrwatch/route66/models/Geocoded';
+import { Nip66Event } from '@nostrwatch/route66/models';
 
 let $monitorsMap: Map<string, Monitor>;
 

@@ -1,5 +1,5 @@
 {
-  "name": "@nostrwatch/validate-nip66",
+  "name": "@nostrwatch/validate-route66",
   "type": "module",
   "version": "0.0.4",
   "main": "dist/bundle.js",
@@ -13,7 +13,7 @@
     "yaml": "2.4.5"
   },
   "devDependencies": {
-    "@nostrwatch/nip66-schema": "*",
+    "@nostrwatch/route66-schema": "*",
     "rimraf": "6.0.1",
     "ts-loader": "^9.2.6",
     "typedoc": "^0.22.15",

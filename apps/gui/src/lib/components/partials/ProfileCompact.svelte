@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { type Monitor, type PubkeyProfile } from '@nostrwatch/nip66/models';
+    import { type Monitor, type PubkeyProfile } from '@nostrwatch/route66/models';
     import { PFP } from '$lib/utils/pfp.js';
 
     export let pubkey: string;

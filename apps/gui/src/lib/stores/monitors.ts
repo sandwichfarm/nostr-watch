@@ -1,17 +1,17 @@
 import { derived, writable, type Writable, get } from "svelte/store";
-import type { ICheck } from "@nostrwatch/nip66/models";
+import type { ICheck } from "@nostrwatch/route66/models";
 import { eventsArray } from "./events.js";
-import type { IMonitor, IEvent } from "@nostrwatch/nip66/models";
+import type { IMonitor, IEvent } from "@nostrwatch/route66/models";
 import { throttledDerived } from "$lib/utils/stores.js";
-import { MonitorManager, StateManager } from "@nostrwatch/nip66";
-import { Monitor } from '@nostrwatch/nip66/models'
+import { MonitorManager, StateManager } from "@nostrwatch/route66";
+import { Monitor } from '@nostrwatch/route66/models'
 import { nip05s, validNip05s } from "./nip05s.js";
-import { nip66 } from "./nip66.js";
-import type Nip66 from "@nostrwatch/nip66";
+import { route66 } from "./route66.js";
+import type Route66 from "@nostrwatch/route66";
 
-let $nip66: Nip66;
+let $route66: Route66;
 
-nip66.subscribe(instance => $nip66 = instance)
+route66.subscribe(instance => $route66 = instance)
 
 export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   const monitorsArr = StateManager.get('cache:monitors');  
@@ -37,7 +37,7 @@ export const monitors = derived(
   ($monitorsMap) => {
     let arr = Array.from($monitorsMap.values());
     if(arr.length){
-      let sorted = $nip66?.services?.monitors?.sortedMonitors
+      let sorted = $route66?.services?.monitors?.sortedMonitors
       if(sorted !== undefined && sorted.length) {
         StateManager.set('cache:monitors', sorted.map(( monitor: Monitor) => monitor.toCache()));
       }
@@ -58,8 +58,8 @@ export const monitors = derived(
 export const monitorsSorted = derived(
   monitors,
   ($monitors) => {
-    ////console.log('monitors sorted', $nip66?.services?.monitors?.sortedMonitors || $monitors)
-    return $nip66?.services?.monitors?.sortedMonitors || $monitors;
+    ////console.log('monitors sorted', $route66?.services?.monitors?.sortedMonitors || $monitors)
+    return $route66?.services?.monitors?.sortedMonitors || $monitors;
   }
 );
 

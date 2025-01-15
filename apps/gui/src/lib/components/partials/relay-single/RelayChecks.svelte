@@ -8,8 +8,8 @@
 	import { timeAgo } from '$lib/utils/time';
 	import { PFP } from '$lib/utils/pfp';
 	import RelayMap from '../RelayMap.svelte';
-	import type { Nip66Event } from '@nostrwatch/nip66/models';
-	import type { Monitor } from '@nostrwatch/nip66/models/Monitor';
+	import type { Nip66Event } from '@nostrwatch/route66/models';
+	import type { Monitor } from '@nostrwatch/route66/models/Monitor';
 	import { onMount } from 'svelte';
     
     export let relay: string;

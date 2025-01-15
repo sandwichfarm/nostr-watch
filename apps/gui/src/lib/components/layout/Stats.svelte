@@ -9,7 +9,7 @@
         isps,
         monitors
     } from '$lib/stores/index.js';
-	import { StateManager } from '@nostrwatch/nip66';
+	import { StateManager } from '@nostrwatch/route66';
 	import { hasBeenBoostrapped } from '$lib/stores/app';
 
     let eventsCount = StateManager.get('count:events:checks');

@@ -1,7 +1,7 @@
 import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
-import { StateManager } from '@nostrwatch/nip66';
+import { StateManager } from '@nostrwatch/route66';
 import { relayAggregates } from './checks.js';
 import { doAggregateCache } from './app.js';
 

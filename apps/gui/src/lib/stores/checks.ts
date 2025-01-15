@@ -9,8 +9,8 @@ interface Check {
 
 import { eventsArray } from './events.js';
 
-import { Nip66Event } from '@nostrwatch/nip66/models';
-import { StateManager } from "@nostrwatch/nip66";
+import { Nip66Event } from '@nostrwatch/route66/models';
+import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache, isBootstrapping } from "./app.js";
 
 export const relayCheckAggregator = ($checks: Nip66Event[]) => {

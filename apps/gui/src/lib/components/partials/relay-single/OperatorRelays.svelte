@@ -4,8 +4,8 @@
     import { derived, writable, type Writable } from 'svelte/store';
     
 	
-	import { eventsArray, nip66 } from '$lib/stores';
-	import { type IEvent, Monitor, Nip66Event } from '@nostrwatch/nip66/models';
+	import { eventsArray, route66 } from '$lib/stores';
+	import { type IEvent, Monitor, Nip66Event } from '@nostrwatch/route66/models';
 	import OperatorRelay from './OperatorRelay.svelte';
 
     export let pubkey: string;
@@ -16,8 +16,8 @@
     const deadRelays: Writable<Nip66Event[]> = writable([])
 
     const fetchDeadRelays = async () => {
-        if(!$nip66) return;
-        const deadRelays = await $nip66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
+        if(!$route66) return;
+        const deadRelays = await $route66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
         //console.log('dead relays fetched:', deadRelays.length)
         deadRelays?.forEach( (event: IEvent) => {
             deadRelays.update( ( events: Nip66Event[] ): Nip66Event[] => {
@@ -37,13 +37,13 @@
     });
 
     const mount = async () => {
-        if(!$nip66) return;
-        await $nip66.ready();
+        if(!$route66) return;
+        await $route66.ready();
         fetchDeadRelays()
     }
 
     const destroy = async () => {
-        // await $nip66.shutdown()
+        // await $route66.shutdown()
     }
 
     onMount(mount)
@@ -51,6 +51,6 @@
 </script>
 {#if pubkey}
     {#each $operatorRelays as event}
-        <OperatorRelay {event} {nip66} />
+        <OperatorRelay {event} {route66} />
     {/each}
 {/if}

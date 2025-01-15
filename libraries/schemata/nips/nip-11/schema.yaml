@@ -5,10 +5,10 @@ type: object
 properties:
   name:
     type: string
-    errorMessage: "Name is required and must be a string."
+    errorMessage: "Name must be a string."
   description:
     type: string
-    errorMessage: "Description is required and must be a string."
+    errorMessage: "Description must be a string."
   pubkey:
     allOf:
       - $ref: "@/secp256k1.yaml"

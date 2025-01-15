@@ -2,7 +2,7 @@ import { get, type Writable } from 'svelte/store';
 import type { nip11 } from 'nostr-tools';
 
 import { nip11sLocal } from '$lib/stores/nip11s.js';
-import { Nip11, type RelayInformation } from '@nostrwatch/nip66/models';
+import { Nip11, type RelayInformation } from '@nostrwatch/route66/models';
 import { getRelayErrorSubject, setRelayError, type RelayErrorMessages } from '$lib/stores/relay-errors.js';
 import { relaysErrors } from '$lib/stores/relay-errors';
 

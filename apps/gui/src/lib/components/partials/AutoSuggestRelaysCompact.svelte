@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { relayAggregates, relaysForMiniSearch } from "$lib/stores/checks.js";
-    import { StateManager } from "@nostrwatch/nip66";
+    import { StateManager } from "@nostrwatch/route66";
 	import AutoSuggest from "./AutoSuggest.svelte";
     import * as searchConfig from "$lib/stores/search-relays.js";
 	import { derived } from "svelte/store";

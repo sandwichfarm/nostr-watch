@@ -1,6 +1,6 @@
 import { writable, derived, type Writable, type Readable, get } from "svelte/store";
-import { Monitor, Nip66Event, type IEvent } from '@nostrwatch/nip66/models'
-import { StateManager } from "@nostrwatch/nip66";
+import { Monitor, Nip66Event, type IEvent } from '@nostrwatch/route66/models'
+import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache } from "./app";
 
 

@@ -293,13 +293,13 @@ run()
 // //   let index = 0;
 
 // //   let nwAPI = await nwAPIRelays(),
-// //     nip66 = await nwN66Relays();
+// //     route66 = await nwN66Relays();
 
 // //   const xportOnlineRelays = [];
 
 // //   console.log("---overview---");
 // //   console.log(`nostr.watch API (online): ${nwAPI.length}`);
-// //   console.log(`NIP-66 (online): ${nip66.length}`);
+// //   console.log(`NIP-66 (online): ${route66.length}`);
 // //   console.log(`xport.top (unchecked): ${xportRelays.legnth}`);
 // //   console.log("-------------");
 
@@ -326,10 +326,10 @@ run()
 // //   };
 
 // //   nwAPI = nwAPI.map(mapNormalizeURL);
-// //   nip66 = nip66.map(mapNormalizeURL);
+// //   route66 = route66.map(mapNormalizeURL);
 // //   xportRelays = xportRelays.map(mapNormalizeURL);
 
-// //   const missing = findMissingItems(nwAPI, nip66, xportRelays);
+// //   const missing = findMissingItems(nwAPI, route66, xportRelays);
 
 // //   console.log("---RESULTS---");
 // //   console.log("  ");

@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Tabs from "$lib/components/ui/tabs";
-  import { Monitor, type Nip66Event } from '@nostrwatch/nip66/models';
+  import { Monitor, type Nip66Event } from '@nostrwatch/route66/models';
   import { onMount } from 'svelte';
   import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 	import { clickToCopy } from "$lib/utils/ux";

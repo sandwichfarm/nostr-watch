@@ -1,6 +1,6 @@
 <script lang="ts">
     import Checkbox from "../../ui/checkbox/checkbox.svelte";
-    import { StateManager } from "@nostrwatch/nip66";
+    import { StateManager } from "@nostrwatch/route66";
     import type { Writable } from "svelte/store";
     import { capitalize } from "@nostrwatch/utils";
 	import type { DataTableConfig } from "./DataTableTypes";

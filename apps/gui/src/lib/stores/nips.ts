@@ -1,6 +1,6 @@
 import { derived, get, readable } from 'svelte/store';
 import { relayAggregates } from './checks.js';
-import { StateManager } from '@nostrwatch/nip66';
+import { StateManager } from '@nostrwatch/route66';
 import type { Readable } from 'svelte/store';
 import { doAggregateCache } from './app.js';
 

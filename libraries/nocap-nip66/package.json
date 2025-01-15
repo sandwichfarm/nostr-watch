@@ -1,5 +1,5 @@
 {
-  "name": "@nostrwatch/nocap-nip66",
+  "name": "@nostrwatch/nocap-route66",
   "version": "1.0.0",
   "description": "A library for transforming NOCAP output into Nostr events of kind 30166",
   "main": "dist/index.js",
@@ -15,11 +15,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/nocapd-nip66.git"
+    "url": "https://github.com/yourusername/nocapd-route66.git"
   },
   "keywords": [
     "nostr",
-    "nip66",
+    "route66",
     "nocap",
     "event",
     "library"

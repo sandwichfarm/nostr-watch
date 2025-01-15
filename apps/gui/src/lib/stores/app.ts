@@ -1,23 +1,23 @@
-import { StateManager } from "@nostrwatch/nip66";
+import { StateManager } from "@nostrwatch/route66";
 import type { Readable, Writable } from "svelte/store";
 import { readable, writable, derived, get } from "svelte/store";
 import { formatSeconds, timeAgo } from "../utils/time";
-import { nip66 } from "./nip66";
+import { route66 } from "./route66";
 import { delay } from "@nostrwatch/utils";
 
-export type AppStateType = 'booting' | 'running' | 'sleeping' | 'shutdown'
+export type AppStateType = 'booting' | 'running' | 'shutdown'
 export const appState: Writable<AppStateType> = writable()
 
 export type TabStateType = 'idle' | 'leader' | 'follower' | 'unsupported';
 export const tabState: Writable<TabStateType> = writable('follower');
-export const nip66Initialized: Readable<boolean> = derived( nip66, ($nip66) => $nip66?.initialized? true: false )
+export const route66Initialized: Readable<boolean> = derived( route66, ($route66) => $route66?.initialized? true: false )
 export const unsupported: Writable<boolean> = writable(false)
 export const isLivesyncing: Writable<boolean> = writable(false)
 export const isBootstrapping: Writable<boolean> = writable(false)
 export const lastCompleteSync: Writable<number> = writable(StateManager.get('lastCompleteSync') ?? 0)
 
-export const nip66Ready = async () => {
-    while(!get(nip66Initialized)) {
+export const route66Ready = async () => {
+    while(!get(route66Initialized)) {
         await delay(200);
     }
 }

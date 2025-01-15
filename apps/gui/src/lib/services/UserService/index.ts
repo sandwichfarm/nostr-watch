@@ -1,13 +1,13 @@
-import { Service, type FetchOptions } from "@nostrwatch/nip66/services"
-import type { IAdaptersArgument } from "@nostrwatch/nip66/interfaces"
+import { Service, type FetchOptions } from "@nostrwatch/route66/services"
+import type { IAdaptersArgument } from "@nostrwatch/route66/interfaces"
 import { User } from "$lib/models/User.js"
-import { NostrEvent, type IEvent } from "@nostrwatch/nip66/models"
+import { NostrEvent, type IEvent } from "@nostrwatch/route66/models"
 import type { Pubkey } from "$lib/models/User.js";
-import type {  WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/nip66/core/WebsocketAdapter";
+import type {  WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/route66/core/WebsocketAdapter";
 import type { Filter } from "nostr-tools";
 import { get } from "svelte/store";
-import { nip66 } from "$lib/stores";
-import type Nip66 from "@nostrwatch/nip66"
+import { route66 } from "$lib/stores";
+import type Route66 from "@nostrwatch/route66"
 
 export type UserFeedItem = {
     user: User,
@@ -75,12 +75,12 @@ export class UserService extends Service {
     }
 
     // async unsubscribe(hash?: string): Promise<void> {
-    //     const $nip66: Nip66 = get(nip66)
-    //     await $nip66.adapters?.websocket?.unsubscribe(hash)
+    //     const $route66: Route66 = get(route66)
+    //     await $route66.adapters?.websocket?.unsubscribe(hash)
     // }
 
     // async unsubscribeAll(): Promise<void> {
-    //     const $nip66: Nip66 = get(nip66)
+    //     const $route66: Route66 = get(route66)
     //     const promises: Promise<boolean>[] = []
     //     this.unsubscribeMany(this._subIds)
     // }

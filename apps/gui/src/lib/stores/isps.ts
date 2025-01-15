@@ -2,7 +2,7 @@
 import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { relayAggregates } from './checks.js'; 
-import { StateManager } from '@nostrwatch/nip66';
+import { StateManager } from '@nostrwatch/route66';
 import { doAggregateCache } from './app.js';
 
 export type StoreIsp = {

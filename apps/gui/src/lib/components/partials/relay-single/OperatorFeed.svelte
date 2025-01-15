@@ -4,8 +4,8 @@
 
     import Masonry from 'svelte-bricks'
     
-    import type Nip66 from "@nostrwatch/nip66"
-    import { nip66 } from '$lib/stores';
+    import type Route66 from "@nostrwatch/route66"
+    import { route66 } from '$lib/stores';
     import { isLivesyncing } from '$lib/stores/app';
 
     
@@ -60,7 +60,7 @@
             wasLivesyncing = true;
             stopLiveSync()
         }
-        const instance: Nip66 = get(nip66);
+        const instance: Route66 = get(route66);
         while(!instance || !instance.ready) {
             await new Promise(resolve => setTimeout(resolve, 100));
         }

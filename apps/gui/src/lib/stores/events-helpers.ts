@@ -1,20 +1,20 @@
 import { writable, derived, type Writable, type Readable } from "svelte/store";
-import type Nip66 from '@nostrwatch/nip66'
-import { Monitor, Nip66Event, type IEvent } from '@nostrwatch/nip66/models'
-import { StateManager } from "@nostrwatch/nip66";
+import type Route66 from '@nostrwatch/route66'
+import { Monitor, Nip66Event, type IEvent } from '@nostrwatch/route66/models'
+import { StateManager } from "@nostrwatch/route66";
 import { eventKey } from "$lib/utils/event-keys";
-import { nip66 } from "./nip66";
+import { route66 } from "./route66.js";
 import { events } from "./events";
 import PQueue from 'p-queue';
 import { delay } from '@nostrwatch/utils'
 
 const queue = new PQueue({concurrency: 1});
 
-let $nip66: Nip66 | null = null;
-nip66.subscribe(value => $nip66 = value);
+let $route66: Route66 | null = null;
+route66.subscribe(value => $route66 = value);
 
 const getMonitor = (pubkey: string): Monitor => {
-    return $nip66?.services?.monitors?.map.get(pubkey)
+    return $route66?.services?.monitors?.map.get(pubkey)
 }
 
 export const addEventsToStore = (_events: IEvent[]) => {

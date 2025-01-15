@@ -5,10 +5,10 @@
     import * as Card from '$lib/components/ui/card';
 	import ProfileCompact from '$lib/components/partials/ProfileCompact.svelte';
 	
-	import { nip66 } from '$lib/stores';
+	import { route66 } from '$lib/stores';
 
-	import type { PubkeyProfile, PubkeyRelays } from '@nostrwatch/nip66/models';
-	import { Monitor, Nip66Event } from '@nostrwatch/nip66/models';
+	import type { PubkeyProfile, PubkeyRelays } from '@nostrwatch/route66/models';
+	import { Monitor, Nip66Event } from '@nostrwatch/route66/models';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
     import OperatorRelays from '../OperatorRelays.svelte';
 
@@ -21,8 +21,8 @@
     let otherRelaysCount: number;
 
     const mount = async () => {
-        if(!$nip66) return;
-        await $nip66.ready();
+        if(!$route66) return;
+        await $route66.ready();
     }
 
     const destroy = () => {}

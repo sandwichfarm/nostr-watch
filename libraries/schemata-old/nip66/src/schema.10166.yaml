@@ -1,4 +1,4 @@
-$id: "https://kind10166.nip66.schemata.nostr.watch"
+$id: "https://kind10166.route66.schemata.nostr.watch"
 $schema: "http://json-schema.org/draft-07/schema#"
 title: "k10166"
 type: "object"

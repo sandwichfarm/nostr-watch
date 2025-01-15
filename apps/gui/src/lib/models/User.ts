@@ -1,5 +1,5 @@
 import type { UserService } from "$lib/services/UserService";
-import { PubkeyProfile, PubkeyRelays, type IEvent } from "@nostrwatch/nip66/models";
+import { PubkeyProfile, PubkeyRelays, type IEvent } from "@nostrwatch/route66/models";
 import { nip19, type NostrEvent } from "nostr-tools";
 
 export type Pubkey = string;

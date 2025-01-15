@@ -5,12 +5,12 @@
 	
 	import { onMount } from 'svelte';
 	import { derived, readable, writable, type Readable, type Writable } from 'svelte/store';
-    import { Nip66Event, Monitor, type IEvent } from '@nostrwatch/nip66/models'
-    import { nip66 } from '$lib/stores/nip66.js';
+    import { Nip66Event, Monitor, type IEvent } from '@nostrwatch/route66/models'
+    import { route66 } from '$lib/stores/route66.js';
     import Nip66Check from '$lib/components/partials/Nip66Check.svelte'
     import MonitorProfileCompact from '$lib/components/partials/MonitorProfileCompact.svelte'
 
-    import type Nip66 from '@nostrwatch/nip66';
+    import type Route66 from '@nostrwatch/route66';
     
     import type { AddressPointer, DecodeResult, NAddr } from 'nostr-tools/nip19';
 	import { doBootstrap } from '$lib/stores/routines.js';
@@ -18,7 +18,7 @@
 
     let id = $page.params.id;
     let data: DecodeResult | undefined;
-    let nip66Instance: Nip66;
+    let nip66Instance: Route66;
     let monitorPubkey: string | undefined;
 
     const acceptedKinds: Readable<number[]> = readable([30166, 10166]);
@@ -90,7 +90,7 @@
     onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         doBootstrap.set(false);
-        nip66Instance = $nip66? $nip66: await instance();
+        nip66Instance = $route66? $route66: await instance();
         await nip66Instance.ready()
         await getNip66EventFromNip19OrHex()
         await getSupplementaryData()

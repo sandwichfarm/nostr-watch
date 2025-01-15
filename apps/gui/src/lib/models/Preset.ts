@@ -1,8 +1,8 @@
-import { StateManager } from "@nostrwatch/nip66";
+import { StateManager } from "@nostrwatch/route66";
 import type { DataTableConfig } from "../components/lists/table/DataTableTypes";
 import { User } from "./User";
-import { deterministicHash } from "@nostrwatch/nip66/utils";
-import type { IEvent } from "@nostrwatch/nip66/models";
+import { deterministicHash } from "@nostrwatch/route66/utils";
+import type { IEvent } from "@nostrwatch/route66/models";
 
 export type DataTablePresetConfig = {
     slug: string;

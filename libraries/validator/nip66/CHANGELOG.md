@@ -1,4 +1,4 @@
-# @nostrwatch/nip66
+# @nostrwatch/route66
 
 ## 0.0.4
 

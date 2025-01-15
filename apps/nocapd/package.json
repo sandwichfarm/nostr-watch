@@ -11,7 +11,7 @@
     "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/nocap": "workspace:^",
     "@nostrwatch/nocap-every-adapter-default": "workspace:^",
-    "@nostrwatch/nocap-nip66": "workspace:^",
+    "@nostrwatch/nocap-route66": "workspace:^",
     "@nostrwatch/nwcache": "workspace:^",
     "@nostrwatch/publisher": "workspace:^",
     "@nostrwatch/publisher-nostrtools": "workspace:^",

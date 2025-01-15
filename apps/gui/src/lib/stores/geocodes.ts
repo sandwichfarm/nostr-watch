@@ -3,8 +3,8 @@ import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { relayAggregates } from './checks.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
-import { StateManager } from '@nostrwatch/nip66';
-import { Nip66Event } from '@nostrwatch/nip66/models';
+import { StateManager } from '@nostrwatch/route66';
+import { Nip66Event } from '@nostrwatch/route66/models';
 import type { lte } from 'lodash';
 import { doAggregateCache } from './app.js';
 

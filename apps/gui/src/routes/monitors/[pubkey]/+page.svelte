@@ -4,7 +4,7 @@
 
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { Batcher } from '@nostrwatch/nip66/core';
+    import { Batcher } from '@nostrwatch/route66/core';
     import { eventKey } from '$lib/utils/event-keys';
     
     let data = [];
@@ -35,10 +35,10 @@
     });
     
     onMount(async () => {
-        N66 = (await import('@nostrwatch/nip66')).default;
-		////console.log(await import('@nostrwatch/nip66-cacheadapter-nostrsqlite'))
-		NostrSqliteAdapter = (await import('@nostrwatch/nip66-cacheadapter-nostrsqlite')).default;
-		NostrToolsAdapter = (await import('@nostrwatch/nip66-wsadapter-nostrtools')).default;
+        N66 = (await import('@nostrwatch/route66')).default;
+		////console.log(await import('@nostrwatch/route66-cacheadapter-nostrsqlite'))
+		NostrSqliteAdapter = (await import('@nostrwatch/route66-cacheadapter-nostrsqlite')).default;
+		NostrToolsAdapter = (await import('@nostrwatch/route66-wsadapter-nostrtools')).default;
 
 		////console.log('Initializing...');
 		const adapters = {

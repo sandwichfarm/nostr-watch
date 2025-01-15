@@ -1,7 +1,7 @@
 import { get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
-import { StateManager } from '@nostrwatch/nip66';
+import { StateManager } from '@nostrwatch/route66';
 import { doAggregateCache } from './app.js';
 
 export const versions = throttledDerived(eventsArray, ($eventsArray) => {

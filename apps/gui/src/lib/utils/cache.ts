@@ -1,8 +1,8 @@
-import type Nip66 from '@nostrwatch/nip66';
+import type Route66 from '@nostrwatch/route66';
 import { get } from 'svelte/store';
-import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded, nip66Ready } from '../stores/app';
+import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready } from '../stores/app';
 import { instance, stopLiveSync } from './lifecycle';
-import { StateManager } from '@nostrwatch/nip66';
+import { StateManager } from '@nostrwatch/route66';
 import { delay } from '@nostrwatch/utils';
 
 export interface LocalStorageUsage {
@@ -12,34 +12,34 @@ export interface LocalStorageUsage {
 }
 
 export const wipeCache = async () => {
-    await nip66Ready()
-    const $nip66 = await instance();
-    await abortWebsocket($nip66);
-    await wipeCacheAdapter($nip66);
+    await route66Ready()
+    const $route66 = await instance();
+    await abortWebsocket($route66);
+    await wipeCacheAdapter($route66);
     await wipeEventsStore();
     await wipeAppStores();
     await wipeEventsStore();
-    $nip66.destroy();
+    $route66.destroy();
     await wipeState();
     StateManager.emit('wipe')
     await delay(1000)
     document.location = '/'
 }
 
-const abortWebsocket = async ($nip66: Nip66) => {
+const abortWebsocket = async ($route66: Route66) => {
     if(get(isLivesyncing)) {
         await stopLiveSync()
     }
-    $nip66.adapters.websocketAdapter.unsubscribeAll();
-    $nip66.adapters.websocketAdapter.abort();
+    $route66.adapters.websocketAdapter.unsubscribeAll();
+    $route66.adapters.websocketAdapter.abort();
 }
 
-export const wipeCacheAdapter = async ($nip66: Nip66) => {
-    $nip66.adapters.cacheAdapter.WIPE();
+export const wipeCacheAdapter = async ($route66: Route66) => {
+    $route66.adapters.cacheAdapter.WIPE();
 }
 
 export const wipeState = async () => {
-    const StateManager = (await import('@nostrwatch/nip66')).StateManager;
+    const StateManager = (await import('@nostrwatch/route66')).StateManager;
     StateManager.clear();
 }
 

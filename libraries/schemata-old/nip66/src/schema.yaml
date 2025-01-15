@@ -1,6 +1,6 @@
-$id: "https://nip66.schemata.nostr.watch"
+$id: "https://route66.schemata.nostr.watch"
 $schema: "http://json-schema.org/draft-07/schema#"
-title: "nip66"
+title: "route66"
 type: "object"
 oneOf: 
   - $ref: "schema.30166.yaml"

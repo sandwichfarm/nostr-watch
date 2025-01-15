@@ -4,7 +4,7 @@
 	import { doAggregateCache } from '$lib/stores/app';
 	import { onDestroy, onMount } from 'svelte';
 	import { writable, type Writable } from 'svelte/store';
-	import { StateManager } from '@nostrwatch/nip66';
+	import { StateManager } from '@nostrwatch/route66';
 	import { type default as DataTableType } from '$lib/components/lists/table/DataTable.svelte';
 	import { type default as StatsType } from '$lib/components/layout/Stats.svelte';
 	import type { DataTableConfig } from '$lib/components/lists/table/DataTableTypes';

@@ -1,4 +1,4 @@
-import { deterministicHash } from '@nostrwatch/nip66/utils';
+import { deterministicHash } from '@nostrwatch/route66/utils';
 import type { NostrEvent } from 'nostr-tools';
 import { get } from 'svelte/store';
 import { EventEmitter } from 'tseep' 

@@ -1,4 +1,4 @@
-import { deterministicHash } from '@nostrwatch/nip66/utils';
+import { deterministicHash } from '@nostrwatch/route66/utils';
 import { validateNip11, validateMessage, validateNote, type SchemaValidatorResult } from '@nostrwatch/schemata-js-ajv'
 
 self.onmessage = ({ data }) => {

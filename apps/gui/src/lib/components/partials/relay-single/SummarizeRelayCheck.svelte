@@ -3,7 +3,7 @@
     import Badge from '$lib/components/ui/badge/badge.svelte';
     import { monitors } from '$lib/stores/monitors.js';
     import ProfileCompact from '../ProfileCompact.svelte';
-    import type { Monitor } from "@nostrwatch/nip66/models"
+    import type { Monitor } from "@nostrwatch/route66/models"
     import { PFP } from '$lib/utils/pfp.js';
 	import { timeAgo } from "$lib/utils/time";
     

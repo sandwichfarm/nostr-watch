@@ -1,14 +1,14 @@
 import { derived, get, writable, type Readable, type Writable } from "svelte/store";
-import { Nip66Event, type INip11 } from "@nostrwatch/nip66/models"
-import { deterministicHash } from "@nostrwatch/nip66/utils";
+import { Nip66Event, type INip11 } from "@nostrwatch/route66/models"
+import { deterministicHash } from "@nostrwatch/route66/utils";
 
 import { eventsArray } from './events.js'; 
 import { Nip11Service } from "$lib/services/Nip11Service";
-import { StateManager } from "@nostrwatch/nip66";
+import { StateManager } from "@nostrwatch/route66";
 import { compress, decompress } from "compress-json";
-import { Nip11 } from "@nostrwatch/nip66/models";
+import { Nip11 } from "@nostrwatch/route66/models";
 import { doAggregateCache, hasBeenBoostrapped, hasBeenSeeded } from "./app.js";
-import type { RelayInformation } from "@nostrwatch/nip66/models";
+import type { RelayInformation } from "@nostrwatch/route66/models";
 import type { nip11 } from "nostr-tools";
 
 type RelayUrl = string

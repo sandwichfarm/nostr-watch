@@ -1,5 +1,5 @@
 {
-  "name": "@nostrwatch/nip66-schema",
+  "name": "@nostrwatch/route66-schema",
   "version": "0.0.1",
   "main": "index.js",
   "license": "MIT",

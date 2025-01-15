@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
 
-import { StateManager } from "@nostrwatch/nip66";
-import { Nip66 } from "@nostrwatch/nip66"
-import { nip66 } from '$lib/stores';
+import { StateManager } from "@nostrwatch/route66";
+import { Route66 } from "@nostrwatch/route66"
+import { route66 } from '$lib/stores';
 
 import { PresetService } from "../services/PresetService";
 import type { DataTablePreset, DataTablePresetConfig } from "../models/Preset";
@@ -17,12 +17,12 @@ export class DataTablePresetManager {
     
     constructor(key: string){
         this._key = key;
-        const $nip66: Nip66 = get(nip66);
-        $nip66.ready().then( this.initializeService.bind(this) )
+        const $route66: Route66 = get(route66);
+        $route66.ready().then( this.initializeService.bind(this) )
     }
 
-    initializeService( $nip66: Nip66 ){
-        this._service = new PresetService($nip66.adapters);
+    initializeService( $route66: Route66 ){
+        this._service = new PresetService($route66.adapters);
     }
 
     loadPersistedPreset(){

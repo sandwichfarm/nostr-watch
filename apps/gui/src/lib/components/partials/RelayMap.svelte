@@ -6,8 +6,8 @@
     import { writable, type Writable } from 'svelte/store';
     import { MapPointLabelPosition, type MapData, type MapLink } from '@unovis/ts'
     import { WorldMapTopoJSON } from '@unovis/ts/maps'
-    import type { Monitor, Nip66Event } from '@nostrwatch/nip66/models';
-	  import { StateManager } from '@nostrwatch/nip66';
+    import type { Monitor, Nip66Event } from '@nostrwatch/route66/models';
+	  import { StateManager } from '@nostrwatch/route66';
     
     export let relay: string;
     export let monitors: Writable<Monitor[]>

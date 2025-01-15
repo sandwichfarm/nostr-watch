@@ -9,7 +9,7 @@
     import { pauseLiveSync } from '$lib/utils/lifecycle.js'; // Update the path as necessary
     import type { Note } from "nostr-tools/nip19";
 	import Badge from "../../ui/badge/badge.svelte";
-	import type { Nip11 } from "@nostrwatch/nip66/models";
+	import type { Nip11 } from "@nostrwatch/route66/models";
 
     import * as Alert from "$lib/components/ui/alert/index.js";
 

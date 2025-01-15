@@ -7,7 +7,7 @@ import { RetryManager } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
 
 import { parseRelayNetwork, delay, lastCheckedId, parseUrl } from '@nostrwatch/utils'
-import { Kind30166 } from '@nostrwatch/nocap-nip66'
+import { Kind30166 } from '@nostrwatch/nocap-route66'
 import { Publisher } from '@nostrwatch/publisher'
 import PublisherWsAdapter from '@nostrwatch/publisher-nostrtools'
 

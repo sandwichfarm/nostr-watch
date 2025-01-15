@@ -2,7 +2,7 @@
 	import type { UserFeedItem } from '$lib/services/UserService';
     import { parseNote } from '$lib/utils/notes';
 	import { timeAgo } from '$lib/utils/time';
-	import type { IEvent } from '@nostrwatch/nip66/models/Event';
+	import type { IEvent } from '@nostrwatch/route66/models/Event';
 	import type { UserFeedItemRelatives } from '$lib/services/UserService';
 	import { observeViewport } from '$lib/utils/ux';
 	import { onDestroy, onMount } from 'svelte';

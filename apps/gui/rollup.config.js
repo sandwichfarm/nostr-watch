@@ -50,7 +50,7 @@ export default [
 			css({ output: 'bundle.css' }),
 			resolve({
 				browser: true,
-				dedupe: ['svelte', '@nostrwatch/nip66', '@nostrwatch/nip66-cacheadapter-dexieetl', '@nostrwatch/nip66-wsadapter-nostrtools'],
+				dedupe: ['svelte', '@nostrwatch/route66', '@nostrwatch/route66-cacheadapter-dexieetl', '@nostrwatch/route66-wsadapter-nostrtools'],
 				exportConditions: ['svelte']
 			}),
 			commonjs({
@@ -84,7 +84,7 @@ export default [
 			css({ output: 'bundle.css' }),
 			resolve({
 				browser: true,
-				dedupe: ['svelte', '@nostrwatch/nip66', '@nostrwatch/nip66-cacheadapter-dexieetl', '@nostrwatch/nip66-wsadapter-nostrtools'],
+				dedupe: ['svelte', '@nostrwatch/route66', '@nostrwatch/route66-cacheadapter-dexieetl', '@nostrwatch/route66-wsadapter-nostrtools'],
 				exportConditions: ['svelte']
 			}),
 			commonjs(),

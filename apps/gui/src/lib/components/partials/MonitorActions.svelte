@@ -4,11 +4,11 @@
     import * as Table from '$lib/components/ui/table/index.js'
 
     import { monitorsMap } from "$lib/stores/monitors.js";
-    import type { IEvent, Monitor } from '@nostrwatch/nip66/models';
+    import type { IEvent, Monitor } from '@nostrwatch/route66/models';
     import { events, eventsArray } from '$lib/stores/events.js';
 
-    import { nip66 } from '$lib/stores';
-    import type Nip66 from '@nostrwatch/nip66';
+    import { route66 } from '$lib/stores';
+    import type Route66 from '@nostrwatch/route66';
 	import { onMount } from 'svelte';
 	import { eventKey } from '$lib/utils/event-keys';
 	import { activeMonitorChecksCount } from '$lib/stores';
@@ -55,18 +55,18 @@
                         sync: true,
                         batch: 25
                     },
-                    relays: [ ...($nip66?.services?.monitors?.nip66Relays || []), ...monitor.relays ],
+                    relays: [ ...($route66?.services?.monitors?.nip66Relays || []), ...monitor.relays ],
                     priority: 20
                 }
                 const onevents = (events: IEvent[]) => {
                     addEventsToStore(events)
                 }
-                await $nip66?.services?.monitors?.sync(options, { onevents })
+                await $route66?.services?.monitors?.sync(options, { onevents })
                 disabled.set(false);
                 await resumer();
 
             }
-            $nip66?.services?.monitors?.manager?.updateMonitor?.(monitor)
+            $route66?.services?.monitors?.manager?.updateMonitor?.(monitor)
             
         }
     })

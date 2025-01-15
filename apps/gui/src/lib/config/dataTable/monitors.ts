@@ -1,6 +1,6 @@
 import { relaySpeedGroupResolver, SpeedGroupBars, SpeedGroupColors, SpeedGroups } from '$lib/stores/checks.js';
 import { inactiveDisabledMonitorChecksCount, monitors, monitorsMap } from '$lib/stores/monitors.js';
-import type { Monitor } from "@nostrwatch/nip66/models"
+import type { Monitor } from "@nostrwatch/route66/models"
 import { PFP } from '$lib/utils/pfp.js';
 import { get } from 'svelte/store';
 import { formatSeconds, timeAgo } from '$lib/utils/time.js';

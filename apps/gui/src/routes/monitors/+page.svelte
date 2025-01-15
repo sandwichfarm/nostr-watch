@@ -4,18 +4,18 @@
     import DataTable from '$lib/components/lists/table/DataTable.svelte';
     import MonitorsActions from '$lib/components/partials/MonitorActions.svelte';
     import * as Alert from "$lib/components/ui/alert/index.js";
-    import { type Monitor } from "@nostrwatch/nip66/models"
+    import { type Monitor } from "@nostrwatch/route66/models"
     
     import { monitorsSorted, monitorRows, inactiveDisabledMonitorChecksCount } from '$lib/stores/monitors.js';
 
     import defaultTableConfig from '$lib/config/dataTable/monitors.js';
-    import { StateManager } from '@nostrwatch/nip66';
+    import { StateManager } from '@nostrwatch/route66';
     import { doBootstrap } from '$lib/stores/routines';
     import { doAggregateCache } from '$lib/stores/app';
     import { writable, type Writable } from 'svelte/store';
     import type { Formatters } from '$lib/config/dataTable/monitors';
-    import { nip66 } from '$lib/stores';
-	import { nip66Ready } from '$lib/stores/app';
+    import { route66 } from '$lib/stores';
+	import { route66Ready } from '$lib/stores/app';
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
 

@@ -48,21 +48,21 @@ importers:
       '@nostrwatch/auditor':
         specifier: workspace:*
         version: link:../../libraries/auditor
-      '@nostrwatch/nip66':
-        specifier: workspace:^
-        version: link:../../libraries/nip66
-      '@nostrwatch/nip66-cacheadapter-nostrsqlite':
-        specifier: workspace:^
-        version: link:../../libraries/nip66/adapters/cache/NostrSqliteAdapter
-      '@nostrwatch/nip66-wsadapter-nostrtools':
-        specifier: workspace:^
-        version: link:../../libraries/nip66/adapters/websocket/NostrToolsAdapter
       '@nostrwatch/nocap':
         specifier: workspace:^
         version: link:../../libraries/nocap
       '@nostrwatch/nocap-websocket-adapter-default':
         specifier: workspace:^
         version: link:../../libraries/nocap/adapters/default/WebsocketAdapterDefault
+      '@nostrwatch/route66':
+        specifier: workspace:^
+        version: link:../../libraries/route66
+      '@nostrwatch/route66-cacheadapter-nostrsqlite':
+        specifier: workspace:^
+        version: link:../../libraries/route66/adapters/cache/NostrSqliteAdapter
+      '@nostrwatch/route66-wsadapter-nostrtools':
+        specifier: workspace:^
+        version: link:../../libraries/route66/adapters/websocket/NostrToolsAdapter
       '@nostrwatch/schemata-js-ajv':
         specifier: workspace:^
         version: link:../../libraries/schemata-js-ajv
@@ -105,6 +105,9 @@ importers:
       iso-3166:
         specifier: ^4.3.0
         version: 4.3.0
+      json-source-map:
+        specifier: ^0.6.1
+        version: 0.6.1
       light-bolt11-decoder:
         specifier: ^3.2.0
         version: 3.2.0
@@ -307,7 +310,7 @@ importers:
       '@nostrwatch/nocap-every-adapter-default':
         specifier: workspace:^
         version: link:../../libraries/nocap/adapters/default/ZEveryAdapterDefault
-      '@nostrwatch/nocap-nip66':
+      '@nostrwatch/nocap-route66':
         specifier: workspace:^
         version: link:../../libraries/nocap-nip66
       '@nostrwatch/nwcache':
@@ -1157,300 +1160,6 @@ importers:
         specifier: ^2.1.5
         version: 2.1.5(@types/node@22.9.3)(sass-embedded@1.82.0)(terser@5.36.0)
 
-  libraries/nip66:
-    dependencies:
-      '@nostrwatch/nocap':
-        specifier: workspace:^
-        version: link:../nocap
-      '@nostrwatch/utils':
-        specifier: workspace:^
-        version: link:../../internal/utils
-      '@pabra/logger':
-        specifier: ^1.2.0
-        version: 1.2.0
-      compress-json:
-        specifier: ^3.1.0
-        version: 3.1.0
-      jsurl2:
-        specifier: ^2.2.0
-        version: 2.2.0
-      jwt-encode:
-        specifier: 1.0.1
-        version: 1.0.1
-      minisearch:
-        specifier: ^7.1.0
-        version: 7.1.1
-      node-localstorage:
-        specifier: ^3.0.5
-        version: 3.0.5
-      nostr-tools:
-        specifier: ^2.10.3
-        version: 2.10.3(typescript@5.7.2)
-      p-queue:
-        specifier: 8.0.1
-        version: 8.0.1
-      queue:
-        specifier: 7.0.0
-        version: 7.0.0
-      tseep:
-        specifier: ^1.3.1
-        version: 1.3.1
-      tslib:
-        specifier: ^2.7.0
-        version: 2.8.1
-    devDependencies:
-      '@rollup/plugin-alias':
-        specifier: 5.1.1
-        version: 5.1.1(rollup@4.22.4)
-      '@rollup/plugin-commonjs':
-        specifier: 28.0.0
-        version: 28.0.0(rollup@4.22.4)
-      '@rollup/plugin-node-resolve':
-        specifier: 15.3.0
-        version: 15.3.0(rollup@4.22.4)
-      '@rollup/plugin-replace':
-        specifier: 6.0.1
-        version: 6.0.1(rollup@4.22.4)
-      '@rollup/plugin-terser':
-        specifier: ^0.4.4
-        version: 0.4.4(rollup@4.22.4)
-      '@rollup/plugin-wasm':
-        specifier: 6.2.2
-        version: 6.2.2(rollup@4.22.4)
-      '@surma/rollup-plugin-off-main-thread':
-        specifier: 2.2.3
-        version: 2.2.3
-      '@types/node-localstorage':
-        specifier: ^1.3.3
-        version: 1.3.3
-      esbuild:
-        specifier: ^0.24.0
-        version: 0.24.0
-      esbuild-plugin-alias:
-        specifier: ^0.2.1
-        version: 0.2.1
-      esbuild-plugin-clean:
-        specifier: ^1.0.1
-        version: 1.0.1(esbuild@0.24.0)
-      eslint:
-        specifier: ^8.46.0
-        version: 8.57.1
-      get-port:
-        specifier: 7.1.0
-        version: 7.1.0
-      prettier:
-        specifier: ^3.0.0
-        version: 3.3.3
-      rollup:
-        specifier: 4.22.4
-        version: 4.22.4
-      rollup-plugin-copy:
-        specifier: 3.5.0
-        version: 3.5.0
-      rollup-plugin-livereload:
-        specifier: 2.0.5
-        version: 2.0.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-      rollup-plugin-node-polyfills:
-        specifier: 0.2.1
-        version: 0.2.1
-      rollup-plugin-off-main-thread:
-        specifier: 1.1.0
-        version: 1.1.0
-      rollup-plugin-peer-deps-external:
-        specifier: 2.2.4
-        version: 2.2.4(rollup@4.22.4)
-      rollup-plugin-terser:
-        specifier: 7.0.2
-        version: 7.0.2(rollup@4.22.4)
-      rollup-plugin-tsconfig-paths:
-        specifier: 1.5.2
-        version: 1.5.2(rollup@4.22.4)(typescript@5.7.2)
-      rollup-plugin-typescript2:
-        specifier: 0.36.0
-        version: 0.36.0(rollup@4.22.4)(typescript@5.7.2)
-      rollup-plugin-visualizer:
-        specifier: 5.12.0
-        version: 5.12.0(rollup@4.22.4)
-      rollup-plugin-web-worker-loader:
-        specifier: 1.6.1
-        version: 1.6.1(rollup@4.22.4)
-      tsc-alias:
-        specifier: ^1.8.10
-        version: 1.8.10
-      typescript:
-        specifier: ^5.0.0
-        version: 5.7.2
-
-  libraries/nip66/adapters/cache/NostrSqliteAdapter:
-    dependencies:
-      '@nostrwatch/nip66':
-        specifier: workspace:^
-        version: link:../../..
-      '@nostrwatch/worker-relay':
-        specifier: workspace:^
-        version: link:../../../../worker-relay
-    devDependencies:
-      '@aidenlx/esbuild-plugin-inline-worker':
-        specifier: ^1.0.1
-        version: 1.0.1(esbuild@0.24.0)
-      '@chialab/esbuild-plugin-meta-url':
-        specifier: ^0.18.2
-        version: 0.18.2
-      '@chialab/esbuild-plugin-worker':
-        specifier: ^0.18.1
-        version: 0.18.1
-      '@esbuild-plugins/node-globals-polyfill':
-        specifier: ^0.2.3
-        version: 0.2.3(esbuild@0.24.0)
-      '@esbuild-plugins/node-modules-polyfill':
-        specifier: ^0.2.2
-        version: 0.2.2(esbuild@0.24.0)
-      '@jgoz/esbuild-plugin-livereload':
-        specifier: ^2.1.2
-        version: 2.1.2(esbuild@0.24.0)
-      esbuild:
-        specifier: ^0.24.0
-        version: 0.24.0
-      esbuild-plugin-alias:
-        specifier: ^0.2.1
-        version: 0.2.1
-      esbuild-plugin-clean:
-        specifier: ^1.0.1
-        version: 1.0.1(esbuild@0.24.0)
-      esbuild-plugin-inline-worker:
-        specifier: ^0.1.1
-        version: 0.1.1
-      esbuild-plugin-polyfill-node:
-        specifier: ^0.3.0
-        version: 0.3.0(esbuild@0.24.0)
-      esbuild-plugin-tsc:
-        specifier: ^0.4.0
-        version: 0.4.0(typescript@5.7.2)
-      esbuild-plugin-wasm:
-        specifier: ^1.1.0
-        version: 1.1.0
-      get-port:
-        specifier: ^7.1.0
-        version: 7.1.0
-      typescript:
-        specifier: ^5.6.3
-        version: 5.7.2
-      vite:
-        specifier: ^5.4.11
-        version: 5.4.11(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0)
-      vite-plugin-node-polyfills:
-        specifier: ^0.22.0
-        version: 0.22.0(rollup@4.27.4)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0))
-
-  libraries/nip66/adapters/websocket/NostrToolsAdapter:
-    dependencies:
-      '@noble/ciphers':
-        specifier: 1.0.0
-        version: 1.0.0
-      '@noble/curves':
-        specifier: 1.6.0
-        version: 1.6.0
-      '@noble/hashes':
-        specifier: 1.5.0
-        version: 1.5.0
-      '@nostr-fetch/adapter-nostr-tools-v2':
-        specifier: ^0.16.0
-        version: 0.16.0(nostr-fetch@0.16.0)(nostr-tools@2.10.3(typescript@5.7.2))
-      '@nostrwatch/nip66':
-        specifier: workspace:^
-        version: link:../../..
-      nostr-fetch:
-        specifier: ^0.16.0
-        version: 0.16.0
-      nostr-tools:
-        specifier: ^2.7.2
-        version: 2.10.3(typescript@5.7.2)
-    devDependencies:
-      '@esbuild-plugins/node-globals-polyfill':
-        specifier: 0.2.3
-        version: 0.2.3(esbuild@0.24.0)
-      '@esbuild-plugins/node-modules-polyfill':
-        specifier: 0.2.2
-        version: 0.2.2(esbuild@0.24.0)
-      '@jgoz/esbuild-plugin-livereload':
-        specifier: ^2.1.1
-        version: 2.1.2(esbuild@0.24.0)
-      '@rollup/plugin-commonjs':
-        specifier: 28.0.0
-        version: 28.0.0(rollup@4.27.4)
-      '@rollup/plugin-node-resolve':
-        specifier: 15.3.0
-        version: 15.3.0(rollup@4.27.4)
-      '@rollup/plugin-replace':
-        specifier: 6.0.1
-        version: 6.0.1(rollup@4.27.4)
-      '@rollup/plugin-terser':
-        specifier: 0.4.4
-        version: 0.4.4(rollup@4.27.4)
-      '@surma/rollup-plugin-off-main-thread':
-        specifier: 2.2.3
-        version: 2.2.3
-      '@types/jwt-encode':
-        specifier: 1.0.3
-        version: 1.0.3
-      esbuild:
-        specifier: 0.24.0
-        version: 0.24.0
-      esbuild-plugin-alias:
-        specifier: 0.2.1
-        version: 0.2.1
-      esbuild-plugin-clean:
-        specifier: 1.0.1
-        version: 1.0.1(esbuild@0.24.0)
-      esbuild-plugin-inline-worker:
-        specifier: 0.1.1
-        version: 0.1.1
-      esbuild-plugin-polyfill-node:
-        specifier: 0.3.0
-        version: 0.3.0(esbuild@0.24.0)
-      esbuild-plugin-tsc:
-        specifier: ^0.4.0
-        version: 0.4.0(typescript@5.7.2)
-      eslint:
-        specifier: ^8.46.0
-        version: 8.57.1
-      jest:
-        specifier: ^29.6.1
-        version: 29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))
-      prettier:
-        specifier: ^3.0.0
-        version: 3.3.3
-      rollup:
-        specifier: ^4.27.4
-        version: 4.27.4
-      rollup-plugin-copy:
-        specifier: 3.5.0
-        version: 3.5.0
-      rollup-plugin-livereload:
-        specifier: 2.0.5
-        version: 2.0.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-      rollup-plugin-node-polyfills:
-        specifier: 0.2.1
-        version: 0.2.1
-      rollup-plugin-peer-deps-external:
-        specifier: 2.2.4
-        version: 2.2.4(rollup@4.27.4)
-      rollup-plugin-terser:
-        specifier: 7.0.2
-        version: 7.0.2(rollup@4.27.4)
-      rollup-plugin-typescript2:
-        specifier: 0.36.0
-        version: 0.36.0(rollup@4.27.4)(typescript@5.7.2)
-      rollup-plugin-visualizer:
-        specifier: 5.12.0
-        version: 5.12.0(rollup@4.27.4)
-      rollup-plugin-web-worker-loader:
-        specifier: 1.6.1
-        version: 1.6.1(rollup@4.27.4)
-      typescript:
-        specifier: ^5.0.0
-        version: 5.7.2
-
   libraries/nocap:
     dependencies:
       '@nostrwatch/logger':
@@ -2059,6 +1768,300 @@ importers:
       vitest:
         specifier: ^0.31.0
         version: 0.31.4(@vitest/ui@0.34.6)(terser@5.36.0)
+
+  libraries/route66:
+    dependencies:
+      '@nostrwatch/nocap':
+        specifier: workspace:^
+        version: link:../nocap
+      '@nostrwatch/utils':
+        specifier: workspace:^
+        version: link:../../internal/utils
+      '@pabra/logger':
+        specifier: ^1.2.0
+        version: 1.2.0
+      compress-json:
+        specifier: ^3.1.0
+        version: 3.1.0
+      jsurl2:
+        specifier: ^2.2.0
+        version: 2.2.0
+      jwt-encode:
+        specifier: 1.0.1
+        version: 1.0.1
+      minisearch:
+        specifier: ^7.1.0
+        version: 7.1.1
+      node-localstorage:
+        specifier: ^3.0.5
+        version: 3.0.5
+      nostr-tools:
+        specifier: ^2.10.3
+        version: 2.10.3(typescript@5.7.2)
+      p-queue:
+        specifier: 8.0.1
+        version: 8.0.1
+      queue:
+        specifier: 7.0.0
+        version: 7.0.0
+      tseep:
+        specifier: ^1.3.1
+        version: 1.3.1
+      tslib:
+        specifier: ^2.7.0
+        version: 2.8.1
+    devDependencies:
+      '@rollup/plugin-alias':
+        specifier: 5.1.1
+        version: 5.1.1(rollup@4.22.4)
+      '@rollup/plugin-commonjs':
+        specifier: 28.0.0
+        version: 28.0.0(rollup@4.22.4)
+      '@rollup/plugin-node-resolve':
+        specifier: 15.3.0
+        version: 15.3.0(rollup@4.22.4)
+      '@rollup/plugin-replace':
+        specifier: 6.0.1
+        version: 6.0.1(rollup@4.22.4)
+      '@rollup/plugin-terser':
+        specifier: ^0.4.4
+        version: 0.4.4(rollup@4.22.4)
+      '@rollup/plugin-wasm':
+        specifier: 6.2.2
+        version: 6.2.2(rollup@4.22.4)
+      '@surma/rollup-plugin-off-main-thread':
+        specifier: 2.2.3
+        version: 2.2.3
+      '@types/node-localstorage':
+        specifier: ^1.3.3
+        version: 1.3.3
+      esbuild:
+        specifier: ^0.24.0
+        version: 0.24.0
+      esbuild-plugin-alias:
+        specifier: ^0.2.1
+        version: 0.2.1
+      esbuild-plugin-clean:
+        specifier: ^1.0.1
+        version: 1.0.1(esbuild@0.24.0)
+      eslint:
+        specifier: ^8.46.0
+        version: 8.57.1
+      get-port:
+        specifier: 7.1.0
+        version: 7.1.0
+      prettier:
+        specifier: ^3.0.0
+        version: 3.3.3
+      rollup:
+        specifier: 4.22.4
+        version: 4.22.4
+      rollup-plugin-copy:
+        specifier: 3.5.0
+        version: 3.5.0
+      rollup-plugin-livereload:
+        specifier: 2.0.5
+        version: 2.0.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      rollup-plugin-node-polyfills:
+        specifier: 0.2.1
+        version: 0.2.1
+      rollup-plugin-off-main-thread:
+        specifier: 1.1.0
+        version: 1.1.0
+      rollup-plugin-peer-deps-external:
+        specifier: 2.2.4
+        version: 2.2.4(rollup@4.22.4)
+      rollup-plugin-terser:
+        specifier: 7.0.2
+        version: 7.0.2(rollup@4.22.4)
+      rollup-plugin-tsconfig-paths:
+        specifier: 1.5.2
+        version: 1.5.2(rollup@4.22.4)(typescript@5.7.2)
+      rollup-plugin-typescript2:
+        specifier: 0.36.0
+        version: 0.36.0(rollup@4.22.4)(typescript@5.7.2)
+      rollup-plugin-visualizer:
+        specifier: 5.12.0
+        version: 5.12.0(rollup@4.22.4)
+      rollup-plugin-web-worker-loader:
+        specifier: 1.6.1
+        version: 1.6.1(rollup@4.22.4)
+      tsc-alias:
+        specifier: ^1.8.10
+        version: 1.8.10
+      typescript:
+        specifier: ^5.0.0
+        version: 5.7.2
+
+  libraries/route66/adapters/cache/NostrSqliteAdapter:
+    dependencies:
+      '@nostrwatch/route66':
+        specifier: workspace:^
+        version: link:../../..
+      '@nostrwatch/worker-relay':
+        specifier: workspace:^
+        version: link:../../../../worker-relay
+    devDependencies:
+      '@aidenlx/esbuild-plugin-inline-worker':
+        specifier: ^1.0.1
+        version: 1.0.1(esbuild@0.24.0)
+      '@chialab/esbuild-plugin-meta-url':
+        specifier: ^0.18.2
+        version: 0.18.2
+      '@chialab/esbuild-plugin-worker':
+        specifier: ^0.18.1
+        version: 0.18.1
+      '@esbuild-plugins/node-globals-polyfill':
+        specifier: ^0.2.3
+        version: 0.2.3(esbuild@0.24.0)
+      '@esbuild-plugins/node-modules-polyfill':
+        specifier: ^0.2.2
+        version: 0.2.2(esbuild@0.24.0)
+      '@jgoz/esbuild-plugin-livereload':
+        specifier: ^2.1.2
+        version: 2.1.2(esbuild@0.24.0)
+      esbuild:
+        specifier: ^0.24.0
+        version: 0.24.0
+      esbuild-plugin-alias:
+        specifier: ^0.2.1
+        version: 0.2.1
+      esbuild-plugin-clean:
+        specifier: ^1.0.1
+        version: 1.0.1(esbuild@0.24.0)
+      esbuild-plugin-inline-worker:
+        specifier: ^0.1.1
+        version: 0.1.1
+      esbuild-plugin-polyfill-node:
+        specifier: ^0.3.0
+        version: 0.3.0(esbuild@0.24.0)
+      esbuild-plugin-tsc:
+        specifier: ^0.4.0
+        version: 0.4.0(typescript@5.7.2)
+      esbuild-plugin-wasm:
+        specifier: ^1.1.0
+        version: 1.1.0
+      get-port:
+        specifier: ^7.1.0
+        version: 7.1.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.7.2
+      vite:
+        specifier: ^5.4.11
+        version: 5.4.11(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0)
+      vite-plugin-node-polyfills:
+        specifier: ^0.22.0
+        version: 0.22.0(rollup@4.27.4)(vite@5.4.11(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0))
+
+  libraries/route66/adapters/websocket/NostrToolsAdapter:
+    dependencies:
+      '@noble/ciphers':
+        specifier: 1.0.0
+        version: 1.0.0
+      '@noble/curves':
+        specifier: 1.6.0
+        version: 1.6.0
+      '@noble/hashes':
+        specifier: 1.5.0
+        version: 1.5.0
+      '@nostr-fetch/adapter-nostr-tools-v2':
+        specifier: ^0.16.0
+        version: 0.16.0(nostr-fetch@0.16.0)(nostr-tools@2.10.3(typescript@5.7.2))
+      '@nostrwatch/route66':
+        specifier: workspace:^
+        version: link:../../..
+      nostr-fetch:
+        specifier: ^0.16.0
+        version: 0.16.0
+      nostr-tools:
+        specifier: ^2.7.2
+        version: 2.10.3(typescript@5.7.2)
+    devDependencies:
+      '@esbuild-plugins/node-globals-polyfill':
+        specifier: 0.2.3
+        version: 0.2.3(esbuild@0.24.0)
+      '@esbuild-plugins/node-modules-polyfill':
+        specifier: 0.2.2
+        version: 0.2.2(esbuild@0.24.0)
+      '@jgoz/esbuild-plugin-livereload':
+        specifier: ^2.1.1
+        version: 2.1.2(esbuild@0.24.0)
+      '@rollup/plugin-commonjs':
+        specifier: 28.0.0
+        version: 28.0.0(rollup@4.27.4)
+      '@rollup/plugin-node-resolve':
+        specifier: 15.3.0
+        version: 15.3.0(rollup@4.27.4)
+      '@rollup/plugin-replace':
+        specifier: 6.0.1
+        version: 6.0.1(rollup@4.27.4)
+      '@rollup/plugin-terser':
+        specifier: 0.4.4
+        version: 0.4.4(rollup@4.27.4)
+      '@surma/rollup-plugin-off-main-thread':
+        specifier: 2.2.3
+        version: 2.2.3
+      '@types/jwt-encode':
+        specifier: 1.0.3
+        version: 1.0.3
+      esbuild:
+        specifier: 0.24.0
+        version: 0.24.0
+      esbuild-plugin-alias:
+        specifier: 0.2.1
+        version: 0.2.1
+      esbuild-plugin-clean:
+        specifier: 1.0.1
+        version: 1.0.1(esbuild@0.24.0)
+      esbuild-plugin-inline-worker:
+        specifier: 0.1.1
+        version: 0.1.1
+      esbuild-plugin-polyfill-node:
+        specifier: 0.3.0
+        version: 0.3.0(esbuild@0.24.0)
+      esbuild-plugin-tsc:
+        specifier: ^0.4.0
+        version: 0.4.0(typescript@5.7.2)
+      eslint:
+        specifier: ^8.46.0
+        version: 8.57.1
+      jest:
+        specifier: ^29.6.1
+        version: 29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))
+      prettier:
+        specifier: ^3.0.0
+        version: 3.3.3
+      rollup:
+        specifier: ^4.27.4
+        version: 4.27.4
+      rollup-plugin-copy:
+        specifier: 3.5.0
+        version: 3.5.0
+      rollup-plugin-livereload:
+        specifier: 2.0.5
+        version: 2.0.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      rollup-plugin-node-polyfills:
+        specifier: 0.2.1
+        version: 0.2.1
+      rollup-plugin-peer-deps-external:
+        specifier: 2.2.4
+        version: 2.2.4(rollup@4.27.4)
+      rollup-plugin-terser:
+        specifier: 7.0.2
+        version: 7.0.2(rollup@4.27.4)
+      rollup-plugin-typescript2:
+        specifier: 0.36.0
+        version: 0.36.0(rollup@4.27.4)(typescript@5.7.2)
+      rollup-plugin-visualizer:
+        specifier: 5.12.0
+        version: 5.12.0(rollup@4.27.4)
+      rollup-plugin-web-worker-loader:
+        specifier: 1.6.1
+        version: 1.6.1(rollup@4.27.4)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.7.2
 
   libraries/sanitize:
     dependencies:
@@ -8305,6 +8308,9 @@ packages:
   json-schema@0.4.0:
     resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
 
+  json-source-map@0.6.1:
+    resolution: {integrity: sha512-1QoztHPsMQqhDq0hlXY5ZqcEdUzxQEIxgFkKl4WUp2pgShObl+9ovi4kRh2TfvAfxAoHOJ9vIMEqk3k4iex7tg==}
+
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
 
@@ -13255,7 +13261,7 @@ snapshots:
   '@jest/console@29.7.0':
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       chalk: 4.1.2
       jest-message-util: 29.7.0
       jest-util: 29.7.0
@@ -13268,14 +13274,14 @@ snapshots:
       '@jest/test-result': 29.7.0
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       ci-info: 3.9.0
       exit: 0.1.2
       graceful-fs: 4.2.11
       jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@20.17.7)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))
+      jest-config: 29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))
       jest-haste-map: 29.7.0
       jest-message-util: 29.7.0
       jest-regex-util: 29.6.3
@@ -13300,7 +13306,7 @@ snapshots:
     dependencies:
       '@jest/fake-timers': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       jest-mock: 29.7.0
 
   '@jest/expect-utils@29.7.0':
@@ -13340,7 +13346,7 @@ snapshots:
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
       '@jridgewell/trace-mapping': 0.3.25
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       chalk: 4.1.2
       collect-v8-coverage: 1.0.2
       exit: 0.1.2
@@ -13410,7 +13416,7 @@ snapshots:
       '@jest/schemas': 29.6.3
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       '@types/yargs': 17.0.33
       chalk: 4.1.2
 
@@ -14487,7 +14493,7 @@ snapshots:
 
   '@types/brotli@1.3.4':
     dependencies:
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
 
   '@types/caseless@0.12.5': {}
 
@@ -14648,7 +14654,7 @@ snapshots:
 
   '@types/empower-core@1.2.4':
     dependencies:
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
 
   '@types/empower@1.2.35':
     dependencies:
@@ -14675,7 +14681,7 @@ snapshots:
 
   '@types/fs-extra@8.1.5':
     dependencies:
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
 
   '@types/geojson@7946.0.14': {}
 
@@ -14684,7 +14690,7 @@ snapshots:
   '@types/glob@7.2.0':
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
 
   '@types/glob@8.1.0':
     dependencies:
@@ -14697,7 +14703,7 @@ snapshots:
 
   '@types/http-proxy@1.17.15':
     dependencies:
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
 
   '@types/ioredis@5.0.0':
     dependencies:
@@ -14741,7 +14747,7 @@ snapshots:
 
   '@types/node-localstorage@1.3.3':
     dependencies:
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
 
   '@types/node@12.20.55': {}
 
@@ -14789,7 +14795,7 @@ snapshots:
   '@types/request@2.48.12':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.2
 
@@ -18548,37 +18554,6 @@ snapshots:
       - supports-color
       - ts-node
 
-  jest-config@29.7.0(@types/node@20.17.7)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
-    dependencies:
-      '@babel/core': 7.26.0
-      '@jest/test-sequencer': 29.7.0
-      '@jest/types': 29.6.3
-      babel-jest: 29.7.0(@babel/core@7.26.0)
-      chalk: 4.1.2
-      ci-info: 3.9.0
-      deepmerge: 4.3.1
-      glob: 7.2.3
-      graceful-fs: 4.2.11
-      jest-circus: 29.7.0(babel-plugin-macros@3.1.0)
-      jest-environment-node: 29.7.0
-      jest-get-type: 29.6.3
-      jest-regex-util: 29.6.3
-      jest-resolve: 29.7.0
-      jest-runner: 29.7.0
-      jest-util: 29.7.0
-      jest-validate: 29.7.0
-      micromatch: 4.0.8
-      parse-json: 5.2.0
-      pretty-format: 29.7.0
-      slash: 3.0.0
-      strip-json-comments: 3.1.1
-    optionalDependencies:
-      '@types/node': 20.17.7
-      ts-node: 10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)
-    transitivePeerDependencies:
-      - babel-plugin-macros
-      - supports-color
-
   jest-config@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
       '@babel/core': 7.26.0
@@ -18644,7 +18619,7 @@ snapshots:
     dependencies:
       '@jest/types': 29.6.3
       '@types/graceful-fs': 4.1.9
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       anymatch: 3.1.3
       fb-watchman: 2.0.2
       graceful-fs: 4.2.11
@@ -18718,7 +18693,7 @@ snapshots:
       '@jest/test-result': 29.7.0
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       chalk: 4.1.2
       emittery: 0.13.1
       graceful-fs: 4.2.11
@@ -18746,7 +18721,7 @@ snapshots:
       '@jest/test-result': 29.7.0
       '@jest/transform': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       chalk: 4.1.2
       cjs-module-lexer: 1.4.1
       collect-v8-coverage: 1.0.2
@@ -18792,7 +18767,7 @@ snapshots:
   jest-util@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11
@@ -18811,7 +18786,7 @@ snapshots:
     dependencies:
       '@jest/test-result': 29.7.0
       '@jest/types': 29.6.3
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       emittery: 0.13.1
@@ -18820,13 +18795,13 @@ snapshots:
 
   jest-worker@26.6.2:
     dependencies:
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       merge-stream: 2.0.0
       supports-color: 7.2.0
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -18889,6 +18864,8 @@ snapshots:
   json-schema-traverse@1.0.0: {}
 
   json-schema@0.4.0: {}
+
+  json-source-map@0.6.1: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
 
@@ -22036,14 +22013,14 @@ snapshots:
       core-util-is: 1.0.2
       extsprintf: 1.4.1
 
-  vite-node@0.31.4(@types/node@20.17.7)(terser@5.36.0):
+  vite-node@0.31.4(@types/node@22.10.2)(terser@5.36.0):
     dependencies:
       cac: 6.7.14
       debug: 4.3.7
       mlly: 1.7.3
       pathe: 1.1.2
       picocolors: 1.1.1
-      vite: 4.5.5(@types/node@20.17.7)(terser@5.36.0)
+      vite: 4.5.5(@types/node@22.10.2)(terser@5.36.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -22206,13 +22183,13 @@ snapshots:
       fsevents: 2.3.3
       terser: 5.36.0
 
-  vite@4.5.5(@types/node@20.17.7)(terser@5.36.0):
+  vite@4.5.5(@types/node@22.10.2)(terser@5.36.0):
     dependencies:
       esbuild: 0.18.20
       postcss: 8.4.49
       rollup: 3.29.5
     optionalDependencies:
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       fsevents: 2.3.3
       terser: 5.36.0
 
@@ -22300,7 +22277,7 @@ snapshots:
     dependencies:
       '@types/chai': 4.3.20
       '@types/chai-subset': 1.3.5
-      '@types/node': 20.17.7
+      '@types/node': 22.10.2
       '@vitest/expect': 0.31.4
       '@vitest/runner': 0.31.4
       '@vitest/snapshot': 0.31.4
@@ -22320,8 +22297,8 @@ snapshots:
       strip-literal: 1.3.0
       tinybench: 2.9.0
       tinypool: 0.5.0
-      vite: 4.5.5(@types/node@20.17.7)(terser@5.36.0)
-      vite-node: 0.31.4(@types/node@20.17.7)(terser@5.36.0)
+      vite: 4.5.5(@types/node@22.10.2)(terser@5.36.0)
+      vite-node: 0.31.4(@types/node@22.10.2)(terser@5.36.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@vitest/ui': 0.34.6(vitest@0.31.4)

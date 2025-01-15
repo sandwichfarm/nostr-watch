@@ -1,9 +1,9 @@
-import { Service, type FetchOptions } from "@nostrwatch/nip66/services"
+import { Service, type FetchOptions } from "@nostrwatch/route66/services"
 import type { Filter } from "nostr-tools";
-import type { WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/nip66/core";
+import type { WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/route66/core";
 import { DataTablePreset } from "$lib/models/Preset";
-import type { IEvent } from "@nostrwatch/nip66/models";
-import type { IAdaptersArgument } from "@nostrwatch/nip66";
+import type { IEvent } from "@nostrwatch/route66/models";
+import type { IAdaptersArgument } from "@nostrwatch/route66";
 
 export type PresetGenerator = AsyncGenerator<DataTablePreset[], void, unknown>;
 

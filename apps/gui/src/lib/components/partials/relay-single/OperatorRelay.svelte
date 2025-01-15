@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { Nip66Event } from "@nostrwatch/nip66/models";
+	import type { Nip66Event } from "@nostrwatch/route66/models";
 	import { formatRelayUrl } from "$lib/utils/routing.js";
 	import type { Writable } from "svelte/store";
-    import type Nip66 from "@nostrwatch/nip66";
+    import type Route66 from "@nostrwatch/route66";
 
     export let event: Nip66Event;
-    export let nip66: Writable<Nip66>;
+    export let route66: Writable<Route66>;
 
     $: status =
-        $nip66?.services?.monitors?.manager?.isRelayOnline(event)
+        $route66?.services?.monitors?.manager?.isRelayOnline(event)
             ? 'online'
-            : $nip66?.services?.monitors?.manager?.isRelayDead(event)
+            : $route66?.services?.monitors?.manager?.isRelayDead(event)
                 ? 'dead'
                 : 'offline'
     

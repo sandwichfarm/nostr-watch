@@ -1,7 +1,7 @@
 <script lang="ts">
     import Nip66Check from "$lib/components/partials/Nip66Check.svelte";
     import ProfileCompact from '../ProfileCompact.svelte';
-    import type { Monitor } from "@nostrwatch/nip66/models";
+    import type { Monitor } from "@nostrwatch/route66/models";
     import { monitors } from '$lib/stores/monitors.js';
     import { PFP } from '$lib/utils/pfp.js';
     

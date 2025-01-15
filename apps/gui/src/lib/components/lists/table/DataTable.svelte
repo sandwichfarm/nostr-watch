@@ -11,7 +11,7 @@
     import { Input } from '$lib/components/ui/input/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
-	import { StateManager } from '@nostrwatch/nip66';
+	import { StateManager } from '@nostrwatch/route66';
     
     import TableOptions from './TableOptions.svelte';
     import * as Popover from "$lib/components/ui/popover";

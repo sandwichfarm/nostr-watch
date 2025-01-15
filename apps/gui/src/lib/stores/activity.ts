@@ -1,8 +1,8 @@
 import { get, readable, writable, type Writable } from "svelte/store";
 import RelayCountry from "../components/partials/relay-single/RelayCountry.svelte";
 import type { Readable } from "svelte/store";
-import { nip66 } from '$lib/stores/nip66'
-import type Nip66 from "@nostrwatch/nip66"
+import { route66 } from '$lib/stores/route66'
+import type Route66 from "@nostrwatch/route66"
 
 const activityStrings: Readable<Record<string, string>> = readable({
     'monitors': 'running branl.',
@@ -14,15 +14,15 @@ const activityStrings: Readable<Record<string, string>> = readable({
 })
 
 let $activityStrings = get(activityStrings)
-let $nip66: Nip66;
+let $route66: Route66;
 let bound: boolean = false;
 
-nip66.subscribe( (n66: Nip66) => { 
+route66.subscribe( (n66: Route66) => { 
     if(!n66) return;
-    $nip66 = n66 
-    $nip66.ready().then( () => {
+    $route66 = n66 
+    $route66.ready().then( () => {
         if(bound) return;
-        $nip66.on('activity', bindActivities);
+        $route66.on('activity', bindActivities);
         bound = true;
     })
 })

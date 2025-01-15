@@ -3,21 +3,21 @@
   import { onDestroy, onMount } from 'svelte';
   import { doBootstrap } from '$lib/stores/routines.js';
   import { derived, writable, type Readable, type Writable } from 'svelte/store';
-  import { Nip66Event, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/nip66/models';
+  import { Nip66Event, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/route66/models';
   import { relayAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
   import { nip11s, nip11Service, nip11sLocal } from '$lib/stores/nip11s.js';
   import { isSeeded } from '$lib/stores/app.js';
   import { eventsArray } from '$lib/stores/events.js';
   import { relaysErrors } from '$lib/stores/relay-errors.js';
   import { isHex } from '$lib/utils/nostr.js';
-  import { Nip11 } from '@nostrwatch/nip66/models';
+  import { Nip11 } from '@nostrwatch/route66/models';
   import { isLivesyncing, doAggregateCache, hasBeenBoostrapped } from '$lib/stores/app';
   import { pauseLiveSync, beginLiveSync } from '$lib/utils/lifecycle';
   import { addEventsToStore } from '$lib/stores/events-helpers';
   import { clickToCopy, observeViewport } from '$lib/utils/ux';
   import { Skeleton } from "$lib/components/ui/skeleton";
-	import { nip66Ready } from '$lib/stores/app';
-	import { nip66 } from '$lib/stores';
+	import { route66Ready } from '$lib/stores/app';
+	import { route66 } from '$lib/stores';
 
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
@@ -125,10 +125,10 @@
 
   const loadRelayData = async () => {
       destroy();
-      await nip66Ready()
+      await route66Ready()
       loadNip11().then(loadOperatorMeta)
       if (!$isLivesyncing) {
-          $nip66?.services?.relay?.getRelayData(relayUrl).then( (res: any) => {
+          $route66?.services?.relay?.getRelayData(relayUrl).then( (res: any) => {
             if (!res) return;
             const [data, mons] = res;
             addEventsToStore(data);
@@ -171,7 +171,7 @@
         }
       };
       const onevents = (events: IEvent[]) => events.forEach( onevent )
-      $nip66?.services?.relay?.fetchOperatorMeta(operatorPubkey, { onevent, onevents });
+      $route66?.services?.relay?.fetchOperatorMeta(operatorPubkey, { onevent, onevents });
       while($operatorProfile === null || $operatorRelays === null) {
           await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -196,7 +196,7 @@
 
   const destroy = () => {
       if (currentRelay === relayUrl) return;
-      $nip66?.services?.relay?.unsubscribeAll();
+      $route66?.services?.relay?.unsubscribeAll();
       loading = true;
       currentRelay = '';
       monitors.set([]);
@@ -370,7 +370,7 @@
                   {/if}
                   {#if item === 'general'}
                     {#if CardGeneral}
-                      <CardGeneral version={version} software={software} geocode={geocode} />
+                      <CardGeneral {relayUrl} checks={$checksrelay} version={version} software={software} geocode={geocode} />
                     {:else}
                       <Skeleton class="h-24 w-full" />
                     {/if}

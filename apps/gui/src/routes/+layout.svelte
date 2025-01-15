@@ -11,12 +11,12 @@
   import { instance, bootstrap, seedFromCache } from '$lib/utils/lifecycle';
   import { writable, type Writable, get } from 'svelte/store';
   import { navigating } from '$app/stores';
-  import type Nip66 from '@nostrwatch/nip66';
+  import type Route66 from '@nostrwatch/route66';
   import { destroy } from '$lib/utils/lifecycle';
   import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
   import { delay } from '@nostrwatch/utils';
   import { getBrowserInfo } from '$lib/utils/compat.js';
-  import { StateManager } from '@nostrwatch/nip66';
+  import { StateManager } from '@nostrwatch/route66';
   import { unsupported, appState, tabState, type TabStateType } from '$lib/stores/app';
   import { IdleDetector } from '$lib/utils/idle.js';
 
@@ -30,7 +30,7 @@
   const lifecycle = createTabLifecycle();
   
   let idleDetector: IdleDetector | null = null;
-  let nip66: Nip66;
+  let route66: Route66;
 
   function handleIdle() {
     console.log('User is idle. Performing idle actions...');
@@ -80,9 +80,9 @@
   lifecycle.onReleaseLeader(async () => {
     console.log('[Lifecycle] onReleaseLeader triggered'); 
     try {
-      nip66 = await instance();
-      await nip66.ready();
-      await nip66.shutdown();
+      route66 = await instance();
+      await route66.ready();
+      await route66.shutdown();
       await delay(1000);
       destroy();
       console.log("Leader tab: Released.");

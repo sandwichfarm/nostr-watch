@@ -230,11 +230,6 @@ export class Nip66Event extends Geocoded implements IEvent {
     get hasBanner(): boolean {
       return !!this.banner;
     }
-
-    get nrelay(): string | null {
-      if(!this.url) return null;
-      return nip19.nrelayEncode(this.url)
-    }
   }
 
   

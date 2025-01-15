@@ -6,10 +6,13 @@
   "module": "./dist/web/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
-    "import": "./dist/web/index.js",
-    "require": "./dist/server/index.js",
-    "node": "./dist/server/index.js",
-    "default": "./dist/web/index.js"
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/web/index.js",
+      "require": "./dist/server/index.js",
+      "default": "./dist/web/index.js"
+    },
+    "./*": "./dist/*"
   },
   "dependencies": {
     "@jspm/core": "^2.1.0",
@@ -38,7 +41,7 @@
   "scripts": {
     "nip01": "node --no-warnings ./example/nip01.js",
     "nip50": "node --no-warnings ./example/nip50.js",
-    "build": "tsc && tsc-alias && node build.js",
+    "build": "node build.js && tsc && tsc-alias",
     "dev": "tsc --watch & tsc-alias -w & node build.js --watch"
   }
 }

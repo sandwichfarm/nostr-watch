@@ -1,4 +1,3 @@
-import Ajv from "ajv";
 import { EventEmitter } from "tseep";
 
 import type { WebSocketWrapper as WebSocket } from '@nostrwatch/websocket';
@@ -95,9 +94,7 @@ export abstract class Suite implements ISuite {
     showNamespace: false
   });
   private _sampler: Sampler;
-  private _ingestors: Ingestor[] = [];
-
-  protected ajv = new Ajv({strict: false});
+  
   protected ws: WebSocket;
   protected signal: EventEmitter = new EventEmitter();
   protected result: ISuiteResult = structuredClone(defaultSuiteResult);
@@ -124,6 +121,7 @@ export abstract class Suite implements ISuite {
     this.signal.once("SUITE:READY", () => { this._ready = true });
     this.setup()
   }
+
   get socket(): WebSocket {
     return this.ws;
   }
@@ -154,7 +152,6 @@ export abstract class Suite implements ISuite {
 
   async setup(){
     this.expect = new Expect();
-    
     const importFn = suiteTests?.[this.slug];
     if(importFn) {
       const tests: DynamicallyImportedNipTests = await importFn()

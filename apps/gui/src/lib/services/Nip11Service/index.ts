@@ -38,11 +38,11 @@ export class Nip11Service {
     }
 
     private onmessage(message: MessageEvent<Nip11ServiceMessage>){
-        console.log('N11S recieved nip11 service message', message)
+        //console.log('N11S recieved nip11 service message', message)
         const { relay, nip11:_nip11, error } = message.data;
         const nip11 = new Nip11(_nip11 as RelayInformation)
         if(error) {
-            console.log('N11S setting error in store', error.message)
+            //console.log('N11S setting error in store', error.message)
             setRelayError(relay, 'nip11', error.message)
             return
         }

@@ -2,7 +2,7 @@ import { deterministicHash } from '@nostrwatch/nip66/utils';
 import { validateNip11, validateMessage, validateNote, type SchemaValidatorResult } from '@nostrwatch/schemata-js-ajv'
 
 self.onmessage = ({ data }) => {
-    console.log('schema validation worker recieved data', data)
+    //console.log('schema validation worker recieved data', data)
     const { json, type, subject, slug } = data as any;
     let { hash } = data as any;
     let result: SchemaValidatorResult;

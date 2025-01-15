@@ -39,57 +39,57 @@
 
   
   function handleIdle() {
-    console.log('User is idle. Performing idle actions...');
+    //console.log('User is idle. Performing idle actions...');
     isIdle.set(true);
     lifecycle.releaseLeadership();
   }
   
   function handleActive() {
-    console.log('User is active again.');
+    //console.log('User is active again.');
     isIdle.set(false);
     lifecycle.acquireLeadership();
     idleDetector?.reset?.();
   }
   
   lifecycle.onStartLeader(async () => {
-    console.log('[Lifecycle] onStartLeader triggered');
+    //console.log('[Lifecycle] onStartLeader triggered');
     isLeader.set(true);
     if (get(unsupported)) return;
     
     try {
       await boot(); 
-      console.log('Leader tab: DB initialized.');
+      //console.log('Leader tab: DB initialized.');
     } catch (error) {
       console.error('[Lifecycle] Error in onStartLeader:', error);
     }
   });
   
   lifecycle.onLeaderAcquired(async () => {
-    console.log('Non-leader tab: Just became leader, initializing DB.');
+    //console.log('Non-leader tab: Just became leader, initializing DB.');
     isLeader.set(true);
     if (get(unsupported)) return;
     
     try {
       await boot(); 
-      console.log('Leader tab: DB initialized.');
+      //console.log('Leader tab: DB initialized.');
     } catch (error) {
       console.error('[Lifecycle] Error in onLeaderAcquired:', error);
     }
   });
   
   lifecycle.onReleaseLeader(async () => {
-    console.log('[Lifecycle] onReleaseLeader triggered'); 
+    //console.log('[Lifecycle] onReleaseLeader triggered'); 
     try {
-      console.log("Leader tab: Releasing...");
+      //console.log("Leader tab: Releasing...");
       nip66 = await instance();
-      console.log("Leader tab: awaiting ready...");
+      //console.log("Leader tab: awaiting ready...");
       await nip66.ready();
-      console.log("Leader tab: ready, awaiting shutdown...");
+      //console.log("Leader tab: ready, awaiting shutdown...");
       await nip66.shutdown();
-      console.log("Leader tab: shutdown...");
+      //console.log("Leader tab: shutdown...");
       await delay(1000);
       destroy();
-      console.log("Leader tab: Released.");
+      //console.log("Leader tab: Released.");
       isLeader.set(false);
     } catch (error) {
       console.error('[Lifecycle] Error in onReleaseLeader:', error);
@@ -97,7 +97,7 @@
   });
   
   lifecycle.onWaitForLeaderRelease(() => {
-    console.log('Non-leader tab: Waiting for DB to be released by leader...');
+    //console.log('Non-leader tab: Waiting for DB to be released by leader...');
   });
   
   let unsubs: (() => any)[] = [];
@@ -124,7 +124,7 @@
     if (idleDetector) {
       idleDetector.destroy();
       idleDetector = null;
-      console.log('IdleDetector destroyed on component cleanup.');
+      //console.log('IdleDetector destroyed on component cleanup.');
     }
   };
   
@@ -132,7 +132,7 @@
     if (!get(doBootstrap)) {
       try {
         await seedFromCache();
-        console.log('Data seeded from cache.');
+        //console.log('Data seeded from cache.');
       } catch (error) {
         console.error('Error seeding from cache:', error);
       }
@@ -140,7 +140,7 @@
       busy = true;
       try {
         await bootstrap();
-        console.log('Bootstrap completed.');
+        //console.log('Bootstrap completed.');
       } catch (error) {
         console.error('Error during bootstrap:', error);
       } finally {
@@ -194,14 +194,14 @@
         onIdle: handleIdle,
         onActive: handleActive,
       });
-      console.log('IdleDetector initialized on component mount.');
+      //console.log('IdleDetector initialized on component mount.');
     }
   
     lifecycle.acquireLeadership();
   });
   
   $: if (navigating) {
-    console.log('Navigation detected. Rechecking support and loading data.');
+    //console.log('Navigation detected. Rechecking support and loading data.');
     checkSupport();
     boot();
   };

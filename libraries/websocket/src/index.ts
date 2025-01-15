@@ -8,17 +8,44 @@ interface WebSocketEventMap {
   message: MessageEvent;
 }
 
-export class WebSocketWrapper {
-  ws: WebSocket;
+export interface IWebSocketWrapper {
+  ws: WebSocket | undefined;
+  relay: string;
+  _ready: boolean;
+  on<Key extends keyof WebSocketEventMap>(
+    key: Key,
+    fn: (event: WebSocketEventMap[Key]) => void
+  ): void;
+  off(): void;
+  connect(): Promise<boolean>;
+  ready(): Promise<void>;
+  closed(): Promise<void>;
+  defaultHandlers(): void;
+  terminate(): void;
+  close(): void;
+  send<T>(data: T | Buffer | string): void;
+  get CONNECTED(): boolean;
+  get CONNECTING(): boolean;
+  get CLOSING(): boolean;
+  get CLOSED(): boolean;
+  get BUSY(): boolean;
+  get OPEN(): boolean;
+}
+
+export class WebSocketWrapper implements IWebSocketWrapper {
+  ws: WebSocket | undefined;
   relay: string;
   _ready: boolean = false;
+  private options?: WebSocket.ClientOptions;
+  
   // private logger: Logger = new Logger('@nostrwatch/auditor:WebSocketWrapper');
   private listeners: {
     [K in keyof WebSocketEventMap]?: Set<EventListener>
   } = {};
 
-  constructor(relay: string) {
+  constructor(relay: string, options?: WebSocket.ClientOptions) {
     this.relay = relay;
+    this.options = options;
   }
 
   on<Key extends keyof WebSocketEventMap>(
@@ -27,9 +54,9 @@ export class WebSocketWrapper {
   ): void {
     // this.logger.debug(`binding ${key} event`);
 
-    if (key === 'open' || key === 'close') {
-      return console.warn(`Cannot override default ${key} event handler`);
-    }
+    // if (key === 'open' || key === 'close') {
+    //   return console.warn(`Cannot override default ${key} event handler`);
+    // }
 
     const wrappedFn: EventListener = (event: Event) => {
       fn(event as WebSocketEventMap[Key]);
@@ -39,14 +66,14 @@ export class WebSocketWrapper {
       this.listeners[key] = new Set();
     }
     this.listeners[key]?.add(wrappedFn);
-    this.ws.addEventListener('message', wrappedFn as any);
+    this.ws?.addEventListener(key, wrappedFn as any);
   }
 
   off(): void {
     for (const [key, handlers] of Object.entries(this.listeners)) {
       const eventKey = key as keyof WebSocketEventMap;
       handlers.forEach((fn) => {
-        this.ws.removeEventListener('message', fn as any);
+        this.ws?.removeEventListener('message', fn as any);
       });
     }
     this.listeners = {};
@@ -73,7 +100,7 @@ export class WebSocketWrapper {
       return true;
     }
 
-    this.ws = new WebSocket(this.relay);
+    this.ws = new WebSocket(this.relay, this.options);
     this.defaultHandlers();
 
     while (this.CONNECTING) {
@@ -105,33 +132,33 @@ export class WebSocketWrapper {
 
   defaultHandlers(): void {
     this.off();
-    this.ws.addEventListener('open', () => (this._ready = true));
-    this.ws.addEventListener('close', () => (this._ready = false));
-    // this.ws.addEventListener('error', (err) => this.logger.debug(`error: ${err}`));
+    this.ws?.addEventListener('open', () => (this._ready = true));
+    this.ws?.addEventListener('close', () => (this._ready = false));
+    // this.ws?.addEventListener('error', (err) => this.logger.debug(`error: ${err}`));
   }
 
   terminate(): void {
     if (typeof (this.ws as any).terminate === 'function') {
       (this.ws as any).terminate();
     } else {
-      this.ws.close();
+      this.ws?.close();
     }
   }
 
   close(): void {
-    this.ws.close();
+    this.ws?.close();
   }
 
   send<T>(data: T | Buffer | string): void {
     console.log('WebsocketWrapper send', data)
     if (data instanceof Buffer) {
-      this.ws.send(data.toString('utf-8'));
+      this.ws?.send(data.toString('utf-8'));
       console.log('WebsocketWrapper send', data.toString('utf-8'))
     } else if (data instanceof Object) {
-      this.ws.send(JSON.stringify(data));
+      this.ws?.send(JSON.stringify(data));
       console.log('WebsocketWrapper send', JSON.stringify(data))
     } else if (typeof data === 'string') {
-      this.ws.send(data);
+      this.ws?.send(data);
       console.log('WebsocketWrapper send', data)
     }
   }
@@ -155,4 +182,9 @@ export class WebSocketWrapper {
   get BUSY(): boolean {
     return this.CONNECTING || this.CLOSING;
   }
+
+  get OPEN(): boolean {
+    return this.CONNECTED;
+  }
 }
+

@@ -41,6 +41,9 @@
     "ws": "8.18.0",
     "@nostrwatch/nocap": "workspace:*"
   },
+  "peerDependencies": {
+    "@nostrwatch/websocket": "workspace:^"
+  },
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",

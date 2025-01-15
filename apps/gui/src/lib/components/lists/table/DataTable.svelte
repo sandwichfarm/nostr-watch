@@ -52,7 +52,7 @@
                 name: $config.humanReadableNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
-            console.log('columns', columns.length);    
+            //console.log('columns', columns.length);    
 
             // const data_ = $data.map((item: any) => {
             //     const formattedItem = { ...item };
@@ -130,14 +130,14 @@
                 tableInstanceConfig.initialSortDirection = $config.sortState.direction
             }
         }
-        console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, tableInstanceConfig);
+        //console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, tableInstanceConfig);
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
             if(tableInstance === null || force){
                 tableInstance = new DataTable<any>(tableInstanceConfig);
             }
         } else {
             if (tableInstance) {
-                console.log('Destroying DataTable instance due to no data.');
+                //console.log('Destroying DataTable instance due to no data.');
                 tableInstance = null;
             }
         }
@@ -177,7 +177,7 @@
     });
 
     filters.subscribe((newFilters: any) => {
-        console.log('Filters updated', newFilters);
+        //console.log('Filters updated', newFilters);
         config.update( (currentConfig: DataTableConfig) => {
             currentConfig.activeFilters = newFilters;
             return currentConfig;

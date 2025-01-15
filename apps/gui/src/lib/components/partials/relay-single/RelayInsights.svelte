@@ -36,7 +36,7 @@
     const bubbleType: Writable<'percent' | 'count'> = writable('percent')
 
     const changeBubbleType = (type: 'percent' | 'count') => {
-        console.log('ACTIVITY')
+        //console.log('ACTIVITY')
         bubbleType.set(type)
     }
 

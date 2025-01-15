@@ -19,8 +19,7 @@ export default [
       sourcemap: true,
       entryFileNames: '[name].cjs.js',
       strict: false,
-      exports: 'auto',
-      external: ['torfetch'],
+      exports: 'auto'
     },
     plugins: [
       resolve({

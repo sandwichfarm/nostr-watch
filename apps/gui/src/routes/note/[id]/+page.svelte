@@ -68,7 +68,7 @@
                 returnResults: true,
             }
         })
-        //console.log('result', result)
+        ////console.log('result', result)
         const event = result[0]
         if(result.length > 0) {
             foundEvent.set(new Nip66Event(event))

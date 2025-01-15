@@ -15,18 +15,18 @@ nip66.subscribe(instance => $nip66 = instance)
 
 export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   const monitorsArr = StateManager.get('cache:monitors');  
-  //console.log('cached monitors', monitorsArr)
+  ////console.log('cached monitors', monitorsArr)
   if(!monitorsArr?.length) return new Map()
-  //console.log('cached monitors: yes')
+  ////console.log('cached monitors: yes')
   const map: Map<string, Monitor> = new Map()
   for(const monitor of monitorsArr) {
-    //console.log('monitor wtf', monitor?.registration)
+    ////console.log('monitor wtf', monitor?.registration)
     const mon = Monitor.fromCache(monitor)
-    //console.log('monitor from cache', mon)
+    ////console.log('monitor from cache', mon)
     if(!mon) continue
     map.set(monitor.pubkey, mon)
   }
-  //console.log('cached monitors map', map)
+  ////console.log('cached monitors map', map)
   return map
 }
 
@@ -58,7 +58,7 @@ export const monitors = derived(
 export const monitorsSorted = derived(
   monitors,
   ($monitors) => {
-    //console.log('monitors sorted', $nip66?.services?.monitors?.sortedMonitors || $monitors)
+    ////console.log('monitors sorted', $nip66?.services?.monitors?.sortedMonitors || $monitors)
     return $nip66?.services?.monitors?.sortedMonitors || $monitors;
   }
 );
@@ -90,7 +90,7 @@ export const monitorChecksCount = derived(
     $eventsArray.forEach((event: any) => {
       countMap[event.pubkey] = (countMap?.[event.pubkey] || 0) + 1;
     });
-    //console.log('monitor counts', countMap);
+    ////console.log('monitor counts', countMap);
     return countMap;
   }
 );

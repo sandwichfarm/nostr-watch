@@ -27,10 +27,12 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
     try {
       if (this.base.network === 'clearnet') {
         this.base.ws = new CompatibleWebSocket(this.base.url);
+        await this.base.ws.ready();
       } else if (this.base.network === 'tor') {
         const torSocksProxy = 'socks5h://127.0.0.1:9050';
         const agent = new (require('socks-proxy-agent')).SocksProxyAgent(torSocksProxy);
         this.base.ws = new CompatibleWebSocket(this.base.url, { agent });
+        await this.base.ws.ready();
       } else {
         throw new Error('Unsupported network');
       }
@@ -84,6 +86,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event()`);
     let ev: any;
     try{
+      console.log('MESSAGE', message)
       const messageType = (message instanceof Buffer)? 'buffer': typeof message;
       if(messageType === 'string') {
         ev = JSON.parse(message as string)

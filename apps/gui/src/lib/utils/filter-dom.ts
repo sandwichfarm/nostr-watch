@@ -134,7 +134,7 @@ export function createFilter(
         };
     }
 
-    console.log(`nofilter: Filter type not supported for key "${key}"`);
+    //console.log(`nofilter: Filter type not supported for key "${key}"`);
 
     return null;
 }

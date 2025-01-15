@@ -9,9 +9,9 @@
     export let config: Writable<DataTableConfig | null>;
 
     const toggleColumnShow = (key: string) => {
-        config.update((currentConfig: DataTableConfig) => {
+        config.update((currentConfig: DataTableConfig): DataTableConfig => {
             if (!currentConfig || !Array.isArray(currentConfig.columnsShow)) {
-                console.error("columnsShow is not an array");
+                console.error("columnsShow is not an array");ajvErrors(ajv);
                 return currentConfig;
             }
             let newColumnsShow: string[];

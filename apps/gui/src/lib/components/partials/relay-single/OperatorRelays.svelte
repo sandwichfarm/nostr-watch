@@ -18,7 +18,7 @@
     const fetchDeadRelays = async () => {
         if(!$nip66) return;
         const deadRelays = await $nip66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
-        console.log('dead relays fetched:', deadRelays.length)
+        //console.log('dead relays fetched:', deadRelays.length)
         deadRelays?.forEach( (event: IEvent) => {
             deadRelays.update( ( events: Nip66Event[] ): Nip66Event[] => {
                 return [...events, new Nip66Event(event)]

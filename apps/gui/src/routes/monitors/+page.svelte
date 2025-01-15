@@ -26,7 +26,7 @@
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
 
-    StateManager.on('monitor:update:lastActive', (value: any) => { console.log('monitor:lastActive', value) })
+    // StateManager.on('monitor:update:lastActive', (value: any) => { //console.log('monitor:lastActive', value) })
 
 	const setConfig = () => {
 		
@@ -35,11 +35,11 @@
 		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
-			console.log('setting config with user config', conf)
+			//console.log('setting config with user config', conf)
 			config.set(conf)
 		}
 		else {
-			console.log('setting config without user config', conf)
+			//console.log('setting config without user config', conf)
 			config.set(conf)
 		}
 		ready.set(true)

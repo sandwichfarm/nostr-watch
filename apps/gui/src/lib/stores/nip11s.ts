@@ -71,16 +71,16 @@ export const nip11s = derived(
       ));
     }
     else if( hasBeenSeeded() ){
-      console.log('!!! HAS BEEN SEEDED')
+      //console.log('!!! HAS BEEN SEEDED')
       const cachedMap = StateManager.get('aggregate:nip11s')
-      console.log('cached nip11 compressed', nip11Map)
+      //console.log('cached nip11 compressed', nip11Map)
       if (cachedMap) {
         try {
           let decompressed = decompress(cachedMap);
           if (Array.isArray(decompressed)) {
             decompressed = decompressed.map( ([relay, entries]: [string, RelayInformation[]]) => [relay, entries?.map( (nip11: RelayInformation) => new Nip11(nip11) )] )
             nip11Map = new Map(decompressed);
-            console.log('nip11Map cached nip11Map', nip11Map);
+            //console.log('nip11Map cached nip11Map', nip11Map);
           } else {
             console.error('nip11Map Decompressed value is not a valid array:', decompressed);
           }
@@ -90,7 +90,7 @@ export const nip11s = derived(
       }
     }
     else {
-      // console.log('!!! HAS NOT BEEN BOOTSTRAPPED OR SEEDED')
+      // //console.log('!!! HAS NOT BEEN BOOTSTRAPPED OR SEEDED')
     }
       
     return nip11Map;

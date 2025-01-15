@@ -35,6 +35,6 @@ self.onmessage = ({ data }) => {
 }
 
 self.onerror = (err: any) => {
-    console.log('WORKER ERROR', err)
+    //console.log('WORKER ERROR', err)
     self.postMessage({ error: 'timed out.' } as Nip11ServiceMessage)
 }

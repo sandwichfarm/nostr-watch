@@ -30,7 +30,7 @@ export default defineConfig({
         {
           name: 'debug-build',
           writeBundle() {
-            console.log('Build completed. Check output in the dist directory.');
+            //console.log('Build completed. Check output in the dist directory.');
           },
         }
       ]

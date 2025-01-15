@@ -16,7 +16,6 @@ export type SchemaValidatorResult = {
 
 const validate = (schema: any, data: any): SchemaValidatorResult => {
     const ajv = new Ajv({
-        allErrors: true,
         strict: false
     });
     ajvErrors(ajv);

@@ -1,5 +1,7 @@
 /// <reference types="vite/types/importMeta.d.ts" />
 
+import { isBrowser } from "@nostrwatch/utils";
+
 import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAdapter } from "@nostrwatch/nip66/core";
 import { IEvent } from "@nostrwatch/nip66/models";
 
@@ -110,7 +112,8 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     async REQ(filters: ReqFilter[]): Promise<IEvent[]> {
         // ////console.log(filters)
         const message: ReqCommand = ['REQ', this.subId, ...filters];
-        let results = (await this.relay.query(message)) as unknown as IEvent[]
+        const promise = this.relay.query(message).catch(this.handleWorkerError.bind(this))
+        let results = (await promise) as unknown as IEvent[]
         return results
     }
 
@@ -134,5 +137,11 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
 
     async WIPE(): Promise<boolean> {
         return this.relay.wipe();
+    }
+
+    private handleWorkerError() {
+        if(isBrowser()) {
+            location.reload()
+        }
     }
 }

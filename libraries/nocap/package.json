@@ -48,6 +48,9 @@
     "socks-proxy-agent": "8.0.2",
     "ws": "8.16.0"
   },
+  "peerDependencies": {
+    "@nostrwatch/websocket": "workspace:^"
+  },
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
@@ -75,8 +78,5 @@
     "vitest": "0.34.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "0.2.2"
-  },
-  "peerDependencies": {
-    "vitest": "^0.32.0"
   }
 }

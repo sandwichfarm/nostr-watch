@@ -69,7 +69,7 @@
     }
   
     const setRelayMapPoint = async(): Promise<void> => {
-      //console.log('relay aggregate', aggregate)
+      ////console.log('relay aggregate', aggregate)
       if(!aggregate?.dd?.lat) return console.warn('Reglay aggregate does not have any geodata.')
       relayMapPoint.set({ 
         id: 'relay', 
@@ -87,7 +87,7 @@
       if(!monitorCheck) return //console.warn(`${monitor.pubkey} could not find check data...`)
       const rtt = monitorCheck?.rtt || undefined
 
-      //console.log('monitor data', monitor, monitor.pubkey, dd, monitorCheck, rtt)
+      ////console.log('monitor data', monitor, monitor.pubkey, dd, monitorCheck, rtt)
       if(!dd || !rtt || !monitorCheck) return //console.warn(`${monitor.pubkey} could not find data...`)
   
       const point: MapPoint = { 
@@ -134,7 +134,7 @@
   
         const areas: any[] = []
 
-        //console.log(areas, points, links)
+        ////console.log(areas, points, links)
   
         return {
           areas,
@@ -147,7 +147,7 @@
     const resetMonitors = async (): Promise<void> => {
       monitorMapPoints.set([])
       monitorLinks.set([])
-      //console.log(updateMapData())
+      ////console.log(updateMapData())
     }
   
     const setMapPoints = async (): Promise<void> => {
@@ -166,7 +166,7 @@
         label: 'you',
         radius: 10
       })
-      //console.log(currentUserPoint)
+      ////console.log(currentUserPoint)
       if($currentUserPoint.id && $relayMapPoint.id) {
         currentUserLink.set({
           source: $relayMapPoint.id,
@@ -180,7 +180,7 @@
     }
 
     const init = () => {
-      //console.log('RelayMap Hydrated')
+      ////console.log('RelayMap Hydrated')
       ready = true
       setMapPoints()
     }

@@ -42,11 +42,11 @@
 		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
-			console.log('setting config with user config', conf)
+			//console.log('setting config with user config', conf)
 			config.set(conf)
 		}
 		else {
-			console.log('setting config without user config', conf)
+			//console.log('setting config without user config', conf)
 			config.set(conf)
 		}
 		ready.set(true)

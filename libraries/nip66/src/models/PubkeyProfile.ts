@@ -1,4 +1,5 @@
 import { IEvent, NostrEvent } from "./Event";
+import type { Nip05 } from "nostr-tools/nip05";
 
 export class PubkeyProfile extends NostrEvent {
 
@@ -46,7 +47,7 @@ export class PubkeyProfile extends NostrEvent {
         return this.parsed?.lud16
     }
 
-    get nip05(): string | undefined {
+    get nip05(): Nip05 | undefined {
         return this.parsed?.nip05
     }
 

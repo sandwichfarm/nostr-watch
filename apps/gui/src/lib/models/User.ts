@@ -29,7 +29,7 @@ export class User {
                 if( meta.kind === 0) this.#profile = new PubkeyProfile(meta);
                 if( meta.kind === 10002 ) this.#relays = new PubkeyRelays(meta);
             }
-            //console.log('user initialize', metas);
+            ////console.log('user initialize', metas);
             this.#ready = true;
         })
     }

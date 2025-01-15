@@ -146,12 +146,12 @@
   };
 
   const loadOperatorMeta = async () => {
-    console.log('loadOperatorMeta')
+    //console.log('loadOperatorMeta')
     const begin = Date.now();
       if (!operatorPubkey) return operatorMetaReady.set(true);
       let count = 0
       const onevent = (event: IEvent) => {
-        console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
+        //console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
         count++;
         if (event.kind === 0) {
           if($operatorProfile === null) {
@@ -176,7 +176,7 @@
           await new Promise(resolve => setTimeout(resolve, 100));
       }
       operatorMetaReady.set(true)
-      console.log('loadOperatorMeta', 'done', Date.now() - begin)
+      //console.log('loadOperatorMeta', 'done', Date.now() - begin)
   };
 
   const mount = async () => {

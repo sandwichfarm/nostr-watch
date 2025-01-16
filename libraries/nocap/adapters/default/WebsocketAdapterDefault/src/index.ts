@@ -1,4 +1,5 @@
 import { TorWebSocket } from './tor';
+import { Buffer } from 'buffer';
 
 import {
   AbstractAdapter,
@@ -23,19 +24,20 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   initialize(): void {}
 
   async check_open(): Promise<void> {
+    console.log('WebsocketAdapterDefault.check_open()', 'open');
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
     try {
       if (this.base.network === 'clearnet') {
         this.base.ws = new CompatibleWebSocket(this.base.url);
-        await this.base.ws.ready();
       } else if (this.base.network === 'tor') {
         const torSocksProxy = 'socks5h://127.0.0.1:9050';
         const agent = new (require('socks-proxy-agent')).SocksProxyAgent(torSocksProxy);
         this.base.ws = new CompatibleWebSocket(this.base.url, { agent });
-        await this.base.ws.ready();
       } else {
         throw new Error('Unsupported network');
       }
+      await this.base.ws.ready();
+      console.log('WebsocketAdapterDefault.check_open()', 'connected');
       this.bind_events();
     } catch (error) {
       console.error('Error in check_open:', error);
@@ -64,11 +66,13 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   bind_events(): void {
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.bind_events()`);
     try {
-      this.base.ws?.on('open', (e: Event) => {
+      this.base.ws?.on('open', async (e: Event) => {
+        console.log('WebsocketAdapterDefault.check_open()', 'complete', this.base.subid('open'));
         this.base.on_open(e);
         this.count.event++;
       });
-      this.base.ws?.on('message', (data: any) => {
+      this.base.ws?.on('message', (message: any) => {
+        const { data } = message;
         this.handle_nostr_event(data);
       });
       this.base.ws?.on('close', (e: Event) => {
@@ -86,24 +90,23 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event()`);
     let ev: any;
     try{
-      console.log('MESSAGE', message)
       const messageType = (message instanceof Buffer)? 'buffer': typeof message;
       if(messageType === 'string') {
-        ev = JSON.parse(message as string)
+        ev = JSON.parse(message as string);
       }
       else if(messageType === 'buffer') {
-        ev = JSON.parse((message as Buffer).toString())
+        ev = JSON.parse((message as Buffer).toString());
       }
     } catch (e) {
-      const err = `${this.base.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`;
-      this.base?.logger?.err(err);
-      this.base.auditor.fail('INVALID_JSON', {
-        description: 'Relay responded to subscription with invalid JSON.',
-        severity: 'high',
-        impact: ['reliability'],
-        domain: 'NIP-01',
-      });
-      return this.base.websocket_hard_fail(err);
+      console.error('json parsing failed')
+      return this.base.websocket_hard_fail(this.notNip01Compat(e));
+    }
+
+    const validEventTypes = ['EVENT', 'EOSE', 'OK', 'NOTICE', 'LIMITS', 'AUTH'];
+
+    if(!validEventTypes.includes(ev?.[0])) {
+      console.error('event type failed', typeof ev, ev?.[0])
+      return this.base.websocket_hard_fail(this.notNip01Compat(ev));
     }
 
     if (!ev || !(ev instanceof Array) || !ev.length) return;
@@ -167,6 +170,18 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
     if (!this.base.isConnected()) return;
     this.base?.logger?.debug('WebsocketAdapterDefault.close()');
     this.base?.ws?.close();
+  }
+
+  notNip01Compat(e?: any): string {
+    const err = `${this.base.url} is not NIP-01 compatible, responded with invalid JSON: ${e}`;
+    this.base?.logger?.err(err);
+    this.base.auditor.fail('INVALID_JSON', {
+      description: 'Relay responded to subscription with invalid JSON.',
+      severity: 'high',
+      impact: ['reliability'],
+      domain: 'NIP-01',
+    });
+    return err
   }
 }
 

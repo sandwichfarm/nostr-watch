@@ -10,7 +10,8 @@
 
     const busy: Writable<boolean> = writable(false);
     const speed: Writable<number | null> = writable(null);
-    const success: Writable<boolean | null> = writable(null);
+    // const success: Writable<boolean | null> = writable(null);
+    const result: Writable<any | null> = writable(null);
     const speedometerWidth: Writable<number> = writable(400);
 
     let nocap: Nocap | null ;
@@ -23,15 +24,14 @@
         nocap.on('change', (value: any) => {
             //console.log('onchange value', value);
         });
-        nocap.useAdapters([WebsocketAdapter]);
-        const result = await nocap.check('open' as CheckKey);
-        //console.log('speedcard result', result)
+        nocap.useAdapter(WebsocketAdapter);
+        const res = await nocap.check(['open', 'read']);
+        //console.log('speedcard result', res)
         busy.set(false);
-        speed.set(result.open.duration);
-        success.set(result.open.data)
+        speed.set(res.open.duration);
+        // success.set(res.open.data)
+        result.set(res);
         nocap = null;
-        
-
         if (container) {
             resizeObserver = new ResizeObserver(entries => {
                 for (let entry of entries) {
@@ -53,6 +53,8 @@
         nocap = null;
     });
 
+    $: error = $result?.open?.message ?? false;
+    $: success = $result?.open?.data ?? false
     $: value = $speed ? Math.round($speed) : null;
     $: isMaximum = (value || 0) > 3000;
     $: width = $speedometerWidth;
@@ -69,7 +71,9 @@
         <Card.Title>Speed</Card.Title>
     </Card.Header>
     <Card.Content class="speedometer-container">
-        {#if $success === true && $busy === false}
+        <!-- <pre>{JSON.stringify($result, null, 2)}</pre> -->
+
+        {#if success === true && $busy === false}
         <div bind:this={container} class="text-center">
             {#if value}
                 <Speedometer 
@@ -122,7 +126,11 @@
             {#if $busy}
                 <div>Speed test commencing...</div>
             {:else}
-                <div>Could not connect.</div>
+                {#if error}
+                    <div>{error}</div>
+                {:else}
+                    <div>Could not connect.</div>
+                {/if}
             {/if}
         {/if}
     </Card.Content>

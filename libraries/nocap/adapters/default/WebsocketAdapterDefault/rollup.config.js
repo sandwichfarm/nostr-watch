@@ -72,6 +72,7 @@ export default [
       strict: false,
     },
     plugins: [
+      nodePolyfills(),
       resolve({
         browser: true,
         extensions: ['.js'],
@@ -82,7 +83,7 @@ export default [
       json({
         sourceMap: true,
       }),
-      nodePolyfills(),
+      
       // terser(),
     ],
     onwarn

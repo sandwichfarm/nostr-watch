@@ -14,8 +14,8 @@
       "types": "./dist/server/types/index.d.ts"
     },
     "./web": {
-      "import": "./dist/web/index.esm.js",
-      "types": "./dist/web/types/index.d.ts"
+      "import": "./dist/web/index.js",
+      "types": "./dist/server/types/index.d.ts"
     }
   },
   "scripts": {

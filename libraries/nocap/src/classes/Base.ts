@@ -985,7 +985,7 @@ on_event(subid: string, ev: any): void {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isConnecting', 
-      () => this.ws?.readyState && (this.ws?.readyState as number) === WebSocket.CONNECTING ? true : false
+      () => this.ws?.readyState && (this.ws?.readyState as number) === 0 ? true : false
     )
   }
 
@@ -1000,7 +1000,10 @@ on_event(subid: string, ev: any): void {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isConnected', 
-      () => this.ws?.readyState && this.ws.readyState === WebSocket.OPEN ? true : false
+      () => {
+        console.log('isConnected', this.ws?.readyState && this.ws.readyState === 1 ? true : false, this?.ws?.readyState)
+        return this.ws?.readyState && this.ws.readyState === 1 ? true : false
+      }
     )
   }
 
@@ -1017,7 +1020,7 @@ on_event(subid: string, ev: any): void {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isClosing', 
-      () => this.ws?.readyState && this.ws.readyState === WebSocket.CLOSING ? true : false
+      () => this.ws?.readyState && this.ws.readyState === 2 ? true : false
     )
   }
 
@@ -1032,7 +1035,22 @@ on_event(subid: string, ev: any): void {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isClosed', 
-      () => this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
+      () => this.ws?.readyState && this.ws.readyState === 3 ? true : false
+    )
+  }
+
+  /**
+   * isBusy
+   * Checks if the websocket is busy (connecting or closing)
+   * 
+   * @private
+   * @returns {boolean} - True if closed, false otherwise
+   */
+  isBusy(): boolean {
+    return this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'isBusy', 
+      () => this.isConnecting() || this.isClosing()
     )
   }
 

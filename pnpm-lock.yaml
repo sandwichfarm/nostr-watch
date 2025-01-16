@@ -51,9 +51,9 @@ importers:
       '@nostrwatch/nocap':
         specifier: workspace:^
         version: link:../../libraries/nocap
-      '@nostrwatch/nocap-websocket-adapter-default':
+      '@nostrwatch/nocap-every-adapter-default':
         specifier: workspace:^
-        version: link:../../libraries/nocap/adapters/default/WebsocketAdapterDefault
+        version: link:../../libraries/nocap/adapters/default/ZEveryAdapterDefault
       '@nostrwatch/route66':
         specifier: workspace:^
         version: link:../../libraries/route66
@@ -1597,6 +1597,9 @@ importers:
       '@nostrwatch/websocket':
         specifier: workspace:^
         version: link:../../../../websocket
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       websocket-polyfill:
         specifier: ^0.0.3
         version: 0.0.3

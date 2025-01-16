@@ -99,7 +99,7 @@
 		"@careswitch/svelte-data-table": "^0.6.3",
 		"@nostrwatch/auditor": "workspace:*",
 		"@nostrwatch/nocap": "workspace:^",
-		"@nostrwatch/nocap-websocket-adapter-default": "workspace:^",
+		"@nostrwatch/nocap-every-adapter-default": "workspace:^",
 		"@nostrwatch/route66": "workspace:^",
 		"@nostrwatch/route66-cacheadapter-nostrsqlite": "workspace:^",
 		"@nostrwatch/route66-wsadapter-nostrtools": "workspace:^",

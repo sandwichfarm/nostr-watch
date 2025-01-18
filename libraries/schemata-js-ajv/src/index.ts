@@ -16,8 +16,9 @@ export type SchemaValidatorResult = {
 
 const validate = (schema: any, data: any): SchemaValidatorResult => {
     const ajv = new Ajv({
-        strict: false
-    });
+        strict: false, 
+        allErrors: true
+      });
     ajvErrors(ajv);
     const result = structuredClone(defaultResult)
     const validate = ajv.compile(schema);

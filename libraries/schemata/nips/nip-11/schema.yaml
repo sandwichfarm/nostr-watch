@@ -42,7 +42,7 @@ properties:
       - allOf:
           - $ref: "#/$defs/retent"
         description: "The retention policy of the relay."
-        errorMessage: "Retention must be an object with kinds, count, and time."
+        errorMessage: "Retention must be an object with at least one of kinds, count or time."
   banner:
     type: string
     pattern: "^https?://"
@@ -175,7 +175,6 @@ allOf:
       required:
         - amount
         - unit
-        - kinds
   retent:
     type: object
     properties:

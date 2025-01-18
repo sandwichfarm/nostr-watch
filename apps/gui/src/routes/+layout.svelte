@@ -19,10 +19,12 @@
   import { StateManager } from '@nostrwatch/route66';
   import { unsupported, appState, tabState, type TabStateType } from '$lib/stores/app';
   import { IdleDetector } from '$lib/utils/idle.js';
+	import Debugger from '$lib/components/partials/Debugger.svelte';
+	import { isIdle } from '$lib/stores/app';
 
   window.process = process;
 
-  const IDLE_TIMEOUT_MS = 60 * 1000;
+  const IDLE_TIMEOUT_MS = 5* 60 * 1000;
   
   let isReady = false;
   let busy = false;
@@ -35,6 +37,7 @@
   function handleIdle() {
     console.log('User is idle. Performing idle actions...');
     setTabState('idle');
+    isIdle.set(true);
     lifecycle.releaseLeadership();
   }
   
@@ -47,6 +50,7 @@
       setTabState('leader');
       await boot();
       idleDetector?.reset?.();
+      isIdle.set(false);
     } catch (error) {
       console.error('Error in handleActive:', error);
       setTabState('follower');
@@ -211,6 +215,7 @@
   }
 </script>
 
+<Debugger />
 
 {#if isReady}
   {#if $tabState === 'idle'}

@@ -10,11 +10,12 @@ import { Nip11 } from "@nostrwatch/route66/models";
 import { doAggregateCache, hasBeenBoostrapped, hasBeenSeeded } from "./app.js";
 import type { RelayInformation } from "@nostrwatch/route66/models";
 import type { nip11 } from "nostr-tools";
+import { relayAggregates } from "./checks.js";
+import { isPubkey } from "../utils/nostr.js";
 
 type RelayUrl = string
 
 export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
-
 export const nip11sLocal: Writable<Map<string, Nip11>> = writable(new Map())
 
 const processNip11 = ( json: any ) => {
@@ -71,16 +72,13 @@ export const nip11s = derived(
       ));
     }
     else if( hasBeenSeeded() ){
-      //console.log('!!! HAS BEEN SEEDED')
       const cachedMap = StateManager.get('aggregate:nip11s')
-      //console.log('cached nip11 compressed', nip11Map)
       if (cachedMap) {
         try {
           let decompressed = decompress(cachedMap);
           if (Array.isArray(decompressed)) {
             decompressed = decompressed.map( ([relay, entries]: [string, RelayInformation[]]) => [relay, entries?.map( (nip11: RelayInformation) => new Nip11(nip11) )] )
             nip11Map = new Map(decompressed);
-            //console.log('nip11Map cached nip11Map', nip11Map);
           } else {
             console.error('nip11Map Decompressed value is not a valid array:', decompressed);
           }
@@ -95,3 +93,58 @@ export const nip11s = derived(
       
     return nip11Map;
 });
+
+export const relaysWithNip11s: Readable<string[]> = derived(
+  nip11s,
+  ($nip11s) => {
+    const result = new Set()
+    for(const relay of $nip11s.keys()) {
+      result.add(relay)
+    }
+    return Array.from(result) as string[]
+  }
+)
+
+export const relaysWithoutNip11s: Readable<string[]> = derived(
+  relayAggregates,
+  ($relayAggregates) => {
+    const result = new Set()
+    $relayAggregates.forEach( (check: any) => { 
+      if(!check.hasNip11) {
+        result.add(check.relay)
+      }
+    })
+    return Array.from(result) as string[]
+  }
+)
+
+export const operatorPubkeys: Readable<string[]> = derived(
+  nip11s,
+  ($nip11s) => {
+    const result: Set<string> = new Set()
+    if(!$nip11s) return []
+    for(const [relay, nip11] of Array.from($nip11s)) {
+      const json = nip11?.[0].json;
+      if(!json) continue;
+      const { pubkey } = json;
+      if(pubkey){
+        result.add(pubkey)
+      }
+    }
+    return Array.from(result)
+  }
+)
+
+export const operatorPubkeysValid: Readable<string[]> = derived(
+  operatorPubkeys,
+  ($operatorPubkeys) => {
+    return $operatorPubkeys.filter(isPubkey)
+  }
+)
+
+export const operatorPubkeysInvalid: Readable<string[]> = derived(
+  operatorPubkeys,
+  ($operatorPubkeys) => {
+    return $operatorPubkeys.filter((pubkey: string) => !isPubkey(pubkey))
+  }
+)

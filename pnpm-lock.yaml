@@ -2243,6 +2243,9 @@ importers:
 
   libraries/worker-relay:
     dependencies:
+      '@nostrwatch/utils':
+        specifier: ^0.1.9
+        version: 0.1.9
       '@sqlite.org/sqlite-wasm':
         specifier: ^3.46.1-build3
         version: 3.46.1-build5

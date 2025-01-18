@@ -1,4 +1,5 @@
 import { EventEmitter } from "eventemitter3";
+import { batchNip11s, Nip11Args } from "interface";
 
 export type WorkerMessageCommand =
   | "reply"
@@ -14,6 +15,12 @@ export type WorkerMessageCommand =
   | "setEventMetadata"
   | "debug"
   | "delete"
+  | "countNip11s"
+  | "countUniqueNip11s"
+  | "dumpNip11s"
+  | "batchUpsertNip11"
+  | "upsertNip11" 
+  | "getNip11"
   | "wipe";
 
 export interface WorkerMessage<T> {
@@ -63,6 +70,13 @@ export interface RelayHandler extends EventEmitter<RelayHandlerEvents> {
   close(): void;
   event(ev: NostrEvent): boolean;
   eventBatch(evs: Array<NostrEvent>): boolean;
+
+  countNip11s(): Promise<number>;
+  countUniqueNip11s(): Promise<number>;
+  dumpNip11s(): Promise<any[]>;
+  batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean>;
+  upsertNip11(nip11Args: Nip11Args): Promise<boolean>;
+  getNip11(relay: string): Promise<any>;
 
   /**
    * Run any SQL command

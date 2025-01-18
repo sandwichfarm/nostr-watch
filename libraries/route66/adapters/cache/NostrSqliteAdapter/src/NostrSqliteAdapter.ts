@@ -6,7 +6,7 @@ import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAda
 import { IEvent } from "@nostrwatch/route66/models";
 
 import { WorkerRelayInterface } from "@nostrwatch/worker-relay"
-import { ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist/types"; 
+import { OkResponse, ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist/types"; 
 import { generateSubId, randomInRange } from "./utils";
 import { NostrEvent } from "nostr-tools";
 
@@ -17,6 +17,14 @@ export interface INostrSqliteAdapter extends ICacheAdapter {
     DUMP(): Promise<Uint8Array>;
     CLOSE(subId: string): Promise<boolean>;
     WIPE(): Promise<boolean>;
+
+    upsertNip11(relay: string, nip11: any): Promise<boolean>;
+    batchUpsertNip11(relayNip11s: {relay: string, nip11: any}[]): Promise<boolean>;
+    countNip11s(): Promise<number>;
+    countUniqueNip11s(): Promise<number>;
+    dumpNip11s(): Promise<any[]>;
+
+    getNip11(relay: string): Promise<any>;
 }
 
 export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdapter {
@@ -35,6 +43,8 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     }
 
     setup(){}
+
+    async abort(): Promise<boolean>{ return true }
 
     /**
      * overload defaults with inop because WorkerRelayInterface handles it.
@@ -105,6 +115,30 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         this.addEvent(event)
     }
 
+    async countNip11s(): Promise<number> {
+        return this.relay.countNip11s();
+    }
+
+    async countUniqueNip11s(): Promise<number> {
+        return this.relay.countUniqueNip11s();
+    }
+
+    async batchUpsertNip11(relayNip11s: {relay: string, nip11: any}[]): Promise<boolean> {
+        return Promise.resolve(this.relay.batchUpsertNip11(relayNip11s));
+    }
+
+    async dumpNip11s(): Promise<any[]> {
+        return this.relay.dumpNip11s();
+    }
+
+    async upsertNip11(relay: string, nip11: any): Promise<OkResponse> {
+        return this.relay.upsertNip11({ relay, nip11 })
+    }
+
+    async getNip11(relay: string): Promise<any> {
+        return this.relay.getNip11(relay)
+    }
+
     async EVENT(event: IEvent): Promise<void> {
         await this.relay.event(event as unknown as NostrEvent)
     }
@@ -112,7 +146,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     async REQ(filters: ReqFilter[]): Promise<IEvent[]> {
         // ////console.log(filters)
         const message: ReqCommand = ['REQ', this.subId, ...filters];
-        const promise = this.relay.query(message).catch(this.handleWorkerError.bind(this))
+        const promise = this.relay.query(message).catch((err?: any) => this.handleWorkerError(message, err))
         let results = (await promise) as unknown as IEvent[]
         return results
     }
@@ -139,9 +173,12 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         return this.relay.wipe();
     }
 
-    private handleWorkerError() {
+    private handleWorkerError(context?: any, err?: any) {
+        if(err) {   
+            console.error('context:', context, err)
+        }
         if(isBrowser()) {
-            location.reload()
+            // setTimeout( () => location.reload(), 1000 )
         }
     }
 }

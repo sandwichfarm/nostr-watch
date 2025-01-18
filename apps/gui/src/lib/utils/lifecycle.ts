@@ -1,4 +1,4 @@
-import { get } from 'svelte/store';
+import { get, type Writable, type Readable } from 'svelte/store';
 
 import Route66, { StateManager } from '@nostrwatch/route66';
 
@@ -10,16 +10,21 @@ import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
 import { addEventsToStore } from '$lib/stores/events-helpers.js';
 
-import type { Monitor, NostrEvent } from "@nostrwatch/route66/models"
+import type { Monitor, Nip11, NostrEvent } from "@nostrwatch/route66/models"
 import { nip05Service } from '$lib/stores/nip05s.js';
 import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready } from '../stores/app';
-import type { SubscribeHandlers } from '@nostrwatch/route66/core/WebsocketAdapter';
+import type { SubscribeHandlers, WebsocketAdapterOptions } from '@nostrwatch/route66/core/WebsocketAdapter';
 import { Batcher } from '@nostrwatch/route66/core';
 
 import NostrSqliteAdapter from '@nostrwatch/route66-cacheadapter-nostrsqlite';
 import NostrToolsAdapter from '@nostrwatch/route66-wsadapter-nostrtools';
 import type { Nip05Service } from '../services/Nip05Service';
 import type { Nip05 } from 'nostr-tools/nip05';
+import { nip11Service, operatorPubkeys, operatorPubkeysValid, relaysWithNip11s, relaysWithoutNip11s } from '../stores';
+import { userService } from '../stores/user';
+import type { UserService } from '../services/UserService';
+import type { Filter } from 'nostr-tools';
+import type { Nip11Service } from '../services/Nip11Service';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -64,23 +69,23 @@ export const bindBootstrapEmitters = () => {
     });
 };
 
-export const bindLiveSubscriptionEmitters = () => {
-    console.log('bindLiveSubscriptionEmitters')
-    if (!$route66 || typeof $route66.on !== 'function') {
-        throw new Error('Invalid nip66Instance: missing `on` method.');
-    }
-    $route66.on('event', (event: any) => {
-        const key = eventKey(event);
-        if (!key) return;
-        events.update((currentEvents: Map<string, any>) => {
-            const existing = currentEvents.get(key);
-            if (existing && existing.id === event.id) return currentEvents;
-            if (existing && existing.created_at > event.created_at) return currentEvents;
-            currentEvents.set(key, new Nip66Event(event));
-            return currentEvents; 
-        });
-    });
-}
+// export const bindLiveSubscriptionEmitters = () => {
+//     console.log('bindLiveSubscriptionEmitters')
+//     if (!$route66 || typeof $route66.on !== 'function') {
+//         throw new Error('Invalid nip66Instance: missing `on` method.');
+//     }
+//     $route66.on('event', (event: any) => {
+//         const key = eventKey(event);
+//         if (!key) return;
+//         events.update((currentEvents: Map<string, any>) => {
+//             const existing = currentEvents.get(key);
+//             if (existing && existing.id === event.id) return currentEvents;
+//             if (existing && existing.created_at > event.created_at) return currentEvents;
+//             currentEvents.set(key, new Nip66Event(event));
+//             return currentEvents; 
+//         });
+//     });
+// }
 
 export const instance = async (): Promise<Route66> => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -126,7 +131,6 @@ export const instance = async (): Promise<Route66> => {
 
 export const loadMonitorsFromCache = () => {
     const monitors = StateManager.get('cache:monitors')
-    console.log('Loading monitors from cache:', monitors.length);
     if(monitors) {
         $route66?.services?.monitors?.loadMonitors(monitors);
     }
@@ -165,11 +169,13 @@ export const bootstrap = async () => {
     if( shouldSync() ){
         if( get(isBootstrapping) ) return;
         isBootstrapping.set(true)
-        $route66?.services?.monitors?.bootstrap().then( () => {
+        await $route66?.services?.monitors?.bootstrap().then( async () => {
             isBootstrapping.set(false)
-            updateLastSync()
-            beginLiveSync({ onevents })
+            seedFromCache();
+            updateLastSync();
             removeStaleChecksFromStore()
+            await fetchNip11s();
+            await bootstrapOperatorMeta();
         })
     }
     else {
@@ -181,9 +187,93 @@ export const bootstrap = async () => {
     }
 }
 
+const bootstrapOperatorMeta = async () => {
+    console.log('bootstrapOperatorMeta');
+    const $operatorPubkeysValid: string[] = get(operatorPubkeysValid);
+    const emptyFilter: Filter = { kinds: [0, 10002], authors: [] };
+    const chunks: Filter[][] = [];
+    let filters: Filter[] = [];
+    let filter: Filter = structuredClone(emptyFilter);
+    
+    for (const pubkey of $operatorPubkeysValid) {
+        // Ensure `filter.authors` is initialized as an array
+        if (!Array.isArray(filter.authors)) {
+            filter.authors = [];
+        }
+    
+        // Check if the current filter's authors list has exceeded 20
+        if (filter.authors.length > 20) {
+            filters.push(filter);
+            filter = structuredClone(emptyFilter); // Reset the filter
+            console.log(`chunk: reset: filter`, filter, filter.authors.length);
+    
+            // If the `filters` list has exceeded 10, push it to chunks and reset
+            if (filters.length > 10) {
+                console.log(`chunk: reset: filters`, filters, filters.length);
+                chunks.push([...filters]);
+                filters = [];
+            }
+        }
+    
+        // Add the current pubkey to the filter's authors
+        console.log(`chunk: add: ${pubkey} to filter`, filter, filter.authors.length);
+        (filter.authors as string[]).push(pubkey);
+    }
+    
+    // Don't forget to handle remaining filters and the last filter in progress
+    if ((filter.authors as string[]).length > 0) {
+        filters.push(filter);
+    }
+    
+    if (filters.length > 0) {
+        chunks.push([...filters]);
+    }
+    
+    console.log('chunks', chunks.length, chunks);
+    for(const filters of chunks){
+        const onevent = (event: IEvent) => addEventsToStore([event]);
+        const onevents = (events: IEvent[]) => events.forEach( onevent );
+        const relays = $route66?.services?.relay?.userMetaRelays || []
+        const priority = 1;
+        const options: WebsocketAdapterOptions = {
+            cache: true,
+            returnResults: true, 
+            keepAlive: false,
+            stream: true
+        }
+        await $route66.subscribe( { relays, filters, priority, options }, { onevent, onevents } );
+    }
+    
+    console.log('bootstrapOperatorMeta:done')
+}
+
+const fetchNip11s = async () => {
+    console.log('fetchNip11s')
+    const $nip11Service: Nip11Service = get(nip11Service);
+    const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s);
+    const $relaysWithNip11s: string[] = get(relaysWithNip11s);
+    const relays: string[] = Array.from(new Set([...$relaysWithoutNip11s, ...$relaysWithNip11s]));
+    if(relays.length === 0) return;
+    const promises: Promise<any>[] = [];
+    for(const relay of relays){
+        promises.push(new Promise( resolve => {
+            setTimeout( resolve, 20000 )
+            $nip11Service.check(relay).then( resolve )
+        }));
+    }
+    const debug = setInterval( () => { 
+        console.log('fetchNip11s:total', promises.length)
+        console.log('fetchNip11s:waiting', promises.filter( (p) => p?.status === 'pending').length)
+    }, 1000)
+    await Promise.allSettled(promises);
+    clearInterval(debug)
+    console.log('fetchNip11s:done')
+}
+
 type LiveSyncResumer = () => Promise<void>
 
 export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {
+    console.log('starting live sync')
     isLivesyncing.set(true)
     if(!$route66){
         $route66 = await instance();
@@ -192,6 +282,7 @@ export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void
 }
 
 export const stopLiveSync = async (): Promise<void> => {
+    console.log('stopping live sync')
     isLivesyncing.set(false)
     if(!$route66){
         $route66 = await instance();
@@ -200,8 +291,8 @@ export const stopLiveSync = async (): Promise<void> => {
 }
 
 export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
-    console.log('Lifecycle:pauseLiveSync')
-    let wasLiveSyncing = get(isLivesyncing) 
+    console.log('pausing live sync')
+    let wasLiveSyncing = get(isLivesyncing)? true: false;
     if(!$route66){
         $route66 = await instance();
     }
@@ -238,8 +329,6 @@ export const seedFromCache = async () => {
     const promises: Promise<any>[] = [];
     $route66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
         promises.push(new Promise( resolve => {
-            //console.log('!!! begin seeding', monitor.pubkey)
-            //console.log('loading from cache', monitor.pubkey)
             $route66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey).then(resolve)
         }));
     })

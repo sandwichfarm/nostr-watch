@@ -5,6 +5,8 @@ import { nip11sLocal } from '$lib/stores/nip11s.js';
 import { Nip11, type RelayInformation } from '@nostrwatch/route66/models';
 import { getRelayErrorSubject, setRelayError, type RelayErrorMessages } from '$lib/stores/relay-errors.js';
 import { relaysErrors } from '$lib/stores/relay-errors';
+import { instance } from '$lib/utils/lifecycle';
+import type { Route66 } from '@nostrwatch/route66';
 
 export type Nip11ServiceMessage = {
     relay: string,
@@ -42,7 +44,6 @@ export class Nip11Service {
         const { relay, nip11:_nip11, error } = message.data;
         const nip11 = new Nip11(_nip11 as RelayInformation)
         if(error) {
-            //console.log('N11S setting error in store', error.message)
             setRelayError(relay, 'nip11', error.message)
             return
         }
@@ -52,5 +53,8 @@ export class Nip11Service {
             }
             return map;
         });
+        instance().then( ($route66: Route66) => {
+            $route66?.adapters?.cache?.upsertNip11(relay, nip11)
+        })
     }
 }

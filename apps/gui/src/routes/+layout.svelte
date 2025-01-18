@@ -19,20 +19,21 @@
   import { StateManager } from '@nostrwatch/route66';
   import { unsupported, appState, tabState, type TabStateType } from '$lib/stores/app';
   import { IdleDetector } from '$lib/utils/idle.js';
-	import Debugger from '$lib/components/partials/Debugger.svelte';
-	import { isIdle } from '$lib/stores/app';
+  import Debugger from '$lib/components/partials/Debugger.svelte';
+  import { isIdle } from '$lib/stores/app';
 
   window.process = process;
 
-  const IDLE_TIMEOUT_MS = 5* 60 * 1000;
+  const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
   
   let isReady = false;
   let busy = false;
   
   const lifecycle = createTabLifecycle();
-  
   let idleDetector: IdleDetector | null = null;
   let route66: Route66;
+
+  const isDebuggerVisible = writable(false); // Store for debugger visibility
 
   function handleIdle() {
     console.log('User is idle. Performing idle actions...');
@@ -164,13 +165,9 @@
       unsupported.set(false);
     }
   }
-  
-  onDestroy(() => {
-    unsubscribe();
-    console.log('Component destroyed. Cleaned up subscriptions and resources.');
-  });
-  
-  onMount(async () => {
+
+  // Add event listener for 'd' key to toggle debugger visibility
+  onMount(() => {
     checkSupport();
   
     if (get(unsupported)) return;
@@ -197,7 +194,23 @@
       console.log('IdleDetector initialized on component mount.');
     }
   
+    const toggleDebugger = (event: KeyboardEvent) => {
+      if (event.key === 'd') {
+        isDebuggerVisible.update(visible => !visible);
+      }
+    };
+    window.addEventListener('keydown', toggleDebugger);
+
     lifecycle.acquireLeadership();
+
+    return () => {
+      window.removeEventListener('keydown', toggleDebugger);
+    };
+  });
+  
+  onDestroy(() => {
+    unsubscribe();
+    console.log('Component destroyed. Cleaned up subscriptions and resources.');
   });
   
   $: if (navigating) {
@@ -215,7 +228,9 @@
   }
 </script>
 
-<Debugger />
+{#if $isDebuggerVisible}
+  <Debugger />
+{/if}
 
 {#if isReady}
   {#if $tabState === 'idle'}

@@ -3,7 +3,6 @@
     import RelaySoftware from '../RelaySoftware.svelte';
     import RelayCountry from '../RelayCountry.svelte';
     import { route66 } from '$lib/stores/route66';
-	import { Monitor } from '@nostrwatch/route66/models';
     
     export let relayUrl;
     export let checks;
@@ -24,8 +23,7 @@
             <Card.Description>Card Description</Card.Description>
         </Card.Header>  
         <Card.Content>
-            
-            {enabledMonitors.length}/{checks.length}
+            {checks.length}/{enabledMonitors.length}
             [{percentageReportingOnline}]
             of your enabled monitors are reporting {relayUrl} online
             <RelaySoftware {version} {software} />

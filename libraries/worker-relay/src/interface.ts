@@ -18,6 +18,8 @@ export interface Nip11Args {
   nip11: any;
 }
 
+export type batchNip11s = Nip11Args[];
+
 export class WorkerRelayInterface {
   #worker: Worker | SharedWorker;
   #commandQueue: Map<string, (v: unknown, ports: ReadonlyArray<MessagePort>) => void> = new Map();
@@ -75,6 +77,22 @@ export class WorkerRelayInterface {
 
   async init(args: InitAargs) {
     return await this.#workerRpc<InitAargs, boolean>("init", args);
+  }
+
+  async countNip11s() {
+    return await this.#workerRpc<void, number>("countNip11s");
+  }
+
+  async countUniqueNip11s() {
+    return await this.#workerRpc<void, number>("countUniqueNip11s");
+  }
+
+  async dumpNip11s() {
+    return await this.#workerRpc<void, Uint8Array>("dumpNip11s");
+  }
+
+  async batchUpsertNip11(relayNip11s: batchNip11s) {
+    return await this.#workerRpc<batchNip11s, boolean>("batchUpsertNip11", relayNip11s);
   }
 
   async upsertNip11(nip11Args: Nip11Args) {

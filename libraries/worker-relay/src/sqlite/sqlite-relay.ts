@@ -7,7 +7,7 @@ import { debugLog } from "../debug";
 // import wasm file directly, this needs to be copied from https://sqlite.org/download.html
 import SqlitePath from "./sqlite3.wasm?url";
 import { runFixers } from "./fixers";
-import { Nip11Args } from "interface";
+import { batchNip11s, Nip11Args } from "interface";
 
 export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements RelayHandler {
   #sqlite?: Sqlite3Static;
@@ -51,7 +51,46 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     this.#log(`Opened ${this.db.filename}`);
   }
 
+  dumpNip11s() {
+    if (this.db) {
+      const res = this.db.selectArrays(`SELECT relay, json FROM relay_nip11s`);
+      return Promise.resolve(res?.map(a => {
+        return {
+          relay: a[0] as string,
+          nip11: JSON.parse(a[1] as string),
+        };
+      }) ?? []);
+    }
+    return Promise.resolve([]);
+  }
+
+  countUniqueNip11s() {
+    if (this.db) {
+      const res = this.db.selectArrays(`SELECT COUNT(*) FROM nip11s`);
+      const count = res?.at(0)?.at(0) as number
+      return Promise.resolve(count || 0);
+    }
+    return Promise.resolve(0 as number);
+  }
+
+  countNip11s() {
+    if (this.db) {
+      const res = this.db.selectArrays(`SELECT COUNT(*) FROM relay_nip11s`);
+      const count = res?.at(0)?.at(0) as number
+      return Promise.resolve(count || 0);
+    }
+    return Promise.resolve(0 as number);
+  }
+
+  batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean> {
+    for (const { relay, nip11 } of relayNip11s) {
+      this.upsertNip11({ relay, nip11 });
+    }
+    return Promise.resolve(true);
+  }
+
   async upsertNip11(nip11Args: Nip11Args) {
+    console.log('upsertNip11', nip11Args);  
     const { relay, nip11 } = nip11Args;
     const hash = deterministicHash(nip11);
     if (this.db) {
@@ -265,6 +304,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
 
     const [sql, params] = this.#buildQuery(req);
     const res = this.db?.selectArrays(sql, params);
+    if(!res?.length) return [];
     const results =
       res?.map(a => {
         if (req.ids_only === true) {
@@ -275,7 +315,8 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
           ...ev,
           relays: (a[1] as string | null)?.split(","),
         };
-      }) ?? [];
+      });
+    if(!results?.length) return [];
     const time = unixNowMs() - start;
     this.#log(`Query ${id} results took ${time.toLocaleString()}ms`, req);
     return results;

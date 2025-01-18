@@ -1,4 +1,4 @@
-import type { IWebsocketAdapter } from './WebsocketAdapter';
+import type { IWebsocketAdapter, SubscribeHandlers, WebsocketRequestBody } from './WebsocketAdapter';
 import type { ICacheAdapter } from './CacheAdapter';
 
 import type { RelayService as RelayServiceType } from '../services/RelayService';
@@ -9,6 +9,7 @@ import type { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 import type { Workers } from './Workers';
 import { StateManager } from '@base/managers/StateManager';
 import { delay } from '@nostrwatch/utils';
+import { IEvent } from '@base/interfaces';
 
 type AnyAdapter = IWebsocketAdapter | ICacheAdapter;
 
@@ -190,13 +191,17 @@ export class Route66 {
     return this?.cacheAdapter?.workers?.cache;
   }
 
-  // async bootstrap(){
-    
-  // }
-
   ping(): void {
     this.cacheAdapter?.ping()
     this.websocketAdapter?.ping()
+  }
+
+  async subscribe(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
+    return this.websocketAdapter?.subscribe(args, callbacks) ?? false
+  }
+
+  async fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
+    return this.websocketAdapter?.fetch(args, callbacks) ?? false
   }
 
   REQ(filters: any): void {

@@ -161,7 +161,7 @@
             operatorProfile.set(new PubkeyProfile(event));
           }
         }
-        if (event.kind === 10002 && !$operatorRelays) {
+        if (event.kind === 10002) {
           if($operatorRelays === null) {
             operatorRelays.set(new PubkeyRelays(event));
           }
@@ -171,7 +171,7 @@
         }
       };
       const onevents = (events: IEvent[]) => events.forEach( onevent )
-      $route66?.services?.relay?.fetchOperatorMeta(operatorPubkey, { onevent, onevents });
+      $route66?.services?.relay?.fetchOperatorMeta(operatorPubkey, { onevent, onevents }, [relayUrl]);
       while($operatorProfile === null || $operatorRelays === null) {
           await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -192,6 +192,7 @@
       loadRelayData().then(() => {
           resume();
       });
+      console.log('nip11 from cache', await $route66?.adapters?.cache?.getNip11(relayUrl));
   };
 
   const destroy = () => {

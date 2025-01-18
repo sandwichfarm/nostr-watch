@@ -2,7 +2,7 @@ import { transformCheck } from "@base/transform/TransformCheck";
 import { IEvent, NostrEvent, NostrTag } from "./Event";
 import { Geocoded } from "./Geocoded";
 import { nip19 } from "nostr-tools";
-import { Nip11, Nip11Fee, Nip11Fees } from "./Nip11";
+import { Nip11, Nip11Fee, Nip11Fees, type RelayInformation  } from "./Nip11";
 import { isPubkey } from "@base/utils/nostr";
 
 export class Nip66Event extends Geocoded implements IEvent {
@@ -56,19 +56,28 @@ export class Nip66Event extends Geocoded implements IEvent {
       return undefined;
     }
 
-    set nip11(nip11: string) {
-      if(this.content.length > 2) {
+    set nip11(nip11: string | RelayInformation) {
+      if(typeof nip11 === 'string' && nip11.length > 2) {
         try { 
-          this._nip11 = new Nip11( JSON.parse(this.content) );
+          const n11: RelayInformation = JSON.parse(nip11);
+          if(Object.keys(nip11).length > 0) {
+            this._nip11 = new Nip11(n11);
+          }
+          else {
+            this._nip11 = false;
+          }
         }
         catch(e){
           this._nip11 = false;
         }
       }
+      else if(typeof nip11 === 'object' && Object.keys(nip11).length > 0) {
+        this._nip11 = new Nip11(nip11 as RelayInformation);
+      }
     }
 
     get hasNip11(): boolean {
-      return this._nip11 instanceof Nip11;
+      return this._nip11 instanceof Nip11 && Object.keys(this._nip11)?.length > 0;
     }
 
     get nip11Hash(): string | undefined {

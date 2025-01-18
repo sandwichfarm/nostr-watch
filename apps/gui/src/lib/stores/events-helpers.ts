@@ -24,8 +24,8 @@ export const addEventsToStore = (_events: IEvent[]) => {
         events.update((map) => {
             _events.forEach(async (event: IEvent) => {
                 //temporary fix for a bug in relay monitors.
-                const aTag = event.tags.find((t: string[]) => t[0] === 'a')
-                if(aTag) return;
+                // const aTag = event.tags.find((t: string[]) => t[0] === 'a')
+                // if(aTag) return;
                 //
                 const key = eventKey(event);
                 if(!key) return;

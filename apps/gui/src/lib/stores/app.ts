@@ -10,6 +10,9 @@ export const appState: Writable<AppStateType> = writable()
 
 export type TabStateType = 'idle' | 'leader' | 'follower' | 'unsupported';
 export const tabState: Writable<TabStateType> = writable('follower');
+
+export const isIdle: Writable<boolean> = writable(false)
+
 export const route66Initialized: Readable<boolean> = derived( route66, ($route66) => $route66?.initialized? true: false )
 export const unsupported: Writable<boolean> = writable(false)
 export const isLivesyncing: Writable<boolean> = writable(false)
@@ -33,7 +36,7 @@ export const updateLastSync = () => {
 
 export const shouldSync = () => {
     const threshold = 60*30
-    // const threshold = 15*60
+    // const threshold = 1*15
     const timestamp = get(lastCompleteSync)
     const now = Math.round(Date.now()/1000)
     console.log('should sync?', threshold<(now-timestamp), formatSeconds(threshold), timeAgo(now*1000), timeAgo(timestamp*1000))

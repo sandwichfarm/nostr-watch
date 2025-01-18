@@ -141,7 +141,12 @@ export abstract class Adapter {
   }
 
   async ready(): Promise<void> {
+    this._ready = true;
     return;
+  }
+
+  get isReady(): boolean { 
+    return this._ready;
   }
 
   private _bindWorkerHandlers(): void {

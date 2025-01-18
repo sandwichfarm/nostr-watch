@@ -81,6 +81,10 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     return success;
   }
 
+  private cleanRelayUrls(relays: string[]): string[] {
+    return relays.filter((r: string) => !r.includes(','));
+  }
+
   async _subscribe(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
     let { filters, relays, options, hash, priority } = request;
     const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
@@ -88,7 +92,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
 
     const subby = async (): Promise<IEvent[] | boolean> => {
       return new Promise(async (resolve, reject) => {
-        const effectiveRelays = relays ?? this.relays;
+        const effectiveRelays = this.cleanRelayUrls(relays ?? this.relays);
         const result: IEvent[] = [];
         let count: number = 0;
         if (!effectiveRelays || effectiveRelays.length === 0) {
@@ -107,9 +111,9 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             result.push(event);
           }
         }
-        const onclose = () => {
+        const onclose = (reasons: string[] = []) => {
           //console.log(`closing subscription:`, hash)
-          callbacks?.onclose?.();
+          callbacks?.onclose?.(reasons?.[0] || 'unknown');
           this.subs.delete(hash as string);  
         }
         const oneose = () => {
@@ -150,7 +154,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
       if(!this.fetcher) throw new Error('No fetcher available');
       let { filters, relays, options, hash } = request;
       const { stream } = options ?? defaultWebsocketAdapterOptions;
-      const effectiveRelays = relays ?? this.relays;
+      const effectiveRelays = this.cleanRelayUrls(relays ?? this.relays);
       if (!effectiveRelays || effectiveRelays.length === 0) {
         throw new Error('No relays available for fetching.');
       }

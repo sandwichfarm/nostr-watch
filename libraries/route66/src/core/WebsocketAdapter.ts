@@ -183,12 +183,12 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   onMessage(response: WebsocketResponseBody): void {
     const { hash } = response
     //console.log('got the fucking message.', hash)
-    if(hash && this.subscriptions.has(hash)){
+    // if(hash && this.subscriptions.has(hash)){
       StateManager.emit(hash, response)
-    }
-    else {
-      console.warn(`[WebsocketAdapter] No subscription found for hash: ${hash}`)
-    }
+    // }
+    // else {
+    //   console.warn(`[WebsocketAdapter] No subscription found for hash: ${hash}`)
+    // }
   } 
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{

@@ -11,6 +11,7 @@ const migrations = [
   { version: 4, script: migrate_v4 },
   { version: 5, script: migrate_v5 },
   { version: 6, script: migrate_v6 },
+  { version: 7, script: migrate_v7 },
 ];
 
 async function migrate(relay: SqliteRelay) {

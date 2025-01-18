@@ -11,6 +11,7 @@ import { doAggregateCache, hasBeenBoostrapped, hasBeenSeeded } from "./app.js";
 import type { RelayInformation } from "@nostrwatch/route66/models";
 import type { nip11 } from "nostr-tools";
 import { relayAggregates } from "./checks.js";
+import { isPubkey } from "../utils/nostr.js";
 
 type RelayUrl = string
 
@@ -93,26 +94,57 @@ export const nip11s = derived(
     return nip11Map;
 });
 
-export const relaysWithNip11s = derived(
+export const relaysWithNip11s: Readable<string[]> = derived(
   nip11s,
   ($nip11s) => {
     const result = new Set()
     for(const relay of $nip11s.keys()) {
       result.add(relay)
     }
+    return Array.from(result) as string[]
+  }
+)
+
+export const relaysWithoutNip11s: Readable<string[]> = derived(
+  relayAggregates,
+  ($relayAggregates) => {
+    const result = new Set()
+    $relayAggregates.forEach( (check: any) => { 
+      if(!check.hasNip11) {
+        result.add(check.relay)
+      }
+    })
+    return Array.from(result) as string[]
+  }
+)
+
+export const operatorPubkeys: Readable<string[]> = derived(
+  nip11s,
+  ($nip11s) => {
+    const result: Set<string> = new Set()
+    if(!$nip11s) return []
+    for(const [relay, nip11] of Array.from($nip11s)) {
+      const json = nip11?.[0].json;
+      if(!json) continue;
+      const { pubkey } = json;
+      if(pubkey){
+        result.add(pubkey)
+      }
+    }
     return Array.from(result)
   }
 )
 
-export const relaysWithoutNip11s = derived(
-  relayAggregates,
-  ($relayAggregates) => {
-    const result = new Set()
-    for(const [relay, check] of $relayAggregates) {
-      if(!check.hasNip11) {
-        result.add(relay)
-      }
-    }
-    return Array.from(result)
+export const operatorPubkeysValid: Readable<string[]> = derived(
+  operatorPubkeys,
+  ($operatorPubkeys) => {
+    return $operatorPubkeys.filter(isPubkey)
+  }
+)
+
+export const operatorPubkeysInvalid: Readable<string[]> = derived(
+  operatorPubkeys,
+  ($operatorPubkeys) => {
+    return $operatorPubkeys.filter((pubkey: string) => !isPubkey(pubkey))
   }
 )

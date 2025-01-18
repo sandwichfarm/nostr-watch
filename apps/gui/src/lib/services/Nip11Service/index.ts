@@ -54,7 +54,7 @@ export class Nip11Service {
             return map;
         });
         instance().then( ($route66: Route66) => {
-            $route66?.adapters?.cache?.upsertNip11(nip11)
+            $route66?.adapters?.cache?.upsertNip11(relay, nip11)
         })
     }
 }

@@ -10,11 +10,7 @@ export class NostrToolsAdapter extends WebsocketAdapter {
     super()
     this.connect();
   }
-
-  async ready(): Promise<void> {
-    return;
-  }
-
+  
   async newWorker(): Promise<Worker | SharedWorker> {
     return NostrToolsWorker();
   }

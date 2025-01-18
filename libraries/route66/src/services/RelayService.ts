@@ -89,11 +89,11 @@ export class RelayService extends Service {
     return checks;
   }
 
-  async fetchOperatorMeta(pubkey: string, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+  async fetchOperatorMeta(pubkey: string, callbacks?: SubscribeHandlers, relays: string[] = []): Promise<IEvent[]> {
     const filters: Filter[] = [
       { kinds: [0, 10002], authors: [pubkey] }
     ]
-    const relays = this.userMetaRelays;
+    relays = [...this.userMetaRelays, ...relays];
     const priority = 1000;
     const options: WebsocketAdapterOptions = {
       cache: true,

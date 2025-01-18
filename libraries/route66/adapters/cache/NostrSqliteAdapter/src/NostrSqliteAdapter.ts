@@ -6,7 +6,7 @@ import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAda
 import { IEvent } from "@nostrwatch/route66/models";
 
 import { WorkerRelayInterface } from "@nostrwatch/worker-relay"
-import { ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist/types"; 
+import { OkResponse, ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist/types"; 
 import { generateSubId, randomInRange } from "./utils";
 import { NostrEvent } from "nostr-tools";
 
@@ -17,6 +17,9 @@ export interface INostrSqliteAdapter extends ICacheAdapter {
     DUMP(): Promise<Uint8Array>;
     CLOSE(subId: string): Promise<boolean>;
     WIPE(): Promise<boolean>;
+
+    upsertNip11(relay: string, nip11: any): Promise<OkResponse>;
+    getNip11(relay: string): Promise<any>;
 }
 
 export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdapter {
@@ -35,6 +38,8 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     }
 
     setup(){}
+
+    async abort(): Promise<boolean>{ return true }
 
     /**
      * overload defaults with inop because WorkerRelayInterface handles it.
@@ -103,6 +108,14 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
 
     async putEvent(event: IEvent): Promise<void> {
         this.addEvent(event)
+    }
+
+    async upsertNip11(relay: string, nip11: any): Promise<OkResponse> {
+        return this.relay.upsertNip11({ relay, nip11 })
+    }
+
+    async getNip11(relay: string): Promise<any> {
+        return this.relay.getNip11(relay)
     }
 
     async EVENT(event: IEvent): Promise<void> {

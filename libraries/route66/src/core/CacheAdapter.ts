@@ -125,6 +125,9 @@ export interface ICacheAdapter extends IAdapter {
   CLOSE(subId: string): Promise<boolean>;
   WIPE(): Promise<boolean>;
 
+  upsertNip11?(relay: string, nip11: any): Promise<void>;
+  getNip11?(relay: any): Promise<any>;  
+
   addEvent(event: IEvent): Promise<void>;
   addEvents(events: IEvent[]): Promise<void>;
   putEvent(event: IEvent): Promise<void>;

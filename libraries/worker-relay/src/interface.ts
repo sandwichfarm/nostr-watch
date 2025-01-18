@@ -13,6 +13,11 @@ export interface InitAargs {
   insertBatchSize?: number;
 }
 
+export interface Nip11Args {
+  relay: string;
+  nip11: any;
+}
+
 export class WorkerRelayInterface {
   #worker: Worker | SharedWorker;
   #commandQueue: Map<string, (v: unknown, ports: ReadonlyArray<MessagePort>) => void> = new Map();
@@ -70,6 +75,14 @@ export class WorkerRelayInterface {
 
   async init(args: InitAargs) {
     return await this.#workerRpc<InitAargs, boolean>("init", args);
+  }
+
+  async upsertNip11(nip11Args: Nip11Args) {
+    return await this.#workerRpc<Nip11Args, OkResponse>("upsertNip11", nip11Args);
+  }
+
+  async getNip11(relay: string) {
+    return await this.#workerRpc<string, OkResponse>("getNip11", relay);
   }
 
   async event(ev: NostrEvent) {

@@ -7,19 +7,7 @@ import { debugLog } from "../debug";
 // import wasm file directly, this needs to be copied from https://sqlite.org/download.html
 import SqlitePath from "./sqlite3.wasm?url";
 import { runFixers } from "./fixers";
-
-
-type Addr = {
-  kind: number,
-  pubkey: string, 
-  dTag: string
-}
-
-interface NostrEventExtended extends NostrEvent {
-  relays: string[] | undefined;
-}
-
-type WorkerRelayResultsType = (string | NostrEventExtended)[]
+import { Nip11Args } from "interface";
 
 export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements RelayHandler {
   #sqlite?: Sqlite3Static;
@@ -47,7 +35,6 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     await this.#open(path);
     if (this.db) {
       await migrate(this);
-      // don't await to avoid timeout
       runFixers(this);
     }
   }
@@ -62,10 +49,37 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     this.#pool = await this.#sqlite.installOpfsSAHPoolVfs({});
     this.db = new this.#pool.OpfsSAHPoolDb(path);
     this.#log(`Opened ${this.db.filename}`);
-    /*this.db.exec(
-      `PRAGMA cache_size=${32 * 1024
-      }; PRAGMA page_size=8192; PRAGMA journal_mode=MEMORY; PRAGMA temp_store=MEMORY;`,
-    );*/
+  }
+
+  async upsertNip11(nip11Args: Nip11Args) {
+    const { relay, nip11 } = nip11Args;
+    const hash = deterministicHash(nip11);
+    if (this.db) {
+      this.db.exec(
+        `INSERT OR REPLACE INTO nip11s(hash, json) VALUES(?,?)`,
+        {
+          bind: [hash, JSON.stringify(nip11)],
+        },
+      );
+      this.db.exec(
+        `INSERT OR REPLACE INTO relay_nip11s(relay, hash) VALUES(?,?)`,
+        {
+          bind: [relay, hash],
+        },
+      );
+      return true;
+    }
+    return false;
+  }
+
+  async getNip11(relay: string) {
+    if (this.db) {
+      const res = this.db.selectArrays(
+        `SELECT json FROM nip11s WHERE hash = (SELECT hash FROM relay_nip11s WHERE relay = ?)`,
+        [relay],
+      );
+      return res?.at(0)?.at(0);
+    }
   }
 
   /**
@@ -142,100 +156,47 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     this.#log("Deleted", ids, deleted);
   }
 
-  #deleteByAddr(db: Database, addrs: Array<Addr>) {
-    if (addrs.length === 0) return;
-  
-    // Construct where clauses for the JOIN condition
-    const whereClauses = addrs
-      .map(() => `(e.kind = ? AND e.pubkey = ? AND t.key = ? AND t.value = ?)`)
-      .join(" OR ");
-    const params: Array<number | string> = addrs.flatMap(addr => [addr.kind, addr.pubkey, "d", addr.dTag]);
-  
-    // Delete events matching the conditions via JOIN
-    db.exec(
-      `DELETE FROM events
-       WHERE id IN (
-         SELECT e.id
-         FROM events e
-         JOIN tags t ON e.id = t.event_id
-         WHERE ${whereClauses}
-       )`,
-      { bind: params }
-    );
-    const deletedEvents = db.changes();
-  
-    // Delete associated search content matching the same conditions
-    db.exec(
-      `DELETE FROM search_content
-       WHERE id IN (
-         SELECT e.id
-         FROM events e
-         JOIN tags t ON e.id = t.event_id
-         WHERE ${whereClauses}
-       )`,
-      { bind: params }
-    );
-    const deletedSearchContent = db.changes();
-  
-    // Log the operation
-    this.#log("Deleted events and associated search content", { addrs, deletedEvents, deletedSearchContent });
-  }
-
   #insertEvent(db: Database, ev: NostrEvent) {
     if (this.#seenInserts.has(ev.id)) return false;
 
     const legacyReplaceableKinds = [0, 3, 41];
 
-    // Handle legacy and standard replaceable events [RE] (kinds 0, 3, 41, 10000-19999)
+    // Handle legacy and standard replaceable events (kinds 0, 3, 41, 10000-19999)
     if (legacyReplaceableKinds.includes(ev.kind) || (ev.kind >= 10_000 && ev.kind < 20_000)) {
-      const existingEvent = db.selectObject(
-        `SELECT id, created 
-        FROM events 
-        WHERE kind = ? AND pubkey = ? 
-        ORDER BY created DESC LIMIT 1`,
-        [ev.kind, ev.pubkey]
-      ) as { id: string; created: number } | undefined;
+      const oldEvents = db.selectValues(
+        `SELECT id FROM events WHERE kind = ? AND pubkey = ? AND created <= ?`,
+        [ev.kind, ev.pubkey, ev.created_at]
+      ) as Array<string>;
 
-      if (existingEvent) {
-        if (existingEvent.id === ev.id) {
-          // Already have this event
-          this.#seenInserts.add(ev.id);
-          return false;
-        } else if (existingEvent.created >= ev.created_at) {
-          // Incoming event is older or equal in created_at
-          return false;
-        } else {
-          // Delete the older event
-          this.#deleteById(db, [existingEvent.id]);
-        }
+      if (oldEvents.includes(ev.id)) {
+        // Already have this event
+        this.#seenInserts.add(ev.id);
+        return false;
+      } else {
+        // Delete older events of the same kind and pubkey
+        this.#deleteById(db, oldEvents);
       }
     }
 
-    // Handle parameterized replaceable events [PRE] (kinds 30000-39999)
+    // Handle parameterized replaceable events (kinds 30000-39999)
     if (ev.kind >= 30_000 && ev.kind < 40_000) {
       const dTag = ev.tags.find(a => a[0] === "d")?.[1] ?? "";
-      const existingEvent = db.selectObject(
-        `SELECT e.id, e.created
+
+      const oldEvents = db.selectValues(
+        `SELECT e.id
          FROM events e
          JOIN tags t ON e.id = t.event_id
-         WHERE e.kind = ? AND e.pubkey = ? AND t.key = ? AND t.value = ?
-         ORDER BY e.created DESC LIMIT 1`,
-        [ev.kind, ev.pubkey, "d", dTag]
-      ) as { id: string; created: number } | undefined;
+         WHERE e.kind = ? AND e.pubkey = ? AND t.key = ? AND t.value = ? AND created <= ?`,
+        [ev.kind, ev.pubkey, "d", dTag, ev.created_at]
+      ) as Array<string>;
 
-      if (existingEvent) {
-        if (existingEvent.id === ev.id) {
-          // Already have this event
-          this.#seenInserts.add(ev.id);
-          return false;
-        } else if (existingEvent.created >= ev.created_at) {
-          // Incoming event is older or equal in created_at
-          return false;
-        } else {
-          // Delete the older events
-          const { kind, pubkey } = ev;
-          this.#deleteByAddr(db, [{ kind, pubkey, dTag }]);
-        }
+      if (oldEvents.includes(ev.id)) {
+        // Already have this event
+        this.#seenInserts.add(ev.id);
+        return false;
+      } else {
+        // Delete older events with the same kind, pubkey, and d tag
+        this.#deleteById(db, oldEvents);
       }
     }
 
@@ -259,7 +220,6 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     );
 
     const insertedEvents = db.changes();
-    this.#log(`Inserted event ${ev.id}`);
     if (insertedEvents > 0) {
       // Insert tags
       for (const t of ev.tags.filter(a => a[0].length === 1)) {
@@ -300,7 +260,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
   /**
    * Query relay by nostr filter
    */
-  req(id: string, req: ReqFilter): WorkerRelayResultsType {
+  req(id: string, req: ReqFilter) {
     const start = unixNowMs();
 
     const [sql, params] = this.#buildQuery(req);
@@ -317,7 +277,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
         };
       }) ?? [];
     const time = unixNowMs() - start;
-    this.#log(`Query ${id} results took ${time.toLocaleString()}ms`);
+    this.#log(`Query ${id} results took ${time.toLocaleString()}ms`, req);
     return results;
   }
 
@@ -416,15 +376,6 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
       params.push(...vArray);
       tx++;
     }
-    const andTags = Object.entries(req).filter(([k]) => k.startsWith("&"));
-    for (const [key, values] of andTags) {
-      for (const value of values as Array<string>) {
-        sql += ` inner join tags t_${tx} on events.id = t_${tx}.event_id and t_${tx}.key = ? and t_${tx}.value = ?`;
-        params.push(key.slice(1));
-        params.push(value);
-        tx++;
-      }
-    }
     if (req.search) {
       sql += " inner join search_content on search_content.id = events.id";
       conditions.push("search_content match ?");
@@ -516,4 +467,104 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
   }
 
   #fixMissingTags(db: Database) {}
+}
+
+
+/**
+ * Determines the type of the given value.
+ */
+function getType(value: any): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  if (value instanceof Date) return 'date';
+  if (value instanceof RegExp) return 'regexp';
+  if (value instanceof Map) return 'map';
+  if (value instanceof Set) return 'set';
+  return typeof value;
+}
+
+/**
+* Serializes any JavaScript value into a deterministic string.
+* Ensures that object keys are sorted to maintain consistency.
+*/
+function deterministicStringify(value: any): string {
+  const seen = new WeakSet();
+
+  function stringify(val: any): string {
+      const type = getType(val);
+
+      switch (type) {
+          case 'undefined':
+              return 'undefined';
+          case 'null':
+              return 'null';
+          case 'boolean':
+          case 'number':
+          case 'bigint':
+          case 'symbol':
+              return val.toString();
+          case 'string':
+              return JSON.stringify(val);
+          case 'date':
+              return `Date:${val.toISOString()}`;
+          case 'regexp':
+              return `RegExp:${val.toString()}`;
+          case 'function':
+              return `Function:${val.toString()}`;
+          case 'array':
+              return `[${val.map((item: any) => stringify(item)).join(',')}]`;
+          case 'map': {
+              const mapEntries = Array.from(val.entries() as Iterable<[string, number]>).sort(([a], [b]) => {
+                  if (a < b) return -1;
+                  if (a > b) return 1;
+                  return 0;
+              });
+          
+              return `Map:{${mapEntries.map(([k, v]) => `${stringify(k)}=>${stringify(v)}`).join(',')}}`;
+          }                     
+          case 'set':
+              const setEntries = Array.from(val.values()).sort();
+              return `Set:{${setEntries.map(item => stringify(item)).join(',')}}`;
+          case 'object':
+              if (seen.has(val)) {
+                  throw new TypeError('Converting circular structure to string');
+              }
+              seen.add(val);
+              const keys = Object.keys(val).sort();
+              const objString = `{${keys.map(key => `${JSON.stringify(key)}:${stringify(val[key])}`).join(',')}}`;
+              seen.delete(val);
+              return objString;
+          default:
+              return '';
+      }
+  }
+
+  return stringify(value);
+}
+
+/**
+* Implements the FNV-1a hash algorithm.
+* Returns a hexadecimal string representation of the hash.
+*/
+function fnv1aHash(str: string): string {
+  let hash = 0x811c9dc5; // FNV offset basis
+  const prime = 0x01000193; // FNV prime
+
+  for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i);
+      hash = (hash * prime) >>> 0;
+  }
+
+  // Convert to hexadecimal and pad with zeros if necessary
+  return ('0000000' + hash.toString(16)).slice(-8);
+}
+
+/**
+* Generates a deterministic hash for any given input.
+* @param value The input value to hash.
+* @returns A hexadecimal string representing the hash.
+*/
+export function deterministicHash(value: any): string {
+  const serialized = deterministicStringify(value);
+  return fnv1aHash(serialized);
 }

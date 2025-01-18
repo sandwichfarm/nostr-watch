@@ -20,6 +20,7 @@ import NostrSqliteAdapter from '@nostrwatch/route66-cacheadapter-nostrsqlite';
 import NostrToolsAdapter from '@nostrwatch/route66-wsadapter-nostrtools';
 import type { Nip05Service } from '../services/Nip05Service';
 import type { Nip05 } from 'nostr-tools/nip05';
+import { nip11Service, relaysWithNip11s, relaysWithoutNip11s } from '../stores';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -126,7 +127,6 @@ export const instance = async (): Promise<Route66> => {
 
 export const loadMonitorsFromCache = () => {
     const monitors = StateManager.get('cache:monitors')
-    console.log('Loading monitors from cache:', monitors.length);
     if(monitors) {
         $route66?.services?.monitors?.loadMonitors(monitors);
     }
@@ -167,9 +167,11 @@ export const bootstrap = async () => {
         isBootstrapping.set(true)
         $route66?.services?.monitors?.bootstrap().then( () => {
             isBootstrapping.set(false)
-            updateLastSync()
+            seedFromCache();
+            updateLastSync();
             beginLiveSync({ onevents })
             removeStaleChecksFromStore()
+            fetchNip11s();
         })
     }
     else {
@@ -181,9 +183,24 @@ export const bootstrap = async () => {
     }
 }
 
+const fetchNip11s = async () => {
+    const $nip11Service = get(nip11Service);
+    const $relaysWithoutNip11s = get(relaysWithoutNip11s);
+    const $relaysWithNip11s = get(relaysWithNip11s);
+    const relays = Array.from(new Set([...$relaysWithoutNip11s, ...$relaysWithNip11s]));
+    if($relaysWithoutNip11s.length === 0) return;
+    const promises: Promise<any>[] = [];
+    for(const relay of relays){
+        promises.push(new Promise( resolve => {
+            $nip11Service.check(relay).then( resolve )
+        }));
+    }
+}
+
 type LiveSyncResumer = () => Promise<void>
 
 export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {
+    console.log('starting live sync')
     isLivesyncing.set(true)
     if(!$route66){
         $route66 = await instance();
@@ -192,6 +209,7 @@ export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void
 }
 
 export const stopLiveSync = async (): Promise<void> => {
+    console.log('stopping live sync')
     isLivesyncing.set(false)
     if(!$route66){
         $route66 = await instance();
@@ -200,8 +218,8 @@ export const stopLiveSync = async (): Promise<void> => {
 }
 
 export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
-    console.log('Lifecycle:pauseLiveSync')
-    let wasLiveSyncing = get(isLivesyncing) 
+    console.log('pausing live sync')
+    let wasLiveSyncing = get(isLivesyncing)? true: false;
     if(!$route66){
         $route66 = await instance();
     }
@@ -238,8 +256,6 @@ export const seedFromCache = async () => {
     const promises: Promise<any>[] = [];
     $route66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
         promises.push(new Promise( resolve => {
-            //console.log('!!! begin seeding', monitor.pubkey)
-            //console.log('loading from cache', monitor.pubkey)
             $route66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey).then(resolve)
         }));
     })

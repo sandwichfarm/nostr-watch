@@ -101,14 +101,11 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
       console.error('json parsing failed')
       return this.base.websocket_hard_fail(this.notNip01Compat(e));
     }
-
-    const validEventTypes = ['EVENT', 'EOSE', 'OK', 'NOTICE', 'LIMITS', 'AUTH'];
-
-    if(!validEventTypes.includes(ev?.[0])) {
+    const validResponseTypes = ['EVENT', 'EOSE', 'OK', 'NOTICE', 'LIMITS', 'AUTH', 'CLOSED'];
+    if(!validResponseTypes.includes(ev?.[0])) {
       console.error('event type failed', typeof ev, ev?.[0])
       return this.base.websocket_hard_fail(this.notNip01Compat(ev));
     }
-
     if (!ev || !(ev instanceof Array) || !ev.length) return;
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.handle_nostr_event(): ${ev[0]}`);
 
@@ -149,6 +146,10 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
 
       case 'LIMITS':
         this.base.on_limits(ev[1]);
+        break;
+
+      case 'CLOSED': 
+        this.base.on_closed(ev[1], ev?.[2]);
         break;
 
       case 'AUTH':

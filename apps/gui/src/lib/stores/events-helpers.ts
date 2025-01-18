@@ -18,6 +18,7 @@ const getMonitor = (pubkey: string): Monitor => {
 }
 
 export const addEventsToStore = (_events: IEvent[]) => {
+    console.log(`addEventsToStore: ${_events.length} events`)
     queue.add(async () => {
         await delay(100)
         events.update((map) => {

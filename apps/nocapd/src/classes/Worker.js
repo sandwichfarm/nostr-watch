@@ -474,12 +474,14 @@ export class NWWorker {
       const resultHasKey = result?.[key]?.data && Object.keys(result[key].data)?.length > 0
       if(resultHasKey){
         const persist_result = async (resolve, reject) => { 
-          
           this.log.debug(`persist_result(${key})`)
           const checked_at = result.checked_at
           const data = (key === 'ssl' && result.ssl.duration > 0)? JSON.stringify(sslData(result?.ssl?.data ?? {})): JSON.stringify( result[key].data ?? {} )
           const check_record = { url, relay_id, checked_at, data, hash: hash( result[key].data) }
-          const check_id = await this.rcache.check[key].insert(check_record).catch( e => this.log.error(`Could not persist ${url} to ${key} check: ${e}`))
+          const check_id = await this.rcache.check[key].insert(check_record).catch( e => {
+            console.log(`persist_result:${key}`)
+            return this.log.error(`Could not persist ${url} to ${key} check: ${e}`)
+          })
           
           if(!check_id)
             reject(new Error(`Could not persist ${check_id} check`))

@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 
 import Logger from "@nostrwatch/logger";
-import { parseRelayNetwork } from "@nostrwatch/utils";
+import { capitalize, parseRelayNetwork } from "@nostrwatch/utils";
 
 import { ConfigValidator, ConfigValidatorInterface, IConfig } from "../validators/ConfigValidator";
 import { IResult, ResultValidator, type IResultData } from "../validators/ResultValidator";
@@ -640,29 +640,44 @@ export default class Base {
    * @private
    * @returns null
    */ 
+  on_closed(subId: string, message?: string): void {
+    this.cbcall('closed');
+    this.track('relay', 'closed', { subId, message });
+    this.handle_close();
+  }   
+
+  /**
+   * on_event
+   * Special Nostr event triggered by Adapter
+   * 
+   * @private
+   * @returns null
+   */
+  on_event(subid: string, ev: any): void {
+    this.track('relay', 'event', ev.id);
+
+    // Cast `this.adapters.websocket` as IAdapter to ensure TypeScript knows it's an instance
+    const handler = (this.adapters?.websocket as IAdapter)?.handle_event;
+
+    if (!handler) return;
+
+    handler(subid, ev);
+  }
+
+
+  /**
+   * on_close
+   * Standard WebSocket event triggered by Adapter 
+   * 
+   * @private
+   * @returns null
+   */ 
   on_close(): void {
     this.cbcall('close');
     this.track('relay', 'close', undefined);
     this.handle_close();
   }
 
-/**
- * on_event
- * Special Nostr event triggered by Adapter
- * 
- * @private
- * @returns null
- */
-on_event(subid: string, ev: any): void {
-  this.track('relay', 'event', ev.id);
-
-  // Cast `this.adapters.websocket` as IAdapter to ensure TypeScript knows it's an instance
-  const handler = (this.adapters?.websocket as IAdapter)?.handle_event;
-
-  if (!handler) return;
-
-  handler(subid, ev);
-}
 
   /**
    * on_limits
@@ -863,8 +878,13 @@ on_event(subid: string, ev: any): void {
           message = err.open.message
         else if(typeof err ==='string')
           message = err
-        else 
+        else if(typeof err === 'object' && !Array.isArray(err))
+          message = Object.entries(err)
+            .map(([key, value]) => `${capitalize(key)} is ${value}`)
+            .join(', ') + '.';
+        else {
           message = "unknown error"
+        }
       else
         message = "Check skipped because no connection could be made to relay's websocket."
       this?.results?.set(key as keyof IResult, { data: false, duration: -1, status: "error", message }) 

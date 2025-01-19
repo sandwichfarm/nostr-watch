@@ -221,7 +221,7 @@
                     on:input={handleGlobalFilterChange}
                 />
 
-                <DataTableShowResults />
+                <DataTableShowResults {config}  />
                 <DataTablePaginator {tableInstance} />
                 <Popover.Root>
                     <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">⚙</Popover.Trigger>

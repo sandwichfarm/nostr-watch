@@ -204,6 +204,11 @@ export class Service {
     }
 
     const cacheEvents = await this.fetchFromCache(filters, callbacks);
+    if(!cacheEvents?.length) {
+      console.warn('Fetch returned no events');
+      return []
+    }
+    
     cacheEvents.forEach(maybeAddEventToMap);
 
     const _callbacks: SubscribeHandlers = {};

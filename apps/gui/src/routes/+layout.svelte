@@ -166,7 +166,6 @@
     }
   }
 
-  // Add event listener for 'd' key to toggle debugger visibility
   onMount(() => {
     checkSupport();
   
@@ -191,7 +190,7 @@
         onIdle: handleIdle,
         onActive: handleActive,
       });
-      console.log('IdleDetector initialized on component mount.');
+      console.log('IdleDetector initialized.');
     }
   
     const toggleDebugger = (event: KeyboardEvent) => {

@@ -47,10 +47,10 @@
         {/if}
         {#if otherRelaysCount > 0}
         <div class="text-white/80 my-6">
-            {name} operates <Badge class="rounded-full">{otherRelaysCount}</Badge> other relays
+            <span class="bg-white/5 py-1 px-2 rounded-sm">{name}</span> operates <Badge class="rounded-full">{otherRelaysCount}</Badge> other relays
         </div>
-        <OperatorRelays {pubkey} {relayUrl} {monitors} bind:otherRelaysCount />
         {/if}
+        <OperatorRelays {pubkey} {relayUrl} {monitors} bind:otherRelaysCount />
     </Card.Content>
 </Card.Root>
 {/if}

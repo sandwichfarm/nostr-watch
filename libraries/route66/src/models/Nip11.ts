@@ -32,6 +32,9 @@ export class Nip11 {
   private _hash: string;
 
   constructor(nip11: RelayInformation) {
+    if(typeof nip11 === 'string'){
+      nip11 = JSON.parse(nip11);
+    }
     this._json = nip11;
     this._hash = deterministicHash(this._json)
   }

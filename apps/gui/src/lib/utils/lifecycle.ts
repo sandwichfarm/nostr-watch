@@ -64,7 +64,7 @@ export const bindBootstrapEmitters = () => {
     });    
 
     $route66.on('events', (_events: any) => {
-        console.log('Svelte Received events:', _events.length);
+        console.log('Svelte Received events:', _events.length, _events);
         addEventsToStore(_events)
     });
 };

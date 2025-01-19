@@ -17,29 +17,34 @@ const getMonitor = (pubkey: string): Monitor => {
     return $route66?.services?.monitors?.map.get(pubkey)
 }
 
-export const addEventsToStore = (_events: IEvent[]) => {
-    console.log(`addEventsToStore: ${_events.length} events`)
+export const addEventsToStore = async (_events: IEvent[]) => {
+    console.log(`addEventsToStore: ${_events.length} events`);
     queue.add(async () => {
-        await delay(100)
-        events.update((map) => {
-            _events.forEach(async (event: IEvent) => {
-                //temporary fix for a bug in relay monitors.
-                // const aTag = event.tags.find((t: string[]) => t[0] === 'a')
-                // if(aTag) return;
-                //
+        await delay(10);
+        events.update((oldMap) => {
+            const newMap = new Map(oldMap);
+            for (const event of _events) {
+                // Temporary fix for a bug in relay monitors.
+                // const aTag = event.tags.find((t: string[]) => t[0] === 'a');
+                // if (aTag) continue;
+
                 const key = eventKey(event);
-                if(!key) return;
+                if (!key) continue;
+
                 const monitor = getMonitor(event.pubkey);
-                const online = monitor?.relayIsOnline(event)
-                monitor?.maybeUpdateLastActive?.(event); 
-                if(!online) return;
-                const existing = map.get(key);
-                if (existing && existing.id === event.id) return;
-                if (!event?.created_at || (existing && (existing.created_at ?? 0) > event.created_at)) return;
-                map.set(key, new Nip66Event(event));
-                await delay(1)
-            });
-            return map;
+                const online = monitor?.relayIsOnline(event);
+                monitor?.maybeUpdateLastActive?.(event);
+
+                if (!online) continue;
+
+                const existing = newMap.get(key);
+                if (existing && existing.id === event.id) continue;
+                if (!event?.created_at || (existing && (existing.created_at ?? 0) > event.created_at)) continue;
+
+                newMap.set(key, new Nip66Event(event));
+            }
+
+            return newMap;
         });
-    })
-}
+    });
+};

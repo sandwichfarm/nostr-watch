@@ -49,15 +49,6 @@
     </div>
 {/if}
 
-<!-- <JsonHighlighter
-    jsonString={JSON.stringify($nip11?.json, null, 4)}
-    ajvResult={$validationResult}
-    />
-
-
- -->
-
-
 {#if $nip11 && $validationResult} 
     <JsonHighlighter
     jsonString={JSON.stringify($nip11?.json, null, 4)}

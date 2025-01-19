@@ -231,6 +231,10 @@ export class MonitorService extends Service {
       StateManager.emit('activity', 'monitors/bootstrap/checks', 'update', { value })
     }
     const onevents = (events: IEvent[]) => {
+      if(!events?.length) {
+        console.warn('bootstrapMonitorsChecks: no events found');
+        return;
+      }
       events.forEach(onevent)
       value += events.length
       StateManager.emit('activity', 'monitors/bootstrap/checks', 'update', { value })
@@ -445,7 +449,7 @@ export class MonitorService extends Service {
     }
     let highestTimestamp: number = 0;
     const onevents: SubscribeHandlers['onevents'] = (events: IEvent[]) => {
-      console.log('!!! liveSync: onevents', events.length);
+      console.log('!!! liveSync: onevents', events?.length);
   
       const now = Math.round(Date.now() / 1000);
       let highestTimestamp = startedAt; // Initialize to startedAt to avoid unnecessary checks later

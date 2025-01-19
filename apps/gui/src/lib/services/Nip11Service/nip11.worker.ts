@@ -7,7 +7,6 @@ const check = async (relay: string): Promise<nip11.RelayInformation> => {
 
 const timeoutMessage = (relay: string) => {
     const error = `Request for NIP-11 from ${relay} timed out.`
-    console.error('TIMEOUT ERROR', error)
     self.postMessage({ relay, error } as Nip11ServiceMessage)
 }
 
@@ -29,12 +28,10 @@ self.onmessage = ({ data }) => {
         .catch((error: any) => { 
             if(timedOut) return;
             clearTimeout(timeout)
-            console.error('CHECK CATCH ERROR', error)
             self.postMessage({ relay, error } as Nip11ServiceMessage)
         })
 }
 
 self.onerror = (err: any) => {
-    //console.log('WORKER ERROR', err)
     self.postMessage({ error: 'timed out.' } as Nip11ServiceMessage)
 }

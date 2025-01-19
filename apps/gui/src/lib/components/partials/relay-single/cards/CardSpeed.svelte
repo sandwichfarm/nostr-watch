@@ -127,7 +127,7 @@
                 <div>Speed test commencing...</div>
             {:else}
                 {#if error}
-                    <div>{error}</div>
+                    <div>Error: {error}</div>
                 {:else}
                     <div>Could not connect.</div>
                 {/if}

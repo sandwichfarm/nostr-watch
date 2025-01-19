@@ -7,6 +7,8 @@ import { getRelayErrorSubject, setRelayError, type RelayErrorMessages } from '$l
 import { relaysErrors } from '$lib/stores/relay-errors';
 import { instance } from '$lib/utils/lifecycle';
 import type { Route66 } from '@nostrwatch/route66';
+import PQueue from 'p-queue';
+const queue = new PQueue({concurrency: 50});
 
 export type Nip11ServiceMessage = {
     relay: string,
@@ -28,15 +30,17 @@ export class Nip11Service {
     }
     
     async check(relay: string): Promise<Nip11 | undefined> {
-        this.worker.postMessage({ relay })
-        let result: Nip11 | undefined; 
-        let error: RelayErrorMessages | undefined
-        while(!result && !error){
-            result = (get(nip11sLocal) as Map<string, Nip11>)?.get(relay)
-            error = getRelayErrorSubject(relay, 'resolve', 'nip11')
-            await new Promise( resolve => setTimeout( resolve, 200 ))
-        }
-        return result;
+        queue.add(async () => {
+            this.worker.postMessage({ relay })
+            let result: Nip11 | undefined; 
+            let error: RelayErrorMessages | undefined
+            while(!result && !error){
+                result = (get(nip11sLocal) as Map<string, Nip11>)?.get(relay)
+                error = getRelayErrorSubject(relay, 'resolve', 'nip11')
+                await new Promise( resolve => setTimeout( resolve, 200 ))
+            }
+            return result;
+        });
     }
 
     private onmessage(message: MessageEvent<Nip11ServiceMessage>){

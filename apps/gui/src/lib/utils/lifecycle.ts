@@ -69,25 +69,8 @@ export const bindBootstrapEmitters = () => {
     });
 };
 
-// export const bindLiveSubscriptionEmitters = () => {
-//     console.log('bindLiveSubscriptionEmitters')
-//     if (!$route66 || typeof $route66.on !== 'function') {
-//         throw new Error('Invalid nip66Instance: missing `on` method.');
-//     }
-//     $route66.on('event', (event: any) => {
-//         const key = eventKey(event);
-//         if (!key) return;
-//         events.update((currentEvents: Map<string, any>) => {
-//             const existing = currentEvents.get(key);
-//             if (existing && existing.id === event.id) return currentEvents;
-//             if (existing && existing.created_at > event.created_at) return currentEvents;
-//             currentEvents.set(key, new Nip66Event(event));
-//             return currentEvents; 
-//         });
-//     });
-// }
-
 export const instance = async (): Promise<Route66> => {
+    console.log('Lifecycle:instance')
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
         throw new Error('Window or navigator not available.');
     }
@@ -137,6 +120,7 @@ export const loadMonitorsFromCache = () => {
 }
 
 export const bootstrapMonitorData = async () => {
+    console.log('bootstrapMonitorData')
     if(!$route66){
         $route66 = await instance();
     }
@@ -167,6 +151,7 @@ export const bootstrap = async () => {
         }
     }
     if( shouldSync() ){
+        console.log('bootstrap:syncing')
         if( get(isBootstrapping) ) return;
         isBootstrapping.set(true)
         await $route66?.services?.monitors?.bootstrap().then( async () => {
@@ -179,6 +164,7 @@ export const bootstrap = async () => {
         })
     }
     else {
+        console.log('bootstrap:skipping')
         await new Promise( (resolve) => setTimeout(resolve, 1000) )         
         seedFromCache().then( () => {
             if(get(isLivesyncing)) return;
@@ -196,31 +182,21 @@ const bootstrapOperatorMeta = async () => {
     let filter: Filter = structuredClone(emptyFilter);
     
     for (const pubkey of $operatorPubkeysValid) {
-        // Ensure `filter.authors` is initialized as an array
         if (!Array.isArray(filter.authors)) {
             filter.authors = [];
         }
     
-        // Check if the current filter's authors list has exceeded 20
         if (filter.authors.length > 20) {
             filters.push(filter);
-            filter = structuredClone(emptyFilter); // Reset the filter
-            console.log(`chunk: reset: filter`, filter, filter.authors.length);
-    
-            // If the `filters` list has exceeded 10, push it to chunks and reset
+            filter = structuredClone(emptyFilter);
             if (filters.length > 10) {
-                console.log(`chunk: reset: filters`, filters, filters.length);
                 chunks.push([...filters]);
                 filters = [];
             }
         }
-    
-        // Add the current pubkey to the filter's authors
-        console.log(`chunk: add: ${pubkey} to filter`, filter, filter.authors.length);
         (filter.authors as string[]).push(pubkey);
     }
     
-    // Don't forget to handle remaining filters and the last filter in progress
     if ((filter.authors as string[]).length > 0) {
         filters.push(filter);
     }
@@ -333,14 +309,13 @@ export const seedFromCache = async () => {
         }));
     })
     const cachedEvents = (await Promise.all(promises)).flat();
-    // StateManager.emit(`events`, cachedEvents);
     addEventsToStore(cachedEvents ?? []);
     isSeeded.set(true)
 }
 
 export const removeStaleChecksFromStore = async () => {
     const eventsArr: IEvent[] = get(eventsArray)
-    if(!eventsArr.length) return //console.log('no events to check for staleness');
+    if(!eventsArr.length) return
     const oldKeys: string[] = []
     for(const check of eventsArr.filter( event => event.kind === 30166 )){
         const monitor = $monitorsMap.get(check.pubkey);
@@ -348,7 +323,7 @@ export const removeStaleChecksFromStore = async () => {
         if(monitor.relayIsOnline(check)) continue;
         oldKeys.push(eventKey(check));
     }
-    if(oldKeys.length === 0) return //console.log('no stale checks found');
+    if(oldKeys.length === 0) return
     const $events: Map<string, NostrEvent> = get(events);
     for(const key of oldKeys){
         $events.delete(key);

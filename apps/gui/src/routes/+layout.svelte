@@ -76,6 +76,7 @@
     setTabState('leader');
     try {
       await boot(); 
+      seedFromCache()
       console.log('Leader tab: DB initialized.');
     } catch (error) {
       console.error('[Lifecycle] Error in onLeaderAcquired:', error);
@@ -149,18 +150,20 @@
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(userAgent);
     const browserInfo = getBrowserInfo();
-    const isSafari = browserInfo?.name.toLowerCase().includes('safari');
+    // const isSafari = browserInfo?.name.toLowerCase().includes('safari');
   
-    if (isSafari || isMobile) {
+    if (isMobile) {
       unsupported.set(true);
   
-      if (isMobile && page.url.pathname !== '/mobile') {
+      if (isMobile && $page.url.pathname !== '/mobile') {
         goto('/mobile'); 
       }
+    // } else if (isSafari) {
+    //   unsupported.set(true);
   
-      if (isSafari && page.url.pathname !== '/unsupported') {
-        goto('/unsupported');
-      }
+    //   if (isSafari && $page.url.pathname !== '/unsupported') {
+    //     goto('/unsupported');
+    //   }
     } else {
       unsupported.set(false);
     }
@@ -218,8 +221,8 @@
     boot();
   };
 
-  // Helper function to set app state with logging
   function setTabState(newState: TabStateType) {
+    if($tabState === newState) return;
     tabState.update(current => {
       console.log(`TabState changing from ${current} to ${newState}`);
       return newState;
@@ -237,7 +240,7 @@
     <div class="flex flex-col items-center justify-center h-screen px-4">
       <div class="text-2xl">Zzz</div>
     </div>
-  {:else if $tabState === 'leader'}
+  {:else if $tabState === 'leader' || $unsupported}
     <!-- Leader State -->
     <Header />
     <div id="content-wrapper" class="mt-16 block">

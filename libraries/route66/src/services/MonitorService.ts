@@ -110,6 +110,7 @@ export class MonitorService extends Service {
   }
   
   async sync(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    console.log('sync')
     let index = 0
     let checkCounts = new Map();
     const updateCounts = (events: IEvent[]) => {
@@ -121,19 +122,23 @@ export class MonitorService extends Service {
       }
     }
     const onevent = (event: IEvent) => { 
+      console.log('onevent', event)
       updateCounts([event]);
       callbacks?.onevent?.(event)
     };
     const onevents = (events: IEvent[]) => {
+      console.log('onevents', events.length)
       updateCounts(events);
       callbacks?.onevents?.(events);
     }
     const oneose = () => { 
+      console.log('oneose')
       this.updateCheckpoint(args?.filters![index], checkCounts); 
       index++;
       callbacks?.oneose?.();
     }
     args.sync = true;
+    console.log('sync: args', args)
     const results = await this._fetch(args, { onevents, oneose, onevent });
     this.updateCheckpoints(args?.filters || [], checkCounts);
     return results;
@@ -211,6 +216,7 @@ export class MonitorService extends Service {
   }
 
   async bootstrapMonitors(): Promise<void> {
+    console.log('bootstrapMonitors')
     await this.fetchMonitorRegistrations();
     await this.fetchMonitorMeta();
     await this.ensureMonitorsActive();
@@ -223,6 +229,7 @@ export class MonitorService extends Service {
   }
 
   async bootstrapMonitorsChecks(options?: Partial<WebsocketAdapterOptions>): Promise<IEvent[] | boolean | undefined> {  
+    console.log('bootstrapMonitorsChecks')
     StateManager.emit('activity', 'monitors/bootstrap/checks', 'begin')
     let value = 0
     const onevent = (event: IEvent) => {
@@ -236,7 +243,6 @@ export class MonitorService extends Service {
         return;
       }
       events.forEach(onevent)
-      value += events.length
       StateManager.emit('activity', 'monitors/bootstrap/checks', 'update', { value })
     }
     const result = await this.syncMonitorsChecks(options, true, { onevent, onevents });
@@ -273,27 +279,29 @@ export class MonitorService extends Service {
   }
   
   async fetchMonitorRegistrations(): Promise<void> {
+    console.log('fetchMonitorRegistrations')
     StateManager.emit('activity', 'monitors/bootstrap/registrations', 'begin')
     let totalFound = 0
     const onevent = (event: IEvent) => {
+      // console.log('onevent', event)
         if(event.kind !== 10166) return;
         this.manager.handleEvent(event);
         totalFound++
         StateManager.emit('activity', 'monitors/bootstrap/registrations', 'update', { value: totalFound})
     }
-    const result = await this.fetch(
-      {
-        filters: [{kinds: [10166]}], 
-        relays: this.nip66Relays, 
-        options: {
-          cache: true,
-          returnResults: true,
-          keepAlive: false,
-          stream: true,
-        }
-      }, 
-      { onevent } );
-      StateManager.emit('activity', 'monitors/bootstrap/registrations', 'finish', result)
+    const args = {
+      filters: [{kinds: [10166]}], 
+      relays: this.nip66Relays, 
+      options: {
+        cache: true,
+        returnResults: true,
+        keepAlive: false,
+        stream: true,
+      }
+    }
+    console.log('fetchMonitorRegistrations: args', args)
+    const result = await this.subscribe( args, { onevent } );
+    StateManager.emit('activity', 'monitors/bootstrap/registrations', 'finish', result)
   }
 
   async fetchMonitorMeta(): Promise<void> {
@@ -312,18 +320,17 @@ export class MonitorService extends Service {
       StateManager.emit('activity', 'monitors/bootstrap/meta', 'update', { value: totalEvents});
     };
     const filters = authors.map(author => ({ authors: [author], kinds: [0, 10002] }))
-    await this.fetch(
-      {
-        filters, 
-        relays: this.userMetaRelays,
-        options: {
-          cache: true,
-          returnResults: true,
-          keepAlive: false,
-          stream: true
-        }
-      }, 
-      { onevent, onevents } );
+    const args =  {
+      filters, 
+      relays: this.userMetaRelays,
+      options: {
+        cache: true,
+        returnResults: true,
+        keepAlive: false,
+        stream: true
+      }
+    }
+    await this.subscribe( args, { onevent, onevents } );
     this.array.forEach((monitor) => {
       monitor.relays.forEach((relay:string) => this.addRelay('route66', relay));
     });
@@ -337,12 +344,14 @@ export class MonitorService extends Service {
     const filters = [checkFilter];
     const options = defaultWebsocketAdapterOptions;
     const relays = this.nip66Relays;
-    const result = await this.fetch({ filters, relays, options });
+    const result = await this.subscribe({ filters, relays, options });
     return (result instanceof Array)? result.length > 0: (result as unknown as boolean)
   }
 
   async syncMonitorsChecks(options?: Partial<WebsocketAdapterOptions>, enabled?: boolean, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+    console.log('syncMonitorsChecks')
     const filters: Filter[] = this.getMonitorCheckFilters(enabled);
+    console.log('syncMonitorsChecks: filters', filters)
     const defaultOptions = {
       cache: true,
       returnResults: true, 
@@ -352,12 +361,12 @@ export class MonitorService extends Service {
     }
     let count = 0;
     const onevent = (event: IEvent) => {
-      count++;
       callbacks?.onevent?.(event);
       StateManager.emit(`event`, event);
       // StateManager.emit(`event:${event.kind}`, event);
     };
     const onevents = (events: IEvent[]) => {
+      // console.log('onevents', events.length)
       count += events.length;
       callbacks?.onevents?.(events);
       StateManager.emit(`events`, events);
@@ -369,6 +378,7 @@ export class MonitorService extends Service {
     else {
       options = {...defaultOptions, ...options}
     }
+    console.log('syncMonitorsChecks: options', options)
     const result: IEvent[] | boolean | undefined = await this.sync( { relays, filters, options: options as WebsocketAdapterOptions }, { onevent, onevents } );
     // StateManager.emit('bootstrap:checks:complete')
     return result;

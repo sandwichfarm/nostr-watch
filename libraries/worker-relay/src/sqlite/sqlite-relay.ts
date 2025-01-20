@@ -20,6 +20,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
    * Initialize the SQLite driver
    */
   async init(path: string) {
+    console.log('WebAssembly.instantiateStreaming', typeof WebAssembly?.instantiateStreaming !== undefined ? 'Supported' : 'Not Supported');
     if (this.#sqlite) return;
     this.#sqlite = await sqlite3InitModule({
       locateFile: (path, prefix) => {

@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
           if (code.includes('$state.frozen')) {
             code = code.replace(/\$state\.frozen/g, '$state.raw');
             fs.writeFileSync(modulePath, code, 'utf-8');
-            //console.log('Patched svelte-speedometer: replaced "$state.frozen" with "$state.raw"');
+            console.log('Patched svelte-speedometer: replaced "$state.frozen" with "$state.raw"');
           }
         }
       },
@@ -73,40 +73,40 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       sveltekit(),
-      patchSvelteSpeedometer(), // Add the patch plugin
-      {
-        name: 'image-proxy-middleware',
-        configureServer(server) {
-          server.middlewares.use('/images', async (req, res, next) => {
-            try {
-              const imagePath = req.url;
-              if (!imagePath) {
-                res.statusCode = 400;
-                res.end('Bad Request: Image path is missing.');
-                return;
-              }
+      // patchSvelteSpeedometer(), // Add the patch plugin
+      // {
+      //   name: 'image-proxy-middleware',
+      //   configureServer(server) {
+      //     server.middlewares.use('/images', async (req, res, next) => {
+      //       try {
+      //         const imagePath = req.url;
+      //         if (!imagePath) {
+      //           res.statusCode = 400;
+      //           res.end('Bad Request: Image path is missing.');
+      //           return;
+      //         }
 
-              const remoteUrl = `https://m.primal.net${imagePath}`;
-              const response = await fetch(remoteUrl, { method: 'GET', redirect: 'follow' });
+      //         const remoteUrl = `https://m.primal.net${imagePath}`;
+      //         const response = await fetch(remoteUrl, { method: 'GET', redirect: 'follow' });
 
-              if (!response.ok) {
-                res.statusCode = response.status;
-                res.end(`Failed to fetch image: ${response.statusText}`);
-                return;
-              }
+      //         if (!response.ok) {
+      //           res.statusCode = response.status;
+      //           res.end(`Failed to fetch image: ${response.statusText}`);
+      //           return;
+      //         }
 
-              res.setHeader('Access-Control-Allow-Origin', '*');
-              const contentType = response.headers.get('content-type') || 'image/jpeg';
-              res.setHeader('Content-Type', contentType);
-              response.body.pipe(res);
-            } catch (error) {
-              console.error('Error in image proxy middleware:', error);
-              res.statusCode = 500;
-              res.end('Internal Server Error');
-            }
-          });
-        },
-      },
+      //         res.setHeader('Access-Control-Allow-Origin', '*');
+      //         const contentType = response.headers.get('content-type') || 'image/jpeg';
+      //         res.setHeader('Content-Type', contentType);
+      //         response.body.pipe(res);
+      //       } catch (error) {
+      //         console.error('Error in image proxy middleware:', error);
+      //         res.statusCode = 500;
+      //         res.end('Internal Server Error');
+      //       }
+      //     });
+      //   },
+      // },
       isProd
         ? {
             name: 'worker-headers',

@@ -1,20 +1,15 @@
-import {  WorkerOptions, AdapterWorkerResult, AdapterWebsocketWorker, IAdapterWebsocketWorker, SubscribeHandlers, WebsocketRequest } from "@nostrwatch/route66/core"
-
-import { IEvent } from "@nostrwatch/route66/interfaces";
-import { AdapterWebsocketWorkerCommand } from "@nostrwatch/route66/core";
-
-import { Filter } from "nostr-tools";
-
-import { IWebsocketAdapterCallbacks } from '@nostrwatch/route66/core'
+import BrowserDetector from 'browser-dtector';
+import PQueue from "p-queue";
 
 import { NostrFetcher, type FetchFilter } from 'nostr-fetch';
 import { simplePoolAdapter } from '@nostr-fetch/adapter-nostr-tools-v2'
-import { SimplePool } from 'nostr-tools';
-import { SubCloser } from 'nostr-tools/abstract-pool';
-import { defaultWebsocketAdapterOptions, defaultWebsocketRequestBody, WebsocketAdapterResult, WebsocketAdapterOptions, WebsocketRequestBody } from 'node_modules/@nostrwatch/route66/src/core';
+import { Filter, SimplePool } from "nostr-tools";
+import { SubCloser, AbstractSimplePool } from 'nostr-tools/abstract-pool';
 
-import PQueue from "p-queue";
-import { AbstractSimplePool } from "nostr-tools/abstract-pool";
+import {  WorkerOptions, AdapterWorkerResult, AdapterWebsocketWorker, IAdapterWebsocketWorker, SubscribeHandlers, WebsocketRequest } from "@nostrwatch/route66/core"
+
+import { AdapterWebsocketWorkerCommand, IWebsocketAdapterCallbacks, defaultWebsocketAdapterOptions, defaultWebsocketRequestBody, WebsocketAdapterResult, WebsocketAdapterOptions, WebsocketRequestBody  } from '@nostrwatch/route66/core'
+import { IEvent } from "@nostrwatch/route66/interfaces";
 
 const queue = new PQueue({ concurrency: 10 });
 
@@ -25,6 +20,9 @@ interface NostrToolsWorkerResult extends AdapterWorkerResult {}
 interface NostrToolsWorkerOptions extends WorkerOptions {
   relays?: string[]
 }
+
+const bdetect = new BrowserDetector(navigator.userAgent);
+const agent = bdetect.parseUserAgent();
 
 const defaultRelays = ['wss://relaypag.es', 'wss://relay.nostr.watch', 'wss://purplepag.es', 'wss://user.kindpag.es']
 
@@ -40,12 +38,31 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   protected _filtersQueue: Filter[] = [];
 
   constructor( options: NostrToolsWorkerOptions ){
-    ////console.log('NostrToolsWorker: constructor', options)
-    super(options)
-    const pool = new SimplePool();
-    this._pool = pool
-    this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(pool))
-    this.relays = options?.relays ? options.relays : defaultRelays
+    super(options);
+    this.init();
+    this.relays = options?.relays ? options.relays : defaultRelays;
+  }
+
+  init(){
+    this.poolInit();
+    this.fetcherInit();
+  }
+
+  poolInit(){
+    this._pool = new SimplePool();
+  }
+
+  fetcherInit(force: boolean = false){
+    if(!this?.pool) {
+      this.poolInit();
+      if(!this.pool) throw new Error('No pool available')  
+    }
+    if(!force && this.fetcher) return;
+    if(agent.name === 'Safari') {
+      this._fetcher = NostrFetcher.init();
+    } else {
+      this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(this.pool), {  minLogLevel: 'all' } )
+    }
   }
 
   async setup(command: NostrToolsWorkerCommand): Promise<void> {}
@@ -90,6 +107,8 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
     priority = priority ?? 0;
 
+    console.log('NostrToolsWorker:subscribe:filters', filters)
+
     const subby = async (): Promise<IEvent[] | boolean> => {
       return new Promise(async (resolve, reject) => {
         const effectiveRelays = this.cleanRelayUrls(relays ?? this.relays);
@@ -98,6 +117,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
         if (!effectiveRelays || effectiveRelays.length === 0) {
           throw new Error('No relays available for subscription.');
         }
+        if(!filters) filters = [];
         filters = Array.isArray(filters) ? filters : [filters];
         await this.connect();
         
@@ -111,11 +131,12 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             result.push(event);
           }
         }
+
         const onclose = (reasons: string[] = []) => {
-          //console.log(`closing subscription:`, hash)
           callbacks?.onclose?.(reasons?.[0] || 'unknown');
           this.subs.delete(hash as string);  
         }
+
         const oneose = () => {
           if(this.signal.aborted) return;
           callbacks?.oneose?.();
@@ -128,14 +149,14 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             resolve(result)
           }
         }
-        ////console.log('NostrToolsWorker: _subscribe: this.pool.subscribeMany', effectiveRelays, filters)
+
         const closer = this.pool!.subscribeMany(
           effectiveRelays,
           filters,
           { onevent, oneose, onclose }
         );
+        
         this.subs.set(hash as string, () => {
-          //console.log('[websocket worker] closing subscription:', hash)
           closer.close()
         });
       });
@@ -149,78 +170,105 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     }
   }
 
-  async _fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
+  async _fetch(
+    request: WebsocketRequestBody = defaultWebsocketRequestBody,
+    callbacks?: SubscribeHandlers
+  ): Promise<IEvent[] | boolean> {
     return queue.add(async () => {
-      if(!this.fetcher) throw new Error('No fetcher available');
       let { filters, relays, options, hash } = request;
+  
+      // Initialize fetcher
+      this.fetcherInit();
+      console.log('NostrToolsWorker:fetch:filters', filters);
+  
       const { stream } = options ?? defaultWebsocketAdapterOptions;
       const effectiveRelays = this.cleanRelayUrls(relays ?? this.relays);
+  
       if (!effectiveRelays || effectiveRelays.length === 0) {
         throw new Error('No relays available for fetching.');
       }
-      this.subs.set(hash as string, this.fetcher.shutdown.bind(this.fetcher));
+  
+      // Track active subscriptions
+      this.subs.set(hash as string, (this.fetcher as NostrFetcher).shutdown.bind(this.fetcher));
+  
+      // Normalize filters
+      if (!filters) filters = [];
       filters = Array.isArray(filters) ? filters : [filters];
       await this.connect();
-      const events = []
-      let count = 0
-      // const fetchPromises: Promise<IEvent[] | boolean>[] = [];
-      ////console.log(`running ${filters.length} fetches.`)
+  
+      const events: (IEvent[] | boolean)[] = [];
+      let count = 0;
+  
+      console.log('NostrToolsWorker: _fetch: filters', filters);
+  
       for (let filter of filters) {
-        if(this.signal.aborted) return;
-        ////console.log(`NostrToolsWorker: _fetch #${count}: filter`, filter)
-        events.push(await new Promise<IEvent[] | boolean>(async (resolve) => {
-          const { since, until, ...remainingFilter } = filter;
-          const range: Record<string, number> = {};
-          if (since) range['since'] = since;
-          if (until) range['until'] = until;
-          delete filter.since 
-          delete filter.until
-          let count = 0;
-          const events = new Set<IEvent>();
-          const onevent = (event: IEvent) => {
-            if(this.signal.aborted) return;
-            events.add(event as IEvent);
-            if(stream){
-              count++;
-              callbacks!.onevent?.(event);
+        if (this.signal.aborted) return;
+  
+        const { since, until, ...remainingFilter } = filter;
+        const range: Record<string, number> = {};
+        if (since) range.since = since;
+        if (until) range.until = until;
+  
+        let totalEvents = 0;
+  
+        try {
+          console.log('allEventsIterator:filter', remainingFilter)
+          const eventMap = new Map<string, IEvent>();
+          const iterator = this.fetcher!.allEventsIterator(
+            effectiveRelays,
+            remainingFilter as FetchFilter,
+            range,
+            {
+              signal: this.signal,
+              skipFilterMatching: true,
+              skipVerification: true,
+              abortSubBeforeEoseTimeoutMs: 20000,
+              connectTimeoutMs: 5000,
+            }
+          );
+  
+          // Process events in the iterator
+          for await (const event of iterator) {
+            if (this.signal.aborted) return;
+            if (eventMap.has(event.id)) continue;
+  
+            eventMap.set(event.id, event as IEvent);
+            totalEvents++;
+  
+            if (stream) {
+              callbacks?.onevent?.(event);
             }
           }
-          const oneose = () => {
-            if(this.signal.aborted) return;
-            if(stream) {
-              resolve(count > 0)
-            }
-            else {
-              resolve(Array.from(events));
-            }
-            callbacks?.oneose?.();
-            // this.fetcher?.shutdown();
+  
+          if (stream) {
+            // Resolve to boolean for streaming mode
+            events.push(totalEvents > 0);
+          } else {
+            // Collect unique events for non-streaming mode
+            events.push(Array.from(eventMap.values()));
           }
-          try {
-            const iterator = this.fetcher!.allEventsIterator(
-              effectiveRelays,
-              remainingFilter as FetchFilter,
-              range,
-              { signal: this.signal }
-            );
-            for await (const event of iterator) {
-              onevent(event as IEvent);
-            }
-            oneose();
-          } catch (error) {
-            console.warn('Error during fetch:', error);
-            resolve([]);
-          }
-        }));
-        ////console.log(`NostrToolsWorker: _fetch #${count}: complete`)
-        count++
+  
+          // Callbacks after End of Stream
+          callbacks?.oneose?.();
+  
+        } catch (error) {
+          console.warn('Error during fetch:', error);
+        }
+  
+        console.log(`NostrToolsWorker: _fetch #${count}: complete, total events: ${totalEvents}`);
+        count++;
       }
-      callbacks?.onclose?.();
+  
+      // Cleanup after all filters are processed
+      callbacks?.onclose?.(hash as string);
       this.subs.delete(hash as string);
+  
+      // Aggregate and return results
       const result = events.flat();
-      return options?.stream? result.length > 0: result;
+      return options?.stream ? result.length > 0 : result;
     }) as Promise<IEvent[] | boolean>;
   }
+  
 
   closeSubscription(hash?: string): void {}
 

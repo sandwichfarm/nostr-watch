@@ -85,7 +85,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     super(options)
     this.batcher = new Batcher<IEvent, WebsocketRequestBody>({
       maxLength: 100, 
-      timeout: 10000,
+      timeout: 2000,
       callback: this.batchResponse.bind(this)
     })
   }
@@ -142,7 +142,6 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     if(to === 'adapter'){
       if(!this?.mainThread) return console.warn('AdapterWebsocketWorker: mainThread not found')
       this.mainThread.postMessage(args)
-      //console.log('sent message to adapter')
       sent = true
     }
     if(to === 'cache'){
@@ -176,7 +175,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     }
     const result = await this._subscribe(request, callbacks)
     if(!stream){
-      this.requestSyncReponse(request, result as IEvent[])
+      this.requestSyncResponse(request, result as IEvent[])
     }
     if( !options?.keepAlive ){
       this.respond(ResponseType.complete, request)
@@ -191,7 +190,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
 
   async fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody){
     if(this.signal.aborted) this.abortControllerReset()
-    const { hash, options } = request
+    const { options } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
     let callbacks: SubscribeHandlers | undefined;
     if(stream){
@@ -199,7 +198,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     }
     const result = await this._fetch(request, callbacks)
     if(!stream){
-      this.requestSyncReponse(request, result as IEvent[])
+      this.requestSyncResponse(request, result as IEvent[])
     }
     this.respond(ResponseType.complete, request)
   }
@@ -223,7 +222,6 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   respond(type: ResponseType, request: WebsocketRequestBody, result?: IEvent | IEvent[]){
-    
     const { hash, options } = request;
     const { cache, returnResults } = options;
     
@@ -232,6 +230,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       result,
       hash: hash as string
     }
+
     if(cache === true) {
       this.send({to: 'cache', args: response})
     }
@@ -242,7 +241,6 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   batchResponse(events: IEvent[], state?: WebsocketRequestBody, id?: string){
-    //console.log(`AdapterWebsocketWorker: batchResponse: ${id}`, events.length)
     if(!state) throw new Error('AdapterWebsocketWorker: batchResponse: state is undefined')
     this.respond(ResponseType.events, state, events)
   }
@@ -267,10 +265,9 @@ export class AdapterWebsocketWorker extends AdapterWorker {
     return { onevent, oneose }
   }
 
-  requestSyncReponse(request: WebsocketRequestBody, result: IEvent[]){
+  requestSyncResponse(request: WebsocketRequestBody, result: IEvent[]){
     const { hash, options } = request
     const { cache, returnResults } = options
-    ////console.log(`AdapterWebsocketWorker: requestSyncReponse cache: ${cache} returnResults: ${returnResults}`)
     let args: WebsocketResponseBody = {
       type: ResponseType.events, 
       result,

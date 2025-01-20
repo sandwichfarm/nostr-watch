@@ -177,7 +177,6 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     return queue.add(async () => {
       let { filters, relays, options, hash } = request;
   
-      // Initialize fetcher
       this.fetcherInit();
       console.log('NostrToolsWorker:fetch:filters', filters);
   
@@ -258,6 +257,10 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
         console.log(`NostrToolsWorker: _fetch #${count}: complete, total events: ${totalEvents}`);
         count++;
       }
+
+      if(agent.name === 'Safari') {
+          this.fetcher?.shutdown();
+      } 
   
       // Cleanup after all filters are processed
       callbacks?.onclose?.(hash as string);

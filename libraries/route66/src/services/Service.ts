@@ -150,6 +150,10 @@ export class Service {
     let cacheEvents: IEvent[] = [];
     cacheEvents = await this.cacheAdapter.REQ(filters);
 
+    if(cacheEvents.length){
+      console.log('cache hit', cacheEvents.length, filters)
+    }
+
     if (callbacks?.onevents) {
         callbacks.onevents(cacheEvents);
     }

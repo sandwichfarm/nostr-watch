@@ -59,7 +59,7 @@ export class UserService extends Service {
         until = until || Math.round(Date.now() / 1000);
         const filter: Filter = { authors: [user.pubkey], kinds: [1], limit, until};
         const options: WebsocketAdapterOptions = {
-            cache: false,
+            cache: true,
             stream: false,
             returnResults: true,
             keepAlive: false,
@@ -112,7 +112,7 @@ export class UserService extends Service {
         ]
         const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]
         const options: WebsocketAdapterOptions  = {
-            cache: false,
+            cache: true,
             stream: true,
             returnResults: true,
             keepAlive: false
@@ -132,7 +132,7 @@ export class UserService extends Service {
     async meta(user: User): Promise<IEvent[] | boolean | undefined> {
         const filter: Filter = {authors: [user.pubkey], kinds: [0, 10002]}
         const options: WebsocketAdapterOptions  = {
-            cache: false,
+            cache: true,
             stream: false,
             returnResults: true,
             keepAlive: false

@@ -62,8 +62,17 @@
             if(!b11) return null
             return Bolt11.decode(b11)
         }).filter( b11 => b11 !== null )
-    $: zapSum = Math.round(bolt11s.reduce((acc, b11) => acc += parseInt(b11.sections.find( section => section?.name === 'amount')?.value || "0"), 0)/1000)
+    $: zapSum = abbrNum(Math.round(bolt11s.reduce((acc, b11) => acc += parseInt(b11.sections.find( section => section?.name === 'amount')?.value || "0"), 0)/1000));
     
+
+    function abbrNum(num: number): string {
+        if (num < 1000) return num.toString();
+        const units = ["", "K", "M", "B", "T", "P", "E"];
+        const magnitude = Math.floor(Math.log10(num) / 3);
+        const precision = magnitude - 1; 
+        const scaled = num / Math.pow(1000, magnitude); 
+        return `${scaled.toFixed(precision + 1)}${units[magnitude]}`;
+    }
   </script>
 
 <section 

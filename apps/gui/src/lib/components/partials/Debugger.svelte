@@ -106,9 +106,14 @@
     const debugCacheAdapter = async () => {
         await $route66?.cacheAdapter?.ready();
         addDebug('cacheAdapter:countAll', await $route66?.cacheAdapter?.COUNT([{}]));
+        addDebug('cacheAdapter:count10166', await $route66?.cacheAdapter?.COUNT([{ kinds: [10166]}]));
         addDebug('cacheAdapter:count30166', await $route66?.cacheAdapter?.COUNT([{ kinds: [30166]}]));
         addDebug('cacheAdapter:count0', await $route66?.cacheAdapter?.COUNT([{ kinds: [0]}]));
         addDebug('cacheAdapter:count10002', await $route66?.cacheAdapter?.COUNT([{ kinds: [10002]}]));
+
+        addDebug('cacheAdapter:count1', await $route66?.cacheAdapter?.COUNT([{ kinds: [1]}]));
+        addDebug('cacheAdapter:count1111', await $route66?.cacheAdapter?.COUNT([{ kinds: [1111]}]));
+        addDebug('cacheAdapter:9735,9321', await $route66?.cacheAdapter?.COUNT([{ kinds: [9735, 9321] }]));
 
         addDebug('cacheAdapter:nip11s', await $route66?.cacheAdapter?.countNip11s());
         addDebug('cacheAdapter:nip11sUnique', await $route66?.cacheAdapter?.countUniqueNip11s());

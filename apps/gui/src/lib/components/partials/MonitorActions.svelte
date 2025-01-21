@@ -30,7 +30,7 @@
 
     onMount(() => {
         toggleEnableMonitor = async () => {
-            const { addEventsToStore } = await import('$lib/stores/events-helpers.js');
+            const { publishEventsToMemoryRelay } = await import('$lib/stores/events-helpers.js');
             const resumer = await pauseLiveSync();
             disabled.set(true);
             if(monitor?.enabled) {
@@ -59,7 +59,7 @@
                     priority: 20
                 }
                 const onevents = (events: IEvent[]) => {
-                    addEventsToStore(events)
+                    publishEventsToMemoryRelay(events)
                 }
                 await $route66?.services?.monitors?.sync(options, { onevents })
                 disabled.set(false);

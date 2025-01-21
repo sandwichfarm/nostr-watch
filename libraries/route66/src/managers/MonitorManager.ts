@@ -1,7 +1,7 @@
 
 import { IEvent } from '@base/interfaces';
 import { Monitor } from '../models/Monitor';
-import { Nip66Event, NostrEvent } from '@base/models';
+import { Nip66CheckEvent, NostrEvent } from '@base/models';
 
 export type MonitorPriorities = MonitorPriority[];
 
@@ -94,15 +94,15 @@ export class MonitorManager {
     return qualified;
   }
 
-  isRelayOnline(event: Nip66Event | IEvent): boolean {
+  isRelayOnline(event: Nip66CheckEvent | IEvent): boolean {
     return this.array.some((monitor) => monitor.relayIsOnline(event));
   }
 
-  isRelayOffline(event: Nip66Event | IEvent): boolean {
+  isRelayOffline(event: Nip66CheckEvent | IEvent): boolean {
     return this.array.every((monitor) => monitor.relayIsOffline(event) || monitor.relayIsDead(event));
   }
 
-  isRelayDead(event: Nip66Event | IEvent): boolean {
+  isRelayDead(event: Nip66CheckEvent | IEvent): boolean {
     return this.array.every((monitor) => monitor.relayIsDead(event));
   }
 
@@ -140,7 +140,7 @@ export class MonitorManager {
     this.monitors.set(monitor.pubkey, monitor);
   }
 
-  maybeUpdateLastActive(event: IEvent | Nip66Event): boolean {
+  maybeUpdateLastActive(event: IEvent | Nip66CheckEvent): boolean {
     const monitor = this.monitors.get(event.pubkey);
     if(!monitor) return false;
     return monitor.maybeUpdateLastActive(event);

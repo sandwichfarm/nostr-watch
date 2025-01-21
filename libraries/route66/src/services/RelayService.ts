@@ -6,7 +6,7 @@ import { Service } from './Service';
 import { StateManager } from '@base/managers/StateManager';
 import { IEvent } from '@base/interfaces';
 import { Filter } from 'nostr-tools';
-import { Monitor, Nip66Event, NostrEvent } from '@base/models';
+import { Monitor, Nip66CheckEvent, NostrEvent } from '@base/models';
 import { MonitorService } from './MonitorService';
 
 export class RelayService extends Service {
@@ -61,7 +61,7 @@ export class RelayService extends Service {
     ]
   }
 
-  async getRelayData(relay: string): Promise<[ Nip66Event[], Map<string, Monitor> ] | undefined> {
+  async getRelayData(relay: string): Promise<[ Nip66CheckEvent[], Map<string, Monitor> ] | undefined> {
     await this.ready();
     let checks = await this.fetchRelayChecks(relay);
     if(!checks || !checks?.length) return;
@@ -72,7 +72,7 @@ export class RelayService extends Service {
     return [ checks, monitors ];
   }
 
-  async fetchRelayChecks(r: string): Promise<Nip66Event[] | undefined> {
+  async fetchRelayChecks(r: string): Promise<Nip66CheckEvent[] | undefined> {
     const relay: string | null = RelayService.formatRelay(r);
     if(!relay) return;
     const filters: Filter[] = this.relayFilters(relay);
@@ -85,7 +85,7 @@ export class RelayService extends Service {
     }
     const events: IEvent[] = await this.fetch( { relays, filters, options } );
     if(!events) return;
-    const checks: Nip66Event[] = events.map((event: IEvent) => new Nip66Event(event));  
+    const checks: Nip66CheckEvent[] = events.map((event: IEvent) => new Nip66CheckEvent(event));  
     return checks;
   }
 
@@ -105,7 +105,7 @@ export class RelayService extends Service {
     return this.subscribe( { relays, filters, priority, options }, callbacks );
   }
 
-  async monitorInstancesFromChecks(checks: Nip66Event[], type: 'map' | 'array' = 'map'): Promise<Map<string, Monitor> | Monitor[] | undefined> {
+  async monitorInstancesFromChecks(checks: Nip66CheckEvent[], type: 'map' | 'array' = 'map'): Promise<Map<string, Monitor> | Monitor[] | undefined> {
     let filters: Filter[] = []
     const metaPromises: Promise<any>[] = []
     for(const check of checks){
@@ -153,7 +153,7 @@ export class RelayService extends Service {
     }
   }
 
-  static removeOldChecks (monitors: Map<string, Monitor>, checks: Nip66Event[]): Nip66Event[] {
+  static removeOldChecks (monitors: Map<string, Monitor>, checks: Nip66CheckEvent[]): Nip66CheckEvent[] {
     return checks.filter(check => {
       const monitor = monitors.get(check.pubkey);
       if(monitor && monitor.relayIsOnline(check)) return true

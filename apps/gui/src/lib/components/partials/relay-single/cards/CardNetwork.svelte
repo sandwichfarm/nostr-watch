@@ -1,6 +1,6 @@
 <script lang="ts">
     import * as Card from '$lib/components/ui/card';
-	import type { Nip66Event } from '@nostrwatch/route66/models';
+	import type { Nip66CheckEvent } from '@nostrwatch/route66/models';
 	import RelayIsp from '../RelayIsp.svelte';
     
     export let aggregate: any;

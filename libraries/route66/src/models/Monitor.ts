@@ -1,4 +1,4 @@
-import { Nip66Event, type IEvent } from '@base/models';
+import { Nip66CheckEvent, type IEvent } from '@base/models';
 import { StateManager } from '@base/managers/StateManager';
 import { SyncRange, SyncRangeParameter, SyncStateManager } from '@base/managers/SyncStateManager';
 import { Filter } from 'nostr-tools';
@@ -318,7 +318,7 @@ export class Monitor {
     return results;
   }
 
-  maybeUpdateLastActive(event: IEvent | Nip66Event): boolean {
+  maybeUpdateLastActive(event: IEvent | Nip66CheckEvent): boolean {
     if(!event?.created_at) return false;
     if(event.created_at > this.lastActive) {
       this.lastActive = event.created_at;

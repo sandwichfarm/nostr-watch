@@ -3,8 +3,8 @@
   import { onDestroy, onMount } from 'svelte';
   import { doBootstrap } from '$lib/stores/routines.js';
   import { derived, writable, type Readable, type Writable } from 'svelte/store';
-  import { Nip66Event, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/route66/models';
-  import { relayAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
+  import { Nip66CheckEvent, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/route66/models';
+  import { relayCheckAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
   import { nip11s, nip11Service, nip11sLocal } from '$lib/stores/nip11s.js';
   import { isSeeded } from '$lib/stores/app.js';
   import { eventsArray } from '$lib/stores/events.js';
@@ -13,7 +13,7 @@
   import { Nip11 } from '@nostrwatch/route66/models';
   import { isLivesyncing, doAggregateCache, hasBeenBoostrapped } from '$lib/stores/app';
   import { pauseLiveSync, beginLiveSync } from '$lib/utils/lifecycle';
-  import { addEventsToStore } from '$lib/stores/events-helpers';
+  import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers';
   import { clickToCopy, observeViewport } from '$lib/utils/ux';
   import { Skeleton } from "$lib/components/ui/skeleton";
 	import { route66Ready } from '$lib/stores/app';
@@ -81,12 +81,12 @@
   const monitors: Writable<Monitor[]> = writable([]);
   const activeTab: Writable<string> = writable('overview');
 
-  const checksrelay: Readable<Nip66Event[]> = derived(
+  const checksrelay: Readable<Nip66CheckEvent[]> = derived(
       eventsArray,
       ($eventsArray) => {
-          const results = new Map<string, Nip66Event>();
+          const results = new Map<string, Nip66CheckEvent>();
           if ($eventsArray.length) {
-              $eventsArray.forEach((check: Nip66Event) => {
+              $eventsArray.forEach((check: Nip66CheckEvent) => {
                   if (!check.relay) return console.error('Invalid check:', check);
                   if (check.relay !== relayUrl) return;
                   if (!results.has(check.pubkey)) {
@@ -95,7 +95,7 @@
               });
           }
           return Array.from(results.values())
-              .sort((a: Nip66Event, b: Nip66Event) => (b.created_at as number) - (a.created_at as number));
+              .sort((a: Nip66CheckEvent, b: Nip66CheckEvent) => (b.created_at as number) - (a.created_at as number));
       }
   );
 
@@ -108,7 +108,7 @@
               id: index,
           }))?.[0];
       } else {
-          return $relayAggregates.find((agg: any) => agg.relay === relayUrl);
+          return $relayCheckAggregates.find((agg: any) => agg.relay === relayUrl);
       }
   });
 
@@ -131,7 +131,7 @@
           $route66?.services?.relay?.getRelayData(relayUrl).then( (res: any) => {
             if (!res) return;
             const [data, mons] = res;
-            addEventsToStore(data);
+            publishEventsToMemoryRelay(data);
             monitors.set(Array.from(mons?.values() || new Set()));
           })
       }

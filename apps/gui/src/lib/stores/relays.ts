@@ -1,13 +1,13 @@
 import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js';
 import { StateManager } from '@nostrwatch/route66';
-import { relayAggregates } from './checks.js';
+import { relayCheckAggregates } from './checks.js';
 import { doAggregateCache } from './app.js';
 
-export const relays = derived(relayAggregates, ($relayAggregates) => {
+export const relays = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const relays = new Set();
 
-    $relayAggregates.forEach((relayAggregate) => {
+    $relayCheckAggregates.forEach((relayAggregate) => {
         const { created_at, relay, network, monitorPubkey } = relayAggregate
         if (!relay) return;
         try {

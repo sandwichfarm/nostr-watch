@@ -2,13 +2,13 @@ import { get, type Writable, type Readable } from 'svelte/store';
 
 import Route66, { StateManager } from '@nostrwatch/route66';
 
-import { Nip66Event, type IEvent } from '@nostrwatch/route66/models';
+import { Nip66CheckEvent, type IEvent } from '@nostrwatch/route66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
 import { route66, events, monitorsMap, monitors, eventsArray } from '$lib/stores/index.js';
 import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
-import { addEventsToStore } from '$lib/stores/events-helpers.js';
+import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers.js';
 
 import type { Monitor, Nip11, NostrEvent } from "@nostrwatch/route66/models"
 import { nip05Service } from '$lib/stores/nip05s.js';
@@ -36,7 +36,7 @@ let initializing: boolean = false;
 let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
     maxLength: 50, 
     timeout: 30000,
-    callback: addEventsToStore
+    callback: publishEventsToMemoryRelay
 })
 
 export const bindBootstrapEmitters = () => {
@@ -65,7 +65,7 @@ export const bindBootstrapEmitters = () => {
 
     $route66.on('events', (_events: any) => {
         console.log('Svelte Received events:', _events.length, _events);
-        addEventsToStore(_events)
+        publishEventsToMemoryRelay(_events)
     });
 };
 
@@ -207,7 +207,7 @@ const bootstrapOperatorMeta = async () => {
     
     console.log('chunks', chunks.length, chunks);
     for(const filters of chunks){
-        const onevent = (event: IEvent) => addEventsToStore([event]);
+        const onevent = (event: IEvent) => publishEventsToMemoryRelay([event]);
         const onevents = (events: IEvent[]) => events.forEach( onevent );
         const relays = $route66?.services?.relay?.userMetaRelays || []
         const priority = 1;
@@ -309,7 +309,8 @@ export const seedFromCache = async () => {
         }));
     })
     const cachedEvents = (await Promise.all(promises)).flat();
-    addEventsToStore(cachedEvents ?? []);
+    if(cachedEvents.length === 0) return;
+    publishEventsToMemoryRelay(cachedEvents);
     isSeeded.set(true)
 }
 

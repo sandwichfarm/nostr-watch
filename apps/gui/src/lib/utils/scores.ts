@@ -51,18 +51,18 @@ function computeNormalizedEntropy(countMap: Map<string, number>): number {
  * Calculates the decentralization score for a specific combination of ISP, Software, and Country.
  *
  * @param combination - The combination of ISP, Software, and Country.
- * @param relayAggregates - An array of relay aggregates.
+ * @param relayCheckAggregates - An array of relay aggregates.
  * @param weights - The weights assigned to each dimension.
  * @returns The decentralization score between 0 (fully centralized) and 100 (fully decentralized).
  */
 export function calculateDecentralizationScore(
     combination: Combination,
-    relayAggregates: any[],
+    relayCheckAggregates: any[],
     weights: Weights = { software: 1, country: 1, isp: 1 } // Default weights
 ): number {
     if(!combination.isp || !combination.country || !combination.software) return -1;
     // Filter relay aggregates based on the combination
-    const filteredRelays = relayAggregates.filter(relay => 
+    const filteredRelays = relayCheckAggregates.filter(relay => 
         relay.isp?.toLowerCase() === combination.isp.toLowerCase() &&
         relay.software?.toLowerCase() === combination.software.toLowerCase() &&
         relay.geocode?.toLowerCase() === combination.country.toLowerCase()

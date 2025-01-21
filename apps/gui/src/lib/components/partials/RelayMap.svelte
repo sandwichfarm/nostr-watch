@@ -6,12 +6,12 @@
     import { writable, type Writable } from 'svelte/store';
     import { MapPointLabelPosition, type MapData, type MapLink } from '@unovis/ts'
     import { WorldMapTopoJSON } from '@unovis/ts/maps'
-    import type { Monitor, Nip66Event } from '@nostrwatch/route66/models';
+    import type { Monitor, Nip66CheckEvent } from '@nostrwatch/route66/models';
 	  import { StateManager } from '@nostrwatch/route66';
     
     export let relay: string;
     export let monitors: Writable<Monitor[]>
-    export let checks: Writable<Nip66Event[]>
+    export let checks: Writable<Nip66CheckEvent[]>
     export let aggregate: any;
 
     let ready: boolean = false;
@@ -83,7 +83,7 @@
     const setMonitor = (monitor: Monitor) => {
       if(!monitor?.registration) return;
       const { dd } = monitor.registration
-      const monitorCheck: Nip66Event | undefined = $checks.find( check => check.pubkey === monitor.pubkey )
+      const monitorCheck: Nip66CheckEvent | undefined = $checks.find( check => check.pubkey === monitor.pubkey )
       if(!monitorCheck) return //console.warn(`${monitor.pubkey} could not find check data...`)
       const rtt = monitorCheck?.rtt || undefined
 

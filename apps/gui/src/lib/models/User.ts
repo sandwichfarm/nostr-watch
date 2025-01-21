@@ -22,6 +22,14 @@ export class User {
         }
     }
 
+    static from(profile: IEvent, relays: IEvent): User {
+        const instance = new User(profile.pubkey);
+        instance.#profile = new PubkeyProfile(profile);
+        instance.#relays = new PubkeyRelays(relays);
+        instance.forceReady();
+        return instance;
+    }
+
     async initialize(): Promise<void> {
         if(!this.#service) return;
         this.#service.meta(this).then( (metas: IEvent[]) =>{
@@ -38,6 +46,10 @@ export class User {
         while(!this.#ready){
             await new Promise(resolve => setTimeout(resolve, 100));
         }
+    }
+
+    forceReady(){
+        this.#ready = true;
     }
 
     get pubkey(): Pubkey {
@@ -82,6 +94,14 @@ export class User {
 
     get relays(): string[] | undefined {
         return this.#relays?.relays
+    }
+
+    set relays(instance: PubkeyRelays){
+        this.#relays = instance;
+    }
+
+    set profile(instance: PubkeyProfile){
+        this.#profile = instance;
     }
 
     get reference(): string | undefined {

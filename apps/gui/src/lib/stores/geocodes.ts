@@ -1,20 +1,20 @@
 
 import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
-import { relayAggregates } from './checks.js'; 
+import { relayCheckAggregates } from './checks.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
-import { Nip66Event } from '@nostrwatch/route66/models';
+import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import type { lte } from 'lodash';
 import { doAggregateCache } from './app.js';
 
 export const geocodes = derived(
-  relayAggregates, 
-  ($relayAggregates) => {
-    if (!$relayAggregates.length) return [];
+  relayCheckAggregates, 
+  ($relayCheckAggregates) => {
+    if (!$relayCheckAggregates.length) return [];
     const codes = new Set();
 
-    $relayAggregates.forEach((event: Nip66Event) => {
+    $relayCheckAggregates.forEach((event: Nip66CheckEvent) => {
       if (event.geocode) {
         codes.add(event.geocode.toLowerCase());
       }
@@ -33,9 +33,9 @@ export const geocodes = derived(
   }
 );
 
-export const geocodeCounts = derived(relayAggregates, ($relayAggregates) => {
+export const geocodeCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const counts = new Map();
-    $relayAggregates.forEach((relayCheck) => {
+    $relayCheckAggregates.forEach((relayCheck) => {
         const geocode = relayCheck?.geocode || 'unknown';
         counts.set(geocode, (counts.get(geocode) || 0) + 1);
     });

@@ -5,7 +5,7 @@ import { nip19 } from "nostr-tools";
 import { Nip11, Nip11Fee, Nip11Fees, type RelayInformation  } from "./Nip11";
 import { isPubkey } from "@base/utils/nostr";
 
-export class Nip66Event extends Geocoded implements IEvent {
+export class Nip66CheckEvent extends Geocoded implements IEvent {
     _nip11?: Nip11 | false;
 
     static keys = [

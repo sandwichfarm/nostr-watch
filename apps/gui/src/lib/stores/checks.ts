@@ -7,13 +7,13 @@ interface Check {
   [id: string]: any;
 }
 
-import { eventsArray } from './events.js';
+import { eventsArray, type StoreEventType } from './events.js';
 
-import { Nip66Event } from '@nostrwatch/route66/models';
+import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache, isBootstrapping } from "./app.js";
 
-export const relayCheckAggregator = ($checks: Nip66Event[]) => {
+export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const countMap: Record<
     string,
     { a: Record<string, any>; checks: Check[]; aggregate?: any }
@@ -55,8 +55,8 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
   const range = globalMax - globalMin || 1;
 
   Object.keys(countMap).forEach((relay) => {
-    countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66Event) => {
-      [...Nip66Event.keys, 'seenTimes'].forEach((key: string) => {
+    countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
+      [...Nip66CheckEvent.keys, 'seenTimes'].forEach((key: string) => {
         const value = nip66Event[key];
         
         const isNonNull = value !== null && value !== undefined;
@@ -111,9 +111,13 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
 
 export const relayChecks: Readable<
   Record<string, { a: Record<string, any>; checks: Check[]; aggregate?: any }>
-> = derived(eventsArray, relayCheckAggregator);
+> = derived(eventsArray, ($events) => {
+  const checks = $events.filter( (event: StoreEventType) => event.kind === 30166 ) as Nip66CheckEvent[]
+  if(!checks.length) return {};
+  return relayCheckAggregator(checks);
+});
 
-export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
+export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
   let aggregates = Object.entries($relayChecks).map(([relay, item], index) => ({
     relay,
     ...item.aggregate,
@@ -138,8 +142,8 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
   return aggregates 
 });
 
-export const relaysForMiniSearch: Readable<any[]> = derived(relayAggregates, ($relayAggregates) => {
-  let ag = $relayAggregates.map((item, index) => {
+export const relaysForMiniSearch: Readable<any[]> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  let ag = $relayCheckAggregates.map((item, index) => {
     const { relay, isp, operatorPubkey, supportedNips, lastSeen }  = item
     return { 
       ...{ relay, isp, operatorPubkey, supportedNips, lastSeen },

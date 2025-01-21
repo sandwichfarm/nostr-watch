@@ -1,0 +1,80 @@
+import { derived, get, type Readable } from "svelte/store";
+import { operatorPubkeySoftwaresMap } from "../softwares"
+import { relayCheckAggregates } from "../checks";
+import { pubkeyProfile, pubkeyProfile$, pubkeyRelays, pubkeyRelays$, pubkeyUserInstance, pubkeyUserInstance$, type StorePubkeyProfile, type StorePubkeyRelays, type StorePubkeyRelaysReadable, type StoreUser, type StoreUserReadable } from "./helpers-pubkey";
+
+//aggregates
+export const operatorSoftwares = (pubkey: string): string[] | undefined => {
+    const set = get(operatorPubkeySoftwaresMap).get(pubkey)
+    if(!set) return undefined;
+    return Array.from(set)
+}
+
+export const operatorSoftwares$ = (pubkey: string): Readable<string[] | undefined> => {
+    return derived(operatorPubkeySoftwaresMap, ($operatorPubkeySoftwaresMap) => {
+        const set = $operatorPubkeySoftwaresMap.get(pubkey)
+        if(!set) return undefined;
+        return Array.from(set);
+    })
+}
+
+export const operatorRelaysOperated = (pubkey: string): string[] | undefined => {
+    return get(relayCheckAggregates)
+        .filter((entry: any) => entry?.aggregate?.operatorPubkey === pubkey )
+        .map((aggregate: any) => aggregate.relay)
+}
+
+export const operatorRelaysOperated$ = (pubkey: string): Readable<string[] | undefined> => {
+    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
+        return $relayCheckAggregates
+            .filter((entry) => entry?.aggregate?.operatorPubkey === pubkey )
+            .map((aggregate) => aggregate.relay)
+    })
+}
+
+export const operatorIsps = (pubkey: string): string[] | undefined => {
+    const uniques: Set<string> = new Set();
+    get(relayCheckAggregates)
+        .filter((entry: any) => entry?.aggregate?.operatorPubkey === pubkey )
+        .map((aggregate: any) => aggregate?.asname )
+        .filter((isp: string) => !!isp )
+        .forEach((isp: string) => uniques.add(isp))
+    return Array.from(uniques);
+}
+
+export const operatorIsps$ = (pubkey: string): Readable<string[] | undefined> => {
+    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
+        const uniques: Set<string> = new Set();
+        $relayCheckAggregates
+            .filter((entry) => entry?.aggregate?.operatorPubkey === pubkey )
+            .map((aggregate) => aggregate?.asname )
+            .filter((isp) => !!isp )
+            .forEach((isp) => uniques.add(isp))
+        return Array.from(uniques);
+    })
+}
+
+//convenience, namespaced wrappers
+export const operatorUser = (pubkey: string): StoreUser => {
+    return pubkeyUserInstance(pubkey);
+}
+
+export const operatorUser$ = (pubkey: string): StoreUserReadable => {
+    return pubkeyUserInstance$(pubkey);
+}
+
+export const operatorRelays = (pubkey: string): StorePubkeyRelays => {
+    return pubkeyRelays(pubkey);
+}
+
+export const operatorRelays$ = (pubkey: string): StorePubkeyRelaysReadable => {
+    return pubkeyRelays$(pubkey);
+}
+
+export const operatorProfile = (pubkey: string): StorePubkeyProfile | undefined => {
+    return pubkeyProfile(pubkey);
+}
+
+export const operatorProfile$ = (pubkey: string): Readable<StorePubkeyProfile | undefined> => {
+    return pubkeyProfile$(pubkey);
+}

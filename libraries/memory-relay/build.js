@@ -3,13 +3,13 @@ import esbuild from 'esbuild';
 const production = process.env.NODE_ENV === 'prod';
 
 esbuild.build({
-  entryPoints: ['src/index.ts'],
+  entryPoints: ['src/index.ts', 'src/abstract.ts', 'src/svelte.ts'],
   bundle: true,
   minify: production,
-  sourcemap: true,
+  sourcemap: !production,
   outdir: 'dist/esm',
   format: 'esm',
+  splitting: true,
+  external: ['nostr-tools', 'tseep', 'lodash', 'svelte'],
   outExtension: { '.js': '.mjs' },
-  loader: { '.wasm': 'copy' },
-  plugins: [wasmLoader({mode: 'embedded'})],
 }).catch(() => process.exit(1));

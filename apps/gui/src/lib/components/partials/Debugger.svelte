@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayAggregates, relaysWithNip11s, relaysWithoutNip11s } from "$lib/stores";
+	import { nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayCheckAggregates, relaysWithNip11s, relaysWithoutNip11s } from "$lib/stores";
 	import { isLivesyncing } from "$lib/stores/app";
 	import { doBootstrap } from "$lib/stores/routines";
 	import { appState, isBootstrapping, isSeeded, tabState, isIdle } from "$lib/stores/app";
@@ -62,8 +62,8 @@
         addDebug('isLivesyncing', value);
     });
 
-    relayAggregates.subscribe((value) => {
-        addDebug('relayAggregates', value.length);
+    relayCheckAggregates.subscribe((value) => {
+        addDebug('relayCheckAggregates', value.length);
     });
 
     nip11s.subscribe((value) => {

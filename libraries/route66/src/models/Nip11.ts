@@ -81,6 +81,13 @@ export class Nip11 {
   }
 
   /**
+   * Returns the limitation object for the relay.
+   */
+  get limitation(): Limitations {
+    return this.json.limitation;
+  }
+
+  /**
    * Indicates whether payment is required to use the relay.
    */
   get paymentRequired(): boolean {

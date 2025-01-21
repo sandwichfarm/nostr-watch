@@ -4,7 +4,7 @@ import type { WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/
 import type { IEvent } from "@nostrwatch/route66/models";
 
 import { route66 } from "../stores";
-import { storeRelay, type StoreRelay } from "../stores/store-relay";
+import { storeRelay, type eventsStoreMemoryRelay } from "../stores/memory-relays/memory-relay-events";
 import type { Route66 } from "@nostrwatch/route66";
 import { instance } from "./lifecycle";
 import type { Filter } from "nostr-tools";
@@ -47,7 +47,7 @@ async function* generate(
         throw new Error("Route66 instance could not be initialized.");
     }
 
-    const $storeRelay: StoreRelay = get(storeRelay);
+    const $storeRelay: eventsStoreMemoryRelay = get(storeRelay);
 
     relays = relays || [];
     const priority = 100;

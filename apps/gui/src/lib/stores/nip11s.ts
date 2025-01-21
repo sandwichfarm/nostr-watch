@@ -1,5 +1,5 @@
 import { derived, get, writable, type Readable, type Writable } from "svelte/store";
-import { Nip66Event, type INip11 } from "@nostrwatch/route66/models"
+import { Nip66CheckEvent, type INip11 } from "@nostrwatch/route66/models"
 import { deterministicHash } from "@nostrwatch/route66/utils";
 
 import { eventsArray } from './events.js'; 
@@ -10,29 +10,13 @@ import { Nip11 } from "@nostrwatch/route66/models";
 import { doAggregateCache, hasBeenBoostrapped, hasBeenSeeded } from "./app.js";
 import type { RelayInformation } from "@nostrwatch/route66/models";
 import type { nip11 } from "nostr-tools";
-import { relayAggregates } from "./checks.js";
+import { relayCheckAggregates } from "./checks.js";
 import { isPubkey } from "../utils/nostr.js";
 
 type RelayUrl = string
 
 export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
 export const nip11sLocal: Writable<Map<string, Nip11>> = writable(new Map())
-
-const processNip11 = ( json: any ) => {
-  const result = { json: null, hash: null }
-  try {
-    if(json instanceof Object ) {
-      result.json = json
-    }
-    else {
-      result.json = JSON.parse(json);
-    }
-    result.hash = deterministicHash(json);
-  } catch (error) {
-    console.error('Failed to parse JSON content:', error);
-  }
-  return result;
-}
 
 export const nip11s = derived(
     [eventsArray, nip11sLocal], 
@@ -51,7 +35,7 @@ export const nip11s = derived(
     let nip66Nip11s: number = 0
     let localNip11s: number = 0
 
-    $eventsArray.forEach((event: Nip66Event) => {
+    $eventsArray.forEach((event: Nip66CheckEvent) => {
       if(!event.nip11 || !event.relay) return;
       updateEntry(event.relay, event.nip11)
       nip66Nip11s++;
@@ -106,10 +90,10 @@ export const relaysWithNip11s: Readable<string[]> = derived(
 )
 
 export const relaysWithoutNip11s: Readable<string[]> = derived(
-  relayAggregates,
-  ($relayAggregates) => {
+  relayCheckAggregates,
+  ($relayCheckAggregates) => {
     const result = new Set()
-    $relayAggregates.forEach( (check: any) => { 
+    $relayCheckAggregates.forEach( (check: any) => { 
       if(!check.hasNip11) {
         result.add(check.relay)
       }

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { relayAggregates } from '$lib/stores/checks.js';
+	import { relayCheckAggregates } from '$lib/stores/checks.js';
 	import { doBootstrap } from '$lib/stores/routines';
 	import { doAggregateCache } from '$lib/stores/app';
 	import { onDestroy, onMount } from 'svelte';
@@ -65,6 +65,6 @@
 <main> 
 	{#if $ready}
 	<Stats />
-	<DataTable data={relayAggregates} {config} {tableKey} />
+	<DataTable data={relayCheckAggregates} {config} {tableKey} />
 	{/if}
 </main>

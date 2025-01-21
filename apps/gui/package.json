@@ -106,6 +106,7 @@
 		"@nostrwatch/schemata-js-ajv": "workspace:^",
 		"@nostrwatch/utils": "workspace:^",
 		"@nostrwatch/worker-relay": "workspace:^",
+		"@nostrwatch/memory-relay": "workspace:^",
 		"@unovis/svelte": "^1.4.5",
 		"@unovis/ts": "^1.4.5",
 		"ajv": "^8.17.1",

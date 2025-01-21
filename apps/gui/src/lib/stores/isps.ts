@@ -1,7 +1,7 @@
 
 import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
-import { relayAggregates } from './checks.js'; 
+import { relayCheckAggregates } from './checks.js'; 
 import { StateManager } from '@nostrwatch/route66';
 import { doAggregateCache } from './app.js';
 
@@ -33,10 +33,10 @@ export const isps = derived(eventsArray, ($eventsArray) => {
     return ispsArray;
 });
 
-export const ispCounts = derived(relayAggregates, ($relayAggregates) => {
+export const ispCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const counts = new Map();
 
-    $relayAggregates.forEach((relayCheck) => {
+    $relayCheckAggregates.forEach((relayCheck) => {
         const isp = relayCheck?.isp || 'unknown';
         counts.set(isp, (counts.get(isp) || 0) + 1);
     });

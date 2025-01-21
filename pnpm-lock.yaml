@@ -48,6 +48,9 @@ importers:
       '@nostrwatch/auditor':
         specifier: workspace:*
         version: link:../../libraries/auditor
+      '@nostrwatch/memory-relay':
+        specifier: workspace:^
+        version: link:../../libraries/memory-relay
       '@nostrwatch/nocap':
         specifier: workspace:^
         version: link:../../libraries/nocap
@@ -1153,10 +1156,22 @@ importers:
       '@nostrwatch/utils':
         specifier: workspace:^
         version: link:../../internal/utils
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       nostr-tools:
         specifier: ^2.10.4
         version: 2.10.4(typescript@5.7.2)
+      svelte:
+        specifier: ^5.2.7
+        version: 5.2.7
+      tseep:
+        specifier: ^1.3.1
+        version: 1.3.1
     devDependencies:
+      '@types/lodash':
+        specifier: ^4
+        version: 4.17.13
       esbuild:
         specifier: ^0.24.0
         version: 0.24.2

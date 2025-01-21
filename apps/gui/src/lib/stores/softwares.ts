@@ -2,7 +2,7 @@ import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
-import { relayAggregates } from './checks.js';
+import { relayCheckAggregates } from './checks.js';
 import { doAggregateCache } from './app.js';
 
 export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
@@ -26,9 +26,9 @@ export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
   return softwaresArray;
 });
 
-export const softwareCounts = derived(relayAggregates, ($relayAggregates) => {
+export const softwareCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
   const counts = new Map();
-  $relayAggregates.forEach((relayCheck) => {
+  $relayCheckAggregates.forEach((relayCheck) => {
     const sw = relayCheck?.software?.toLowerCase() || 'unknown';
     let count = counts.get(sw) || 0;
     count++;
@@ -47,10 +47,10 @@ export const softwarePercentages = derived(softwareCounts, ($softwareCounts) => 
   return percentages;
 });
 
-export const softwareVersionCounts = derived(relayAggregates, ($relayAggregates) => {
+export const softwareVersionCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
   const counts = new Map();
 
-  $relayAggregates.forEach((relayCheck) => {
+  $relayCheckAggregates.forEach((relayCheck) => {
     const sw = (relayCheck?.software?.toLowerCase()) || 'unknown';
     const ver = (relayCheck?.version?.toLowerCase()) || 'unknown';
 
@@ -69,11 +69,11 @@ export const softwareVersionCounts = derived(relayAggregates, ($relayAggregates)
 export const softwareVersionPercentages = derived(softwareVersionCounts, ($softwareVersionCounts) => {
   const percentages = new Map();
 
-  $softwareVersionCounts.forEach((versionMap, software) => {
-    const total = Array.from(versionMap.values()).reduce((sum, count) => sum + count, 0);
+  $softwareVersionCounts.forEach((versionMap: Map<string, number>, software: string) => {
+    const total: number = Array.from(versionMap.values()).reduce((sum, count) => sum + count, 0);
     const softwarePercentMap = new Map();
 
-    versionMap.forEach((count, version) => {
+    versionMap.forEach((count: number, version: string) => {
       const percent = ((count / total) * 100).toFixed(1);
       softwarePercentMap.set(version, parseFloat(percent));
     });
@@ -83,3 +83,47 @@ export const softwareVersionPercentages = derived(softwareVersionCounts, ($softw
 
   return percentages;
 });
+
+export const softwareRelays = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const softwareRelays = new Map();
+
+  $relayCheckAggregates.forEach((relayCheck) => {
+    const sw = relayCheck?.software?.toLowerCase() || 'unknown';
+    if (!softwareRelays.has(sw)) {
+      softwareRelays.set(sw, []);
+    }
+    softwareRelays.get(sw).push(relayCheck.relay);
+  });
+
+  return softwareRelays;
+})
+
+type MapStringSet = Map<string, Set<string>>;
+
+export const softwareOperatorPubkeysMap = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const softwareOperators: MapStringSet = new Map<string, Set<string>>();
+
+  $relayCheckAggregates.forEach((relayCheck) => {
+    const sw = relayCheck?.software?.toLowerCase() || 'unknown';
+    if (!softwareOperators.has(sw)) {
+      softwareOperators.set(sw, new Set());
+    }
+    softwareOperators.get(sw)?.add(relayCheck.operatorPubkey);
+  });
+  return softwareOperators;
+})
+
+export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($softwareOperatorPubkeysMap) => {
+  const operatorSoftware: MapStringSet = new Map<string, Set<string>>();
+
+  $softwareOperatorPubkeysMap.forEach((pubkeys, software) => {
+    pubkeys.forEach((pubkey) => {
+      if (!operatorSoftware.has(pubkey)) {
+        operatorSoftware.set(pubkey, new Set());
+      }
+      operatorSoftware.get(pubkey)?.add(software);
+    });
+  });
+
+  return operatorSoftware;
+})

@@ -1,11 +1,15 @@
 import { writable, derived, type Writable, type Readable, get } from "svelte/store";
-import { Monitor, Nip66Event, type IEvent } from '@nostrwatch/route66/models'
-import { StateManager } from "@nostrwatch/route66";
+import { Nip66CheckEvent, Geocoded, NostrEvent, type IEvent, Monitor } from '@nostrwatch/route66/models'
+import { Route66, StateManager } from "@nostrwatch/route66";
 import { doAggregateCache } from "./app";
+import { SvelteMemoryRelay } from "@nostrwatch/memory-relay"
+import { route66 } from "./route66";
 
+export const events: Writable<Map<string, StoreEventType>> = writable(new Map());
 
-export const events: Writable<Map<string, Nip66Event>> = writable(new Map());
-export const eventsArray: Readable<Nip66Event[]> = derived(
+export type StoreEventType = Nip66CheckEvent | Geocoded | NostrEvent
+
+export const eventsArray: Readable<StoreEventType[]> = derived(
     events, 
     ($events) => {
         const eventsArr = Array.from($events?.values() || []);
@@ -31,7 +35,7 @@ export const totalMonitors: Readable<number> = derived(
 
         
 
-// export const checkEventsByRelay: Readable<Map<string, Nip66Event>> = derived(
+// export const checkEventsByRelay: Readable<Map<string, Nip66CheckEvent>> = derived(
 //     eventsArray,
 //     $events => {
 //         const map = new Map();

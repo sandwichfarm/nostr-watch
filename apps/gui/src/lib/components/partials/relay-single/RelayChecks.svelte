@@ -8,18 +8,18 @@
 	import { timeAgo } from '$lib/utils/time';
 	import { PFP } from '$lib/utils/pfp';
 	import RelayMap from '../RelayMap.svelte';
-	import type { Nip66Event } from '@nostrwatch/route66/models';
+	import type { Nip66CheckEvent } from '@nostrwatch/route66/models';
 	import type { Monitor } from '@nostrwatch/route66/models/Monitor';
 	import { onMount } from 'svelte';
     
     export let relay: string;
-    export let checks: Writable<Nip66Event[]>;
+    export let checks: Writable<Nip66CheckEvent[]>;
     export let monitors: Writable<Monitor[]>;
     export let aggregate: any;
 
-    let selectedCheckCache: Nip66Event | null = null;
+    let selectedCheckCache: Nip66CheckEvent | null = null;
     
-    export const selectedCheck: Writable<Nip66Event | null> = writable($checks?.[0] || null);
+    export const selectedCheck: Writable<Nip66CheckEvent | null> = writable($checks?.[0] || null);
     const showMap: Writable<boolean> = writable(false)
     const showLocalCheck: Writable<boolean> = writable(false)
 

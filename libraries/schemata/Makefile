@@ -21,7 +21,7 @@ $(DIST_DIR)/%.json: %.yaml
 	@echo "Converting $< -> $@"
 	@mkdir -p $(dir $@)
 	@$(YAMLCONVERT) $< > $@
-	@sed -i '' 's/\.yaml/.json/g' $@ || sed -i 's/\.yaml/.json/g' $@
+	@sed -i.bak 's/\.yaml/.json/g' $@ && rm $@.bak
 
 .PHONY: convert_json
 convert_json: FORCE $(JSON_SCHEMAS)

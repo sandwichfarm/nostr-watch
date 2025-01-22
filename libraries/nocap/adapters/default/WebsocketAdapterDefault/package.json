@@ -4,6 +4,10 @@
   "type": "module",
   "license": "MIT",
   "entry": "src/index.ts",
+  "main": "dist/server/cjs/index.cjs.js",
+  "browser": "./dist/web/index.js",
+  "module": "./dist/server/index.js",
+  "types": "./dist/web/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/server/index.js",

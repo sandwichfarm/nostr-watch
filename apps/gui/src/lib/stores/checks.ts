@@ -22,8 +22,15 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const relayAverages: Record<string, number> = {};
   const relayCounts: Record<string, number> = {};
 
-  $checks.forEach((check) => {
-    const relay = check.relay;
+  $checks.forEach((check: Nip66CheckEvent) => {
+    let relay: string;
+    if(!check?.relay) return;
+    try {
+      relay = new URL(check?.relay).toString();
+    }
+    catch(e){
+      console.warn('could not normalize relay:', check.relay)
+    }
 
     if (!relayAverages[relay]) {
       relayAverages[relay] = 0;
@@ -118,11 +125,19 @@ export const relayChecks: Readable<
 });
 
 export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
-  let aggregates = Object.entries($relayChecks).map(([relay, item], index) => ({
-    relay,
-    ...item.aggregate,
-    id: index,
-  }));
+  let aggregates = Object.entries($relayChecks).map(([relay, item], index) => {
+    try {
+      relay = new URL(relay).toString();
+    }
+    catch(e){
+      console.warn('could not normalize relay:', relay)
+    }
+    return {
+      relay,
+      ...item.aggregate,
+      id: index
+    }
+  });
   //console.log('relayChecks', $relayChecks?.length)
   const $isBootstrapping = get(isBootstrapping)
   const agg = StateManager.get('aggregate:complete');

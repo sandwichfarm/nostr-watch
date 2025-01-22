@@ -7,7 +7,7 @@ interface Check {
   [id: string]: any;
 }
 
-import { eventsArray, type StoreEventType } from './events.js';
+import { events, eventsArray, type StoreEventType } from './events.js';
 
 import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import { StateManager } from "@nostrwatch/route66";
@@ -116,12 +116,15 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   return countMap;
 }
 
+export const eventsChecks: Readable<Nip66CheckEvent[]> = derived(eventsArray, ($events) => {
+  return $events.filter(event => event.kind === 30166) as Nip66CheckEvent[];
+})
+
 export const relayChecks: Readable<
   Record<string, { a: Record<string, any>; checks: Check[]; aggregate?: any }>
-> = derived(eventsArray, ($events) => {
-  const checks = $events.filter( (event: StoreEventType) => event.kind === 30166 ) as Nip66CheckEvent[]
-  if(!checks.length) return {};
-  return relayCheckAggregator(checks);
+> = derived(eventsChecks, ($eventsChecks) => {
+  if(!$eventsChecks.length) return {};
+  return relayCheckAggregator($eventsChecks);
 });
 
 export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
@@ -138,7 +141,7 @@ export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($rela
       id: index
     }
   });
-  //console.log('relayChecks', $relayChecks?.length)
+  
   const $isBootstrapping = get(isBootstrapping)
   const agg = StateManager.get('aggregate:complete');
   if(!aggregates.length || ($isBootstrapping && agg) ) {

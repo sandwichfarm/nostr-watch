@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayCheckAggregates, relaysWithNip11s, relaysWithoutNip11s } from "$lib/stores";
+    	import { onMount } from "svelte";
+        import { debounce } from "lodash";
+
+	import { events, nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayCheckAggregates, relaysWithNip11s, relaysWithoutNip11s } from "$lib/stores";
 	import { isLivesyncing } from "$lib/stores/app";
 	import { doBootstrap } from "$lib/stores/routines";
 	import { appState, isBootstrapping, isSeeded, tabState, isIdle } from "$lib/stores/app";
@@ -7,7 +10,7 @@
 	import { route66 } from "$lib/stores";
 	import { Value } from "svelte-radix";
 	import { shouldSync as _shouldSync } from "$lib/stores/app";
-	import { onMount } from "svelte";
+
 
     const debug: Writable<Map<string, any>> = writable(new Map());
     const shouldSync: Writable<boolean> = writable(false);
@@ -93,6 +96,25 @@
     relaysWithoutNip11s.subscribe((value) => {
         addDebug('relaysWithoutNip11s', value.length);
     });
+
+    // eventsChecks.subscribe((events) => {
+    //     addDebug('store:eventsChecks', $eventsChecks);
+    // });
+
+    const debugStores = () => {
+        const eventKeys = Array.from($events?.keys?.()) ?? []; 
+        const eventsArray = Array.from(eventKeys);
+
+        addDebug('store:events', eventKeys?.length || 0);
+
+        [0,1,3,10002,10166,30166].forEach( kind => {
+            addDebug(`store:events:${kind}`, eventsArray.filter( (key: string) => { 
+                const parts = key.split(':');
+                return parts[1] === kind.toString();
+            }).length);
+        });
+    }
+
     
     const debugRoute66 = () => {
         shouldSync.set(_shouldSync());
@@ -127,6 +149,7 @@
         await new Promise((resolve) => setTimeout(resolve, 1000));
         debugRoute66()
         debugCacheAdapter()
+        debugStores()
     })
 
     setInterval(debugRoute66, 1000*1);

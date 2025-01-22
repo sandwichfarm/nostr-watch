@@ -110,7 +110,7 @@
   };
 
   async function init() {
-    // console.log('init called');
+    // //console.log('init called');
     ready = true;
     setRelayMapPoint();
     // (★) If monitors/checks are already loaded, we can set them here

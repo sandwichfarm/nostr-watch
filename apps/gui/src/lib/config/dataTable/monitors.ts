@@ -184,7 +184,7 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 }
 
 export const tableRowStyler = (row: Record<string, any>) => {
-    console.log(`tableRowStyler:`, 'active', row.active, row)
+    //console.log(`tableRowStyler:`, 'active', row.active, row)
     return {
         'bg-green-400 bg-opacity-5': row.enabled === true && row.active > 0,
         'opacity-20': !row.active

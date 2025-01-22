@@ -16,9 +16,9 @@
     const deadRelays: Writable<Nip66CheckEvent[]> = writable([])
 
     const fetchDeadRelays = async () => {
-        console.log('FML fetching dead relays')
+        //console.log('FML fetching dead relays')
         const dead = await $route66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
-        console.log('dead relays fetched:', deadRelays.length)
+        //console.log('dead relays fetched:', deadRelays.length)
         dead?.forEach( (event: IEvent) => {
             const deadInstance = new Nip66CheckEvent(event)
             if(deadInstance.relay === relayUrl) return;

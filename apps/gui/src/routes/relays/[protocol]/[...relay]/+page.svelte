@@ -19,6 +19,7 @@
 	import { route66Ready } from '$lib/stores/app';
 	import { route66 } from '$lib/stores';
 	import { timeAgo } from '$lib/utils/time';
+	import type { NostrEvent } from 'nostr-tools';
 
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
@@ -93,14 +94,14 @@
 
   $: lastSeenAgo = $lastSeen? timeAgo($lastSeen*1000): '';
 
-  const checksrelay: Readable<Nip66CheckEvent[]> = derived(
+  const relayChecks: Readable<Nip66CheckEvent[]> = derived(
       eventsArray,
       ($eventsArray) => {
           const results = new Map<string, Nip66CheckEvent>();
           if ($eventsArray.length) {
               $eventsArray.forEach((check: Nip66CheckEvent) => {
-                  if (!check.relay) return console.error('Invalid check:', check);
-                  if (check.relay !== relayUrl) return;
+                  if (check.kind !== 30166) return;
+                  if (check?.relay !== relayUrl) return;
                   if (!results.has(check.pubkey)) {
                       results.set(check.pubkey, check);
                   }
@@ -111,16 +112,16 @@
       }
   );
 
-  const relayAggregate: Readable<any | undefined> = derived(checksrelay, ($checksrelay) => {
-      let aggregate = relayCheckAggregator($checksrelay);
+  const relayAggregate: Readable<any | undefined> = derived([relayChecks, relayCheckAggregates], ([$relayChecks, $relayCheckAggregates]) => {
+      let aggregate = relayCheckAggregator($relayChecks);
       if (aggregate) {
           return Object.entries(aggregate).map(([relay, item], index) => ({
               relay,
-              ...item.aggregate,
+              ...(item as any)?.aggregate || {},
               id: index,
           }))?.[0];
       } else {
-          return $relayCheckAggregates.find((agg: any) => agg.relay === relayUrl);
+          return $relayCheckAggregates.find((agg: any) => agg.relay === new URL(relayUrl).toString());
       }
   });
 
@@ -140,7 +141,7 @@
 
     const getRelayData = async (type = 'online') => {
       const res = await $route66?.services?.relay?.getRelayData(relayUrl, type)
-      console.log(`RELAY DATA.${type} check:`, res?.[0]?.length)
+      //console.log(`RELAY DATA.${type} check:`, res?.[0]?.length)
       return res
     }
 
@@ -177,10 +178,10 @@
       }
 
       const deadRes = await getRelayData('dead')
-      console.log('RELAY DATA.dead check:', deadRes)
+      //console.log('RELAY DATA.dead check:', deadRes)
       if (!deadRes?.[0]?.length) {
         relayIsUnknown.set(true)
-        console.log('RELAY DATA: RELAY HAS NEVER BEEN SEEN')
+        //console.log('RELAY DATA: RELAY HAS NEVER BEEN SEEN')
       } else {
         console.warn('RELAY DATA: RELAY IS DEAD', deadRes?.[0]?.length)
         const [data, mons] = deadRes
@@ -228,12 +229,12 @@
   };
 
   const loadOperatorMeta = async () => {
-    //console.log('loadOperatorMeta')
+    ////console.log('loadOperatorMeta')
     const begin = Date.now();
       if (!operatorPubkey) return operatorMetaReady.set(true);
       let count = 0
       const onevent = (event: IEvent) => {
-        //console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
+        ////console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
         count++;
         if (event.kind === 0) {
           if($operatorProfile === null) {
@@ -258,7 +259,7 @@
           await new Promise(resolve => setTimeout(resolve, 100));
       }
       operatorMetaReady.set(true)
-      //console.log('loadOperatorMeta', 'done', Date.now() - begin)
+      ////console.log('loadOperatorMeta', 'done', Date.now() - begin)
   };
 
   const mount = async () => {
@@ -274,7 +275,7 @@
       loadRelayData().then(() => {
           resume();
       });
-      console.log('nip11 from cache', await $route66?.adapters?.cache?.getNip11(relayUrl));
+      // //console.log('nip11 from cache', await $route66?.adapters?.cache?.getNip11(relayUrl));
   };
 
   const destroy = () => {
@@ -295,7 +296,7 @@
   onMount(mount);
   onDestroy(destroy);
 
-  $: hasChecks = $checksrelay?.length > 0;
+  $: hasChecks = $relayChecks?.length > 0;
   $: relayUrl = new URL(`${$page.params.protocol}://${$page.params.relay}`).toString();
   $: geocode = $relayAggregate?.geocode;
   $: description = $nip11?.description || null;
@@ -422,7 +423,7 @@
                 <div>
                   {#if item === 'map'}
                     {#if CardMap}
-                      <CardMap relay={relayUrl} {monitors} checks={checksrelay} aggregate={$relayAggregate} />
+                      <CardMap relay={relayUrl} {monitors} checks={relayChecks} aggregate={$relayAggregate} />
                     {:else}
                       <Skeleton class="h-48 w-full" />
                     {/if}
@@ -459,14 +460,14 @@
                   {/if}
                   {#if item === 'checks'}
                     {#if CardChecks}
-                      <CardChecks checks={$checksrelay} {activeTab} />
+                      <CardChecks checks={$relayChecks} {activeTab} />
                     {:else}
                       <Skeleton class="h-36 w-full" />
                     {/if}
                   {/if}
                   {#if item === 'general'}
                     {#if CardGeneral}
-                      <CardGeneral {relayUrl} checks={$checksrelay} version={version} software={software} geocode={geocode} />
+                      <CardGeneral {relayUrl} checks={$relayChecks} version={version} software={software} geocode={geocode} />
                     {:else}
                       <Skeleton class="h-24 w-full" />
                     {/if}
@@ -501,7 +502,7 @@
 
           {#if Tabs && RelayChecks && $relayAggregate}
             <Tabs.Content value="checks" class="py-6">
-              <RelayChecks relay={relayUrl} {monitors} checks={checksrelay} aggregate={$relayAggregate} />
+              <RelayChecks relay={relayUrl} {monitors} checks={relayChecks} aggregate={$relayAggregate} />
             </Tabs.Content>
           {/if}
 

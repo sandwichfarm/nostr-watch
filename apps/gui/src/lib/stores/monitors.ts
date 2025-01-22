@@ -8,6 +8,7 @@ import { Monitor } from '@nostrwatch/route66/models'
 import { nip05s, validNip05s } from "./nip05s.js";
 import { route66 } from "./route66.js";
 import type Route66 from "@nostrwatch/route66";
+import { publishEventsToMemoryRelay } from "./events-helpers.js";
 
 let $route66: Route66 | null;
 
@@ -18,8 +19,9 @@ export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   if(!monitorsArr?.length) return new Map()
   const map: Map<string, Monitor> = new Map()
   for(const monitor of monitorsArr) {
-    const mon = Monitor.fromCache(monitor)
+    const mon: Monitor | undefined = Monitor.fromCache(monitor)
     if(!mon) continue
+    publishEventsToMemoryRelay(mon.events)
     map.set(monitor.pubkey, mon)
   }
   return map

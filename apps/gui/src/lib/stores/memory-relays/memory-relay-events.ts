@@ -22,7 +22,7 @@ const eventModelMap: Record<number, any> = {
 }
 
 eventsStoreMemoryRelay_.on('instantiate', (event: StoreEventType) => { 
-    return  eventModelMap[event.kind]? 
+    return  eventModelMap?.[event.kind]? 
         new eventModelMap[event.kind](event):
         new NostrEvent(event);
 });
@@ -30,20 +30,16 @@ eventsStoreMemoryRelay_.on('instantiate', (event: StoreEventType) => {
 //!!NOTICE: THE EVENTS RELAY IS ONLY STORING NIP-66 EVENTS
 // TO MAINTAIN FUNCTIONALITY UNTIL EVERYTHING IT FLETCHED OUT:
 eventsStoreMemoryRelay_.on('qualify', (event: StoreEventType, key: string, $relay: SvelteMemoryRelay<IEvent, StoreEventType>) => { 
-    const { kind } = event;
-
-    // const existing = $relay.get(key);
-    // if (existing && existing.id === event.id) return false
-
-    if(kind !== 30166 && kind !== 10166) return false;
-
-    const monitor = getMonitor(event.pubkey);
-    const online = monitor?.relayIsOnline(event);
-    monitor?.maybeUpdateLastActive?.(event);
-
-    // if (!online) return false
-
-    // if (!event?.created_at || (existing && (existing.created_at ?? 0) > event.created_at)) return false
+    const kind = event.kind
+    if(!event) return false 
+    if(kind === undefined) return false
+    if(![0, 10002, 30166, 10166].includes(kind)) return false;
+    if(kind === 30166) {
+        const monitor = getMonitor(event.pubkey);
+        const online = monitor?.relayIsOnline(event);
+        monitor?.maybeUpdateLastActive?.(event);
+        if(!online) return false;
+    }
     return true
 });
 

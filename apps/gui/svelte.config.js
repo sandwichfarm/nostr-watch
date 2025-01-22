@@ -28,7 +28,13 @@ const config = {
         '/unsupported',
         '/mobile',
         '/software',
-        '/software/[name]'
+        '/software/[name]',
+        '/geography',
+        '/geography/[country]',
+        '/operators',
+        '/operators/[operator]',
+        '/isps',
+        '/isps/[isp]',
       ]
     },
   }

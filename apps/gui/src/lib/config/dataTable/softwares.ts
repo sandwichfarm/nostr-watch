@@ -4,7 +4,7 @@ import { makeSoftwareReadable } from '$lib/synonyms/software';
 export const columnsDisable: DataKeys = []
 export const filtersDisable: DataKeys = []
 
-export const columnsShow: DataKeys = ['name', 'versions', 'marketShare', 'totalDeployed']
+export const columnsShow: DataKeys = ['name', 'versionsNum', 'marketShare', 'totalDeployed']
 export const filtersShow: DataKeys = ['version']
 
 export const humanReadableNames: NameFormatter = {};
@@ -25,13 +25,14 @@ export const tableFormatters: Formatters = {
             :'<span class="w-6 h-6 inline-block mr-2"></span>';
         return `${icon}${software}`;
     },
-    versions: (versions: string[]) => {
-        return `<span class="inline-block m-auto text-sm py-2 px-3 rounded-full bg-white/10">${versions.length}</span>`;
+    versionsNum: (versionsNum: number) => {
+        return `<span class="inline-block m-auto text-sm py-2 px-3 rounded-full bg-white/10">${versionsNum}</span>`;
     },
     marketShare: (marketShare: number) => {
         return `<span class="text-lg">${marketShare.toFixed(1)}%</span>`;
     }   
 }
+
 
 export const filterFormatters: Formatters = {
     name: (software: string) => {

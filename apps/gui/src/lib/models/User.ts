@@ -37,7 +37,7 @@ export class User {
                 if( meta.kind === 0) this.#profile = new PubkeyProfile(meta);
                 if( meta.kind === 10002 ) this.#relays = new PubkeyRelays(meta);
             }
-            ////console.log('user initialize', metas);
+            //////console.log('user initialize', metas);
             this.#ready = true;
         })
     }
@@ -52,6 +52,21 @@ export class User {
         this.#ready = true;
     }
 
+    get keys(): (keyof this)[] {
+        return [
+            'pubkey',
+            'name',
+            'about',
+            'lud06',
+            'lud16',
+            'lnaddr',
+            'photo',
+            'banner',
+            'relays',
+            'reference'
+        ]
+    }
+
     get pubkey(): Pubkey {
         return this.#pubkey;
     }
@@ -62,6 +77,10 @@ export class User {
 
     get name(): string | undefined {
         return this.#profile?.name;
+    }
+
+    get about(): string | undefined {
+        return this.#profile?.about;
     }
 
     get lud06(): string | undefined {

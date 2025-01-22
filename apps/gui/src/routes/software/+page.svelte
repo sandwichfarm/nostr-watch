@@ -30,7 +30,7 @@
 		
 		let conf = {...defaultDataTableConfig, ...builtInTableConfig}
 
-        console.log('conf', conf)
+        //console.log('conf', conf)
 
 		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
 		
@@ -42,7 +42,7 @@
 			config.set(conf)
 		}
 
-        console.log('config', $config)
+        //console.log('config', $config)
 
 		ready.set(true)
 	}

@@ -19,8 +19,8 @@ const getMonitor = (pubkey: string): Monitor => {
 }
 
 export const publishEventsToMemoryRelay = async (_events: IEvent[]) => {
-    console.log(`publishEventsToMemoryRelay: ${_events.length} events`);
     queue.add(async () => {
+        await delay(10);
         get(eventsStoreMemoryRelay).eventBatch(_events)
     });
 };

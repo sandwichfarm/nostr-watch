@@ -4,6 +4,8 @@
 	import type { Writable } from 'svelte/store';
 	import SummarizeRelayChecks from '../SummarizeRelayChecks.svelte';
 
+    export const prerender = true;
+
     export let checks;
     export let activeTab: Writable<string>;
 </script>

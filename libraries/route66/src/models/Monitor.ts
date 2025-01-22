@@ -88,6 +88,10 @@ export class Monitor {
     return cache
   }
 
+  get events(): IEvent[] {
+    return [ this?.profile?.json ?? undefined, this.registration?.json ?? undefined, this._relays?.json ?? undefined ].filter(Boolean) as IEvent[]; 
+  }
+
   get active(): boolean {
     // console.log('Monitor: get active():', this.pubkey, this.lastActive)
     if(this.lastActive < 0) return false;

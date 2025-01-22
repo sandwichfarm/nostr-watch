@@ -162,6 +162,7 @@ export const softwareRows = derived(relayCheckAggregates, () => {
       id: deterministicHash(name),
       name,
       versions: get(softwareVersions).get(name) || [],
+      versionsNum: get(softwareVersions).get(name)?.length || 0,
       totalDeployed: get(softwareCounts).get(name) || 0,
       marketShare: get(softwarePercentages).get(name) || 0,
     };

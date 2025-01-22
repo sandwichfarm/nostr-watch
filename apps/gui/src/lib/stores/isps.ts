@@ -15,7 +15,7 @@ export const isps = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const ispsMap = new Map();
     $relayCheckAggregates.forEach((event) => {
         if (event?.asname) {
-            ispsMap.set(event.asname.toLowerCase(), {
+            ispsMap.set(event.asname, {
                 title: event.isp,
                 as: event.as,
                 asname: event.asname
@@ -68,3 +68,22 @@ export const ispPercentages = derived(ispCounts, ($ispCounts) => {
 
     return percentages;
 });
+
+export const ispRows = derived(
+    [isps, ispCounts, ispPercentages], 
+    ([$isps, $ispCounts, $ispPercentages]) => {
+    const rows = $isps.map((isp) => {
+        const count = $ispCounts.get(isp.title) || 0;
+        const percent = $ispPercentages.get(isp.title) || 0;
+        const { title:prettyName, asname, as } = isp;
+        return {
+            id: as,
+            prettyName,
+            asname, 
+            as,
+            count,
+            percent
+        };
+    });
+    return rows;
+})

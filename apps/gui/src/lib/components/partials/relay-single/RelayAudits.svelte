@@ -65,7 +65,7 @@
             }
             return suites;
         });
-        //console.log(`Suite Start: ${suiteKey}`);
+        ////console.log(`Suite Start: ${suiteKey}`);
     };
 
     // Handler for when a suite finishes
@@ -79,7 +79,7 @@
             }
             return suites;
         });
-        //console.log(`Suite Finish: ${suiteKey}`, result);
+        ////console.log(`Suite Finish: ${suiteKey}`, result);
     };
 
     // Handler for when a test within a suite starts
@@ -113,7 +113,7 @@
             }
             return suites;
         });
-        //console.log(`Suite Test Start: ${testKey} in Suite: ${suiteKey}`);
+        ////console.log(`Suite Test Start: ${testKey} in Suite: ${suiteKey}`);
     };
 
     // Handler for when a test within a suite finishes
@@ -160,7 +160,7 @@
             }
             return suites;
         });
-        //console.log(`Suite Test Finish: ${testKey} in Suite: ${suiteKey}`, testResult);
+        ////console.log(`Suite Test Finish: ${testKey} in Suite: ${suiteKey}`, testResult);
     };
 
     // Handler for when samples are emitted for a suite
@@ -182,13 +182,13 @@
             }
             return suites;
         });
-        //console.log(`Suite Samples: ${suiteKey}`, samples);
+        ////console.log(`Suite Samples: ${suiteKey}`, samples);
     };
 
     onMount(async () => {
         const resumer = await pauseLiveSync();
 
-        //console.log('Starting relay audits...');
+        ////console.log('Starting relay audits...');
         
         const audit = new Auditor();
 

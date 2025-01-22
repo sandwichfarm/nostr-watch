@@ -8,6 +8,7 @@ import { IEvent } from '@base/interfaces';
 import { Filter } from 'nostr-tools';
 import { Monitor, Nip66CheckEvent, NostrEvent } from '@base/models';
 import { MonitorService } from './MonitorService';
+import { getNormalizedWebsocketVariants, WebsocketUrlType } from '@base/utils/nostr';
 
 export class RelayService extends Service {
   monitors: MonitorService;
@@ -41,12 +42,12 @@ export class RelayService extends Service {
     }
   }
 
-  relayFilters(relay: string, liveness: string = 'online'): Filter[] { 
+  relayFilters(relay: WebsocketUrlType, liveness: string = 'online'): Filter[] { 
     const filters: Filter[] = []
     // console.log('this.monitors.activeMonitors', liveness, this.monitors.activeMonitors.length)
     if( this.monitors.activeMonitors.length === 0 ) return [{ kinds: [30166], "#d": [relay] }]
     const monitors = liveness === 'online'? this.monitors.activeMonitors: this.monitors.array;
-    const defaultFilter: Filter = { "#d": [relay], kinds: [30166] }
+    const defaultFilter: Filter = { "#d": getNormalizedWebsocketVariants(relay), kinds: [30166] }
     if(liveness === 'dead') {
       // console.log('relayfilters', filters)
       return [defaultFilter]
@@ -79,7 +80,7 @@ export class RelayService extends Service {
         const monitor = monitors.get(check.pubkey);
         if(!monitor || !monitor.relayIsOnline(check)) return false
         return true
-      })  
+      })
     }
     if(liveness === 'offline') {
       checks = checks.filter(check => {
@@ -87,7 +88,6 @@ export class RelayService extends Service {
         if(!monitor || !monitor.relayIsOffline(check, true)) return false
         return true
       })
-
     }
     if(liveness === 'dead') {
       checks = checks.filter(check => {
@@ -102,7 +102,7 @@ export class RelayService extends Service {
   async fetchRelayChecks(r: string, liveness: string = 'online'): Promise<Nip66CheckEvent[] | undefined> {
     const relay: string | null = RelayService.formatRelay(r);
     if(!relay) return;
-    const filters: Filter[] = this.relayFilters(relay, liveness);
+    const filters: Filter[] = this.relayFilters(relay as WebsocketUrlType, liveness);
     const relays = this.nip66Relays;
     const options: WebsocketAdapterOptions = {
       cache: true,

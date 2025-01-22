@@ -11,6 +11,8 @@
     } from '$lib/stores/index.js';
 	import { StateManager } from '@nostrwatch/route66';
 	import { hasBeenBoostrapped } from '$lib/stores/app';
+	import { relayCheckAggregates } from '$lib/stores';
+	import { eventsChecks } from '$lib/stores';
 
     let eventsCount = StateManager.get('count:events:checks');
 
@@ -38,7 +40,7 @@
     </span>
     <span class={eventsClass}>
         <span>Checks</span>
-        <span>{$eventsArray?.length || eventsCount}</span>
+        <span>{$eventsChecks?.length || eventsCount}</span>
     </span>
     <span class={nip11sClass}>
         <span>NIP11s</span>

@@ -164,10 +164,11 @@ export abstract class AbstractMemoryRelay<
   protected shouldInsert(event: Input) {
     const { type, key } = eventIdData(event);
     const existing = this.events.get(key);
-    if (!this.qualifyEvent(event, key)) return false;
+    const qualified = this.qualifyEvent(event, key)
+    if (!qualified) return false;
     if (!existing) return true;
     if (type === "replaceable" || type === "parameterized") {
-      return (event.created_at as number) > (existing.created_at as number);
+      return (event.created_at as number) > (existing.created_at as number)
     }
     return false;
   }

@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
           if (code.includes('$state.frozen')) {
             code = code.replace(/\$state\.frozen/g, '$state.raw');
             fs.writeFileSync(modulePath, code, 'utf-8');
-            console.log('Patched svelte-speedometer: replaced "$state.frozen" with "$state.raw"');
+            //console.log('Patched svelte-speedometer: replaced "$state.frozen" with "$state.raw"');
           }
         }
       },

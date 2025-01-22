@@ -37,13 +37,13 @@
     const tableData = derived(
         [data, config],
         ([ $data, $config ]) => {
-            console.log('data', $data.length);
+            // //console.log('data', $data.length);
 
             if (!$data || $data.length === 0) {
                 return { data: [], columns: [] };
             }
 
-            console.log('config.columnsShow', $config.columnsShow.length);
+            // //console.log('config.columnsShow', $config.columnsShow.length);
 
             if($config.columnsShow.length === 0) {
                 return { data: [], columns: [] };
@@ -55,7 +55,7 @@
                 name: $config.humanReadableNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
-            console.log('columns', columns.length);
+            // //console.log('columns', columns.length);
 
             return { data: $data, columns };
         }
@@ -109,7 +109,7 @@
     }
 
     const createTable = (force: boolean = false) => {
-        console.log('Creating DataTable instance...');
+        //console.log('Creating DataTable instance...');
         const tableInstanceConfig: any = {
             pageSize: $config.pageSize,
             columns: $filteredTableData.columns,
@@ -124,16 +124,16 @@
                 tableInstanceConfig.initialSortDirection = $config.sortState.direction
             }
         }
-        console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, tableInstanceConfig);
+        // //console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, tableInstanceConfig);
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
             if(tableInstance === null || force){
-                console.log('Creating DataTable instance due to data.');
+                // //console.log('Creating DataTable instance due to data.');
                 tableInstance = new DataTable<any>(tableInstanceConfig);
-                console.log('tableInstance', tableInstance)
+                // //console.log('tableInstance', tableInstance)
             }
         } else {
             if (tableInstance) {
-                console.log('Destroying DataTable instance due to no data.');
+                // //console.log('Destroying DataTable instance due to no data.');
                 tableInstance = null;
             }
         }
@@ -173,7 +173,7 @@
     });
 
     filters.subscribe((newFilters: any) => {
-        //console.log('Filters updated', newFilters);
+        ////console.log('Filters updated', newFilters);
         config.update( (currentConfig: DataTableConfig) => {
             currentConfig.activeFilters = newFilters;
             return currentConfig;

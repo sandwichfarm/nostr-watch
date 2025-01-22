@@ -8,7 +8,7 @@ import { relaysErrors } from '$lib/stores/relay-errors';
 import { instance } from '$lib/utils/lifecycle';
 import type { Route66 } from '@nostrwatch/route66';
 import PQueue from 'p-queue';
-const queue = new PQueue({concurrency: 50});
+const queue = new PQueue({concurrency: 10});
 
 export type Nip11ServiceMessage = {
     relay: string,
@@ -44,7 +44,7 @@ export class Nip11Service {
     }
 
     private onmessage(message: MessageEvent<Nip11ServiceMessage>){
-        //console.log('N11S recieved nip11 service message', message)
+        ////console.log('N11S recieved nip11 service message', message)
         const { relay, nip11:_nip11, error } = message.data;
         const nip11 = new Nip11(_nip11 as RelayInformation)
         if(error) {

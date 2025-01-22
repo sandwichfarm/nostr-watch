@@ -142,13 +142,13 @@ async function replaceNip19(text: string, update: (output: string) => void): Pro
         replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Note</a>`;
       }
 
-      //console.log('nip19', { original, replacement });
+      ////console.log('nip19', { original, replacement });
 
       return { original, replacement };
     }));
 
     replacements.forEach(({ original, replacement }) => {
-      //console.log("Replacing:", original, "with:", replacement);
+      ////console.log("Replacing:", original, "with:", replacement);
       text = text.replace(original, replacement);
     });
 

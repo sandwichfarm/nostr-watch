@@ -204,8 +204,8 @@ export class Route66 {
     return this.websocketAdapter?.fetch(args, callbacks) ?? false
   }
 
-  REQ(filters: any): void {
-    this.cacheAdapter?.REQ(filters)
+  async REQ(filters: any): Promise<IEvent[] | undefined> {
+    return this.cacheAdapter?.REQ(filters)
   }
 }
 

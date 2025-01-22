@@ -100,7 +100,7 @@
 		"@nostrwatch/auditor": "workspace:*",
 		"@nostrwatch/memory-relay": "workspace:^",
 		"@nostrwatch/nocap": "workspace:^",
-		"@nostrwatch/nocap-every-adapter-default": "workspace:^",
+		"@nostrwatch/nocap-websocket-adapter-default": "workspace:^",
 		"@nostrwatch/route66": "workspace:^",
 		"@nostrwatch/route66-cacheadapter-nostrsqlite": "workspace:^",
 		"@nostrwatch/route66-wsadapter-nostrtools": "workspace:^",

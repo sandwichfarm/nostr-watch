@@ -178,7 +178,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
             console.error('context:', context, err)
         }
         if(isBrowser()) {
-            // setTimeout( () => location.reload(), 1000 )
+            setTimeout( () => location.reload(), 1000 )
         }
     }
 }

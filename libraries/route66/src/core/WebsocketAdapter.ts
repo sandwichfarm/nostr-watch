@@ -193,7 +193,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{
     let { hash } = args
-    console.log('WebsocketAdapter:subscribe', args)
+    // console.log('WebsocketAdapter:subscribe', args)
     if(callbacks && Object.keys(callbacks).length > 0) {
       args.options.stream = true
     }
@@ -211,7 +211,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   async fetch(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
-    console.log('WebsocketAdapter:fetch', args)
+    // console.log('WebsocketAdapter:fetch', args)
     if(callbacks && Object.keys(callbacks).length > 0) {
       args.options.stream = true
     }
@@ -244,7 +244,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       return hash
     }    
     if(this.worker instanceof Worker) {
-      console.log('WebsocketAdapter:request', message)
+      // console.log('WebsocketAdapter:request', message)
       this.worker.postMessage(message)
     } else if(this.worker instanceof SharedWorker)
       this.worker.port.postMessage(message)

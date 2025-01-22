@@ -30,16 +30,16 @@ eventsStoreMemoryRelay_.on('instantiate', (event: StoreEventType) => {
 //!!NOTICE: THE EVENTS RELAY IS ONLY STORING NIP-66 EVENTS
 // TO MAINTAIN FUNCTIONALITY UNTIL EVERYTHING IT FLETCHED OUT:
 eventsStoreMemoryRelay_.on('qualify', (event: StoreEventType, key: string, $relay: SvelteMemoryRelay<IEvent, StoreEventType>) => { 
-    // const { kind } = event;
+    const { kind } = event;
 
     // const existing = $relay.get(key);
     // if (existing && existing.id === event.id) return false
 
-    // if(kind !== 30166 && kind !== 10166) return false;
+    if(kind !== 30166 && kind !== 10166) return false;
 
-    // const monitor = getMonitor(event.pubkey);
-    // const online = monitor?.relayIsOnline(event);
-    // monitor?.maybeUpdateLastActive?.(event);
+    const monitor = getMonitor(event.pubkey);
+    const online = monitor?.relayIsOnline(event);
+    monitor?.maybeUpdateLastActive?.(event);
 
     // if (!online) return false
 

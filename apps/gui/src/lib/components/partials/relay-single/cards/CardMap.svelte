@@ -1,7 +1,7 @@
 <script lang="ts">
     import * as Card from '$lib/components/ui/card';
 	import type { Writable } from 'svelte/store';
-	import RelayMap from '../../RelayMap.svelte';
+	import RelayMap from '$lib/components/partials/relay-single/RelayMap.svelte';
 	import type { Monitor, Nip66CheckEvent } from '@nostrwatch/route66/models';
     
     export let relay: string;

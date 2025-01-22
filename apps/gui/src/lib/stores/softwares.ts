@@ -1,12 +1,22 @@
-import { derived, get } from 'svelte/store';
+import { derived, get, type Readable } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
 import { relayCheckAggregates } from './checks.js';
 import { doAggregateCache } from './app.js';
+import type { Nip66CheckEvent } from '@nostrwatch/route66/models';
+import { deterministicHash } from '@nostrwatch/route66/utils';
 
-export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
-  const software = new Set();
+export const softwareKey = (software: string) => {
+  return software?.toLowerCase()
+}
+
+export const softwareCleanKey = (software: string) => {
+  return softwareKey(software).replace(/ /g, '-');
+}
+
+export const softwares: Readable<string[]> = throttledDerived(eventsArray, ($eventsArray: Nip66CheckEvent[]) => {
+  const software: Set<string> = new Set();
 
   $eventsArray.forEach((check) => {
     if (check?.software) {
@@ -14,7 +24,7 @@ export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
     }
   });
 
-  let softwaresArray = Array.from(software).sort();
+  let softwaresArray: string[] = Array.from(software).sort();
 
   if(softwaresArray.length){
     if(get(doAggregateCache)) StateManager.set('aggregate:softwares', softwaresArray);
@@ -29,7 +39,7 @@ export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
 export const softwareCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
   const counts = new Map();
   $relayCheckAggregates.forEach((relayCheck) => {
-    const sw = relayCheck?.software?.toLowerCase() || 'unknown';
+    const sw = softwareKey(relayCheck?.software) || 'unknown';
     let count = counts.get(sw) || 0;
     count++;
     counts.set(sw, count);
@@ -47,11 +57,28 @@ export const softwarePercentages = derived(softwareCounts, ($softwareCounts) => 
   return percentages;
 });
 
+export const softwareVersions = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const uniqueMap = new Map<string, Set<string>>()
+  for (const relayCheck of $relayCheckAggregates) {
+    const sw = softwareKey(relayCheck?.software) || 'unknown'
+    if (!uniqueMap.has(sw)) {
+      uniqueMap.set(sw, new Set())
+    }
+    uniqueMap.get(sw)!.add(relayCheck.version)
+  }
+  const result = new Map<string, string[]>()
+  for (const [softwareName, versionsSet] of uniqueMap.entries()) {
+    result.set(softwareName, Array.from(versionsSet))
+  }
+  return result
+})
+
+
 export const softwareVersionCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
   const counts = new Map();
 
   $relayCheckAggregates.forEach((relayCheck) => {
-    const sw = (relayCheck?.software?.toLowerCase()) || 'unknown';
+    const sw = (softwareKey(relayCheck?.software)) || 'unknown';
     const ver = (relayCheck?.version?.toLowerCase()) || 'unknown';
 
     if (!counts.has(sw)) {
@@ -62,7 +89,6 @@ export const softwareVersionCounts = derived(relayCheckAggregates, ($relayCheckA
     const currentCount = versionMap.get(ver) || 0;
     versionMap.set(ver, currentCount + 1);
   });
-
   return counts;
 });
 
@@ -88,7 +114,7 @@ export const softwareRelays = derived(relayCheckAggregates, ($relayCheckAggregat
   const softwareRelays = new Map();
 
   $relayCheckAggregates.forEach((relayCheck) => {
-    const sw = relayCheck?.software?.toLowerCase() || 'unknown';
+    const sw = softwareKey(relayCheck?.software) || 'unknown';
     if (!softwareRelays.has(sw)) {
       softwareRelays.set(sw, []);
     }
@@ -104,7 +130,7 @@ export const softwareOperatorPubkeysMap = derived(relayCheckAggregates, ($relayC
   const softwareOperators: MapStringSet = new Map<string, Set<string>>();
 
   $relayCheckAggregates.forEach((relayCheck) => {
-    const sw = relayCheck?.software?.toLowerCase() || 'unknown';
+    const sw = softwareKey(relayCheck?.software) || 'unknown';
     if (!softwareOperators.has(sw)) {
       softwareOperators.set(sw, new Set());
     }
@@ -126,4 +152,20 @@ export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($
   });
 
   return operatorSoftware;
+})
+
+
+export const softwareRows = derived(relayCheckAggregates, () => {
+  const rows: any[] = [];
+  get(softwares).forEach((name: string) => {
+    const row = {
+      id: deterministicHash(name),
+      name,
+      versions: get(softwareVersions).get(name) || [],
+      totalDeployed: get(softwareCounts).get(name) || 0,
+      marketShare: get(softwarePercentages).get(name) || 0,
+    };
+    rows.push(row);
+  });
+  return rows;
 })

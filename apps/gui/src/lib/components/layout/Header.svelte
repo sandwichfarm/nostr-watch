@@ -17,8 +17,10 @@
     <nav>
         <a href="/">home</a>
         <a href="/relays">relays</a>
+        <a href="/software">software</a>
         <a href="/monitors">monitors</a>
         <a href="/preferences">preferences</a>
+        
     </nav>
     {/if}
     {#if !isHomepage && (loadedEnough || !$doBootstrap) && !$unsupported}

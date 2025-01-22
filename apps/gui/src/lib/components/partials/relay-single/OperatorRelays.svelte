@@ -16,22 +16,29 @@
     const deadRelays: Writable<Nip66CheckEvent[]> = writable([])
 
     const fetchDeadRelays = async () => {
-        if(!$route66) return;
-        const deadRelays = await $route66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
-        //console.log('dead relays fetched:', deadRelays.length)
-        deadRelays?.forEach( (event: IEvent) => {
+        console.log('FML fetching dead relays')
+        const dead = await $route66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
+        console.log('dead relays fetched:', deadRelays.length)
+        dead?.forEach( (event: IEvent) => {
+            const deadInstance = new Nip66CheckEvent(event)
+            if(deadInstance.relay === relayUrl) return;
+            if($onlineRelays.find((e: Nip66CheckEvent) => e.relay === deadInstance.relay)) return;
             deadRelays.update( ( events: Nip66CheckEvent[] ): Nip66CheckEvent[] => {
-                return [...events, new Nip66CheckEvent(event)]
+                return [...events, deadInstance]
             })
         })
     }
-    const operatorRelays = derived([eventsArray, deadRelays], ([$eventsArray, $deadRelays]) => {
-        const online =  $eventsArray.filter((event: Nip66CheckEvent) => {
+
+    const onlineRelays = derived(eventsArray, ($eventsArray) => {
+        return $eventsArray.filter((event: Nip66CheckEvent) => {
             return  event?.operatorPubkey 
                     && event.operatorPubkey === pubkey 
                     && event?.relay !== relayUrl;
         })
-        const all = [...online, ...$deadRelays]
+    });
+
+    const allOperatorRelays = derived([onlineRelays, deadRelays], ([$onlineRelays, $deadRelays]) => {
+        const all = [...$onlineRelays, ...$deadRelays]
         otherRelaysCount = all.length
         return all
     });
@@ -49,8 +56,9 @@
     onMount(mount)
     onDestroy(destroy)
 </script>
+<!-- <pre>{JSON.stringify($allOperatorRelays, null, 2)}</pre> -->
 {#if pubkey}
-    {#each $operatorRelays as event}
+    {#each $allOperatorRelays as event}
         <OperatorRelay {event} {route66} />
     {/each}
 {/if}

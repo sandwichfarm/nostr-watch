@@ -95,14 +95,29 @@ export class MonitorService extends Service {
 
   async fetchOperatorRelaysNotOnline(pubkey: string, args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
     const filters: Filter[] = []
-    this.array.forEach((monitor) => {
+    this.activeMonitors.forEach((monitor) => {
       filters.push({...monitor.checkFilterNotOnline, "#p": [pubkey]})
     })
-    console.log('dead fileters', filters);
+    console.log(`FML this.activeMonitors`, this.activeMonitors)
     let relays = args?.relays || this.nip66Relays;
     const options = {
       stream: false,
-      cache: false,
+      cache: true,
+      returnResults: true,
+      keepAlive: false
+    }
+    return this.subscribe({ filters, relays, options }, callbacks);
+  }
+
+  async fetchOperatorRelaysDead(pubkey: string, args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+    const filters: Filter[] = []
+    this.activeMonitors.forEach((monitor) => {
+      filters.push({...monitor.checkFilterDead, "#p": [pubkey]})
+    })
+    let relays = args?.relays || this.nip66Relays;
+    const options = {
+      stream: false,
+      cache: true,
       returnResults: true,
       keepAlive: false
     }
@@ -494,6 +509,7 @@ export class MonitorService extends Service {
   }
 
   async ensureMonitorsActive(pubkeys?: string | string[]): Promise<void> {
+    console.log('ensureMonitorsActive')
     StateManager.emit('activity', 'monitors/bootstrap/ensureActive', 'begin');
     const MAX_FILTERS = 10; //TODO: try to derive from NIP-11
 

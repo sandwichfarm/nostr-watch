@@ -21,6 +21,7 @@
   import { IdleDetector } from '$lib/utils/idle.js';
   import Debugger from '$lib/components/partials/Debugger.svelte';
   import { isIdle } from '$lib/stores/app';
+	import { resetStores } from '$lib/stores/memory-relays/routines';
 
   window.process = process;
 
@@ -124,6 +125,7 @@
   
   async function boot() {
     appState.set('booting');
+    // (await instance()).monitorService.ensureMonitorsActive();
     if (!get(doBootstrap)) {
       try {
         await seedFromCache();
@@ -212,6 +214,7 @@
   
   onDestroy(() => {
     unsubscribe();
+    resetStores();
     console.log('Component destroyed. Cleaned up subscriptions and resources.');
   });
   

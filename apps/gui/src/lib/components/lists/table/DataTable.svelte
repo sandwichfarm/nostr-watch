@@ -6,7 +6,6 @@
     import Filters from './Filters.svelte'; 
     import DataTableShowResults from '$lib/components/partials/DataTableShowResults.svelte';
     import DataTablePaginator from '$lib/components/partials/DataTablePaginator.svelte';
-    // import { resultsPerPage } from '$lib/stores/datatable-settings';
     import { applyFilters, createRelayFilters, type ConsoleFilter } from '$lib/utils/filter-dom.js';
     import { Input } from '$lib/components/ui/input/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
@@ -38,9 +37,13 @@
     const tableData = derived(
         [data, config],
         ([ $data, $config ]) => {
+            console.log('data', $data.length);
+
             if (!$data || $data.length === 0) {
                 return { data: [], columns: [] };
             }
+
+            console.log('config.columnsShow', $config.columnsShow.length);
 
             if($config.columnsShow.length === 0) {
                 return { data: [], columns: [] };
@@ -52,17 +55,7 @@
                 name: $config.humanReadableNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
-            //console.log('columns', columns.length);    
-
-            // const data_ = $data.map((item: any) => {
-            //     const formattedItem = { ...item };
-            //     for (const key in $config.tableFormatters) {
-            //         if (Object.prototype.hasOwnProperty.call(formattedItem, key)) {
-            //             formattedItem[key] = $config.tableFormatters[key](formattedItem[key], formattedItem);
-            //         }
-            //     }
-            //     return formattedItem;
-            // });
+            console.log('columns', columns.length);
 
             return { data: $data, columns };
         }
@@ -116,6 +109,7 @@
     }
 
     const createTable = (force: boolean = false) => {
+        console.log('Creating DataTable instance...');
         const tableInstanceConfig: any = {
             pageSize: $config.pageSize,
             columns: $filteredTableData.columns,
@@ -130,14 +124,16 @@
                 tableInstanceConfig.initialSortDirection = $config.sortState.direction
             }
         }
-        //console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, tableInstanceConfig);
+        console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, tableInstanceConfig);
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
             if(tableInstance === null || force){
+                console.log('Creating DataTable instance due to data.');
                 tableInstance = new DataTable<any>(tableInstanceConfig);
+                console.log('tableInstance', tableInstance)
             }
         } else {
             if (tableInstance) {
-                //console.log('Destroying DataTable instance due to no data.');
+                console.log('Destroying DataTable instance due to no data.');
                 tableInstance = null;
             }
         }
@@ -205,6 +201,7 @@
     }
 
 </script>
+<!-- <pre>{JSON.stringify($tableData, null, 2)}</pre> -->
 
 <!-- **UI Layout with Resizable Panes** -->
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
@@ -325,7 +322,7 @@
         {:else}
             <!-- **Loading or Empty State** -->
             <div class="flex h-full items-center justify-center align-middle">
-                <p>[ loading image here ]</p>
+                <p>[ loading image here ] {tableKey}</p>
             </div>
         {/if}
     </Resizable.Pane>
@@ -372,10 +369,6 @@
           
     </Resizable.Pane>
 </Resizable.PaneGroup>
-
-
-
-
 
 <style lang="postcss" global>
     .active-filter {

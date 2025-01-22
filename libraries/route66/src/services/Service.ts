@@ -126,15 +126,11 @@ export class Service {
   }
 
   async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
-    console.log('Service.fetch', args)
     await this.ready();
-    console.log('Service.fetch ready')
     if(!args.hash) {  
       args.hash = deterministicHash(args);
     }
-    console.warn('Service.fetch() not implemented');
     this.subscriptions.add(args.hash)
-    console.log('Service.fetch() calling _fetch', args, 'callbacks', (Object.keys(callbacks ?? {}).length))
     const results = await this._fetch(args, callbacks);
     this.subscriptions.delete(args.hash)
     return results;
@@ -150,9 +146,9 @@ export class Service {
     let cacheEvents: IEvent[] = [];
     cacheEvents = await this.cacheAdapter.REQ(filters);
 
-    if(cacheEvents.length){
-      console.log('cache hit', cacheEvents.length, filters)
-    }
+    // if(cacheEvents.length){
+      // console.log('cache hit', cacheEvents.length, filters)
+    // }
 
     if (callbacks?.onevents) {
         callbacks.onevents(cacheEvents);
@@ -168,7 +164,7 @@ export class Service {
 
   async fetchFromWebsocket(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     await this.ready();
-    console.log('Service.fetchFromWebsocket: ready', args);
+    // console.log('Service.fetchFromWebsocket: ready', args);
     const { relays, filters, options } = args;
     const websocketEvents: IEvent[] = await this.websocketAdapter.fetch(
         {
@@ -183,12 +179,7 @@ export class Service {
   }
 
   async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
-    console.log('Service._fetch', args)
-
     await this.ready();
-
-    console.log('Service._fetch ready')
-
     const { relays, options, sync } = args;
     let { filters } = args;
     let { returnResults } = options;

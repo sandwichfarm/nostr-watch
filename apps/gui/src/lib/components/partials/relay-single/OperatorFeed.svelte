@@ -102,7 +102,9 @@
 
 <section id="operator-feed" class="block relative">
     {#if $feed.length === 0}
-    loading
+        <div class="flex flex-col text-center items-center justify-center h-[600px]">
+            <span class="text-2xl text-center">loading</span>
+        </div>
     {/if}
     {#if $userService}
     <Masonry

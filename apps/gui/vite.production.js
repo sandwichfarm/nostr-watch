@@ -39,6 +39,7 @@ export default defineConfig({
   optimizeDeps: {
     esbuildOptions: {
       target: "esnext",
+      bundle: true
     },
     exclude: [
       '@nostrwatch/worker-relay',

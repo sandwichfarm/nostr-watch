@@ -41,41 +41,68 @@ export class RelayService extends Service {
     }
   }
 
-  // get relay (): string {
-  //   return this._relay;
-  // }
-
-  // set relay(relay: string) {
-  //   try {
-  //     relay = new URL(relay).toString();
-  //     this._relay = relay;
-  //   }
-  //   catch {
-  //     console.warn (`[RelayService] Invalid relay URL: ${relay}`);
-  //   }
-  // }
-
-  relayFilters(relay: string): Filter[] { 
-    return [ 
-      { kinds: [30166], "#d": [relay] }
-    ]
+  relayFilters(relay: string, liveness: string = 'online'): Filter[] { 
+    const filters: Filter[] = []
+    // console.log('this.monitors.activeMonitors', liveness, this.monitors.activeMonitors.length)
+    if( this.monitors.activeMonitors.length === 0 ) return [{ kinds: [30166], "#d": [relay] }]
+    const monitors = liveness === 'online'? this.monitors.activeMonitors: this.monitors.array;
+    const defaultFilter: Filter = { "#d": [relay], kinds: [30166] }
+    if(liveness === 'dead') {
+      // console.log('relayfilters', filters)
+      return [defaultFilter]
+    }
+    monitors.forEach((monitor) => {
+      let filter;
+      switch(liveness){
+        case 'offline':
+          filter = { ...monitor.checkFilterOffline, ...defaultFilter }
+          break;
+        case 'online': 
+          filter = { ...monitor.checkFilter, ...defaultFilter }
+      }
+      if(!filter) return;
+      filters.push(filter)
+    })
+    // console.log('relayfilters', filters)
+    return filters;
   }
 
-  async getRelayData(relay: string): Promise<[ Nip66CheckEvent[], Map<string, Monitor> ] | undefined> {
+  async getRelayData(relay: string, liveness: string = 'online'): Promise<[ Nip66CheckEvent[], Map<string, Monitor> ] | undefined> {
     await this.ready();
-    let checks = await this.fetchRelayChecks(relay);
+    await this.monitors.ready();
+    let checks = await this.fetchRelayChecks(relay, liveness);
     if(!checks || !checks?.length) return;
     const monitors: Map<string, Monitor> | undefined = (await this.monitorInstancesFromChecks(checks)) as Map<string, Monitor>;
-    ////console.log('typeof monitors', typeof monitors, monitors);
     if(!monitors) return;
-    checks = RelayService.removeOldChecks(monitors, checks);
+    if(liveness === 'online') {
+      checks = checks.filter(check => {
+        const monitor = monitors.get(check.pubkey);
+        if(!monitor || !monitor.relayIsOnline(check)) return false
+        return true
+      })  
+    }
+    if(liveness === 'offline') {
+      checks = checks.filter(check => {
+        const monitor = monitors.get(check.pubkey);
+        if(!monitor || !monitor.relayIsOffline(check, true)) return false
+        return true
+      })
+
+    }
+    if(liveness === 'dead') {
+      checks = checks.filter(check => {
+        const monitor = monitors.get(check.pubkey);
+        if(!monitor || !monitor.relayIsDead(check)) return true
+        return false
+      })
+    }
     return [ checks, monitors ];
   }
 
-  async fetchRelayChecks(r: string): Promise<Nip66CheckEvent[] | undefined> {
+  async fetchRelayChecks(r: string, liveness: string = 'online'): Promise<Nip66CheckEvent[] | undefined> {
     const relay: string | null = RelayService.formatRelay(r);
     if(!relay) return;
-    const filters: Filter[] = this.relayFilters(relay);
+    const filters: Filter[] = this.relayFilters(relay, liveness);
     const relays = this.nip66Relays;
     const options: WebsocketAdapterOptions = {
       cache: true,
@@ -83,7 +110,7 @@ export class RelayService extends Service {
       keepAlive: false,
       stream: false
     }
-    const events: IEvent[] = await this.fetch( { relays, filters, options } );
+    const events: IEvent[] = await this.fetch( { relays, filters, options, hash: `relay:${Math.random()}` } );
     if(!events) return;
     const checks: Nip66CheckEvent[] = events.map((event: IEvent) => new Nip66CheckEvent(event));  
     return checks;
@@ -100,7 +127,7 @@ export class RelayService extends Service {
       returnResults: true, 
       keepAlive: false,
       stream: true,
-      batch: 1,
+      batch: 1
     }
     return this.subscribe( { relays, filters, priority, options }, callbacks );
   }

@@ -127,8 +127,8 @@ const formatFee = (fees: Nip11Fee[]) => {
 export const tableFormatters: Formatters = {
     relay: (relay: string, row: any) => {
         const { icon } = row;
-        const formatted = truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '');
-        const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: ''
+        const formatted = `<span class="inline-block my-1 text-xl bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
+        const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: '<span class="inline-block mr-2 h-6 w-6"></span>'
         return `<a class="text-lg" href="/relays/${formatRelayUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
     // monitorPubkey: (pubkey) => {

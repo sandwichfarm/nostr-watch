@@ -22,11 +22,11 @@
         busy.set(true);
         nocap = new Nocap(relayUrl);
         nocap.on('change', (value: any) => {
-            //console.log('onchange value', value);
+            ////console.log('onchange value', value);
         });
         nocap.useAdapter(WebsocketAdapter);
         const res = await nocap.check(['open', 'read']);
-        //console.log('speedcard result', res)
+        ////console.log('speedcard result', res)
         busy.set(false);
         speed.set(res.open.duration);
         // success.set(res.open.data)

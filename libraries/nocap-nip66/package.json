@@ -10,8 +10,7 @@
     "build:node": "webpack --config webpack.config.js --env target=node",
     "test": "vitest",
     "lint": "eslint . --ext .ts",
-    "clean": "rimraf dist",
-    "prepare": "npm run clean && npm run build"
+    "clean": "rimraf dist"
   },
   "repository": {
     "type": "git",

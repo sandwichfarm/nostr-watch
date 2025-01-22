@@ -1,4 +1,3 @@
-import { glob } from 'glob';
 import esbuild from 'esbuild';
 import { polyfillNode } from 'esbuild-plugin-polyfill-node';
 import fs from 'fs';

@@ -22,6 +22,14 @@ export class User {
         }
     }
 
+    static from(profile: IEvent, relays: IEvent): User {
+        const instance = new User(profile.pubkey);
+        instance.#profile = new PubkeyProfile(profile);
+        instance.#relays = new PubkeyRelays(relays);
+        instance.forceReady();
+        return instance;
+    }
+
     async initialize(): Promise<void> {
         if(!this.#service) return;
         this.#service.meta(this).then( (metas: IEvent[]) =>{
@@ -29,7 +37,7 @@ export class User {
                 if( meta.kind === 0) this.#profile = new PubkeyProfile(meta);
                 if( meta.kind === 10002 ) this.#relays = new PubkeyRelays(meta);
             }
-            ////console.log('user initialize', metas);
+            //////console.log('user initialize', metas);
             this.#ready = true;
         })
     }
@@ -38,6 +46,25 @@ export class User {
         while(!this.#ready){
             await new Promise(resolve => setTimeout(resolve, 100));
         }
+    }
+
+    forceReady(){
+        this.#ready = true;
+    }
+
+    get keys(): (keyof this)[] {
+        return [
+            'pubkey',
+            'name',
+            'about',
+            'lud06',
+            'lud16',
+            'lnaddr',
+            'photo',
+            'banner',
+            'relays',
+            'reference'
+        ]
     }
 
     get pubkey(): Pubkey {
@@ -50,6 +77,10 @@ export class User {
 
     get name(): string | undefined {
         return this.#profile?.name;
+    }
+
+    get about(): string | undefined {
+        return this.#profile?.about;
     }
 
     get lud06(): string | undefined {
@@ -82,6 +113,14 @@ export class User {
 
     get relays(): string[] | undefined {
         return this.#relays?.relays
+    }
+
+    set relays(instance: PubkeyRelays){
+        this.#relays = instance;
+    }
+
+    set profile(instance: PubkeyProfile){
+        this.#profile = instance;
     }
 
     get reference(): string | undefined {

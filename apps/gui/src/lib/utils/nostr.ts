@@ -1,8 +1,11 @@
 import type { Nip05 } from "nostr-tools/nip05"
+
+import type { Nip05Service } from "../services/Nip05Service"
+
 import { nip05Service } from "$lib/stores/nip05s.js"
 import { get } from "svelte/store"
 import { monitorNip05s } from "$lib/stores/monitors.js"
-import type { NostrEvent } from "@nostrwatch/route66/models/Event"
+
 
 export const checkManyNip05s = async () => {
     for(const { pubkey, nip05 } of get(monitorNip05s)){
@@ -11,7 +14,7 @@ export const checkManyNip05s = async () => {
 }
 
 export const checkNip05 = async ( pubkey: string, nip05: Nip05 ) => {
-    const service = get(nip05Service);
+    const service: Nip05Service = get(nip05Service);
     service.check(pubkey, nip05)
 }
 
@@ -38,3 +41,13 @@ export const nipLeadingZero =( number: number | string): string  => {
     }
     return typeof number === 'string'? number: number.toString()
 }
+
+/**
+ * Takes a URL string and returns a tuple of two strings:
+ * [urlWithoutTrailingSlash, urlWithTrailingSlash].
+ */
+function getNormalizedUrlVariants(url: string): [string, string] {
+    const withoutSlash = url.replace(/\/+$/, '');
+    const withSlash = withoutSlash + '/';
+    return [withoutSlash, withSlash];
+  }

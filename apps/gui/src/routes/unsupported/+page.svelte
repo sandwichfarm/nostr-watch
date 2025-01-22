@@ -17,4 +17,4 @@ $: browser = getBrowserInfo()
         {browser.name} 
         <span class="text-sm italic text-white/60">{browser.version} </span>
     </div>
-  </div>
+</div>

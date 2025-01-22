@@ -27,9 +27,9 @@ export const setRelayError = (relay: string, type: RelayErrorType, subject: Rela
     (messages as RelayErrorMessages).push(message)
 
     relayErrors.set(`${type}:${subject}`, messages)
-    //console.log('relayErrors', subject, relay, relayErrors)
+    ////console.log('relayErrors', subject, relay, relayErrors)
     $relaysErrors.set(relay, relayErrors)
-    //console.log('relayErrors', subject, $relaysErrors)
+    ////console.log('relayErrors', subject, $relaysErrors)
     relaysErrors.set($relaysErrors);
-    //console.log('relayErrors (from store)', get(relaysErrors))
+    ////console.log('relayErrors (from store)', get(relaysErrors))
 }

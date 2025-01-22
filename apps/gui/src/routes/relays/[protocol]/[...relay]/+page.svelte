@@ -3,8 +3,8 @@
   import { onDestroy, onMount } from 'svelte';
   import { doBootstrap } from '$lib/stores/routines.js';
   import { derived, writable, type Readable, type Writable } from 'svelte/store';
-  import { Nip66Event, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/route66/models';
-  import { relayAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
+  import { Nip66CheckEvent, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/route66/models';
+  import { relayCheckAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
   import { nip11s, nip11Service, nip11sLocal } from '$lib/stores/nip11s.js';
   import { isSeeded } from '$lib/stores/app.js';
   import { eventsArray } from '$lib/stores/events.js';
@@ -13,11 +13,13 @@
   import { Nip11 } from '@nostrwatch/route66/models';
   import { isLivesyncing, doAggregateCache, hasBeenBoostrapped } from '$lib/stores/app';
   import { pauseLiveSync, beginLiveSync } from '$lib/utils/lifecycle';
-  import { addEventsToStore } from '$lib/stores/events-helpers';
+  import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers';
   import { clickToCopy, observeViewport } from '$lib/utils/ux';
   import { Skeleton } from "$lib/components/ui/skeleton";
 	import { route66Ready } from '$lib/stores/app';
 	import { route66 } from '$lib/stores';
+	import { timeAgo } from '$lib/utils/time';
+	import type { NostrEvent } from 'nostr-tools';
 
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
@@ -67,6 +69,8 @@
       loadComponent(() => import('$lib/components/partials/relay-single/RelayNip11.svelte'), (comp) => RelayNip11 = comp);
   };
 
+  const env = import.meta.env.MODE;
+
   doBootstrap.set(false);
   doAggregateCache.set(false);
 
@@ -81,34 +85,43 @@
   const monitors: Writable<Monitor[]> = writable([]);
   const activeTab: Writable<string> = writable('overview');
 
-  const checksrelay: Readable<Nip66Event[]> = derived(
+  const relayIsOffline: Writable<boolean> = writable(false);
+  const relayIsDead: Writable<boolean> = writable(false);
+  const relayIsUnknown: Writable<boolean> = writable(false);
+  const lastCheck: Writable<Nip66CheckEvent | undefined> = writable(undefined);
+  const lastSeen: Writable<number | null> = writable(null);
+  const lastSeenBy: Writable<Monitor | null> = writable(null); 
+
+  $: lastSeenAgo = $lastSeen? timeAgo($lastSeen*1000): '';
+
+  const relayChecks: Readable<Nip66CheckEvent[]> = derived(
       eventsArray,
       ($eventsArray) => {
-          const results = new Map<string, Nip66Event>();
+          const results = new Map<string, Nip66CheckEvent>();
           if ($eventsArray.length) {
-              $eventsArray.forEach((check: Nip66Event) => {
-                  if (!check.relay) return console.error('Invalid check:', check);
-                  if (check.relay !== relayUrl) return;
+              $eventsArray.forEach((check: Nip66CheckEvent) => {
+                  if (check.kind !== 30166) return;
+                  if (check?.relay !== relayUrl) return;
                   if (!results.has(check.pubkey)) {
                       results.set(check.pubkey, check);
                   }
               });
           }
           return Array.from(results.values())
-              .sort((a: Nip66Event, b: Nip66Event) => (b.created_at as number) - (a.created_at as number));
+              .sort((a: Nip66CheckEvent, b: Nip66CheckEvent) => (b.created_at as number) - (a.created_at as number));
       }
   );
 
-  const relayAggregate: Readable<any | undefined> = derived(checksrelay, ($checksrelay) => {
-      let aggregate = relayCheckAggregator($checksrelay);
+  const relayAggregate: Readable<any | undefined> = derived([relayChecks, relayCheckAggregates], ([$relayChecks, $relayCheckAggregates]) => {
+      let aggregate = relayCheckAggregator($relayChecks);
       if (aggregate) {
           return Object.entries(aggregate).map(([relay, item], index) => ({
               relay,
-              ...item.aggregate,
+              ...(item as any)?.aggregate || {},
               id: index,
           }))?.[0];
       } else {
-          return $relayAggregates.find((agg: any) => agg.relay === relayUrl);
+          return $relayCheckAggregates.find((agg: any) => agg.relay === new URL(relayUrl).toString());
       }
   });
 
@@ -124,20 +137,90 @@
   );
 
   const loadRelayData = async () => {
-      destroy();
-      await route66Ready()
-      loadNip11().then(loadOperatorMeta)
+    destroy()
+
+    const getRelayData = async (type = 'online') => {
+      const res = await $route66?.services?.relay?.getRelayData(relayUrl, type)
+      //console.log(`RELAY DATA.${type} check:`, res?.[0]?.length)
+      return res
+    }
+
+    await route66Ready()
+    await $route66.services.relay.ready()
+    loadNip11().then(loadOperatorMeta)
+
+    if ($isLivesyncing) {
+      loading = false
+      currentRelay = relayUrl
+      return
+    }
+
+    try {
+      const onlineRes = await getRelayData('online')
+      if (onlineRes?.[0]?.length) {
+        console.warn('RELAY DATA: RELAY IS PROBABLE ONLINE', onlineRes)
+        const [data, mons] = onlineRes
+        publishEventsToMemoryRelay(data)
+        monitors.set(Array.from(mons?.values() || new Set()))
+        return
+      }
+
+      const offlineRes = await getRelayData('offline')
+      if (offlineRes?.[0]?.length) {
+        console.warn('RELAY DATA: RELAY MAY BE OFFLINE', offlineRes)
+        const [data, mons] = offlineRes
+        const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
+        lastCheck.set(latestEvent)
+        lastSeen.set(latestEvent?.created_at ?? null)
+        lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
+        relayIsOffline.set(true)
+        return
+      }
+
+      const deadRes = await getRelayData('dead')
+      //console.log('RELAY DATA.dead check:', deadRes)
+      if (!deadRes?.[0]?.length) {
+        relayIsUnknown.set(true)
+        //console.log('RELAY DATA: RELAY HAS NEVER BEEN SEEN')
+      } else {
+        console.warn('RELAY DATA: RELAY IS DEAD', deadRes?.[0]?.length)
+        const [data, mons] = deadRes
+        const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
+        lastCheck.set(latestEvent)
+        lastSeen.set(latestEvent?.created_at ?? null)
+        lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
+        relayIsDead.set(true)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      loading = false
+      currentRelay = relayUrl
+    }
+  }
+
+
+
+  const loadOfflineChecks = async () => {
       if (!$isLivesyncing) {
-          $route66?.services?.relay?.getRelayData(relayUrl).then( (res: any) => {
+          $route66?.services?.relay?.getOfflineChecks(relayUrl).then( (res: any) => {
             if (!res) return;
             const [data, mons] = res;
-            addEventsToStore(data);
+            publishEventsToMemoryRelay(data);
             monitors.set(Array.from(mons?.values() || new Set()));
           })
       }
-      
-      loading = false;
-      currentRelay = relayUrl;
+  };
+
+  const loadDeadChecks = async () => {
+      if (!$isLivesyncing) {
+          $route66?.services?.relay?.getOfflineChecks(relayUrl).then( (res: any) => {
+            if (!res) return;
+            const [data, mons] = res;
+            publishEventsToMemoryRelay(data);
+            monitors.set(Array.from(mons?.values() || new Set()));
+          })
+      }
   };
 
   const loadNip11 = async () => {
@@ -146,12 +229,12 @@
   };
 
   const loadOperatorMeta = async () => {
-    //console.log('loadOperatorMeta')
+    ////console.log('loadOperatorMeta')
     const begin = Date.now();
       if (!operatorPubkey) return operatorMetaReady.set(true);
       let count = 0
       const onevent = (event: IEvent) => {
-        //console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
+        ////console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
         count++;
         if (event.kind === 0) {
           if($operatorProfile === null) {
@@ -176,7 +259,7 @@
           await new Promise(resolve => setTimeout(resolve, 100));
       }
       operatorMetaReady.set(true)
-      //console.log('loadOperatorMeta', 'done', Date.now() - begin)
+      ////console.log('loadOperatorMeta', 'done', Date.now() - begin)
   };
 
   const mount = async () => {
@@ -192,22 +275,28 @@
       loadRelayData().then(() => {
           resume();
       });
-      console.log('nip11 from cache', await $route66?.adapters?.cache?.getNip11(relayUrl));
+      // //console.log('nip11 from cache', await $route66?.adapters?.cache?.getNip11(relayUrl));
   };
 
   const destroy = () => {
-      if (currentRelay === relayUrl) return;
       $route66?.services?.relay?.unsubscribeAll();
+      if (currentRelay === relayUrl) return;
       loading = true;
       currentRelay = '';
       monitors.set([]);
       operatorProfile.set(null);
       operatorRelays.set(null);
+      nip11Ready.set(false);
+      operatorMetaReady.set(false);
+      relayIsOffline.set(false);
+      relayIsDead.set(false);
+      relayIsUnknown.set(false);
   };
 
   onMount(mount);
   onDestroy(destroy);
 
+  $: hasChecks = $relayChecks?.length > 0;
   $: relayUrl = new URL(`${$page.params.protocol}://${$page.params.relay}`).toString();
   $: geocode = $relayAggregate?.geocode;
   $: description = $nip11?.description || null;
@@ -263,6 +352,11 @@
 
   $: errors = $relaysErrors?.get(relayUrl)
 
+  $: protocolsMatch = $page.params.protocol === 'wss' && location.protocol.replace(':', '') === 'https' 
+                      || $page.params.protocol === 'ws' && location.protocol.replace(':', '') === 'http' 
+
+  $: probablyOnline = !$relayIsOffline && !$relayIsDead && !$relayIsUnknown;
+
   let [minColWidth, maxColWidth, gap] = [400, 800, 21];
   let width: number, height: number;
 </script>
@@ -301,7 +395,9 @@
   </div>
 </header>
 
+{#if probablyOnline}
 <main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">
+  
   <section class="flex-1 rounded shadow">
     {#if Tabs}
       <Tabs.Root value={$activeTab} class="w-full p-0">
@@ -327,7 +423,7 @@
                 <div>
                   {#if item === 'map'}
                     {#if CardMap}
-                      <CardMap relay={relayUrl} {monitors} checks={checksrelay} aggregate={$relayAggregate} />
+                      <CardMap relay={relayUrl} {monitors} checks={relayChecks} aggregate={$relayAggregate} />
                     {:else}
                       <Skeleton class="h-48 w-full" />
                     {/if}
@@ -364,14 +460,14 @@
                   {/if}
                   {#if item === 'checks'}
                     {#if CardChecks}
-                      <CardChecks checks={$checksrelay} {activeTab} />
+                      <CardChecks checks={$relayChecks} {activeTab} />
                     {:else}
                       <Skeleton class="h-36 w-full" />
                     {/if}
                   {/if}
                   {#if item === 'general'}
                     {#if CardGeneral}
-                      <CardGeneral {relayUrl} checks={$checksrelay} version={version} software={software} geocode={geocode} />
+                      <CardGeneral {relayUrl} checks={$relayChecks} version={version} software={software} geocode={geocode} />
                     {:else}
                       <Skeleton class="h-24 w-full" />
                     {/if}
@@ -391,10 +487,12 @@
                     {/if}
                   {/if}
                   {#if item === 'speed'}
-                    {#if CardSpeed && !loading}
-                      <CardSpeed {relayUrl} />
-                    {:else}
-                      <Skeleton class="h-24 w-full" />
+                    {#if protocolsMatch || env === 'development'}
+                      {#if CardSpeed && !loading}
+                        <CardSpeed {relayUrl} />
+                      {:else}
+                        <Skeleton class="h-24 w-full" />
+                      {/if}
                     {/if}
                   {/if}
                 </div>
@@ -404,7 +502,7 @@
 
           {#if Tabs && RelayChecks && $relayAggregate}
             <Tabs.Content value="checks" class="py-6">
-              <RelayChecks relay={relayUrl} {monitors} checks={checksrelay} aggregate={$relayAggregate} />
+              <RelayChecks relay={relayUrl} {monitors} checks={relayChecks} aggregate={$relayAggregate} />
             </Tabs.Content>
           {/if}
 
@@ -443,11 +541,31 @@
       </Tabs.Root>
     {/if}
   </section>
+  
 </main>
 
-{#if Stats}
-  <Stats />
+{:else}
+  <div class="flex flex-col text-center items-center justify-center h-[600px]">
+    <span class="text-2xl text-center">
+    {#if $relayIsOffline}
+      <span class="block">Relay may be offline</span>
+      <span class="block">It was last seen {lastSeenAgo}</span>
+    {:else if $relayIsDead}
+      <span class="text-9xl">☠️</span>
+      <span class="block">Relay is dead</span>
+      <span class="block">It was last seen {lastSeenAgo}</span>
+    {:else if $relayIsUnknown}
+      <span class="block">Nobody has ever reported information on this relay</span>
+    {:else}
+      <span class="block">loading</span>
+    {/if}
+    </span>
+  </div>
 {/if}
+
+<!-- {#if Stats}
+  <Stats />
+{/if} -->
 
 <style lang="postcss" global>
     h1 > .copy-message {

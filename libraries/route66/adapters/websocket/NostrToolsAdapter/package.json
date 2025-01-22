@@ -26,8 +26,7 @@
     "dev": "node build.js --watch",
     "clean": "rm -rf dist",
     "clean:source": "find src -name \"*.d.ts\" -type f -delete && find src -name \"*.d.ts.map\" -type f -delete",
-    "test": "jest",
-    "prepare": "pnpm run build"
+    "test": "jest"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "0.2.3",

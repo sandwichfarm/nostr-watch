@@ -38,7 +38,6 @@ export class WebSocketWrapper implements IWebSocketWrapper {
   _ready: boolean = false;
   private options?: WebSocket.ClientOptions;
   
-  // private logger: Logger = new Logger('@nostrwatch/auditor:WebSocketWrapper');
   private listeners: {
     [K in keyof WebSocketEventMap]?: Set<EventListener>
   } = {};
@@ -52,22 +51,19 @@ export class WebSocketWrapper implements IWebSocketWrapper {
     key: Key,
     fn: (event: WebSocketEventMap[Key]) => void
   ): void {
-    // this.logger.debug(`binding ${key} event`);
-
-    // if (key === 'open' || key === 'close') {
-    //   return console.warn(`Cannot override default ${key} event handler`);
-    // }
-
-    const wrappedFn: EventListener = (event: Event) => {
-      fn(event as WebSocketEventMap[Key]);
+    const wrappedFn = (evt: Event) => {
+      fn(evt as WebSocketEventMap[Key]);
     };
-
+  
     if (!this.listeners[key]) {
       this.listeners[key] = new Set();
     }
-    this.listeners[key]?.add(wrappedFn);
-    this.ws?.addEventListener(key, wrappedFn as any);
+    this.listeners[key]!.add(wrappedFn as unknown as EventListener);
+  
+    (this.ws as any)?.addEventListener(key as any, wrappedFn as any);
   }
+  
+  
 
   off(): void {
     for (const [key, handlers] of Object.entries(this.listeners)) {
@@ -82,16 +78,13 @@ export class WebSocketWrapper implements IWebSocketWrapper {
   async connect(): Promise<boolean> {
     const timeout = setTimeout(() => {
       if (this.CONNECTING) {
-        // this.logger.debug('Connection timed out');
         this.terminate();
       }
     }, 10000);
 
     if (this.BUSY) {
-      // this.logger.debug('Websocket is busy');
       await new Promise<boolean>((resolve) =>
         setTimeout(() => {
-          // this.logger.debug('retrying connection');
           this.connect().then(resolve);
         }, 500)
       );
@@ -104,7 +97,6 @@ export class WebSocketWrapper implements IWebSocketWrapper {
     this.defaultHandlers();
 
     while (this.CONNECTING) {
-      // this.logger.debug(`connecting to ${this.relay}`);
       await new Promise<void>((resolve) => setTimeout(resolve, 100));
     }
 
@@ -114,7 +106,6 @@ export class WebSocketWrapper implements IWebSocketWrapper {
       return false;
     }
 
-    // this.logger.debug(`connected to ${this.relay}`);
     return true;
   }
 
@@ -134,7 +125,6 @@ export class WebSocketWrapper implements IWebSocketWrapper {
     this.off();
     this.ws?.addEventListener('open', () => (this._ready = true));
     this.ws?.addEventListener('close', () => (this._ready = false));
-    // this.ws?.addEventListener('error', (err) => this.logger.debug(`error: ${err}`));
   }
 
   terminate(): void {

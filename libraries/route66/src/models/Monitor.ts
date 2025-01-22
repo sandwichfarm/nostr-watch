@@ -1,4 +1,4 @@
-import { Nip66Event, type IEvent } from '@base/models';
+import { Nip66CheckEvent, type IEvent } from '@base/models';
 import { StateManager } from '@base/managers/StateManager';
 import { SyncRange, SyncRangeParameter, SyncStateManager } from '@base/managers/SyncStateManager';
 import { Filter } from 'nostr-tools';
@@ -88,7 +88,12 @@ export class Monitor {
     return cache
   }
 
+  get events(): IEvent[] {
+    return [ this?.profile?.json ?? undefined, this.registration?.json ?? undefined, this._relays?.json ?? undefined ].filter(Boolean) as IEvent[]; 
+  }
+
   get active(): boolean {
+    // console.log('Monitor: get active():', this.pubkey, this.lastActive)
     if(this.lastActive < 0) return false;
     return Math.round(Date.now()/1000)-this.frequency < this.lastActive;
   }
@@ -269,9 +274,9 @@ export class Monitor {
     return RelayLiveness.Offline;
   }
 
-  relayIsOffline(event: IEvent): boolean {
+  relayIsOffline(event: IEvent, strict: boolean = false): boolean {
     const timestamp = (event.created_at as number);
-    return timestamp < this.isOnlineAfter;
+    return timestamp < this.isOnlineAfter && (!strict || timestamp >= this.isDeadBefore);
   }
 
   relayIsOnline(event: IEvent): boolean {
@@ -289,7 +294,7 @@ export class Monitor {
   }
 
   async returnOfflineRelays(events: IEvent[]): Promise<IEvent[]> {
-    return events.filter(this.relayIsOffline.bind(this));
+    return events.filter((events) => this.relayIsOffline(events));
   }
 
   async returnDeadRelays(events: IEvent[]): Promise<IEvent[]> {
@@ -318,7 +323,8 @@ export class Monitor {
     return results;
   }
 
-  maybeUpdateLastActive(event: IEvent | Nip66Event): boolean {
+  maybeUpdateLastActive(event: IEvent | Nip66CheckEvent): boolean {
+    if(event.kind !== 30166) return false;
     if(!event?.created_at) return false;
     if(event.created_at > this.lastActive) {
       this.lastActive = event.created_at;

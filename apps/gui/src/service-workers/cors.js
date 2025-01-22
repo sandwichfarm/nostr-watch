@@ -1,11 +1,11 @@
 
 self.addEventListener('install', (event) => {
-    console.log('Service Worker installed');
+    //console.log('Service Worker installed');
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    console.log('Service Worker activated');
+    //console.log('Service Worker activated');
     event.waitUntil(self.clients.claim());
 });
 
@@ -27,7 +27,7 @@ self.addEventListener('fetch', (event) => {
                 })
                 .catch(() => {
                     const proxyUrl = `https://proxy.nostr.watch/${encodeURIComponent(url.href)}`;
-                    console.log(`Routing request through proxy: ${proxyUrl}`);
+                    //console.log(`Routing request through proxy: ${proxyUrl}`);
 
                     return fetch(proxyUrl, {
                         mode: 'cors',

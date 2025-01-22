@@ -6,6 +6,7 @@
 	import { eventsArray } from '$lib/stores';
 	import { totalMonitors } from '$lib/stores';
   import ActivityList  from "$lib/components/partials/ActivityList.svelte"
+	import Counts from '$lib/components/partials/home/Counts.svelte';
 
 	onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
@@ -24,6 +25,7 @@
       <AutoSuggestRelaysCompact maxResults={5} autoFocus={true} />
     </div>
   </section>
+  <Counts />
   {:else}
   <div class="flex flex-col items-center justify-center h-screen">
     <!-- <div class="text-2xl h-[420px] align-middle bg-white/10 mb-4">[ loading graphic ]</div> -->

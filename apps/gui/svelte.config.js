@@ -26,7 +26,15 @@ const config = {
         '/relays/[protocol]/[...relay]',
         '/reload/[...path]',
         '/unsupported',
-        '/mobile'
+        '/mobile',
+        '/software',
+        '/software/[name]',
+        '/geography',
+        '/geography/[country]',
+        '/operators',
+        '/operators/[operator]',
+        '/isps',
+        '/isps/[isp]',
       ]
     },
   }

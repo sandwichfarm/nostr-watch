@@ -8,25 +8,22 @@ import { Monitor } from '@nostrwatch/route66/models'
 import { nip05s, validNip05s } from "./nip05s.js";
 import { route66 } from "./route66.js";
 import type Route66 from "@nostrwatch/route66";
+import { publishEventsToMemoryRelay } from "./events-helpers.js";
 
-let $route66: Route66;
+let $route66: Route66 | null;
 
 route66.subscribe(instance => $route66 = instance)
 
 export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   const monitorsArr = StateManager.get('cache:monitors');  
-  ////console.log('cached monitors', monitorsArr)
   if(!monitorsArr?.length) return new Map()
-  ////console.log('cached monitors: yes')
   const map: Map<string, Monitor> = new Map()
   for(const monitor of monitorsArr) {
-    ////console.log('monitor wtf', monitor?.registration)
-    const mon = Monitor.fromCache(monitor)
-    ////console.log('monitor from cache', mon)
+    const mon: Monitor | undefined = Monitor.fromCache(monitor)
     if(!mon) continue
+    publishEventsToMemoryRelay(mon.events)
     map.set(monitor.pubkey, mon)
   }
-  ////console.log('cached monitors map', map)
   return map
 }
 
@@ -58,7 +55,6 @@ export const monitors = derived(
 export const monitorsSorted = derived(
   monitors,
   ($monitors) => {
-    ////console.log('monitors sorted', $route66?.services?.monitors?.sortedMonitors || $monitors)
     return $route66?.services?.monitors?.sortedMonitors || $monitors;
   }
 );
@@ -90,7 +86,6 @@ export const monitorChecksCount = derived(
     $eventsArray.forEach((event: any) => {
       countMap[event.pubkey] = (countMap?.[event.pubkey] || 0) + 1;
     });
-    ////console.log('monitor counts', countMap);
     return countMap;
   }
 );

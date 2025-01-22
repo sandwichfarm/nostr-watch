@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { relayAggregates, relaysForMiniSearch } from "$lib/stores/checks.js";
+	import { relayCheckAggregates, relaysForMiniSearch } from "$lib/stores/checks.js";
     import { StateManager } from "@nostrwatch/route66";
 	import AutoSuggest from "./AutoSuggest.svelte";
     import * as searchConfig from "$lib/stores/search-relays.js";
@@ -9,9 +9,9 @@
     export let maxResults: number | undefined;
     export let autoFocus: boolean = false;  
 
-    let relayData: Readable<any[]> = derived([relayAggregates, relaysForMiniSearch], ([$relayAggregates, $relaysForMiniSearch]) => {
-        return  $relayAggregates.length? 
-                    $relayAggregates: 
+    let relayData: Readable<any[]> = derived([relayCheckAggregates, relaysForMiniSearch], ([$relayCheckAggregates, $relaysForMiniSearch]) => {
+        return  $relayCheckAggregates.length? 
+                    $relayCheckAggregates: 
                     $relaysForMiniSearch?.length? 
                         $relaysForMiniSearch:
                         []

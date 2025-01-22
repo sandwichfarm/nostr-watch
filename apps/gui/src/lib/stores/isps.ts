@@ -1,7 +1,7 @@
 
 import { derived, get } from 'svelte/store';
 import { eventsArray } from './events.js'; 
-import { relayAggregates } from './checks.js'; 
+import { relayCheckAggregates, relayChecks } from './checks.js'; 
 import { StateManager } from '@nostrwatch/route66';
 import { doAggregateCache } from './app.js';
 
@@ -11,11 +11,11 @@ export type StoreIsp = {
     asname: string;
 };
 
-export const isps = derived(eventsArray, ($eventsArray) => {
+export const isps = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const ispsMap = new Map();
-    $eventsArray.forEach((event) => {
+    $relayCheckAggregates.forEach((event) => {
         if (event?.asname) {
-            ispsMap.set(event.asname.toLowerCase(), {
+            ispsMap.set(event.asname, {
                 title: event.isp,
                 as: event.as,
                 asname: event.asname
@@ -33,10 +33,10 @@ export const isps = derived(eventsArray, ($eventsArray) => {
     return ispsArray;
 });
 
-export const ispCounts = derived(relayAggregates, ($relayAggregates) => {
+export const ispCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const counts = new Map();
 
-    $relayAggregates.forEach((relayCheck) => {
+    $relayCheckAggregates.forEach((relayCheck) => {
         const isp = relayCheck?.isp || 'unknown';
         counts.set(isp, (counts.get(isp) || 0) + 1);
     });
@@ -68,3 +68,22 @@ export const ispPercentages = derived(ispCounts, ($ispCounts) => {
 
     return percentages;
 });
+
+export const ispRows = derived(
+    [isps, ispCounts, ispPercentages], 
+    ([$isps, $ispCounts, $ispPercentages]) => {
+    const rows = $isps.map((isp) => {
+        const count = $ispCounts.get(isp.title) || 0;
+        const percent = $ispPercentages.get(isp.title) || 0;
+        const { title:prettyName, asname, as } = isp;
+        return {
+            id: as,
+            prettyName,
+            asname, 
+            as,
+            count,
+            percent
+        };
+    });
+    return rows;
+})

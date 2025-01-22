@@ -11,7 +11,7 @@ import { monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from '@nostrwatch/route66/models/Monitor';
 import type { Nip11Fee } from '@nostrwatch/route66/models/Nip11';
 import type { DD } from '@nostrwatch/route66/models/Geocoded';
-import { Nip66Event } from '@nostrwatch/route66/models';
+import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -64,8 +64,8 @@ export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired',
 
 export const availableColumnKeys: string[] = [
     ...(columnsDisable
-        ? Nip66Event.keys.filter(key => !columnsDisable.includes(key))
-        : Nip66Event.keys),
+        ? Nip66CheckEvent.keys.filter(key => !columnsDisable.includes(key))
+        : Nip66CheckEvent.keys),
     "seenBy",
     "lastSeen",
     "seenTimes"
@@ -73,8 +73,8 @@ export const availableColumnKeys: string[] = [
 
 export const availableFilterKeys: string[] = [
     ...(columnsDisable
-        ? Nip66Event.keys.filter(key => !filtersDisable.includes(key))
-        : Nip66Event.keys),
+        ? Nip66CheckEvent.keys.filter(key => !filtersDisable.includes(key))
+        : Nip66CheckEvent.keys),
     "seenBy",
     "lastSeen",
     "seenTimes"
@@ -127,8 +127,8 @@ const formatFee = (fees: Nip11Fee[]) => {
 export const tableFormatters: Formatters = {
     relay: (relay: string, row: any) => {
         const { icon } = row;
-        const formatted = truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '');
-        const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: ''
+        const formatted = `<span class="inline-block my-1 text-xl bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
+        const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: '<span class="inline-block mr-2 h-6 w-6"></span>'
         return `<a class="text-lg" href="/relays/${formatRelayUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
     // monitorPubkey: (pubkey) => {

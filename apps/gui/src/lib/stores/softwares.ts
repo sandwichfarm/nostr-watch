@@ -1,12 +1,22 @@
-import { derived, get } from 'svelte/store';
+import { derived, get, type Readable } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
-import { relayAggregates } from './checks.js';
+import { relayCheckAggregates } from './checks.js';
 import { doAggregateCache } from './app.js';
+import type { Nip66CheckEvent } from '@nostrwatch/route66/models';
+import { deterministicHash } from '@nostrwatch/route66/utils';
 
-export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
-  const software = new Set();
+export const softwareKey = (software: string) => {
+  return software?.toLowerCase()
+}
+
+export const softwareCleanKey = (software: string) => {
+  return softwareKey(software).replace(/ /g, '-');
+}
+
+export const softwares: Readable<string[]> = throttledDerived(eventsArray, ($eventsArray: Nip66CheckEvent[]) => {
+  const software: Set<string> = new Set();
 
   $eventsArray.forEach((check) => {
     if (check?.software) {
@@ -14,7 +24,7 @@ export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
     }
   });
 
-  let softwaresArray = Array.from(software).sort();
+  let softwaresArray: string[] = Array.from(software).sort();
 
   if(softwaresArray.length){
     if(get(doAggregateCache)) StateManager.set('aggregate:softwares', softwaresArray);
@@ -26,10 +36,10 @@ export const softwares = throttledDerived(eventsArray, ($eventsArray) => {
   return softwaresArray;
 });
 
-export const softwareCounts = derived(relayAggregates, ($relayAggregates) => {
+export const softwareCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
   const counts = new Map();
-  $relayAggregates.forEach((relayCheck) => {
-    const sw = relayCheck?.software?.toLowerCase() || 'unknown';
+  $relayCheckAggregates.forEach((relayCheck) => {
+    const sw = softwareKey(relayCheck?.software) || 'unknown';
     let count = counts.get(sw) || 0;
     count++;
     counts.set(sw, count);
@@ -47,11 +57,28 @@ export const softwarePercentages = derived(softwareCounts, ($softwareCounts) => 
   return percentages;
 });
 
-export const softwareVersionCounts = derived(relayAggregates, ($relayAggregates) => {
+export const softwareVersions = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const uniqueMap = new Map<string, Set<string>>()
+  for (const relayCheck of $relayCheckAggregates) {
+    const sw = softwareKey(relayCheck?.software) || 'unknown'
+    if (!uniqueMap.has(sw)) {
+      uniqueMap.set(sw, new Set())
+    }
+    uniqueMap.get(sw)!.add(relayCheck.version)
+  }
+  const result = new Map<string, string[]>()
+  for (const [softwareName, versionsSet] of uniqueMap.entries()) {
+    result.set(softwareName, Array.from(versionsSet))
+  }
+  return result
+})
+
+
+export const softwareVersionCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
   const counts = new Map();
 
-  $relayAggregates.forEach((relayCheck) => {
-    const sw = (relayCheck?.software?.toLowerCase()) || 'unknown';
+  $relayCheckAggregates.forEach((relayCheck) => {
+    const sw = (softwareKey(relayCheck?.software)) || 'unknown';
     const ver = (relayCheck?.version?.toLowerCase()) || 'unknown';
 
     if (!counts.has(sw)) {
@@ -62,18 +89,17 @@ export const softwareVersionCounts = derived(relayAggregates, ($relayAggregates)
     const currentCount = versionMap.get(ver) || 0;
     versionMap.set(ver, currentCount + 1);
   });
-
   return counts;
 });
 
 export const softwareVersionPercentages = derived(softwareVersionCounts, ($softwareVersionCounts) => {
   const percentages = new Map();
 
-  $softwareVersionCounts.forEach((versionMap, software) => {
-    const total = Array.from(versionMap.values()).reduce((sum, count) => sum + count, 0);
+  $softwareVersionCounts.forEach((versionMap: Map<string, number>, software: string) => {
+    const total: number = Array.from(versionMap.values()).reduce((sum, count) => sum + count, 0);
     const softwarePercentMap = new Map();
 
-    versionMap.forEach((count, version) => {
+    versionMap.forEach((count: number, version: string) => {
       const percent = ((count / total) * 100).toFixed(1);
       softwarePercentMap.set(version, parseFloat(percent));
     });
@@ -83,3 +109,64 @@ export const softwareVersionPercentages = derived(softwareVersionCounts, ($softw
 
   return percentages;
 });
+
+export const softwareRelays = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const softwareRelays = new Map();
+
+  $relayCheckAggregates.forEach((relayCheck) => {
+    const sw = softwareKey(relayCheck?.software) || 'unknown';
+    if (!softwareRelays.has(sw)) {
+      softwareRelays.set(sw, []);
+    }
+    softwareRelays.get(sw).push(relayCheck.relay);
+  });
+
+  return softwareRelays;
+})
+
+type MapStringSet = Map<string, Set<string>>;
+
+export const softwareOperatorPubkeysMap = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const softwareOperators: MapStringSet = new Map<string, Set<string>>();
+
+  $relayCheckAggregates.forEach((relayCheck) => {
+    const sw = softwareKey(relayCheck?.software) || 'unknown';
+    if (!softwareOperators.has(sw)) {
+      softwareOperators.set(sw, new Set());
+    }
+    softwareOperators.get(sw)?.add(relayCheck.operatorPubkey);
+  });
+  return softwareOperators;
+})
+
+export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($softwareOperatorPubkeysMap) => {
+  const operatorSoftware: MapStringSet = new Map<string, Set<string>>();
+
+  $softwareOperatorPubkeysMap.forEach((pubkeys, software) => {
+    pubkeys.forEach((pubkey) => {
+      if (!operatorSoftware.has(pubkey)) {
+        operatorSoftware.set(pubkey, new Set());
+      }
+      operatorSoftware.get(pubkey)?.add(software);
+    });
+  });
+
+  return operatorSoftware;
+})
+
+
+export const softwareRows = derived(relayCheckAggregates, () => {
+  const rows: any[] = [];
+  get(softwares).forEach((name: string) => {
+    const row = {
+      id: deterministicHash(name),
+      name,
+      versions: get(softwareVersions).get(name) || [],
+      versionsNum: get(softwareVersions).get(name)?.length || 0,
+      totalDeployed: get(softwareCounts).get(name) || 0,
+      marketShare: get(softwarePercentages).get(name) || 0,
+    };
+    rows.push(row);
+  });
+  return rows;
+})

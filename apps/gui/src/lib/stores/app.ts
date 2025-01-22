@@ -39,7 +39,7 @@ export const shouldSync = () => {
     // const threshold = 1*15
     const timestamp = get(lastCompleteSync)
     const now = Math.round(Date.now()/1000)
-    console.log('should sync?', threshold<(now-timestamp), formatSeconds(threshold), timeAgo(now*1000), timeAgo(timestamp*1000))
+    //console.log('should sync?', threshold<(now-timestamp), formatSeconds(threshold), timeAgo(now*1000), timeAgo(timestamp*1000))
     if(threshold<(now-timestamp))
         return true;
     return false; 

@@ -1,5 +1,5 @@
 import { derived, get, readable } from 'svelte/store';
-import { relayAggregates } from './checks.js';
+import { relayCheckAggregates } from './checks.js';
 import { StateManager } from '@nostrwatch/route66';
 import type { Readable } from 'svelte/store';
 import { doAggregateCache } from './app.js';
@@ -12,8 +12,8 @@ export type NipFormattedAlt = NipFormattedNumber | NipFormattedProgrammatic
 export type NipFormattedNumber = `0${number}` | `${number}`;
 export type NipFormattedProgrammatic = `nip_0${number}` | `nip_${number}`;
 
-export const nips: Readable<number[]> = derived(relayAggregates, ($relayAggregates): Nip[] => {
-    return Array.from($relayAggregates.reduce((nips, relayCheck): Set<Nip> => {
+export const nips: Readable<number[]> = derived(relayCheckAggregates, ($relayCheckAggregates): Nip[] => {
+    return Array.from($relayCheckAggregates.reduce((nips, relayCheck): Set<Nip> => {
         if (relayCheck?.supportedNips?.length > 0) {
             relayCheck.supportedNips.forEach((nip: Nip) => {
                 nips.add(nip);
@@ -23,10 +23,10 @@ export const nips: Readable<number[]> = derived(relayAggregates, ($relayAggregat
     }, new Set<Nip>()))
 })
 
-export const nipCounts = derived(relayAggregates, ($relayAggregates) => {
+export const nipCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const counts = new Map();
 
-    $relayAggregates.forEach((relayCheck) => {
+    $relayCheckAggregates.forEach((relayCheck) => {
         if (relayCheck?.supportedNips?.length > 0) {
             relayCheck.supportedNips.forEach((nip: Nip) => {
                 counts.set(nip, (counts.get(nip) || 0) + 1);

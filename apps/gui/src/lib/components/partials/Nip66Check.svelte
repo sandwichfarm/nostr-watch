@@ -1,12 +1,12 @@
 <script lang="ts">
   import * as Tabs from "$lib/components/ui/tabs";
-  import { Monitor, type Nip66Event } from '@nostrwatch/route66/models';
+  import { Monitor, type Nip66CheckEvent } from '@nostrwatch/route66/models';
   import { onMount } from 'svelte';
   import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 	import { clickToCopy } from "$lib/utils/ux";
 	import { nip19 } from "nostr-tools";
 
-  export let check: Nip66Event;
+  export let check: Nip66CheckEvent;
   // export let monitor: Monitor | undefined;
 
   onMount(() => {});

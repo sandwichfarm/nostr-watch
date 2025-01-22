@@ -7,13 +7,13 @@ interface Check {
   [id: string]: any;
 }
 
-import { eventsArray } from './events.js';
+import { events, eventsArray, type StoreEventType } from './events.js';
 
-import { Nip66Event } from '@nostrwatch/route66/models';
+import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache, isBootstrapping } from "./app.js";
 
-export const relayCheckAggregator = ($checks: Nip66Event[]) => {
+export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const countMap: Record<
     string,
     { a: Record<string, any>; checks: Check[]; aggregate?: any }
@@ -22,8 +22,15 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
   const relayAverages: Record<string, number> = {};
   const relayCounts: Record<string, number> = {};
 
-  $checks.forEach((check) => {
-    const relay = check.relay;
+  $checks.forEach((check: Nip66CheckEvent) => {
+    let relay: string;
+    if(!check?.relay) return;
+    try {
+      relay = new URL(check?.relay).toString();
+    }
+    catch(e){
+      console.warn('could not normalize relay:', check.relay)
+    }
 
     if (!relayAverages[relay]) {
       relayAverages[relay] = 0;
@@ -55,8 +62,8 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
   const range = globalMax - globalMin || 1;
 
   Object.keys(countMap).forEach((relay) => {
-    countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66Event) => {
-      [...Nip66Event.keys, 'seenTimes'].forEach((key: string) => {
+    countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
+      [...Nip66CheckEvent.keys, 'seenTimes'].forEach((key: string) => {
         const value = nip66Event[key];
         
         const isNonNull = value !== null && value !== undefined;
@@ -109,17 +116,32 @@ export const relayCheckAggregator = ($checks: Nip66Event[]) => {
   return countMap;
 }
 
+export const eventsChecks: Readable<Nip66CheckEvent[]> = derived(eventsArray, ($events) => {
+  return $events.filter(event => event.kind === 30166) as Nip66CheckEvent[];
+})
+
 export const relayChecks: Readable<
   Record<string, { a: Record<string, any>; checks: Check[]; aggregate?: any }>
-> = derived(eventsArray, relayCheckAggregator);
+> = derived(eventsChecks, ($eventsChecks) => {
+  if(!$eventsChecks.length) return {};
+  return relayCheckAggregator($eventsChecks);
+});
 
-export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
-  let aggregates = Object.entries($relayChecks).map(([relay, item], index) => ({
-    relay,
-    ...item.aggregate,
-    id: index,
-  }));
-  //console.log('relayChecks', $relayChecks?.length)
+export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
+  let aggregates = Object.entries($relayChecks).map(([relay, item], index) => {
+    try {
+      relay = new URL(relay).toString();
+    }
+    catch(e){
+      console.warn('could not normalize relay:', relay)
+    }
+    return {
+      relay,
+      ...item.aggregate,
+      id: index
+    }
+  });
+  
   const $isBootstrapping = get(isBootstrapping)
   const agg = StateManager.get('aggregate:complete');
   if(!aggregates.length || ($isBootstrapping && agg) ) {
@@ -138,8 +160,8 @@ export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChec
   return aggregates 
 });
 
-export const relaysForMiniSearch: Readable<any[]> = derived(relayAggregates, ($relayAggregates) => {
-  let ag = $relayAggregates.map((item, index) => {
+export const relaysForMiniSearch: Readable<any[]> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  let ag = $relayCheckAggregates.map((item, index) => {
     const { relay, isp, operatorPubkey, supportedNips, lastSeen }  = item
     return { 
       ...{ relay, isp, operatorPubkey, supportedNips, lastSeen },

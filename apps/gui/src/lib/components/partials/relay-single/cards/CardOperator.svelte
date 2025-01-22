@@ -8,7 +8,7 @@
 	import { route66 } from '$lib/stores';
 
 	import type { PubkeyProfile, PubkeyRelays } from '@nostrwatch/route66/models';
-	import { Monitor, Nip66Event } from '@nostrwatch/route66/models';
+	import { Monitor, Nip66CheckEvent } from '@nostrwatch/route66/models';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
     import OperatorRelays from '../OperatorRelays.svelte';
 

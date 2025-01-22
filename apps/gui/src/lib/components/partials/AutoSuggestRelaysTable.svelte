@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { relayAggregates, relaysForMiniSearch } from "$lib/stores/checks.js";
+	import { relayCheckAggregates, relaysForMiniSearch } from "$lib/stores/checks.js";
     import { StateManager } from "@nostrwatch/route66";
 	import AutoSuggest from "./AutoSuggest.svelte";
     import * as searchConfig from "$lib/stores/search-relays.js";
@@ -10,7 +10,7 @@
         bootstrapped = true;
     });
 
-    $: miniSearchData = bootstrapped? $relayAggregates: $relaysForMiniSearch?.length? $relaysForMiniSearch: null
+    $: miniSearchData = bootstrapped? $relayCheckAggregates: $relaysForMiniSearch?.length? $relaysForMiniSearch: null
 </script>
 
 {#if miniSearchData}

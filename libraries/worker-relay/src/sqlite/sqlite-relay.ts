@@ -292,7 +292,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
       return true;
     }
     catch(e) {
-      console.error(e);
+      console.error('event:', ev, e);
       return false;
     }
   }
@@ -505,15 +505,21 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
   }
 
   insertIntoSearchIndex(db: Database, ev: NostrEvent) {
-    if (ev.kind === 0) {
-      const profile = JSON.parse(ev.content) as {
-        name?: string;
-        display_name?: string;
-        lud16?: string;
-        nip05?: string;
-        website?: string;
-        about?: string;
-      };
+    if (ev.kind === 0 && ev.content.length > 2) {
+      let profile;
+      try {
+        profile = JSON.parse(ev.content) as {
+          name?: string;
+          display_name?: string;
+          lud16?: string;
+          nip05?: string;
+          website?: string;
+          about?: string;
+        };
+      } 
+      catch(e){
+        console.error(e);
+      }
       if (profile) {
         const indexContent = [
           profile.name,

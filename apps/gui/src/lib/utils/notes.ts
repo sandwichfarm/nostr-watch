@@ -112,46 +112,50 @@ function replaceYoutubeLink(text: string): string {
 
 
 async function replaceNip19(text: string, update: (output: string) => void): Promise<void> {
-  const NIP19_REGEX = /nostr:(nevent|nprofile|naddr|nrelay|npub|note)[\w\d]+/gi;
-  const matches = [...text.matchAll(NIP19_REGEX)];
-  if (matches.length === 0) return;
+  try {
+    const NIP19_REGEX = /nostr:(nevent|nprofile|naddr|nrelay|npub|note)[\w\d]+/gi;
+    const matches = [...text.matchAll(NIP19_REGEX)];
+    if (matches.length === 0) return;
 
-  const replacements = await Promise.all(matches.map(async (m) => {
-    const original = m[0];
-    const encoded = original.replace('nostr:', '');
-    const { type, data } = nip19.decode(encoded);
-    const classes = "inline-block px-2 py-1 rounded-sm bg-black/20 text-white/70 hover:text-white/80 hover:bg-black/10"
+    const replacements = await Promise.all(matches.map(async (m) => {
+      const original = m[0];
+      const encoded = original.replace('nostr:', '');
+      const { type, data } = nip19.decode(encoded);
+      const classes = "inline-block px-2 py-1 rounded-sm bg-black/20 text-white/70 hover:text-white/80 hover:bg-black/10"
 
-    let replacement = original;
-    if (type === 'npub') {
-      const service: UserService | null = get(userService);
-      if (!service) {
-        return { original, replacement: encoded };
+      let replacement = original;
+      if (type === 'npub') {
+        const service: UserService | null = get(userService);
+        if (!service) {
+          return { original, replacement: encoded };
+        }
+        const user = service.userFromPubkey(data);
+        await user.ready();
+        replacement = `<a href="https://njump.me/${encoded}" class="${classes}">${user.name}</a>`;
+      } else if (type === 'nevent') {
+        replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
+      } else if (type === 'naddr') {
+        replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
+      } else if (type === 'nprofile') {
+        replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Profile</a>`;
+      } else if (type === 'note'){
+        replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Note</a>`;
       }
-      const user = service.userFromPubkey(data);
-      await user.ready();
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes}">${user.name}</a>`;
-    } else if (type === 'nevent') {
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
-    } else if (type === 'naddr') {
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
-    } else if (type === 'nprofile') {
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Profile</a>`;
-    } else if (type === 'note'){
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Note</a>`;
-    }
 
-    //console.log('nip19', { original, replacement });
+      ////console.log('nip19', { original, replacement });
 
-    return { original, replacement };
-  }));
+      return { original, replacement };
+    }));
 
-  replacements.forEach(({ original, replacement }) => {
-    //console.log("Replacing:", original, "with:", replacement);
-    text = text.replace(original, replacement);
-  });
+    replacements.forEach(({ original, replacement }) => {
+      ////console.log("Replacing:", original, "with:", replacement);
+      text = text.replace(original, replacement);
+    });
 
-  update(text);
+    update(text);
+  } catch(e: any){
+    console.error('Error in replaceNip19:', e);
+  }
 }
 
 

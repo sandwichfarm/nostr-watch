@@ -31,15 +31,18 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build Worker Relay
-        run: |
-          pnpm --filter @nostrwatch/worker-relay run clean
-          pnpm --filter @nostrwatch/worker-relay run tsc
-          pnpm --filter @nostrwatch/worker-relay run copy:wasm
-          pnpm --filter @nostrwatch/worker-relay run build:esm
+      - name: Build Packages
+        run: pnpm -r build
+
+      # - name: Build Worker Relay
+      #   run: |
+      #     pnpm --filter @nostrwatch/worker-relay run clean
+      #     pnpm --filter @nostrwatch/worker-relay run tsc
+      #     pnpm --filter @nostrwatch/worker-relay run copy:wasm
+      #     pnpm --filter @nostrwatch/worker-relay run build:esm
       
-      - name: Build GUI
-        run: pnpm --filter @nostrwatch/gui build
+      # - name: Build GUI
+      #   run: pnpm --filter @nostrwatch/gui build
 
       - name: Check Artifact Size
         run: du -sh libraries/**/dist internal/**/dist apps/gui/dist
@@ -66,13 +69,6 @@ jobs:
       matrix:
         include:
           - package: 'nostrings'
-          - package: 'announce'
-          - package: 'logger'
-          - package: 'seed'
-          - package: 'utils'
-          - package: 'nwcache'
-          - package: 'controlflow'
-          - package: 'publisher'
           - package: 'nocap'
           - package: 'nocap-websocket-adapter-default'
           - package: 'nocap-websocket-browser-adapter-default'
@@ -81,8 +77,14 @@ jobs:
           - package: 'nocap-geo-adapter-default'
           - package: 'nocap-ssl-adapter-default'
           - package: 'nocap-every-adapter-default'
-          - package: 'worker-relay'
+          - package: 'route66'
+          - package: 'route66/adapters/cache/NostrSqliteAdapter'
+          - package: 'route66/adapters/websocket/NostrToolsAdapter'
+          - package: 'memory-relay'
           - package: 'gui'
+          - package: 'schemata'
+          - package: 'schemata-js-ajv'
+          - package: 'auditor'
 
     steps:
       - uses: actions/checkout@v4
@@ -136,6 +138,7 @@ jobs:
 
       - name: Find Package
         id: find_package
+        if: matrix.package != 'gui'
         run: |
           PKG_PATH=$(find libraries internal apps -type d -name "${{ matrix.package }}" -print -quit)
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"

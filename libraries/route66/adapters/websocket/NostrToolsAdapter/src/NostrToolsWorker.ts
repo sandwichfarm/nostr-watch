@@ -61,7 +61,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     if(agent.name === 'Safari') {
       this._fetcher = NostrFetcher.init();
     } else {
-      this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(this.pool), {  minLogLevel: 'all' } )
+      this._fetcher = NostrFetcher.withCustomPool(simplePoolAdapter(this.pool))
     }
   }
 
@@ -107,7 +107,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
     const { stream, keepAlive } = options ?? defaultWebsocketAdapterOptions;
     priority = priority ?? 0;
 
-    console.log('NostrToolsWorker:subscribe:filters', filters)
+    // console.log('NostrToolsWorker:subscribe:filters', filters)
 
     const subby = async (): Promise<IEvent[] | boolean> => {
       return new Promise(async (resolve, reject) => {
@@ -178,7 +178,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
       let { filters, relays, options, hash } = request;
   
       this.fetcherInit();
-      console.log('NostrToolsWorker:fetch:filters', filters);
+      // console.log('NostrToolsWorker:fetch:filters', filters);
   
       const { stream } = options ?? defaultWebsocketAdapterOptions;
       const effectiveRelays = this.cleanRelayUrls(relays ?? this.relays);
@@ -198,7 +198,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
       const events: (IEvent[] | boolean)[] = [];
       let count = 0;
   
-      console.log('NostrToolsWorker: _fetch: filters', filters);
+      // console.log('NostrToolsWorker: _fetch: filters', filters);
   
       for (let filter of filters) {
         if (this.signal.aborted) return;
@@ -211,7 +211,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
         let totalEvents = 0;
   
         try {
-          console.log('allEventsIterator:filter', remainingFilter)
+          // console.log('allEventsIterator:filter', remainingFilter)
           const eventMap = new Map<string, IEvent>();
           const iterator = this.fetcher!.allEventsIterator(
             effectiveRelays,
@@ -254,7 +254,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
           console.warn('Error during fetch:', error);
         }
   
-        console.log(`NostrToolsWorker: _fetch #${count}: complete, total events: ${totalEvents}`);
+        // console.log(`NostrToolsWorker: _fetch #${count}: complete, total events: ${totalEvents}`);
         count++;
       }
 

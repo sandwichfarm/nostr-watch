@@ -5,7 +5,7 @@
     
 	
 	import { eventsArray, route66 } from '$lib/stores';
-	import { type IEvent, Monitor, Nip66Event } from '@nostrwatch/route66/models';
+	import { type IEvent, Monitor, Nip66CheckEvent } from '@nostrwatch/route66/models';
 	import OperatorRelay from './OperatorRelay.svelte';
 
     export let pubkey: string;
@@ -13,25 +13,32 @@
     export let otherRelaysCount: number = 0;
     export let monitors: Monitor[];
 
-    const deadRelays: Writable<Nip66Event[]> = writable([])
+    const deadRelays: Writable<Nip66CheckEvent[]> = writable([])
 
     const fetchDeadRelays = async () => {
-        if(!$route66) return;
-        const deadRelays = await $route66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
+        //console.log('FML fetching dead relays')
+        const dead = await $route66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
         //console.log('dead relays fetched:', deadRelays.length)
-        deadRelays?.forEach( (event: IEvent) => {
-            deadRelays.update( ( events: Nip66Event[] ): Nip66Event[] => {
-                return [...events, new Nip66Event(event)]
+        dead?.forEach( (event: IEvent) => {
+            const deadInstance = new Nip66CheckEvent(event)
+            if(deadInstance.relay === relayUrl) return;
+            if($onlineRelays.find((e: Nip66CheckEvent) => e.relay === deadInstance.relay)) return;
+            deadRelays.update( ( events: Nip66CheckEvent[] ): Nip66CheckEvent[] => {
+                return [...events, deadInstance]
             })
         })
     }
-    const operatorRelays = derived([eventsArray, deadRelays], ([$eventsArray, $deadRelays]) => {
-        const online =  $eventsArray.filter((event: Nip66Event) => {
+
+    const onlineRelays = derived(eventsArray, ($eventsArray) => {
+        return $eventsArray.filter((event: Nip66CheckEvent) => {
             return  event?.operatorPubkey 
                     && event.operatorPubkey === pubkey 
                     && event?.relay !== relayUrl;
         })
-        const all = [...online, ...$deadRelays]
+    });
+
+    const allOperatorRelays = derived([onlineRelays, deadRelays], ([$onlineRelays, $deadRelays]) => {
+        const all = [...$onlineRelays, ...$deadRelays]
         otherRelaysCount = all.length
         return all
     });
@@ -49,8 +56,9 @@
     onMount(mount)
     onDestroy(destroy)
 </script>
+<!-- <pre>{JSON.stringify($allOperatorRelays, null, 2)}</pre> -->
 {#if pubkey}
-    {#each $operatorRelays as event}
+    {#each $allOperatorRelays as event}
         <OperatorRelay {event} {route66} />
     {/each}
 {/if}

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { Nip66Event } from "@nostrwatch/route66/models";
+	import type { Nip66CheckEvent } from "@nostrwatch/route66/models";
 	import { formatRelayUrl } from "$lib/utils/routing.js";
 	import type { Writable } from "svelte/store";
     import type Route66 from "@nostrwatch/route66";
 
-    export let event: Nip66Event;
+    export let event: Nip66CheckEvent;
     export let route66: Writable<Route66>;
 
     $: status =

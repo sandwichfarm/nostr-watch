@@ -6,7 +6,6 @@ export * from './class';
 export * from './network';
 export * from './object';
 export * from './redis';
-export * from './redis';
 export * from './string';
 export * from './time';
 export * from './url';

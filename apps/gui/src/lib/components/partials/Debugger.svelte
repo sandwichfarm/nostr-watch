@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayAggregates, relaysWithNip11s, relaysWithoutNip11s } from "$lib/stores";
+    	import { onMount } from "svelte";
+        import { debounce } from "lodash";
+
+	import { events, nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayCheckAggregates, relaysWithNip11s, relaysWithoutNip11s } from "$lib/stores";
 	import { isLivesyncing } from "$lib/stores/app";
 	import { doBootstrap } from "$lib/stores/routines";
 	import { appState, isBootstrapping, isSeeded, tabState, isIdle } from "$lib/stores/app";
@@ -7,7 +10,7 @@
 	import { route66 } from "$lib/stores";
 	import { Value } from "svelte-radix";
 	import { shouldSync as _shouldSync } from "$lib/stores/app";
-	import { onMount } from "svelte";
+
 
     const debug: Writable<Map<string, any>> = writable(new Map());
     const shouldSync: Writable<boolean> = writable(false);
@@ -62,8 +65,8 @@
         addDebug('isLivesyncing', value);
     });
 
-    relayAggregates.subscribe((value) => {
-        addDebug('relayAggregates', value.length);
+    relayCheckAggregates.subscribe((value) => {
+        addDebug('relayCheckAggregates', value.length);
     });
 
     nip11s.subscribe((value) => {
@@ -93,6 +96,25 @@
     relaysWithoutNip11s.subscribe((value) => {
         addDebug('relaysWithoutNip11s', value.length);
     });
+
+    // eventsChecks.subscribe((events) => {
+    //     addDebug('store:eventsChecks', $eventsChecks);
+    // });
+
+    const debugStores = () => {
+        const eventKeys = Array.from($events?.keys?.()) ?? []; 
+        const eventsArray = Array.from(eventKeys);
+
+        addDebug('store:events', eventKeys?.length || 0);
+
+        [0,1,3,10002,10166,30166].forEach( kind => {
+            addDebug(`store:events:${kind}`, eventsArray.filter( (key: string) => { 
+                const parts = key.split(':');
+                return parts[1] === kind.toString();
+            }).length);
+        });
+    }
+
     
     const debugRoute66 = () => {
         shouldSync.set(_shouldSync());
@@ -106,9 +128,14 @@
     const debugCacheAdapter = async () => {
         await $route66?.cacheAdapter?.ready();
         addDebug('cacheAdapter:countAll', await $route66?.cacheAdapter?.COUNT([{}]));
+        addDebug('cacheAdapter:count10166', await $route66?.cacheAdapter?.COUNT([{ kinds: [10166]}]));
         addDebug('cacheAdapter:count30166', await $route66?.cacheAdapter?.COUNT([{ kinds: [30166]}]));
         addDebug('cacheAdapter:count0', await $route66?.cacheAdapter?.COUNT([{ kinds: [0]}]));
         addDebug('cacheAdapter:count10002', await $route66?.cacheAdapter?.COUNT([{ kinds: [10002]}]));
+
+        addDebug('cacheAdapter:count1', await $route66?.cacheAdapter?.COUNT([{ kinds: [1]}]));
+        addDebug('cacheAdapter:count1111', await $route66?.cacheAdapter?.COUNT([{ kinds: [1111]}]));
+        addDebug('cacheAdapter:9735,9321', await $route66?.cacheAdapter?.COUNT([{ kinds: [9735, 9321] }]));
 
         addDebug('cacheAdapter:nip11s', await $route66?.cacheAdapter?.countNip11s());
         addDebug('cacheAdapter:nip11sUnique', await $route66?.cacheAdapter?.countUniqueNip11s());
@@ -122,6 +149,7 @@
         await new Promise((resolve) => setTimeout(resolve, 1000));
         debugRoute66()
         debugCacheAdapter()
+        debugStores()
     })
 
     setInterval(debugRoute66, 1000*1);

@@ -2,13 +2,13 @@ import { get, type Writable, type Readable } from 'svelte/store';
 
 import Route66, { StateManager } from '@nostrwatch/route66';
 
-import { Nip66Event, type IEvent } from '@nostrwatch/route66/models';
+import { Nip66CheckEvent, type IEvent } from '@nostrwatch/route66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
 import { route66, events, monitorsMap, monitors, eventsArray } from '$lib/stores/index.js';
 import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
-import { addEventsToStore } from '$lib/stores/events-helpers.js';
+import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers.js';
 
 import type { Monitor, Nip11, NostrEvent } from "@nostrwatch/route66/models"
 import { nip05Service } from '$lib/stores/nip05s.js';
@@ -36,18 +36,29 @@ let initializing: boolean = false;
 let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
     maxLength: 50, 
     timeout: 30000,
-    callback: addEventsToStore
+    callback: publishEventsToMemoryRelay
 })
 
+let count = 0
+
 export const bindBootstrapEmitters = () => {
-    console.log('Lifecycle:bindBootstrapEmitters')
+    //console.log('Lifecycle:bindBootstrapEmitters')
     const $nip05Service: Nip05Service = get(nip05Service)
     
     if (!$route66 || typeof $route66.on !== 'function') {
         throw new Error('Invalid nip66Instance: missing `on` method.');
     }
 
-    $route66.on('monitor:update', (monitor: Monitor) => {
+    const onEvents = (_events: IEvent[]) => {
+        count++
+        publishEventsToMemoryRelay(_events)
+    }
+
+    const onMonitorUpdate = (monitor: Monitor) => {
+        //console.log('monitor.events', monitor.events)
+        if(monitor?.events) {
+            publishEventsToMemoryRelay(monitor.events)
+        }
         monitorsMap.update((monitorsMap: Map<string, Monitor>) => {
             const existing = monitorsMap.get(monitor.pubkey);
             if (existing?.registration?.created_at && monitor?.registration?.created_at && existing.registration.created_at > monitor.registration.created_at) {
@@ -61,16 +72,17 @@ export const bindBootstrapEmitters = () => {
             }
             return monitorsMap;
         });
-    });    
+    }
 
-    $route66.on('events', (_events: any) => {
-        console.log('Svelte Received events:', _events.length, _events);
-        addEventsToStore(_events)
-    });
+
+    $route66.off('monitor:update', onMonitorUpdate);
+    $route66.off('events', onEvents);
+    $route66.on('monitor:update', onMonitorUpdate);    
+    $route66.on('events', onEvents);
 };
 
 export const instance = async (): Promise<Route66> => {
-    console.log('Lifecycle:instance')
+    //console.log('Lifecycle:instance')
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
         throw new Error('Window or navigator not available.');
     }
@@ -83,14 +95,14 @@ export const instance = async (): Promise<Route66> => {
     initializing = true;
 
     if ($route66 && $route66 instanceof Route66 && $route66.initialized) {
-        console.log('route66 instance exists and is initialized');
+        //console.log('route66 instance exists and is initialized');
         return $route66;
     }
 
     $route66 = $route66 || get(route66);
 
     if (!$route66) {
-        console.log('creating new route66 instance');
+        //console.log('creating new route66 instance');
         const adapters = {
             cacheAdapter: new NostrSqliteAdapter(),
             websocketAdapter: new NostrToolsAdapter(),
@@ -102,7 +114,7 @@ export const instance = async (): Promise<Route66> => {
 
     if (!$route66.initialized) {
         await $route66.init();
-        console.log('route66 initialized');
+        //console.log('route66 initialized');
         loadMonitorsFromCache($route66);
     }
     
@@ -120,7 +132,7 @@ export const loadMonitorsFromCache = () => {
 }
 
 export const bootstrapMonitorData = async () => {
-    console.log('bootstrapMonitorData')
+    //console.log('bootstrapMonitorData')
     if(!$route66){
         $route66 = await instance();
     }
@@ -137,13 +149,13 @@ export const bootstrapMonitorChecks = async () => {
 }
 
 export const bootstrap = async () => {
-    console.log('bootstrap')
+    //console.log('bootstrap')
     if(!$route66){
-        console.log('bootstrap:no instance')
+        //console.log('bootstrap:no instance')
         $route66 = await instance();
     }
     await $route66.ready();
-    console.log('bootstrap:ready')
+    //console.log('bootstrap:ready')
     bindBootstrapEmitters();
     const onevents = (events: IEvent[]) => {
         for(const event of events){
@@ -151,20 +163,20 @@ export const bootstrap = async () => {
         }
     }
     if( shouldSync() ){
-        console.log('bootstrap:syncing')
+        //console.log('bootstrap:syncing')
         if( get(isBootstrapping) ) return;
         isBootstrapping.set(true)
         await $route66?.services?.monitors?.bootstrap().then( async () => {
+            await fetchNip11s()
+            await bootstrapOperatorMeta()
             isBootstrapping.set(false)
             seedFromCache();
             updateLastSync();
             removeStaleChecksFromStore()
-            await fetchNip11s();
-            await bootstrapOperatorMeta();
         })
     }
     else {
-        console.log('bootstrap:skipping')
+        //console.log('bootstrap:skipping')
         await new Promise( (resolve) => setTimeout(resolve, 1000) )         
         seedFromCache().then( () => {
             if(get(isLivesyncing)) return;
@@ -174,7 +186,7 @@ export const bootstrap = async () => {
 }
 
 const bootstrapOperatorMeta = async () => {
-    console.log('bootstrapOperatorMeta');
+    //console.log('bootstrapOperatorMeta');
     const $operatorPubkeysValid: string[] = get(operatorPubkeysValid);
     const emptyFilter: Filter = { kinds: [0, 10002], authors: [] };
     const chunks: Filter[][] = [];
@@ -204,27 +216,27 @@ const bootstrapOperatorMeta = async () => {
     if (filters.length > 0) {
         chunks.push([...filters]);
     }
-    
-    console.log('chunks', chunks.length, chunks);
     for(const filters of chunks){
-        const onevent = (event: IEvent) => addEventsToStore([event]);
-        const onevents = (events: IEvent[]) => events.forEach( onevent );
+        const onevent = (event: IEvent) => { 
+            publishEventsToMemoryRelay([event])
+        };
+        const onevents = (events: IEvent[]) => {
+            publishEventsToMemoryRelay(events);
+        }
         const relays = $route66?.services?.relay?.userMetaRelays || []
         const priority = 1;
         const options: WebsocketAdapterOptions = {
             cache: true,
             returnResults: true, 
             keepAlive: false,
-            stream: true
+            stream: true,
+            batch: 20
         }
-        await $route66.subscribe( { relays, filters, priority, options }, { onevent, onevents } );
+        await $route66.subscribe( { relays, filters, priority, options }, { onevents, onevent } );
     }
-    
-    console.log('bootstrapOperatorMeta:done')
 }
 
 const fetchNip11s = async () => {
-    console.log('fetchNip11s')
     const $nip11Service: Nip11Service = get(nip11Service);
     const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s);
     const $relaysWithNip11s: string[] = get(relaysWithNip11s);
@@ -238,18 +250,18 @@ const fetchNip11s = async () => {
         }));
     }
     const debug = setInterval( () => { 
-        console.log('fetchNip11s:total', promises.length)
-        console.log('fetchNip11s:waiting', promises.filter( (p) => p?.status === 'pending').length)
+        //console.log('fetchNip11s:total', promises.length)
+        //console.log('fetchNip11s:waiting', promises.filter( (p) => p?.status === 'pending').length)
     }, 1000)
     await Promise.allSettled(promises);
     clearInterval(debug)
-    console.log('fetchNip11s:done')
+    //console.log('fetchNip11s:done')
 }
 
 type LiveSyncResumer = () => Promise<void>
 
 export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {
-    console.log('starting live sync')
+    //console.log('starting live sync')
     isLivesyncing.set(true)
     if(!$route66){
         $route66 = await instance();
@@ -258,7 +270,7 @@ export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void
 }
 
 export const stopLiveSync = async (): Promise<void> => {
-    console.log('stopping live sync')
+    //console.log('stopping live sync')
     isLivesyncing.set(false)
     if(!$route66){
         $route66 = await instance();
@@ -267,7 +279,7 @@ export const stopLiveSync = async (): Promise<void> => {
 }
 
 export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
-    console.log('pausing live sync')
+    //console.log('pausing live sync')
     let wasLiveSyncing = get(isLivesyncing)? true: false;
     if(!$route66){
         $route66 = await instance();
@@ -283,7 +295,7 @@ export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
 }
 
 export const destroy = () => {
-    console.log('Lifecycle:destroy')
+    //console.log('Lifecycle:destroy')
     route66.update(($route66: Route66) => {
         if ($route66 && typeof $route66.destroy === 'function') {
             $route66.destroy();
@@ -294,14 +306,23 @@ export const destroy = () => {
     });
 };
 
-export const seedFromCache = async () => {
+export const canSeedFromCache = async (): boolean => {
     if(!$route66) {
         $route66 = await instance();
     }
-    if(!$route66) return;
-    if(get(isSeeded)) return;
-    if(!hasBeenBoostrapped()) return;
+    if(!$route66) return false;
+    if(get(isSeeded)) return false;
+    if(!hasBeenBoostrapped()) return false;
+    return true
+}
 
+export const seedFromCache = async () => {
+    seedChecksFromCache()
+    seedMetaFromCache()
+}   
+
+export const seedChecksFromCache = async () => {
+    if(!canSeedFromCache()) return;
     const promises: Promise<any>[] = [];
     $route66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
         promises.push(new Promise( resolve => {
@@ -309,8 +330,35 @@ export const seedFromCache = async () => {
         }));
     })
     const cachedEvents = (await Promise.all(promises)).flat();
-    addEventsToStore(cachedEvents ?? []);
+    if(cachedEvents.length === 0) return;
+    publishEventsToMemoryRelay(cachedEvents);
     isSeeded.set(true)
+}
+
+export const seedMetaFromCache = async () => {
+    if(!$route66) {
+        $route66 = await instance();
+    }
+    if(!$route66) return;
+    if(get(isSeeded)) return;
+    if(!hasBeenBoostrapped()) return;
+
+    const cachedEvents = await $route66.REQ([{ kinds: [ 0, 10002 ]}])
+    if(!cachedEvents?.length) return;
+    publishEventsToMemoryRelay(cachedEvents);
+}
+
+export const seedAllEventsFromCache = async () => {
+    if(!$route66) {
+        $route66 = await instance();
+    }
+    if(!$route66) return;
+    if(get(isSeeded)) return;
+    if(!hasBeenBoostrapped()) return;
+
+    const cachedEvents = await $route66.REQ([{}])
+    if(cachedEvents.length === 0) return;
+    publishEventsToMemoryRelay(cachedEvents);
 }
 
 export const removeStaleChecksFromStore = async () => {

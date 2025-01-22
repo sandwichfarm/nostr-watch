@@ -19,7 +19,7 @@
     "build:clean": "pnpm run clean && pnpm run build"
   },
   "dependencies": {
-    "@nostrwatch/logger": "*"
+    "@nostrwatch/logger": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",

@@ -98,7 +98,7 @@
         });
         showAllFilters.set(initialShowAll);
         updateDisabledFilters($filters)
-        //console.log('setting active filters', $config.activeFilters)
+        ////console.log('setting active filters', $config.activeFilters)
         filters.set( $config.activeFilters )
     }
 
@@ -142,7 +142,7 @@
 
     // **Compute Active Record IDs Based on Active Filters**
     function computeActiveRecordIDs(activeFilters: Record<string, any>): Set<string> {
-        // //console.log('begin computeActiveRecordIDs');
+        // ////console.log('begin computeActiveRecordIDs');
         // const begin = new Date().getTime();
         let activeRecordIDs: Set<string> | null = null;
 
@@ -194,14 +194,14 @@
                 }
             }
         });
-        // //console.log('end computeActiveRecordIDs', new Date().getTime() - begin);
+        // ////console.log('end computeActiveRecordIDs', new Date().getTime() - begin);
         return activeRecordIDs || new Set(get(tableData).data.map(record => record.id));
     }
 
     // **Update Disabled Filters Based on Active Filters**
     function updateDisabledFilters(activeFilters: Record<string, any>) {
         // const begin = new Date().getTime();
-        // //console.log('begin updateDisabledFilters');
+        // ////console.log('begin updateDisabledFilters');
         const activeRecordIDs = computeActiveRecordIDs(activeFilters);
         const newDisabledFilters: Record<string, Set<string>> = {};
 
@@ -256,7 +256,7 @@
                 }
             });
         });
-        // //console.log('end updateDisabledFilters', new Date().getTime() - begin);
+        // ////console.log('end updateDisabledFilters', new Date().getTime() - begin);
         disabledFilters.set(newDisabledFilters)
     }
 
@@ -275,7 +275,7 @@
             }));
             miniSearch.addAll(miniSearchData);
             miniSearchInstances[filterKey] = miniSearch;
-            // //console.log(`Initialized MiniSearch for ${filterKey}`);
+            // ////console.log(`Initialized MiniSearch for ${filterKey}`);
         }
     }
 
@@ -399,7 +399,7 @@
 
             return currentFilters;
         });
-        // //console.log('end applyFilter', new Date().getTime() - begin);
+        // ////console.log('end applyFilter', new Date().getTime() - begin);
         debounce(refreshIndices, 20)();
     }
 
@@ -414,7 +414,7 @@
             });
         });
 
-        //console.log(`Set mode for ${filterKey} to ${mode}:`, $relayFilters.find(f => f.key === filterKey));
+        ////console.log(`Set mode for ${filterKey} to ${mode}:`, $relayFilters.find(f => f.key === filterKey));
 
         // If switching to UNIQUE mode, ensure only one selection is active
         if (mode === 'UNIQUE') {
@@ -454,13 +454,13 @@
             return currentFilters;
         });
         refreshIndices();
-        //console.log(`Cleared filter for ${filterKey}${value !== undefined ? `: ${value}` : '.'}`);
+        ////console.log(`Cleared filter for ${filterKey}${value !== undefined ? `: ${value}` : '.'}`);
     }
 
     // **Clear All Filters**
     function clearAllFilters() {
         filters.set({});
-        //console.log('Cleared all filters.');
+        ////console.log('Cleared all filters.');
         refreshIndices();
     }
 
@@ -693,7 +693,7 @@
                                     on:input={(e) => {
                                         filter.searchTerm = e.target.value;
                                         filter.filteredDistinctValues = filter.distinctValues.filter(val => val.toLowerCase().includes(filter.searchTerm.toLowerCase()));
-                                        //console.log(`Filter [${filter.key}] searchTerm updated to:`, filter.searchTerm);
+                                        ////console.log(`Filter [${filter.key}] searchTerm updated to:`, filter.searchTerm);
                                     }}
                                 />
                             </div>
@@ -745,7 +745,7 @@
                                     on:input={(e) => {
                                         filter.searchTerm = e.target.value;
                                         filter.filteredDistinctValues = filter.distinctValues.filter(val => val.toLowerCase().includes(filter.searchTerm.toLowerCase()));
-                                        //console.log(`Filter [${filter.key}] searchTerm updated to:`, filter.searchTerm);
+                                        ////console.log(`Filter [${filter.key}] searchTerm updated to:`, filter.searchTerm);
                                     }}
                                 />
                             </div>
@@ -803,7 +803,7 @@
                                                         [condition]: inputValue
                                                     }
                                                 }));
-                                                //console.log(`Filter [${filter.key}] condition [${condition}] set to:`, inputValue);
+                                                ////console.log(`Filter [${filter.key}] condition [${condition}] set to:`, inputValue);
                                             } else {
                                                 // Clear the specific condition if input is invalid
                                                 filters.update(currentFilters => {
@@ -813,7 +813,7 @@
                                                     }
                                                     return currentFilters;
                                                 });
-                                                //console.log(`Filter [${filter.key}] condition [${condition}] cleared.`);
+                                                ////console.log(`Filter [${filter.key}] condition [${condition}] cleared.`);
                                             }
                                         }
                                     }}

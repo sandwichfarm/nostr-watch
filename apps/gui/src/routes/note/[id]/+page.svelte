@@ -5,7 +5,7 @@
 	
 	import { onMount } from 'svelte';
 	import { derived, readable, writable, type Readable, type Writable } from 'svelte/store';
-    import { Nip66Event, Monitor, type IEvent } from '@nostrwatch/route66/models'
+    import { Nip66CheckEvent, Monitor, type IEvent } from '@nostrwatch/route66/models'
     import { route66 } from '$lib/stores/route66.js';
     import Nip66Check from '$lib/components/partials/Nip66Check.svelte'
     import MonitorProfileCompact from '$lib/components/partials/MonitorProfileCompact.svelte'
@@ -22,12 +22,12 @@
     let monitorPubkey: string | undefined;
 
     const acceptedKinds: Readable<number[]> = readable([30166, 10166]);
-    const foundEvent: Writable<Nip66Event> = writable(null);
+    const foundEvent: Writable<Nip66CheckEvent> = writable(null);
     const looking: Writable<boolean> = writable(true);
     const error: Writable<string | null> = writable(null);
     const filters: Writable<Filter[] | null> = writable(null);
     const relays: Writable<string[]> = writable(['wss://relaypag.es', 'wss://relay.nostr.watch`']);
-    const checks: Writable<Nip66Event[]> = writable([]);
+    const checks: Writable<Nip66CheckEvent[]> = writable([]);
 
     const getNip66EventFromNip19OrHex = async () => {
         try {
@@ -68,10 +68,10 @@
                 returnResults: true,
             }
         })
-        ////console.log('result', result)
+        //////console.log('result', result)
         const event = result[0]
         if(result.length > 0) {
-            foundEvent.set(new Nip66Event(event))
+            foundEvent.set(new Nip66CheckEvent(event))
         }
         looking.set(false)
     }

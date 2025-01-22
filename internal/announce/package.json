@@ -3,12 +3,12 @@
   "version": "0.4.5",
   "description": "Generates a NIP-66 10166 event, NIP-65 10002 event and NIP-01 0 events for monitors on *every* boot.",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
     "test": "vitest",
-    "test-ui": "vitest --ui",
-    "prepare": "pnpm run build"
+    "test-ui": "vitest --ui"
   },
   "author": "",
   "license": "ISC",

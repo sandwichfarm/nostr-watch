@@ -19,8 +19,8 @@ importers:
         version: 2.10.4(typescript@5.7.2)
     devDependencies:
       '@changesets/cli':
-        specifier: 2.27.8
-        version: 2.27.8
+        specifier: 2.27.11
+        version: 2.27.11
       esbuild:
         specifier: ^0.24.0
         version: 0.24.0
@@ -46,7 +46,7 @@ importers:
         specifier: ^0.6.3
         version: 0.6.3(svelte@5.2.7)
       '@nostrwatch/auditor':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../libraries/auditor
       '@nostrwatch/memory-relay':
         specifier: workspace:^
@@ -227,8 +227,8 @@ importers:
         specifier: ^3.1.2
         version: 3.3.2(prettier@3.3.3)(svelte@5.2.7)
       prettier-plugin-tailwindcss:
-        specifier: ^0.6.4
-        version: 0.6.9(prettier-plugin-svelte@3.3.2(prettier@3.3.3)(svelte@5.2.7))(prettier@3.3.3)
+        specifier: ^0.6.10
+        version: 0.6.10(prettier-plugin-svelte@3.3.2(prettier@3.3.3)(svelte@5.2.7))(prettier@3.3.3)
       publint:
         specifier: ^0.2.0
         version: 0.2.12
@@ -390,32 +390,32 @@ importers:
         specifier: 0.15.1
         version: 0.15.1(nostr-fetch@0.15.1)(nostr-tools@1.17.0(typescript@5.7.2))
       '@nostrwatch/controlflow':
-        specifier: 0.5.1
-        version: 0.5.1
+        specifier: workspace:^
+        version: link:../../internal/controlflow
       '@nostrwatch/logger':
-        specifier: 0.0.9
-        version: 0.0.9
+        specifier: workspace:^
+        version: link:../../internal/logger
       '@nostrwatch/nocap':
-        specifier: 0.9.2
-        version: 0.9.2(@types/node@22.10.2)(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@2.1.5(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0))
+        specifier: workspace:^
+        version: link:../../libraries/nocap
       '@nostrwatch/nostrawl':
-        specifier: '*'
-        version: 0.0.4(typescript@5.7.2)
+        specifier: workspace:^
+        version: link:../../libraries/nostrawl
       '@nostrwatch/nostrings':
-        specifier: 0.3.0
-        version: 0.3.0
+        specifier: workspace:^
+        version: link:../../libraries/nostrings
       '@nostrwatch/nwcache':
-        specifier: 0.5.0
-        version: 0.5.0
+        specifier: workspace:^
+        version: link:../../internal/nwcache
       '@nostrwatch/publisher':
-        specifier: 0.12.2
-        version: 0.12.2(typescript@5.7.2)
+        specifier: workspace:^
+        version: link:../../internal/publisher
       '@nostrwatch/seed':
-        specifier: 0.1.3
-        version: 0.1.3
+        specifier: workspace:^
+        version: link:../../internal/seed
       '@nostrwatch/utils':
-        specifier: 0.1.9
-        version: 0.1.9
+        specifier: workspace:^
+        version: link:../../internal/utils
       '@types/ioredis':
         specifier: 5.0.0
         version: 5.0.0
@@ -1378,9 +1378,6 @@ importers:
 
   libraries/nocap/adapters/default/DnsAdapterDefault:
     dependencies:
-      '@nostrwatch/nocap':
-        specifier: workspace:*
-        version: link:../../..
       cross-fetch:
         specifier: ^4.0.0
         version: 4.0.0
@@ -1391,6 +1388,9 @@ importers:
       '@babel/plugin-transform-modules-commonjs':
         specifier: 7.23.3
         version: 7.23.3(@babel/core@7.26.0)
+      '@nostrwatch/nocap':
+        specifier: '*'
+        version: 0.9.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@0.34.6)
       '@types/promise-deferred':
         specifier: 2.0.5
         version: 2.0.5
@@ -1418,9 +1418,6 @@ importers:
 
   libraries/nocap/adapters/default/GeoAdapterDefault:
     dependencies:
-      '@nostrwatch/nocap':
-        specifier: workspace:*
-        version: link:../../..
       cross-fetch:
         specifier: ^4.0.0
         version: 4.0.0
@@ -1431,6 +1428,9 @@ importers:
       '@babel/plugin-transform-modules-commonjs':
         specifier: 7.23.3
         version: 7.23.3(@babel/core@7.26.0)
+      '@nostrwatch/nocap':
+        specifier: '*'
+        version: 0.9.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@0.34.6)
       '@rollup/plugin-commonjs':
         specifier: ^28.0.0
         version: 28.0.1(rollup@4.27.4)
@@ -1543,9 +1543,6 @@ importers:
 
   libraries/nocap/adapters/default/SslAdapterDefault:
     dependencies:
-      '@nostrwatch/nocap':
-        specifier: workspace:*
-        version: link:../../..
       '@nostrwatch/utils':
         specifier: workspace:*
         version: link:../../../../../internal/utils
@@ -1562,6 +1559,9 @@ importers:
       '@babel/plugin-transform-modules-commonjs':
         specifier: 7.23.3
         version: 7.23.3(@babel/core@7.26.0)
+      '@nostrwatch/nocap':
+        specifier: '*'
+        version: 0.9.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@0.34.6)
       '@nostrwatch/nocap-every-adapter-default':
         specifier: workspace:^
         version: link:../ZEveryAdapterDefault
@@ -1625,24 +1625,6 @@ importers:
 
   libraries/nocap/adapters/default/WebsocketAdapterDefault:
     dependencies:
-      '@nostrwatch/nocap':
-        specifier: workspace:*
-        version: link:../../..
-      '@nostrwatch/nocap-dns-adapter-default':
-        specifier: workspace:*
-        version: link:../DnsAdapterDefault
-      '@nostrwatch/nocap-geo-adapter-default':
-        specifier: workspace:*
-        version: link:../GeoAdapterDefault
-      '@nostrwatch/nocap-info-adapter-default':
-        specifier: workspace:*
-        version: link:../InfoAdapterDefault
-      '@nostrwatch/nocap-ssl-adapter-default':
-        specifier: workspace:*
-        version: link:../SslAdapterDefault
-      '@nostrwatch/nocap-websocket-adapter-default':
-        specifier: workspace:*
-        version: 'link:'
       '@nostrwatch/websocket':
         specifier: workspace:^
         version: link:../../../../websocket
@@ -1662,6 +1644,9 @@ importers:
       '@babel/plugin-transform-modules-commonjs':
         specifier: 7.23.3
         version: 7.23.3(@babel/core@7.26.0)
+      '@nostrwatch/nocap':
+        specifier: workspace:^
+        version: link:../../..
       '@rollup/plugin-commonjs':
         specifier: ^28.0.0
         version: 28.0.1(rollup@4.27.4)
@@ -1795,6 +1780,45 @@ importers:
       webpack-cli:
         specifier: ^5.1.4
         version: 5.1.4(webpack@5.96.1)
+
+  libraries/nostrawl:
+    dependencies:
+      '@nostr-fetch/adapter-nostr-tools':
+        specifier: 0.13.1
+        version: 0.13.1(nostr-fetch@0.13.1)(nostr-tools@1.17.0(typescript@5.7.2))
+      bullmq:
+        specifier: 4.14.2
+        version: 4.14.2
+      dotenv:
+        specifier: 16.3.1
+        version: 16.3.1
+      ioredis:
+        specifier: 5.3.2
+        version: 5.3.2
+      javascript-time-ago:
+        specifier: 2.5.9
+        version: 2.5.9
+      lmdb:
+        specifier: 3.0.5
+        version: 3.0.5
+      nostr-fetch:
+        specifier: 0.13.1
+        version: 0.13.1
+      nostr-tools:
+        specifier: 1.17.0
+        version: 1.17.0(typescript@5.7.2)
+      p-queue:
+        specifier: 7.4.1
+        version: 7.4.1
+      promise-deferred:
+        specifier: 2.0.4
+        version: 2.0.4
+      ramda:
+        specifier: 0.30.1
+        version: 0.30.1
+      websocket-polyfill:
+        specifier: 0.0.3
+        version: 0.0.3
 
   libraries/nostrings:
     dependencies:
@@ -2923,6 +2947,9 @@ packages:
   '@changesets/apply-release-plan@7.0.6':
     resolution: {integrity: sha512-TKhVLtiwtQOgMAC0fCJfmv93faiViKSDqr8oMEqrnNs99gtSC1sZh/aEMS9a+dseU1ESZRCK+ofLgGY7o0fw/Q==}
 
+  '@changesets/apply-release-plan@7.0.7':
+    resolution: {integrity: sha512-qnPOcmmmnD0MfMg9DjU1/onORFyRpDXkMMl2IJg9mECY6RnxL3wN0TCCc92b2sXt1jt8DgjAUUsZYGUGTdYIXA==}
+
   '@changesets/assemble-release-plan@6.0.5':
     resolution: {integrity: sha512-IgvBWLNKZd6k4t72MBTBK3nkygi0j3t3zdC1zrfusYo0KpdsvnDjrMM9vPnTCLCMlfNs55jRL4gIMybxa64FCQ==}
 
@@ -2933,12 +2960,19 @@ packages:
     resolution: {integrity: sha512-PfeXjvs9OfQJV8QSFFHjwHX3QnUL9elPEQ47SgkiwzLgtKGyuikWjrdM+lO9MXzOE22FO9jEGkcs4b+B6D6X0Q==}
     hasBin: true
 
+  '@changesets/cli@2.27.11':
+    resolution: {integrity: sha512-1QislpE+nvJgSZZo9+Lj3Lno5pKBgN46dAV8IVxKJy9wX8AOrs9nn5pYVZuDpoxWJJCALmbfOsHkyxujgetQSg==}
+    hasBin: true
+
   '@changesets/cli@2.27.8':
     resolution: {integrity: sha512-gZNyh+LdSsI82wBSHLQ3QN5J30P4uHKJ4fXgoGwQxfXwYFTJzDdvIJasZn8rYQtmKhyQuiBj4SSnLuKlxKWq4w==}
     hasBin: true
 
   '@changesets/config@3.0.4':
     resolution: {integrity: sha512-+DiIwtEBpvvv1z30f8bbOsUQGuccnZl9KRKMM/LxUHuDu5oEjmN+bJQ1RIBKNJjfYMQn8RZzoPiX0UgPaLQyXw==}
+
+  '@changesets/config@3.0.5':
+    resolution: {integrity: sha512-QyXLSSd10GquX7hY0Mt4yQFMEeqnO5z/XLpbIr4PAkNNoQNKwDyiSrx4yd749WddusH1v3OSiA0NRAYmH/APpQ==}
 
   '@changesets/errors@0.2.0':
     resolution: {integrity: sha512-6BLOQUscTpZeGljvyQXlWOItQyU71kCdGz7Pi8H8zdw6BI0g3m43iL4xKUVPWtG+qrrL9DTjpdn8eYuCQSRpow==}
@@ -2948,6 +2982,9 @@ packages:
 
   '@changesets/get-release-plan@4.0.5':
     resolution: {integrity: sha512-E6wW7JoSMcctdVakut0UB76FrrN3KIeJSXvB+DHMFo99CnC3ZVnNYDCVNClMlqAhYGmLmAj77QfApaI3ca4Fkw==}
+
+  '@changesets/get-release-plan@4.0.6':
+    resolution: {integrity: sha512-FHRwBkY7Eili04Y5YMOZb0ezQzKikTka4wL753vfUA5COSebt7KThqiuCN9BewE4/qFGgF/5t3AuzXx1/UAY4w==}
 
   '@changesets/get-version-range-type@0.4.0':
     resolution: {integrity: sha512-hwawtob9DryoGTpixy1D3ZXbGgJu1Rhr+ySH2PvTLHvkZuQ7sRT4oQwMh0hbqZH1weAooedEjRsbrWcGLCeyVQ==}
@@ -4141,9 +4178,6 @@ packages:
   '@nostr-fetch/kernel@0.17.0':
     resolution: {integrity: sha512-r0EdueKQlMRqCqOIPUS53UrVl8AbWWnV03PNQn78MLvwCPqq9c+IPY93dh9nL3GWZOB0oTRkBJ3/sgIzDL3iOw==}
 
-  '@nostrwatch/controlflow@0.5.1':
-    resolution: {integrity: sha512-BvtpaBwKoLUluu+LT2NdTJiLXacRhN1ATQEu3AomiW6CxRr8gexx/DyI50Do9TS/I36Hx1X5tSOElGYc9ZWRrA==}
-
   '@nostrwatch/logger@0.0.9':
     resolution: {integrity: sha512-G/Z4E9/vtJhP7bRu0WA8bXE+HiFTLO8bVWCT34RZnW7/W6fWOxoAbTt5fhqrLwzYVtVWcfHwF2fiDidaVhqsQA==}
 
@@ -4173,20 +4207,11 @@ packages:
     peerDependencies:
       vitest: ^0.32.0
 
-  '@nostrwatch/nostrawl@0.0.4':
-    resolution: {integrity: sha512-UD4Zir2zC0OYdr81HEeE/ERaISllHr8zkfsChgXN37DYN1Q6mTaQqfN1eydyC1vqNzPxJpAXepYe/zKu8DB6Dg==}
-
   '@nostrwatch/nostrings@0.3.0':
     resolution: {integrity: sha512-lysjNu78+WuOvrMTpGFKCGKVyUsqeqfDIyl/F7JQvfMpR2koxJYZAtyeIo/8gjV2PAaQZuyx72Z/46FiBVVn7w==}
 
-  '@nostrwatch/nwcache@0.5.0':
-    resolution: {integrity: sha512-9LShY4RgK6/uSvV0H83ZQ3WpabvFYwe6dS4AHfD+6DsWAQ90LRZli3GlDWsMWsYeAN/mHfwuVP/SvhcZGxcnew==}
-
   '@nostrwatch/publisher@0.12.2':
     resolution: {integrity: sha512-hlYPXLVjtuxkB9vcezKVtI4cNS29MI39TO12cUaoijYv6Fd6hMduq0KO+43tSqHCItR30K12rrTEjOmsmTSrUg==}
-
-  '@nostrwatch/seed@0.1.3':
-    resolution: {integrity: sha512-qmhueaxkZdj+wKb2RIwpLnRnfTRnGsVseBCEfAeZXhLEcVwl4ATbdRJbuj8JzX6QhgGP5yFNfW384jkBYDaKAw==}
 
   '@nostrwatch/utils@0.1.9':
     resolution: {integrity: sha512-/5BvJfvWH+z8uCquVMIrdzFnMBz+b5hN7JSbrWjwGU+J+/tGDwrsue7y+MqFKldcgPb4clSOG1onWKhsufQKlg==}
@@ -9342,15 +9367,15 @@ packages:
       prettier: ^3.0.0
       svelte: ^3.2.0 || ^4.0.0-next.0 || ^5.0.0-next.0
 
-  prettier-plugin-tailwindcss@0.6.9:
-    resolution: {integrity: sha512-r0i3uhaZAXYP0At5xGfJH876W3HHGHDp+LCRUJrs57PBeQ6mYHMwr25KH8NPX44F2yGTvdnH7OqCshlQx183Eg==}
+  prettier-plugin-tailwindcss@0.6.10:
+    resolution: {integrity: sha512-ndj2WLDaMzACnr1gAYZiZZLs5ZdOeBYgOsbBmHj3nvW/6q8h8PymsXiEnKvj/9qgCCAoHyvLOisoQdIcsDvIgw==}
     engines: {node: '>=14.21.3'}
     peerDependencies:
       '@ianvs/prettier-plugin-sort-imports': '*'
       '@prettier/plugin-pug': '*'
       '@shopify/prettier-plugin-liquid': '*'
       '@trivago/prettier-plugin-sort-imports': '*'
-      '@zackad/prettier-plugin-twig-melody': '*'
+      '@zackad/prettier-plugin-twig': '*'
       prettier: ^3.0
       prettier-plugin-astro: '*'
       prettier-plugin-css-order: '*'
@@ -9372,7 +9397,7 @@ packages:
         optional: true
       '@trivago/prettier-plugin-sort-imports':
         optional: true
-      '@zackad/prettier-plugin-twig-melody':
+      '@zackad/prettier-plugin-twig':
         optional: true
       prettier-plugin-astro:
         optional: true
@@ -12476,6 +12501,22 @@ snapshots:
       resolve-from: 5.0.0
       semver: 7.6.3
 
+  '@changesets/apply-release-plan@7.0.7':
+    dependencies:
+      '@changesets/config': 3.0.5
+      '@changesets/get-version-range-type': 0.4.0
+      '@changesets/git': 3.0.2
+      '@changesets/should-skip-package': 0.1.1
+      '@changesets/types': 6.0.0
+      '@manypkg/get-packages': 1.1.3
+      detect-indent: 6.1.0
+      fs-extra: 7.0.1
+      lodash.startcase: 4.4.0
+      outdent: 0.5.0
+      prettier: 2.8.8
+      resolve-from: 5.0.0
+      semver: 7.6.3
+
   '@changesets/assemble-release-plan@6.0.5':
     dependencies:
       '@changesets/errors': 0.2.0
@@ -12498,6 +12539,37 @@ snapshots:
       '@changesets/errors': 0.2.0
       '@changesets/get-dependents-graph': 2.1.2
       '@changesets/get-release-plan': 4.0.5
+      '@changesets/git': 3.0.2
+      '@changesets/logger': 0.1.1
+      '@changesets/pre': 2.0.1
+      '@changesets/read': 0.6.2
+      '@changesets/should-skip-package': 0.1.1
+      '@changesets/types': 6.0.0
+      '@changesets/write': 0.3.2
+      '@manypkg/get-packages': 1.1.3
+      ansi-colors: 4.1.3
+      ci-info: 3.9.0
+      enquirer: 2.4.1
+      external-editor: 3.1.0
+      fs-extra: 7.0.1
+      mri: 1.2.0
+      p-limit: 2.3.0
+      package-manager-detector: 0.2.4
+      picocolors: 1.1.1
+      resolve-from: 5.0.0
+      semver: 7.6.3
+      spawndamnit: 3.0.1
+      term-size: 2.2.1
+
+  '@changesets/cli@2.27.11':
+    dependencies:
+      '@changesets/apply-release-plan': 7.0.7
+      '@changesets/assemble-release-plan': 6.0.5
+      '@changesets/changelog-git': 0.2.0
+      '@changesets/config': 3.0.5
+      '@changesets/errors': 0.2.0
+      '@changesets/get-dependents-graph': 2.1.2
+      '@changesets/get-release-plan': 4.0.6
       '@changesets/git': 3.0.2
       '@changesets/logger': 0.1.1
       '@changesets/pre': 2.0.1
@@ -12563,6 +12635,16 @@ snapshots:
       fs-extra: 7.0.1
       micromatch: 4.0.8
 
+  '@changesets/config@3.0.5':
+    dependencies:
+      '@changesets/errors': 0.2.0
+      '@changesets/get-dependents-graph': 2.1.2
+      '@changesets/logger': 0.1.1
+      '@changesets/types': 6.0.0
+      '@manypkg/get-packages': 1.1.3
+      fs-extra: 7.0.1
+      micromatch: 4.0.8
+
   '@changesets/errors@0.2.0':
     dependencies:
       extendable-error: 0.1.7
@@ -12578,6 +12660,15 @@ snapshots:
     dependencies:
       '@changesets/assemble-release-plan': 6.0.5
       '@changesets/config': 3.0.4
+      '@changesets/pre': 2.0.1
+      '@changesets/read': 0.6.2
+      '@changesets/types': 6.0.0
+      '@manypkg/get-packages': 1.1.3
+
+  '@changesets/get-release-plan@4.0.6':
+    dependencies:
+      '@changesets/assemble-release-plan': 6.0.5
+      '@changesets/config': 3.0.5
       '@changesets/pre': 2.0.1
       '@changesets/read': 0.6.2
       '@changesets/types': 6.0.0
@@ -13208,6 +13299,41 @@ snapshots:
       jest-util: 29.7.0
       slash: 3.0.0
 
+  '@jest/core@29.7.0':
+    dependencies:
+      '@jest/console': 29.7.0
+      '@jest/reporters': 29.7.0
+      '@jest/test-result': 29.7.0
+      '@jest/transform': 29.7.0
+      '@jest/types': 29.6.3
+      '@types/node': 22.10.2
+      ansi-escapes: 4.3.2
+      chalk: 4.1.2
+      ci-info: 3.9.0
+      exit: 0.1.2
+      graceful-fs: 4.2.11
+      jest-changed-files: 29.7.0
+      jest-config: 29.7.0(@types/node@22.10.2)
+      jest-haste-map: 29.7.0
+      jest-message-util: 29.7.0
+      jest-regex-util: 29.6.3
+      jest-resolve: 29.7.0
+      jest-resolve-dependencies: 29.7.0
+      jest-runner: 29.7.0
+      jest-runtime: 29.7.0
+      jest-snapshot: 29.7.0
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      jest-watcher: 29.7.0
+      micromatch: 4.0.8
+      pretty-format: 29.7.0
+      slash: 3.0.0
+      strip-ansi: 6.0.1
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
+
   '@jest/core@29.7.0(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))':
     dependencies:
       '@jest/console': 29.7.0
@@ -13647,14 +13773,6 @@ snapshots:
       '@noble/curves': 1.6.0
       '@noble/hashes': 1.5.0
 
-  '@nostrwatch/controlflow@0.5.1':
-    dependencies:
-      bullmq: 5.29.1
-      dotenv: 16.3.1
-      node-schedule: 2.1.1
-    transitivePeerDependencies:
-      - supports-color
-
   '@nostrwatch/logger@0.0.9':
     dependencies:
       logging: 3.3.0
@@ -13717,18 +13835,18 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@nostrwatch/nocap@0.9.2(@types/node@22.10.2)(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@2.1.5(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0))':
+  '@nostrwatch/nocap@0.9.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@0.34.6)':
     dependencies:
       '@nostrwatch/logger': 0.0.9
       '@nostrwatch/nocap-every-adapter-default': 1.7.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       fetch-h2: 3.0.2
       get-ssl-certificate: 2.3.3
-      jest: 29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))
+      jest: 29.7.0
       murmurhash: 2.0.1
       object-hash: 3.0.0
       promise-deferred: 2.0.4
       socks-proxy-agent: 8.0.2
-      vitest: 2.1.5(@types/node@22.10.2)(sass-embedded@1.82.0)(terser@5.36.0)
+      vitest: 0.34.6(@vitest/ui@0.34.6)(sass-embedded@1.82.0)(terser@5.36.0)
       ws: 8.16.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - '@types/node'
@@ -13740,39 +13858,9 @@ snapshots:
       - ts-node
       - utf-8-validate
 
-  '@nostrwatch/nostrawl@0.0.4(typescript@5.7.2)':
-    dependencies:
-      '@nostr-fetch/adapter-nostr-tools': 0.13.1(nostr-fetch@0.13.1)(nostr-tools@1.17.0(typescript@5.7.2))
-      bullmq: 4.14.2
-      dotenv: 16.3.1
-      ioredis: 5.3.2
-      javascript-time-ago: 2.5.9
-      lmdb: 3.0.5
-      nostr-fetch: 0.13.1
-      nostr-tools: 1.17.0(typescript@5.7.2)
-      p-queue: 7.4.1
-      promise-deferred: 2.0.4
-      ramda: 0.30.1
-      websocket-polyfill: 0.0.3
-    transitivePeerDependencies:
-      - supports-color
-      - typescript
-
   '@nostrwatch/nostrings@0.3.0':
     dependencies:
       '@nostrwatch/logger': 0.0.9
-    transitivePeerDependencies:
-      - supports-color
-
-  '@nostrwatch/nwcache@0.5.0':
-    dependencies:
-      '@nostrwatch/nostrings': 0.3.0
-      dotenv: 16.3.1
-      lmdb: 2.9.4
-      lmdb-index: 1.1.0
-      lmdb-oql: 0.5.5
-      murmurhash: 2.0.1
-      object-hash: 3.0.0
     transitivePeerDependencies:
       - supports-color
 
@@ -13782,10 +13870,6 @@ snapshots:
       nostr-tools: 1.17.0(typescript@5.7.2)
     transitivePeerDependencies:
       - typescript
-
-  '@nostrwatch/seed@0.1.3':
-    dependencies:
-      js-yaml: 4.1.0
 
   '@nostrwatch/utils@0.1.9':
     dependencies:
@@ -14656,7 +14740,7 @@ snapshots:
 
   '@types/ioredis@5.0.0':
     dependencies:
-      ioredis: 5.4.1
+      ioredis: 5.3.2
     transitivePeerDependencies:
       - supports-color
 
@@ -15951,7 +16035,7 @@ snapshots:
     dependencies:
       cron-parser: 4.9.0
       glob: 8.1.0
-      ioredis: 5.4.1
+      ioredis: 5.3.2
       lodash: 4.17.21
       msgpackr: 1.11.2
       node-abort-controller: 3.1.1
@@ -16319,6 +16403,21 @@ snapshots:
       ripemd160: 2.0.2
       safe-buffer: 5.2.1
       sha.js: 2.4.11
+
+  create-jest@29.7.0:
+    dependencies:
+      '@jest/types': 29.6.3
+      chalk: 4.1.2
+      exit: 0.1.2
+      graceful-fs: 4.2.11
+      jest-config: 29.7.0(@types/node@22.10.2)
+      jest-util: 29.7.0
+      prompts: 2.4.2
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
 
   create-jest@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
@@ -18447,6 +18546,25 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
+  jest-cli@29.7.0:
+    dependencies:
+      '@jest/core': 29.7.0
+      '@jest/test-result': 29.7.0
+      '@jest/types': 29.6.3
+      chalk: 4.1.2
+      create-jest: 29.7.0
+      exit: 0.1.2
+      import-local: 3.2.0
+      jest-config: 29.7.0(@types/node@22.10.2)
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
+
   jest-cli@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
       '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))
@@ -18465,6 +18583,36 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
+
+  jest-config@29.7.0(@types/node@22.10.2):
+    dependencies:
+      '@babel/core': 7.26.0
+      '@jest/test-sequencer': 29.7.0
+      '@jest/types': 29.6.3
+      babel-jest: 29.7.0(@babel/core@7.26.0)
+      chalk: 4.1.2
+      ci-info: 3.9.0
+      deepmerge: 4.3.1
+      glob: 7.2.3
+      graceful-fs: 4.2.11
+      jest-circus: 29.7.0(babel-plugin-macros@3.1.0)
+      jest-environment-node: 29.7.0
+      jest-get-type: 29.6.3
+      jest-regex-util: 29.6.3
+      jest-resolve: 29.7.0
+      jest-runner: 29.7.0
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      micromatch: 4.0.8
+      parse-json: 5.2.0
+      pretty-format: 29.7.0
+      slash: 3.0.0
+      strip-json-comments: 3.1.1
+    optionalDependencies:
+      '@types/node': 22.10.2
+    transitivePeerDependencies:
+      - babel-plugin-macros
+      - supports-color
 
   jest-config@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
@@ -18723,6 +18871,18 @@ snapshots:
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
+
+  jest@29.7.0:
+    dependencies:
+      '@jest/core': 29.7.0
+      '@jest/types': 29.6.3
+      import-local: 3.2.0
+      jest-cli: 29.7.0
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
 
   jest@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
@@ -20007,7 +20167,7 @@ snapshots:
       prettier: 3.3.3
       svelte: 5.2.7
 
-  prettier-plugin-tailwindcss@0.6.9(prettier-plugin-svelte@3.3.2(prettier@3.3.3)(svelte@5.2.7))(prettier@3.3.3):
+  prettier-plugin-tailwindcss@0.6.10(prettier-plugin-svelte@3.3.2(prettier@3.3.3)(svelte@5.2.7))(prettier@3.3.3):
     dependencies:
       prettier: 3.3.3
     optionalDependencies:

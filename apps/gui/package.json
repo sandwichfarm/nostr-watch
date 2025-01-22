@@ -98,6 +98,7 @@
 	"dependencies": {
 		"@careswitch/svelte-data-table": "^0.6.3",
 		"@nostrwatch/auditor": "workspace:*",
+		"@nostrwatch/memory-relay": "workspace:^",
 		"@nostrwatch/nocap": "workspace:^",
 		"@nostrwatch/nocap-every-adapter-default": "workspace:^",
 		"@nostrwatch/route66": "workspace:^",
@@ -106,7 +107,6 @@
 		"@nostrwatch/schemata-js-ajv": "workspace:^",
 		"@nostrwatch/utils": "workspace:^",
 		"@nostrwatch/worker-relay": "workspace:^",
-		"@nostrwatch/memory-relay": "workspace:^",
 		"@unovis/svelte": "^1.4.5",
 		"@unovis/ts": "^1.4.5",
 		"ajv": "^8.17.1",
@@ -126,6 +126,7 @@
 		"minisearch": "^7.1.0",
 		"nostr-tools": "^2.10.3",
 		"p-queue": "^8.0.1",
+		"process": "^0.11.10",
 		"radix-svelte": "^0.9.0",
 		"surrealdb": "^1.0.6",
 		"svelte-geolocation": "^1.0.0",

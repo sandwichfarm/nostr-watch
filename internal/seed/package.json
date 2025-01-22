@@ -12,8 +12,7 @@
     "dev:server": "webpack --config webpack.server.config.cjs --watch",
     "test": "vitest",
     "lint": "eslint . --ext .ts",
-    "clean": "rimraf dist",
-    "prepare": "pnpm run clean && pnpm run build"
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "@nostr-fetch/adapter-nostr-tools": "^0.15.1",

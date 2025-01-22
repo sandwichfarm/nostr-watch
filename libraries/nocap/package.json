@@ -30,7 +30,6 @@
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
-    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
@@ -56,6 +55,7 @@
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
     "@rollup/plugin-alias": "5.1.1",
     "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-inject": "^5.0.5",
     "@rollup/plugin-json": "^5.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-replace": "^5.0.0",

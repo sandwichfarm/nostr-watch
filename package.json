@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.2.0",
   "scripts": {
+    "build": "pnpm -r build",
     "preinstall": "npx only-allow pnpm",
     "prerelease": "./scripts/prerelease.sh",
     "release": "pnpm run prerelease && ./scripts/release.sh",

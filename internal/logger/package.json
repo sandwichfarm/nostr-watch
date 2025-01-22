@@ -3,20 +3,22 @@
   "version": "0.0.9",
   "description": "A logging wrapper",
   "type": "module",
+  "module": "src/index.ts",
   "exports": {
     ".": {
       "node": {
+        "types": "./dist/types/index.d.ts",
         "import": "./dist/server/index.esm.js",
-        "require": "./dist/server/index.cjs.js",
-        "types": "./dist/types/index.d.ts"
+        "require": "./dist/server/index.cjs.js"
       },
       "browser": {
-        "import": "./dist/browser/index.esm.js",
-        "types": "./dist/types/index.d.ts"
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/browser/index.esm.js"
       },
       "default": {
-        "import": "./dist/browser/index.esm.js",
-        "types": "./dist/types/index.d.ts"
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/browser/index.esm.js"
+        
       }
     }
   },
@@ -26,8 +28,7 @@
     "build:types": "tsc -p tsconfig.json --emitDeclarationOnly",
     "dev": "rollup -c --watch",
     "test": "vitest",
-    "lint": "eslint . --ext .ts",
-    "prepare": "pnpm run clean && pnpm run build"
+    "lint": "eslint . --ext .ts"
   },
   "keywords": [
     "logger",

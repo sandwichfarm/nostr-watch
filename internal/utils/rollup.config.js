@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 
 const production = !process.env.ROLLUP_WATCH;
 
-const input = glob.sync('src/**/index.ts');
+const input = glob.sync('src/**/*.ts');
 
 console.log('inputs', input);
 

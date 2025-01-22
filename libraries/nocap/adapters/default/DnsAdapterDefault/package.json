@@ -28,7 +28,6 @@
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
-    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"

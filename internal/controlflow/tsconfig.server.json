@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ES2020",
+    "module": "NodeNext",
     "lib": ["ES2020"],
     
     "sourceMap": true,
@@ -10,7 +10,7 @@
     "esModuleInterop": true,
     "declaration": true,
     "emitDeclarationOnly": false,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true, 
     "skipLibCheck": true

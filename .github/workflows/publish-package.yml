@@ -164,7 +164,7 @@ jobs:
       - name: Upload Build (GUI)
         if: matrix.package == 'gui'
         run: |
-          scp -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
+          scp -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}/
 
       - name: Update Symlink
         if: matrix.package == 'gui' 

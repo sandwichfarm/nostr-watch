@@ -129,11 +129,8 @@ jobs:
 
       - name: Validate Secrets
         if: matrix.package == 'gui'
-        env: 
-          GUI_HOST_USER: ${{ secrets.GUI_HOST_USER }}
-          GUI_HOST_IP: ${{ secrets.GUI_HOST_IP }}
         run: |
-          if [ -z "${{ GUI_HOST_USER }}" ] || [ -z "${{ GUI_HOST_IP }}" ]; then
+          if [ -z "${{ secrets.GUI_HOST_USER }}" ] || [ -z "${{ secrets.GUI_HOST_IP }}" ]; then
             echo "Secrets GUI_HOST_USER or GUI_HOST_IP are missing."
             exit 1
           else

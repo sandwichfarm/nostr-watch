@@ -1,6 +1,13 @@
-# nostrability schemata
+```
+Note: This package will be migrated to nostrability/schemata once all events that @nostrwatch tests have a schema specified.
+```
 
-A template for simplifying the validation of nostr events, their attriobutes and their respective tags using JSON-Schema standards. 
+# @nostrwatch/schemata
+
+A template for simplifying the validation of nostr events, their attributes and their respective tags using JSON-Schema standards. 
+
+## Related
+- [`@nostrwatch/schemata-js-ajv`](https://github.com/sandwichfarm/nostr-watch/tree/next/libraries/schemata-js-ajv) - Typescript library for validating nostr events, depends on this package.
 
 ## Usage 
 1. Download ZIP file (all languages) or include package (js only for now)

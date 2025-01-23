@@ -210,7 +210,7 @@ jobs:
         run: |
           if [ -d "${{ steps.find_package.outputs.the_path }}" ]; then
             cd "$(dirname "${{ steps.find_package.outputs.the_path }}")"
-            zip -r "${{ matrix.package }}@v${{ steps.publish.outputs.version }}.zip" "$(basename "${{ steps.find_package.outputs.the_path }}")"
+            zip -r "${{ matrix.package }}@v${{ steps.publish.outputs.version }}.zip" "$(basename "${{ steps.find_package.outputs.the_path }}")"/*
           else
             echo "Directory not found: ${{ steps.find_package.outputs.the_path }}"
             exit 1

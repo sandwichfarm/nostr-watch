@@ -125,7 +125,13 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.GUI_SSH_KEY }}" > ~/.ssh/gui_ssh_key
           chmod 600 ~/.ssh/gui_ssh_key
-      
+
+          
+      - name: Test SSH Connection
+        run: |
+          ssh -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
+
+
       - name: Prepare Directories (GUI)
         if: matrix.package == 'gui'
         run: |

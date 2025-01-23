@@ -134,7 +134,8 @@ jobs:
       - name: Upload Build (GUI)
         if: matrix.package == 'gui'
         run: |
-          scp -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
+          scp -i "${{ secrets.GUI_SSH_KEY }}" -o StrictHostKeyChecking=no -r ./apps/gui/dist/* "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}"
+
 
       - name: Find Package
         id: find_package

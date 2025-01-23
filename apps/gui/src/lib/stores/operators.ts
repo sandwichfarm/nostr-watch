@@ -42,8 +42,7 @@ export const operatorsRows: Readable<OperatorsRow[]> = derived(
     ([$operatorsUserInstances]) => {
         const rows: any[] = []
         $operatorsUserInstances.forEach((userInstance) => {
-            if(!userInstance) return;
-            //console.log('userInstance', userInstance)       
+            if(!userInstance) return;   
             const keys = userInstance.keys;
             const row: OperatorsRow = Object.fromEntries( 
                 keys

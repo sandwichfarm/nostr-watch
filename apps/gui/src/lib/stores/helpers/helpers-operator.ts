@@ -40,7 +40,6 @@ export const operatorIsps = (pubkey: string): string[] | undefined => {
         .map((aggregate: any) => aggregate?.isp )
         .filter((isp: string) => !!isp )
     result.forEach((isp: string) => uniques.add(isp))
-    console.log('operatorIsps', result, uniques)
     return Array.from(uniques);
 }
 

@@ -232,8 +232,6 @@
       if (!operatorPubkey) return operatorMetaReady.set(true);
       let count = 0
 
-      const profileFromStore = relayOperatorProf
-
       const onevent = (event: IEvent) => {
         ////console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
         count++;

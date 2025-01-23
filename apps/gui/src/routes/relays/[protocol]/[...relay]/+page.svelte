@@ -139,13 +139,13 @@
 
     const getRelayData = async (type = 'online') => {
       const res = await $route66?.services?.relay?.getRelayData(relayUrl, type)
-      //console.log(`RELAY DATA.${type} check:`, res?.[0]?.length)
-      return res
+      loadNip11().then(loadOperatorMeta)
+      return
     }
 
     await route66Ready()
     await $route66.services.relay.ready()
-    loadNip11().then(loadOperatorMeta)
+
 
     if ($isLivesyncing) {
       loading = false
@@ -153,48 +153,43 @@
       return
     }
 
-    try {
-      const onlineRes = await getRelayData('online')
-      if (onlineRes?.[0]?.length) {
-        console.warn('RELAY DATA: RELAY IS PROBABLE ONLINE', onlineRes)
-        const [data, mons] = onlineRes
-        publishEventsToMemoryRelay(data)
-        monitors.set(Array.from(mons?.values() || new Set()))
-        return
-      }
+    // try {
+    //   const onlineRes = await getRelayData('online')
+    //   if (onlineRes?.[0]?.length) {
+    //     const [data, mons] = onlineRes
+    //     publishEventsToMemoryRelay(data)
+    //     monitors.set(Array.from(mons?.values() || new Set()))
+    //     return
+    //   }
 
-      const offlineRes = await getRelayData('offline')
-      if (offlineRes?.[0]?.length) {
-        console.warn('RELAY DATA: RELAY MAY BE OFFLINE', offlineRes)
-        const [data, mons] = offlineRes
-        const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
-        lastCheck.set(latestEvent)
-        lastSeen.set(latestEvent?.created_at ?? null)
-        lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
-        relayIsOffline.set(true)
-        return
-      }
+    //   const offlineRes = await getRelayData('offline')
+    //   if (offlineRes?.[0]?.length) {
+    //     const [data, mons] = offlineRes
+    //     const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
+    //     lastCheck.set(latestEvent)
+    //     lastSeen.set(latestEvent?.created_at ?? null)
+    //     lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
+    //     relayIsOffline.set(true)
+    //     return
+    //   }
 
-      const deadRes = await getRelayData('dead')
-      //console.log('RELAY DATA.dead check:', deadRes)
-      if (!deadRes?.[0]?.length) {
-        relayIsUnknown.set(true)
-        //console.log('RELAY DATA: RELAY HAS NEVER BEEN SEEN')
-      } else {
-        console.warn('RELAY DATA: RELAY IS DEAD', deadRes?.[0]?.length)
-        const [data, mons] = deadRes
-        const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
-        lastCheck.set(latestEvent)
-        lastSeen.set(latestEvent?.created_at ?? null)
-        lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
-        relayIsDead.set(true)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      loading = false
-      currentRelay = relayUrl
-    }
+    //   const deadRes = await getRelayData('dead')
+    //   if (!deadRes?.[0]?.length) {
+    //     relayIsUnknown.set(true)
+    //   } else {
+    //     const [data, mons] = deadRes
+    //     const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
+    //     lastCheck.set(latestEvent)
+    //     lastSeen.set(latestEvent?.created_at ?? null)
+    //     lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
+    //     relayIsDead.set(true)
+    //   }
+    // } catch (err) {
+    //   console.error(err)
+    // } finally {
+    //   loading = false
+    //   currentRelay = relayUrl
+    // }
   }
 
 
@@ -269,6 +264,7 @@
 
   const destroy = () => {
       $route66?.services?.relay?.unsubscribeAll();
+      $route66?.services?.monitors?.unsubscribeAll();
       if (currentRelay === relayUrl) return;
       loading = true;
       currentRelay = '';
@@ -386,7 +382,6 @@
     </div>
   </div>
 </header>
-
 
 {#if probablyOnline}
 <main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">

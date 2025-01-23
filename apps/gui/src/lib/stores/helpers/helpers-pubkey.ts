@@ -34,30 +34,28 @@ export const pubkeyUserInstance$ = (pubkey: string): Readable<StoreUser> => {
 }
 
 export type StorePubkeyProfile = PubkeyProfile | undefined
-export type StorePubkeyProfileReadable = Readable<StorePubkeyProfile>
 
 export const pubkeyProfile = (pubkey: string): StorePubkeyProfile | undefined => {
     //console.log( 'pubkeyProfile', `${formatPubkeyForIndex(pubkey)}:${0}`, get(events).get(`${formatPubkeyForIndex(pubkey)}:${0}`));
     return topMemoryRelay().get(`${formatPubkeyForIndex(pubkey)}:${0}`) as PubkeyProfile | undefined;
 }
 
-export const pubkeyProfile$ = (pubkey: string): StorePubkeyProfileReadable => {
-    return derived(eventsStoreMemoryRelay, ($storeRelay) => {
+export const pubkeyProfile$ = (pubkey: string): Readable<StorePubkeyProfile> => {
+    return derived([eventsStoreMemoryRelay, get(eventsStoreMemoryRelay).store], ([$storeRelay]) => {
         return $storeRelay.$get(`${formatPubkeyForIndex(pubkey)}:${0}`);
-    }) as StorePubkeyProfileReadable
+    }) as Readable<StorePubkeyProfile> 
 }
 
 export type StorePubkeyRelays = PubkeyProfile | undefined
-export type StorePubkeyRelaysReadable = Readable<StorePubkeyRelays>
 
 export const pubkeyRelays = (pubkey: string): StorePubkeyRelays => {
     return topMemoryRelay()?.get(`${formatPubkeyForIndex(pubkey)}:${10002}`) as StorePubkeyRelays;
 }
 
-export const pubkeyRelays$ = (pubkey: string): StorePubkeyRelaysReadable => {
-    return derived(eventsStoreMemoryRelay, ($storeRelay) => {
-        return $storeRelay.$get(`${formatPubkeyForIndex(pubkey)}:${10002}`);
-    }) as StorePubkeyRelaysReadable
+export const pubkeyRelays$ = (pubkey: string): Readable<StorePubkeyRelays> => {
+    return derived([eventsStoreMemoryRelay, get(eventsStoreMemoryRelay).store], ([$storeRelay]) => {
+        return $storeRelay.get(`${formatPubkeyForIndex(pubkey)}:${10002}`);
+    }) as Readable<StorePubkeyRelays>
 }
 
 export type StorePubkeyEvents = StoreEventType[]

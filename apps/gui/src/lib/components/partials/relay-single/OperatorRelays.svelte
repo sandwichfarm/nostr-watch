@@ -39,7 +39,7 @@
 
     const allOperatorRelays = derived([onlineRelays, deadRelays], ([$onlineRelays, $deadRelays]) => {
         const all = [...$onlineRelays, ...$deadRelays]
-        otherRelaysCount = all.length
+        otherRelaysCount = $onlineRelays.length
         return all
     });
 

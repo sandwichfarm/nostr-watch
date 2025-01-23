@@ -11,10 +11,11 @@
 	import { Monitor } from '@nostrwatch/route66/models';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
     import OperatorRelays from '../OperatorRelays.svelte';
+	import type { Readable } from 'svelte/store';
 
     export let pubkey: string;
-    export let relays: PubkeyRelays;
-    export let profile: PubkeyProfile;
+    export let relays: Readable<PubkeyRelays>;
+    export let profile: Readable<PubkeyProfile>;
     export let relayUrl: string;
     export let monitors: Monitor[];
 
@@ -30,7 +31,7 @@
     onMount(mount)
     onDestroy(destroy)
 
-    $: name = profile?.name ?? undefined
+    $: name = $profile?.name ?? undefined
 </script>
 {#if pubkey}
 <Card.Root class="relay-card">
@@ -39,10 +40,10 @@
         <!-- <Card.Description>A map showing where monitors reported from</Card.Description> -->
     </Card.Header>  
     <Card.Content class="">
-        {#if profile && pubkey}
+        {#if $profile && pubkey}
         <ProfileCompact {pubkey} {profile}  />
-            {#if profile?.about}
-            <p class="mt-2 p-4 bg-white/5 line-clamp-6">{profile?.about}</p>
+            {#if $profile?.about}
+            <p class="mt-2 p-4 bg-white/5 line-clamp-6">{$profile?.about}</p>
             {/if}
         {/if}
         {#if otherRelaysCount > 0}

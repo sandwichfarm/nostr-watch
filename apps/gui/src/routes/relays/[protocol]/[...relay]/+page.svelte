@@ -139,10 +139,11 @@
 
     await route66Ready()
     await $route66.services.relay.ready()
-    loadNip11().then(loadOperatorMeta)
+    await loadNip11().then(loadOperatorMeta)
+
+    loading = false
 
     if ($isLivesyncing) {
-      loading = false
       currentRelay = relayUrl
       return
     }

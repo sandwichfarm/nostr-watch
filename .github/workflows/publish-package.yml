@@ -149,7 +149,6 @@ jobs:
         
       - name: Find Package
         id: find_package
-        if: matrix.package != 'gui'
         run: |
           PKG_PATH=$(find libraries internal apps -type d -name "${{ matrix.package }}" -print -quit)
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
@@ -171,10 +170,22 @@ jobs:
           RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"
           echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
 
+
+      - name: Debug Directory Before Zipping
+        run: |
+          echo "Checking contents of: ${{ steps.find_package.outputs.the_path }}"
+          ls -l "${{ steps.find_package.outputs.the_path }}"
+
       - name: Archive Subdirectory
         id: archive
         run: |
-          zip -r "${{ steps.meta.outputs.release_slug }}.zip" "${{ steps.find_package.outputs.the_path }}"
+          if [ -d "${{ steps.find_package.outputs.the_path }}" ]; then
+            cd "$(dirname "${{ steps.find_package.outputs.the_path }}")"
+            zip -r "${{ matrix.package }}@v${{ steps.publish.outputs.version }}.zip" "$(basename "${{ steps.find_package.outputs.the_path }}")"
+          else
+            echo "Directory not found: ${{ steps.find_package.outputs.the_path }}"
+            exit 1
+          fi
 
       - name: Create Release ${{ steps.meta.outputs.release_slug }}
         uses: actions/create-release@latest

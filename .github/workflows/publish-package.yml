@@ -149,7 +149,6 @@ jobs:
           echo "Host User: ${{ secrets.GUI_HOST_USER }}"
           echo "Host IP: ${{ secrets.GUI_HOST_IP }}"
           ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
-      
 
       - name: Prepare Directories (GUI)
         if: matrix.package == 'gui'

@@ -119,12 +119,18 @@ jobs:
           VERSION=$(jq -r '.version' ./apps/gui/package.json)
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
+      - name: Prepare SSH Key
+        if: matrix.package == 'gui'
+        run: |
+          echo "${{ secrets.GUI_SSH_KEY }}" > ~/.ssh/gui_ssh_key
+          chmod 600 ~/.ssh/gui_ssh_key
+      
       - name: Prepare Directories (GUI)
         if: matrix.package == 'gui'
         run: |
           VERSION=${{ env.VERSION }}
           echo "Deploying version $VERSION"
-          ssh -i "${{ secrets.GUI_SSH_KEY }}" -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" << EOF
+          ssh -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
           set -e
           mkdir -p /var/www/${VERSION}
           rm -rf /var/www/html/
@@ -134,9 +140,13 @@ jobs:
       - name: Upload Build (GUI)
         if: matrix.package == 'gui'
         run: |
-          scp -i "${{ secrets.GUI_SSH_KEY }}" -o StrictHostKeyChecking=no -r ./apps/gui/dist/* "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}"
+          scp -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
 
-
+      - name: Cleanup SSH Key
+        if: matrix.package == 'gui'
+        run: |
+          rm -f ~/.ssh/gui_ssh_key
+        
       - name: Find Package
         id: find_package
         if: matrix.package != 'gui'

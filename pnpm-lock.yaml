@@ -705,7 +705,7 @@ importers:
   internal/publisher:
     dependencies:
       '@nostrwatch/logger':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../logger
       '@nostrwatch/publisher-nostrtools':
         specifier: workspace:^
@@ -860,13 +860,13 @@ importers:
         specifier: ^0.15.1
         version: 0.15.1(nostr-fetch@0.15.1)(nostr-tools@1.17.0(typescript@5.7.2))
       '@nostrwatch/logger':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../logger
       '@nostrwatch/nwcache':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../nwcache
       '@nostrwatch/utils':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../utils
       cross-fetch:
         specifier: ^3.1.5
@@ -1209,10 +1209,10 @@ importers:
   libraries/nocap:
     dependencies:
       '@nostrwatch/logger':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../internal/logger
       '@nostrwatch/utils':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../internal/utils
       '@nostrwatch/websocket':
         specifier: workspace:^
@@ -1378,6 +1378,9 @@ importers:
 
   libraries/nocap/adapters/default/DnsAdapterDefault:
     dependencies:
+      '@nostrwatch/nocap':
+        specifier: workspace:^
+        version: link:../../..
       cross-fetch:
         specifier: ^4.0.0
         version: 4.0.0
@@ -1388,9 +1391,6 @@ importers:
       '@babel/plugin-transform-modules-commonjs':
         specifier: 7.23.3
         version: 7.23.3(@babel/core@7.26.0)
-      '@nostrwatch/nocap':
-        specifier: '*'
-        version: 0.9.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@0.34.6)
       '@types/promise-deferred':
         specifier: 2.0.5
         version: 2.0.5
@@ -1418,6 +1418,9 @@ importers:
 
   libraries/nocap/adapters/default/GeoAdapterDefault:
     dependencies:
+      '@nostrwatch/nocap':
+        specifier: workspace:^
+        version: link:../../..
       cross-fetch:
         specifier: ^4.0.0
         version: 4.0.0
@@ -1428,9 +1431,6 @@ importers:
       '@babel/plugin-transform-modules-commonjs':
         specifier: 7.23.3
         version: 7.23.3(@babel/core@7.26.0)
-      '@nostrwatch/nocap':
-        specifier: '*'
-        version: 0.9.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@0.34.6)
       '@rollup/plugin-commonjs':
         specifier: ^28.0.0
         version: 28.0.1(rollup@4.27.4)
@@ -1483,7 +1483,7 @@ importers:
   libraries/nocap/adapters/default/InfoAdapterDefault:
     dependencies:
       '@nostrwatch/nocap':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../..
       '@sandwichfarm/torfetch':
         specifier: https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277
@@ -1543,8 +1543,11 @@ importers:
 
   libraries/nocap/adapters/default/SslAdapterDefault:
     dependencies:
+      '@nostrwatch/nocap':
+        specifier: workspace:^
+        version: link:../../..
       '@nostrwatch/utils':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../../../../internal/utils
       get-ssl-cert:
         specifier: 2.3.3
@@ -1559,9 +1562,6 @@ importers:
       '@babel/plugin-transform-modules-commonjs':
         specifier: 7.23.3
         version: 7.23.3(@babel/core@7.26.0)
-      '@nostrwatch/nocap':
-        specifier: '*'
-        version: 0.9.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@0.34.6)
       '@nostrwatch/nocap-every-adapter-default':
         specifier: workspace:^
         version: link:../ZEveryAdapterDefault
@@ -1625,6 +1625,9 @@ importers:
 
   libraries/nocap/adapters/default/WebsocketAdapterDefault:
     dependencies:
+      '@nostrwatch/nocap':
+        specifier: workspace:^
+        version: link:../../..
       '@nostrwatch/websocket':
         specifier: workspace:^
         version: link:../../../../websocket
@@ -1644,9 +1647,6 @@ importers:
       '@babel/plugin-transform-modules-commonjs':
         specifier: 7.23.3
         version: 7.23.3(@babel/core@7.26.0)
-      '@nostrwatch/nocap':
-        specifier: workspace:^
-        version: link:../../..
       '@rollup/plugin-commonjs':
         specifier: ^28.0.0
         version: 28.0.1(rollup@4.27.4)
@@ -1702,22 +1702,22 @@ importers:
   libraries/nocap/adapters/default/ZEveryAdapterDefault:
     dependencies:
       '@nostrwatch/nocap':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../..
       '@nostrwatch/nocap-dns-adapter-default':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../DnsAdapterDefault
       '@nostrwatch/nocap-geo-adapter-default':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../GeoAdapterDefault
       '@nostrwatch/nocap-info-adapter-default':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../InfoAdapterDefault
       '@nostrwatch/nocap-ssl-adapter-default':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../SslAdapterDefault
       '@nostrwatch/nocap-websocket-adapter-default':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../WebsocketAdapterDefault
     devDependencies:
       '@babel/core':
@@ -4180,32 +4180,6 @@ packages:
 
   '@nostrwatch/logger@0.0.9':
     resolution: {integrity: sha512-G/Z4E9/vtJhP7bRu0WA8bXE+HiFTLO8bVWCT34RZnW7/W6fWOxoAbTt5fhqrLwzYVtVWcfHwF2fiDidaVhqsQA==}
-
-  '@nostrwatch/nocap-dns-adapter-default@1.1.5':
-    resolution: {integrity: sha512-zefZ52idxJGBF+VDqqKDZVZ0ehDYtHTyWqeP4H4jjJVtIQrmnvkDBE+pJvl/eE46qW8ic7qovfd//+145OCOSQ==}
-
-  '@nostrwatch/nocap-every-adapter-default@1.7.0':
-    resolution: {integrity: sha512-OUs1ejCb7Dpz+yft1dRWJmhGEyvESCJ2Dl6/Fj7jvBu3wss/ezAPq+VTTt4+w23OVlnIr72Tto6urYzvMwWDEQ==}
-
-  '@nostrwatch/nocap-geo-adapter-default@1.2.0':
-    resolution: {integrity: sha512-WG122kh4wgGR9OrWs4DtDK89fZwEv/PByTK+Q558m6wkt7TfApmUHVQ6N2J67IWuGeJRAyulUd3apfmNbm674g==}
-
-  '@nostrwatch/nocap-info-adapter-default@1.2.0':
-    resolution: {integrity: sha512-laQpMC9/tcUjL25+vPkLBGB+YPIeAkJPFSniJE1IpNwF+Se0SeFW9PhxchgAHTrkpl/setQZ2ppBMDE3UyPlDg==}
-
-  '@nostrwatch/nocap-ssl-adapter-default@1.4.5':
-    resolution: {integrity: sha512-DbEShCld884yQuTAUYvYmidZMwMzOZDpPamv0izDCGRiSst79IbbP6bfM8S8+F4OeXjCOgfzZvrxOyFOPooZQw==}
-
-  '@nostrwatch/nocap-websocket-adapter-default@1.4.0':
-    resolution: {integrity: sha512-EU6goDk5JhhpubOSBGnCSk+XLe6c3bRKdAOAUeE1UF9TMcg97lsS0spoOcqut9fmAhkgibyI0+r4Um/B5htEmA==}
-
-  '@nostrwatch/nocap-websocket-browser-adapter-default@0.0.5':
-    resolution: {integrity: sha512-4/fYe1YOHeiuWsKzKuh/3woEstltYRBnn5s0C74/lEc7UyI6luT03NSeUAJCADMDpVq0e9Aso15w9SMyOJM9dQ==}
-
-  '@nostrwatch/nocap@0.9.2':
-    resolution: {integrity: sha512-Hd7T+YbkplZBauNDn6pyDHXXsAj/+DClzALY345+dOyEH2srvPpn3qwDZDTwITysmrL/qO+2bwEqPDvEiD1pbQ==}
-    peerDependencies:
-      vitest: ^0.32.0
 
   '@nostrwatch/nostrings@0.3.0':
     resolution: {integrity: sha512-lysjNu78+WuOvrMTpGFKCGKVyUsqeqfDIyl/F7JQvfMpR2koxJYZAtyeIo/8gjV2PAaQZuyx72Z/46FiBVVn7w==}
@@ -11569,18 +11543,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.14.2:
-    resolution: {integrity: sha512-wEBG1ftX4jcglPxgFCMJmZ2PLtSbJ2Peg6TmpJFTbe9GZYOQCDPdMYu/Tm0/bGZkw8paZnJY45J4K2PZrLYq8g==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.16.0:
     resolution: {integrity: sha512-HS0c//TP7Ina87TfiPUz1rQzMhHrl/SG2guqRcTOIUYD2q8uhUdNHZYJUaQ8aTGPzCh+c6oawMKW35nFl1dxyQ==}
     engines: {node: '>=10.0.0'}
@@ -13299,41 +13261,6 @@ snapshots:
       jest-util: 29.7.0
       slash: 3.0.0
 
-  '@jest/core@29.7.0':
-    dependencies:
-      '@jest/console': 29.7.0
-      '@jest/reporters': 29.7.0
-      '@jest/test-result': 29.7.0
-      '@jest/transform': 29.7.0
-      '@jest/types': 29.6.3
-      '@types/node': 22.10.2
-      ansi-escapes: 4.3.2
-      chalk: 4.1.2
-      ci-info: 3.9.0
-      exit: 0.1.2
-      graceful-fs: 4.2.11
-      jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@22.10.2)
-      jest-haste-map: 29.7.0
-      jest-message-util: 29.7.0
-      jest-regex-util: 29.6.3
-      jest-resolve: 29.7.0
-      jest-resolve-dependencies: 29.7.0
-      jest-runner: 29.7.0
-      jest-runtime: 29.7.0
-      jest-snapshot: 29.7.0
-      jest-util: 29.7.0
-      jest-validate: 29.7.0
-      jest-watcher: 29.7.0
-      micromatch: 4.0.8
-      pretty-format: 29.7.0
-      slash: 3.0.0
-      strip-ansi: 6.0.1
-    transitivePeerDependencies:
-      - babel-plugin-macros
-      - supports-color
-      - ts-node
-
   '@jest/core@29.7.0(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))':
     dependencies:
       '@jest/console': 29.7.0
@@ -13778,85 +13705,6 @@ snapshots:
       logging: 3.3.0
     transitivePeerDependencies:
       - supports-color
-
-  '@nostrwatch/nocap-dns-adapter-default@1.1.5':
-    dependencies:
-      cross-fetch: 4.0.0
-    transitivePeerDependencies:
-      - encoding
-
-  '@nostrwatch/nocap-every-adapter-default@1.7.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
-    dependencies:
-      '@nostrwatch/nocap-dns-adapter-default': 1.1.5
-      '@nostrwatch/nocap-geo-adapter-default': 1.2.0
-      '@nostrwatch/nocap-info-adapter-default': 1.2.0
-      '@nostrwatch/nocap-ssl-adapter-default': 1.4.5
-      '@nostrwatch/nocap-websocket-adapter-default': 1.4.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-      '@nostrwatch/nocap-websocket-browser-adapter-default': 0.0.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - supports-color
-      - utf-8-validate
-
-  '@nostrwatch/nocap-geo-adapter-default@1.2.0':
-    dependencies:
-      cross-fetch: 4.0.0
-    transitivePeerDependencies:
-      - encoding
-
-  '@nostrwatch/nocap-info-adapter-default@1.2.0':
-    dependencies:
-      ajv: 8.17.1
-      cross-fetch: 4.0.0
-    transitivePeerDependencies:
-      - encoding
-
-  '@nostrwatch/nocap-ssl-adapter-default@1.4.5':
-    dependencies:
-      get-ssl-cert: 2.3.3
-      ssl-checker: 2.0.8
-
-  '@nostrwatch/nocap-websocket-adapter-default@1.4.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
-    dependencies:
-      websocket-polyfill: 0.0.3
-      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
-  '@nostrwatch/nocap-websocket-browser-adapter-default@0.0.5(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
-    dependencies:
-      websocket-polyfill: 0.0.3
-      ws: 8.14.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
-  '@nostrwatch/nocap@0.9.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vitest@0.34.6)':
-    dependencies:
-      '@nostrwatch/logger': 0.0.9
-      '@nostrwatch/nocap-every-adapter-default': 1.7.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-      fetch-h2: 3.0.2
-      get-ssl-certificate: 2.3.3
-      jest: 29.7.0
-      murmurhash: 2.0.1
-      object-hash: 3.0.0
-      promise-deferred: 2.0.4
-      socks-proxy-agent: 8.0.2
-      vitest: 0.34.6(@vitest/ui@0.34.6)(sass-embedded@1.82.0)(terser@5.36.0)
-      ws: 8.16.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-    transitivePeerDependencies:
-      - '@types/node'
-      - babel-plugin-macros
-      - bufferutil
-      - encoding
-      - node-notifier
-      - supports-color
-      - ts-node
-      - utf-8-validate
 
   '@nostrwatch/nostrings@0.3.0':
     dependencies:
@@ -16404,21 +16252,6 @@ snapshots:
       safe-buffer: 5.2.1
       sha.js: 2.4.11
 
-  create-jest@29.7.0:
-    dependencies:
-      '@jest/types': 29.6.3
-      chalk: 4.1.2
-      exit: 0.1.2
-      graceful-fs: 4.2.11
-      jest-config: 29.7.0(@types/node@22.10.2)
-      jest-util: 29.7.0
-      prompts: 2.4.2
-    transitivePeerDependencies:
-      - '@types/node'
-      - babel-plugin-macros
-      - supports-color
-      - ts-node
-
   create-jest@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
       '@jest/types': 29.6.3
@@ -18546,25 +18379,6 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-  jest-cli@29.7.0:
-    dependencies:
-      '@jest/core': 29.7.0
-      '@jest/test-result': 29.7.0
-      '@jest/types': 29.6.3
-      chalk: 4.1.2
-      create-jest: 29.7.0
-      exit: 0.1.2
-      import-local: 3.2.0
-      jest-config: 29.7.0(@types/node@22.10.2)
-      jest-util: 29.7.0
-      jest-validate: 29.7.0
-      yargs: 17.7.2
-    transitivePeerDependencies:
-      - '@types/node'
-      - babel-plugin-macros
-      - supports-color
-      - ts-node
-
   jest-cli@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
       '@jest/core': 29.7.0(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2))
@@ -18583,36 +18397,6 @@ snapshots:
       - babel-plugin-macros
       - supports-color
       - ts-node
-
-  jest-config@29.7.0(@types/node@22.10.2):
-    dependencies:
-      '@babel/core': 7.26.0
-      '@jest/test-sequencer': 29.7.0
-      '@jest/types': 29.6.3
-      babel-jest: 29.7.0(@babel/core@7.26.0)
-      chalk: 4.1.2
-      ci-info: 3.9.0
-      deepmerge: 4.3.1
-      glob: 7.2.3
-      graceful-fs: 4.2.11
-      jest-circus: 29.7.0(babel-plugin-macros@3.1.0)
-      jest-environment-node: 29.7.0
-      jest-get-type: 29.6.3
-      jest-regex-util: 29.6.3
-      jest-resolve: 29.7.0
-      jest-runner: 29.7.0
-      jest-util: 29.7.0
-      jest-validate: 29.7.0
-      micromatch: 4.0.8
-      parse-json: 5.2.0
-      pretty-format: 29.7.0
-      slash: 3.0.0
-      strip-json-comments: 3.1.1
-    optionalDependencies:
-      '@types/node': 22.10.2
-    transitivePeerDependencies:
-      - babel-plugin-macros
-      - supports-color
 
   jest-config@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
@@ -18871,18 +18655,6 @@ snapshots:
       jest-util: 29.7.0
       merge-stream: 2.0.0
       supports-color: 8.1.1
-
-  jest@29.7.0:
-    dependencies:
-      '@jest/core': 29.7.0
-      '@jest/types': 29.6.3
-      import-local: 3.2.0
-      jest-cli: 29.7.0
-    transitivePeerDependencies:
-      - '@types/node'
-      - babel-plugin-macros
-      - supports-color
-      - ts-node
 
   jest@29.7.0(@types/node@22.10.2)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@22.10.2)(typescript@5.7.2)):
     dependencies:
@@ -22873,11 +22645,6 @@ snapshots:
       signal-exit: 4.1.0
 
   ws@7.5.10(bufferutil@4.0.8)(utf-8-validate@5.0.10):
-    optionalDependencies:
-      bufferutil: 4.0.8
-      utf-8-validate: 5.0.10
-
-  ws@8.14.2(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     optionalDependencies:
       bufferutil: 4.0.8
       utf-8-validate: 5.0.10

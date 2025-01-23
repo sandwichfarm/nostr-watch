@@ -34,12 +34,11 @@
   },
   "dependencies": {
     "get-ssl-cert": "2.3.3",
-    "ssl-checker": "2.0.8"
+    "ssl-checker": "2.0.8",
+    "@nostrwatch/utils": "workspace:^",
+    "@nostrwatch/nocap": "workspace:^"
   },
-  "peerDependencies": {
-    "@nostrwatch/utils": "workspace:*",
-    "@nostrwatch/nocap": "workspace:*"
-  },
+  "peerDependencies": {},
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",

@@ -41,7 +41,7 @@
     "publisher"
   ],
   "dependencies": {
-    "@nostrwatch/logger": "workspace:*",
+    "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/publisher-nostrtools": "workspace:^",
     "@nostrwatch/utils": "workspace:^",
     "nostr-geotags": "^0.7.1",

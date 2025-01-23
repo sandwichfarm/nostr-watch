@@ -37,11 +37,12 @@
   "dependencies": {
     "buffer": "^6.0.3",
     "websocket-polyfill": "^0.0.3",
-    "ws": "8.18.0"
+    "ws": "8.18.0",
+    "@nostrwatch/websocket": "workspace:^",
+    "@nostrwatch/nocap": "workspace:^"
   },
   "peerDependencies": {
-    "@nostrwatch/websocket": "workspace:^",
-    "@nostrwatch/nocap": "workspace:*"
+
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

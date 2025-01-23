@@ -21,6 +21,7 @@ export default [
       strict: false,
       exports: 'auto'
     },
+    external: ['@nostrwatch/nocap', '@nostrwatch/websocket'],
     plugins: [
       resolve({
         extensions: ['.js'],

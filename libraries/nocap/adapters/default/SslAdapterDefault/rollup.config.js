@@ -22,6 +22,7 @@ export default [
       strict: false,
       exports: 'named',
     },
+    external: ['@nostrwatch/nocap', '@nostrwatch/utils'],
     plugins: [
       resolve({
         extensions: ['.js'],

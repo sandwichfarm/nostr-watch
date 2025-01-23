@@ -33,7 +33,8 @@
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "cross-fetch": "^4.0.0"
+    "cross-fetch": "^4.0.0",
+    "@nostrwatch/nocap": "workspace:^"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -48,7 +49,5 @@
     "vitest-websocket-mock": "^0.4.0",
     "webpack": "^5.96.1"
   },
-  "peerDependencies": {
-    "@nostrwatch/nocap": "workspace:*"
-  }
+  "peerDependencies": {}
 }

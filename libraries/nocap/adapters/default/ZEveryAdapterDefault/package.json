@@ -33,13 +33,13 @@
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
   },
-  "peerDependencies": {
-    "@nostrwatch/nocap-dns-adapter-default": "workspace:*",
-    "@nostrwatch/nocap-geo-adapter-default": "workspace:*",
-    "@nostrwatch/nocap-info-adapter-default": "workspace:*",
-    "@nostrwatch/nocap-ssl-adapter-default": "workspace:*",
-    "@nostrwatch/nocap-websocket-adapter-default": "workspace:*",
-    "@nostrwatch/nocap": "workspace:*"
+  "dependencies": {
+    "@nostrwatch/nocap-dns-adapter-default": "workspace:^",
+    "@nostrwatch/nocap-geo-adapter-default": "workspace:^",
+    "@nostrwatch/nocap-info-adapter-default": "workspace:^",
+    "@nostrwatch/nocap-ssl-adapter-default": "workspace:^",
+    "@nostrwatch/nocap-websocket-adapter-default": "workspace:^",
+    "@nostrwatch/nocap": "workspace:^"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

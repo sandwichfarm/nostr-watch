@@ -122,6 +122,7 @@ jobs:
       - name: Prepare SSH Key
         if: matrix.package == 'gui'
         run: |
+          mkdir -p ~/.ssh
           echo "${{ secrets.GUI_SSH_KEY }}" > ~/.ssh/gui_ssh_key
           chmod 600 ~/.ssh/gui_ssh_key
       

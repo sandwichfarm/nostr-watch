@@ -124,7 +124,7 @@ jobs:
         run: |
           VERSION=${{ env.VERSION }}
           echo "Deploying version $VERSION"
-          ssh -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+          ssh -i "${{ secrets.GUI_SSH_KEY }}" -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" << EOF
           set -e
           mkdir -p /var/www/${VERSION}
           rm -rf /var/www/html/

@@ -8,7 +8,7 @@
 	import { route66 } from '$lib/stores';
 
 	import type { PubkeyProfile, PubkeyRelays } from '@nostrwatch/route66/models';
-	import { Monitor, Nip66CheckEvent } from '@nostrwatch/route66/models';
+	import { Monitor } from '@nostrwatch/route66/models';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
     import OperatorRelays from '../OperatorRelays.svelte';
 
@@ -41,9 +41,9 @@
     <Card.Content class="">
         {#if profile && pubkey}
         <ProfileCompact {pubkey} {profile}  />
-        {#if profile?.about}
-        <p class="mt-2 p-4 bg-white/5 line-clamp-6">{profile?.about}</p>
-        {/if}
+            {#if profile?.about}
+            <p class="mt-2 p-4 bg-white/5 line-clamp-6">{profile?.about}</p>
+            {/if}
         {/if}
         {#if otherRelaysCount > 0}
         <div class="text-white/80 my-6">

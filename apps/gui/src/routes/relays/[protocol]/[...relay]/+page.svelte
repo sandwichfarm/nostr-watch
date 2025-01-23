@@ -19,8 +19,8 @@
 	import { route66Ready } from '$lib/stores/app';
 	import { route66 } from '$lib/stores';
 	import { timeAgo } from '$lib/utils/time';
-	import type { NostrEvent } from 'nostr-tools';
-
+	import { operatorProfile$, operatorRelays$ } from '$lib/stores/helpers/helpers-operator';
+	
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
   let RelayChecks: typeof import('$lib/components/partials/relay-single/RelayChecks.svelte').default | null = null;
@@ -80,8 +80,6 @@
   
   const nip11Ready: Writable<boolean> = writable(false);
   const operatorMetaReady: Writable<boolean> = writable(false);
-  const operatorProfile: Writable<PubkeyProfile | null> = writable(null);
-  const operatorRelays: Writable<PubkeyRelays | null> = writable(null);
   const monitors: Writable<Monitor[]> = writable([]);
   const activeTab: Writable<string> = writable('overview');
 
@@ -233,24 +231,17 @@
     const begin = Date.now();
       if (!operatorPubkey) return operatorMetaReady.set(true);
       let count = 0
+
+      const profileFromStore = relayOperatorProf
+
       const onevent = (event: IEvent) => {
         ////console.log('loadOperatorMeta', 'event', count, Date.now() - begin)
         count++;
         if (event.kind === 0) {
-          if($operatorProfile === null) {
-            operatorProfile.set(new PubkeyProfile(event));
-          }
-          else if($operatorProfile && event?.created_at && $operatorProfile?.created_at && $operatorProfile!.created_at < event?.created_at) {
-            operatorProfile.set(new PubkeyProfile(event));
-          }
+          publishEventsToMemoryRelay([event])
         }
         if (event.kind === 10002) {
-          if($operatorRelays === null) {
-            operatorRelays.set(new PubkeyRelays(event));
-          }
-          else if($operatorRelays && event?.created_at && $operatorRelays?.created_at && $operatorRelays!.created_at < event?.created_at) {
-            operatorRelays.set(new PubkeyRelays(event));
-          }
+          publishEventsToMemoryRelay([event])
         }
       };
       const onevents = (events: IEvent[]) => events.forEach( onevent )
@@ -284,8 +275,8 @@
       loading = true;
       currentRelay = '';
       monitors.set([]);
-      operatorProfile.set(null);
-      operatorRelays.set(null);
+      // operatorProfile.set(null);
+      // operatorRelays.set(null);
       nip11Ready.set(false);
       operatorMetaReady.set(false);
       relayIsOffline.set(false);
@@ -308,6 +299,8 @@
           : $relayAggregate?.operatorPubkey && isHex($relayAggregate.operatorPubkey)
               ? $relayAggregate.operatorPubkey
               : null;
+  $: operatorProfile = operatorPubkey? operatorProfile$(operatorPubkey): undefined;
+  $: operatorRelays = operatorPubkey? operatorRelays$(operatorPubkey): undefined;
   $: supportedNips =
       $nip11?.supportedNips?.length
           ? $nip11.supportedNips
@@ -391,9 +384,11 @@
         </h1>
         <p class="text-md italic text-white/80 pl-3 line-clamp-2 w-3/4">{description}</p>
       </div>
+
     </div>
   </div>
 </header>
+
 
 {#if probablyOnline}
 <main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">

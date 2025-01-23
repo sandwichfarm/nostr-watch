@@ -126,6 +126,21 @@ jobs:
           echo "${{ secrets.GUI_SSH_KEY }}" > ~/.ssh/gui_ssh_key
           chmod 600 ~/.ssh/gui_ssh_key
 
+      - name: Validate Secrets
+        if: matrix.package == 'gui'
+        run: |
+          if [ -z "${{ secrets.GUI_HOST_USER }}" ] || [ -z "${{ secrets.GUI_HOST_IP }}" ]; then
+            echo "Secrets GUI_HOST_USER or GUI_HOST_IP are missing."
+            exit 1
+          else
+            echo "Secrets are set correctly."
+          fi
+
+
+      - name: Debug Command Construction
+        if: matrix.package == 'gui'
+        run: |
+          echo ssh -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
 
       - name: Debug SSH Command
         if: matrix.package == 'gui'
@@ -141,7 +156,7 @@ jobs:
         run: |
           VERSION=${{ env.VERSION }}
           echo "Deploying version $VERSION"
-          ssh -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+          ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
           set -e
           mkdir -p /var/www/${VERSION}
           rm -rf /var/www/html/

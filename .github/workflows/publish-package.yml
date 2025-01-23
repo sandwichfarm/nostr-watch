@@ -159,14 +159,20 @@ jobs:
           ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
           set -e
           mkdir -p /var/www/${VERSION}
-          rm -rf /var/www/html/
-          ln -s /var/www/${VERSION} /var/www/html
           EOF
 
       - name: Upload Build (GUI)
         if: matrix.package == 'gui'
         run: |
           scp -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
+
+      - name: Update Symlink
+        if: matrix.package == 'gui' 
+        run: |
+          ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+          set -e
+          ln -sfn /var/www/${{ env.VERSION }} /var/www/html
+          EOF
 
       - name: Cleanup SSH Key
         if: matrix.package == 'gui'

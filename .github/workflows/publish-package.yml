@@ -64,6 +64,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: build
+    environment: ${{ matrix.package == 'gui' && 'next.nostr.watch' || 'default' }}
     strategy:
       fail-fast: false
       matrix:
@@ -128,8 +129,11 @@ jobs:
 
       - name: Validate Secrets
         if: matrix.package == 'gui'
+        env: 
+          GUI_HOST_USER: ${{ secrets.GUI_HOST_USER }}
+          GUI_HOST_IP: ${{ secrets.GUI_HOST_IP }}
         run: |
-          if [ -z "${{ secrets.GUI_HOST_USER }}" ] || [ -z "${{ secrets.GUI_HOST_IP }}" ]; then
+          if [ -z "${{ GUI_HOST_USER }}" ] || [ -z "${{ GUI_HOST_IP }}" ]; then
             echo "Secrets GUI_HOST_USER or GUI_HOST_IP are missing."
             exit 1
           else
@@ -190,6 +194,7 @@ jobs:
         
 
       - name: Set Meta
+        if: matrix.package != 'gui'
         id: meta
         run: |
           RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"
@@ -197,11 +202,13 @@ jobs:
 
 
       - name: Debug Directory Before Zipping
+        if: matrix.package != 'gui'
         run: |
           echo "Checking contents of: ${{ steps.find_package.outputs.the_path }}"
           ls -l "${{ steps.find_package.outputs.the_path }}"
 
       - name: Archive Subdirectory
+        if: matrix.package != 'gui'
         id: archive
         run: |
           if [ -d "${{ steps.find_package.outputs.the_path }}" ]; then
@@ -213,6 +220,7 @@ jobs:
           fi
 
       - name: Create Release ${{ steps.meta.outputs.release_slug }}
+        if: matrix.package != 'gui'
         uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -224,6 +232,7 @@ jobs:
           prerelease: true
 
       - name: Upload Release Asset
+        if: matrix.package != 'gui'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

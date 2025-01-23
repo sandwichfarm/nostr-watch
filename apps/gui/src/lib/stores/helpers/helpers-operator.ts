@@ -2,6 +2,7 @@ import { derived, get, type Readable } from "svelte/store";
 import { operatorPubkeySoftwaresMap } from "../softwares"
 import { relayCheckAggregates } from "../checks";
 import { pubkeyProfile, pubkeyProfile$, pubkeyRelays, pubkeyRelays$, pubkeyUserInstance, pubkeyUserInstance$, type StorePubkeyProfile, type StorePubkeyRelays, type StorePubkeyRelaysReadable, type StoreUser, type StoreUserReadable } from "./helpers-pubkey";
+import { isps } from "$lib/stores/isps";
 
 //aggregates
 export const operatorSoftwares = (pubkey: string): string[] | undefined => {
@@ -20,25 +21,26 @@ export const operatorSoftwares$ = (pubkey: string): Readable<string[] | undefine
 
 export const operatorRelaysOperated = (pubkey: string): string[] | undefined => {
     return get(relayCheckAggregates)
-        .filter((entry: any) => entry?.aggregate?.operatorPubkey === pubkey )
+        .filter((aggregate: any) => aggregate?.operatorPubkey === pubkey )
         .map((aggregate: any) => aggregate.relay)
 }
 
 export const operatorRelaysOperated$ = (pubkey: string): Readable<string[] | undefined> => {
     return derived(relayCheckAggregates, ($relayCheckAggregates) => {
         return $relayCheckAggregates
-            .filter((entry) => entry?.aggregate?.operatorPubkey === pubkey )
+            .filter((aggregate) => aggregate?.operatorPubkey === pubkey )
             .map((aggregate) => aggregate.relay)
     })
 }
 
 export const operatorIsps = (pubkey: string): string[] | undefined => {
     const uniques: Set<string> = new Set();
-    get(relayCheckAggregates)
-        .filter((entry: any) => entry?.aggregate?.operatorPubkey === pubkey )
-        .map((aggregate: any) => aggregate?.asname )
+    const result = get(relayCheckAggregates)
+        .filter((aggregate: any) => aggregate?.operatorPubkey === pubkey )
+        .map((aggregate: any) => aggregate?.isp )
         .filter((isp: string) => !!isp )
-        .forEach((isp: string) => uniques.add(isp))
+    result.forEach((isp: string) => uniques.add(isp))
+    console.log('operatorIsps', result, uniques)
     return Array.from(uniques);
 }
 
@@ -46,11 +48,11 @@ export const operatorIsps$ = (pubkey: string): Readable<string[] | undefined> =>
     return derived(relayCheckAggregates, ($relayCheckAggregates) => {
         const uniques: Set<string> = new Set();
         $relayCheckAggregates
-            .filter((entry) => entry?.aggregate?.operatorPubkey === pubkey )
-            .map((aggregate) => aggregate?.asname )
-            .filter((isp) => !!isp )
-            .forEach((isp) => uniques.add(isp))
-        return Array.from(uniques);
+            .filter((aggregate: any) => aggregate?.operatorPubkey === pubkey )
+            .map((aggregate: any) => aggregate?.isp )
+            .filter((isp: string) => !!isp )
+            .forEach((isp: string) => uniques.add(isp))
+        return Array.from(uniques)
     })
 }
 

@@ -1,7 +1,9 @@
-import { derived, writable, type Readable, type Writable } from "svelte/store";
+import { derived, get, writable, type Readable, type Writable } from "svelte/store";
 import type { User } from "../models/User";
 import { relayCheckAggregates } from "./checks";
 import {  pubkeyUserInstance } from "./helpers/helpers-pubkey";
+import { operatorIsps, operatorRelays, operatorRelaysOperated, operatorSoftwares } from "./helpers/helpers-operator";
+import { type StoreIsp, isps } from "./isps";
 
 export const operatorsPubkeys: Readable<string[]> = derived(
     relayCheckAggregates,
@@ -32,7 +34,8 @@ export const operatorsUserInstances: Readable<Map<string, User>> = derived(
     }
 )
 
-export type OperatorsRow = Record<keyof User | 'id', string | number | boolean | any[] | undefined>
+
+export type OperatorsRow = Record<keyof User | 'id' | 'isps' | 'ispsCount' | 'relays' | 'relaysCount' | 'softwares' | 'softwaresCount', string | number | boolean | any[] | undefined>
 
 export const operatorsRows: Readable<OperatorsRow[]> = derived(
     [operatorsUserInstances],
@@ -48,8 +51,15 @@ export const operatorsRows: Readable<OperatorsRow[]> = derived(
                     .filter( (entry) => typeof entry[1] !==  'function' )
             )
             row.id = userInstance.pubkey;
+            row.isps = operatorIsps(userInstance.pubkey);
+            row.ispsCount = row.isps?.length || 0;
+            row.relays = operatorRelaysOperated(userInstance.pubkey);
+            row.relaysCount = row.relays?.length || 0;
+            row.softwares = operatorSoftwares(userInstance.pubkey);
+            row.softwaresCount = row.softwares?.length || 0;
             rows.push(row);
         });
         return rows;
     }
 )
+

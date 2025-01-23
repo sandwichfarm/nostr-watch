@@ -4,7 +4,7 @@ import { makeSoftwareReadable } from '$lib/synonyms/software';
 export const columnsDisable: DataKeys = []
 export const filtersDisable: DataKeys = []
 
-export const columnsShow: DataKeys = ['name', 'about', 'lud16', 'lud06', 'reference']
+export const columnsShow: DataKeys = ['name', 'about', 'reference', 'relaysCount', 'softwaresCount', 'ispsCount']
 export const filtersShow: DataKeys = []
 
 export const humanReadableNames: NameFormatter = {};
@@ -29,7 +29,25 @@ export const tableFormatters: Formatters = {
         if(typeof about !== 'string') return '-';
         const aboutHtml = `<span class="text-sm max-w-[400px] block">${truncateWithEllipsis(about, 100)}</span>`;
         return aboutHtml;
+    },
+    reference: (reference: string) => {
+        if(typeof reference !== 'string') return '-';
+        const referenceHtml = `<a href="https://njump.me/${reference}" target="_blank" class="text-sm underline">jump</a>`;
+        return referenceHtml;
+    },
+    relaysCount: (relaysCount: number) => {
+        if(typeof relaysCount !== 'number') return '-';
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10">${relaysCount}</span>`;
+    },
+    ispsCount: (ispsCount: number) => {
+        if(typeof ispsCount !== 'number') return '-';
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10">${ispsCount}</span>`;
+    },
+    softwaresCount: (softwaresCount: number) => {
+        if(typeof softwaresCount !== 'number') return '-';
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10">${softwaresCount}</span>`;
     }
+
 }
 
 

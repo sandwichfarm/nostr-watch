@@ -1,5 +1,5 @@
 
-import { derived, get } from 'svelte/store';
+import { derived, get, type Readable } from 'svelte/store';
 import { eventsArray } from './events.js'; 
 import { relayCheckAggregates, relayChecks } from './checks.js'; 
 import { StateManager } from '@nostrwatch/route66';
@@ -11,7 +11,7 @@ export type StoreIsp = {
     asname: string;
 };
 
-export const isps = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+export const isps: Readable<StoreIsp[]> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const ispsMap = new Map();
     $relayCheckAggregates.forEach((event) => {
         if (event?.asname) {

@@ -185,7 +185,7 @@ export const bootstrap = async () => {
     }
 }
 
-const bootstrapOperatorMeta = async () => {
+export const bootstrapOperatorMeta = async () => {
     //console.log('bootstrapOperatorMeta');
     const $operatorPubkeysValid: string[] = get(operatorPubkeysValid);
     const emptyFilter: Filter = { kinds: [0, 10002], authors: [] };

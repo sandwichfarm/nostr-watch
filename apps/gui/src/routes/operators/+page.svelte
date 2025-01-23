@@ -11,6 +11,7 @@
 	import { events } from '$lib/stores';
 	import { operatorsPubkeys } from '$lib/stores/operators';
 	import { operatorsUserInstances } from '$lib/stores/operators';
+	import { bootstrapOperatorMeta } from '$lib/utils/lifecycle';
 
     let DataTable: DataTableType;
     const componentsLoaded: Writable<boolean> = writable(false);
@@ -54,7 +55,10 @@
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         doBootstrap.set(true)
         doAggregateCache.set(true)
-        loadComponents().then(setConfig);
+        loadComponents().then(() => {
+            setConfig()
+            bootstrapOperatorMeta()
+        });
     });
 
     onDestroy(() => {

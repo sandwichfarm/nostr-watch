@@ -137,20 +137,19 @@
   const loadRelayData = async () => {
     destroy()
 
-    const getRelayData = async (type = 'online') => {
-      const res = await $route66?.services?.relay?.getRelayData(relayUrl, type)
-      loadNip11().then(loadOperatorMeta)
-      return
-    }
-
     await route66Ready()
     await $route66.services.relay.ready()
-
+    loadNip11().then(loadOperatorMeta)
 
     if ($isLivesyncing) {
       loading = false
       currentRelay = relayUrl
       return
+    }
+
+    const getRelayData = async (type = 'online') => {
+      const res = await $route66?.services?.relay?.getRelayData(relayUrl, type)
+      return res
     }
 
     // try {
@@ -518,6 +517,7 @@
 
           {#if RelayAudits}
             <Tabs.Content value="audit">
+              nip11 ready {$nip11Ready? 'true': 'false'}
               {#if showAuditTab && $nip11Ready}
                 <RelayAudits {relayUrl} {nip11} />
               {:else}

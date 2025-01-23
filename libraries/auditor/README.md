@@ -1,11 +1,34 @@
-# auditor
+> alpha af
 
-A framework to test relays against their advertised supported NIPs.
+# @nostrwatch/auditor
 
-# usage
+A framework to test relays against their advertised supported NIPs. (name pending)
+
+**Features**
+- Minimal boilerplate
+- Familiar testing patterns
+- Overloads for more advanced testing cases
+- Nip Support detection via NIP-11
+- Live data Sampler for more accurate test results. 
+
+
+![@nostrwatch/auditor console screenshot](.assets/output.png)
+
+# Basic usage
+
+Test detected NIPs (will also test NIP-11 against schema)
 
 ```js
+import Auditor from "@nostrwatch/auditor"
 
+const relay = "wss://relay.damus.io"
+const audit = new Auditor(options)
+await audit.detectSupportedNips()
+const results = audit.test(relay)
+```
+
+Test only NIP-50
+```js
 import Auditor from "@nostrwatch/auditor"
 
 const relay = "wss://relay.damus.io"
@@ -15,29 +38,50 @@ audit.removeSuite('Nip01') //Nip01 runs by default.
 const results = audit.test(relay)
 ```
 
-Writing a suite
+If you do not detect nips or add any Suites, NIP-01 will run by default
+```js
+import Auditor from "@nostrwatch/auditor"
 
-TODO.
+const relay = "wss://relay.damus.io"
+const audit = new Auditor(options)
+const results = audit.test(relay)
+//runs NIP-01 suite
+```
 
-Write a suite's test
+_**`not yet implemnented`**_ Load your own suite or overload a built-in suite with your own. (overloading individuals tests in a suite is not yet supported)
+```js
+import Auditor from "@nostrwatch/auditor"
+import Nip01 from from "./my-nip01-test.js"
+
+const relay = "wss://relay.damus.io"
+const audit = new Auditor(options)
+audit.loadSuite(Nip01)
+audit.addSuite('Nip50') 
+const results = audit.test(relay)
+```
+
+# Contribute
+
+## Writing a Suite 
 
 ```js
+//TODO: More complicated to demonstrate because of conventions.
+//...and using the Nip01 Suite as an example here is horrible because it's
+//inevitably the most complex.
+```
 
-import { ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
+## Writing a Suite's Test 
+Simple example of a suite test. Suite Tests are intended to be compact with explicit purposes. 
+```js
 import { ISuite } from '#base/Suite.js';
+import { ISuiteTest, SuiteTest } from '#base/SuiteTest.js';
 
 import { INip01Filter } from '../interfaces/index.js';
 
 export class FilterLimit extends SuiteTest implements ISuiteTest {
   readonly slug: string = 'FilterLimit';
-  totalEvents: number = 0;
   maxEvents: number = 10;
-
   limit: number = 1
-
-  constructor(suite: ISuite) {
-    super(suite);
-  }
 
   get filters(): INip01Filter[] {
     return [{ limit: this.limit }]

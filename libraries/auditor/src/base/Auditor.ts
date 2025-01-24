@@ -42,7 +42,8 @@ export class Auditor {
   protected resulter: Resulter = new Resulter(defaultResult);
   private logger: Logger = new Logger('@nostrwatch/auditor', {
     showTimer: false,
-    showNamespace: false
+    showNamespace: false,
+    level: 'debug'
   });
 
   constructor(conf?: IAuditorConf) {

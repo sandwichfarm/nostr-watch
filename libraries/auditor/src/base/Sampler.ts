@@ -18,7 +18,7 @@ export class Sampler {
   private _totalSamples: number = 0;  
   private _abort: boolean = false;
   // private signal = new EventEmitter();
-  private logger: Logger = new Logger('@nostrwatch/auditor:Sampler');
+  private logger: Logger = new Logger('@nostrwatch/auditor:Sampler', {level: 'debug'});
   private _ingestors: Ingestor[] = [];  
 
   constructor(ws: WebSocket, maximumSamples?: number, timeout?: number) {

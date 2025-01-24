@@ -91,7 +91,8 @@ export abstract class Suite implements ISuite {
   private _state: SuiteState = new SuiteState();
   private logger: Logger = new Logger('@nostrwatch/auditor:Suite', {
     showTimer: false,
-    showNamespace: false
+    showNamespace: false,
+    level: 'debug'
   });
   private _sampler: Sampler;
   

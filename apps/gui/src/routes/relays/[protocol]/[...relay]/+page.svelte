@@ -518,7 +518,6 @@
 
           {#if RelayAudits}
             <Tabs.Content value="audit">
-              nip11 ready {$nip11Ready? 'true': 'false'}
               {#if showAuditTab && $nip11Ready}
                 <RelayAudits {relayUrl} {nip11} />
               {:else}

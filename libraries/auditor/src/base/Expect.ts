@@ -38,7 +38,8 @@ export class AssertWrap {
   private _skip: boolean = false;
   private logger = new Logger('@nostrwatch/auditor:AssertWrap', {
     showTimer: false,
-    showNamespace: false
+    showNamespace: false,
+    level: 'debug'
   });
 
   constructor({type, verbose}: IAssertWrapOptions) {

@@ -98,7 +98,6 @@ export class MonitorService extends Service {
     this.activeMonitors.forEach((monitor) => {
       filters.push({...monitor.checkFilterNotOnline, "#p": [pubkey]})
     })
-    console.log(`FML this.activeMonitors`, this.activeMonitors)
     let relays = args?.relays || this.nip66Relays;
     const options = {
       stream: false,

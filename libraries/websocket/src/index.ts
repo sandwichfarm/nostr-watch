@@ -97,7 +97,7 @@ export class WebSocketWrapper implements IWebSocketWrapper {
     this.defaultHandlers();
 
     while (this.CONNECTING) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 100));
+      await new Promise<void>((resolve) => setTimeout(resolve, 10));
     }
 
     clearTimeout(timeout);
@@ -111,13 +111,13 @@ export class WebSocketWrapper implements IWebSocketWrapper {
 
   async ready(): Promise<void> {
     while (!this._ready) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 100));
+      await new Promise<void>((resolve) => setTimeout(resolve, 10));
     }
   }
 
   async closed(): Promise<void> {
     while (this.BUSY) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 100));
+      await new Promise<void>((resolve) => setTimeout(resolve, 10));
     }
   }
 
@@ -140,16 +140,16 @@ export class WebSocketWrapper implements IWebSocketWrapper {
   }
 
   send<T>(data: T | Buffer | string): void {
-    console.log('WebsocketWrapper send', data)
+    // console.log('WebsocketWrapper send', data)
     if (data instanceof Buffer) {
       this.ws?.send(data.toString('utf-8'));
-      console.log('WebsocketWrapper send', data.toString('utf-8'))
+      // console.log('WebsocketWrapper send', data.toString('utf-8'))
     } else if (data instanceof Object) {
       this.ws?.send(JSON.stringify(data));
-      console.log('WebsocketWrapper send', JSON.stringify(data))
+      // console.log('WebsocketWrapper send', JSON.stringify(data))
     } else if (typeof data === 'string') {
       this.ws?.send(data);
-      console.log('WebsocketWrapper send', data)
+      // console.log('WebsocketWrapper send', data)
     }
   }
 

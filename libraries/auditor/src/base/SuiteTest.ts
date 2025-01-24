@@ -63,7 +63,8 @@ export abstract class SuiteTest implements ISuiteTest {
   
   private logger: Logger = new Logger('@nostrwatch/auditor', {
     showTimer: false,
-    showNamespace: false
+    showNamespace: false,
+    level: 'debug'
   }); 
   private _expect: Expect = new Expect();
   private _events: Note[] = [];

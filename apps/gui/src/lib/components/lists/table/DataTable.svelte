@@ -154,6 +154,16 @@
             if(resultsPerPage !== newConfig.pageSize) {
                 resultsPerPage = newConfig.pageSize;
             }
+            if(!newConfig?.availableColumnKeys || newConfig.availableColumnKeys?.length === 0) {
+                newConfig.availableColumnKeys = [ 
+                    ...(newConfig.columnsShow.filter(key => !newConfig.columnsDisable.includes(key))),
+                ]
+            }
+            if(!newConfig?.availableFilterKeys || newConfig.availableFilterKeys?.length === 0) {
+                newConfig.availableFilterKeys = [ 
+                    ...(newConfig.filtersShow.filter(key => !newConfig.filtersDisable.includes(key))),
+                ]
+            }
         })
         const unsubTableConfig = config.subscribe( () =>  setTimeout( () => createTable(true), 10 ) );
         while($filteredTableData.data.length === 0) {

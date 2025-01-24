@@ -19,6 +19,20 @@ export const isLivesyncing: Writable<boolean> = writable(false)
 export const isBootstrapping: Writable<boolean> = writable(false)
 export const lastCompleteSync: Writable<number> = writable(StateManager.get('lastCompleteSync') ?? 0)
 
+export const darkMode: Writable<boolean> = writable(false)
+
+darkMode.set(window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+darkModeQuery.addEventListener('change', (event) => {
+  if (event.matches) {
+    darkMode.set(true);
+  } else {
+    darkMode.set(false);
+  }
+});
+
 export const route66Ready = async () => {
     while(!get(route66Initialized)) {
         await delay(200);

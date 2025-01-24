@@ -17,6 +17,7 @@
     import * as Tabs from "$lib/components/ui/tabs";
 	import Button from '../../ui/button/button.svelte';
 	import type { DataTableConfig } from './DataTableTypes';
+	import { darkMode } from '$lib/stores/app';
 
     export let tableKey: string;
     export let data: Readable<any[]>;
@@ -196,7 +197,7 @@
     }
 
     $: isCollapsed = $config?.sidebarCollapsed || false;
-    $: activeFilters = Object.keys($filters).length;
+    $: activeFilters = Object.keys($filters).length
 
     const toggleSidebarPane = () => {
         if(isCollapsed) {
@@ -295,11 +296,21 @@
                         {#each tableInstance?.rows as row (row.id)}
                             <Table.Row 
                                 class="{$rowStyles.get(row.pubkey)}" 
-                                style="{row.banner? 
-                                    `background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),  url('${row.banner}'); 
-                                     background-repeat: no-repeat; 
-                                     background-size: cover; `
-                                     : ''}"
+                                style="{
+                                    row.banner
+                                        ? 
+                                            $darkMode
+                                                ? 
+                                                    `background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),  url('${row.banner}'); 
+                                                    background-repeat: no-repeat; 
+                                                    background-size: cover;`
+                                                :
+                                                    `background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)),  url('${row.banner}'); 
+                                                    background-repeat: no-repeat; 
+                                                    background-size: cover;`
+                                            
+                                        : ''
+                                }"
                                 >
                                 {#if actionsComponent}
                                     <svelte:component this={actionsComponent} data={row} />

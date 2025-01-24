@@ -11,3 +11,5 @@ packages:
     - "libraries/adapters/**/*"
     - "libraries/validators/**/*"
     - "libraries/schemata/*"
+    - '!apps/nocapd'
+    - '!libraries/nocap-route66'

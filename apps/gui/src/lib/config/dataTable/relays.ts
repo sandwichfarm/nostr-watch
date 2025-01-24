@@ -11,7 +11,8 @@ import { monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from '@nostrwatch/route66/models/Monitor';
 import type { Nip11Fee } from '@nostrwatch/route66/models/Nip11';
 import type { DD } from '@nostrwatch/route66/models/Geocoded';
-import { Nip66CheckEvent } from '@nostrwatch/route66/models';
+import { Nip66CheckEvent, PubkeyProfile } from '@nostrwatch/route66/models';
+import { pubkeyProfile, pubkeyUserInstance } from '$lib/stores/helpers/helpers-pubkey';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -240,10 +241,16 @@ export const tableFormatters: Formatters = {
     },
     operatorPubkey: (pk: string): string => {
         if(!pk) return '';
-        const valid = isPubkey(pk)
-        const validationClasses = valid? 'text-green-200/50 font-bold': 'text-red-400/80 italic';
-        const notice = !valid? '⚠': ''
-        return `<span class="inline-block max-w-20 overflow-hidden overflow-ellipsis ${validationClasses}">${notice}${pk}</span>`
+        const profile: PubkeyProfile = pubkeyProfile(pk);
+        if(!profile) return '';
+        let image = ''
+        let name = ''
+        if(profile?.photo) {
+            image = `<span class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
+                <img src=${profile.photo} alt=${profile.photo} class="w-full h-auto" />
+            </span>`
+        }
+        return `<div class="flex">${image}</div>`
     },
     operatorPubkeyValid: (value?: boolean) => {
         if(!value) return ''

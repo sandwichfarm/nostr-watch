@@ -220,7 +220,7 @@
     }
 </script>
 {relayUrl}
-<div class="p-6 min-h-screen text-white">
+<div class="p-6 min-h-screen text-white dark:text-black">
 
     <Alert.Root class="mb-2">
         <Alert.Title>Notice</Alert.Title>
@@ -237,13 +237,13 @@
 
     <div class="space-y-6">
         {#each $auditResults as suite (suite.suiteKey)}
-            <div class="bg-white/5 shadow-lg rounded-lg p-5">
+            <div class="bg-white/5 dark:bg-black/10 shadow-lg rounded-lg p-5">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center">
                         {#if suite.status === 'running'}
                             <div class="w-4 h-4 border-2 border-t-2 border-gray-400 rounded-sm animate-spin mr-2"></div>
                         {/if}
-                        <span class="text-xl font-semibold">
+                        <span class="text-xl font-semibold text-black dark:text-white bg-black/20 dark:bg-white/20">
                             Suite: {suite.suiteKey}
                         </span>
                     </div>

@@ -213,6 +213,6 @@
     }
     
     #relay-insights > li span.value {
-        @apply text-white font-bold inline py-1 px-2 bg-white/5 rounded-sm;
+        @apply text-white font-bold inline py-1 px-2 bg-white/5 dark:bg-black/5 rounded-sm;
     }
     </style>

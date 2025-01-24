@@ -43,12 +43,12 @@
         {#if $profile && pubkey}
         <ProfileCompact {pubkey} {profile}  />
             {#if $profile?.about}
-            <p class="mt-2 p-4 bg-white/5 line-clamp-6">{$profile?.about}</p>
+            <p class="mt-2 p-4 bg-white/5 dark:bg-black/5 line-clamp-6">{$profile?.about}</p>
             {/if}
         {/if}
         {#if otherRelaysCount > 0}
         <div class="text-white/80 my-6">
-            <span class="bg-white/5 py-1 px-2 rounded-sm">{name}</span> operates <Badge class="rounded-full">{otherRelaysCount}</Badge> other relays
+            <span class="bg-white/5 dark:bg-black/5 py-1 px-2 rounded-sm">{name}</span> operates <Badge class="rounded-full">{otherRelaysCount}</Badge> other relays
         </div>
         {/if}
         <OperatorRelays {pubkey} {relayUrl} {monitors} bind:otherRelaysCount />

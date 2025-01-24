@@ -55,7 +55,7 @@
     ajvResult={$validationResult}
     />
 {:else if $nip11}
-    <pre class="py-6 px-8 bg-white/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>
+    <pre class="py-6 px-8 bg-white/5 dark:bg-black/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>
 
 {:else}
 no nip11?

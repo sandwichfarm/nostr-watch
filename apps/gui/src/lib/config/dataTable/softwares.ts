@@ -23,14 +23,14 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableFormatters: Formatters = {
     name: (software: string, row: any) => {
         if(typeof software !== 'string') return '-';
-        software = `<span class="my-1 text-xl bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(makeSoftwareReadable(software), 33)}</span>`;
+        software = `<span class="my-1 text-xl bg-white/10 dark:bg-black/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(makeSoftwareReadable(software), 33)}</span>`;
         const icon = row.icon? 
             `<img src="${row.icon}" alt="${software}" class="w-6 h-6 inline-block mr-2">` 
             :'<span class="w-6 h-6 inline-block mr-2"></span>';
         return `${icon}${software}`;
     },
     versionsNum: (versionsNum: number) => {
-        return `<span class="inline-block m-auto text-sm py-2 px-3 rounded-full bg-white/10">${versionsNum}</span>`;
+        return `<span class="inline-block m-auto text-sm py-2 px-3 rounded-full bg-white/10 dark:bg-black/10">${versionsNum}</span>`;
     },
     marketShare: (marketShare: number) => {
         return `<span class="text-md">${marketShare.toFixed(1)}%</span>`;

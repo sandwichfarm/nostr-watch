@@ -19,7 +19,7 @@
 
 {#if isHomepage}
   {#if loadedEnough}
-  <section class="h-[420px] bg-white/5 flex flex-col justify-center items-center">
+  <section class="h-[420px] bg-white/5 dark:bg-black/5 flex flex-col justify-center items-center">
     <h1 class="w-full text-center text-3xl mb-4">find your relays.</h1>
     <div class="w-full max-w-xl">
       <AutoSuggestRelaysCompact maxResults={5} autoFocus={true} />
@@ -28,7 +28,7 @@
   <Counts />
   {:else}
   <div class="flex flex-col items-center justify-center h-screen">
-    <!-- <div class="text-2xl h-[420px] align-middle bg-white/10 mb-4">[ loading graphic ]</div> -->
+    <!-- <div class="text-2xl h-[420px] align-middle bg-white/10 dark:bg-black/10 mb-4">[ loading graphic ]</div> -->
     <ActivityList />
   </div>
   {/if}

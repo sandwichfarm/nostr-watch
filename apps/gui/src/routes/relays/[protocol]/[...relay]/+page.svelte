@@ -350,7 +350,7 @@
 
 <header
   id="relay-header"
-  class="relative bg-center bg-cover bg-no-repeat h-48"
+  class="relative bg-center bg-cover bg-no-repeat h-48 px-3 py-10 bg-black/20 dark:!bg-white/5"
   style={banner? `background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)),  url('${banner}'); 
           background-repeat: no-repeat; 
           background-size: cover;`: ''}
@@ -367,7 +367,7 @@
       <div class="">
         <h1 class="copy-this relative">
           <span 
-            class="block -mt-2 relative text-6xl py-2 px-3 text-white rounded-lg cursor-pointer hover:bg-black/50" 
+            class="block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg cursor-pointer hover:bg-white/50 hover:dark:bg-black/50" 
             use:clickToCopy 
             use:observeViewport
             aria-label="Copy relay URL to clipboard"
@@ -501,7 +501,7 @@
             <!-- {#if $nip11sLocal?.get(relayUrl)}
               NIP-11 found locally <br />
             {/if} -->
-            <!-- <pre class="py-6 px-8 bg-white/5 rounded-lg">
+            <!-- <pre class="py-6 px-8 bg-white/5 dark:bg-black/5 rounded-lg">
               {JSON.stringify($nip11?.json, null, 4)}
             </pre> -->
             <RelayNip11 {nip11} />
@@ -555,17 +555,14 @@
   <Stats />
 {/if} -->
 
-<style lang="postcss" global>
+<style lang="postcss">
+
     h1 > .copy-message {
-        @apply hidden absolute bg-black/50 text-white text-xs px-1 rounded;
+        @apply hidden absolute bg-black/50 dark:bg-white/50 text-white dark:text-black text-xs px-1 rounded;
     }
 
     h1:hover > .copy-message {
         @apply block -top-1;
-    }
-
-    #relay-header {
-        @apply px-3 py-10 bg-white/5;
     }
 
     #overview-container > div {
@@ -573,7 +570,7 @@
     }
 
     .data-\[state\=active\]\:bg-background[data-state="active"] {
-        @apply !bg-black/10;
+        @apply !bg-black/10 dark:!bg-white/10;
     }
 
     pre {
@@ -585,6 +582,6 @@
     }
 
     body .relay-card {
-        @apply bg-white/5;
+        @apply bg-white/5 dark:!bg-black/10;
     }
 </style>

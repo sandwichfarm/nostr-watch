@@ -78,7 +78,7 @@
 <section 
     tabindex="-1" 
     id="note-{noteExtended.note.id}" 
-    class="note px-8 py-5 rounded-lg bg-white/5 text-md block mb-3" 
+    class="note px-8 py-5 rounded-lg bg-white/5 dark:bg-black/5 text-md block mb-3" 
     use:observeViewport
     on:viewportchange={(event: any) => {
         if(event.detail.isIntersecting) fetchRelatives(noteExtended.note.id)
@@ -101,7 +101,7 @@
         <a href="https://njump.me/{noteExtended.note.reference}" target="_blank">link</a>
     </div>
     
-    <div class="content text-white/55 text-xl my-6 overflow-hidden overflow-ellipsis">
+    <div class="content text-white/5 dark:text-black/55 text-xl my-6 overflow-hidden overflow-ellipsis">
         {@html $content}
     </div>
     <div class="actions flex mt-2 hover:opacity-100 {animationClass}">

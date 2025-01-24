@@ -242,7 +242,7 @@
                             <Tabs.Content value="visiblity"  class="py-4 px-8">
                                 <TableOptions {config} {tableKey} />
                             </Tabs.Content>
-                            <Tabs.Content value="order" class=" text-white/20">
+                            <Tabs.Content value="order" class=" bg-white/20 dark:bg-black/20">
                                 coming soon...
                             </Tabs.Content>
                         </Tabs.Root>
@@ -351,7 +351,7 @@
         > <!----->
 
             {#if sidebarPaneApi}
-                <Button class="rounded-l-none display-inline bg-white/5 text-white/80 hover:bg-white/15 text-white/90" on:click={toggleSidebarPane()}>
+                <Button class="rounded-l-none display-inline bg-white/5 dark:bg-black/5 text-white/80 hover:bg-white/15 dark:bg-black/15 text-white/90" on:click={toggleSidebarPane()}>
                     {#if isCollapsed}
                     ⭅
                     {:else}
@@ -404,6 +404,6 @@
     }
 
     body .data-[state=active]:bg-background[data-state="active"] {
-        @apply !bg-white/10;
+        @apply !bg-white/10 dark:bg-black/10;
     }
 </style>

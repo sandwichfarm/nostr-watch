@@ -78,7 +78,7 @@
     }
 
     #stats-bar {
-        @apply p-2 flex uppercase text-sm fixed bottom-0 right-0 left-0 bg-black/25 backdrop-blur-lg z-[9999];
+        @apply p-2 flex uppercase text-sm fixed bottom-0 right-0 left-0 bg-black/25 dark:bg-white/25 backdrop-blur-lg z-[9999];
     }
 
     #stats-bar > span {

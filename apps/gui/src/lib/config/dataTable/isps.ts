@@ -24,33 +24,33 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableFormatters: Formatters = {
     prettyName: (prettyName: string, row: any) => {
         if(typeof prettyName !== 'string') return '-';
-        prettyName = `<span class="my-1 text-xl bg-white/10 py-1 px-2 rounded-sm">${prettyName}</span>`;
+        prettyName = `<span class="my-1 text-xl bg-white/10 dark:bg-black/10 py-1 px-2 rounded-sm">${prettyName}</span>`;
         const icon = row.icon? 
             `<img src="${row.icon}" alt="${prettyName}" class="w-6 h-6 inline-block mr-2">` 
             :'<span class="w-6 h-6 inline-block mr-2"></span>';
         return `${icon}${prettyName}`;
     },
     percent: (percent: number) => {
-        return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-white/10">${percent}%</span>`
+        return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-white/10 dark:bg-black/10">${percent}%</span>`
     }
     // geocode: (geocode: string, row: any) => {
     //     let emoji
     //     let value
     //     if(geocode === 'unknown'){
     //         emoji = `<span class="mr-2 text-3xl">🌎</span>`
-    //         value = `<span class="my-1 text-xl bg-white/10 py-1 px-2 rounded-sm">unknown</span>`;
+    //         value = `<span class="my-1 text-xl bg-white/10 dark:bg-black/10 py-1 px-2 rounded-sm">unknown</span>`;
     //     }
     //     else {
     //         emoji = `<span class="mr-2 text-3xl">${countryCodeToFlagEmoji(geocode)}</span>`
-    //         value = `<span class="my-1 text-xl bg-white/10 py-1 px-2 rounded-sm">${getCountryName(geocode)}</span>`;
+    //         value = `<span class="my-1 text-xl bg-white/10 dark:bg-black/10 py-1 px-2 rounded-sm">${getCountryName(geocode)}</span>`;
     //     }
     //     return `<span class="block min-w-[300px]">${emoji}${value} [${geocode}]</span>`;
     // },
     // percent: (percent: number) => {
-    //     return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-white/10">${percent}%</span>`
+    //     return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-white/10 dark:bg-black/10">${percent}%</span>`
     // },
     // relaysCount: (relaysCount: number) => {
-    //     return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-white/10">${relaysCount}</span>`
+    //     return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-white/10 dark:bg-black/10">${relaysCount}</span>`
     // }
 }
 

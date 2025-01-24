@@ -33,7 +33,7 @@
 
 <style>
     #site-header {
-        @apply fixed top-0 right-0 left-0 flex items-center h-16 bg-black/25 backdrop-blur-lg text-white z-[8999];
+        @apply fixed top-0 right-0 left-0 flex items-center h-16 bg-black/25 dark:bg-white/25 backdrop-blur-lg text-white dark:text-black z-[8999];
     }
 
     #site-header h1 {

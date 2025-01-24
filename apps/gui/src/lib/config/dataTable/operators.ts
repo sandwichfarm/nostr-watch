@@ -20,7 +20,7 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableFormatters: Formatters = {
     name: (name: string, row: any) => {
         if(typeof name !== 'string') return '-';
-        const nameHtml = `<span class="my-1 text-xl bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(name, 55)}</span>`;
+        const nameHtml = `<span class="my-1 text-xl bg-white/10 dark:bg-black/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(name, 55)}</span>`;
         const photo = row.photo? 
             `<img src="${row.photo}" alt="${name}" class="w-12 h-12 inline-block mr-2 rounded-full">` 
             :'<span class="w-12 h-12 inline-block mr-2"></span>';
@@ -38,15 +38,15 @@ export const tableFormatters: Formatters = {
     },
     relaysCount: (relaysCount: number) => {
         if(typeof relaysCount !== 'number') return '-';
-        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10">${relaysCount}</span>`;
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10 dark:bg-black/10">${relaysCount}</span>`;
     },
     ispsCount: (ispsCount: number) => {
         if(typeof ispsCount !== 'number') return '-';
-        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10">${ispsCount}</span>`;
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10 dark:bg-black/10">${ispsCount}</span>`;
     },
     softwaresCount: (softwaresCount: number) => {
         if(typeof softwaresCount !== 'number') return '-';
-        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10">${softwaresCount}</span>`;
+        return `<span class="text-sm rounded-full full py-2 px-3 bg-white/10 dark:bg-black/10">${softwaresCount}</span>`;
     }
 
 }

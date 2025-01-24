@@ -65,6 +65,6 @@
 
 <style lang="postcss">
     .hp-card {
-        @apply bg-white/10 py-20 rounded-lg shadow-md m-5;
+        @apply bg-white/10 dark:bg-black/10 py-20 rounded-lg shadow-md m-5;
     }
 </style>

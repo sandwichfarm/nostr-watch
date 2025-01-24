@@ -62,13 +62,13 @@
 <!-- <p>Reported <em>online</em> by <Badge class="rounded-full">{validChecks.length}</Badge> monitors</p> -->
 <div class="flex">
     <div class=" w-1/4 border-r overflow-y-auto flex-none">
-        <button class="block w-full py-3 px-3 text-left {$showMap? 'bg-white/10': ''}" on:click={toggleMap}>
+        <button class="block w-full py-3 px-3 text-left {$showMap? 'bg-white/10 dark:bg-black/10': ''}" on:click={toggleMap}>
             <span class="inline-block">
                 <span class="inline-block text-2xl mr-2">🌎</span>
                 <span class="relative -top-1"> Map</span>
             </span> 
         </button>
-        <button class="block w-full py-3 px-3 text-left {$showLocalCheck? 'bg-white/10': ''}" on:click={toggleLocalCheck}>
+        <button class="block w-full py-3 px-3 text-left {$showLocalCheck? 'bg-white/10 dark:bg-black/10': ''}" on:click={toggleLocalCheck}>
             <span class="inline-block">
                 <span class="inline-block text-2xl mr-2">🫵</span>
                 <span class="relative -top-1"> Run check locally</span>
@@ -76,10 +76,10 @@
         </button>
         {#each validChecks as check}
             {#if check?.pubkey}
-            <button class="block w-full py-3 px-3 text-left {$selectedCheck && check.id === $selectedCheck?.id? 'bg-white/10': ''}" on:click={() => { selectedCheck.set(check); showMap.set(false); showLocalCheck.set(false) }}>
+            <button class="block w-full py-3 px-3 text-left {$selectedCheck && check.id === $selectedCheck?.id? 'bg-white/10 dark:bg-black/10': ''}" on:click={() => { selectedCheck.set(check); showMap.set(false); showLocalCheck.set(false) }}>
                 <img src="{$monitorsMap.get(check?.pubkey)?.photo ?? PFP.generate(check?.pubkey)}" alt="{$monitorsMap.get(check?.pubkey)?.name}'s profile photo" class="h-6 w-6 mr-2 overflow-hidden rounded-full inline-block" /> <span class="inline-block">
                     {$monitorsMap.get(check?.pubkey)?.name}
-                    <span class="text-sm text-white/50 italic">{timeAgo((check.created_at as number)*1000)}</span>
+                    <span class="text-sm text-white/5 dark:text-black/50 italic">{timeAgo((check.created_at as number)*1000)}</span>
                 </span> 
             </button>
             {/if}

@@ -522,7 +522,7 @@
             <Tabs.Content value="visiblity"  class="py-4 px-8">
                 <FilterOptions {config} {tableKey} onChange={onFilterChange} />
             </Tabs.Content>
-            <Tabs.Content value="order" class=" text-white/20">
+            <Tabs.Content value="order" class=" bg-white/20 dark:bg-black/20">
                 coming soon...
             </Tabs.Content>
         </Tabs.Root>
@@ -717,7 +717,7 @@
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
                                     <a href="#" 
                                         on:click|preventDefault={() => toggleShowAllBadges(filter.key)} 
-                                        class="my-3 text-sm text-center relative more-link block py-2 text-white/50 bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-white/10"
+                                        class="my-3 text-sm text-center relative more-link block py-2 text-white/5 dark:text-black/50 bg-white/5 dark:bg-black/5 no-underline font-bold hover:text-white/60  hover:bg-white/10 dark:bg-black/10"
                                         >
                                         {#if $showAllFilters[filter.key]}
                                             <span class="absolute left-2">⇈</span>
@@ -768,7 +768,7 @@
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
                                 <a href="#" 
                                 on:click|preventDefault={() => toggleShowAllBadges(filter.key)} 
-                                class="my-3 text-sm text-center relative more-link block py-2 text-white/50 bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-white/10"
+                                class="my-3 text-sm text-center relative more-link block py-2 text-white/5 dark:text-black/50 bg-white/5 dark:bg-black/5 no-underline font-bold hover:text-white/60  hover:bg-white/10 dark:bg-black/10"
                                 >
                                     {#if $showAllFilters[filter.key]}
                                         <span class="absolute left-2">⇈</span>

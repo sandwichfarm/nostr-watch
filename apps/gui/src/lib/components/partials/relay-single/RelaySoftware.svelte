@@ -10,7 +10,7 @@
     {#if software}
         <div class="mt-1 py-1  block">
             <span class="text-white/80 font-bold text-xl ">
-                {makeSoftwareReadable(software)}{#if version}<span class="text-white/50">:{version}</span>{/if}
+                {makeSoftwareReadable(software)}{#if version}<span class="text-white/5 dark:text-black/50">:{version}</span>{/if}
             </span>
         </div>
     {/if}

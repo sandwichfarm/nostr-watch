@@ -501,7 +501,7 @@
             <!-- {#if $nip11sLocal?.get(relayUrl)}
               NIP-11 found locally <br />
             {/if} -->
-            <!-- <pre class="py-6 px-8 bg-white/5 dark:bg-black/5 rounded-lg">
+            <!-- <pre class="py-6 px-8 bg-black/5 dark:bg-white/5 rounded-lg">
               {JSON.stringify($nip11?.json, null, 4)}
             </pre> -->
             <RelayNip11 {nip11} />

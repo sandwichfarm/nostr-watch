@@ -85,7 +85,7 @@
         
         
 
-        <ul id="relay-insights" class="mt-1 py-1 block text-white/90 text-xl">
+        <ul id="relay-insights" class="mt-1 py-1 block text-black/90 dark:text-white/90 text-xl">
             {#if software}
                 <li class="flex">
                     <div class="flex-shrink mr-5">
@@ -213,6 +213,6 @@
     }
     
     #relay-insights > li span.value {
-        @apply text-white font-bold inline py-1 px-2 bg-white/5 dark:bg-black/5 rounded-sm;
+        @apply text-black dark:text-white font-bold inline py-1 px-2 bg-black/5 dark:bg-white/5 rounded-sm;
     }
     </style>

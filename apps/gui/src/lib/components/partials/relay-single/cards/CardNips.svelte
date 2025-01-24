@@ -14,10 +14,11 @@
         <Card.Content>
            {#each supportedNips as nip}
             <span class="block mb-2">
-                <a target="_blank" href="https://github.com/nostr-protocol/nips/blob/master/{nipLeadingZero(nip)}.md" class="font-bold text-white/80 hover:text-white/90 py-1 px-2 bg-white/5 dark:bg-black/5 rounded-sm hover:text-white/10 dark:text-black/10">
+                <a target="_blank" href="https://github.com/nostr-protocol/nips/blob/master/{nipLeadingZero(nip)}.md" 
+                    class="font-bold text-black/80 hover:text-black/90 py-1 px-2 bg-black/5 dark:bg-white/10 rounded-sm  dark:text-white/70">
                     {formatNip(nip)}
                 </a>
-                <span class="text-white/5 dark:text-black/50">{ $NIP_NAMES[ nipLeadingZero(nip).toString() ] }</span>
+                <span class="text-black/70 dark:text-white/70">{ $NIP_NAMES[ nipLeadingZero(nip).toString() ] }</span>
             </span>
            {/each}
         </Card.Content>

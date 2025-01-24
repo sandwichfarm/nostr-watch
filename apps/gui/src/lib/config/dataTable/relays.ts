@@ -127,7 +127,7 @@ const formatFee = (fees: Nip11Fee[]) => {
 export const tableFormatters: Formatters = {
     relay: (relay: string, row: any) => {
         const { icon } = row;
-        const formatted = `<span class="inline-block my-1 text-xl bg-white/10 dark:bg-black/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
+        const formatted = `<span class="inline-block my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
         const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: '<span class="inline-block mr-2 h-6 w-6"></span>'
         return `<a class="text-lg" href="/relays/${formatRelayUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
@@ -193,7 +193,7 @@ export const tableFormatters: Formatters = {
         });
     
         if (extra.length) {
-            str += `<span class="text-xs inline-block relative whitespace-nowrap text-white/5 dark:text-black/50">+${extra.length}</span>`;
+            str += `<span class="text-xs inline-block relative whitespace-nowrap text-black/70 dark:text-white/70">+${extra.length}</span>`;
         }
     
         str += "</div>";

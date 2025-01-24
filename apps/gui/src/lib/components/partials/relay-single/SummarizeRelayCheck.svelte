@@ -20,6 +20,6 @@
 <div class="py-2">
 <img src="{monitorPhoto}" alt="{monitorName}'s profile photo" class="h-6 w-6 mr-2 overflow-hidden rounded-full inline-block" /> <span class="inline-block">
     {monitorName}
-    <span class="text-white/5 dark:text-black/50 text-sm italic">{timeAgo(check.created_at*1000)}</span>
+    <span class="text-black/70 dark:text-white/70 text-sm italic">{timeAgo(check.created_at*1000)}</span>
 </span> 
 </div>

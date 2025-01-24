@@ -362,7 +362,7 @@
         > <!----->
 
             {#if sidebarPaneApi}
-                <Button class="rounded-l-none display-inline bg-white/5 dark:bg-black/5 text-white/80 hover:bg-white/15 dark:bg-black/15 text-white/90" on:click={toggleSidebarPane()}>
+                <Button class="rounded-l-none display-inline bg-black/5 dark:bg-white/5 text-white/80 hover:bg-white/15 dark:bg-black/15 text-white/90" on:click={toggleSidebarPane()}>
                     {#if isCollapsed}
                     ⭅
                     {:else}
@@ -415,6 +415,6 @@
     }
 
     body .data-[state=active]:bg-background[data-state="active"] {
-        @apply !bg-white/10 dark:bg-black/10;
+        @apply !bg-black/10 dark:bg-white/10;
     }
 </style>

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html  class="dark" lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
@@ -12,9 +12,11 @@
 		/>
 		<script>
 			function toggleDarkMode(isDark) {
+				// document.documentElement.classList.toggle('dark', prefersDark);
 				if (isDark) {
 					document.documentElement.classList.add('dark');
 				} else {
+					
 					document.documentElement.classList.remove('dark');
 				}
 			}

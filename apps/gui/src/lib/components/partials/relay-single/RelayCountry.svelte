@@ -7,7 +7,7 @@
 <div id="geocode">
     {#if geocode}
         <div class="mt-1 py-1 block">
-            <span class="text-white/80 font-bold text-xl ">
+            <span class="text-black/80 dark:text-white/80 font-bold text-xl ">
                 {geocode}
             </span>
         </div>

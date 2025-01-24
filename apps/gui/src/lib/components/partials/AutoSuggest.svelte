@@ -181,7 +181,7 @@
             }}
           >
             <strong class="text-lg"> {result.relay || "N/A"} </strong><br />
-            <small class="text-sm italic text-white/5 dark:text-black/50">{result.operatorPubkey || "N/A"}</small>
+            <small class="text-sm italic text-black/70 dark:text-white/70">{result.operatorPubkey || "N/A"}</small>
           </div>
         {/each}
       </div>  

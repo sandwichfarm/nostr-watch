@@ -717,7 +717,7 @@
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
                                     <a href="#" 
                                         on:click|preventDefault={() => toggleShowAllBadges(filter.key)} 
-                                        class="my-3 text-sm text-center relative more-link block py-2 text-white/5 dark:text-black/50 bg-white/5 dark:bg-black/5 no-underline font-bold hover:text-white/60  hover:bg-white/10 dark:bg-black/10"
+                                        class="my-3 text-sm text-center relative more-link block py-2 text-black/70 dark:text-white/70 bg-black/5 dark:bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-black/10 dark:bg-white/10"
                                         >
                                         {#if $showAllFilters[filter.key]}
                                             <span class="absolute left-2">⇈</span>
@@ -768,7 +768,7 @@
                                 {#if filter.filteredDistinctValues.length > maxBadgeLength}
                                 <a href="#" 
                                 on:click|preventDefault={() => toggleShowAllBadges(filter.key)} 
-                                class="my-3 text-sm text-center relative more-link block py-2 text-white/5 dark:text-black/50 bg-white/5 dark:bg-black/5 no-underline font-bold hover:text-white/60  hover:bg-white/10 dark:bg-black/10"
+                                class="my-3 text-sm text-center relative more-link block py-2 text-black/70 dark:text-white/70 bg-black/5 dark:bg-white/5 no-underline font-bold hover:text-white/60  hover:bg-black/10 dark:bg-white/10"
                                 >
                                     {#if $showAllFilters[filter.key]}
                                         <span class="absolute left-2">⇈</span>

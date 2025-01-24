@@ -15,7 +15,7 @@
   $: reference = check.reference;
 </script>
 
-<div id="encoded" class="overflow-hidden overflow-ellipsis bg-white/5 dark:bg-black/5 py-3 px-6 rounded-md cursor-pointer font-mono max-w-full" use:clickToCopy>
+<div id="encoded" class="overflow-hidden overflow-ellipsis bg-black/5 dark:bg-white/5 py-3 px-6 rounded-md cursor-pointer font-mono max-w-full" use:clickToCopy>
   {reference}
 </div>
 
@@ -168,7 +168,7 @@
   </Tabs.Content>
 
   <Tabs.Content value="empty">
-    <pre class="m-4 py-5 px-7 bg-white/10 dark:bg-black/10 rounded-lg text-sm">{JSON.stringify(check.json, null, 2)}</pre>
+    <pre class="m-4 py-5 px-7 bg-black/10 dark:bg-white/10 rounded-lg text-sm">{JSON.stringify(check.json, null, 2)}</pre>
   </Tabs.Content>
 </Tabs.Root>
 
@@ -182,19 +182,19 @@
   }
 
   th {
-    @apply bg-white/10 dark:bg-black/10
+    @apply  bg-black/10 dark:bg-white/10;
   }
 
   table tbody tr td:first-child {
-    @apply w-64 text-white/5 dark:text-black/50;
+    @apply w-64;
 
   }
 
   pre {
-    white-space: pre-wrap;       /* Since CSS 2.1 */
-    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
-    white-space: -pre-wrap;      /* Opera 4-6 */
-    white-space: -o-pre-wrap;    /* Opera 7 */
-    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+    white-space: pre-wrap;       
+    white-space: -moz-pre-wrap;
+    white-space: -pre-wrap;    
+    white-space: -o-pre-wrap;  
+    word-wrap: break-word;     
   }
 </style>

@@ -15,7 +15,7 @@
 <style lang="postcss">
 
 	.dimension-link {
-		@apply py-1 px-2 ml-3 text-sm rounded-sm bg-white/5 dark:bg-black/5 hover:bg-white/20 dark:bg-black/20;
+		@apply py-1 px-2 ml-3 text-sm rounded-sm bg-black/5 dark:bg-white/5 hover:bg-white/20 dark:bg-black/20;
 	}
 
     .dimension-link-active {

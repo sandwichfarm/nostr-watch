@@ -129,7 +129,7 @@
     {/if}
     
     {#if $busy}
-        <div class="mt-10 py-6 text-center text-xl bg-white/5 dark:bg-black/5 text-white/5 dark:text-black/50 italic">
+        <div class="mt-10 py-6 text-center text-xl bg-black/5 dark:bg-white/5 text-black/70 dark:text-white/70 italic">
             Spamming {user?.name? user?.name: 'the operator'}'s relays for more notes... 
         </div>
     {/if}

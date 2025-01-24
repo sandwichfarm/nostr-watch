@@ -21,7 +21,7 @@
         <div id="isp">
             {#if isp}
                 <div class="mt-1 py-1 block">
-                    <span class="text-white/80 font-bold text-xl ">
+                    <span class="text-black/80 dark:text-white/80 font-bold text-xl ">
                         {isp}
                     </span>
                 </div>
@@ -31,7 +31,7 @@
             {#if ipv4?.length}
                 {#each ipv4 as ip}
                 <!-- <div class="mt-1 py-1 block"> -->
-                    <span class="text-white/80 font-bold text-lg block mt-3">
+                    <span class="text-black/80 dark:text-white/80 font-bold text-lg block mt-3">
                         {ip}
                     </span>
                 <!-- </div> -->

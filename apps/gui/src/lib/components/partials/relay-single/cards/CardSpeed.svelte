@@ -115,7 +115,7 @@
                         }
                     ]}
                     />
-                <span class="inline-block text-white/90 font-bold text-6xl">
+                <span class="inline-block text-black/60 dark:text-white/90 font-bold text-5xl relative -top-20">
                     {value}ms
                 </span>
             {:else}

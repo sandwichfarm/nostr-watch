@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { writable } from 'svelte/store';
+    import { derived, writable, type Readable, type Writable } from 'svelte/store';
     import { Checkbox } from "$lib/components/ui/checkbox/index.js";
     import * as Table from '$lib/components/ui/table/index.js'
 
@@ -16,15 +16,13 @@
 
     export let data: any;
     export let view: 'head' | 'cell' = 'cell';
-    let monitor: Monitor;
+    let monitor: Readable<Monitor | undefined> = derived(monitorsMap, (map) => map.get(data?.pubkey));
     
     const disabled = writable(false);
 
-    if(view === 'cell') {
-        if(data?.pubkey) {
-            monitorsMap.subscribe((map) => monitor = map.get(data?.pubkey));
-        }
-    }
+    // if(view === 'cell') {
+
+    // }
 
     let toggleEnableMonitor: () => void; 
 
@@ -33,8 +31,9 @@
             disabled.set(true);
             const { publishEventsToMemoryRelay } = await import('$lib/stores/events-helpers.js');
             const resumer = await pauseLiveSync();
-            if(monitor?.enabled) {
-                monitor.disable();
+            if(!$monitor) return;
+            if($monitor?.enabled) {
+                $monitor.disable();
                 ([...$eventsArray] as IEvent[]).filter( event => event.pubkey === monitor.pubkey).forEach( event => {
                     const key = eventKey(event);
                     $events.delete(key)
@@ -44,9 +43,9 @@
                 disabled.set(false);
             } 
             else {
-                monitor.enable()
+                $monitor?.enable()
                 const options = {
-                    filters: [ monitor.checkFilter ],
+                    filters: [ $monitor.checkFilter ],
                     options: {
                         stream: true,
                         returnResults: true,
@@ -54,29 +53,28 @@
                         sync: true,
                         batch: 25
                     },
-                    relays: [ ...($route66?.services?.monitors?.nip66Relays || []), ...monitor.relays ],
+                    relays: [ ...($route66?.services?.monitors?.nip66Relays || []), ...$monitor.relays ],
                     priority: 20
                 }
                 const onevents = (events: IEvent[]) => {
                     publishEventsToMemoryRelay(events)
                 }
-                await $route66?.services?.monitors?.sync(options, { onevents })
+                await $route66?.services?.monitors?.subscribe(options, { onevents })
                 await resumer();
                 disabled.set(false);
 
             }
-            $route66?.services?.monitors?.manager?.updateMonitor?.(monitor)
-            
+            $route66?.services?.monitors?.manager?.updateMonitor?.($monitor)
         }
     })
 
-    $: checked = monitor?.enabled
+    $: checked = $monitor?.enabled
 </script>
 
 {#if view === 'cell'}
     <Table.Cell>
-        {#if monitor?.pubkey}
-        <Checkbox disabled={$disabled} id="toggle-${monitor.pubkey.slice(0,21)}" bind:checked aria-labelledby="terms-label" onCheckedChange={toggleEnableMonitor} />
+        {#if $monitor?.pubkey}
+        <Checkbox disabled={$disabled} id="toggle-${$monitor.pubkey.slice(0,21)}" bind:checked aria-labelledby="terms-label" onCheckedChange={toggleEnableMonitor} />
         {/if}
     </Table.Cell>
 {:else}

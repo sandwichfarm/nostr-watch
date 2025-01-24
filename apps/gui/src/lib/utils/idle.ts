@@ -1,4 +1,3 @@
-// IdleDetector.ts
 type IdleCallback = () => void;
 
 interface IdleDetectorOptions {
@@ -15,7 +14,7 @@ export class IdleDetector {
   private isIdle: boolean = false;
 
   constructor(options: IdleDetectorOptions = {}) {
-    this.idleTimeoutMs = options.idleTimeoutMs ?? 300000; // Default 5 minutes
+    this.idleTimeoutMs = options.idleTimeoutMs ?? 300000;
     this.onIdle = options.onIdle;
     this.onActive = options.onActive;
 
@@ -26,7 +25,6 @@ export class IdleDetector {
   }
 
   private init() {
-    // List of events to consider as user activity
     const events = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
 
     events.forEach((event) => {
@@ -78,5 +76,9 @@ export class IdleDetector {
       window.removeEventListener(event, this.resetTimer, true);
     });
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+  }
+
+  public reset() {
+    this.resetTimer();
   }
 }

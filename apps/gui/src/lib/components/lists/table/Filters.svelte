@@ -14,14 +14,12 @@
     import {
         type ConsoleFilter,
         createRelayFilters,
-        createFilter
-    } from '$lib/utils/filter-dom.js'; // Importing from the shared module
+    } from './filter-dom.js'; 
 
-    import { debounce } from 'lodash'; // Ensure lodash is installed
+    import { debounce } from 'lodash';
 	import FilterOptions from './FilterOptions.svelte';
 
     import type { DataTableConfig, Formatters } from './DataTableTypes';
-	import { delay } from '@nostrwatch/utils';
 
     // **Props Passed to the Component**
     export let tableKey: string;
@@ -220,7 +218,7 @@
 
                 if (filterMode === 'OR' || filterMode === 'UNIQUE') {
                     // Simulate selecting this option
-                    const tempActiveFilters = { ...activeFilters };
+                    const tempActiveFilters = structuredClone(activeFilters);
 
                     if (filterMode === 'UNIQUE') {
                         // Ensure only this option is selected
@@ -334,19 +332,22 @@
             } else if (filter.type === 'string' || filter.type === 'array') {
                 if (mode === 'OR') {
                     // union
+                    console.log('filter: existing', existingFilter)
                     if (Array.isArray(existingFilter)) {
                         if (existingFilter.includes(value)) {
+                            console.log('existing filter')
                             const newValues = existingFilter.filter(v => v !== value);
                             if (newValues.length === 0) {
                                 const { [filterKey]: _, ...rest } = currentFilters;
                                 return rest;
                             }
+                            console.log('filter: new 1', { ...currentFilters, [filterKey]: newValues })
                             return { ...currentFilters, [filterKey]: newValues };
                         } else {
+                            console.log('filter: new 2', { ...currentFilters, [filterKey]: [...existingFilter, value] })
                             return { ...currentFilters, [filterKey]: [...existingFilter, value] };
                         }
                     } else {
-                        // Initialize with the new value
                         return { ...currentFilters, [filterKey]: [value] };
                     }
                 } else if (mode === 'AND') {
@@ -371,7 +372,11 @@
                 } else if (mode === 'UNIQUE') {
                     if (filter.type === 'array') {
                         // For array filters in UNIQUE mode, maintain filterValue as an array
-                        if (Array.isArray(existingFilter) && existingFilter.includes(value)) {
+                        if (!Array.isArray(existingFilter)) {
+                            console.log('array type filter is no longer an array', filterKey, value, existingFilter)
+                            return { ...currentFilters };
+                        }
+                        if (existingFilter.includes(value)) {
                             // Deselect the value
                             const { [filterKey]: _, ...rest } = currentFilters;
                             return rest;
@@ -391,7 +396,6 @@
                 }
             } else if (filter.type === 'number') {
                 // Number filters can have specific logic based on conditions
-                // This example assumes exact match; extend as needed
                 if (typeof value === 'number') {
                     return { ...currentFilters, [filterKey]: value };
                 }
@@ -400,7 +404,7 @@
             return currentFilters;
         });
         // ////console.log('end applyFilter', new Date().getTime() - begin);
-        debounce(refreshIndices, 20)();
+        debounce(refreshIndices, 100)();
     }
 
     // **Set the Mode for a Specific Filter Group**
@@ -583,25 +587,21 @@
                                             {/if}
                                             <span class="inline-flex items-center">
                                                 {format(filter.key, [value], false)}
-                                                <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, value)}>✕</Button>
                                             </span>
                                         {/each}
                                     {:else}
                                         <span class="inline-flex items-center">
                                             {format(filter.key, [activeFilters[filter.key]], false)}
-                                            <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key])}>✕</Button>
                                         </span>
                                     {/if}
                                 {:else if filter.mode === 'UNIQUE'}
                                     {#if Array.isArray(activeFilters[filter.key]) && activeFilters[filter.key].length > 0}
                                         <span class="inline-flex items-center">
                                             {format(filter.key, [activeFilters[filter.key][0]], false)}
-                                            <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key][0])}>✕</Button>
                                         </span>
                                     {:else if typeof activeFilters[filter.key] === 'string'}
                                         <span class="inline-flex items-center">
                                             {format(filter.key, [activeFilters[filter.key]], false)}
-                                            <Button size="small" variant="link" class="ml-1" on:click={() => clearFilter(filter.key, activeFilters[filter.key])}>✕</Button>
                                         </span>
                                     {/if}
                                 {/if}
@@ -659,7 +659,6 @@
                         Clear
                     </Button>
                 </div>
-
                 
 
                 <!-- **Filter Options** -->

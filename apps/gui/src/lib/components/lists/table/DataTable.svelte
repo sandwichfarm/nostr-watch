@@ -6,7 +6,7 @@
     import Filters from './Filters.svelte'; 
     import DataTableShowResults from '$lib/components/partials/DataTableShowResults.svelte';
     import DataTablePaginator from '$lib/components/partials/DataTablePaginator.svelte';
-    import { applyFilters, createRelayFilters, type ConsoleFilter } from '$lib/utils/filter-dom.js';
+    import { applyFilters, createRelayFilters, type ConsoleFilter } from './filter-dom.js';
     import { Input } from '$lib/components/ui/input/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';

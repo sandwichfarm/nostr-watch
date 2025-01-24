@@ -125,7 +125,6 @@
             }
         }
 
-        console.log('tableInstanceConfig', tableInstanceConfig);
         // //console.log(`Creating DataTable instance with ${$filteredTableData.data.length} rows.`, tableInstanceConfig);
         if ($filteredTableData && $filteredTableData.columns && $filteredTableData.columns.length) {
             if(tableInstance === null || force){

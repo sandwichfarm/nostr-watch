@@ -127,7 +127,9 @@
     appState.set('booting');
     if (!get(doBootstrap)) {
       try {
-        (await instance()).monitorService.ensureMonitorsActive();
+        route66 = await instance();
+        await route66.ready();
+        route66?.services?.monitors?.ensureMonitorsActive();
         await seedFromCache();
         appState.set('running');
         //console.log('Data seeded from cache.');

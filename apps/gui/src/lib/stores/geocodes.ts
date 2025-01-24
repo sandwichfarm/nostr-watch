@@ -7,6 +7,7 @@ import { StateManager } from '@nostrwatch/route66';
 import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import type { lte } from 'lodash';
 import { doAggregateCache } from './app.js';
+import softwares from '../config/dataTable/softwares.js';
 
 export const geocodes: Readable<string[]> = derived(
   relayCheckAggregates, 
@@ -69,9 +70,26 @@ export const relaysByGeo: Readable<Map<string, string[]>> = derived(
     return relaysByGeo;
 })
 
+export const softwaresByGeo: Readable<Map<string, string[]>> = derived(
+  [relayCheckAggregates],
+  ([$relayCheckAggregates]) => {
+    const softwaresByGeo: Map<string, string[] | Set<string>> = new Map();
+    $relayCheckAggregates.forEach((relayCheck) => {
+      const geocode = relayCheck?.geocode || 'unknown';
+      const softwares = softwaresByGeo.get(geocode) || new Set();
+      if((softwares as Set<string>).has(relayCheck.software)) return;
+      (softwares as Set<string>).add(relayCheck.software);
+      softwaresByGeo.set(geocode, softwares);
+    });
+    softwaresByGeo.forEach((softwares, geocode) => {
+      softwaresByGeo.set(geocode, Array.from(softwares));
+    })
+    return softwaresByGeo as Map<string, string[]>;
+})
+
 export const geoRows = derived(
-  [geocodes, geocodeCounts, geocodePercentages, relaysByGeo],
-  ([$geocodes, $geocodeCounts, $geocodePercentages, $relaysByGeo]) => {
+  [geocodes, geocodeCounts, geocodePercentages, relaysByGeo, softwaresByGeo],
+  ([$geocodes, $geocodeCounts, $geocodePercentages, $relaysByGeo, $softwaresByGeo]) => {
     const rows: Record<string, any> = [];
     $geocodes.forEach((geocode: string) => {
       const id = geocode;
@@ -79,7 +97,9 @@ export const geoRows = derived(
       const percent = $geocodePercentages.get(geocode) || 0;
       const relays = $relaysByGeo.get(geocode) || [];
       const relaysCount = relays.length || 0;
-      rows.push({ id, geocode, count, percent, relays, relaysCount });
+      const softwares = $softwaresByGeo.get(geocode) || [];
+      const softwaresCount = softwares.length || 0;
+      rows.push({ id, geocode, count, percent, relays, relaysCount, softwares, softwaresCount });
     });
     return rows;
   }

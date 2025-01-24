@@ -1,4 +1,3 @@
-import { relaySpeedGroupResolver, SpeedGroupBars, SpeedGroupColors, SpeedGroups } from '$lib/stores/checks.js';
 import { inactiveDisabledMonitorChecksCount, monitors, monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from "@nostrwatch/route66/models"
 import { PFP } from '$lib/utils/pfp.js';
@@ -6,30 +5,6 @@ import { get } from 'svelte/store';
 import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 import { validNip05s } from '$lib/stores/nip05s.js';
 import { activeMonitorChecksCount } from '$lib/stores';
-
-type Resolver = (input: any) => any
-
-class SpeedGroupResolver {
-    private resolver: Resolver = () => SpeedGroups.Mid;
-    private unsubscribe: () => void;
-  
-    constructor() {
-      this.unsubscribe = relaySpeedGroupResolver.subscribe((fn: Resolver) => {
-        this.resolver = fn;
-      });
-    }
-  
-    resolve(input: number): SpeedGroups {
-      return this.resolver(input);
-    }
-  
-    dispose() {
-      this.unsubscribe();
-    }
-}
-
-const speedGroupResolver = new SpeedGroupResolver();
-  
 
 export type NameFormatter = Record<string, string>;
 

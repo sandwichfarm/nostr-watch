@@ -1,4 +1,3 @@
-// tests/Publisher.test.ts
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Publisher } from '../src/Publisher';
 import wsAdapter from '@nostrwatch/publisher-nostrtools';

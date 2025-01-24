@@ -4,14 +4,11 @@
   "license": "MIT",
   "type": "module",
   "entry": "src/index.ts",
-  "main": "dist/server/cjs/index.cjs.js",
-  "module": "dist/server/index.js",
-  "types": "./dist/web/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/server/types/index.d.ts",
       "import": "./dist/server/index.js",
-      "require": "./dist/server/cjs/index.cjs.js",
-      "types": "./dist/server/types/index.d.ts"
+      "require": "./dist/server/cjs/index.cjs.js"
     },
     "./web": {
       "types": "./dist/web/index.d.ts",

@@ -10,6 +10,8 @@
 	import { route66 } from "$lib/stores";
 	import { Value } from "svelte-radix";
 	import { shouldSync as _shouldSync } from "$lib/stores/app";
+	import { eventsStoreMemoryRelay } from "$lib/stores/memory-relays/memory-relay-events";
+	import { calculateSize, type ObjectSizeType } from "$lib/utils/cache";
 
 
     const debug: Writable<Map<string, any>> = writable(new Map());
@@ -104,10 +106,12 @@
     const debugStores = () => {
         const eventKeys = Array.from($events?.keys?.()) ?? []; 
         const eventsArray = Array.from(eventKeys);
+        const measure: ObjectSizeType = calculateSize($events)
 
         addDebug('store:events', eventKeys?.length || 0);
+        addDebug('store:events:size', `${measure.size.toFixed(2)}${measure.unit}`);
 
-        [0,1,3,10002,10166,30166].forEach( kind => {
+        [0,1,3,10002,10166, 30166].forEach( kind => {
             addDebug(`store:events:${kind}`, eventsArray.filter( (key: string) => { 
                 const parts = key.split(':');
                 return parts[1] === kind.toString();

@@ -103,3 +103,60 @@ export const getLocalStorageUsage = (maxSizeMB: number = 5): LocalStorageUsage =
         percentageUsed,
     };
 }
+
+export type ObjectSizeType = { size: number, unit: 'bytes' | 'KB' | 'MB' }
+
+export const calculateSize = (input: any): ObjectSizeType => {
+    function getSizeInBytes(value: any): number {
+        const objectList = new Set();
+        const stack = [value];
+        let bytes = 0;
+
+        while (stack.length) {
+            const currentValue = stack.pop();
+
+            if (currentValue === null || currentValue === undefined) {
+                bytes += 0;
+            } else if (typeof currentValue === 'boolean') {
+                bytes += 4;
+            } else if (typeof currentValue === 'string') {
+                bytes += currentValue.length * 2;
+            } else if (typeof currentValue === 'number') {
+                bytes += 8;
+            } else if (typeof currentValue === 'object') {
+                if (!objectList.has(currentValue)) {
+                    objectList.add(currentValue);
+                    for (const key in currentValue) {
+                        if (currentValue.hasOwnProperty(key)) {
+                            bytes += key.length * 2;
+                            stack.push(currentValue[key]);
+                        }
+                    }
+
+                    if (currentValue instanceof Map) {
+                        currentValue.forEach((v, k) => {
+                            stack.push(k);
+                            stack.push(v);
+                        });
+                    } else if (currentValue instanceof Set) {
+                        currentValue.forEach(v => stack.push(v));
+                    } else if (Array.isArray(currentValue)) {
+                        stack.push(...currentValue);
+                    }
+                }
+            }
+        }
+
+        return bytes;
+    }
+
+    const bytes = getSizeInBytes(input);
+
+    if (bytes >= 1024 * 1024) {
+        return { size: bytes / (1024 * 1024), unit: 'MB' };
+    } else if (bytes >= 1024) {
+        return { size: bytes / 1024, unit: 'KB' };
+    } else {
+        return { size: bytes, unit: 'bytes' };
+    }
+}

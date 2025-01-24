@@ -6,8 +6,8 @@ import { getCountryName } from '$lib/stores/iso3166';
 export const columnsDisable: DataKeys = ['id']
 export const filtersDisable: DataKeys = []
 
-export const columnsShow: DataKeys = ['geocode', 'count', 'percent']
-export const filtersShow: DataKeys = []
+export const columnsShow: DataKeys = ['geocode', 'count', 'percent', 'softwaresCount']
+export const filtersShow: DataKeys = ['count', 'softwaresCount', 'softwares']
 
 export const humanReadableNames: NameFormatter = {};
 
@@ -43,6 +43,11 @@ export const tableFormatters: Formatters = {
 
 export const filterFormatters: Formatters = {
     name: (software: string) => {
+        if(typeof software !== 'string') return '-';
+        software = makeSoftwareReadable(software);
+        return truncateWithEllipsis(software, 33);
+    },
+    softwares: (software: string) => {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
         return truncateWithEllipsis(software, 33);

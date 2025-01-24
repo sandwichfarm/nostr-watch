@@ -1,11 +1,12 @@
 import type { DataKeys, Formatters, NameFormatter } from '$lib/components/lists/table/DataTableTypes';
 import { makeSoftwareReadable } from '$lib/synonyms/software';
 
-export const columnsDisable: DataKeys = []
-export const filtersDisable: DataKeys = []
 
 export const columnsShow: DataKeys = ['name', 'about', 'reference', 'relaysCount', 'softwaresCount', 'ispsCount']
-export const filtersShow: DataKeys = []
+export const filtersShow: DataKeys = ['softwares', 'isps']
+
+export const columnsDisable: DataKeys = []
+export const filtersDisable: DataKeys = []
 
 export const humanReadableNames: NameFormatter = {};
 
@@ -56,7 +57,12 @@ export const filterFormatters: Formatters = {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
         return truncateWithEllipsis(software, 33);
-    }
+    },
+    softwares: (software: string) => {
+        if(typeof software !== 'string') return '-';
+        software = makeSoftwareReadable(software);
+        return truncateWithEllipsis(software, 33);
+    },
 }
 
 export const tableRowStyler = (row: Record<string, any>) => {

@@ -201,7 +201,7 @@
     }
 
 </script>
-<!-- <pre>{JSON.stringify($tableData, null, 2)}</pre> -->
+<!-- <pre>{JSON.stringify($config.filtersShow, null, 2)}</pre> -->
 
 <!-- **UI Layout with Resizable Panes** -->
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">

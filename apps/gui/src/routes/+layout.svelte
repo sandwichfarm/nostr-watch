@@ -8,7 +8,7 @@
   import { doBootstrap } from '$lib/stores/routines.js';
   
   import Header from '$lib/components/layout/Header.svelte';
-  import { instance, bootstrap, seedChecksFromCache } from '$lib/utils/lifecycle';
+  import { instance, bootstrap, seedFromCache } from '$lib/utils/lifecycle';
   import { writable, type Writable, get } from 'svelte/store';
   import { navigating } from '$app/stores';
   import type Route66 from '@nostrwatch/route66';
@@ -77,7 +77,7 @@
     setTabState('leader');
     try {
       await boot(); 
-      seedChecksFromCache()
+      seedFromCache()
       //console.log('Leader tab: DB initialized.');
     } catch (error) {
       console.error('[Lifecycle] Error in onLeaderAcquired:', error);
@@ -128,7 +128,7 @@
     if (!get(doBootstrap)) {
       try {
         (await instance()).monitorService.ensureMonitorsActive();
-        await seedChecksFromCache();
+        await seedFromCache();
         appState.set('running');
         //console.log('Data seeded from cache.');
       } catch (error) {

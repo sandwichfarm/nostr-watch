@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 
-import { verifyEvent, finalizeEvent, SimplePool, Event } from "nostr-tools";
+import { verifyEvent } from "nostr-tools";
 import { Publisher, Kind10166, Kind0, Kind10002 } from "@nostrwatch/publisher";
 import Logger from "@nostrwatch/logger";
 const log = new Logger('@nostrwatch/announce')
@@ -15,7 +15,7 @@ interface AnnounceMonitorOptions {
   geo?: object;
   kinds?: number[];
   timeouts?: object;
-  counts?: number[];
+  networks?: string[];
   checks?: string[];
   owner?: string;
   frequency?: string;
@@ -39,12 +39,11 @@ export class AnnounceMonitor {
   }
 
   setup(options: AnnounceMonitorOptions): void {
-    // Destructuring options with default values
     const {
       geo = {},
       kinds = [],
       timeouts = {},
-      counts = [],
+      networks = {},
       checks = [],
       owner = '',
       frequency = '',
@@ -57,21 +56,20 @@ export class AnnounceMonitor {
     if (!(geo instanceof Object)) throw new Error("geo must be object");
     if (!(timeouts instanceof Object)) throw new Error("timeouts must be object");
     if (!(kinds instanceof Array)) throw new Error("kinds must be array");
-    if (!(counts instanceof Array)) throw new Error("counts must be array");
     if (!(checks instanceof Array)) throw new Error("checks must be array");
+    if (!(networks instanceof Array)) throw new Error("checks must be array");
     if (typeof owner !== "string") throw new Error("owner must be string");
     if (typeof frequency !== "string") throw new Error("frequency must be string");
 
     if( !(relays instanceof Array) ) throw new Error("relays must be an array");
     if( !(profile instanceof Object) ) throw new Error("profile must be an object");
 
-    // Assigning the validated options to class properties
     this.monReg.geo = geo;
     this.monReg.kinds = kinds;
     this.monReg.timeouts = timeouts;
-    this.monReg.counts = counts;
     this.monReg.owner = owner;
     this.monReg.frequency = frequency;
+    this.monReg.networks = networks;
     this.monReg.checks = AnnounceMonitor.formatChecks(checks)
 
     this.monRelays = relays;
@@ -80,7 +78,7 @@ export class AnnounceMonitor {
 
   static formatChecks(checks: Array<string>): Array<string> {
     if(checks.includes('all'))
-      return ['open', 'read', 'write', 'info', 'dns', 'geo', 'ssl']
+      return ['websocket', 'ws', 'info', 'dns', 'geo', 'ssl']
     return checks
   }
 

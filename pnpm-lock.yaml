@@ -321,7 +321,7 @@ importers:
         version: link:../../libraries/nocap/adapters/default/ZEveryAdapterDefault
       '@nostrwatch/nocap-route66':
         specifier: workspace:^
-        version: link:../../libraries/nocap-nip66
+        version: link:../../libraries/nocap-route66
       '@nostrwatch/nwcache':
         specifier: workspace:^
         version: link:../../internal/nwcache
@@ -1327,7 +1327,7 @@ importers:
         specifier: 0.2.2
         version: 0.2.2(vitest@0.34.6)
 
-  libraries/nocap-nip66:
+  libraries/nocap-route66:
     dependencies:
       '@nostrwatch/logger':
         specifier: '*'
@@ -1363,6 +1363,9 @@ importers:
       ts-loader:
         specifier: ^9.0.0
         version: 9.5.1(typescript@5.7.2)(webpack@5.96.1)
+      tsc-alias:
+        specifier: ^1.8.10
+        version: 1.8.10
       typescript:
         specifier: ^5.0.0
         version: 5.7.2
@@ -15319,7 +15322,7 @@ snapshots:
 
   '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4)(webpack@5.96.1)':
     dependencies:
-      webpack: 5.96.1(esbuild@0.24.2)(webpack-cli@5.1.4)
+      webpack: 5.96.1(esbuild@0.24.0)(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack@5.96.1)
 
   '@webpack-cli/info@2.0.2(webpack-cli@5.1.4)(webpack@5.93.0)':
@@ -15329,7 +15332,7 @@ snapshots:
 
   '@webpack-cli/info@2.0.2(webpack-cli@5.1.4)(webpack@5.96.1)':
     dependencies:
-      webpack: 5.96.1(esbuild@0.24.2)(webpack-cli@5.1.4)
+      webpack: 5.96.1(esbuild@0.24.0)(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack@5.96.1)
 
   '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4)(webpack@5.93.0)':
@@ -15339,7 +15342,7 @@ snapshots:
 
   '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4)(webpack@5.96.1)':
     dependencies:
-      webpack: 5.96.1(esbuild@0.24.2)(webpack-cli@5.1.4)
+      webpack: 5.96.1(esbuild@0.24.0)(webpack-cli@5.1.4)
       webpack-cli: 5.1.4(webpack@5.96.1)
 
   '@xtuc/ieee754@1.2.0': {}
@@ -21522,7 +21525,7 @@ snapshots:
       semver: 7.6.3
       source-map: 0.7.4
       typescript: 5.7.2
-      webpack: 5.96.1(esbuild@0.24.2)(webpack-cli@5.1.4)
+      webpack: 5.96.1(esbuild@0.24.0)(webpack-cli@5.1.4)
 
   ts-node@10.9.2(@swc/core@1.9.3(@swc/helpers@0.5.15))(@types/node@16.18.123)(typescript@4.9.4):
     dependencies:
@@ -22343,7 +22346,7 @@ snapshots:
       import-local: 3.2.0
       interpret: 3.1.1
       rechoir: 0.8.0
-      webpack: 5.96.1(esbuild@0.24.2)(webpack-cli@5.1.4)
+      webpack: 5.96.1(esbuild@0.24.0)(webpack-cli@5.1.4)
       webpack-merge: 5.10.0
 
   webpack-merge@5.10.0:

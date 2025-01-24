@@ -13,6 +13,7 @@
     import { writable, type Writable } from 'svelte/store';
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
+	import { stringify } from 'json-source-map';
 
 
     const tableKey: string = 'monitors'
@@ -49,6 +50,7 @@
     $: warnHasLessThanRecommendedMonitors = countEnabledMonitors < 3;
     $: warnHasMoreThanRecommendedMonitors = countEnabledMonitors > 8;
 </script>
+<!-- <pre>{JSON.stringify($monitorsSorted.map( monitor => monitor), null, 2)}</pre> -->
 {#if $ready}
     {#if $monitorsSorted.length}
         {#if criticalHasNoMonitorsEnabled}
@@ -87,6 +89,6 @@
         <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {tableKey} />
     {/if}
 
-<Stats />
+<!-- <Stats /> -->
 
 {/if}

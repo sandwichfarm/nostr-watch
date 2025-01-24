@@ -9,7 +9,7 @@ import { NocapdQueue, BullMQ } from '@nostrwatch/controlflow'
 import Logger from '@nostrwatch/logger'
 import relaycache, { Schemas } from '@nostrwatch/nwcache'
 import { bootstrap } from '@nostrwatch/seed'
-import { parseRelayNetwork, delay, loadConfig, RedisConnectionDetails, parseUrl } from "@nostrwatch/utils"
+import { delay, loadConfig, RedisConnectionDetails, parseUrl } from "@nostrwatch/utils"
 
 import { NWWorker } from './classes/Worker.js'
 import { ShortBus } from './classes/ShortBus.js'
@@ -108,11 +108,13 @@ const maybeAnnounce = async () => {
     "nocapd.checks.options.timeout": "timeouts",
     "nocapd.checks.options.expires": "frequency",
     "nocapd.checks.enabled": "checks",
+    "nocapd.networks": "networks",
     "monitor.geo": "geo",
     "monitor.owner": "owner",
     "publisher.to_relays": "relays",
     "monitor.info": "profile"
   }
+
   const conf = mapper(config, map)
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf, process.env.DAEMON_PUBKEY)

@@ -1,4 +1,3 @@
-// src/Publisher.ts
 import Logger from '@nostrwatch/logger';
 import { isClassInstance } from '@nostrwatch/utils';
 
@@ -24,7 +23,12 @@ export class Publisher {
         new config.wsAdapter(relays, config?.wsConf || {})
       });
     } else {
-      this.ws = isClassInstance(config?.wsAdapter) ? config?.wsAdapter : new config.wsAdapter(relays, config?.wsConf || {});
+      try {
+        this.ws = isClassInstance(config?.wsAdapter) ? config?.wsAdapter : new config.wsAdapter(relays, config?.wsConf || {});
+      }
+      catch(e){
+        this.logger.error(`Publisher::constructor(): Error: ${e}`);
+      }
     }
   }
 

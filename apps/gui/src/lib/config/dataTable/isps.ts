@@ -6,8 +6,8 @@ import { getCountryName } from '$lib/stores/iso3166';
 export const columnsDisable: DataKeys = ['id']
 export const filtersDisable: DataKeys = []
 
-export const columnsShow: DataKeys = ['prettyName', 'asname', 'as', 'count', 'percent']
-export const filtersShow: DataKeys = []
+export const columnsShow: DataKeys = ['prettyName', 'asname', 'as', 'count', 'percent', 'softwaresCount']
+export const filtersShow: DataKeys = ['softwares']
 
 export const humanReadableNames: NameFormatter = {};
 

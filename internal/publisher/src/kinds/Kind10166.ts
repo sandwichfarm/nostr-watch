@@ -15,9 +15,8 @@ interface Timeouts {
 
 interface Kind10166Data {
   frequency?: string;
-  // owner?: string; // Uncomment if needed
+  networks?: string[];
   kinds?: number[];
-  counts?: number[];
   checks?: string[];
   timeouts?: Timeouts;
   geo?: GeoData;
@@ -71,9 +70,9 @@ export class Kind10166 extends Event {
       });
     }
 
-    if (data.counts) {
-      data.counts.map(count => count.toString()).forEach(countStr => {
-        tags.push(['n', countStr]);
+    if(data.networks && Array.isArray(data.networks)) {
+      data.networks.forEach(network => {
+        tags.push(['n', network]);
       });
     }
 
@@ -94,6 +93,8 @@ export class Kind10166 extends Event {
       const geoTags = ngeotags(data.geo, geoOpts);
       tags = [...tags, ...geoTags];
     }
+
+    
 
     return tags;
   }

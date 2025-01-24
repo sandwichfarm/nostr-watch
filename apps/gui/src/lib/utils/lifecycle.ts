@@ -151,11 +151,9 @@ export const bootstrapMonitorChecks = async () => {
 export const bootstrap = async () => {
     //console.log('bootstrap')
     if(!$route66){
-        //console.log('bootstrap:no instance')
         $route66 = await instance();
     }
     await $route66.ready();
-    //console.log('bootstrap:ready')
     bindBootstrapEmitters();
     const onevents = (events: IEvent[]) => {
         for(const event of events){
@@ -339,6 +337,7 @@ export const seedMetaFromCache = async () => {
     if(!$route66) {
         $route66 = await instance();
     }
+    await $route66.ready();
     if(!$route66) return;
     if(get(isSeeded)) return;
     if(!hasBeenBoostrapped()) return;

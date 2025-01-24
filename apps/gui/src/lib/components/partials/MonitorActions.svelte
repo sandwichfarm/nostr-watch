@@ -30,9 +30,9 @@
 
     onMount(() => {
         toggleEnableMonitor = async () => {
+            disabled.set(true);
             const { publishEventsToMemoryRelay } = await import('$lib/stores/events-helpers.js');
             const resumer = await pauseLiveSync();
-            disabled.set(true);
             if(monitor?.enabled) {
                 monitor.disable();
                 ([...$eventsArray] as IEvent[]).filter( event => event.pubkey === monitor.pubkey).forEach( event => {
@@ -40,9 +40,8 @@
                     $events.delete(key)
                 });
                 events.set($events);
-                disabled.set(false);
                 await resumer();
-                
+                disabled.set(false);
             } 
             else {
                 monitor.enable()
@@ -62,8 +61,8 @@
                     publishEventsToMemoryRelay(events)
                 }
                 await $route66?.services?.monitors?.sync(options, { onevents })
-                disabled.set(false);
                 await resumer();
+                disabled.set(false);
 
             }
             $route66?.services?.monitors?.manager?.updateMonitor?.(monitor)

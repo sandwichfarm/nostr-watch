@@ -64,7 +64,7 @@
 
 <main> 
 	{#if $ready}
-	<Stats />
+	<!-- <Stats /> -->
 	<DataTable data={relayCheckAggregates} {config} {tableKey} />
 	{/if}
 </main>

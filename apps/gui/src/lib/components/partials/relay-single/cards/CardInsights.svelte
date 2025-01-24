@@ -100,10 +100,10 @@
                     {#if usagePercentageSoftware || usageCountSoftware}
                         {#if usageCountSoftware}
                             {#if usageCountSoftware === 1}
-                                only this relay uses this <span class="value">{readableSoftware}</span>
+                                only this relay uses this <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{readableSoftware}</span>
                             {:else}
                                 {#if $bubbleType == 'percent'}of {/if}
-                                relays use <span class="value">{readableSoftware}</span>
+                                relays use <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{readableSoftware}</span>
                                 <!-- {#if usagePercentageSoftware}
                                     or <span class="value">{ usagePercentageSoftware }%</span>
                                 {/if} -->
@@ -129,10 +129,10 @@
                         {#if usagePercentageVersion || usageCountVersion}
                             {#if usageCountVersion}
                                 {#if usageCountVersion === 1}
-                                    relay (this one) uses <span class="value">{readableSoftware}</span> version <span class="value">{version}</span>
+                                    relay (this one) uses <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{readableSoftware}</span> version <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{version}</span>
                                 {:else}
                                     {#if $bubbleType == 'percent'}of {/if}
-                                    <span class="value">{readableSoftware}</span> relays are on version <span class="value">{version}</span>
+                                    <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{readableSoftware}</span> relays are on version <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{version}</span>
                                     <!-- {#if usagePercentageVersion}
                                         or <span class="value">{ usagePercentageVersion }%</span>
                                     {/if} -->
@@ -156,10 +156,10 @@
                 <div class="flex-grow">
                     {#if usageCountGeocode}
                     {#if usageCountGeocode === 1}
-                        relay (this one) uses <span class="value">{geocode}</span>
+                        relay (this one) uses <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{geocode}</span>
                     {:else}
                         {#if $bubbleType == 'percent'}of {/if}
-                        relays are located in <span class="value">{geocode}</span>
+                        relays are located in <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{geocode}</span>
                         <!-- {#if usagePercentageGeocode}
                             or <span class="value">{ usagePercentageGeocode }%</span>
                         {/if} -->
@@ -182,10 +182,10 @@
                     {#if usagePercentageIsp || usageCountIsp}
                         {#if usageCountIsp}
                             {#if usageCountIsp === 1}
-                                This is the only known relay that uses the ISP <span class="value">{isp}</span>
+                                This is the only known relay that uses the ISP <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{isp}</span>
                             {:else}
                                 {#if $bubbleType == 'percent'}of {/if}
-                                relays have <span class="value">{isp}</span> as their ISP 
+                                relays have <span class="value text-black dark:text-white bg-black/5 dark:bg-white/5">{isp}</span> as their ISP 
                                 <!-- {#if usagePercentageIsp}
                                     or <span class="value">{ usagePercentageIsp }%</span>
                                 {/if} -->
@@ -207,12 +207,12 @@
 </Card.Root>
 {/if}
 
-<style>
+<style lang="postcss">
     #relay-insights > li {
         @apply pb-6 leading-10;
     }
     
     #relay-insights > li span.value {
-        @apply text-black dark:text-white font-bold inline py-1 px-2 bg-black/5 dark:bg-white/5 rounded-sm;
+        @apply font-bold inline py-1 px-2 rounded-sm;
     }
     </style>

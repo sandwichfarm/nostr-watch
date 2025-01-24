@@ -288,5 +288,9 @@ export default {
     columnsShow,
     filtersShow,
     availableColumnKeys,
-    availableFilterKeys
+    availableFilterKeys,
+    sortState: {
+        columnId: 'lastSeen',
+        direction: 'desc'
+    },
 }

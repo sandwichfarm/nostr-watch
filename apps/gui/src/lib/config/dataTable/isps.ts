@@ -40,6 +40,9 @@ export const tableFormatters: Formatters = {
     // }
 }
 
+export const availableColumnKeys: string[] = [
+    ...(columnsDisable.filter(key => !columnsShow.includes(key))),
+]
 
 export const filterFormatters: Formatters = {
     name: (software: string) => {
@@ -66,5 +69,9 @@ export default {
     filtersShow,
     initialSort: 'count',
     initialSortDirection: 'desc',
-    tableRowStyler
+    tableRowStyler,
+    sortState: {
+        columnId: 'count',
+        direction: 'desc'
+    },
 }

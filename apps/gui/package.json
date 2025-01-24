@@ -1,7 +1,7 @@
 {
 	"name": "@nostrwatch/gui",
 	"description": "",
-	"version": "0.6.11",
+	"version": "0.6.13",
 	"license": "MIT",
 	"keywords": [
 		"svelte",

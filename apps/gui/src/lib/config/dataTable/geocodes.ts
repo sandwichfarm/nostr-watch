@@ -69,7 +69,9 @@ export default {
     filtersDisable,
     columnsShow,
     filtersShow,
-    initialSort: 'count',
-    initialSortDirection: 'desc',
+    sortState: {
+        columnId: 'count',
+        direction: 'desc'
+    },
     tableRowStyler
 }

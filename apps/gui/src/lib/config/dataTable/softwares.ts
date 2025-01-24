@@ -50,6 +50,8 @@ export default {
     filtersDisable,
     columnsShow,
     filtersShow,
-    initialSort: 'totalDeployed',
-    initialSortDirection: 'desc'
+    sortState: {
+        columnId: 'totalDeployed',
+        direction: 'desc'
+    }
 }

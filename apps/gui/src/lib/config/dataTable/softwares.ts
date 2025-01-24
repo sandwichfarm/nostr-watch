@@ -4,10 +4,14 @@ import { makeSoftwareReadable } from '$lib/synonyms/software';
 export const columnsDisable: DataKeys = []
 export const filtersDisable: DataKeys = []
 
-export const columnsShow: DataKeys = ['name', 'versionsNum', 'marketShare', 'totalDeployed']
+export const columnsShow: DataKeys = ['name', 'totalDeployed', 'versionsNum', 'marketShare']
 export const filtersShow: DataKeys = ['version']
 
-export const humanReadableNames: NameFormatter = {};
+export const humanReadableNames: NameFormatter = {
+    totalDeployed: 'Total Relays',
+    versionsNum: 'Versions',
+    marketShare: 'Market Share'
+};
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
     if (text.length > maxLength) {
@@ -29,7 +33,7 @@ export const tableFormatters: Formatters = {
         return `<span class="inline-block m-auto text-sm py-2 px-3 rounded-full bg-white/10">${versionsNum}</span>`;
     },
     marketShare: (marketShare: number) => {
-        return `<span class="text-lg">${marketShare.toFixed(1)}%</span>`;
+        return `<span class="text-md">${marketShare.toFixed(1)}%</span>`;
     }   
 }
 

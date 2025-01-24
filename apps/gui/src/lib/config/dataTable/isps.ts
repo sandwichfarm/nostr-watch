@@ -6,10 +6,13 @@ import { getCountryName } from '$lib/stores/iso3166';
 export const columnsDisable: DataKeys = ['id']
 export const filtersDisable: DataKeys = []
 
-export const columnsShow: DataKeys = ['prettyName', 'asname', 'as', 'count', 'percent', 'softwaresCount']
+export const columnsShow: DataKeys = ['prettyName', 'count', 'percent', 'softwaresCount']
 export const filtersShow: DataKeys = ['softwares']
 
-export const humanReadableNames: NameFormatter = {};
+export const humanReadableNames: NameFormatter = {
+    count: 'Total Relays',
+    percent: 'Market Share'
+};
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
     if (text.length > maxLength) {
@@ -19,6 +22,17 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 }
 
 export const tableFormatters: Formatters = {
+    prettyName: (prettyName: string, row: any) => {
+        if(typeof prettyName !== 'string') return '-';
+        prettyName = `<span class="my-1 text-xl bg-white/10 py-1 px-2 rounded-sm">${prettyName}</span>`;
+        const icon = row.icon? 
+            `<img src="${row.icon}" alt="${prettyName}" class="w-6 h-6 inline-block mr-2">` 
+            :'<span class="w-6 h-6 inline-block mr-2"></span>';
+        return `${icon}${prettyName}`;
+    },
+    percent: (percent: number) => {
+        return `<span class="text-md py-4 px-2 rounded-full inline-block text-center bg-white/10">${percent}%</span>`
+    }
     // geocode: (geocode: string, row: any) => {
     //     let emoji
     //     let value

@@ -18,12 +18,8 @@
         <a href="/">home</a>
         <a href="/relays">relays</a>
         <a href="/operators">operators</a>
-        <a href="/software">software</a>
-        <a href="/geography">geo</a>
-        <a href="/isps">isps</a>
         <a href="/monitors">monitors</a>
         <a href="/preferences">preferences</a>
-        
     </nav>
     {/if}
     {#if !isHomepage && (loadedEnough || !$doBootstrap) && !$unsupported}

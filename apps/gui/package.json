@@ -1,7 +1,7 @@
 {
 	"name": "@nostrwatch/gui",
 	"description": "",
-	"version": "0.6.21",
+	"version": "0.6.22",
 	"license": "MIT",
 	"keywords": [
 		"svelte",
@@ -16,7 +16,7 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/careswitch/svelte-data-table.git"
+		"url": "git+https://github.com/sandwichfarm/nostr-watch"
 	},
 	"scripts": {
 		"dev": "vite dev",
@@ -96,7 +96,6 @@
 	"types": "./dist/index.d.ts",
 	"type": "module",
 	"dependencies": {
-		"@careswitch/svelte-data-table": "^0.6.3",
 		"@nostrwatch/auditor": "workspace:^",
 		"@nostrwatch/memory-relay": "workspace:^",
 		"@nostrwatch/nocap": "workspace:^",

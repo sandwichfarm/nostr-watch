@@ -1,0 +1,69 @@
+{
+  "name": "@nostrwatch/nocap-route66",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "A library for transforming NOCAP output into Nostr events of kind 30166",
+  "entry": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/node/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./web": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./umd": {
+      "import": "./dist/umd/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias && webpack --config webpack.config.js",
+    "build:browser": "webpack --config webpack.config.js --env target=web",
+    "build:node": "webpack --config webpack.config.js --env target=node",
+    "test": "vitest",
+    "lint": "eslint . --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/nocapd-route66.git"
+  },
+  "keywords": [
+    "nostr",
+    "route66",
+    "nocap",
+    "event",
+    "library"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@nostrwatch/logger": "*",
+    "@nostrwatch/nocap": "workspace:^",
+    "nostr-geotags": "0.7.1",
+    "nostr-tools": "2.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.4.2",
+    "rimraf": "^5.0.0",
+    "ts-loader": "^9.0.0",
+    "tsc-alias": "^1.8.10",
+    "typescript": "^5.0.0",
+    "vitest": "^0.34.1",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

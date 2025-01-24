@@ -2,7 +2,6 @@
 	import { onMount } from 'svelte';
   import type { Writable } from 'svelte/store';
 
-  import { resultsPerPage as value } from '$lib/stores/datatable-settings';
 	import type { DataTableConfig } from '../lists/table/DataTableTypes';
 
   export let config: Writable<DataTableConfig>;
@@ -40,8 +39,9 @@
 
   const adjustValue = (direction: number) => {
     if(!config) return;
-    config.update((currentConfig: DataTableConfig) => {
-      Math.max(minValue, currentConfig.pageSize + direction * incrementStep)
+    config.update( (currentConfig: DataTableConfig ) => {
+      currentConfig.pageSize = Math.max(minValue, currentConfig.pageSize + direction * incrementStep);
+      return currentConfig
     });
   };
 
@@ -70,10 +70,27 @@
 
   const handleInput = (e: Event) => {
     const inputValue = parseInt((e.target as HTMLInputElement).value, 10);
-    value.set(isNaN(inputValue) ? minValue : Math.max(minValue, inputValue));
+    config.update( currentConfig => {
+      currentConfig.pageSize = isNaN(inputValue) ? minValue : Math.max(minValue, inputValue)
+      return currentConfig;
+    });
+  
   };
 
   onMount(() => {
+    if($config && !$config?.pageSize) {
+        config.update( (currentConfig: DataTableConfig) => {
+            currentConfig.pageSize = 50;
+            return currentConfig;
+        });
+    } else {
+      if($config && $config.pageSize < minValue) {
+        config.update( (currentConfig: DataTableConfig) => {
+            currentConfig.pageSize = isNaN(currentConfig.pageSize) ? minValue : Math.max(minValue, currentConfig.pageSize)
+            return currentConfig;
+        });
+      }
+    }
     // Add listeners to the input element
     inputElement.addEventListener('keydown', handleKeydown);
     inputElement.addEventListener('keyup', handleKeyup);
@@ -83,43 +100,47 @@
       inputElement.removeEventListener('keyup', handleKeyup);
     };
   });
+
+  $: pageSize = $config?.pageSize || 50;
 </script>
 
-    <input
-        type="number"
-        bind:value={$value}
-        min={minValue}
-        on:input={handleInput}
-        bind:this={inputElement}
-        />
-  
-  <style>
-    input {
-      background: none;
-      text-align: center;
-      padding: 0.2rem;
-      width: 3rem;
-      position:relative;
-      top: -0.2rem;
-      display: inline-block;
-      outline: none; 
-      border:none;
-    }
-    input:focus {
-      background:rgba(255,255,255,0.05);
-      outline: none; 
-      border:none;
-    }
+<!-- <pre>{JSON.stringify($config, null, 2)}</pre> -->
 
-    input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-      margin: 0;
-    }
+  <input
+      type="number"
+      bind:value={pageSize}
+      min={minValue}
+      on:input={handleInput}
+      bind:this={inputElement}
+      />
 
-    /* Firefox */
-    input[type=number] {
-      -moz-appearance: textfield;
-    }
-  </style>
-  
+
+<style>
+  input {
+    background: none;
+    text-align: center;
+    padding: 0.2rem;
+    width: 3rem;
+    position:relative;
+    top: -0.2rem;
+    display: inline-block;
+    outline: none; 
+    border:none;
+  }
+  input:focus {
+    background:rgba(255,255,255,0.05);
+    outline: none; 
+    border:none;
+  }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Firefox */
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+</style>

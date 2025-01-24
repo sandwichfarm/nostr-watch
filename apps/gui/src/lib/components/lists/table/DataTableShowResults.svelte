@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
   import type { Writable } from 'svelte/store';
 
-	import type { DataTableConfig } from '../lists/table/DataTableTypes';
+	import type { DataTableConfig } from './DataTableTypes';
 
   export let config: Writable<DataTableConfig>;
   

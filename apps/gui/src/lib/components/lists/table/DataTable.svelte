@@ -1,11 +1,11 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { get, writable, derived, type Writable, type Readable } from 'svelte/store';
-    import { DataTable } from '@careswitch/svelte-data-table';
+    import { DataTable } from '$lib/components/@Careswitch/svelte-data-table';
     import * as Resizable from '$lib/components/ui/resizable';
     import Filters from './Filters.svelte'; 
-    import DataTableShowResults from '$lib/components/partials/DataTableShowResults.svelte';
-    import DataTablePaginator from '$lib/components/partials/DataTablePaginator.svelte';
+    import DataTableShowResults from './DataTableShowResults.svelte';
+    import DataTablePaginator from './DataTablePaginator.svelte';
     import { applyFilters, createRelayFilters, type ConsoleFilter } from './filter-dom.js';
     import { Input } from '$lib/components/ui/input/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
@@ -38,13 +38,10 @@
     const tableData = derived(
         [data, config],
         ([ $data, $config ]) => {
-            // //console.log('data', $data.length);
 
             if (!$data || $data.length === 0) {
                 return { data: [], columns: [] };
             }
-
-            // //console.log('config.columnsShow', $config.columnsShow.length);
 
             if($config.columnsShow.length === 0) {
                 return { data: [], columns: [] };
@@ -55,8 +52,6 @@
                 key: key,
                 name: $config.humanReadableNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
-
-            // //console.log('columns', columns.length);
 
             return { data: $data, columns };
         }
@@ -110,7 +105,7 @@
     }
 
     const createTable = (force: boolean = false) => {
-        //console.log('Creating DataTable instance...');
+        console.log('Creating DataTable instance...');
         const tableInstanceConfig: any = {
             pageSize: $config.pageSize,
             columns: $filteredTableData.columns,
@@ -177,7 +172,7 @@
         }
         return () => {
             unsubConfig();
-            unsubTableConfig();
+            // unsubTableConfig();
             if (tableInstance) {
                 tableInstance = null;
             }

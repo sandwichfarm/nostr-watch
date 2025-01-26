@@ -135,8 +135,8 @@ export class DataTable<T> {
 				const aVal = this.#getValue(a, columnId);
 				const bVal = this.#getValue(b, columnId);
 
-				if (aVal === undefined || aVal === null) return direction === 'asc' ? 1 : -1;
-				if (bVal === undefined || bVal === null) return direction === 'asc' ? -1 : 1;
+				if (aVal === undefined || aVal === null || aVal < 0 || aVal == '') return direction === 'asc' ? 1 : -1;
+				if (bVal === undefined || bVal === null || bVal < 0 || aVal == '') return direction === 'asc' ? -1 : 1;
 
 				if (colDef && colDef.sorter) {
 					return direction === 'asc'

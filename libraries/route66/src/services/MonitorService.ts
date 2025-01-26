@@ -4,7 +4,7 @@ import { IAdaptersArgument } from '@base/interfaces/IAdaptersArgument';
 import { Monitor } from '@base/models';
 import { Filter } from 'nostr-tools';
 import { MonitorManager } from '../managers/MonitorManager';
-import { FetchOptions, Service } from './Service';
+import { Service } from './Service';
 import { StateManager } from '@base/managers/StateManager';
 import { MonitorRegistration } from '@base/models/MonitorRegistration';
 
@@ -87,13 +87,13 @@ export class MonitorService extends Service {
     this.manager.loadMonitors(monitors);
   }
 
-  async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+  async fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     const { filters, relays, options } = args;
     const message: WebsocketRequestBody = { filters, relays, options };
     return this._fetch(message, callbacks);
   }
 
-  async fetchOperatorRelaysNotOnline(pubkey: string, args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+  async fetchOperatorRelaysNotOnline(pubkey: string, args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
     const filters: Filter[] = []
     this.activeMonitors.forEach((monitor) => {
       filters.push({...monitor.checkFilterNotOnline, "#p": [pubkey]})
@@ -108,7 +108,7 @@ export class MonitorService extends Service {
     return this.subscribe({ filters, relays, options }, callbacks);
   }
 
-  async fetchOperatorRelaysDead(pubkey: string, args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
+  async fetchOperatorRelaysDead(pubkey: string, args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean | undefined> {
     const filters: Filter[] = []
     this.activeMonitors.forEach((monitor) => {
       filters.push({...monitor.checkFilterDead, "#p": [pubkey]})
@@ -123,7 +123,7 @@ export class MonitorService extends Service {
     return this.fetch({ filters, relays, options }, callbacks);
   }
   
-  async sync(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+  async sync(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     console.log('sync')
     let index = 0
     let checkCounts = new Map();
@@ -151,7 +151,6 @@ export class MonitorService extends Service {
       index++;
       callbacks?.oneose?.();
     }
-    args.sync = true;
     console.log('sync: args', args)
     const results = await this._fetch(args, { onevents, oneose, onevent });
     this.updateCheckpoints(args?.filters || [], checkCounts);
@@ -393,7 +392,7 @@ export class MonitorService extends Service {
       options = {...defaultOptions, ...options}
     }
     console.log('syncMonitorsChecks: options', options)
-    const result: IEvent[] | boolean | undefined = await this.sync( { relays, filters, options: options as WebsocketAdapterOptions }, { onevent, onevents } );
+    const result: IEvent[] | boolean | undefined = await this.fetch( { relays, filters, options: options as WebsocketAdapterOptions }, { onevent, onevents } );
     // StateManager.emit('bootstrap:checks:complete')
     return result;
   }
@@ -444,13 +443,7 @@ export class MonitorService extends Service {
         case 'websocket':
           return await this.fetchFromWebsocket({ filters, relays, options });
         default: 
-          if(sync) {
-            return this.fetch({ filters, relays, options }) as Promise<IEvent[]>;
-          }
-          else {
-            return this.sync({ filters, relays, options }) as Promise<IEvent[]>;
-          }
-          
+          return this.fetch({ filters, relays, options }) as Promise<IEvent[]>;
       }
   }
 

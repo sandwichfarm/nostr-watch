@@ -52,6 +52,13 @@ export class User {
         this.#ready = true;
     }
 
+    get events(): IEvent[] {
+        const events: IEvent[] = [];
+        if(this.#profile) events.push(this.#profile);
+        if(this.#relays) events.push(this.#relays);
+        return events;
+    }
+
     get keys(): (keyof this)[] {
         return [
             'pubkey',

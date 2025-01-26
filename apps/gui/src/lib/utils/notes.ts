@@ -4,7 +4,7 @@ import { writable, type Writable } from 'svelte/store';
 import { nip19 } from "nostr-tools";
 import { get } from 'svelte/store';
 import type { UserService } from "$lib/services/UserService";
-import { userService } from '$lib/stores/user.js';
+import { userService } from '$lib/stores/services.js';
 
 type SyncTransform = (input: string) => string;
 type AsyncTransform = (input: string, update: (output: string) => void) => Promise<void>;
@@ -119,27 +119,33 @@ async function replaceNip19(text: string, update: (output: string) => void): Pro
 
     const replacements = await Promise.all(matches.map(async (m) => {
       const original = m[0];
-      const encoded = original.replace('nostr:', '');
-      const { type, data } = nip19.decode(encoded);
-      const classes = "inline-block px-2 py-1 rounded-sm bg-black/20 text-white/70 hover:text-white/80 hover:bg-black/10"
-
       let replacement = original;
-      if (type === 'npub') {
-        const service: UserService | null = get(userService);
-        if (!service) {
-          return { original, replacement: encoded };
+      try {
+        
+        const encoded = original.replace('nostr:', '');
+        const { type, data } = nip19.decode(encoded);
+        const classes = "inline-block px-2 py-1 rounded-sm bg-black/20 text-white/70 hover:text-white/80 hover:bg-black/10"
+
+        if (type === 'npub') {
+          const service: UserService | null = get(userService);
+          if (!service) {
+            return { original, replacement: encoded };
+          }
+          const user = service.userFromPubkey(data);
+          await user.ready();
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes}">${user.name}</a>`;
+        } else if (type === 'nevent') {
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
+        } else if (type === 'naddr') {
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
+        } else if (type === 'nprofile') {
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Profile</a>`;
+        } else if (type === 'note'){
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Note</a>`;
         }
-        const user = service.userFromPubkey(data);
-        await user.ready();
-        replacement = `<a href="https://njump.me/${encoded}" class="${classes}">${user.name}</a>`;
-      } else if (type === 'nevent') {
-        replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
-      } else if (type === 'naddr') {
-        replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
-      } else if (type === 'nprofile') {
-        replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Profile</a>`;
-      } else if (type === 'note'){
-        replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Note</a>`;
+      }
+      catch(e){
+        console.error('Error in replaceNip19:', e);
       }
 
       ////console.log('nip19', { original, replacement });

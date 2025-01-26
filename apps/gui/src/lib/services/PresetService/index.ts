@@ -1,4 +1,4 @@
-import { Service, type FetchOptions } from "@nostrwatch/route66/services"
+import { Service, type WebsocketRequestBody } from "@nostrwatch/route66/services"
 import type { Filter } from "nostr-tools";
 import type { WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/route66/core";
 import { DataTablePreset } from "$lib/models/Preset";
@@ -83,7 +83,7 @@ export class PresetService extends Service {
                 resolveQueue = null;
             }
         };
-        this.subscribe(args as FetchOptions, { onevents })
+        this.subscribe(args as WebsocketRequestBody, { onevents })
         yield* generator();
     }
 

@@ -12,9 +12,7 @@ export interface IGroupedRelays {
   appData?: string[];
 }
 
-export interface FetchOptions extends WebsocketRequestBody {
-  sync?: boolean;
-}
+// export interface WebsocketRequestBody extends WebsocketRequestBody {}
 
 export type ServiceAdaptersTypes = {
   cache: ICacheAdapter;
@@ -78,7 +76,7 @@ export class Service {
     return false;
   }
 
-  async subscribe(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+  async subscribe(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     await this.ready();
     let { filters, relays, options, hash } = args;
     if(!hash) {
@@ -126,7 +124,7 @@ export class Service {
     this.websocketAdapter.unsubscribeAll();
   }
 
-  async fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+  async fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     await this.ready();
     if(!args.hash) {  
       args.hash = deterministicHash(args);
@@ -161,7 +159,7 @@ export class Service {
     return cacheEvents;
   }
 
-  async fetchFromWebsocket(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+  async fetchFromWebsocket(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     await this.ready();
     // console.log('Service.fetchFromWebsocket: ready', args);
     const { relays, filters, options } = args;
@@ -179,9 +177,9 @@ export class Service {
     return websocketEvents instanceof Array ? websocketEvents : [];
   }
 
-  async _fetch(args: FetchOptions, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+  async _fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     await this.ready();
-    const { relays, options, sync } = args;
+    const { relays, options } = args;
     let { filters } = args;
     let { returnResults } = options;
 
@@ -203,10 +201,6 @@ export class Service {
         events.set(id, event);
         return true;
     };
-
-    if (sync) {
-        filters = await this.modifyCacheFilters(filters);
-    }
 
     const cacheEvents = await this.fetchFromCache(filters, callbacks);
 

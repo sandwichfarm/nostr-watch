@@ -1,13 +1,16 @@
-import { Service, type FetchOptions } from "@nostrwatch/route66/services"
+import { Service, type WebsocketRequestBody } from "@nostrwatch/route66/services"
 import type { IAdaptersArgument } from "@nostrwatch/route66/interfaces"
 import { User } from "$lib/models/User.js"
 import { NostrEvent, type IEvent } from "@nostrwatch/route66/models"
 import type { Pubkey } from "$lib/models/User.js";
 import type {  WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/route66/core/WebsocketAdapter";
 import type { Filter } from "nostr-tools";
-import { get } from "svelte/store";
+import { get, writable, type Writable } from "svelte/store";
 import { route66 } from "$lib/stores";
 import type Route66 from "@nostrwatch/route66"
+import { publishEventsToMemoryRelay } from "$lib/stores/events-helpers";
+import { eventsStoreMemoryRelay } from "$lib/stores/memory-relays/memory-relay-events";
+import { SvelteMemoryRelay } from "@nostrwatch/memory-relay";
 
 export type UserFeedItem = {
     user: User,
@@ -22,12 +25,12 @@ export type UserFeedItemRelatives = {
 
 export type UserFeed = UserFeedItem[]
 
-export interface UserFetchOptions extends WebsocketAdapterOptions {}
+export interface UserWebsocketRequestBody extends WebsocketAdapterOptions {}
 
-export interface UserFetchArgs extends FetchOptions {
+export interface UserFetchArgs extends WebsocketRequestBody {
     filters: Filter[];
     relays: string[],
-    options: UserFetchOptions,
+    options: UserWebsocketRequestBody,
     hash?: string,
     priority?: number
 }
@@ -35,6 +38,7 @@ export interface UserFetchArgs extends FetchOptions {
 export class UserService extends Service {
 
     private _subIds: string[] = []
+    private _relay: SvelteMemoryRelay<IEvent, NostrEvent> = new SvelteMemoryRelay<IEvent, NostrEvent>(writable(new Map()))
 
     constructor(adapters: IAdaptersArgument){
         super(adapters)
@@ -51,6 +55,14 @@ export class UserService extends Service {
         this._subIds.push(id)
     }
 
+    private get relay(): SvelteMemoryRelay<IEvent, NostrEvent> {
+        return this._relay
+    }
+
+    get store(): Writable<Map<string, NostrEvent>> {
+        return this.relay.store
+    }
+
     userFromPubkey(pubkey: Pubkey): User {
         return new User(pubkey, this);
     }
@@ -58,9 +70,12 @@ export class UserService extends Service {
     async userNotes(user: User, limit: number = 30, until?: number): Promise<IEvent[]> {
         until = until || Math.round(Date.now() / 1000);
         const filter: Filter = { authors: [user.pubkey], kinds: [1], limit, until};
+        const onevent = (ev: IEvent) => {
+            this.relay.event(ev);
+        }
         const options: WebsocketAdapterOptions = {
             cache: true,
-            stream: false,
+            stream: true,
             returnResults: true,
             keepAlive: false,
         };
@@ -70,7 +85,7 @@ export class UserService extends Service {
             options,
             priority: 10
         };
-        let notes = (await this.subscribe(args))?.sort((a, b) => (b.created_at as number) - (a.created_at as number));
+        let notes = (await this.subscribe(args, { onevent }))?.sort((a, b) => (b.created_at as number) - (a.created_at as number));
         return notes;
     }
 

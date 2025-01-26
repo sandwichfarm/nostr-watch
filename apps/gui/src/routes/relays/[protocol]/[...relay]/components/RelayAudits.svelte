@@ -8,10 +8,11 @@
     // Assume pauseLiveSync is imported from a utility module
     import { pauseLiveSync } from '$lib/utils/lifecycle.js'; // Update the path as necessary
     import type { Note } from "nostr-tools/nip19";
-	import Badge from "../../ui/badge/badge.svelte";
+	// import Badge from "../../ui/badge/badge.svelte";
 	import type { Nip11 } from "@nostrwatch/route66/models";
 
     import * as Alert from "$lib/components/ui/alert/index.js";
+	import Badge from "$ui/badge/badge.svelte";
 
 
     // Props passed to the component

@@ -51,6 +51,12 @@ importers:
       '@nostrwatch/nocap':
         specifier: workspace:^
         version: link:../../libraries/nocap
+      '@nostrwatch/nocap-dns-adapter-default':
+        specifier: workspace:^
+        version: link:../../libraries/nocap/adapters/default/DnsAdapterDefault
+      '@nostrwatch/nocap-info-adapter-default':
+        specifier: workspace:^
+        version: link:../../libraries/nocap/adapters/default/InfoAdapterDefault
       '@nostrwatch/nocap-websocket-adapter-default':
         specifier: workspace:^
         version: link:../../libraries/nocap/adapters/default/WebsocketAdapterDefault

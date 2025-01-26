@@ -1,5 +1,4 @@
 import { get, readable, writable, type Writable } from "svelte/store";
-import RelayCountry from "../components/partials/relay-single/RelayCountry.svelte";
 import type { Readable } from "svelte/store";
 import { route66 } from '$lib/stores/route66'
 import type Route66 from "@nostrwatch/route66"

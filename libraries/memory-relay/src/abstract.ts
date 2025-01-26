@@ -12,11 +12,13 @@ export abstract class AbstractMemoryRelay<
   OutputCollection = any | any[],
   OutputCount = any
 > {
+  private listeners: Map<string, AbstractMemoryRelayCallback<this, Output>> = new Map();
+
   protected _events: Map<string, Output> = new Map();  
   protected _nip11s: Map<string, any> = new Map();
 
-  private listeners: Map<string, AbstractMemoryRelayCallback<this, Output>> = new Map();
-
+  highestTimestamp: number[] = new Array(0);
+  lowestTimestamp: number[] = new Array(0);
   debounceMS: number = 1000;
 
   protected set events(e: Map<string, Output>) {
@@ -116,11 +118,17 @@ export abstract class AbstractMemoryRelay<
   eventBatch(evs: Input[]): number {
     const inserted = [];
     for (const ev of evs) {
-      const count = this.maybeInsert(ev);
-      if (!count) continue;
+      const inserts: number = this.maybeInsert(ev);
+      if (!inserts) continue;
       inserted.push(ev);
     }
     return inserted.length;
+  }
+
+  setTimestampRange(event: Input | Output | BaseEvent, index: number = 0) {
+    const ts = event.created_at as number;
+    if (!this.highestTimestamp?.[index] || ts > this.highestTimestamp[index]) this.highestTimestamp[index] = ts;
+    if (!this.lowestTimestamp?.[index] || ts < this.lowestTimestamp[index]) this.lowestTimestamp[index] = ts;
   }
 
   formatCollection(collection: Output[]): OutputCollection {
@@ -130,9 +138,10 @@ export abstract class AbstractMemoryRelay<
   req(id: string, filters: Filter[], format: boolean = true): OutputCollection | Output[] {
     const ret: Output[] = [];
     for (const [, e] of this.events) {
-      for (const filter of filters) {
+      for (const [index, filter] of filters.entries()) {
         if (eventMatchesFilter(e, filter)) {
           ret.push(e);
+          this.setTimestampRange(e, index);
         }
       }
     }

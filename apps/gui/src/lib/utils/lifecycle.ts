@@ -21,7 +21,7 @@ import NostrToolsAdapter from '@nostrwatch/route66-wsadapter-nostrtools';
 import type { Nip05Service } from '../services/Nip05Service';
 import type { Nip05 } from 'nostr-tools/nip05';
 import { nip11Service, operatorPubkeys, operatorPubkeysValid, relaysWithNip11s, relaysWithoutNip11s } from '../stores';
-import { userService } from '../stores/user';
+import { userService } from '../stores/services';
 import type { UserService } from '../services/UserService';
 import type { Filter } from 'nostr-tools';
 import type { Nip11Service } from '../services/Nip11Service';

@@ -10,7 +10,7 @@
 	import type { DataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { default as relaysTableConfig } from '$lib/config/dataTable/relays.js';
-	import { userService } from '$lib/stores/user';
+	import { userService } from '$lib/stores/services';
 	import RelayDimensions from './relay-dimensions.svelte';
 
 	export const prerender = true;

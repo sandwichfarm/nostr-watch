@@ -10,8 +10,8 @@
 	import type { PubkeyProfile, PubkeyRelays } from '@nostrwatch/route66/models';
 	import { Monitor } from '@nostrwatch/route66/models';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
-    import OperatorRelays from '../OperatorRelays.svelte';
 	import type { Readable } from 'svelte/store';
+	import OperatorRelays from '$lib/components/partials/OperatorRelays.svelte';
 
     export let pubkey: string;
     export let relays: Readable<PubkeyRelays>;

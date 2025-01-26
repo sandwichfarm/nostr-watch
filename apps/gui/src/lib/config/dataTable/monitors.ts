@@ -24,10 +24,10 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 }
 
 export const columnsDisable: DataKeys = ['asname']
-export const filtersDisable: DataKeys = ['as', 'asname']
+export const filtersDisable: DataKeys = ['pubkey', 'as', 'asname']
 
 export const columnsShow: DataKeys = ['pubkey', 'networks', 'frequency', 'reportingOnline', 'lastActive', 'checks']
-export const filtersShow: DataKeys = ['pubkey', 'geohash', 'relays', 'checks']
+export const filtersShow: DataKeys = ['geohash', 'relays', 'checks']
 
 export const humanReadableNames: NameFormatter = {
     'pubkey': 'Monitor'

@@ -9,11 +9,17 @@
 		"skipLibCheck": true,
 		"sourceMap": true,
 		"strict": true,
-		"module": "NodeNext",
-		"moduleResolution": "bundler",
 		"baseUrl": "./",
 		"paths": {
-			"@nostrwatch/*": ["../../libraries/*/dist"]
-		}
+			"@nostrwatch/*": ["../../libraries/*/dist"],
+			"$stores/*": ["src/lib/stores/*"],
+			"$utils/*": ["src/lib/utils/*"],
+			"$ui/*": ["src/lib/components/ui/*"],
+			"$components/*": ["src/components/*"],
+			"$layouts/*": ["src/layouts/*"],
+			"$routes/*": ["src/routes/*"],
+			"$lib/*": ["src/lib/*"],
+			"src/*": ["src/*"]
+		},
 	}
 }

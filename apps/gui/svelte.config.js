@@ -7,6 +7,15 @@ const config = {
   preprocess: [preprocess(), vitePreprocess({})],
 
   kit: {
+    alias: {
+      "$stores": "./src/lib/stores",
+			"$utils": "./src/lib/utils",
+      "$ui": "./src/lib/components/ui",
+			"$components": "./src/components",
+			"$layouts": "./src/layouts",
+			"$routes": "./src/routes",
+			"$lib": "./src/lib"
+    },
     adapter: adapter({
       pages: "dist",
       assets: "dist",

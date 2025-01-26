@@ -1,15 +1,12 @@
 <script lang="ts">
-    import Badge from '$lib/components/ui/badge/badge.svelte';
-	import ProfileCompact from '../ProfileCompact.svelte';
     import RelayCheck from './RelayCheck.svelte';
     import { writable, type Writable } from 'svelte/store';
     import { monitorsMap } from '$lib/stores';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import { timeAgo } from '$lib/utils/time';
 	import { PFP } from '$lib/utils/pfp';
 	import RelayMap from './RelayMap.svelte';
 	import type { Nip66CheckEvent } from '@nostrwatch/route66/models';
-	import type { Monitor } from '@nostrwatch/route66/models/Monitor';
+	import type { Monitor } from '@nostrwatch/route66/models';
 	import { onMount } from 'svelte';
     
     export let relay: string;

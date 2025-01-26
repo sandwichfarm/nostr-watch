@@ -10,7 +10,7 @@
   import Header from '$lib/components/layout/Header.svelte';
   import { instance, bootstrap, seedFromCache } from '$lib/utils/lifecycle';
   import { writable, type Writable, get } from 'svelte/store';
-  import { StateManager } from '@nostrwatch/route66';
+  import { Route66, StateManager } from '@nostrwatch/route66';
   import { destroy } from '$lib/utils/lifecycle';
   import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
   import { delay } from '@nostrwatch/utils';
@@ -19,6 +19,9 @@
   import { IdleDetector } from '$lib/utils/idle.js';
   import Debugger from '$lib/components/partials/Debugger.svelte';
 	import { resetStores } from '$lib/stores/memory-relays/routines';
+	import { feedService, userService } from '$lib/stores/services';
+	import { UserService } from '$lib/services/UserService';
+	import { FeedService } from '$lib/services/FeedService';
 
   window.process = process;
 
@@ -29,7 +32,7 @@
 
   const lifecycle = createTabLifecycle();
   let idleDetector: IdleDetector | null = null;
-  let route66: any; // type Route66 if you import from your library
+  let route66: Route66; // type Route66 if you import from your library
 
   const isDebuggerVisible = writable(false);
 
@@ -153,6 +156,7 @@
         route66 = await instance();
         await route66.ready();
         route66?.services?.monitors?.ensureMonitorsActive();
+        initServices();
         await seedFromCache();
         appState.set('running');
       } catch (error) {
@@ -163,6 +167,8 @@
       busy = true;
       try {
         await bootstrap();
+        route66 = await instance();
+        initServices();
         appState.set('running');
       } catch (error) {
         console.error('Error during bootstrap:', error);
@@ -170,6 +176,11 @@
         busy = false;
       }
     }
+  }
+
+  const initServices = () => {
+    userService.set(new UserService(route66.adapters));
+    // feedService.set(new FeedService(route66.adapters));
   }
 
   // --------------------------------------------------------------------------------

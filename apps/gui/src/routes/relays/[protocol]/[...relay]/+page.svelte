@@ -20,25 +20,28 @@
 	import { route66 } from '$lib/stores';
 	import { timeAgo } from '$lib/utils/time';
 	import { operatorProfile$, operatorRelays$ } from '$lib/stores/helpers/helpers-operator';
+	import { NocapService } from '$lib/services/NocapService';
+	import { relayLivenessAggregate, relayLivenessAggregate$, relayLivenessChecks, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
+	import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools';
 	
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
-  let RelayChecks: typeof import('$lib/components/partials/relay-single/RelayChecks.svelte').default | null = null;
-  let OperatorFeed: typeof import('$lib/components/partials/relay-single/OperatorFeed.svelte').default | null = null;
+  let RelayChecks: typeof import('$routes/relays/[protocol]/[...relay]/components/RelayChecks.svelte').default | null = null;
+  let OperatorFeed: typeof import('./components/RelayOperatorFeed.svelte').default | null = null;
   let Tabs: typeof import('$lib/components/ui/tabs').default | null = null;
   let Masonry: typeof import('svelte-bricks').default | null = null;
-  let CardChecks: typeof import('$lib/components/partials/relay-single/cards/CardChecks.svelte').default | null = null;
-  let CardFees: typeof import('$lib/components/partials/relay-single/cards/CardFees.svelte').default | null = null;
-  let CardInsights: typeof import('$lib/components/partials/relay-single/cards/CardInsights.svelte').default | null = null;
-  let CardGeneral: typeof import('$lib/components/partials/relay-single/cards/CardGeneral.svelte').default | null = null;
-  let CardMap: typeof import('$lib/components/partials/relay-single/cards/CardMap.svelte').default | null = null;
-  let CardNetwork: typeof import('$lib/components/partials/relay-single/cards/CardNetwork.svelte').default | null = null;
+  let CardChecks: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardChecks.svelte').default | null = null;
+  let CardFees: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardFees.svelte').default | null = null;
+  let CardInsights: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardInsights.svelte').default | null = null;
+  let CardGeneral: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardGeneral.svelte').default | null = null;
+  let CardMap: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardMap.svelte').default | null = null;
+  let CardNetwork: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardNetwork.svelte').default | null = null;
   let Stats: typeof import('$lib/components/layout/Stats.svelte').default | null = null;
-  let CardOperator: typeof import('$lib/components/partials/relay-single/cards/CardOperator.svelte').default | null = null;
-  let CardSpeed: typeof import('$lib/components/partials/relay-single/cards/CardSpeed.svelte').default | null = null;
-  let CardNips: typeof import('$lib/components/partials/relay-single/cards/CardNips.svelte').default | null = null;
-  let RelayAudits: typeof import('$lib/components/partials/relay-single/RelayAudits.svelte').default | null = null;
-  let RelayNip11: typeof import('$lib/components/partials/relay-single/RelayNip11.svelte').default | null = null;
+  let CardOperator: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardOperator.svelte').default | null = null;
+  let CardSpeed: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardSpeed.svelte').default | null = null;
+  let CardNips: typeof import('$routes/relays/[protocol]/[...relay]/components/cards/CardNips.svelte').default | null = null;
+  let RelayAudits: typeof import('$routes/relays/[protocol]/[...relay]/components/RelayAudits.svelte').default | null = null;
+  let RelayNip11: typeof import('$routes/relays/[protocol]/[...relay]/components/RelayNip11.svelte').default | null = null;
 
   const loadComponent = async (importFunc: () => Promise<any>, setter: (component: any) => void) => {
       try {
@@ -52,21 +55,21 @@
   const loadComponents = () => {
       loadComponent(() => import('svelte-bricks'), (comp) => Masonry = comp);
       loadComponent(() => import('$lib/components/partials/ProfileCompact.svelte'), (comp) => ProfileCompact = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/RelayChecks.svelte'), (comp) => RelayChecks = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/OperatorFeed.svelte'), (comp) => OperatorFeed = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/RelayChecks.svelte'), (comp) => RelayChecks = comp);
+      loadComponent(() => import('./components/RelayOperatorFeed.svelte'), (comp) => OperatorFeed = comp);
       loadComponent(() => import('$lib/components/ui/tabs'), (comp) => Tabs = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardChecks.svelte'), (comp) => CardChecks = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardFees.svelte'), (comp) => CardFees = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardInsights.svelte'), (comp) => CardInsights = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardGeneral.svelte'), (comp) => CardGeneral = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardMap.svelte'), (comp) => CardMap = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardNetwork.svelte'), (comp) => CardNetwork = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardChecks.svelte'), (comp) => CardChecks = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardFees.svelte'), (comp) => CardFees = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardInsights.svelte'), (comp) => CardInsights = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardGeneral.svelte'), (comp) => CardGeneral = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardMap.svelte'), (comp) => CardMap = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardNetwork.svelte'), (comp) => CardNetwork = comp);
       loadComponent(() => import('$lib/components/layout/Stats.svelte'), (comp) => Stats = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardOperator.svelte'), (comp) => CardOperator = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardSpeed.svelte'), (comp) => CardSpeed = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/cards/CardNips.svelte'), (comp) => CardNips = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/RelayAudits.svelte'), (comp) => RelayAudits = comp);
-      loadComponent(() => import('$lib/components/partials/relay-single/RelayNip11.svelte'), (comp) => RelayNip11 = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardOperator.svelte'), (comp) => CardOperator = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardSpeed.svelte'), (comp) => CardSpeed = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/cards/CardNips.svelte'), (comp) => CardNips = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/RelayAudits.svelte'), (comp) => RelayAudits = comp);
+      loadComponent(() => import('$routes/relays/[protocol]/[...relay]/components/RelayNip11.svelte'), (comp) => RelayNip11 = comp);
   };
 
   const env = import.meta.env.MODE;
@@ -77,11 +80,16 @@
   export let params: { protocol: string; relay: string };
   let currentRelay: string = '';
   let loading: boolean = true;
+
+  const relayUrl = new URL(`${$page.params.protocol}://${$page.params.relay}`).toString();
   
   const nip11Ready: Writable<boolean> = writable(false);
   const operatorMetaReady: Writable<boolean> = writable(false);
   const monitors: Writable<Monitor[]> = writable([]);
   const activeTab: Writable<string> = writable('overview');
+
+  const liveness: Writable<null | 'online' | 'offline' | 'dead' | 'unknown'> = writable(null);
+  const oldChecks: Writable<Nip66CheckEvent[]> = writable([]);
 
   const relayIsOffline: Writable<boolean> = writable(false);
   const relayIsDead: Writable<boolean> = writable(false);
@@ -90,38 +98,13 @@
   const lastSeen: Writable<number | null> = writable(null);
   const lastSeenBy: Writable<Monitor | null> = writable(null); 
 
-  $: lastSeenAgo = $lastSeen? timeAgo($lastSeen*1000): '';
-
-  const relayChecks: Readable<Nip66CheckEvent[]> = derived(
-      eventsArray,
-      ($eventsArray) => {
-          const results = new Map<string, Nip66CheckEvent>();
-          if ($eventsArray.length) {
-              $eventsArray.forEach((check: Nip66CheckEvent) => {
-                  if (check.kind !== 30166) return;
-                  if (check?.relay !== relayUrl) return;
-                  if (!results.has(check.pubkey)) {
-                      results.set(check.pubkey, check);
-                  }
-              });
-          }
-          return Array.from(results.values())
-              .sort((a: Nip66CheckEvent, b: Nip66CheckEvent) => (b.created_at as number) - (a.created_at as number));
-      }
-  );
-
-  const relayAggregate: Readable<any | undefined> = derived([relayChecks, relayCheckAggregates], ([$relayChecks, $relayCheckAggregates]) => {
-      let aggregate = relayCheckAggregator($relayChecks);
-      if (aggregate) {
-          return Object.entries(aggregate).map(([relay, item], index) => ({
-              relay,
-              ...(item as any)?.aggregate || {},
-              id: index,
-          }))?.[0];
-      } else {
-          return $relayCheckAggregates.find((agg: any) => agg.relay === new URL(relayUrl).toString());
-      }
-  });
+  const relayAggregate: Readable<any | undefined> = relayLivenessAggregate$(relayUrl);
+  const relayChecks: Readable<Nip66CheckEvent[]> = derived([oldChecks, relayCheckAggregates], ([$oldChecks]) => {
+    if($oldChecks.length) {
+      return $oldChecks;
+    }
+    return relayLivenessChecks(relayUrl);
+  })
 
   const nip11: Readable<Nip11 | undefined> = derived(
       [nip11sLocal, nip11s],
@@ -139,6 +122,7 @@
 
     await route66Ready()
     await $route66.services.relay.ready()
+    await detectLiveness();
     await loadNip11().then(loadOperatorMeta)
 
     loading = false
@@ -147,52 +131,113 @@
       currentRelay = relayUrl
       return
     }
+  }
+
+  const detectLiveness = async () => {
+    if($relayChecks.length) {
+      liveness.set('online')
+      return;
+    }
 
     const getRelayData = async (type = 'online') => {
       const res = await $route66?.services?.relay?.getRelayData(relayUrl, type)
       return res
     }
 
-    // try {
-    //   const onlineRes = await getRelayData('online')
-    //   if (onlineRes?.[0]?.length) {
-    //     const [data, mons] = onlineRes
-    //     publishEventsToMemoryRelay(data)
-    //     monitors.set(Array.from(mons?.values() || new Set()))
-    //     return
-    //   }
+    try {
+      const onlineRes = await getRelayData('online')
+      if (onlineRes?.[0]?.length) {
+        const [data, mons] = onlineRes
+        const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
+        lastCheck.set(latestEvent)
+        lastSeen.set(latestEvent?.created_at ?? null)
+        lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
+        liveness.set('online')
+        return
+      }
 
-    //   const offlineRes = await getRelayData('offline')
-    //   if (offlineRes?.[0]?.length) {
-    //     const [data, mons] = offlineRes
-    //     const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
-    //     lastCheck.set(latestEvent)
-    //     lastSeen.set(latestEvent?.created_at ?? null)
-    //     lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
-    //     relayIsOffline.set(true)
-    //     return
-    //   }
+      console.log('no online checks')
 
-    //   const deadRes = await getRelayData('dead')
-    //   if (!deadRes?.[0]?.length) {
-    //     relayIsUnknown.set(true)
-    //   } else {
-    //     const [data, mons] = deadRes
-    //     const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
-    //     lastCheck.set(latestEvent)
-    //     lastSeen.set(latestEvent?.created_at ?? null)
-    //     lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
-    //     relayIsDead.set(true)
-    //   }
-    // } catch (err) {
-    //   console.error(err)
-    // } finally {
-    //   loading = false
-    //   currentRelay = relayUrl
-    // }
+      const nocap = new NocapService() 
+      const result = await nocap.check(relayUrl, ['open', 'read', 'dns', 'info'])
+      let onlineButNoRecentData = false;
+
+      console.log(result)
+
+      if(result?.open?.data){
+        liveness.set('online')
+        onlineButNoRecentData = true;
+        let sk = generateSecretKey()
+        let pubkey = getPublicKey(generateSecretKey())
+        const unsignedEvent = {
+          kind: 30166,
+          created_at: Math.floor(Date.now()/1000),
+          content: JSON.stringify(result.info.data),
+          tags: [ 
+            ['rtt-open', `${result.open.duration}`], 
+            ['rtt-read', `${result.read.duration}`],
+            ['network', 'clearnet']
+          ]
+        }
+        const ivp4s = result.dns.data.ipv4
+        const ivp6s = result.dns.data.ipv6
+        if(ivp4s.length){
+          ivp4s.forEach( ipv4 => {
+            unsignedEvent.tags.push(['l', ipv4, 'ipv4'])
+          })
+        }
+        if(ivp6s.length){
+          ivp6s.forEach( ipv6 => {
+            unsignedEvent.tags.push(['l', ipv6, 'ipv6'])
+          })
+        }
+        const event = finalizeEvent(unsignedEvent, sk)
+        oldChecks.update( (old: Nip66CheckEvent[]) => [...old, event] )
+      }
+
+
+      const offlineRes = await getRelayData('offline')
+      if (offlineRes?.[0]?.length) {
+        const [data, mons] = offlineRes
+        const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
+        oldChecks.set(data)
+        lastCheck.set(latestEvent)
+        lastSeen.set(latestEvent?.created_at ?? null)
+        lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
+        if(onlineButNoRecentData){
+          liveness.set('offline')
+        }
+        return
+      }
+
+      console.log('no offline checks')
+
+      const deadRes = await getRelayData('dead')
+      if (!deadRes?.[0]?.length) {
+        relayIsUnknown.set(true)
+      } else {
+        const [data, mons] = deadRes
+        const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
+        oldChecks.set(data)
+        lastCheck.set(latestEvent)
+        lastSeen.set(latestEvent?.created_at ?? null)
+        lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
+        if(onlineButNoRecentData){
+          liveness.set('dead')
+        }
+        return 
+      }
+
+      console.log('no dead checks')
+
+      liveness.set('unknown')
+    } catch (err) {
+      console.error(err)
+    } finally {
+      loading = false
+      currentRelay = relayUrl
+    }
   }
-
-
 
   const loadOfflineChecks = async () => {
       if (!$isLivesyncing) {
@@ -281,8 +326,7 @@
   onMount(mount);
   onDestroy(destroy);
 
-  $: hasChecks = $relayChecks?.length > 0;
-  $: relayUrl = new URL(`${$page.params.protocol}://${$page.params.relay}`).toString();
+  $: lastSeenAgo = $lastSeen? timeAgo($lastSeen*1000): '';
   $: geocode = $relayAggregate?.geocode;
   $: description = $nip11?.description || null;
   $: banner = $nip11?.banner || null;
@@ -342,7 +386,7 @@
   $: protocolsMatch = $page.params.protocol === 'wss' && location.protocol.replace(':', '') === 'https' 
                       || $page.params.protocol === 'ws' && location.protocol.replace(':', '') === 'http' 
 
-  $: probablyOnline = !$relayIsOffline && !$relayIsDead && !$relayIsUnknown;
+  $: probablyOnline = $relayChecks.length;
 
   let [minColWidth, maxColWidth, gap] = [400, 800, 21];
   let width: number, height: number;
@@ -535,14 +579,16 @@
 {:else}
   <div class="flex flex-col text-center items-center justify-center h-[600px]">
     <span class="text-2xl text-center">
-    {#if $relayIsOffline}
+    {#if $liveness === null}
+      Checking status.
+    {:else if $liveness === 'offline'}
       <span class="block">Relay may be offline</span>
       <span class="block">It was last seen {lastSeenAgo}</span>
-    {:else if $relayIsDead}
+    {:else if $liveness === 'dead'}
       <span class="text-9xl">☠️</span>
       <span class="block">Relay is dead</span>
       <span class="block">It was last seen {lastSeenAgo}</span>
-    {:else if $relayIsUnknown}
+    {:else if $liveness === 'unknown'}
       <span class="block">Nobody has ever reported information on this relay</span>
     {:else}
       <span class="block">loading</span>

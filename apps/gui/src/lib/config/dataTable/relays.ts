@@ -8,7 +8,7 @@ import { IconBadgeCheckGreen, IconCheckGreen, IconCheckRed } from '$lib/utils/ic
 import { PFP } from '$lib/utils/pfp';
 
 import { monitorsMap } from '$lib/stores/monitors.js';
-import type { Monitor } from '@nostrwatch/route66/models/Monitor';
+import type { Monitor } from '@nostrwatch/route66/models';
 import type { Nip11Fee } from '@nostrwatch/route66/models/Nip11';
 import type { DD } from '@nostrwatch/route66/models/Geocoded';
 import { Nip66CheckEvent, PubkeyProfile } from '@nostrwatch/route66/models';
@@ -167,6 +167,7 @@ export const tableFormatters: Formatters = {
     },
     rtt: (rtt) => {
         const wholeNum = Math.round(rtt)
+        if(wholeNum <= 0) return '';
         const rttColor = wholeNum < 500? 'text-green-400': wholeNum < 1000? 'text-orange-400/80': 'text-red-600';
         return `<span class="text-xs font-mono font-bold ${rttColor}">${wholeNum}ms`;
     }, 

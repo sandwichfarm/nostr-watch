@@ -63,17 +63,17 @@ export class SvelteMemoryRelay<
       this.store, 
       ($events) => {
         const results: OutputEvent[] = [];
-        for (const filter of filters) {
+        for (const [index, filter] of filters.entries()) {
           for (const [key, event] of $events) {
             if (eventMatchesFilter(event, filter)) {
               results.push(event);
+              // this.setTimestampRange(event, index);
             }
           }
         }
         return results;
       }
     );
-
     return store as OutputCollection;
   }
 

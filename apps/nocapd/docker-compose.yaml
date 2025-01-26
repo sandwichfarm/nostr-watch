@@ -10,9 +10,9 @@ services:
         BUILDKIT_INLINE_CACHE: 0
       dockerfile: Dockerfile
     volumes:
-      - /Users/sandwich/Develop/nostr-watch/.lmdb:/app/.lmdb:rw
-      - ./.env.docker:/app/.env:ro
-      - ./config.yaml:/app/config.yaml:ro
+      - .lmdb:/app/nostr-watch/apps/nocapd/.lmdb:rw
+      - ./.env.docker:/app/nostr-watch/apps/nocapd/.env:ro
+      - ./config.yaml:/app/nostr-watch/apps/nocapd/config.yaml:ro
     environment:
       DOCKER: 'yes'
     env_file: .env.docker

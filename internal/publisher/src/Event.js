@@ -1,4 +1,5 @@
-import { validateEvent, verifySignature, getSignature, getEventHash } from 'nostr-tools'
+import { finalizeEvent, verifyEvent } from 'nostr-tools/pure'
+import { validateEvent, getEventHash } from 'nostr-tools'
 
 import Logger from '@nostrwatch/logger'
 
@@ -56,8 +57,8 @@ export class Event {
     if(!this?.event) 
       throw new Error('signEvent(): this.event is not defined')
     try {
-      this.event.sig = getSignature(this.event, privateKey || process.env.DAEMON_PRIVKEY)
-      const valid = validateEvent(this.event) && verifySignature(this.event)
+      this.event = finalizeEvent(this.event, privateKey || process.env.DAEMON_PRIVKEY)
+      const valid = validateEvent(this.event) && verifyEvent(this.event)
       if(!valid)
         throw new Error('generateEvent(): event does not validate')  
       return this.event

@@ -138,10 +138,14 @@ export class AnnounceMonitor {
       }
       try {
         const publisher = new Publisher(this.pubkey, relays)
-        await Promise.any( publisher.publishEvent( this.events[kind] ) )
+        const promises = publisher.publishEvent( this.events[kind] )
+        console.log('promises', typeof promises)
+        console.dir(promises)
+        await promises
       }
       catch(e){
         log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(this.monRelays.join(','))}`)
+        console.error(e)
       }   
       log.info(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(this.monRelays.join(','))}`)  
       pubbedIds.push(this.events[kind].id)

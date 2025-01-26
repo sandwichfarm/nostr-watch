@@ -1,6 +1,7 @@
 import { SimplePool } from "nostr-tools"
 
 export default class {
+
   constructor(relays){
     this.relays = relays
     this.pool = new SimplePool()

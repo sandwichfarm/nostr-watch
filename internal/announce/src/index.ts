@@ -49,11 +49,13 @@ export class AnnounceMonitor {
       counts = [],
       checks = [],
       owner = '',
-      frequency = '',
+      frequency = '86400',
       profile = {},
       relays = [],
       networks = []
     } = options;
+
+    console.log('frequency', options.frequency)
 
     this.monReg = {}
 

@@ -20,6 +20,7 @@
     "ngeohash": "^0.6.3",
     "nostr-fetch": "0.14.1",
     "nostr-geotags": "^0.5.0",
+    "nostr-tools": "2.10.4",
     "object-hash": "3.0.0",
     "object-mapper": "6.2.0",
     "promise-deferred": "2.0.4",

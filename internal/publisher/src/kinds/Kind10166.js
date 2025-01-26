@@ -30,6 +30,7 @@ export class Kind10166 extends Event {
 
 
   static generateTags(data) {
+    console.log('data', data)
     const geoOpts = {};
     let tags = [];
     if(data?.frequency)
@@ -38,8 +39,8 @@ export class Kind10166 extends Event {
     //   tags.push(['o', data.owner]);
     if(data?.kinds)
       data?.kinds.map(kind => kind.toString()).forEach(kind => tags.push(["k", kind]));
-    if(data?.counts)
-      data?.counts.map(count => count.toString()).forEach(count => tags.push(["n", count]));
+    if(data?.networks)
+      data?.networks.map(network => network.toString()).forEach(network => tags.push(["n", network]));
     if(data?.checks)
       data?.checks.map(check => check.toString()).forEach(check => tags.push(["c", check]));
     if(data?.timeouts)

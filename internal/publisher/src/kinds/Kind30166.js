@@ -47,6 +47,8 @@ export class Kind30166 extends Event {
     const read = check?.read?.duration
     const write = check?.write?.duration
 
+    const network = check?.network
+
     let tags = []
 
     tags.push(['d', check.url])

@@ -109,11 +109,13 @@ const maybeAnnounce = async () => {
     "nocapd.checks.options.expires": "frequency",
     "nocapd.checks.enabled": "checks",
     "monitor.geo": "geo",
+    "nocapd.networks": "networks",
     "monitor.owner": "owner",
     "publisher.to_relays": "relays",
     "monitor.info": "profile"
   }
   const conf = mapper(config, map)
+  // console.dir(config.nocapd.checks.enabled)
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf, process.env.DAEMON_PUBKEY)
   try {
@@ -301,6 +303,8 @@ export const Nocapd = async () => {
   const lmdbOpts = config?.lmdb ?? {}
   concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb', lmdbOpts)
+  // console.dir(config)
+  await maybeAnnounce();
   log.info('Loaded cache...')
   await delay(5000)
   await migrate(rcache)

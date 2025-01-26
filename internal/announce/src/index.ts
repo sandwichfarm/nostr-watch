@@ -21,12 +21,14 @@ interface AnnounceMonitorOptions {
   frequency?: string;
   relays?: string[];
   profile?: object;
+  networks?: string[];
 }
 
 export class AnnounceMonitor {
   public events?: any = {};
   public monReg?: any;
-  public monRelays: string[] = [];
+  public metaRelays: string[] = [ 'wss://user.kindpag.es', 'wss://purplepag.es' ];
+  public monRelays: string[] = [ ];
   public monProfile: any;
   private publisher: Publisher;
   private pubkey: string | null = null;
@@ -50,6 +52,7 @@ export class AnnounceMonitor {
       frequency = '',
       profile = {},
       relays = [],
+      networks = []
     } = options;
 
     this.monReg = {}
@@ -62,6 +65,7 @@ export class AnnounceMonitor {
     if (typeof owner !== "string") throw new Error("owner must be string");
     if (typeof frequency !== "string") throw new Error("frequency must be string");
 
+    if( !(networks instanceof Array) ) throw new Error("networks must be an array");
     if( !(relays instanceof Array) ) throw new Error("relays must be an array");
     if( !(profile instanceof Object) ) throw new Error("profile must be an object");
 
@@ -72,9 +76,10 @@ export class AnnounceMonitor {
     this.monReg.counts = counts;
     this.monReg.owner = owner;
     this.monReg.frequency = frequency;
+    this.monReg.networks = networks; 
     this.monReg.checks = AnnounceMonitor.formatChecks(checks)
 
-    this.monRelays = relays;
+    this.monRelays = [...this.monRelays, ...relays];
     this.monProfile = profile;
   }
 
@@ -88,7 +93,10 @@ export class AnnounceMonitor {
     log.debug(`announce::generate(): ${this.pubkey}`)
 
     const $monReg = new Kind10166(this.pubkey)
-    $monReg.generateEvent({...$monReg})
+
+    $monReg.generateEvent({...this.monReg})
+    console.log('10166')
+    console.dir($monReg.event)
     this.events["10166"] = $monReg
 
     const $monRelays = new Kind10002(this.pubkey)
@@ -118,9 +126,17 @@ export class AnnounceMonitor {
     const pubbedIds: string[] = []
     const kinds = Object.keys(this.events)
     for(let i = 0; i < kinds.length; i++) {
-      const kind = kinds[i]    
+      const kind = kinds[i]
+      let relays: string[] = [];
+      if(kind === '10166'){
+        relays = this.monRelays
+      }
+      if(kind === '0' || kind === '10002'){
+        relays = this.metaRelays
+      }
       try {
-        await Promise.any( this.publisher.publishEvent(this.events[kind]) )
+        const publisher = new Publisher(this.pubkey, relays)
+        await Promise.any( publisher.publishEvent( this.events[kind] ) )
       }
       catch(e){
         log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(this.monRelays.join(','))}`)

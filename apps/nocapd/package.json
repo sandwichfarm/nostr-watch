@@ -6,7 +6,7 @@
   "license": "MIT",
   "dependencies": {
     "@nostr-fetch/adapter-nostr-tools": "0.14.1",
-    "@nostrwatch/announce": "0.4.5",
+    "@nostrwatch/announce": "^0.4.5",
     "@nostrwatch/controlflow": "0.5.1",
     "@nostrwatch/logger": "0.0.9",
     "@nostrwatch/nocap": "0.9.2",

@@ -92,7 +92,7 @@
             }}></div>
         {/if}
              
-        <FeedNote note={item} memoryRelay={$feedService.memoryRelay} />
+        <FeedNote note={item} memoryRelay={$feedService.memoryRelay} relativesFetcher={$feedService.relativeFetchers.get(item.id)} />
     </Masonry>
     {/if}
     

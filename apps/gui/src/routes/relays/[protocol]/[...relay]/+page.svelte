@@ -3,11 +3,10 @@
   import { onDestroy, onMount } from 'svelte';
   import { doBootstrap } from '$lib/stores/routines.js';
   import { derived, writable, type Readable, type Writable } from 'svelte/store';
-  import { Nip66CheckEvent, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/route66/models';
-  import { eventsChecks, relayCheckAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
+  import { Nip66CheckEvent, type Monitor, type INip11, type IEvent } from '@nostrwatch/route66/models';
+  import { relayCheckAggregates } from '$lib/stores/checks.js';
   import { nip11s, nip11Service, nip11sLocal } from '$lib/stores/nip11s.js';
   import { isSeeded } from '$lib/stores/app.js';
-  import { eventsArray } from '$lib/stores/events.js';
   import { relaysErrors } from '$lib/stores/relay-errors.js';
   import { isHex } from '$lib/utils/nostr.js';
   import { Nip11 } from '@nostrwatch/route66/models';
@@ -592,14 +591,14 @@
   <div class="flex flex-col text-center items-center justify-center h-[600px]">
     <span class="text-2xl text-center">
     {#if $liveness === null}
-      Checking status.
+      looking for proof of life.
     {:else if $liveness === 'offline'}
-      <span class="block">Relay may be offline</span>
-      <span class="block">It was last seen {lastSeenAgo}</span>
+      <span class="block text-lg mb-2">Relay may be offline</span>
+      <span class="block text-md">It was last seen {lastSeenAgo}</span>
     {:else if $liveness === 'dead'}
       <span class="text-9xl">☠️</span>
-      <span class="block">Relay is dead</span>
-      <span class="block">It was last seen {lastSeenAgo}</span>
+      <span class="block text-lg mb-2">Relay is dead</span>
+      <span class="block text-md">It was last seen {lastSeenAgo}</span>
     {:else if $liveness === 'unknown'}
       <span class="block">Nobody has ever reported information on this relay</span>
     {:else}

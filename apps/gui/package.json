@@ -1,7 +1,7 @@
 {
 	"name": "@nostrwatch/gui",
 	"description": "",
-	"version": "0.6.25",
+	"version": "0.6.26",
 	"license": "MIT",
 	"keywords": [
 		"svelte",
@@ -21,7 +21,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "rm -rf dist && vite build -c vite.production.js",
-		"preview": "serve dist",
+		"preview": "vite preview",
 		"package": "svelte-kit sync && svelte-package && publint",
 		"release": "changeset publish",
 		"prepublishOnly": "npm run package",

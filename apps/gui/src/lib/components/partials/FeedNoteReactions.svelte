@@ -1,14 +1,26 @@
 <script lang="ts">
-    import { type Readable } from 'svelte/store';
+    import { readable, type Readable } from 'svelte/store';
     import { noteReactionsCount$ } from '$stores/helpers/helpers-notes';
     import type { NostrEvent } from '@nostrwatch/route66/models';
 	import type { SvelteMemoryRelay } from '@nostrwatch/memory-relay';
+	import { onDestroy, onMount } from 'svelte';
 
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<NostrEvent, NostrEvent>;
     export let reactionsCountCache: number; 
-    const reactions: Readable<number> = noteReactionsCount$<NostrEvent>(note.id, memoryRelay);
-    reactions.subscribe( count => reactionsCountCache = count )
+    let reactions: Readable<number>;
+
+    onMount( () => {
+        reactions = noteReactionsCount$<NostrEvent>(note.id, memoryRelay);
+        const unsub = reactions.subscribe( count => {
+            if(count === 0) return;
+            reactionsCountCache = count 
+        })
+        return () => {
+            unsub()
+            reactions = readable(0);
+        }
+    })
 </script>
 
 {$reactions? $reactions : ''}

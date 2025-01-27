@@ -23,6 +23,8 @@ export class FeedService extends Service {
     private _highestTimestamp: number[] = Array(this._filters.length).fill(0);
     private _lowestTimestamp: number[] = Array(this._filters.length).fill(0);
 
+    relativeFetchers: Map<string, () => void> = new Map()
+
     constructor(adapters: IAdaptersArgument, filters: Filter[] = [{}], relays: string[] = []){
         super(adapters)
         this._relays = [...this._relays, ...relays]
@@ -98,11 +100,6 @@ export class FeedService extends Service {
         this._relays.push(relay)
     }
 
-    async fetchRelatives(user: User, note: NostrEvent){
-        const onevents = (events: IEvent[]) => this.memoryRelay.eventBatch(events)
-        this.noteRelatives(user, note, { onevents })
-    }
-
     async detectUserRelays(user: User){
         if(user.relays) user.relays.forEach( this.addRelay.bind(this) )
     }
@@ -115,7 +112,7 @@ export class FeedService extends Service {
             stream: true,
             returnResults: true,
             keepAlive: false,
-            batch: 10
+            batch: 3
         };
 
         const args: WebsocketRequestBody = {
@@ -128,28 +125,38 @@ export class FeedService extends Service {
         const onevents = async (events: IEvent[]) => {
             console.log('populating feed with events', events.length)
             this.memoryRelay.eventBatch(events)
-            events.forEach(async (event) => {
-                const note = this.memoryRelay.get(event.id)
-                if(!note) return console.warn('Note not found, it should be found', event.id)
-                let user = pubkeyUserInstance(note.pubkey)
-                if(!user){
-                    user = get(userService)?.userFromPubkey(note.pubkey)
-                    if(!user) return;
-                    await user.ready();
-                    get(eventsStoreMemoryRelay).eventBatch( user.events )
-                }
-                if(!user) return;
-                this.setTimestampRange(event)
-                const onRelativeEvents = this.memoryRelay.eventBatch.bind(this.memoryRelay)
-                this.noteRelatives(user, note, { onevents: onRelativeEvents })
-            })
+            events.forEach(this.processNote.bind(this))
         }
 
         const onevent = console.log
 
         console.log(`subscribing to feed #${this._fetches}`, args)
         this._fetches++;
-        const result = await this.subscribe(args, { onevents, onevent })
+         await this.subscribe(args, { onevents, onevent })
+    }
+
+    private processNote = async (event: IEvent) => {
+        const note = this.memoryRelay.get(event.id)
+        if(!note) return console.warn('Note not found, it should be found', event.id)
+        let user = pubkeyUserInstance(note.pubkey)
+        if(!user){
+            user = get(userService)?.userFromPubkey(note.pubkey)
+            if(!user) return;
+            await user.ready();
+            get(eventsStoreMemoryRelay).eventBatch( user.events )
+        }
+        if(!user) return;
+        this.setTimestampRange(event)
+        this.relativeFetchers.set(event.id, () => {
+            console.log('fetchRelatives', note.id)
+            this.fetchRelatives(user, note)
+        })
+    }
+
+    async fetchRelatives(user: User, note: NostrEvent){
+        console.log('fetchRelatives', note.id)
+        const onevent = (events: IEvent) => this.memoryRelay.event(events)
+        this.noteRelatives(user, note, { onevent })
     }
 
     private populateAuthorsRelays(){
@@ -180,7 +187,7 @@ export class FeedService extends Service {
     }
 
     private async noteRelatives(user: User, note: NostrEvent, callbacks: SubscribeHandlers): Promise<IEvent[]> {
-        const { id, pubkey } = note
+        const { id } = note
         const filters: Filter[] = [
             { kinds: [9735, 9321], '#e': [id] },  //zaps
             { kinds: [1, 7, 1111], '#e': [id] },  //commments, mentions
@@ -191,8 +198,7 @@ export class FeedService extends Service {
             cache: true,
             stream: true,
             returnResults: true,
-            keepAlive: false,
-            batch: 10
+            keepAlive: false
         }
         // const hash = `${note.id}-${user.pubkey}`
         const args: UserFetchArgs = {

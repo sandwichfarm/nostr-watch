@@ -1,14 +1,15 @@
 <script lang="ts">
     import Bolt11 from 'light-bolt11-decoder';
-    import { type Readable } from 'svelte/store';
+    import { readable, type Readable } from 'svelte/store';
     import { noteCommentsCount$, noteZaps$ } from '$stores/helpers/helpers-notes';
     import type { NostrEvent } from '@nostrwatch/route66/models';
 	import type { SvelteMemoryRelay } from '@nostrwatch/memory-relay';
+	import { onDestroy, onMount } from 'svelte';
 
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<NostrEvent, NostrEvent>;
     export let zapSumCache: string; 
-    const zaps: Readable<NostrEvent[]> = noteZaps$<NostrEvent>(note.id, memoryRelay);
+    let zaps: Readable<NostrEvent[]> = noteZaps$<NostrEvent>(note.id, memoryRelay);
 
     $: bolt11s = $zaps.map(zap => {
             const b11 = zap.tags.find(tag => tag[0] === 'bolt11')?.[1]
@@ -30,7 +31,7 @@
         );
 
 
-    zaps.subscribe( sum => zapSumCache = zapSum )
+    
 
     function abbrNum(num: number): string {
         if(num === 0) return '';
@@ -41,6 +42,16 @@
         const scaled = num / Math.pow(1000, magnitude); 
         return `${scaled.toFixed(precision + 1)}${units[magnitude]}`;
     }
+
+    onMount( () => {
+        const unsub = zaps.subscribe( () => {
+            zapSumCache = zapSum
+        })
+        return () => {
+            unsub()
+            zaps = readable([]);
+        }
+    })
     
 </script>
 

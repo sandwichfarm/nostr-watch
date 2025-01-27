@@ -168,7 +168,7 @@ export const bootstrap = async () => {
             await fetchNip11s()
             await bootstrapOperatorMeta()
             isBootstrapping.set(false)
-            // seedFromCache();
+            await seedFromCache();
             updateLastSync();
             removeStaleChecksFromStore()
         })

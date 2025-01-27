@@ -14,13 +14,16 @@
 	import FeedNoteComments from './FeedNoteComments.svelte';
 	import FeedNoteZaps from './FeedNoteZaps.svelte';
 	import FeedNoteReactions from './FeedNoteReactions.svelte';
+	import { delay } from '@nostrwatch/utils';
 
+    
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<IEvent, NostrEvent>;
+    export let relativesFetcher: undefined | (() => void) = undefined;
 
     let content: Writable<string>;
   
-    const mount = () => {
+    const mount = async () => {
         content = parseNote(note.content, {
             removeHashtags: true,
             nip19: true,
@@ -35,7 +38,7 @@
     }
 
     const destroy = () => {
-
+        content.set('');
     }
 
     onMount(mount)
@@ -61,6 +64,7 @@
     use:observeViewport
     on:viewportchange={(event: any) => {
         isVisible = event.detail.isIntersecting;
+        if(isVisible && relativesFetcher) relativesFetcher()
     }}
     >
     <div class="text-xs text-gray-400">

@@ -27,6 +27,7 @@
         if(!relativesFetcher) return;
         if(relativesFetched) return;
         relativesFetcher()
+        relativesFetched = true;
     }
   
     const mount = async () => {

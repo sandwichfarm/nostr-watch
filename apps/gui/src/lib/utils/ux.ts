@@ -30,9 +30,12 @@ export const clickToCopy = (node: HTMLElement, target?: string) => {
   };
 };
 
-export function observeViewport(node: HTMLElement, options = {}, debounceTime = 500) {
-  let lastIsIntersecting = false; // Track state to avoid redundant events
+export function observeViewport(node: HTMLElement, options: { infiniteScroll?: boolean } = { infiniteScroll: true }, debounceTime = 500) {
+  const { infiniteScroll } = options;
+  let lastIsIntersecting = false;
   let timeoutId: number | null = null;
+  
+  if(!infiniteScroll) return;
 
   const debounceEvent = (callback: () => void, delay: number) => {
     if (timeoutId) {

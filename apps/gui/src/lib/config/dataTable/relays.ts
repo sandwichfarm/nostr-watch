@@ -276,6 +276,24 @@ export const filterFormatters: Formatters = {
     software: (software) => {
         if(typeof software !== 'string') return '-';
         return makeSoftwareReadable(software);
+    },
+    operatorPubkey: (pk: string): string => {
+        if(!pk) return ' ';
+        if(!isPubkey(pk)) return ' ';
+        const profile: PubkeyProfile = pubkeyProfile(pk);
+        if(!profile) return ' ';
+        if(!profile?.photo) return ' ';
+        let name = truncateWithEllipsis(pk, 33);
+        if(profile?.name){
+            name = truncateWithEllipsis(profile.name, 33);
+        }
+        let image = `<span class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
+             <img src="${profile.photo}" alt="${profile.photo}" class="w-full h-auto" />
+            </span>`
+        return `<div class="flex">
+            <div>${image}</div>
+            <div>${name}</div>
+            </div>`
     }
 }
 

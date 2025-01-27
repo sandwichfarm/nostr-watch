@@ -19,6 +19,7 @@
     import { pauseLiveSync } from '$lib/utils/lifecycle';
 
     export let filters: Filter[]; 
+    export let infiniteScroll: boolean = true;
 
     let user: User | undefined;
     let resumer: Function | undefined;
@@ -86,8 +87,9 @@
 
         {#if lowItemId(item.id)}
             <div 
-            use:observeViewport
+            use:observeViewport={ {infiniteScroll} }
             on:viewportchange={(event: any) => {
+                if(!infiniteScroll) return;
                 if(event.detail.isIntersecting) $feedService!.populate();
             }}></div>
         {/if}

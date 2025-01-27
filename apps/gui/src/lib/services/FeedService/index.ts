@@ -194,14 +194,17 @@ export class FeedService extends Service {
             keepAlive: false,
             batch: 10
         }
-        const hash = `${note.id}-${user.pubkey}`
+        // const hash = `${note.id}-${user.pubkey}`
         const args: UserFetchArgs = {
             filters,
             relays,
             options,
-            hash,
             priority: 5
         }
         return this.subscribe(args, callbacks) as Promise<IEvent[]>
+    }
+
+    destroy(){
+        this.memoryRelay.destroy()
     }
 }

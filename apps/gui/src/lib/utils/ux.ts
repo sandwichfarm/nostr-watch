@@ -30,22 +30,33 @@ export const clickToCopy = (node: HTMLElement, target?: string) => {
   };
 };
 
-export function observeViewport(node: HTMLElement, options = {}) {
+export function observeViewport(node: HTMLElement, options = {}, debounceTime = 500) {
   let lastIsIntersecting = false; // Track state to avoid redundant events
+  let timeoutId: number | null = null;
+
+  const debounceEvent = (callback: () => void, delay: number) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = window.setTimeout(callback, delay);
+  };
 
   const observer = new IntersectionObserver(([entry]) => {
     const isIntersecting = entry.isIntersecting;
 
     if (isIntersecting !== lastIsIntersecting) {
       lastIsIntersecting = isIntersecting;
-      node.dispatchEvent(
-        new CustomEvent('viewportchange', {
-          detail: {
-            isIntersecting: isIntersecting,
-            intersectionRatio: entry.intersectionRatio,
-          },
-        })
-      );
+
+      debounceEvent(() => {
+        node.dispatchEvent(
+          new CustomEvent('viewportchange', {
+            detail: {
+              isIntersecting: isIntersecting,
+              intersectionRatio: entry.intersectionRatio,
+            },
+          })
+        );
+      }, debounceTime);
     }
   }, options);
 
@@ -53,6 +64,9 @@ export function observeViewport(node: HTMLElement, options = {}) {
 
   return {
     destroy() {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       observer.unobserve(node);
     },
   };

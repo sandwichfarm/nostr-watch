@@ -4,7 +4,7 @@
     import { derived, writable, type Writable } from 'svelte/store';
     
 	
-	import { eventsArray, route66 } from '$lib/stores';
+	import { eventsArray, route66, type StoreEventType } from '$lib/stores';
 	import { type IEvent, Monitor, Nip66CheckEvent } from '@nostrwatch/route66/models';
 	import OperatorRelay from './OperatorRelay.svelte';
 
@@ -14,6 +14,13 @@
     export let monitors: Monitor[];
 
     const deadRelays: Writable<Nip66CheckEvent[]> = writable([])
+
+    const deduplicate = (events: Nip66CheckEvent[]): Nip66CheckEvent[] => {
+        return events.reduce( (acc: Nip66CheckEvent[], event: Nip66CheckEvent) => {
+            if(acc.find( (e: Nip66CheckEvent) => e.relay === event.relay)) return acc;
+            return [...acc, event]
+        }, [])
+    }
 
     const fetchDeadRelays = async () => {
         const dead = await $route66.services.monitors.fetchOperatorRelaysNotOnline(pubkey) || []
@@ -28,17 +35,17 @@
     }
 
     const onlineRelays = derived(eventsArray, ($eventsArray) => {
-        return $eventsArray.filter((event: Nip66CheckEvent) => {
-            return  event?.operatorPubkey 
-                    && event.operatorPubkey === pubkey 
-                    && event?.relay !== relayUrl;
-        })
+        return deduplicate($eventsArray.filter( (event: StoreEventType) => {
+            return  (event as Nip66CheckEvent)?.operatorPubkey 
+                    && (event as Nip66CheckEvent).operatorPubkey === pubkey 
+                    && (event as Nip66CheckEvent)?.relay !== relayUrl;
+        }) as Nip66CheckEvent[])
     });
 
     const allOperatorRelays = derived([onlineRelays, deadRelays], ([$onlineRelays, $deadRelays]) => {
         const all = [...$onlineRelays, ...$deadRelays]
         otherRelaysCount = $onlineRelays.length
-        return all
+        return deduplicate(all)
     });
 
     const mount = async () => {

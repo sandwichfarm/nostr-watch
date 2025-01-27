@@ -220,7 +220,8 @@
         expandedSamples = { ...expandedSamples, [id]: !expandedSamples[id] };
     }
 </script>
-{relayUrl}
+
+
 <div class="p-6 min-h-screen text-white">
 
     <Alert.Root class="mb-2">

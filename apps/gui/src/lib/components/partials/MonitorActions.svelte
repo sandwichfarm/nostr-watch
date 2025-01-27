@@ -34,7 +34,7 @@
             if(!$monitor) return;
             if($monitor?.enabled) {
                 $monitor.disable();
-                ([...$eventsArray] as IEvent[]).filter( event => event.pubkey === monitor.pubkey).forEach( event => {
+                ([...$eventsArray] as IEvent[]).filter( event => event.pubkey === $monitor.pubkey).forEach( event => {
                     const key = eventKey(event);
                     $events.delete(key)
                 });
@@ -56,9 +56,7 @@
                     relays: [ ...($route66?.services?.monitors?.nip66Relays || []), ...$monitor.relays ],
                     priority: 20
                 }
-                const onevents = (events: IEvent[]) => {
-                    publishEventsToMemoryRelay(events)
-                }
+                const onevents = publishEventsToMemoryRelay
                 await $route66?.services?.monitors?.subscribe(options, { onevents })
                 await resumer();
                 disabled.set(false);

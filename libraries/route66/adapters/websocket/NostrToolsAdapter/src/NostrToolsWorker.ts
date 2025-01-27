@@ -11,7 +11,7 @@ import {  WorkerOptions, AdapterWorkerResult, AdapterWebsocketWorker, IAdapterWe
 import { AdapterWebsocketWorkerCommand, IWebsocketAdapterCallbacks, defaultWebsocketAdapterOptions, defaultWebsocketRequestBody, WebsocketAdapterResult, WebsocketAdapterOptions, WebsocketRequestBody  } from '@nostrwatch/route66/core'
 import { IEvent } from "@nostrwatch/route66/interfaces";
 
-const queue = new PQueue({ concurrency: 10 });
+const queue = new PQueue({ concurrency: 5 });
 
 interface NostrToolsWorkerCommand extends AdapterWebsocketWorkerCommand {}
 

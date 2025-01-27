@@ -64,35 +64,5 @@ export default [
 		watch: {
 			clearScreen: false
 		}
-	},
-	{
-		treeshake: production,
-		input: 'src/main.js',
-		output: {
-			sourcemap: true,
-			format: 'iife',
-			name: 'app',
-			file: 'public/build/bundle.js',
-			inlineDynamicImports: true
-		},
-		plugins: [
-			svelte({
-				compilerOptions: {
-					dev: !production
-				}
-			}),
-			css({ output: 'bundle.css' }),
-			resolve({
-				browser: true,
-				dedupe: ['svelte', '@nostrwatch/route66', '@nostrwatch/route66-cacheadapter-dexieetl', '@nostrwatch/route66-wsadapter-nostrtools'],
-				exportConditions: ['svelte']
-			}),
-			commonjs(),
-			!production && livereload('public'),
-			production && terser()
-		],
-		watch: {
-			clearScreen: false
-		}
 	}
 ];

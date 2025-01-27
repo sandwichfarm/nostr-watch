@@ -10,6 +10,10 @@ import { OkResponse, ReqCommand, ReqFilter } from "@nostrwatch/worker-relay/dist
 import { generateSubId, randomInRange } from "./utils";
 import { NostrEvent } from "nostr-tools";
 
+import PQueue from 'p-queue';
+
+const queue = new PQueue({ concurrency: 10 });
+
 export interface INostrSqliteAdapter extends ICacheAdapter {
     REQ(filters: ReqFilter[]): Promise<IEvent[]>;
     COUNT(filters: ReqFilter[]): Promise<number>;

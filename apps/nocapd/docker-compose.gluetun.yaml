@@ -1,0 +1,48 @@
+version: "3.8"
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    env_file:
+      - ./.env.gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+    restart: always
+
+    # Updated Docker healthcheck
+    # healthcheck:
+      # Curl the internal healthcheck endpoint
+      # test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9999/health || exit 1"]
+      # interval: 30s
+      # timeout: 5s
+      # retries: 5
+      # start_period: 30s
+
+  nocapd:
+    container_name: nocapd
+    network_mode: "container:gluetun"
+    restart: always
+    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 0
+    volumes:
+      - ./.lmdb:/app/nostr-watch/apps/nocapd/.lmdb:rw
+      - ./.env.docker:/app/nostr-watch/apps/nocapd/.env:ro
+      - ./config.yaml:/app/nostr-watch/apps/nocapd/config.yaml:ro
+    env_file:
+      - .env.docker
+    environment:
+      DOCKER: "yes"
+    depends_on:
+      - gluetun
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2m"

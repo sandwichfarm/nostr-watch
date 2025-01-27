@@ -4,7 +4,7 @@
   import { doBootstrap } from '$lib/stores/routines.js';
   import { derived, writable, type Readable, type Writable } from 'svelte/store';
   import { Nip66CheckEvent, PubkeyProfile, PubkeyRelays, type Monitor, type INip11, type IEvent } from '@nostrwatch/route66/models';
-  import { relayCheckAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
+  import { eventsChecks, relayCheckAggregates, relayCheckAggregator } from '$lib/stores/checks.js';
   import { nip11s, nip11Service, nip11sLocal } from '$lib/stores/nip11s.js';
   import { isSeeded } from '$lib/stores/app.js';
   import { eventsArray } from '$lib/stores/events.js';
@@ -23,6 +23,8 @@
 	import { NocapService } from '$lib/services/NocapService';
 	import { relayLivenessAggregate, relayLivenessAggregate$, relayLivenessChecks, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 	import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools';
+	import { eventKey } from '$utils/event-keys';
+	import { NostrEvent } from '@nostrwatch/route66/models';
 	
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
@@ -98,10 +100,20 @@
   const lastSeen: Writable<number | null> = writable(null);
   const lastSeenBy: Writable<Monitor | null> = writable(null); 
 
+  const deduplicateEvents = ( events: NostrEvent[] ) => {
+    const deduped = new Map();
+    events.forEach( event => {
+      const key = eventKey(event);
+      deduped.set(key, event);
+    });
+    return Array.from(deduped.values());
+  }
+
   const relayAggregate: Readable<any | undefined> = relayLivenessAggregate$(relayUrl);
   const relayChecks: Readable<Nip66CheckEvent[]> = derived([oldChecks, relayCheckAggregates], ([$oldChecks]) => {
+    const checks = relayLivenessChecks(relayUrl)
     if($oldChecks.length) {
-      return $oldChecks;
+      return deduplicateEvents([...$oldChecks, ...checks]);
     }
     return relayLivenessChecks(relayUrl);
   })
@@ -122,8 +134,10 @@
 
     await route66Ready()
     await $route66.services.relay.ready()
+    
     await detectLiveness();
     await loadNip11().then(loadOperatorMeta)
+    
 
     loading = false
 
@@ -136,6 +150,9 @@
   const detectLiveness = async () => {
     if($relayChecks.length) {
       liveness.set('online')
+      const latestEvent = $relayChecks.sort((a, b) => b.created_at - a.created_at)[0]
+      lastCheck.set(latestEvent)
+      lastSeen.set(latestEvent?.created_at ?? null)
       return;
     }
 
@@ -158,8 +175,8 @@
 
       console.log('no online checks')
 
-      const nocap = new NocapService() 
-      const result = await nocap.check(relayUrl, ['open', 'read', 'dns', 'info'])
+      const nocap = new NocapService({ timeouts: { open: 5000 }}) 
+      const result = await nocap.check(relayUrl, ['open'])
       let onlineButNoRecentData = false;
 
       console.log(result)
@@ -175,7 +192,6 @@
           content: JSON.stringify(result.info.data),
           tags: [ 
             ['rtt-open', `${result.open.duration}`], 
-            ['rtt-read', `${result.read.duration}`],
             ['network', 'clearnet']
           ]
         }
@@ -204,9 +220,7 @@
         lastCheck.set(latestEvent)
         lastSeen.set(latestEvent?.created_at ?? null)
         lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
-        if(onlineButNoRecentData){
-          liveness.set('offline')
-        }
+        liveness.set('offline')
         return
       }
 
@@ -222,9 +236,7 @@
         lastCheck.set(latestEvent)
         lastSeen.set(latestEvent?.created_at ?? null)
         lastSeenBy.set(mons.get(latestEvent?.pubkey ?? null))
-        if(onlineButNoRecentData){
-          liveness.set('dead')
-        }
+        liveness.set('dead')
         return 
       }
 
@@ -386,7 +398,7 @@
   $: protocolsMatch = $page.params.protocol === 'wss' && location.protocol.replace(':', '') === 'https' 
                       || $page.params.protocol === 'ws' && location.protocol.replace(':', '') === 'http' 
 
-  $: probablyOnline = $relayChecks.length;
+  $: probablyOnline = $liveness === 'online';
 
   let [minColWidth, maxColWidth, gap] = [400, 800, 21];
   let width: number, height: number;

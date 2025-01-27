@@ -5,24 +5,29 @@ import type { Nip66CheckEvent } from "@nostrwatch/route66/models/Nip66CheckEvent
 import { events, eventsArray, type StoreEventType } from "$stores/events";
 import type { NostrEvent } from "nostr-tools";
 
+type AggregateType = Record<string, {
+    a: Record<string, any>;
+    checks: any[];
+    aggregate?: any;
+}>
 
-export const relayLivenessAggregate = (relayUrl: string): any | undefined => {
-    return get(eventsChecks).find((aggregate: any) => aggregate.relay === relayUrl) || undefined
+export const relayLivenessAggregate = (relayUrl: string): AggregateType | undefined => {
+    return get(relayChecks)?.[relayUrl]?.aggregate;
 }
 
-export const relayLivenessAggregate$ = (relayUrl: string): Readable<any | undefined> => {
-    return derived(eventsChecks, ($eventsChecks) => {
-        return $eventsChecks.find((aggregate: any) => aggregate.relay === relayUrl) || undefined
+export const relayLivenessAggregate$ = (relayUrl: string): Readable<AggregateType> | undefined => {
+    return derived(relayChecks, ($relayChecks) => {
+        return $relayChecks?.[relayUrl]?.aggregate;
     })
 }
 
 export const relayLivenessChecks = (relayUrl: string): Nip66CheckEvent[] => {
-    return relayLivenessAggregate(relayUrl)?.checks || [];
+    return get(eventsChecks)?.filter(event => (event as Nip66CheckEvent).relay === relayUrl) as Nip66CheckEvent[]; 
 }
 
 export const relayLivenessChecks$ = (relayUrl: string): Readable<Nip66CheckEvent[]> => {
-    return derived(eventsArray, ($eventsArray: StoreEventType[]) => {
-        return $eventsArray.filter(event => event!.relay === relayUrl) as Nip66CheckEvent[];  
+    return derived(eventsArray, ($relayChecks: StoreEventType[]) => {
+        return $relayChecks.filter(event => (event as Nip66CheckEvent).relay === relayUrl) as Nip66CheckEvent[];  
     })
 }
 

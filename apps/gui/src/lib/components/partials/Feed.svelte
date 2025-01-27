@@ -29,7 +29,7 @@
     const busy: Writable<boolean> = writable(false);
     let items: Readable<NostrEvent[]> | undefined;
 
-    let [minColWidth, maxColWidth, gap] = [300, 500, 21]
+    let [minColWidth, maxColWidth, gap] = [400, 600, 21]
     let width:number, height: number
     
     const lastItemId = () => {
@@ -54,7 +54,10 @@
     }
 
     const destroy = () => {
-        $feedService!.unsubscribeAll();
+        $feedService!.unsubscribeAll().then( () => {
+            $feedService!.destroy();
+            feedService.set(null) 
+        });
         resumer?.()
     }
 
@@ -70,8 +73,6 @@
             <span class="text-2xl text-center">loading</span>
         </div>
     {/if}
-
-    {$items?.length}
 
     {#if $feedService && $items?.length}
     <Masonry

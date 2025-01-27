@@ -126,7 +126,7 @@
         addDebug('route66:websocketAdapter', $route66?.websocketAdapter.isReady? true: false);
         addDebug('route66:initialized', $route66?.initialized? true: false);
         addDebug('route66:numSubscriptions', $route66?.websocketAdapter?.subscriptions.size);
-        addDebug('route66:subscriptions', Array.from($route66?.websocketAdapter?.subscriptions));
+        // addDebug('route66:subscriptions', Array.from($route66?.websocketAdapter?.subscriptions));
     }
 
     const debugCacheAdapter = async () => {

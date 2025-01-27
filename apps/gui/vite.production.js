@@ -8,6 +8,7 @@ export default defineConfig({
     preserveSymlinks: false,
   },
   worker: {
+    format: 'es',
     plugins: [
       sveltekit(),
       nodePolyfills({ })
@@ -20,7 +21,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name && assetInfo.name.endsWith('.worker.js')) {
+          if (assetInfo.names.length && assetInfo.names.filter(name => name.endsWith('.worker.js'))) {
             return 'workers/[name][extname]';
           }
           return 'assets/[name]-[hash][extname]';

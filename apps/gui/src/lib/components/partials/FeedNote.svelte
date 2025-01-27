@@ -7,18 +7,16 @@
 	import { observeViewport } from '$lib/utils/ux';
 	import { onDestroy, onMount } from 'svelte';
     import { writable, type Readable, type Writable } from 'svelte/store';
-    import Bolt11 from 'light-bolt11-decoder';
 	import { pubkeyUserInstance } from '$stores/helpers/helpers-pubkey';
 	import type { SvelteMemoryRelay } from '@nostrwatch/memory-relay';
     import { noteCommentsCount$, noteReactionsCount$, noteZaps$ } from '$stores/helpers/helpers-notes';  
 	import { activeMonitorChecksCount } from '$stores/monitors';
+	import FeedNoteComments from './FeedNoteComments.svelte';
+	import FeedNoteZaps from './FeedNoteZaps.svelte';
+	import FeedNoteReactions from './FeedNoteReactions.svelte';
 
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<IEvent, NostrEvent>;
-
-    const comments: Readable<number> = noteCommentsCount$<NostrEvent>(note.id, memoryRelay); 
-    const zaps: Readable<NostrEvent[]> = noteZaps$<NostrEvent>(note.id, memoryRelay);
-    const reactions: Readable<number> = noteReactionsCount$<NostrEvent>(note.id, memoryRelay);
 
     let content: Writable<string>;
   
@@ -46,44 +44,24 @@
     $: isComment = note.isComment
     $: user = pubkeyUserInstance(note.pubkey)
     $: name = user?.name || user?.pubkey
-    // $: animationClass = $relativesFetched? 'animate' : ''
-    $: bolt11s = $zaps.map(zap => {
-            const b11 = zap.tags.find(tag => tag[0] === 'bolt11')?.[1]
-            if(!b11) return null
-            return Bolt11.decode(b11)
-        }).filter( b11 => b11 !== null )
-    $: zapSum = isVisible? abbrNum(
-        Math
-            .round(
-                bolt11s
-                    .reduce((acc, b11) => acc += parseInt(
-                        b11.sections.find( 
-                            section => section?.name === 'amount')?.value || "0"
-                        )
-                        , 0)
-                /1000
-            )
-        ): '';
     
     let isVisible: boolean = true;
 
     $: actionsClass = isVisible? '' : 'opacity-0';
 
-    function abbrNum(num: number): string {
-        if(num === 0) return '';
-        if (num < 1000) return num.toString();
-        const units = ["", "K", "M", "B", "T", "P", "E"];
-        const magnitude = Math.floor(Math.log10(num) / 3);
-        const precision = magnitude - 1; 
-        const scaled = num / Math.pow(1000, magnitude); 
-        return `${scaled.toFixed(precision + 1)}${units[magnitude]}`;
-    }
+    let commentsCountCache: number | undefined;
+    let reactionsCountCache: number | undefined;
+    let zapSumCache: string = '';
 </script>
 
 <section 
     tabindex="-1" 
     id="note-{note.id}" 
     class="note px-8 py-5 rounded-lg bg-black/5 dark:bg-white/5 text-md block mb-3" 
+    use:observeViewport
+    on:viewportchange={(event: any) => {
+        isVisible = event.detail.isIntersecting;
+    }}
     >
     <div class="text-xs text-gray-400">
             <span class="text-xs text-gray-400">
@@ -106,22 +84,31 @@
         {@html $content}
     </div>
     <div class="actions flex mt-2 hover:opacity-100 {actionsClass} min-h-6">
-        {#if isVisible}
         <div class="flex-grow">
             <a href="">♡</a>
-            {$reactions? $reactions : ''}
+            {#if isVisible}
+            <FeedNoteReactions {note} {memoryRelay} bind:reactionsCountCache={reactionsCountCache} />
+            {:else}
+            {reactionsCountCache? reactionsCountCache : ''}
+            {/if}
         </div>
         <div class="flex-grow">
             <a href="">⚡</a>
-            {zapSum}
+            {#if isVisible}
+            <FeedNoteZaps {note} {memoryRelay} bind:zapSumCache={zapSumCache} />
+            {:else}
+            {zapSumCache? zapSumCache : ''}
+            {/if}
         </div>
         <div class="flex-grow">
             <a href="">🗨</a>
-            {$comments? $comments : ''}
+            {#if isVisible}
+            <FeedNoteComments {note} {memoryRelay} bind:commentsCountCache={commentsCountCache} />
+            {:else}
+            {commentsCountCache? commentsCountCache : ''}
+            {/if}
         </div>
-        {/if}
     </div>
-    
 </section>
   
 <style global>

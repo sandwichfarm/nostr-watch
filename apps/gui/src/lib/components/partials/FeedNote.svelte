@@ -22,6 +22,12 @@
     export let relativesFetcher: undefined | (() => void) = undefined;
 
     let content: Writable<string>;
+
+    const fetchRelatives = async () => {
+        if(!relativesFetcher) return;
+        if(relativesFetched) return;
+        relativesFetcher()
+    }
   
     const mount = async () => {
         content = parseNote(note.content, {
@@ -55,6 +61,8 @@
     let commentsCountCache: number | undefined;
     let reactionsCountCache: number | undefined;
     let zapSumCache: string = '';
+
+    let relativesFetched: boolean = false;
 </script>
 
 <section 
@@ -64,7 +72,7 @@
     use:observeViewport
     on:viewportchange={(event: any) => {
         isVisible = event.detail.isIntersecting;
-        if(isVisible && relativesFetcher) relativesFetcher()
+        if(isVisible) fetchRelatives()
     }}
     >
     <div class="text-xs text-gray-400">

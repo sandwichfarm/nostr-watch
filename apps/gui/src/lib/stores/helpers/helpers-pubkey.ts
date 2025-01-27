@@ -40,9 +40,18 @@ export const pubkeyProfile = (pubkey: string): StorePubkeyProfile | undefined =>
     return topMemoryRelay().get(`${formatPubkeyForIndex(pubkey)}:${0}`) as PubkeyProfile | undefined;
 }
 
+
+// let count = 0
 export const pubkeyProfile$ = (pubkey: string): Readable<StorePubkeyProfile> => {
-    return derived([eventsStoreMemoryRelay, get(eventsStoreMemoryRelay).store], ([$storeRelay]) => {
-        return $storeRelay.$get(`${formatPubkeyForIndex(pubkey)}:${0}`);
+    return derived([get(eventsStoreMemoryRelay).store], ([$store]) => {
+        // if(count < 1) {
+        //     const key = `${formatPubkeyForIndex(pubkey)}:${0}`
+        //     console.log(key)
+        //     console.dir(Array.from($store.keys()).filter(k => k.endsWith(':0')))
+        //     // console.log('pubkeyProfile', `${formatPubkeyForIndex(pubkey)}:${0}`, $storeRelay.get(`${formatPubkeyForIndex(pubkey)}:${0}`))
+        // }
+        // count++
+        return $store.get(`${formatPubkeyForIndex(pubkey)}:${0}`);
     }) as Readable<StorePubkeyProfile> 
 }
 

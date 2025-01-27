@@ -110,18 +110,14 @@ export const softwareVersionPercentages = derived(softwareVersionCounts, ($softw
   return percentages;
 });
 
-export const softwareRelays = derived(relayCheckAggregates, ($relayCheckAggregates) => {
-  const softwareRelays = new Map();
-
+export const softwareRelaysStore = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const map: Map<string, string[]> = new Map();
   $relayCheckAggregates.forEach((relayCheck) => {
     const sw = softwareKey(relayCheck?.software) || 'unknown';
-    if (!softwareRelays.has(sw)) {
-      softwareRelays.set(sw, []);
-    }
-    softwareRelays.get(sw).push(relayCheck.relay);
+    if (!map.has(sw)) map.set(sw, []);
+    (map.get(sw) as string[]).push(relayCheck.relay);
   });
-
-  return softwareRelays;
+  return map;
 })
 
 type MapStringSet = Map<string, Set<string>>;
@@ -139,6 +135,19 @@ export const softwareOperatorPubkeysMap = derived(relayCheckAggregates, ($relayC
   return softwareOperators;
 })
 
+export const ispsBySoftware: Readable<Map<string, Set<string>>> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const ispsBySoftware: Map<string, Set<string>> = new Map();
+  $relayCheckAggregates.forEach((relayCheck) => {
+    const isp = relayCheck?.isp || 'unknown';
+    const software = relayCheck?.software || 'unknown';
+    const isps = ispsBySoftware.get(software) || new Set();
+    if((isps as Set<string>).has(isp)) return;
+    (isps as Set<string>).add(isp);
+    ispsBySoftware.set(software, isps);
+  });
+  return ispsBySoftware;
+})
+
 export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($softwareOperatorPubkeysMap) => {
   const operatorSoftware: MapStringSet = new Map<string, Set<string>>();
 
@@ -154,17 +163,29 @@ export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($
   return operatorSoftware;
 })
 
+export const softwareGeocodesStore = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+  const map: Map<string, string[]> = new Map();
+  $relayCheckAggregates.forEach((relayCheck) => {
+    const sw = softwareKey(relayCheck?.software) || 'unknown';
+    if (!map.has(sw)) map.set(sw, []);
+    if(!relayCheck?.geocode) return;
+    (map.get(sw) as string[]).push(relayCheck.geocode);
+  });
+  return map;
+})
 
 export const softwareRows = derived(relayCheckAggregates, () => {
   const rows: any[] = [];
-  get(softwares).forEach((name: string) => {
+  const $softwares = get(softwares);
+  if(!$softwares.length) return rows;
+  $softwares.forEach((name: string) => {
     const row = {
       id: deterministicHash(name),
       name,
-      versions: get(softwareVersions).get(name) || [],
-      versionsNum: get(softwareVersions).get(name)?.length || 0,
-      totalDeployed: get(softwareCounts).get(name) || 0,
-      marketShare: get(softwarePercentages).get(name) || 0,
+      versions: get(softwareVersions)?.get(name) || [],
+      versionsNum: get(softwareVersions)?.get(name)?.length || 0,
+      totalDeployed: get(softwareCounts)?.get(name) || 0,
+      marketShare: get(softwarePercentages)?.get(name) || 0,
     };
     rows.push(row);
   });

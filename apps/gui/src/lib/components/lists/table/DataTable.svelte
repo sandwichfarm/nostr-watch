@@ -228,7 +228,9 @@
                 <DataTableShowResults {config}  />
                 <DataTablePaginator {tableInstance} />
                 <Popover.Root>
-                    <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">⚙</Popover.Trigger>
+                    <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">
+                        <Badge variant="secondary" class="cursor-pointer text-sm">Column Visiblity</Badge>
+                    </Popover.Trigger>
                     <Popover.Content class="z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
                         <Tabs.Root value="visiblity" class="">
                             <Tabs.List>

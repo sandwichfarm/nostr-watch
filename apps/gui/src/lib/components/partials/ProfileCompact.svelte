@@ -2,6 +2,7 @@
     import { type Monitor, type PubkeyProfile } from '@nostrwatch/route66/models';
     import { PFP } from '$lib/utils/pfp.js';
 	import type { Readable } from 'svelte/store';
+	import PubkeyPhoto from './PubkeyPhoto.svelte';
 
     export let pubkey: string;
     export let profile: Readable<PubkeyProfile>;
@@ -9,15 +10,7 @@
 
 <div class="flex flex-nowrap">
     <div class="flex-shrink mr-2">
-        {#if $profile?.photo}
-            <span class="overflow-hidden">
-                <img src={$profile.photo} alt={$profile.photo} class="w-10 h-10 block rounded-full" />
-            </span>
-        {:else}
-            <span class="rounded-full overflow-hidden inline-block">
-                <img src={PFP.generate(pubkey)} alt="${pubkey} photo" class="w-8 h-8" />
-            </span>
-        {/if}
+        <PubkeyPhoto pubkey={pubkey} />
     </div>
     <div class="flex-grow">
         {#if $profile?.name}

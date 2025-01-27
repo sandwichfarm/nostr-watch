@@ -92,8 +92,8 @@ export class RelayService extends Service {
     if(liveness === 'dead') {
       checks = checks.filter(check => {
         const monitor = monitors.get(check.pubkey);
-        if(!monitor || !monitor.relayIsDead(check)) return true
-        return false
+        if(!monitor || !monitor.relayIsDead(check)) return false
+        return true
       })
     }
     return [ checks, monitors ];

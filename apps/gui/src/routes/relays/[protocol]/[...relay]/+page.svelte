@@ -24,6 +24,7 @@
 	import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools';
 	import { eventKey } from '$utils/event-keys';
 	import { NostrEvent } from '@nostrwatch/route66/models';
+	import type { IResult } from '@nostrwatch/nocap';
 	
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
@@ -91,13 +92,13 @@
 
   const liveness: Writable<null | 'online' | 'offline' | 'dead' | 'unknown'> = writable(null);
   const oldChecks: Writable<Nip66CheckEvent[]> = writable([]);
+  const localCheck: Writable<IResult | null> = writable(null);
 
-  const relayIsOffline: Writable<boolean> = writable(false);
-  const relayIsDead: Writable<boolean> = writable(false);
-  const relayIsUnknown: Writable<boolean> = writable(false);
   const lastCheck: Writable<Nip66CheckEvent | undefined> = writable(undefined);
   const lastSeen: Writable<number | null> = writable(null);
   const lastSeenBy: Writable<Monitor | null> = writable(null); 
+
+  const nocapService: Writable<NocapService> = writable(new NocapService());
 
   const deduplicateEvents = ( events: NostrEvent[] ) => {
     const deduped = new Map();
@@ -172,42 +173,35 @@
         return
       }
 
-      // console.log('no online checks')
+      const localCheckResult = await $nocapService.check(relayUrl, ['open'])
 
-      const nocap = new NocapService({ timeouts: { open: 5000 }}) 
-      const result = await nocap.check(relayUrl, ['open'])
-      let onlineButNoRecentData = false;
-
-      // console.log(result)
-
-      if(result?.open?.data){
+      if(localCheckResult?.open?.data){
         liveness.set('online')
-        onlineButNoRecentData = true;
         let sk = generateSecretKey()
-        let pubkey = getPublicKey(generateSecretKey())
         const unsignedEvent = {
           kind: 30166,
           created_at: Math.floor(Date.now()/1000),
-          content: JSON.stringify(result.info.data),
+          content: JSON.stringify(localCheckResult.info.data),
           tags: [ 
-            ['rtt-open', `${result.open.duration}`], 
+            ['rtt-open', `${localCheckResult.open.duration}`], 
             ['network', 'clearnet']
           ]
         }
-        const ivp4s = result.dns.data.ipv4
-        const ivp6s = result.dns.data.ipv6
+        const ivp4s = localCheckResult.dns.data.ipv4
+        const ivp6s = localCheckResult.dns.data.ipv6
         if(ivp4s.length){
-          ivp4s.forEach( ipv4 => {
+          ivp4s.forEach( (ipv4: string) => {
             unsignedEvent.tags.push(['l', ipv4, 'ipv4'])
           })
         }
         if(ivp6s.length){
-          ivp6s.forEach( ipv6 => {
+          ivp6s.forEach( (ipv6: string) => {
             unsignedEvent.tags.push(['l', ipv6, 'ipv6'])
           })
         }
         const event = finalizeEvent(unsignedEvent, sk)
         oldChecks.update( (old: Nip66CheckEvent[]) => [...old, event] )
+        return;
       }
 
 
@@ -223,11 +217,11 @@
         return
       }
 
-      // console.log('no offline checks')
-
       const deadRes = await getRelayData('dead')
+      console.log('dead results', deadRes)
       if (!deadRes?.[0]?.length) {
-        relayIsUnknown.set(true)
+        liveness.set('unknown')
+        return
       } else {
         const [data, mons] = deadRes
         const latestEvent = data.sort((a, b) => b.created_at - a.created_at)[0]
@@ -238,10 +232,6 @@
         liveness.set('dead')
         return 
       }
-
-      // console.log('no dead checks')
-
-      liveness.set('unknown')
     } catch (err) {
       console.error(err)
     } finally {
@@ -250,27 +240,27 @@
     }
   }
 
-  const loadOfflineChecks = async () => {
-      if (!$isLivesyncing) {
-          $route66?.services?.relay?.getOfflineChecks(relayUrl).then( (res: any) => {
-            if (!res) return;
-            const [data, mons] = res;
-            publishEventsToMemoryRelay(data);
-            monitors.set(Array.from(mons?.values() || new Set()));
-          })
-      }
-  };
+  // const loadOfflineChecks = async () => {
+  //     if (!$isLivesyncing) {
+  //         $route66?.services?.relay?.getOfflineChecks(relayUrl).then( (res: any) => {
+  //           if (!res) return;
+  //           const [data, mons] = res;
+  //           publishEventsToMemoryRelay(data);
+  //           monitors.set(Array.from(mons?.values() || new Set()));
+  //         })
+  //     }
+  // };
 
-  const loadDeadChecks = async () => {
-      if (!$isLivesyncing) {
-          $route66?.services?.relay?.getOfflineChecks(relayUrl).then( (res: any) => {
-            if (!res) return;
-            const [data, mons] = res;
-            publishEventsToMemoryRelay(data);
-            monitors.set(Array.from(mons?.values() || new Set()));
-          })
-      }
-  };
+  // const loadDeadChecks = async () => {
+  //     if (!$isLivesyncing) {
+  //         $route66?.services?.relay?.getOfflineChecks(relayUrl).then( (res: any) => {
+  //           if (!res) return;
+  //           const [data, mons] = res;
+  //           publishEventsToMemoryRelay(data);
+  //           monitors.set(Array.from(mons?.values() || new Set()));
+  //         })
+  //     }
+  // };
 
   const loadNip11 = async () => {
       await $nip11Service.check(relayUrl)
@@ -329,9 +319,7 @@
       // operatorRelays.set(null);
       nip11Ready.set(false);
       operatorMetaReady.set(false);
-      relayIsOffline.set(false);
-      relayIsDead.set(false);
-      relayIsUnknown.set(false);
+      liveness.set(null);
   };
 
   onMount(mount);
@@ -524,7 +512,7 @@
                   {/if}
                   {#if item === 'operator'}
                     {#if CardOperator && $operatorProfile && operatorPubkey}
-                      <CardOperator {relayUrl} pubkey={operatorPubkey} profile={$operatorProfile} monitors={$monitors} />
+                      <CardOperator {relayUrl} pubkey={operatorPubkey} profile={operatorProfile} monitors={$monitors} />
                     {:else if !$operatorMetaReady}
                       <Skeleton class="h-36 w-full" />
                     {/if}
@@ -593,11 +581,11 @@
     {#if $liveness === null}
       looking for proof of life.
     {:else if $liveness === 'offline'}
-      <span class="block text-lg mb-2">Relay may be offline</span>
+      <span class="block text-xl my-3">Relay may be offline</span>
       <span class="block text-md">It was last seen {lastSeenAgo}</span>
     {:else if $liveness === 'dead'}
       <span class="text-9xl">☠️</span>
-      <span class="block text-lg mb-2">Relay is dead</span>
+      <span class="block text-xl my-3">Relay is probably dead</span>
       <span class="block text-md">It was last seen {lastSeenAgo}</span>
     {:else if $liveness === 'unknown'}
       <span class="block">Nobody has ever reported information on this relay</span>

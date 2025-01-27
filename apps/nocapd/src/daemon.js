@@ -101,6 +101,17 @@ const stop = async(signal) => {
   log.debug(`shutdown progress: complete!`)
 }
 
+const maybeShutdown = () => {
+  const startedThreshold = 60*60*1000
+  const threshold = 0.30;
+  const expiredThreshold = Math.round($q.checker.cache_counts.onlineExpired*threshold)
+  if($q.checker.startTime < Date.now() - startedThreshold) return 
+  if($q.checker.cache_counts.onlineExpired > expiredThreshold) {
+    console.warn('shutting down because onlineExpired is too high')
+    gracefulShutdown()
+  }
+}
+
 const maybeAnnounce = async () => {
   log.debug(`maybeAnnounce()`)
   const map = {

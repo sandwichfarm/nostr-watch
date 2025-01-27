@@ -120,7 +120,8 @@ export const relaysFromCache = async (opts) => {
       result = await cache.relay.get.all()
     }
 
-    console.log('result returned.')
+    console.log('result returned.', result?.length)
+    console.dir()
   
     result = result.map( relay => relay.url )
   }

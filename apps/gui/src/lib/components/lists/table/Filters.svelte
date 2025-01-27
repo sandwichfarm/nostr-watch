@@ -332,19 +332,19 @@
             } else if (filter.type === 'string' || filter.type === 'array') {
                 if (mode === 'OR') {
                     // union
-                    console.log('filter: existing', existingFilter)
+                    // console.log('filter: existing', existingFilter)
                     if (Array.isArray(existingFilter)) {
                         if (existingFilter.includes(value)) {
-                            console.log('existing filter')
+                            // console.log('existing filter')
                             const newValues = existingFilter.filter(v => v !== value);
                             if (newValues.length === 0) {
                                 const { [filterKey]: _, ...rest } = currentFilters;
                                 return rest;
                             }
-                            console.log('filter: new 1', { ...currentFilters, [filterKey]: newValues })
+                            // console.log('filter: new 1', { ...currentFilters, [filterKey]: newValues })
                             return { ...currentFilters, [filterKey]: newValues };
                         } else {
-                            console.log('filter: new 2', { ...currentFilters, [filterKey]: [...existingFilter, value] })
+                            // console.log('filter: new 2', { ...currentFilters, [filterKey]: [...existingFilter, value] })
                             return { ...currentFilters, [filterKey]: [...existingFilter, value] };
                         }
                     } else {
@@ -373,7 +373,7 @@
                     if (filter.type === 'array') {
                         // For array filters in UNIQUE mode, maintain filterValue as an array
                         if (!Array.isArray(existingFilter)) {
-                            console.log('array type filter is no longer an array', filterKey, value, existingFilter)
+                            // console.log('array type filter is no longer an array', filterKey, value, existingFilter)
                             return { ...currentFilters };
                         }
                         if (existingFilter.includes(value)) {

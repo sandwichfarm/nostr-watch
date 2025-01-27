@@ -81,7 +81,7 @@ export const softwaresByIsp: Readable<Map<string, string[]>> = derived(
             (softwares as Set<string>).add(relayCheck.software);
             softwaresByIsp.set(isp, softwares);
         });
-        console.log(softwaresByIsp, 'softwaresByIsp')
+        // console.log(softwaresByIsp, 'softwaresByIsp')
         softwaresByIsp.forEach((softwares, isp) => {
             softwaresByIsp.set(isp, Array.from(softwares));
         })

@@ -29,7 +29,7 @@ export class FeedService extends Service {
         super(adapters)
         this._relays = [...this._relays, ...relays]
         this._filters = filters
-        console.log('filters', filters, this._filters, this.filters)
+        // console.log('filters', filters, this._filters, this.filters)
         this._relay.on('qualify', (event: IEvent) => {
             return true
         })
@@ -105,7 +105,7 @@ export class FeedService extends Service {
     }
 
     async populate(){
-        console.log('populating feed', this.filters)
+        // console.log('populating feed', this.filters)
         this.populateAuthorsRelays()
         const options: WebsocketAdapterOptions = {
             cache: true,
@@ -123,14 +123,14 @@ export class FeedService extends Service {
         }
 
         const onevents = async (events: IEvent[]) => {
-            console.log('populating feed with events', events.length)
+            // console.log('populating feed with events', events.length)
             this.memoryRelay.eventBatch(events)
             events.forEach(this.processNote.bind(this))
         }
 
         const onevent = console.log
 
-        console.log(`subscribing to feed #${this._fetches}`, args)
+        // console.log(`subscribing to feed #${this._fetches}`, args)
         this._fetches++;
          await this.subscribe(args, { onevents, onevent })
     }
@@ -148,25 +148,25 @@ export class FeedService extends Service {
         if(!user) return;
         this.setTimestampRange(event)
         this.relativeFetchers.set(event.id, () => {
-            console.log('fetchRelatives', note.id)
+            // console.log('fetchRelatives', note.id)
             this.fetchRelatives(user, note)
         })
     }
 
     async fetchRelatives(user: User, note: NostrEvent){
-        console.log('fetchRelatives', note.id)
+        // console.log('fetchRelatives', note.id)
         const onevent = (events: IEvent) => this.memoryRelay.event(events)
         this.noteRelatives(user, note, { onevent })
     }
 
     private populateAuthorsRelays(){
         const authors: string[] = this.authorsFromFilters()
-        console.log('authors', authors)
+        // console.log('authors', authors)
         const authorsRelays: Set<string> = new Set()
         if(authors){
             authors.forEach((author) => {
                 const relays = pubkeyRelays(author)?.relays ?? []
-                console.log(relays)
+                // console.log(relays)
                 relays.forEach(relay => authorsRelays.add(relay))
             })
         }

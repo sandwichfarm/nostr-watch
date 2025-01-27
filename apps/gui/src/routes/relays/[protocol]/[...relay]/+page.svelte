@@ -172,13 +172,13 @@
         return
       }
 
-      console.log('no online checks')
+      // console.log('no online checks')
 
       const nocap = new NocapService({ timeouts: { open: 5000 }}) 
       const result = await nocap.check(relayUrl, ['open'])
       let onlineButNoRecentData = false;
 
-      console.log(result)
+      // console.log(result)
 
       if(result?.open?.data){
         liveness.set('online')
@@ -223,7 +223,7 @@
         return
       }
 
-      console.log('no offline checks')
+      // console.log('no offline checks')
 
       const deadRes = await getRelayData('dead')
       if (!deadRes?.[0]?.length) {
@@ -239,7 +239,7 @@
         return 
       }
 
-      console.log('no dead checks')
+      // console.log('no dead checks')
 
       liveness.set('unknown')
     } catch (err) {

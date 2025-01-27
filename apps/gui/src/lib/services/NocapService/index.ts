@@ -25,9 +25,9 @@ export class NocapService {
     }
 
     async check(relay: string, checks: string | string[] = 'open'): Promise<any | undefined> {
-        console.log('checking', relay)
+        // console.log('checking', relay)
         this.worker.postMessage({ relay, checks } as NocapRequestMessage)
-        console.log('message posted', { relay, checks })
+        // console.log('message posted', { relay, checks })
         let result: any | undefined;
         while(!result){
             result = get(nocapResults).get(relay)

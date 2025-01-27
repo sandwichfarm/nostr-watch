@@ -5,7 +5,6 @@ import DnsAdapterDefault from "@nostrwatch/nocap-dns-adapter-default"
 import type { NocapRequestMessage, NocapResultMessage } from "./index.js";
 
 const check = async (relay: string, checks: CheckKey[]): Promise<any> => {
-    console.log('check')
     const nocap = new Nocap(relay)
     nocap.useAdapter(WebsocketAdapterDefault)
     nocap.useAdapter(InfoAdapterDefault)
@@ -14,13 +13,11 @@ const check = async (relay: string, checks: CheckKey[]): Promise<any> => {
 }
 
 self.onmessage = ({ data }) => {
-    console.log('worker')
     const { relay, checks } = data as NocapRequestMessage;
-    console.log('worker: checking:', relay, checks)
     check(relay, checks)
         .then( (results: any) => {
             const message: NocapResultMessage = { relay, results }
-            console.log('message:', message)    
+            // console.log('message:', message)    
             self.postMessage(message)
         })
         .catch( (error: any) => {

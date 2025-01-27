@@ -11,7 +11,7 @@ export default defineConfig({
     format: 'es',
     plugins: [
       sveltekit(),
-      nodePolyfills({ })
+      nodePolyfills()
     ]
   },
   build: {

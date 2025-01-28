@@ -13,14 +13,6 @@
     export let filters: Writable<{}> = writable({});
     let hydrated = false 
 
-    filters.subscribe(() => {
-        hydrated = false;
-    })
-
-    
-    let dataCache = { areas: [], points: [], links: [] };
-
-
     const mapData: Readable<MapData<MapArea, MapPoint, MapLink>> = throttledDerived(data, ($data) => {
         // console.log('deriving')
         
@@ -46,12 +38,9 @@
                 }
             })
 
-        hydrated = true;
+        // hydrated = true;
         return { areas: [], points, links: [] }
     }, 1000)
-
-    
-    mapData.subscribe( ($d) => dataCache = $d )
 
     type MapPoint = {
         id?: string;
@@ -83,7 +72,6 @@
     const pointLabelTextBrightnessRatio = (d: MapPoint): number => d.brightness || 0.9;
 </script>
 
-{dataCache? dataCache.points.length : 'no data'}
 {#if $mapData && $mapData.points && $mapData.points.length > 0}
     <VisSingleContainer
       data={$mapData} 

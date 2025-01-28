@@ -13,13 +13,10 @@
     import { writable, type Writable } from 'svelte/store';
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
-	import { stringify } from 'json-source-map';
-
 
     const dataKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
-
 
 	const setConfig = () => {
 		
@@ -53,42 +50,43 @@
 <!-- <pre>{JSON.stringify($monitorsSorted.map( monitor => monitor), null, 2)}</pre> -->
 {#if $ready}
     {#if $monitorsSorted.length}
-        {#if criticalHasNoMonitorsEnabled}
-            <Alert.Root class="mb-2">
-                <Alert.Title>Critical</Alert.Title>
-                <Alert.Description>
-                    You have no monitors enabled, which will prevent the application from functioning correctly.
-                </Alert.Description>
-            </Alert.Root>
-        {:else if warnHasLessThanRecommendedMonitors}
-            <Alert.Root class="mb-2">
-                <Alert.Title>Warning</Alert.Title>
-                <Alert.Description>
-                    You have less than 3 monitors enabled, this could affect the completedness of your results.
-                </Alert.Description>
-            </Alert.Root>
-        {/if}
-    
-        {#if criticalInactiveMonitorsEnabled}
-            <Alert.Root class="mb-2">
-                <Alert.Title>Warning</Alert.Title>
-                <Alert.Description>
-                    You have a {countInactiveMonitorsEnabled} inactive monitor{countInactiveMonitorsEnabled>1? 's': ''} enabled.
-                </Alert.Description>
-            </Alert.Root>
-        {/if}
+        <div class="px-10">
+            {#if criticalHasNoMonitorsEnabled}
+                <Alert.Root class="mb-2">
+                    <Alert.Title class="text-red-500 font-bold">Critical</Alert.Title>
+                    <Alert.Description class="opacity-80">
+                        You have no monitors enabled, which will prevent the application from functioning correctly.
+                    </Alert.Description>
+                </Alert.Root>
+            {:else if warnHasLessThanRecommendedMonitors}
+                <Alert.Root class="mb-2">
+                    <Alert.Title class="text-orange-500 font-bold">Warning</Alert.Title>
+                    <Alert.Description class="opacity-80">
+                        You have less than 3 monitors enabled, this could affect the completedness of your results.
+                    </Alert.Description>
+                </Alert.Root>
+            {/if}
+        
+            {#if criticalInactiveMonitorsEnabled}
+                <Alert.Root class="mb-2">
+                    <Alert.Title class="text-orange-500 font-bold" >Warning</Alert.Title>
+                    <Alert.Description class="opacity-80">
+                        You have a {countInactiveMonitorsEnabled} inactive monitor{countInactiveMonitorsEnabled>1? 's': ''} enabled.
+                    </Alert.Description>
+                </Alert.Root>
+            {/if}
 
-        {#if warnHasMoreThanRecommendedMonitors}
-            <Alert.Root class="mb-2">
-                <Alert.Title>Warning</Alert.Title>
-                <Alert.Description>
-                    You have more than 8 monitors enabled, this might cause performance issues and consume extraneous bandwidth.
-                </Alert.Description>
-            </Alert.Root>
-        {/if}
+            {#if warnHasMoreThanRecommendedMonitors}
+                <Alert.Root class="mb-2">
+                    <Alert.Title class="text-orange-500 font-bold">Warning</Alert.Title>
+                    <Alert.Description class="opacity-80">
+                        You have more than 8 monitors enabled, this might cause performance issues and consume extraneous bandwidth.
+                    </Alert.Description>
+                </Alert.Root>
+            {/if}
+
+        </div>
         <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {dataKey} />
     {/if}
-
-<!-- <Stats /> -->
 
 {/if}

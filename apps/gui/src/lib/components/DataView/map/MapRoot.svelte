@@ -21,7 +21,7 @@
 
 </script>
 
-<MapViewSelector enabledViews={['bubble', 'markers', 'heatmap', 'choropleth']} bind:activeView />
+<MapViewSelector enabledViews={['bubble', 'heatmap']} bind:activeView />
 
 {#if data}
 

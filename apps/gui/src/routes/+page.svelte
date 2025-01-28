@@ -20,7 +20,7 @@
 {#if isHomepage}
   {#if loadedEnough}
   <section class="h-[420px] bg-black/5 dark:bg-white/5 flex flex-col justify-center items-center relative z-[200]">
-    <h1 class="w-full text-center text-3xl mb-4">nostr.watch is a client for browsing nostr relays.</h1>
+    <h1 class="w-full text-center text-3xl mb-4">nostr.watch is a client for browsing, learning and researching nostr relays.</h1>
     <div class="w-full max-w-xl">
       <AutoSuggestRelaysCompact 
         maxResults={5} 

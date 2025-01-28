@@ -33,7 +33,7 @@
         <button 
             on:click={() => activeView.set('heatmap')}
             class="dimension-link {$activeView === 'heatmap'? 'dimension-link-active': ''}">
-            Heat
+            Heatmap
         </button>
     {/if}
 

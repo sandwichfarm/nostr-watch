@@ -77,7 +77,8 @@ export const tableFormatters: Formatters = {
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
-            profile += `<div class="text-sm">${monitor.profile.name}</div>`
+            profile += `<span class="inline-block my-1 text-md bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${monitor.profile.name}</span>`
+            // profile += `<div class="text-sm">${monitor.profile.name}</div>`
         }
         profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis">${monitor.pubkey}</div>`
         profile += '</div>'

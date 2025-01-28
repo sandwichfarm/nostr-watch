@@ -166,7 +166,7 @@ export const bootstrap = async () => {
         isBootstrapping.set(true)
         await $route66?.services?.monitors?.bootstrap().then( async () => {
             await fetchNip11s()
-            await bootstrapOperatorMeta()
+            await bootstrapOperatorsMeta()
             isBootstrapping.set(false)
             await seedFromCache();
             updateLastSync();
@@ -183,15 +183,17 @@ export const bootstrap = async () => {
     }
 }
 
-export const bootstrapOperatorMeta = async () => {
-    //console.log('bootstrapOperatorMeta');
-    const $operatorPubkeysValid: string[] = get(operatorPubkeysValid);
+export const bootstrapOperatorsMeta = async (pubkeys?: string[]) => {
+
+    if(!pubkeys){
+        pubkeys = get(operatorPubkeysValid);
+    }
     const emptyFilter: Filter = { kinds: [0, 10002], authors: [] };
     const chunks: Filter[][] = [];
     let filters: Filter[] = [];
     let filter: Filter = structuredClone(emptyFilter);
     
-    for (const pubkey of $operatorPubkeysValid) {
+    for (const pubkey of pubkeys) {
         if (!Array.isArray(filter.authors)) {
             filter.authors = [];
         }
@@ -228,11 +230,13 @@ export const bootstrapOperatorMeta = async () => {
             returnResults: true, 
             keepAlive: false,
             stream: true,
-            batch: 20
+            batch: 10
         }
         await $route66.subscribe( { relays, filters, priority, options }, { onevents, onevent } );
     }
 }
+
+
 
 const fetchNip11s = async () => {
     const $nip11Service: Nip11Service = get(nip11Service);

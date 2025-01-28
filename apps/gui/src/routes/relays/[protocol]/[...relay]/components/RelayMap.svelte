@@ -181,7 +181,6 @@
         });
       }
     }
-
     monitorMapPoints.set(newPoints);
     monitorLinks.set(newLinks);
   }

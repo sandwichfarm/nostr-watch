@@ -23,8 +23,7 @@
 
     // **Props Passed to the Component**
     export let dataKey: string;
-    export let tableData: Readable<{ data: any[] }>;
-    
+    export let dataExtended: Readable<{ data: any[] }>;
     export let filters: Writable<Record<string, any>>;
     export let config: any;
 
@@ -32,7 +31,7 @@
 
     const filterOverrides: Record<string, { type: 'search' | 'badge', miniSearchOptions?: any }> = {};
 
-    $: keysEnable = ($config.columnsShow?.length && $config.filtersShow?.length )? Array.from(new Set([...$config.columnsShow, ...$config.filtersShow])) : []
+    // $: keysEnable = ($config.columnsShow?.length && $config.filtersShow?.length )? Array.from(new Set([...$config.columnsShow, ...$config.filtersShow])) : []
     $: filtersInclude = $config.filtersShow?.length? [ ...$config.filtersShow.filter(f => !$config.filtersDisable.includes(f)) ]: [];
 
     // **Accordion States**
@@ -78,14 +77,14 @@
     }
 
     const refreshIndices = () => {
-        const { data } = $tableData;
+        const { data } = $dataExtended;
         if(!data) return;
         buildInvertedIndex(data, filtersInclude);
         updateDisabledFilters($filters)
     }
 
     const filtersInit = () => {
-        const { data } = $tableData;
+        const { data } = $dataExtended;
         if(!data) return;
         buildInvertedIndex(data, filtersInclude);
         const initialFilters = createRelayFilters(data, filtersInclude, $config.humanReadableNames);
@@ -109,7 +108,7 @@
         filtersInit()
     }
 
-    const tableDataUnsub = tableData.subscribe(() => {
+    const tableDataUnsub = dataExtended.subscribe(() => {
         // debounce(filtersInit, 5000)()
     });
 
@@ -193,7 +192,7 @@
             }
         });
         // ////console.log('end computeActiveRecordIDs', new Date().getTime() - begin);
-        return activeRecordIDs || new Set(get(tableData).data.map(record => record.id));
+        return activeRecordIDs || new Set(get(dataExtended).data.map(record => record.id));
     }
 
     // **Update Disabled Filters Based on Active Filters**
@@ -279,7 +278,7 @@
 
     // **Handle Search Input with Debounce**
     const handleSearchInput = debounce((filterKey: string, searchTerm: string) => {
-        initializeMiniSearch(filterKey, get(tableData).data, filterOverrides[filterKey]?.miniSearchOptions);
+        initializeMiniSearch(filterKey, get(dataExtended).data, filterOverrides[filterKey]?.miniSearchOptions);
         const miniSearch = miniSearchInstances[filterKey];
         const results = miniSearch.search(searchTerm);
         const matchedValues = results.map(result => result[filterKey]).filter(v => v !== undefined);

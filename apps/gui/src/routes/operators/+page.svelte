@@ -11,7 +11,7 @@
 	import { events } from '$lib/stores';
 	import { operatorsPubkeys } from '$lib/stores/operators';
 	import { operatorsUserInstances } from '$lib/stores/operators';
-	import { bootstrapOperatorMeta } from '$lib/utils/lifecycle';
+	import { bootstrapOperatorsMeta } from '$lib/utils/lifecycle';
 	import { seedMetaFromCache } from '$lib/utils/lifecycle';
 
     let DataTable: DataTableType;
@@ -27,7 +27,7 @@
 		componentsLoaded.set(true);
 	}
 
-    const tableKey: string = 'operators'
+    const dataKey: string = 'operators'
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
 
@@ -37,7 +37,7 @@
 
         //console.log('conf', conf)
 
-		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
+		const userTableConfig = StateManager.get(`preferences:${dataKey}:tableConfig`);
 		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
@@ -59,7 +59,7 @@
         seedMetaFromCache()
         loadComponents().then(() => {
             setConfig()
-            bootstrapOperatorMeta()
+            bootstrapOperatorsMeta()
         });
     });
 
@@ -71,5 +71,5 @@
 
 </script>
 {#if $ready}
-    <DataTable {data} {config} {tableKey} />
+    <DataTable {data} {config} {dataKey} />
 {/if}

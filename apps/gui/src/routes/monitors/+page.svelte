@@ -16,7 +16,7 @@
 	import { stringify } from 'json-source-map';
 
 
-    const tableKey: string = 'monitors'
+    const dataKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
 
@@ -24,7 +24,7 @@
 	const setConfig = () => {
 		
 		let conf = {...defaultDataTableConfig, ...builtInTableConfig}
-		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
+		const userTableConfig = StateManager.get(`preferences:${dataKey}:tableConfig`);
 		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
@@ -86,7 +86,7 @@
                 </Alert.Description>
             </Alert.Root>
         {/if}
-        <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {tableKey} />
+        <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {dataKey} />
     {/if}
 
 <!-- <Stats /> -->

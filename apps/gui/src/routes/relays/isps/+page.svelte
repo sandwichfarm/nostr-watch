@@ -25,7 +25,7 @@
 		componentsLoaded.set(true);
 	}
 
-    const tableKey: string = 'isps'
+    const dataKey: string = 'isps'
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
 
@@ -35,7 +35,7 @@
 
         //console.log('conf', conf)
 
-		const userTableConfig = StateManager.get(`preferences:${tableKey}:tableConfig`);
+		const userTableConfig = StateManager.get(`preferences:${dataKey}:tableConfig`);
 		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
@@ -65,5 +65,5 @@
 <!-- <pre>{JSON.stringify(Array.from($ispCounts), null, 2)}</pre> -->
 {#if $ready}
     <RelayDimensions />
-    <DataTable {data} {config} {tableKey} />
+    <DataTable {data} {config} {dataKey} />
 {/if}

@@ -19,7 +19,7 @@
 	import type { DataTableConfig } from './DataTableTypes';
 	import { darkMode } from '$lib/stores/app';
 
-    export let tableKey: string;
+    export let dataKey: string;
     export let data: Readable<any[]>;
     export let config: Writable<DataTableConfig>;
     export let enableFilters: boolean = true;
@@ -147,7 +147,7 @@
     // **DataTable Subscription**
     onMount(async (): Promise<any> => {
         const unsubConfig = config.subscribe( (newConfig: DataTableConfig) => {
-            StateManager.set(`preferences:${tableKey}:tableConfig`, cachableConfig(newConfig));
+            StateManager.set(`preferences:${dataKey}:tableConfig`, cachableConfig(newConfig));
             if(resultsPerPage !== newConfig.pageSize) {
                 resultsPerPage = newConfig.pageSize;
             }
@@ -238,7 +238,7 @@
                                 <Tabs.Trigger value="order">Order</Tabs.Trigger>
                             </Tabs.List>
                             <Tabs.Content value="visiblity"  class="py-4 px-8">
-                                <TableOptions {config} {tableKey} />
+                                <TableOptions {config} {dataKey} />
                             </Tabs.Content>
                             <Tabs.Content value="order" class=" bg-white/20 dark:bg-black/20">
                                 coming soon...
@@ -341,7 +341,7 @@
         {:else}
             <!-- **Loading or Empty State** -->
             <div class="flex h-full items-center justify-center align-middle">
-                <p>[ loading image here ] {tableKey}</p>
+                <p>[ loading image here ] {dataKey}</p>
             </div>
         {/if}
     </Resizable.Pane>
@@ -378,7 +378,7 @@
             {:else}
                 {#if tableInstance !== null && enableFilters}
                     <Filters 
-                        {tableKey}
+                        {dataKey}
                         {tableData} 
                         {filters} 
                         {config}

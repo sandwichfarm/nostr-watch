@@ -11,7 +11,7 @@
     const toggleColumnShow = (key: string) => {
         config.update((currentConfig: DataTableConfig): DataTableConfig => {
             if (!currentConfig || !Array.isArray(currentConfig.columnsShow)) {
-                console.error("columnsShow is not an array");ajvErrors(ajv);
+                console.error("columnsShow is not an array");
                 return currentConfig;
             }
             let newColumnsShow: string[];

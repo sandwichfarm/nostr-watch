@@ -16,7 +16,7 @@ export class FeedService extends Service {
 
     private _relay: SvelteMemoryRelay<IEvent, NostrEvent> = new SvelteMemoryRelay<IEvent, NostrEvent>(writable(new Map()))
     private _filters: Filter[] = []
-    private _relays: string[] = ['wss://relay.nostr.band', 'wss://relay.damus.io']
+    private _relays: string[] = ['wss://relay.damus.io']
     private _acceptedKinds: number[] = []  
     private _fetches: number = 0; 
 
@@ -193,7 +193,7 @@ export class FeedService extends Service {
             { kinds: [1, 7, 1111], '#e': [id] },  //commments, mentions
             { kinds: [1111], '#E': [id] }         //NIP-22 comments
         ]
-        const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]
+        const relays: string[] = [ ...(user.relays || []), 'wss://relay.damus.io' ]
         const options: WebsocketAdapterOptions  = {
             cache: true,
             stream: true,

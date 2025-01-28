@@ -74,3 +74,34 @@ export function observeViewport(node: HTMLElement, options: { infiniteScroll?: b
     },
   };
 }
+
+export const randomLoadingMessage = () => { 
+  const messages = [
+    'desperately trying to find the meaning of life',
+    'trying to find the lost city of Atlantis',
+    'searching for the Holy Grail',
+    'looking for the needle in the haystack',
+    'searching for the pot of gold at the end of the rainbow',
+    'trying to find the end of the rainbow',
+    'looking for the end of the universe',
+    'searching for the end of the internet',
+    'trying to find the end of the world',
+    'searching for the end of time',
+    'looking for the end of the rainbow',
+    'presently annoying fiatjaf, need a sec.',
+    'telling pablo purplepag.es is down',
+    'asking gigi to forgive me for missing the hike',
+    'running branl.',
+    'meat good.',
+    `showing benthecarmen this isn't the dumbest thing he's ever heard`,
+    'telling fiatjaf websockets suck',
+    'deduplicating fuzzy strings in relay lists',
+    'waiting for the day relays have pubkeys',
+    'waiting for the day NIPs that have no impact on relays will be called NAPs',
+    `wondering why some relays don't support NIP-01`,
+    `wondering why most NIP-50 relays do case sensitive searches`,
+    `terminating websocket connection with beligerent relay`,
+  ]
+
+  return messages[Math.floor(Math.random() * messages.length)];
+}

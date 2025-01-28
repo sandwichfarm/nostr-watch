@@ -17,6 +17,8 @@
 	import type { DataTableConfig } from './DataTableTypes';
 	import { darkMode } from '$lib/stores/app';
 	import type { DataViewColumns } from '../DataTableTypes';
+	import { randomLoadingMessage } from '$utils/ux';
+	import Loading from '$lib/components/partials/Loading.svelte';
 
     export let dataKey: string;
     export let data: Readable<any[]>;
@@ -292,9 +294,7 @@
         <DataTablePaginator {tableInstance} />
     </div>
 {:else}
-    <div class="flex h-full items-center justify-center align-middle">
-        <p>[ loading image here ] {dataKey}</p>
-    </div>
+    <Loading />
 {/if}
 
 <style lang="postcss" global>

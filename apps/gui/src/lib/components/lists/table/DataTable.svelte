@@ -18,6 +18,7 @@
 	import Button from '../../ui/button/button.svelte';
 	import type { DataTableConfig } from './DataTableTypes';
 	import { darkMode } from '$lib/stores/app';
+	import { randomLoadingMessage } from '$utils/ux';
 
     export let dataKey: string;
     export let data: Readable<any[]>;
@@ -339,10 +340,16 @@
                 <DataTablePaginator {tableInstance} />
             </div>
         {:else}
-            <!-- **Loading or Empty State** -->
-            <div class="flex h-full items-center justify-center align-middle">
-                <p>[ loading image here ] {dataKey}</p>
-            </div>
+        <div class="flex flex-col text-center items-center justify-center h-[600px]">
+            <span class="text-2xl text-center mb-2">
+                please wait
+                <svg class="w-6 h-6 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+            </span>
+            <span class="text-2xl text-center italic max-w-[500px]">{randomLoadingMessage()}</span>
+        </div>
         {/if}
     </Resizable.Pane>
     <Resizable.Handle withHandle />

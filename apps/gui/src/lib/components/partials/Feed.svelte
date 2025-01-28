@@ -17,6 +17,7 @@
 
     import { observeViewport } from '$lib/utils/ux';
     import { pauseLiveSync } from '$lib/utils/lifecycle';
+	import Loading from './Loading.svelte';
 
     export let filters: Filter[]; 
     export let infiniteScroll: boolean = true;
@@ -70,9 +71,7 @@
 
 <section id="operator-feed" class="block relative">
     {#if $items?.length === 0}
-        <div class="flex flex-col text-center items-center justify-center h-[600px]">
-            <span class="text-2xl text-center">loading</span>
-        </div>
+       <Loading />
     {/if}
 
     {#if $feedService && $items?.length}

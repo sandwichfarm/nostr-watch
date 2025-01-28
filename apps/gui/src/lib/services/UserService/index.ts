@@ -125,7 +125,7 @@ export class UserService extends Service {
             { kinds: [1, 7, 1111], '#e': [id] }, //commments, mentions
             { kinds: [1111], '#E': [id] } //NIP-22 comments
         ]
-        const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]
+        const relays: string[] = [ ...(user.relays || []), 'wss://relay.damus.io' ]
         const options: WebsocketAdapterOptions  = {
             cache: true,
             stream: true,

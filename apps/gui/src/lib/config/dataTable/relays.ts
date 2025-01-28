@@ -115,10 +115,10 @@ const formatFee = (fees: Nip11Fee[]) => {
     for(const fee of Object.values(fees)) {
         // if(!['msat', 'sat'].some( u => u === fee.unit)) continue;
         const amount = fee.unit === 'msats'?  fee.amount/1000: fee.amount;
-        str += `<span>`
-        str += `<span class="fee-amount">${amount}</span><span class="fee-unit">sats</span>`
+        str += `<span class="block">`
+        str += `<span class="fee-amount">${amount}</span> <span class="fee-unit text-black/50 dark:text-white/50">sats</span>`
         if(fee?.period) {
-            str += `<span class="fee-period">/${fee.period/60/60/24} days</span>`
+            str += `<span class="fee-period"> <span class="text-black/50 dark:text-white/50">every</span> ${fee.period/60/60/24} days</span>`
         }
         str += `</span>`
     }

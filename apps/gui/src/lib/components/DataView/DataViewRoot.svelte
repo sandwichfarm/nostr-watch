@@ -118,7 +118,7 @@
         {/if}
 
         {#if $activeView === 'map'} 
-            <MapRoot data={justData} />
+            <MapRoot data={justData} {filters} />
         {/if}
     
     </Resizable.Pane>

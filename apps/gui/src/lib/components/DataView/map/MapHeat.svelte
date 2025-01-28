@@ -2,20 +2,42 @@
     import { onMount } from 'svelte';
     import { VisSingleContainer, VisTopoJSONMap } from '@unovis/svelte'
     import { MapPointLabelPosition, type ColorAccessor, type MapData } from '@unovis/ts'
-	import { derived, readable, type Readable } from 'svelte/store';
+	import { derived, readable, writable, type Readable, type Writable } from 'svelte/store';
 	import { points } from '@unovis/ts/components/topojson-map/style';
 	import { WorldMapTopoJSON } from '@unovis/ts/maps';
+	import { map } from 'lodash';
+	import { pauseLiveSync } from '$utils/lifecycle';
+	import { throttledDerived } from '$utils/stores';
     
     export let data: Readable<any[]>;
+    export let filters: Writable<{}> = writable({});
     let hydrated = false 
+
+    filters.subscribe(() => {
+        hydrated = false;
+    })
+
     
-    const mapData: Readable<MapData<MapArea, MapPoint, MapLink>> = derived(data, ($data) => {
-        // if(hydrated){
-        //     return $data;
-        // }
-        if (!$data) {
+    let dataCache = { areas: [], points: [], links: [] };
+
+    // onMount(() => {
+    //     const resumer = pauseLiveSync()
+    //     return async () => {
+    //       (await resumer)()
+    //     }
+    // })
+
+
+    const mapData: Readable<MapData<MapArea, MapPoint, MapLink>> = throttledDerived(data, ($data) => {
+        // console.log('deriving')
+        
+        if (!$data?.length) {
             return { areas: [], points: [], links: [] }
         }
+
+        // if(hydrated){
+        //     return dataCache;
+        // }
 
         const points = $data
             .filter((datum: any) => datum?.dd)
@@ -25,15 +47,18 @@
                     latitude: datum.dd.lat,
                     longitude: datum.dd.lon,
                     label: '',
-                    color: 'blue',
-                    radius: 10,
+                    color: 'red',
+                    radius: 5,
                     position: MapPointLabelPosition.Center,
                 }
             })
 
         hydrated = true;
         return { areas: [], points, links: [] }
-    })
+    }, 1000)
+
+    
+    mapData.subscribe( ($d) => dataCache = $d )
 
     type MapPoint = {
         id?: string;
@@ -65,6 +90,7 @@
     const pointLabelTextBrightnessRatio = (d: MapPoint): number => d.brightness || 0.9;
 </script>
 
+{dataCache? dataCache.points.length : 'no data'}
 {#if $mapData && $mapData.points && $mapData.points.length > 0}
     <VisSingleContainer
       data={$mapData} 
@@ -74,7 +100,7 @@
         topojson={WorldMapTopoJSON} 
         disableZoom={true}
         heatmapMode={true}
-        heatmapModeBlurStdDeviation={4}
+        heatmapModeBlurStdDeviation={6}
         {pointLabel}
         {pointLabelTextBrightnessRatio}
       />

@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import BootstrapLoading from "$lib/components/partials/BootstrapLoading.svelte";
 	import Nip66Check from "$lib/components/partials/Nip66Check.svelte";
 	import PubkeyPhoto from "$lib/components/partials/PubkeyPhoto.svelte";
+	import { hasBeenBoostrapped } from "$stores/app";
 	import { softwareGeos$, softwareIsps$, softwareOperatorsPubkeys$, softwareRelays$ } from "$stores/helpers/helpers-software";
 	import Badge from "$ui/badge/badge.svelte";
 	import { formatRelayUrl } from "$utils/routing";
@@ -18,12 +20,16 @@
     const operators: Readable<string[]> = softwareOperatorsPubkeys$(softwareKey);
     const geocodes: Readable<string[]> = softwareGeos$(softwareKey);
 
+    $: bootstrapped = hasBeenBoostrapped();
+
 </script>
 
 <header
   id="relay-header"
   class="relative bg-center bg-cover bg-no-repeat h-48 px-3 py-10 bg-black/20 dark:!bg-white/5"
 >
+
+
   <div class="relative z-10 flex justify-between p-6 h-full">
     <div class="flex">
       <div class="">
@@ -43,6 +49,10 @@
   </div>
 </header>
 
+{#if !bootstrapped}
+    <BootstrapLoading />
+{:else}
+ 
 <section>
     <div class="flex flex-col gap-10">
         <!-- Operators Section -->
@@ -126,6 +136,8 @@
         </div>
     </div>
 </section>
+
+{/if}
 
 <style lang="postcss">
 

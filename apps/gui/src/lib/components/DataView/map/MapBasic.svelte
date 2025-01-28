@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { pauseLiveSync } from '$utils/lifecycle';
   import { VisLeafletMap } from '@unovis/svelte'
 	import { on } from 'process';
 	import { onMount } from 'svelte';
-	import { derived, type Readable } from 'svelte/store';
+	import { derived, readable, type Readable } from 'svelte/store';
   
     type MapPointDataRecord = { id: string; dd: { lat: number; lon: number } }
 
@@ -17,7 +18,7 @@
             .filter((d: any) => d?.dd)
             .map((d: any) => {
                 return {
-                    id: d.id,
+                    id: d.relay.replace('wss://', '').replace('ws://', ''),  
                     dd: { lat: d.dd.lat, lon: d.dd.lon }
                 }
             })
@@ -31,14 +32,19 @@
 
     let showMap = false
 
-    onMount(() => {
+    onMount(async () => {
         showMap = true
+        data = readable([])
+        const resumer = await pauseLiveSync()
+        return () => {
+          resumer()
+        }
     })
   </script>
   
   {#if showMap}
   <VisLeafletMap
-    height="100vh"
+    height="75vh"
     data={$mapData}
     {style}
     {renderer}
@@ -49,7 +55,15 @@
     clusterExpandOnClick={false}
     attribution={[
       '<a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>',
-    ]}/>
+    ]}
+    fitViewOnInit={true}
+    fitViewOnUpdate={true}
+    [options]={{
+      scrollWheelZoom: false,
+      dragging: false
+    }}
+    
+    />
   {/if}
   
 <style lang="postcss" global    >

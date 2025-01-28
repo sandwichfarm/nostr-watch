@@ -96,7 +96,7 @@ export const randomLoadingMessage = () => {
     'telling pablo purplepag.es is down',
     'running branl.',
     'meat good.',
-    `showing benthecarmen this isn't the dumbest thing he's ever heard`,
+    `showing benthecarman this isn't the dumbest thing he's ever heard`,
     'telling fiatjaf websockets suck',
     'deduplicating fuzzy strings in relay lists',
     'waiting for the day relays have pubkeys',

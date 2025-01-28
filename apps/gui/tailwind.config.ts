@@ -18,6 +18,11 @@ const config: Config = {
 			}
 		},
 		extend: {
+			boxShadow: {
+				'offset-20': '20px 20px 0px rgba(255,255,255,0.03)',
+				'start': '10px 10px 0px 1px rgba(255,255,255,0.03)',
+				'end': '20px 20px 0px 1px rgba(255,255,255,0.03)',
+			},
 			colors: {
 				border: 'hsl(var(--border) / <alpha-value>)',
 				input: 'hsl(var(--input) / <alpha-value>)',

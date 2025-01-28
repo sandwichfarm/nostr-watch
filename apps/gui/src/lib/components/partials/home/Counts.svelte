@@ -44,21 +44,21 @@
             <div class="label text-center">active monitors</div>
         </div>
     </div>
-    <div class="w-1/6">
+    <div class="w-1/6  drop-shadow-[0_35px_35px_rgba(255,255,255,0.15)]">
         <div class="hp-card">
             <div class="label text-center">operated by</div>
             <div class="value text-7xl font-bold text-center"><a href="/operators">{countOperators}</div>
             <div class="label text-center">relay operators</div>
         </div>
     </div>
-    <div class="w-1/6">
+    <div class="w-1/6 drop-shadow-[0_35px_35px_rgba(255,255,255,0.15)]">
         <div class="hp-card">
             <div class="label text-center">running on</div>
             <div class="value text-7xl font-bold text-center"><a href="/relays/software">{countSoftwares}</a></div>
             <div class="label text-center">software stacks</div>
         </div>
     </div>
-    <div class="w-1/6">
+    <div class="w-1/6 drop-shadow-[0_35px_35px_rgba(255,255,255,0.15)]">
         <div class="hp-card">
             <div class="label text-center">served by</div>
             <div class="value text-7xl font-bold text-center">
@@ -67,7 +67,7 @@
             <div class="label text-center">isps</div>
         </div>
     </div>
-    <div class="w-1/6">
+    <div class="w-1/6 drop-shadow-[0_35px_35px_rgba(255,255,255,0.15)]  ">
         <div class="hp-card">
             <div class="label text-center">in</div>
             <div class="value text-7xl font-bold text-center"><a href="/relays/geography">{countCountries}</a></div>
@@ -79,7 +79,7 @@
 
 <style lang="postcss">
     .hp-card {
-        @apply border-white/5 border-[2px] bg-white/10 dark:bg-black/10 hover:bg-white/20 py-14 rounded-md shadow-md m-5;
+        @apply border-white/5 border-[2px] bg-white/10 dark:bg-black/10 hover:bg-white/15 py-14 rounded-md m-5 shadow-start hover:shadow-end transition-shadow duration-200 drop-shadow-[0_25px_25px_rgba(255,255,255,0.35)];
     }
 
     .hp-card:hover {

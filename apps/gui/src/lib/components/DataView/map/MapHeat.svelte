@@ -32,7 +32,7 @@
                     latitude: datum.dd.lat,
                     longitude: datum.dd.lon,
                     label: '',
-                    color: 'red',
+                    color: 'rgba(255,0,0,0.8)',
                     radius: 5,
                     position: MapPointLabelPosition.Center,
                 }

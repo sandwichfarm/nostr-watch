@@ -20,7 +20,7 @@ const getMonitor = (pubkey: string): Monitor => {
 
 export const publishEventsToMemoryRelay = async (_events: IEvent[]) => {
     queue.add(async () => {
-        await delay(10);
+        await delay(20);
         get(eventsStoreMemoryRelay).eventBatch(_events)
     });
 };

@@ -6,22 +6,50 @@
 	import { hasBeenBoostrapped } from "$stores/app";
 	import { softwareGeos$, softwareIsps$, softwareOperatorsPubkeys$, softwareRelays$ } from "$stores/helpers/helpers-software";
 	import Badge from "$ui/badge/badge.svelte";
+	import { instance } from "$utils/lifecycle";
+	import { parseNote } from "$utils/notes";
 	import { formatRelayUrl } from "$utils/routing";
 	import { clickToCopy, observeViewport } from "$utils/ux";
+	import { NostrEvent, type IEvent } from "@nostrwatch/route66/models";
+	import { deterministicHash } from "@nostrwatch/route66/utils";
 	import countryCodeToFlagEmoji from "country-code-to-flag-emoji";
 	import { stringify } from "json-source-map";
-	import type { Readable } from "svelte/store";
+	import { map } from "lodash";
+	import { onMount } from "svelte";
+	import { get, writable, type Readable, type Writable } from "svelte/store";
 
+    const WIKI_KIND = 30818;
 
-    const softwareKey = atob($page.params.softwareKey);
+    const softwareKeyBase64 = $page.params.softwareKey;
+    const softwareKey = atob(softwareKeyBase64);
 
     const relays: Readable<Nip66Check[]> = softwareRelays$(softwareKey);
     const isps: Readable<string[]> = softwareIsps$(softwareKey);
     const operators: Readable<string[]> = softwareOperatorsPubkeys$(softwareKey);
     const geocodes: Readable<string[]> = softwareGeos$(softwareKey);
 
+    const wikis: Writable<NostrEvent[]> = writable([]);
+
     $: bootstrapped = hasBeenBoostrapped();
 
+    onMount(async () => {
+        const route66 = await instance();
+        await route66.ready();
+        const filters = {
+            kinds: [WIKI_KIND],
+            '#d': [softwareKeyBase64]
+        }
+        const relays = ['wss://relay.wikifreedia.xyz']
+        const options = {
+            cache: true,
+            stream: false,
+            keepAlive: false,
+            returnResults: true
+        }
+        let results = await route66.adapters?.websocketAdapter?.subscribe({relays, filters, options});
+        results = results.map((ev: IEvent) => new NostrEvent(ev))
+        wikis.set(results);
+    });
 </script>
 
 <header
@@ -29,6 +57,7 @@
   class="relative bg-center bg-cover bg-no-repeat h-48 px-3 py-10 bg-black/20 dark:!bg-white/5"
 >
 
+  
 
   <div class="relative z-10 flex justify-between p-6 h-full">
     <div class="flex">
@@ -44,14 +73,28 @@
           <span class="copy-message">click to copy software key</span>
         </h1>
       </div>
-
+      
+      
     </div>
+    
+  </div>
+  <div class="text-xs block clear-both ml-10 font-mono opacity-50" use:clickToCopy>
+    {$page.params.softwareKey}
   </div>
 </header>
 
 {#if !bootstrapped}
     <BootstrapLoading />
 {:else}
+
+{#if $wikis.length}
+    <section class="p-4 mt-20">
+        <h2 class="text-xl font-semibold mb-2">About</h2>
+        {#each $wikis as wiki (wiki)}
+            <p>{get(parseNote(wiki.content))}</p>
+        {/each}
+    </section>
+{/if}
  
 <section>
     <div class="flex flex-col gap-10">

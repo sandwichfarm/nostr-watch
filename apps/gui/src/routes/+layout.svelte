@@ -5,11 +5,11 @@
   import { page, navigating } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
+  import { writable, type Writable, get } from 'svelte/store';
   import { doBootstrap } from '$lib/stores/routines.js';
-  
+
   import Header from '$lib/components/layout/Header.svelte';
   import { instance, bootstrap, seedFromCache } from '$lib/utils/lifecycle';
-  import { writable, type Writable, get } from 'svelte/store';
   import { Route66, StateManager } from '@nostrwatch/route66';
   import { destroy } from '$lib/utils/lifecycle';
   import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
@@ -32,36 +32,49 @@
 
   const lifecycle = createTabLifecycle();
   let idleDetector: IdleDetector | null = null;
-  let route66: Route66; // type Route66 if you import from your library
+  let route66: Route66;
 
   const isDebuggerVisible = writable(false);
+
+
+  const shutdown = async () => {
+    console.log('[Lifecycle] onReleaseLeader triggered.');
+    try {
+      route66 = await instance();
+      await route66.ready();
+      await route66.shutdown();
+      await delay(1000);
+      destroy();
+      setTabState('follower');
+    } catch (error) {
+      console.error('[Lifecycle] Error in onReleaseLeader:', error);
+      setTabState('follower');
+    }
+  }
 
   // --------------------------------------------------------------------------------
   // Utility to change tabState using store.get instead of $tabState in TS context
   // --------------------------------------------------------------------------------
   function setTabState(newState: TabStateType) {
     if (get(tabState) === newState) return;
-    tabState.update(current => {
-      // console.log(`TabState changing from ${current} to ${newState}`);
-      return newState;
-    });
+    tabState.update(() => newState);
+    console.log(`Tab state updated to: ${newState}`);
   }
 
   // --------------------------------------------------------------------------------
   // Idle Logic
   // --------------------------------------------------------------------------------
   function handleIdle() {
-    // console.log('User is idle. Performing idle actions...');
+    console.log('User is idle.');
     setTabState('idle');
     isIdle.set(true);
     lifecycle.releaseLeadership();
   }
 
   async function handleActive() {
+    console.log('User is active.');
     try {
-      // console.log('User is active again.');
       setTabState('follower');
-      // Attempt to acquire leadership again:
       await lifecycle.acquireLeadership();
       if (get(unsupported)) return;
 
@@ -79,46 +92,35 @@
   // Lifecycle: Leader events
   // --------------------------------------------------------------------------------
   lifecycle.onStartLeader(async () => {
-    // console.log('[Lifecycle] onStartLeader triggered');
+    console.log('[Lifecycle] onStartLeader triggered.');
     if (get(unsupported)) return;
     setTabState('leader');
     try {
-      await boot(); 
+      await boot();
     } catch (error) {
       console.error('[Lifecycle] Error in onStartLeader:', error);
     }
   });
 
   lifecycle.onLeaderAcquired(async () => {
-    // console.log('Non-leader tab: Just became leader...');
+    console.log('[Lifecycle] onLeaderAcquired triggered.');
     if (get(unsupported)) return;
     setTabState('leader');
     try {
-      await boot(); 
+      await boot();
       seedFromCache();
     } catch (error) {
       console.error('[Lifecycle] Error in onLeaderAcquired:', error);
     }
   });
 
-  lifecycle.onReleaseLeader(async () => {
-    // console.log('[Lifecycle] onReleaseLeader triggered'); 
-    try {
-      route66 = await instance();
-      await route66.ready();
-      await route66.shutdown();
-      await delay(1000);
-      destroy();
-      setTabState('follower');
-    } catch (error) {
-      console.error('[Lifecycle] Error in onReleaseLeader:', error);
-      setTabState('follower'); 
-    }
-  });
+  lifecycle.onReleaseLeader(shutdown);
 
   lifecycle.onWaitForLeaderRelease(() => {
-    // console.log('Non-leader tab: Waiting for DB to be released...');
+    console.log('[Lifecycle] Waiting for leader to release...');
   });
+
+  lifecycle.onTabInactive(shutdown);
 
   // --------------------------------------------------------------------------------
   // Subscriptions cleanup
@@ -137,7 +139,7 @@
     if (idleDetector) {
       idleDetector.destroy();
       idleDetector = null;
-      // console.log('IdleDetector destroyed on component cleanup.');
+      console.log('IdleDetector destroyed on component cleanup.');
     }
   }
 
@@ -145,12 +147,10 @@
   // Boot function (with concurrency & unsupported check)
   // --------------------------------------------------------------------------------
   async function boot() {
-    // If we're unsupported or already running busy logic, do nothing
     if (get(unsupported)) return;
 
     appState.set('booting');
 
-    // If we've already booted once (cached DB, etc.), skip direct bootstrap
     if (!get(doBootstrap)) {
       try {
         route66 = await instance();
@@ -163,7 +163,6 @@
         console.error('Error seeding from cache:', error);
       }
     } else if (!busy) {
-      // If doBootstrap is true and we're not busy, do a fresh bootstrap
       busy = true;
       try {
         await bootstrap();
@@ -180,8 +179,7 @@
 
   const initServices = () => {
     userService.set(new UserService(route66.adapters));
-    // feedService.set(new FeedService(route66.adapters));
-  }
+  };
 
   // --------------------------------------------------------------------------------
   // checkSupport - Mobile = unsupported
@@ -189,17 +187,24 @@
   function checkSupport() {
     const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test(userAgent);
-    const browserInfo = getBrowserInfo();
 
-    // If it's mobile, set unsupported -> force /mobile route
     if (isMobile) {
       unsupported.set(true);
       if (isMobile && get(page).url.pathname !== '/mobile') {
-        goto('/mobile'); 
+        goto('/mobile');
       }
     } else {
-      // Otherwise mark as supported
       unsupported.set(false);
+    }
+  }
+
+  // --------------------------------------------------------------------------------
+  // Recover leadership when tab becomes visible again
+  // --------------------------------------------------------------------------------
+  function recoverLeadershipOnVisibilityChange() {
+    if (document.visibilityState === 'visible') {
+      console.log('Tab became visible. Attempting to reclaim leadership...');
+      lifecycle.acquireLeadership();
     }
   }
 
@@ -210,62 +215,33 @@
     checkSupport();
     if (get(unsupported)) return;
 
-    // Version check for localStorage
-    const version = StateManager.get('version');
-    if (!version || version !== 2) {
-      console.warn('Clearing LocalStorage from nostrwatch legacy');
-      StateManager.clear();
-      StateManager.set('version', 2);  
-    }
-
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-
-    // If doBootstrap is not yet set
     if (typeof get(doBootstrap) === 'undefined') {
       doBootstrap.set(true);
     }
 
-    // Initialize IdleDetector
     if (!idleDetector) {
       idleDetector = new IdleDetector({
         idleTimeoutMs: IDLE_TIMEOUT_MS,
         onIdle: handleIdle,
         onActive: handleActive,
       });
-      // console.log('IdleDetector initialized.');
     }
 
-    // Debugger toggle with "d" key
-    const toggleDebugger = (event: KeyboardEvent) => {
-      if (event.key === 'd') {
-        isDebuggerVisible.update(visible => !visible);
-      }
-    };
-    window.addEventListener('keydown', toggleDebugger);
+    document.addEventListener('visibilitychange', recoverLeadershipOnVisibilityChange);
 
-    // Attempt to acquire leadership
     lifecycle.acquireLeadership();
 
     return () => {
-      window.removeEventListener('keydown', toggleDebugger);
+      document.removeEventListener('visibilitychange', recoverLeadershipOnVisibilityChange);
     };
   });
 
-  // --------------------------------------------------------------------------------
-  // onDestroy logic
-  // --------------------------------------------------------------------------------
   onDestroy(() => {
     unsubscribe();
     resetStores();
-    // console.log('Component destroyed. Cleaned up subscriptions and resources.');
   });
 
-  // --------------------------------------------------------------------------------
-  // React to navigation - but only if not unsupported
-  // Use $navigating to get the actual store value
-  // --------------------------------------------------------------------------------
   $: if ($navigating) {
-    // console.log('Navigation detected. Rechecking support and loading data.');
     checkSupport();
     if (!get(unsupported) && !busy) {
       boot();
@@ -274,11 +250,14 @@
 </script>
 
 {#if $unsupported}
-  <slot />
+  <div>
+    <h1>Unsupported Device</h1>
+    <p>Please switch to a supported device.</p>
+  </div>
 {:else}
   {#if isReady}
     {#if $tabState === 'idle'}
-      <div class="flex flex-col items-center justify-center h-screen px-4">
+      <div class="flex items-center justify-center h-screen">
         <div class="text-2xl">Zzz</div>
       </div>
     {:else if $tabState === 'leader'}
@@ -300,32 +279,8 @@
 {/if}
 
 <style global>
-  :root {
-    --scrollbar-primary: black;
-    --scrollbar-secondary: rgba(255,255,255,0.2);
-  }
-  
   body {
-    @apply pb-10;
-  }
-  
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-secondary) var(--scrollbar-primary);
-  }
-  
-  *::-webkit-scrollbar {
-    width: 15px;
-  }
-  
-  *::-webkit-scrollbar-track {
-    background: var(--scrollbar-primary);
-    border-radius: 5px;
-  }
-  
-  *::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-secondary);
-    border-radius: 14px;
-    border: 3px solid var(--scrollbar-primary);
+    margin: 0;
+    padding: 0;
   }
 </style>

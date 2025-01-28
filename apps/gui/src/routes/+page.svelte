@@ -19,7 +19,7 @@
 
 {#if isHomepage}
   {#if loadedEnough}
-  <section class="h-[420px] bg-black/5 dark:bg-white/5 flex flex-col justify-center items-center">
+  <section class="h-[420px] bg-black/5 dark:bg-white/5 flex flex-col justify-center items-center relative z-[200]">
     <h1 class="w-full text-center text-3xl mb-4">nostr.watch is a client for browsing nostr relays.</h1>
     <div class="w-full max-w-xl">
       <AutoSuggestRelaysCompact 
@@ -37,13 +37,15 @@
           focus:outline-none focus:border-transparent focus:ring-0"
         resultWrapperClass="
           result-wrapper
-          shadow-md absolute top-full -mt-8 left-0 right-0 z-9999 backdrop-blur-lg border border-white/10 dark:bg-black/60 dark:border-white/10"
+          shadow-md absolute top-full -mt-8 
+          left-0 right-0 z-9999 backdrop-blur-lg 
+          border border-white/10 dark:bg-black/60 dark:border-white/10"
         />
     </div>
   </section>
   <Counts />
   {:else}
-  <div class="flex flex-col items-center justify-center h-screen">
+  <div class="flex flex-col items-center justify-center h-screen relative z-[100]">
     <!-- <div class="text-2xl h-[420px] align-middle bg-black/10 dark:bg-white/10 mb-4">[ loading graphic ]</div> -->
     <ActivityList />
   </div>
@@ -53,6 +55,6 @@
 
 <style lang="postcss" global>
   .result-wrapper > div {
-    @apply rounded-sm bg-gradient-to-b from-black/100 to-black/0; 
+    @apply rounded-sm bg-transparent bg-gradient-to-b from-black/90 to-black/0; 
   }
 </style>

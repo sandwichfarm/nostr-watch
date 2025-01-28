@@ -66,6 +66,10 @@ export class MonitorService extends Service {
     return this.manager.enabledMonitors;
   } 
 
+  get activeEnabledMonitors() {
+    return this.manager.enabledActiveMonitors;
+  }
+
   get disabledMonitors() {
     return this.manager.disabledMonitors;
   }

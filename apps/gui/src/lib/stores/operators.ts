@@ -4,6 +4,7 @@ import { relayCheckAggregates } from "./checks";
 import {  pubkeyUserInstance } from "./helpers/helpers-pubkey";
 import { operatorIsps, operatorRelays, operatorRelaysOperated, operatorSoftwares } from "./helpers/helpers-operator";
 import { type StoreIsp, isps } from "./isps";
+import { isPubkey } from "$utils/nostr";
 
 export const operatorsPubkeys: Readable<string[]> = derived(
     relayCheckAggregates,
@@ -16,6 +17,13 @@ export const operatorsPubkeys: Readable<string[]> = derived(
             }
         });
         return Array.from(operators).sort()
+    }
+)
+
+export const operatorsPubkeysValid: Readable<string[]> = derived(
+    operatorsPubkeys,
+    ($operatorsPubkeys) => {
+        return $operatorsPubkeys.filter(isPubkey)
     }
 )
 

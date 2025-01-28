@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { relayCheckAggregates } from "$lib/stores";
-	import { route66 } from "$lib/stores";
+	import { geocodes, relayCheckAggregates } from "$lib/stores";
 	import { isps, softwares } from "$lib/stores";
+	import { operatorsPubkeys, operatorsPubkeysValid } from "$stores/operators";
+	import { instance } from "$utils/lifecycle";
+	import { isPubkey } from "$utils/nostr";
 	import { onMount } from "svelte";
 	import { writable, type Writable } from "svelte/store";
 
@@ -9,9 +11,10 @@
     const enabledMonitors: Writable<number | null> = writable(null);    
 
     const mount = async () => {
-        await $route66.ready();
-        activeMonitors.set($route66.services.monitors.activeMonitors?.length)
-        enabledMonitors.set($route66.services.monitors.enabledMonitors?.length)
+        const $route66 = await instance();
+        await $route66.ready()
+        activeMonitors.set($route66!.services.monitors!.activeMonitors?.length || 0)
+        enabledMonitors.set($route66!.services.monitors!.activeEnabledMonitors?.length)
     }
 
     onMount(mount)
@@ -21,43 +24,54 @@
     $: countMonitorsActive = $activeMonitors || null;
     $: countSoftwares = $softwares?.length || null;
     $: countIsps = $isps?.length || null;
+    $: countOperators = $operatorsPubkeysValid?.length || null;
+    $: countCountries = $geocodes?.length || null;
 </script>
 
-<div class="flex mt-9">
+<div class="flex mt-9 mx-10">
     <!--several blocks on a single row that are equal widths, and for small screen sizes collapse to a single column --> 
-    <div class="w-1/5">
+    <div class="w-1/6">
         <div class="hp-card">
-            <div class="text-center">there are around</div>
-            <div class="text-9xl font-bold text-center">{countRelays}</div>
-            <div class="text-center">relays online</div>
+            <div class="label text-center">there are around</div>
+            <div class="value text-7xl font-bold text-center"><a href="/relays">{countRelays}</a></div>
+            <div class="label text-center">relays online</div>
         </div>
     </div>
-    <div class="w-1/5">
+    <div class="w-1/6">
         <div class="hp-card">
-            <div class="text-center">reported by</div>
-            <div class="text-9xl font-bold text-center">{countMonitorsEnabled}</div>
-            <div class="text-center">enabled monitors</div>
+            <div class="label text-center">reported by</div>
+            <div class="value text-7xl font-bold text-center"><a href="/monitors">{countMonitorsEnabled}/{countMonitorsActive} </a></div>
+            <div class="label text-center">active monitors</div>
         </div>
     </div>
-    <div class="w-1/5">
+    <div class="w-1/6">
         <div class="hp-card">
-            <div class="text-center">out of</div>
-            <div class="text-9xl font-bold text-center">{countMonitorsActive}</div>
-            <div class="text-center">monitors presently active</div>
+            <div class="label text-center">operated by</div>
+            <div class="value text-7xl font-bold text-center"><a href="/operators">{countOperators}</div>
+            <div class="label text-center">relay operators</div>
         </div>
     </div>
-    <div class="w-1/5">
+    <div class="w-1/6">
         <div class="hp-card">
-            <div class="text-center">running on</div>
-            <div class="text-9xl font-bold text-center">{countSoftwares}</div>
-            <div class="text-center">software stacks</div>
+            <div class="label text-center">running on</div>
+            <div class="value text-7xl font-bold text-center"><a href="/relays/software">{countSoftwares}</a></div>
+            <div class="label text-center">software stacks</div>
         </div>
     </div>
-    <div class="w-1/5">
+    <div class="w-1/6">
         <div class="hp-card">
-            <div class="text-center">served by</div>
-            <div class="text-9xl font-bold text-center">{countIsps}</div>
-            <div class="text-center">isps</div>
+            <div class="label text-center">served by</div>
+            <div class="value text-7xl font-bold text-center">
+                <a href="/relays/isps">{countIsps}</a>
+            </div>
+            <div class="label text-center">isps</div>
+        </div>
+    </div>
+    <div class="w-1/6">
+        <div class="hp-card">
+            <div class="label text-center">in</div>
+            <div class="value text-7xl font-bold text-center"><a href="/relays/geography">{countCountries}</a></div>
+            <div class="label text-center">countries</div>
         </div>
     </div>
 </div>
@@ -65,6 +79,26 @@
 
 <style lang="postcss">
     .hp-card {
-        @apply bg-black/10 dark:bg-white/10 py-20 rounded-lg shadow-md m-5;
+        @apply border-white/5 border-[2px] bg-white/10 dark:bg-black/10 hover:bg-white/20 py-14 rounded-md shadow-md m-5;
+    }
+
+    .hp-card:hover {
+        @apply bg-white/20 dark:bg-black/15;
+    }
+
+    .hp-card .label {
+        @apply opacity-50 hover:opacity-60;
+    }
+
+    .hp-card:hover .label {
+        @apply opacity-60;
+    }
+
+    .hp-card:hover .value {
+        @apply opacity-100;
+    }
+
+    .hp-card .value {
+        @apply opacity-70;
     }
 </style>

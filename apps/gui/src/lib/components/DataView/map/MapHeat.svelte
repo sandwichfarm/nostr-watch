@@ -20,13 +20,6 @@
     
     let dataCache = { areas: [], points: [], links: [] };
 
-    // onMount(() => {
-    //     const resumer = pauseLiveSync()
-    //     return async () => {
-    //       (await resumer)()
-    //     }
-    // })
-
 
     const mapData: Readable<MapData<MapArea, MapPoint, MapLink>> = throttledDerived(data, ($data) => {
         // console.log('deriving')

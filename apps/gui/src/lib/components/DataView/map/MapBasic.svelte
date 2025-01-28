@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { pauseLiveSync } from '$utils/lifecycle';
+	import { throttledDerived } from '$utils/stores';
   import { VisLeafletMap } from '@unovis/svelte'
 	import { on } from 'process';
 	import { onMount } from 'svelte';
@@ -9,7 +10,7 @@
 
     export let data: Readable<any[]>;
 
-    const mapData = derived(data, ($data) => {
+    const mapData = throttledDerived(data, ($data) => {
         if (!$data) {
             return []
         }
@@ -22,7 +23,7 @@
                     dd: { lat: d.dd.lat, lon: d.dd.lon }
                 }
             })
-    })
+    }, 1000)
     const style = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
     const renderer = 'raster'
     const pointLatitude = (d: MapPointDataRecord) => d?.dd.lat
@@ -35,10 +36,6 @@
     onMount(async () => {
         showMap = true
         data = readable([])
-        const resumer = await pauseLiveSync()
-        return () => {
-          resumer()
-        }
     })
   </script>
   

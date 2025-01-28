@@ -36,6 +36,13 @@
 
   const isDebuggerVisible = writable(false);
 
+  const toggleDebugger = (event: KeyboardEvent) => {
+    if (event.key === 'd') {
+      isDebuggerVisible.update(visible => !visible);
+    }
+  };
+  window.addEventListener('keydown', toggleDebugger);
+
 
   const shutdown = async () => {
     console.log('[Lifecycle] onReleaseLeader triggered.');

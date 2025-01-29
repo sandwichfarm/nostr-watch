@@ -17,7 +17,7 @@
     import * as Tabs from "$lib/components/ui/tabs";
 	import Button from '../../ui/button/button.svelte';
 	import type { DataTableConfig } from './DataTableTypes';
-	import { darkMode } from '$lib/stores/app';
+	import { darkMode } from '$lib/stores/theme';
 	import { randomLoadingMessage } from '$utils/ux';
 
     export let dataKey: string;

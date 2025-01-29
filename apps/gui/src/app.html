@@ -12,11 +12,11 @@
 		/>
 		<script>
 			function toggleDarkMode(isDark) {
+				//NOTE: temporarily disable dark mode in production
 				// document.documentElement.classList.toggle('dark', prefersDark);
 				if (isDark) {
 					document.documentElement.classList.add('dark');
 				} else {
-					
 					document.documentElement.classList.remove('dark');
 				}
 			}

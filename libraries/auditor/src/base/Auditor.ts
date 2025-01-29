@@ -38,7 +38,7 @@ export const defaultResult: IAuditorResult = {
 export class Auditor {
   private _suites: SuiteSet = new Set();
   private _conf: IAuditorConf = defaultAuditorConf;
-  protected ws?: WebSocket;
+  protected socket?: WebSocket;
   protected resulter: Resulter = new Resulter(defaultResult);
   private logger: Logger = new Logger('@nostrwatch/auditor', {
     showTimer: false,
@@ -80,7 +80,7 @@ export class Auditor {
 
   async checkNip11(): Promise<ISuiteResult> {
     const Suite = await import(`../nips/Nip11/index.js`);
-    const $Suite = new Suite.default(this.ws as WebSocket);
+    const $Suite = new Suite.default(this.socket as WebSocket);
     const result = await $Suite.test()
     return result; 
   }
@@ -114,7 +114,7 @@ export class Auditor {
 
   async test(relay: string): Promise<IAuditorResult> {
     this.logger.info(`Auditor: ${relay}`);  
-    this.ws = new WebSocket(relay);
+    this.socket = new WebSocket(relay);
     const suites = Array.from(this.suites);
     this.logger.debug(`Auditor: testing suites: ${suites.join(', ')}`);  
     const SuiteInstances = [];
@@ -123,7 +123,7 @@ export class Auditor {
             const Suite = await nipManifest?.[suite]?.()
             if(!Suite) continue;
             this.logger.info(`Auditor: suite ${suite} loaded.`);
-            const $Suite = new Suite.default(this.ws as WebSocket);
+            const $Suite = new Suite.default(this.socket as WebSocket);
             console.log('$suite', $Suite)
             if (!$Suite.pretest) {
               console.log('no pretest')

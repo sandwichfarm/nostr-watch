@@ -79,7 +79,9 @@
 
 <style lang="postcss">
     .hp-card {
-        @apply border-white/5 border-[2px] bg-white/10 dark:bg-black/10 hover:bg-white/15 py-14 rounded-md m-5 shadow-start hover:shadow-end transition-shadow duration-200 drop-shadow-[0_25px_25px_rgba(255,255,255,0.35)];
+        @apply border-white/5 border-[2px] 
+                bg-white/10 dark:bg-black/10 hover:bg-white/15 
+                py-14 rounded-md m-5 shadow-start hover:shadow-end transition-shadow duration-200 drop-shadow-[0_25px_25px_rgba(255,255,255,0.35)];
     }
 
     .hp-card:hover {

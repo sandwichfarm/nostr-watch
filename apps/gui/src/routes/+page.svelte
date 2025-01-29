@@ -6,7 +6,7 @@
 	import { eventsArray } from '$lib/stores';
 	import { totalMonitors } from '$lib/stores';
   import ActivityList  from "$lib/components/partials/ActivityList.svelte"
-	import Counts from '$lib/components/partials/home/Counts.svelte';
+	import Counts from '$routes/components/Counts.svelte';
 
 	onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;

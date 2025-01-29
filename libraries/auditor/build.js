@@ -238,7 +238,7 @@ async function cleanDist() {
 
 async function build() {
     try {
-        await cleanDist();
+        // await cleanDist();
 
         if (isWatchMode) {
             const browserContext = await esbuild.context(browserConfig);

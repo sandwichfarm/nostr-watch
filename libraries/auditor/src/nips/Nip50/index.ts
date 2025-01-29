@@ -10,8 +10,8 @@ export class Nip50 extends Suite implements ISuite {
     return 'Nip50';
   }
 
-  constructor(ws: WebSocket) {
-    super(ws, import.meta.url);  
+  constructor(socket: WebSocket) {
+    super(socket, import.meta.url);  
   }
 }
 

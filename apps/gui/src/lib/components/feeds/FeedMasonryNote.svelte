@@ -1,27 +1,26 @@
 <script lang="ts">
-	import type { UserFeedItem } from '$lib/services/UserService';
     import { parseNote } from '$lib/utils/notes';
 	import { timeAgo } from '$lib/utils/time';
 	import type { IEvent, NostrEvent } from '@nostrwatch/route66/models';
-	import type { UserFeedItemRelatives } from '$lib/services/UserService';
 	import { observeViewport } from '$lib/utils/ux';
 	import { onDestroy, onMount } from 'svelte';
-    import { writable, type Readable, type Writable } from 'svelte/store';
+    import { type Writable } from 'svelte/store';
 	import { pubkeyUserInstance } from '$stores/helpers/helpers-pubkey';
 	import type { SvelteMemoryRelay } from '@nostrwatch/memory-relay';
-    import { noteCommentsCount$, noteReactionsCount$, noteZaps$ } from '$stores/helpers/helpers-notes';  
-	import { activeMonitorChecksCount } from '$stores/monitors';
 	import FeedNoteComments from './FeedNoteComments.svelte';
 	import FeedNoteZaps from './FeedNoteZaps.svelte';
 	import FeedNoteReactions from './FeedNoteReactions.svelte';
-	import { delay } from '@nostrwatch/utils';
 
-    
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<IEvent, NostrEvent>;
     export let relativesFetcher: undefined | (() => void) = undefined;
 
+    let isVisible: boolean = true;
     let content: Writable<string>;
+    let relativesFetched: boolean = false;
+    let commentsCountCache: number | undefined;
+    let reactionsCountCache: number | undefined;
+    let zapSumCache: string = '';
 
     const fetchRelatives = async () => {
         if(!relativesFetcher) return;
@@ -54,16 +53,7 @@
     $: isComment = note.isComment
     $: user = pubkeyUserInstance(note.pubkey)
     $: name = user?.name || user?.pubkey
-    
-    let isVisible: boolean = true;
-
     $: actionsClass = isVisible? '' : 'opacity-0';
-
-    let commentsCountCache: number | undefined;
-    let reactionsCountCache: number | undefined;
-    let zapSumCache: string = '';
-
-    let relativesFetched: boolean = false;
 </script>
 
 <section 

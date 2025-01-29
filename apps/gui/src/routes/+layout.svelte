@@ -21,7 +21,8 @@
 	import { resetStores } from '$lib/stores/memory-relays/routines';
 	import { feedService, userService } from '$lib/stores/services';
 	import { UserService } from '$lib/services/UserService';
-	import { FeedService } from '$lib/services/FeedService';
+	
+  import { theme } from '$lib/stores/theme';
 
   window.process = process;
 
@@ -254,6 +255,8 @@
       boot();
     }
   }
+
+  $: document.documentElement.classList.toggle("dark", $theme === "dark");
 </script>
 
 {#if $unsupported}

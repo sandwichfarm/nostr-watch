@@ -6,9 +6,9 @@
   "module": "./dist/web/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
+    "node": "./dist/server/index.js",
     "import": "./dist/web/index.js",
     "require": "./dist/server/index.js",
-    "node": "./dist/server/index.js",
     "default": "./dist/web/index.js"
   },
   "dependencies": {

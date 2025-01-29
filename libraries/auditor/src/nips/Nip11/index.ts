@@ -21,8 +21,8 @@ export class Nip11 extends Suite implements ISuite {
   readonly requires: string[] = [];
   readonly pretest: boolean = true;
 
-  constructor(ws: WebSocket) {
-    super(ws, import.meta.url);  
+  constructor(socket: WebSocket) {
+    super(socket, import.meta.url);  
   }
   
 }

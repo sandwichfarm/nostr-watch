@@ -16,7 +16,7 @@
 	import { stringify } from "json-source-map";
 	import { map } from "lodash";
 	import { onMount } from "svelte";
-	import { get, writable, type Readable, type Writable } from "svelte/store";
+	import { derived, get, writable, type Readable, type Writable } from "svelte/store";
 
     const WIKI_KIND = 30818;
 
@@ -30,6 +30,10 @@
 
     const wikis: Writable<NostrEvent[]> = writable([]);
 
+    const parsedWikis: Readable<NostrEvent[]> = derived(wikis, ($wikis) => {
+        return $wikis.map((ev: IEvent) => new NostrEvent(ev))
+    });
+
     $: bootstrapped = hasBeenBoostrapped();
 
     onMount(async () => {
@@ -37,7 +41,7 @@
         await route66.ready();
         const filters = {
             kinds: [WIKI_KIND],
-            '#d': [softwareKeyBase64]
+            '#d': [softwareKey]
         }
         const relays = ['wss://relay.wikifreedia.xyz']
         const options = {
@@ -56,8 +60,6 @@
   id="relay-header"
   class="relative bg-center bg-cover bg-no-repeat h-48 px-3 py-10 bg-black/20 dark:!bg-white/5"
 >
-
-  
 
   <div class="relative z-10 flex justify-between p-6 h-full">
     <div class="flex">
@@ -90,8 +92,21 @@
 {#if $wikis.length}
     <section class="p-4 mt-20">
         <h2 class="text-xl font-semibold mb-2">About</h2>
-        {#each $wikis as wiki (wiki)}
-            <p>{get(parseNote(wiki.content))}</p>
+        {#each $parsedWikis as wiki (wiki)}
+            <p>{@html 
+                get(parseNote(wiki.content, {
+                    removeHashtags: true,
+                    nip19: true,
+                    markdown: true,
+                    images: true,
+                    videos: true,
+                    truncate: false,
+                    // truncateLength: 100,
+                    sanitize: false,
+                    replaceAmpersand: true,
+                    }
+                ))
+                }</p>
         {/each}
     </section>
 {/if}

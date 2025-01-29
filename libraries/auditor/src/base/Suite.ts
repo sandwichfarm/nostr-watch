@@ -96,7 +96,7 @@ export abstract class Suite implements ISuite {
   });
   private _sampler: Sampler;
   
-  protected ws: WebSocket;
+  protected _socket: WebSocket;
   protected signal: EventEmitter = new EventEmitter();
   protected result: ISuiteResult = structuredClone(defaultSuiteResult);
   protected resulter: SuiteResulter = new SuiteResulter(defaultSuiteResult);
@@ -116,15 +116,19 @@ export abstract class Suite implements ISuite {
   data: any = {};
 
 
-  constructor(ws: WebSocket, metaUrl: string) {
-    this.ws = ws;
+  constructor(socket: WebSocket, metaUrl: string) {
+    this._socket = socket;
     this.logger.registerLogger('notice', 'info', chalk.gray.italic);
     this.signal.once("SUITE:READY", () => { this._ready = true });
     this.setup()
   }
 
+  set socket(socket: WebSocket) {
+    this._socket = socket;
+  }
+
   get socket(): WebSocket {
-    return this.ws;
+    return this._socket;
   }
 
   get messages(): MessagesMapType {  

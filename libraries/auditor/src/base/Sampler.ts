@@ -10,7 +10,7 @@ import { generateSubId } from "#utils/nostr.js";
 import { Emitter } from "./Emitter";
 
 export class Sampler {
-  private ws: WebSocket;
+  private socket: WebSocket;
   private subId: string = "test";
   private _maximumSamples: number = 500;
   private _timeout: ReturnType<typeof setTimeout>;
@@ -21,8 +21,8 @@ export class Sampler {
   private logger: Logger = new Logger('@nostrwatch/auditor:Sampler', {level: 'debug'});
   private _ingestors: Ingestor[] = [];  
 
-  constructor(ws: WebSocket, maximumSamples?: number, timeout?: number) {
-    this.ws = ws;
+  constructor(socket: WebSocket, maximumSamples?: number, timeout?: number) {
+    this.socket = socket;
     if(maximumSamples) this._maximumSamples = maximumSamples;
     if(timeout) this._timeoutMs = timeout
     Emitter.on('all:abort', this.abort.bind(this))
@@ -53,7 +53,7 @@ export class Sampler {
   }
 
   setupHandlers() {
-    this.ws.on('message', (msg: MessageEvent<any>) => {
+    this.socket.on('message', (msg: MessageEvent<any>) => {
       const message = JSON.parse(msg.data);
       const type = message[0];
       switch(type) {
@@ -64,8 +64,8 @@ export class Sampler {
           break;
         }
         case 'EOSE': {
-          // this.signal.emit('ws:eose');
-          Emitter.emit(`ws:eose:${this.subId}`);
+          // this.signal.emit('socket:eose');
+          Emitter.emit(`socket:eose:${this.subId}`);
           break;
         }
       }
@@ -78,7 +78,7 @@ export class Sampler {
 
   async sample() {
     try {
-      await this.ws.connect();
+      await this.socket.connect();
       this.setupHandlers();
   
       const timeout = this.setAbortTimeout();
@@ -105,7 +105,7 @@ export class Sampler {
   
   private sendRequest() {
     const message = Nip01ClientMessageGenerator.REQ(this.subId, [{ limit: this._maximumSamples, since: 0 }]);
-    this.ws.send(message);
+    this.socket.send(message);
   }
   
   private async waitForEoseOrAbort(timeout: NodeJS.Timeout): Promise<boolean> {
@@ -124,20 +124,20 @@ export class Sampler {
       }, 100);
   
       const cleanup = () => {
-        Emitter.off(`ws:eose:${this.subId}`, onEose);
-        // this.signal.off('ws:eose', onEose);
+        Emitter.off(`socket:eose:${this.subId}`, onEose);
+        // this.signal.off('socket:eose', onEose);
         clearTimeout(timeout);
         clearInterval(interval);
       };
       
-      Emitter.once(`ws:eose:${this.subId}`, onEose);
-      // this.signal.once('ws:eose', onEose);
+      Emitter.once(`socket:eose:${this.subId}`, onEose);
+      // this.signal.once('socket:eose', onEose);
     });
   }
   
   private async cleanupWebSocket() {
-    this.ws.terminate();
-    await this.ws.closed();
+    this.socket.close();
+    await this.socket.closed();
   }
   
   get aborted () {

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Feed from "$lib/components/partials/Feed.svelte";
+    import Feed from "$lib/components/feeds/Feed.svelte";
 
     export let pubkey: string;
 

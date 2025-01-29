@@ -49,8 +49,8 @@ export class Nip01 extends Suite implements ISuite {
 
   private subId: string = 'test';
 
-  constructor(ws: WebSocket) {
-    super(ws, import.meta.url);  
+  constructor(socket: WebSocket) {
+    super(socket, import.meta.url);  
   }
 
   protected onMessageEvent(message: RelayEventMessage): void {

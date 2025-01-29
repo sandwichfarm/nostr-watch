@@ -11,7 +11,7 @@
     $: loadedEnough = hasBeenBoostrapped() || $totalMonitors > 1
 </script>
 
-<header id="site-header" class="relative">
+<header id="site-header">
     {#if (loadedEnough || !$doBootstrap) && !$unsupported}
     <h1>nostr.watch</h1>
     <nav>
@@ -29,7 +29,6 @@
         </search>
     </div>
     {/if}
-    
 </header>
 
 <style>

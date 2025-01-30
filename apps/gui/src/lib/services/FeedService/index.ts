@@ -22,7 +22,7 @@ export class FeedService extends Service {
 
     private _highestTimestamp: number[] = Array(this._filters.length).fill(0);
     private _lowestTimestamp: number[] = Array(this._filters.length).fill(0);
-
+    
     relativeFetchers: Map<string, () => void> = new Map()
 
     constructor(adapters: IAdaptersArgument, filters: Filter[] = [{}], relays: string[] = []){

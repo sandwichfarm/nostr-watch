@@ -1,6 +1,5 @@
 import { IAdapter, TAdapterCount } from '../interfaces/IAdapter';
 import Base from '../classes/Base';
-import { ICounts } from './Counter';
 
 export type AdapterType = 'websocket' | 'dns' | 'geo' | 'info' | 'ssl';
 

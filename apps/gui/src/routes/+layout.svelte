@@ -15,7 +15,7 @@
   import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
   import { delay } from '@nostrwatch/utils';
   import { getBrowserInfo } from '$lib/utils/compat.js';
-  import { unsupported, appState, tabState, type TabStateType, isIdle } from '$lib/stores/app';
+  import { unsupported, appState, tabState, type TabStateType, isIdle, hasBeenBoostrapped } from '$lib/stores/app';
   import { IdleDetector } from '$lib/utils/idle.js';
   import Debugger from '$lib/components/partials/Debugger.svelte';
 	import { resetStores } from '$lib/stores/memory-relays/routines';
@@ -23,6 +23,8 @@
 	import { UserService } from '$lib/services/UserService';
 	
   import { theme } from '$lib/stores/theme';
+	import { totalMonitors } from '$stores/events';
+	import ActivityList from '$lib/components/partials/ActivityList.svelte';
 
   window.process = process;
 
@@ -116,7 +118,7 @@
     setTabState('leader');
     try {
       await boot();
-      seedFromCache();
+      // seedFromCache();
     } catch (error) {
       console.error('[Lifecycle] Error in onLeaderAcquired:', error);
     }
@@ -165,7 +167,6 @@
         await route66.ready();
         route66?.services?.monitors?.ensureMonitorsActive();
         initServices();
-        await seedFromCache();
         appState.set('running');
       } catch (error) {
         console.error('Error seeding from cache:', error);
@@ -256,7 +257,7 @@
     }
   }
 
-  // $: document.documentElement.classList.toggle("dark", $theme === "dark");
+  $: loadedEnough = hasBeenBoostrapped() || $totalMonitors > 1
 </script>
 
 {#if $unsupported}
@@ -271,10 +272,16 @@
         <div class="text-2xl">Zzz</div>
       </div>
     {:else if $tabState === 'leader'}
+      {#if loadedEnough}
       <Header />
       <div id="content-wrapper" class="mt-16 block">
         <slot />
       </div>
+      {:else}
+      <div class="flex flex-col items-center justify-center h-screen relative z-[100]">
+        <ActivityList />
+      </div>
+      {/if}
     {:else if $tabState === 'follower'}
       <div class="flex flex-col items-center justify-center h-screen px-4">
         <div class="text-2xl">Another Session Detected</div>

@@ -65,15 +65,18 @@ export const tableFormatters: Formatters = {
         return `<span class="${entry.valid? 'text-green-500': 'text-red-500'} text-sm">${nip05}</span>`
     },
     pubkey: (pubkey) => {
-        let monitor: Monitor = {};
+        let monitor: Monitor | undefined;
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
+        if(!monitor) return pubkey;
         let profile: string = '<div class="flex">';
         profile += '<div class="flex-shrink-0 mr-2">'
-        profile += `
-            <span class="inline-block rounded-full overflow-hidden w-10 h-10">
-                <img src=${monitor.photo} alt=${monitor.photo} class="w-full h-auto" />
-            </span>
-            `
+        if(monitor?.photo){
+            profile += `
+                <span class="inline-block rounded-full overflow-hidden w-10 h-10">
+                    <img src=${monitor.photo} alt=${monitor.photo} class="w-full h-auto" />
+                </span>
+                `
+        }
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){

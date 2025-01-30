@@ -60,7 +60,7 @@
             await (await instance()).ready()
             if(canSeedFromCache()){
                 console.log('OPERATORS: SEEDING')
-                seedMetaFromCache()
+                // seedMetaFromCache()
             }
             else {
                 console.log('OPERATORS: BOOTSTRAPPING')
@@ -78,7 +78,6 @@
     $: eventsArray = Array.from( $events.entries() ) 
 
 </script>
-{$data?.length}
 
 {#if $ready}
     <DataTable {data} {config} {dataKey} />

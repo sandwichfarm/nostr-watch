@@ -90,9 +90,9 @@
   </div>
 </header>
 
-{#if !bootstrapped}
+<!-- {#if !bootstrapped}
     <BootstrapLoading />
-{:else}
+{:else} -->
 
 <div class="flex flex-row">
     {#if $wikis.length}
@@ -220,7 +220,7 @@
     </div>
 </section>
 
-{/if}
+<!-- {/if}   -->
 
 <style lang="postcss" global>
     .wiki-wrapper {

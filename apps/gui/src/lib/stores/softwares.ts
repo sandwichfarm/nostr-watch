@@ -34,7 +34,7 @@ export const softwares: Readable<string[]> = throttledDerived(eventsArray, ($eve
   }
 
   return softwaresArray;
-});
+}, 100);
 
 export const softwareCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
   const counts = new Map();
@@ -177,7 +177,7 @@ export const softwareGeocodesStore = derived(relayCheckAggregates, ($relayCheckA
 export const softwareRows = derived(relayCheckAggregates, () => {
   const rows: any[] = [];
   const $softwares = get(softwares);
-  if(!$softwares.length) return rows;
+  if(!$softwares?.length) return rows;
   $softwares.forEach((name: string) => {
     const row = {
       id: deterministicHash(name),

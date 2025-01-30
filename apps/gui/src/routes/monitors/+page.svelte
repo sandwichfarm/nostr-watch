@@ -13,6 +13,7 @@
     import { writable, type Writable } from 'svelte/store';
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
+	import { bootstrapMonitorData } from '$utils/lifecycle';
 
     const dataKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);

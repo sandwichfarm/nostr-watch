@@ -21,7 +21,7 @@ export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   for(const monitor of monitorsArr) {
     const mon: Monitor | undefined = Monitor.fromCache(monitor)
     if(!mon) continue
-    publishEventsToMemoryRelay(mon.events)
+    publishEventsToMemoryRelay(mon.events, 'monitorsMapFromCache')
     map.set(monitor.pubkey, mon)
   }
   return map

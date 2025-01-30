@@ -34,7 +34,6 @@ export default [
       json({
         sourceMap: true,
       }),
-      nodePolyfills(),
       copy({
         targets: [
           { src: 'src/global.d.ts', dest: 'dist/server/types' },

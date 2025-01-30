@@ -20,6 +20,8 @@
     
     const disabled = writable(false);
 
+    let busy: boolean = false;
+
     // if(view === 'cell') {
 
     // }
@@ -28,10 +30,12 @@
 
     onMount(() => {
         toggleEnableMonitor = async () => {
+            if(busy) return;
+            busy = true;
             disabled.set(true);
             const { publishEventsToMemoryRelay } = await import('$lib/stores/events-helpers.js');
             const resumer = await pauseLiveSync();
-            if(!$monitor) return;
+            if(!$monitor) return console.warn('Monitor not found');
             if($monitor?.enabled) {
                 $monitor.disable();
                 events.update($events => {

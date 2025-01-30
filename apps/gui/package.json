@@ -50,6 +50,7 @@
 	"devDependencies": {
 		"@changesets/cli": "^2.27.7",
 		"@faker-js/faker": "^8.4.1",
+		"@rollup/plugin-replace": "^6.0.2",
 		"@rollup/plugin-yaml": "^4.1.2",
 		"@sveltejs/adapter-netlify": "^4.3.6",
 		"@sveltejs/adapter-static": "^3.0.6",
@@ -127,6 +128,7 @@
 		"lodash": "^4.17.21",
 		"lucide-svelte": "^0.462.0",
 		"marked": "^15.0.3",
+		"minimatch": "^10.0.1",
 		"minisearch": "^7.1.0",
 		"nostr-tools": "^2.10.3",
 		"p-queue": "^8.0.1",

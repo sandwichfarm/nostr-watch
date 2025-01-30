@@ -47,7 +47,7 @@ async function* generate(
         throw new Error("Route66 instance could not be initialized.");
     }
 
-    const $storeRelay: eventsStoreMemoryRelay = get(storeRelay);
+    const $storeRelay: typeof eventsStoreMemoryRelay = get(storeRelay);
 
     relays = relays || [];
     const priority = 100;
@@ -107,7 +107,7 @@ async function* generate(
         }
     };
 
-    const storeEvents = $storeRelay.REQ(filters);
+    const storeEvents = $storeRelay.req(filters);
     if (storeEvents?.length) {
         onevents(storeEvents);
     }

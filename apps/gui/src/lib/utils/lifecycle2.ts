@@ -29,11 +29,10 @@ import { debounce } from 'lodash';
 
 let $monitorsMap: Map<string, Monitor>;
 let emittersBound: boolean = false; 
-
-monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
-
 let $route66: Route66;
 let initializing: boolean = false;
+
+monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
 
 let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
     maxLength: 50, 
@@ -41,9 +40,7 @@ let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
     callback: (events: IEvent[]) => publishEventsToMemoryRelay(events, 'livesyncer')
 })
 
-let count = 0
-
-export const bindBootstrapEmitters = (from?: string) => {
+const bindBootstrapEmitters = (from?: string) => {
     if(emittersBound) return;
     if(from) console.log('Lifecycle:bindBootstrapEmitters', from)
     const $nip05Service: Nip05Service = get(nip05Service)
@@ -54,7 +51,6 @@ export const bindBootstrapEmitters = (from?: string) => {
 
     const onEvents = (_events: IEvent[]) => {
         console.log('onEvents', from)
-        count++
         publishEventsToMemoryRelay(_events, 'onEvents')
     }
 
@@ -78,13 +74,10 @@ export const bindBootstrapEmitters = (from?: string) => {
             return monitorsMap;
         });
     }
-
-
     $route66.off('monitor:update', onMonitorUpdate);
     $route66.off('events', onEvents);
     $route66.on('monitor:update', onMonitorUpdate);    
     $route66.on('events', onEvents);
-
     emittersBound = true;
 };
 
@@ -96,7 +89,7 @@ export const instance = async (): Promise<Route66> => {
 
     if(initializing) {
         await route66Ready();
-        return get(route66)
+        return get(route66) as Route66;
     }
 
     initializing = true;
@@ -109,14 +102,12 @@ export const instance = async (): Promise<Route66> => {
     $route66 = $route66 || get(route66);
 
     if (!$route66) {
-        //console.log('creating new route66 instance');
         const adapters = {
             cacheAdapter: new NostrSqliteAdapter(),
             websocketAdapter: new NostrToolsAdapter(),
         }; 
-
         route66.set(new Route66(adapters));
-        $route66 = get(route66)
+        $route66 = get(route66) as Route66
     }
 
     if (!$route66.initialized) {
@@ -156,19 +147,15 @@ export const bootstrapMonitorChecks = async () => {
 }
 
 export const bootstrap = async () => {
-    //console.log('bootstrap')
     if(!$route66){
         $route66 = await instance();
     }
     await $route66.ready();
-    // await $route66?.cacheAdapter?.relay.debug();
     bindBootstrapEmitters('bootstrap');
     if( shouldSync() ){
         console.log('bootstrap:syncing')
         if( get(isBootstrapping) ) return;
         isBootstrapping.set(true)
-        // await bootstrapMonitorData();
-        // await bootstrapMonitorChecks();
         await $route66?.services?.monitors?.bootstrap()
         updateLastSync();
         seedFromCache();

@@ -2,16 +2,55 @@ import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import nodePolyfills from 'rollup-plugin-node-polyfills';
 
+const debug = process.env.DEBUG === 'true';
+
+function globalHack() {
+  return {
+    name: 'replace-global',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      for (const [fileName, chunkOrAsset] of Object.entries(bundle)) {
+        console.log('Checking file:', fileName);
+        if (chunkOrAsset.type === 'chunk' && fileName.includes('.worker')) {
+          console.log('Replacing global in:', fileName);
+          chunkOrAsset.code = chunkOrAsset.code.replace(
+            /\bglobal\./g,
+            'self.'
+          );
+          chunkOrAsset.code = chunkOrAsset.code.replace(/\bglobal\./g, 'self.');
+          chunkOrAsset.code = chunkOrAsset.code.replace(/typeof global/g, 'typeof self');
+        }
+      }
+    },
+  };
+}
+
 export default defineConfig({
   resolve: {
     mainFields: ['module', 'main'],
     preserveSymlinks: false,
   },
   worker: {
+    minify: false,
+    sourcemap: true,
     format: 'es',
+    optimizeDeps: {
+      exclude: [  
+        '@nostrwatch/nocap', 
+        '@nostrwatch/nocap-websocket-adapter-default', 
+        '@nostrwatch/websocket' 
+      ]
+    },
+    rollupOptions: {
+      inlineDynamicImports: true
+    },
+    // define: {
+    //   global: 'self'
+    // },
     plugins: [
       sveltekit(),
-      nodePolyfills()
+      nodePolyfills(),
+      globalHack(),
     ]
   },
   build: {

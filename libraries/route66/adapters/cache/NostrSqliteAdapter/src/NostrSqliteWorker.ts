@@ -10,8 +10,8 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
         eventWriteQueue: [],
         relay: undefined,
         messageChannel: undefined,
-        insertBatchEvery: 1000,
-        insertBatchSize: 25,
+        insertBatchEvery: 100,
+        insertBatchSize: 10,
         lastBatch: 0,
     };
     relay = relayHandler;

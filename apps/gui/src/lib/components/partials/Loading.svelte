@@ -13,7 +13,6 @@ import { randomLoadingMessage } from '$utils/ux';
         <!-- Text -->
         <span class="text-3xl">please wait</span>
     </div>
-
     <!-- Random Loading Message -->
     <span class="opacity-50 text-lg text-center italic max-w-[500px]">{randomLoadingMessage()}</span>
 </div>

@@ -1,6 +1,6 @@
 /// <reference types="vite/types/importMeta.d.ts" />
 
-import { isBrowser } from "@nostrwatch/utils";
+import { delay, isBrowser } from "@nostrwatch/utils";
 
 import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAdapter } from "@nostrwatch/route66/core";
 import { IEvent } from "@nostrwatch/route66/models";
@@ -93,6 +93,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
             worker.port.start()
         }
         this.relay = new WorkerRelayInterface(worker);
+        await delay(1000)
         this._ready = true
         return this.relay.worker; 
     }
@@ -182,7 +183,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
             console.error('context:', context, err)
         }
         if(isBrowser()) {
-            setTimeout( () => location.reload(), 2000 )
+            // setTimeout( () => location.reload(), 2000 )
         }
     }
 }

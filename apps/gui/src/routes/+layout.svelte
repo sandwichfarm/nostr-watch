@@ -128,7 +128,7 @@
     console.log('[Lifecycle] Waiting for leader to release...');
   });
 
-  lifecycle.onTabInactive(shutdown);
+  // lifecycle.onTabInactive(shutdown);
 
   // --------------------------------------------------------------------------------
   // Subscriptions cleanup
@@ -256,7 +256,7 @@
     }
   }
 
-  $: document.documentElement.classList.toggle("dark", $theme === "dark");
+  // $: document.documentElement.classList.toggle("dark", $theme === "dark");
 </script>
 
 {#if $unsupported}

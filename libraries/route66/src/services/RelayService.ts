@@ -104,13 +104,14 @@ export class RelayService extends Service {
     if(!relay) return;
     const filters: Filter[] = this.relayFilters(relay as WebsocketUrlType, liveness);
     const relays = this.nip66Relays;
+    const priority = 100;
     const options: WebsocketAdapterOptions = {
       cache: true,
       returnResults: true, 
       keepAlive: false,
       stream: false
     }
-    const events: IEvent[] = await this.fetch( { relays, filters, options, hash: `relay:${Math.random()}` } );
+    const events: IEvent[] = await this.fetch( { relays, filters, options, hash: `relay:${Math.random()}`, priority } );
     if(!events) return;
     const checks: Nip66CheckEvent[] = events.map((event: IEvent) => new Nip66CheckEvent(event));  
     return checks;

@@ -219,8 +219,8 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
             range,
             {
               signal: this.signal,
-              skipFilterMatching: true,
-              skipVerification: true,
+              // skipFilterMatching: true,
+              // skipVerification: true,
               abortSubBeforeEoseTimeoutMs: 20000,
               connectTimeoutMs: 5000,
             }

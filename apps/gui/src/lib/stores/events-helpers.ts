@@ -8,6 +8,7 @@ import { events } from "./events";
 import PQueue from 'p-queue';
 import { delay } from '@nostrwatch/utils'
 import { eventsStoreMemoryRelay } from "./memory-relays/memory-relay-events.js";
+import { deterministicHash } from "@nostrwatch/route66/utils";
 
 const queue = new PQueue({concurrency: 1});
 
@@ -18,7 +19,14 @@ const getMonitor = (pubkey: string): Monitor => {
     return $route66?.services?.monitors?.map.get(pubkey)
 }
 
+const testingUniques = new Set<string>();
+
 export const publishEventsToMemoryRelay = async (_events: IEvent[]) => {
+    if(!_events?.length) return;
+    const key = deterministicHash(_events.map( event => event.id));
+    if(testingUniques.has(key)) return console.log(`duplicate add!`, testingUniques.size, _events);
+    testingUniques.add(key);
+    // console.log(`Memory Relay: Publishing ${_events.length} events to memory relay`, deterministicHash(_events.map(eventKey)), _events);
     queue.add(async () => {
         await delay(20);
         get(eventsStoreMemoryRelay).eventBatch(_events)

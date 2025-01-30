@@ -34,11 +34,14 @@
             if(!$monitor) return;
             if($monitor?.enabled) {
                 $monitor.disable();
-                ([...$eventsArray] as IEvent[]).filter( event => event.pubkey === $monitor.pubkey).forEach( event => {
-                    const key = eventKey(event);
-                    $events.delete(key)
-                });
-                events.set($events);
+                events.update($events => {
+                    $events.entries().forEach( ([key, event]) => {
+                        if(event.pubkey === $monitor.pubkey){
+                            $events.delete(key);
+                        }
+                    })
+                    return $events;
+                })
                 await resumer();
                 disabled.set(false);
             } 

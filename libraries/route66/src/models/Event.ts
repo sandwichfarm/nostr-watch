@@ -1,5 +1,22 @@
 import { isPRE, isRE } from "@base/utils";
+import { zapSum, zapSumNum } from "@base/utils/nostr";
 import { nip19 } from "nostr-tools";
+
+export enum Kinds {
+  Note = 1,
+  Comment = 1111,
+  Reaction = 7,
+  ReactionUri = 17,
+  ZapReciept = 9725,
+
+  RelayCheck = 30166,
+  RelayMonitorRegistration = 10166,
+
+  Wiki = 30818
+}
+
+
+export type NostrTag = string[];
 
 export type IEvent = {
   id: string;
@@ -15,11 +32,22 @@ export type NostrEventOptions = {
   relays: string[];
 }
 
+export type NostrEventRelatives = {
+  zaps: NostrEvent[],
+  comments: NostrEvent[],
+  reactions: NostrEvent[]
+}
+
 export const defaultNostrEventOptions: NostrEventOptions = { relays: [] };
 
-export class NostrEvent implements IEvent{
+export class NostrEvent implements IEvent {
   protected _json: IEvent;
   protected _options: NostrEventOptions;
+  private _relatives: NostrEventRelatives = {
+    zaps: [],
+    comments: [],
+    reactions: []
+  };
 
   constructor(event: IEvent, options?: NostrEventOptions) {
     this._json = event;
@@ -101,6 +129,61 @@ export class NostrEvent implements IEvent{
     return nip19.noteEncode(this.id);
   }
 
+  get zaps() {
+    return this._relatives.zaps;
+  }
+
+  get comments() {
+    return this._relatives.comments;
+  }
+
+  get commentsCount(): number {
+    return this._relatives.comments.length;
+  }
+
+  get reactions() {
+    return this._relatives.reactions;
+  }
+
+  get reactionsCount(): number {  
+    return this._relatives.reactions.length;
+  }
+
+  get zapSum(): string {
+    return zapSum(this.zaps);
+  }
+
+  get zapSumNum(): number {
+    return zapSumNum(this.zaps);
+  }
+
+  // addRelatives(events: IEvent[]): void {
+  //   events.forEach(event => this.addRelative(event))
+  // }
+
+  // addRelative(event: IEvent): any {
+  //   const type = relativesKindMap?.[event.kind]
+  //   if(!type) return;
+  //   const model = relativesModelMap?.[type];
+  //   if(!model) return;
+  //   const instance = new model(event)
+  //   this._relatives[ relativesKindMap[event.kind] ].push( instance );
+  //   return instance
+  // }
 }
 
-export type NostrTag = string[];
+// export const relativesKindMap: Record<number, keyof NostrEventRelatives>  = {
+//   1: 'comments',
+//   1111: 'comments',
+//   7: 'reactions',
+//   9725: 'zaps'
+// }
+
+// export const relativesModelMap: Record<keyof NostrEventRelatives, any> = {
+//   comments: NostrEvent,
+//   reactions: NostrEvent,
+//   zaps: NostrEvent
+// }
+
+
+

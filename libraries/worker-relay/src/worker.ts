@@ -7,12 +7,12 @@ const state: WorkerState = {
   relay: undefined,
   eventWriteQueue: [],
   insertBatchSize: 10,
-  insertBatchEvery: 1000,
+  insertBatchEvery: 100,
   lastBatch: 0,
 }
 
 try {
-  setTimeout(() => insertBatch(state), 100);
+  setTimeout(() => insertBatch(state), state.insertBatchEvery);
 } catch (e) {
   console.error(e);
 }

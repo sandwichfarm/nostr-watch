@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import FeedNoteContent from "$lib/components/feeds/FeedNoteContent.svelte";
 	import BootstrapLoading from "$lib/components/partials/BootstrapLoading.svelte";
 	import Nip66Check from "$lib/components/partials/Nip66Check.svelte";
 	import PubkeyPhoto from "$lib/components/partials/PubkeyPhoto.svelte";
+	import Wiki from "$lib/components/wikis/Wiki.svelte";
 	import { hasBeenBoostrapped } from "$stores/app";
 	import { softwareGeos$, softwareIsps$, softwareOperatorsPubkeys$, softwareRelays$ } from "$stores/helpers/helpers-software";
+	import { doBootstrap } from "$stores/routines";
 	import Badge from "$ui/badge/badge.svelte";
+	import Button from "$ui/button/button.svelte";
 	import { instance } from "$utils/lifecycle";
 	import { parseNote } from "$utils/notes";
 	import { formatRelayUrl } from "$utils/routing";
@@ -14,7 +18,7 @@
 	import { deterministicHash } from "@nostrwatch/route66/utils";
 	import countryCodeToFlagEmoji from "country-code-to-flag-emoji";
 	import { stringify } from "json-source-map";
-	import { map } from "lodash";
+	import { map, truncate } from "lodash";
 	import { onMount } from "svelte";
 	import { derived, get, writable, type Readable, type Writable } from "svelte/store";
 
@@ -37,6 +41,7 @@
     $: bootstrapped = hasBeenBoostrapped();
 
     onMount(async () => {
+        doBootstrap.set(true);
         const route66 = await instance();
         await route66.ready();
         const filters = {
@@ -89,60 +94,49 @@
     <BootstrapLoading />
 {:else}
 
-{#if $wikis.length}
-    <section class="p-4 mt-20">
-        <h2 class="text-xl font-semibold mb-2">About</h2>
-        {#each $parsedWikis as wiki (wiki)}
-            <p>{@html 
-                get(parseNote(wiki.content, {
-                    removeHashtags: true,
-                    nip19: true,
-                    markdown: true,
-                    images: true,
-                    videos: true,
-                    truncate: false,
-                    // truncateLength: 100,
-                    sanitize: false,
-                    replaceAmpersand: true,
-                    }
-                ))
-                }</p>
-        {/each}
-    </section>
-{/if}
- 
-<section>
-    <div class="mt-10 flex flex-row w-full items-center   justify-center gap-10">
-        <div class="flex flex-col items-center">
-            <h2 class="text-xl font-semibold mb-2">Deployed by</h2>
-            <div class="h-28 w-28 rounded-full bg-blue-500 text-white flex items-center justify-center text-4xl font-bold">
-                {$operators.length}
-            </div>
-            <p class="mt-2 text-lg font-medium">Operators</p>
-        </div>
-        <div class="flex flex-col items-center">
-            <h2 class="text-xl font-semibold mb-2">In</h2>
-            <div class="h-28 w-28 rounded-full bg-green-500 text-white flex items-center justify-center text-4xl font-bold">
-                {$geocodes.length}
-            </div>
-            <p class="mt-2 text-lg font-medium">Countries</p>
-        </div>
-        <div class="flex flex-col items-center">
-            <h2 class="text-xl font-semibold mb-2">Served by</h2>
-            <div class="h-28 w-28 rounded-full bg-red-500 text-white flex items-center justify-center text-4xl font-bold">
-                {$isps.length}
-            </div>
-            <p class="mt-2 text-lg font-medium">ISPs</p>
-        </div>
-        <div class="flex flex-col items-center">
-            <h2 class="text-xl font-semibold mb-2">Powering</h2>
-            <div class="h-28 w-28 rounded-full bg-yellow-500 text-white flex items-center justify-center text-4xl font-bold">
-                {$relays.length}
-            </div>
-            <p class="mt-2 text-lg font-medium">Relays</p>
-        </div>
+<div class="flex flex-row">
+    {#if $wikis.length}
+    <div class="row !pt-7">
+    <div class="wiki-wrapper">
+        <Wiki wikis={parsedWikis} />
     </div>
+    </div>
+    {/if}
 
+    <!-- <section id="stat-summary"> -->
+        <div class="mt-10 flex flex-row w-full items-center   justify-center gap-10">
+            <div class="flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-2">Deployed by</h2>
+                <div class="h-28 w-28 rounded-full bg-blue-500 text-white flex items-center justify-center text-4xl font-bold">
+                    {$operators.length}
+                </div>
+                <p class="mt-2 text-lg font-medium">Operators</p>
+            </div>
+            <div class="flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-2">In</h2>
+                <div class="h-28 w-28 rounded-full bg-green-500 text-white flex items-center justify-center text-4xl font-bold">
+                    {$geocodes.length}
+                </div>
+                <p class="mt-2 text-lg font-medium">Countries</p>
+            </div>
+            <div class="flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-2">Served by</h2>
+                <div class="h-28 w-28 rounded-full bg-red-500 text-white flex items-center justify-center text-4xl font-bold">
+                    {$isps.length}
+                </div>
+                <p class="mt-2 text-lg font-medium">ISPs</p>
+            </div>
+            <div class="flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-2">Powering</h2>
+                <div class="h-28 w-28 rounded-full bg-yellow-500 text-white flex items-center justify-center text-4xl font-bold">
+                    {$relays.length}
+                </div>
+                <p class="mt-2 text-lg font-medium">Relays</p>
+            </div>
+        </div>
+    <!-- </section> -->
+</div>
+<section>
     <div class="flex flex-col gap-10">
         <!-- Operators Section -->
         <div class="row flex">
@@ -228,7 +222,10 @@
 
 {/if}
 
-<style lang="postcss">
+<style lang="postcss" global>
+    .wiki-wrapper {
+        @apply max-w-[750px] m-auto;
+    }
 
     h1 > .copy-message {
         @apply hidden absolute bg-black/50 dark:bg-white/50 text-white dark:text-black text-xs px-1 rounded;

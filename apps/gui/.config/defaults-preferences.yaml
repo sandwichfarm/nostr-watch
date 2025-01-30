@@ -1,0 +1,23 @@
+liveness: 
+  onlineThresholdMultiplier: 1.5
+  DeathThreshold: 30d
+content:
+  nip66: 
+    relays:
+    - 'wss://purplepag.es'
+    - 'wss://user.kindpag.es'
+    - 'wss://relay.nostr.band'
+    pubkeys: 
+    - ''
+  userMeta: 
+    relays: 
+    - 'wss://purplepag.es'
+    - 'wss://user.kindpag.es'
+    - 'wss://relay.nostr.band'
+  wiki: 
+    relays:
+    - 'wss://relay.wikifreedia.xyz'
+    pubkeys: 
+    - ''
+  
+ 

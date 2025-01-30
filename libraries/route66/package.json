@@ -69,6 +69,7 @@
     "compress-json": "^3.1.0",
     "jsurl2": "^2.2.0",
     "jwt-encode": "1.0.1",
+    "light-bolt11-decoder": "^3.2.0",
     "minisearch": "^7.1.0",
     "node-localstorage": "^3.0.5",
     "nostr-tools": "^2.10.3",

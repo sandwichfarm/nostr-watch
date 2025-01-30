@@ -345,7 +345,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
       });
     if(!results?.length) return [];
     const time = unixNowMs() - start;
-    this.#log(`Query ${id} results took ${time.toLocaleString()}ms`, req);
+    this.#log(`Query ${id} results took ${time.toLocaleString()}ms`, req, `${results?.length} results`);
     return results;
   }
 

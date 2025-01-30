@@ -16,7 +16,7 @@ export class FeedService extends Service {
 
     private _relay: SvelteMemoryRelay<IEvent, NostrEvent> = new SvelteMemoryRelay<IEvent, NostrEvent>(writable(new Map()))
     private _filters: Filter[] = []
-    private _relays: string[] = ['wss://relay.damus.io']
+    private _relays: string[] = ['wss://relay.damus.io', 'wss://relay.nostr.band']
     private _acceptedKinds: number[] = []  
     private _fetches: number = 0; 
 
@@ -105,7 +105,6 @@ export class FeedService extends Service {
     }
 
     async populate(){
-        // console.log('populating feed', this.filters)
         this.populateAuthorsRelays()
         const options: WebsocketAdapterOptions = {
             cache: true,
@@ -187,27 +186,8 @@ export class FeedService extends Service {
     }
 
     private async noteRelatives(user: User, note: NostrEvent, callbacks: SubscribeHandlers): Promise<IEvent[]> {
-        const { id } = note
-        const filters: Filter[] = [
-            { kinds: [9735, 9321], '#e': [id] },  //zaps
-            { kinds: [1, 7, 1111], '#e': [id] },  //commments, mentions
-            { kinds: [1111], '#E': [id] }         //NIP-22 comments
-        ]
         const relays: string[] = [ ...(user.relays || []), 'wss://relay.damus.io' ]
-        const options: WebsocketAdapterOptions  = {
-            cache: true,
-            stream: true,
-            returnResults: true,
-            keepAlive: false
-        }
-        // const hash = `${note.id}-${user.pubkey}`
-        const args: UserFetchArgs = {
-            filters,
-            relays,
-            options,
-            priority: 5
-        }
-        return this.subscribe(args, callbacks) as Promise<IEvent[]>
+        return this.subscribeRelatives(note, relays, callbacks) as Promise<IEvent[]>
     }
 
     destroy(){

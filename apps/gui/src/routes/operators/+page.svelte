@@ -8,10 +8,10 @@
     import builtInTableConfig from '$lib/config/dataTable/operators.js'
 	import { operatorsRows as data } from '$lib/stores/operators';
     import { type default as DataTableType } from '$lib/components/lists/table/DataTable.svelte';
-	import { events } from '$lib/stores';
+	import { events, route66 } from '$lib/stores';
 	import { operatorsPubkeys } from '$lib/stores/operators';
 	import { operatorsUserInstances } from '$lib/stores/operators';
-	import { bootstrapOperatorsMeta } from '$lib/utils/lifecycle';
+	import { bootstrapOperatorsMeta, canSeedFromCache, instance } from '$lib/utils/lifecycle';
 	import { seedMetaFromCache } from '$lib/utils/lifecycle';
 
     let DataTable: DataTableType;
@@ -54,12 +54,20 @@
 
     onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-        doBootstrap.set(true)
-        doAggregateCache.set(true)
-        seedMetaFromCache()
-        loadComponents().then(() => {
+        console.log('OPERATORS: LOADING COMPONENTS')
+        loadComponents().then(async () => {
             setConfig()
-            bootstrapOperatorsMeta()
+            await (await instance()).ready()
+            if(canSeedFromCache()){
+                console.log('OPERATORS: SEEDING')
+                seedMetaFromCache()
+            }
+            else {
+                console.log('OPERATORS: BOOTSTRAPPING')
+                await bootstrapOperatorsMeta()
+                doBootstrap.set(true)
+                doAggregateCache.set(true)
+            }
         });
     });
 
@@ -70,6 +78,8 @@
     $: eventsArray = Array.from( $events.entries() ) 
 
 </script>
+{$data?.length}
+
 {#if $ready}
     <DataTable {data} {config} {dataKey} />
 {/if}

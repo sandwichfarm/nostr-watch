@@ -32,14 +32,16 @@ export interface WorkerState {
   insertBatchSize: number;
   insertBatchEvery: number;
   lastBatch: number;
+
+
 }
 
 export const defaultWorkerState = {
   self: self as DedicatedWorkerGlobalScope | SharedWorkerGlobalScope,
   relay: undefined,
   eventWriteQueue: [],
-  insertBatchSize: 10,
-  insertBatchEvery: 1000,
+  insertBatchSize: 5,
+  insertBatchEvery: 500,
   lastBatch: 0,
 }
 
@@ -63,17 +65,19 @@ export async function insertBatch(state: WorkerState) {
         state.eventWriteQueue = state.eventWriteQueue.slice(batch.length);
         state.relay.eventBatch(batch);
         state.lastBatch = Date.now();
-        // console.log("batches processed:", processed);
+        console.log("batches processed:", processed);
         processed++
       }
     }
   }
-  setTimeout(() => insertBatch(state), 100);
+  setTimeout(() => insertBatch(state), state.insertBatchEvery);
 }
 
 export const messageChannelInit = (state: WorkerState, channelPort: MessagePort) => {
   state.messageChannel = channelPort
 }
+
+let retries = 0;
 
 export const relayInit = async (state: WorkerState, args: InitAargs) => {
   console.log("Relay init", args)
@@ -88,12 +92,22 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
       console.log("Channel port init")
       messageChannelInit(state, args.channelPort)
     }
+    await new Promise(resolve => setTimeout(resolve, 1000))
     await state.relay.init(args.databasePath);
   } catch (e) {
+    if(retries <= 3){
+      state.relay?.close();
+      console.warn("Sqlite relay failed, retrying in 1 second", e);
+      retries++
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      await relayInit(state, args)
+      return
+    }
     console.error("Fallback to InMemoryRelay", e);
     state.relay = new InMemoryRelay();
     await state.relay.init(args.databasePath);
   }
+  
 }
 
 export const relayEvent = (state: WorkerState, ev: NostrEvent) => {

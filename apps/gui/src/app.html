@@ -11,26 +11,19 @@
 			rel="stylesheet"
 		/>
 		<script>
-			function toggleDarkMode(isDark) {
-				//NOTE: temporarily disable dark mode in production
-				// document.documentElement.classList.toggle('dark', prefersDark);
+			const toggleDarkMode = (isDark) => {
 				if (isDark) {
 					document.documentElement.classList.add('dark');
 				} else {
 					document.documentElement.classList.remove('dark');
 				}
 			}
-
-			// Function to check the current color scheme preference
-			function checkColorScheme() {
+			const checkColorScheme = () => {
 				return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 			}
-
-			// Apply dark mode based on current preference
 			toggleDarkMode(checkColorScheme());
-
-			// Listen for changes in color scheme preference
 			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+				console.log('isDark',)
 				toggleDarkMode(e.matches);
 			});
 		</script>

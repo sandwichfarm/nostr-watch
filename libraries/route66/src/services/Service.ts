@@ -5,6 +5,7 @@ import { IAdaptersArgument } from "@base/interfaces/IAdaptersArgument";
 import { Filter } from "nostr-tools";
 import { deterministicHash, isPRE, isRE } from "@base/utils";
 import { StateManager } from "@base/managers/StateManager";
+import { NostrEvent } from "@base/models";
 
 export interface IGroupedRelays {
   userMeta?: string[];
@@ -98,6 +99,29 @@ export class Service {
       this.subscriptions.delete(hash)
     }
     return typeof result === 'boolean'? []: result;
+  }
+
+  subscribeRelatives(note: IEvent | NostrEvent, relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    const { id } = note
+    const filters: Filter[] = [
+        { kinds: [9735, 9321], '#e': [id] },  //zaps
+        { kinds: [1, 7, 1111], '#e': [id] },  //commments, mentions
+        { kinds: [1111], '#E': [id] }         //NIP-22 comments
+    ]
+    relays = [ ...(relays || []), 'wss://relay.damus.io' ]
+    const options: WebsocketAdapterOptions  = {
+        cache: true,
+        stream: true,
+        returnResults: true,
+        keepAlive: false
+    }
+    const args: WebsocketRequestBody = {
+        filters,
+        relays,
+        options,
+        priority: 5
+    }
+    return this.subscribe(args, callbacks) as Promise<IEvent[]>
   }
 
   async unsubscribe(hash: string) {

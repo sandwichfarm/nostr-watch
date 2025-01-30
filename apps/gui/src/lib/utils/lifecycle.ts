@@ -75,10 +75,10 @@ export const bindBootstrapEmitters = () => {
     }
 
 
-    $route66.off('monitor:update', onMonitorUpdate);
-    $route66.off('events', onEvents);
-    $route66.on('monitor:update', onMonitorUpdate);    
-    $route66.on('events', onEvents);
+    // $route66.off('monitor:update', onMonitorUpdate);
+    // $route66.off('events', onEvents);
+    // $route66.on('monitor:update', onMonitorUpdate);    
+    // $route66.on('events', onEvents);
 };
 
 export const instance = async (): Promise<Route66> => {
@@ -136,7 +136,7 @@ export const bootstrapMonitorData = async () => {
     if(!$route66){
         $route66 = await instance();
     }
-    bindBootstrapEmitters();
+    // bindBootstrapEmitters();
     await $route66?.services?.monitors?.bootstrapMonitors();
 }
 
@@ -144,7 +144,7 @@ export const bootstrapMonitorChecks = async () => {
     if(!$route66){
         $route66 = await instance();
     }
-    bindBootstrapEmitters();
+    // bindBootstrapEmitters();
     await $route66?.services?.monitors?.syncMonitorsChecks();
 }
 
@@ -154,7 +154,8 @@ export const bootstrap = async () => {
         $route66 = await instance();
     }
     await $route66.ready();
-    bindBootstrapEmitters();
+    await $route66?.cacheAdapter?.relay.debug();
+    // bindBootstrapEmitters();
     const onevents = (events: IEvent[]) => {
         for(const event of events){
             liveSyncBatcher.add(event); 
@@ -164,23 +165,23 @@ export const bootstrap = async () => {
         //console.log('bootstrap:syncing')
         if( get(isBootstrapping) ) return;
         isBootstrapping.set(true)
-        await $route66?.services?.monitors?.bootstrap().then( async () => {
-            await fetchNip11s()
-            await bootstrapOperatorsMeta()
-            isBootstrapping.set(false)
-            await seedFromCache();
-            updateLastSync();
-            removeStaleChecksFromStore()
-        })
+        await $route66?.services?.monitors?.bootstrap()
+        updateLastSync();
+        seedFromCache();
+        await fetchNip11s()
+        await bootstrapOperatorsMeta()
     }
     else {
-        //console.log('bootstrap:skipping')
-        await new Promise( (resolve) => setTimeout(resolve, 1000) )         
-        seedFromCache().then( () => {
-            if(get(isLivesyncing)) return;
-            beginLiveSync({ onevents })
-        });
+        console.log('seeding from cache')
+        await new Promise( (resolve) => setTimeout(resolve, 1000) )     
+        await seedFromCache();
+        await bootstrapMonitorChecks();
+        await bootstrapOperatorsMeta();
     }
+    isBootstrapping.set(false)
+    removeStaleChecksFromStore()
+    if(get(isLivesyncing)) return;
+    beginLiveSync({ onevents })
 }
 
 export const bootstrapOperatorsMeta = async (pubkeys?: string[]) => {
@@ -348,6 +349,7 @@ export const seedMetaFromCache = async () => {
 
     const cachedEvents = await $route66.REQ([{ kinds: [ 0, 10002 ]}])
     if(!cachedEvents?.length) return;
+    console.log('seedMetaFromCache:events', cachedEvents.length)
     publishEventsToMemoryRelay(cachedEvents);
 }
 

@@ -10,6 +10,7 @@
 	import FeedNoteComments from './FeedNoteComments.svelte';
 	import FeedNoteZaps from './FeedNoteZaps.svelte';
 	import FeedNoteReactions from './FeedNoteReactions.svelte';
+	import FeedNoteContent from './FeedNoteContent.svelte';
 
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<IEvent, NostrEvent>;
@@ -84,7 +85,7 @@
     </div>
     
     <div class="content text-black/55 dark:text-white/55 text-xl my-6 overflow-hidden overflow-ellipsis">
-        {@html $content}
+        <FeedNoteContent {note} />
     </div>
     <div class="actions flex mt-2 hover:opacity-100 {actionsClass} min-h-6">
         <div class="flex-grow">

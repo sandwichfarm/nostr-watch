@@ -77,7 +77,6 @@ export function observeViewport(node: HTMLElement, options: { infiniteScroll?: b
 
 export const randomLoadingMessage = () => { 
   const messages = [
-    'desperately trying to find the meaning of life',
     'trying to find the lost city of Atlantis',
     'searching for the Holy Grail',
     'looking for the needle in the haystack',
@@ -92,18 +91,18 @@ export const randomLoadingMessage = () => {
     'searching for the meaning of life',
     'asking tough questions',
     'rm -fr /',
-    'presently annoying fiatjaf, need a sec.',
-    'telling pablo purplepag.es is down',
+    'busy annoying fiatjaf, need a sec.',
+    '...hopefully the pages are still purple',
     'running branl.',
     'meat good.',
     `showing benthecarman this isn't the dumbest thing he's ever heard`,
     'telling fiatjaf websockets suck',
     'deduplicating fuzzy strings in relay lists',
-    'waiting for the day relays have pubkeys',
-    'waiting for the day NIPs that have no impact on relays will be called NAPs',
+    'one day relays have pubkeys',
+    'NIPs that have no impact on relays should be called NAPs',
     `wondering why some relays don't support NIP-01`,
     `wondering why most NIP-50 relays do case sensitive searches`,
-    `terminating websocket connection with beligerent relay`,
+    `[terminating websocket connection with beligerent relay]`,
   ]
 
   return messages[Math.floor(Math.random() * messages.length)];

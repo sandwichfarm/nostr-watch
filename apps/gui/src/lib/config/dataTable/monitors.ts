@@ -27,7 +27,7 @@ export const columnsDisable: DataKeys = ['asname']
 export const filtersDisable: DataKeys = ['pubkey', 'as', 'asname']
 
 export const columnsShow: DataKeys = ['pubkey', 'networks', 'frequency', 'reportingOnline', 'lastActive', 'checks']
-export const filtersShow: DataKeys = ['geohash', 'relays', 'checks']
+export const filtersShow: DataKeys = ['relays', 'checks', 'networks']
 
 export const humanReadableNames: NameFormatter = {
     'pubkey': 'Monitor'

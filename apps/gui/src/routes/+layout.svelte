@@ -52,7 +52,6 @@
   };
   window.addEventListener('keydown', toggleDebugger);
 
-
   const shutdown = async () => {
     console.log('[Lifecycle] onReleaseLeader triggered.');
     try {
@@ -287,7 +286,7 @@
     {:else if $tabState === 'leader'}
       {#if loadedEnough}
       <Header />
-      <div id="content-wrapper" class="mt-16 block">
+      <div id="content-wrapper" class="block">
         <slot />
       </div>
       {:else}

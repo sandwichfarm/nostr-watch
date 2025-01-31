@@ -8,6 +8,7 @@ export type DataRegisterDataSet = {
     fn: DataRegisterFn;
     condition?: DataRegisterCondition;
     onComplete?: DataRegisterFn;
+    keyFn?: (key: string, params: any[]) => string;
     params?:  any[];
     expiry?: number | string;
 }
@@ -30,6 +31,13 @@ export type DataRegisterExecutorArguments = {
     params: any[];
 }
 
+export type DataRegisterCompositeExecutorArguments = {
+    key: string;
+    ignoreCondition?: boolean;
+    ignoreExpiry?: boolean;
+    params: Record<string, any>;
+}
+
 export type DataRegisterState = {
     seeded: Map<string, boolean>;
 }
@@ -47,6 +55,10 @@ export class DataRegister {
     private _timestamps: Map<string, number> = new Map();
     private _busy: Map<string, boolean> = new Map();
     private _ready: boolean = false;
+
+    constructor(){
+        setInterval(this.debug.bind(this), 3000)
+    }
 
     get availableKeys(): string[] {
         return this.dataSetsArray.map((dataSet) => dataSet.key)
@@ -88,13 +100,19 @@ export class DataRegister {
         return this.allKeys.has(dataSet)
     }
 
-    localStorageSetTimestamp(key: string) {
-        StateManager.set(`register:${key}`, this._timestamps.get(key))
+    cacheKey(key: string, params: any[] = []): string {
+        const keyFn = this._dataSets.get(key)?.keyFn;
+        //console.log('cacheKey', "typeof keyFn === 'function'", typeof keyFn === 'function', key, params, keyFn?.(key, params))
+        return typeof keyFn === 'function'? keyFn(key, params): key;
     }
 
-    localStorageLoadTimestamp(key: string){
-        const fromCache = StateManager.get(`register:${key}`)
-        console.log('localStorage', key, fromCache)
+    localStorageSetTimestamp(key: string, params: any[] = []) {
+        StateManager.set(`register:${this.cacheKey(key, params)}`, this._timestamps.get(key))
+    }
+
+    localStorageLoadTimestamp(key: string, params: any[] = []) {
+        const fromCache = StateManager.get(`register:${this.cacheKey(key, params)}`)
+        //console.log('localStorage', key, fromCache)
         if(!fromCache) return;
         this._timestamps.set(key, fromCache)
     }
@@ -108,7 +126,6 @@ export class DataRegister {
         this._dataSets.set(key, dataSet)
         this._seeded.set(key, false)
         this.allKeys.add(key)
-        this.localStorageLoadTimestamp(key)
     }
 
     composite(composite: DataRegisterComposite) {
@@ -143,35 +160,35 @@ export class DataRegister {
         this._busy.set(key, true)
     }
 
-    private stop(key: string) {
+    private stop(key: string, params: any[] = []) {
         this._busy.set(key, false)
-        this.updateTimestamp(key)
+        this.updateTimestamp(key, params)
     }
 
-    private updateTimestamp(key: string) {
+    private updateTimestamp(key: string, params: any[] = []) {
         this._timestamps.set(key, Date.now())
-        this.localStorageSetTimestamp(key)
+        this.localStorageSetTimestamp(key, params)
     }
 
     private isExpired(key: string): boolean {
-        console.log(`isExpired: ${key}`)
+        //console.log(`isExpired: ${key}`)
         
         const expiry = this._dataSets.get(key)?.expiry || this._composite.get(key)?.expiry;
         if(!expiry) {
-            console.log(`isExpired: ${key} has no expiry (always expired)`)
+            //console.log(`isExpired: ${key} has no expiry (always expired)`)
             return true;
         }
 
-        console.log(`isExpired: ${key} seeded`, this._seeded.get(key))
+        //console.log(`isExpired: ${key} seeded`, this._seeded.get(key))
         const timestamp = this._timestamps.get(key);
         
         if(!timestamp) {
-            console.log(`isExpired: ${key} has no timestamp (never been ran)`)
+            //console.log(`isExpired: ${key} has no timestamp (never been ran)`)
             return true;
         }
 
         const expired = Date.now() - timestamp > (expiry as number);
-        console.log(`isExpired: cache has expired`, `${Date.now()} - ${timestamp} [${Date.now()-timestamp}]`, `>`,` ${expiry}`, 'evaluates as:', expired)
+        //console.log(`isExpired: cache has expired`, `${Date.now()} - ${timestamp} [${Date.now()-timestamp}]`, `>`,` ${expiry}`, 'evaluates as:', expired)
         
         return Date.now() - timestamp > (expiry as number);
     }
@@ -188,25 +205,27 @@ export class DataRegister {
         return params || _params['*'] || [];
     }
 
-    private async execute(keys: string[], _params: Record<string, any> = []): Promise<DataRegister> {
+    private async execute(keys: string[], _params: Record<string, any> = {}): Promise<DataRegister> {
+        //console.log('execute', keys, _params)
         for (const key of keys) {
             if(this.busy(key)) continue;
-            this.localStorageLoadTimestamp(key)
+            const params = this.extractParams(key, _params);
+            this.localStorageLoadTimestamp(key, params)
             if(!this.isExpired(key)) continue;
             this.start(key);
-            const params = this.extractParams(key, _params);
+            
             if (this.isComposite(key)) {
                 await this.executeComposite({ key, params });
             } else {
                 await this.executeFunction({ key, params });
             }
-            this.stop(key);
+            this.stop(key, params);
         }
         return this;
     }
 
     private async executeFunction(args: DataRegisterExecutorArguments = { key: '', ignoreCondition: false, ignoreExpiry: false, params: [] }) {  
-        console.log('execute', args)
+        //console.log('execute', args)
         const { key, ignoreCondition, params } = args;
         const passesCondition = await this.testCondition(key, ignoreCondition);
         if(!passesCondition) return;
@@ -219,22 +238,29 @@ export class DataRegister {
         this._seeded.set(key, true)
     }
 
-    private async executeComposite(args: DataRegisterExecutorArguments = { key: '', ignoreCondition: false, params: [] }) {
-        const { key: compositeKey, ignoreCondition: compositeIgnoreCondition, params } = args;
+    private async executeComposite(args: DataRegisterCompositeExecutorArguments = { key: '', params: {} }) {
+        //console.log('executeComposite', args)
+        const { key: compositeKey, ignoreCondition: compositeIgnoreCondition, params:paramsMap } = args;
         const shouldRun = await this.testCondition(compositeKey, compositeIgnoreCondition, true);
-        if (!shouldRun) return;
+        if (!shouldRun) {
+            //console.log('executeComposite', 'condition failed', compositeKey)
+            return;
+        }
         const composite = this._composite.get(compositeKey)!;
+        // composite.keys.forEach( (childKey) => this._busy.set(childKey, true) );    
         //
         const results = new Map()
-        for (const key of composite.keys) {
-            if (this.busy(key)) continue;
-            this.start(key);
-            if(!this.isExpired(key)) continue;
-            const ignoreCondition = composite.ignoreConditions?.[key] ?? false;
-            const ignoreExpiry = composite.ignoreExpiries?.[key] ?? false;
-            const result = await this.executeFunction({ key, ignoreCondition, ignoreExpiry, params })
-            this.stop(key)
-            results.set(key, result)
+        for (const childKey of composite.keys) {
+            if (this.busy(childKey)) continue;
+            const params: any[] = this.extractParams(childKey, paramsMap);
+            if(!this.isExpired(childKey)) continue;
+            this.start(childKey);
+            
+            const ignoreCondition = composite.ignoreConditions?.[childKey] ?? false;
+            const ignoreExpiry = composite.ignoreExpiries?.[childKey] ?? false;
+            const result = await this.executeFunction({ key:childKey, ignoreCondition, ignoreExpiry, params })
+            this.stop(childKey, params);
+            results.set(childKey, result)
         }
         if(composite.onComplete && typeof composite.onComplete === 'function') {
             await composite.onComplete(results)
@@ -258,5 +284,15 @@ export class DataRegister {
                 throw new Error(`DataSet ${dataSet} not found`)
             }
         }
+    }
+
+    debug() {
+        console.log('DataRegister', {
+            dataSets: this._dataSets,
+            composite: this._composite,
+            timestamps: this._timestamps,
+            busy: this._busy,
+            seeded: this._seeded
+        })
     }
 }

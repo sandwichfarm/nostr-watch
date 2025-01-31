@@ -53,13 +53,13 @@ export const bindBootstrapEmitters = (from?: string) => {
     }
 
     const onEvents = (_events: IEvent[]) => {
-        console.log('onEvents', from)
+        // console.log('onEvents', from)
         count++
         publishEventsToMemoryRelay(_events, 'onEvents')
     }
 
     const onMonitorUpdate = (monitor: Monitor) => {
-        console.log('onMonitorUpdate', from)
+        // console.log('onMonitorUpdate', from)
         //console.log('monitor.events', monitor.events)
         if(monitor?.events) {
             publishEventsToMemoryRelay(monitor.events, 'onMonitorUpdate')

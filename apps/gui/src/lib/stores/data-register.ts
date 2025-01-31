@@ -7,6 +7,7 @@ import { beginLiveSync, instance, removeStaleChecksFromStore, seedFromCache } fr
 import { publishEventsToMemoryRelay } from "./events-helpers";
 import { delay } from "@nostrwatch/utils";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
+import { fetchRelayChecks, fetchRelayNip11, fetchRelayOperator } from "$lib/fetchers/relay";
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
@@ -26,21 +27,31 @@ export const dataRegisterInit = async () => {
         fn: async (value: boolean) => { doAggregateCache.set(value) }
     });
 
+    const relayKeyFn = (key: string, params: string[]) => { 
+        const relay = params[0]
+        if (!relay) return key;
+        console.log('relayKeyFn', key, params,  `${key}:${params[0]}`)
+        return `${key}:${params[0]}`;
+    }
+
     //fetchers: relay
     data.register({
         key: 'sync:relay:checks',
         priority: 10,
-        fn: async (relay: string) => {}
+        keyFn: relayKeyFn,
+        fn: fetchRelayChecks
     });
     data.register({
         key: 'sync:relay:nip11',
         priority: 11,
-        fn: async (relay: string) => {}
+        keyFn: relayKeyFn,
+        fn: fetchRelayNip11
     });
     data.register({
         key: 'sync:relay:operator',
         priority: 12,
-        fn: async (check: string) => {}
+        keyFn: relayKeyFn,
+        fn: fetchRelayOperator
     });
 
     //fetchers: all (bootstrap)

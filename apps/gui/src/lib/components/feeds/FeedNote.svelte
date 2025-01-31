@@ -11,6 +11,7 @@
 	import FeedNoteZaps from './FeedNoteZaps.svelte';
 	import FeedNoteReactions from './FeedNoteReactions.svelte';
 	import FeedNoteContent from './FeedNoteContent.svelte';
+	import { fade, fly } from 'svelte/transition';
 
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<IEvent, NostrEvent>;
@@ -88,18 +89,23 @@
         <FeedNoteContent {note} />
     </div>
     <div class="actions flex mt-2 hover:opacity-100 {actionsClass} min-h-6">
+        
         <div class="flex-grow">
             <a href="">♡</a>
             {#if isVisible}
-            <FeedNoteReactions {note} {memoryRelay} bind:reactionsCountCache={reactionsCountCache} />
+                <div in:fly={{ y: 20, duration: 300 }}><div in:fade>
+                    <FeedNoteReactions {note} {memoryRelay} bind:reactionsCountCache={reactionsCountCache} />
+                </div></div>
             {:else}
-            {reactionsCountCache? reactionsCountCache : ''}
+                <div in:fly={{ y: 20, duration: 300 }}><div in:fade>
+                    {reactionsCountCache? reactionsCountCache : ''}
+                </div></div>  
             {/if}
         </div>
         <div class="flex-grow">
             <a href="">⚡</a>
             {#if isVisible}
-            <FeedNoteZaps {note} {memoryRelay} bind:zapSumCache={zapSumCache} />
+                <FeedNoteZaps {note} {memoryRelay} bind:zapSumCache={zapSumCache} />
             {:else}
             {zapSumCache? zapSumCache : ''}
             {/if}

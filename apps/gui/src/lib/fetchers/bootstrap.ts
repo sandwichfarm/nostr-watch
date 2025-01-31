@@ -40,7 +40,7 @@ export const fetchNip11s = async () => {
 
 export const fetchOperators = async (pubkeys?: string[]) => {
     await delay(1000)
-    console.log('fetchOperators')
+    //console.log('fetchOperators')
     const $route66 = await instance();
     await $route66.ready();
     if(!pubkeys?.length){
@@ -65,7 +65,7 @@ export const fetchOperators = async (pubkeys?: string[]) => {
         (filter.authors as string[]).push(pubkey);
     }
 
-    console.log('fetchOperators', 'filters', filters)
+    //console.log('fetchOperators', 'filters', filters)
     
     if ((filter.authors as string[]).length > 0) {
         filters.push(filter);
@@ -88,6 +88,6 @@ export const fetchOperators = async (pubkeys?: string[]) => {
         }
         await $route66.subscribe( { relays, filters, priority, options }, { onevents } )
     }
-    console.log('fetchOperators', results)
+    //console.log('fetchOperators', results)
     return results;
 }

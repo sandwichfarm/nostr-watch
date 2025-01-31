@@ -2,11 +2,21 @@ import { derived, get, type Readable, type Writable } from "svelte/store"
 import { nip11s } from "../nip11s"
 import type { Limitations, Nip11 } from "@nostrwatch/route66/models/Nip11";
 
-export const relayNip11 = (relay: string): Nip11 => {
+export const relayNip11 = (relay: string): Nip11 | undefined => {
     return get(nip11s).get(relay)?.[0];
 }
 
-export const relayNip11$ = (relay: string): Readable<Nip11> => {
+export const relayNip11$ = (relay: string): Readable<Nip11 | undefined> => {
+    return derived(nip11s, ($nip11s) => {
+        return $nip11s.get(relay)?.[0];
+    })
+}
+
+export const relayNip11s = (relay: string): Nip11[] | undefined => {
+    return get(nip11s).get(relay);
+}
+
+export const relayNip11s$ = (relay: string): Readable<Nip11[] | undefined> => {
     return derived(nip11s, ($nip11s) => {
         return $nip11s.get(relay);
     })

@@ -12,6 +12,7 @@ import type { RelayInformation } from "@nostrwatch/route66/models";
 import type { nip11 } from "nostr-tools";
 import { relayCheckAggregates } from "./checks.js";
 import { isPubkey } from "../utils/nostr.js";
+import { throttledDerived } from "$utils/stores.js";
 
 type RelayUrl = string
 
@@ -26,10 +27,9 @@ export const nip11sLocal: Writable<Map<string, Nip11>> = writable(new Map())
 // import { compress, decompress } from './utils';
 // import type { Nip66CheckEvent, Nip11, RelayInformation } from './types';
 
-export const nip11s = derived(
+export const nip11s: Readable<Map<string, Nip11[]>> = derived(
   [eventsArray, nip11sLocal],
   ([$eventsArray, $nip11sLocal]) => {
-
     let nip11Map = new Map<string, Nip11[]>();
 
     // Helper function to update or insert an entry in our Map
@@ -46,9 +46,10 @@ export const nip11s = derived(
     let localNip11s = 0;   // Count how many we got from local store
 
     // 1) Gather nip11s from the NIP-66 events:
-    for (const event of $eventsArray) {
-      // Ensure event has both a relay URL and nip11 data
-      if (!event.nip11 || !event.relay) continue;
+    for (const _event of $eventsArray) {
+      if(_event.kind !== 30166) continue;
+      const event = _event as Nip66CheckEvent;
+      if (!event?.nip11 || !event?.relay) continue;
       updateEntry(event.relay, event.nip11);
       nip66Nip11s++;
     }
@@ -170,3 +171,12 @@ export const operatorPubkeysInvalid: Readable<string[]> = derived(
     return $operatorPubkeys.filter((pubkey: string) => !isPubkey(pubkey))
   }
 )
+
+export const relayNip11s = (relay: string): Readable<Nip11 | undefined> => {
+  return throttledDerived(
+    [nip11s],
+    ([$nip11s]) => {
+        return $nip11s.get(relay)?.[0];
+    }, 
+    100)
+};

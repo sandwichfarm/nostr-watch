@@ -26,6 +26,9 @@
 	import { NostrEvent } from '@nostrwatch/route66/models';
 	import type { IResult } from '@nostrwatch/nocap';
 	import { delay } from '@nostrwatch/utils';
+	import { dataRegister } from '$stores/data-register';
+	import PageHeader from '$lib/components/layout/PageHeader.svelte';
+	import { truncateWithEllipsis } from '$utils/strings';
 	
 
   let ProfileCompact: typeof import('$lib/components/partials/ProfileCompact.svelte').default | null = null;
@@ -211,7 +214,6 @@
       //   return;
       // }
 
-
       const offlineRes = await getRelayData('offline')
       if (offlineRes?.[0]?.length) {
         const [data, mons] = offlineRes
@@ -303,15 +305,26 @@
       if (currentRelay === relayUrl) return;
       const resume = await pauseLiveSync()
       loadComponents();
-      if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-      if (hasBeenBootstrapped()) {
-          while (!isSeeded) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-          }
-      }
-      loadRelayData().then(() => {
-          resume();
-      });
+      await $dataRegister.require(
+        ['sync:cache', 'sync:relay:checks', 'sync:relay:nip11', 'sync:relay:operator'],
+        {
+          'sync:relay:checks': [ relayUrl ],
+          'sync:relay:nip11': [ relayUrl ],
+          'sync:relay:operator': [ relayUrl ]
+        }
+      );
+      await resume();
+
+
+      // if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+      // if (hasBeenBootstrapped()) {
+      //     while (!isSeeded) {
+      //         await new Promise(resolve => setTimeout(resolve, 100));
+      //     }
+      // }
+      // loadRelayData().then(() => {
+      //     resume();
+      // });
       // //console.log('nip11 from cache', await $route66?.adapters?.cache?.getNip11(relayUrl));
   };
 
@@ -392,48 +405,21 @@
   $: protocolsMatch = $page.params.protocol === 'wss' && location.protocol.replace(':', '') === 'https' 
                       || $page.params.protocol === 'ws' && location.protocol.replace(':', '') === 'http' 
 
-  $: probablyOnline = $liveness === 'online';
+  // $: probablyOnline = $liveness === 'online';
+  $: probablyOnline = $relayChecks.length > 0;
 
   let [minColWidth, maxColWidth, gap] = [400, 800, 21];
   let width: number, height: number;
 </script>
 
 
-
-<header
-  id="relay-header"
-  class="relative bg-center bg-cover bg-no-repeat h-48 px-3 py-10 bg-black/20 dark:!bg-white/5"
-  style={banner? `background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)),  url('${banner}'); 
-          background-repeat: no-repeat; 
-          background-size: cover;`: ''}
->
-  <div class="relative z-10 flex justify-between p-6 h-full">
-    <div class="flex">
-      <div class="flex-shrink-0 mr-2">
-        {#if icon}
-          <span class="inline-block overflow-hidden rounded-full w-20 h-20">
-            <img src="{icon}" alt="relay icon" class="inline mr-2 w-full h-auto" />
-          </span>
-        {/if}
-      </div>
-      <div class="">
-        <h1 class="copy-this relative">
-          <span 
-            class="block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg cursor-pointer hover:bg-white/50 hover:dark:bg-black/50" 
-            use:clickToCopy 
-            use:observeViewport
-            aria-label="Copy relay URL to clipboard"
-          >
-            {relayUrl}
-          </span>
-          <span class="copy-message">click to copy relay url</span>
-        </h1>
-        <p class="text-md italic text-white/80 pl-3 line-clamp-2 w-3/4">{description}</p>
-      </div>
-
-    </div>
-  </div>
-</header>
+<PageHeader 
+  title={relayUrl} 
+  subtitle={description? truncateWithEllipsis(description, 100): undefined} 
+  icon={icon? icon: undefined} 
+  banner={banner? banner: undefined}
+  bgOpacity={0.2} 
+/>
 
 {#if probablyOnline}
 <main class="flex flex-wrap md:flex-nowrap mx-0 w-full p-0">
@@ -547,15 +533,12 @@
           {/if}
 
 
-          {#if Tabs && RelayNip11 && $nip11Ready}
+          {#if Tabs && RelayNip11 && Object.keys($nip11 ?? {})?.length > 0}
           <Tabs.Content value="nip11">
             <!-- {$nip11s.get(relayUrl)?.length ?? 0} NIP-11s from NIP-66 events [{$nip11s.get(relayUrl)?.[0] ? true : false}] <br /> -->
             <!-- {#if $nip11sLocal?.get(relayUrl)}
               NIP-11 found locally <br />
             {/if} -->
-            <!-- <pre class="py-6 px-8 bg-black/5 dark:bg-white/5 rounded-lg">
-              {JSON.stringify($nip11?.json, null, 4)}
-            </pre> -->
             <RelayNip11 {nip11} />
           </Tabs.Content>
           {/if}
@@ -570,7 +553,7 @@
 
           {#if RelayAudits}
             <Tabs.Content value="audit">
-              {#if showAuditTab && $nip11Ready}
+              {#if showAuditTab}
                 <RelayAudits {relayUrl} {nip11} />
               {:else}
                 <Skeleton class="h-32 w-full" />

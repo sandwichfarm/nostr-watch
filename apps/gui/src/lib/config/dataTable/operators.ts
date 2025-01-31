@@ -20,7 +20,9 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableFormatters: Formatters = {
     name: (name: string, row: any) => {
         if(typeof name !== 'string') return '-';
-        const nameHtml = `<span class="my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(name, 55)}</span>`;
+        const nameHtml = `<a class="my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm" href="/operators/${row.pubkey}">
+            ${truncateWithEllipsis(name, 55)}
+            </a>`;
         const photo = row.photo? 
             `<img src="${row.photo}" alt="${name}" class="w-12 h-12 inline-block mr-2 rounded-full">` 
             :'<span class="w-12 h-12 inline-block mr-2"></span>';

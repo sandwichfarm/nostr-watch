@@ -77,7 +77,8 @@
     $: eventsArray = Array.from( $events.entries() ) 
 
 </script>
-
+<main class="mt-16">
 {#if $ready}
     <DataTable {data} {config} {dataKey} />
 {/if}
+</main>

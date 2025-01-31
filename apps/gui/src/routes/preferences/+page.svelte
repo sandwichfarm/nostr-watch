@@ -14,7 +14,7 @@
         Nip66Instance = instance($route66);
     });
 </script>
-<div class="flex py-4 px-8">
+<div class="flex py-4 px-8 mt-16">
     {#if Nip66Instance !== null}
     <Button on:click={wipeCache} variant="destructive">
     Wipe

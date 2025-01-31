@@ -2,6 +2,7 @@
 	import { page } from "$app/stores";
 	import MapHeat from "$lib/components/DataView/map/MapHeat.svelte";
 	import FeedNoteContent from "$lib/components/feeds/FeedNoteContent.svelte";
+	import PageHeader from "$lib/components/layout/PageHeader.svelte";
 	import BootstrapLoading from "$lib/components/partials/BootstrapLoading.svelte";
 	import Nip66Check from "$lib/components/partials/Nip66Check.svelte";
 	import PubkeyPhoto from "$lib/components/partials/PubkeyPhoto.svelte";
@@ -62,34 +63,10 @@
     });
 </script>
 
-<header
-  id="relay-header"
-  class="relative bg-center bg-cover bg-no-repeat h-48 px-3 py-10 bg-black/20 dark:!bg-white/5"
->
-
-  <div class="relative z-10 flex justify-between p-6 h-full">
-    <div class="flex">
-      <div class="">
-        <h1 class="copy-this relative">
-          <span 
-            class="block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg cursor-pointer hover:bg-white/50 hover:dark:bg-black/50" 
-            use:clickToCopy 
-            aria-label="Copy software descriptor"
-          >
-            {softwareKey}
-          </span>
-          <span class="copy-message">click to copy software key</span>
-        </h1>
-      </div>
-      
-      
-    </div>
-    
-  </div>
-  <div class="text-xs block clear-both ml-10 font-mono opacity-50" use:clickToCopy>
-    {$page.params.softwareKey}
-  </div>
-</header>
+<PageHeader
+    title={softwareKey} 
+    subtitle={`<div class="text-xs block clear-both ml-10 font-mono opacity-50" use:clickToCopy>${$page.params.softwareKey}</div>`}
+    />
 
 <!-- {#if !bootstrapped}
     <BootstrapLoading />

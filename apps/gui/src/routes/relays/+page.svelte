@@ -76,10 +76,6 @@
 </script>
 
 <main> 
-	
-	
-	
-
 	{#if $ready}
 	<RelayDimensions />
 	<DataView data={relayCheckAggregates} {config} key={dataKey} {enabledViews} />

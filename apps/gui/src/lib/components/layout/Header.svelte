@@ -5,6 +5,7 @@
 	import { hasBeenBootstrapped } from '$lib/stores/app';
     import { totalMonitors } from '$lib/stores';
 	import { unsupported } from '$lib/stores/app';
+	import Nav from './Nav.svelte';
   
     $: isHomepage = $page.url.pathname === '/';
     $: isBootstrapped = hasBeenBootstrapped();
@@ -14,13 +15,7 @@
 <header id="site-header">
     {#if (loadedEnough || !$doBootstrap) && !$unsupported}
     <h1>nostr.watch</h1>
-    <nav>
-        <a href="/">home</a>
-        <a href="/relays">relays</a>
-        <a href="/operators">operators</a>
-        <a href="/monitors">monitors</a>
-        <a href="/preferences">preferences</a>
-    </nav>
+    <Nav />
     {/if}
     {#if !isHomepage && (loadedEnough || !$doBootstrap) && !$unsupported}
     <div class="search-container">
@@ -31,7 +26,7 @@
     {/if}
 </header>
 
-<style lang="postcss">
+<style lang="postcss" global>
     #site-header {
         @apply fixed top-0 right-0 left-0 flex items-center h-16 bg-black/25 dark:bg-white/25 backdrop-blur-lg text-white dark:text-black z-[999];
     }

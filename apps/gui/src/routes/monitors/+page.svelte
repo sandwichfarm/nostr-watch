@@ -54,6 +54,7 @@
     $: warnHasLessThanRecommendedMonitors = countEnabledMonitors < 3;
     $: warnHasMoreThanRecommendedMonitors = countEnabledMonitors > 8;
 </script>
+<main class="pt-16">
 <!-- <pre>{JSON.stringify($monitorsSorted.map( monitor => monitor), null, 2)}</pre> -->
 {#if $ready}
     {#if $monitorsSorted.length}
@@ -95,5 +96,5 @@
         </div>
         <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {dataKey} />
     {/if}
-
 {/if}
+</main>

@@ -48,6 +48,7 @@
 
     onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+        doAggregateCache.set(true)
         // console.log('OPERATORS: LOADING COMPONENTS')
         await loadComponents().then(setConfig);
             // setConfig()

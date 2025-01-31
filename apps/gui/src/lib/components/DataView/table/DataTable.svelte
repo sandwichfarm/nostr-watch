@@ -15,13 +15,14 @@
     import * as Popover from "$lib/components/ui/popover";
     import * as Tabs from "$lib/components/ui/tabs";
 	import type { DataTableConfig } from './DataTableTypes';
-	import { darkMode } from '$lib/stores/app';
+	import { darkMode, isBootstrapped } from '$lib/stores/app';
 	import type { DataViewColumns } from '../DataTableTypes';
 	import { randomLoadingMessage } from '$utils/ux';
 	import Loading from '$lib/components/partials/Loading.svelte';
 
     export let dataKey: string;
     export let data: Readable<any[]>;
+    export let dataUnfilteredLength: number | undefined = undefined;
     export let columns: Readable<DataViewColumns[]>;
     export let config: Writable<DataTableConfig>;
     export let enableFilters: boolean | undefined = true;
@@ -40,7 +41,7 @@
     export const recordChanged = writable(new Map<string, boolean>())
     export const recordWatchValue = writable(new Map<string, any>())
 
-    if(watchValue) {
+    if(watchValue && $isBootstrapped) {
         const triggerFlash = (id: string) => {
             recordChanged.update( (currentMap: Map<string, boolean>) => currentMap.set(id, true))
             setTimeout(() => {
@@ -300,7 +301,7 @@
         </Table.Root>
 
         <DataTableShowResults />
-        <DataTablePaginator {tableInstance} />
+        <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} />
     </div>
 {:else}
     <Loading />

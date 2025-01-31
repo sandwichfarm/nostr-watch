@@ -466,7 +466,7 @@ export class MonitorService extends Service {
       keepAlive: true,
       returnResults: true,
       stream: true,
-      batch: 50
+      batch: 10
     }
     let highestTimestamp: number = 0;
     const onevents: SubscribeHandlers['onevents'] = (events: IEvent[]) => {

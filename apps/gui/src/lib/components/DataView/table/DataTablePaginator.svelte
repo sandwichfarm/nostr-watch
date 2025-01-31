@@ -2,6 +2,7 @@
     import { Button } from '$lib/components/ui/button/index.js';
     import { ArrowLeft, ArrowRight } from 'svelte-radix';
     export let tableInstance;
+    export let totalCount: number | undefined = undefined;
 </script>
 
 <div class="inline-block">
@@ -30,7 +31,7 @@
             <span class="font-semibold">{tableInstance?.totalPages}</span>
         </p>
         <span class="text-xs">
-            ({tableInstance?.allRows.length} / {tableInstance?.baseRows.length})
+            ({tableInstance?.allRows.length} / {totalCount || tableInstance?.baseRows.length})
         </span>
     </div>
 </div>

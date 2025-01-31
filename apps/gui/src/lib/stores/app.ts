@@ -65,7 +65,7 @@ export const hasBeenSeeded = (): boolean => {
     return get(isSeeded)    
 }
 
-export const doAggregateCache: Writable<boolean> = writable(false)
+export const doAggregateCache: Writable<boolean> = writable(true)
 
 export const shouldAggregate = (): boolean => {
     return !get(doAggregateCache)

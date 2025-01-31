@@ -110,7 +110,7 @@
         <DataViewSelector {enabledViews} bind:activeView />
 
         {#if $activeView === 'table'}
-            <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} />
+            <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} dataUnfilteredLength={data?.length} />
         {/if}
 
         {#if $activeView === 'grid'}

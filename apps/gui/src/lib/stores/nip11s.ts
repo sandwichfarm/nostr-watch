@@ -19,20 +19,11 @@ type RelayUrl = string
 export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
 export const nip11sLocal: Writable<Map<string, Nip11>> = writable(new Map())
 
-// import { derived, get } from 'svelte/store';
-// Import or define these according to your actual codebase
-// import { eventsArray, nip11sLocal, doAggregateCache } from './stores';
-// import { StateManager } from './StateManager';
-// import { hasBeenBootstrapped, hasBeenSeeded } from './init';
-// import { compress, decompress } from './utils';
-// import type { Nip66CheckEvent, Nip11, RelayInformation } from './types';
-
 export const nip11s: Readable<Map<string, Nip11[]>> = derived(
   [eventsArray, nip11sLocal],
   ([$eventsArray, $nip11sLocal]) => {
     let nip11Map = new Map<string, Nip11[]>();
 
-    // Helper function to update or insert an entry in our Map
     function updateEntry(relay: string, nip11Entry: Nip11) {
       let existing = nip11Map.get(relay);
       if (!existing) {
@@ -42,10 +33,9 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
       nip11Map.set(relay, existing);
     }
 
-    let nip66Nip11s = 0;   // Count how many we got from nip66 events
-    let localNip11s = 0;   // Count how many we got from local store
+    let nip66Nip11s = 0;
+    let localNip11s = 0;
 
-    // 1) Gather nip11s from the NIP-66 events:
     for (const _event of $eventsArray) {
       if(_event.kind !== 30166) continue;
       const event = _event as Nip66CheckEvent;
@@ -54,8 +44,6 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
       nip66Nip11s++;
     }
 
-    // 2) Gather nip11s from local (HTTP fetch or otherwise)
-    //    `nip11sLocal` is assumed to be a store that returns a Map<relayUrl, Nip11>
     for (const [relayUrl, nip11Entry] of $nip11sLocal.entries()) {
       if (!nip11Entry) continue;
       updateEntry(relayUrl, nip11Entry);
@@ -63,24 +51,16 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
     }
 
     const totalWithoutLocal = nip66Nip11s - localNip11s;
-    console.log('Found from NIP66 events:', nip66Nip11s);
-
-    // 3) If we have newly-fetched data (NIP-66 results),
-    //    and we have fully bootstrapped & seeded, and user wants caching:
     if (
       totalWithoutLocal > 0 &&
       hasBeenBootstrapped() &&
       hasBeenSeeded() &&
       get(doAggregateCache) === true
     ) {
-      // Compress + store aggregated results
       const arrayified = Array.from(nip11Map.entries()).map(
         ([relay, entries]) => [relay, entries.map((n: Nip11) => n.json)]
       );
       StateManager.set('aggregate:nip11s', compress(arrayified));
-
-      // 4) Otherwise, if we have seeded but no new data from events,
-      //    try to load from local storage / StateManager:
     } else if (hasBeenSeeded()) {
       const cachedMap = StateManager.get('aggregate:nip11s');
       if (cachedMap) {
@@ -105,12 +85,7 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
           console.error('Error during nip11Map decompression:', e);
         }
       }
-    } else {
-      // Not yet bootstrapped or seeded, do nothing special
-      // console.log('!!! NOT BOOTSTRAPPED OR SEEDED');
-    }
-
-    console.log('Final nip11Map:', nip11Map);
+    } 
     return nip11Map;
   }
 );
@@ -153,7 +128,6 @@ export const operatorPubkeys: Readable<string[]> = derived(
         result.add(pubkey)
       }
     }
-    // console.log('operatorPubkeys', Array.from(result))
     return Array.from(result)
   }
 )

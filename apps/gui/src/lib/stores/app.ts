@@ -1,7 +1,6 @@
 import { StateManager } from "@nostrwatch/route66";
 import type { Readable, Writable } from "svelte/store";
-import { readable, writable, derived, get } from "svelte/store";
-import { formatSeconds, timeAgo } from "../utils/time";
+import { writable, derived, get } from "svelte/store";
 import { route66 } from "./route66";
 import { delay } from "@nostrwatch/utils";
 
@@ -20,11 +19,8 @@ export const isBootstrapping: Writable<boolean> = writable(false)
 export const lastCompleteSync: Writable<number> = writable(StateManager.get('lastCompleteSync') ?? 0)
 
 export const darkMode: Writable<boolean> = writable(false)
-
-darkMode.set(window.matchMedia('(prefers-color-scheme: dark)').matches);
-
 const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
+darkMode.set(darkModeQuery.matches);
 darkModeQuery.addEventListener('change', (event) => {
   if (event.matches) {
     darkMode.set(true);
@@ -59,12 +55,12 @@ export const shouldSync = () => {
     return false; 
 }
 
-export const hasBeenBoostrapped = (): boolean => {
-    return StateManager.get('lastCompleteSync')? true: false
+export const hasBeenBootstrapped = (): boolean => {
+    return StateManager.get('register:sync:all')? true: false
 }
 
+export const isBootstrapped: Writable<boolean> = writable(hasBeenBootstrapped())
 export const isSeeded: Writable<boolean> = writable(false)    
-
 export const hasBeenSeeded = (): boolean => {
     return get(isSeeded)    
 }

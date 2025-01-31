@@ -2,13 +2,13 @@
     import { page } from '$app/stores';
 	import AutoSuggestRelays from '../partials/AutoSuggestRelaysCompact.svelte';
     import { doBootstrap } from '$lib/stores/routines';
-	import { hasBeenBoostrapped } from '$lib/stores/app';
+	import { hasBeenBootstrapped } from '$lib/stores/app';
     import { totalMonitors } from '$lib/stores';
 	import { unsupported } from '$lib/stores/app';
   
     $: isHomepage = $page.url.pathname === '/';
-    $: isBootstrapped = hasBeenBoostrapped();
-    $: loadedEnough = hasBeenBoostrapped() || $totalMonitors > 1
+    $: isBootstrapped = hasBeenBootstrapped();
+    $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
 </script>
 
 <header id="site-header">

@@ -1,21 +1,24 @@
-import { instance } from "../utils/lifecycle";
+import { bindBootstrapEmitters, instance } from "../utils/lifecycle";
 import type { Nip11Service } from "$lib/services/Nip11Service";
-import { publishEventsToMemoryRelay } from "$stores/events-helpers";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
-import { nip11Service, operatorPubkeysValid, relaysWithNip11s, relaysWithoutNip11s } from "$stores/nip11s";
+import { nip11Service, relaysWithNip11s, relaysWithoutNip11s } from "$stores/nip11s";
 import { get } from "svelte/store";
 import type { Filter } from "nostr-tools";
 import type { WebsocketAdapterOptions } from "@nostrwatch/route66/core/WebsocketAdapter";
+import { operatorsPubkeys, operatorsPubkeysValid } from "$stores/operators";
+import { delay } from "@nostrwatch/utils";
 
 export const fetchMonitors = async () => {
     const $route66 = await instance();
     await $route66.ready();
+    bindBootstrapEmitters();
     await $route66?.services?.monitors?.bootstrapMonitors();
 }
 
 export const fetchMonitorsChecks = async () => {
     const $route66 = await instance();
     await $route66.ready();
+    bindBootstrapEmitters();
     await $route66?.services?.monitors?.bootstrapMonitorsChecks();
 }
 
@@ -32,14 +35,16 @@ export const fetchNip11s = async () => {
             $nip11Service.check(relay).then( resolve )
         }));
     }
-    await Promise.allSettled(promises);
+    return Promise.allSettled(promises);
 }
 
 export const fetchOperators = async (pubkeys?: string[]) => {
+    await delay(1000)
+    console.log('fetchOperators')
     const $route66 = await instance();
     await $route66.ready();
-    if(!pubkeys){
-        pubkeys = get(operatorPubkeysValid);
+    if(!pubkeys?.length){
+        pubkeys = get(operatorsPubkeysValid);
     }
     const emptyFilter: Filter = { kinds: [0, 10002], authors: [] };
     const chunks: Filter[][] = [];
@@ -49,16 +54,18 @@ export const fetchOperators = async (pubkeys?: string[]) => {
         if (!Array.isArray(filter.authors)) {
             filter.authors = [];
         }
-        if (filter.authors.length > 20) {
+        if (filter.authors.length >= 10) {
             filters.push(filter);
             filter = structuredClone(emptyFilter);
-            if (filters.length > 10) {
+            if (filters.length >= 5) {
                 chunks.push([...filters]);
                 filters = [];
             }
         }
         (filter.authors as string[]).push(pubkey);
     }
+
+    console.log('fetchOperators', 'filters', filters)
     
     if ((filter.authors as string[]).length > 0) {
         filters.push(filter);
@@ -67,15 +74,11 @@ export const fetchOperators = async (pubkeys?: string[]) => {
     if (filters.length > 0) {
         chunks.push([...filters]);
     }
+    let results: IEvent[] = []
     for(const filters of chunks){
-        const onevent = (event: IEvent) => { 
-            publishEventsToMemoryRelay([event], 'bootstrapOperatorsMeta')
-        };
-        const onevents = (events: IEvent[]) => {
-            publishEventsToMemoryRelay(events, 'bootstrapOperatorsMeta');
-        }
         const relays = $route66?.services?.relay?.userMetaRelays || []
         const priority = 1;
+        const onevents = (events: IEvent[]) => results.push(...events);
         const options: WebsocketAdapterOptions = {
             cache: true,
             returnResults: true, 
@@ -83,7 +86,8 @@ export const fetchOperators = async (pubkeys?: string[]) => {
             stream: true,
             batch: 10
         }
-        await $route66.subscribe( { relays, filters, priority, options }, { onevents, onevent } );
+        await $route66.subscribe( { relays, filters, priority, options }, { onevents } )
     }
+    console.log('fetchOperators', results)
+    return results;
 }
-

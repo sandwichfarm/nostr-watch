@@ -13,6 +13,7 @@
 	import { operatorsUserInstances } from '$lib/stores/operators';
 	import { bootstrapOperatorsMeta, canSeedFromCache, instance } from '$lib/utils/lifecycle';
 	import { seedMetaFromCache } from '$lib/utils/lifecycle';
+	import { dataRegister } from '$stores/data-register';
 
     let DataTable: DataTableType;
     const componentsLoaded: Writable<boolean> = writable(false);
@@ -32,13 +33,8 @@
     const ready: Writable<boolean> = writable(false);
 
 	const setConfig = () => {
-		
 		let conf = {...defaultDataTableConfig, ...builtInTableConfig}
-
-        //console.log('conf', conf)
-
 		const userTableConfig = StateManager.get(`preferences:${dataKey}:tableConfig`);
-		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
 			config.set(conf)
@@ -47,28 +43,31 @@
 			config.set(conf)
 		}
 
-        //console.log('config', $config)
-
 		ready.set(true)
 	}
 
     onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         console.log('OPERATORS: LOADING COMPONENTS')
-        loadComponents().then(async () => {
-            setConfig()
-            await (await instance()).ready()
-            if(canSeedFromCache()){
-                console.log('OPERATORS: SEEDING')
-                // seedMetaFromCache()
-            }
-            else {
-                console.log('OPERATORS: BOOTSTRAPPING')
-                await bootstrapOperatorsMeta()
-                doBootstrap.set(true)
-                doAggregateCache.set(true)
-            }
-        });
+        await loadComponents().then(setConfig);
+            // setConfig()
+            // 
+            // await (await instance()).ready()
+            // if(canSeedFromCache()){
+            //     console.log('OPERATORS: SEEDING')
+            //     // seedMetaFromCache()
+            // }
+            // else {
+            //     console.log('OPERATORS: BOOTSTRAPPING')
+            //     await bootstrapOperatorsMeta()
+            //     doBootstrap.set(true)
+            //     doAggregateCache.set(true)
+            // }
+        // });
+        await $dataRegister.require([
+            'sync:cache',
+            'sync:all',
+        ]); 
     });
 
     onDestroy(() => {

@@ -10,7 +10,7 @@
   import { relaysErrors } from '$lib/stores/relay-errors.js';
   import { isHex } from '$lib/utils/nostr.js';
   import { Nip11 } from '@nostrwatch/route66/models';
-  import { isLivesyncing, doAggregateCache, hasBeenBoostrapped } from '$lib/stores/app';
+  import { isLivesyncing, doAggregateCache, hasBeenBootstrapped } from '$lib/stores/app';
   import { pauseLiveSync, beginLiveSync, seedFromCache } from '$lib/utils/lifecycle';
   import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers';
   import { clickToCopy, observeViewport } from '$lib/utils/ux';
@@ -304,7 +304,7 @@
       const resume = await pauseLiveSync()
       loadComponents();
       if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-      if (hasBeenBoostrapped()) {
+      if (hasBeenBootstrapped()) {
           while (!isSeeded) {
               await new Promise(resolve => setTimeout(resolve, 100));
           }

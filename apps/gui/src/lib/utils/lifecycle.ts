@@ -12,7 +12,7 @@ import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers.js';
 
 import type { Monitor, Nip11, NostrEvent } from "@nostrwatch/route66/models"
 import { nip05Service } from '$lib/stores/nip05s.js';
-import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready } from '../stores/app';
+import { hasBeenBootstrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready } from '../stores/app';
 import type { SubscribeHandlers, WebsocketAdapterOptions } from '@nostrwatch/route66/core/WebsocketAdapter';
 import { Batcher } from '@nostrwatch/route66/core';
 
@@ -263,19 +263,18 @@ export const fetchNip11s = async () => {
             $nip11Service.check(relay).then( resolve )
         }));
     }
-    const debug = setInterval( () => { 
+    // const debug = setInterval( () => { 
         //console.log('fetchNip11s:total', promises.length)
         //console.log('fetchNip11s:waiting', promises.filter( (p) => p?.status === 'pending').length)
-    }, 1000)
+    // }, 1000)
     await Promise.allSettled(promises);
-    clearInterval(debug)
+    // clearInterval(debug)
     //console.log('fetchNip11s:done')
 }
 
 type LiveSyncResumer = () => Promise<void>
 
 export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {
-    //console.log('starting live sync')
     isLivesyncing.set(true)
     if(!$route66){
         $route66 = await instance();
@@ -284,7 +283,6 @@ export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void
 }
 
 export const stopLiveSync = async (): Promise<void> => {
-    //console.log('stopping live sync')
     isLivesyncing.set(false)
     if(!$route66){
         $route66 = await instance();
@@ -293,7 +291,6 @@ export const stopLiveSync = async (): Promise<void> => {
 }
 
 export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
-    //console.log('pausing live sync')
     let wasLiveSyncing = get(isLivesyncing)? true: false;
     if(!$route66){
         $route66 = await instance();
@@ -309,7 +306,6 @@ export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
 }
 
 export const destroy = () => {
-    //console.log('Lifecycle:destroy')
     route66.update(($route66: Route66) => {
         if ($route66 && typeof $route66.destroy === 'function') {
             $route66.destroy();
@@ -326,17 +322,18 @@ export const canSeedFromCache = async (): boolean => {
     }
     if(!$route66) return false;
     if(get(isSeeded)) return false;
-    if(!hasBeenBoostrapped()) return false;
+    if(!hasBeenBootstrapped()) return false;
     return true
 }
 
-export const seedFromCache = async () => {
-    seedChecksFromCache()
-    seedMetaFromCache()
+export const seedFromCache = async (): Promise<IEvent[]> => {
+    const checks = await seedChecksFromCache()
+    const meta = await seedMetaFromCache()
+    console.log('seedFromCache', [checks, meta].flat())
+    return [checks, meta].flat().filter(  (e) => e !== undefined )
 }   
 
 export const seedChecksFromCache = async () => {
-    if(!canSeedFromCache()) return;
     const promises: Promise<any>[] = [];
     $route66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
         promises.push(new Promise( resolve => {
@@ -345,8 +342,10 @@ export const seedChecksFromCache = async () => {
     })
     const cachedEvents = (await Promise.all(promises)).flat();
     if(cachedEvents.length === 0) return;
-    publishEventsToMemoryRelay(cachedEvents, 'seedChecksFromCache');
+    // publishEventsToMemoryRelay(cachedEvents, 'seedChecksFromCache');
     isSeeded.set(true)
+    console.log('seedChecksFromCache:events', cachedEvents.length)
+    return cachedEvents
 }
 
 export const seedMetaFromCache = async () => {
@@ -355,13 +354,14 @@ export const seedMetaFromCache = async () => {
     }
     await $route66.ready();
     if(!$route66) return;
-    if(get(isSeeded)) return;
-    if(!hasBeenBoostrapped()) return;
+    // if(get(isSeeded)) return;/
+    // if(!hasBeenBootstrapped()) return;
 
     const cachedEvents = await $route66.REQ([{ kinds: [ 0, 10002 ]}])
     if(!cachedEvents?.length) return;
     console.log('seedMetaFromCache:events', cachedEvents.length)
-    publishEventsToMemoryRelay(cachedEvents, 'seedMetaFromCache');
+    // publishEventsToMemoryRelay(cachedEvents, 'seedMetaFromCache');
+    return cachedEvents
 }
 
 export const seedAllEventsFromCache = async () => {
@@ -370,7 +370,7 @@ export const seedAllEventsFromCache = async () => {
     }
     if(!$route66) return;
     if(get(isSeeded)) return;
-    if(!hasBeenBoostrapped()) return;
+    if(!hasBeenBootstrapped()) return;
 
     const cachedEvents = await $route66.REQ([{}])
     if(!cachedEvents?.length) return;

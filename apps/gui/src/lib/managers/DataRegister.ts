@@ -1,3 +1,4 @@
+import { StateManager } from '@nostrwatch/route66';
 import { minimatch } from 'minimatch';
 import timestring from 'timestring';
 
@@ -6,6 +7,7 @@ export type DataRegisterDataSet = {
     priority: number;
     fn: DataRegisterFn;
     condition?: DataRegisterCondition;
+    onComplete?: DataRegisterFn;
     params?:  any[];
     expiry?: number | string;
 }
@@ -15,6 +17,7 @@ export type DataRegisterComposite = {
     priority: number;
     keys: string[];
     condition?: DataRegisterCondition;
+    onComplete?: DataRegisterFn;
     ignoreConditions?: Record<string, boolean>;
     ignoreExpiries?: Record<string, boolean>;
     expiry?: number | string;
@@ -41,8 +44,9 @@ export class DataRegister {
     private _seeded: Map<string, boolean> = new Map();
     private _dataSets: Map<string, DataRegisterDataSet> = new Map();
     private _composite: Map<string, DataRegisterComposite> = new Map();
-    private _expiries: Map<string, number> = new Map();
     private _timestamps: Map<string, number> = new Map();
+    private _busy: Map<string, boolean> = new Map();
+    private _ready: boolean = false;
 
     get availableKeys(): string[] {
         return this.dataSetsArray.map((dataSet) => dataSet.key)
@@ -54,7 +58,7 @@ export class DataRegister {
 
     get state(): DataRegisterState {
         return { 
-            seeded: this._seeded 
+            seeded: structuredClone(this._seeded)
         }
     }
 
@@ -66,6 +70,16 @@ export class DataRegister {
         return Array.from(this._dataSets.values()).sort((a, b) => a.priority - b.priority)
     }
 
+    async ready(){
+        while(!this._ready) {
+            await new Promise(resolve => setTimeout(resolve, 200))
+        }
+    }
+
+    unlock() {
+        this._ready = true;
+    }
+
     isComposite(dataSet: string): boolean {
         return this._composite.has(dataSet)? true: false;
     }
@@ -73,14 +87,28 @@ export class DataRegister {
     exists(dataSet: string): boolean {
         return this.allKeys.has(dataSet)
     }
+
+    localStorageSetTimestamp(key: string) {
+        StateManager.set(`register:${key}`, this._timestamps.get(key))
+    }
+
+    localStorageLoadTimestamp(key: string){
+        const fromCache = StateManager.get(`register:${key}`)
+        console.log('localStorage', key, fromCache)
+        if(!fromCache) return;
+        this._timestamps.set(key, fromCache)
+    }
     
     register(dataSet: DataRegisterDataSet) {
-        if(this.exists(dataSet.key)) {
-            throw new Error(`DataSet ${dataSet.key} already registered`)
+        const { key } = dataSet;
+        if(this.exists(key)) return;
+        if(typeof dataSet.expiry === 'string') {
+            dataSet.expiry = timestring(dataSet.expiry, 'ms')
         }
-        this._dataSets.set(dataSet.key, dataSet)
-        this._seeded.set(dataSet.key, false)
-        this.allKeys.add(dataSet.key)
+        this._dataSets.set(key, dataSet)
+        this._seeded.set(key, false)
+        this.allKeys.add(key)
+        this.localStorageLoadTimestamp(key)
     }
 
     composite(composite: DataRegisterComposite) {
@@ -100,26 +128,52 @@ export class DataRegister {
         this.abortController.abort();
     }
 
-    async require(dataSets: string[], _params: Record<string, any[]> = {}) {
+    private busy(key: string): boolean {
+        return this._busy.get(key) || false;
+    }
+
+    async require(dataSets: string[], _params: Record<string, any[]> = {}): Promise<DataRegister> {
+        this.abort()
+        await this.ready();
         this.validateRequest(dataSets);
-        for (const key of dataSets) {
-            if(!this.isExpired(key)) continue;
-            const params = this.extractParams(key, _params);
-            if (this.isComposite(key)) {
-                await this.executeComposite({ key, params });
-            } else {
-                await this.execute({ key, params });
-            }
-        }
+        this.execute(dataSets, _params)
+    }
+
+    private start(key: string) {
+        this._busy.set(key, true)
+    }
+
+    private stop(key: string) {
+        this._busy.set(key, false)
+        this.updateTimestamp(key)
+    }
+
+    private updateTimestamp(key: string) {
+        this._timestamps.set(key, Date.now())
+        this.localStorageSetTimestamp(key)
     }
 
     private isExpired(key: string): boolean {
-        const expiry = this._expiries.get(key) as number | undefined;
-        if(!this._seeded.get(key)) return true;
-        if(!expiry) return true;
+        console.log(`isExpired: ${key}`)
+        
+        const expiry = this._dataSets.get(key)?.expiry || this._composite.get(key)?.expiry;
+        if(!expiry) {
+            console.log(`isExpired: ${key} has no expiry (always expired)`)
+            return true;
+        }
+
+        console.log(`isExpired: ${key} seeded`, this._seeded.get(key))
         const timestamp = this._timestamps.get(key);
-        if(!timestamp) return true;
-        return Date.now() - timestamp > expiry;
+        
+        if(!timestamp) {
+            console.log(`isExpired: ${key} has no timestamp (never been ran)`)
+            return true;
+        }
+
+        const expired = Date.now() - timestamp > (expiry as number);
+        console.log(`isExpired: cache has expired`, `${Date.now()} - ${timestamp} [${Date.now()-timestamp}]`, `>`,` ${expiry}`, 'evaluates as:', expired)
+        
+        return Date.now() - timestamp > (expiry as number);
     }
 
     private extractParams(key: string, _params: Record<string, any[]>): any[] {
@@ -134,13 +188,34 @@ export class DataRegister {
         return params || _params['*'] || [];
     }
 
-    private async execute(args: DataRegisterExecutorArguments = { key: '', ignoreCondition: false, ignoreExpiry: false, params: [] }) {  
+    private async execute(keys: string[], _params: Record<string, any> = []): Promise<DataRegister> {
+        for (const key of keys) {
+            if(this.busy(key)) continue;
+            this.localStorageLoadTimestamp(key)
+            if(!this.isExpired(key)) continue;
+            this.start(key);
+            const params = this.extractParams(key, _params);
+            if (this.isComposite(key)) {
+                await this.executeComposite({ key, params });
+            } else {
+                await this.executeFunction({ key, params });
+            }
+            this.stop(key);
+        }
+        return this;
+    }
+
+    private async executeFunction(args: DataRegisterExecutorArguments = { key: '', ignoreCondition: false, ignoreExpiry: false, params: [] }) {  
+        console.log('execute', args)
         const { key, ignoreCondition, params } = args;
         const passesCondition = await this.testCondition(key, ignoreCondition);
         if(!passesCondition) return;
-        const { fn } = this._dataSets.get(key)!
+        const { fn, onComplete } = this._dataSets.get(key)!
         if( !fn || typeof fn !== 'function' ) return;
-        await fn(params)
+        let result = await fn(params)
+        if(onComplete && typeof onComplete === 'function') {
+            await onComplete(result)
+        }
         this._seeded.set(key, true)
     }
 
@@ -150,10 +225,19 @@ export class DataRegister {
         if (!shouldRun) return;
         const composite = this._composite.get(compositeKey)!;
         //
+        const results = new Map()
         for (const key of composite.keys) {
+            if (this.busy(key)) continue;
+            this.start(key);
+            if(!this.isExpired(key)) continue;
             const ignoreCondition = composite.ignoreConditions?.[key] ?? false;
             const ignoreExpiry = composite.ignoreExpiries?.[key] ?? false;
-            await this.execute({ key, ignoreCondition, ignoreExpiry, params })
+            const result = await this.executeFunction({ key, ignoreCondition, ignoreExpiry, params })
+            this.stop(key)
+            results.set(key, result)
+        }
+        if(composite.onComplete && typeof composite.onComplete === 'function') {
+            await composite.onComplete(results)
         }
     }
     

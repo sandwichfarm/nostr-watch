@@ -22,12 +22,11 @@ const getMonitor = (pubkey: string): Monitor => {
 const testingUniques = new Set<string>();
 
 export const publishEventsToMemoryRelay = async (_events: IEvent[], from?: string) => {
-    if(from) console.log(`Memory Relay: Publishing ${_events.length} events to memory relay from ${from}`, deterministicHash(_events.map(eventKey)), _events);
+    // if(from) console.log(`Memory Relay: Publishing ${_events.length} events to memory relay from ${from}`, deterministicHash(_events.map(eventKey)), _events);
     if(!_events?.length) return;
     const key = deterministicHash(_events.map( event => event.id));
     if(testingUniques.has(key)) return console.log(`duplicate add!`, testingUniques.size, _events);
     testingUniques.add(key);
-    // console.log(`Memory Relay: Publishing ${_events.length} events to memory relay`, deterministicHash(_events.map(eventKey)), _events);
     queue.add(async () => {
         await delay(20);
         get(eventsStoreMemoryRelay).eventBatch(_events)

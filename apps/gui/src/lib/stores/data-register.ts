@@ -1,15 +1,18 @@
 import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
-import { doAggregateCache } from "$stores/app";
+import { doAggregateCache, isBootstrapped, isSeeded } from "$stores/app";
 import { fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
-import { removeStaleChecksFromStore } from "$utils/lifecycle";
+import { beginLiveSync, instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
+import { publishEventsToMemoryRelay } from "./events-helpers";
+import { delay } from "@nostrwatch/utils";
+import type { IEvent } from "@nostrwatch/route66/models/Event";
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
 export const dataRegisterInit = async () => {
     const data = get(dataRegister);
-
+    
     //state
     data.register({
         key: 'set:bootstrapped',
@@ -25,45 +28,70 @@ export const dataRegisterInit = async () => {
 
     //fetchers: relay
     data.register({
-        key: 'relay:checks',
+        key: 'sync:relay:checks',
         priority: 10,
         fn: async (relay: string) => {}
     });
     data.register({
-        key: 'relay:nip11',
+        key: 'sync:relay:nip11',
         priority: 11,
         fn: async (relay: string) => {}
     });
     data.register({
-        key: 'relay:operator',
+        key: 'sync:relay:operator',
         priority: 12,
         fn: async (check: string) => {}
     });
 
     //fetchers: all (bootstrap)
     data.register({
-        key: 'all:monitors',
+        key: 'sync:monitors',
         priority: 20,
+        expiry: "45m",
         fn: fetchMonitors,
-        expiry: "3h"
+        onComplete: publishEventsToMemoryRelay
     });
     data.register({
-        key: 'all:checks',
+        key: 'sync:checks',
         priority: 21,
+        expiry: "30m",
         fn: fetchMonitorsChecks,
-        expiry: "30m"
+        onComplete: publishEventsToMemoryRelay
     });
     data.register({
-        key: 'all:nip11s',
+        key: 'sync:nip11s',
         priority: 22,
-        fn: fetchNip11s,
-        expiry: "24h"
+        expiry: "24h",
+        fn: fetchNip11s
     });
     data.register({
-        key: 'all:operators',
+        key: 'sync:operators',
         priority: 23,
+        expiry: "30m",
+        condition: async () => !get(isSeeded), 
         fn: fetchOperators,
-        expiry: "10m"
+        onComplete: publishEventsToMemoryRelay
+    });
+    data.register({
+        key: 'sync:live',
+        priority: 200,
+        fn: beginLiveSync
+    })
+
+    //cache: all (bootstrap)
+    data.register({
+        key: 'sync:cache',
+        priority: 3,
+        fn: seedFromCache,
+        condition: async () => {
+            return !get(isSeeded) && get(isBootstrapped)
+        },
+        onComplete: async (events: IEvent[]): Promise<any> => {
+            publishEventsToMemoryRelay(events, 'cache')
+            if(!events?.length) return 
+            isSeeded.set(true)
+            return events?.length ?? 0;
+        }
     });
 
     //memory lifecycle  
@@ -75,43 +103,46 @@ export const dataRegisterInit = async () => {
 
     //composites
     data.composite({
-        key: 'bootstrap:force',
-        keys: ['all:monitors', 'all:checks', 'all:nip11s', 'all:operators'],
+        key: 'sync:all',
+        keys: ['sync:monitors', 'sync:checks', 'sync:nip11s', 'sync:operators', 'sync:live'],
         priority: -10,
-        expiry: "1hr",
-        ignoreConditions: {
-            'all:monitors': true,
-            'all:checks': true,
-            'all:nip11s': true,
-            'all:operators': true
-        },
-        ignoreExpiries: {
-            'all:monitors': true,
-            'all:checks': true,
-            'all:nip11s': true,
-            'all:operators': true
-        }
-    });
-
-    data.composite({
-        key: 'bootstrap:partial',
-        keys: ['all:monitors', 'all:checks', 'all:nip11s', 'all:operators'],
-        priority: -10,
-        expiry: "1hr",
+        onComplete: async () => isBootstrapped.set(true),
         ignoreConditions: {},
         ignoreExpiries: {}
+    });
+    
+    data.composite({
+        key: 'sync:all-force',
+        keys: ['sync:monitors', 'sync:checks', 'sync:nip11s', 'sync:operators', 'sync:live'],
+        priority: -10,
+        onComplete: async () => isBootstrapped.set(true),
+        ignoreConditions: {
+            'sync:monitors': true,
+            'sync:checks': true,
+            'sync:nip11s': true,
+            'sync:operators': true
+        },
+        ignoreExpiries: {
+            'sync:monitors': true,
+            'sync:checks': true,
+            'sync:nip11s': true,
+            'sync:operators': true
+        }
     });
 
     //composites
     data.composite({
-        key: 'relayData',
-        keys: ['relay:checks', 'relay:nip11', 'relay:operator'],
+        key: 'sync:relay',
+        keys: ['sync:relay:checks', 'sync:relay:nip11', 'sync:relay:operator'],
         ignoreConditions: { 
-            'relay:checks': true,
-            'relay:nip11': true,
-            'relay:operator': true
+            'sync:relay:checks': true,
+            'sync:relay:nip11': true,
+            'sync:relay:operator': true
         },
         priority: -20
     });
 
+    await (await instance()).ready()
+    await delay(1000)
+    data.unlock();
 }

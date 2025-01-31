@@ -5,7 +5,7 @@
 	import Nip66Check from "$lib/components/partials/Nip66Check.svelte";
 	import PubkeyPhoto from "$lib/components/partials/PubkeyPhoto.svelte";
 	import Wiki from "$lib/components/wikis/Wiki.svelte";
-	import { hasBeenBoostrapped } from "$stores/app";
+	import { hasBeenBootstrapped } from "$stores/app";
 	import { softwareGeos$, softwareIsps$, softwareOperatorsPubkeys$, softwareRelays$ } from "$stores/helpers/helpers-software";
 	import { doBootstrap } from "$stores/routines";
 	import Badge from "$ui/badge/badge.svelte";
@@ -38,7 +38,7 @@
         return $wikis.map((ev: IEvent) => new NostrEvent(ev))
     });
 
-    $: bootstrapped = hasBeenBoostrapped();
+    $: bootstrapped = hasBeenBootstrapped();
 
     onMount(async () => {
         doBootstrap.set(true);

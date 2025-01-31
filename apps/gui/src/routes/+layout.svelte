@@ -9,22 +9,29 @@
   import { doBootstrap } from '$lib/stores/routines.js';
 
   import Header from '$lib/components/layout/Header.svelte';
-  import { instance, bootstrap, seedFromCache } from '$lib/utils/lifecycle';
-  import { Route66, StateManager } from '@nostrwatch/route66';
+  import { instance, } from '$lib/utils/lifecycle';
   import { destroy } from '$lib/utils/lifecycle';
   import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
   import { delay } from '@nostrwatch/utils';
-  import { getBrowserInfo } from '$lib/utils/compat.js';
-  import { unsupported, appState, tabState, type TabStateType, isIdle, hasBeenBoostrapped } from '$lib/stores/app';
   import { IdleDetector } from '$lib/utils/idle.js';
   import Debugger from '$lib/components/partials/Debugger.svelte';
 	import { resetStores } from '$lib/stores/memory-relays/routines';
-	import { feedService, userService } from '$lib/stores/services';
+	import { userService } from '$lib/stores/services';
 	import { UserService } from '$lib/services/UserService';
 	
-  import { theme } from '$lib/stores/theme';
 	import { totalMonitors } from '$stores/events';
 	import ActivityList from '$lib/components/partials/ActivityList.svelte';
+	import { dataRegister, dataRegisterInit } from '$stores/data-register';
+
+  import { 
+    type TabStateType, 
+    unsupported, 
+    appState, 
+    tabState, 
+    isIdle, 
+    hasBeenBootstrapped, 
+    isBootstrapped 
+  } from '$lib/stores/app';
 
   window.process = process;
 
@@ -35,7 +42,6 @@
 
   const lifecycle = createTabLifecycle();
   let idleDetector: IdleDetector | null = null;
-  let route66: Route66;
 
   const isDebuggerVisible = writable(false);
 
@@ -50,7 +56,7 @@
   const shutdown = async () => {
     console.log('[Lifecycle] onReleaseLeader triggered.');
     try {
-      route66 = await instance();
+      const route66 = await instance();
       await route66.ready();
       await route66.shutdown();
       await delay(1000);
@@ -158,36 +164,43 @@
   // --------------------------------------------------------------------------------
   async function boot() {
     if (get(unsupported)) return;
-
     appState.set('booting');
-
-    if (!get(doBootstrap)) {
-      try {
-        route66 = await instance();
-        await route66.ready();
-        route66?.services?.monitors?.ensureMonitorsActive();
-        initServices();
-        appState.set('running');
-      } catch (error) {
-        console.error('Error seeding from cache:', error);
-      }
-    } else if (!busy) {
-      busy = true;
-      try {
-        await bootstrap();
-        route66 = await instance();
-        initServices();
-        appState.set('running');
-      } catch (error) {
-        console.error('Error during bootstrap:', error);
-      } finally {
-        busy = false;
-      }
+    await initServices();
+    dataRegisterInit();
+    appState.set('running');
+    if(!$isBootstrapped){
+      await $dataRegister.require([
+        'sync:cache',
+        'sync:all'
+      ])
     }
+    // if (!get(doBootstrap)) {
+    //   try {
+    //     route66 = await instance();
+    //     await route66.ready();
+    //     route66?.services?.monitors?.ensureMonitorsActive();
+    //     initServices();
+    //     appState.set('running');
+    //   } catch (error) {
+    //     console.error('Error seeding from cache:', error);
+    //   }
+    // } else if (!busy) {
+    //   busy = true;
+    //   try {
+    //     await bootstrap();
+    //     route66 = await instance();
+    //     initServices();
+    //     appState.set('running');
+    //   } catch (error) {
+    //     console.error('Error during bootstrap:', error);
+    //   } finally {
+    //     busy = false;
+    //   }
+    // }
   }
 
-  const initServices = () => {
-    userService.set(new UserService(route66.adapters));
+  const initServices = async () => {
+    userService.set(new UserService((await instance()).adapters));
   };
 
   // --------------------------------------------------------------------------------
@@ -257,7 +270,7 @@
     }
   }
 
-  $: loadedEnough = hasBeenBoostrapped() || $totalMonitors > 1
+  $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
 </script>
 
 {#if $unsupported}

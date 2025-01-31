@@ -10,7 +10,7 @@
         monitors
     } from '$lib/stores/index.js';
 	import { StateManager } from '@nostrwatch/route66';
-	import { hasBeenBoostrapped } from '$lib/stores/app';
+	import { hasBeenBootstrapped } from '$lib/stores/app';
 	import { relayCheckAggregates } from '$lib/stores';
 	import { eventsChecks } from '$lib/stores';
 
@@ -28,7 +28,7 @@
     $: versionsClass = $versions && $versions.length > 0 ? 'faded' : '';
     $: ispsClass = $isps && $isps.length > 0 ? 'faded' : '';
 </script>
-{#if hasBeenBoostrapped() || $eventsArray.length}
+{#if hasBeenBootstrapped() || $eventsArray.length}
 <div id="stats-bar">
     <span class={monitorsClass}>
         <span>Monitors</span>

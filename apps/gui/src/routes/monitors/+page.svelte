@@ -14,6 +14,7 @@
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
 	import { bootstrapMonitorData } from '$utils/lifecycle';
+	import { dataRegister } from '$stores/data-register';
 
     const dataKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);
@@ -39,6 +40,11 @@
         doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
+        await $dataRegister.require([
+        	'sync:cache',
+        	'sync:monitors',
+            'sync:checks',
+    	]); 
     });
 
     $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: any) => { return !monitor.active && monitor.enabled }).length;

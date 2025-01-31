@@ -2,10 +2,6 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import AutoSuggestRelaysCompact from '$lib/components/partials/AutoSuggestRelaysCompact.svelte';
-	import { hasBeenBoostrapped } from '$lib/stores/app';
-	import { eventsArray } from '$lib/stores';
-	import { totalMonitors } from '$lib/stores';
-  import ActivityList  from "$lib/components/partials/ActivityList.svelte"
 	import Counts from '$routes/components/Counts.svelte';
 
 	onMount(() => {
@@ -14,9 +10,7 @@
   });
 
   $: isHomepage = $page.url.pathname === '/'
-  $: loadedEnough = hasBeenBoostrapped() || $totalMonitors > 1
 </script> 
-
 {#if isHomepage}
   <section class="h-[420px] bg-black/5 dark:bg-white/5 flex flex-col justify-center items-center relative z-[200]">
     <h1 class="w-full text-center text-3xl mb-4 max-w-[600px]">nostr.watch is a client for browsing, testing and researching nostr relays.</h1>

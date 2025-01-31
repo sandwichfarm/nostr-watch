@@ -309,11 +309,7 @@
 <style lang="postcss" global>
 
     .flash-record {
-        @apply bg-white bg-opacity-0 transition-opacity duration-[4000];
-    }
-
-    .flash-record-changed {
-        @apply bg-opacity-10;
+        @apply bg-white/0;
     }
 
     .active-filter {

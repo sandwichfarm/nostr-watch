@@ -21,9 +21,9 @@ const config: Config = {
 		extend: {
 			keyframes: {
 				flash: {
-					'0%': { backgroundColor: 'rgba(255, 255, 255, 0)' },
-					'5%': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-					'100%': { backgroundColor: 'rgba(255, 255, 255, 0)' },
+					'0%': { backgroundColor: 'rgba(238,130,238, 0)' },
+					'5%': { backgroundColor: 'rgba(238,130,238, 0.05)' },
+					'100%': { backgroundColor: 'rgba(238,130,238, 0)' },
 				},
 			},
 			animation: {

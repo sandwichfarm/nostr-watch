@@ -48,7 +48,7 @@
 
     onMount(async () => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-        console.log('OPERATORS: LOADING COMPONENTS')
+        // console.log('OPERATORS: LOADING COMPONENTS')
         await loadComponents().then(setConfig);
             // setConfig()
             // 

@@ -175,20 +175,18 @@ export class DataRegister {
         
         const expiry = this._dataSets.get(key)?.expiry || this._composite.get(key)?.expiry;
         if(!expiry) {
-            //console.log(`isExpired: ${key} has no expiry (always expired)`)
+            console.log(`isExpired: ${key} has no expiry (always expired)`)
             return true;
         }
-
         //console.log(`isExpired: ${key} seeded`, this._seeded.get(key))
         const timestamp = this._timestamps.get(key);
-        
         if(!timestamp) {
-            //console.log(`isExpired: ${key} has no timestamp (never been ran)`)
+            console.log(`isExpired: ${key} has no timestamp (never been ran)`)
             return true;
         }
 
         const expired = Date.now() - timestamp > (expiry as number);
-        //console.log(`isExpired: cache has expired`, `${Date.now()} - ${timestamp} [${Date.now()-timestamp}]`, `>`,` ${expiry}`, 'evaluates as:', expired)
+        console.log(`isExpired: cache has expired`, `${Date.now()} - ${timestamp} [${Date.now()-timestamp}]`, `>`,` ${expiry}`, 'evaluates as:', expired)
         
         return Date.now() - timestamp > (expiry as number);
     }
@@ -253,6 +251,7 @@ export class DataRegister {
         for (const childKey of composite.keys) {
             if (this.busy(childKey)) continue;
             const params: any[] = this.extractParams(childKey, paramsMap);
+            this.localStorageLoadTimestamp(childKey, params)
             if(!this.isExpired(childKey)) continue;
             this.start(childKey);
             

@@ -153,7 +153,7 @@ export const operatorPubkeys: Readable<string[]> = derived(
         result.add(pubkey)
       }
     }
-    console.log('operatorPubkeys', Array.from(result))
+    // console.log('operatorPubkeys', Array.from(result))
     return Array.from(result)
   }
 )

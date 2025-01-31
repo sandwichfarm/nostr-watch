@@ -187,8 +187,10 @@ export const bootstrap = async () => {
     }
     isBootstrapping.set(false)
     removeStaleChecksFromStore()
+}
+
+export const liveSync = () => {
     if(get(isLivesyncing)) return;
-    
     const onevents = (events: IEvent[]) => {
         for(const event of events){
             liveSyncBatcher.add(event); 

@@ -3,7 +3,7 @@ import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
 import { doAggregateCache, isBootstrapped, isSeeded } from "$stores/app";
 import { fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
-import { beginLiveSync, instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
+import { beginLiveSync, bindBootstrapEmitters, instance, liveSync, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { publishEventsToMemoryRelay } from "./events-helpers";
 import { delay } from "@nostrwatch/utils";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
@@ -86,9 +86,8 @@ export const dataRegisterInit = async () => {
     data.register({
         key: 'sync:live',
         priority: 200,
-        fn: beginLiveSync
+        fn: async () => liveSync()
     })
-
     //cache: all (bootstrap)
     data.register({
         key: 'sync:cache',

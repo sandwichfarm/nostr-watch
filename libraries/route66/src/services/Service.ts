@@ -169,18 +169,17 @@ export class Service {
     let cacheEvents: IEvent[] = [];
     cacheEvents = await this.cacheAdapter.REQ(filters);
 
-    if(cacheEvents.length){
+    if(cacheEvents?.length){
       StateManager.emit('events', cacheEvents);
+      if (callbacks?.onevents) {
+        callbacks.onevents(cacheEvents);
+      }
+      if (callbacks?.onevent) {
+        callbacks.onevent(event);
+      }
+  
     }
-
-    if (callbacks?.onevents) {
-      callbacks.onevents(cacheEvents);
-    }
-    if (callbacks?.onevent) {
-      callbacks.onevent(event);
-    }
-
-    return cacheEvents;
+    return cacheEvents?.length? cacheEvents: [];
   }
 
   async fetchFromWebsocket(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {

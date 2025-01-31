@@ -27,7 +27,8 @@
           rounded-xl 
           dark:bg-black/20 dark:border-black/30 dark:text-white/60 
           placeholder:text-gray-400 dark:placeholder:text-gray-500 
-          focus:outline-none focus:border-transparent focus:ring-0"
+          focus:outline-none focus:border-transparent focus:ring-0
+          shadow-[0_0_211px_rgba(255,255,255,0.2)]"
         resultWrapperClass="
           result-wrapper
           shadow-md absolute top-full -mt-8 

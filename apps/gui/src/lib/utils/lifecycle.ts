@@ -36,7 +36,7 @@ let $route66: Route66;
 let initializing: boolean = false;
 
 let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
-    maxLength: 50, 
+    maxLength: 3, 
     timeout: 30000,
     callback: (events: IEvent[]) => publishEventsToMemoryRelay(events, 'livesyncer')
 })

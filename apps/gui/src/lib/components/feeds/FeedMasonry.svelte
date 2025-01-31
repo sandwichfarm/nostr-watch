@@ -20,12 +20,12 @@
     //     return $items![$items!.length - 1].id;
     // }
 
-    // const middleItemId = () => {
-    //     return $items![Math.floor($items!.length / 2)].id;
-    // }
+    const middleItemId = () => {
+        return $items![Math.floor($items!.length / 2)].id;
+    }
 
     const lowItemId = (id: string): boolean => {
-        return $items!.slice(-4).map( item => item.id).includes(id);
+        return $items!.slice(-9).map( item => item.id).includes(id);
     }
 
     const mount = async () => {}

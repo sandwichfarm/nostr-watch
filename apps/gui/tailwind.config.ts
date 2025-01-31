@@ -19,6 +19,16 @@ const config: Config = {
 			}
 		},
 		extend: {
+			keyframes: {
+				flash: {
+					'0%': { backgroundColor: 'rgba(255, 255, 255, 0)' },
+					'5%': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+					'100%': { backgroundColor: 'rgba(255, 255, 255, 0)' },
+				},
+			},
+			animation: {
+				flash: 'flash 1s ease-out',
+			},
 			boxShadow: {
 				'offset-20': '20px 20px 0px rgba(255,255,255,0.03)',
 				'start': '10px 10px 0px 1px rgba(255,255,255,0.03)',

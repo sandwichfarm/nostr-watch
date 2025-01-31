@@ -77,14 +77,14 @@ export class Service {
     return false;
   }
 
-  async subscribe(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+  async subscribe(args: WebsocketRequestBody, callbacks?: SubscribeHandlers, nocache: boolean = false): Promise<IEvent[]> {
     await this.ready();
     let { filters, relays, options, hash } = args;
     if(!hash) {
       hash = deterministicHash(args)
     }
     this.subscriptions.add(hash)
-    if(filters) {
+    if(filters && !nocache) {
       this.fetchFromCache(filters, callbacks);
     }
     if(callbacks) {

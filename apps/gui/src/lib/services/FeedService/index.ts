@@ -118,7 +118,7 @@ export class FeedService extends Service {
             filters: this.maybeModifyFilters(),
             relays: this._relays,
             options,
-            priority: 10
+            priority: 100
         }
 
         const onevents = async (events: IEvent[]) => {
@@ -131,7 +131,7 @@ export class FeedService extends Service {
 
         // console.log(`subscribing to feed #${this._fetches}`, args)
         this._fetches++;
-         await this.subscribe(args, { onevents, onevent })
+        await this.subscribe(args, { onevents, onevent }, this._fetches === 0? true: false)
     }
 
     private processNote = async (event: IEvent) => {
@@ -147,7 +147,6 @@ export class FeedService extends Service {
         if(!user) return;
         this.setTimestampRange(event)
         this.relativeFetchers.set(event.id, () => {
-            // console.log('fetchRelatives', note.id)
             this.fetchRelatives(user, note)
         })
     }

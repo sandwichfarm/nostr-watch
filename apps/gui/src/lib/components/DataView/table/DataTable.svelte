@@ -28,17 +28,36 @@
     export let sidebarPaneApi: Resizable.PaneApi | null = null;
     export let actionsComponent: any | undefined = undefined;
     
-    
     let resultsPerPage: number = $config?.pageSize || 50; 
     let keysEnable: string[];
+    let tableInstance: DataTable<any> | null = null;
+    let globalFilter = '';
 
     $: keysEnable = ($config.columnsShow?.length && $config.filtersShow?.length )? Array.from(new Set([...$config.columnsShow, ...$config.filtersShow])) : [];
     
     const filters = writable({});
+    export let watchValue: string | undefined = 'lastSeen';
+    export const recordChanged = writable(new Map<string, boolean>())
+    export const recordWatchValue = writable(new Map<string, any>())
 
-    let tableInstance: DataTable<any> | null = null;
-
-    let globalFilter = '';
+    if(watchValue) {
+        const triggerFlash = (id: string) => {
+            recordChanged.update( (currentMap: Map<string, boolean>) => currentMap.set(id, true))
+            setTimeout(() => {
+                recordChanged.update( (currentMap: Map<string, boolean>) => currentMap.set(id, false))
+            }, 1000);
+        }
+        data.subscribe( (newData: any) => {
+            newData.forEach( (row: any) => {
+                const oldValue = $recordWatchValue.get(row.id) 
+                const newValue = row?.[watchValue]
+                recordWatchValue.update( (currentMap: Map<string, any>) => currentMap.set(row.id, newValue))
+                if(!oldValue || !newValue) return;
+                if(oldValue === newValue) return;
+                triggerFlash(row.id)
+            });
+        });
+    }
 
     function handleGlobalFilterChange(event: Event) {
         const value = (event.target as HTMLInputElement).value;
@@ -110,16 +129,6 @@
             if(resultsPerPage !== newConfig.pageSize) {
                 resultsPerPage = newConfig.pageSize;
             }
-            // if(!newConfig?.availableColumnKeys || newConfig.availableColumnKeys?.length === 0) {
-            //     newConfig.availableColumnKeys = [ 
-            //         ...(newConfig.columnsShow.filter(key => !newConfig.columnsDisable.includes(key))),
-            //     ]
-            // }
-            // if(!newConfig?.availableFilterKeys || newConfig.availableFilterKeys?.length === 0) {
-            //     newConfig.availableFilterKeys = [ 
-            //         ...(newConfig.filtersShow.filter(key => !newConfig.filtersDisable.includes(key))),
-            //     ]
-            // }
         })
         const unsubTableConfig = config.subscribe( () =>  setTimeout( () => createTable(true), 10 ) );
         while($data.length === 0) {
@@ -247,7 +256,7 @@
             <Table.Body>
                 {#each tableInstance?.rows as row (row.id)}
                     <Table.Row 
-                        class="{$rowStyles.get(row.pubkey)}" 
+                        class="{$rowStyles.get(row.pubkey)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
                         style="{
                             row.banner
                                 ? 
@@ -298,6 +307,15 @@
 {/if}
 
 <style lang="postcss" global>
+
+    .flash-record {
+        @apply bg-white bg-opacity-0 transition-opacity duration-[4000];
+    }
+
+    .flash-record-changed {
+        @apply bg-opacity-10;
+    }
+
     .active-filter {
         background-color: #e0e0e0;
         padding: 0.5rem;
@@ -306,13 +324,12 @@
         align-items: center;
         gap: 0.5rem;
     }
-    /* Optional: Add styles for filter buttons */
     .filter-mode-toggle button.active {
         /* Example active state styles */
         background-color: #3182ce;
         color: white;
     }
-    /* Optional: Style the more-link */
+    
     .more-link {
         color: #3182ce;
         cursor: pointer;

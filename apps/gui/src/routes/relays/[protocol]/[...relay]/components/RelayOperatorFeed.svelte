@@ -6,7 +6,7 @@
     const filters = [{
         authors: [pubkey],
         kinds: [1],
-        limit: 10
+        limit: 50
     }];
 </script>
 

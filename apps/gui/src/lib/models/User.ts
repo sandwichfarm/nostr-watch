@@ -130,6 +130,10 @@ export class User {
         this.#profile = instance;
     }
 
+    get npub(): string | undefined {
+        return nip19.npubEncode(this.#pubkey)
+    }
+
     get reference(): string | undefined {
         const pointer: nip19.ProfilePointer = {
             pubkey: this.#pubkey,

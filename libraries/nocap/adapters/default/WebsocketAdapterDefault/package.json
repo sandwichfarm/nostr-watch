@@ -17,6 +17,10 @@
     "./web": {
       "import": "./dist/web/index.js",
       "types": "./dist/web/types/index.d.ts"
+    },
+    "./web-worker": {
+      "import": "./dist/web/index.js",
+      "types": "./dist/web/types/index.d.ts"
     }
   },
   "scripts": {

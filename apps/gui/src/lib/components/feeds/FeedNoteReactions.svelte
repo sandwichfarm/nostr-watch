@@ -18,7 +18,7 @@
         })
         return () => {
             unsub()
-            reactions = readable(0);
+            reactions = readable(reactionsCountCache);
         }
     })
 </script>

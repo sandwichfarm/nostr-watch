@@ -5,7 +5,11 @@ import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import livereload from 'rollup-plugin-livereload';
 import css from 'rollup-plugin-css-only';
+import replace from '@rollup/plugin-replace';
+import { globSync } from 'glob';
 // import { cleandir } from "rollup-plugin-cleandir";
+
+const workerFiles = globSync('src/**/*.worker.ts'); // Find all worker files
 
 const production = !process.env.ROLLUP_WATCH;
 const OUT_DIR = 'public/build';
@@ -29,6 +33,7 @@ function serve() {
 		}
 	};
 }
+
 
 export default [
 	{
@@ -64,5 +69,18 @@ export default [
 		watch: {
 			clearScreen: false
 		}
-	}
+	},
+	...workerFiles.map((workerFile) => ({
+		input: workerFile,
+		output: {
+		  file: workerFile.replace('src/', 'dist/').replace('.ts', '.js'),
+		  format: 'esm'
+		},
+		plugins: [
+			replace({
+				preventAssignment: true,
+				global: 'self' // Only applies to *.worker.ts files
+			})
+		]
+	}))
 ];

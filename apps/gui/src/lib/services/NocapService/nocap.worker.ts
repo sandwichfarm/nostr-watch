@@ -1,8 +1,10 @@
 import Nocap, { type CheckKey } from "@nostrwatch/nocap"
-import WebsocketAdapterDefault from "@nostrwatch/nocap-websocket-adapter-default/web"
+import WebsocketAdapterDefault from "@nostrwatch/nocap-websocket-adapter-default/web-worker"
 import InfoAdapterDefault from "@nostrwatch/nocap-info-adapter-default"
 import DnsAdapterDefault from "@nostrwatch/nocap-dns-adapter-default"
 import type { NocapRequestMessage, NocapResultMessage } from "./index.js";
+
+// const global = self.global as any
 
 const check = async (relay: string, checks: CheckKey[]): Promise<any> => {
     const nocap = new Nocap(relay)

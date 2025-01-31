@@ -10,12 +10,13 @@
 	import FeedNoteComments from './FeedNoteComments.svelte';
 	import FeedNoteZaps from './FeedNoteZaps.svelte';
 	import FeedNoteReactions from './FeedNoteReactions.svelte';
+	import { fade, fly } from 'svelte/transition';
 
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<IEvent, NostrEvent>;
     export let relativesFetcher: undefined | (() => void) = undefined;
 
-    let isVisible: boolean = true;
+    let isVisible: boolean = false;
     let content: Writable<string>;
     let relativesFetched: boolean = false;
     let commentsCountCache: number | undefined;
@@ -88,27 +89,32 @@
     </div>
     <div class="actions flex mt-2 hover:opacity-100 {actionsClass} min-h-6">
         <div class="flex-grow">
-            <a href="">♡</a>
+            
             {#if isVisible}
-            <FeedNoteReactions {note} {memoryRelay} bind:reactionsCountCache={reactionsCountCache} />
-            {:else}
-            {reactionsCountCache? reactionsCountCache : ''}
+                <div in:fly={{ y: 20, duration: 500 }}><span in:fade>
+                    <a href="">♡</a>
+                    <FeedNoteReactions {note} {memoryRelay} bind:reactionsCountCache={reactionsCountCache} />
+                </span></div>
             {/if}
         </div>
         <div class="flex-grow">
-            <a href="">⚡</a>
+            
             {#if isVisible}
-            <FeedNoteZaps {note} {memoryRelay} bind:zapSumCache={zapSumCache} />
-            {:else}
-            {zapSumCache? zapSumCache : ''}
+            <div in:fly={{ y: 20, duration: 500 }}><span in:fade>
+              <a href="">⚡</a>
+              <FeedNoteZaps {note} {memoryRelay} bind:zapSumCache={zapSumCache} />
+            </span></div>
             {/if}
         </div>
         <div class="flex-grow">
-            <a href="">🗨</a>
+            
             {#if isVisible}
-            <FeedNoteComments {note} {memoryRelay} bind:commentsCountCache={commentsCountCache} />
-            {:else}
-            {commentsCountCache? commentsCountCache : ''}
+            <div in:fly={{ y: 20, duration: 500 }}><span in:fade>
+                <a href="">🗨</a>
+                <FeedNoteComments {note} {memoryRelay} bind:commentsCountCache={commentsCountCache} />
+            </span></div>
+            <!-- {:else}
+            {commentsCountCache? commentsCountCache : ''} -->
             {/if}
         </div>
     </div>

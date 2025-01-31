@@ -1,6 +1,6 @@
 liveness: 
   onlineThresholdMultiplier: 1.5
-  DeathThreshold: 30d
+  DeathThreshold: 30d 
 content:
   nip66: 
     relays:

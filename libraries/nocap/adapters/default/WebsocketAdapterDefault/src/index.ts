@@ -1,7 +1,6 @@
 import { TorWebSocket } from './tor';
 import { Buffer } from 'buffer';
-import 'core-js/features/global-this';
-
+// import 'core-js/features/global-this';
 
 import {
   AbstractAdapter,

@@ -33,36 +33,34 @@ export default [
       json({
         sourceMap: true,
       }),
-      nodePolyfills(),
       terser(),
     ],
     onwarn
   },
 
-  // {
-  //   input: 'dist/server/index.js',
-  //   output: {
-  //     dir: 'dist/server/esm',
-  //     format: 'es',
-  //     sourcemap: true,
-  //     entryFileNames: '[name].esm.js',
-  //     strict: false,
-  //   },
-  //   plugins: [
-  //     resolve({
-  //       extensions: ['.js'],
-  //       preferBuiltins: true,
-  //     }),
-  //     commonjs({
-  //       sourceMap: true,
-  //     }),
-  //     json({
-  //       sourceMap: true,
-  //     }),
-  //     terser(),
-  //   ],
-  //   onwarn
-  // },
+  {
+    input: 'dist/web/index.js',
+    output: {
+      dir: 'dist/worker',
+      format: 'es',
+      sourcemap: true,
+      strict: false,
+    },
+    plugins: [
+      resolve({
+        browser: true,
+        extensions: ['.js'],
+      }),
+      commonjs({
+        sourceMap: true,
+      }),
+      nodePolyfills(),
+      json({
+        sourceMap: true,
+      })
+    ],
+    onwarn
+  },
 
   {
     input: 'dist/web/index.js',
@@ -89,4 +87,6 @@ export default [
     ],
     onwarn
   },
+
+  
 ];

@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { relayCheckAggregates } from '$lib/stores/checks.js';
-	import { doBootstrap } from '$lib/stores/routines';
-	import { doAggregateCache } from '$lib/stores/app';
 	import { onDestroy, onMount } from 'svelte';
 	import { derived, writable, type Writable } from 'svelte/store';
 	import { StateManager } from '@nostrwatch/route66';
@@ -10,11 +8,9 @@
 	import type { DataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { default as relaysTableConfig } from '$lib/config/dataTable/relays.js';
-	import { userService } from '$lib/stores/services';
 	import RelayDimensions from './relay-dimensions.svelte';
-	import MapBasic from '$lib/components/DataView/map/MapBasic.svelte';
-	import Button from '$ui/button/button.svelte';
 	import type { DataViewViews } from '$lib/components/DataView/DataTableTypes';
+	import { dataRegister } from '$stores/data-register';
 
 	export const prerender = true;
 
@@ -41,7 +37,6 @@
 	}
 
 	const setConfig = () => {
-		
 		let conf = {...defaultDataTableConfig, ...relaysTableConfig}
 		const userTableConfig = StateManager.get(`preferences:${dataKey}:tableConfig`);
 		
@@ -58,14 +53,15 @@
 	}
 
 	const mount = async ( ) => {
-		doBootstrap.set(true)
-		doAggregateCache.set(true)
 		loadComponents().then(setConfig);
+		await $dataRegister.require([
+			'sync:cache',
+			'sync:all'
+		])
 	}
 	const destroy = () => {}
 	onMount(mount)  
 	onDestroy(destroy)  
-
 	const view: Writable<'table' | 'map'> = writable('table');
 
 	// const data = derived(relayCheckAggregates, ($relayCheckAggregates) => {

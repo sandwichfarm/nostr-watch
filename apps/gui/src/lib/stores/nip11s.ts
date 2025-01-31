@@ -7,76 +7,114 @@ import { Nip11Service } from "$lib/services/Nip11Service";
 import { StateManager } from "@nostrwatch/route66";
 import { compress, decompress } from "compress-json";
 import { Nip11 } from "@nostrwatch/route66/models";
-import { doAggregateCache, hasBeenBoostrapped, hasBeenSeeded } from "./app.js";
+import { doAggregateCache, hasBeenBootstrapped, hasBeenSeeded } from "./app.js";
 import type { RelayInformation } from "@nostrwatch/route66/models";
 import type { nip11 } from "nostr-tools";
 import { relayCheckAggregates } from "./checks.js";
 import { isPubkey } from "../utils/nostr.js";
+import { throttledDerived } from "$utils/stores.js";
 
 type RelayUrl = string
 
 export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
 export const nip11sLocal: Writable<Map<string, Nip11>> = writable(new Map())
 
-export const nip11s = derived(
-    [eventsArray, nip11sLocal], 
-    ([$eventsArray, $nip11sLocal]
-  ) => {
-    
-    let nip11Map = new Map();
+// import { derived, get } from 'svelte/store';
+// Import or define these according to your actual codebase
+// import { eventsArray, nip11sLocal, doAggregateCache } from './stores';
+// import { StateManager } from './StateManager';
+// import { hasBeenBootstrapped, hasBeenSeeded } from './init';
+// import { compress, decompress } from './utils';
+// import type { Nip66CheckEvent, Nip11, RelayInformation } from './types';
 
-    const updateEntry = (relay: string, nip11Entry: Nip11) => {
+export const nip11s: Readable<Map<string, Nip11[]>> = derived(
+  [eventsArray, nip11sLocal],
+  ([$eventsArray, $nip11sLocal]) => {
+    let nip11Map = new Map<string, Nip11[]>();
+
+    // Helper function to update or insert an entry in our Map
+    function updateEntry(relay: string, nip11Entry: Nip11) {
       let existing = nip11Map.get(relay);
-      if(!existing) existing = []
-      existing.push(nip11Entry)
+      if (!existing) {
+        existing = [];
+      }
+      existing.push(nip11Entry);
       nip11Map.set(relay, existing);
     }
 
-    let nip66Nip11s: number = 0
-    let localNip11s: number = 0
+    let nip66Nip11s = 0;   // Count how many we got from nip66 events
+    let localNip11s = 0;   // Count how many we got from local store
 
-    $eventsArray.forEach((event: Nip66CheckEvent) => {
-      if(!event.nip11 || !event.relay) return;
-      updateEntry(event.relay, event.nip11)
+    // 1) Gather nip11s from the NIP-66 events:
+    for (const _event of $eventsArray) {
+      if(_event.kind !== 30166) continue;
+      const event = _event as Nip66CheckEvent;
+      if (!event?.nip11 || !event?.relay) continue;
+      updateEntry(event.relay, event.nip11);
       nip66Nip11s++;
-    });
-
-    for(const relayUrl of $nip11sLocal.keys()) {
-      const nip11 = $nip11sLocal.get(relayUrl)
-      if(!nip11) continue;
-      updateEntry(relayUrl, nip11)
-      localNip11s++
     }
 
-    const totalWithotLocal = nip66Nip11s - localNip11s
-
-    if( totalWithotLocal > 0 && hasBeenBoostrapped() && hasBeenSeeded() && get(doAggregateCache) === true ) {
-      StateManager.set('aggregate:nip11s', compress(
-        Array.from(nip11Map.entries()).map(([relay, entries]) => [relay, entries.map((nip11: Nip11) => nip11.json)])
-      ));
+    // 2) Gather nip11s from local (HTTP fetch or otherwise)
+    //    `nip11sLocal` is assumed to be a store that returns a Map<relayUrl, Nip11>
+    for (const [relayUrl, nip11Entry] of $nip11sLocal.entries()) {
+      if (!nip11Entry) continue;
+      updateEntry(relayUrl, nip11Entry);
+      localNip11s++;
     }
-    else if( hasBeenSeeded() ){
-      const cachedMap = StateManager.get('aggregate:nip11s')
+
+    const totalWithoutLocal = nip66Nip11s - localNip11s;
+    console.log('Found from NIP66 events:', nip66Nip11s);
+
+    // 3) If we have newly-fetched data (NIP-66 results),
+    //    and we have fully bootstrapped & seeded, and user wants caching:
+    if (
+      totalWithoutLocal > 0 &&
+      hasBeenBootstrapped() &&
+      hasBeenSeeded() &&
+      get(doAggregateCache) === true
+    ) {
+      // Compress + store aggregated results
+      const arrayified = Array.from(nip11Map.entries()).map(
+        ([relay, entries]) => [relay, entries.map((n: Nip11) => n.json)]
+      );
+      StateManager.set('aggregate:nip11s', compress(arrayified));
+
+      // 4) Otherwise, if we have seeded but no new data from events,
+      //    try to load from local storage / StateManager:
+    } else if (hasBeenSeeded()) {
+      const cachedMap = StateManager.get('aggregate:nip11s');
       if (cachedMap) {
         try {
           let decompressed = decompress(cachedMap);
           if (Array.isArray(decompressed)) {
-            decompressed = decompressed.map( ([relay, entries]: [string, RelayInformation[]]) => [relay, entries?.map( (nip11: RelayInformation) => new Nip11(nip11) )] )
+            // Rebuild the Map with real Nip11 objects
+            decompressed = decompressed.map(
+              ([relay, entries]: [string, RelayInformation[]]) => [
+                relay,
+                entries?.map((item: RelayInformation) => new Nip11(item))
+              ]
+            );
             nip11Map = new Map(decompressed);
           } else {
-            console.error('nip11Map Decompressed value is not a valid array:', decompressed);
+            console.error(
+              'Decompressed nip11Map value is not a valid array:',
+              decompressed
+            );
           }
         } catch (e) {
-          console.error('nip11Map Error during decompression:', e);
+          console.error('Error during nip11Map decompression:', e);
         }
       }
+    } else {
+      // Not yet bootstrapped or seeded, do nothing special
+      // console.log('!!! NOT BOOTSTRAPPED OR SEEDED');
     }
-    else {
-      // ////console.log('!!! HAS NOT BEEN BOOTSTRAPPED OR SEEDED')
-    }
-      
+
+    console.log('Final nip11Map:', nip11Map);
     return nip11Map;
-});
+  }
+);
+
 
 export const relaysWithNip11s: Readable<string[]> = derived(
   nip11s,
@@ -115,6 +153,7 @@ export const operatorPubkeys: Readable<string[]> = derived(
         result.add(pubkey)
       }
     }
+    console.log('operatorPubkeys', Array.from(result))
     return Array.from(result)
   }
 )
@@ -132,3 +171,12 @@ export const operatorPubkeysInvalid: Readable<string[]> = derived(
     return $operatorPubkeys.filter((pubkey: string) => !isPubkey(pubkey))
   }
 )
+
+export const relayNip11s = (relay: string): Readable<Nip11 | undefined> => {
+  return throttledDerived(
+    [nip11s],
+    ([$nip11s]) => {
+        return $nip11s.get(relay)?.[0];
+    }, 
+    100)
+};

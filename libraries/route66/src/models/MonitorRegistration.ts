@@ -1,6 +1,7 @@
 import { Geocoded } from "./Geocoded";
 
 export class MonitorRegistration extends Geocoded {
+    
     keys(keys: string[]): string[] {
         return [
             'pubkey',

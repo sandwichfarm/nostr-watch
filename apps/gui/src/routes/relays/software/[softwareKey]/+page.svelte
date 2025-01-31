@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import MapHeat from "$lib/components/DataView/map/MapHeat.svelte";
 	import FeedNoteContent from "$lib/components/feeds/FeedNoteContent.svelte";
 	import BootstrapLoading from "$lib/components/partials/BootstrapLoading.svelte";
 	import Nip66Check from "$lib/components/partials/Nip66Check.svelte";
 	import PubkeyPhoto from "$lib/components/partials/PubkeyPhoto.svelte";
 	import Wiki from "$lib/components/wikis/Wiki.svelte";
-	import { hasBeenBoostrapped } from "$stores/app";
+	import { hasBeenBootstrapped } from "$stores/app";
 	import { softwareGeos$, softwareIsps$, softwareOperatorsPubkeys$, softwareRelays$ } from "$stores/helpers/helpers-software";
 	import { doBootstrap } from "$stores/routines";
 	import Badge from "$ui/badge/badge.svelte";
@@ -38,7 +39,7 @@
         return $wikis.map((ev: IEvent) => new NostrEvent(ev))
     });
 
-    $: bootstrapped = hasBeenBoostrapped();
+    $: bootstrapped = hasBeenBootstrapped();
 
     onMount(async () => {
         doBootstrap.set(true);
@@ -90,9 +91,9 @@
   </div>
 </header>
 
-{#if !bootstrapped}
+<!-- {#if !bootstrapped}
     <BootstrapLoading />
-{:else}
+{:else} -->
 
 <div class="flex flex-row">
     {#if $wikis.length}
@@ -159,7 +160,7 @@
         </div>
 
         <!-- Geocodes Section -->
-        <div class="row flex">
+        <div class="row flex relative">
             <div class="flex flex-col items-center">
                 <h2 class="text-xl font-semibold mb-2">In</h2>
                 <div class="h-28 w-28 rounded-full bg-green-500 text-white flex items-center justify-center text-2xl font-bold">
@@ -167,7 +168,7 @@
                 </div>
                 <p class="mt-2 text-lg font-medium">Countries</p>
             </div>
-            <div class="ml-20 flex-grow mt-2">
+            <div class="ml-20 flex-grow mt-2 relative z-[200]">
                 {#if $geocodes.length > 0}
                     <div class="flex flex-wrap gap-2 text-7xl">
                         {#each $geocodes as geocode (geocode)}
@@ -175,7 +176,12 @@
                         {/each}
                     </div>
                 {/if}
+                <div class='w-[100%] mt-10'>
+                    <MapHeat data={relays} />
+                </div>
+                
             </div>
+            
         </div>
 
         <!-- ISPs Section -->
@@ -220,7 +226,7 @@
     </div>
 </section>
 
-{/if}
+<!-- {/if}   -->
 
 <style lang="postcss" global>
     .wiki-wrapper {

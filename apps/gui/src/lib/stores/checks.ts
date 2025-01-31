@@ -12,6 +12,7 @@ import { events, eventsArray, type StoreEventType } from './events.js';
 import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache, isBootstrapping } from "./app.js";
+import { throttledDerived } from "$utils/stores.js";
 
 export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const countMap: Record<
@@ -127,7 +128,7 @@ export const relayChecks: Readable<
   return relayCheckAggregator($eventsChecks);
 });
 
-export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
+export const relayCheckAggregates: Readable<any[]> = throttledDerived(relayChecks, ($relayChecks) => {
   let aggregates = Object.entries($relayChecks).map(([relay, item], index) => {
     try {
       relay = new URL(relay).toString();
@@ -140,7 +141,7 @@ export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($rela
       ...item.aggregate,
       id: index
     }
-  });
+  }, 100);
   
   const $isBootstrapping = get(isBootstrapping)
   const agg = StateManager.get('aggregate:complete');

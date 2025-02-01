@@ -195,7 +195,7 @@ export class NWWorker {
     if(this.hard_stop) return
     log.debug(`on_success(): ${result.url}`)
     if(result.ignore) return log.warn(`on_success(): ${result.url} was ignored. Not publishing events.`)
-    if(!this.opts.checks.enabled.contains('info')){
+    if(!this.opts.checks.enabled.contains('info') && result?.info){
       delete result.info
     }
     let k30166

@@ -2,7 +2,9 @@
 	import { page } from "$app/stores";
 	import MapHeat from "$lib/components/DataView/map/MapHeat.svelte";
 	import FeedNoteContent from "$lib/components/feeds/FeedNoteContent.svelte";
+	import BlockStandard from "$lib/components/layout/blocks/BlockStandard.svelte";
 	import PageHeader from "$lib/components/layout/PageHeader.svelte";
+	import Reader from "$lib/components/modal/Reader.svelte";
 	import BootstrapLoading from "$lib/components/partials/BootstrapLoading.svelte";
 	import Nip66Check from "$lib/components/partials/Nip66Check.svelte";
 	import PubkeyPhoto from "$lib/components/partials/PubkeyPhoto.svelte";
@@ -34,11 +36,11 @@
     const operators: Readable<string[]> = softwareOperatorsPubkeys$(softwareKey);
     const geocodes: Readable<string[]> = softwareGeos$(softwareKey);
 
-    const wikis: Writable<NostrEvent[]> = writable([]);
+    const wiki: Writable<NostrEvent> = writable(null);
 
-    const parsedWikis: Readable<NostrEvent[]> = derived(wikis, ($wikis) => {
-        return $wikis.map((ev: IEvent) => new NostrEvent(ev))
-    });
+    // const parsedWikis: Readable<NostrEvent[]> = derived(wikis, ($wikis) => {
+    //     return $wikis.map((ev: IEvent) => new NostrEvent(ev))
+    // });
 
     $: bootstrapped = hasBeenBootstrapped();
 
@@ -59,7 +61,10 @@
         }
         let results = await route66.adapters?.websocketAdapter?.subscribe({relays, filters, options});
         results = results.map((ev: IEvent) => new NostrEvent(ev))
-        wikis.set(results);
+        if(results.length) {
+            wiki.set(new NostrEvent(results?.[0]));
+        }
+        
     });
 </script>
 
@@ -73,12 +78,18 @@
 {:else} -->
 
 <div class="flex flex-row">
-    {#if $wikis.length}
-    <div class="row !pt-7">
-    <div class="wiki-wrapper">
-        <Wiki wikis={parsedWikis} />
-    </div>
-    </div>
+    {#if $wiki}
+    <BlockStandard classes={"bg-gray-900"}>
+    <!-- <div class="row !pt-7 bg-gray-900"> -->
+        <Reader 
+            note={wiki} 
+            triggerText="Read more" 
+            readerTitle="About" 
+            parserOptions={{markdown: true}} 
+            clickFn={() => {}}
+            />
+    <!-- </div> -->
+    </BlockStandard>
     {/if}
 
     <!-- <section id="stat-summary"> -->

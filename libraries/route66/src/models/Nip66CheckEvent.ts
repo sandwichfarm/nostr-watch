@@ -61,6 +61,7 @@ export class Nip66CheckEvent extends Geocoded implements IEvent {
       super(event);
       this.nip11 = this.content;
     }
+
     get nip11(): Nip11 | undefined  {
       if(this._nip11 === false) return undefined;
       if(this._nip11 instanceof Nip11) return this._nip11; 

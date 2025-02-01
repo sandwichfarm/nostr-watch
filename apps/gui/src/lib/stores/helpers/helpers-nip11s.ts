@@ -1,4 +1,4 @@
-import { derived, get, type Readable, type Writable } from "svelte/store"
+import { derived, get, readable, writable, type Readable, type Writable } from "svelte/store"
 import { nip11s } from "../nip11s"
 import type { Limitations, Nip11 } from "@nostrwatch/route66/models/Nip11";
 
@@ -36,10 +36,6 @@ export const relaySupportedNips$ = (relay: string) => {
 
 export const relayOperatorPubkey = (relay: string): string | undefined => {
     return relayNip11(relay)?.pubkey;
-}
-
-export const relayOperatorPubkey$ = (relay: string) => {
-    return nip11Property$(relayNip11$(relay), 'pubkey');
 }
 
 export const relaySoftware = (relay: string): string | undefined => {

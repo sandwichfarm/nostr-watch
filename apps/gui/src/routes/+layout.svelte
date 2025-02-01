@@ -2,6 +2,8 @@
   import '../app.css';
   import process from 'process/browser';
 
+  import 'nostr-zap'
+
   import { page, navigating } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';

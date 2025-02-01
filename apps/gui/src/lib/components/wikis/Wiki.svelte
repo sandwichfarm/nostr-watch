@@ -4,31 +4,38 @@
 	import { writable, type Writable } from "svelte/store";
 	import FeedNoteContent from "../feeds/FeedNoteContent.svelte";
 	import Button from "$ui/button/button.svelte";
+	import Reader from "../modal/Reader.svelte";
 
     export let wikis: Readable<NostrEvent[]> | Writable<NostrEvent[]>;
 
+    $: firstNote = $wikis?.[0];
+
     let expanded: Writable<boolean> = writable(false);
 
-    $: expandedClass = $expanded? '' : 'line-clamp-[5]';
+    // $: expandedClass = $expanded? '' : 'line-clamp-[5]';
+    $: expandedClass = $expanded? '' : ''
 </script>
 
 <section class="wiki {expandedClass}">
-    {#each $wikis as wiki (wiki)}
-        <FeedNoteContent note={wiki} parserOptions={{
+    <FeedNoteContent 
+        note={firstNote} 
+        parserOptions={{
             truncate: false,
             markdown: true
-        }} />
-    {/each}
+        }} 
+        useReaderModal={true}
+        readerTitle="About"
+    />
 </section>
 
-<Button 
+<!-- <Button 
     size="sm"
     variant="secondary"
     class="mt-10"
     on:click={() => expanded.set(!$expanded)}>
     
     {$expanded? 'show less' : 'read more'}
-</Button>
+</Button> -->
 
 <style lang="postcss" global>
     .wiki {

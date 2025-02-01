@@ -4,6 +4,7 @@ import { pubkeyProfile, pubkeyProfile$, pubkeyRelays, pubkeyRelays$, pubkeyUserI
 import type { Nip66CheckEvent } from "@nostrwatch/route66/models/Nip66CheckEvent";
 import { events, eventsArray, type StoreEventType } from "$stores/events";
 import type { NostrEvent } from "nostr-tools";
+import { relayNip11$ } from "./helpers-nip11s";
 
 type AggregateType = Record<string, {
     a: Record<string, any>;
@@ -11,11 +12,11 @@ type AggregateType = Record<string, {
     aggregate?: any;
 }>
 
-export const relayLivenessAggregate = (relayUrl: string): AggregateType | undefined => {
+export const relayLivenessAggregate = (relayUrl: string): any | undefined => {
     return get(relayChecks)?.[relayUrl]?.aggregate;
 }
 
-export const relayLivenessAggregate$ = (relayUrl: string): Readable<AggregateType> | undefined => {
+export const relayLivenessAggregate$ = (relayUrl: string): Readable<any> | undefined => {
     return derived(relayChecks, ($relayChecks) => {
         return $relayChecks?.[relayUrl]?.aggregate;
     })
@@ -37,7 +38,8 @@ export const relayOperatorPubkey = (relay: string): string | undefined => {
 }
 
 export const relayOperatorPubkey$ = (relay: string): Readable<string | undefined> => {
-    return derived(relayChecks, ($relayChecks) => {
+    return derived([relayChecks, relayNip11$(relay)], ([$relayChecks, $nip11]) => {
+        if($nip11?.pubkey) return $nip11.pubkey;
         const record = $relayChecks?.[relay];
         return record?.aggregate?.operatorPubkey;
     });

@@ -204,7 +204,7 @@ export class Geocoded extends NostrEvent {
         const codes = 
             this.tags
             .filter((tag: NostrTag) => { 
-                return tag[0] === 'l' && tag[2] === 'countryCode'
+                return tag[0] === 'l' && tag[2].toLowerCase().includes('countrycode')
             })
             .map((tag: NostrTag) => tag[1]);
         if(!codes.length) return [];

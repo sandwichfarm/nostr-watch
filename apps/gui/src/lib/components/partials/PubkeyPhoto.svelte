@@ -5,6 +5,7 @@
 	import type { Readable } from "svelte/store";
 
     export let pubkey: string;
+    export let size: number = 10;
 
     let profile: Readable<PubkeyProfile | undefined> = pubkeyProfile$(pubkey)
 
@@ -13,10 +14,10 @@
 
 {#if photo}
     <span class="overflow-hidden inline-block">
-        <img src={photo} alt={photo} class="w-10 h-10 block rounded-full" />
+        <img src={photo} alt={photo} class="w-{size} h-{size} block rounded-full" />
     </span>
 {:else}
     <span class="rounded-full overflow-hidden inline-block">
-        <img src={PFP.generate(pubkey)} alt="${pubkey} photo" class="w-10 h-10" />
+        <img src={PFP.generate(pubkey)} alt="${pubkey} photo" class="w-{size} h-{size}" />
     </span>
 {/if}

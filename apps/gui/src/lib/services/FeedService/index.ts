@@ -5,11 +5,12 @@ import { NostrEvent, PubkeyRelays, type IEvent } from "@nostrwatch/route66/model
 import type { Filter } from "nostr-tools";
 import { get, writable, type Writable } from "svelte/store";
 import type { UserFetchArgs, UserWebsocketRequestBody } from "../UserService";
-import type { SubscribeHandlers, WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/route66/core/WebsocketAdapter";
+import type { SubscribeHandlers, WebsocketAdapterOptions } from "@nostrwatch/route66/core/WebsocketAdapter";
 import type { User } from "$lib/models/User";
 import { eventsStoreMemoryRelay } from "$lib/stores/memory-relays/memory-relay-events";
 import { pubkeyRelays, pubkeyUserInstance } from "$lib/stores/helpers/helpers-pubkey";
 import { userService } from "$lib/stores/services";
+import { SOURCE } from "@nostrwatch/route66/models";
 
 export class FeedService extends Service {
     private readonly relativesKinds = [1, 7, 1111, 9735, 9321];
@@ -89,8 +90,8 @@ export class FeedService extends Service {
             if(eventMatchesFilter(event, filter)) {
                 const { created_at } = event
                 if(!created_at) continue
-                if(!this.since(index) || created_at > this.since(index)) this._highestTimestamp[index] = created_at
-                if(!this.until(index) || created_at < this.until(index)) this._lowestTimestamp[index] = created_at
+                if(!this.since(index) || created_at > this.since(index) && event[SOURCE] !== 'cache') this._highestTimestamp[index] = created_at
+                if(!this.until(index) || created_at < this.until(index) && event[SOURCE] !== 'cache') this._lowestTimestamp[index] = created_at
                 break;
             }
         }

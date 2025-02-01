@@ -1,3 +1,4 @@
+import { nip19 } from "nostr-tools";
 import { IEvent, NostrEvent } from "./Event";
 import type { Nip05 } from "nostr-tools/nip05";
 
@@ -57,6 +58,10 @@ export class PubkeyProfile extends NostrEvent {
 
     set parsed(value: any) {
         this._parsed = value;
+    }
+
+    get npub(): string | undefined {
+        return nip19.npubEncode(this.pubkey)
     }
 
 }

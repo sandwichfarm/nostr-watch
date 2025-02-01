@@ -18,6 +18,8 @@ export enum Kinds {
 
 export type NostrTag = string[];
 
+export const SOURCE: unique symbol = Symbol('SOURCE');
+
 export type IEvent = {
   id: string;
   pubkey: string;
@@ -26,6 +28,7 @@ export type IEvent = {
   content: string;
   signature: string;
   created_at: number | null;
+  [SOURCE]?: string; 
 }
 
 export type NostrEventOptions = {

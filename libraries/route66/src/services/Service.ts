@@ -6,6 +6,7 @@ import { Filter } from "nostr-tools";
 import { deterministicHash, isPRE, isRE } from "@base/utils";
 import { StateManager } from "@base/managers/StateManager";
 import { NostrEvent } from "@base/models";
+import { SOURCE } from "@base/models/Event";
 
 export interface IGroupedRelays {
   userMeta?: string[];
@@ -84,21 +85,39 @@ export class Service {
       hash = deterministicHash(args)
     }
     this.subscriptions.add(hash)
+
+    let result: IEvent[] = [];
+    
     if(filters && !nocache) {
-      this.fetchFromCache(filters, callbacks);
+      let cacheCallbacks: SubscribeHandlers = {}
+      if(callbacks) {
+        cacheCallbacks = this.addSymbolToCallbacks(callbacks, 'cache');
+        this.fetchFromCache(filters, cacheCallbacks);
+      }
+      else {
+        result = this.addSymbolToEvents(await this.fetchFromCache(filters), 'cache');
+      }
     }
+
+    let wsCallbacks: SubscribeHandlers = {}
     if(callbacks) {
       callbacks.onclose = (subId: string) => {
         this.subscriptions.delete(subId)
         callbacks?.onclose?.(subId)
       }
+      wsCallbacks = this.addSymbolToCallbacks(callbacks, 'ws');
     }
-    const message: WebsocketRequestBody = { filters, relays, options, hash };
-    const result = await this.websocketAdapter.subscribe(message, callbacks);
+    if(options?.stream === true){
+      this.websocketAdapter.subscribe(args, wsCallbacks);
+    }
+    else {
+      result = this.addSymbolToEvents(await this._fetch(args, wsCallbacks), 'ws');
+    }
     if(!options?.keepAlive) {
       this.subscriptions.delete(hash)
     }
-    return typeof result === 'boolean'? []: result;
+
+    return options?.stream && callbacks? []: result;
   }
 
   subscribeRelatives(note: IEvent | NostrEvent, relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[]> {
@@ -122,6 +141,29 @@ export class Service {
         priority: 5
     }
     return this.subscribe(args, callbacks) as Promise<IEvent[]>
+  }
+
+  private addSymbolToCallbacks(callbacks: SubscribeHandlers, symbolValue: string): SubscribeHandlers {
+    const newCallbacks = {...callbacks}
+    newCallbacks.onevent = (event: IEvent) => {
+      event[SOURCE] = symbolValue
+      callbacks.onevent?.(event)
+    }
+    newCallbacks.onevents = (events: IEvent[]) => {
+      events = events.map( event => {
+        event[SOURCE] = symbolValue
+        return event
+      })
+      callbacks.onevents?.(events)
+    }
+    return newCallbacks;
+  }
+
+  private addSymbolToEvents(events: IEvent[], symbolValue: string): IEvent[] {
+    return events.map( event => {
+      event[SOURCE] = symbolValue
+      return event
+    })
   }
 
   async unsubscribe(hash: string) {

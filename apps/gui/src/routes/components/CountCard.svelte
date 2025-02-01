@@ -18,16 +18,16 @@
     })  
 </script>
 
-<div class="w-full md:w-1/3 lg:w-1/6">
+<div class="{$$restProps.class || ''}">
 	<div class="hp-card">
 		{#if $show && $value !== null && $value !== undefined}
 			<div class="content" in:fade>
                 <div in:fly={{ y: 20, duration: 300 }}>
-                    <div class="label text-center">{topText}</div>
+                    <div class="label text-center px-4">{@html topText}</div>
                     <div class="value text-7xl font-bold text-center">
                         <a href={link}>{$value}</a>
                     </div>
-                    <div class="label text-center">{bottomText}</div>
+                    <div class="label text-center px-4">{@html bottomText}</div>
                 </div>
 			</div>
 		{/if}

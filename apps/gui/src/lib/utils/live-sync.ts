@@ -2,8 +2,8 @@ import { isLivesyncing } from "$stores/app";
 import { publishEventsToMemoryRelay } from "$stores/events-helpers";
 import { route66 } from "$stores/route66";
 import type { Route66 } from "@nostrwatch/route66";
-import { Batcher } from "@nostrwatch/route66/core/Batcher";
-import type { IEvent } from "@nostrwatch/route66/models/Event";
+import { Batcher, type SubscribeHandlers } from "@nostrwatch/route66/core";
+import type { IEvent } from "@nostrwatch/route66/models";
 import { get, type Writable } from "svelte/store";
 import { instance } from "./lifecycle";
 

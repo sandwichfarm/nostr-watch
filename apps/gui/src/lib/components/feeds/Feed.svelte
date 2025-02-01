@@ -11,6 +11,7 @@
     import { pauseLiveSync } from '$lib/utils/lifecycle';
 	import Loading from '../partials/Loading.svelte';
 	import FeedMasonry from './FeedMasonry.svelte';
+	import FeedGrid from './FeedGrid.svelte';
 
     type FeedType = 'masonry' | 'list' | 'grid' | 'table' | 'wiki';
 
@@ -18,6 +19,7 @@
     export let filters: Filter[]; 
     export let infiniteScroll: boolean = true;
     export let tabbed: boolean = false;
+    export let maxWidth: number | undefined = undefined;    
 
     let resumer: Function | undefined;
 
@@ -54,6 +56,10 @@
     {#if $feedService && $items?.length}
         {#if type === 'masonry'}
             <FeedMasonry {items} {feedService} {infiniteScroll} />
+        {/if}
+
+        {#if type === 'grid'}
+            <FeedGrid {items} {feedService} {infiniteScroll} {maxWidth} />
         {/if}
 
         {#if type === 'tabbed'}

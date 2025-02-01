@@ -479,7 +479,7 @@ export class NWWorker {
           const check_record = { url, relay_id, checked_at, data, hash: hash( result[key].data) }
           const check_id = await this.rcache.check[key].insert(check_record).catch( (e) => {
             this.log.error(`Could not persist ${url} to ${key} check: ${e}`)
-            console.dir(this.rcache.check?.[key])
+            console.dir(check_record)
           })
           
           // if(!check_id)

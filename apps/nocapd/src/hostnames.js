@@ -164,6 +164,8 @@ export const relayHostnameDedup = async ( result, cache ) => {
           if(case6) log.warn(`Ignored because: ${reason6}`)
           log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}]`)
           result.ignore = true
+        } else {
+          result.ignore = false
         }
       }
       //if target relay is below 0 something has gone terribly wrong. 

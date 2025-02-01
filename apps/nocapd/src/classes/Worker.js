@@ -482,8 +482,8 @@ export class NWWorker {
             console.dir(this.rcache.check?.[key])
           })
           
-          if(!check_id)
-            reject(new Error(`Could not persist ${check_id} check`))
+          // if(!check_id)
+          //   reject(new Error(`Could not persist ${check_id} check`))
 
           record[key] = check_id
           resolve()

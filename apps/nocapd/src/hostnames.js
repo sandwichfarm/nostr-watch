@@ -128,6 +128,7 @@ export const relayHostnameDedup = async ( result, cache ) => {
         // const pathnameIsPubkey = isPubkey(new URL(mURL).pathname.split('/')?.[0] || '')
         const pathnameIsPubkey = new URL(mURL).pathname.split('/')?.some( p => isPubkey(p) )
         const pathnameContainsPubkey = containsPubkey(new URL(mURL).pathname)
+        const pathnameContainsHostname = new URL(mURL).pathname.includes(HOSTNAME)
 
         //the eldest is the root, and the NIP11 data is the same as current segment.
         const reason1 = `Eldest is root AND eldest has NIP11 data AND current segment NIP11 data is same as eldest relative`
@@ -154,15 +155,20 @@ export const relayHostnameDedup = async ( result, cache ) => {
         const reason6 = `Pubkey is in pathname`
         const case6 = pathnameIsPubkey || pathnameContainsPubkey
 
+        //ignore when pathname includes the hostname
+        const reason7 = `path includes hostname`
+        const case7 = pathnameContainsHostname
+
         //set ignore to true, this will prevent the tests from running next time around.
-        if( case1 || case2 || case3 || case4 || case5 || case6 ) {
+        if( case1 || case2 || case3 || case4 || case5 || case6 || case7 ) {
           if(case1) log.warn(`Ignored because: ${reason1}`)
           if(case2) log.warn(`Ignored because: ${reason2}`)
           if(case3) log.warn(`Ignored because: ${reason3}`)
           if(case4) log.warn(`Ignored because: ${reason4}`)
           if(case5) log.warn(`Ignored because: ${reason5}`)
           if(case6) log.warn(`Ignored because: ${reason6}`)
-          log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}]`)
+          if(case7) log.warn(`Ignored because: ${reason7}`)
+          log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}] [6:${case7}]`)
           result.ignore = true
         } else {
           result.ignore = false

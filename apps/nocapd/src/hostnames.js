@@ -4,6 +4,9 @@ import hash from 'object-hash'
 
 const log = new Logger('@nostrwatch/nocapd:hostname')
 
+const isPubkey = (str) => /^[0-9a-fA-F]{64}$/.test(str)
+const containsPubkey = (str) => /[0-9a-fA-F]{64}/.test(str)
+
 export const relayArrToHostnameProtocolKeyedMap = (urls) => {
   const urlMap = new Map();
   const ordered = new Map();
@@ -121,20 +124,29 @@ export const relayHostnameDedup = async ( result, cache ) => {
     const isSameAsAnyRelative = relativeInfoHashesArray.includes(infoHash)
     const isSameAsOlderRelative = foundAtIndex < index
     const isSameAsYoungerRelative = foundAtIndex > index
+    const pathnameIsPubkey = isPubkey(new URL(mURL).pathname.split('/')?.[0])
+    const pathnameContainsPubkey = containsPubkey(new URL(mURL).pathname)
 
     //the eldest is the root, and the NIP11 data is the same as current segment.
     const case1 = eldestIsRoot && eldestHasHash && isSameAsEldest
 
     //the eldest is the root, and the NIP11 data is the same as any other relay in the hostname group.
-    const case2 = eldestIsRoot && infoHash && isSameAsAnyRelative
+    const case2 = eldestIsRoot && infoHash && (isSameAsAnyRelative || isSameAsEldest)
 
     //the eldest is not the root, and the NIP11 data is the same as both an older and younger relative.
     const case3 = !eldestIsRoot && isSameAsOlderRelative && isSameAsYoungerRelative
 
+    //the eldest is the root, and the NIP11 data is the same as the current segment, but the current segment has no NIP11 data.
     const case4 = eldestIsRoot && eldestHasHash && !infoHash
 
+    //the eldest is not the root, and the eldest does not have NIP11 data and the current segment has no NIP11 data either.
+    const case5 = !eldestIsRoot && !eldestHasHash && !infoHash
+
+    //ignore pubkeys in pathnames.
+    const case6 = pathnameIsPubkey || pathnameContainsPubkey
+
     //set ignore to true, this will prevent the tests from running next time around.
-    if( case1 || case2 || case3 || case4 ) {
+    if( case1 || case2 || case3 || case4 || case5 || case6 ) {
       log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}]`)
       result.ignore = true
     }

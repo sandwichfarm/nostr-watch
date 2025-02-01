@@ -9,9 +9,7 @@ export type Nip11Fees = {
   subscription?: Nip11Fee[];
 }
 
-export interface Limitations extends nip11.Limitations {
-  pow_required?: number;
-}
+export interface Limitations extends nip11.Limitations {}
 
 export interface RelayInformation extends nip11.RelayInformation {
   limitation: Limitations;
@@ -60,6 +58,21 @@ export class Nip11 {
   }
 
   /**
+   * Returns the icon of the relay.
+   */
+  get icon(): string | undefined {
+    return this.json.icon;
+  }
+
+  /**
+   * Returns the banner of the relay.
+   */
+  get banner(): string | undefined {
+    return this.json.banner;
+  }
+
+
+  /**
    * Returns the contact information of the relay.
    */
   get contact(): string | undefined {
@@ -102,10 +115,28 @@ export class Nip11 {
   }
 
   /**
+   * Indicates whether the relay is restricted to read-only.
+   * If true, the relay will not accept writes.
+   * If false, the relay will accept writes.
+   * If undefined, the relay may accept writes.
+  */
+  get restrictedWrites(): boolean {
+    return this.json.limitation?.restricted_writes ?? false;
+  }
+
+  /**
    * Indicates whether proof-of-work is required to publish to relay.
    */
-  get powRequired(): number | false {
-    return this.json.limitation?.pow_required ?? false;
+  get powRequired(): boolean {
+    return this.minPowDifficulty !== undefined;
+  }
+
+
+  /**
+   * Returns required pow difficulty for the relay.
+   */
+  get minPowDifficulty(): number | undefined {
+    return this.json.limitation?.min_pow_difficulty ?? false;
   }
 
   /**
@@ -130,30 +161,80 @@ export class Nip11 {
   }
 
   /**
-   * Returns the subscription fees for the relay.
+   * Returns the fees object for the relay.
    */
   get fees():  any | undefined {
     return this.json.fees
   }
 
+  /**
+   * Returns the max message length if set
+   */
   get maxMessageLength(): number | undefined {
-    return this.json.limitation?.max_message_length;
+    return this.limitation?.max_message_length;
   }
 
+  /**
+   * Returns the max message tags if set
+   */
   get maxMessageTags(): number | undefined {
-    return this.json.limitation?.max_event_tags; 
+    return this.limitation?.max_event_tags; 
   }
 
+  /**
+   * Returns the max subscriptions tags if set
+   */
   get maxSubscriptions(): number | undefined {
-    return this.json.limitation?.max_subscriptions;
+    return this.limitation?.max_subscriptions;
   }
 
-  get icon(): string | undefined {
-    return this.json.icon;
+  /**
+   * Returns the max filters if set
+   */
+  get maxFilters(): number | undefined {
+    return this.limitation?.max_filters;
   }
 
-  get banner(): string | undefined {
-    return this.json.banner;
+  /**
+   * Returns the max limit if set
+   */
+  get maxLimit(): number | undefined {
+    return this.limitation?.max_limit;
+  }
+
+  /**
+   * Returns the max subid length if set
+   */
+  get maxSubidLength(): number | undefined {
+    return this.limitation?.max_subid_length;
+  }
+
+  /**
+   * Returns the max event tags if set
+   */
+  get maxEventTags(): number | undefined {
+    return this.limitation?.max_event_tags;
+  }
+
+  /**
+   * Returns the max content length if set
+   */
+  get maxContentLength(): number | undefined {
+    return this.limitation?.max_content_length;
+  }
+
+  /**
+   * Returns the lower limit of notes accepted by the relay.
+   */
+  get createdAtLowerLimit(): number | undefined {
+    return this.limitation?.created_at_lower_limit;
+  }
+
+  /**
+   * Returns the upper limit of notes accepted by the relay.
+   */
+  get createdAtUpperLimit(): number | undefined {
+    return this.limitation?.created_at_upper_limit;
   }
 
   /**

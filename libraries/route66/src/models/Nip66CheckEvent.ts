@@ -30,6 +30,17 @@ export class Nip66CheckEvent extends Geocoded implements IEvent {
       'nip11Hash',
       'paymentRequired', 
       'authRequired', 
+      'powRequired',
+      'minPowDifficulty',
+      'restrictedWrites',
+      'maxSubscriptions',
+      'maxFilters',
+      'maxLimit',
+      'maxSubidLength',
+      'maxEventTags',
+      'maxContentLength',
+      'createdAtLowerLimit',
+      'createdAtUpperLimit',
       'dd',
       'geohash', 
       'geocode', 
@@ -143,18 +154,6 @@ export class Nip66CheckEvent extends Geocoded implements IEvent {
     get version(): string | null {
       return this.nip11?.version || null;
     }
-  
-    get paymentRequired(): boolean {
-      return this.nip11?.paymentRequired || false;
-    }
-  
-    get authRequired(): boolean {
-      return this.nip11?.authRequired || false;
-    }
-  
-    get powRequired(): number | boolean {
-      return this.nip11?.powRequired || false;
-    }
 
     get description(): string | null {  
       return this.nip11?.description || null;
@@ -238,6 +237,59 @@ export class Nip66CheckEvent extends Geocoded implements IEvent {
 
     get hasBanner(): boolean {
       return !!this.banner;
+    }
+
+    //nip11 limitations 
+    get maxSubscriptions(): number | null {
+      return this.nip11?.maxSubscriptions || null;
+    }
+
+    get maxFilters(): number | null {
+      return this.nip11?.maxFilters || null;
+    }
+
+    get maxLimit(): number | null {
+      return this.nip11?.maxLimit || null;
+    }
+
+    get maxSubidLength(): number | null {
+      return this.nip11?.maxSubidLength || null;
+    }
+
+    get maxEventTags(): number | null {
+      return this.nip11?.maxEventTags || null;
+    }
+
+    get maxContentLength(): number | null {
+      return this.nip11?.maxContentLength || null;
+    }
+
+    get createdAtLowerLimit(): number | null {
+      return this.nip11?.createdAtLowerLimit || null;
+    }
+
+    get createdAtUpperLimit(): number | null {
+      return this.nip11?.createdAtUpperLimit || null;
+    }
+
+    get paymentRequired(): boolean {
+      return this.nip11?.paymentRequired || false;
+    }
+  
+    get authRequired(): boolean {
+      return this.nip11?.authRequired || false;
+    }
+  
+    get powRequired(): number | boolean {
+      return this.nip11?.powRequired || false;
+    }
+
+    get minPowDifficulty(): number | boolean {
+      return this.nip11?.minPowDifficulty || false;
+    }
+
+    get restrictedWrites(): boolean {
+      return this.nip11?.restrictedWrites || false;
     }
   }
 

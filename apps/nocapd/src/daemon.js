@@ -102,8 +102,8 @@ const stop = async(signal) => {
 }
 
 const maybeShutdown = () => {
-  const startedThreshold = 60*60*1000
-  const threshold = 0.30;
+  const startedThreshold = 30*60*1000
+  const threshold = 0.60;
   const expiredThreshold = Math.round($q.checker.cache_counts.onlineExpired*threshold)
   if($q.checker.startTime < Date.now() - startedThreshold) return 
   if($q.checker.cache_counts.onlineExpired > expiredThreshold) {

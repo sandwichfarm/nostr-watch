@@ -49,7 +49,8 @@ const setup = async () => {
   logger.debug(`setup(): bootstrapping`)
   const seed = await bootstrap('trawler')
   // RELAYS_SCRAPE = Array.from(new Set(['wss://user.kindpag.es', 'wss://purplepag.es',seed[0]]))
-  RELAYS_SCRAPE = Array.from(new Set(['wss://user.kindpag.es', 'wss://purplepag.es']))
+  console.log('SEED', seed)
+  RELAYS_SCRAPE = Array.from(new Set([...seed[0], 'wss://user.kindpag.es', 'wss://purplepag.es']))
   logger.debug(`setup(): relays found: ${RELAYS_SCRAPE.length}`)
 }
 

@@ -41,7 +41,6 @@ export class Relay extends Schema {
           protocol = $u.protocol,
           hostname = $u.hostname,
           network = parseRelayNetwork(url)
-  
     return { ...this.defaults, url, protocol, hostname, network } 
   }
 }

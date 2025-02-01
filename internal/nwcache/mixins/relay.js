@@ -248,6 +248,16 @@ const relay_get = (db) => {
         where = { Relay: { '#': 'Relay@' } }  
       return [...db.$.select(select).from( Relay ).where(where)] || []
     },
+    allRelayUrls(select=null, where=null) {
+      select = parseSelect(select)
+      if(!where)
+        where = { Relay: { '#': 'Relay@' } }
+      const urls = new Set();  
+      for ( const relay of db.$.select(select).from( Relay ).where( where ) ){
+        urls.add(relay.url)
+      }
+      return [...Array.from(urls)]
+    },
     allIds(){
       const result = this.all(IDS).flat()
       return result || []

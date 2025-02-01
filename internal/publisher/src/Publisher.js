@@ -15,7 +15,7 @@ export class Publisher {
   }
 
   async publishEvent(signedEvent){
-    return this.ws.publish(signedEvent).catch( e => { this.logger.error(`Publisher::publishEvent(): Error: ${e}`) })
+    return this.ws.publish(signedEvent).catch( e => { this.logger.warn(`Publisher::publishEvent(): Error: ${e}`) })
   }
 
   async publishEvents(signedEvents){
@@ -47,7 +47,12 @@ export class PublisherNocap extends Publisher {
         this.generateEvent(relay)
         signedEvents.push(this.signEvent(privateKey))
       }
-      await this.publishEvents(signedEvents).catch( e => { this.logger.error(`PublisherNocap::many(): Error: ${e}`) })
+      try {
+        await this.publishEvents(signedEvents).catch( e => { this.logger.error(`PublisherNocap::many(): Error: ${e}`) })
+      }
+      catch(e) {
+        this.logger.error(`PublisherNocap::many(): Error: ${e}`)
+      }
     }
   }
 
@@ -60,13 +65,18 @@ export class PublisherNocap extends Publisher {
     this.generateEvent(relay)
     const signedEvent = this.signEvent(privateKey)
 
-    await this.publishEvent(signedEvent)
-      .then( () => {
-        this.logger.debug(`one(): published event`)
-      })
-      .catch( e => {
-        this.logger.error(`one(): Error: ${e}`)
-      })
+    try {
+      await this.publishEvent(signedEvent)
+        .then( () => {
+          this.logger.debug(`one(): published event`)
+        })
+        .catch( e => {
+          this.logger.error(`one(): Error: ${e}`)
+        })
+    }
+    catch(e) {
+      this.logger.error(`one(): Error: ${e}`)
+    }
     
     return signedEvent.id
   }

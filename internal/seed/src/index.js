@@ -106,7 +106,7 @@ export const relaysFromCache = async (opts) => {
   try {
     let lmdb
     if(!cache) {
-      lmdb = openDb(cacheOpts.path, { maxDbs: 10 })
+      lmdb = openDb(cacheOpts.path)
       cache = new DbWrapper(lmdb)
       cache = initializeDb(cache)
     } 

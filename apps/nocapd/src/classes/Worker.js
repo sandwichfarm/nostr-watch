@@ -149,7 +149,8 @@ export class NWWorker {
       const { relay:url } = job.data 
       nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
       await nocap.useAdapters([...Object.values(nocapAdapters)]).catch(failure)
-      result = await nocap.check(this.opts.checks.enabled).catch(failure)
+      const alteredChecks = Array.from(new Set([ ...this.opts.checks.enabled, 'info']))
+      result = await nocap.check(alteredChecks).catch(failure)
       clearTimeout(timeout) //don't forget to clear!
       return { result } 
     } 
@@ -193,8 +194,10 @@ export class NWWorker {
     const log = new Logger(`@nostrwatch/nocapd:hostname`)
     if(this.hard_stop) return
     log.debug(`on_success(): ${result.url}`)
-    if(result.ignore) return log.warn(`on_success(): ${result.url} was ignored. Not checking and not publishing events.`)
-
+    if(result.ignore) return log.warn(`on_success(): ${result.url} was ignored. Not publishing events.`)
+    if(!this.opts.checks.enabled.contains('info')){
+      delete result.info
+    }
     let k30166
     if(result?.parent){
       k30166 = new Kind30166Child(process.env.DAEMON_PUBKEY)

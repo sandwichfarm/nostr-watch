@@ -138,7 +138,7 @@ export class NWWorker {
     let result = {}
     try {
       let nocap
-      timeout = setTimeout(//needed to prevent hanging jobs
+      timeout = setTimeout( //needed to prevent hanging jobs
         () => { 
           const message = `Job Timeout: ${job.id} after ${TIMEOUT/1000}s`
           console.log(message)
@@ -151,7 +151,7 @@ export class NWWorker {
       await nocap.useAdapters([...Object.values(nocapAdapters)]).catch(failure)
       const alteredChecks = Array.from(new Set([ ...this.opts.checks.enabled, 'info']))
       result = await nocap.check(alteredChecks).catch(failure)
-      clearTimeout(timeout) //don't forget to clear!
+      clearTimeout(timeout)
       return { result } 
     } 
     catch(err) {
@@ -195,7 +195,7 @@ export class NWWorker {
     if(this.hard_stop) return
     log.debug(`on_success(): ${result.url}`)
     if(result.ignore) return log.warn(`on_success(): ${result.url} was ignored. Not publishing events.`)
-    if(!this.opts.checks.enabled.contains('info') && result?.info){
+    if(!this.opts.checks.enabled.includes('info') && result?.info){
       delete result.info
     }
     let k30166

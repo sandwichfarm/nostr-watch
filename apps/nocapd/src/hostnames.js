@@ -61,99 +61,117 @@ function isRootUrl(url) {
 }
 
 export const relayHostnameDedup = async ( result, cache ) => {
-  const { url:mURL, hostname:HOSTNAME, protocol:PROTOCOL } = result
-  if (!mURL || !HOSTNAME || !PROTOCOL) {
-    throw new Error(`Invalid result object: ${JSON.stringify(result)}`);
-  }
+    const { url:mURL, hostname:HOSTNAME, protocol:PROTOCOL } = result
+    try {
+      if (!mURL || !HOSTNAME || !PROTOCOL) {
+        throw new Error(`Invalid result object: ${JSON.stringify(result)}`);
+      }
 
-  // Get online relays and filter them down to ones that share a hostname with target relay (result)
-  // ...and is not the target relay (result)
-  const online = cache.relay.get.online()    
-  const hostnameFamily = online.filter( r => r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL ) 
-  const hostnameRelatives = [...hostnameFamily]
+      // Get online relays and filter them down to ones that share a hostname with target relay (result)
+      // ...and is not the target relay (result)
+      const online = cache.relay.get.online()    
+      const hostnameFamily = online.filter( r => r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL ) 
+      const hostnameRelatives = [...hostnameFamily]
 
-  //It has no relatives, exit now.
-  if( !hostnameRelatives?.length ) return result
+      //It has no relatives, exit now.
+      if( !hostnameRelatives?.length ) return result
 
-  // Get nip11 for each relative.
-  const hasInfo = Object.keys(result?.info?.data ?? {}).length? true: false
-  const infoHash = hasInfo? `RelayCheckInfo@${hash(result.info.data)}` : null
-  const relativeInfoHashes = new Map()
-  log.debug (`target: ${mURL} w/ info id ${infoHash}`)
-  for(let relayRelative of hostnameRelatives) {
-    if(relayRelative.info === null) continue
-    const { url, info:id } = relayRelative
-    log.debug (`relative: ${url} w/ info id ${id}`)
-    relativeInfoHashes.set(relayRelative.url, id)
-  }
+      // Get nip11 for each relative.
+      const hasInfo = Object.keys(result?.info?.data ?? {}).length? true: false
+      const infoHash = hasInfo? `RelayCheckInfo@${hash(result.info.data)}` : null
+      const relativeInfoHashes = new Map()
+      log.debug (`target: ${mURL} w/ info id ${infoHash}`)
+      for(let relayRelative of hostnameRelatives) {
+        if(relayRelative.info === null) continue
+        const { url, info:id } = relayRelative
+        log.debug (`relative: ${url} w/ info id ${id}`)
+        relativeInfoHashes.set(relayRelative.url, id)
+      }
 
-  const relativeInfoHashesArray = Array.from(relativeInfoHashes.values())
+      const relativeInfoHashesArray = Array.from(relativeInfoHashes.values())
 
-  //Order each relay in the hostname map by segment length.
-  const urlSegmentOrderedMap = relayArrToHostnameProtocolKeyedMap([...hostnameRelatives.map(r => r.url), mURL])
+      //Order each relay in the hostname map by segment length.
+      const urlSegmentOrderedMap = relayArrToHostnameProtocolKeyedMap([...hostnameRelatives.map(r => r.url), mURL])
 
-  //Check if the target relay is the parent or child of any other relay in the hostname group.
-  const orderedFamily = (urlSegmentOrderedMap.get(`${PROTOCOL}//${HOSTNAME}`)).map( r => normalizeURL(r) )
-  let orderedRelatives = orderedFamily.filter( r => r !== mURL )
+      //Check if the target relay is the parent or child of any other relay in the hostname group.
+      const orderedFamily = (urlSegmentOrderedMap.get(`${PROTOCOL}//${HOSTNAME}`)).map( r => normalizeURL(r) )
+      let orderedRelatives = orderedFamily.filter( r => r !== mURL )
 
-  if (!orderedRelatives) {
-    log.error(`Ordered relatives not found for ${PROTOCOL}//${HOSTNAME}`);
-    return result
-  }
+      if (!orderedRelatives) {
+        log.error(`Ordered relatives not found for ${PROTOCOL}//${HOSTNAME}`);
+        return result
+      }
 
-  orderedRelatives = orderedRelatives
-  const index = orderedFamily.indexOf( mURL )
+      orderedRelatives = orderedRelatives
+      const index = orderedFamily.indexOf( mURL )
 
-  //if target relay index is 0, we can call it the parent for now.
-  if(index === 0) {
-    log.debug(`${mURL} has not been ignored and parent cleared, index: ${index}`)
-    result.ignore = false
-    result.parent = ''
-  }
-  //if target relay index is above 0, we can link it to the parent
-  else if(index > 0) {
-    result.parent = orderedRelatives[0]
-    log.debug(`${mURL} is a child of ${orderedRelatives[0]}`)
-    const foundAtIndex = relativeInfoHashesArray.indexOf( infoHash )
-    const eldestHasHash = relativeInfoHashes.get(orderedRelatives[0])? true: false
-    // const hasAnyRelativeHash = relativeInfoHashes.some( r => r? true: false )?.length > 0? true: false
+      //if target relay index is 0, we can call it the parent for now.
+      if(index === 0) {
+        log.debug(`${mURL} has not been ignored and parent cleared, index: ${index}`)
+        result.ignore = false
+        result.parent = ''
+      }
+      //if target relay index is above 0, we can link it to the parent
+      else if(index > 0) {
+        result.parent = orderedRelatives[0]
+        log.debug(`${mURL} is a child of ${orderedRelatives[0]}`)
+        const foundAtIndex = relativeInfoHashesArray.indexOf( infoHash )
+        const eldestHasHash = relativeInfoHashes.get(orderedRelatives[0])? true: false
+        // const hasAnyRelativeHash = relativeInfoHashes.some( r => r? true: false )?.length > 0? true: false
 
-    const eldestIsRoot = isRootUrl(orderedRelatives[0])
+        const eldestIsRoot = isRootUrl(orderedRelatives[0])
 
-    const isSameAsEldest = infoHash === relativeInfoHashes.get(orderedRelatives[0])
-    const isSameAsAnyRelative = relativeInfoHashesArray.includes(infoHash)
-    const isSameAsOlderRelative = foundAtIndex < index
-    const isSameAsYoungerRelative = foundAtIndex > index
-    const pathnameIsPubkey = isPubkey(new URL(mURL).pathname.split('/')?.[0])
-    const pathnameContainsPubkey = containsPubkey(new URL(mURL).pathname)
+        const isSameAsEldest = infoHash === relativeInfoHashes.get(orderedRelatives[0])
+        const isSameAsAnyRelative = relativeInfoHashesArray.includes(infoHash)
+        const isSameAsOlderRelative = foundAtIndex < index
+        const isSameAsYoungerRelative = foundAtIndex > index
+        const pathnameIsPubkey = isPubkey(new URL(mURL).pathname.split('/')?.[0] || '')
+        const pathnameContainsPubkey = containsPubkey(new URL(mURL).pathname)
 
-    //the eldest is the root, and the NIP11 data is the same as current segment.
-    const case1 = eldestIsRoot && eldestHasHash && isSameAsEldest
+        //the eldest is the root, and the NIP11 data is the same as current segment.
+        const reason1 = `Eldest is root, eldest has NIP11 data, and current segment has NIP11 data`
+        const case1 = eldestIsRoot && eldestHasHash && isSameAsEldest
 
-    //the eldest is the root, and the NIP11 data is the same as any other relay in the hostname group.
-    const case2 = eldestIsRoot && infoHash && (isSameAsAnyRelative || isSameAsEldest)
+        //the eldest is the root, and the NIP11 data is the same as any other relay in the hostname group.
+        const reason2 = `Eldest is root, eldest has NIP11 data, and current segment has NIP11 data`
+        const case2 = eldestIsRoot && infoHash && (isSameAsAnyRelative || isSameAsEldest)
 
-    //the eldest is not the root, and the NIP11 data is the same as both an older and younger relative.
-    const case3 = !eldestIsRoot && isSameAsOlderRelative && isSameAsYoungerRelative
+        //the eldest is not the root, and the NIP11 data is the same as both an older and younger relative.
+        const reason3 = `Eldest is not root, eldest has NIP11 data, and current segment has NIP11 data`
+        const case3 = !eldestIsRoot && isSameAsOlderRelative && isSameAsYoungerRelative
 
-    //the eldest is the root, and the NIP11 data is the same as the current segment, but the current segment has no NIP11 data.
-    const case4 = eldestIsRoot && eldestHasHash && !infoHash
+        //the eldest is the root, and the NIP11 data is the same as the current segment, but the current segment has no NIP11 data.
+        const reason4 = `Eldest is root, eldest has NIP11 data, and current segment has no NIP11 data`
+        const case4 = eldestIsRoot && eldestHasHash && !infoHash
 
-    //the eldest is not the root, and the eldest does not have NIP11 data and the current segment has no NIP11 data either.
-    const case5 = !eldestIsRoot && !eldestHasHash && !infoHash
+        //the eldest is not the root, and the eldest does not have NIP11 data and the current segment has no NIP11 data either.
+        const reason5 = `Eldest is not root, eldest does not have NIP11 data, and current segment has no NIP11 data`
+        const case5 = !eldestIsRoot && !eldestHasHash && !infoHash
 
-    //ignore pubkeys in pathnames.
-    const case6 = pathnameIsPubkey || pathnameContainsPubkey
 
-    //set ignore to true, this will prevent the tests from running next time around.
-    if( case1 || case2 || case3 || case4 || case5 || case6 ) {
-      log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}]`)
-      result.ignore = true
+        //ignore pubkeys in pathnames.
+        const reason6 = `Pubkey in pathname`
+        const case6 = pathnameIsPubkey || pathnameContainsPubkey
+
+        //set ignore to true, this will prevent the tests from running next time around.
+        if( case1 || case2 || case3 || case4 || case5 || case6 ) {
+          if(case1) log.warn(`Ignored because: ${reason1}`)
+          if(case2) log.warn(`Ignored because: ${reason2}`)
+          if(case3) log.warn(`Ignored because: ${reason3}`)
+          if(case4) log.warn(`Ignored because: ${reason4}`)
+          if(case5) log.warn(`Ignored because: ${reason5}`)
+          if(case6) log.warn(`Ignored because: ${reason6}`)
+          log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}]`)
+          result.ignore = true
+        }
+      }
+      //if target relay is below 0 something has gone terribly wrong. 
+      else {
+        log.error(`CRITICAL ERROR! relayHostnameDedup(): ${mURL} not found in hostnameGroup`)
+      }
     }
-  }
-  //if target relay is below 0 something has gone terribly wrong. 
-  else {
-    log.error(`CRITICAL ERROR! relayHostnameDedup(): ${mURL} not found in hostnameGroup`)
-  }
+    catch (error) {
+      log.error(`Error in relayHostnameDedup: ${error}`);
+    }
   return result
 }

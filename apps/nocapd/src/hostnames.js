@@ -150,12 +150,11 @@ export const relayHostnameDedup = async ( result, cache ) => {
         const reason5 = `Eldest is not root AND eldest does not have NIP11 data AND current segment has no NIP11 data`
         const case5 = !eldestIsRoot && !eldestHasHash && !infoHash
 
-
-        //ignore pubkeys in pathnames.
+        //ignore pubkeys in pathnames (stopgap!)
         const reason6 = `Pubkey is in pathname`
         const case6 = pathnameIsPubkey || pathnameContainsPubkey
 
-        //ignore when pathname includes the hostname
+        //ignore when pathname includes the hostname (stopgap!)
         const reason7 = `path includes hostname`
         const case7 = pathnameContainsHostname
 

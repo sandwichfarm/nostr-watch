@@ -128,7 +128,7 @@ export class Nip11 {
    * Indicates whether proof-of-work is required to publish to relay.
    */
   get powRequired(): boolean {
-    return this.minPowDifficulty !== undefined;
+    return typeof this.minPowDifficulty === 'number' && this.minPowDifficulty > 0;
   }
 
 
@@ -136,7 +136,7 @@ export class Nip11 {
    * Returns required pow difficulty for the relay.
    */
   get minPowDifficulty(): number | undefined {
-    return this.json.limitation?.min_pow_difficulty ?? false;
+    return this.json.limitation?.min_pow_difficulty ?? undefined;
   }
 
   /**

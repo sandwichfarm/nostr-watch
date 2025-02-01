@@ -313,7 +313,9 @@
           'sync:relay:operator': [ relayUrl ]
         }
       );
+      loading = false
       await resume();
+      
 
 
       // if (typeof window === 'undefined' || typeof navigator === 'undefined') return;

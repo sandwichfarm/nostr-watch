@@ -26,6 +26,9 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   $checks.forEach((check: Nip66CheckEvent) => {
     let relay: string;
     if(!check?.relay) return;
+    if(check.tags.find( (tag: string[]) => tag[0] === 'a' && tag[1]?.startsWith('30166:'))) {
+      return;
+    } 
     try {
       relay = new URL(check?.relay).toString();
     }

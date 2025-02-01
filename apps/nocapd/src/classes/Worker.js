@@ -198,14 +198,14 @@ export class NWWorker {
     if(!this.opts.checks.enabled.includes('info') && result?.info){
       delete result.info
     }
-    let k30166
-    if(result?.parent){
-      k30166 = new Kind30166Child(process.env.DAEMON_PUBKEY)
-      log.debug(`on_success(): ${result.url} is a child of ${result.parent}`)
-    }
-    else {
-      k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
-    }
+    // let k30166
+    // if(result?.parent){
+    //   k30166 = new Kind30166Child(process.env.DAEMON_PUBKEY)
+    //   log.debug(`on_success(): ${result.url} is a child of ${result.parent}`)
+    // }
+    // else {
+    const k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
+    // }
     // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
     k30166.generateEvent( result )
     k30166.signEvent( process.env.DAEMON_PRIVKEY )
@@ -518,11 +518,17 @@ export class NWWorker {
       const retries = await this.retry.getRetries(relay.url);
       const isExpired = lastChecked? await this.isExpired(relay.url, lastChecked): true;
       const isOnline = relay?.online === true;
+      const isIgnored = relay?.ignore === true;
 
       // this.log.debug(`getRelays() relay: ${relay.url}: lastChecked(): ${lastChecked}`)
       // this.log.debug(`getRelays() relay: ${relay.url}: retries(): ${retries}`)
       // this.log.debug(`getRelays() relay: ${relay.url}: isExpired(): ${isExpired}`)
       // this.log.debug(`getRelays() relay: ${relay.url}: isOnline(): ${isOnline}`)
+
+      if(isIgnored) {
+        this.log.warn(`Ignoring: relay: ${relay.url}`)
+        continue;
+      }
 
       if(isOnline) 
         onlineRelays.push(relay.url);

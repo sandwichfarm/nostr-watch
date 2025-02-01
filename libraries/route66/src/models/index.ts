@@ -1,6 +1,7 @@
 export * from './_'
 export { type IEvent, NostrEvent } from './Event';
 export { Nip66CheckEvent } from './Nip66CheckEvent';
+export { RelayCheckAggregate, RelayCheckAggregator } from './RelayCheckAggregate';
 export { Geocoded } from './Geocoded';
 export { type IMonitor, Monitor } from './Monitor';
 export type { IRelay } from './Relay';

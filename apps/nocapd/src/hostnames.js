@@ -125,32 +125,33 @@ export const relayHostnameDedup = async ( result, cache ) => {
         const isSameAsAnyRelative = relativeInfoHashesArray.includes(infoHash)
         const isSameAsOlderRelative = foundAtIndex < index
         const isSameAsYoungerRelative = foundAtIndex > index
-        const pathnameIsPubkey = isPubkey(new URL(mURL).pathname.split('/')?.[0] || '')
+        // const pathnameIsPubkey = isPubkey(new URL(mURL).pathname.split('/')?.[0] || '')
+        const pathnameIsPubkey = new URL(mURL).pathname.split('/')?.some( p => isPubkey(p) )
         const pathnameContainsPubkey = containsPubkey(new URL(mURL).pathname)
 
         //the eldest is the root, and the NIP11 data is the same as current segment.
-        const reason1 = `Eldest is root, eldest has NIP11 data, and current segment has NIP11 data`
+        const reason1 = `Eldest is root AND eldest has NIP11 data AND current segment NIP11 data is same as eldest relative`
         const case1 = eldestIsRoot && eldestHasHash && isSameAsEldest
 
         //the eldest is the root, and the NIP11 data is the same as any other relay in the hostname group.
-        const reason2 = `Eldest is root, eldest has NIP11 data, and current segment has NIP11 data`
+        const reason2 = `Eldest is root, current segment has NIP11 data AND NIP11 data is the same as any other relay in the hostname group`
         const case2 = eldestIsRoot && infoHash && (isSameAsAnyRelative || isSameAsEldest)
 
         //the eldest is not the root, and the NIP11 data is the same as both an older and younger relative.
-        const reason3 = `Eldest is not root, eldest has NIP11 data, and current segment has NIP11 data`
+        const reason3 = `Eldest is not root AND eldest NIP11 is same as an older AND younger relative`
         const case3 = !eldestIsRoot && isSameAsOlderRelative && isSameAsYoungerRelative
 
         //the eldest is the root, and the NIP11 data is the same as the current segment, but the current segment has no NIP11 data.
-        const reason4 = `Eldest is root, eldest has NIP11 data, and current segment has no NIP11 data`
+        const reason4 = `Eldest is root AND eldest has NIP11 data AND current segment has no NIP11 data`
         const case4 = eldestIsRoot && eldestHasHash && !infoHash
 
         //the eldest is not the root, and the eldest does not have NIP11 data and the current segment has no NIP11 data either.
-        const reason5 = `Eldest is not root, eldest does not have NIP11 data, and current segment has no NIP11 data`
+        const reason5 = `Eldest is not root AND eldest does not have NIP11 data AND current segment has no NIP11 data`
         const case5 = !eldestIsRoot && !eldestHasHash && !infoHash
 
 
         //ignore pubkeys in pathnames.
-        const reason6 = `Pubkey in pathname`
+        const reason6 = `Pubkey is in pathname`
         const case6 = pathnameIsPubkey || pathnameContainsPubkey
 
         //set ignore to true, this will prevent the tests from running next time around.

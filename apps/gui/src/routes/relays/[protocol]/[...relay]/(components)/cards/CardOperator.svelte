@@ -11,7 +11,7 @@
 	import { Monitor } from '@nostrwatch/route66/models';
 	// import Badge from '$lib/components/ui/badge/badge.svelte';
 	import type { Readable } from 'svelte/store';
-	import { pubkeyProfile$ } from '$stores/helpers/helpers-pubkey';
+	import { pubkeyProfile$, pubkeyRelays$ } from '$stores/helpers/helpers-pubkey';
 	import RelayOperatorMiniFeed from '../RelayOperatorMiniFeed.svelte';
 	// import OperatorRelays from '$lib/components/partials/OperatorRelays.svelte';
 
@@ -19,6 +19,7 @@
     export let pubkey: string;
 
     const profile: Readable<PubkeyProfile | undefined> = pubkeyProfile$(pubkey);
+    const relays: Readable<PubkeyRelays | undefined> = pubkeyRelays$(pubkey);
 
     let otherRelaysCount: number;
 
@@ -36,7 +37,7 @@
 </script>
 
 {#if pubkey}
-<Card.Root class="w-full bg-gray-900/5 border-white/10 rounded-[3px]">
+<Card.Root class="w-full bg-black border-white/10 rounded-[3px]">
     <Card.Header>
         <Card.Title class='font-mono text-white/80'>operator</Card.Title>  
     </Card.Header>  
@@ -49,8 +50,10 @@
                 {/if}
             {/if}
         </div>
-        <div class="w-3/4">
+        <div class="w-3/4 px-10 min-h-[320px]">
+            {#if $relays && pubkey}
             <RelayOperatorMiniFeed {pubkey} />
+            {/if}
         </div>
 
         <!-- {#if otherRelaysCount > 0}

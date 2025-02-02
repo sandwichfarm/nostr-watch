@@ -12,6 +12,7 @@
 	import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
 	import { formatRelayUrl } from '$utils/routing';
 	import { goto } from '$app/navigation';
+	import AlwaysSquare from '$lib/components/partials/AlwaysSquare.svelte';
 
     const relayUrl = getRelayUrl()
 
@@ -78,8 +79,8 @@
 <Card.Root class="w-full bg-gray-900/5 border-white/10 rounded-[3px]">
     <Card.Header>
         <Card.Title class="flex flex-nowrap">
-            <span class="flex">
-                Insights
+            <span  class='font-mono text-white/80 flex'>
+                insights
             </span>
             <ToggleGroup.Root type="single" size="lg" class="ml-auto flex-shrink relative -top-3" onValueChange={(value: string) => changeBubbleType(value)}>
                 <ToggleGroup.Item value="percent" aria-label="Toggle bold">
@@ -93,15 +94,21 @@
         <Card.Description></Card.Description>
     </Card.Header>  
     <Card.Content>
-        <ul id="relay-insights" class="flex mt-1 py-4 px-10 text-black/90 dark:text-white/90 text-xl">
+        <div id="relay-insights" class="
+            grid 
+            grid-cols-1 
+            md:grid-cols-2 
+            lg:grid-cols-3 
+            xl:grid-cols-4
+            mt-1 py-4 px-3 text-black/90 dark:text-white/90 text-xl min-h-96">
 
             {#if software}
+                
                 <CountCard 
                     topText="" 
                     value={readable($bubbleType === 'percent'? `${usagePercentageSoftware}%`: `${usageCountSoftware}`)} 
                     bottomText={`${$bubbleType === 'percent'? 'of ': ''}relays use ${readableSoftware}`} 
                     index={0} 
-                    class="w-full md:w-1/4" 
                     />
             {/if}
 
@@ -111,7 +118,6 @@
                     value={readable($bubbleType === 'percent'? `${usagePercentageVersion}%`: `${usageCountVersion}`)} 
                     bottomText={`${$bubbleType === 'percent'? 'of ': `<em>${readableSoftware}</em> `}relays use ${version}`} 
                     index={1} 
-                    class="w-full md:w-1/4" 
                     />
             {/if}
 
@@ -121,7 +127,6 @@
                     value={readable(`${usagePercentageGeocode}%`)} 
                     bottomText={`of relays are located in ${geocode} ${countryCodeToFlagEmoji(geocode)}`} 
                     index={2} 
-                    class="w-full md:w-1/4" 
                     />
             {/if}
 
@@ -131,14 +136,21 @@
                     value={readable(`${usagePercentageIsp}%`)} 
                     bottomText={`of relays use ${isp} as their ISP`} 
                     index={3} 
-                    class="w-full md:w-1/4" 
                     />
             {/if}
 
-        </ul>
+        </div>
     </Card.Content>
     <Card.Footer>
-        <Button on:click={ () => goto(`/relays/${formatRelayUrl(relayUrl)}insights`) }>more insights</Button>
+
+        <Button 
+            variant="secondary" 
+            class="ml-8"
+            on:click={ () => goto(`/relays/${formatRelayUrl(relayUrl)}insights`) }
+            >
+            more insights
+        </Button>
+
     </Card.Footer>
 </Card.Root>
 {/if}

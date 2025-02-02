@@ -3,11 +3,11 @@
     import { derived } from 'svelte/store';
     
     export let navLinks = [
-      { href: '/', label: 'Home' },
-      { href: '/relays', label: 'Relays' },
-      { href: '/operators', label: 'Operators' },
-      { href: '/monitors', label: 'Monitors' },
-      { href: '/preferences', label: 'Preferences' }
+      { href: '/', label: 'home' },
+      { href: '/relays', label: 'relays' },
+      { href: '/operators', label: 'operators' },
+      { href: '/monitors', label: 'monitors' },
+      { href: '/preferences', label: 'preferences' }
     ];
     const currentPath = derived(page, ($page) => $page.url.pathname);
   </script>

@@ -9,7 +9,7 @@ import { userService } from '$lib/stores/services.js';
 type SyncTransform = (input: string) => string;
 type AsyncTransform = (input: string, update: (output: string) => void) => Promise<void>;
 
-interface ParseConfig {
+export type ParseConfig = {
   removeHashtags?: boolean;
   nip19?: boolean;
   markdown?: boolean;

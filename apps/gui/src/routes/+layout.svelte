@@ -169,12 +169,13 @@
     await initServices();
     dataRegisterInit();
     appState.set('running');
-    if(!$isBootstrapped){
-      await $dataRegister.require([
-        'sync:cache',
-        'sync:all'
-      ])
-    }
+    const route66 = await instance();
+    await route66.ready();
+    await delay(3000)
+    await $dataRegister.require([
+      'sync:cache',
+      'sync:all',
+    ])
     // if (!get(doBootstrap)) {
     //   try {
     //     route66 = await instance();

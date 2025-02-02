@@ -2,7 +2,7 @@
 import { randomLoadingMessage } from '$utils/ux';
 </script>
 
-<div class="!flex !flex-col !text-center !items-center !justify-center !h-[600px]">
+<div class="!flex !flex-col !text-center !items-center !justify-center h-full">
     <!-- Adjusted layout for spinner and text -->
     <div class="!flex !items-center !space-x-2">
         <!-- Spinner -->

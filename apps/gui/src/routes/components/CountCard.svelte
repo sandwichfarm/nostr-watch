@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount } from "svelte";
+	import AlwaysSquare from "$lib/components/partials/AlwaysSquare.svelte";
+import { onMount } from "svelte";
 	import { writable, type Readable, type Writable } from "svelte/store";
 	import { fly, fade } from "svelte/transition";
 
@@ -18,8 +19,10 @@
     })  
 </script>
 
-<div class="{$$restProps.class || ''}">
+<div class="{$$restProps.class || ''} grid hp-card-wrapper">
+	<AlwaysSquare>
 	<div class="hp-card">
+		
 		{#if $show && $value !== null && $value !== undefined}
 			<div class="content" in:fade>
                 <div in:fly={{ y: 20, duration: 300 }}>
@@ -32,17 +35,26 @@
 			</div>
 		{/if}
 	</div>
+	</AlwaysSquare>
+	
 </div>
 
 <style lang="postcss">
+	.hp-card-wrapper {
+		@apply p-5
+	}
+
 	.hp-card {
 		@apply 
+			flex
 			border-white/5 border-[2px] 
 			bg-white/10 dark:bg-black/10 hover:bg-white/15 
-			py-14 rounded-md m-5 
+			rounded-md
+			items-center justify-center
 			shadow-start hover:shadow-end transition-shadow duration-200 
 			drop-shadow-[0_25px_25px_rgba(255,255,255,0.35)]
-            min-h-[240px];
+            min-h-[240px]
+			h-full;
 	}
 
 	.hp-card:hover {

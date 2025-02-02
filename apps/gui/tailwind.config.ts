@@ -1,5 +1,6 @@
 import { fontFamily } from 'tailwindcss/defaultTheme';
 import type { Config } from 'tailwindcss';
+import plugin from 'tailwindcss/plugin';
 
 const config: Config = {
 	important: true,
@@ -19,6 +20,13 @@ const config: Config = {
     		}
     	},
     	extend: {
+			backgroundSize: {
+				'size-200': '200% 200%',
+			},
+			backgroundPosition: {
+			'pos-0': '0% 0%',
+			'pos-100': '100% 100%',
+			},
     		keyframes: {
     			flash: {
     				'0%': {
@@ -95,7 +103,80 @@ const config: Config = {
     		}
     	}
     },
-    plugins: [require("tailwindcss-animate")]
+    plugins: [
+		require("tailwindcss-animate"),
+		plugin(({ addComponents }) => {
+			const gradients = {
+			  '.gradient-violet': {
+				'@apply bg-gradient-to-br from-violet-300/5 to-violet-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-violet': {
+				'@apply from-violet-600/5 to-violet-600/30': {},
+			  },
+			  '.gradient-blue': {
+				'@apply bg-gradient-to-br from-blue-300/5 to-blue-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-blue': {
+				'@apply from-blue-600/5 to-blue-600/30': {},
+			  },
+			  '.gradient-green': {
+				'@apply bg-gradient-to-br from-green-300/5 to-green-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-green': {
+				'@apply from-green-600/5 to-green-600/30': {},
+			  },
+			  '.gradient-yellow': {
+				'@apply bg-gradient-to-br from-yellow-300/5 to-yellow-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-yellow': {
+				'@apply from-yellow-600/5 to-yellow-600/30': {},
+			  },
+			  '.gradient-orange': {
+				'@apply bg-gradient-to-br from-orange-300/5 to-orange-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-orange': {
+				'@apply from-orange-600/5 to-orange-600/30': {},
+			  },
+			  '.gradient-red': {
+				'@apply bg-gradient-to-br from-red-300/5 to-red-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-red': {
+				'@apply from-red-600/5 to-red-600/30': {},
+			  },
+			  '.gradient-pink': {
+				'@apply bg-gradient-to-br from-pink-300/5 to-pink-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-pink': {
+				'@apply from-pink-600/5 to-pink-600/30': {},
+			  },
+			  '.gradient-purple': {
+				'@apply bg-gradient-to-br from-purple-300/5 to-purple-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-purple': {
+				'@apply from-purple-600/5 to-purple-600/30': {},
+			  },
+			  '.gradient-teal': {
+				'@apply bg-gradient-to-br from-teal-300/5 to-teal-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-teal': {
+				'@apply from-teal-600/5 to-teal-600/30': {},
+			  },
+			  '.gradient-indigo': {
+				'@apply bg-gradient-to-br from-indigo-300/5 to-indigo-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-indigo': {
+				'@apply from-indigo-600/5 to-indigo-600/30': {},
+			  },
+			  '.gradient-gray': {
+				'@apply bg-gradient-to-br from-gray-300/5 to-gray-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.dark .gradient-gray': {
+				'@apply from-gray-600/5 to-gray-600/30': {},
+			  },
+			};
+			addComponents(gradients);
+		  }),
+	]
 };
 
 export default config;

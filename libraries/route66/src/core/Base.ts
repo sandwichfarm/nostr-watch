@@ -92,13 +92,13 @@ export class Route66 {
   async boot(): Promise<void> {
     this.init();
     await this.ready();
-    await this.monitorService?.bootstrap();
+    // await this.monitorService?.bootstrap();
   }
 
   async shutdown(): Promise<void> {
     this.destroy();
     this.adapters?.cacheAdapter?.shutdown();
-    // await this.adapters?.websocketAdapter?.shutdown();
+    await this.adapters?.websocketAdapter?.shutdown();
   }
 
   async restart(): Promise<void> {

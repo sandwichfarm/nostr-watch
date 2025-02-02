@@ -12,14 +12,19 @@
 	import Loading from '../partials/Loading.svelte';
 	import FeedMasonry from './FeedMasonry.svelte';
 	import FeedGrid from './FeedGrid.svelte';
+    import Scroller from '$lib/components/partials/Scroller.svelte';
+	import type { ParseConfig } from '$utils/notes';
 
-    type FeedType = 'masonry' | 'list' | 'grid' | 'table' | 'wiki';
+    type FeedType = 'masonry' | 'list' | 'grid' | 'table' | 'scroller' | 'wiki';
 
     export let type: FeedType = 'masonry';
     export let filters: Filter[]; 
     export let infiniteScroll: boolean = true;
     export let tabbed: boolean = false;
-    export let maxWidth: number | undefined = undefined;    
+    export let maxWidth: number | undefined = undefined; 
+    export let noteClamp: number | undefined = undefined;  
+    export let autoScroll: boolean = false;
+    export let parserOptions: ParseConfig = {}; 
 
     let resumer: Function | undefined;
 
@@ -48,25 +53,44 @@
 
 </script>
 
-<section id="operator-feed" class="block relative">
     {#if $items?.length === 0}
        <Loading />
     {/if}
 
     {#if $feedService && $items?.length}
         {#if type === 'masonry'}
+        <section id="operator-feed" class="block relative">
             <FeedMasonry {items} {feedService} {infiniteScroll} />
+        </section>
         {/if}
 
         {#if type === 'grid'}
-            <FeedGrid {items} {feedService} {infiniteScroll} {maxWidth} />
+        <section id="operator-feed" class="block relative">
+            <FeedGrid {items} {feedService} {infiniteScroll} {maxWidth} {parserOptions} />
+        </section>
+        {/if}
+
+        {#if type === 'scroller'}
+            <Scroller orientation="horizontal" autoScrollInterval={5000} scrollAmount={200}  {autoScroll}  class="overflow-x-auto overflow-y-hidden">
+                <FeedGrid {items} {feedService} {infiniteScroll} {maxWidth} {noteClamp} {parserOptions} />
+            </Scroller>
+        {/if}
+
+        {#if type === 'list'}
+
+        {/if}
+
+        {#if type === 'table'}
+
+        {/if}
+
+        {#if type === 'wiki'}
         {/if}
 
         {#if type === 'tabbed'}
 
         {/if}
     {/if}
-</section>
 
 
 

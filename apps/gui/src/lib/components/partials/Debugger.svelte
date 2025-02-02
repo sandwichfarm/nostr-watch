@@ -149,7 +149,7 @@
 
     onMount( async () => {
         await $route66?.cacheAdapter?.ready()
-        // await $route66?.cacheAdapter?.relay.debug();
+        await $route66?.cacheAdapter?.relay.debug();
         await new Promise((resolve) => setTimeout(resolve, 1000));
         debugRoute66()
         debugCacheAdapter()

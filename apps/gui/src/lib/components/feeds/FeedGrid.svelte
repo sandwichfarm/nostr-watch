@@ -6,11 +6,15 @@
 	import { FeedService } from '$lib/services/FeedService';
     import FeedNote from './FeedNote.svelte';
 	import { observeViewport } from '$lib/utils/ux';
+	import type { ParseConfig } from '$utils/notes';
 
     export let items: Readable<NostrEvent[]> | undefined;
     export let feedService: Writable<FeedService | null>;
     export let infiniteScroll: boolean = true;
     export let maxWidth: number | undefined = undefined;
+    export let noteClamp: number | undefined = undefined; 
+    export let parserOptions: ParseConfig = {}; 
+
     
     // const lastItemId = () => {
     //     return $items![$items!.length - 1].id;
@@ -33,14 +37,18 @@
 </script>
 
 {#if $feedService && $items?.length}
-<div class="columns-2 space-x-4 px-20">
+<!-- <div> -->
 
-    {#each $items as item (item.id)}
+    {#each $items as item, index (item.id)}
 
         <FeedNote 
             note={item} 
+            {index}
+            class="mr-10"
             memoryRelay={$feedService.memoryRelay} 
             relativesFetcher={$feedService.relativeFetchers.get(item.id)} 
+            {noteClamp}
+            
             />
 
         {#if infiniteScroll && lowItemId(item.id)}
@@ -54,5 +62,5 @@
 
     {/each}
     
-</div>
+<!-- </div> -->
 {/if}

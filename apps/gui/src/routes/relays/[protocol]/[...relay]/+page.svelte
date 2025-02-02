@@ -45,7 +45,7 @@
         </Card.Footer>
     </Card.Root>
 
-    {#if $operatorPubkey !== undefined}
+    {#if $operatorPubkey}
     <CardOperator 
         {relayUrl} 
         pubkey={$operatorPubkey} 
@@ -53,22 +53,6 @@
     {/if}
 
     <CardInsights />
-
-
-    <Card.Root class="w-full bg-gray-900/5 border-white/10 rounded-[3px]">
-        <Card.Header>
-            <Card.Title class='font-mono text-white/80'>insights</Card.Title>  
-        </Card.Header>  
-        <Card.Content>
-
-        </Card.Content>
-        <Card.Footer>
-            <!-- <Button>
-                Details
-            </Button> -->
-        </Card.Footer>
-    </Card.Root>
-
 
     <Card.Root class="w-full bg-gray-900/5 border-white/10 rounded-[3px]">
         <Card.Header>

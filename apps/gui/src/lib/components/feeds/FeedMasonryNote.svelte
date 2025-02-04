@@ -12,6 +12,10 @@
 	import FeedNoteReactions from './FeedNoteReactions.svelte';
 	import { fade, fly } from 'svelte/transition';
 
+    import RepliesIcon from 'lucide-svelte/icons/message-square';
+    import ZapsIcon from 'lucide-svelte/icons/zap';
+    import ReactionsIcon from 'lucide-svelte/icons/heart';
+
     export let note: NostrEvent;
     export let memoryRelay: SvelteMemoryRelay<IEvent, NostrEvent>;
     export let relativesFetcher: undefined | (() => void) = undefined;
@@ -92,7 +96,9 @@
             
             {#if isVisible}
                 <div in:fly={{ y: 20, duration: 500 }}><span in:fade>
-                    <a href="">♡</a>
+                    <a href="">
+                        <ReactionsIcon />
+                    </a>
                     <FeedNoteReactions {note} {memoryRelay} bind:reactionsCountCache={reactionsCountCache} />
                 </span></div>
             {/if}
@@ -101,7 +107,9 @@
             
             {#if isVisible}
             <div in:fly={{ y: 20, duration: 500 }}><span in:fade>
-              <a href="">⚡</a>
+              <a href="">
+                <ZapsIcon />
+                </a>
               <FeedNoteZaps {note} {memoryRelay} bind:zapSumCache={zapSumCache} />
             </span></div>
             {/if}
@@ -110,7 +118,9 @@
             
             {#if isVisible}
             <div in:fly={{ y: 20, duration: 500 }}><span in:fade>
-                <a href="">🗨</a>
+                <a href="">
+                    <RepliesIcon />
+                </a>
                 <FeedNoteComments {note} {memoryRelay} bind:commentsCountCache={commentsCountCache} />
             </span></div>
             <!-- {:else}

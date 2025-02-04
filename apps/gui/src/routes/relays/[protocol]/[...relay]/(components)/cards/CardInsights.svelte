@@ -116,7 +116,7 @@
                 <CountCard 
                     topText="" 
                     value={readable($bubbleType === 'percent'? `${usagePercentageVersion}%`: `${usageCountVersion}`)} 
-                    bottomText={`${$bubbleType === 'percent'? 'of ': `<em>${readableSoftware}</em> `}relays use ${version}`} 
+                    bottomText={`${$bubbleType === 'percent'? 'of ': ``} <em>${readableSoftware}</em> relays use ${version}`} 
                     index={1} 
                     />
             {/if}

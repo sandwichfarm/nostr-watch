@@ -4,6 +4,7 @@
 	import { cn } from "$lib/components/utils.js";
 	import { page } from "$app/stores";
 	import { Button } from "$lib/components/ui/button/index.js";
+	import RelayLiveness from "./partials/RelayLiveness.svelte";
 
 	let className: string | undefined | null = undefined;
 
@@ -15,7 +16,10 @@
 	});
 </script>
 <!-- <nav class={cn("flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1", className)}> -->
+	<RelayLiveness class="block relative justify-start hover:bg-transparent text-lg py-1.5 px-3 rounded-md ml-14 -mr-4 capitalize mb-3" />
+
 	<nav class={cn("", className)}>
+
 	{#each items as item}
 		{@const isActive = $page.url.pathname === item.href}
 		<Button

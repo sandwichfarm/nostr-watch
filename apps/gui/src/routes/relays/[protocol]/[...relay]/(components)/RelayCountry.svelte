@@ -1,7 +1,7 @@
 <script lang="ts">
     import { geocodeCounts, geocodePercentages } from '$lib/stores/geocodes.js'
 
-    export let geocode: string;
+    const geocode = ''
 </script>
 
 <div id="geocode">

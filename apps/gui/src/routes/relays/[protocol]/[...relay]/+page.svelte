@@ -13,6 +13,9 @@
 	import { readable, type Readable } from 'svelte/store';
 	import type { PubkeyRelays } from '@nostrwatch/route66/models/PubkeyRelays';
 	import CardInsights from './(components)/cards/CardInsights.svelte';
+	import CardGeneral from './(components)/cards/CardGeneral.svelte';
+	import CardNips from './(components)/cards/CardNips.svelte';
+	import CardLimitation from './(components)/cards/CardLimitation.svelte';
 
     export let relayData: any;
 
@@ -34,16 +37,7 @@
 </script>
 
 <div class="space-y-6">
-    <Card.Root class="w-full bg-gray-900/5 border-white/10 rounded-[3px]">
-        <Card.Header>
-            <Card.Title class='font-mono text-white/80'>general</Card.Title>  
-        </Card.Header>  
-        <Card.Content>
-            {relayData? true: false}
-        </Card.Content>
-        <Card.Footer>
-        </Card.Footer>
-    </Card.Root>
+    <CardGeneral />
 
     {#if $operatorPubkey}
     <CardOperator 
@@ -51,6 +45,10 @@
         pubkey={$operatorPubkey} 
         />
     {/if}
+
+    <CardLimitation />
+
+    <CardNips />
 
     <CardInsights />
 

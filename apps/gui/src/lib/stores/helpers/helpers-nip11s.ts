@@ -42,8 +42,10 @@ export const relaySoftware = (relay: string): string | undefined => {
     return relayNip11(relay)?.software;
 }
 
-export const relaySoftware$ = (relay: string) => {
-    return nip11Property$(relayNip11$(relay), 'software');
+export const relaySoftware$ = (relay: string): Readable<string | undefined> => {
+    const nip11 = relayNip11$(relay);
+    if(!get(nip11)) return readable(undefined);
+    return nip11Property$(nip11 as Readable<Nip11>, 'software');
 }
 
 export const relaySoftwareVersion = (relay: string): string | undefined => {

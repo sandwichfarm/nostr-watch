@@ -87,6 +87,7 @@ export const softwaresByGeo: Readable<Map<string, string[]>> = derived(
     return softwaresByGeo as Map<string, string[]>;
 })
 
+
 export const geoRows = derived(
   [geocodes, geocodeCounts, geocodePercentages, relaysByGeo, softwaresByGeo],
   ([$geocodes, $geocodeCounts, $geocodePercentages, $relaysByGeo, $softwaresByGeo]) => {

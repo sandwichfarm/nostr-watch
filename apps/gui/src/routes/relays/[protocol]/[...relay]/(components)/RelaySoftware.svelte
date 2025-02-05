@@ -3,9 +3,9 @@
     import { softwarePercentages, softwareCounts, softwareVersionPercentages, softwareVersionCounts } from '$lib/stores/softwares.js';
 	import { relayNip11, relaySoftware$, relaySoftwareVersion, relaySoftwareVersion$ } from '$stores/helpers/helpers-nip11s';
 	import { get } from 'lodash';
-	import { getRelayUrl } from '../(utils)/general';
+	import { generateRelayUrlFromPath } from '$utils/routing';
 
-    const relayUrl = getRelayUrl();
+    const relayUrl = generateRelayUrlFromPath();
     const version = relaySoftwareVersion$(relayUrl);  
     const software = relaySoftware$(relayUrl);
 </script>

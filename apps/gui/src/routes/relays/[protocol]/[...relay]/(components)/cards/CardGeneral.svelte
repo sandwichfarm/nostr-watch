@@ -1,8 +1,8 @@
 <script lang="ts">
     import * as Card from '$lib/components/ui/card';
     import { route66 } from '$lib/stores/route66';
-	import { getRelayUrl } from '../../(utils)/general';
-	import { relayCountryCodes$, relayIps$, relayLivenessAggregate$, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
+	import { generateRelayUrlFromPath } from '$utils/routing';
+	import { relayCountryCodes$, relayIps$, relayIsp$, relayLivenessAggregate$, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 	import { relayNip11$, relaySoftware$, relaySoftwareVersion$ } from '$stores/helpers/helpers-nip11s';
 	import { type Readable } from 'svelte/store';
 	import type { IGeocode } from '@nostrwatch/route66/models/Geocode';
@@ -10,8 +10,9 @@
 	import { getCountryName } from '$stores/iso3166';
 	import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
 	import { makeSoftwareReadable } from '$lib/synonyms/software';
+	import isps from '$lib/config/dataTable/isps';
     
-    const relayUrl = getRelayUrl()
+    const relayUrl = generateRelayUrlFromPath()
 
     
     const nip11: Readable<Nip11> = relayNip11$(relayUrl);
@@ -22,6 +23,7 @@
     const software: Readable<string | undefined> = relaySoftware$(relayUrl)
     const version: Readable<string> = relaySoftwareVersion$(relayUrl)
     const countryCodes: Readable<IGeocode[]> = relayCountryCodes$(relayUrl)
+    const isp: Readable<string[]> = relayIsp$(relayUrl)
     
     $: alpha2 = Array.from(new Set($countryCodes
         .filter( ({format, length}) => format === 'alpha' && length === 2 )
@@ -43,6 +45,7 @@
     $: numChecks = $checks.length
     $: percentageReportingOnline = numEnabledMonitors > 0? `${Math.round(numChecks/numEnabledMonitors*100)}%`: `n/a`
     $: readableSoftware = $software? makeSoftwareReadable($software): undefined;
+    $: ipsFlat = Object.values($ips).flat()
 
     const chunkArray = (arr, chunkSize) => {
         const chunks = [];
@@ -66,11 +69,42 @@
             <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>general</Card.Title>  
         </Card.Header>  
         <Card.Content>
-            <div class="grid grid-cols-3 gap-4">
-                <div class="bg-purple-500/10 dark:bg-purple-500/10 p-4 rounded-md">
-                    {#if readableSoftware}
+            <div class="grid grid-cols-3 gap-8">
+                {#if $nip11}
+                <div class="border p-4 rounded-md ">
+                    
                     <div class="text-md leading-loose font-mono">
-                        
+                        <span class='my-4 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                            nip-11
+                        </span>
+                        <div class="mb-2">
+                            {#if $nip11?.paymentRequired}
+                                <span class="inline-block mb-2 mr-2 py-1 px-3 rounded-lg bg-red-600/30 dark:bg-red-600/30">
+                                    payment required
+                                </span> 
+                            {/if}
+                            {#if $nip11?.authRequired}
+                                <span class="inline-block mb-2 mr-2 py-1 px-3 rounded-lg  bg-red-600/30 dark:bg-red-600/30">
+                                    auth required
+                                </span>
+                            {/if}
+                            {#if $nip11?.restrictedWrites === true}
+                                <span class="inline-block mb-2 mr-2 py-1 px-3 rounded-lg bg-red-600/30 dark:bg-red-600/30">
+                                    writes restricted
+                                </span> 
+                            {/if}
+                            {#if $nip11?.requiresPow === true}
+                                <span class="inline-block mb-2 mr-2 py-1 px-3 rounded-lg bg-red-600/30 dark:bg-red-600/30">
+                                    writes restricted
+                                </span> 
+                            {/if}
+                            {#if $nip11?.powRequired === true}
+                                <span class="inline-block mb-2 mr-2 py-1 px-3 rounded-lg bg-red-600/30 dark:bg-red-600/30">
+                                    pow required <span>[{$nip11.minPowDifficulty}]</span>
+                                </span>
+                            {/if}
+                        </div>
+                        {#if readableSoftware}
                         <div class="">
                             Software: 
                             <span class="inline-block mb-2 py-1 px-3 rounded-sm bg-black/10 dark:bg-white/10">
@@ -80,38 +114,88 @@
                         {#if $version}
                         <div class="">
                             Version: 
-                            <span class="inline-block py-1 px-3 rounded-lg bg-black/10 dark:bg-white/10">
+                            <span class="inline-block mb-2 py-1 px-3 rounded-lg bg-black/10 dark:bg-white/10">
                                 {$version}
                             </span> 
                         </div>
                         {/if}
+                        {/if}
+                        {#if $nip11?.supportedNips?.length}
+                        <div class="">
+                            NIPs Supported
+                            <span class="inline-block mb-2 py-1 px-3 rounded-lg bg-black/10 dark:bg-white/10">
+                                {$nip11.supportedNips.length}
+                            </span> 
+                        </div>
+                        {/if}
+                        {#if Object.keys($nip11?.limitation || {})?.length}
+                        <div class="">
+                            Limitations:
+                            <span class="inline-block mb-2 py-1 px-3 rounded-lg bg-black/10 dark:bg-white/10">
+                                {Object.keys($nip11?.limitation || {})?.length}
+                            </span> 
+                        </div>
+                        {/if}
                     </div>
-                    {/if}
+                    
                 </div>
-                <div class="clamp-5">
-                    {#if $ips.ipv4?.length}
+                {/if}
+
+                <div class="border p-4 rounded-md ">
+                    {#if ipsFlat.length}
                     <ul class="pl-5">
-                        known ips 
-                        {#each $ips.ipv4 as ip}
+                        <span class='block my-4 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                            known ips
+                        </span>
+                        {#each ipsFlat as ip, index}
+                            {#if index < 3}
                             <li class="list-disc">
-                                <span class="text-md py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
+                                <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
                                     {ip}
                                 </span>
                             </li>
+                            {:else if index === ipsFlat.length-1} 
+                            <span>+{ipsFlat.length-3} more</span>
+                            {/if}
                         {/each}
+                        <span class='block my-4 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                            known ISPs
+                        </span>
+                        <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
+                            {$isp}
+                        </span>
+                        
                     </ul>
                     {:else}
                         <div>no IPs</div>
                     {/if}
                 </div>
-                <div class="">
+                <div class="border p-4 rounded-md ">
+                    <span class='block my-4 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                        network
+                    </span>
+                    <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
+                        {$livenessAggregate?.networks}
+                    </span>
+
+                    <span class='block my-2 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                        geographical location
+                    </span>
+                    <span class="text-xs italic text-black/50 dark:text-white/50">
+                        The geographic location of relays is a a best-guess using IP to Location databases. A variety of factors can cause this to be inaccurate.
+                    </span>
+
+                    <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
+                        Geohash: {$livenessAggregate?.geohash}
+                    </span>
+                    <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
+                        lat/lon: {$livenessAggregate?.dd.lat.toFixed(5)}, {$livenessAggregate?.dd.lon.toFixed(5)}
+                    </span>
                     {#if countryNames?.length}
                         {#each countryNames as country, index}
                             <div class="text-2xl">{countryCodeToFlagEmoji(alpha2[index])} {country}</div>
                         {/each}
-                        <span class="text-xs italic text-black/50 dark:text-white/50">
-                            The geographic location of relays is a a best-guess using IP to Location databases. A variety of factors can cause this to be inaccurate.
-                        </span>
+                        
                     {:else}
                         <div>No geographical location was found</div>
                     {/if}

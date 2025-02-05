@@ -29,7 +29,7 @@
 	import { dataRegister } from '$stores/data-register';
 	import PageHeader from '$lib/components/layout/PageHeader.svelte';
 	import { truncateWithEllipsis } from '$utils/strings';
-	import { formatRelayUrl } from '$utils/routing';
+	import { generateRelayPathFromUrl } from '$utils/routing';
 	import RelaySidebar from './components/RelaySidebar.svelte';
 	
 
@@ -349,31 +349,31 @@
   const sidebarNavItems = [
 		{
 			title: "Overview",
-			href: `/relays/${formatRelayUrl(relayUrl).slice(0, -1)}`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl).slice(0, -1)}`,
 		},
     {
       title: "Insights",
-      href: `/relays/${formatRelayUrl(relayUrl)}insights`,
+      href: `/relays/${generateRelayPathFromUrl(relayUrl)}insights`,
     },
     {
 			title: "Operator",
-			href: `/relays/${formatRelayUrl(relayUrl)}operator`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}operator`,
 		},
     {
 			title: "Feed",
-			href: `/relays/${formatRelayUrl(relayUrl)}feed`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}feed`,
 		},
     {
 			title: "Checks",
-			href: `/relays/${formatRelayUrl(relayUrl)}checks`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}checks`,
 		},
     {
 			title: "NIP-11",
-			href: `/relays/${formatRelayUrl(relayUrl)}nip-11`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}nip-11`,
 		},
 		{
 			title: "Audits",
-			href: `/relays/${formatRelayUrl(relayUrl)}audits`
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}audits`
 		},
 	];
 

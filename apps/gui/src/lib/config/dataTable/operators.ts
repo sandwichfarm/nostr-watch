@@ -1,4 +1,4 @@
-import type { DataKeys, Formatters, NameFormatter } from '$lib/components/lists/table/DataTableTypes';
+import type { DataKeys, Formatters, NameFormatter } from '$lib/components/DataView/DataTableTypes';
 import { makeSoftwareReadable } from '$lib/synonyms/software';
 
 

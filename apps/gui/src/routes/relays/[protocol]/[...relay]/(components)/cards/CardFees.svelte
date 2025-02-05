@@ -5,7 +5,7 @@
 	import CountCard from '$routes/components/CountCard.svelte';
 	import { relayFees$, relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import { get, readable, type Readable } from 'svelte/store';
-	import { getRelayUrl } from '../../(utils)/general';
+	import { generateRelayUrlFromPath } from '$utils/routing';
 	import RelayFeeItem from '../partials/RelayFeeItem.svelte';
 
     type FeesObject = Record<string, FeesArray[]>
@@ -16,7 +16,7 @@
     } 
 
 
-    const relayUrl = getRelayUrl();
+    const relayUrl = generateRelayUrlFromPath();
     const fees: Readable<FeesObject> = relayFees$(relayUrl);
     const nip11 = relayNip11$(relayUrl)
 

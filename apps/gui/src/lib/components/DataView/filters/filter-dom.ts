@@ -1,3 +1,5 @@
+import type { NameFormatter } from "../DataTableTypes";
+
 // **Filter Types and Interfaces**
 export type FilterCondition = '=' | '<' | '>' | '!=';
 
@@ -37,7 +39,7 @@ export type ConsoleFilter = BooleanFilter | NumberFilter | StringFilter | ArrayF
 export function createRelayFilters(
     data: any[],
     filtersInclude: string[],
-    prettyNames: Record<string, string>,
+    prettyNames: NameFormatter,
     existingFilters: ConsoleFilter[] = []
 ): ConsoleFilter[] {
     if (data.length === 0) {
@@ -58,11 +60,11 @@ export function createRelayFilters(
 export function createFilter(
     key: string,
     data: any[],
-    prettyNames: Record<string, string>,
+    prettyNames: NameFormatter,
     existingFilter?: ConsoleFilter
 ): ConsoleFilter | null {
     const firstValue = data.find((item) => item[key] !== null && item[key] !== undefined)?.[key];
-    const prettyName = prettyNames[key] ?? key;
+    const prettyName = prettyNames?.[key]?.long || prettyNames?.[key]?.short || key;
 
     let mode: 'AND' | 'OR' | 'UNIQUE' = 'OR'; 
 

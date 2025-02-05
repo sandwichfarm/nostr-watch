@@ -45,7 +45,7 @@
             const columns: DataViewColumns[] = $config.columnsShow.map((key: string) => ({
                 id: key,
                 key: key,
-                name: $config.prettyNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
+                name: $config.prettyNames?.[key]?.short ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
             return { data: $data, columns };

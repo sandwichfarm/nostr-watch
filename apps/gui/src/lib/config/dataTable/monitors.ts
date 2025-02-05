@@ -5,16 +5,7 @@ import { get } from 'svelte/store';
 import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 import { validNip05s } from '$lib/stores/nip05s.js';
 import { activeMonitorChecksCount } from '$lib/stores';
-
-export type NameFormatter = Record<string, string>;
-
-export type Formatters = Record<string, Formatter>;
-
-export type DataKeys = string[];
-
-export type Formatter = {
-    (value: any, value2?: any): any;
-}
+import type { DataKeys, Formatters, NameFormatter } from '$lib/components/DataView/DataTableTypes';
 
 export const normalizeKeys = (keys: DataKeys | string) => {
     if(typeof keys === 'string') 
@@ -30,16 +21,9 @@ export const columnsShow: DataKeys = ['pubkey', 'networks', 'frequency', 'report
 export const filtersShow: DataKeys = ['relays', 'checks', 'networks']
 
 export const prettyNames: NameFormatter = {
-    'pubkey': 'Monitor'
-    // networks: 'Network',
-    // supportedNips: 'NIPs',
-    // software: 'Software',
-    // relay: 'Relay',
-    // rttNormalized: 'Speed',
-    // geocode: 'Country',
-    // paymentRequired: 'Payment',
-    // authRequired: 'Auth',
-    // isp: 'ISP'
+    pubkey: {
+        long: 'Monitor',
+    }
 };
 
 export const tableFormatters: Formatters = {

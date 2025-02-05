@@ -6,8 +6,8 @@ import { doAggregateCache } from './app.js';
 import type { Nip66CheckEvent } from '@nostrwatch/route66/models/Nip66CheckEvent';
 import type { IResult } from '@nostrwatch/nocap';
 
-export const relays = derived(relayCheckAggregates, ($relayCheckAggregates) => {
-    const relays = new Set();
+export const relays: Readable<string[]> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+    const relays: Set<string> = new Set();
 
     $relayCheckAggregates.forEach((relayAggregate) => {
         const { created_at, relay, network, monitorPubkey } = relayAggregate

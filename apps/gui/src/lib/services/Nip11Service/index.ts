@@ -30,6 +30,7 @@ export class Nip11Service {
     }
     
     async check(relay: string): Promise<Nip11 | undefined> {
+        console.log('N11S check', relay, typeof relay)
         queue.add(async () => {
             this.worker.postMessage({ relay })
             let result: Nip11 | undefined; 
@@ -48,6 +49,7 @@ export class Nip11Service {
         const { relay, nip11:_nip11, error } = message.data;
         const nip11 = new Nip11(_nip11 as RelayInformation)
         if(error) {
+            console.log('N11S error', relay, error)
             setRelayError(relay, 'nip11', error.message)
             return
         }

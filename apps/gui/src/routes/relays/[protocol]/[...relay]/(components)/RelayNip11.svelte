@@ -8,7 +8,7 @@
 	import { relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import { get } from 'lodash';
 
-    const relayUrl = getRelayUrl()
+    const relayUrl = generateRelayUrlFromPath()
 
     const nip11: Writable<Nip11> = relayNip11$(relayUrl);
 

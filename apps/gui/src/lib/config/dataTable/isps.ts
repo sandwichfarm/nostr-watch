@@ -1,7 +1,5 @@
-import type { DataKeys, Formatters, NameFormatter } from '$lib/components/lists/table/DataTableTypes';
+import type { DataKeys, Formatters, NameFormatter } from '$lib/components/DataView/DataTableTypes';
 import { makeSoftwareReadable } from '$lib/synonyms/software';
-import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
-import { getCountryName } from '$lib/stores/iso3166';
 
 export const columnsDisable: DataKeys = ['id']
 export const filtersDisable: DataKeys = []
@@ -10,8 +8,14 @@ export const columnsShow: DataKeys = ['prettyName', 'count', 'percent', 'softwar
 export const filtersShow: DataKeys = ['softwares']
 
 export const prettyNames: NameFormatter = {
-    count: 'Total Relays',
-    percent: 'Market Share'
+    count: {
+        long: 'Total Relays',
+        short: 'Relays',
+    },
+    percent: {
+        long: 'Market Share',
+        short: 'Share',
+    }
 };
 
 function truncateWithEllipsis(text: string, maxLength: number): string {

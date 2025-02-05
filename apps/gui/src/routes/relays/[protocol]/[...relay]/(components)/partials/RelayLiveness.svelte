@@ -3,10 +3,10 @@
 	import { RelayLivenessType } from "$stores/relays.js";
 	import { timeAgo } from "$utils/time";
 	import { writable, type Writable } from "svelte/store";
-	import { getRelayUrl } from "../../(utils)/general";
 	import { indexOf } from "lodash";
+	import { generateRelayUrlFromPath } from "$utils/routing";
 
-	const relayUrl = getRelayUrl();
+	const relayUrl = generateRelayUrlFromPath();
 	const relayLivenessResult = relayLivenessDetermination$(relayUrl);
 
 	const className = $$props.class;

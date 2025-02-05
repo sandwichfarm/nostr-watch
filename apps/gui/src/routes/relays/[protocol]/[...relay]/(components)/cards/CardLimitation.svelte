@@ -3,12 +3,12 @@
     import * as Table from "$lib/components/ui/table/index.js";
 ;
     import { route66 } from '$lib/stores/route66';
-	import { getRelayUrl } from '../../(utils)/general';
+	import { generateRelayUrlFromPath } from '$utils/routing';
 	import { relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 	import { relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import type { nip11 } from 'nostr-tools';
 	import { NIP_11_LIMITATIONS } from '$stores/nip11-meta';
-    const relayUrl = getRelayUrl()
+    const relayUrl = generateRelayUrlFromPath()
 
     export let checks = relayLivenessChecks$(relayUrl);
     const nip11 = relayNip11$(relayUrl);

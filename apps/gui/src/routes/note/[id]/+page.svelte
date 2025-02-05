@@ -14,7 +14,7 @@
     
     import type { AddressPointer, DecodeResult, NAddr } from 'nostr-tools/nip19';
 	import { doBootstrap } from '$lib/stores/routines.js';
-	import { formatRelayUrl } from '$lib/utils/routing.js';
+	import { generateRelayPathFromUrl } from '$lib/utils/routing.js';
 
     let id = $page.params.id;
     let data: DecodeResult | undefined;
@@ -115,7 +115,7 @@
             Seen by {otherMonitors.length} other monitors
         {/if}
 
-        <a href="/relays/{formatRelayUrl(relayUrl)}">Check out ${relayUrl}'s page for more information</a>
+        <a href="/relays/{generateRelayPathFromUrl(relayUrl)}">Check out ${relayUrl}'s page for more information</a>
        <Nip66Check check={$foundEvent} />
     {:else}
         <p>No event found.</p>

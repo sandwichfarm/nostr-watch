@@ -11,7 +11,7 @@
 	import { route66 } from "$stores/route66";
 	import { eventKey } from "$utils/event-keys";
 	import { pauseLiveSync } from "$utils/live-sync";
-	import { formatRelayUrl } from "$utils/routing";
+	import { generateRelayPathFromUrl } from "$utils/routing";
 	import { truncateWithEllipsis } from "$utils/strings";
 	import type { IResult } from "@nostrwatch/nocap";
 	import type { NostrEvent } from "@nostrwatch/route66/models";
@@ -76,31 +76,31 @@
     const sidebarNavItems = [
 		{
 			title: "Overview",
-			href: `/relays/${formatRelayUrl(relayUrl).slice(0, -1)}`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl).slice(0, -1)}`,
 		},
         {
             title: "Insights",
-            href: `/relays/${formatRelayUrl(relayUrl)}insights`,
+            href: `/relays/${generateRelayPathFromUrl(relayUrl)}insights`,
         },
         {
             title: "Operator",
-            href: `/relays/${formatRelayUrl(relayUrl)}operator`,
+            href: `/relays/${generateRelayPathFromUrl(relayUrl)}operator`,
         },
         {
 			title: "Feed",
-			href: `/relays/${formatRelayUrl(relayUrl)}feed`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}feed`,
 		},
         {
 			title: "Checks",
-			href: `/relays/${formatRelayUrl(relayUrl)}checks`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}checks`,
 		},
         {
 			title: "NIP-11",
-			href: `/relays/${formatRelayUrl(relayUrl)}nip-11`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}nip-11`,
 		},
 		{
 			title: "Audits",
-			href: `/relays/${formatRelayUrl(relayUrl)}audits`
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}audits`
 		},
 	];
 

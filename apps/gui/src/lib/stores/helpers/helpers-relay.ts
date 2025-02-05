@@ -223,3 +223,12 @@ export const relaySimilarRelays = (relay: string): string[] => {
     return Array.from(new Set([...similarByIp, ...similarByCountry, ...similarByIsp, ...similarByGeohash]));
 }
 
+export const relayIsp = (relay: string): string | undefined => {
+    return relayLivenessAggregate(relay)?.isp;
+}
+
+export const relayIsp$ = (relay: string): Readable<string | undefined> => {
+    return derived(relayLivenessAggregate$(relay), ($aggregate) => {
+        return $aggregate?.isp;
+    })
+}

@@ -8,11 +8,14 @@
   import { WorldMapTopoJSON } from '@unovis/ts/maps'
   import type { Monitor, Nip66CheckEvent } from '@nostrwatch/route66/models';
   import { StateManager } from '@nostrwatch/route66';
+	import { monitors } from '$stores/monitors';
+	import { generateRelayUrlFromPath } from '$utils/routing';
+	import { relayLivenessAggregate$, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 
-  export let relay: string;
-  export let monitors: Writable<Monitor[]>;
-  export let checks: Writable<Nip66CheckEvent[]>;
-  export let aggregate: any;
+  const relayUrl = generateRelayUrlFromPath();
+
+  const checks = relayLivenessChecks$(relayUrl)
+  const aggregate = relayLivenessAggregate$(relayUrl)
 
   let ready: boolean = false;
 
@@ -59,7 +62,7 @@
   // (★) Single init call: we’ll rely on onMount + hydrated. 
   //     Remove repeated calls from store subscription for clarity.
   onMount(() => {
-    StateManager.once(`${relay}:hydrated`, init);
+    StateManager.once(`${relayUrl}:hydrated`, init);
     init();
   });
 
@@ -140,8 +143,8 @@
     monitorMapPoints.set([]);
     monitorLinks.set([]);
 
-    const monitorsVal = get(monitors) || [];
-    const checksVal = get(checks) || [];
+    const monitorsVal = $monitors || [];
+    const checksVal = $checks || [];
     const rmp = get(relayMapPoint);
 
     // For each monitor, create a point
@@ -229,7 +232,7 @@
 </script>
 
 {#if ready}
-  <div class="relative pt-0">
+  <div class="relative pt-0 {$$props.class}">
     <VisSingleContainer 
       data={$data} 
       class="map-light dark:map-dark w-full h-[500px]"

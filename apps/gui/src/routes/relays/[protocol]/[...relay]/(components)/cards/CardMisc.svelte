@@ -1,7 +1,7 @@
 <script lang="ts">
     import * as Card from '$lib/components/ui/card';
     import { route66 } from '$lib/stores/route66';
-	import { getRelayUrl } from '../../(utils)/general';
+	import { generateRelayUrlFromPath } from '$utils/routing';
 	import { relayCountryCodes$, relayIps$, relayLivenessAggregate$, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 	import { relayNip11$, relaySoftware$, relaySoftwareVersion$ } from '$stores/helpers/helpers-nip11s';
 	import { type Readable } from 'svelte/store';
@@ -11,7 +11,7 @@
 	import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
 	import { makeSoftwareReadable } from '$lib/synonyms/software';
     
-    const relayUrl = getRelayUrl()
+    const relayUrl = generateRelayUrlFromPath()
 
     
     const nip11: Readable<Nip11> = relayNip11$(relayUrl);

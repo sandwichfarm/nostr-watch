@@ -4,7 +4,12 @@ export type DataViewData = { data: any[], columns: DataViewColumns[] };
 export type DataViewViews = 'table' | 'grid' | 'map';
 export type DataViewMapViews = 'bubble' | 'markers' | 'choropleth' | 'heatmap';
 
-export type NameFormatter = Record<string, string>;
+export type NameFormatter = Record<string, NameFormats>;
+export type NameFormats = {
+    long: string
+    short?: string,
+}
+
 export type Formatters = Record<string, Formatter>;
 export type DataKeys = string[];
 
@@ -18,7 +23,7 @@ export type SortState = {
 }
 
 export type DataTableConfig = { 
-    prettyNames: Record<string, string>;
+    prettyNames: NameFormatter;
     tableRowStyler: (row: any) => string;
 
     availableColumnKeys: string[];

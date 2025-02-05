@@ -14,6 +14,7 @@
 	import { bootstrapOperatorsMeta, canSeedFromCache, instance } from '$lib/utils/lifecycle';
 	import { seedMetaFromCache } from '$lib/utils/lifecycle';
 	import { dataRegister } from '$stores/data-register';
+	import DataViewRoot from '$lib/components/DataView/DataViewRoot.svelte';
 
     let DataTable: DataTableType;
     const componentsLoaded: Writable<boolean> = writable(false);
@@ -80,6 +81,6 @@
 </script>
 <main class="mt-16">
 {#if $ready}
-    <DataTable {data} {config} {dataKey} />
+    <DataViewRoot {data} {config} key={dataKey} />
 {/if}
 </main>

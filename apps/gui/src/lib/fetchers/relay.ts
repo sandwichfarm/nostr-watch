@@ -17,6 +17,7 @@ export const fetchRelayChecks = async (relay: string) => {
 }
 
 export const fetchRelayNip11 = async (relay: string): Promise<Nip11 | undefined> => {
+    console.log('n11s fetchRelayNip11', relay, typeof relay)
     return get(nip11Service).check(relay)
 }
 

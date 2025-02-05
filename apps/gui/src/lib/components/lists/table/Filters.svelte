@@ -567,8 +567,6 @@
     type={rootType}
     disabled={rootDisabled} 
 >
-
-fdklfjdkljfdkl
     {#each $relayFilters as filter (filter.key)}
         <Accordion.Item class="accordion-item max-h-none overflow-x-auto" value={filter.key}>
             <Accordion.Header class="py-2 px-2 border-b-2">

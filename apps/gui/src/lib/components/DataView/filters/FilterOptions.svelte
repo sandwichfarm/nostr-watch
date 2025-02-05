@@ -43,7 +43,7 @@
                 value={key}
                 class="mr-2"
             />
-            {$config?.prettyNames?.[key] || capitalize(key)}
+            {$config?.prettyNames?.[key]?.long || capitalize(key)}
         </li>
     {/each}
 </ul>

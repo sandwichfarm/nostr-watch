@@ -1,7 +1,7 @@
 import countryCodeToFlagEmoji from 'country-code-to-flag-emoji'
 import { relaySpeedGroupResolver, SpeedGroupBars, SpeedGroupColors, SpeedGroups } from '$lib/stores/checks.js';
 import { makeSoftwareReadable } from '$lib/synonyms/software.js';
-import { formatRelayUrl } from '$lib/utils/routing.js';
+import { generateRelayPathFromUrl } from '$lib/utils/routing.js';
 import { formatNip, isPubkey } from '$lib/utils/nostr.js';
 import { timeAgo } from '$lib/utils/time.js';
 import { IconBadgeCheckGreen, IconCheckGreen, IconCheckRed } from '$lib/utils/icons.js';
@@ -13,6 +13,7 @@ import type { Nip11Fee } from '@nostrwatch/route66/models/Nip11';
 import type { DD } from '@nostrwatch/route66/models/Geocoded';
 import { Nip66CheckEvent, PubkeyProfile } from '@nostrwatch/route66/models';
 import { pubkeyProfile, pubkeyUserInstance } from '$lib/stores/helpers/helpers-pubkey';
+import type { NameFormatter } from '$lib/components/DataView/DataTableTypes';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -40,8 +41,6 @@ class SpeedGroupResolver {
 }
 
 const speedGroupResolver = new SpeedGroupResolver();
-
-export type NameFormatter = Record<string, string>;
 
 export type Formatters = Record<string, Formatter>;
 
@@ -82,31 +81,166 @@ export const availableFilterKeys: string[] = [
 ]
 
 export const prettyNames: NameFormatter = {
-    dd: 'Decimal Degrees',
-    geohash: 'Geohash',
-    ipv4: 'IPv4',
-    ipv6: 'IPv6',
-    as: 'AS',
-    asname: 'AS Name',
-    seenBy: 'Seen By',
-    seenTimes: 'Seen',
-    networks: 'Network',
-    lastSeen: 'Last Seen',
-    supportedNips: 'NIPs',
-    software: 'Software',
-    relay: 'Relay',
-    rttNormalized: 'Speed',
-    geocode: 'Country',
-    paymentRequired: 'Payment',
-    authRequired: 'Auth',
-    isp: 'ISP',
-    hasNip11: 'Has Nip11',
-    operatorPubkey: 'Op.',
-    operatorPubkeyValid: 'Operator Pubkey is Valid',
-    rtt: "Avg. RTT",
-    admissionFee: "Adm. Cost",
-    subscriptionFee: "Sub. Cost",
-    publicationFee: "Pub. Cost"
+    dd: {
+        short: 'DD',
+        long: 'Decimal Degrees'
+    },
+    geohash: {
+        long: 'Geohash'
+    },
+    ipv4: {
+        long: 'IPv4'
+    },
+    ipv6: {
+        long: 'IPv6'
+    },
+    as: {
+        short: 'AS',
+        long: 'Autonomous System Number'
+    },
+    asname: {
+        short: 'AS Name',
+        long: 'Autonomous System Name'
+    },
+    seenBy: {
+        long: 'Seen By'
+    },
+    seenTimes: {
+        short: 'Seen #',
+        long: 'Seen Times'
+    },
+    networks: {
+        long: 'Network'
+    },
+    lastSeen: {
+        long: 'Last Seen'
+    },
+    supportedNips: {
+        short: 'NIPs',
+        long: 'Supported NIPs'
+    },
+    software: {
+        short: 'SW',
+        long: 'Software'
+    },
+    relay: {
+        long: 'Relay'
+    },
+    rtt: {
+        short: 'Avg. RTT',
+        long: 'Average RTT'
+    },
+    rttNormalized: {
+        long: 'Speed'
+    },
+    geocode: {
+        long: 'Country'
+    },
+    paymentRequired: {
+        short: 'Payment Req.',
+        long: 'Payment Required'
+    },
+    authRequired: {
+        short: 'Auth Req.',
+        long: 'Auth Required'
+    },
+    isp: {
+        short: 'ISP',
+        long: 'Internet Service Provider'
+    },
+    hasNip11: {
+        short: 'NIP-11?',
+        long: 'Has NIP-11'
+    },
+    operatorPubkey: {
+        short: 'Op. Pk',
+        long: 'Operator Pubkey'
+    },
+    operatorPubkeyValid: {
+        short: 'Op. Pk Valid',
+        long: 'Operator Pubkey is Valid'
+    },
+    // software: {
+    //     short: 'SW',
+    //     long: 'Software'
+    // },
+    admissionFee: {
+        short: 'Adm. Fee',
+        long: 'Admission Fee'
+    },
+    subscriptionFee: {
+        short: 'Sub. Fee',
+        long: 'Subscription Fee'
+    },
+    publicationFee: {
+        short: 'Pub. Fee',
+        long: 'Publication Fee'
+    },
+    powRequired: {
+        short: 'PoW',
+        long: 'Proof of Work Required'
+    },
+    minPowDifficulty: {
+        short: 'PoW Diff',
+        long: 'Minimum PoW Difficulty'
+    },
+    restrictedWrites: {
+        short: 'RW',
+        long: 'Restricted Writes'
+    },
+    maxFilters: {
+        short: 'Max Filters',
+        long: 'Maximum Filters'
+    },
+    maxSubIdLength: {
+        short: 'Max Sub ID',
+        long: 'Maximum Subscription ID Length'
+    },
+    maxEventTags: {
+        short: 'Max Tags',
+        long: 'Maximum Event Tags'
+    },
+    maxSubscriptions: {
+        short: 'Max Subs',
+        long: 'Maximum Subscriptions'
+    },
+    maxContentLength: {
+        short: 'Max Content',
+        long: 'Maximum Content Length'
+    },
+    createdAtLowerLimit: {
+        short: 'Lower Limit',
+        long: 'Created At Lower Limit'
+    },
+    createdAtUpperLimit: {
+        short: 'Upper Limit',
+        long: 'Created At Upper Limit'
+    }
+    // 'Decimal Degrees',
+    // geohash: 'Geohash',
+    // ipv4: 'IPv4',
+    // ipv6: 'IPv6',
+    // as: 'AS',
+    // asname: 'AS Name',
+    // seenBy: 'Seen By',
+    // seenTimes: 'Seen',
+    // networks: 'Network',
+    // lastSeen: 'Last Seen',
+    // supportedNips: 'NIPs',
+    // software: 'Software',
+    // relay: 'Relay',
+    // rttNormalized: 'Speed',
+    // geocode: 'Country',
+    // paymentRequired: 'Payment',
+    // authRequired: 'Auth',
+    // isp: 'ISP',
+    // hasNip11: 'Has Nip11',
+    // operatorPubkey: 'Op.',
+    // operatorPubkeyValid: 'Operator Pubkey is Valid',
+    // rtt: "Avg. RTT",
+    // admissionFee: "Adm. Cost",
+    // subscriptionFee: "Sub. Cost",
+    // publicationFee: "Pub. Cost"
 };
 
 const formatFee = (fees: Nip11Fee[]) => {
@@ -130,7 +264,7 @@ export const tableFormatters: Formatters = {
         const { icon } = row;
         const formatted = `<span class="inline-block my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
         const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: '<span class="inline-block mr-2 h-6 w-6"></span>'
-        return `<a class="text-lg" href="/relays/${formatRelayUrl(relay)}">${iconHtml}${formatted}</a>`;
+        return `<a class="text-lg" href="/relays/${generateRelayPathFromUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
     // monitorPubkey: (pubkey) => {
     //     let monitor: Monitor = {};

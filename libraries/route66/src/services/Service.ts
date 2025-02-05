@@ -108,7 +108,7 @@ export class Service {
       wsCallbacks = this.addSymbolToCallbacks(callbacks, 'ws');
     }
     if(options?.stream === true){
-      this.websocketAdapter.subscribe(args, wsCallbacks);
+      await this.websocketAdapter.subscribe(args, wsCallbacks);
     }
     else {
       result = this.addSymbolToEvents(await this._fetch(args, wsCallbacks), 'ws');

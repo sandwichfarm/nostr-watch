@@ -1,7 +1,7 @@
 import MiniSearch, { type SearchResult } from "minisearch";
 import { writable, type Writable } from "svelte/store";
 import { goto } from '$app/navigation';
-import { formatRelayUrl } from '$lib/utils/routing.js';
+import { generateRelayPathFromUrl } from '$lib/utils/routing.js';
 
 export const searchResults: Writable<SearchResult[]> = writable([]);
 
@@ -40,6 +40,6 @@ export function performSearch(query: string) {
 }
 
 export function selectSuggestion(result: SearchResult, state: any) {
-  goto(`/reload/relays/${formatRelayUrl(result.relay)}`);
+  goto(`/reload/relays/${generateRelayPathFromUrl(result.relay)}`);
   state.showSuggestions = false;
 } 

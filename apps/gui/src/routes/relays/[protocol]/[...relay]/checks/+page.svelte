@@ -12,9 +12,9 @@
 	import type { Monitor } from '@nostrwatch/route66/models';
 	import { onMount } from 'svelte';
 	import { relayLivenessAggregate$, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
-	import { getRelayUrl } from '../(utils)/general';
+	import { generateRelayUrlFromPath } from '$utils/routing';
     
-    const relay = getRelayUrl() 
+    const relay = generateRelayUrlFromPath() 
 
     export let checks: Readable<Nip66CheckEvent[]> = relayLivenessChecks$(relay);
     export let aggregate: Readable<any> = relayLivenessAggregate$(relay);

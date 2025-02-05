@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Nip66CheckEvent } from "@nostrwatch/route66/models";
-	import { formatRelayUrl } from "$lib/utils/routing.js";
+	import { generateRelayPathFromUrl } from "$lib/utils/routing.js";
 	import type { Writable } from "svelte/store";
     import type Route66 from "@nostrwatch/route66";
 
@@ -28,7 +28,7 @@
     {:else}
     <span class="inline-block mr-1 w-3 h-3 {statusClass} rounded-full"></span>
     {/if}
-    <a href="/reload/relays/{formatRelayUrl(event.relay)}">
+    <a href="/reload/relays/{generateRelayPathFromUrl(event.relay)}">
     {event?.relay}
 </div>
 {/if}

@@ -5,7 +5,7 @@
     import RelaySoftware from '../RelaySoftware.svelte';
     import RelayCountry from '../RelayCountry.svelte';
     import { route66 } from '$lib/stores/route66';
-	import { getRelayUrl } from '../../(utils)/general';
+	import { generateRelayUrlFromPath } from '$utils/routing';
 	import { relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 	import { relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import { nipLeadingZero } from '$utils/nostr';
@@ -13,7 +13,7 @@
 	import { formatNip } from '@nostrwatch/auditor';
 	import { values } from 'lodash';
     
-    const relayUrl = getRelayUrl()
+    const relayUrl = generateRelayUrlFromPath()
 
     export let checks = relayLivenessChecks$(relayUrl);
     const nip11 = relayNip11$(relayUrl);

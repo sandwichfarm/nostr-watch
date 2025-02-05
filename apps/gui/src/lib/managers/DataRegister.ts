@@ -229,7 +229,7 @@ export class DataRegister {
         if(!passesCondition) return;
         const { fn, onComplete } = this._dataSets.get(key)!
         if( !fn || typeof fn !== 'function' ) return;
-        let result = await fn(params)
+        let result = await fn(...params)
         if(onComplete && typeof onComplete === 'function') {
             await onComplete(result)
         }

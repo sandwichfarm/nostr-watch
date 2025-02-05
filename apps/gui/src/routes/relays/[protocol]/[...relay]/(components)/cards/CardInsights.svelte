@@ -7,14 +7,14 @@
 	import { readable, writable, type Readable, type Writable } from 'svelte/store';
     import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
 	import { relayLivenessAggregate$ } from '$stores/helpers/helpers-relay';
-	import { getRelayUrl } from '../../(utils)/general';
+	import { generateRelayUrlFromPath } from '$utils/routing';
 	import CountCard from '$routes/components/CountCard.svelte';
 	import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
-	import { formatRelayUrl } from '$utils/routing';
+	import { generateRelayPathFromUrl } from '$utils/routing';
 	import { goto } from '$app/navigation';
 	import AlwaysSquare from '$lib/components/partials/AlwaysSquare.svelte';
 
-    const relayUrl = getRelayUrl()
+    const relayUrl = generateRelayUrlFromPath()
 
     const relayAggregate: Readable<any> | undefined = relayLivenessAggregate$(relayUrl);
 
@@ -153,7 +153,7 @@
         <Button 
             variant="secondary" 
             class="ml-8"
-            on:click={ () => goto(`/relays/${formatRelayUrl(relayUrl)}insights`) }
+            on:click={ () => goto(`/relays/${generateRelayPathFromUrl(relayUrl)}insights`) }
             >
             more insights
         </Button>

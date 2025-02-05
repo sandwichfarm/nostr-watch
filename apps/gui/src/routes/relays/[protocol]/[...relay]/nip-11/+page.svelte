@@ -10,7 +10,7 @@
 	import { setRelayError } from '$lib/stores/relay-errors';
 	import JsonHighlighter from '$lib/components/partials/JsonHighlighter.svelte';
 	import { get } from 'lodash';
-	import { getRelayUrl } from '../(utils)/general';
+	import { generateRelayUrlFromPath } from '$utils/routing';
 	import { relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import { dataRegister } from '$stores/data-register';
 	import { delay } from '@nostrwatch/utils';
@@ -21,7 +21,7 @@
 	import CardLimitation from '../(components)/cards/CardLimitation.svelte';
 	import CardNips from '../(components)/cards/CardNips.svelte';
 
-    const relayUrl = getRelayUrl()
+    const relayUrl = generateRelayUrlFromPath()
 
     const nip11: Readable<Nip11> = relayNip11$(relayUrl);
 
@@ -50,8 +50,9 @@
                 throw new Error('Invalid result from schema validation service');
             }
             validationResult.set(result);
-            for (const error of result.result.errors) {
-                setRelayError(relayUrl, 'schema', 'nip11', error.message);
+            for (const err of result.result.errors) {
+                if(!relayUrl) continue;
+                setRelayError(relayUrl, 'schema', 'nip11', err.message);
             }
         })
     }
@@ -71,7 +72,6 @@
     $: lastSyncedTimestamp = StateManager.get(nip11SyncKey)
     $: lastSyncedTimeAgo = lastSyncedTimestamp? timeAgo(lastSyncedTimestamp): 'unknown'
 
-    
 </script>
 
 {typeof $nip11}

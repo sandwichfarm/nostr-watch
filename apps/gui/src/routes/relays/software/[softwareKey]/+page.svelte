@@ -16,7 +16,7 @@
 	import Button from "$ui/button/button.svelte";
 	import { instance } from "$utils/lifecycle";
 	import { parseNote } from "$utils/notes";
-	import { formatRelayUrl } from "$utils/routing";
+	import { generateRelayPathFromUrl } from "$utils/routing";
 	import { clickToCopy, observeViewport } from "$utils/ux";
 	import { NostrEvent, type IEvent } from "@nostrwatch/route66/models";
 	import { deterministicHash } from "@nostrwatch/route66/utils";
@@ -205,7 +205,7 @@
                 {#if $relays.length > 0}
                     <div class="flex flex-wrap gap-2">
                         {#each $relays as check (check)}
-                            <a class="mr-2 mb-1 py-2 px-2 text-md inline-block text-white/80 hover:text-white rounded-sm bg-white/10 hover:bg-white/30" href="/relays/{formatRelayUrl(check.relay)}">{check.relay.replace('wss://', '').replace('ws://')}</a>
+                            <a class="mr-2 mb-1 py-2 px-2 text-md inline-block text-white/80 hover:text-white rounded-sm bg-white/10 hover:bg-white/30" href="/relays/{generateRelayPathFromUrl(check.relay)}">{check.relay.replace('wss://', '').replace('ws://')}</a>
                         {/each}
                     </div>
                 {/if}

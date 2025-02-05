@@ -16,17 +16,9 @@
     
     const nip11: Readable<Nip11> = relayNip11$(relayUrl);
     export let checks: Readable<Nip66CheckEvent[]> = relayLivenessChecks$(relayUrl);
-    
-    const ips: Readable<Record<string, string[]>> = relayIps$(relayUrl)
-    const livenessAggregate: Readable<any> = relayLivenessAggregate$(relayUrl)
+
     const software: Readable<string | undefined> = relaySoftware$(relayUrl)
     const version: Readable<string> = relaySoftwareVersion$(relayUrl)
-    const countryCodes: Readable<IGeocode[]> = relayCountryCodes$(relayUrl)
-    
-    $: alpha2 = Array.from(new Set($countryCodes
-        .filter( ({format, length}) => format === 'alpha' && length === 2 )
-        .map( ({code}) => code)));
-    $: countryNames = alpha2.map( code => getCountryName(code) )
 
 
     const formatValue = (value: any, key?: string): string => {
@@ -61,14 +53,15 @@
         
 </script>
 {#if $nip11}
-    <Card.Root>
+    <Card.Root class="w-full bg-black border-white/10 rounded-[3px]">
         <Card.Header>
-            <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>general</Card.Title>  
+            <Card.Title class='font-mono text-white/80'>general</Card.Title>  
         </Card.Header>  
         <Card.Content>
             <div class="grid grid-cols-3 gap-4">
+                {#if readableSoftware}
                 <div class="bg-purple-500/10 dark:bg-purple-500/10 p-4 rounded-md">
-                    {#if readableSoftware}
+                    
                     <div class="text-md leading-loose font-mono">
                         
                         <div class="">
@@ -86,36 +79,32 @@
                         </div>
                         {/if}
                     </div>
-                    {/if}
                 </div>
+                {/if}
                 <div class="clamp-5">
-                    {#if $ips.ipv4?.length}
-                    <ul class="pl-5">
-                        known ips 
-                        {#each $ips.ipv4 as ip}
-                            <li class="list-disc">
-                                <span class="text-md py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
-                                    {ip}
-                                </span>
-                            </li>
-                        {/each}
-                    </ul>
+                    This relay 
+                    {#if $nip11.requiresPayment}
+                    requires payment
                     {:else}
-                        <div>no IPs</div>
+                    does not require payment
+                    {/if}
+                    and 
+                    {#if $nip11.requiresAuth}
+                    requires NIP-40 auth
+                    {:else}
+                    does not require NIP-40 auth.
                     {/if}
                 </div>
+                {#if $nip11.supportedNips.length}
                 <div class="">
-                    {#if countryNames?.length}
-                        {#each countryNames as country, index}
-                            <div class="text-2xl">{countryCodeToFlagEmoji(alpha2[index])} {country}</div>
-                        {/each}
-                        <span class="text-xs italic text-black/50 dark:text-white/50">
-                            The geographic location of relays is a a best-guess using IP to Location databases. A variety of factors can cause this to be inaccurate.
-                        </span>
-                    {:else}
-                        <div>No geographical location was found</div>
-                    {/if}
+                    This relay supports {$nip11.supportedNips.length} NIPs
                 </div>
+                {/if}
+                {#if Object.keys($nip11?.limitation || {})?.length}
+                <div class="">
+                    This relay has a {Object.keys($nip11.limitation).length} limitations
+                </div>
+                {/if}
             </div>
             
             <!-- <pre>{JSON.stringify(get(relayLivenessAggregate$(relayUrl)),null, 2)}</pre> -->

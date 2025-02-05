@@ -9,7 +9,7 @@ export const filtersDisable: DataKeys = []
 export const columnsShow: DataKeys = ['prettyName', 'count', 'percent', 'softwaresCount']
 export const filtersShow: DataKeys = ['softwares']
 
-export const humanReadableNames: NameFormatter = {
+export const prettyNames: NameFormatter = {
     count: 'Total Relays',
     percent: 'Market Share'
 };
@@ -74,7 +74,7 @@ export const tableRowStyler = (row: Record<string, any>) => {
 }
 
 export default {
-    humanReadableNames,
+    prettyNames,
     tableFormatters,
     filterFormatters,
     columnsDisable,

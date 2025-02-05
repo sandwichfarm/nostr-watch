@@ -81,7 +81,7 @@ export const availableFilterKeys: string[] = [
     "seenTimes"
 ]
 
-export const humanReadableNames: NameFormatter = {
+export const prettyNames: NameFormatter = {
     dd: 'Decimal Degrees',
     geohash: 'Geohash',
     ipv4: 'IPv4',
@@ -306,7 +306,7 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 }
 
 export default {
-    humanReadableNames,
+    prettyNames,
     tableFormatters,
     filterFormatters,
     columnsDisable,

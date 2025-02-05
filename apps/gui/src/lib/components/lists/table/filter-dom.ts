@@ -3,7 +3,7 @@ export type FilterCondition = '=' | '<' | '>' | '!=';
 
 export interface ConsoleFilterBase {
     key: string;
-    humanReadableName: string;
+    prettyName: string;
     mode: 'AND' | 'OR' | 'UNIQUE';
 }
 
@@ -37,7 +37,7 @@ export type ConsoleFilter = BooleanFilter | NumberFilter | StringFilter | ArrayF
 export function createRelayFilters(
     data: any[],
     filtersInclude: string[],
-    humanReadableNames: Record<string, string>,
+    prettyNames: Record<string, string>,
     existingFilters: ConsoleFilter[] = []
 ): ConsoleFilter[] {
     if (data.length === 0) {
@@ -48,7 +48,7 @@ export function createRelayFilters(
     return uniqueKeys
         .map((key) => {
             const existingFilter = existingFilters.find(f => f.key === key);
-            const filter = createFilter(key, data, humanReadableNames, existingFilter);
+            const filter = createFilter(key, data, prettyNames, existingFilter);
             return filter;
         })
         .filter((filter): filter is ConsoleFilter => filter !== null);
@@ -58,11 +58,11 @@ export function createRelayFilters(
 export function createFilter(
     key: string,
     data: any[],
-    humanReadableNames: Record<string, string>,
+    prettyNames: Record<string, string>,
     existingFilter?: ConsoleFilter
 ): ConsoleFilter | null {
     const firstValue = data.find((item) => item[key] !== null && item[key] !== undefined)?.[key];
-    const humanReadableName = humanReadableNames[key] ?? key;
+    const prettyName = prettyNames[key] ?? key;
 
     let mode: 'AND' | 'OR' | 'UNIQUE' = 'OR'; 
 
@@ -83,14 +83,14 @@ export function createFilter(
     if (typeof firstValue === 'boolean') {
         return {
             key,
-            humanReadableName,
+            prettyName,
             type: 'boolean',
             mode,
         };
     } else if (typeof firstValue === 'number') {
         return {
             key,
-            humanReadableName,
+            prettyName,
             type: 'number',
             conditions: ['=', '<', '>', '!='],
             inputValues: {
@@ -105,7 +105,7 @@ export function createFilter(
         const distinctValues = Array.from(new Set(data.map((item) => item[key]).filter((val) => typeof val === 'string')));
         return {
             key,
-            humanReadableName,
+            prettyName,
             type: 'string',
             distinctValues,
             searchTerm: '',
@@ -122,7 +122,7 @@ export function createFilter(
         );
         return {
             key,
-            humanReadableName,
+            prettyName,
             type: 'array',
             distinctValues,
             searchTerm: '',

@@ -18,7 +18,7 @@ export type SortState = {
 }
 
 export type DataTableConfig = { 
-    humanReadableNames: Record<string, string>;
+    prettyNames: Record<string, string>;
     tableRowStyler: (row: any) => string;
 
     availableColumnKeys: string[];
@@ -41,7 +41,7 @@ export type DataTableConfig = {
 }
 
 export const defaultDataTableConfig: DataTableConfig = {
-    humanReadableNames: {},
+    prettyNames: {},
     tableRowStyler: () => '',
 
     availableColumnKeys: [],

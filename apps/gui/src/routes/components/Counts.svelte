@@ -81,6 +81,6 @@
 <div class="flex mt-9 mx-10">
     <!--several blocks on a single row that are equal widths, and for small screen sizes collapse to a single column --> 
     {#each values as { topText, bottomText, value, link }, index}
-        <CountCard {topText} {value} {bottomText} {link} {index} class="w-full md:w-1/3 lg:w-1/6" />
+        <CountCard {topText} {value} {bottomText} {link} {index} class="w-full md:w-1/3 lg:w-1/6" innerClass={'gradient-purple'} />
     {/each}
 </div>

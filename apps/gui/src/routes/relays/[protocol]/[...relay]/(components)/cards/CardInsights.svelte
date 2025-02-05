@@ -76,7 +76,11 @@
 </script>
 
 {#if hasInsights}
-<Card.Root class="w-full bg-gray-900/5 border-white/10 rounded-[3px]">
+<Card.Root 
+    class="
+    w-full bg-black/20 border-white/10 rounded-[3px]
+    "
+    >
     <Card.Header>
         <Card.Title class="flex flex-nowrap">
             <span  class='font-mono text-white/80 flex'>
@@ -100,15 +104,15 @@
             md:grid-cols-2 
             lg:grid-cols-3 
             xl:grid-cols-4
-            mt-1 py-4 px-3 text-black/90 dark:text-white/90 text-xl min-h-96">
+            mt-1 pb-4 text-black/90 dark:text-white/90 text-xl min-h-96">
 
             {#if software}
-                
                 <CountCard 
                     topText="" 
                     value={readable($bubbleType === 'percent'? `${usagePercentageSoftware}%`: `${usageCountSoftware}`)} 
                     bottomText={`${$bubbleType === 'percent'? 'of ': ''}relays use ${readableSoftware}`} 
                     index={0} 
+                    innerClass="gradient-purple"
                     />
             {/if}
 
@@ -118,6 +122,7 @@
                     value={readable($bubbleType === 'percent'? `${usagePercentageVersion}%`: `${usageCountVersion}`)} 
                     bottomText={`${$bubbleType === 'percent'? 'of ': ``} <em>${readableSoftware}</em> relays use ${version}`} 
                     index={1} 
+                    innerClass="gradient-purple"
                     />
             {/if}
 
@@ -127,6 +132,7 @@
                     value={readable(`${usagePercentageGeocode}%`)} 
                     bottomText={`of relays are located in ${geocode} ${countryCodeToFlagEmoji(geocode)}`} 
                     index={2} 
+                    innerClass="gradient-purple"
                     />
             {/if}
 
@@ -136,6 +142,7 @@
                     value={readable(`${usagePercentageIsp}%`)} 
                     bottomText={`of relays use ${isp} as their ISP`} 
                     index={3} 
+                    innerClass="gradient-purple"
                     />
             {/if}
 

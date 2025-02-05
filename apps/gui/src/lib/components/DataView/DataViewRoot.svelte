@@ -45,7 +45,7 @@
             const columns: DataViewColumns[] = $config.columnsShow.map((key: string) => ({
                 id: key,
                 key: key,
-                name: $config.humanReadableNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
+                name: $config.prettyNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
             return { data: $data, columns };
@@ -59,7 +59,7 @@
             if (!$dataExtended.data || !$dataExtended.columns || $dataExtended.columns.length === 0) {
                 return { data: [], columns: [] };
             }
-            const currentRelayFilters: ConsoleFilter[] = createRelayFilters($dataExtended.data, $config.filtersShow, $config.humanReadableNames);
+            const currentRelayFilters: ConsoleFilter[] = createRelayFilters($dataExtended.data, $config.filtersShow, $config.prettyNames);
             const filteredData = applyFilters($dataExtended.data, $filters, currentRelayFilters);
             return { data: filteredData, columns: $dataExtended.columns };
         }

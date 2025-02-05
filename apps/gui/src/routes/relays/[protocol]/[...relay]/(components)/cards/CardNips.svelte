@@ -51,7 +51,7 @@
     $: nipsChunks = chunkArray(supportedNips, 5);
         
 </script>
-<Card.Root class="w-full bg-gray-900/5 border-white/10 rounded-[3px]">
+<Card.Root class="w-full bg-black border-white/10 rounded-[3px]">
     <Card.Header>
         <Card.Title class='font-mono text-white/80'>nips</Card.Title>  
     </Card.Header>  

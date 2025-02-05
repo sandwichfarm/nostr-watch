@@ -39,7 +39,12 @@
     <div class="flex flex-row">
         <div class="flex-shrink">
             <!-- Note the removal of the extra curly braces -->
-            <span class={{indicatorClass}}></span>
+            <span 
+                class:bg-green-500={liveness === RelayLivenessType.Online}
+                class:bg-red-500={liveness === RelayLivenessType.Offline}
+                class:bg-orange-500={liveness === RelayLivenessType.MaybeOffline}
+                class="w-4 h-4 mr-2 mt-1.5 rounded-full block"
+                ></span>
         </div>
         <div class="flex-grow">
             <span class={valueClass}>{liveness}</span>

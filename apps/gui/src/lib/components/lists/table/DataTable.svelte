@@ -52,7 +52,7 @@
             const columns = $config.columnsShow.map((key: string) => ({
                 id: key,
                 key: key,
-                name: $config.humanReadableNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
+                name: $config.prettyNames?.[key] ?? key.charAt(0).toUpperCase() + key.slice(1),
             }));
 
             return { data: $data, columns };
@@ -66,7 +66,7 @@
             if (!$tableData.data || !$tableData.columns || $tableData.columns.length === 0) {
                 return { data: [], columns: [] };
             }
-            const currentRelayFilters: ConsoleFilter[] = createRelayFilters($tableData.data, $config.filtersShow, $config.humanReadableNames);
+            const currentRelayFilters: ConsoleFilter[] = createRelayFilters($tableData.data, $config.filtersShow, $config.prettyNames);
             const filteredData = applyFilters($tableData.data, $filters, currentRelayFilters);
             return { data: filteredData, columns: $tableData.columns };
         }

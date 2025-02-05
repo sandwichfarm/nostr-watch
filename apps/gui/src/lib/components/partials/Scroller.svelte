@@ -3,9 +3,9 @@
   import { onMount } from 'svelte';
 
   export let orientation: 'horizontal' | 'vertical' = 'horizontal';
-  export let autoScroll: boolean = true; // Auto-scroll enabled by default
-  export let speed: number = 40; // Pixels per second (affects CSS duration)
-  export let scrollMode: 'css' | 'js' = 'css'; // New property for scrolling mode
+  export let autoScroll: boolean = true; 
+  export let speed: number = 40; 
+  export let scrollMode: 'css' | 'js' = 'css'; 
   export let className: string = $$props.class;
 
   let outerContainer: HTMLDivElement;
@@ -13,22 +13,19 @@
   let contentWidth = 0;
   let manualOffset = 0;
 
-  // **Calculate auto-scroll duration based on speed**
   function calculateDuration(): string {
-    return `${contentWidth / speed}s`; // Ensures slower speeds = longer duration
+    return `${contentWidth / speed}s`; 
   }
 
-  // **Ensure content width is measured for scrolling calculations**
   function updateContentWidth() {
     if (contentEl) {
-      contentWidth = contentEl.scrollWidth / 2; // We duplicate content for seamless looping
+      contentWidth = contentEl.scrollWidth / 2; 
       if (scrollMode === 'css') {
         contentEl.style.setProperty('--scroll-duration', calculateDuration());
       }
     }
   }
 
-  // **Manual scrolling with buttons (only in JS mode)**
   function scrollPrev() {
     if (scrollMode === 'js') {
       contentEl.scrollBy({ left: -speed * 5, behavior: 'smooth' });
@@ -42,17 +39,16 @@
   }
 
   onMount(() => {
-    setTimeout(updateContentWidth, 100); // Ensures correct content measurement
+    setTimeout(updateContentWidth, 100)
+    setInterval(updateContentWidth, 100); 
   });
 </script>
 
-<!-- **Outer Container (Fixed Size, No Overflow Growth)** -->
 <div 
   bind:this={outerContainer}
   class={`relative w-full overflow-hidden ${className}`}
   style="height: 100%;"
 >
-  <!-- **Content Wrapper (Duplicate Content for Seamless Scroll)** -->
   <div class="absolute inset-0 overflow-hidden px-20">
     <div 
       bind:this={contentEl} 
@@ -64,13 +60,11 @@
     </div>
   </div>
 
-  <!-- **Fixed Gradient Overlays (Always Visible)** -->
   {#if orientation === 'horizontal'}
     <div class="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black to-transparent pointer-events-none z-10"></div>
     <div class="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black to-transparent pointer-events-none z-10"></div>
   {/if}
 
-  <!-- **Fixed Arrow Buttons (Only Shown in JS Mode)** -->
   {#if scrollMode === 'js' && orientation === 'horizontal'}
     <div class="absolute top-1/2 left-2 -translate-y-1/2 z-20">
       <Button on:click={scrollPrev} class="rounded-full p-2 shadow bg-black/50 hover:bg-gray-100">
@@ -86,7 +80,6 @@
 </div>
 
 <style>
-  /* **Smooth, Adjustable Auto-Scroll Animation (Only Active in CSS Mode)** */
   .cssScroll {
     animation: autoScroll var(--scroll-duration, 30s) linear infinite;
   }
@@ -96,12 +89,10 @@
     to   { transform: translateX(-50%); }
   }
 
-  /* **Ensure Buttons and Gradients are Fixed to Viewport** */
   .absolute {
     position: absolute;
   }
   
-  /* **Fix Scrollbar Hiding** */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

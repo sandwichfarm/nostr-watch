@@ -94,6 +94,7 @@
                 </Table.Header>
                 <Table.Body>
                 {#each limitationEntries as [key, value]}
+                    {@const type = typeof value}
                     <Table.Row>
                     <Table.Cell>
                         <span class="font-mono inline-block my-1 py-1 px-2 rounded-sm bg-white/10">{key}</span>
@@ -102,7 +103,18 @@
                         <span class="font-mono inline-block my-1 py-1 px-2 rounded-sm bg-white/10 font-bold">{value}</span>
                     </Table.Cell>
                     <Table.Cell class="text-lg py-3 text-black/70 dark:text-white/70">
-                        {$NIP_11_LIMITATIONS?.[key] || ''}
+                        {#if type === 'boolean'}
+                            <span class="{value === true? '': 'line-through opacity-20'}">
+                                {$NIP_11_LIMITATIONS?.[key] || ''}
+                            </span>
+                        {/if}
+
+                        {#if type === 'number'}
+                            <span class="{value > 0? '': 'line-through opacity-20'}">
+                                {@html $NIP_11_LIMITATIONS?.[key] || ''}
+                            </span>
+                        {/if}
+                        
                     </Table.Cell>
                     </Table.Row>
                 {/each}

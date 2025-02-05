@@ -61,33 +61,12 @@
         
 </script>
 {#if $nip11}
-    <Card.Root>
+    <Card.Root class="w-full bg-black border-white/10 rounded-[3px]">
         <Card.Header>
-            <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>general</Card.Title>  
+            <Card.Title class='font-mono text-white/80'>general</Card.Title>  
         </Card.Header>  
         <Card.Content>
             <div class="grid grid-cols-3 gap-4">
-                <div class="bg-purple-500/10 dark:bg-purple-500/10 p-4 rounded-md">
-                    {#if readableSoftware}
-                    <div class="text-md leading-loose font-mono">
-                        
-                        <div class="">
-                            Software: 
-                            <span class="inline-block mb-2 py-1 px-3 rounded-sm bg-black/10 dark:bg-white/10">
-                                { readableSoftware }
-                            </span>
-                        </div>
-                        {#if $version}
-                        <div class="">
-                            Version: 
-                            <span class="inline-block py-1 px-3 rounded-lg bg-black/10 dark:bg-white/10">
-                                {$version}
-                            </span> 
-                        </div>
-                        {/if}
-                    </div>
-                    {/if}
-                </div>
                 <div class="clamp-5">
                     {#if $ips.ipv4?.length}
                     <ul class="pl-5">

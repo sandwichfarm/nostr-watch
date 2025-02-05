@@ -12,6 +12,7 @@
     export let feedService: Writable<FeedService | null>;
     export let infiniteScroll: boolean = true;
     export let maxWidth: number | undefined = undefined;
+    export let maxHeight: number | undefined = undefined;
     export let noteClamp: number | undefined = undefined; 
     export let parserOptions: ParseConfig = {}; 
 

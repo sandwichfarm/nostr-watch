@@ -18,6 +18,7 @@
     const initializeZapper = () => {
         if(!pubkey || !pubkeyRelays || !npub) return
         const el = document?.getElementById(npub)
+        if(!el) return
         window?.nostrZap?.initTarget(el)
         initialized = true
     }

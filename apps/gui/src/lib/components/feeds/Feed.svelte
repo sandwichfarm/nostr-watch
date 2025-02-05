@@ -19,9 +19,12 @@
 
     export let type: FeedType = 'masonry';
     export let filters: Filter[]; 
+    export let relays: Readable<string[] | undefined>  = undefined;
+
     export let infiniteScroll: boolean = true;
     export let tabbed: boolean = false;
     export let maxWidth: number | undefined = undefined; 
+    export let maxHeight: number | undefined = undefined; 
     export let noteClamp: number | undefined = undefined;  
     export let autoScroll: boolean = false;
     export let parserOptions: ParseConfig = {}; 
@@ -72,7 +75,7 @@
 
         {#if type === 'scroller'}
             <Scroller orientation="horizontal" autoScrollInterval={5000} scrollAmount={200}  {autoScroll}  class="overflow-x-auto overflow-y-hidden">
-                <FeedGrid {items} {feedService} {infiniteScroll} {maxWidth} {noteClamp} {parserOptions} />
+                <FeedGrid {items} {feedService} {infiniteScroll} {maxWidth} {maxHeight} {noteClamp} {parserOptions} />
             </Scroller>
         {/if}
 
@@ -90,6 +93,14 @@
         {#if type === 'tabbed'}
 
         {/if}
+    <!-- {:else} -->
+            <!-- couldn't find any notes 
+            <pre>
+                {JSON.stringify(filters, null, 2)}
+            </pre>
+            <pre>
+                {JSON.stringify(relays, null, 2)}
+            </pre> -->
     {/if}
 
 

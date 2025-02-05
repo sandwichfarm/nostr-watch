@@ -127,36 +127,40 @@ export class DataTable<T> {
 
 	#applySort() {
 		if (!this.#isSortDirty) return;
-
+	
 		const { columnId, direction } = this.#sortState;
 		if (columnId && direction) {
 			const colDef = this.#getColumnDef(columnId);
 			this.#sortedData = [...this.#filteredData].sort((a, b) => {
 				const aVal = this.#getValue(a, columnId);
 				const bVal = this.#getValue(b, columnId);
-
-				if (aVal === undefined || aVal === null || aVal < 0 || aVal == '') return direction === 'asc' ? 1 : -1;
-				if (bVal === undefined || bVal === null || bVal < 0 || aVal == '') return direction === 'asc' ? -1 : 1;
-
+	
+				const isAInvalid = aVal === undefined || aVal === null || aVal < 0 || aVal === '';
+				const isBInvalid = bVal === undefined || bVal === null || bVal < 0 || bVal === '';
+	
+				// Push invalid values to the bottom regardless of sort direction
+				if (isAInvalid && isBInvalid) return 0;
+				if (isAInvalid) return 1; // `a` is invalid, push it down
+				if (isBInvalid) return -1; // `b` is invalid, push it down
+	
 				if (colDef && colDef.sorter) {
 					return direction === 'asc'
 						? colDef.sorter(aVal, bVal, a, b)
 						: colDef.sorter(bVal, aVal, b, a);
 				}
-
+	
 				if (typeof aVal === 'string' && typeof bVal === 'string') {
 					return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
 				}
-
-				if (aVal < bVal) return direction === 'asc' ? -1 : 1;
-				if (aVal > bVal) return direction === 'asc' ? 1 : -1;
-				return 0;
+	
+				return direction === 'asc' ? aVal - bVal : bVal - aVal;
 			});
 		} else {
 			this.#sortedData = [...this.#filteredData];
 		}
 		this.#isSortDirty = false;
 	}
+	
 
 	/**
 	 * Gets or sets the base data rows without any filtering or sorting applied.

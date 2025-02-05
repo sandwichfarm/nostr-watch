@@ -148,6 +148,6 @@ export const NIP_NAMES: Readable<Record<string, string>> = readable({
     "auth_required": "this relay requires NIP-42 authentication to happen before a new connection may perform any other action. Even if set to False, authentication may be required for specific actions.",
     "payment_required": "this relay requires payment before a new connection may perform any action.",
     "restricted_writes": "this relay requires some kind of condition to be fulfilled in order to accept events (not necessarily, but including payment_required and min_pow_difficulty). This should only be set to true when users are expected to know the relay policy before trying to write to it -- like belonging to a special pubkey-based whitelist or writing only events of a specific niche kind or content. Normal anti-spam heuristics, for example, do not qualify.",
-    "created_at_lower_limit": "'created_at' lower limit",
-    "created_at_upper_limit": "'created_at' upper limit"
+    "created_at_lower_limit": `<span class="text-sm font-mono bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">created_at</span>  lower limit`,
+    "created_at_upper_limit": `<span class="text-sm font-mono bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">created_at</span> upper limit`
   })

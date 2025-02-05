@@ -9,7 +9,7 @@ export const filtersDisable: DataKeys = []
 export const columnsShow: DataKeys = ['geocode', 'count', 'percent', 'softwaresCount']
 export const filtersShow: DataKeys = ['count', 'softwaresCount', 'softwares']
 
-export const humanReadableNames: NameFormatter = {};
+export const prettyNames: NameFormatter = {};
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
     if (text.length > maxLength) {
@@ -62,7 +62,7 @@ export const tableRowStyler = (row: Record<string, any>) => {
 }
 
 export default {
-    humanReadableNames,
+    prettyNames,
     tableFormatters,
     filterFormatters,
     columnsDisable,

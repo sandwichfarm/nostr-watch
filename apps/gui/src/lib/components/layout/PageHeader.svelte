@@ -14,7 +14,7 @@
 </script>
 <header
   id="relay-header"
-  class="relative bg-center bg-cover bg-no-repeat px-3 pb-10 bg-black/20 dark:!bg-white/5 pt-20"
+  class="relative bg-center bg-cover bg-no-repeat px-3 pb-10 gradient-purple pt-24"
   style={banner? `background: linear-gradient(rgba(0, 0, 0, ${bgOpacity}), rgba(0, 0, 0, ${bgOpacity})),  url('${banner}'); 
     background-repeat: no-repeat; 
     background-size: cover;`: ''}

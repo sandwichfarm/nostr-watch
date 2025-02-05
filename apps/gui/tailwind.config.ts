@@ -132,10 +132,10 @@ const config: Config = {
 				'@apply from-yellow-600/5 to-yellow-600/30': {},
 			  },
 			  '.gradient-orange': {
-				'@apply bg-gradient-to-br from-orange-300/5 to-orange-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+				'@apply bg-gradient-to-br from-orange-300/5 to-orange-300/30 transition-all duration-1000 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
 			  },
 			  '.dark .gradient-orange': {
-				'@apply from-orange-600/5 to-orange-600/30': {},
+				'@apply from-orange-600/50 to-orange-600/80': {},
 			  },
 			  '.gradient-red': {
 				'@apply bg-gradient-to-br from-red-300/5 to-red-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},

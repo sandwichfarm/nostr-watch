@@ -12,7 +12,8 @@
   $: isHomepage = $page.url.pathname === '/'
 </script> 
 {#if isHomepage}
-  <section class="h-[420px] pt-16 bg-black/5 dark:bg-white/5 flex flex-col justify-center items-center relative z-[200]">
+  <section class="h-[420px] pt-16 gradient-purple flex flex-col justify-center items-center relative z-[200]">
+    <div class="white/20 dark:bg-white/5 absolute top-0 right-0 left-0 bottom-0"></div>
     <h1 class="w-full text-center text-3xl mb-4 max-w-[600px]">nostr.watch is a client for browsing, testing and researching nostr relays.</h1>
     <div class="w-full max-w-xl">
       <AutoSuggestRelaysCompact 

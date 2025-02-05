@@ -87,7 +87,7 @@
         const { data } = $dataExtended;
         if(!data) return;
         buildInvertedIndex(data, filtersInclude);
-        const initialFilters = createRelayFilters(data, filtersInclude, $config.humanReadableNames);
+        const initialFilters = createRelayFilters(data, filtersInclude, $config.prettyNames);
         relayFilters.set(initialFilters);
         const initialShowAll: Record<string, boolean> = {};
         initialFilters.forEach( (filter: any) => {
@@ -573,7 +573,9 @@
                     <!-- **Accordion Trigger Layout with Active Filters Badge and List** -->
                     <div class="flex items-center w-full text-sm py-3 px-2">
                         <!-- Filter Title -->
-                        <span class="flex-shrink-0 overflow-hidden text-ellipsis">{filter.humanReadableName}</span>
+                        <span class="flex-shrink-0 overflow-hidden text-ellipsis font-mono">
+                            {filter.prettyName}
+                        </span>
                         
                         {#if activeFilters[filter.key]}
                             <!-- Badge with Count -->
@@ -618,7 +620,7 @@
                     <div class="w-max-[100px] mb-2">
                         <Input
                             type="text"
-                            placeholder={`Search ${filter.humanReadableName}`}
+                            placeholder={`Search ${filter.prettyName}`}
                             on:input={(e) => {
                                 if (e.target instanceof HTMLInputElement) {
                                     const searchTerm = e.target.value;
@@ -689,7 +691,7 @@
                             <div class="w-max-[100px] mb-2">
                                 <Input
                                     type="text"
-                                    placeholder={`Search ${filter.humanReadableName}`}
+                                    placeholder={`Search ${filter.prettyName}`}
                                     bind:value={filter.searchTerm}
                                     on:input={(e) => {
                                         filter.searchTerm = e.target.value;
@@ -741,7 +743,7 @@
                             <div class="w-max-[100px] mb-2">
                                 <Input
                                     type="text"
-                                    placeholder={`Search ${filter.humanReadableName}`}
+                                    placeholder={`Search ${filter.prettyName}`}
                                     bind:value={filter.searchTerm}
                                     on:input={(e) => {
                                         filter.searchTerm = e.target.value;
@@ -791,7 +793,7 @@
                             <div class="number-filter-option">
                                 <Input
                                     type="number"
-                                    placeholder={`${condition} ${filter.humanReadableName}`}
+                                    placeholder={`${condition} ${filter.prettyName}`}
                                     on:input={(e) => {
                                         if (e.target instanceof HTMLInputElement) {
                                             const inputValue = parseFloat(e.target.value);

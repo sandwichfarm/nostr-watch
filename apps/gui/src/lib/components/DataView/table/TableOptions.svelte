@@ -40,7 +40,7 @@
                 value={key}
                 class="mr-2"
             />
-            {$config?.humanReadableNames?.[key] || capitalize(key)}
+            {$config?.prettyNames?.[key] || capitalize(key)}
         </li>
     {/each}
 </ul>

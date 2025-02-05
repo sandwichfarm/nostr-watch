@@ -7,7 +7,7 @@ export const filtersDisable: DataKeys = []
 export const columnsShow: DataKeys = ['name', 'totalDeployed', 'versionsNum', 'marketShare']
 export const filtersShow: DataKeys = ['version']
 
-export const humanReadableNames: NameFormatter = {
+export const prettyNames: NameFormatter = {
     totalDeployed: 'Total Relays',
     versionsNum: 'Versions',
     marketShare: 'Market Share'
@@ -47,7 +47,7 @@ export const filterFormatters: Formatters = {
 }
 
 export default {
-    humanReadableNames,
+    prettyNames,
     tableFormatters,
     filterFormatters,
     columnsDisable,

@@ -4,11 +4,12 @@ import { onMount } from "svelte";
 	import { writable, type Readable, type Writable } from "svelte/store";
 	import { fly, fade } from "svelte/transition";
 
-	export let topText: string;
+	export let topText: string | undefined = undefined;
 	export let value: Readable<string | number | null>;
-	export let link: string;
-	export let bottomText: string;
+	export let link: string | undefined = undefined;
+	export let bottomText: string | undefined = undefined;
     export let index: number = 0;
+	export let innerClass: string | undefined = undefined;
 
     let show: Writable<boolean> =  writable(false);
 
@@ -21,16 +22,25 @@ import { onMount } from "svelte";
 
 <div class="{$$restProps.class || ''} grid hp-card-wrapper">
 	<AlwaysSquare>
-	<div class="hp-card">
+	<div class="hp-card {innerClass? innerClass: 'bg-white/10 dark:bg-black/10'}">
 		
 		{#if $show && $value !== null && $value !== undefined}
 			<div class="content" in:fade>
                 <div in:fly={{ y: 20, duration: 300 }}>
+					{#if topText}
                     <div class="label text-center px-4">{@html topText}</div>
+					{/if}
                     <div class="value text-7xl font-bold text-center">
-                        <a href={link}>{$value}</a>
+						{#if link}
+							<a href={link}>{@html $value}</a>
+						{:else}
+							{@html $value}
+						{/if}
+                        
                     </div>
+					{#if bottomText}
                     <div class="label text-center px-4">{@html bottomText}</div>
+					{/if}
                 </div>
 			</div>
 		{/if}
@@ -48,7 +58,7 @@ import { onMount } from "svelte";
 		@apply 
 			flex
 			border-white/5 border-[2px] 
-			bg-white/10 dark:bg-black/10 hover:bg-white/15 
+			 hover:bg-white/15 
 			rounded-md
 			items-center justify-center
 			shadow-start hover:shadow-end transition-shadow duration-200 

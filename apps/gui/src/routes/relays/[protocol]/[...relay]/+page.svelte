@@ -16,6 +16,8 @@
 	import CardGeneral from './(components)/cards/CardGeneral.svelte';
 	import CardNips from './(components)/cards/CardNips.svelte';
 	import CardLimitation from './(components)/cards/CardLimitation.svelte';
+	import CardNip11 from './(components)/cards/CardNip11.svelte';
+    import CardFees from './(components)/cards/CardFees.svelte';
 
     export let relayData: any;
 
@@ -39,6 +41,10 @@
 <div class="space-y-6">
     <CardGeneral />
 
+    <CardNip11 />
+
+    <CardFees />
+
     {#if $operatorPubkey}
     <CardOperator 
         {relayUrl} 
@@ -46,9 +52,9 @@
         />
     {/if}
 
-    <CardLimitation />
+    <!-- <CardLimitation />
 
-    <CardNips />
+    <CardNips /> -->
 
     <CardInsights />
 

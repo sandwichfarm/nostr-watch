@@ -37,6 +37,12 @@
 
   window.process = process;
 
+  if ('serviceWorker' in navigator) {
+    addEventListener('load', function () {
+      navigator.serviceWorker.register('$src/service-worker/index.js'); 
+    });
+  }
+
   const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
   let isReady = false;

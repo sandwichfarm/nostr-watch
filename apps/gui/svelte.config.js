@@ -16,7 +16,8 @@ const config = {
 			"$routes": "./src/routes",
       "$relay": './src/routes/relays/[protocol]/[...relay]',
       "$relays": './src/routes/relays',
-			"$lib": "./src/lib"
+			"$lib": "./src/lib",
+      "$src": "./src"
     },
     adapter: adapter({
       pages: "dist",

@@ -60,8 +60,8 @@
             returnResults: true
         }
         let results = await route66.adapters?.websocketAdapter?.subscribe({relays, filters, options});
-        results = results.map((ev: IEvent) => new NostrEvent(ev))
-        if(results.length) {
+        if(results?.length) {
+            results = results.map((ev: IEvent) => new NostrEvent(ev))
             wiki.set(new NostrEvent(results?.[0]));
         }
         

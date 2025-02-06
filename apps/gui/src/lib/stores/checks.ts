@@ -31,7 +31,9 @@ export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($ov
     "banner",
     "seenBy",
     "lastSeen",
-    "seenTimes"
+    "seenTimes",
+    "monitorPubkey",
+    "operatorPubkey"
   ]
   const derivedKeys = [
     'nip11IsValid', 

@@ -10,10 +10,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
-    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname.endsWith('nostr.watch')) {
         return;
     }
-    console.log('Service Worker fetch event', event.request.url);
     if (url.pathname.match(/\.(webp|jpg|png|gif|svg|jpeg|well-known)$/)) {
         event.respondWith(
             fetch(event.request)

@@ -15,7 +15,7 @@
 		if (profile) {
 			const unsubscribe = profile.subscribe((p) => {
 				if (p?.photo) {
-					fetchWithTimeout(p.photo, 3000) // 3 seconds timeout
+					fetchWithTimeout(p.photo, 10000)
 						.then(() => {
 							photo = p.photo;
 							loading = false;

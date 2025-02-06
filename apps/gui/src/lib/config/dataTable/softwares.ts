@@ -1,4 +1,4 @@
-import type { DataKeys, Formatters, NameFormatter } from '$lib/components/DataView/DataTableTypes';
+import type { DataKeys, Formatters, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 import { makeSoftwareReadable } from '$lib/synonyms/software';
 
 export const columnsDisable: DataKeys = []

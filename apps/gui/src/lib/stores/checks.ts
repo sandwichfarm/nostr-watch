@@ -7,13 +7,52 @@ interface Check {
   [id: string]: any;
 }
 
-import { events, eventsArray, type StoreEventType } from './events.js';
+import { eventsArray } from './events.js';
 
 import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache, isBootstrapping } from "./app.js";
 import { throttledDerived } from "$utils/stores.js";
 import { nip11ValidationErrorCount } from "./nip11-validations.js";
+
+let nip11Errors: Map<string, number> = new Map();
+
+nip11ValidationErrorCount.subscribe((value) => {
+  nip11Errors = value;
+})
+
+export const overrideRelayChecksActiveKeys: Writable<string[]> = writable([]);
+
+export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($overrideRelayChecksActiveKeys) => {
+  const alwaysKeys = [
+    "relay",
+    "created_at",
+    "icon",
+    "banner",
+    "seenBy",
+    "lastSeen",
+    "seenTimes"
+  ]
+  const derivedKeys = [
+    'nip11IsValid', 
+    'nip11ValidationErrors'
+  ]
+  let keys = []
+  if($overrideRelayChecksActiveKeys.length) { 
+    keys = [ 
+      ...alwaysKeys,
+      ...$overrideRelayChecksActiveKeys
+    ]
+  }
+  else {
+    keys = [
+      ...alwaysKeys,
+      ...Nip66CheckEvent.keys,
+      ...derivedKeys
+    ]
+  }
+  return Array.from(new Set(keys))
+})
 
 export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const countMap: Record<
@@ -68,7 +107,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
 
   Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
-      [...Nip66CheckEvent.keys, 'seenTimes', 'nip11IsValid', 'nip11ValidationErrors'].forEach((key: string) => {
+      get(relayChecksActiveKeys).forEach((key: string) => {
         const value = nip66Event[key];
         
         const isNonNull = value !== null && value !== undefined;
@@ -77,18 +116,19 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
         const isAccArray = Array.isArray(acc[key]);
 
         if(key === 'nip11ValidationErrors'){
-          const nip11ValidationErrors = get(nip11ValidationErrorCount).get(relay)
+          const nip11ValidationErrors = nip11Errors.get(relay)
           acc.nip11ValidationErrors = nip11ValidationErrors? nip11ValidationErrors: 0;
           return acc
         }
         else if(key === 'nip11IsValid'){
-          const nip11ValidationErrors = get(nip11ValidationErrorCount).get(relay)
-          if(typeof nip11ValidationErrors === 'undefined') {
-            acc.nip11IsValid = null;
+          const nip11ValidationErrors = nip11Errors.get(relay)
+          if(typeof nip11ValidationErrors === 'number') {
+            acc.nip11IsValid = nip11ValidationErrors === 0? true: false;  
           }
           else {
-            acc.nip11Isvalid = nip11ValidationErrors === 0? true: false;  
+            acc.nip11IsValid = null;
           }
+          
           return acc
         }
         else if(key === 'seenTimes') {
@@ -141,6 +181,8 @@ export const eventsChecks: Readable<Nip66CheckEvent[]> = derived(eventsArray, ($
   return $events.filter(event => event.kind === 30166) as Nip66CheckEvent[];
 })
 
+
+
 export const relayChecks: Readable<
   Record<string, { a: Record<string, any>; checks: Check[]; aggregate?: any }>
 > = derived(eventsChecks, ($eventsChecks) => {
@@ -148,7 +190,7 @@ export const relayChecks: Readable<
   return relayCheckAggregator($eventsChecks);
 });
 
-export const relayCheckAggregates: Readable<any[]> = throttledDerived(relayChecks, ($relayChecks) => {
+export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
   let aggregates = Object.entries($relayChecks).map(([relay, item], index) => {
     try {
       relay = new URL(relay).toString();
@@ -161,7 +203,7 @@ export const relayCheckAggregates: Readable<any[]> = throttledDerived(relayCheck
       ...item.aggregate,
       id: index
     }
-  }, 100);
+  });
   
   const $isBootstrapping = get(isBootstrapping)
   const agg = StateManager.get('aggregate:complete');

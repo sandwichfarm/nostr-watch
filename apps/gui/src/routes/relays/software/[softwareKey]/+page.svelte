@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/stores";
-	import MapHeat from "$lib/components/DataView/map/MapHeat.svelte";
+	import MapHeat from "$lib/components/data-view/map/MapHeat.svelte";
 	import FeedNoteContent from "$lib/components/feeds/FeedNoteContent.svelte";
 	import BlockStandard from "$lib/components/layout/blocks/BlockStandard.svelte";
 	import PageHeader from "$lib/components/layout/PageHeader.svelte";

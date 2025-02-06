@@ -5,7 +5,7 @@ import { get } from 'svelte/store';
 import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 import { validNip05s } from '$lib/stores/nip05s.js';
 import { activeMonitorChecksCount } from '$lib/stores';
-import type { DataKeys, Formatters, NameFormatter } from '$lib/components/DataView/DataTableTypes';
+import type { DataKeys, Formatters, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 
 export const normalizeKeys = (keys: DataKeys | string) => {
     if(typeof keys === 'string') 

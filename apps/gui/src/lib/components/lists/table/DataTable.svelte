@@ -107,7 +107,6 @@
     }
 
     const createTable = (force: boolean = false) => {
-        console.log('Creating DataTable instance...');
         const tableInstanceConfig: any = {
             pageSize: $config.pageSize,
             columns: $filteredTableData.columns,
@@ -166,7 +165,7 @@
         })
         const unsubTableConfig = config.subscribe( () =>  setTimeout( () => createTable(true), 10 ) );
         while($filteredTableData.data.length === 0) {
-            await new Promise(r => setTimeout(r, 50));
+            await new Promise(r => setTimeout(r, 100));
         }
         createTable();
         if($config.sidebarCollapsed){

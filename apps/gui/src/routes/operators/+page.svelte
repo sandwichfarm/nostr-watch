@@ -14,7 +14,7 @@
 	import { bootstrapOperatorsMeta, canSeedFromCache, instance } from '$lib/utils/lifecycle';
 	import { seedMetaFromCache } from '$lib/utils/lifecycle';
 	import { dataRegister } from '$stores/data-register';
-	import DataViewRoot from '$lib/components/DataView/DataViewRoot.svelte';
+	import DataViewRoot from '$lib/components/data-view/DataViewRoot.svelte';
 
     let DataTable: DataTableType;
     const componentsLoaded: Writable<boolean> = writable(false);

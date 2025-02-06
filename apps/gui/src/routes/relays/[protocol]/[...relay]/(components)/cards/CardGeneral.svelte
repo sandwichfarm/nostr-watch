@@ -207,9 +207,11 @@
                     <span class="font-mono py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
                         Geohash: {$livenessAggregate?.geohash}
                     </span>
+                    {#if $livenessAggregate?.dd?.lat && $livenessAggregate?.dd?.lon}
                     <span class="font-mono py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
                         lat/lon: {$livenessAggregate?.dd.lat.toFixed(5)}, {$livenessAggregate?.dd.lon.toFixed(5)}
                     </span>
+                    {/if}
                     <span class="block text-xs italic text-black/50 dark:text-white/50">
                         The geographic location of relays is a a best-guess using IP to Location databases. A variety of factors can cause this to be inaccurate.
                     </span>

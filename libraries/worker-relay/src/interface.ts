@@ -25,7 +25,7 @@ export class WorkerRelayInterface {
   #commandQueue: Map<string, (v: unknown, ports: ReadonlyArray<MessagePort>) => void> = new Map();
 
   // Command timeout
-  timeout: number = 30_000;
+  timeout: number = 5_000;
 
   /**
    * Interface wrapper for worker relay

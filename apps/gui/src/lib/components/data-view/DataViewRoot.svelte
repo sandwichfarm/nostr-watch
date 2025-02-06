@@ -5,7 +5,7 @@
     import Filters from './filters/DataViewFilters.svelte'; 
     import { applyFilters, createRelayFilters, type ConsoleFilter } from './filters/filter-dom.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
-    import DataTable from '$lib/components/DataView/table/DataTable.svelte';
+    import DataTable from '$lib/components/data-view/table/DataTable.svelte';
 
 	import Button from '$lib/components/ui/button/button.svelte';
 	import type { DataTableConfig } from './DataTableTypes.svelte';
@@ -28,7 +28,6 @@
     
     // **Stores and Reactive Variables**
     const filters = writable({});
-
 
     const dataExtended: Readable<DataViewData> = derived(
         [data, config],

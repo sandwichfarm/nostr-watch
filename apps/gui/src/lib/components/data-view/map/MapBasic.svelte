@@ -22,6 +22,7 @@
                 }
             })
     }, 1000)
+    
     const style = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
     const renderer = 'raster'
     const pointLatitude = (d: MapPointDataRecord) => d?.dd.lat

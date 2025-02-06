@@ -5,7 +5,7 @@
     import * as Resizable from '$lib/components/ui/resizable'; 
     import DataTableShowResults from './DataTableShowResults.svelte';
     import DataTablePaginator from './DataTablePaginator.svelte';
-    import { applyFilters, createRelayFilters, type ConsoleFilter } from '$lib/components/DataView/filters/filter-dom.js';
+    import { applyFilters, createRelayFilters, type ConsoleFilter } from '$lib/components/data-view/filters/filter-dom.js';
     import { Input } from '$lib/components/ui/input/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
@@ -89,7 +89,6 @@
     }
 
     const createTable = (force: boolean = false) => {
-        console.log('Creating DataTable instance...');
         const tableInstanceConfig: any = {
             pageSize: $config.pageSize,
             columns: $columns,
@@ -123,7 +122,6 @@
         return cachable;
     }
 
-    // **DataTable Subscription**
     onMount(async (): Promise<any> => {
         const unsubConfig = config.subscribe( (newConfig: DataTableConfig) => {
             StateManager.set(`preferences:${dataKey}:tableConfig`, cachableConfig(newConfig));
@@ -132,8 +130,10 @@
             }
         })
         const unsubTableConfig = config.subscribe( () =>  setTimeout( () => createTable(true), 10 ) );
-        while($data.length === 0) {
-            await new Promise(r => setTimeout(r, 50));
+        let timedOut = false;
+        const interval = setInterval(() => timedOut = true, 5000);
+        while($data.length === 0 && !timedOut) {
+            await new Promise(r => setTimeout(r, 100));
         }
         createTable();
         if($config.sidebarCollapsed){

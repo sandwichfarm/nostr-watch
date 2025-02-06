@@ -36,9 +36,7 @@
     let timedOut = false;
 
     const ready = async () => {
-        const timeout = setTimeout(() => {
-            timedOut = true;
-        }, 5000);
+        const timeout = setTimeout(() => timedOut = true, 5000);
         while(!$nip11 && !timedOut){
             await delay(100);
         }

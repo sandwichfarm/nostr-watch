@@ -22,6 +22,8 @@ export type SortState = {
     direction: 'asc' | 'desc' | null
 }
 
+export type DataTableConfigDependencies = Record<string, string[]>
+
 export type DataTableConfig = { 
     prettyNames: NameFormatter;
     tableRowStyler: (row: any) => string;
@@ -43,6 +45,8 @@ export type DataTableConfig = {
 
     maxBadgeLength: number;
     pageSize: number;
+
+    dataDependencies?: DataTableConfigDependencies;
 }
 
 export const defaultDataTableConfig: DataTableConfig = {

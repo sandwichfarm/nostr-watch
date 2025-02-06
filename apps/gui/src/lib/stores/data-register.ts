@@ -14,6 +14,7 @@ import type { Nip11 } from "@nostrwatch/route66/models/Nip11";
 import { relayNip11Validations } from "./nip11-validations";
 import { page } from "$app/stores";
 import { relayLiveSync } from "$utils/live-sync";
+import { SYNC_CHECKS_EXPIRY, SYNC_MONITORS_EXPIRY, SYNC_NIP11_EXPIRY, SYNC_OPERATORS_EXPIRY, SYNC_RELAY_ALL_EXPIRY, SYNC_RELAY_CHECKS_EXPIRY, SYNC_RELAY_NIP11_EXPIRY, SYNC_RELAY_OPERATOR_EXPIRY, VALIDATE_NIP11S_EXPIRY } from "$lib/constants/synchronization";
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
@@ -44,18 +45,21 @@ export const dataRegisterInit = async () => {
     data.register({
         key: 'sync:relay:checks',
         priority: 10,
+        expiry: SYNC_RELAY_CHECKS_EXPIRY,
         keyFn: relayKeyFn,
         fn: fetchRelayChecks
     });
     data.register({
         key: 'sync:relay:nip11',
         priority: 11,
+        expiry: SYNC_RELAY_NIP11_EXPIRY,
         keyFn: relayKeyFn,
         fn: fetchRelayNip11
     });
     data.register({
         key: 'sync:relay:operator',
         priority: 12,
+        expiry: SYNC_RELAY_OPERATOR_EXPIRY,
         keyFn: relayKeyFn,
         fn: fetchRelayOperator
     });
@@ -70,27 +74,27 @@ export const dataRegisterInit = async () => {
     data.register({
         key: 'sync:monitors',
         priority: 20,
-        expiry: "45m",
+        expiry: SYNC_MONITORS_EXPIRY,
         fn: fetchMonitors,
         onComplete: publishEventsToMemoryRelay
     });
     data.register({
         key: 'sync:checks',
         priority: 21,
-        expiry: "30m",
+        expiry: SYNC_CHECKS_EXPIRY,
         fn: fetchMonitorsChecks,
         onComplete: publishEventsToMemoryRelay
     });
     data.register({
         key: 'sync:nip11s',
         priority: 22,
-        expiry: "24h",
+        expiry: SYNC_NIP11_EXPIRY,
         fn: fetchNip11s
     });
     data.register({
         key: 'sync:operators',
         priority: 23,
-        expiry: "30m",
+        expiry: SYNC_OPERATORS_EXPIRY,
         condition: async () => !get(isSeeded), 
         fn: fetchOperators,
         onComplete: publishEventsToMemoryRelay
@@ -104,19 +108,20 @@ export const dataRegisterInit = async () => {
 
     data.register({
         key: 'validate:nip11s',
-        expiry: "1h",    
+        expiry: VALIDATE_NIP11S_EXPIRY,    
         priority: 200,
         fn: async () => {
             const validator = new SchemaValidationService();
             const validationsMap = new Map();
             const keysIndex: string[] = []
             const promises: Promise<SchemaValidationServiceResponse>[] = [];
-            get(nip11s).forEach(async (n11Entry, relay) => {
+            for( const [relay, n11Entry] of Array.from(get(nip11s).entries()) ){
                 keysIndex.push(relay)
                 const json = n11Entry?.[0]?.json
                 if(!json) return
                 promises.push(validator.validateNip11(json))
-            })
+                await delay(10)
+            }
             const validations = await Promise.all(promises);
             validations.forEach( (validation, index) => {
                 validationsMap.set(keysIndex[index], validation)
@@ -158,6 +163,7 @@ export const dataRegisterInit = async () => {
         key: 'sync:all',
         keys: ['sync:monitors', 'sync:checks', 'sync:nip11s', 'sync:operators', 'sync:live'],
         priority: -10,
+        expiry: SYNC_RELAY_ALL_EXPIRY,
         onComplete: async () => isBootstrapped.set(true),
         ignoreConditions: {},
         ignoreExpiries: {}

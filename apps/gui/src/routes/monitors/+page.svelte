@@ -35,12 +35,12 @@
 		ready.set(true)
 	}
 
-    onMount(async () => {
+    onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
-        await $dataRegister.require([
+        $dataRegister.require([
         	'sync:cache',
         	'sync:monitors',
             'sync:checks',

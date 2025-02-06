@@ -85,7 +85,7 @@ export class DataRegister {
 
     async ready(){
         while(!this._ready) {
-            await new Promise(resolve => setTimeout(resolve, 200))
+            await new Promise(resolve => setTimeout(resolve, 100))
         }
     }
 

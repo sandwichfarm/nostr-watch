@@ -1,6 +1,6 @@
 <script lang="ts">
-    	import { onMount } from "svelte";
-        import { debounce } from "lodash";
+    import { onMount, onDestroy } from "svelte";
+    import { debounce } from "lodash";
 
 	import { events, nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayCheckAggregates } from "$lib/stores";
 	import { isLivesyncing } from "$lib/stores/app";
@@ -156,6 +156,8 @@
         debugCacheAdapter()
         debugStores()
     })
+
+    onDestroy( () => clearInterval(debugRoute66) )
 
     setInterval(debugRoute66, 1000*1);
 

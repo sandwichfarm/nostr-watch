@@ -13,9 +13,11 @@ import type { Nip11Fee } from '@nostrwatch/route66/models/Nip11';
 import type { DD } from '@nostrwatch/route66/models/Geocoded';
 import { Nip66CheckEvent, PubkeyProfile } from '@nostrwatch/route66/models';
 import { pubkeyProfile, pubkeyUserInstance } from '$lib/stores/helpers/helpers-pubkey';
-import type { NameFormatter } from '$lib/components/DataView/DataTableTypes';
+import type { DataTableConfigDependencies, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 import { nip11 } from 'nostr-tools';
 import { nip11ValidationErrorCount } from '$stores/nip11-validations';
+
+import pickaxe from 'lucide-svelte/icons/pickaxe';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -240,6 +242,15 @@ const formatFee = (fees: Nip11Fee[]) => {
     return str;
 }
 
+export const dataDependencies: DataTableConfigDependencies = {
+    'nip11IsValid': ['hasNip11'],
+    'nip11ValidationErrors': ['hasNip11'],
+    'powRequired': ['minPowDifficulty'],
+    'hasBanner': ['banner'],
+    'hasIcon': ['icon'],
+    'operatorPubkeyValid': ['operatorPubkey']
+}
+
 export const tableFormatters: Formatters = {
     relay: (relay: string, row: any) => {
         const { icon } = row;
@@ -300,7 +311,7 @@ export const tableFormatters: Formatters = {
     },
 
 
-    seenBy: (pubkeys: string[], row: any): string => {
+    seenBy: (pubkeys: string[]): string => {
         let str = '<div class="flex items-center whitespace-nowrap">';
         let i = 0;
         let z = 500;
@@ -348,22 +359,33 @@ export const tableFormatters: Formatters = {
         return output;
     },
     paymentRequired: (r) => {
-        const text = r? 'yes': 'no'
+        const text = r? 'yes': ''
         const style = r? '': 'text-opacity-50'
         return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
     },	
     authRequired: (r) => {
-        const text = r? 'yes': 'no'
+        const text = r? 'yes': ''
         const style = r? '': 'text-opacity-50'
         return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
     },
     powRequired: (r) => {
+        const text = r? 'yes': ''
+        const style = r? '': 'text-opacity-50'
+        return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
+    },
+    minPowDifficulty: (r) => {
         if(!r) return ''
-        return `<span class="text-xs font-bold">${r}</span>`
+        return `<span class="text-xs font-bold">⛏ ${r}</span>`
     },
     hasNip11: (r) => {
         if(!r) return ''
         return `<img class="text-green" src="${IconBadgeCheckGreen}" />`
+    },
+    nip11IsValid: (valid: boolean, row: any) => {
+        if(!row.hasNip11) return '<span class="opacity-20">n/a</span>';
+        return valid
+                    ? `<span class="text-green-600">✓</span>`
+                    : `<span class="text-red-500">✗</span>`;
     },
     operatorPubkey: (pk: string): string => {
         if(!pk) return '';

@@ -26,11 +26,14 @@ export const fetchRelayOperator = async (relay: string): Promise<IEvent[]> => {
     const checksReadable = relayLivenessChecks$(relay)
     const $nip11s = get(nip11sReadable)
     const $checks = get(checksReadable)
-    while($nip11s === undefined || $checks === undefined) {
+    let timedOut = false    
+    setTimeout(() => timedOut = true, 5000)
+    while( ($nip11s === undefined || $checks === undefined) && !timedOut) {
         await delay(100)
     }
-    const operatorPubkey = $nip11s[0]?.pubkey ?? $checks.find(check => check.operatorPubkey)?.pubkey
-    if(!operatorPubkey) return
+    if(timedOut) return []
+    const operatorPubkey = $nip11s?.[0]?.pubkey ?? $checks.find(check => check.operatorPubkey)?.pubkey
+    if(!operatorPubkey) return []
     return fetchOperators([operatorPubkey])
 }
 

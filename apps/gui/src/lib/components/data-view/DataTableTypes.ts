@@ -10,6 +10,11 @@ export type NameFormats = {
     short?: string,
 }
 
+export type DataFormatters = Record<string, DataFormatter>;
+export type DataFormatter = {
+    (value: any, value2?: any): string | number | boolean | number[] | string[] | null;
+}
+
 export type Formatters = Record<string, Formatter>;
 export type DataKeys = string[];
 
@@ -29,9 +34,11 @@ export type DataTableConfig = {
     tableRowStyler: (row: any) => string;
 
     availableColumnKeys: string[];
-    tableFormatters: Formatters;
     columnsDisable: string[];
     columnsShow: string[];
+
+    tableFormatters: Formatters;
+    filterDataFormatters: Formatters;
 
     availableFilterKeys: string[];
     filtersDisable: string[];

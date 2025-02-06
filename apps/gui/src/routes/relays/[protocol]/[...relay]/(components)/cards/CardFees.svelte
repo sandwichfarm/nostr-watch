@@ -24,6 +24,9 @@
     // export let paymentUrl: string | undefined;
 
     const commaOrAnd = (index: number, length: number) => {
+        if(length === 1){
+            return '';
+        }
         if(index === length - 1){
             return ' and ';
         }

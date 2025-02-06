@@ -85,17 +85,13 @@ export class TabLifecycle {
     this.onTabActiveHandler();
   }
 
-  public onTabInactive(fn: Handler) {
-    this.onTabInactiveHandler = async () => {
-      // Call the provided handler
-      await fn();
-  
-      // If the tab is the leader, release leadership when inactive
-      if (this.isLeader) {
-        console.log('[TabLifecycle] Tab inactive, releasing leadership.');
-        await this.releaseLeadership();
-      }
-    };
+  public async onTabInactive(fn: Handler) {
+    await this.onTabInactiveHandler();
+    // If the tab is the leader, release leadership when inactive
+    if (this.isLeader) {
+      console.log('[TabLifecycle] Tab inactive, releasing leadership.');
+      await this.releaseLeadership();
+    }
   }
   
 

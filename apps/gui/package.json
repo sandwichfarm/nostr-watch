@@ -140,6 +140,7 @@
 		"process": "^0.11.10",
 		"radix-svelte": "^0.9.0",
 		"surrealdb": "^1.0.6",
+		"svelte-dnd-action": "^0.9.57",
 		"svelte-geolocation": "^1.0.0",
 		"svelte-headless-table": "^0.18.3",
 		"svelte-masonry": "^0.1.1",

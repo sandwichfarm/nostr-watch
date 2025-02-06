@@ -94,7 +94,6 @@
       setTabState('follower');
       await lifecycle.acquireLeadership();
       if (get(unsupported)) return;
-
       setTabState('leader');
       await boot();
       idleDetector?.reset?.();
@@ -283,11 +282,7 @@
   </div>
 {:else}
   {#if isReady}
-    {#if $tabState === 'idle'}
-      <div class="flex items-center justify-center h-screen">
-        <div class="text-2xl">Zzz</div>
-      </div>
-    {:else if $tabState === 'leader'}
+    {#if $tabState === 'leader'}
       {#if loadedEnough}
       <Header />
       <div id="content-wrapper" class="block">
@@ -298,6 +293,10 @@
         <ActivityList />
       </div>
       {/if}
+    {:else if $tabState === 'idle'}
+      <div class="flex items-center justify-center h-screen">
+        <div class="text-2xl">Zzz</div>
+      </div>
     {:else if $tabState === 'follower'}
       <div class="flex flex-col items-center justify-center h-screen px-4">
         <div class="text-2xl">Another Session Detected</div>

@@ -126,7 +126,7 @@
             {#if usagePercentageGeocode || usageCountGeocode}
                 <CountCard 
                     topText="" 
-                    value={readable(`${usagePercentageGeocode}%`)} 
+                    value={readable($bubbleType === 'percent'? `${usagePercentageGeocode}%`: `${usageCountGeocode}`)} 
                     bottomText={`of relays are located in ${geocode} ${countryCodeToFlagEmoji(geocode)}`} 
                     index={2} 
                     innerClass="gradient-purple"
@@ -136,7 +136,7 @@
             {#if isp}
                 <CountCard 
                     topText="" 
-                    value={readable(`${usagePercentageIsp}%`)} 
+                    value={readable($bubbleType === 'percent'? `${usagePercentageIsp}%`: `${usageCountIsp}`)} 
                     bottomText={`of relays use ${isp} as their ISP`} 
                     index={3} 
                     innerClass="gradient-purple"

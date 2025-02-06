@@ -157,18 +157,23 @@
                 {/if}
 
                 <div class="border p-4 rounded-md ">
+                    <span class='block my-4 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                        network
+                    </span>
+                    <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
+                        {$livenessAggregate?.networks}
+                    </span>
                     {#if ipsFlat.length}
-                    <ul class="pl-5">
                         <span class='block my-4 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
                             known ips
                         </span>
                         {#each ipsFlat as ip, index}
                             {#if index < 3}
-                            <li class="list-disc">
+                            <span class="mr-2 inline-block">
                                 <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
                                     {ip}
                                 </span>
-                            </li>
+                            </span>
                             {:else if index === ipsFlat.length-1} 
                             <span>+{ipsFlat.length-3} more</span>
                             {/if}
@@ -179,19 +184,11 @@
                         <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
                             {$isp}
                         </span>
-                        
-                    </ul>
                     {:else}
                         <div>no IPs</div>
                     {/if}
                 </div>
                 <div class="border p-4 rounded-md ">
-                    <span class='block my-4 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
-                        network
-                    </span>
-                    <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
-                        {$livenessAggregate?.networks}
-                    </span>
                     {#if countryNames?.length || $livenessAggregate?.geohash || $livenessAggregate?.dd}
                     <span class='block my-2 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
                         geographical location

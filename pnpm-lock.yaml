@@ -162,6 +162,9 @@ importers:
       surrealdb:
         specifier: ^1.0.6
         version: 1.1.0(tslib@2.8.1)(typescript@5.7.2)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+      svelte-dnd-action:
+        specifier: ^0.9.57
+        version: 0.9.57(svelte@5.2.7)
       svelte-geolocation:
         specifier: ^1.0.0
         version: 1.0.0
@@ -10281,6 +10284,11 @@ packages:
     hasBin: true
     peerDependencies:
       svelte: ^3.55.0 || ^4.0.0-next.0 || ^4.0.0 || ^5.0.0-next.0
+
+  svelte-dnd-action@0.9.57:
+    resolution: {integrity: sha512-H1QPlthwAH+xjaISKbp/dQJYeC3Jt1mlTNqJDko0f7XgEyi5ee3PMEuAfF1soJXA0Y5ceb+W8xJXiSZ+2CeMNA==}
+    peerDependencies:
+      svelte: '>=3.23.0 || ^5.0.0-next.0'
 
   svelte-geolocation@1.0.0:
     resolution: {integrity: sha512-zGa5k4t1IPxnkZlFOq+KTmCbaBQ53t6kdJdHLVNp/JmopklYHtTlivVqmTe9PvWtJjf0alhA0VbAUwt8OzZOAA==}
@@ -20871,6 +20879,10 @@ snapshots:
       - sass
       - stylus
       - sugarss
+
+  svelte-dnd-action@0.9.57(svelte@5.2.7):
+    dependencies:
+      svelte: 5.2.7
 
   svelte-geolocation@1.0.0: {}
 

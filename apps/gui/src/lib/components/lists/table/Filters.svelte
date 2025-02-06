@@ -193,7 +193,7 @@
             }
         });
         // ////console.log('end computeActiveRecordIDs', new Date().getTime() - begin);
-        return activeRecordIDs || new Set(get(tableData).data.map(record => record.id));
+        return activeRecordIDs || new Set($tableData.data.map(record => record.id));
     }
 
     // **Update Disabled Filters Based on Active Filters**
@@ -279,7 +279,7 @@
 
     // **Handle Search Input with Debounce**
     const handleSearchInput = debounce((filterKey: string, searchTerm: string) => {
-        initializeMiniSearch(filterKey, get(tableData).data, filterOverrides[filterKey]?.miniSearchOptions);
+        initializeMiniSearch(filterKey, $tableData.data, filterOverrides[filterKey]?.miniSearchOptions);
         const miniSearch = miniSearchInstances[filterKey];
         const results = miniSearch.search(searchTerm);
         const matchedValues = results.map(result => result[filterKey]).filter(v => v !== undefined);

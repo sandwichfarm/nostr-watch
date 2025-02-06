@@ -13,7 +13,7 @@ import type { Nip11Fee } from '@nostrwatch/route66/models/Nip11';
 import type { DD } from '@nostrwatch/route66/models/Geocoded';
 import { Nip66CheckEvent, PubkeyProfile } from '@nostrwatch/route66/models';
 import { pubkeyProfile, pubkeyUserInstance } from '$lib/stores/helpers/helpers-pubkey';
-import type { DataTableConfigDependencies, NameFormatter } from '$lib/components/data-view/DataTableTypes';
+import type { DataFormatters, DataTableConfigDependencies, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 import { nip11 } from 'nostr-tools';
 import { nip11ValidationErrorCount } from '$stores/nip11-validations';
 
@@ -248,7 +248,28 @@ export const dataDependencies: DataTableConfigDependencies = {
     'powRequired': ['minPowDifficulty'],
     'hasBanner': ['banner'],
     'hasIcon': ['icon'],
-    'operatorPubkeyValid': ['operatorPubkey']
+    'operatorPubkeyValid': ['operatorPubkey'],
+    'admissionFee': ['fees'],
+    'subscriptionFee': ['fees'],
+    'publicationFee': ['fees'],
+}
+
+export const filterDataFormatters: DataFormatters = {
+    admissionFee: (fees: Nip11Fee[]) => {
+        if(!fees || !fees?.length) return null
+        fees.sort((a, b) => a.amount - b.amount);
+        return fees[0].amount;
+    },
+    subscriptionFee: (fees: Nip11Fee[]) => {
+        if(!fees || !fees?.length) return null
+        fees.sort((a, b) => a.amount - b.amount);
+        return fees[0].amount;
+    },
+    publicationFee: (fees: Nip11Fee[]) => {
+        if(!fees || !fees?.length) return null
+        fees.sort((a, b) => a.amount - b.amount);
+        return fees[0].amount;
+    },
 }
 
 export const tableFormatters: Formatters = {
@@ -309,8 +330,6 @@ export const tableFormatters: Formatters = {
                 ${errorsCount}
                 </span>`;    
     },
-
-
     seenBy: (pubkeys: string[]): string => {
         let str = '<div class="flex items-center whitespace-nowrap">';
         let i = 0;

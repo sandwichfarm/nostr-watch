@@ -69,6 +69,15 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
         '@dist': path.resolve(__dirname, './dist'),
         '@components': path.resolve(__dirname, './src/components'),
+        "$stores": path.resolve(__dirname, "./src/lib/stores"),
+        "$utils": path.resolve(__dirname, "./src/lib/utils"),
+        "$ui": path.resolve(__dirname, "./src/lib/components/ui"),
+        "$components": path.resolve(__dirname, "./src/components"),
+        "$layouts": path.resolve(__dirname, "./src/layouts"),
+        "$routes": path.resolve(__dirname, "./src/routes"),
+        "$relay": path.resolve(__dirname, "./src/routes/relays/[protocol]/[...relay]"),
+        "$relays": path.resolve(__dirname, "./src/routes/relays"),
+        "$lib": path.resolve(__dirname, "./src/lib")
       },
     },
     plugins: [

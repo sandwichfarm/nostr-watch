@@ -6,7 +6,7 @@
 	import { points } from '@unovis/ts/components/topojson-map/style';
 	import { WorldMapTopoJSON } from '@unovis/ts/maps';
 	import { map } from 'lodash';
-	import { pauseLiveSync } from '$utils/lifecycle';
+	import { pauseLiveSync } from '$utils/live-sync';
 	import { throttledDerived } from '$utils/stores';
     
     export let data: Readable<any[]>;

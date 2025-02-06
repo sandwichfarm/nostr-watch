@@ -11,9 +11,10 @@
   import { isHex } from '$lib/utils/nostr.js';
   import { Nip11 } from '@nostrwatch/route66/models';
   import { isLivesyncing, doAggregateCache, hasBeenBootstrapped } from '$lib/stores/app';
-  import { pauseLiveSync, beginLiveSync, seedFromCache } from '$lib/utils/lifecycle';
+  import { seedFromCache } from '$utils/lifecycle';
+  import { pauseLiveSync, beginLiveSync } from '$utils/live-sync';
   import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers';
-  import { clickToCopy, observeViewport } from '$lib/utils/ux';
+  import { clickToCopy, observeViewport } from '$utils/ux';
   import { Skeleton } from "$lib/components/ui/skeleton";
 	import { route66Ready } from '$lib/stores/app';
 	import { route66 } from '$lib/stores';

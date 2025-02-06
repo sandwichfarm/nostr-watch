@@ -14,6 +14,8 @@ const config = {
 			"$components": "./src/components",
 			"$layouts": "./src/layouts",
 			"$routes": "./src/routes",
+      "$relay": './src/routes/relays/[protocol]/[...relay]',
+      "$relays": './src/routes/relays',
 			"$lib": "./src/lib"
     },
     adapter: adapter({
@@ -33,6 +35,12 @@ const config = {
         '/relays',
         '/relays/map',
         '/relays/[protocol]/[...relay]',
+        '/relays/[protocol]/[...relay]/audits',
+        '/relays/[protocol]/[...relay]/checks',
+        '/relays/[protocol]/[...relay]/feed',
+        '/relays/[protocol]/[...relay]/insights',
+        '/relays/[protocol]/[...relay]/nip-11',
+        '/relays/[protocol]/[...relay]/operator',
         '/reload/[...path]',
         '/unsupported',
         '/mobile',

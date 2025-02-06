@@ -12,7 +12,7 @@
 	import { onMount } from 'svelte';
 	import { eventKey } from '$lib/utils/event-keys';
 	import { activeMonitorChecksCount } from '$lib/stores';
-	import { pauseLiveSync } from '$lib/utils/lifecycle';
+	import { pauseLiveSync } from '$lib/utils/live-sync';
 
     export let data: any;
     export let view: 'head' | 'cell' = 'cell';

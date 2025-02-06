@@ -1,7 +1,8 @@
 import type Route66 from '@nostrwatch/route66';
 import { get } from 'svelte/store';
 import { hasBeenBootstrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready } from '../stores/app';
-import { instance, stopLiveSync } from './lifecycle';
+import { instance } from './lifecycle';
+import { stopLiveSync } from './live-sync'
 import { StateManager } from '@nostrwatch/route66';
 import { delay } from '@nostrwatch/utils';
 

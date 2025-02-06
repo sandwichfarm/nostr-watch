@@ -1,15 +1,22 @@
 import { derived, get, readable, writable, type Readable, type Writable } from "svelte/store"
-import { nip11s } from "../nip11s"
+import { nip11s, nip11sLocal } from "../nip11s"
 import type { Limitations, Nip11 } from "@nostrwatch/route66/models/Nip11";
+import { relayCheckAggregates } from "$stores/checks";
 
 export const relayNip11 = (relay: string): Nip11 | undefined => {
     return get(nip11s).get(relay)?.[0];
 }
 
 export const relayNip11$ = (relay: string): Readable<Nip11 | undefined> => {
-    return derived(nip11s, ($nip11s) => {
-        return $nip11s.get(relay)?.[0];
-    })
+    return derived(
+        [nip11sLocal, nip11s],
+        ([$nip11sLocal, $nip11s]) => {
+            const localNip11 = $nip11sLocal.get(relay);
+            if (localNip11) return localNip11;
+            if ($nip11s) return $nip11s.get(relay)?.[0];
+            return undefined;
+        }
+    );
 }
 
 export const relayNip11s = (relay: string): Nip11[] | undefined => {
@@ -70,4 +77,26 @@ export const relayFees = (relay: string): number | undefined => {
 
 export const relayFees$ = (relay: string) => {
     return nip11Property$(relayNip11$(relay), 'fees');
+}
+
+export const relaysWithNip11s$ = (): Readable<string[]> => {
+    return derived(nip11s, ($nip11s) => {
+        const result = new Set()
+        for(const relay of $nip11s.keys()) {
+            result.add(relay)
+        }
+        return Array.from(result) as string[]
+    })
+}
+
+export const relaysWithoutNip11s$ = (): Readable<string[]> => {
+    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
+        const result = new Set()
+        $relayCheckAggregates.forEach( (check: any) => { 
+            if(!check.hasNip11) {
+                result.add(check.relay)
+            }
+        })
+        return Array.from(result) as string[]
+    })
 }

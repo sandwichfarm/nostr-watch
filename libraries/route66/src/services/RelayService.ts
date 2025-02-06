@@ -188,4 +188,34 @@ export class RelayService extends Service {
       return false
     })
   }
+
+  async beginLiveSync(relay: string, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
+    const filters: Filter[] = []
+    this.monitors.enabledMonitors.forEach( (monitor: Monitor ) => {
+      const lastSyncUntil = monitor.getLastSync(30166)?.until;
+      filters.push({ 
+        kinds: [30166], 
+        authors: [monitor.pubkey], 
+        since: lastSyncUntil, 
+        "#d": [relay] 
+      });
+    }) 
+    const hash = `liveSyncMonitorsChecksForRelay`;
+    const relays: string[] = this.nip66Relays;
+    const options: WebsocketAdapterOptions = {
+      cache: true,
+      keepAlive: true,
+      returnResults: true,
+      stream: true,
+      batch: 2
+    }
+    const onevents: SubscribeHandlers['onevents'] = (events: IEvent[]) => {  
+      callbacks?.onevents?.(events);
+    };
+    return this.subscribe({ filters, relays, options, hash }, { onevents });
+  }
+
+  async stopLiveSync(): Promise<void> {
+    await this.unsubscribe('liveSyncMonitorsChecksForRelay');
+  }
 }

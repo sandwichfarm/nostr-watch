@@ -14,6 +14,7 @@ export const isIdle: Writable<boolean> = writable(false)
 
 export const route66Initialized: Readable<boolean> = derived( route66, ($route66) => $route66?.initialized? true: false )
 export const unsupported: Writable<boolean> = writable(false)
+export const doLiveSync: Writable<boolean> = writable(true) 
 export const isLivesyncing: Writable<boolean> = writable(false)
 export const isBootstrapping: Writable<boolean> = writable(false)
 export const lastCompleteSync: Writable<number> = writable(StateManager.get('lastCompleteSync') ?? 0)

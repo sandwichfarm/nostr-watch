@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { pauseLiveSync } from '$utils/lifecycle';
 	import { throttledDerived } from '$utils/stores';
   import { VisLeafletMap } from '@unovis/svelte'
-	import { on } from 'process';
 	import { onMount } from 'svelte';
 	import { derived, readable, type Readable } from 'svelte/store';
   

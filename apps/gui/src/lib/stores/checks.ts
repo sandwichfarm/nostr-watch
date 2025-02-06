@@ -13,6 +13,7 @@ import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache, isBootstrapping } from "./app.js";
 import { throttledDerived } from "$utils/stores.js";
+import { nip11ValidationErrorCount } from "./nip11-validations.js";
 
 export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const countMap: Record<
@@ -67,7 +68,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
 
   Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
-      [...Nip66CheckEvent.keys, 'seenTimes'].forEach((key: string) => {
+      [...Nip66CheckEvent.keys, 'seenTimes', 'nip11IsValid', 'nip11ValidationErrors'].forEach((key: string) => {
         const value = nip66Event[key];
         
         const isNonNull = value !== null && value !== undefined;
@@ -75,13 +76,29 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
         const isArray = Array.isArray(value);
         const isAccArray = Array.isArray(acc[key]);
 
-        if(key === 'seenTimes') {
+        if(key === 'nip11ValidationErrors'){
+          const nip11ValidationErrors = get(nip11ValidationErrorCount).get(relay)
+          acc.nip11ValidationErrors = nip11ValidationErrors? nip11ValidationErrors: 0;
+          return acc
+        }
+        else if(key === 'nip11IsValid'){
+          const nip11ValidationErrors = get(nip11ValidationErrorCount).get(relay)
+          if(typeof nip11ValidationErrors === 'undefined') {
+            acc.nip11IsValid = null;
+          }
+          else {
+            acc.nip11Isvalid = nip11ValidationErrors === 0? true: false;  
+          }
+          return acc
+        }
+        else if(key === 'seenTimes') {
           if(!acc?.seenTimes) {
             acc.seenTimes = 1;
           }
           else {
             acc.seenTimes += 1;
           }
+          return acc;
         }
         else if(key === 'monitorPubkey'){
           if(!acc?.seenBy) {
@@ -164,11 +181,11 @@ export const relayCheckAggregates: Readable<any[]> = throttledDerived(relayCheck
   return aggregates 
 });
 
-export const relaysForMiniSearch: Readable<any[]> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+export const relaysForMiniSearch: Readable<any[]> = throttledDerived(relayCheckAggregates, ($relayCheckAggregates) => {
   let ag = $relayCheckAggregates.map((item, index) => {
     const { relay, isp, operatorPubkey, supportedNips, lastSeen }  = item
     return { 
-      ...{ relay, isp, operatorPubkey, supportedNips, lastSeen },
+      ...{ relay, operatorPubkey },
       id: index,
     }
   });
@@ -180,7 +197,7 @@ export const relaysForMiniSearch: Readable<any[]> = derived(relayCheckAggregates
   }
   
   return ag || [];
-});
+}, 1000);
 
 export enum SpeedGroups {
   LightningFast = 100,

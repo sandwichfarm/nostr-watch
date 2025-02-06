@@ -187,7 +187,7 @@
     };
 
     onMount(async () => {
-        const resumer = await pauseLiveSync();
+        // const resumer = await pauseLiveSync();
 
         ////console.log('Starting relay audits...');
         
@@ -211,7 +211,7 @@
             console.error('Audit failed:', err);
         });
 
-        await resumer();
+        // await resumer();
     });
 
     // Function to toggle the expansion of a sample-set

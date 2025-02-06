@@ -1,13 +1,19 @@
 import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
-import { doAggregateCache, isBootstrapped, isSeeded } from "$stores/app";
+import { doAggregateCache, doLiveSync, isBootstrapped, isSeeded } from "$stores/app";
 import { fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
 import { beginLiveSync, bindBootstrapEmitters, instance, liveSync, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { publishEventsToMemoryRelay } from "./events-helpers";
 import { delay } from "@nostrwatch/utils";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
 import { fetchRelayChecks, fetchRelayNip11, fetchRelayOperator } from "$lib/fetchers/relay";
+import { SchemaValidationService, type SchemaValidationServiceResponse } from "$lib/services/SchemaValidationService";
+import { nip11s } from "./nip11s";
+import type { Nip11 } from "@nostrwatch/route66/models/Nip11";
+import { relayNip11Validations } from "./nip11-validations";
+import { page } from "$app/stores";
+import { relayLiveSync } from "$utils/live-sync";
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
@@ -54,6 +60,12 @@ export const dataRegisterInit = async () => {
         fn: fetchRelayOperator
     });
 
+    data.register({
+        key: 'sync:relay:live',
+        priority: 12,
+        fn: async (relay: string) => relayLiveSync(relay)
+    });
+
     //fetchers: all (bootstrap)
     data.register({
         key: 'sync:monitors',
@@ -86,16 +98,46 @@ export const dataRegisterInit = async () => {
     data.register({
         key: 'sync:live',
         priority: 200,
+        condition: async () => get(doLiveSync) === true,
         fn: async () => liveSync()
     })
+
+    data.register({
+        key: 'validate:nip11s',
+        expiry: "1h",    
+        priority: 200,
+        fn: async () => {
+            const validator = new SchemaValidationService();
+            const validationsMap = new Map();
+            const keysIndex: string[] = []
+            const promises: Promise<SchemaValidationServiceResponse>[] = [];
+            get(nip11s).forEach(async (n11Entry, relay) => {
+                keysIndex.push(relay)
+                const json = n11Entry?.[0]?.json
+                if(!json) return
+                promises.push(validator.validateNip11(json))
+            })
+            const validations = await Promise.all(promises);
+            validations.forEach( (validation, index) => {
+                validationsMap.set(keysIndex[index], validation)
+            })
+            return validationsMap;  
+        },
+        onComplete: async (validationsMap: Map<string, SchemaValidationServiceResponse>) => {
+            console.log('validationsMap', validationsMap)   
+            relayNip11Validations.update(() => validationsMap)
+        }
+    })
+
+
     //cache: all (bootstrap)
     data.register({
         key: 'sync:cache',
         priority: 3,
-        fn: seedFromCache,
         condition: async () => {
             return !get(isSeeded) && get(isBootstrapped)
         },
+        fn: seedFromCache,
         onComplete: async (events: IEvent[]): Promise<any> => {
             publishEventsToMemoryRelay(events, 'cache')
             if(!events?.length) return 
@@ -143,7 +185,7 @@ export const dataRegisterInit = async () => {
     //composites
     data.composite({
         key: 'sync:relay',
-        keys: ['sync:relay:checks', 'sync:relay:nip11', 'sync:relay:operator'],
+        keys: ['sync:relay:checks', 'sync:relay:nip11', 'sync:relay:operator', 'sync:relay:live'],
         ignoreConditions: { 
             'sync:relay:checks': true,
             'sync:relay:nip11': true,
@@ -153,6 +195,6 @@ export const dataRegisterInit = async () => {
     });
 
     await (await instance()).ready()
-    await delay(1000)
+    await delay(20)
     data.unlock();
 }

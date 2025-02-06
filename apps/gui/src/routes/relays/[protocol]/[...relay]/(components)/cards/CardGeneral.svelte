@@ -4,30 +4,45 @@
 	import { generateRelayUrlFromPath } from '$utils/routing';
 	import { relayCountryCodes$, relayIps$, relayIsp$, relayLivenessAggregate$, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 	import { relayNip11$, relaySoftware$, relaySoftwareVersion$ } from '$stores/helpers/helpers-nip11s';
-	import { type Readable } from 'svelte/store';
+	import { readable, type Readable } from 'svelte/store';
 	import type { IGeocode } from '@nostrwatch/route66/models/Geocode';
 	import type { Nip66CheckEvent } from '@nostrwatch/route66/models/Nip66CheckEvent';
 	import { getCountryName } from '$stores/iso3166';
 	import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
 	import { makeSoftwareReadable } from '$lib/synonyms/software';
 	import isps from '$lib/config/dataTable/isps';
+	import { onMount } from 'svelte';
+	import type { Nip11 } from '@nostrwatch/route66/models/Nip11';
     
-    const relayUrl = generateRelayUrlFromPath()
+    const relayUrl = generateRelayUrlFromPath() as string
 
+    let nip11: Readable<Nip11 | undefined> = readable(undefined);
+    let checks: Readable<Nip66CheckEvent[]> = readable([]);
     
-    const nip11: Readable<Nip11> = relayNip11$(relayUrl);
-    export let checks: Readable<Nip66CheckEvent[]> = relayLivenessChecks$(relayUrl);
+    let ips: Readable<Record<string, string[]> | undefined> = readable({});
+    let livenessAggregate: Readable<any> = readable({});
+    let software: Readable<string | undefined>  = readable(undefined);
+    let version: Readable<string | undefined>  = readable(undefined);
+    let countryCodes: Readable<IGeocode[]>  = readable([]);
+    let isp: Readable<string[]> = readable([]);
+
+    onMount( () => {
+        nip11 = relayNip11$(relayUrl);
+        checks = relayLivenessChecks$(relayUrl);
     
-    const ips: Readable<Record<string, string[]>> = relayIps$(relayUrl)
-    const livenessAggregate: Readable<any> = relayLivenessAggregate$(relayUrl)
-    const software: Readable<string | undefined> = relaySoftware$(relayUrl)
-    const version: Readable<string> = relaySoftwareVersion$(relayUrl)
-    const countryCodes: Readable<IGeocode[]> = relayCountryCodes$(relayUrl)
-    const isp: Readable<string[]> = relayIsp$(relayUrl)
+        ips = relayIps$(relayUrl)
+        livenessAggregate = relayLivenessAggregate$(relayUrl)
+        software= relaySoftware$(relayUrl)
+        version= relaySoftwareVersion$(relayUrl)
+        countryCodes = relayCountryCodes$(relayUrl)
+        isp = relayIsp$(relayUrl)
+    })
     
-    $: alpha2 = Array.from(new Set($countryCodes
-        .filter( ({format, length}) => format === 'alpha' && length === 2 )
-        .map( ({code}) => code)));
+    $: alpha2 = $countryCodes 
+        ? Array.from(new Set($countryCodes
+            .filter( ({format, length}) => format === 'alpha' && length === 2 )
+            .map( ({code}) => code)))
+        : [];
     $: countryNames = alpha2.map( code => getCountryName(code) )
 
 
@@ -42,7 +57,7 @@
     // $: supportedNips = $nip11?.supportedNips? $nip11.supportedNips: [];
     $: enabledMonitors = $route66?.initialized ? $route66?.services?.monitors.enabledMonitors: []
     $: numEnabledMonitors = enabledMonitors.length
-    $: numChecks = $checks.length
+    $: numChecks = $checks?.length || 0
     $: percentageReportingOnline = numEnabledMonitors > 0? `${Math.round(numChecks/numEnabledMonitors*100)}%`: `n/a`
     $: readableSoftware = $software? makeSoftwareReadable($software): undefined;
     $: ipsFlat = Object.values($ips).flat()
@@ -177,27 +192,27 @@
                     <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
                         {$livenessAggregate?.networks}
                     </span>
-
+                    {#if countryNames?.length || $livenessAggregate?.geohash || $livenessAggregate?.dd}
                     <span class='block my-2 font-bold text-sm [text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
                         geographical location
                     </span>
-                    <span class="text-xs italic text-black/50 dark:text-white/50">
-                        The geographic location of relays is a a best-guess using IP to Location databases. A variety of factors can cause this to be inaccurate.
-                    </span>
-
-                    <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
-                        Geohash: {$livenessAggregate?.geohash}
-                    </span>
-                    <span class="font-mono text-lg py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
-                        lat/lon: {$livenessAggregate?.dd.lat.toFixed(5)}, {$livenessAggregate?.dd.lon.toFixed(5)}
-                    </span>
                     {#if countryNames?.length}
                         {#each countryNames as country, index}
-                            <div class="text-2xl">{countryCodeToFlagEmoji(alpha2[index])} {country}</div>
+                            <div class="text-3xl my-2">{countryCodeToFlagEmoji(alpha2[index])} {country}</div>
                         {/each}
                         
                     {:else}
                         <div>No geographical location was found</div>
+                    {/if}
+                    <span class="font-mono py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
+                        Geohash: {$livenessAggregate?.geohash}
+                    </span>
+                    <span class="font-mono py-1 px-2 bg-white/10 rouned-lg inline-block mb-2">
+                        lat/lon: {$livenessAggregate?.dd.lat.toFixed(5)}, {$livenessAggregate?.dd.lon.toFixed(5)}
+                    </span>
+                    <span class="block text-xs italic text-black/50 dark:text-white/50">
+                        The geographic location of relays is a a best-guess using IP to Location databases. A variety of factors can cause this to be inaccurate.
+                    </span>
                     {/if}
                 </div>
             </div>

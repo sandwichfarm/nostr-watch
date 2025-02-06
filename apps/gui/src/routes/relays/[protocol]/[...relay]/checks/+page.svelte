@@ -1,6 +1,6 @@
 <script lang="ts">
 
-    import { writable, type Readable, type Writable } from 'svelte/store';
+    import { readable, writable, type Readable, type Writable } from 'svelte/store';
     import { monitors, monitorsMap, relayChecks } from '$lib/stores';
 	import { timeAgo } from '$lib/utils/time';
 	import { PFP } from '$lib/utils/pfp';
@@ -13,11 +13,12 @@
 	import { onMount } from 'svelte';
 	import { relayLivenessAggregate$, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 	import { generateRelayUrlFromPath } from '$utils/routing';
+	import { fade } from 'svelte/transition';
     
-    const relay = generateRelayUrlFromPath() 
+    const relayUrl = generateRelayUrlFromPath() as string;
 
-    export let checks: Readable<Nip66CheckEvent[]> = relayLivenessChecks$(relay);
-    export let aggregate: Readable<any> = relayLivenessAggregate$(relay);
+    let checks: Readable<Nip66CheckEvent[]> = readable([]);
+    let aggregate: Readable<any> = readable({});
 
     let selectedCheckCache: Nip66CheckEvent | null = null;
     
@@ -52,6 +53,8 @@
     }
 
     onMount(() => {
+        checks = relayLivenessChecks$(relayUrl);
+        aggregate = relayLivenessAggregate$(relayUrl);
         if($checks.length) {
             selectedCheck.set($checks[0])
         }
@@ -60,6 +63,7 @@
     $: validChecks = $checks.filter(Boolean);
 </script>
 
+<div in:fade>
 {#if validChecks.length}
 <!-- <p>Reported <em>online</em> by <Badge class="rounded-full">{validChecks.length}</Badge> monitors</p> -->
 <div class="flex">
@@ -90,7 +94,7 @@
 
     <div class="flex-1 h-full py-4 px-8">
         {#if $showMap}
-            <RelayMap {relay} {checks} {monitors} {aggregate} />
+            <RelayMap relay={relayUrl} {checks} {monitors} {aggregate} />
         {:else}    
             {#if $selectedCheck}
                 <RelayCheck check={$selectedCheck} />
@@ -101,7 +105,7 @@
     </div>
 </div>
 {/if}
-
+</div>
 <style>
 .flex {
     display: flex;

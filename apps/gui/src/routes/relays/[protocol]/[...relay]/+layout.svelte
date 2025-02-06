@@ -6,135 +6,155 @@
 
 	import { relayCheckAggregates } from "$stores/checks";
 	import { dataRegister } from "$stores/data-register";
-	import { relayLivenessAggregate$, relayLivenessChecks } from "$stores/helpers/helpers-relay";
+	import { relayLivenessAggregate$, relayLivenessChecks, relayOperatorPubkey$ } from "$stores/helpers/helpers-relay";
 	import { nip11s, nip11sLocal } from "$stores/nip11s";
 	import { route66 } from "$stores/route66";
 	import { eventKey } from "$utils/event-keys";
-	import { pauseLiveSync } from "$utils/live-sync";
-	import { generateRelayPathFromUrl } from "$utils/routing";
+	import { pauseLiveSync, stopRelayLiveSync, type LiveSyncResumer } from "$utils/live-sync";
+	import { generateRelayPathFromUrl, generateRelayUrlFromPath } from "$utils/routing";
 	import { truncateWithEllipsis } from "$utils/strings";
 	import type { IResult } from "@nostrwatch/nocap";
-	import type { NostrEvent } from "@nostrwatch/route66/models";
+	import type { NostrEvent, PubkeyProfile } from "@nostrwatch/route66/models";
 	import type { Monitor } from "@nostrwatch/route66/models";
 	import type { Nip11 } from "@nostrwatch/route66/models";
 	import type { Nip66CheckEvent } from "@nostrwatch/route66/models";
 	import { onDestroy, onMount, setContext } from "svelte";
-	import { derived, writable, type Readable, type Writable } from "svelte/store";
+	import { derived, readable, writable, type Readable, type Writable } from "svelte/store";
 	import { operatorProfile$, operatorRelays$ } from "$stores/helpers/helpers-operator";
 	import { isPubkey } from "$utils/nostr";
+	import { relayNip11$ } from "$stores/helpers/helpers-nip11s";
+	import { fade } from "svelte/transition";
+	import OperatorRelay from "$lib/components/partials/OperatorRelay.svelte";
+	import { doLiveSync } from "$stores/app";
 
-    export let params: { protocol: string; relay: string };
+    // export let params: { protocol: string; relay: string };
+
+    $: pathname = $page.url
+
     let currentRelay: string = '';
     let loading: boolean = true;
 
-    const relayUrl = new URL(`${$page.params.protocol}://${$page.params.relay}`).toString();
+    const relayUrl = generateRelayUrlFromPath() as string;
 
-    const nip11Ready: Writable<boolean> = writable(false);
-    const operatorMetaReady: Writable<boolean> = writable(false);
-    const monitors: Writable<Monitor[]> = writable([]);
-    const activeTab: Writable<string> = writable('overview');
+    // const nip11Ready: Writable<boolean> = writable(false);
+    // const operatorMetaReady: Writable<boolean> = writable(false);
+    // const monitors: Writable<Monitor[]> = writable([]);
 
-    const liveness: Writable<null | 'online' | 'offline' | 'dead' | 'unknown'> = writable(null);
-    const oldChecks: Writable<Nip66CheckEvent[]> = writable([]);
-    const localCheck: Writable<IResult | null> = writable(null);
-
-    const lastCheck: Writable<Nip66CheckEvent | undefined> = writable(undefined);
-    const lastSeen: Writable<number | null> = writable(null);
-    const lastSeenBy: Writable<Monitor | null> = writable(null); 
+    // const liveness: Writable<null | 'online' | 'offline' | 'dead' | 'unknown'> = writable(null);
+    // const oldChecks: Writable<Nip66CheckEvent[]> = writable([]);
 
     // const nocapService: Writable<NocapService> = writable(new NocapService());
 
-    const deduplicateEvents = ( events: NostrEvent[] ) => {
-    const deduped = new Map();
-    events.forEach( event => {
-        const key = eventKey(event);
-        deduped.set(key, event);
-    });
-    return Array.from(deduped.values());
-    }
+    // const deduplicateEvents = ( events: NostrEvent[] ) => {
+    // const deduped = new Map();
+    // events.forEach( event => {
+    //     const key = eventKey(event);
+    //     deduped.set(key, event);
+    // });
+    // return Array.from(deduped.values());
+    // }
 
-    const relayAggregate: Readable<any | undefined> = relayLivenessAggregate$(relayUrl);
-    const relayChecks: Readable<Nip66CheckEvent[]> = derived([oldChecks, relayCheckAggregates], ([$oldChecks]) => {
-    const checks = relayLivenessChecks(relayUrl)
-    if($oldChecks.length) {
-        return deduplicateEvents([...$oldChecks, ...checks]);
-    }
-    return relayLivenessChecks(relayUrl);
-    })
-
-    const nip11: Readable<Nip11 | undefined> = derived(
-        [nip11sLocal, nip11s],
-        ([$nip11sLocal, $nip11s]) => {
-            let result: Nip11 | undefined;
-            const localNip11 = $nip11sLocal.get(relayUrl);
-            if (localNip11) return localNip11;
-            if ($nip11s) return $nip11s.get(relayUrl)?.[0];
-            return undefined;
-        }
-    );
+    
+    // const relayChecks: Readable<Nip66CheckEvent[]> = derived([oldChecks, relayCheckAggregates], ([$oldChecks]) => {
+    //     const checks = relayLivenessChecks(relayUrl)
+    //     if($oldChecks.length) {
+    //         return deduplicateEvents([...$oldChecks, ...checks]);
+    //     }
+    //     return relayLivenessChecks(relayUrl);
+    // })
+    let relayAggregate: Readable<any | undefined> = readable(undefined)
+    let nip11: Readable<Nip11 | undefined> = readable(undefined);
+    let operatorPubkey: Readable<string | undefined> = readable(undefined);
+    let operatorProfile: Readable<PubkeyProfile | undefined> = readable(undefined);
+    let operatorRelays: Readable<string[] | undefined> = readable(undefined);
 
     const sidebarNavItems = [
 		{
 			title: "Overview",
-			href: `/relays/${generateRelayPathFromUrl(relayUrl).slice(0, -1)}`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}`,
 		},
         {
             title: "Insights",
-            href: `/relays/${generateRelayPathFromUrl(relayUrl)}insights`,
+            href: `/relays/${generateRelayPathFromUrl(relayUrl)}/insights`,
         },
         {
             title: "Operator",
-            href: `/relays/${generateRelayPathFromUrl(relayUrl)}operator`,
+            href: `/relays/${generateRelayPathFromUrl(relayUrl)}/operator`,
         },
         {
 			title: "Feed",
-			href: `/relays/${generateRelayPathFromUrl(relayUrl)}feed`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}/feed`,
 		},
         {
 			title: "Checks",
-			href: `/relays/${generateRelayPathFromUrl(relayUrl)}checks`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}/checks`,
 		},
         {
 			title: "NIP-11",
-			href: `/relays/${generateRelayPathFromUrl(relayUrl)}nip-11`,
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}/nip-11`,
 		},
 		{
 			title: "Audits",
-			href: `/relays/${generateRelayPathFromUrl(relayUrl)}audits`
+			href: `/relays/${generateRelayPathFromUrl(relayUrl)}/audits`
 		},
 	];
 
-    const mount = async () => {
+    let hasSynced = false;
+
+    const sync = async () => {
+        if(hasSynced) return;
+        await $route66?.ready();
+        await $dataRegister.require(
+            [
+                'sync:cache', 
+                'sync:relay:checks', 
+                'sync:relay:nip11', 
+                'sync:relay:operator',
+                'sync:relay:live'
+            ],
+            {
+                'sync:relay:checks': [ relayUrl ],
+                'sync:relay:nip11': [ relayUrl ],
+                'sync:relay:operator': [ relayUrl ],
+                'sync:relay:live': [ relayUrl ]
+            }
+        );
+        hasSynced = true;
+    }
+
+    const mount = () => {
+      doLiveSync.set(false);
       if (currentRelay === relayUrl) return;
-      await $route66?.ready();
-      const resume = await pauseLiveSync()
-      await $dataRegister.require(
-        [
-            'sync:cache', 
-            'sync:relay:checks', 
-            'sync:relay:nip11', 
-            'sync:relay:operator'
-        ],
-        {
-          'sync:relay:checks': [ relayUrl ],
-          'sync:relay:nip11': [ relayUrl ],
-          'sync:relay:operator': [ relayUrl ]
+      
+      let resume: LiveSyncResumer;
+      pauseLiveSync().then( (r) => resume = r);
+      sync().then( () => {
+        nip11 = relayNip11$(relayUrl);
+        operatorPubkey = relayOperatorPubkey$(relayUrl);
+        if($operatorPubkey) {
+          operatorProfile = operatorProfile$($operatorPubkey);
+          operatorRelays = operatorRelays$($operatorPubkey);
         }
-      );
-      loading = false
-      await resume();
-  };
+        relayAggregate = relayLivenessAggregate$(relayUrl);
+        loading = false
+      })
+      return () => {
+        stopRelayLiveSync();
+        resume();
+      }
+     };
+
+     relayNip11$
 
     const destroy = () => {
-        $route66?.services?.relay?.unsubscribeAll();
-        $route66?.services?.monitors?.unsubscribeAll();
         if (currentRelay === relayUrl) return;
         loading = true;
-        currentRelay = '';
-        monitors.set([]);
-        nip11Ready.set(false);
-        operatorMetaReady.set(false);
-        liveness.set(null);
+        doLiveSync.set(true);
+        // currentRelay = '';
+        // monitors.set([]);
+        // nip11Ready.set(false);
+        // operatorMetaReady.set(false);
+        // liveness.set(null);
     };
 
     onMount(mount);
@@ -142,26 +162,18 @@
 
     $: description = $nip11?.description || null;
     $: banner = $nip11?.banner || null;
-    $: icon = $nip11?.icon || null;
-    $: operatorPubkey =
-        $nip11?.pubkey && $nip11.pubkey.length && isPubkey($nip11.pubkey)
-            ? $nip11.pubkey
-            : $relayAggregate?.operatorPubkey && isPubkey($relayAggregate.operatorPubkey)
-                ? $relayAggregate.operatorPubkey
-                : null;
-    $: operatorProfile = operatorPubkey? operatorProfile$(operatorPubkey): undefined;
-    $: operatorRelays = operatorPubkey? operatorRelays$(operatorPubkey): undefined;
+    $: icon = $nip11?.icon || null;4
 
-    $: relayData = {
-        url: relayUrl,
-        operator: {
-            pubkey: operatorPubkey,
-            profile: operatorProfile,
-            relays: operatorRelays
-        }
-    }
+    // $: relayData = {
+    //     url: relayUrl,
+    //     operator: {
+    //         pubkey: $operatorPubkey,
+    //         profile: $operatorProfile,
+    //         relays: $operatorRelays
+    //     }
+    // }
 
-    setContext('relayUrl', relayUrl);
+    // setContext('relayUrl', relayUrl);
 </script>
 
 <PageHeader
@@ -177,8 +189,14 @@
       <aside class="-ml-10 lg:w-1/6">
         <RelaySidebar items={sidebarNavItems} class="hidden lg:block" />
       </aside>
-      <div class="flex-1 pr-10">
+      {#key pathname}
+      <div 
+        class="flex-1 pr-10" 
+        in:fade={{ duration: 300, delay: 400 }} 
+        out:fade={{ duration: 150 }}
+        >
         <slot {relayAggregate} />
       </div>
+      {/key}
     </div>
 </div>

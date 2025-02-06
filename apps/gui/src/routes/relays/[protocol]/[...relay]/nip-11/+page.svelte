@@ -9,17 +9,17 @@
     import { SchemaValidationService, type SchemaValidationServiceResponse } from '$lib/services/SchemaValidationService';
 	import { setRelayError } from '$lib/stores/relay-errors';
 	import JsonHighlighter from '$lib/components/partials/JsonHighlighter.svelte';
-	import { get } from 'lodash';
 	import { generateRelayUrlFromPath } from '$utils/routing';
 	import { relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import { dataRegister } from '$stores/data-register';
 	import { delay } from '@nostrwatch/utils';
-	import { validateAdditionalItems } from 'ajv/dist/vocabularies/applicator/additionalItems';
-	import { validateNip11 } from '@nostrwatch/schemata-js-ajv';
 	import { StateManager } from '@nostrwatch/route66';
 	import { timeAgo } from '$utils/time';
 	import CardLimitation from '../(components)/cards/CardLimitation.svelte';
 	import CardNips from '../(components)/cards/CardNips.svelte';
+	import { nip11ValidationErrorCount } from '$stores/nip11-validations';
+	import { fade } from 'svelte/transition';
+	// import { nip11ValidationErrorCount, relayNip11Validations } from '$stores/nip11s';
 
     const relayUrl = generateRelayUrlFromPath()
 
@@ -58,14 +58,16 @@
     }
 
     onMount(async () => {
-        await $dataRegister.require(
+        $dataRegister.require(
             ['sync:relay:nip11'],
             {'sync:relay:nip11': [relayUrl]}
-        );
-        await ready();
-        if(timedOut) return;
-        validate()
-        console.log('synckey', nip11SyncKey)
+        ).then( async () => {
+            await ready();
+            if(timedOut) return;
+            validate()
+            console.log('synckey', nip11SyncKey)
+        })
+        
     });
 
     $: nip11SyncKey = `sync:relay:nip11:${new URL(relayUrl).toString()}`
@@ -74,16 +76,19 @@
 
 </script>
 
-{typeof $nip11}
-
-{#if $nip11 && $validationResult} 
+<!-- <pre>
+    {JSON.stringify(Array.from($nip11ValidationErrorCount.entries()), null, 4)}
+</pre> -->
+{#if $nip11}
+<div in:fade>
+{#if $validationResult} 
     <div>
         NIP-11 last synced {lastSyncedTimestamp? lastSyncedTimestamp: 'wtf?'} {lastSyncedTimeAgo}
     </div>
     <div class="mb-4">
     {#if $nip11Valid}
-        <div class="bg-green-500/70 text-white p-4 rounded-lg">
-            <p class="text-lg font-bold">NIP-11 has no issues</p>
+        <div class="bg-green-500/30 text-white p-4 rounded-lg">
+            <p class="text-lg font-bold">NIP-11 looks good</p>
         </div>
     {:else}
         <div class="bg-red-500/50 text-white p-4 rounded-lg">
@@ -108,9 +113,6 @@
     />
     <CardLimitation />
     <CardNips />
-{:else if $nip11}
-    <pre class="py-6 px-8 bg-black/5 dark:bg-white/5 rounded-lg">{JSON.stringify($nip11?.json, null, 4)}</pre>
-{:else}
-no nip11?
 {/if}
-
+</div>
+{/if}

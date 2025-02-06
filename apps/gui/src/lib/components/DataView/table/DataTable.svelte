@@ -68,19 +68,19 @@
         }
     }
 
-    const rowStyles = derived(
-        data,
-        ($data) => {
-            if (!$data || !$columns || $columns.length === 0 || !$config.tableRowStyler) {
-                return new Map();   
-            }
-            const map: Map<string, string> = new Map();
-            $data.forEach((row: any) => {
-                map.set(row.id, $config.tableRowStyler(row));
-            });
-            return map
-        }
-    );
+    // const rowStyles = derived(
+    //     data,
+    //     ($data) => {
+    //         if (!$data || !$columns || $columns.length === 0 || !$config.tableRowStyler) {
+    //             return new Map();   
+    //         }
+    //         const map: Map<string, string> = new Map();
+    //         $data.forEach((row: any) => {
+    //             map.set(row.id, $config.tableRowStyler(row));
+    //         });
+    //         return map
+    //     }
+    // );
 
     $: {
         if (tableInstance) {
@@ -257,7 +257,7 @@
             <Table.Body>
                 {#each tableInstance?.rows as row (row.id)}
                     <Table.Row 
-                        class="{$rowStyles.get(row.pubkey)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
+                        class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
                         style="{
                             row.banner
                                 ? 

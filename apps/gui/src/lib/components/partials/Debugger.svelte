@@ -2,7 +2,7 @@
     	import { onMount } from "svelte";
         import { debounce } from "lodash";
 
-	import { events, nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayCheckAggregates, relaysWithNip11s, relaysWithoutNip11s } from "$lib/stores";
+	import { events, nip11s, nip11sLocal, operatorPubkeys,  operatorPubkeysInvalid, operatorPubkeysValid , relayCheckAggregates } from "$lib/stores";
 	import { isLivesyncing } from "$lib/stores/app";
 	import { doBootstrap } from "$lib/stores/routines";
 	import { appState, isBootstrapping, isSeeded, tabState, isIdle } from "$lib/stores/app";
@@ -12,6 +12,7 @@
 	import { shouldSync as _shouldSync } from "$lib/stores/app";
 	import { eventsStoreMemoryRelay } from "$lib/stores/memory-relays/memory-relay-events";
 	import { calculateSize, type ObjectSizeType } from "$lib/utils/cache";
+	import { relaysWithNip11s$, relaysWithoutNip11s$ } from "$stores/helpers/helpers-nip11s";
 
 
     const debug: Writable<Map<string, any>> = writable(new Map());
@@ -91,11 +92,11 @@
         addDebug('operatorPubkeysInvalid', value.length);
     });
 
-    relaysWithNip11s.subscribe((value) => {
+    relaysWithNip11s$().subscribe((value) => {
         addDebug('relaysWithNip11s', value.length);
     });
 
-    relaysWithoutNip11s.subscribe((value) => {
+    relaysWithoutNip11s$().subscribe((value) => {
         addDebug('relaysWithoutNip11s', value.length);
     });
 

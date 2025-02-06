@@ -175,6 +175,7 @@
     await $dataRegister.require([
       'sync:cache',
       'sync:all',
+      'validate:nip11s'
     ])
     // if (!get(doBootstrap)) {
     //   try {

@@ -1,22 +1,21 @@
 <script lang="ts">
-	import Button from '$lib/components/ui/button/button.svelte';
-    import * as Card from '$lib/components/ui/card';
-    import RelayInsights from "../RelayInsights.svelte";
-
     import { onMount } from 'svelte';
 	import { readable, writable, type Readable, type Writable } from 'svelte/store';
-    import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
-	import { relayLivenessAggregate$ } from '$stores/helpers/helpers-relay';
-	import { generateRelayUrlFromPath } from '$utils/routing';
+    import { goto } from '$app/navigation';
+
+	import Button from '$lib/components/ui/button/button.svelte';
+    import * as Card from '$lib/components/ui/card';
 	import CountCard from '$routes/components/CountCard.svelte';
+    import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
+
 	import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
-	import { generateRelayPathFromUrl } from '$utils/routing';
-	import { goto } from '$app/navigation';
-	import AlwaysSquare from '$lib/components/partials/AlwaysSquare.svelte';
+	import { generateRelayPathFromUrl, generateRelayUrlFromPath } from '$utils/routing';
 
-    const relayUrl = generateRelayUrlFromPath()
+    import { relayLivenessAggregate$ } from '$stores/helpers/helpers-relay';
 
-    const relayAggregate: Readable<any> | undefined = relayLivenessAggregate$(relayUrl);
+    const relayUrl = generateRelayUrlFromPath() as string;
+
+    let relayAggregate: Readable<any | undefined> = readable(undefined, () => {})
 
     type CountMap = Readable<Map<string, number>>
     type PercentageMap = Readable<Map<string, number>>
@@ -27,27 +26,25 @@
         makeSoftwareReadable: (value: string) => string;
 
     onMount( async () => {
-        import('$lib/stores/geocodes.js').then( module => {
+        await import('$lib/stores/geocodes.js').then( module => {
             geocodeCounts = module.geocodeCounts
             geocodePercentages = module.geocodePercentages
         })
-        import('$lib/stores/isps.js').then( module => {
+        await import('$lib/stores/isps.js').then( module => {
             ispPercentages = module.ispPercentages
             ispCounts = module.ispCounts
         })
-        import('$lib/stores/softwares.js').then( module => {
+        await import('$lib/stores/softwares.js').then( module => {
             softwareCounts = module.softwareCounts
             softwarePercentages = module.softwarePercentages
             softwareVersionCounts = module.softwareVersionCounts
             softwareVersionPercentages = module.softwareVersionPercentages
         })
-        import('$lib/synonyms/software.js').then( module => {
+        await import('$lib/synonyms/software.js').then( module => {
             makeSoftwareReadable = module.makeSoftwareReadable;
         })
+        relayAggregate = relayLivenessAggregate$(relayUrl);
     } )
-
-    
-    let actions
 
     const bubbleType: Writable<'percent' | 'count'> = writable('percent')
 
@@ -57,7 +54,7 @@
     }
 
     $: software = $relayAggregate?.software
-    $: readableSoftware = makeSoftwareReadable && makeSoftwareReadable(software)
+    $: readableSoftware = software && makeSoftwareReadable && makeSoftwareReadable(software)
     $: version = $relayAggregate?.version
     $: usagePercentageSoftware = software && $softwarePercentages?.get(software)? $softwarePercentages.get(software): null
     $: usageCountSoftware = software && $softwareCounts?.get(software)? $softwareCounts.get(software): null;

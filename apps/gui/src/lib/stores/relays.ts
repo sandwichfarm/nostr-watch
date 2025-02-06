@@ -10,13 +10,13 @@ export const relays: Readable<string[]> = derived(relayCheckAggregates, ($relayC
     const relays: Set<string> = new Set();
 
     $relayCheckAggregates.forEach((relayAggregate) => {
-        const { created_at, relay, network, monitorPubkey } = relayAggregate
+        const { relay} = relayAggregate
         if (!relay) return console.warn('derived relays: no relay', relayAggregate);
         try {
             const normalized = new URL(relay).toString()
             if(relays.has(normalized)){
-                const matches = $relayCheckAggregates.filter( aggregate => aggregate.relay === normalized || aggregate.relay === relay)
-                console.warn('derived relays: duplicate', matches?.length, matches);    
+                // const matches = $relayCheckAggregates.filter( aggregate => aggregate.relay === normalized || aggregate.relay === relay)
+                // console.warn('derived relays: duplicate', matches?.length, matches);    
                 return;
             }
             relays.add(normalized);

@@ -4,20 +4,11 @@
 	import MapBasic from "./MapBasic.svelte";
 	import MapHeat from "./MapHeat.svelte";
 	import MapViewSelector from "./MapViewSelector.svelte";
-	import { pauseLiveSync } from "$utils/lifecycle";
-	import { onMount } from "svelte";
 
     export let data: Readable<any[]> | undefined;
     export let filters: Writable<{}>;
 
     let activeView: Writable<DataViewMapViews>;
-
-    // onMount(() => {
-        // const resumer = pauseLiveSync()
-        // return async () => {
-        //   (await resumer)()
-        // }
-    // })
 
 </script>
 

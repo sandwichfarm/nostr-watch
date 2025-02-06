@@ -30,11 +30,9 @@ export class FeedService extends Service {
         super(adapters)
         this._relays = [...this._relays, ...relays]
         this._filters = filters
-        // console.log('filters', filters, this._filters, this.filters)
         this._relay.on('qualify', (event: IEvent) => {
             return true
         })
-
         this._relay.on('instantiate', (event: IEvent) => {
             // let user: User | undefined; 
             // user = pubkeyUserInstance(event.pubkey)
@@ -191,6 +189,7 @@ export class FeedService extends Service {
     }
 
     destroy(){
+        this.unsubscribeAll()
         this.memoryRelay.destroy()
     }
 }

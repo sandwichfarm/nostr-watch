@@ -68,10 +68,10 @@ export const filterFormatters: Formatters = {
 }
 
 export const tableRowStyler = (row: Record<string, any>) => {
-    //console.log(`tableRowStyler:`, 'active', row.active, row)
-    return {
-        'h-[100px]': true
-    }
+    return 'h-[100px]'
+    // return {
+    //     'h-[100px]': true
+    // }
 }
 
 export default {

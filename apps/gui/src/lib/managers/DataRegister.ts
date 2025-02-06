@@ -1,4 +1,5 @@
 import { StateManager } from '@nostrwatch/route66';
+import { delay } from '@nostrwatch/utils';
 import { minimatch } from 'minimatch';
 import timestring from 'timestring';
 
@@ -57,7 +58,7 @@ export class DataRegister {
     private _ready: boolean = false;
 
     constructor(){
-        setInterval(this.debug.bind(this), 3000)
+        // setInterval(this.debug.bind(this), 3000)
     }
 
     get availableKeys(): string[] {
@@ -175,18 +176,18 @@ export class DataRegister {
         
         const expiry = this._dataSets.get(key)?.expiry || this._composite.get(key)?.expiry;
         if(!expiry) {
-            console.log(`isExpired: ${key} has no expiry (always expired)`)
+            // console.log(`isExpired: ${key} has no expiry (always expired)`)
             return true;
         }
         //console.log(`isExpired: ${key} seeded`, this._seeded.get(key))
         const timestamp = this._timestamps.get(key);
         if(!timestamp) {
-            console.log(`isExpired: ${key} has no timestamp (never been ran)`)
+            // console.log(`isExpired: ${key} has no timestamp (never been ran)`)
             return true;
         }
 
         const expired = Date.now() - timestamp > (expiry as number);
-        console.log(`isExpired: cache has expired`, `${Date.now()} - ${timestamp} [${Date.now()-timestamp}]`, `>`,` ${expiry}`, 'evaluates as:', expired)
+        // console.log(`isExpired: cache has expired`, `${Date.now()} - ${timestamp} [${Date.now()-timestamp}]`, `>`,` ${expiry}`, 'evaluates as:', expired)
         
         return Date.now() - timestamp > (expiry as number);
     }
@@ -234,6 +235,7 @@ export class DataRegister {
             await onComplete(result)
         }
         this._seeded.set(key, true)
+        await delay(10)
     }
 
     private async executeComposite(args: DataRegisterCompositeExecutorArguments = { key: '', params: {} }) {

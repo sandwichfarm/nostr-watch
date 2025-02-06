@@ -7,7 +7,7 @@ export const generateRelayPathFromUrl = (inputUrl: string): string | undefined =
       const url = new URL(inputUrl);
       const protocol = url.protocol.slice(0, -1);
       const everythingElse = inputUrl.split('://')[1];
-      return `${protocol}/${everythingElse}`;
+      return `${protocol}/${everythingElse}`.slice(0, -1);
     } catch (error) {
       console.warn(`Failed to format relay url: ${inputUrl}`);
     }

@@ -20,12 +20,13 @@ import NostrSqliteAdapter from '@nostrwatch/route66-cacheadapter-nostrsqlite';
 import NostrToolsAdapter from '@nostrwatch/route66-wsadapter-nostrtools';
 import type { Nip05Service } from '../services/Nip05Service';
 import type { Nip05 } from 'nostr-tools/nip05';
-import { nip11Service, operatorPubkeys, operatorPubkeysValid, relaysWithNip11s, relaysWithoutNip11s } from '../stores';
+import { nip11Service, operatorPubkeys, operatorPubkeysValid } from '../stores';
 import { userService } from '../stores/services';
 import type { UserService } from '../services/UserService';
 import type { Filter } from 'nostr-tools';
 import type { Nip11Service } from '../services/Nip11Service';
 import { debounce } from 'lodash';
+import { relaysWithNip11s$, relaysWithoutNip11s$ } from '$stores/helpers/helpers-nip11s';
 
 let $monitorsMap: Map<string, Monitor>;
 let emittersBound: boolean = false; 
@@ -254,8 +255,8 @@ export const bootstrapOperatorsMeta = async (pubkeys?: string[]) => {
 
 export const fetchNip11s = async () => {
     const $nip11Service: Nip11Service = get(nip11Service);
-    const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s);
-    const $relaysWithNip11s: string[] = get(relaysWithNip11s);
+    const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s$());
+    const $relaysWithNip11s: string[] = get(relaysWithNip11s$());
     const relays: string[] = Array.from(new Set([...$relaysWithoutNip11s, ...$relaysWithNip11s]));
     if(relays.length === 0) return;
     const promises: Promise<any>[] = [];

@@ -3,13 +3,7 @@
     import { writable, type Writable } from "svelte/store";
     import { Auditor } from "@nostrwatch/auditor";
     import * as Tabs from "$lib/components/ui/tabs";
-
-
-    // Assume pauseLiveSync is imported from a utility module
-    import { pauseLiveSync } from '$lib/utils/lifecycle.js'; // Update the path as necessary
     import type { Note } from "nostr-tools/nip19";
-	// import Badge from "../../ui/badge/badge.svelte";
-	import type { Nip11 } from "@nostrwatch/route66/models";
 
     import * as Alert from "$lib/components/ui/alert/index.js";
 	import Badge from "$ui/badge/badge.svelte";
@@ -17,12 +11,9 @@
 	import { generateRelayUrlFromPath } from "$utils/routing";
 	import { relayNip11$ } from "$stores/helpers/helpers-nip11s";
 
-
-    // Props passed to the component
     const relayUrl = generateRelayUrlFromPath();
     const nip11 = relayNip11$(relayUrl);
 
-    // Interfaces to define the structure of suites and tests
     interface TestResult {
         suiteKey: string;
         testKey: string;
@@ -47,16 +38,12 @@
         status: 'running' | 'finished';
     }
 
-    // Writable store to hold audit results as a list of suites
     const auditResults: Writable<SuiteResult[]> = writable([]);
 
-    // Reactive variable to track expanded sample sets
     let expandedSamples: Record<string, boolean> = {};
 
-    // Handler for when a suite starts
     const onSuiteStart = (suiteKey: string) => {
         auditResults.update(suites => {
-            // Avoid adding duplicate suites
             if (!suites.find(s => s.suiteKey === suiteKey)) {
                 return [...suites, {
                     suiteKey,
@@ -69,10 +56,8 @@
             }
             return suites;
         });
-        ////console.log(`Suite Start: ${suiteKey}`);
     };
 
-    // Handler for when a suite finishes
     const onSuiteFinish = (suiteKey: string, result: any) => {
         auditResults.update(suites => {
             const suite = suites.find(s => s.suiteKey === suiteKey);
@@ -83,12 +68,9 @@
             }
             return suites;
         });
-        ////console.log(`Suite Finish: ${suiteKey}`, result);
     };
 
-    // Handler for when a test within a suite starts
     const onSuiteTestStart = (suiteKey: string, testKey: string | undefined) => {
-        
         if (!testKey) {
             console.warn(`Suite Test Start emitted with undefined testKey in Suite: ${suiteKey}`);
             return;
@@ -117,10 +99,8 @@
             }
             return suites;
         });
-        ////console.log(`Suite Test Start: ${testKey} in Suite: ${suiteKey}`);
     };
 
-    // Handler for when a test within a suite finishes
     const onSuiteTestFinish = (suiteKey: string, testResult: any) => {
         const { testKey } = testResult;
         if (!testKey) {
@@ -164,10 +144,8 @@
             }
             return suites;
         });
-        ////console.log(`Suite Test Finish: ${testKey} in Suite: ${suiteKey}`, testResult);
     };
 
-    // Handler for when samples are emitted for a suite
     const onSuiteSamples = (suiteKey: string, samples: Record<string, any[]>) => {
         auditResults.update(suites => {
             const suite = suites.find(s => s.suiteKey === suiteKey);
@@ -189,10 +167,13 @@
         ////console.log(`Suite Samples: ${suiteKey}`, samples);
     };
 
-    onMount(async () => {});
+    const ready: Writable<boolean> = writable(false);
+
+    onMount(async () => {
+        setTimeout(() => ready.set(true), 400)
+    });
 
     const run = async () => {
-        const resumer = await pauseLiveSync();
         const audit = new Auditor();
         if ($nip11 && $nip11?.supportedNips) {
             audit.applySupportedNips($nip11.supportedNips);
@@ -200,7 +181,6 @@
             await audit.detectSupportedNips()
         }
 
-        // Register event listeners
         audit.on('auditor.suite:start', (suiteKey: string) => onSuiteStart(suiteKey));
         audit.on('auditor.suite:finish', (suiteKey: string, result: any) => onSuiteFinish(suiteKey, result));
         audit.on('auditor.suite.test:start', (suiteKey: string, testKey: string | undefined) => onSuiteTestStart(suiteKey, testKey));
@@ -212,7 +192,7 @@
             console.error('Audit failed:', err);
         });
 
-        await resumer();
+        // await resumer();
     }
 
     // Function to toggle the expansion of a sample-set
@@ -222,6 +202,8 @@
     }
 </script>
 
+
+{#if ready}
 <Button 
     on:click={run}
     variant="default" 
@@ -496,7 +478,7 @@
             {/each}
         </div>
     </div>
-
+{/if}
     <style>
         /* Optional: Customize scrollbar for better aesthetics */
         pre::-webkit-scrollbar {

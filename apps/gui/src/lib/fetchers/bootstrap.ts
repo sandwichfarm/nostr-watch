@@ -1,12 +1,13 @@
 import { bindBootstrapEmitters, instance } from "../utils/lifecycle";
 import type { Nip11Service } from "$lib/services/Nip11Service";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
-import { nip11Service, relaysWithNip11s, relaysWithoutNip11s } from "$stores/nip11s";
+import { nip11Service } from "$stores/nip11s";
 import { get } from "svelte/store";
 import type { Filter } from "nostr-tools";
 import type { WebsocketAdapterOptions } from "@nostrwatch/route66/core/WebsocketAdapter";
 import { operatorsPubkeys, operatorsPubkeysValid } from "$stores/operators";
 import { delay } from "@nostrwatch/utils";
+import { relaysWithNip11s$, relaysWithoutNip11s$ } from "$stores/helpers/helpers-nip11s";
 
 export const fetchMonitors = async () => {
     const $route66 = await instance();
@@ -24,8 +25,8 @@ export const fetchMonitorsChecks = async () => {
 
 export const fetchNip11s = async () => {
     const $nip11Service: Nip11Service = get(nip11Service);
-    const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s);
-    const $relaysWithNip11s: string[] = get(relaysWithNip11s);
+    const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s$());
+    const $relaysWithNip11s: string[] = get(relaysWithNip11s$());
     const relays: string[] = Array.from(new Set([...$relaysWithoutNip11s, ...$relaysWithNip11s]));
     if(relays.length === 0) return;
     const promises: Promise<any>[] = [];

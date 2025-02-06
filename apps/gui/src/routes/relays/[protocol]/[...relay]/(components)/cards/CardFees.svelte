@@ -33,7 +33,7 @@
 
     $: paymentsUrl = $nip11?.paymentsUrl || undefined;
     $: type = Array.isArray(fees) ? 'array' : typeof $fees;
-    $: feeKeys = type === 'object' && fees? Object.keys($fees): [];
+    $: feeKeys = type === 'object' && $fees? Object.keys($fees || {}): [];
     $: keysLength = feeKeys.length;
 </script>
 {#if keysLength > 0}

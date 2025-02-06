@@ -57,3 +57,46 @@ export const liveSync = () => {
     }
     beginLiveSync({ onevents })
 }
+
+
+//relay live sync
+export const beginRelayLiveSync = async (relay: string, callbacks?: SubscribeHandlers): Promise<void> => {
+    isLivesyncing.set(true)
+    if(!$route66){
+        $route66 = await instance();
+    }
+    $route66?.services?.relay?.beginLiveSync(relay, callbacks)
+}
+
+export const stopRelayLiveSync = async (): Promise<void> => {
+    isLivesyncing.set(false)
+    if(!$route66){
+        $route66 = await instance();
+    }
+    $route66?.services?.relay?.stopLiveSync()
+}
+
+export const pauseRelayLiveSync = async (relay: string): Promise<LiveSyncResumer> => {
+    let wasLiveSyncing = get(isLivesyncing)? true: false;
+    if(!$route66){
+        $route66 = await instance();
+    }
+    if(wasLiveSyncing){
+        await stopRelayLiveSync()
+    }
+    return async () => {
+        if(wasLiveSyncing){
+            beginRelayLiveSync(relay)
+        }
+    }
+}
+
+export const relayLiveSync = (relay: string) => {
+    if(get(isLivesyncing)) return;
+    const onevents = (events: IEvent[]) => {
+        for(const event of events){
+            liveSyncBatcher.add(event); 
+        }
+    }
+    beginRelayLiveSync(relay, { onevents })
+}

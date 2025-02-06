@@ -18,22 +18,23 @@
 	import Badge from '$lib/components/ui/badge/badge.svelte';
     import Button from '$lib/components/ui/button/button.svelte';
 	import { truncateWithEllipsis } from '$utils/strings';
-	// import OperatorRelays from '$lib/components/partials/OperatorRelays.svelte';
 
-    export let relayUrl: string;
     export let pubkey: string;
 
-    const profile: Readable<PubkeyProfile | undefined> = pubkeyProfile$(pubkey);
-    const relayListNote: Readable<PubkeyRelays | undefined> = pubkeyRelays$(pubkey);
-
-    let otherRelaysCount: number;
+    let profile: Readable<PubkeyProfile | undefined> = readable(undefined, () => {});
+    let relayListNote: Readable<PubkeyRelays | undefined> = readable(undefined, () => {});
 
     const mount = async () => {
         if(!$route66) return;
         await $route66.ready();
+        profile = pubkeyProfile$(pubkey);
+        relayListNote = pubkeyRelays$(pubkey);
     }
 
-    const destroy = () => {}
+    const destroy = () => {
+        profile = readable(undefined, () => {});
+        relayListNote = readable(undefined, () => {});
+    }
 
     const operatorRelaysOperated = operatorRelaysOperated$(pubkey);
 

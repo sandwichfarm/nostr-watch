@@ -1,18 +1,19 @@
 import { derived, get, writable, type Readable, type Writable } from "svelte/store";
 import { Nip66CheckEvent, type INip11 } from "@nostrwatch/route66/models"
-import { deterministicHash } from "@nostrwatch/route66/utils";
 
-import { eventsArray } from './events.js'; 
+
 import { Nip11Service } from "$lib/services/Nip11Service";
 import { StateManager } from "@nostrwatch/route66";
 import { compress, decompress } from "compress-json";
 import { Nip11 } from "@nostrwatch/route66/models";
 import { doAggregateCache, hasBeenBootstrapped, hasBeenSeeded } from "./app.js";
 import type { RelayInformation } from "@nostrwatch/route66/models";
-import type { nip11 } from "nostr-tools";
 import { relayCheckAggregates } from "./checks.js";
 import { isPubkey } from "../utils/nostr.js";
 import { throttledDerived } from "$utils/stores.js";
+import type { SchemaValidationServiceResponse } from "$lib/services/SchemaValidationService/index.js";
+
+import { eventsArray } from './events.js'; 
 
 type RelayUrl = string
 
@@ -89,31 +90,6 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
     return nip11Map;
   }
 );
-
-
-export const relaysWithNip11s: Readable<string[]> = derived(
-  nip11s,
-  ($nip11s) => {
-    const result = new Set()
-    for(const relay of $nip11s.keys()) {
-      result.add(relay)
-    }
-    return Array.from(result) as string[]
-  }
-)
-
-export const relaysWithoutNip11s: Readable<string[]> = derived(
-  relayCheckAggregates,
-  ($relayCheckAggregates) => {
-    const result = new Set()
-    $relayCheckAggregates.forEach( (check: any) => { 
-      if(!check.hasNip11) {
-        result.add(check.relay)
-      }
-    })
-    return Array.from(result) as string[]
-  }
-)
 
 export const operatorPubkeys: Readable<string[]> = derived(
   nip11s,

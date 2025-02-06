@@ -14,6 +14,8 @@ import type { DD } from '@nostrwatch/route66/models/Geocoded';
 import { Nip66CheckEvent, PubkeyProfile } from '@nostrwatch/route66/models';
 import { pubkeyProfile, pubkeyUserInstance } from '$lib/stores/helpers/helpers-pubkey';
 import type { NameFormatter } from '$lib/components/DataView/DataTableTypes';
+import { nip11 } from 'nostr-tools';
+import { nip11ValidationErrorCount } from '$stores/nip11-validations';
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -62,23 +64,19 @@ export const filtersDisable: DataKeys = ['relay', 'as', 'asname', 'icon', 'banne
 export const columnsShow: DataKeys = ['relay', 'lastSeen', 'geocode', 'paymentRequired', 'authRequired']
 export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
 
-export const availableColumnKeys: string[] = [
+const availableKeys: string[] = [
     ...(columnsDisable
         ? Nip66CheckEvent.keys.filter(key => !columnsDisable.includes(key))
         : Nip66CheckEvent.keys),
     "seenBy",
     "lastSeen",
-    "seenTimes"
+    "seenTimes",
+    "nip11IsValid",
+    "nip11ValidationErrors"
 ]
 
-export const availableFilterKeys: string[] = [
-    ...(columnsDisable
-        ? Nip66CheckEvent.keys.filter(key => !filtersDisable.includes(key))
-        : Nip66CheckEvent.keys),
-    "seenBy",
-    "lastSeen",
-    "seenTimes"
-]
+export const availableColumnKeys = [...availableKeys]
+export const availableFilterKeys = [...availableKeys]
 
 export const prettyNames: NameFormatter = {
     dd: {
@@ -215,32 +213,15 @@ export const prettyNames: NameFormatter = {
     createdAtUpperLimit: {
         short: 'Upper Limit',
         long: 'Created At Upper Limit'
+    },
+    nip11IsValid: {
+        short: 'NIP-11 Valid',
+        long: 'NIP-11 is Valid'
+    },
+    nip11ValidationErrors: {
+        short: 'NIP-11 Errors #',
+        long: 'NIP-11 Validation Errors Count'
     }
-    // 'Decimal Degrees',
-    // geohash: 'Geohash',
-    // ipv4: 'IPv4',
-    // ipv6: 'IPv6',
-    // as: 'AS',
-    // asname: 'AS Name',
-    // seenBy: 'Seen By',
-    // seenTimes: 'Seen',
-    // networks: 'Network',
-    // lastSeen: 'Last Seen',
-    // supportedNips: 'NIPs',
-    // software: 'Software',
-    // relay: 'Relay',
-    // rttNormalized: 'Speed',
-    // geocode: 'Country',
-    // paymentRequired: 'Payment',
-    // authRequired: 'Auth',
-    // isp: 'ISP',
-    // hasNip11: 'Has Nip11',
-    // operatorPubkey: 'Op.',
-    // operatorPubkeyValid: 'Operator Pubkey is Valid',
-    // rtt: "Avg. RTT",
-    // admissionFee: "Adm. Cost",
-    // subscriptionFee: "Sub. Cost",
-    // publicationFee: "Pub. Cost"
 };
 
 const formatFee = (fees: Nip11Fee[]) => {
@@ -309,6 +290,16 @@ export const tableFormatters: Formatters = {
         if(!ipv4) return '';
         return ipv4.map(ip => `<span class="p-1 mr-1 block text-xs clear-right">${ip}</span>`).join('');
     },
+    nip11ValidationErrors: (errorsCount) => {
+        if(errorsCount === 0) 
+            return ``; 
+        else 
+            return `<span class="text-xs font-bold bg-red-600/50 px-2 py-1 rounded-full inline-block">
+                ${errorsCount}
+                </span>`;    
+    },
+
+
     seenBy: (pubkeys: string[], row: any): string => {
         let str = '<div class="flex items-center whitespace-nowrap">';
         let i = 0;

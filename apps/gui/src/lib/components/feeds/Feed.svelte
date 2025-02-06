@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
-    import { get, writable, type Readable, type Writable } from 'svelte/store';
+    import { get, readable, writable, type Readable, type Writable } from 'svelte/store';
 
     import type { Filter } from 'nostr-tools';
 
@@ -29,26 +29,32 @@
     export let autoScroll: boolean = false;
     export let parserOptions: ParseConfig = {}; 
 
-    let resumer: Function | undefined;
+    // let resumer: Function | undefined;
 
     const feedService: Writable<FeedService | null> = writable(null);
     let items: Readable<NostrEvent[]> | undefined;
 
+    const notesNotFound = writable(false);
+
     const mount = async () => {
-        resumer = await pauseLiveSync();
+        // resumer = await pauseLiveSync();
         if(!$route66) return console.warn('route66 does not exist.');
         await $route66.ready();
         feedService.set(new FeedService($route66.adapters, filters));
         $feedService!.populate();
         items = $feedService!.memoryRelay.$req(deterministicHash(filters), filters)
+        setTimeout(() => {
+            if($items?.length === 0) notesNotFound.set(true)
+        }, 10000)
     }
 
     const destroy = () => {
         $feedService!.unsubscribeAll().then( () => {
             $feedService!.destroy();
             feedService.set(null) 
+            items = readable([], () => {});
         });
-        resumer?.()
+        // resumer?.()
     }
 
     onMount(mount);
@@ -57,7 +63,15 @@
 </script>
 
     {#if $items?.length === 0}
+        {#if $notesNotFound}
+        <div class="!flex !flex-col !text-center !items-center !justify-center h-full">
+            <div class="!flex !items-center !space-x-2">
+                <span class="!text-2xl italic opacity-50">Couldn't find any notes.</span>
+            </div>
+        </div>
+       {:else}
        <Loading />
+       {/if}
     {/if}
 
     {#if $feedService && $items?.length}

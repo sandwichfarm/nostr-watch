@@ -47,29 +47,17 @@
 		ready.set(true)
 	}
 
-    onMount(async () => {
+    onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         doAggregateCache.set(true)
         // console.log('OPERATORS: LOADING COMPONENTS')
-        await loadComponents().then(setConfig);
-            // setConfig()
-            // 
-            // await (await instance()).ready()
-            // if(canSeedFromCache()){
-            //     console.log('OPERATORS: SEEDING')
-            //     // seedMetaFromCache()
-            // }
-            // else {
-            //     console.log('OPERATORS: BOOTSTRAPPING')
-            //     await bootstrapOperatorsMeta()
-            //     doBootstrap.set(true)
-            //     doAggregateCache.set(true)
-            // }
-        // });
-        await $dataRegister.require([
-            'sync:cache',
-            'sync:all',
-        ]); 
+        loadComponents().then( () => {
+            setConfig()
+            $dataRegister.require([
+                'sync:cache',
+                'sync:all',
+            ]); 
+        });
     });
 
     onDestroy(() => {

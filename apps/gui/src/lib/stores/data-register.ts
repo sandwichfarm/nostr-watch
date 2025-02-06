@@ -62,7 +62,7 @@ export const dataRegisterInit = async () => {
 
     data.register({
         key: 'sync:relay:live',
-        priority: 12,
+        priority: 200,
         fn: async (relay: string) => relayLiveSync(relay)
     });
 

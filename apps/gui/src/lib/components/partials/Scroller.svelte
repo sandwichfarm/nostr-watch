@@ -39,8 +39,12 @@
   }
 
   onMount(() => {
-    setTimeout(updateContentWidth, 100)
-    setInterval(updateContentWidth, 100); 
+    const timeout = setTimeout(updateContentWidth, 100)
+    const interval = setInterval(updateContentWidth, 100); 
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    }
   });
 </script>
 

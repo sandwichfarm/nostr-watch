@@ -10,7 +10,6 @@
 
 	import type { PubkeyProfile, PubkeyRelays } from '@nostrwatch/route66/models';
 	import { Monitor } from '@nostrwatch/route66/models';
-	// import Badge from '$lib/components/ui/badge/badge.svelte';
 	import { readable, type Readable } from 'svelte/store';
 	import { pubkeyProfile$, pubkeyRelays$ } from '$stores/helpers/helpers-pubkey';
 	import RelayOperatorMiniFeed from '../RelayOperatorMiniFeed.svelte';

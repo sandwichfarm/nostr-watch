@@ -10,7 +10,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
-    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname.endsWith('nostr.watch')) {
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname.includes('nostr.watch')) {
         return;
     }
     if (url.pathname.match(/\.(webp|jpg|png|gif|svg|jpeg|well-known)$/)) {
@@ -20,7 +20,7 @@ self.addEventListener('fetch', (event) => {
                     if (response.ok) {
                         return response;
                     }
-                    throw new Error('Fetch failed');
+                    // throw new Error('Fetch failed');
                 })
                 .catch(() => {
                     const proxyUrl = `https://proxy.nostr.watch/${url.href}`;

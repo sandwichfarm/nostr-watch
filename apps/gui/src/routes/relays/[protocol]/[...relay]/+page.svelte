@@ -164,7 +164,9 @@
   
   <!-- Main Cards Display Area -->
   <div class="space-y-6">
+	{#if enabledCards.length}
 	{#each enabledCards as item (item.id)}
+	  {#if cardImports?.[item.id]}
 	  {#await import(cardImports[item.id])}
 		<!-- loading... -->
 	  {:then { default: Component } }
@@ -177,6 +179,8 @@
 		  <p class="text-red-800">{error.message}</p>
 		</div>
 	  {/await}
+	  {/if}
 	{/each}
+	{/if}
   </div>
   

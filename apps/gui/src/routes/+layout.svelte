@@ -37,11 +37,11 @@
 
   window.process = process;
 
-  if ('serviceWorker' in navigator) {
-    addEventListener('load', function () {
-      navigator.serviceWorker.register('$src/service-worker/index.js'); 
-    });
-  }
+  // if ('serviceWorker' in navigator) {
+  //   addEventListener('load', function () {
+  //     navigator.serviceWorker.register('$src/service-worker/cors.js'); 
+  //   });
+  // }
 
   const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 

@@ -25,6 +25,8 @@
 	import ActivityList from '$lib/components/partials/ActivityList.svelte';
 	import { dataRegister, dataRegisterInit } from '$stores/data-register';
 
+  import { ActivityManager } from '$lib/managers/ActivityManager';
+
   import { 
     type TabStateType, 
     unsupported, 
@@ -75,72 +77,72 @@
     }
   }
 
-  // --------------------------------------------------------------------------------
-  // Utility to change tabState using store.get instead of $tabState in TS context
-  // --------------------------------------------------------------------------------
-  function setTabState(newState: TabStateType) {
-    if (get(tabState) === newState) return;
-    tabState.update(() => newState);
-    console.log(`Tab state updated to: ${newState}`);
-  }
+  // // --------------------------------------------------------------------------------
+  // // Utility to change tabState using store.get instead of $tabState in TS context
+  // // --------------------------------------------------------------------------------
+  // function setTabState(newState: TabStateType) {
+  //   if (get(tabState) === newState) return;
+  //   tabState.update(() => newState);
+  //   console.log(`Tab state updated to: ${newState}`);
+  // }
 
-  // --------------------------------------------------------------------------------
-  // Idle Logic
-  // --------------------------------------------------------------------------------
-  function handleIdle() {
-    console.log('User is idle.');
-    setTabState('idle');
-    isIdle.set(true);
-    lifecycle.releaseLeadership();
-  }
+  // // --------------------------------------------------------------------------------
+  // // Idle Logic
+  // // --------------------------------------------------------------------------------
+  // function handleIdle() {
+  //   console.log('User is idle.');
+  //   setTabState('idle');
+  //   isIdle.set(true);
+  //   lifecycle.releaseLeadership();
+  // }
 
-  async function handleActive() {
-    console.log('User is active.');
-    try {
-      setTabState('follower');
-      await lifecycle.acquireLeadership();
-      if (get(unsupported)) return;
-      setTabState('leader');
-      await boot();
-      idleDetector?.reset?.();
-      isIdle.set(false);
-    } catch (error) {
-      console.error('Error in handleActive:', error);
-      setTabState('follower');
-    }
-  }
+  // async function handleActive() {
+  //   console.log('User is active.');
+  //   try {
+  //     setTabState('follower');
+  //     await lifecycle.acquireLeadership();
+  //     if (get(unsupported)) return;
+  //     setTabState('leader');
+  //     await boot();
+  //     idleDetector?.reset?.();
+  //     isIdle.set(false);
+  //   } catch (error) {
+  //     console.error('Error in handleActive:', error);
+  //     setTabState('follower');
+  //   }
+  // }
 
-  // --------------------------------------------------------------------------------
-  // Lifecycle: Leader events
-  // --------------------------------------------------------------------------------
-  lifecycle.onStartLeader(async () => {
-    console.log('[Lifecycle] onStartLeader triggered.');
-    if (get(unsupported)) return;
-    setTabState('leader');
-    try {
-      await boot();
-    } catch (error) {
-      console.error('[Lifecycle] Error in onStartLeader:', error);
-    }
-  });
+  // // --------------------------------------------------------------------------------
+  // // Lifecycle: Leader events
+  // // --------------------------------------------------------------------------------
+  // lifecycle.onStartLeader(async () => {
+  //   console.log('[Lifecycle] onStartLeader triggered.');
+  //   if (get(unsupported)) return;
+  //   setTabState('leader');
+  //   try {
+  //     await boot();
+  //   } catch (error) {
+  //     console.error('[Lifecycle] Error in onStartLeader:', error);
+  //   }
+  // });
 
-  lifecycle.onLeaderAcquired(async () => {
-    console.log('[Lifecycle] onLeaderAcquired triggered.');
-    if (get(unsupported)) return;
-    setTabState('leader');
-    try {
-      await boot();
-      // seedFromCache();
-    } catch (error) {
-      console.error('[Lifecycle] Error in onLeaderAcquired:', error);
-    }
-  });
+  // lifecycle.onLeaderAcquired(async () => {
+  //   console.log('[Lifecycle] onLeaderAcquired triggered.');
+  //   if (get(unsupported)) return;
+  //   setTabState('leader');
+  //   try {
+  //     await boot();
+  //     // seedFromCache();
+  //   } catch (error) {
+  //     console.error('[Lifecycle] Error in onLeaderAcquired:', error);
+  //   }
+  // });
 
-  lifecycle.onReleaseLeader(shutdown);
+  // lifecycle.onReleaseLeader(shutdown);
 
-  lifecycle.onWaitForLeaderRelease(() => {
-    console.log('[Lifecycle] Waiting for leader to release...');
-  });
+  // lifecycle.onWaitForLeaderRelease(() => {
+  //   console.log('[Lifecycle] Waiting for leader to release...');
+  // });
 
   // lifecycle.onTabInactive(shutdown);
 
@@ -158,11 +160,11 @@
 
   function unsubscribe() {
     unsubs.forEach(unsub => unsub());
-    if (idleDetector) {
-      idleDetector.destroy();
-      idleDetector = null;
-      console.log('IdleDetector destroyed on component cleanup.');
-    }
+    // if (idleDetector) {
+    //   // idleDetector.destroy();
+    //   // idleDetector = null;
+    //   console.log('IdleDetector destroyed on component cleanup.');
+    // }
   }
 
   // --------------------------------------------------------------------------------
@@ -172,10 +174,10 @@
     if (get(unsupported)) return;
     appState.set('booting');
     await initServices();
-    dataRegisterInit();
     appState.set('running');
     const route66 = await instance();
     await route66.ready();
+    dataRegisterInit();
     await delay(3000)
     await $dataRegister.require([
       'sync:cache',
@@ -228,19 +230,21 @@
     }
   }
 
-  // --------------------------------------------------------------------------------
-  // Recover leadership when tab becomes visible again
-  // --------------------------------------------------------------------------------
-  function recoverLeadershipOnVisibilityChange() {
-    if (document.visibilityState === 'visible') {
-      console.log('Tab became visible. Attempting to reclaim leadership...');
-      lifecycle.acquireLeadership();
-    }
-  }
+  // // --------------------------------------------------------------------------------
+  // // Recover leadership when tab becomes visible again
+  // // --------------------------------------------------------------------------------
+  // function recoverLeadershipOnVisibilityChange() {
+  //   if (document.visibilityState === 'visible') {
+  //     console.log('Tab became visible. Attempting to reclaim leadership...');
+  //     lifecycle.acquireLeadership();
+  //   }
+  // }
 
   // --------------------------------------------------------------------------------
   // onMount logic
   // --------------------------------------------------------------------------------
+  let activityManager: ActivityStateManager;
+
   onMount(() => {
     checkSupport();
     if (get(unsupported)) return;
@@ -249,20 +253,30 @@
       doBootstrap.set(true);
     }
 
-    if (!idleDetector) {
-      idleDetector = new IdleDetector({
-        idleTimeoutMs: IDLE_TIMEOUT_MS,
-        onIdle: handleIdle,
-        onActive: handleActive,
-      });
-    }
+    // if (!idleDetector) {
+    //   idleDetector = new IdleDetector({
+    //     idleTimeoutMs: IDLE_TIMEOUT_MS,
+    //     onIdle: handleIdle,
+    //     onActive: handleActive,
+    //   });
+    // }
 
-    document.addEventListener('visibilitychange', recoverLeadershipOnVisibilityChange);
+    activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
 
-    lifecycle.acquireLeadership();
+    activityManager.on('active', async () => {
+      await boot();
+      console.log('ActivityManager: handler: TAB IS ACTIVE', '+layout.svelte');
+      console.log(`STATE IS ${$tabState}`, '+layout.svelte')
+    });
+
+    activityManager.on('inactive', async () => {
+      await shutdown();
+      console.log('TAB IS INACTIVE');
+      console.log(`STATE IS ${$tabState}`, '+layout.svelte')
+    });
 
     return () => {
-      document.removeEventListener('visibilitychange', recoverLeadershipOnVisibilityChange);
+      activityManager.destroy();
     };
   });
 
@@ -271,15 +285,17 @@
     resetStores();
   });
 
-  $: if ($navigating) {
-    checkSupport();
-    if (!get(unsupported) && !busy) {
-      boot();
-    }
-  }
+  // $: if ($navigating) {
+  //   checkSupport();
+  //   if (!get(unsupported) && !busy) {
+  //     boot();
+  //   }
+  // }
 
   $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
 </script>
+
+
 
 {#if $unsupported}
   <div>
@@ -299,7 +315,7 @@
         <ActivityList />
       </div>
       {/if}
-    {:else if $tabState === 'idle'}
+    <!-- {:else if $tabState === 'idle'}
       <div class="flex items-center justify-center h-screen">
         <div class="text-2xl">Zzz</div>
       </div>
@@ -307,7 +323,13 @@
       <div class="flex flex-col items-center justify-center h-screen px-4">
         <div class="text-2xl">Another Session Detected</div>
         <div class="text-lg text-center">Please wait while the existing session is terminated.</div>
-      </div>
+      </div> -->
+    {:else}
+    <div class="flex flex-col items-center justify-center h-screen px-4">
+      <div class="text-2xl">{$tabState}</div>
+      <!-- <div class="text-lg text-center">Please wait while the existing session is terminated.</div> -->
+    </div>
+    
     {/if}
   {/if}
 {/if}

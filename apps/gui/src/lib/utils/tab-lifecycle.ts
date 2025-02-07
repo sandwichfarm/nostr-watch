@@ -21,7 +21,7 @@ export class TabLifecycle {
   private channel: BroadcastChannel | null = null;
   private myId: string;
   private leaderId: string | null = null;
-  private isLeader = false;
+  private _isLeader = false;
 
   private onStartLeaderHandler: Handler = () => {};
   private onReleaseLeaderHandler: Handler = () => {};
@@ -63,6 +63,14 @@ export class TabLifecycle {
     });
 
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
+  }
+
+  get isLeader() {
+    return this._isLeader;
+  }
+
+  private set isLeader(value: boolean) {
+    this._isLeader = value;
   }
 
   private handleVisibilityChange = () => {

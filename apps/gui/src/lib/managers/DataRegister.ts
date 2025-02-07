@@ -205,7 +205,7 @@ export class DataRegister {
     }
 
     private async execute(keys: string[], _params: Record<string, any> = {}): Promise<DataRegister> {
-        //console.log('execute', keys, _params)
+        
         for (const key of keys) {
             if(this.busy(key)) continue;
             const params = this.extractParams(key, _params);
@@ -224,7 +224,7 @@ export class DataRegister {
     }
 
     private async executeFunction(args: DataRegisterExecutorArguments = { key: '', ignoreCondition: false, ignoreExpiry: false, params: [] }) {  
-        //console.log('execute', args)
+        // console.log('execute', args)
         const { key, ignoreCondition, params } = args;
         const passesCondition = await this.testCondition(key, ignoreCondition);
         if(!passesCondition) return;
@@ -239,7 +239,7 @@ export class DataRegister {
     }
 
     private async executeComposite(args: DataRegisterCompositeExecutorArguments = { key: '', params: {} }) {
-        //console.log('executeComposite', args)
+        // console.log('executeComposite', args)
         const { key: compositeKey, ignoreCondition: compositeIgnoreCondition, params:paramsMap } = args;
         const shouldRun = await this.testCondition(compositeKey, compositeIgnoreCondition, true);
         if (!shouldRun) {
@@ -251,6 +251,7 @@ export class DataRegister {
         //
         const results = new Map()
         for (const childKey of composite.keys) {
+            // console.log('executeComposite', 'childKey', childKey)
             if (this.busy(childKey)) continue;
             const params: any[] = this.extractParams(childKey, paramsMap);
             this.localStorageLoadTimestamp(childKey, params)

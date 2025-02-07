@@ -7,7 +7,7 @@ import { delay } from "@nostrwatch/utils";
 export type AppStateType = 'booting' | 'running' | 'shutdown'
 export const appState: Writable<AppStateType> = writable()
 
-export type TabStateType = 'idle' | 'leader' | 'follower' | 'unsupported';
+export type TabStateType = 'idle' | 'active' | 'inactive' | 'leader' | 'follower' | 'unsupported';
 export const tabState: Writable<TabStateType> = writable('follower');
 
 export const isIdle: Writable<boolean> = writable(false)

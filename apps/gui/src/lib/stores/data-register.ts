@@ -163,7 +163,7 @@ export const dataRegisterInit = async () => {
         key: 'sync:all',
         keys: ['sync:monitors', 'sync:checks', 'sync:nip11s', 'sync:operators', 'sync:live'],
         priority: -10,
-        expiry: SYNC_RELAY_ALL_EXPIRY,
+        // expiry: SYNC_RELAY_ALL_EXPIRY,
         onComplete: async () => isBootstrapped.set(true),
         ignoreConditions: {},
         ignoreExpiries: {}

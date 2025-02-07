@@ -18,7 +18,7 @@ function delay(ms: number): Promise<void> {
 
 export class ActivityManager {
   private currentState: ActivityState;
-  private transitioning: boolean = false; // <-- Guard flag to prevent overlapping transitions
+  private transitioning: boolean = false; // Guard flag to prevent overlapping transitions
 
   // External handlers now return Promise<void>
   private externalHandlers: { active: () => Promise<void>; inactive: () => Promise<void> } = {
@@ -33,17 +33,29 @@ export class ActivityManager {
   private myId: string;
   private leaderId: string | null = null;
   private isLeader: boolean = false;
-  // Lowered forced takeover timeout from 5000 ms to 1000 ms.
+  // Forced takeover timeout: 1000 ms.
   private releaseWaitTimeoutId: number | null = null;
   private releaseWaitTimeoutMs: number = 1000;
 
   // Delay before firing the active callback after claiming leadership.
   private LEADERSHIP_CONFIRM_DELAY_MS: number = 200;
 
+  // When the document becomes hidden, wait this many milliseconds before marking inactive.
+  private HIDDEN_DELAY_MS: number = 3000;
+
+  // Heartbeat: update leader timestamp every second.
+  private heartbeatIntervalId: number | null = null;
+  private HEARTBEAT_INTERVAL_MS: number = 1000;
+  // If the leader’s timestamp is older than this threshold, it’s considered stale.
+  private STALE_THRESHOLD_MS: number = 2500;
+
   private boundVisibilityHandler: () => void;
   private boundIdleEventHandler: (e: Event) => void;
   private boundChannelMessageHandler: (ev: MessageEvent) => void;
   private boundBeforeUnloadHandler: () => void;
+
+  // We'll store a timeout ID for the delayed hidden action.
+  private visibilityHiddenTimeoutId: number | null = null;
 
   constructor(idleTimeoutMs: number = 5 * 60 * 1000) {
     this.idleTimeoutMs = idleTimeoutMs;
@@ -99,9 +111,7 @@ export class ActivityManager {
    * The external handler for the new state is awaited before updating the state.
    */
   private async transitionState(newState: ActivityState) {
-    if (this.transitioning) return;
-    if (this.currentState === newState) return;
-
+    if (this.transitioning || this.currentState === newState) return;
     this.transitioning = true;
     console.log(`ActivityManager: Transitioning from ${this.currentState} to ${newState}`);
     if (this.isActiveState(newState)) {
@@ -157,14 +167,25 @@ export class ActivityManager {
   private async handleVisibilityChange() {
     console.log('ActivityManager: Visibility changed:', document.visibilityState);
     if (document.visibilityState === 'hidden') {
-      if (this.isLeader) {
-        await this.releaseLeadership();
-      } else {
-        // If not leader, ensure we’re marked inactive.
-        await this.transitionState('inactive');
+      // Instead of acting immediately, wait a bit before transitioning.
+      if (this.visibilityHiddenTimeoutId) {
+        clearTimeout(this.visibilityHiddenTimeoutId);
       }
-      this.clearIdleTimer();
+      this.visibilityHiddenTimeoutId = window.setTimeout(async () => {
+        if (document.visibilityState === 'hidden') {
+          if (this.isLeader) {
+            await this.releaseLeadership();
+          } else {
+            await this.transitionState('inactive');
+          }
+          this.clearIdleTimer();
+        }
+      }, this.HIDDEN_DELAY_MS);
     } else if (document.visibilityState === 'visible') {
+      if (this.visibilityHiddenTimeoutId) {
+        clearTimeout(this.visibilityHiddenTimeoutId);
+        this.visibilityHiddenTimeoutId = null;
+      }
       await this.onActivity();
     }
   }
@@ -179,13 +200,11 @@ export class ActivityManager {
         this.leaderId = newLeaderId;
         if (newLeaderId === this.myId) {
           this.isLeader = true;
-          // Wait before transitioning to 'leader'
           await delay(this.LEADERSHIP_CONFIRM_DELAY_MS);
           await this.transitionState('leader');
         } else {
           this.isLeader = false;
           if (document.visibilityState === 'visible') {
-            // When another tab is leader, mark this tab as inactive.
             await this.transitionState('inactive');
           }
         }
@@ -225,6 +244,23 @@ export class ActivityManager {
     }
   }
 
+  private startHeartbeat() {
+    this.clearHeartbeat();
+    this.heartbeatIntervalId = window.setInterval(() => {
+      if (this.isLeader) {
+        // Update the timestamp so that other tabs can detect a stale leader.
+        localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now() }));
+      }
+    }, this.HEARTBEAT_INTERVAL_MS);
+  }
+
+  private clearHeartbeat() {
+    if (this.heartbeatIntervalId !== null) {
+      clearInterval(this.heartbeatIntervalId);
+      this.heartbeatIntervalId = null;
+    }
+  }
+
   private async acquireLeadership() {
     if (this.isLeader) return;
 
@@ -255,7 +291,7 @@ export class ActivityManager {
       currentLeader &&
       currentLeader !== this.myId
     ) {
-      if (leaderTimestamp && Date.now() - leaderTimestamp > 2000) {
+      if (leaderTimestamp && Date.now() - leaderTimestamp > this.STALE_THRESHOLD_MS) {
         console.log('ActivityManager: Detected stale leader. Clearing it.');
         localStorage.removeItem('leaderId');
         currentLeader = null;
@@ -263,13 +299,14 @@ export class ActivityManager {
     }
 
     if (!currentLeader) {
-      // Claim leadership and wait briefly before firing the active callback.
+      // Claim leadership and start heartbeat.
       this.leaderId = this.myId;
       this.isLeader = true;
       localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now() }));
       this.sendMessage('leader-claimed', { leaderId: this.myId });
       await delay(this.LEADERSHIP_CONFIRM_DELAY_MS);
       await this.transitionState('leader');
+      this.startHeartbeat();
     } else if (currentLeader !== this.myId) {
       this.leaderId = currentLeader;
       this.sendMessage('request-leader-release', { requestingId: this.myId });
@@ -282,6 +319,7 @@ export class ActivityManager {
     } else {
       this.isLeader = true;
       await this.transitionState('leader');
+      this.startHeartbeat();
     }
   }
 
@@ -309,6 +347,7 @@ export class ActivityManager {
       }
     }
     this.isLeader = false;
+    this.clearHeartbeat();
     if (this.currentState !== 'inactive') {
       await this.transitionState('inactive');
     }

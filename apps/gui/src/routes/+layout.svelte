@@ -330,7 +330,8 @@
       </div> -->
     {:else}
     <div class="flex flex-col items-center justify-center h-screen px-4">
-      <div class="text-2xl">{$tabState}</div>
+      <div class="text-7xl"><small><small>z </small></small>zZ</div>
+      <div class="text-xs opacity-30">[{$tabState}]</div>
       <!-- <div class="text-lg text-center">Please wait while the existing session is terminated.</div> -->
     </div>
     

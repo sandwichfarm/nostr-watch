@@ -108,6 +108,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   async onMainThreadMessage(request: WebsocketRequest): Promise<void> {
+    console.log('WebsocketAdapter:AdapterWebsocketWorker: onMainThreadMessage', request)
     this.onMessage(request)
   }
 
@@ -116,6 +117,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   }
 
   onMessage(request: WebsocketRequest = defaultWebsocketRequest){
+    console.log('WebsocketAdapter:AdapterWebsocketWorker: onMessage', request)
     const { action, args } = request
     if(action === 'publish'){
       return this.publish(args)

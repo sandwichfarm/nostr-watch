@@ -276,6 +276,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   closeSubscription(hash?: string): void {}
 
   unsubscribe({ hash }: WebsocketRequestBody): void {
+    console.log('WebsocketAdapter:WebsocketAdapterWorker:NostrToolsWorker:unsubscribe', hash)
     if(!hash) return
     if(!this.subs.has(hash as string)) return
     const closer = this.subs.get(hash as string);

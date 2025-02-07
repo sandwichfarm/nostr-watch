@@ -63,7 +63,7 @@
   window.addEventListener('keydown', toggleDebugger);
 
   const shutdown = async () => {
-    console.log('[Lifecycle] onReleaseLeader triggered.');
+    console.log('Shutdown...');
     try {
       const route66 = await instance();
       await route66.ready();
@@ -80,11 +80,11 @@
   // // --------------------------------------------------------------------------------
   // // Utility to change tabState using store.get instead of $tabState in TS context
   // // --------------------------------------------------------------------------------
-  // function setTabState(newState: TabStateType) {
-  //   if (get(tabState) === newState) return;
-  //   tabState.update(() => newState);
-  //   console.log(`Tab state updated to: ${newState}`);
-  // }
+  function setTabState(newState: TabStateType) {
+    if (get(tabState) === newState) return;
+    tabState.update(() => newState);
+    console.log(`Tab state updated to: ${newState}`);
+  }
 
   // // --------------------------------------------------------------------------------
   // // Idle Logic
@@ -172,11 +172,15 @@
   // --------------------------------------------------------------------------------
   async function boot() {
     if (get(unsupported)) return;
+    console.log('Booting...');
     appState.set('booting');
     await initServices();
+    // console.log('Services initialized.');
     appState.set('running');
     const route66 = await instance();
+    // console.log('Instance acquired.');
     await route66.ready();
+    // console.log('Route66 ready.');
     dataRegisterInit();
     await delay(3000)
     await $dataRegister.require([
@@ -264,15 +268,15 @@
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
 
     activityManager.on('active', async () => {
+      // console.log('ActivityManager: handler: TAB IS ACTIVE', '+layout.svelte');
+      // console.log(`STATE IS ${$tabState}`, '+layout.svelte')
       await boot();
-      console.log('ActivityManager: handler: TAB IS ACTIVE', '+layout.svelte');
-      console.log(`STATE IS ${$tabState}`, '+layout.svelte')
     });
 
     activityManager.on('inactive', async () => {
+      // console.log('TAB IS INACTIVE');
+      // console.log(`STATE IS ${$tabState}`, '+layout.svelte')
       await shutdown();
-      console.log('TAB IS INACTIVE');
-      console.log(`STATE IS ${$tabState}`, '+layout.svelte')
     });
 
     return () => {

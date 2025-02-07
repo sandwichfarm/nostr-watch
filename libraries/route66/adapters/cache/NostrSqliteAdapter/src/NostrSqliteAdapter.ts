@@ -41,14 +41,15 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     }
 
     destroy(){
-        if(this.relay.worker instanceof Worker){
-            this.relay.worker.terminate()
-        }
+       this.abort()
     }
 
     setup(){}
 
-    async abort(): Promise<boolean>{ return true }
+    async abort(): Promise<boolean>{ 
+        this.relay.abort();
+        return true;
+    }
 
     /**
      * overload defaults with inop because WorkerRelayInterface handles it.

@@ -71,6 +71,7 @@ export class AdapterCacheWorker extends AdapterWorker {
   }
 
   async onMainThreadMessage(command: AdapterCacheWorkerCommand): Promise<void> {
+    // this.onMessage(command)
     return void 0;
   }
 

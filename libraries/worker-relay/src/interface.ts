@@ -23,6 +23,7 @@ export type batchNip11s = Nip11Args[];
 export class WorkerRelayInterface {
   #worker: Worker | SharedWorker;
   #commandQueue: Map<string, (v: unknown, ports: ReadonlyArray<MessagePort>) => void> = new Map();
+  #timeouts: any[] = [];
 
   // Command timeout
   timeout: number = 5_000;
@@ -147,6 +148,18 @@ export class WorkerRelayInterface {
     return await this.#workerRpc<string, boolean>("debug", v);
   }
 
+  abort() {
+    this.#timeouts.forEach(t => clearTimeout(t));
+    this.#timeouts = [];
+    this.#commandQueue.clear();
+    if(this.#worker instanceof Worker) {
+      this.#worker.terminate();
+    }
+    else if(this.#worker instanceof SharedWorker) {
+      this.#worker.port.close();
+    }
+  }
+
   async #workerRpc<T, R>(cmd: WorkerMessageCommand, args?: T) {
     const id = uuid();
     const msg = {
@@ -165,8 +178,9 @@ export class WorkerRelayInterface {
         this.#commandQueue.delete(id);
         reject(new Error("Timeout"));
       }, this.timeout);
+      this.#timeouts.push(t);
       this.#commandQueue.set(id, (v, port) => {
-        clearTimeout(t);
+        if(t) clearTimeout(t);
         const cmdReply = v as WorkerMessage<R & { error?: any }>;
         if (cmdReply.args.error) {
           reject(cmdReply.args.error);

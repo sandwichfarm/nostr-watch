@@ -126,7 +126,7 @@
   }
 
   const mount = () => {
-    doLiveSync.set(false);
+    // doLiveSync.set(true);
     if (currentRelay === relayUrl) return;
     
     let resume: LiveSyncResumer;
@@ -152,7 +152,7 @@
   const destroy = () => {
       if (currentRelay === relayUrl) return;
       loading = true;
-      doLiveSync.set(true);
+      // doLiveSync.set(false);
       // currentRelay = '';
       // monitors.set([]);
       // nip11Ready.set(false);

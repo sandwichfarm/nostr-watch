@@ -33,7 +33,7 @@ let emittersBound: boolean = false;
 
 monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
 
-let $route66: Route66;
+let $route66: Route66 | null;
 let initializing: boolean = false;
 
 let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
@@ -46,7 +46,7 @@ let count = 0
 
 export const bindBootstrapEmitters = (from?: string) => {
     if(emittersBound) return;
-    if(from) console.log('Lifecycle:bindBootstrapEmitters', from)
+    // if(from) console.log('Lifecycle:bindBootstrapEmitters', from)
     const $nip05Service: Nip05Service = get(nip05Service)
     
     if (!$route66 || typeof $route66.on !== 'function') {
@@ -309,13 +309,15 @@ export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
 }
 
 export const destroy = () => {
-    route66.update(($route66: Route66) => {
+    initializing = false;
+    $route66 = null;
+    route66.update( ($route66) => {
         if ($route66 && typeof $route66.destroy === 'function') {
             $route66.destroy();
         } else {
             console.error('route66 instance is missing or does not have a destroy method.');
         }
-        return $route66;
+        return null;
     });
 };
 
@@ -347,7 +349,7 @@ export const seedChecksFromCache = async () => {
     if(cachedEvents.length === 0) return;
     // publishEventsToMemoryRelay(cachedEvents, 'seedChecksFromCache');
     isSeeded.set(true)
-    console.log('seedChecksFromCache:events', cachedEvents.length)
+    // console.log('seedChecksFromCache:events', cachedEvents.length)
     return cachedEvents
 }
 

@@ -146,12 +146,12 @@ export class CacheAdapter extends Adapter {
 
   constructor(worker?: Worker | SharedWorker | URL) {  
     super(worker)
-    StateManager.on('destroy', () => {
-      if(this.worker instanceof Worker) {
-        this.worker?.terminate()
-      }
+    // StateManager.on('destroy', () => {
+    //   if(this.worker instanceof Worker) {
+    //     this.worker?.terminate()
+    //   }
         
-    })
+    // })
     this.init();
   }
   

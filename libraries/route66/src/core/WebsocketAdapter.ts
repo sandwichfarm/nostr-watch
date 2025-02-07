@@ -101,10 +101,10 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   constructor(worker?: Worker | SharedWorker | URL) {
     super(worker)
-    StateManager.on('destroy', () => {
-      if(this.worker instanceof Worker)
-        this.worker?.terminate()
-    })
+    // StateManager.on('destroy', () => {
+    //   if(this.worker instanceof Worker)
+    //     this.worker?.terminate()
+    // })
   }
 
   get worker(): Worker | SharedWorker | undefined {
@@ -131,30 +131,43 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   async unsubscribe(hash?: string): Promise<boolean> {
+    console.log('WebsocketAdapter:unsubscribe', hash)
     if(hash && !this.subscriptions.has(hash)) return true;
+    console.log('WebsocketAdapter:unsubscribe:found', hash) 
     const unsub = this.request({
       action: 'unsubscribe',
       args: {
         ...defaultWebsocketRequestBody, 
-        hash
+        hash,
+        options: {
+          ...defaultWebsocketAdapterOptions,
+          returnResults: true
+        }
       }
     })
+    console.log('WebsocketAdapter:unsubscribe:sentrequest', hash)
     return this.response(unsub) as Promise<boolean>
   }
 
   async unsubscribeAll(hash?: string): Promise<boolean> {
     const hashes = [...Array.from(this.subscriptions)]
     for(let hash of hashes){
+      console.log('WebsocketAdapter:unsubscribeAll', hash)
       await this.unsubscribe(hash)
     }
     return true;
   }
 
   async shutdown(): Promise<void> {
-    await this.unsubscribeAll();
-    await this.abort();
-    await delay(1000);
+    console.log('WebsocketAdapter:shutdown')
+    // console.log('WebsocketAdapter:shutdown:unsubscribing', this.subscriptions.size)
+    // await this.unsubscribeAll();
+    // console.log('WebsocketAdapter:shutdown:unsubscribed', this.subscriptions.size)
+    // await this.abort();
+    // console.log('WebsocketAdapter:shutdown:aborted')
+    // await delay(1000);
     this.terminate()
+    console.log('WebsocketAdapter:shutdown:terminated')
     await delay(100);
   }
 
@@ -164,6 +177,10 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       args: { 
         ...defaultWebsocketRequestBody,
         hash: 'abort',
+        options: {
+          ...defaultWebsocketAdapterOptions,
+          returnResults: true
+        }
       }
     })
     return this.response(abort) as Promise<boolean>
@@ -239,12 +256,13 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       message.args.hash = deterministicHash(message?.args?.filters ?? {})  
     }
     const { hash } = message.args
+    console.log('WebsocketAdapter:request', hash, message)
     if(!this?.worker) {
       console.warn('[WebsocketAdapter] Error sending command: no worker found')
       return hash
     }    
     if(this.worker instanceof Worker) {
-      // console.log('WebsocketAdapter:request', message)
+      console.log('WebsocketAdapter:request', message)
       this.worker.postMessage(message)
     } else if(this.worker instanceof SharedWorker)
       this.worker.port.postMessage(message)

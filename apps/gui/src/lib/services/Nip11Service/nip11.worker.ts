@@ -19,7 +19,7 @@ self.onmessage = ({ data }) => {
         timeoutMessage(relay) 
     }
     const timeout = setTimeout(timeoutRequest, 5000)
-    console.log('N11S worker received message', data)
+    // console.log('N11S worker received message', data)
     check(relay)
         .then((nip11: nip11.RelayInformation) => {
             if(timedOut) return;

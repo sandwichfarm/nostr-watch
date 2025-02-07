@@ -7,21 +7,19 @@
 	import { StateManager } from '@nostrwatch/route66';
 
 	import SettingsIcon from 'lucide-svelte/icons/settings';
-  
-	// --- Card Import Mapping (unchanged) ---
+
+	const cardModules = import.meta.glob('./**/cards/*.svelte');
 	const cardImports = {
-	  general: './(components)/cards/CardGeneral.svelte',
-	  fees: './(components)/cards/CardFees.svelte',
-	  operator: './(components)/cards/CardOperator.svelte',
-	  insights: './(components)/cards/CardInsights.svelte',
-	  checks: './(components)/cards/CardChecks.svelte',
-	  nip11Limitation: './(components)/cards/CardLimitation.svelte',
-	  nip11SupportedNips: './(components)/cards/CardNips.svelte',
-	  issues: './(components)/cards/CardIssues.svelte'
+		general: cardModules['./(components)/cards/CardGeneral.svelte'],
+		fees: cardModules['./(components)/cards/CardFees.svelte'],
+		operator: cardModules['./(components)/cards/CardOperator.svelte'],
+		insights: cardModules['./(components)/cards/CardInsights.svelte'],
+		checks: cardModules['./(components)/cards/CardChecks.svelte'],
+		nip11Limitation: cardModules['./(components)/cards/CardLimitation.svelte'],
+		nip11SupportedNips: cardModules['./(components)/cards/CardNips.svelte'],
+		issues: cardModules['./(components)/cards/CardIssues.svelte']
 	};
   
-	// --- Global & Default Orders ---
-	// The full (global) order remains fixed.
 	const availableCards = [
 	  'general',
 	  'issues',
@@ -33,7 +31,6 @@
 	  'checks'
 	];
 
-	// By default, these cards are enabled (visible).
 	const defaultCardsView = [
 	  'general',
 	  'fees',
@@ -48,23 +45,14 @@
 
 	const cardsVisible = Array.isArray(cardsUser)? cardsUser: defaultCardsView
 	const cardsOrder = cardsUser? cardsUser: defaultCardsView
-	// const cards = 
-	// 	cardsOrder
-	// 		.filter(card => cardsVisible.includes(card))
-	// 		.sort((a, b) => cardsOrder.indexOf(a) - cardsOrder.indexOf(b))
-  
-	// --- State: enabledCards for dndzone ---
-	// We store the visible items as objects with an id property.
+
 	let availableCardsFormatted: { id: string }[] = availableCards.map(card => ({ id: card }));
   
-	// Derived: Disabled cards are those not in enabledCards.
 	let enabledCards: { id: string }[] = cardsVisible.map(card => ({ id: card }));
 	$: disabledCards = availableCards.filter(
 	  card => !enabledCards.some(item => item.id === card)
 	);
   
-	// --- dndzone Event Handlers ---
-	// The library expects you to update your items array based on the event.
 	function handleConsider(e: CustomEvent) {
 	  if (e.detail && Array.isArray(e.detail.items) && e.detail.items.length > 0) {
 		enabledCards = e.detail.items;
@@ -76,9 +64,7 @@
 	  }
 	  StateManager.set('preferences:relay:overview:cards', enabledCards.map(item => item.id));
 	}
-  
-	// --- Toggle Handler ---
-	// If a card is visible, remove it; if not, add it to the end.
+
 	function toggleCard(card: string) {
 	  if (enabledCards.some(item => item.id === card)) {
 		enabledCards = enabledCards.filter(item => item.id !== card);
@@ -88,7 +74,6 @@
 	}
   </script>
   
-  <!-- DIALOG: Customize View -->
   <div class="flex justify-end">
 	<Dialog.Root>
 		<Dialog.Trigger>
@@ -100,7 +85,6 @@
 		<Dialog.Header>
 			<Dialog.Title>Customize View</Dialog.Title>
 			<Dialog.Description>
-			<!-- Enabled Cards (draggable list) -->
 			<div>
 				<h3 class="mb-2">
 				Enabled Cards (drag to reorder; click “Disable” to remove)
@@ -120,9 +104,7 @@
 					class="sortable-item flex items-center justify-between p-2 mb-1 border rounded"
 					data-id={item.id}
 					>
-					<!-- Only this span is used as the drag handle -->
 					<span use:dragHandle class="cursor-move text-white">{item.id}</span>
-					<!-- The disable button is excluded from drag events -->
 					{#if unHidableCards.includes(item.id)}
 					<em>must be active</em>
 					{:else}
@@ -141,7 +123,6 @@
 				</div>
 			</div>
 	
-			<!-- Disabled Cards (click to enable) -->
 			<div class="mt-4">
 				<h3 class="mb-2">Disabled Cards (click to enable)</h3>
 				<div class="disabled-cards border p-2">
@@ -162,12 +143,11 @@
 	</Dialog.Root>
 	</div>
   
-  <!-- Main Cards Display Area -->
   <div class="space-y-6">
 	{#if enabledCards.length}
 	{#each enabledCards as item (item.id)}
 	  {#if cardImports?.[item.id]}
-	  {#await import(cardImports[item.id])}
+	  {#await cardImports[item.id]()}
 		<!-- loading... -->
 	  {:then { default: Component } }
 		<div in:fade={{ duration: 500 }}>

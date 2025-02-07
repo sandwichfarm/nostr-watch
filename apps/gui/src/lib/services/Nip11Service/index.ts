@@ -49,8 +49,7 @@ export class Nip11Service {
         const { relay, nip11:_nip11, error } = message.data;
         const nip11 = new Nip11(_nip11 as RelayInformation)
         if(error) {
-            console.log('N11S error', relay, error)
-            setRelayError(relay, 'nip11', error.message)
+            setRelayError(relay, 'schema', 'nip11', error.message)
             return
         }
         nip11sLocal.update((map: Map<string, Nip11>) => {

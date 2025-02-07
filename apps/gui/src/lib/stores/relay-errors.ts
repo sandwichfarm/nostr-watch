@@ -44,9 +44,9 @@ export const setRelayError = (relay: string, type: RelayErrorType, subject: Rela
     messages.push(message)
     // (messages as RelayErrorMessages).push(message)
     relayErrors.set(`${type}:${subject}`, messages)
-    console.log('relayErrors', subject, relay, relayErrors)
+    // console.log('relayErrors', subject, relay, relayErrors)
     relaysErrorsMap.set(relay, relayErrors)
-    console.log('relayErrors', subject, relaysErrorsMap)
+    // console.log('relayErrors', subject, relaysErrorsMap)
     relaysErrors.update(() => relaysErrorsMap);
-    console.log('relayErrors (from store)', get(relaysErrors))
+    // console.log('relayErrors (from store)', get(relaysErrors))
 }

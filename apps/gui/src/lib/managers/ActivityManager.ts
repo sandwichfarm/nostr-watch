@@ -273,6 +273,7 @@ export class ActivityManager {
     ) {
       console.log('ActivityManager: Detected page refresh; clearing stale leader.');
       localStorage.removeItem('leaderId');
+      await delay(1000)
     }
 
     let currentLeader: string | null = null;

@@ -270,7 +270,7 @@
     activityManager.on('active', async () => {
       // console.log('ActivityManager: handler: TAB IS ACTIVE', '+layout.svelte');
       // console.log(`STATE IS ${$tabState}`, '+layout.svelte')
-      boot();
+      await boot();
     });
 
     activityManager.on('inactive', async () => {

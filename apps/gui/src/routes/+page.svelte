@@ -13,9 +13,21 @@
   $: isHomepage = $page.url.pathname === '/'
 </script> 
 {#if isHomepage}
-  <section class="h-[420px] pt-16 gradient-purple flex flex-col justify-center items-center relative z-[200]">
-    <div class="white/20 dark:bg-white/5 absolute top-0 right-0 left-0 bottom-0 z-[10]"></div>
-    <h1 class="w-full text-center text-3xl mb-4 max-w-[600px] relative z-[20]">nostr.watch is a client for browsing, testing and researching nostr relays.</h1>
+
+  <section class="
+    flex flex-col justify-center items-center relative z-[200]
+    h-[450px] lg:h-[420px] 
+    pt-26 md:pt-16 md:pb-0 gradient-purple">
+
+    <div class="
+      absolute top-0 right-0 left-0 bottom-0 z-[10]
+      bg-black/20 dark:bg-white/5 
+      ">
+    </div>
+
+    <h1 class="w-full text-center text-2xl md:text-3xl mb-4 max-w-[600px] relative z-[20]">
+      nostr.watch is a client for browsing, testing and researching nostr relays.
+    </h1>
     
     <div class="w-full max-w-xl relative z-[100]">
       <AutoSuggestRelaysCompact 
@@ -24,11 +36,12 @@
         placeholderText={"find your relays"}
         inputClass="
           
-          w-full py-2 px-4 mr-4 
+          w-[85%] md:w-full py-2 px-4 mx-4 
           text-center
           border border-black/20 
-          text-3xl 
+          text-2xl md:text-3xl 
           rounded-xl 
+
           dark:bg-black/20 dark:border-black/30 dark:text-white/60 
           placeholder:text-gray-400 dark:placeholder:text-gray-500 
           focus:outline-none focus:border-transparent focus:ring-0

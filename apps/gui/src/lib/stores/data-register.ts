@@ -45,21 +45,21 @@ export const dataRegisterInit = async () => {
     data.register({
         key: 'sync:relay:checks',
         priority: 10,
-        expiry: SYNC_RELAY_CHECKS_EXPIRY,
+        // expiry: SYNC_RELAY_CHECKS_EXPIRY,
         keyFn: relayKeyFn,
         fn: fetchRelayChecks
     });
     data.register({
         key: 'sync:relay:nip11',
         priority: 11,
-        expiry: SYNC_RELAY_NIP11_EXPIRY,
+        // expiry: SYNC_RELAY_NIP11_EXPIRY,
         keyFn: relayKeyFn,
         fn: fetchRelayNip11
     });
     data.register({
         key: 'sync:relay:operator',
         priority: 12,
-        expiry: SYNC_RELAY_OPERATOR_EXPIRY,
+        // expiry: SYNC_RELAY_OPERATOR_EXPIRY,
         keyFn: relayKeyFn,
         fn: fetchRelayOperator
     });

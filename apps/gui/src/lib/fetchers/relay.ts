@@ -11,6 +11,7 @@ import { operatorRelays } from "$stores/helpers/helpers-operator"
 import { instance } from "$utils/lifecycle"
 
 export const fetchRelayChecks = async (relay: string) => {
+    console.log('fetchRelayChecks', relay)
     const $route66 = await instance()
     await $route66.ready();
     $route66?.services?.relay?.getRelayData(relay, 'online')

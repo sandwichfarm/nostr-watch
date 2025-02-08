@@ -270,7 +270,7 @@
     activityManager.on('active', async () => {
       // console.log('ActivityManager: handler: TAB IS ACTIVE', '+layout.svelte');
       // console.log(`STATE IS ${$tabState}`, '+layout.svelte')
-      await boot();
+      boot();
     });
 
     activityManager.on('inactive', async () => {
@@ -319,22 +319,11 @@
         <ActivityList />
       </div>
       {/if}
-    <!-- {:else if $tabState === 'idle'}
-      <div class="flex items-center justify-center h-screen">
-        <div class="text-2xl">Zzz</div>
-      </div>
-    {:else if $tabState === 'follower'}
-      <div class="flex flex-col items-center justify-center h-screen px-4">
-        <div class="text-2xl">Another Session Detected</div>
-        <div class="text-lg text-center">Please wait while the existing session is terminated.</div>
-      </div> -->
     {:else}
     <div class="flex flex-col items-center justify-center h-screen px-4">
-      <div class="text-7xl"><small><small>z </small></small>zZ</div>
+      <div class="text-7xl">booting.</div>
       <div class="text-xs opacity-30">[{$tabState}]</div>
-      <!-- <div class="text-lg text-center">Please wait while the existing session is terminated.</div> -->
     </div>
-    
     {/if}
   {/if}
 {/if}

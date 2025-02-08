@@ -61,7 +61,10 @@
     });
 
 </script>
+
+<main class="mt-20"> 
 {#if $ready}
     <RelayDimensions />
     <DataTable {data} {config} {dataKey} />
 {/if}
+</main>

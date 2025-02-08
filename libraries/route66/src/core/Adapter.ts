@@ -125,11 +125,11 @@ export abstract class Adapter {
   }
 
   async shutdown(): Promise<void> {
-    // if(this?.worker) {
-    //   if(this?.worker instanceof Worker){
-    //     this.worker?.terminate()
-    //   }
-    // }
+    if(this?.worker) {
+      if(this?.worker instanceof Worker){
+        this.worker?.terminate()
+      }
+    }
     // this.emitter.emit('shutdown')
   }
 

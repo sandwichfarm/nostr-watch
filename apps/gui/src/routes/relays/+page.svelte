@@ -155,7 +155,7 @@
 
 <!-- <pre class="mt-20">{JSON.stringify($shapeshift, null, 2)}</pre> -->
 
-<main> 
+<main class="mt-20"> 
 	{#if $ready}
 	
 	<RelayDimensions />

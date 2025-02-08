@@ -4,7 +4,7 @@ import { tabState, type TabStateType } from '$stores/app';
 export type ActivityState = 'leader' | 'follower' | 'idle' | 'inactive';
 
 interface LifecycleMessage {
-  type: 'leader-claimed' | 'request-leader-release' | 'leader-released';
+  type: 'leader-claimed' | 'request-leader-release' | 'leader-released' | 'shutdown-complete';
   payload?: Record<string, any>;
   sourceId: string;
 }
@@ -35,19 +35,19 @@ export class ActivityManager {
   private isLeader: boolean = false;
   // Forced takeover timeout: 1000 ms.
   private releaseWaitTimeoutId: number | null = null;
-  private releaseWaitTimeoutMs: number = 500;
+  private releaseWaitTimeoutMs: number = 1000;
 
-  // Delay before firing the active callback after claiming leadership.
-  private LEADERSHIP_CONFIRM_DELAY_MS: number = 200;
+  // Delay before firing the active callback when replacing an existing leader.
+  private LEADERSHIP_CONFIRM_DELAY_MS: number = 2000;
 
   // When the document becomes hidden, wait this many milliseconds before marking inactive.
-  private HIDDEN_DELAY_MS: number = 3000;
+  private HIDDEN_DELAY_MS: number = 15000;
 
   // Heartbeat: update leader timestamp every second.
   private heartbeatIntervalId: number | null = null;
   private HEARTBEAT_INTERVAL_MS: number = 1000;
   // If the leader’s timestamp is older than this threshold, it’s considered stale.
-  private STALE_THRESHOLD_MS: number = 2500;
+  private STALE_THRESHOLD_MS: number = 10000;
 
   private boundVisibilityHandler: () => void;
   private boundIdleEventHandler: (e: Event) => void;
@@ -167,7 +167,7 @@ export class ActivityManager {
   private async handleVisibilityChange() {
     console.log('ActivityManager: Visibility changed:', document.visibilityState);
     if (document.visibilityState === 'hidden') {
-      // Instead of acting immediately, wait a bit before transitioning.
+      // Wait HIDDEN_DELAY_MS before acting on hidden
       if (this.visibilityHiddenTimeoutId) {
         clearTimeout(this.visibilityHiddenTimeoutId);
       }
@@ -200,6 +200,7 @@ export class ActivityManager {
         this.leaderId = newLeaderId;
         if (newLeaderId === this.myId) {
           this.isLeader = true;
+          // Only wait if replacing an existing leader.
           await delay(this.LEADERSHIP_CONFIRM_DELAY_MS);
           await this.transitionState('leader');
         } else {
@@ -225,6 +226,7 @@ export class ActivityManager {
         }
         break;
       }
+      // Optionally, handle a "shutdown-complete" message here if you choose to send it.
       default:
         break;
     }
@@ -281,6 +283,12 @@ export class ActivityManager {
         const parsed = JSON.parse(leaderData);
         currentLeader = parsed.id;
         leaderTimestamp = parsed.ts;
+        // NEW: If the stored value has shutdown true, wait for shutdown to complete.
+        if (parsed.shutdown) {
+          console.log('ActivityManager: Detected leader is shutting down, waiting for shutdown completion.');
+          await delay(500);
+          return await this.acquireLeadership();
+        }
       } catch (e) {
         currentLeader = leaderData;
       }
@@ -299,12 +307,12 @@ export class ActivityManager {
     }
 
     if (!currentLeader) {
-      // Claim leadership and start heartbeat.
+      // CLAIM LEADERSHIP IMMEDIATELY WHEN NO LEADER EXISTS.
       this.leaderId = this.myId;
       this.isLeader = true;
       localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now() }));
       this.sendMessage('leader-claimed', { leaderId: this.myId });
-      await delay(this.LEADERSHIP_CONFIRM_DELAY_MS);
+      // Skip extra delay because no leader existed.
       await this.transitionState('leader');
       this.startHeartbeat();
     } else if (currentLeader !== this.myId) {
@@ -332,25 +340,15 @@ export class ActivityManager {
 
   private async releaseLeadership() {
     if (!this.isLeader) return;
+    // Mark that shutdown is in progress by setting a shutdown flag.
+    localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now(), shutdown: true }));
     this.sendMessage('leader-released', { oldLeaderId: this.myId });
-    const leaderData = localStorage.getItem('leaderId');
-    if (leaderData) {
-      try {
-        const parsed = JSON.parse(leaderData);
-        if (parsed.id === this.myId) {
-          localStorage.removeItem('leaderId');
-        }
-      } catch (e) {
-        if (leaderData === this.myId) {
-          localStorage.removeItem('leaderId');
-        }
-      }
-    }
+    // Await the external inactive handler.
+    await this.transitionState('inactive');
+    localStorage.removeItem('leaderId');
+    this.sendMessage('shutdown-complete', {}); // Optional: notify others.
     this.isLeader = false;
     this.clearHeartbeat();
-    if (this.currentState !== 'inactive') {
-      await this.transitionState('inactive');
-    }
   }
 
   private async handleBeforeUnload() {

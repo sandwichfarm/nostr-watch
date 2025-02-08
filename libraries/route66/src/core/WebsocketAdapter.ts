@@ -256,13 +256,13 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       message.args.hash = deterministicHash(message?.args?.filters ?? {})  
     }
     const { hash } = message.args
-    console.log('WebsocketAdapter:request', hash, message)
+    // console.log('WebsocketAdapter:request', hash, message)
     if(!this?.worker) {
       console.warn('[WebsocketAdapter] Error sending command: no worker found')
       return hash
     }    
     if(this.worker instanceof Worker) {
-      console.log('WebsocketAdapter:request', message)
+      // console.log('WebsocketAdapter:request', message)
       this.worker.postMessage(message)
     } else if(this.worker instanceof SharedWorker)
       this.worker.port.postMessage(message)

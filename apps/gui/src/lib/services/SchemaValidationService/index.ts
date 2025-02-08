@@ -61,9 +61,9 @@ export class SchemaValidationService {
         hash = hash ?? deterministicHash(request.json)
         this._subIds.add(hash)
         this.worker.postMessage(request)
-        console.log(`SchemaValidationService: validate request sent for ${hash}`)        
+        // console.log(`SchemaValidationService: validate request sent for ${hash}`)        
         const result = await this.respond(hash)
-        console.log(`SchemaValidationService: validate request received for ${hash}`, result)
+        // console.log(`SchemaValidationService: validate request received for ${hash}`, result)
         return result;
     }
     

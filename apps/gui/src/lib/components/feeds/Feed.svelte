@@ -44,8 +44,8 @@
         $feedService!.populate();
         items = $feedService!.memoryRelay.$req(deterministicHash(filters), filters)
         setTimeout(() => {
-            if($items?.length === 0) notesNotFound.set(true)
-        }, 10000)
+            if(items && get(items)?.length === 0) notesNotFound.set(true)
+        }, 15000)
     }
 
     const destroy = () => {

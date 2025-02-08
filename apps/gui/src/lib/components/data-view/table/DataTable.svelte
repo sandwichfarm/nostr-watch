@@ -155,7 +155,6 @@
     }
 
     $: isCollapsed = $config?.sidebarCollapsed || false;
-    $: activeFilters = Object.keys($filters).length
 
     const toggleSidebarPane = () => {
         if(isCollapsed) {

@@ -106,7 +106,7 @@
     }
 
     $: isCollapsed = $config?.sidebarCollapsed || false;
-    $: activeFilters = Object.keys($filters).length
+    $: activeFilters = Object.keys($filters || {}).length
 
     export let activeView: Writable<'table' | 'grid' | 'map'>;
 </script>

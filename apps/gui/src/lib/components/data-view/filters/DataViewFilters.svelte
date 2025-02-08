@@ -219,7 +219,7 @@
 
             newDisabledFilters[filterKey] = new Set();
 
-            Object.keys(invertedIndex[filterKey]).forEach(option => {
+            Object.keys(invertedIndex?.[filterKey] || {}).forEach(option => {
                 const normalizedOption = String(option).toLowerCase();
                 const optionRecordIDs = invertedIndex[filterKey][option];
 
@@ -521,7 +521,7 @@
     class="{buttonClass} ml-2" 
     disabled={Object.keys(activeFilters || {}).length > 0 ? false : true}
 >
-    {#if Object.keys(activeFilters ).length > 0}
+    {#if Object.keys(activeFilters || {}).length > 0}
         Clear {Object.keys(activeFilters || {}).length} Filters
     {:else}
         No Filters Applied
@@ -550,7 +550,7 @@
 </Popover.Root>
 
 <!-- **Active Filters Display (Enabled)** -->
-{#if false && Object.keys(activeFilters).length > 0}
+{#if false && Object.keys(activeFilters || {}).length > 0}
     <div class="active-filters p-2">
         <h5>Active Filters:</h5>
         <div class="active-filters-list">

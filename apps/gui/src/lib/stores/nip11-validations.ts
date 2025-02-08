@@ -11,7 +11,7 @@ relayNip11Validations.subscribe( async (value) => {
   }
 })
 
-if(Object.keys(get(relayNip11Validations)).length === 0) {
+if(Object.keys(get(relayNip11Validations)).length < 10) {
   const cachedMap = StateManager.get('aggregate:relayNip11Validations');
   if(cachedMap) {
     try {

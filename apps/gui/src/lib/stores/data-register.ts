@@ -116,6 +116,7 @@ export const dataRegisterInit = async () => {
             const keysIndex: string[] = []
             const promises: Promise<SchemaValidationServiceResponse>[] = [];
             for( const [relay, n11Entry] of Array.from(get(nip11s).entries()) ){
+                console.log('validate:nip11s', relay)
                 keysIndex.push(relay)
                 const json = n11Entry?.[0]?.json
                 if(!json) return
@@ -161,7 +162,7 @@ export const dataRegisterInit = async () => {
     //composites
     data.composite({
         key: 'sync:all',
-        keys: ['sync:monitors', 'sync:checks', 'sync:nip11s', 'sync:operators', 'sync:live'],
+        keys: ['sync:monitors', 'sync:checks', 'sync:nip11s', 'sync:operators', 'validate:nip11s', 'sync:live'],
         priority: -10,
         // expiry: SYNC_RELAY_ALL_EXPIRY,
         onComplete: async () => isBootstrapped.set(true),

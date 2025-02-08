@@ -14,6 +14,7 @@ import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache, isBootstrapping } from "./app.js";
 import { throttledDerived } from "$utils/stores.js";
 import { nip11ValidationErrorCount } from "./nip11-validations.js";
+import { monitorsMap } from "./monitors.js";
 
 let nip11Errors: Map<string, number> = new Map();
 
@@ -33,7 +34,9 @@ export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($ov
     "lastSeen",
     "seenTimes",
     "monitorPubkey",
-    "operatorPubkey"
+    "operatorPubkey",
+    "hasNip11",
+    "dd"
   ]
   const derivedKeys = [
     'nip11IsValid', 
@@ -65,12 +68,14 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const relayAverages: Record<string, number> = {};
   const relayCounts: Record<string, number> = {};
 
+  
+
   $checks.forEach((check: Nip66CheckEvent) => {
     let relay: string;
     if(!check?.relay) return;
-    if(check.tags.find( (tag: string[]) => tag[0] === 'a' && tag[1]?.startsWith('30166:'))) {
-      return;
-    } 
+    // if(check.tags.find( (tag: string[]) => tag[0] === 'a' && tag[1]?.startsWith('30166:'))) {
+    //   return;
+    // } 
     try {
       relay = new URL(check?.relay).toString();
     }
@@ -78,21 +83,25 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
       console.warn('could not normalize relay:', check.relay)
     }
 
-    if (!relayAverages[relay]) {
-      relayAverages[relay] = 0;
-      relayCounts[relay] = 0;
-    }
+    const monitor = get(monitorsMap).get(check.pubkey);
 
-    const rtt = check.rtt;
-    if (typeof rtt === 'number') {
-      relayAverages[relay] += rtt;
-      relayCounts[relay] += 1;
-    }
+    if(monitor?.checks.includes('open')) {
+      if (!relayAverages[relay]) {
+        relayAverages[relay] = 0;
+        relayCounts[relay] = 0;
+      }
 
-    if (!countMap[relay]) {
-      countMap[relay] = { a: {}, checks: [] };
+      const rtt = check.rtt;
+      if (typeof rtt === 'number') {
+        relayAverages[relay] += rtt;
+        relayCounts[relay] += 1;
+      }
+
+      if (!countMap[relay]) {
+        countMap[relay] = { a: {}, checks: [] };
+      }
+      countMap[relay].checks.push(check);
     }
-    countMap[relay].checks.push(check);
   });
 
   Object.keys(relayAverages).forEach((relay) => {
@@ -109,7 +118,8 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
 
   Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
-      get(relayChecksActiveKeys).forEach((key: string) => {
+      Nip66CheckEvent.keys.forEach((key: string) => {
+      // get(relayChecksActiveKeys).forEach((key: string) => {
         const value = nip66Event[key];
         
         const isNonNull = value !== null && value !== undefined;
@@ -118,12 +128,12 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
         const isAccArray = Array.isArray(acc[key]);
 
         if(key === 'nip11ValidationErrors'){
-          const nip11ValidationErrors = nip11Errors.get(relay)
+          const nip11ValidationErrors = get(nip11ValidationErrorCount).get(relay)
           acc.nip11ValidationErrors = nip11ValidationErrors? nip11ValidationErrors: 0;
           return acc
         }
         else if(key === 'nip11IsValid'){
-          const nip11ValidationErrors = nip11Errors.get(relay)
+          const nip11ValidationErrors = get(nip11ValidationErrorCount).get(relay)
           if(typeof nip11ValidationErrors === 'number') {
             acc.nip11IsValid = nip11ValidationErrors === 0? true: false;  
           }
@@ -164,7 +174,6 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
           acc[key] = value;
         }
       });
-  
       return acc;
     }, {});
   });

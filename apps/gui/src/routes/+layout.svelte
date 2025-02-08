@@ -39,7 +39,7 @@
 
   window.process = process;
 
-  if ('serviceWorker' in navigator) {
+  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     addEventListener('load', function () {
       navigator.serviceWorker.register('$src/service-worker/cors.js'); 
     });

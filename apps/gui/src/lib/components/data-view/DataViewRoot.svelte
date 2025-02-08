@@ -19,6 +19,7 @@
     export let enableFilters: boolean = true;
     export let key: string;
     export let enabledViews: DataViewViews[];
+    export let onFilterChange: (config: DataTableConfig) => void = (config) => {};
 
     export let sidebarPaneApi: Resizable.PaneApi | null = null;
     
@@ -29,51 +30,62 @@
     // **Stores and Reactive Variables**
     const filters = writable({});
 
-    const dataExtended: Readable<DataViewData> = derived(
-        [data, config],
-        ([ $data, $config ]) => {
-
-            if (!$data || $data.length === 0) {
-                return { data: [], columns: [] };
-            }
-
-            if($config.columnsShow.length === 0) {
-                return { data: [], columns: [] };
-            }
-
-            const columns: DataViewColumns[] = $config.columnsShow.map((key: string) => ({
-                id: key,
-                key: key,
-                name: $config.prettyNames?.[key]?.short ?? key.charAt(0).toUpperCase() + key.slice(1),
-            }));
-
-            return { data: $data, columns };
-        }
-    );
-    
-
-    const filteredData = derived(
-        [dataExtended, filters],
-        ([$dataExtended, $filters]) => {
-            if (!$dataExtended.data || !$dataExtended.columns || $dataExtended.columns.length === 0) {
-                return { data: [], columns: [] };
-            }
-            const currentRelayFilters: ConsoleFilter[] = createRelayFilters($dataExtended.data, $config.filtersShow, $config.prettyNames);
-            const filteredData = applyFilters($dataExtended.data, $filters, currentRelayFilters);
-            return { data: filteredData, columns: $dataExtended.columns };
-        }
-    );
+    let dataExtended: Readable<DataViewData> = readable({ data: [], columns: [] });
+    let filteredData: Readable<{data: any[]; columns: any[] }> = readable({ data: [], columns: [] });
+    let justData = readable([]);
+    let justColumns = readable([]);
 
     onMount(async (): Promise<any> => {
-        
-    });
+        dataExtended = derived(
+            [data, config],
+            ([ $data, $config ]) => {
 
-    filters.subscribe((newFilters: any) => {
-        config.update( (currentConfig: DataTableConfig) => {
-            const newConfig = { ...currentConfig };
-            newConfig.filtersActive = newFilters;
-            return newConfig;
+                if (!$data || $data.length === 0) {
+                    return { data: [], columns: [] };
+                }
+
+                if($config.columnsShow.length === 0) {
+                    return { data: [], columns: [] };
+                }
+
+                const columns: DataViewColumns[] = $config.columnsShow.map((key: string) => ({
+                    id: key,
+                    key: key,
+                    name: $config.prettyNames?.[key]?.short ?? key.charAt(0).toUpperCase() + key.slice(1),
+                }));
+
+                return { data: $data, columns };
+            }
+        );
+
+        filters.subscribe((newFilters: any) => {
+            config.update( (currentConfig: DataTableConfig) => {
+                if(currentConfig.filtersActive === newFilters) return currentConfig;
+                const newConfig = { ...currentConfig };
+                newConfig.filtersActive = newFilters;
+                return newConfig;
+            });
         });
+        
+        filteredData = derived(
+            [dataExtended, filters],
+            ([$dataExtended, $filters]) => {
+                if (!$dataExtended.data || !$dataExtended.columns || $dataExtended.columns.length === 0) {
+                    return { data: [], columns: [] };
+                }
+                const currentRelayFilters: ConsoleFilter[] = createRelayFilters($dataExtended.data, $config.filtersShow, $config.prettyNames);
+                const filteredData = applyFilters($dataExtended.data, $filters, currentRelayFilters);
+                return { data: filteredData, columns: $dataExtended.columns };
+            }
+        );
+
+        justData = derived(filteredData, $filteredData => $filteredData.data);
+        justColumns = derived(filteredData, $filteredData => $filteredData.columns);
+
+        if($config.sidebarCollapsed){
+            setTimeout(() => sidebarPaneApi.collapse(), 1);
+        }
+        
     });
 
     function clearAllFilters() {
@@ -96,18 +108,18 @@
     $: isCollapsed = $config?.sidebarCollapsed || false;
     $: activeFilters = Object.keys($filters).length
 
-    let activeView: Writable<'table' | 'grid' | 'map'>;
-
-    const justData = derived(filteredData, $filteredData => $filteredData.data);
-    const justColumns = derived(filteredData, $filteredData => $filteredData.columns);
-
+    export let activeView: Writable<'table' | 'grid' | 'map'>;
 </script>
+
+{#if $filteredData && $filteredData?.data?.length}
+
+<DataViewSelector {enabledViews} bind:activeView />
 
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
 
     <Resizable.Pane defaultSize={75}>
         
-        <DataViewSelector {enabledViews} bind:activeView />
+        
 
         {#if $activeView === 'table'}
             <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} dataUnfilteredLength={data?.length} />
@@ -136,7 +148,9 @@
         > <!----->
 
             {#if sidebarPaneApi}
-                <Button class="rounded-l-none display-inline bg-black/5 dark:bg-white/5 text-white/80 hover:bg-white/15 dark:bg-black/15 text-white/90" on:click={toggleSidebarPane()}>
+                <Button 
+                    class="rounded-l-none display-inline bg-black/5 dark:bg-white/5 text-white/80 hover:bg-white/15 dark:bg-black/15 text-white/90" 
+                    on:click={() => toggleSidebarPane()}>
                     {#if isCollapsed}
                     ⭅
                     {:else}
@@ -155,6 +169,7 @@
             {:else}
                 {#if $data?.length && enableFilters}
                     <Filters 
+                        bind:onFilterChange
                         dataKey={key}
                         {dataExtended} 
                         {filters} 
@@ -165,6 +180,8 @@
           
     </Resizable.Pane>
 </Resizable.PaneGroup>
+
+{/if}
 
 <style lang="postcss" global>
     .active-filter {

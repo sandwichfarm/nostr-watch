@@ -66,7 +66,8 @@ export function linkableState<T extends object>(defaultState: T): LinkableState<
     }
   }
 
-  const initialState: T = decodeState(window.location.hash);
+  let currentHash = window.location.hash;
+  const initialState: T = decodeState(currentHash);
   const store = writable<T>(initialState);
 
   // If a hash was present on page load, remove it from the URL.

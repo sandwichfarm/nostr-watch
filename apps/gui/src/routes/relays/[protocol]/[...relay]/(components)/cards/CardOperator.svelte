@@ -11,7 +11,7 @@
 
 	import type { PubkeyProfile, PubkeyRelays } from '@nostrwatch/route66/models';
 	import { Monitor } from '@nostrwatch/route66/models';
-	import { readable, type Readable } from 'svelte/store';
+	import { readable, type Readable, type Unsubscriber } from 'svelte/store';
 	import { pubkeyProfile$, pubkeyRelays$ } from '$stores/helpers/helpers-pubkey';
     import { relayOperatorPubkey$ } from '$stores/helpers/helpers-relay';
 	import RelayOperatorMiniFeed from '../RelayOperatorMiniFeed.svelte';
@@ -30,11 +30,13 @@
     let relayListNote: Readable<PubkeyRelays | undefined> = readable(undefined, () => {});
     let operatorRelaysOperated: Readable<string[]> = readable([]);
 
+    let pubkeyUnsub: Unsubscriber = () => {};
+
     const mount = async () => {
         if(!$route66) return;
         await $route66.ready();
         pubkey = relayOperatorPubkey$(relayUrl);
-        pubkey.subscribe(async (value) => {
+        pubkeyUnsub = pubkey.subscribe(async (value) => {
             if(value){
                 profile = pubkeyProfile$(value);
                 relayListNote = pubkeyRelays$(value);
@@ -44,6 +46,7 @@
     }
 
     const destroy = () => {
+        pubkeyUnsub();
         // profile = readable(undefined, () => {});
         // relayListNote = readable(undefined, () => {});
     }

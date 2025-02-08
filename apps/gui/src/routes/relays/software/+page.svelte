@@ -9,6 +9,7 @@
 	import { softwareRows as data } from '$lib/stores';
     import { type default as DataTableType } from '$lib/components/lists/table/DataTable.svelte';
 	import RelayDimensions from '../relay-dimensions.svelte';
+	import DataViewRoot from '$lib/components/data-view/DataViewRoot.svelte';
 
     let DataTable: DataTableType;
     const componentsLoaded: Writable<boolean> = writable(false);
@@ -63,5 +64,6 @@
 <!-- <pre>{JSON.stringify($data, null, 4)}</pre> -->
 {#if $ready}
     <RelayDimensions />
+    <!-- <DataViewRoot {data} {config} key={dataKey} activeView={writable("table")} /> -->
     <DataTable {data} {config} {dataKey} />
 {/if}

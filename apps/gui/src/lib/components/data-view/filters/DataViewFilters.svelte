@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
-    import { get, type Readable } from 'svelte/store';
+    import { derived, get, type Readable } from 'svelte/store';
     import { writable, type Writable } from 'svelte/store';
 
     import { Input } from '$lib/components/ui/input/index.js';
@@ -22,12 +22,25 @@
     import type { DataTableConfig, Formatters } from './DataTableTypes';
 	import { linkableState, type LinkableState } from '$utils/linkable-state.js';
 	import FilterLink from './FilterLink.svelte';
+	import { throttledDerived } from '$utils/stores.js';
+	import { delay } from '@nostrwatch/utils';
 
     // **Props Passed to the Component**
     export let dataKey: string;
     export let dataExtended: Readable<{ data: any[] }>;
     export let filters: Writable<Record<string, any>>;
     export let config: any;
+
+    export const onFilterChange = (updateConfig: DataTableConfig) => {
+        Object.entries(updateConfig.filtersActive).forEach( ([key]) => {
+            if(!$config?.filtersShow.includes(key)) {
+                config.update( (oldConfig: DataTableConfig) => {
+                    return {...oldConfig, filtersShow: [...oldConfig.filtersShow, key]}
+                });
+            }
+        })
+        filtersInit()
+    }
 
     const maxBadgeLength: number = 21;
 
@@ -62,7 +75,7 @@
     const disabledFilters: Writable<Record<string, Set<string>>> = writable({});
 
     // **Active Filters**
-    $: activeFilters = $filters;
+    $: activeFilters = $config?.filtersActive || $filters;
 
     // **MiniSearch Instances**
     let miniSearchInstances: Record<string, MiniSearch> = {};
@@ -85,6 +98,13 @@
         updateDisabledFilters($filters)
     }
 
+    const unsub = derived([filters, dataExtended], ([newFilters]) => {
+        if(!$dataExtended.data || !filtersInclude) return;
+        buildInvertedIndex( $dataExtended.data, filtersInclude);
+        createRelayFilters( $dataExtended.data, filtersInclude, $config.prettyNames);
+        updateDisabledFilters($filters)
+    });
+
     const filtersInit = () => {
         const { data } = $dataExtended;
         if(!data) return;
@@ -97,26 +117,14 @@
         });
         showAllFilters.set(initialShowAll);
         updateDisabledFilters($filters)
-        ////console.log('setting active filters', $config.activeFilters)
         filters.set( $config.filtersActive )
     }
 
-    const onFilterChange = ($config: DataTableConfig) => {
-        Object.entries(activeFilters).forEach( ([key]) => {
-            if(!$config?.filtersShow.includes(key)) {
-                clearFilter(key)
-            }
-        })
+    onMount(async () => {
         filtersInit()
-    }
-
-    const tableDataUnsub = dataExtended.subscribe(() => {
-        // debounce(filtersInit, 5000)()
     });
-
-    onMount(filtersInit);
     onDestroy( () => {
-        tableDataUnsub()
+        // tableDataUnsub()
     })
 
     // **Build Inverted Index**
@@ -499,7 +507,9 @@
     $: buttonClassSelected = 'bg-blue-500 text-white';
 </script>  
 
-<FilterLink {filters} {config} />
+
+
+<FilterLink {filters} {config} {onFilterChange} />
 
 <!-- <pre class="absolute top-1 left-1 bg-black border border-white p-10 z-[9999]">{JSON.stringify($disabledFilters, null, 2)}</pre> -->
 
@@ -509,10 +519,10 @@
     variant="destructive" 
     on:click={clearAllFilters} 
     class="{buttonClass} ml-2" 
-    disabled={Object.keys(activeFilters).length > 0 ? false : true}
+    disabled={Object.keys(activeFilters || {}).length > 0 ? false : true}
 >
-    {#if Object.keys(activeFilters).length > 0}
-        Clear {Object.keys(activeFilters).length} Filters
+    {#if Object.keys(activeFilters ).length > 0}
+        Clear {Object.keys(activeFilters || {}).length} Filters
     {:else}
         No Filters Applied
     {/if}
@@ -581,7 +591,7 @@
                             {filter.prettyName}
                         </span>
                         
-                        {#if activeFilters[filter.key]}
+                        {#if activeFilters?.[filter.key]}
                             <!-- Badge with Count -->
                             <Badge class="ml-2 text-xs py-0.5 px-2 rounded-full">{Array.isArray(activeFilters[filter.key]) ? activeFilters[filter.key].length : 1}</Badge>
                             

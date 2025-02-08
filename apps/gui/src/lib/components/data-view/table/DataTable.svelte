@@ -43,6 +43,8 @@
     export const recordChanged = writable(new Map<string, boolean>())
     export const recordWatchValue = writable(new Map<string, any>())
 
+    let dataSubscription;
+
     if(watchValue && $isBootstrapped) {
         const triggerFlash = (id: string) => {
             recordChanged.update( (currentMap: Map<string, boolean>) => currentMap.set(id, true))
@@ -50,7 +52,7 @@
                 recordChanged.update( (currentMap: Map<string, boolean>) => currentMap.set(id, false))
             }, 1000);
         }
-        data.subscribe( (newData: any) => {
+        dataSubscription = data.subscribe( (newData: any) => {
             newData.forEach( (row: any) => {
                 const oldValue = $recordWatchValue.get(row.id) 
                 const newValue = row?.[watchValue]
@@ -130,12 +132,10 @@
             await new Promise(r => setTimeout(r, 100));
         }
         createTable();
-        if($config.sidebarCollapsed){
-            sidebarPaneApi?.collapse();
-        }
         return () => {
             unsubConfig();
             unsubTableConfig();
+            dataSubscription?.();
             if (tableInstance) {
                 tableInstance = null;
             }

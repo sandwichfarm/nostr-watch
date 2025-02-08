@@ -18,6 +18,8 @@
     const debug: Writable<Map<string, any>> = writable(new Map());
     const shouldSync: Writable<boolean> = writable(false);
 
+    const subs = [];
+
     export const addDebug = (key: string, value: any) => {
         debug.update((d) => {
             d.set(key, value);
@@ -36,69 +38,69 @@
         debug.set(new Map());
     };
 
-    shouldSync.subscribe((value) => {
+    subs.push(shouldSync.subscribe((value) => {
         addDebug('shouldSync', value);
-    });
+    }));
 
-    doBootstrap.subscribe((value) => {
+    subs.push(doBootstrap.subscribe((value) => {
         addDebug('doBootstrap', value);
-    });
+    }));
 
-    isBootstrapping.subscribe((value) => {
+    subs.push(isBootstrapping.subscribe((value) => {
         addDebug('isBootstrapping', value);
-    });
+    }));
 
-    isSeeded.subscribe((value) => {
+    subs.push(isSeeded.subscribe((value) => {
         addDebug('isSeeded', value);
-    });
+    }));
 
-    appState.subscribe((value) => {
+    subs.push(appState.subscribe((value) => {
         addDebug('appState', value);
-    });
+    }));
 
-    tabState.subscribe((value) => {
+    subs.push(tabState.subscribe((value) => {
         addDebug('tabState', value);
-    });
+    }));
 
-    isIdle.subscribe((value) => {
+    subs.push(isIdle.subscribe((value) => {
         addDebug('isIdle', value);
-    });
+    }));
 
-    isLivesyncing.subscribe((value) => {
+    subs.push(isLivesyncing.subscribe((value) => {
         addDebug('isLivesyncing', value);
-    });
+    }));
 
-    relayCheckAggregates.subscribe((value) => {
+    subs.push(relayCheckAggregates.subscribe((value) => {
         addDebug('relayCheckAggregates', value.length);
-    });
+    }));
 
-    nip11s.subscribe((value) => {
+    subs.push(nip11s.subscribe((value) => {
         addDebug('nip11s', Array.from(value)?.length || 0);
-    });
+    }));
 
-    nip11sLocal.subscribe((value) => {
+    subs.push(nip11sLocal.subscribe((value) => {
         addDebug('nip11sLocal', Array.from(value)?.length || 0);
-    });
+    }));
 
-    operatorPubkeys.subscribe((value) => {
+    subs.push(operatorPubkeys.subscribe((value) => {
         addDebug('operatorPubkeys', value.length);
-    });
+    }));
 
-    operatorPubkeysValid.subscribe((value) => {
+    subs.push(operatorPubkeysValid.subscribe((value) => {
         addDebug('operatorPubkeysValid', value.length);
-    });
+    }));
 
-    operatorPubkeysInvalid.subscribe((value) => {
+    subs.push(operatorPubkeysInvalid.subscribe((value) => {
         addDebug('operatorPubkeysInvalid', value.length);
-    });
+    }));
 
-    relaysWithNip11s$().subscribe((value) => {
+    subs.push(relaysWithNip11s$().subscribe((value) => {
         addDebug('relaysWithNip11s', value.length);
-    });
+    }));
 
-    relaysWithoutNip11s$().subscribe((value) => {
+    subs.push(relaysWithoutNip11s$().subscribe((value) => {
         addDebug('relaysWithoutNip11s', value.length);
-    });
+    }));
 
     // eventsChecks.subscribe((events) => {
     //     addDebug('store:eventsChecks', $eventsChecks);
@@ -155,6 +157,10 @@
         debugRoute66()
         debugCacheAdapter()
         debugStores()
+
+        return () => {
+            subs.forEach((unsub) => unsub());
+        }
     })
 
     onDestroy( () => clearInterval(debugRoute66) )

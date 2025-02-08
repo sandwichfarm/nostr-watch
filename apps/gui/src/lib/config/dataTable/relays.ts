@@ -185,7 +185,7 @@ export const prettyNames: NameFormatter = {
         long: 'Minimum PoW Difficulty'
     },
     restrictedWrites: {
-        short: 'RW',
+        short: 'Restr. Writes',
         long: 'Restricted Writes'
     },
     maxFilters: {
@@ -226,12 +226,29 @@ export const prettyNames: NameFormatter = {
     }
 };
 
+function deduplicateArrayOfObjects<T>(array: T[], keys: (keyof T)[]): T[] {
+    const seen = new Set<string>();
+    return array.filter(item => {
+      const compositeKey = keys.map(key => item[key]).join("|");
+      if (seen.has(compositeKey)) {
+        return false;
+      }
+      seen.add(compositeKey);
+      return true;
+    });
+  }
+
 const formatFee = (fees: Nip11Fee[]) => {
-    if(!fees) return ''
+    if(!fees || !Array.isArray(fees)) return ''
     let str = '';
-    for(const fee of Object.values(fees)) {
+    fees = deduplicateArrayOfObjects(fees, ['amount', 'period']);
+    for(const fee of fees) {
         // if(!['msat', 'sat'].some( u => u === fee.unit)) continue;
-        const amount = fee.unit === 'msats'?  fee.amount/1000: fee.amount;
+        let amount = fee.unit === 'msats'? fee.amount/1000: fee.amount;
+        if(amount > 10) {
+            amount = Math.round(amount);
+        }
+
         str += `<span class="block">`
         str += `<span class="fee-amount">${amount}</span> <span class="fee-unit text-black/50 dark:text-white/50">sats</span>`
         if(fee?.period) {
@@ -251,25 +268,21 @@ export const dataDependencies: DataTableConfigDependencies = {
     'operatorPubkeyValid': ['operatorPubkey'],
     'admissionFee': ['fees'],
     'subscriptionFee': ['fees'],
-    'publicationFee': ['fees'],
+    'publicationFee': ['fees']
 }
 
-export const filterDataFormatters: DataFormatters = {
-    admissionFee: (fees: Nip11Fee[]) => {
-        if(!fees || !fees?.length) return null
-        fees.sort((a, b) => a.amount - b.amount);
-        return fees[0].amount;
-    },
-    subscriptionFee: (fees: Nip11Fee[]) => {
-        if(!fees || !fees?.length) return null
-        fees.sort((a, b) => a.amount - b.amount);
-        return fees[0].amount;
-    },
-    publicationFee: (fees: Nip11Fee[]) => {
-        if(!fees || !fees?.length) return null
-        fees.sort((a, b) => a.amount - b.amount);
-        return fees[0].amount;
-    },
+const formatFeeData = (fees: Nip11Fee[]) => {
+    if(!fees || !fees?.length) return null
+    fees.sort((a, b) => a.amount - b.amount);
+    const { amount, unit } = fees[0];
+    if(unit === 'msats') return amount/1000;
+    return fees[0].amount;
+}
+
+export const dataFormatters: DataFormatters = {
+    admissionFee: formatFeeData,
+    subscriptionFee: formatFeeData,
+    publicationFee: formatFeeData
 }
 
 export const tableFormatters: Formatters = {
@@ -392,6 +405,11 @@ export const tableFormatters: Formatters = {
         const style = r? '': 'text-opacity-50'
         return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
     },
+    restrictedWrites: (r) => {
+        const text = r? 'yes': ''
+        const style = r? '': 'text-opacity-50'
+        return `<span class="p-1 inline-block mr-1 uppercase text-xs bold text-${style}">${text}</span>`
+    },
     minPowDifficulty: (r) => {
         if(!r) return ''
         return `<span class="text-xs font-bold">⛏ ${r}</span>`
@@ -401,7 +419,7 @@ export const tableFormatters: Formatters = {
         return `<img class="text-green" src="${IconBadgeCheckGreen}" />`
     },
     nip11IsValid: (valid: boolean, row: any) => {
-        if(!row.hasNip11) return '<span class="opacity-20">n/a</span>';
+        if(row.hasNip11 === undefined) return '<span class="opacity-20">n/a</span>';
         return valid
                     ? `<span class="text-green-600">✓</span>`
                     : `<span class="text-red-500">✗</span>`;
@@ -473,6 +491,7 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 
 export default {
     prettyNames,
+    dataFormatters,
     tableFormatters,
     filterFormatters,
     columnsDisable,
@@ -484,5 +503,5 @@ export default {
     sortState: {
         columnId: 'lastSeen',
         direction: 'desc'
-    },
+    }
 }

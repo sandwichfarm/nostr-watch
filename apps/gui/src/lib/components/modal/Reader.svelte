@@ -47,12 +47,15 @@
 
     }
 
-    onMount(() => {
-        content = parseNote($note.content, parserOptions);  
+    const noteUnsub = note.subscribe((n) => {
+        content = parseNote(n.content, parserOptions);  
     });
 
-    note.subscribe((n) => {
-        content = parseNote(n.content, parserOptions);  
+    onMount(() => {
+        content = parseNote($note.content, parserOptions);  
+        return () => {
+            noteUnsub();
+        }
     });
 
     $: readerClass = $showReader? 'block' : 'hidden';

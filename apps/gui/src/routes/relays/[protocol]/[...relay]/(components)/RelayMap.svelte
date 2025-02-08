@@ -68,16 +68,23 @@
 
   // (★) If you REALLY need to react to changes in monitors/checks, 
   //     do a partial update. But do NOT re-run init (which resets everything).
-  monitors.subscribe((val) => {
+  const monitorsUnsub = monitors.subscribe((val) => {
     if (ready && val?.length) {
       setMonitors();
       updateMapData();
     }
   });
-  checks.subscribe((val) => {
+  const checksUnsub = checks.subscribe((val) => {
     if (ready && val?.length) {
       setMonitors();
       updateMapData();
+    }
+  });
+
+  onMount(() => {
+    return () => {
+      monitorsUnsub();
+      checksUnsub();
     }
   });
 

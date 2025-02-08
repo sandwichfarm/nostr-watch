@@ -1,3 +1,5 @@
+import { dataFormatters } from "$lib/config/dataTable/relays";
+
 type ValueGetter<T, V> = (row: T) => V;
 type Sorter<T, V> = (a: V, b: V, rowA: T, rowB: T) => number;
 type Filter<T, V> = (value: V, filterValue: V, row: T) => boolean;
@@ -131,9 +133,15 @@ export class DataTable<T> {
 		const { columnId, direction } = this.#sortState;
 		if (columnId && direction) {
 			const colDef = this.#getColumnDef(columnId);
+			const formatter = dataFormatters?.[columnId];
+			
 			this.#sortedData = [...this.#filteredData].sort((a, b) => {
-				const aVal = this.#getValue(a, columnId);
-				const bVal = this.#getValue(b, columnId);
+				const aVal = formatter
+					? formatter(this.#getValue(a, columnId))
+					: this.#getValue(a, columnId);
+				const bVal = formatter
+					? formatter(this.#getValue(b, columnId))
+					: this.#getValue(b, columnId);
 	
 				const isAInvalid = aVal === undefined || aVal === null || aVal < 0 || aVal === '';
 				const isBInvalid = bVal === undefined || bVal === null || bVal < 0 || bVal === '';
@@ -147,6 +155,10 @@ export class DataTable<T> {
 					return direction === 'asc'
 						? colDef.sorter(aVal, bVal, a, b)
 						: colDef.sorter(bVal, aVal, b, a);
+				}
+
+				if(typeof aVal === 'number' && typeof bVal === 'number') {
+					return direction === 'asc' ? aVal - bVal : bVal - aVal;
 				}
 	
 				if (typeof aVal === 'string' && typeof bVal === 'string') {

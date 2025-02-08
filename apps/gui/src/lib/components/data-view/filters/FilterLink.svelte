@@ -16,6 +16,7 @@
   
     export let filters: Writable<Record<string, any>>;
     export let config: Writable<DataTableConfig>;
+    export let onFilterChange: (config: DataTableConfig) => void = (config) => {}
 
     type LinkableDataView = {
         filters: Record<string, any>;
@@ -38,22 +39,25 @@
     let LinkableDataView: LinkableState<LinkableDataView> = linkableState<LinkableDataView>(initialState);
     let updatingFromLinkable = false;
     let updatingFromFilters = false;
+
+    const syncLinkStateWithConfig = (state: LinkableDataView) => {
+        config.update( (oldConfig) => {
+            console.log('config compare', oldConfig, state)
+            return { ...oldConfig, ...state }
+        });
+    }
     
     onMount(async () => {
-        await delay(1);
-    
         const linkConfig = get(LinkableDataView.store);
-
-        // alert(objectEquality({ ...$config, ...linkConfig }, $config)? 'same' : 'different')
-
-        if(!objectEquality({ ...$config, ...linkConfig }, $config)) {
-            updatingFromLinkable = true;
-            config.update( (oldConfig) => {
-                return { ...oldConfig, ...linkConfig }
-            });
-            filters.set(linkConfig.filtersActive);
-            updatingFromLinkable = false;
-        }
+        updatingFromLinkable = true;
+        await delay(1);
+        syncLinkStateWithConfig(linkConfig);
+        // await delay(1);
+        filters.update( () => linkConfig.filtersActive);
+        updatingFromLinkable = false;
+        await delay(1);
+        onFilterChange({ ...get(config), ...linkConfig })
+        // }
   
         // LinkableDataView.subscribe(async (linkState: LinkableDataView) => {
         //     if(!dialogOpen) return;
@@ -69,7 +73,7 @@
         //     }
         // });
   
-        filters.subscribe(async (newFilters: Record<string, any>) => {
+        const unsub = filters.subscribe(async (newFilters: Record<string, any>) => {
             if(dialogOpen) return;
             while(updatingFromLinkable) await delay(10);
             const currentLinkState = get(LinkableDataView.store);
@@ -80,6 +84,10 @@
                 updatingFromFilters = false;
             }
         });
+
+        return () => {
+            unsub();
+        }
     });
 
     const hash: Readable<string> = LinkableDataView.hash(linkableKeys)

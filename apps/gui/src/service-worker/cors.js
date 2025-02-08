@@ -10,27 +10,26 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
+
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname.includes('nostr.watch')) {
+        event.respondWith(fetch(event.request));
         return;
     }
-    if (url.pathname.match(/\.(webp|jpg|png|gif|svg|jpeg|well-known)$/)) {
+
+    if (url.pathname.match(/\.(webp|jpg|png|gif|svg|jpeg)$/) || url.pathname.includes('.well-known')) {
+        const proxyUrl = `https://proxy.nostr.watch/${url.href}`;
+        console.log(`Proxying request to: ${proxyUrl}`);
+
         event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    if (response.ok) {
-                        return response;
-                    }
-                    // throw new Error('Fetch failed');
-                })
-                .catch(() => {
-                    const proxyUrl = `https://proxy.nostr.watch/${url.href}`;
-                    return fetch(proxyUrl, {
-                        mode: 'cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                })
+            fetch(proxyUrl, {
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
         );
+        return;
     }
+
+    event.respondWith(fetch(event.request));
 });

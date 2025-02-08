@@ -206,7 +206,7 @@
         $relayFilters.forEach(filter => {
             const filterKey = filter.key;
             const filterMode = filter.mode || 'AND';
-            const filterValue = activeFilters[filter.key];
+            const filterValue = activeFilters?.[filter.key];
 
             newDisabledFilters[filterKey] = new Set();
 
@@ -578,7 +578,7 @@
                             {filter.prettyName}
                         </span>
                         
-                        {#if activeFilters[filter.key]}
+                        {#if activeFilters?.[filter.key]}
                             <!-- Badge with Count -->
                             <Badge class="ml-2 text-xs py-0.5 px-2 rounded-full">{Array.isArray(activeFilters[filter.key]) ? activeFilters[filter.key].length : 1}</Badge>
                             

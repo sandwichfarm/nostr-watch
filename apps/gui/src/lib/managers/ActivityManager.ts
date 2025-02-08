@@ -35,7 +35,7 @@ export class ActivityManager {
   private isLeader: boolean = false;
   // Forced takeover timeout: 1000 ms.
   private releaseWaitTimeoutId: number | null = null;
-  private releaseWaitTimeoutMs: number = 1000;
+  private releaseWaitTimeoutMs: number = 500;
 
   // Delay before firing the active callback after claiming leadership.
   private LEADERSHIP_CONFIRM_DELAY_MS: number = 200;

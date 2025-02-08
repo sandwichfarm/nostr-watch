@@ -180,13 +180,13 @@
         };
     });
 
-    filters.subscribe((newFilters: any) => {
-        ////console.log('Filters updated', newFilters);
-        config.update( (currentConfig: DataTableConfig) => {
-            currentConfig.activeFilters = newFilters;
-            return currentConfig;
-        });
-    });
+    // filters.subscribe((newFilters: any) => {
+    //     ////console.log('Filters updated', newFilters);
+    //     config.update( (currentConfig: DataTableConfig) => {
+    //         currentConfig.activeFilters = newFilters;
+    //         return currentConfig;
+    //     });
+    // });
 
     function clearAllFilters() {
         filters.set({});

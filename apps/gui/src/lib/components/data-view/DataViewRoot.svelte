@@ -70,8 +70,9 @@
 
     filters.subscribe((newFilters: any) => {
         config.update( (currentConfig: DataTableConfig) => {
-            currentConfig.activeFilters = newFilters;
-            return currentConfig;
+            const newConfig = { ...currentConfig };
+            newConfig.filtersActive = newFilters;
+            return newConfig;
         });
     });
 

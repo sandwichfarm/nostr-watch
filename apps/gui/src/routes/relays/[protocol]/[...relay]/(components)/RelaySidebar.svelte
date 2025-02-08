@@ -24,27 +24,29 @@
 
 	{#each $items as item}
 		{@const isActive = $page.url.pathname === item.href}
+		
 		<Button
-			href={item.href}
+			href={item?.href? item.href: "#"}
 			size="lg"
 			variant="ghost"
 			class={cn(
 				!isActive && "hover:underline",
+				item?.href? "!text-black dark:!text-white": "!text-black/30 dark:!text-white/30 hover:!no-underline",
 				"block w-full relative justify-start hover:bg-transparent text-lg py-1.5 px-3 mb-3"
 			)}
 			data-sveltekit-noscroll
 		>
 			{#if isActive}
 				<div
-					class="bg-muted absolute inset-0 rounded-md bg-purple-600/25"
+					class="bg-muted absolute inset-0 rounded-md bg-purple-600/25 "
 					in:send={{ key: "active-sidebar-tab" }}
 					out:receive={{ key: "active-sidebar-tab" }}
 				/>
 			{/if}
-			<div class="relative">
+			<div class="relative ">
 				{item.title}
 				{#if item?.errorCount}
-				<span class="relative -top-0.5 ml-1 rounded-full bg-red-700 text-white text-xs font-bold py-1 px-2">
+				<span class="relative -top-0.5 ml-1 rounded-full bg-red-700  text-xs font-bold py-1 px-2 ">
 					{item.errorCount}
 				</span>
 				{/if}

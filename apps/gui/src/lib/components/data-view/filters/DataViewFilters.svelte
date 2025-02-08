@@ -20,6 +20,8 @@
 	import FilterOptions from './FilterOptions.svelte';
 
     import type { DataTableConfig, Formatters } from './DataTableTypes';
+	import { linkableState, type LinkableState } from '$utils/linkable-state.js';
+	import FilterLink from './FilterLink.svelte';
 
     // **Props Passed to the Component**
     export let dataKey: string;
@@ -96,7 +98,7 @@
         showAllFilters.set(initialShowAll);
         updateDisabledFilters($filters)
         ////console.log('setting active filters', $config.activeFilters)
-        filters.set( $config.activeFilters )
+        filters.set( $config.filtersActive )
     }
 
     const onFilterChange = ($config: DataTableConfig) => {
@@ -496,6 +498,8 @@
     $: buttonClass = 'mb-2 text-sm font-bold py-1 px-2 mr-1';
     $: buttonClassSelected = 'bg-blue-500 text-white';
 </script>  
+
+<FilterLink {filters} {config} />
 
 <!-- <pre class="absolute top-1 left-1 bg-black border border-white p-10 z-[9999]">{JSON.stringify($disabledFilters, null, 2)}</pre> -->
 

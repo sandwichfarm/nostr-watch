@@ -45,7 +45,7 @@ export type DataTableConfig = {
     filtersShow: string[];
     filterFormatters: Formatters;
 
-    activeFilters: Record<string, any>;
+    filtersActive: Record<string, any>;
 
     sidebarCollapsed: boolean;
     sortState: SortState;

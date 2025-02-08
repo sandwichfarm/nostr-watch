@@ -75,18 +75,6 @@
         href: `/relays/${generateRelayPathFromUrl(relayUrl)}`,
       },
       {
-          title: "Insights",
-          href: `/relays/${generateRelayPathFromUrl(relayUrl)}/insights`,
-      },
-      {
-          title: "Operator",
-          href: `/relays/${generateRelayPathFromUrl(relayUrl)}/operator`,
-      },
-      {
-        title: "Feed",
-        href: `/relays/${generateRelayPathFromUrl(relayUrl)}/feed`,
-      },
-      {
         title: "Checks",
         href: `/relays/${generateRelayPathFromUrl(relayUrl)}/checks`
       },
@@ -96,8 +84,20 @@
         errorCount: $nip11ValidationErrorCount.get(relayUrl)
       },
       {
-        title: "Audits",
+        title: "Audit",
         href: `/relays/${generateRelayPathFromUrl(relayUrl)}/audits`
+      },
+      {
+        title: "Insights",
+        // href: `/relays/${generateRelayPathFromUrl(relayUrl)}/insights`,
+      },
+      {
+        title: "Operator",
+        // href: `/relays/${generateRelayPathFromUrl(relayUrl)}/operator`,
+      },
+      {
+        title: "Feed",
+        // href: `/relays/${generateRelayPathFromUrl(relayUrl)}/feed`,
       },
     ];
   });

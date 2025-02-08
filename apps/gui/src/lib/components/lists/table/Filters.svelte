@@ -97,7 +97,7 @@
         showAllFilters.set(initialShowAll);
         updateDisabledFilters($filters)
         ////console.log('setting active filters', $config.activeFilters)
-        filters.set( $config.activeFilters )
+        filters.set( $config.filtersActive )
     }
 
     const onFilterChange = ($config: DataTableConfig) => {

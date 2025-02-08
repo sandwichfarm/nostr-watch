@@ -10,6 +10,8 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
 	import { StateManager } from '@nostrwatch/route66';
+
+    import { cachableConfig } from './utils.js'
     
     import TableOptions from './TableOptions.svelte';
     import * as Popover from "$lib/components/ui/popover";
@@ -114,24 +116,6 @@
         }
     }
 
-    const cachableConfig = (config: DataTableConfig) => {
-        const cachable: Partial<DataTableConfig> = {...config};
-        //remove functions 
-        delete cachable.tableFormatters;
-        delete cachable.filterFormatters;
-        delete cachable.tableRowStyler;
-        
-        // //remove built-in config that isn't technically user config... :D 
-        delete cachable.prettyNames
-        delete cachable.columnsDisable
-        delete cachable.filtersDisable;
-        delete cachable.availableColumnKeys;
-        delete cachable.availableFilterKeys;
-
-        //TODO: separate built-in config from user config
-        return cachable;
-    }
-
     onMount(async (): Promise<any> => {
         const unsubConfig = config.subscribe( (newConfig: DataTableConfig) => {
             StateManager.set(`preferences:${dataKey}:tableConfig`, cachableConfig(newConfig));
@@ -158,13 +142,13 @@
         };
     });
 
-    filters.subscribe((newFilters: any) => {
-        ////console.log('Filters updated', newFilters);
-        config.update( (currentConfig: DataTableConfig) => {
-            currentConfig.activeFilters = newFilters;
-            return currentConfig;
-        });
-    });
+    // filters.subscribe((newFilters: any) => {
+    //     ////console.log('Filters updated', newFilters);
+    //     config.update( (currentConfig: DataTableConfig) => {
+    //         currentConfig.activeFilters = newFilters;
+    //         return currentConfig;
+    //     });
+    // });
 
     function clearAllFilters() {
         filters.set({});

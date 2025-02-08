@@ -354,15 +354,15 @@
 		},
     {
       title: "Insights",
-      href: `/relays/${generateRelayPathFromUrl(relayUrl)}insights`,
+      // href: `/relays/${generateRelayPathFromUrl(relayUrl)}insights`,
     },
     {
 			title: "Operator",
-			href: `/relays/${generateRelayPathFromUrl(relayUrl)}operator`,
+			// href: `/relays/${generateRelayPathFromUrl(relayUrl)}operator`,
 		},
     {
 			title: "Feed",
-			href: `/relays/${generateRelayPathFromUrl(relayUrl)}feed`,
+			// href: `/relays/${generateRelayPathFromUrl(relayUrl)}feed`,
 		},
     {
 			title: "Checks",

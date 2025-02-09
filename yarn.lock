@@ -1221,6 +1221,11 @@
   resolved "https://registry.npmjs.org/@lmdb/lmdb-darwin-arm64/-/lmdb-darwin-arm64-3.0.5.tgz#7e519574f2bba54097951a2e28df50195a240224"
   integrity sha512-GCG4eAKkIQBD0c0qhR0mrLO4nnXjEf86Sh5HkqjqWqP/sPAFJvgBqky8lhJQaQvTsfI9jDH0rvD4hWlPYKApYg==
 
+"@lmdb/lmdb-darwin-arm64@3.2.5":
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/@lmdb/lmdb-darwin-arm64/-/lmdb-darwin-arm64-3.2.5.tgz#0af60fd0ce727c9b62aed749a605821c4dd6aeb0"
+  integrity sha512-LR1bXR8Ligyk6+4wmpOS1siViDOfuxKMwl9KYwv7ROHyCpuHY+etVZ+F+0erk3Ucr8T6q+ccm+c/iZf3cCbbTQ==
+
 "@lmdb/lmdb-darwin-x64@2.8.5":
   version "2.8.5"
   resolved "https://registry.npmjs.org/@lmdb/lmdb-darwin-x64/-/lmdb-darwin-x64-2.8.5.tgz#ca243534c8b37d5516c557e4624256d18dd63184"
@@ -1230,6 +1235,11 @@
   version "3.0.5"
   resolved "https://registry.npmjs.org/@lmdb/lmdb-darwin-x64/-/lmdb-darwin-x64-3.0.5.tgz#96bde1d7bb77b725255bf858083658ba77fda4f5"
   integrity sha512-6/7G3Z9YZnWMH8hWiaSDyN79ksowCDdYaZRGKTP3F4owKkmdKQ5sz9BOGVBIf0xRjuIlWaO+KPh5NI54/NfW9w==
+
+"@lmdb/lmdb-darwin-x64@3.2.5":
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/@lmdb/lmdb-darwin-x64/-/lmdb-darwin-x64-3.2.5.tgz#f89a280897d837fb49e638cb34527ccb96ac9f27"
+  integrity sha512-BGS9r0ttPwElq1aXJ+Y18DQT25WosZQQWZ4/vKE7bMfh4DrR0rMGLBOp8y9L/Ym8Y7rqmL8mvINkKg0+i+1N5w==
 
 "@lmdb/lmdb-linux-arm64@2.8.5":
   version "2.8.5"
@@ -1241,6 +1251,11 @@
   resolved "https://registry.npmjs.org/@lmdb/lmdb-linux-arm64/-/lmdb-linux-arm64-3.0.5.tgz#48f118034b261c1a55a5e3c6e3c5d9328997d95f"
   integrity sha512-kZ7k9HU9cdcDKLfufEw6m+kINNMADixEfjYNWW889vtAYbdFnhhj1kdaOxo1SEubBx/1pkuHfiQ0dxG3tGhyOg==
 
+"@lmdb/lmdb-linux-arm64@3.2.5":
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/@lmdb/lmdb-linux-arm64/-/lmdb-linux-arm64-3.2.5.tgz#eaf041d88d373c6ce591764b8e61dfd078193d48"
+  integrity sha512-TC7RLSQV4f/0VoymcxOBt5ooypKXSnn4uiYrJJRoyrhGaNQmo8MFro8/X8f7vKfMXZ18KfzJmH6/GwJszoI7yg==
+
 "@lmdb/lmdb-linux-arm@2.8.5":
   version "2.8.5"
   resolved "https://registry.npmjs.org/@lmdb/lmdb-linux-arm/-/lmdb-linux-arm-2.8.5.tgz#17bd54740779c3e4324e78e8f747c21416a84b3d"
@@ -1250,6 +1265,11 @@
   version "3.0.5"
   resolved "https://registry.npmjs.org/@lmdb/lmdb-linux-arm/-/lmdb-linux-arm-3.0.5.tgz#6d6b6d83a1b42e772b7bdc6d94a62d1721cda379"
   integrity sha512-vQlnQtnjJZeB4QwBqzydGrtGvcoZfJk4URxV5CMiLPNuaUYuUvP+S4FHTeHCmpkrDzxhscIh7jI89noyPs2aTg==
+
+"@lmdb/lmdb-linux-arm@3.2.5":
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/@lmdb/lmdb-linux-arm/-/lmdb-linux-arm-3.2.5.tgz#b49a3d142ffdc8cfcb728327d3063bb302bcb862"
+  integrity sha512-V7AQQJtPrmViZQhmh7PhC/SQKkJC0xXwMcG1jdkcifCoUhacu3SyTWIoyVuloMWo8fHZsoYVBQfumzDW4XL1vg==
 
 "@lmdb/lmdb-linux-x64@2.8.5":
   version "2.8.5"
@@ -1261,6 +1281,11 @@
   resolved "https://registry.npmjs.org/@lmdb/lmdb-linux-x64/-/lmdb-linux-x64-3.0.5.tgz#546970122c409148edb2922e50480b290a892f8f"
   integrity sha512-QPIEG6n4W+Ldkl9Yq+4dIxOoSbQdyhLbR2fEp7HqKN1nu2LcRZ+WSoAUoRqpydR97YpagxV3wnw/ILUoGx7ISQ==
 
+"@lmdb/lmdb-linux-x64@3.2.5":
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/@lmdb/lmdb-linux-x64/-/lmdb-linux-x64-3.2.5.tgz#11757048c7decd7a29e7341b0c4cc5358622d6d7"
+  integrity sha512-e0jNcz+2i5wxINH58h4UhjO/H5USomicZVzPK7YJpRLbzsTIFpXIsvr+YmygFKyM3vvgPURlUJgln2uNMN4fHA==
+
 "@lmdb/lmdb-win32-x64@2.8.5":
   version "2.8.5"
   resolved "https://registry.npmjs.org/@lmdb/lmdb-win32-x64/-/lmdb-win32-x64-2.8.5.tgz#8233e8762440b0f4632c47a09b1b6f23de8b934c"
@@ -1270,6 +1295,11 @@
   version "3.0.5"
   resolved "https://registry.npmjs.org/@lmdb/lmdb-win32-x64/-/lmdb-win32-x64-3.0.5.tgz#22036c2f59e03ddd4f61d7381d13c02198ec0d0e"
   integrity sha512-c2ohB2tekVK3H0/CnsfK7DxhFDSw6fYYcAe/DgYdLRnUEBqvK5Hf2nMh00cqvWEXJ29KbkI0I+NJw/iJozIZYw==
+
+"@lmdb/lmdb-win32-x64@3.2.5":
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/@lmdb/lmdb-win32-x64/-/lmdb-win32-x64-3.2.5.tgz#743a3cfad690cd68ff76ab30233034eb08b0eaeb"
+  integrity sha512-VtKaMEwqL68b7CCPSvRvl434dbt6bwFsel33NYqd9gppxkezFzNALTp3TJfoOXwapW0qjo1QXa4SkN+yNNYghg==
 
 "@lukeed/ms@^2.0.1":
   version "2.0.2"
@@ -7555,6 +7585,24 @@ lmdb@3.0.5:
     "@lmdb/lmdb-linux-x64" "3.0.5"
     "@lmdb/lmdb-win32-x64" "3.0.5"
 
+lmdb@^3.2.5:
+  version "3.2.5"
+  resolved "https://registry.yarnpkg.com/lmdb/-/lmdb-3.2.5.tgz#8cfe1f5414dd51fd6289b776f1beffe89dee0b74"
+  integrity sha512-KIyB6PcHzmUv8aSIbN6JVS5Tyc16puIvPI43X8GT2i57BXeY+OPGsJHIdPrggX6FZsZPY1UxkJBtipYCKN/cAg==
+  dependencies:
+    msgpackr "^1.11.2"
+    node-addon-api "^6.1.0"
+    node-gyp-build-optional-packages "5.2.2"
+    ordered-binary "^1.5.3"
+    weak-lru-cache "^1.2.2"
+  optionalDependencies:
+    "@lmdb/lmdb-darwin-arm64" "3.2.5"
+    "@lmdb/lmdb-darwin-x64" "3.2.5"
+    "@lmdb/lmdb-linux-arm" "3.2.5"
+    "@lmdb/lmdb-linux-arm64" "3.2.5"
+    "@lmdb/lmdb-linux-x64" "3.2.5"
+    "@lmdb/lmdb-win32-x64" "3.2.5"
+
 load-tsconfig@^0.2.0:
   version "0.2.5"
   resolved "https://registry.npmjs.org/load-tsconfig/-/load-tsconfig-0.2.5.tgz#453b8cd8961bfb912dea77eb6c168fe8cca3d3a1"
@@ -8020,6 +8068,13 @@ msgpackr@^1.10.1, msgpackr@^1.6.2, msgpackr@^1.9.5, msgpackr@^1.9.9:
   version "1.11.0"
   resolved "https://registry.npmjs.org/msgpackr/-/msgpackr-1.11.0.tgz#8321d52333048cadc749f56385e3231e65337091"
   integrity sha512-I8qXuuALqJe5laEBYoFykChhSXLikZmUhccjGsPuSJ/7uPip2TJ7lwdIQwWSAi0jGZDXv4WOP8Qg65QZRuXxXw==
+  optionalDependencies:
+    msgpackr-extract "^3.0.2"
+
+msgpackr@^1.11.2:
+  version "1.11.2"
+  resolved "https://registry.yarnpkg.com/msgpackr/-/msgpackr-1.11.2.tgz#4463b7f7d68f2e24865c395664973562ad24473d"
+  integrity sha512-F9UngXRlPyWCDEASDpTf6c9uNhGPTqnTeLVt7bN+bU1eajoR/8V9ys2BRaV5C/e5ihE6sJ9uPIKaYt6bFuO32g==
   optionalDependencies:
     msgpackr-extract "^3.0.2"
 
@@ -8495,6 +8550,11 @@ ordered-binary@^1.4.1:
   version "1.5.1"
   resolved "https://registry.npmjs.org/ordered-binary/-/ordered-binary-1.5.1.tgz#94ccbf14181711081ee23931db0dc3f58aaa0df6"
   integrity sha512-5VyHfHY3cd0iza71JepYG50My+YUbrFtGoUz2ooEydPyPM7Aai/JW098juLr+RG6+rDJuzNNTsEQu2DZa1A41A==
+
+ordered-binary@^1.5.3:
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/ordered-binary/-/ordered-binary-1.5.3.tgz#8bee2aa7a82c3439caeb1e80c272fd4cf51170fb"
+  integrity sha512-oGFr3T+pYdTGJ+YFEILMpS3es+GiIbs9h/XQrclBXUtd44ey7XwfsMzM31f64I1SQOawDoDr/D823kNCADI8TA==
 
 os-browserify@^0.3.0:
   version "0.3.0"

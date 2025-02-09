@@ -2,3 +2,4 @@ node_modules
 docker-compose.yaml
 yarn.lock
 .env*
+config.yaml

@@ -17,6 +17,7 @@
     "@nostrwatch/utils": "0.1.9",
     "bluebird": "3.7.2",
     "chalk": "5.3.0",
+    "lmdb": "^3.2.5",
     "ngeohash": "^0.6.3",
     "nostr-fetch": "0.14.1",
     "nostr-geotags": "^0.5.0",

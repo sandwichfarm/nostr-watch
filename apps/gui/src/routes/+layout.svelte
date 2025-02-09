@@ -193,7 +193,7 @@
   $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
 
   $: percentModulesLoaded = Math.round((progressList.length / Object.keys(modules || {}).length) * 100);
-  $: monitorsSynced = 
+  $: numMonitorsSynced = 
       activities
         .filter( item =>
           item.slug === "monitors/bootstrap/registrations"
@@ -201,15 +201,17 @@
           || item.slug === "monitors/bootstrap/ensureActive"
         )
         .filter( item => item.complete )
-        .length === 3;
-  $: relayChecksSynced = 
+        .length
+  $: numRelayChecksSynced = 
       activities
         .filter( item =>
           item.slug === "monitors/bootstrap/checks"
         )
         .filter( item => item.complete )
-        .length === 1
-  $: percentCompleted = percentModulesLoaded * 0.7 + (monitorsSynced? 10: 0) + (relayChecksSynced? 20: 0);
+        .length
+  $: monitorsSynced = numMonitorsSynced === 3;
+  $: relayChecksSynced = numRelayChecksSynced === 1;
+  $: percentCompleted = percentModulesLoaded * 0.5 + (numMonitorsSynced*10) + (relayChecksSynced? 20: 0);
 
   let loadingThresholdPassed = false;
   setTimeout(() => loadingThresholdPassed = true, 1000 )
@@ -229,13 +231,13 @@ loadedEnough: {loadedEnough} <br /> -->
 {:else}
   {#if loading && !hasBeenBootstrapped()}
   <div class="flex flex-col items-center justify-center h-screen px-4">
-    <div class="text-7xl">booting.</div>
-    <div class="text-lg">need a sec, this should only happen once per release.</div>
+    <div class="text-7xl mb-3">booting.</div>
+    <!-- <div class="text-lg">need a sec, this should only happen once per release.</div> -->
     <div>
      <h4 class="sr-only">Status</h4>
      <div class="mt-6" aria-hidden="true">
        <div class="overflow-hidden rounded-full bg:black/10 dark:bg-white/20">
-         <div class="h-2 rounded-full text-purple-700" style="width: {percentCompleted}%"></div>
+         <div class="h-2 rounded-full bg-purple-700" style="width: {percentCompleted}%"></div>
        </div>
        {percentCompleted}%
        <div class="mt-6 hidden grid-cols-3 text-sm font-medium text-gray-600 sm:grid">
@@ -251,6 +253,11 @@ loadedEnough: {loadedEnough} <br /> -->
     </div>
     {/if}
   </div>
+  {:else if loading && !hasBeenBootstrapped()}
+    <div class="flex flex-col items-center justify-center h-screen px-4">
+      <div class="text-7xl">booting.</div>
+      <div class="text-xs opacity-30">[{$tabState}]</div>
+    </div>
   {/if}
   {#if isReady}
     {#if $tabState === 'leader'}
@@ -262,10 +269,10 @@ loadedEnough: {loadedEnough} <br /> -->
       {/if}
     {:else}
 
-      <!-- <div class="flex flex-col items-center justify-center h-screen px-4">
+      <div class="flex flex-col items-center justify-center h-screen px-4">
         <div class="text-7xl">booting.</div>
         <div class="text-xs opacity-30">[{$tabState}]</div>
-      </div> -->
+      </div>
     {/if}    
   {/if}
 {/if}

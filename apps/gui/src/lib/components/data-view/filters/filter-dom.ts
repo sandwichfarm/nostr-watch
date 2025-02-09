@@ -142,7 +142,7 @@ export function applyFilters(
     relayFilters: ConsoleFilter[]
 ): any[] {
     return data.filter(item => {
-        return Object.entries(activeFilters).every(([key, filterValue]) => {
+        return Object.entries(activeFilters || {}).every(([key, filterValue]) => {
             const filter = relayFilters.find(f => f.key === key);
             if (!filter) return true;
 

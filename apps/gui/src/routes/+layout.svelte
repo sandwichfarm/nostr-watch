@@ -19,6 +19,7 @@
     tabState, 
     hasBeenBootstrapped, 
   } from '$lib/stores/app';
+	import BootstrapLoading from './(components)/BootstrapLoading.svelte';
 
 
   let modules: Record<ModuleKey, any> | null = null;
@@ -50,6 +51,17 @@
   //     navigator.serviceWorker.register('$src/service-workers/cors.js'); 
   //   });
   // }
+
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for (let registration of registrations) {
+      registration.unregister();
+    }
+  }).then(() => {
+    console.log("Service workers unregistered");
+  }).catch(error => {
+    console.error("Error unregistering service workers:", error);
+  });
+
 
   const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -237,29 +249,7 @@ loadedEnough: {loadedEnough} <br /> -->
   </div>
 {:else}
   {#if loading && !hasBeenBootstrapped()}
-  <div class="flex flex-col items-center justify-center h-screen px-4">
-    <div class="text-7xl mb-3">booting.</div>
-    <!-- <div class="text-lg">need a sec, this should only happen once per release.</div> -->
-    <div>
-     <h4 class="sr-only">Status</h4>
-     <div class="mt-6" aria-hidden="true">
-       <div class="overflow-hidden rounded-full bg:black/10 dark:bg-white/20">
-         <div class="h-2 rounded-full bg-purple-700" style="width: {percentCompleted}%"></div>
-       </div>
-       {percentCompleted}%
-       <div class="mt-6 hidden grid-cols-3 text-sm font-medium text-gray-600 sm:grid">
-         <div class="{isReady? 'text-purple-700': ''}">Loading Assets</div>
-         <div class="{isReady && monitorsSynced === true? 'text-purple-700': ''}">Syncing Monitors</div>
-         <div class="{isReady && relayChecksSynced === true? 'text-purple-700': ''}">Syncing Relay checks</div>
-       </div>
-     </div>
-    </div>
-    <div class="h-[400px] pt-36">
-    {#if isReady}
-      <ActivityList bind:activities />
-    {/if}
-  </div>
-  </div>
+  <BootstrapLoading {isReady} {monitorsSynced} {relayChecksSynced} {percentCompleted} />
   {:else if loading && hasBeenBootstrapped()}
     <div class="flex flex-col items-center justify-center h-screen px-4">
       <div class="text-7xl">booting.</div>

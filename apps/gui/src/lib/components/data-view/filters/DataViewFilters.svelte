@@ -554,7 +554,7 @@
     <div class="active-filters p-2">
         <h5>Active Filters:</h5>
         <div class="active-filters-list">
-            {#each Object.entries(activeFilters) as [key, value]}
+            {#each Object.entries(activeFilters || {}) as [key, value]}
                 <Badge class="mb-1 mr-1 px-1 py-1 text-xs" size="small" variant="secondary">
                     {#if typeof value === 'function'}
                         [Custom Filter]

@@ -205,21 +205,23 @@ export class DataRegister {
     }
 
     private async execute(keys: string[], _params: Record<string, any> = {}): Promise<DataRegister> {
-        
+        console.log('execute', keys, _params)
         for (const key of keys) {
             if(this.busy(key)) continue;
             const params = this.extractParams(key, _params);
             this.localStorageLoadTimestamp(key, params)
             if(!this.isExpired(key)) continue;
             this.start(key);
-            
             if (this.isComposite(key)) {
+                console.log('execute', 'composite', key)
                 await this.executeComposite({ key, params });
+                console.log('execute', 'composite done', key)
             } else {
                 await this.executeFunction({ key, params });
             }
             this.stop(key, params);
         }
+        console.log('execute', 'done')
         return this;
     }
 
@@ -257,7 +259,6 @@ export class DataRegister {
             this.localStorageLoadTimestamp(childKey, params)
             if(!this.isExpired(childKey)) continue;
             this.start(childKey);
-            
             const ignoreCondition = composite.ignoreConditions?.[childKey] ?? false;
             const ignoreExpiry = composite.ignoreExpiries?.[childKey] ?? false;
             const result = await this.executeFunction({ key:childKey, ignoreCondition, ignoreExpiry, params })

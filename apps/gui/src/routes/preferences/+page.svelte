@@ -6,10 +6,12 @@
 	import type Route66 from '@nostrwatch/route66'
 	import Stats from '$lib/components/layout/Stats.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import { doBootstrap } from '$stores/routines';
 
     let Nip66Instance: Route66 | null;
 
     onMount(() => {
+        doBootstrap.set(false)
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
         Nip66Instance = instance($route66);
     });

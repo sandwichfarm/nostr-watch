@@ -118,7 +118,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
 
   Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
-      Nip66CheckEvent.keys.forEach((key: string) => {
+      [...Nip66CheckEvent.keys, 'nip11ValidationErrors', 'nip11Isvalid'].forEach((key: string) => {
       // get(relayChecksActiveKeys).forEach((key: string) => {
         const value = nip66Event[key];
         
@@ -134,7 +134,6 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
         }
         else if(key === 'nip11IsValid'){
           const nip11ValidationErrors = nip11Errors.get(relay)
-          console.log(relay, nip11Errors.get(relay))
           if(typeof nip11ValidationErrors === 'number') {
             acc.nip11IsValid = nip11ValidationErrors === 0? true: false;  
           }

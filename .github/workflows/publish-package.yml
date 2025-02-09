@@ -121,7 +121,7 @@ jobs:
           concurrency: "50"
           enable-delete-action: true
           enable-purge-pull-zone: true
-          pull-zone-id: "3312865"
+          pull-zone-id: "3313140"
           replication-timeout: "15000"  
 
       # - name: Install jq

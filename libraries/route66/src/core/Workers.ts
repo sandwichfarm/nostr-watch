@@ -13,7 +13,7 @@ export class Workers {
 
   private _ready: boolean = false;
 
-  constructor( adapters: IAdaptersArgument ){
+  constructor( adapters: IAdaptersArgument, private doSetup: boolean = true ){
     this.setupWorkers( adapters )
   }
 
@@ -52,18 +52,19 @@ export class Workers {
   }
 
   async setupWorkers(adapters: IAdaptersArgument){
+    const cacheAdapterChannelPort = this.channel.port2;
+    const websocketAdapterChannelPort = this.channel.port1;
+
     if(adapters.cacheAdapter.useWorker){
-      this.cache = (await adapters.cacheAdapter.newWorker()) as Worker | SharedWorker
+      this.cache = (await adapters.cacheAdapter.newWorker(cacheAdapterChannelPort)) as Worker | SharedWorker
       ////console.log('cacheAdapter.newWorker()', this.cache)
     }
     if(adapters.websocketAdapter.useWorker){
-      this.websocket = (await adapters.websocketAdapter.newWorker()) as Worker | SharedWorker
+      this.websocket = (await adapters.websocketAdapter.newWorker(websocketAdapterChannelPort)) as Worker | SharedWorker
       ////console.log('websocketAdapter.newWorker()', this.websocket)
     }
     if(adapters.cacheAdapter.useWorker && adapters.websocketAdapter.useWorker){
-      const cacheAdapterChannelPort = this.channel.port2;
-      const websocketAdapterChannelPort = this.channel.port1;
-      if(this.cache instanceof Worker || this.cache instanceof SharedWorker){
+      if(!adapters.cacheAdapter.handleSetupInternally && (this.cache instanceof Worker || this.cache instanceof SharedWorker)){
         const message = {type: 'setup', channelPort: cacheAdapterChannelPort}
         if(this.cache instanceof Worker) {
           ////console.log(`[Workers] setupWorkers() -> cache.postMessage() to Worker`, this.cache, message)
@@ -78,7 +79,7 @@ export class Workers {
       else {
         console.warn('Cache Worker not defined')
       }
-      if(this.websocket instanceof Worker || this.websocket instanceof SharedWorker){
+      if(!adapters.cacheAdapter.handleSetupInternally && (this.websocket instanceof Worker || this.websocket instanceof SharedWorker)){
         const message = {type: 'setup', channelPort: websocketAdapterChannelPort}
         if(this.websocket instanceof Worker) {
           ////console.log(`[Workers] setupWorkers() [websocket] -> websocket.postMessage() to Worker`, message)

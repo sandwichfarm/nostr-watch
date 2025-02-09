@@ -26,7 +26,9 @@ self.addEventListener('fetch', (event) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-            })
+            }).catch((error) => {
+                console.warn('Failed to fetch:', event.request.url, error);
+            }),
         );
         return;
     }

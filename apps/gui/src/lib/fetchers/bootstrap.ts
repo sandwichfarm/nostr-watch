@@ -40,7 +40,7 @@ export const fetchNip11s = async () => {
 }
 
 export const fetchOperators = async (pubkeys?: string[]) => {
-    await delay(1000)
+    // await delay(1000)
     //console.log('fetchOperators')
     const $route66 = await instance();
     await $route66.ready();

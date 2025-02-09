@@ -19,7 +19,7 @@ export interface IAdapter {
   worker?: Worker | SharedWorker;
   useWorker: boolean;
 
-  newWorker(): Promise<Worker | SharedWorker>;
+  newWorker(channelPort?: MessagePort): Promise<Worker | SharedWorker>;
 
   ping(): void;
 
@@ -51,6 +51,8 @@ export abstract class Adapter {
   useWorker: boolean = true;
 
   protected emitter: EventEmitter = new EventEmitter();
+
+  handleSetupInternally: boolean = false;
 
   constructor( worker?: Worker | SharedWorker | URL, shared?: boolean ) {
     if (worker instanceof Worker) {

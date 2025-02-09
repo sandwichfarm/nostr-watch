@@ -3,10 +3,7 @@
     import { VisSingleContainer, VisTopoJSONMap } from '@unovis/svelte'
     import { MapPointLabelPosition, type ColorAccessor, type MapData } from '@unovis/ts'
 	import { derived, readable, writable, type Readable, type Writable } from 'svelte/store';
-	import { points } from '@unovis/ts/components/topojson-map/style';
 	import { WorldMapTopoJSON } from '@unovis/ts/maps';
-	import { map } from 'lodash';
-	import { pauseLiveSync } from '$utils/live-sync';
 	import { throttledDerived } from '$utils/stores';
     
     export let data: Readable<any[]>;

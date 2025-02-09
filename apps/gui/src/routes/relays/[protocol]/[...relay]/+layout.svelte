@@ -2,30 +2,21 @@
 <script lang="ts">
 	import { page } from "$app/stores";
 	import PageHeader from "$lib/components/layout/PageHeader.svelte";
-    import RelaySidebar from './(components)/RelaySidebar.svelte';
+  import RelaySidebar from './(components)/RelaySidebar.svelte';
 
-	import { relayCheckAggregates } from "$stores/checks";
 	import { dataRegister } from "$stores/data-register";
 	import { relayLivenessAggregate$, relayLivenessChecks, relayOperatorPubkey$ } from "$stores/helpers/helpers-relay";
-	import { nip11s, nip11sLocal } from "$stores/nip11s";
 	import { route66 } from "$stores/route66";
-	import { eventKey } from "$utils/event-keys";
 	import { pauseLiveSync, stopRelayLiveSync, type LiveSyncResumer } from "$utils/live-sync";
 	import { generateRelayPathFromUrl, generateRelayUrlFromPath } from "$utils/routing";
 	import { truncateWithEllipsis } from "$utils/strings";
-	import type { IResult } from "@nostrwatch/nocap";
-	import type { NostrEvent, PubkeyProfile } from "@nostrwatch/route66/models";
-	import type { Monitor } from "@nostrwatch/route66/models";
+	import type { PubkeyProfile } from "@nostrwatch/route66/models";
 	import type { Nip11 } from "@nostrwatch/route66/models";
-	import type { Nip66CheckEvent } from "@nostrwatch/route66/models";
-	import { onDestroy, onMount, setContext } from "svelte";
-	import { derived, readable, writable, type Readable, type Writable } from "svelte/store";
+	import { onDestroy, onMount } from "svelte";
+	import { derived, readable, type Readable } from "svelte/store";
 	import { operatorProfile$, operatorRelays$ } from "$stores/helpers/helpers-operator";
-	import { isPubkey } from "$utils/nostr";
 	import { relayNip11$ } from "$stores/helpers/helpers-nip11s";
 	import { fade } from "svelte/transition";
-	import OperatorRelay from "$lib/components/partials/OperatorRelay.svelte";
-	import { doLiveSync } from "$stores/app";
 
   import {nip11ValidationErrorCount} from "$stores/nip11-validations";
 

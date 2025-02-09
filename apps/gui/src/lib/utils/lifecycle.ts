@@ -1,8 +1,8 @@
-import { get, type Writable, type Readable } from 'svelte/store';
+import { get } from 'svelte/store';
 
 import Route66, { StateManager } from '@nostrwatch/route66';
 
-import { Nip66CheckEvent, type IEvent } from '@nostrwatch/route66/models';
+import { type IEvent } from '@nostrwatch/route66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
 import { route66, events, monitorsMap, monitors, eventsArray } from '$lib/stores/index.js';
@@ -18,14 +18,12 @@ import { Batcher } from '@nostrwatch/route66/core';
 
 import NostrSqliteAdapter from '@nostrwatch/route66-cacheadapter-nostrsqlite';
 import NostrToolsAdapter from '@nostrwatch/route66-wsadapter-nostrtools';
+
 import type { Nip05Service } from '../services/Nip05Service';
 import type { Nip05 } from 'nostr-tools/nip05';
-import { nip11Service, operatorPubkeys, operatorPubkeysValid } from '../stores';
-import { userService } from '../stores/services';
-import type { UserService } from '../services/UserService';
+import { nip11Service, operatorPubkeysValid } from '../stores';
 import type { Filter } from 'nostr-tools';
 import type { Nip11Service } from '../services/Nip11Service';
-import { debounce } from 'lodash';
 import { relaysWithNip11s$, relaysWithoutNip11s$ } from '$stores/helpers/helpers-nip11s';
 
 let $monitorsMap: Map<string, Monitor>;
@@ -156,49 +154,49 @@ export const bootstrapMonitorChecks = async () => {
     await $route66?.services?.monitors?.syncMonitorsChecks();
 }
 
-export const bootstrap = async () => {
-    //console.log('bootstrap')
-    if(!$route66){
-        $route66 = await instance();
-    }
-    await $route66.ready();
-    // await $route66?.cacheAdapter?.relay.debug();
-    bindBootstrapEmitters('bootstrap');
-    if( shouldSync() ){
-        console.log('bootstrap:syncing')
-        if( get(isBootstrapping) ) return;
-        isBootstrapping.set(true)
-        // await bootstrapMonitorData();
-        // await bootstrapMonitorChecks();
-        await $route66?.services?.monitors?.bootstrap()
-        updateLastSync();
-        seedFromCache();
-        await fetchNip11s()
-        await bootstrapOperatorsMeta()
-    }
-    else {
-        console.log('seeding from cache')
-        await new Promise( (resolve) => setTimeout(resolve, 1000) )     
-        await seedFromCache();
-        if(get(monitorsMap).size === 0){
-            await bootstrapMonitorData();
-        }
-        await bootstrapMonitorChecks();
-        await bootstrapOperatorsMeta();
-    }
-    isBootstrapping.set(false)
-    removeStaleChecksFromStore()
-}
+// export const bootstrap = async () => {
+//     //console.log('bootstrap')
+//     if(!$route66){
+//         $route66 = await instance();
+//     }
+//     await $route66.ready();
+//     // await $route66?.cacheAdapter?.relay.debug();
+//     bindBootstrapEmitters('bootstrap');
+//     if( shouldSync() ){
+//         console.log('bootstrap:syncing')
+//         if( get(isBootstrapping) ) return;
+//         isBootstrapping.set(true)
+//         // await bootstrapMonitorData();
+//         // await bootstrapMonitorChecks();
+//         await $route66?.services?.monitors?.bootstrap()
+//         updateLastSync();
+//         seedFromCache();
+//         await fetchNip11s()
+//         await bootstrapOperatorsMeta()
+//     }
+//     else {
+//         console.log('seeding from cache')
+//         await new Promise( (resolve) => setTimeout(resolve, 1000) )     
+//         await seedFromCache();
+//         if(get(monitorsMap).size === 0){
+//             await bootstrapMonitorData();
+//         }
+//         await bootstrapMonitorChecks();
+//         await bootstrapOperatorsMeta();
+//     }
+//     isBootstrapping.set(false)
+//     removeStaleChecksFromStore()
+// }
 
-export const liveSync = () => {
-    if(get(isLivesyncing)) return;
-    const onevents = (events: IEvent[]) => {
-        for(const event of events){
-            liveSyncBatcher.add(event); 
-        }
-    }
-    beginLiveSync({ onevents })
-}
+// export const liveSync = () => {
+//     if(get(isLivesyncing)) return;
+//     const onevents = (events: IEvent[]) => {
+//         for(const event of events){
+//             liveSyncBatcher.add(event); 
+//         }
+//     }
+//     beginLiveSync({ onevents })
+// }
 
 export const bootstrapOperatorsMeta = async (pubkeys?: string[]) => {
 
@@ -253,60 +251,60 @@ export const bootstrapOperatorsMeta = async (pubkeys?: string[]) => {
     }
 }
 
-export const fetchNip11s = async () => {
-    const $nip11Service: Nip11Service = get(nip11Service);
-    const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s$());
-    const $relaysWithNip11s: string[] = get(relaysWithNip11s$());
-    const relays: string[] = Array.from(new Set([...$relaysWithoutNip11s, ...$relaysWithNip11s]));
-    if(relays.length === 0) return;
-    const promises: Promise<any>[] = [];
-    for(const relay of relays){
-        promises.push(new Promise( resolve => {
-            setTimeout( resolve, 20000 )
-            $nip11Service.check(relay).then( resolve )
-        }));
-    }
-    // const debug = setInterval( () => { 
-        //console.log('fetchNip11s:total', promises.length)
-        //console.log('fetchNip11s:waiting', promises.filter( (p) => p?.status === 'pending').length)
-    // }, 1000)
-    await Promise.allSettled(promises);
-    // clearInterval(debug)
-    //console.log('fetchNip11s:done')
-}
+// export const fetchNip11s = async () => {
+//     const $nip11Service: Nip11Service = get(nip11Service);
+//     const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s$());
+//     const $relaysWithNip11s: string[] = get(relaysWithNip11s$());
+//     const relays: string[] = Array.from(new Set([...$relaysWithoutNip11s, ...$relaysWithNip11s]));
+//     if(relays.length === 0) return;
+//     const promises: Promise<any>[] = [];
+//     for(const relay of relays){
+//         promises.push(new Promise( resolve => {
+//             setTimeout( resolve, 20000 )
+//             $nip11Service.check(relay).then( resolve )
+//         }));
+//     }
+//     // const debug = setInterval( () => { 
+//         //console.log('fetchNip11s:total', promises.length)
+//         //console.log('fetchNip11s:waiting', promises.filter( (p) => p?.status === 'pending').length)
+//     // }, 1000)
+//     await Promise.allSettled(promises);
+//     // clearInterval(debug)
+//     //console.log('fetchNip11s:done')
+// }
 
-type LiveSyncResumer = () => Promise<void>
+// type LiveSyncResumer = () => Promise<void>
 
-export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {
-    isLivesyncing.set(true)
-    if(!$route66){
-        $route66 = await instance();
-    }
-    $route66?.services?.monitors?.beginLiveSync(callbacks)
-}
+// export const beginLiveSync = async (callbacks?: SubscribeHandlers): Promise<void> => {
+//     isLivesyncing.set(true)
+//     if(!$route66){
+//         $route66 = await instance();
+//     }
+//     $route66?.services?.monitors?.beginLiveSync(callbacks)
+// }
 
-export const stopLiveSync = async (): Promise<void> => {
-    isLivesyncing.set(false)
-    if(!$route66){
-        $route66 = await instance();
-    }
-    $route66?.services?.monitors?.stopLiveSync()
-}
+// export const stopLiveSync = async (): Promise<void> => {
+//     isLivesyncing.set(false)
+//     if(!$route66){
+//         $route66 = await instance();
+//     }
+//     $route66?.services?.monitors?.stopLiveSync()
+// }
 
-export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
-    let wasLiveSyncing = get(isLivesyncing)? true: false;
-    if(!$route66){
-        $route66 = await instance();
-    }
-    if(wasLiveSyncing){
-        await stopLiveSync()
-    }
-    return async () => {
-        if(wasLiveSyncing){
-            beginLiveSync()
-        }
-    }
-}
+// export const pauseLiveSync = async (): Promise<LiveSyncResumer> => {
+//     let wasLiveSyncing = get(isLivesyncing)? true: false;
+//     if(!$route66){
+//         $route66 = await instance();
+//     }
+//     if(wasLiveSyncing){
+//         await stopLiveSync()
+//     }
+//     return async () => {
+//         if(wasLiveSyncing){
+//             beginLiveSync()
+//         }
+//     }
+// }
 
 export const destroy = () => {
     initializing = false;

@@ -24,6 +24,7 @@ export class WorkerRelayInterface {
   #worker: Worker | SharedWorker;
   #commandQueue: Map<string, (v: unknown, ports: ReadonlyArray<MessagePort>) => void> = new Map();
   #timeouts: any[] = [];
+  #channelPort?: MessagePort; 
 
   // Command timeout
   timeout: number = 5_000;
@@ -56,24 +57,32 @@ export class WorkerRelayInterface {
         this.#commandQueue.delete(cmd.id);
       }
     };
+
     if(this.#worker instanceof Worker) {
       this.#worker.onmessage = onmessage; 
     }
     else if(this.#worker instanceof SharedWorker) {
       this.#worker.port.onmessage = onmessage;
     }
-    if(channelPort) {
-      if(this.#worker instanceof Worker) {
-        this.#worker.postMessage({ type: "setup", channelPort }, [channelPort]);
-      }
-      else if(this.#worker instanceof SharedWorker) {
-        this.#worker.port.postMessage({ type: "setup", channelPort }, [channelPort]);
-      }
-    }
+
+    this.#channelPort = channelPort;
   }
 
   get worker() {
     return this.#worker;
+  }
+
+  async setup() {
+    // alert(this.#channelPort? 'channelPort exists' : 'channelPort does not exist');
+    if(!this.#channelPort) return;
+    const channelPort = this.#channelPort;
+    // if(this.#worker instanceof Worker) {
+    //   this.#worker.postMessage({ type: "setup", channelPort }, [channelPort]);
+    // }
+    // else if(this.#worker instanceof SharedWorker) {
+    //   this.#worker.port.postMessage({ type: "setup", channelPort }, [channelPort]);
+    // }
+    return await this.#workerRpc<any, boolean>("setup", { type: "setup", channelPort }, [channelPort]);
   }
 
   async init(args: InitAargs) {
@@ -160,7 +169,7 @@ export class WorkerRelayInterface {
     }
   }
 
-  async #workerRpc<T, R>(cmd: WorkerMessageCommand, args?: T) {
+  async #workerRpc<T, R>(cmd: WorkerMessageCommand, args?: T, transfer?: Transferable[]) {
     const id = uuid();
     const msg = {
       id,
@@ -169,10 +178,10 @@ export class WorkerRelayInterface {
     } as WorkerMessage<T>;
     return await new Promise<R>((resolve, reject) => {
       if(this.#worker instanceof Worker) {
-        this.#worker.postMessage(msg);
+        this.#worker.postMessage(msg, transfer || []);
       }
       else if(this.#worker instanceof SharedWorker) {
-        this.#worker.port.postMessage(msg);
+        this.#worker.port.postMessage(msg, transfer || []);
       }
       const t = setTimeout(() => {
         this.#commandQueue.delete(id);

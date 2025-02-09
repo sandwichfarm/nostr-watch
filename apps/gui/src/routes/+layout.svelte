@@ -11,11 +11,9 @@
   import { doBootstrap } from '$lib/stores/routines.js';
 
   import Header from '$lib/components/layout/Header.svelte';
-  import { instance, } from '$lib/utils/lifecycle';
-  import { destroy } from '$lib/utils/lifecycle';
-  import { createTabLifecycle } from '$lib/utils/tab-lifecycle';
+  import { instance, destroy } from '$lib/utils/lifecycle';
   import { delay } from '@nostrwatch/utils';
-  import { IdleDetector } from '$lib/utils/idle.js';
+  
   import Debugger from '$lib/components/partials/Debugger.svelte';
 	import { resetStores } from '$lib/stores/memory-relays/routines';
 	import { userService } from '$lib/stores/services';
@@ -32,26 +30,20 @@
     unsupported, 
     appState, 
     tabState, 
-    isIdle, 
     hasBeenBootstrapped, 
-    isBootstrapped 
   } from '$lib/stores/app';
 
   window.process = process;
 
   if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     addEventListener('load', function () {
-      navigator.serviceWorker.register('$src/service-worker/cors.js'); 
+      navigator.serviceWorker.register('$src/service-workers/cors.js'); 
     });
   }
 
   const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
   let isReady = false;
-  let busy = false;
-
-  const lifecycle = createTabLifecycle();
-  let idleDetector: IdleDetector | null = null;
 
   const isDebuggerVisible = writable(false);
 
@@ -77,78 +69,12 @@
     }
   }
 
-  // // --------------------------------------------------------------------------------
-  // // Utility to change tabState using store.get instead of $tabState in TS context
-  // // --------------------------------------------------------------------------------
   function setTabState(newState: TabStateType) {
     if (get(tabState) === newState) return;
     tabState.update(() => newState);
     console.log(`Tab state updated to: ${newState}`);
   }
 
-  // // --------------------------------------------------------------------------------
-  // // Idle Logic
-  // // --------------------------------------------------------------------------------
-  // function handleIdle() {
-  //   console.log('User is idle.');
-  //   setTabState('idle');
-  //   isIdle.set(true);
-  //   lifecycle.releaseLeadership();
-  // }
-
-  // async function handleActive() {
-  //   console.log('User is active.');
-  //   try {
-  //     setTabState('follower');
-  //     await lifecycle.acquireLeadership();
-  //     if (get(unsupported)) return;
-  //     setTabState('leader');
-  //     await boot();
-  //     idleDetector?.reset?.();
-  //     isIdle.set(false);
-  //   } catch (error) {
-  //     console.error('Error in handleActive:', error);
-  //     setTabState('follower');
-  //   }
-  // }
-
-  // // --------------------------------------------------------------------------------
-  // // Lifecycle: Leader events
-  // // --------------------------------------------------------------------------------
-  // lifecycle.onStartLeader(async () => {
-  //   console.log('[Lifecycle] onStartLeader triggered.');
-  //   if (get(unsupported)) return;
-  //   setTabState('leader');
-  //   try {
-  //     await boot();
-  //   } catch (error) {
-  //     console.error('[Lifecycle] Error in onStartLeader:', error);
-  //   }
-  // });
-
-  // lifecycle.onLeaderAcquired(async () => {
-  //   console.log('[Lifecycle] onLeaderAcquired triggered.');
-  //   if (get(unsupported)) return;
-  //   setTabState('leader');
-  //   try {
-  //     await boot();
-  //     // seedFromCache();
-  //   } catch (error) {
-  //     console.error('[Lifecycle] Error in onLeaderAcquired:', error);
-  //   }
-  // });
-
-  // lifecycle.onReleaseLeader(shutdown);
-
-  // lifecycle.onWaitForLeaderRelease(() => {
-  //   console.log('[Lifecycle] Waiting for leader to release...');
-  // });
-
-  // lifecycle.onTabInactive(shutdown);
-
-  // --------------------------------------------------------------------------------
-  // Subscriptions cleanup
-  // --------------------------------------------------------------------------------
   let unsubs: (() => void)[] = [];
 
   const appStateUnsub = tabState.subscribe(value => {
@@ -160,11 +86,6 @@
 
   function unsubscribe() {
     unsubs.forEach(unsub => unsub());
-    // if (idleDetector) {
-    //   // idleDetector.destroy();
-    //   // idleDetector = null;
-    //   console.log('IdleDetector destroyed on component cleanup.');
-    // }
   }
 
   // --------------------------------------------------------------------------------
@@ -175,42 +96,15 @@
     console.log('Booting...');
     appState.set('booting');
     await initServices();
-    // console.log('Services initialized.');
     appState.set('running');
     const route66 = await instance();
-    // console.log('Instance acquired.');
     await route66.ready();
-    // console.log('Route66 ready.');
     dataRegisterInit();
-    await delay(3000)
     await $dataRegister.require([
       'sync:cache',
       'sync:all',
       'validate:nip11s'
     ])
-    // if (!get(doBootstrap)) {
-    //   try {
-    //     route66 = await instance();
-    //     await route66.ready();
-    //     route66?.services?.monitors?.ensureMonitorsActive();
-    //     initServices();
-    //     appState.set('running');
-    //   } catch (error) {
-    //     console.error('Error seeding from cache:', error);
-    //   }
-    // } else if (!busy) {
-    //   busy = true;
-    //   try {
-    //     await bootstrap();
-    //     route66 = await instance();
-    //     initServices();
-    //     appState.set('running');
-    //   } catch (error) {
-    //     console.error('Error during bootstrap:', error);
-    //   } finally {
-    //     busy = false;
-    //   }
-    // }
   }
 
   const initServices = async () => {
@@ -234,16 +128,6 @@
     }
   }
 
-  // // --------------------------------------------------------------------------------
-  // // Recover leadership when tab becomes visible again
-  // // --------------------------------------------------------------------------------
-  // function recoverLeadershipOnVisibilityChange() {
-  //   if (document.visibilityState === 'visible') {
-  //     console.log('Tab became visible. Attempting to reclaim leadership...');
-  //     lifecycle.acquireLeadership();
-  //   }
-  // }
-
   // --------------------------------------------------------------------------------
   // onMount logic
   // --------------------------------------------------------------------------------
@@ -257,25 +141,13 @@
       doBootstrap.set(true);
     }
 
-    // if (!idleDetector) {
-    //   idleDetector = new IdleDetector({
-    //     idleTimeoutMs: IDLE_TIMEOUT_MS,
-    //     onIdle: handleIdle,
-    //     onActive: handleActive,
-    //   });
-    // }
-
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
 
     activityManager.on('active', async () => {
-      // console.log('ActivityManager: handler: TAB IS ACTIVE', '+layout.svelte');
-      // console.log(`STATE IS ${$tabState}`, '+layout.svelte')
       await boot();
     });
 
     activityManager.on('inactive', async () => {
-      // console.log('TAB IS INACTIVE');
-      // console.log(`STATE IS ${$tabState}`, '+layout.svelte')
       await shutdown();
     });
 
@@ -285,16 +157,10 @@
   });
 
   onDestroy(() => {
+    console.log('DESTROY')
     unsubscribe();
     resetStores();
   });
-
-  // $: if ($navigating) {
-  //   checkSupport();
-  //   if (!get(unsupported) && !busy) {
-  //     boot();
-  //   }
-  // }
 
   $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
 </script>

@@ -8,7 +8,6 @@
 	import { FeedService } from '$lib/services/FeedService';
 	import { deterministicHash } from '@nostrwatch/route66/utils';
 	import type { NostrEvent } from '@nostrwatch/route66/models';
-    import { pauseLiveSync } from '$lib/utils/lifecycle';
 	import Loading from '../partials/Loading.svelte';
 	import FeedMasonry from './FeedMasonry.svelte';
 	import FeedGrid from './FeedGrid.svelte';

@@ -92,7 +92,7 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
       console.log("Channel port init")
       messageChannelInit(state, args.channelPort)
     }
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // await new Promise(resolve => setTimeout(resolve, 1000))
     await state.relay.init(args.databasePath);
   } catch (e) {
     if(retries <= 3){

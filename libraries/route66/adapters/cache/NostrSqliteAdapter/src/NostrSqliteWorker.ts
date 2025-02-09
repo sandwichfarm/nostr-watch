@@ -20,8 +20,6 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
 
     constructor(options: WorkerOptions) {
         super(options);
-        ////console.log('NostrSqliteWorker', this.state)
-        ////console.log('NostrSqliteWorker constructor');
         this._setupHandlers()
     }
 
@@ -30,28 +28,35 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
         if (this.state.messageChannel) {
             this.state.messageChannel.close();
         }
-        ////console.log('NostrSqliteWorker destroyed');
     }
 
     async setup(command: AdapterWorkerMessage) {
-        ////console.log(`NostrSqliteWorker: setup()`, command);
+        console.log('NostrSqliteWorker: Setup (command)', command);
+
+        const { id } = command;
+        const { channelPort } = command.args;
+
         const conf: InitAargs = {
             databasePath: "relay2.db",
             insertBatchSize: this.state.insertBatchSize,
         };
 
-        try {
-            await relayInit(this.state, conf);
-        } catch (err) {
-            console.error('Setup failed, retrying with wipe:', err);
-            await relayWipe(this.state);
-            await this.setup(command);
-        }
+        let error = false;
 
-        if (command?.channelPort) {
-            this.state.messageChannel = command.channelPort;
+        await relayInit(this.state, conf).catch( async () => {
+            error = true;
+        });
+
+        if (channelPort) {
+            this.state.messageChannel = channelPort;
             this.setupChannelHandlers();
         }
+        
+        this.mainThread!.postMessage({
+            id,
+            cmd: 'reply',
+            args: !error
+        });
     }
 
     //do nothing.
@@ -63,8 +68,8 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
             : this.mainThread as DedicatedWorkerGlobalScope;
     
         const onmessage = async (message: MessageEvent) => {
-            ////console.log(`NostrSqliteWorker: Received:`, message.data);
-            if (message.data.type === 'setup') {
+            console.log(`NostrSqliteWorker: Received:`, message.data);
+            if (message.data?.cmd === 'setup') {
                 await this.setup(message.data);
             } else {
                 this.fromMainThread(message);
@@ -95,7 +100,7 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     fromMainThread(ev: MessageEvent) {
         ////console.log(`CacheWorker: From Main Thread:`, ev);
         if(this.state.relay) 
-        this.relay(this.state, ev);
+            this.relay(this.state, ev);
     }
 
     async addEvent(nostrEvent: IEvent) {

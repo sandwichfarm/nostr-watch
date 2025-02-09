@@ -3,6 +3,7 @@ import { batchNip11s, Nip11Args } from "interface";
 
 export type WorkerMessageCommand =
   | "reply"
+  | "setup"
   | "init"
   | "event"
   | "req"

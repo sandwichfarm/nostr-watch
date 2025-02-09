@@ -199,18 +199,11 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   onMessage(response: WebsocketResponseBody): void {
     const { hash } = response
-    //console.log('got the fucking message.', hash)
-    // if(hash && this.subscriptions.has(hash)){
-      StateManager.emit(hash, response)
-    // }
-    // else {
-    //   console.warn(`[WebsocketAdapter] No subscription found for hash: ${hash}`)
-    // }
+    StateManager.emit(hash, response)
   } 
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{
     let { hash } = args
-    // console.log('WebsocketAdapter:subscribe', args)
     if(callbacks && Object.keys(callbacks).length > 0) {
       args.options.stream = true
     }
@@ -228,7 +221,6 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   async fetch(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
-    // console.log('WebsocketAdapter:fetch', args)
     if(callbacks && Object.keys(callbacks).length > 0) {
       args.options.stream = true
     }
@@ -256,13 +248,11 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       message.args.hash = deterministicHash(message?.args?.filters ?? {})  
     }
     const { hash } = message.args
-    // console.log('WebsocketAdapter:request', hash, message)
     if(!this?.worker) {
       console.warn('[WebsocketAdapter] Error sending command: no worker found')
       return hash
     }    
     if(this.worker instanceof Worker) {
-      // console.log('WebsocketAdapter:request', message)
       this.worker.postMessage(message)
     } else if(this.worker instanceof SharedWorker)
       this.worker.port.postMessage(message)

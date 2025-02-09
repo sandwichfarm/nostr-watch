@@ -137,6 +137,8 @@ export interface ICacheAdapter extends IAdapter {
 
   patchRelay?(relay: Partial<IRelay>): Promise<void>;
   updateRelay?(relay: IRelay): Promise<void>;
+
+  handleSetupInternally?: boolean;
 }
 
 export class CacheAdapter extends Adapter {

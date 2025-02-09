@@ -36,7 +36,7 @@ const abortWebsocket = async ($route66: Route66) => {
 }
 
 export const wipeCacheAdapter = async ($route66: Route66) => {
-    $route66.adapters.cacheAdapter.WIPE();
+    await $route66.adapters.cacheAdapter.WIPE();
 }
 
 export const wipeState = async () => {

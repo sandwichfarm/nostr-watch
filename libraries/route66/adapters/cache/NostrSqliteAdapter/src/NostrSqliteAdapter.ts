@@ -34,6 +34,7 @@ export interface INostrSqliteAdapter extends ICacheAdapter {
 export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdapter {
     private _relay?: WorkerRelayInterface;
     protected _ready: boolean = false;
+    handleSetupInternally: boolean = true;
 
     constructor(worker?: Worker | URL) {
         super(worker)
@@ -71,31 +72,36 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         return generateSubId(randomInRange(11, 24))
     }
 
-    async newWorker(): Promise<Worker | SharedWorker> {
+    async newWorker(channelPort?: MessagePort): Promise<Worker | SharedWorker> {
         let worker;
         if(this.overloadWorker) {
-            ////console.log(`NostrSqliteAdapter: using overloadWorker`)
             worker = this.overloadWorker
         }
         else if(import.meta.env.DEV) {
-            ////console.log(`NostrSqliteAdapter: Instantiated new worker with URL in DEV mode`)
              /* @vite-ignore */
             worker = new Worker(new URL('./workers/nostrsqlite.worker.js', import.meta.url), { type: 'module' });
         } else {
-            ////console.log(`NostrSqliteAdapter: Instantiated new worker with URL in PROD mode`)
             worker = new Worker(
                 new URL("./workers/nostrsqlite.worker.js", import.meta.url),
                 { type: 'module' }
             );
         }
-        ////console.log('NostrSqliteAdapter: newWorker', worker)
-        // if(!(worker instanceof Worker) && !(worker instanceof SharedWorker)) throw new Error('NostrSqliteAdapter: Worker is not a Worker or SharedWorker instance')
         if(worker instanceof SharedWorker) {
             worker.port.start()
         }
-        this.relay = new WorkerRelayInterface(worker);
-        await delay(1000)
-        this._ready = true
+
+        if(typeof channelPort === 'undefined') {
+            throw new Error('NostrSqliteAdapter: channelPort is not defined')
+        }
+
+        this.relay = new WorkerRelayInterface(worker, channelPort);
+        
+        
+        this._ready = await this.relay.setup().catch((err?: any) => this.handleWorkerError('setup', err)) as boolean
+        console.log('ready?', this._ready );
+        if(!this._ready) {
+            throw new Error('NostrSqliteAdapter: failed to setup')
+        }
         return this.relay.worker; 
     }
 

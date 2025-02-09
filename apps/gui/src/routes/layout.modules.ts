@@ -17,7 +17,7 @@ type ModuleDefinition = {
   path: string;
 };
 
-const moduleLoaders: Record<ModuleKey, ModuleDefinition> = {
+export const moduleLoaders: Record<ModuleKey, ModuleDefinition> = {
   Header: {
     loader: () => import('$lib/components/layout/Header.svelte'),
     path: '$lib/components/layout/Header.svelte'

@@ -5,6 +5,11 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import url from 'url';
 
+function rng(min: number = 200, max: number = 1000): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
 
@@ -31,7 +36,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    // middlewareMode: true,
+    middlewareMode: true,
     build: {
       minify: isProd? 'terser': false, 
       assetsInlineLimit: 0,
@@ -82,20 +87,21 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
-      // {
-      //   name: 'simulate-latency',
-      //   configureServer(server) {
-      //     server.middlewares.use((req, res, next) => {
-      //       if (req.url.includes('(components)')) {
-      //         setTimeout(next, 1000);
-      //       } else if (req.url.includes('wasm')) {
-      //         setTimeout(next, 1000)
-      //       } else {
-      //         next();
-      //       }
-      //     });
-      //   },
-      // },
+      {
+        name: 'simulate-latency',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            const latency = rng();
+            if (req.url.includes('components') || req.url.includes('stores')) {
+              setTimeout(next, latency);
+            } else if (req.url.includes('wasm')) {
+              setTimeout(next, latency*2)
+            } else {
+              next();
+            }
+          });
+        },
+      },
       sveltekit(),
       // patchSvelteSpeedometer(), // Add the patch plugin
       // {

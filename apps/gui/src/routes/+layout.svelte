@@ -8,7 +8,7 @@
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
   import { writable, type Writable, get } from 'svelte/store';
-  import { loadModules, type ModuleKey, type Modules } from './layout.modules.js';
+  import { loadModules, type ModuleKey, type Modules, moduleLoaders } from './layout.modules.js';
 
   import { type ActivityItem } from '$lib/stores/activity.js';
   import { doBootstrap } from '$lib/stores/routines.js';
@@ -172,11 +172,12 @@
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
     activityManager.on('active', async () => {
       console.log('active.')
-      await boot();
+      boot();
     });
     activityManager.on('inactive', async () => {
       await shutdown();
     });
+    
     isReady = true;
   });
 
@@ -192,7 +193,10 @@
 
   $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
 
-  $: percentModulesLoaded = Math.round((progressList.length / Object.keys(modules || {}).length) * 100);
+  $: {
+    console.log(progressList.length, Object.keys(modules || {}).length, `progressList.length / Object.keys(modules || {}).length`, progressList.length / Object.keys(modules || {}).length)
+  }
+  $: percentModulesLoaded = Math.round((progressList.length / Object.keys(moduleLoaders || {}).length) * 100);
   $: numMonitorsSynced = 
       activities
         .filter( item =>
@@ -214,7 +218,7 @@
   $: percentCompleted = percentModulesLoaded * 0.5 + (numMonitorsSynced*10) + (relayChecksSynced? 20: 0);
 
   let loadingThresholdPassed = false;
-  setTimeout(() => loadingThresholdPassed = true, 1000 )
+  setTimeout(() => loadingThresholdPassed = true, 200 )
   $: loading = loadingThresholdPassed && (!isReady || !loadedEnough);
 </script>
 
@@ -242,18 +246,18 @@ loadedEnough: {loadedEnough} <br /> -->
        {percentCompleted}%
        <div class="mt-6 hidden grid-cols-3 text-sm font-medium text-gray-600 sm:grid">
          <div class="{isReady? 'text-purple-700': ''}">Loading Assets</div>
-         <div class="{monitorsSynced === true? 'text-purple-700': ''}">Syncing Monitors</div>
-         <div class="{relayChecksSynced === true? 'text-purple-700': ''}">Syncing Relay checks</div>
+         <div class="{isReady && monitorsSynced === true? 'text-purple-700': ''}">Syncing Monitors</div>
+         <div class="{isReady && relayChecksSynced === true? 'text-purple-700': ''}">Syncing Relay checks</div>
        </div>
      </div>
     </div>
+    <div class="h-[400px] pt-36">
     {#if isReady}
-    <div class="h-[400px] pt-48">
       <ActivityList bind:activities />
-    </div>
     {/if}
   </div>
-  {:else if loading && !hasBeenBootstrapped()}
+  </div>
+  {:else if loading && hasBeenBootstrapped()}
     <div class="flex flex-col items-center justify-center h-screen px-4">
       <div class="text-7xl">booting.</div>
       <div class="text-xs opacity-30">[{$tabState}]</div>
@@ -267,13 +271,26 @@ loadedEnough: {loadedEnough} <br /> -->
           <slot />
         </div>
       {/if}
-    {:else}
-
+    {:else if $tabState === 'follower'}
       <div class="flex flex-col items-center justify-center h-screen px-4">
-        <div class="text-7xl">booting.</div>
+        <div class="text-7xl mb-3">taking charge</div>
+        <div class="text-xl opacity-50">nostr.watch can only run in one tab at a time, shutting down other tab.</div>
         <div class="text-xs opacity-30">[{$tabState}]</div>
       </div>
-    {/if}    
+    {:else if $tabState === 'idle'}
+      <div class="flex flex-col items-center justify-center h-screen px-4">
+        <div class="text-7xl mb-3">you were sleeping</div>
+        <div class="text-xl opacity-50">nostr.watch shutdown while you were gone, restarting</div>
+        <div class="text-xs opacity-30">[{$tabState}]</div>
+      </div>
+    {:else}
+      <div class="flex flex-col items-center justify-center h-screen px-4">
+        <div class="text-7xl mb-3">booting.</div>
+        {#if $tabState}
+        <div class="text-xs opacity-30">[{$tabState}]</div>
+        {/if}
+      </div>
+    {/if}  
   {/if}
 {/if}
 

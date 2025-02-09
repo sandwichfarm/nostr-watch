@@ -45,11 +45,11 @@
 
   window.process = process;
 
-  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-    addEventListener('load', function () {
-      navigator.serviceWorker.register('$src/service-workers/cors.js'); 
-    });
-  }
+  // if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  //   addEventListener('load', function () {
+  //     navigator.serviceWorker.register('$src/service-workers/cors.js'); 
+  //   });
+  // }
 
   const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 

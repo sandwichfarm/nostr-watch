@@ -26,8 +26,9 @@ export const fetchMonitorsChecks = async () => {
 export const fetchNip11s = async () => {
     const $nip11Service: Nip11Service = get(nip11Service);
     const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s$());
-    const $relaysWithNip11s: string[] = get(relaysWithNip11s$());
-    const relays: string[] = Array.from(new Set([...$relaysWithoutNip11s, ...$relaysWithNip11s]));
+    // const $relaysWithNip11s: string[] = get(relaysWithNip11s$());
+    // const relays: string[] = Array.from(new Set([...$relaysWithoutNip11s, ...$relaysWithNip11s]));
+    const relays: string[] = Array.from(new Set([...$relaysWithoutNip11s]));
     if(relays.length === 0) return;
     const promises: Promise<any>[] = [];
     for(const relay of relays){

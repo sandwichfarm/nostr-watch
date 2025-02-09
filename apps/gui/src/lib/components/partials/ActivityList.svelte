@@ -4,7 +4,7 @@
     import { get } from 'svelte/store';
 	import Badge from '../ui/badge/badge.svelte';
     
-    let activities: ActivityItem[] = [];
+    export let activities: ActivityItem[] = [];
     const unsubscribe = activity.subscribe($activity => {
         activities = Array.from($activity.values()).sort((a, b) => a.index - b.index);
     });
@@ -31,6 +31,8 @@
         transition: opacity 0.5s, transform 0.5s;
     }
 </style>
+
+<!-- ACTIVITIES: {activities.length} -->
 
 <div class="">
     {#each activities as item, index (item.slug)}

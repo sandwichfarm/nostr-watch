@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    // middlewareMode: true,
     build: {
       minify: isProd? 'terser': false, 
       assetsInlineLimit: 0,
@@ -81,6 +82,20 @@ export default defineConfig(({ mode }) => {
       },
     },
     plugins: [
+      // {
+      //   name: 'simulate-latency',
+      //   configureServer(server) {
+      //     server.middlewares.use((req, res, next) => {
+      //       if (req.url.includes('(components)')) {
+      //         setTimeout(next, 1000);
+      //       } else if (req.url.includes('wasm')) {
+      //         setTimeout(next, 1000)
+      //       } else {
+      //         next();
+      //       }
+      //     });
+      //   },
+      // },
       sveltekit(),
       // patchSvelteSpeedometer(), // Add the patch plugin
       // {

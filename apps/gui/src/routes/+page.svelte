@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import AutoSuggestRelaysCompact from '$lib/components/partials/AutoSuggestRelaysCompact.svelte';
-	import Counts from '$routes/components/Counts.svelte';
+	import Counts from '$routes/(components)/Counts.svelte';
 	import RelayDataViewShortcut from '$lib/components/shortcuts/RelayDataViewShortcut.svelte';
 
 	onMount(() => {

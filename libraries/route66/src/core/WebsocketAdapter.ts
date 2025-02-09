@@ -89,6 +89,8 @@ export interface IWebsocketAdapterMethods extends IAdapter {
   terminate(): void;
 
   abort(): Promise<boolean>;
+
+  handleSetupInternally?: boolean;
 }
 
 export interface IWebsocketAdapter extends IWebsocketAdapterMethods, IAdapter {}

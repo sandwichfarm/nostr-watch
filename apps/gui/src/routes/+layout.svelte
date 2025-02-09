@@ -8,23 +8,10 @@
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
   import { writable, type Writable, get } from 'svelte/store';
+  import { loadModules, type ModuleKey, type Modules } from './layout.modules.js';
+
+  import { type ActivityItem } from '$lib/stores/activity.js';
   import { doBootstrap } from '$lib/stores/routines.js';
-
-  import Header from '$lib/components/layout/Header.svelte';
-  import { instance, destroy } from '$lib/utils/lifecycle';
-  import { delay } from '@nostrwatch/utils';
-  
-  import Debugger from '$lib/components/partials/Debugger.svelte';
-	import { resetStores } from '$lib/stores/memory-relays/routines';
-	import { userService } from '$lib/stores/services';
-	import { UserService } from '$lib/services/UserService';
-	
-	import { totalMonitors } from '$stores/events';
-	import ActivityList from '$lib/components/partials/ActivityList.svelte';
-	import { dataRegister, dataRegisterInit } from '$stores/data-register';
-
-  import { ActivityManager } from '$lib/managers/ActivityManager';
-
   import { 
     type TabStateType, 
     unsupported, 
@@ -32,6 +19,29 @@
     tabState, 
     hasBeenBootstrapped, 
   } from '$lib/stores/app';
+
+
+  let modules: Record<ModuleKey, any> | null = null;
+  let progressList: ModuleKey[] = [];
+
+  let Header: Modules['Header'];
+  let Debugger: Modules['Debugger'];
+  let ActivityList: Modules['ActivityList'];
+  
+  let lifecycle: Modules['lifecycle'];
+  let instance: Modules['lifecycle']['instance'];
+  let destroy: Modules['lifecycle']['destroy'];
+
+  let delay: Modules['utils']['delay'];
+  let resetStores: Modules['routines']['resetStores'];
+  let userService: Modules['services']['userService'];
+  let UserService: Modules['UserService']['UserService'];
+  let totalMonitors: Modules['events']['totalMonitors'];
+  let ActivityManager: Modules['ActivityManager']['ActivityManager'];
+  let dataRegister: Modules['dataRegister']['dataRegister'];
+  let dataRegisterInit: Modules['dataRegister']['dataRegisterInit'];
+
+  let modulesLoaded: boolean = false;
 
   window.process = process;
 
@@ -57,11 +67,11 @@
   const shutdown = async () => {
     console.log('Shutdown...');
     try {
-      const route66 = await instance();
+      const route66 = await lifecycle.instance();
       await route66.ready();
       await route66.shutdown();
       await delay(1000);
-      destroy();
+      lifecycle.destroy();
       setTabState('follower');
     } catch (error) {
       console.error('[Lifecycle] Error in onReleaseLeader:', error);
@@ -75,32 +85,20 @@
     console.log(`Tab state updated to: ${newState}`);
   }
 
-  let unsubs: (() => void)[] = [];
-
-  const appStateUnsub = tabState.subscribe(value => {
-    if (value !== undefined) {
-      if (!isReady) isReady = true;
-    }
-  });
-  unsubs.push(appStateUnsub);
-
-  function unsubscribe() {
-    unsubs.forEach(unsub => unsub());
-  }
-
   // --------------------------------------------------------------------------------
   // Boot function (with concurrency & unsupported check)
   // --------------------------------------------------------------------------------
   async function boot() {
-    if (get(unsupported)) return;
     console.log('Booting...');
+    if (get(unsupported)) return;
+    
     appState.set('booting');
     await initServices();
     appState.set('running');
-    const route66 = await instance();
+    const route66 = await lifecycle.instance();
     await route66.ready();
     dataRegisterInit();
-    await $dataRegister.require([
+    await get(dataRegister).require([
       'sync:cache',
       'sync:all',
       'validate:nip11s'
@@ -108,7 +106,7 @@
   }
 
   const initServices = async () => {
-    userService.set(new UserService((await instance()).adapters));
+    userService.set(new UserService((await lifecycle.instance()).adapters));
   };
 
   // --------------------------------------------------------------------------------
@@ -131,9 +129,39 @@
   // --------------------------------------------------------------------------------
   // onMount logic
   // --------------------------------------------------------------------------------
-  let activityManager: ActivityStateManager;
 
-  onMount(() => {
+  const load = async () => {
+    modules = await loadModules((key, mod) => {
+      progressList = [...progressList, key];
+      console.log(`Module loaded: ${key}`);
+    });
+
+    ({ Header, Debugger, ActivityList } = modules);
+
+    lifecycle = modules.lifecycle;
+    ({ instance, destroy } = lifecycle);
+
+    ({ userService } = modules.services);
+    ({ resetStores } = modules.routines);
+    ({ totalMonitors } = modules.events);
+    ({ dataRegister } = modules.dataRegister);
+    ({ delay } = modules.utils);
+    ({ ActivityManager } = modules.ActivityManager);
+    ({ UserService } = modules.UserService);
+    ({ dataRegisterInit } = modules.dataRegister);
+
+    // if(import.meta.env.DEV){
+    //   //similate slow loading
+    //   // await delay(1000);
+    // }
+  };
+
+  let activityManager: Modules['ActivityManager']['ActivityManager'];
+
+  onMount(async () => {
+    
+    await load();
+
     checkSupport();
     if (get(unsupported)) return;
 
@@ -142,29 +170,55 @@
     }
 
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
-
     activityManager.on('active', async () => {
+      console.log('active.')
       await boot();
     });
-
     activityManager.on('inactive', async () => {
       await shutdown();
     });
-
-    return () => {
-      activityManager.destroy();
-    };
+    isReady = true;
   });
 
   onDestroy(() => {
     console.log('DESTROY')
-    unsubscribe();
     resetStores();
+    activityManager.destroy();
   });
 
+
+
+  let activities: ActivityItem[] = [];
+
   $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
+
+  $: percentModulesLoaded = Math.round((progressList.length / Object.keys(modules || {}).length) * 100);
+  $: monitorsSynced = 
+      activities
+        .filter( item =>
+          item.slug === "monitors/bootstrap/registrations"
+          || item.slug === "monitors/bootstrap/meta"
+          || item.slug === "monitors/bootstrap/ensureActive"
+        )
+        .filter( item => item.complete )
+        .length === 3;
+  $: relayChecksSynced = 
+      activities
+        .filter( item =>
+          item.slug === "monitors/bootstrap/checks"
+        )
+        .filter( item => item.complete )
+        .length === 1
+  $: percentCompleted = percentModulesLoaded * 0.7 + (monitorsSynced? 10: 0) + (relayChecksSynced? 20: 0);
+
+  let loadingThresholdPassed = false;
+  setTimeout(() => loadingThresholdPassed = true, 1000 )
+  $: loading = loadingThresholdPassed && (!isReady || !loadedEnough);
 </script>
 
+<!-- loading: {loading} <br />
+isReady: {isReady} <br />
+loadedEnough: {loadedEnough} <br /> -->
 
 
 {#if $unsupported}
@@ -173,24 +227,46 @@
     <p>Please switch to a supported device.</p>
   </div>
 {:else}
+  {#if loading && !hasBeenBootstrapped()}
+  <div class="flex flex-col items-center justify-center h-screen px-4">
+    <div class="text-7xl">booting.</div>
+    <div class="text-lg">need a sec, this should only happen once per release.</div>
+    <div>
+     <h4 class="sr-only">Status</h4>
+     <div class="mt-6" aria-hidden="true">
+       <div class="overflow-hidden rounded-full bg:black/10 dark:bg-white/20">
+         <div class="h-2 rounded-full text-purple-700" style="width: {percentCompleted}%"></div>
+       </div>
+       {percentCompleted}%
+       <div class="mt-6 hidden grid-cols-3 text-sm font-medium text-gray-600 sm:grid">
+         <div class="{isReady? 'text-purple-700': ''}">Loading Assets</div>
+         <div class="{monitorsSynced === true? 'text-purple-700': ''}">Syncing Monitors</div>
+         <div class="{relayChecksSynced === true? 'text-purple-700': ''}">Syncing Relay checks</div>
+       </div>
+     </div>
+    </div>
+    {#if isReady}
+    <div class="h-[400px] pt-48">
+      <ActivityList bind:activities />
+    </div>
+    {/if}
+  </div>
+  {/if}
   {#if isReady}
     {#if $tabState === 'leader'}
       {#if loadedEnough}
-      <Header />
-      <div id="content-wrapper" class="block">
-        <slot />
-      </div>
-      {:else}
-      <div class="flex flex-col items-center justify-center h-screen relative z-[100]">
-        <ActivityList />
-      </div>
+        <Header />
+        <div id="content-wrapper" class="block">
+          <slot />
+        </div>
       {/if}
     {:else}
-    <div class="flex flex-col items-center justify-center h-screen px-4">
-      <div class="text-7xl">booting.</div>
-      <div class="text-xs opacity-30">[{$tabState}]</div>
-    </div>
-    {/if}
+
+      <!-- <div class="flex flex-col items-center justify-center h-screen px-4">
+        <div class="text-7xl">booting.</div>
+        <div class="text-xs opacity-30">[{$tabState}]</div>
+      </div> -->
+    {/if}    
   {/if}
 {/if}
 

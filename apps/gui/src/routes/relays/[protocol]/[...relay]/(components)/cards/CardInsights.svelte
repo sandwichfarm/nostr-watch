@@ -5,7 +5,7 @@
 
 	import Button from '$lib/components/ui/button/button.svelte';
     import * as Card from '$lib/components/ui/card';
-	import CountCard from '$routes/components/CountCard.svelte';
+	import CountCard from '$routes/(components)/CountCard.svelte';
     import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
 
 	import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';

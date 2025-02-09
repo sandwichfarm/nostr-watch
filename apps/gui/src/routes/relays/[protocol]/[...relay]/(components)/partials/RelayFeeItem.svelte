@@ -1,5 +1,5 @@
 <script lang="ts">
-	import CountCard from "$routes/components/CountCard.svelte";
+	import CountCard from "$routes/(components)/CountCard.svelte";
 	import { formatSeconds } from "$utils/time";
 	import { readable } from "svelte/store";
 

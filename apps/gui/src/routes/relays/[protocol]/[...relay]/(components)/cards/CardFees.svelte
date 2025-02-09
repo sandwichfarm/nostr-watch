@@ -2,7 +2,7 @@
     import Button from '$lib/components/ui/button/button.svelte';
     import * as Card from '$lib/components/ui/card';
     import { formatSeconds } from "$lib/utils/time.js"
-	import CountCard from '$routes/components/CountCard.svelte';
+	import CountCard from '$routes/(components)/CountCard.svelte';
 	import { relayFees$, relayNip11$ } from '$stores/helpers/helpers-nip11s';
 	import { get, readable, type Readable } from 'svelte/store';
 	import { generateRelayUrlFromPath } from '$utils/routing';

@@ -79,7 +79,7 @@ export class Workers {
       else {
         console.warn('Cache Worker not defined')
       }
-      if(!adapters.cacheAdapter.handleSetupInternally && (this.websocket instanceof Worker || this.websocket instanceof SharedWorker)){
+      if(!adapters.websocketAdapter.handleSetupInternally && (this.websocket instanceof Worker || this.websocket instanceof SharedWorker)){
         const message = {type: 'setup', channelPort: websocketAdapterChannelPort}
         if(this.websocket instanceof Worker) {
           ////console.log(`[Workers] setupWorkers() [websocket] -> websocket.postMessage() to Worker`, message)

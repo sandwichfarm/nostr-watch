@@ -61,7 +61,7 @@
 {:else}
 	{#if photo}
 		<span class="overflow-hidden inline-block mr-3">
-			<img src={photo} alt={pubkey} class="w-{size} h-{size} block rounded-full" />
+			<img src="{photo}?thumbnail" alt={pubkey} class="w-{size} h-{size} block rounded-full" />
 		</span>
 	{:else}
 		<span class="rounded-full overflow-hidden inline-block mr-3">

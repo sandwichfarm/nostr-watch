@@ -184,14 +184,24 @@
       doBootstrap.set(true);
     }
 
+    let justBooted = true;
+    await boot();
+
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
     activityManager.on('active', async () => {
       console.log('active.')
+      if(justBooted) return;
       boot();
     });
+    
     activityManager.on('inactive', async () => {
+      if(justBooted) return;
       await shutdown();
     });
+
+    setTimeout( () => {
+      justBooted = false;
+    }, 1000)
     
     isReady = true;
   });

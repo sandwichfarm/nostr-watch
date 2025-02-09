@@ -1,3 +1,7 @@
+<script>
+	import { isBootstrapping } from "$stores/app";
+
+</script>
 <script lang="ts">
     import { onMount } from 'svelte';
     import { get, writable, derived, type Writable, type Readable, readable } from 'svelte/store';
@@ -111,26 +115,28 @@
     export let activeView: Writable<'table' | 'grid' | 'map'>;
 </script>
 
-{#if $filteredData && $filteredData?.data?.length}
-
 <DataViewSelector {enabledViews} bind:activeView />
 
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
 
     <Resizable.Pane defaultSize={75}>
-        
-        
+        {#if $filteredData && $filteredData?.data?.length}
+            {#if $activeView === 'table'}
+                <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} dataUnfilteredLength={data?.length} />
+            {/if}
 
-        {#if $activeView === 'table'}
-            <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} dataUnfilteredLength={data?.length} />
-        {/if}
+            {#if $activeView === 'grid'}
+                <div>Grid</div>
+            {/if}
 
-        {#if $activeView === 'grid'}
-            <div>Grid</div>
-        {/if}
-
-        {#if $activeView === 'map'} 
-            <MapRoot data={justData} {filters} />
+            {#if $activeView === 'map'} 
+                <MapRoot data={justData} {filters} />
+            {/if}
+        {:else if $isBootstrapping}
+            <div class="flex items-center justify-center h-full">
+                <span class="text-7xl">bootstrapping</span>
+                <span class="text-xl">the application is still bootstrapping, please wait while seed data is populated.</span>
+            </div>
         {/if}
     
     </Resizable.Pane>

@@ -24,7 +24,7 @@ export const tableFormatters: Formatters = {
             ${truncateWithEllipsis(name, 55)}
             </a>`;
         const photo = row.photo? 
-            `<img src="${row.photo}" alt="${name}" class="w-12 h-12 inline-block mr-2 rounded-full">` 
+            `<img src="${row.photo}?thumbnail" alt="${name}" class="w-12 h-12 inline-block mr-2 rounded-full">` 
             :'<span class="w-12 h-12 inline-block mr-2"></span>';
         return `<span class="block min-w-[300px]">${photo}${nameHtml}</span>`;
     },

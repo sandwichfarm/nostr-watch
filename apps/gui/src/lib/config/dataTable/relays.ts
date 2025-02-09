@@ -357,7 +357,7 @@ export const tableFormatters: Formatters = {
             const monitor = $monitorsMap.get(pk);
             if (!monitor) return;
     
-            str += `<img src="${monitor.photo}" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
+            str += `<img src="${monitor.photo}?thumbnail" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
             i++;
             z--;
         });
@@ -472,7 +472,7 @@ export const filterFormatters: Formatters = {
             name = truncateWithEllipsis(profile.name, 33);
         }
         let image = `<span class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
-             <img src="${profile.photo}" alt="${profile.photo}" class="w-full h-auto" />
+             <img src="${profile.photo}?thumbnail" alt="${profile.photo}" class="w-full h-auto" />
             </span>`
         return `<div class="flex">
             <div>${image}</div>

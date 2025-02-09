@@ -1,7 +1,7 @@
 import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
-import { doAggregateCache, doLiveSync, isBootstrapped, isSeeded } from "$stores/app";
+import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded } from "$stores/app";
 import { fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
@@ -162,20 +162,47 @@ export const dataRegisterInit = async () => {
     //composites
     data.composite({
         key: 'sync:all',
-        keys: ['sync:monitors', 'sync:checks', 'sync:operators', 'sync:live', 'sync:nip11s', 'validate:nip11s'],
+        keys: [
+            'sync:monitors', 
+            'sync:checks', 
+            'sync:operators', 
+            'sync:live', 
+            'sync:nip11s', 
+            'validate:nip11s'
+        ],
         priority: -10,
-        // condition: async () => !get(doBootstrap),
-        onComplete: async () => isBootstrapped.set(true),
+        condition: async () => {
+            isBootstrapping.set(true)
+            return true;
+        },
+        onComplete: async () => {
+            isBootstrapping.set(false)
+            isBootstrapped.set(true)
+        },
         ignoreConditions: {},
         ignoreExpiries: {}
     });
     
     data.composite({
         key: 'sync:all-force',
-        keys: ['sync:monitors', 'sync:checks', 'sync:operators', 'sync:live', 'sync:nip11s', 'validate:nip11s'],
+        keys: [
+            'sync:monitors', 
+            'sync:checks', 
+            'sync:operators', 
+            'sync:live', 
+            'sync:nip11s', 
+            'validate:nip11s'
+        ],
         // condition: async () => !get(doBootstrap),
         priority: -10,
-        onComplete: async () => isBootstrapped.set(true),
+        condition: async () => {
+            isBootstrapping.set(true)
+            return true;
+        },
+        onComplete: async () => {
+            isBootstrapping.set(false)
+            isBootstrapped.set(true)
+        },
         ignoreConditions: {
             'sync:monitors': true,
             'sync:checks': true,

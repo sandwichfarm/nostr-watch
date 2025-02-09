@@ -18,7 +18,7 @@
     <div class="flex-shrink-0">
         {#if monitor?.profile?.photo}
             <span class="rounded-full overflow-hidden">
-                <img src={photo} alt={photo} class="w-20 h-24" />
+                <img src="{photo}?thumbnail" alt={photo} class="w-20 h-24" />
             </span>
         {:else}
             <span class="rounded-full overflow-hidden">

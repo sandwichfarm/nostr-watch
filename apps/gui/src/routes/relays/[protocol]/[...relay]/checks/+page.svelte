@@ -83,7 +83,7 @@
         {#each validChecks as check}
             {#if check?.pubkey}
             <button class="block w-full py-3 px-3 text-left {$selectedCheck && check.id === $selectedCheck?.id? 'bg-black/10 dark:bg-white/10': ''}" on:click={() => { selectedCheck.set(check); showMap.set(false); showLocalCheck.set(false) }}>
-                <img src="{$monitorsMap.get(check?.pubkey)?.photo ?? PFP.generate(check?.pubkey)}" alt="{$monitorsMap.get(check?.pubkey)?.name}'s profile photo" class="h-6 w-6 mr-2 overflow-hidden rounded-full inline-block" /> <span class="inline-block">
+                <img src="{$monitorsMap.get(check?.pubkey)?.photo ?? PFP.generate(check?.pubkey)}?thumbnail" alt="{$monitorsMap.get(check?.pubkey)?.name}'s profile photo" class="h-6 w-6 mr-2 overflow-hidden rounded-full inline-block" /> <span class="inline-block">
                     {$monitorsMap.get(check?.pubkey)?.name}
                     <span class="text-sm text-black/70 dark:text-white/70 italic">{timeAgo((check.created_at as number)*1000)}</span>
                 </span> 

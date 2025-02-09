@@ -134,6 +134,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
         }
         else if(key === 'nip11IsValid'){
           const nip11ValidationErrors = nip11Errors.get(relay)
+          console.log(relay, nip11Errors.get(relay))
           if(typeof nip11ValidationErrors === 'number') {
             acc.nip11IsValid = nip11ValidationErrors === 0? true: false;  
           }

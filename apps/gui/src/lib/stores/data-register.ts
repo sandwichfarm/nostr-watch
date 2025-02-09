@@ -162,7 +162,7 @@ export const dataRegisterInit = async () => {
     //composites
     data.composite({
         key: 'sync:all',
-        keys: ['sync:monitors', 'sync:checks', 'sync:nip11s', 'sync:operators', 'validate:nip11s', 'sync:live'],
+        keys: ['sync:monitors', 'sync:checks', 'sync:operators', 'sync:live', 'sync:nip11s', 'validate:nip11s'],
         priority: -10,
         onComplete: async () => isBootstrapped.set(true),
         ignoreConditions: {},
@@ -171,7 +171,7 @@ export const dataRegisterInit = async () => {
     
     data.composite({
         key: 'sync:all-force',
-        keys: ['sync:monitors', 'sync:checks', 'sync:nip11s', 'sync:operators', 'validate:nip11s', 'sync:live'],
+        keys: ['sync:monitors', 'sync:checks', 'sync:operators', 'sync:live', 'sync:nip11s', 'validate:nip11s'],
         priority: -10,
         onComplete: async () => isBootstrapped.set(true),
         ignoreConditions: {

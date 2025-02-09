@@ -109,77 +109,91 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Install jq
-        if: matrix.package == 'gui'
-        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Deploy to Bunny
+        uses: R-J-dev/bunny-deploy@v2.0.3 
+        with:
+          access-key: ${{ secrets.BUNNY_API_KEY }}
+          directory-to-upload: "./apps/gui/dist"
+          storage-endpoint: "https://storage.bunnycdn.com"
+          storage-zone-name: "nostr-watch"
+          storage-zone-password: ${{ secrets.BUNNY_STORAGE_ZONE_PASSWORD }}
+          concurrency: "50"
+          enable-delete-action: true
+          enable-purge-pull-zone: true
+          pull-zone-id: "3312865"
+          replication-timeout: "15000"  
 
-      - name: Get package version (GUI)
-        if: matrix.package == 'gui'
-        id: get_version
-        run: |
-          VERSION=$(jq -r '.version' ./apps/gui/package.json)
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+      # - name: Install jq
+      #   if: matrix.package == 'gui'
+      #   run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Prepare SSH Key
-        if: matrix.package == 'gui'
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.GUI_SSH_KEY }}" > ~/.ssh/gui_ssh_key
-          chmod 600 ~/.ssh/gui_ssh_key
+      # - name: Get package version (GUI)
+      #   if: matrix.package == 'gui'
+      #   id: get_version
+      #   run: |
+      #     VERSION=$(jq -r '.version' ./apps/gui/package.json)
+      #     echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
-      - name: Validate Secrets
-        if: matrix.package == 'gui'
-        run: |
-          if [ -z "${{ secrets.GUI_HOST_USER }}" ] || [ -z "${{ secrets.GUI_HOST_IP }}" ]; then
-            echo "Secrets GUI_HOST_USER or GUI_HOST_IP are missing."
-            exit 1
-          else
-            echo "Secrets are set correctly."
-          fi
+      # - name: Prepare SSH Key
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     echo "${{ secrets.GUI_SSH_KEY }}" > ~/.ssh/gui_ssh_key
+      #     chmod 600 ~/.ssh/gui_ssh_key
+
+      # - name: Validate Secrets
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     if [ -z "${{ secrets.GUI_HOST_USER }}" ] || [ -z "${{ secrets.GUI_HOST_IP }}" ]; then
+      #       echo "Secrets GUI_HOST_USER or GUI_HOST_IP are missing."
+      #       exit 1
+      #     else
+      #       echo "Secrets are set correctly."
+      #     fi
 
 
-      - name: Debug Command Construction
-        if: matrix.package == 'gui'
-        run: |
-          echo ssh -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
+      # - name: Debug Command Construction
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     echo ssh -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
 
-      - name: Debug SSH Command
-        if: matrix.package == 'gui'
-        run: |
-          echo "Testing SSH Connection..."
-          echo "Host User: ${{ secrets.GUI_HOST_USER }}"
-          echo "Host IP: ${{ secrets.GUI_HOST_IP }}"
-          ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
+      # - name: Debug SSH Command
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     echo "Testing SSH Connection..."
+      #     echo "Host User: ${{ secrets.GUI_HOST_USER }}"
+      #     echo "Host IP: ${{ secrets.GUI_HOST_IP }}"
+      #     ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
 
-      - name: Prepare Directories (GUI)
-        if: matrix.package == 'gui'
-        run: |
-          VERSION=${{ env.VERSION }}
-          echo "Deploying version $VERSION"
-          ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
-          set -e
-          mkdir -p /var/www/${VERSION}
-          EOF
+      # - name: Prepare Directories (GUI)
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     VERSION=${{ env.VERSION }}
+      #     echo "Deploying version $VERSION"
+      #     ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+      #     set -e
+      #     mkdir -p /var/www/${VERSION}
+      #     EOF
 
-      - name: Upload Build (GUI)
-        if: matrix.package == 'gui'
-        run: |
-          scp -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/${{ env.VERSION }}/
+      # - name: Upload Build (GUI)
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     scp -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/${{ env.VERSION }}/
 
-      - name: Update Symlink & Permissions
-        if: matrix.package == 'gui' 
-        run: |
-          ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
-          set -e
-          ln -sfn /var/www/${{ env.VERSION }} /var/www/html
-          chown -R caddy:www-data /var/www/html
-          chown -R caddy:www-data /var/www/${{ env.VERSION }}
-          EOF
+      # - name: Update Symlink & Permissions
+      #   if: matrix.package == 'gui' 
+      #   run: |
+      #     ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+      #     set -e
+      #     ln -sfn /var/www/${{ env.VERSION }} /var/www/html
+      #     chown -R caddy:www-data /var/www/html
+      #     chown -R caddy:www-data /var/www/${{ env.VERSION }}
+      #     EOF
 
-      - name: Cleanup SSH Key
-        if: matrix.package == 'gui'
-        run: |
-          rm -f ~/.ssh/gui_ssh_key
+      # - name: Cleanup SSH Key
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     rm -f ~/.ssh/gui_ssh_key
         
       - name: Find Package
         id: find_package

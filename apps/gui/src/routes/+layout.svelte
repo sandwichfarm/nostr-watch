@@ -105,7 +105,7 @@
     } else {
       datas.push('sync:all-force')
     }
-    await get(dataRegister).require()
+    await get(dataRegister).require(datas)
   }
 
   const initServices = async () => {

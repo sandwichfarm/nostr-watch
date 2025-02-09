@@ -27,7 +27,7 @@ export class WorkerRelayInterface {
   #channelPort?: MessagePort; 
 
   // Command timeout
-  timeout: number = 5_000;
+  timeout: number = 30_000;
 
   /**
    * Interface wrapper for worker relay

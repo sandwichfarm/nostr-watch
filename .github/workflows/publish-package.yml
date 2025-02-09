@@ -110,6 +110,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Deploy to Bunny
+        if: matrix.package == 'gui'
         uses: R-J-dev/bunny-deploy@v2.0.3 
         with:
           access-key: ${{ secrets.BUNNY_API_KEY }}

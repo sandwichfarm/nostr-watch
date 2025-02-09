@@ -98,11 +98,14 @@
     const route66 = await lifecycle.instance();
     await route66.ready();
     dataRegisterInit();
-    await get(dataRegister).require([
-      'sync:cache',
-      'sync:all',
-      'validate:nip11s'
-    ])
+    const datas = []
+    datas.push('sync:cache')
+    if(hasBeenBootstrapped()){
+      datas.push('sync:all')
+    } else {
+      datas.push('sync:all-force')
+    }
+    await get(dataRegister).require()
   }
 
   const initServices = async () => {

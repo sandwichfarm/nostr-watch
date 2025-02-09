@@ -115,7 +115,7 @@ jobs:
         with:
           access-key: ${{ secrets.BUNNY_API_KEY }}
           directory-to-upload: "./apps/gui/dist"
-          storage-endpoint: "https://storage.bunnycdn.com"
+          storage-endpoint: "https://sg.storage.bunnycdn.com"
           storage-zone-name: "nostr-watch"
           storage-zone-password: ${{ secrets.BUNNY_STORAGE_ZONE_PASSWORD }}
           concurrency: "50"

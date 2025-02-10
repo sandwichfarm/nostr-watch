@@ -36,6 +36,7 @@ export class ActivityManager {
   private leaderId: string | null = null;
   private isLeader: boolean = false;
   private releaseWaitTimeoutId: number | null = null;
+  // Reduced forced takeover timeout.
   private releaseWaitTimeoutMs: number = 500;
 
   // Reduced leadership confirmation delay.
@@ -46,6 +47,7 @@ export class ActivityManager {
   // Heartbeat settings.
   private heartbeatIntervalId: number | null = null;
   private HEARTBEAT_INTERVAL_MS: number = 1000;
+  // Reduced stale threshold.
   private STALE_THRESHOLD_MS: number = 5000;
 
   private boundVisibilityHandler: () => void;
@@ -74,11 +76,9 @@ export class ActivityManager {
     document.addEventListener('visibilitychange', this.boundVisibilityHandler);
 
     this.boundIdleEventHandler = this.resetIdleTimer.bind(this);
-    ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'].forEach(
-      eventName => {
-        window.addEventListener(eventName, this.boundIdleEventHandler, true);
-      }
-    );
+    ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'].forEach(eventName => {
+      window.addEventListener(eventName, this.boundIdleEventHandler, true);
+    });
 
     this.boundBeforeUnloadHandler = this.handleBeforeUnload.bind(this);
     window.addEventListener('beforeunload', this.boundBeforeUnloadHandler);
@@ -158,22 +158,6 @@ export class ActivityManager {
     if (document.visibilityState !== 'visible') return;
     console.log('ActivityManager: User is active.');
     await this.acquireLeadership();
-    // Immediately re-read stored leader to update UX state:
-    const stored = localStorage.getItem('leaderId');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.id !== this.myId) {
-          await this.transitionState('follower');
-        } else {
-          await this.transitionState('leader');
-        }
-      } catch (e) {
-        await this.transitionState('leader');
-      }
-    } else {
-      await this.transitionState('leader');
-    }
     this.startIdleTimer();
   }
 
@@ -188,7 +172,6 @@ export class ActivityManager {
           if (this.isLeader) {
             await this.releaseLeadership();
           } else {
-            // For visible tabs that are not leader, you want to display "follower"
             await this.transitionState('inactive');
           }
           this.clearIdleTimer();
@@ -217,8 +200,7 @@ export class ActivityManager {
         } else {
           this.isLeader = false;
           if (document.visibilityState === 'visible') {
-            // Change: update to "follower" (instead of "inactive")
-            await this.transitionState('follower');
+            await this.transitionState('inactive');
           }
         }
         this.clearReleaseWaitTimeout();
@@ -279,11 +261,6 @@ export class ActivityManager {
     }
   }
 
-  /**
-   * acquireLeadership():
-   * - If any leader exists (even if valid), force a takeover by sending a release request and clearing the entry.
-   * - Then claim leadership.
-   */
   private async acquireLeadership() {
     if (this.isLeader) return;
   
@@ -295,31 +272,74 @@ export class ActivityManager {
       localStorage.removeItem('leaderId');
     }
   
-    // Check if any leader exists.
+    // POLL: Wait if the stored leader is shutting down.
+    const MAX_SHUTDOWN_WAIT_MS = 2500;
+    let shutdownWaitTime = 0;
+    while (true) {
+      const leaderDataRaw = localStorage.getItem('leaderId');
+      if (leaderDataRaw) {
+        try {
+          const parsed = JSON.parse(leaderDataRaw);
+          if (parsed.shutdown) {
+            console.log('ActivityManager: Detected leader is shutting down, waiting for shutdown completion.');
+            await delay(250);
+            shutdownWaitTime += 250;
+            if (shutdownWaitTime >= MAX_SHUTDOWN_WAIT_MS) {
+              console.warn('ActivityManager: Waited too long for shutdown; forcing clear.');
+              localStorage.removeItem('leaderId');
+              break;
+            }
+            continue;
+          }
+        } catch (e) {
+          break;
+        }
+      }
+      break;
+    }
+  
+    let currentLeader: string | null = null;
+    let leaderTimestamp: number | null = null;
     const leaderData = localStorage.getItem('leaderId');
     if (leaderData) {
-      let parsed: { id?: string; shutdown?: boolean } = {};
       try {
-        parsed = JSON.parse(leaderData);
-      } catch (e) {}
-      const currentLeader = parsed.id;
-      if (currentLeader && currentLeader !== this.myId) {
-        if (!parsed.shutdown) {
-          console.log('ActivityManager: Forcing takeover (release request sent) because current leader is', currentLeader);
-          this.sendMessage('request-leader-release', { requestingId: this.myId });
-          await delay(250);
-          localStorage.removeItem('leaderId');
-        }
+        const parsed = JSON.parse(leaderData);
+        currentLeader = parsed.id;
+        leaderTimestamp = parsed.ts;
+      } catch (e) {
+        currentLeader = leaderData;
       }
     }
   
-    // Claim leadership.
-    localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now() }));
-    this.leaderId = this.myId;
-    this.isLeader = true;
-    this.sendMessage('leader-claimed', { leaderId: this.myId });
-    await this.transitionState('leader');
-    this.startHeartbeat();
+    if (
+      document.visibilityState === 'visible' &&
+      currentLeader &&
+      currentLeader !== this.myId
+    ) {
+      if (leaderTimestamp && Date.now() - leaderTimestamp > this.STALE_THRESHOLD_MS) {
+        console.log('ActivityManager: Detected stale leader. Clearing it.');
+        localStorage.removeItem('leaderId');
+        currentLeader = null;
+      } else {
+        await this.transitionState('inactive');
+        return;
+      }
+    }
+  
+    if (!currentLeader) {
+      this.leaderId = this.myId;
+      this.isLeader = true;
+      localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now() }));
+      this.sendMessage('leader-claimed', { leaderId: this.myId });
+      await this.transitionState('leader');
+      this.startHeartbeat();
+    } else if (currentLeader !== this.myId) {
+      await this.transitionState('inactive');
+    } else {
+      this.isLeader = true;
+      await this.transitionState('leader');
+      this.startHeartbeat();
+    }
   }
   
   private clearReleaseWaitTimeout() {
@@ -329,10 +349,6 @@ export class ActivityManager {
     }
   }
   
-  /**
-   * releaseLeadership():
-   * - Marks shutdown, sends a release message, awaits the external inactive handler, then clears the leader entry.
-   */
   private async releaseLeadership() {
     if (!this.isLeader) return;
     localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now(), shutdown: true }));

@@ -253,10 +253,10 @@ loadedEnough: {loadedEnough} <br /> -->
 
 
 {#if $unsupported}
-  <div>
-    <h1>Unsupported Device</h1>
-    <p>Please switch to a supported device.</p>
-  </div>
+<div class="flex flex-col items-center justify-center h-screen px-4">
+  <div class="text-7xl">Unsupported</div>
+  <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
+</div>
 {:else}
   {#if loading && !hasBeenBootstrapped()}
   <BootstrapLoading {isReady} {monitorsSynced} {relayChecksSynced} {percentCompleted} />

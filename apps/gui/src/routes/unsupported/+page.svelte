@@ -13,8 +13,7 @@ $: browser = getBrowserInfo()
 
 <div class="flex flex-col items-center justify-center h-screen text-center">
     <div class="text-2xl text-center">Unsupported Browser</div>
-    <div class="text-lg text-center">This version of nostr.watch does not support 
-        {browser.name} 
+    <div class="text-lg text-center">This version of nostr.watch does not support {browser.name} 
         <span class="text-sm italic text-white/60">{browser.version} </span>
     </div>
 </div>

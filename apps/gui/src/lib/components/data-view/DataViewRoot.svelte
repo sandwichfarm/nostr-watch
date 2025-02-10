@@ -1,8 +1,5 @@
-<script>
-	import { isBootstrapping } from "$stores/app";
-
-</script>
 <script lang="ts">
+    import { isBootstrapping } from "$stores/app";
     import { onMount } from 'svelte';
     import { get, writable, derived, type Writable, type Readable, readable } from 'svelte/store';
     import * as Resizable from '$lib/components/ui/resizable';
@@ -186,8 +183,6 @@
           
     </Resizable.Pane>
 </Resizable.PaneGroup>
-
-{/if}
 
 <style lang="postcss" global>
     .active-filter {

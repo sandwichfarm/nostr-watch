@@ -65,8 +65,8 @@
 <!-- <pre>{JSON.stringify($data, null, 4)}</pre> -->
 {#if $ready}
     <RelayDimensions />
-    <!-- <DataViewRoot {data} {config} key={dataKey} activeView={writable("table")} /> -->
-    <DataTable {data} {config} {dataKey} />
+    <DataViewRoot {data} {config} key={dataKey} activeView={writable("table")} />
+    <!-- <DataTable {data} {config} {dataKey} /> -->
 {/if}
 
 </main>

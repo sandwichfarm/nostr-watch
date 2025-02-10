@@ -1,0 +1,19 @@
+{
+    "manifest_version": 3,
+    "name": "umon",
+    "version": "0.1.0",
+    "description": "A browser extension for monitoring Nostr activity.",
+    "permissions": [],
+    "action": {
+      "default_popup": "src/popup/index.html",
+      "default_icon": {
+        "16": "public/icon.png",
+        "48": "public/icon.png",
+        "128": "public/icon.png"
+      }
+    },
+    "background": {
+      "service_worker": "src/background/index.js"
+    }
+  }
+  

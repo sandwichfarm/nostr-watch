@@ -33,8 +33,8 @@
 
     let dataExtended: Readable<DataViewData> = readable({ data: [], columns: [] });
     let filteredData: Readable<{data: any[]; columns: any[] }> = readable({ data: [], columns: [] });
-    let justData = readable([]);
-    let justColumns = readable([]);
+    let justData: Readable<any[]> = readable([]);
+    let justColumns: Readable<any[]>  = readable([]);
 
     onMount(async (): Promise<any> => {
         dataExtended = derived(
@@ -119,9 +119,9 @@
 <Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
 
     <Resizable.Pane defaultSize={75}>
-        {#if $filteredData && $filteredData?.data?.length}
+        {#if $filteredData && $justData?.length && $justColumns?.length}
             {#if $activeView === 'table'}
-                <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} dataUnfilteredLength={data?.length} />
+                <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} dataUnfilteredLength={$justData?.length} />
             {/if}
 
             {#if $activeView === 'grid'}
@@ -132,8 +132,8 @@
                 <MapRoot data={justData} {filters} />
             {/if}
         {:else if $isBootstrapping && !$isSeeded}
-            <div class="flex items-center justify-center h-full">
-                <span class="text-7xl">bootstrapping</span>
+            <div class="flex flex-col items-center justify-center h-screen px-4">
+                <span class="text-5xl">bootstrapping</span>
                 <span class="text-xl">the application is still bootstrapping, please wait while seed data is populated.</span>
             </div>
         {/if}

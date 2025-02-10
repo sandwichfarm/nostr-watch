@@ -2,14 +2,14 @@ import countryCodeToFlagEmoji from 'country-code-to-flag-emoji'
 import { relaySpeedGroupResolver, SpeedGroupBars, SpeedGroupColors, SpeedGroups } from '$lib/stores/checks.js';
 import { makeSoftwareReadable } from '$lib/synonyms/software.js';
 import { generateRelayPathFromUrl } from '$lib/utils/routing.js';
-import { formatNip, isPubkey } from '$lib/utils/nostr.js';
-import { timeAgo } from '$lib/utils/time.js';
+import { expandKinds, formatNip, isPubkey } from '$lib/utils/nostr.js';
+import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 import { IconBadgeCheckGreen, IconCheckGreen, IconCheckRed } from '$lib/utils/icons.js';
 import { PFP } from '$lib/utils/pfp';
 
 import { monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from '@nostrwatch/route66/models';
-import type { Nip11Fee } from '@nostrwatch/route66/models/Nip11';
+import type { Nip11Fee, RetentionDetails } from '@nostrwatch/route66/models/Nip11';
 import type { DD } from '@nostrwatch/route66/models/Geocoded';
 import { Nip66CheckEvent, PubkeyProfile } from '@nostrwatch/route66/models';
 import { pubkeyProfile, pubkeyUserInstance } from '$lib/stores/helpers/helpers-pubkey';
@@ -368,6 +368,38 @@ export const tableFormatters: Formatters = {
     
         str += "</div>";
     
+        return str;
+    },
+    retentionPolicy: (retentionPolicy) => {
+        if (!Array.isArray(retentionPolicy) || retentionPolicy.length === 0) return "";
+
+        retentionPolicy = deduplicateArrayOfObjects(retentionPolicy, ["kinds", "time", "count"]);
+    
+        let str = '<div class="flex flex-wrap items-center gap-2 text-sm">';
+    
+        retentionPolicy.forEach((rule) => {
+          if (typeof rule !== "object" || rule === null) return;
+    
+          const kinds = rule.kinds ? expandKinds(rule.kinds).join(", ") : "All";
+          const time = rule.time === null ? "∞" : rule.time ? formatSeconds(rule.time) : "";
+          const count = rule.count ? rule.count.toLocaleString() : "";
+    
+          // Special case: If it's "All" kinds & time is "∞", return only the infinity symbol
+          if (kinds === "All" && time === "∞") {
+            str += `<span class="text-lg font-semibold">∞</span>`;
+            return;
+          }
+    
+          str += `
+            <div class="flex items-center space-x-2 bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded-lg shadow-sm">
+              <span class="text-gray-900 dark:text-gray-100">${kinds !== "All" ? `🔹 ${kinds}` : "All"}</span>
+              ${time ? `<span class="text-gray-600 dark:text-gray-300">⏳ ${time}</span>` : ""}
+              ${count ? `<span class="text-gray-600 dark:text-gray-300">📦 ${count}</span>` : ""}
+            </div>
+          `;
+        });
+    
+        str += "</div>";
         return str;
     },
     subscriptionFee: formatFee,

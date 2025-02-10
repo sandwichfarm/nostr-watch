@@ -166,6 +166,9 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
             acc.lastSeen = value;
           }
         }
+        else if (isNonNull && (key === 'fees' || key === 'retention')) {
+          acc[key] = value;
+        }
         else if (isArray) {
           acc[key] = isAccArray
             ? [...new Set([...acc[key], ...value])]

@@ -2,8 +2,9 @@ import { transformCheck } from "@base/transform/TransformCheck";
 import { IEvent, NostrEvent, NostrTag } from "./Event";
 import { Geocoded } from "./Geocoded";
 import { nip19 } from "nostr-tools";
-import { Nip11, Nip11Fee, Nip11Fees, type RelayInformation  } from "./Nip11";
+import { Nip11, Nip11Fee, Nip11Fees, RetentionDetails, type RelayInformation  } from "./Nip11";
 import { isPubkey } from "@base/utils/nostr";
+import { Retention } from "nostr-tools/nip11";
 
 export class Nip66CheckEvent extends Geocoded implements IEvent {
     _nip11?: Nip11 | false;
@@ -28,6 +29,9 @@ export class Nip66CheckEvent extends Geocoded implements IEvent {
       'version', 
       'hasNip11',
       'nip11Hash',
+      'hasRetention',
+      'retentionPolicy',
+      'hasLimitations',
       'paymentRequired', 
       'authRequired', 
       'powRequired',
@@ -162,6 +166,18 @@ export class Nip66CheckEvent extends Geocoded implements IEvent {
 
     get contact(): string | null {
       return this.nip11?.contact || null;
+    }
+
+    get hasLimitations(): boolean {
+      return this.nip11?.limitation? true: false;
+    }
+
+    get retentionPolicy(): RetentionDetails[] | null {
+      return this.nip11?.retention || null;
+    }
+
+    get hasRetentionPolicy(): boolean {
+      return this.nip11?.hasRetention || false;
     }
 
     get maxMessageLength(): number | null {

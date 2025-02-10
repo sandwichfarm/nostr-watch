@@ -9,6 +9,12 @@ export type Nip11Fees = {
   subscription?: Nip11Fee[];
 }
 
+export interface RetentionDetails {
+  kinds: (number | number[])[]
+  time?: number | null
+  count?: number | null
+}
+
 export interface Limitations extends nip11.Limitations {}
 
 export interface RelayInformation extends nip11.RelayInformation {
@@ -235,6 +241,14 @@ export class Nip11 {
    */
   get createdAtUpperLimit(): number | undefined {
     return this.limitation?.created_at_upper_limit;
+  }
+
+  get retention(): RetentionDetails[] | undefined {
+    return this.json?.retention as RetentionDetails[];
+  }
+
+  get hasRetention(): boolean {
+    return this.retention? true: false;
   }
 
   /**

@@ -256,11 +256,12 @@ export class DataRegister {
             if (this.busy(childKey)) continue;
             const params: any[] = this.extractParams(childKey, paramsMap);
             this.localStorageLoadTimestamp(childKey, params)
-            if(!this.isExpired(childKey)) continue;
+            if(composite.ignoreExpiries?.[childKey] !== true) {
+                if(!this.isExpired(childKey)) continue;
+            }
             this.start(childKey);
             const ignoreCondition = composite.ignoreConditions?.[childKey] ?? false;
-            const ignoreExpiry = composite.ignoreExpiries?.[childKey] ?? false;
-            const result = await this.executeFunction({ key:childKey, ignoreCondition, ignoreExpiry, params })
+            const result = await this.executeFunction({ key:childKey, ignoreCondition, params })
             this.stop(childKey, params);
             results.set(childKey, result)
         }

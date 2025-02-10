@@ -240,7 +240,7 @@
         .length
   $: monitorsSynced = numMonitorsSynced === 3;
   $: relayChecksSynced = numRelayChecksSynced === 1;
-  $: percentCompleted = percentModulesLoaded * 0.5 + (numMonitorsSynced*10) + (relayChecksSynced? 20: 0);
+  $: percentCompleted = percentModulesLoaded * 0.5 + (numMonitorsSynced*10) + (loadedEnough? 20: 0);
 
   let loadingThresholdPassed = false;
   let loadingThresholdTimeout: ReturnType<typeof setTimeout>;
@@ -256,15 +256,22 @@
       loadingThresholdTimeout = setTimeout(() => loadingThresholdPassed = true, 1000 )
     }
   }
+
   setTimeout(() => loadingThresholdPassed = true, 1000 )
+
+  let loadedEnoughSignal = false;
+
+  $: {
+    if(loadedEnough){
+      setTimeout(() => { 
+        console.log('loaded enough.')
+        loadedEnoughSignal = true;
+      }, 1000);
+    }
+  }
   
-  $: loading = loadingThresholdPassed && (!isReady || !loadedEnough);
+  $: loading = loadingThresholdPassed && (!isReady || !loadedEnoughSignal);
 </script>
-
-<!-- loading: {loading} <br />
-isReady: {isReady} <br />
-loadedEnough: {loadedEnough} <br /> -->
-
 
 {#if $unsupported}
 <div class="flex flex-col items-center justify-center h-screen px-4">
@@ -273,16 +280,15 @@ loadedEnough: {loadedEnough} <br /> -->
 </div>
 {:else}
   {#if loading && !hasBeenBootstrapped()}
-  <BootstrapLoading {isReady} {monitorsSynced} {relayChecksSynced} {percentCompleted} />
+    <BootstrapLoading {isReady} {monitorsSynced} {relayChecksSynced} {percentCompleted} bind:activities />
   {:else if loading && hasBeenBootstrapped()}
     <div class="flex flex-col items-center justify-center h-screen px-4">
       <div class="text-7xl">loading.</div>
       <div class="text-xs opacity-30">[{$tabState}]</div>
     </div>
-  {/if}
-  {#if isReady}
+  {:else if isReady}
     {#if $tabState === 'leader'}
-      {#if loadedEnough}
+      {#if loadedEnoughSignal}
         <Header />
         <div id="content-wrapper" class="block">
           <slot />

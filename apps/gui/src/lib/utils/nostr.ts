@@ -83,3 +83,26 @@ export const zapSumString = (sum: number): string => {
     const scaled = sum / Math.pow(1000, magnitude); 
     return `${scaled.toFixed(precision + 1)}${units[magnitude]}`;
 }    
+
+export const expandKinds = (kinds: (number | [number, number])[]): number[] => {
+    const expanded: number[] = [];
+  
+    for (const kind of kinds) {
+      if (Array.isArray(kind) && kind.length === 2) {
+        const [start, end] = kind;
+        if (typeof start !== "number" || typeof end !== "number") {
+          throw new Error("Invalid kind range: start and end must be numbers.");
+        }
+        for (let i = start; i <= end; i++) {
+          expanded.push(i);
+        }
+      } else if (typeof kind === "number") {
+        expanded.push(kind);
+      } else {
+        throw new Error("Invalid kind specification.");
+      }
+    }
+  
+    return expanded;
+  }
+  

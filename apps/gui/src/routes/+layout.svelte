@@ -243,7 +243,21 @@
   $: percentCompleted = percentModulesLoaded * 0.5 + (numMonitorsSynced*10) + (relayChecksSynced? 20: 0);
 
   let loadingThresholdPassed = false;
-  setTimeout(() => loadingThresholdPassed = true, 200 )
+  let loadingThresholdTimeout: ReturnType<typeof setTimeout>;
+
+  $: {
+    if($navigating?.to){
+      console.log('navigating to:', $navigating.to)
+      clearTimeout(loadingThresholdTimeout)
+      loadingThresholdPassed = false
+    }
+    if($navigating?.from){
+      console.log('navigating from:', $navigating.from)
+      loadingThresholdTimeout = setTimeout(() => loadingThresholdPassed = true, 1000 )
+    }
+  }
+  setTimeout(() => loadingThresholdPassed = true, 1000 )
+  
   $: loading = loadingThresholdPassed && (!isReady || !loadedEnough);
 </script>
 
@@ -254,7 +268,7 @@ loadedEnough: {loadedEnough} <br /> -->
 
 {#if $unsupported}
 <div class="flex flex-col items-center justify-center h-screen px-4">
-  <div class="text-7xl">Unsupported</div>
+  <div class="text-3xl">Unsupported</div>
   <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
 </div>
 {:else}
@@ -262,7 +276,7 @@ loadedEnough: {loadedEnough} <br /> -->
   <BootstrapLoading {isReady} {monitorsSynced} {relayChecksSynced} {percentCompleted} />
   {:else if loading && hasBeenBootstrapped()}
     <div class="flex flex-col items-center justify-center h-screen px-4">
-      <div class="text-7xl">booting.</div>
+      <div class="text-7xl">loading.</div>
       <div class="text-xs opacity-30">[{$tabState}]</div>
     </div>
   {/if}

@@ -171,10 +171,10 @@ export const dataRegisterInit = async () => {
             'validate:nip11s'
         ],
         priority: -10,
-        condition: async () => {
-            isBootstrapping.set(true)
-            return true;
-        },
+        // fn: async () => {
+        //     isBootstrapping.set(true)
+        //     return true;
+        // },
         onComplete: async () => {
             isBootstrapping.set(false)
             isBootstrapped.set(true)
@@ -195,7 +195,7 @@ export const dataRegisterInit = async () => {
         ],
         // condition: async () => !get(doBootstrap),
         priority: -10,
-        condition: async () => {
+        fn: async () => {
             isBootstrapping.set(true)
             return true;
         },

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { isBootstrapping } from "$stores/app";
+    import { isBootstrapping, isSeeded } from "$stores/app";
     import { onMount } from 'svelte';
     import { get, writable, derived, type Writable, type Readable, readable } from 'svelte/store';
     import * as Resizable from '$lib/components/ui/resizable';
@@ -110,6 +110,8 @@
     $: activeFilters = Object.keys($filters || {}).length
 
     export let activeView: Writable<'table' | 'grid' | 'map'>;
+
+    let loading = false 
 </script>
 
 <DataViewSelector {enabledViews} bind:activeView />
@@ -129,7 +131,7 @@
             {#if $activeView === 'map'} 
                 <MapRoot data={justData} {filters} />
             {/if}
-        {:else if $isBootstrapping}
+        {:else if $isBootstrapping && !$isSeeded}
             <div class="flex items-center justify-center h-full">
                 <span class="text-7xl">bootstrapping</span>
                 <span class="text-xl">the application is still bootstrapping, please wait while seed data is populated.</span>

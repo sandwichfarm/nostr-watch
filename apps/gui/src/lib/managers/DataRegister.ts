@@ -18,6 +18,7 @@ export type DataRegisterComposite = {
     key: string;
     priority: number;
     keys: string[];
+    fn?: DataRegisterFn;
     condition?: DataRegisterCondition;
     onComplete?: DataRegisterFn;
     ignoreConditions?: Record<string, boolean>;
@@ -241,19 +242,17 @@ export class DataRegister {
     }
 
     private async executeComposite(args: DataRegisterCompositeExecutorArguments = { key: '', params: {} }) {
-        // console.log('executeComposite', args)
         const { key: compositeKey, ignoreCondition: compositeIgnoreCondition, params:paramsMap } = args;
         const shouldRun = await this.testCondition(compositeKey, compositeIgnoreCondition, true);
-        if (!shouldRun) {
-            //console.log('executeComposite', 'condition failed', compositeKey)
-            return;
-        }
+        if (!shouldRun) return;
         const composite = this._composite.get(compositeKey)!;
-        // composite.keys.forEach( (childKey) => this._busy.set(childKey, true) );    
-        //
+        const { fn } = composite;
+        if(fn && typeof fn === 'function') {
+            const params: any[] = this.extractParams(compositeKey, paramsMap);
+            await fn(params)
+        }
         const results = new Map()
         for (const childKey of composite.keys) {
-            // console.log('executeComposite', 'childKey', childKey)
             if (this.busy(childKey)) continue;
             const params: any[] = this.extractParams(childKey, paramsMap);
             this.localStorageLoadTimestamp(childKey, params)

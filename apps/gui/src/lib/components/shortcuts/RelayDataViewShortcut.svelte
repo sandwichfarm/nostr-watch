@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 	import Page from "$routes/+page.svelte";
 	import Badge from "$ui/badge/badge.svelte";
@@ -185,8 +186,18 @@
     }
     
     onMount( () => {
-
+        if(!window.location.hash && $page.url.pathname === "/relays"){
+            setActive(shortcuts[0]);
+        }
     })
+
+    const setActive = (shortcut: any) => {
+        active.set(shortcut.title)
+        if(shortcut?.payload){
+            shortcut.hash = btoa(JSON.stringify(compress(shortcut.payload)))
+        }
+        onClick(`/relays#${shortcut.hash}`)
+    }
 </script>
 <div class="leading-9 {className}">
 {#if label}
@@ -198,13 +209,7 @@
     <Button 
         size="small" 
         variant={buttonVariant} 
-        on:click={() => {
-            active.set(shortcut.title)
-            if(shortcut?.payload){
-                shortcut.hash = btoa(JSON.stringify(compress(shortcut.payload)))
-            }
-            onClick(`/relays#${shortcut.hash}`)
-        }}
+        on:click={() => setActive(shortcut)}
         class="{buttonClass} {$active === shortcut.title? buttonActiveClass: ''}"
         >
         {shortcut.title}

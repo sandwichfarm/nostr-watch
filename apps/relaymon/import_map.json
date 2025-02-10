@@ -1,0 +1,8 @@
+{
+    "imports": {
+      "npm:murmurhash": "https://esm.sh/murmurhash@latest",
+      "npm:p-queue": "https://esm.sh/p-queue@latest",
+      "npm:chalk": "https://esm.sh/chalk@latest",
+      "npm:cross-fetch": "https://esm.sh/cross-fetch@latest"
+    }
+  }

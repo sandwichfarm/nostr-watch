@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+      "lib": ["deno.ns", "deno.window", "esnext"],
+      "strict": true,
+    },
+    "nodeModulesDir": "auto",
+    "importMap": "./import_map.json",
+    "tasks": {
+      "start": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write main.ts",
+      "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write",
+      "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'",
+
+    },
+    "fmt": {
+      "files": {
+        "include": ["**/*.ts", "**/*.js", "**/*.json", "**/*.yaml", "**/*.yml"]
+      }
+    },
+    "lint": {
+      "files": {
+        "include": ["**/*.ts", "**/*.js"]
+      }
+    },
+    "version": "0.1.0"
+  }
+  

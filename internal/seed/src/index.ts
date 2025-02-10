@@ -1,4 +1,3 @@
-// src/index.ts
 import { extractConfig } from '@nostrwatch/utils';
 import Logger from '@nostrwatch/logger';
 import { fetch } from 'cross-fetch';

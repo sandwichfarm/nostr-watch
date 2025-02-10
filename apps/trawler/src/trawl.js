@@ -23,7 +23,7 @@ let options = {
   restDuration: 1000*60*5,
   strictTimestamps: true,
   relaysPerBatch: 1,
-  since: 1738067836,
+  since: 0,
   nostrFetchOptions: {
     sort: true
   },

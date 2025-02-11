@@ -215,7 +215,11 @@
         $relayFilters.forEach(filter => {
             const filterKey = filter.key;
             const filterMode = filter.mode || 'AND';
-            const filterValue = activeFilters[filter.key];
+            const filterValue = activeFilters?.[filter.key];
+
+            if(!filterValue) {
+                return;
+            }
 
             newDisabledFilters[filterKey] = new Set();
 

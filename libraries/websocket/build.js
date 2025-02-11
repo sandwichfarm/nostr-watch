@@ -24,7 +24,7 @@ async function cleanDist() {
   const distBrowserPath = path.join(distDir, 'web');
   const distWorkerPath  = path.join(distDir, 'worker');
   const distServerPath  = path.join(distDir, 'server');
-  const distDenoPath    = path.join(distDir, 'deno'); // ✅ New Deno output folder
+  const distDenoPath    = path.join(distDir, 'deno');
 
   try {
     for (const dirPath of [distBrowserPath, distWorkerPath, distServerPath, distDenoPath]) {
@@ -107,10 +107,10 @@ const denoConfig = {
   bundle: true,
   outdir: 'dist/deno',
   format: 'esm',
-  platform: 'neutral', // ✅ Neutral so it works in Deno
+  platform: 'neutral',
   sourcemap: false,
   allowOverwrite: true,
-  external: ['ws'], // ✅ Prevent "ws" from being bundled (Deno has WebSocket)
+  external: ['ws'],
   plugins: []
 };
 

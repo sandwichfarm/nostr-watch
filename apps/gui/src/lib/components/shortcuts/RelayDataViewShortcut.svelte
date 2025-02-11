@@ -153,6 +153,8 @@
                     "minPowDifficulty",
                     "restrictedWrites",
                     "maxSubscriptions",
+                    "software",
+                    "version",
                     "maxFilters",
                     "maxLimit",
                     "maxSubidLength",

@@ -179,6 +179,26 @@
         },
     ]
 
+    const setActive = (shortcut: any) => {
+        active.set(shortcut.title)
+        if(shortcut?.payload){
+            try {
+                shortcut.hash = btoa(JSON.stringify(compress(shortcut.payload)))
+                onClick(`/relays#${shortcut.hash}`)
+                return 
+            }
+            catch(e){
+                onClick(`/relays`)
+                return 
+            }   
+        }
+        if(!shortcut.hash) {
+            onClick(`/relays`)
+            return 
+        }
+        onClick(`/relays#${shortcut.hash}`)
+    }
+
     const active = writable(shortcuts[0].title);
 
     if(window.location.hash){
@@ -187,8 +207,8 @@
         console.log('active shortcut', shortcut)    
         if(shortcut) active.set(shortcut.title);
     } 
-    else {
-        active.set(shortcuts[0].title);
+    else if($page.url.pathname === "/relays"){
+        setActive(shortcuts[0]);
     }
     
     onMount( () => {
@@ -196,13 +216,7 @@
         
     })
 
-    const setActive = (shortcut: any) => {
-        active.set(shortcut.title)
-        if(shortcut?.payload){
-            shortcut.hash = btoa(JSON.stringify(compress(shortcut.payload)))
-        }
-        onClick(`/relays#${shortcut.hash}`)
-    }
+    
 </script>
 <div class="leading-9 {className}">
 {#if label}

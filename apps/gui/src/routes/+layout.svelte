@@ -46,13 +46,12 @@
 
   window.process = process;
 
-  // if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  //   addEventListener('load', function () {
-  //     navigator.serviceWorker.register('$src/service-workers/cors.js'); 
-  //   });
-  // }
-
-  if("serviceWorker" in navigator) {
+  if(window.isSecureContext === false && "serviceWorker" in navigator && navigator.serviceWorker !== undefined) {
+    // if (import.meta.env.PROD) {
+    //   addEventListener('load', function () {
+    //     navigator.serviceWorker.register('$src/service-workers/cors.js'); 
+    //   });
+    // }
     navigator.serviceWorker.getRegistrations().then(function(registrations) {
       for (let registration of registrations) {
         registration.unregister();

@@ -21,6 +21,7 @@ export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   for(const monitor of monitorsArr) {
     const mon: Monitor | undefined = Monitor.fromCache(monitor)
     if(!mon) continue
+    console.log(monitorsMapFromCache, mon.events)
     publishEventsToMemoryRelay(mon.events, 'monitorsMapFromCache')
     map.set(monitor.pubkey, mon)
   }
@@ -30,24 +31,30 @@ export const monitorsMapFromCache = (): Map<string, Monitor>  => {
 export const monitorsMap: Writable<Map<string, Monitor>> = writable(monitorsMapFromCache());
 
 export const monitors = derived(
-  monitorsMap, 
-  ($monitorsMap) => {
+  ([monitorsMap]), 
+  ([$monitorsMap]) => {
     let arr = Array.from($monitorsMap.values());
-    if(arr.length){
-      let sorted = $route66?.services?.monitors?.sortedMonitors
-      if(sorted !== undefined && sorted.length) {
-        StateManager.set('cache:monitors', sorted.map(( monitor: Monitor) => monitor.toCache()));
-      }
-      else {
-        StateManager.set('cache:monitors', arr.map(( monitor: Monitor) => monitor.toCache()));   
+    if(!arr.length){
+      const sorted = $route66?.services?.monitors?.sortedMonitors
+      if(sorted && sorted.length) {
+        arr = sorted
       }
     }
-    else {
+    if(arr !== undefined && arr.length) {
+      StateManager.set('cache:monitors', arr.map(( monitor: Monitor) => monitor.toCache()));
+    }
+    if(!arr || !arr.length) {
       const fromCacheValues = StateManager.get('cache:monitors');  
       if(fromCacheValues?.length) {
         arr = fromCacheValues.map( (cache: any) => Monitor.fromCache(cache) );
       }
+      console.log('monitors derived from cache', arr)
     }
+    if(arr.length){
+      StateManager.set('cache:monitors', arr.map(( monitor: Monitor) => monitor.toCache())); 
+      console.log('monitors set to cache', arr)
+    }
+    console.log('monitors derived', arr)
     return arr;
   }
 )
@@ -91,8 +98,8 @@ export const monitorChecksCount = derived(
 );
 
 export const monitorRows = derived(
-  [monitorsSorted, activeMonitorChecksCount, monitorChecksCount, nip05s],
-  ([$monitorsSorted, $activeMonitorChecksCount, $monitorChecksCount, $nip05s]) => {
+  [monitors, monitorsSorted, activeMonitorChecksCount, monitorChecksCount, nip05s],
+  ([$monitors, $monitorsSorted, $activeMonitorChecksCount, $monitorChecksCount, $nip05s]) => {
     return $monitorsSorted.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
       row.id = monitor.pubkey;

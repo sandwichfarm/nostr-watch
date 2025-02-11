@@ -13,6 +13,9 @@
 	import { eventKey } from '$lib/utils/event-keys';
 	import { activeMonitorChecksCount } from '$lib/stores';
 	import { pauseLiveSync } from '$lib/utils/live-sync';
+	import { delay } from '@nostrwatch/utils';
+	import type { Nip05 } from 'nostr-tools/nip05';
+	import { nip05Service } from '$stores/nip05s';
 
     export let data: any;
     export let view: 'head' | 'cell' = 'cell';
@@ -28,6 +31,27 @@
 
     let toggleEnableMonitor: () => void; 
 
+    const updateState = async (monitor: Monitor, enable: boolean) => {
+        monitor.enabled = enable;
+        $route66?.services?.monitors?.manager?.updateMonitor?.(monitor)
+
+        monitorsMap.update((monitorsMap: Map<string, Monitor>) => {
+            const existing = monitorsMap.get(monitor.pubkey);
+            if (existing?.registration?.created_at && monitor?.registration?.created_at && existing.registration.created_at > monitor.registration.created_at) {
+                return monitorsMap;
+            }
+            const { pubkey } = monitor
+            const nip05: Nip05 | undefined = monitor?.profile?.nip05;
+            monitorsMap.set(pubkey, monitor);
+            if(nip05 && !$nip05Service.find(pubkey, nip05)){
+                $nip05Service.check(pubkey, nip05)
+            }
+            return monitorsMap;
+        });
+    }
+
+    
+
     onMount(() => {
         toggleEnableMonitor = async () => {
             if(busy) return;
@@ -35,9 +59,11 @@
             disabled.set(true);
             const { publishEventsToMemoryRelay } = await import('$lib/stores/events-helpers.js');
             const resumer = await pauseLiveSync();
+            console.log('monitors: toggleEnableMonitor', $monitor.enabled)
             if(!$monitor) return console.warn('Monitor not found');
             if($monitor?.enabled) {
-                $monitor.disable();
+                console.log('monitors:  disabling monitor')
+                // $monitor.disable();
                 events.update($events => {
                     $events.entries().forEach( ([key, event]) => {
                         if(event.pubkey === $monitor.pubkey){
@@ -46,11 +72,13 @@
                     })
                     return $events;
                 })
+                await updateState($monitor, false);
                 await resumer();
                 disabled.set(false);
             } 
             else {
-                $monitor?.enable()
+                console.log('monitors: enabling monitor')
+                // $monitor?.enable()
                 const options = {
                     filters: [ $monitor.checkFilter ],
                     options: {
@@ -65,11 +93,12 @@
                 }
                 const onevents = publishEventsToMemoryRelay
                 await $route66?.services?.monitors?.subscribe(options, { onevents })
+                await updateState($monitor, true);
                 await resumer();
                 disabled.set(false);
 
             }
-            $route66?.services?.monitors?.manager?.updateMonitor?.($monitor)
+            busy = false;
         }
     })
 

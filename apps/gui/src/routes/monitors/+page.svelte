@@ -5,7 +5,7 @@
     import MonitorsActions from '$lib/components/partials/MonitorActions.svelte';
     import * as Alert from "$lib/components/ui/alert/index.js";
     
-    import { monitorsSorted, monitorRows, inactiveDisabledMonitorChecksCount } from '$lib/stores/monitors.js';
+    import { monitorRows, monitorsSorted } from '$lib/stores/monitors.js';
 
     import { StateManager } from '@nostrwatch/route66';
     import { doBootstrap } from '$lib/stores/routines';
@@ -15,6 +15,7 @@
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
 	import { bootstrapMonitorData } from '$utils/lifecycle';
 	import { dataRegister } from '$stores/data-register';
+	import DataViewRoot from '$lib/components/data-view/DataViewRoot.svelte';
 
     const dataKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);
@@ -55,9 +56,13 @@
     $: warnHasMoreThanRecommendedMonitors = countEnabledMonitors > 8;
 </script>
 <main class="pt-16">
+<!-- {$ready? 'true': 'false'}
+<pre>{countEnabledMonitors}</pre>
+<pre>{JSON.stringify($monitorRows, null, 2)}</pre>
+<pre>{JSON.stringify($monitorsSorted, null, 2)}</pre> -->
 <!-- <pre>{JSON.stringify($monitorsSorted.map( monitor => monitor), null, 2)}</pre> -->
 {#if $ready}
-    {#if $monitorsSorted.length}
+    {#if $monitorRows.length}
         <div class="px-10">
             {#if criticalHasNoMonitorsEnabled}
                 <Alert.Root class="mb-2">
@@ -94,7 +99,13 @@
             {/if}
 
         </div>
-        <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {dataKey} />
+        <!-- <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {dataKey} /> -->
+         <DataViewRoot
+            {config}
+            data={monitorRows}
+            key={dataKey}
+            actionsComponent={MonitorsActions}
+        />
     {/if}
 {/if}
 </main>

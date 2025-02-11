@@ -147,11 +147,11 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 }
 
 export const tableRowStyler = (row: Record<string, any>) => {
-    //console.log(`tableRowStyler:`, 'active', row.active, row)
-    return {
-        'bg-green-400 bg-opacity-5': row.enabled === true && row.active > 0,
-        'opacity-20': !row.active
-    }
+    console.log(`tableRowStyler:`, 'active', row.active, row)
+    let classes = [];
+    if(row.active === false) classes.push('opacity-20');
+    if(row.enabled === true && row.active === true) classes.push('bg-green-400 bg-opacity-5');
+    return classes.join(' ');
 }
 
 export default {

@@ -44,7 +44,7 @@
       <div class="mt-6 hidden grid-cols-3 text-sm font-medium text-gray-600 sm:grid">
         <div class="{isReady ? 'text-purple-700' : ''}">Loading Assets</div>
         <div class="{isReady && monitorsSynced ? 'text-purple-700' : ''}">Syncing Monitors</div>
-        <div class="{isReady && relayChecksSynced ? 'text-purple-700' : ''}">Syncing Relay checks</div>
+        <div class="{isReady && percentCompleted === 100 ? 'text-purple-700' : ''}">Syncing Relay checks</div>
       </div>
     </div>
   </div>

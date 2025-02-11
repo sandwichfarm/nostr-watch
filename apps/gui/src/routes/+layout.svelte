@@ -64,7 +64,6 @@
     });
   }
 
-
   const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
   let isReady = false;

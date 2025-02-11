@@ -26,6 +26,7 @@ function globalHack() {
 }
 
 export default defineConfig({
+  mode: "production",
   resolve: {
     mainFields: ['module', 'main'],
     preserveSymlinks: false,

@@ -16,7 +16,7 @@
 
 <div class="space-y-4">
     <div class="flex items-center space-x-4">
-        <img src="{monitorPhoto}?thumbnail" alt="{monitorName}'s profile photo" class="h-12 w-12 rounded-full" />
+        <img src="{monitorPhoto}" alt="{monitorName}'s profile photo" class="h-12 w-12 rounded-full" />
         <div>
             <h3 class="text-lg font-semibold">{monitorName}</h3>
             <p class="text-sm text-gray-500">{pubkey}</p>

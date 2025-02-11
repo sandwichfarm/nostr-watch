@@ -24,7 +24,7 @@
     <div class="flex-shrink-0 mr-2">
         {#if icon}
             <span class="inline-block overflow-hidden rounded-full w-20 h-20">
-            <img src="{icon}?thumbnail" alt="relay icon" class="inline mr-2 w-full h-auto" />
+            <img src="{icon}" alt="relay icon" class="inline mr-2 w-full h-auto" />
             </span>
         {/if}
     </div>

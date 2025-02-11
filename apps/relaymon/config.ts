@@ -60,7 +60,7 @@ export interface Config {
   };
 }
 
-export function parseDuration(input: number | string): number {
+export function timeString(input: number | string): number {
   if (typeof input === "number") return input;
   const trimmed = input.trim();
   const regex = /^(\d+(?:\.\d+)?)(ms|s|m|h|d)$/;
@@ -89,17 +89,17 @@ export function parseDuration(input: number | string): number {
 function processConfigTimeValues(config: any): void {
   // Convert seed.interval.
   if (config.relaymon?.seed?.interval) {
-    config.relaymon.seed.interval = parseDuration(config.relaymon.seed.interval);
+    config.relaymon.seed.interval = timeString(config.relaymon.seed.interval);
   }
   // Convert checks.options.expires and interval.
   if (config.relaymon?.checks?.options) {
     if (config.relaymon.checks.options.expires) {
-      config.relaymon.checks.options.expires = parseDuration(
+      config.relaymon.checks.options.expires = timeString(
         config.relaymon.checks.options.expires,
       );
     }
     if (config.relaymon.checks.options.interval) {
-      config.relaymon.checks.options.interval = parseDuration(
+      config.relaymon.checks.options.interval = timeString(
         config.relaymon.checks.options.interval,
       );
     }
@@ -111,7 +111,7 @@ function processConfigTimeValues(config: any): void {
         ...entry,
         delay:
           typeof entry.delay === "string"
-            ? parseDuration(entry.delay)
+            ? timeString(entry.delay)
             : entry.delay,
       }),
     );

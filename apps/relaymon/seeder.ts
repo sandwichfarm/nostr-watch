@@ -4,6 +4,8 @@ import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { getLogger } from "./logger.ts";
 import { persistResult } from "./db.ts";
 
+const nostrNow = () => Math.round(Date.now() / 1000);
+
 export interface SeederOptions {
   interval: number;
   sources: string[];
@@ -83,7 +85,7 @@ export class RelaySeeder {
     }
 
     seeds.forEach(url => this.relayList.add(url));
-    this.lastSeedTimestamps = timestamps;
+    // this.lastSeedTimestamps = timestamps;
     this.logger.info(`Seeder aggregated ${this.relayList.size} unique relays from sources.`);
 
     for (const relay of this.relayList) {
@@ -99,14 +101,14 @@ export class RelaySeeder {
   async seedFromConfig(): Promise<[string[], number]> {
     const relays = this.options.config && Array.isArray(this.options.config) ? this.options.config : [];
     this.logger.info(`seedFromConfig: Found ${relays.length} relays from config.`);
-    return [relays, Date.now()];
+    return [relays, nostrNow()];
   }
 
   async seedFromStatic(): Promise<[string[], number]> {
     try {
       if (!this.options.static?.path) {
         this.logger.warn("seedFromStatic: No static seed file path specified.");
-        return [[], Date.now()];
+        return [[], nostrNow()];
       }
       const fileContents = await Deno.readTextFile(this.options.static.path);
       let data: any;
@@ -118,17 +120,17 @@ export class RelaySeeder {
       }
       const relays = data?.relays && Array.isArray(data.relays) ? data.relays : [];
       this.logger.info(`seedFromStatic: Loaded ${relays.length} relays from static file.`);
-      return [relays, Date.now()];
+      return [relays,  nostrNow()];
     } catch (e) {
       this.logger.error(`seedFromStatic: Error reading static seed file: ${e}`);
-      return [[], Date.now()];
+      return [[],  nostrNow()];
     }
   }
 
   async seedFromCache(): Promise<[string[], number]> {
     if (!this.db) {
       this.logger.error("seedFromCache: No database configured for seeding.");
-      return [[], Date.now()];
+      return [[], nostrNow()];
     }
     try {
       const rows = [...this.db.query("SELECT url, network FROM relay_status")];
@@ -140,17 +142,17 @@ export class RelaySeeder {
         }
       });
       this.logger.info(`seedFromCache: Found ${relays.length} relays from cache.`);
-      return [relays, Date.now()];
+      return [relays, nostrNow()];
     } catch (e) {
       this.logger.error(`seedFromCache: Error reading from DB: ${e}`);
-      return [[], Date.now()];
+      return [[], nostrNow()];
     }
   }
 
   async seedFromAPI(): Promise<[string[], number]> {
     if (!this.options.api?.rest_api) {
       this.logger.warn("seedFromAPI: No REST API specified in options.");
-      return [[], Date.now()];
+      return [[], nostrNow()];
     }
     try {
       const controller = new AbortController();
@@ -160,7 +162,7 @@ export class RelaySeeder {
       clearTimeout(timeoutId);
       if (!response.ok) {
         this.logger.warn(`seedFromAPI: API response not OK: ${response.status}`);
-        return [[], Date.now()];
+        return [[], nostrNow()];
       }
       const responseData = await response.json();
       let relays: string[] = [];
@@ -170,10 +172,10 @@ export class RelaySeeder {
         relays = responseData.relays || [];
       }
       this.logger.info(`seedFromAPI: Received ${relays.length} relays from API.`);
-      return [relays, Date.now()];
+      return [relays, nostrNow()];
     } catch (e) {
       this.logger.error(`seedFromAPI: Error fetching from API: ${e}`);
-      return [[], Date.now()];
+      return [[], nostrNow()];
     }
   }
 
@@ -202,7 +204,7 @@ export class RelaySeeder {
     for await (const ev of events) {
       // Update the newest timestamp if the event is later.
       if (ev.created_at > newest) newest = ev.created_at;
-      const relay = ev.tags.find((tag: string[]) => tag[0] === "d" && !tag[0].includes("#"))?.[1];
+      const relay = ev.tags.find((tag: string[]) => tag[0] === "d")?.[1];
       if (!relay) continue;
       relays.push(relay);
     }

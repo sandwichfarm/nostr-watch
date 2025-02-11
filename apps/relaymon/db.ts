@@ -18,7 +18,7 @@ export function persistResult(result: any): void {
   const online = result.open?.data ? 1 : 0;
   const ignore = result.ignore ? 1 : 0;
   const parent = result.parent || "";
-  const checked_at = result.checked_at || Date.now();
+  const checked_at = Math.round(Date.now()/1000);
   const rtt = result.open?.duration || -1;
   const network = result.network || "clearnet";
   
@@ -39,7 +39,7 @@ export function persistResult(result: any): void {
 }
 
 export function getExpiredRelays(expires: number, allowedNetworks: string[]): string[] {
-  const now = Date.now();
+  const now = Math.round(Date.now()/1000);
   const expired: string[] = [];
   if (allowedNetworks.length === 0) {
     return expired;
@@ -47,8 +47,8 @@ export function getExpiredRelays(expires: number, allowedNetworks: string[]): st
   const placeholders = allowedNetworks.map(() => '?').join(',');
   const query = `SELECT url, checked_at FROM relay_status WHERE network IN (${placeholders})`;
   for (const [url, checked_at] of db.query(query, allowedNetworks)) {
-    if (!checked_at || now - checked_at > expires) {
-      expired.push(url);
+    if (!checked_at || now - (checked_at as number) > expires) {
+      expired.push(url as string);
     }
   }
   return expired;
@@ -64,4 +64,4 @@ export function getOnlineRelays(): string[] {
       onlineRelays.push(url as string);
     }
     return onlineRelays;
-  }
+}

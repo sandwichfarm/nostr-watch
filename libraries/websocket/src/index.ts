@@ -1,180 +1,123 @@
-
-import WebSocket from 'modern-isomorphic-ws';
-
-interface WebSocketEventMap {
-  open: Event;
-  close: CloseEvent;
-  error: ErrorEvent;
-  message: MessageEvent;
-}
-
-export interface IWebSocketWrapper {
-  ws: WebSocket | undefined;
-  relay: string;
-  _ready: boolean;
-  on<Key extends keyof WebSocketEventMap>(
-    key: Key,
-    fn: (event: WebSocketEventMap[Key]) => void
-  ): void;
-  off(): void;
-  connect(): Promise<boolean>;
-  ready(): Promise<void>;
-  closed(): Promise<void>;
-  defaultHandlers(): void;
-  terminate(): void;
-  close(): void;
-  send<T>(data: T | Buffer | string): void;
-  get CONNECTED(): boolean;
-  get CONNECTING(): boolean;
-  get CLOSING(): boolean;
-  get CLOSED(): boolean;
-  get BUSY(): boolean;
-  get OPEN(): boolean;
-}
-
-export class WebSocketWrapper implements IWebSocketWrapper {
-  ws: WebSocket | undefined;
-  relay: string;
-  _ready: boolean = false;
-  private options?: WebSocket.ClientOptions;
-  
-  private listeners: {
-    [K in keyof WebSocketEventMap]?: Set<EventListener>
-  } = {};
-
-  constructor(relay: string, options?: WebSocket.ClientOptions) {
-    this.relay = relay;
-    this.options = options;
-  }
-
-  on<Key extends keyof WebSocketEventMap>(
-    key: Key,
-    fn: (event: WebSocketEventMap[Key]) => void
-  ): void {
-    const wrappedFn = (evt: Event) => {
-      fn(evt as WebSocketEventMap[Key]);
-    };
-  
-    if (!this.listeners[key]) {
-      this.listeners[key] = new Set();
+declare global {
+    interface GlobalThis {
+        Deno?: any;
     }
-    this.listeners[key]!.add(wrappedFn as unknown as EventListener);
-  
-    (this.ws as any)?.addEventListener(key as any, wrappedFn as any);
   }
   
+  export class UniversalWebSocket {
+    private ws: WebSocket;
+    private isNode: boolean;
   
-
-  off(): void {
-    for (const [key, handlers] of Object.entries(this.listeners)) {
-      const eventKey = key as keyof WebSocketEventMap;
-      handlers.forEach((fn) => {
-        this.ws?.removeEventListener('message', fn as any);
-      });
+    constructor(url: string, protocols?: string | string[], options?: { agent?: any }) {
+      this.isNode = typeof WebSocket === "undefined";
+      this.ws = this.createWebSocket(url, protocols, options);
+      this.setupEventListeners();
     }
-    this.listeners = {};
-  }
-
-  async connect(): Promise<boolean> {
-    const timeout = setTimeout(() => {
-      if (this.CONNECTING) {
-        this.terminate();
+  
+    private createWebSocket(url: string, protocols?: string | string[], options?: { agent?: any }): WebSocket {
+      if (!this.isNode) {
+        return new WebSocket(url, protocols);
       }
-    }, 10000);
-
-    if (this.BUSY) {
-      await new Promise<boolean>((resolve) =>
-        setTimeout(() => {
-          this.connect().then(resolve);
-        }, 500)
-      );
-      return false;
-    } else if (this.CONNECTED) {
-      return true;
+      throw new Error("WebSocket not supported in this environment");
     }
-
-    this.ws = new WebSocket(this.relay, this.options);
-    this.defaultHandlers();
-
-    while (this.CONNECTING) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  
+    static async create(url: string, protocols?: string | string[], options?: { agent?: any }): Promise<UniversalWebSocket> {
+      if (typeof WebSocket !== "undefined") {
+        return new UniversalWebSocket(url, protocols, options);
+      }
+  
+      const { default: WS } = await import("ws");
+      const protocolString = Array.isArray(protocols) ? protocols.join(",") : protocols;
+      const nodeWS = new WS(url, { ...options, ...(protocolString ? { protocol: protocolString } : {}) });
+  
+      return new UniversalWebSocket(url, protocols, options)._wrapNodeWS(nodeWS);
     }
-
-    clearTimeout(timeout);
-
-    if (this.CLOSED || this.CLOSING) {
-      return false;
+  
+    private _wrapNodeWS(nodeWS: any): this {
+      this.ws = nodeWS;
+      this.setupEventListeners();
+      return this;
     }
-
-    return true;
-  }
-
-  async ready(): Promise<void> {
-    while (!this._ready) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  
+    private setupEventListeners(): void {
+      if (typeof (this.ws as any).on === "function") {
+        (this.ws as any).on("open", () => this.onopen?.(new Event("open")));
+        (this.ws as any).on("message", (data: any) => this.onmessage?.(new MessageEvent("message", { data })));
+        (this.ws as any).on("error", (err: any) => this.onerror?.(new Event("error")));
+        (this.ws as any).on("close", (code: number, reason: string) => this.onclose?.(new CloseEvent("close", { code, reason })));
+      }
+    }
+  
+    public send(data: string | ArrayBufferLike | Blob | ArrayBufferView) {
+      this.ws.send(data);
+    }
+  
+    public close(code?: number, reason?: string) {
+      this.ws.close(code, reason);
+    }
+  
+    public async terminate() {
+      if (typeof (this.ws as any).terminate === "function") {
+        (this.ws as any).terminate();
+      } else {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
+        this.ws.onmessage = null;
+        this.ws.onopen = null;
+        this.ws.close();
+      }
+    }
+  
+    public isConnecting(): boolean {
+      return this.ws.readyState === WebSocket.CONNECTING;
+    }
+  
+    public isOpen(): boolean {
+      return this.ws.readyState === WebSocket.OPEN;
+    }
+  
+    public isClosing(): boolean {
+      return this.ws.readyState === WebSocket.CLOSING;
+    }
+  
+    public isClosed(): boolean {
+      return this.ws.readyState === WebSocket.CLOSED;
+    }
+  
+    public async ready(): Promise<void> {
+      while (!this.isOpen()) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    }
+  
+    public get readyState(): number {
+      return this.ws.readyState;
+    }
+  
+    public get url(): string {
+      return this.ws.url;
+    }
+  
+    public set onopen(callback: ((event: Event) => void) | null) {
+      this.ws.onopen = callback;
+    }
+  
+    public set onmessage(callback: ((event: MessageEvent) => void) | null) {
+      this.ws.onmessage = callback;
+    }
+  
+    public set onerror(callback: ((event: Event) => void) | null) {
+      this.ws.onerror = callback;
+    }
+  
+    public set onclose(callback: ((event: CloseEvent) => void) | null) {
+      this.ws.onclose = callback;
+    }
+  
+    public on(event: "open" | "message" | "error" | "close", listener: (...args: any[]) => void) {
+      if (typeof (this.ws as any).on === "function") {
+        (this.ws as any).on(event, listener);
+      }
     }
   }
-
-  async closed(): Promise<void> {
-    while (this.BUSY) {
-      await new Promise<void>((resolve) => setTimeout(resolve, 10));
-    }
-  }
-
-  defaultHandlers(): void {
-    this.off();
-    this.ws?.addEventListener('open', () => (this._ready = true));
-    this.ws?.addEventListener('close', () => (this._ready = false));
-  }
-
-  terminate(): void {
-    if (typeof (this.ws as any).terminate === 'function') {
-      (this.ws as any).terminate();
-    } else {
-      this.ws?.close();
-    }
-  }
-
-  close(): void {
-    this.ws?.close();
-  }
-
-  send<T>(data: T | Buffer | string): void {
-    // console.log('WebsocketWrapper send', data)
-    if (data instanceof Buffer) {
-      this.ws?.send(data.toString('utf-8'));
-      // console.log('WebsocketWrapper send', data.toString('utf-8'))
-    } else if (data instanceof Object) {
-      this.ws?.send(JSON.stringify(data));
-      // console.log('WebsocketWrapper send', JSON.stringify(data))
-    } else if (typeof data === 'string') {
-      this.ws?.send(data);
-      // console.log('WebsocketWrapper send', data)
-    }
-  }
-
-  get CONNECTED(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
-  }
-
-  get CONNECTING(): boolean {
-    return this.ws?.readyState === WebSocket.CONNECTING;
-  }
-
-  get CLOSING(): boolean {
-    return this.ws?.readyState === WebSocket.CLOSING;
-  }
-
-  get CLOSED(): boolean {
-    return this.ws?.readyState === WebSocket.CLOSED;
-  }
-
-  get BUSY(): boolean {
-    return this.CONNECTING || this.CLOSING;
-  }
-
-  get OPEN(): boolean {
-    return this.CONNECTED;
-  }
-}
-
+  

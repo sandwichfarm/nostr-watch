@@ -43,6 +43,7 @@
     "@nostrwatch/websocket": "workspace:^",
     "buffer": "^6.0.3",
     "core-js": "^3.40.0",
+    "globalthis": "^1.0.4",
     "websocket-polyfill": "^0.0.3",
     "ws": "8.18.0"
   },

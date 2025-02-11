@@ -33,7 +33,7 @@ export async function runDaemon(config: any): Promise<void> {
     console.log('checking expired relays');
     while (true) {
       const expiredRelays = getExpiredRelays(
-        config.relaymon.checks.options.expires,
+        Math.round(config.relaymon.checks.options.expires/1000),
         config.relaymon.networks
       );
       logger.info(`Found ${expiredRelays.length} expired relays in the DB.`);

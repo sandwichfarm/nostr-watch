@@ -36,13 +36,10 @@ export class Worker {
       const result = await nocap.check(
         this.config.relaymon.checks.enabled || ["open", "read"]
       );
-      console.log(relayUrl, result.open.data ? "online" : "offline");
       const dedupedResult = await relayHostnameDedup(result);
       if (!dedupedResult.ignore && result.open.data === true) {
         await this.publishResult(dedupedResult);
-      } else {
-        this.logger.info(`Relay offline: ${relayUrl}`);
-      }
+      } 
       await persistResult(dedupedResult);
       await this.progressMessage(relayUrl, result, false);
       this.relayRetries.set(relayUrl, 0);
@@ -55,10 +52,10 @@ export class Worker {
 
   async publishResult(result: any): Promise<void> {
     try {
-      const event$ = new Kind30166(Deno.env.get("DAEMON_PUBKEY"));
-      event$.generateEvent(result);
-      const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
-      const signedEvent = event$.signEvent(privkey);
+      // const event$ = new Kind30166(Deno.env.get("DAEMON_PUBKEY"));
+      // event$.generateEvent(result);
+      // const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
+      // const signedEvent = event$.signEvent(privkey);
       // Uncomment the next two lines if you want to publish the event:
       // await this.publisher.publishEvent(signedEvent);
       // this.logger.info(`Published event for relay ${result.url}`);
@@ -97,7 +94,6 @@ export class Worker {
     result: any = {},
     error: boolean = false
   ): Promise<void> {
-    this.logger.debug("progressMessage()");
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray;

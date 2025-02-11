@@ -21,12 +21,12 @@ import { CheckKey, CheckMethodKey, PreCheckKey, StrictCheckKey } from '../types/
 import SAMPLE_EVENT from "../data/sample_event";
 import { isBrowser } from '@nostrwatch/utils';
 import { AbstractAdapter } from './AbstractAdapter';
-import { CompatibleWebSocket } from './CompatibleWebsocket';
+import { UniversalWebSocket } from '@nostrwatch/websocket';
 
 type WebSocketType = WebSocket | import('ws').WebSocket;
 
 export default class Base {
-  ws: CompatibleWebSocket | null = null;
+  ws: UniversalWebSocket | null = null;
   network?: string;
   auditor = new Auditor();
   cb: Record<string, Function> = {};
@@ -562,7 +562,7 @@ export default class Base {
     this.maybeExecuteAdapterMethod(
       'websocket', 
       'terminate',
-      () => this.ws?.terminate()
+      () => (this.ws as any)?.terminate()
     )
   }
 
@@ -614,7 +614,7 @@ export default class Base {
    * @private
    * @returns null
    */
-  on_error(err: Error): void {
+  on_error(err: Event): void {
     this.cbcall('error');
     this.track('relay', 'error', err);
     this.handle_error(err);
@@ -626,7 +626,7 @@ export default class Base {
    * @private
    * @returns null
    */
-  handle_error(err: Error): void {
+  handle_error(err: Event): void {
     if (this.hard_fail) return;
     this.logger.debug(`handle_error(): ${err}`);
     this.websocket_hard_fail(err);

@@ -337,6 +337,10 @@ export const seedFromCache = async (): Promise<IEvent[]> => {
 }   
 
 export const seedChecksFromCache = async () => {
+    if(!$route66){
+        $route66 = await instance();
+    }
+    await $route66.ready();
     const promises: Promise<any>[] = [];
     $route66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
         promises.push(new Promise( resolve => {
@@ -345,9 +349,7 @@ export const seedChecksFromCache = async () => {
     })
     const cachedEvents = (await Promise.all(promises)).flat();
     if(cachedEvents.length === 0) return;
-    // publishEventsToMemoryRelay(cachedEvents, 'seedChecksFromCache');
     isSeeded.set(true)
-    // console.log('seedChecksFromCache:events', cachedEvents.length)
     return cachedEvents
 }
 
@@ -356,14 +358,10 @@ export const seedMetaFromCache = async () => {
         $route66 = await instance();
     }
     await $route66.ready();
-    if(!$route66) return;
-    // if(get(isSeeded)) return;/
-    // if(!hasBeenBootstrapped()) return;
-
+    // if(!$route66) return [];
     const cachedEvents = await $route66.REQ([{ kinds: [ 0, 10002 ]}])
-    if(!cachedEvents?.length) return;
+    if(!cachedEvents?.length) return [];
     console.log('seedMetaFromCache:events', cachedEvents.length)
-    // publishEventsToMemoryRelay(cachedEvents, 'seedMetaFromCache');
     return cachedEvents
 }
 
@@ -371,12 +369,11 @@ export const seedAllEventsFromCache = async () => {
     if(!$route66) {
         $route66 = await instance();
     }
-    if(!$route66) return;
-    if(get(isSeeded)) return;
-    if(!hasBeenBootstrapped()) return;
-
+    await $route66.ready();
+    if(get(isSeeded)) return [];
+    // if(!hasBeenBootstrapped()) return;
     const cachedEvents = await $route66.REQ([{}])
-    if(!cachedEvents?.length) return;
+    if(!cachedEvents?.length) return [];
     publishEventsToMemoryRelay(cachedEvents, 'seedAllEventsFromCache');
 }
 

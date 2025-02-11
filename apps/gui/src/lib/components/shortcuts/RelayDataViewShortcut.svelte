@@ -179,6 +179,8 @@
         },
     ]
 
+    const active = writable(shortcuts[0].title);
+
     const setActive = (shortcut: any) => {
         active.set(shortcut.title)
         if(shortcut?.payload){
@@ -199,13 +201,13 @@
         onClick(`/relays#${shortcut.hash}`)
     }
 
-    const active = writable(shortcuts[0].title);
+    
 
     if(window.location.hash){
         const hash = window.location.hash.replace('#', '');
         const shortcut = shortcuts.find(shortcut => shortcut.hash === hash);
         console.log('active shortcut', shortcut)    
-        if(shortcut) active.set(shortcut.title);
+        if(shortcut) setActive(shortcut);
     } 
     else if($page.url.pathname === "/relays"){
         setActive(shortcuts[0]);

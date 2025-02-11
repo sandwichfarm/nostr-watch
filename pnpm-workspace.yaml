@@ -11,5 +11,8 @@ packages:
     - "libraries/adapters/**/*"
     - "libraries/validators/**/*"
     - "libraries/schemata/*"
+    
+    #exlusions
     - '!apps/nocapd'
     - '!libraries/nocap-route66'
+    - '!apps/umon'

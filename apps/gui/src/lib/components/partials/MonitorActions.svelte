@@ -63,7 +63,7 @@
             if(!$monitor) return console.warn('Monitor not found');
             if($monitor?.enabled) {
                 console.log('monitors:  disabling monitor')
-                // $monitor.disable();
+                $monitor.disable();
                 events.update($events => {
                     $events.entries().forEach( ([key, event]) => {
                         if(event.pubkey === $monitor.pubkey){
@@ -78,7 +78,7 @@
             } 
             else {
                 console.log('monitors: enabling monitor')
-                // $monitor?.enable()
+                $monitor?.enable()
                 const options = {
                     filters: [ $monitor.checkFilter ],
                     options: {

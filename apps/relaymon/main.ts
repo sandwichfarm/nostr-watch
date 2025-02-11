@@ -1,4 +1,3 @@
-// main.ts
 import { header } from "./header.ts";
 import { loadConfig } from "./config.ts";
 import { runDaemon } from "./daemon.ts";

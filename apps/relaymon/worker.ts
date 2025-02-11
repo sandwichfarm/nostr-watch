@@ -40,12 +40,12 @@ export class Worker {
       if (!dedupedResult.ignore && result.open.data === true) {
         await this.publishResult(dedupedResult);
       } 
-      await persistResult(dedupedResult);
-      await this.progressMessage(relayUrl, result, false);
+      persistResult(dedupedResult);
+      this.progressMessage(relayUrl, result, false);
       this.relayRetries.set(relayUrl, 0);
     } catch (error: any) {
       this.logger.error(`Error processing relay ${relayUrl}: ${error.message}`);
-      await this.progressMessage(relayUrl, {}, true);
+      this.progressMessage(relayUrl, {}, true);
       this.scheduleRetry(relayUrl);
     }
   }
@@ -82,14 +82,7 @@ export class Worker {
     });
   }
 
-  /**
-   * Logs the progress of the relay check.
-   *
-   * For each enabled check (open, read, write, ssl, dns, geo, info), it logs a colored status.
-   * It also accumulates the duration of all checks and shows it (in seconds).
-   * If an error occurs, it logs the number of retries.
-   */
-  async progressMessage(
+  progressMessage(
     url: string,
     result: any = {},
     error: boolean = false

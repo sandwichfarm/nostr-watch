@@ -1,4 +1,3 @@
-// config.ts
 import { parse } from "jsr:@std/yaml";
 
 export interface Config {
@@ -29,7 +28,7 @@ export interface Config {
       expiry: { max: number; delay: number }[];
     };
     seed: {
-      interval: number;  // in milliseconds
+      interval: number;
       sources: string[];
       options: {
         db?: {
@@ -87,11 +86,9 @@ export function timeString(input: number | string): number {
 }
 
 function processConfigTimeValues(config: any): void {
-  // Convert seed.interval.
   if (config.relaymon?.seed?.interval) {
     config.relaymon.seed.interval = timeString(config.relaymon.seed.interval);
   }
-  // Convert checks.options.expires and interval.
   if (config.relaymon?.checks?.options) {
     if (config.relaymon.checks.options.expires) {
       config.relaymon.checks.options.expires = timeString(
@@ -104,7 +101,6 @@ function processConfigTimeValues(config: any): void {
       );
     }
   }
-  // Convert each retry expiry delay.
   if (Array.isArray(config.relaymon?.retry?.expiry)) {
     config.relaymon.retry.expiry = config.relaymon.retry.expiry.map(
       (entry: any) => ({

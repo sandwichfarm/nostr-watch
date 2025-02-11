@@ -54,10 +54,6 @@ export function getExpiredRelays(expires: number, allowedNetworks: string[]): st
   return expired;
 }
 
-/**
- * Retrieves the URLs of online relays from the SQLite database.
- * A relay is considered online if its "online" column equals 1.
- */
 export function getOnlineRelays(): string[] {
     const onlineRelays: string[] = [];
     for (const [url] of db.query("SELECT url FROM relay_status WHERE online = 1")) {

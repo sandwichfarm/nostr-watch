@@ -1,4 +1,3 @@
-// announce.ts
 import { getLogger } from "./logger.ts";
 import { AnnounceMonitor } from "npm:@nostrwatch/announce";
 

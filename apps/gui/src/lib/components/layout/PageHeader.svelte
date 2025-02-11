@@ -40,7 +40,7 @@
           <span class="copy-message">click to copy</span>
         </h1>
         {#if subtitle}
-            <span class="ml-3 text-lg block">{subtitle}</span>
+            <span class="ml-3 text-lg block">{@html subtitle}</span>
         {/if}
         
       </div>

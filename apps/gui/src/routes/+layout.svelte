@@ -52,15 +52,17 @@
   //   });
   // }
 
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for (let registration of registrations) {
-      registration.unregister();
-    }
-  }).then(() => {
-    console.log("Service workers unregistered");
-  }).catch(error => {
-    console.error("Error unregistering service workers:", error);
-  });
+  if("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for (let registration of registrations) {
+        registration.unregister();
+      }
+    }).then(() => {
+      console.log("Service workers unregistered");
+    }).catch(error => {
+      console.error("Error unregistering service workers:", error);
+    });
+  }
 
 
   const IDLE_TIMEOUT_MS = 5 * 60 * 1000;

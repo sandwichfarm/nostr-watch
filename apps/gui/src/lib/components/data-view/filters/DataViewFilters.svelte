@@ -32,7 +32,7 @@
     export let config: any;
 
     export const onFilterChange = (updateConfig: DataTableConfig) => {
-        Object.entries(updateConfig.filtersActive).forEach( ([key]) => {
+        Object.keys(updateConfig.filtersActive || {}).forEach( (key: string) => {
             if(!$config?.filtersShow.includes(key)) {
                 config.update( (oldConfig: DataTableConfig) => {
                     return {...oldConfig, filtersShow: [...oldConfig.filtersShow, key]}

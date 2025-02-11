@@ -182,13 +182,16 @@
     if(window.location.hash){
         const hash = window.location.hash.replace('#', '');
         const shortcut = shortcuts.find(shortcut => shortcut.hash === hash);
+        console.log('active shortcut', shortcut)    
         if(shortcut) active.set(shortcut.title);
+    } 
+    else {
+        active.set(shortcuts[0].title);
     }
     
     onMount( () => {
-        if(!window.location.hash && $page.url.pathname === "/relays"){
-            setActive(shortcuts[0]);
-        }
+        
+        
     })
 
     const setActive = (shortcut: any) => {

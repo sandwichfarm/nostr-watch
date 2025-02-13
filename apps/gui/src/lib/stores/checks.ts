@@ -204,6 +204,14 @@ export const relayChecks: Readable<
   return relayCheckAggregator($eventsChecks);
 });
 
+export const relayCheckMap: Readable<Map<string, any>> = derived(relayChecks, ($relayChecks) => {
+  const map = new Map();
+  for(const [relay, item] of Object.entries($relayChecks)){
+    map.set(relay, item.aggregate)
+  }
+  return map;
+})
+
 export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
   let aggregates = Object.entries($relayChecks).map(([relay, item], index) => {
     try {

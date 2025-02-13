@@ -1,0 +1,66 @@
+monitor:
+  slug: trawler.eighteen
+  info:
+    name: "trawler"
+    about: "Trrawls nostr for relays, dedupes, validates, checks liveness, and publishes events."
+    nip05: trawler@nostr.watch
+  owner: "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019"
+  geo:
+    city: "Frankfurt am Main"
+    country: "Germany"
+    countryCode: "DE"
+    lat: 50.1169
+    lon: 8.6821
+    region: "Hesse"
+    continent: "Europe"
+
+publisher:
+  relays:
+    - "wss://relay.nostr.watch"
+    - "wss://history.nostr.watch"
+    - "wss://relaypag.es"
+
+relaymon:
+  networks:
+    - clearnet
+    - tor
+    - i2p
+  retry:
+    expiry:
+      - { max: 3, delay: "1m" }
+      - { max: 5, delay: "20m" }
+      - { max: 7, delay: "1h" }
+      - { max: 11, delay: "3h" }
+      - { max: 15, delay: "6h" }
+      - { max: 22, delay: "24h" }
+      - { max: 107, delay: "7d" }
+  seed:
+    interval: "30m"
+    sources:
+      - events 
+    options:
+      db:
+        path: "./relay.db"
+      static:
+        path: "./seed.yaml"
+      config: []
+      events:
+        pubkeys: 
+          - "9e81fadfe8c07351d806b47bc6c0d0dfb189343656e400e207a2be9b37411e79"
+        relays:
+          - "wss://relay.nostr.watch"
+          - "wss://history.nostr.watch"
+          - "wss://relaypag.es"
+  checks:
+    enabled:
+      - open
+    options:
+      expires: "2m"
+      interval: "15s"
+      timeout:
+        open: 30000
+        read: 5000
+      max: "200"
+
+queue:
+  workerConcurrency: 10

@@ -17,7 +17,8 @@
 		checks: cardModules['./(components)/cards/CardChecks.svelte'],
 		nip11Limitation: cardModules['./(components)/cards/CardLimitation.svelte'],
 		nip11SupportedNips: cardModules['./(components)/cards/CardNips.svelte'],
-		issues: cardModules['./(components)/cards/CardIssues.svelte']
+		issues: cardModules['./(components)/cards/CardIssues.svelte'],
+		similarRelays: cardModules['./(components)/cards/CardSimilarRelays.svelte']
 	};
   
 	const availableCards = [
@@ -27,6 +28,7 @@
 	  'nip11SupportedNips',
 	  'fees',
 	  'operator',
+	  'similarRelays',
 	  'insights',
 	  'checks'
 	];

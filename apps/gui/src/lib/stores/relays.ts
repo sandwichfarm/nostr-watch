@@ -53,7 +53,7 @@ export type RelayLivenessObject = {
     determination: RelayLivenessType;
 }
 
-export const relayLivenessObjectFactory= (relay: string): RelayLivenessObject => {
+export const relayLivenessObjectFactory = (relay: string): RelayLivenessObject => {
     return {
         relay,
         remoteChecks: [],

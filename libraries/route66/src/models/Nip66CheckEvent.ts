@@ -308,6 +308,8 @@ export class Nip66CheckEvent extends Geocoded implements IEvent {
     get restrictedWrites(): boolean {
       return this.nip11?.restrictedWrites || false;
     }
-  }
 
-  
+    get hostname(): string | null {
+      return this.url? new URL(this.url).hostname: null;
+    }
+  }

@@ -20,10 +20,45 @@ type RelayUrl = string
 export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
 export const nip11sLocal: Writable<Map<string, Nip11>> = writable(new Map())
 
+const toCache = (nip11Map) => {
+  const arrayified = Array.from(nip11Map.entries()).map(
+    ([relay, entries]) => [relay, entries.map((n: Nip11) => n.json)]
+  );
+  StateManager.set('aggregate:nip11s', compress(arrayified));
+}
+
+const fromCache = () => {
+  const cachedMap = StateManager.get('aggregate:nip11s');
+  if (cachedMap) {
+    try {
+      let decompressed = decompress(cachedMap);
+      console.log('Decompressed nip11Map:', decompressed);
+      if (Array.isArray(decompressed)) {
+        // Rebuild the Map with real Nip11 objects
+        decompressed = decompressed.map(
+          ([relay, entries]: [string, RelayInformation[]]) => [
+            relay,
+            entries?.map((item: RelayInformation) => new Nip11(item))
+          ]
+        );
+        return new Map(decompressed);
+      } else {
+        console.error(
+          'Decompressed nip11Map value is not a valid array:',
+          decompressed
+        );
+      }
+    } catch (e) {
+      console.error('Error during nip11Map decompression:', e);
+    }
+  }
+}
+
 export const nip11s: Readable<Map<string, Nip11[]>> = derived(
   [eventsArray, nip11sLocal],
   ([$eventsArray, $nip11sLocal]) => {
-    let nip11Map = new Map<string, Nip11[]>();
+    const cachedMap = fromCache();
+    let nip11Map = cachedMap || new Map<string, Nip11[]>();
 
     function updateEntry(relay: string, nip11Entry: Nip11) {
       let existing = nip11Map.get(relay);
@@ -37,18 +72,18 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
     let nip66Nip11s = 0;
     let localNip11s = 0;
 
+    for (const [relayUrl, nip11Entry] of $nip11sLocal.entries()) {
+      if (!nip11Entry) continue;
+      updateEntry(relayUrl, nip11Entry);
+      localNip11s++;
+    }
+
     for (const _event of $eventsArray) {
       if(_event.kind !== 30166) continue;
       const event = _event as Nip66CheckEvent;
       if (!event?.nip11 || !event?.relay) continue;
       updateEntry(event.relay, event.nip11);
       nip66Nip11s++;
-    }
-
-    for (const [relayUrl, nip11Entry] of $nip11sLocal.entries()) {
-      if (!nip11Entry) continue;
-      updateEntry(relayUrl, nip11Entry);
-      localNip11s++;
     }
 
     const totalWithoutLocal = nip66Nip11s - localNip11s;
@@ -58,35 +93,8 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
       hasBeenSeeded() &&
       get(doAggregateCache) === true
     ) {
-      const arrayified = Array.from(nip11Map.entries()).map(
-        ([relay, entries]) => [relay, entries.map((n: Nip11) => n.json)]
-      );
-      StateManager.set('aggregate:nip11s', compress(arrayified));
-    } else if (hasBeenSeeded()) {
-      const cachedMap = StateManager.get('aggregate:nip11s');
-      if (cachedMap) {
-        try {
-          let decompressed = decompress(cachedMap);
-          if (Array.isArray(decompressed)) {
-            // Rebuild the Map with real Nip11 objects
-            decompressed = decompressed.map(
-              ([relay, entries]: [string, RelayInformation[]]) => [
-                relay,
-                entries?.map((item: RelayInformation) => new Nip11(item))
-              ]
-            );
-            nip11Map = new Map(decompressed);
-          } else {
-            console.error(
-              'Decompressed nip11Map value is not a valid array:',
-              decompressed
-            );
-          }
-        } catch (e) {
-          console.error('Error during nip11Map decompression:', e);
-        }
-      }
-    } 
+      toCache(nip11Map);
+    }
     return nip11Map;
   }
 );

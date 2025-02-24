@@ -1,13 +1,14 @@
-import { derived, get, writable, type Readable, type Writable } from "svelte/store";
-import { Nip66CheckEvent, type INip11 } from "@nostrwatch/route66/models"
+import { compress, decompress } from "compress-json";
 
+import { derived, get, writable, type Readable, type Writable } from "svelte/store";
+
+import type { StateManager as StateManagerType } from "@nostrwatch/route66";
+import type { Nip66CheckEvent as Nip66CheckEventType, Nip11 as Nip11Type, RelayInformation } from "@nostrwatch/route66/models"
 
 import { Nip11Service } from "$lib/services/Nip11Service";
-import { StateManager } from "@nostrwatch/route66";
-import { compress, decompress } from "compress-json";
-import { Nip11 } from "@nostrwatch/route66/models";
+
 import { doAggregateCache, hasBeenBootstrapped, hasBeenSeeded } from "./app.js";
-import type { RelayInformation } from "@nostrwatch/route66/models";
+
 import { relayCheckAggregates } from "./checks.js";
 import { isPubkey } from "../utils/nostr.js";
 import { throttledDerived } from "$utils/stores.js";
@@ -15,17 +16,38 @@ import type { SchemaValidationServiceResponse } from "$lib/services/SchemaValida
 
 import { eventsArray } from './events.js'; 
 
+let Nip11: typeof Nip11Type;
+let StateManager: typeof StateManagerType;
+
+import("@nostrwatch/route66/models")
+  .then(({Nip11:Nip11_}) => { 
+    Nip11 = Nip11_;
+  })
+  .catch((e) => {
+    console.error('Error importing Nip11:', e);
+  });
+
+import("@nostrwatch/route66")
+  .then(({StateManager:StateManager_}) => { 
+    StateManager = StateManager_;
+  })
+  .catch((e) => {
+    console.error('Error importing StateManager:', e);
+  });
+
+
+
 type RelayUrl = string
 
 export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
-export const nip11sLocal: Writable<Map<string, Nip11>> = writable(new Map())
+export const nip11sLocal: Writable<Map<string, Nip11Type>> = writable(new Map())
 
-export const nip11s: Readable<Map<string, Nip11[]>> = derived(
+export const nip11s: Readable<Map<string, Nip11Type[]>> = derived(
   [eventsArray, nip11sLocal],
   ([$eventsArray, $nip11sLocal]) => {
-    let nip11Map = new Map<string, Nip11[]>();
+    let nip11Map = new Map<string, Nip11Type[]>();
 
-    function updateEntry(relay: string, nip11Entry: Nip11) {
+    function updateEntry(relay: string, nip11Entry: Nip11Type) {
       let existing = nip11Map.get(relay);
       if (!existing) {
         existing = [];
@@ -39,7 +61,7 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
 
     for (const _event of $eventsArray) {
       if(_event.kind !== 30166) continue;
-      const event = _event as Nip66CheckEvent;
+      const event = _event as Nip66CheckEventType;
       if (!event?.nip11 || !event?.relay) continue;
       updateEntry(event.relay, event.nip11);
       nip66Nip11s++;
@@ -56,26 +78,32 @@ export const nip11s: Readable<Map<string, Nip11[]>> = derived(
       totalWithoutLocal > 0 &&
       hasBeenBootstrapped() &&
       hasBeenSeeded() &&
-      get(doAggregateCache) === true
+      get(doAggregateCache) === true &&
+      StateManager
     ) {
       const arrayified = Array.from(nip11Map.entries()).map(
-        ([relay, entries]) => [relay, entries.map((n: Nip11) => n.json)]
+        ([relay, entries]) => [relay, entries.map((n: Nip11Type) => n.json)]
       );
       StateManager.set('aggregate:nip11s', compress(arrayified));
     } else if (hasBeenSeeded()) {
-      const cachedMap = StateManager.get('aggregate:nip11s');
+      let cachedMap;
+      if(StateManager){
+        cachedMap = StateManager.get('aggregate:nip11s');
+      }
       if (cachedMap) {
         try {
           let decompressed = decompress(cachedMap);
           if (Array.isArray(decompressed)) {
             // Rebuild the Map with real Nip11 objects
-            decompressed = decompressed.map(
-              ([relay, entries]: [string, RelayInformation[]]) => [
-                relay,
-                entries?.map((item: RelayInformation) => new Nip11(item))
-              ]
-            );
-            nip11Map = new Map(decompressed);
+            if(Nip11){
+              decompressed = decompressed.map(
+                ([relay, entries]: [string, RelayInformation[]]) => [
+                  relay,
+                  entries?.map((item: RelayInformation) => new Nip11(item))
+                ]
+              );
+              nip11Map = new Map(decompressed);
+            }
           } else {
             console.error(
               'Decompressed nip11Map value is not a valid array:',
@@ -122,11 +150,9 @@ export const operatorPubkeysInvalid: Readable<string[]> = derived(
   }
 )
 
-export const relayNip11s = (relay: string): Readable<Nip11 | undefined> => {
+export const relayNip11s = (relay: string): Readable<Nip11Type | undefined> => {
   return throttledDerived(
     [nip11s],
-    ([$nip11s]) => {
-        return $nip11s.get(relay)?.[0];
-    }, 
+    ([$nip11s]) => $nip11s.get(relay)?.[0],
     100)
 };

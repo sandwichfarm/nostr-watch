@@ -38,12 +38,12 @@ export const route66Ready = async () => {
 
 StateManager.on('wipe', () => { lastCompleteSync.set(0) })
 
-export const updateLastSync = () => {
-    const now = Math.round(Date.now()/1000)
-    lastCompleteSync.set(now)
-    StateManager.set('lastCompleteSync', now)
-    isSeeded.set(true)
-}
+// export const updateLastSync = () => {
+//     const now = Math.round(Date.now()/1000)
+//     lastCompleteSync.set(now)
+//     StateManager.set('lastCompleteSync', now)
+//     isSeeded.set(true)
+// }
 
 export const shouldSync = () => {
     const threshold = 60*30

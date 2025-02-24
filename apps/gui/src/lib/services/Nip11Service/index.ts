@@ -1,14 +1,27 @@
-import { get, type Writable } from 'svelte/store';
 import type { nip11 } from 'nostr-tools';
 
-import { nip11sLocal } from '$lib/stores/nip11s.js';
-import { Nip11, type RelayInformation } from '@nostrwatch/route66/models';
-import { getRelayErrorSubject, setRelayError, type RelayErrorMessages } from '$lib/stores/relay-errors.js';
-import { relaysErrors } from '$lib/stores/relay-errors';
-import { instance } from '$lib/utils/lifecycle';
+import { get, type Writable } from 'svelte/store';
+
 import type { Route66 } from '@nostrwatch/route66';
+import { type Nip11 as Nip11Type, type RelayInformation } from '@nostrwatch/route66/models';
+
+import { nip11sLocal } from '$lib/stores/nip11s.js';
+import { getRelayErrorSubject, setRelayError, type RelayErrorMessages } from '$lib/stores/relay-errors.js';
+
+import { instance } from '$lib/utils/lifecycle';
+// import { relaysErrors } from '$lib/stores/relay-errors';
+
 import PQueue from 'p-queue';
 const queue = new PQueue({concurrency: 10});
+
+let Nip11: typeof Nip11Type;
+import('@nostrwatch/route66/models')
+    .then(({Nip11:Nip11_}) => {
+        Nip11 = Nip11_;
+    })
+    .catch((e) => {
+        console.error('Error importing Nip11:', e);
+    });
 
 export type Nip11ServiceMessage = {
     relay: string,

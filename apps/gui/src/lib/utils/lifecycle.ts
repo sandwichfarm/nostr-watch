@@ -6,7 +6,6 @@ import { type IEvent } from '@nostrwatch/route66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
 import { route66, events, monitorsMap, monitors, eventsArray } from '$lib/stores/index.js';
-import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
 import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers.js';
 

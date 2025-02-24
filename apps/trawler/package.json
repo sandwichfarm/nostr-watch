@@ -12,7 +12,7 @@
     "@nostrwatch/controlflow": "workspace:^",
     "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/nocap": "workspace:^",
-    "@nostrwatch/nostrawl": "workspace:^",
+    "nostrawl": "*",
     "@nostrwatch/nostrings": "workspace:^",
     "@nostrwatch/nwcache": "workspace:^",
     "@nostrwatch/publisher": "workspace:^",

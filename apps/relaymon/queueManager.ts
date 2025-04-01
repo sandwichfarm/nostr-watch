@@ -45,7 +45,7 @@ export class QueueManager {
   
   // Log the current state of the queue
   logQueueState(): void {
-    logger.info(`Queue state - Pending: ${this.checkQueue.pending}, Size: ${this.checkQueue.size}, Completed: ${this.sizeCompleted}, Failed: ${this.sizeFailed}, Enqueued: ${this.enqueuedRelays.size}`);
+    logger.debug(`Queue state - Pending: ${this.checkQueue.pending}, Size: ${this.checkQueue.size}, Completed: ${this.sizeCompleted}, Failed: ${this.sizeFailed}, Enqueued: ${this.enqueuedRelays.size}`);
   }
 
   // Add a relay to enqueued set

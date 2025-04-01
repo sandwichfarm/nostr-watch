@@ -601,8 +601,8 @@ export default class Base {
    * @private
    * @returns null
    */
-  on_open(e: Event): void {
-    this.cbcall('open', e);
+  on_open(): void {
+    this.cbcall('open');
     this.track('relay', 'open');
     this.handle_connect_check(true);
   }
@@ -1021,7 +1021,6 @@ export default class Base {
       'websocket', 
       'isConnected', 
       () => {
-        console.log('isConnected', this.ws?.readyState && this.ws.readyState === 1 ? true : false, this?.ws?.readyState)
         return this.ws?.readyState && this.ws.readyState === 1 ? true : false
       }
     )

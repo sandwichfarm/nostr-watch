@@ -220,7 +220,7 @@ function createAsciiBox(stats: StatusStats): string {
   };
   
   // Box dimensions
-  const boxWidth = 90;
+  const boxWidth = 88; // Adjusted to prevent extra vertical bars
   const columnWidth = Math.floor((boxWidth - 2) / 3);
   const titleText = ' RELAYMON STATUS ';
   const titlePadding = Math.floor((boxWidth - 2 - titleText.length) / 2);
@@ -243,13 +243,26 @@ function createAsciiBox(stats: StatusStats): string {
   const cacheHeader = `${header('CACHE STATS')}`;
   const sessionHeader = `${header('SESSION STATS')}`;
   
-  // Pad headers to fit column width
-  const paddedQueueHeader = ` ${queueHeader}${' '.repeat(columnWidth - strLength(queueHeader) - 1)}`;
-  const paddedCacheHeader = `${cacheHeader}${' '.repeat(columnWidth - strLength(cacheHeader))}`;
-  const paddedSessionHeader = `${sessionHeader}${' '.repeat(columnWidth - strLength(sessionHeader))}`;
+  // Create a header row with exact width
+  let headerContent = '';
+  
+  // Pad each header to fit exactly one column width
+  headerContent += ` ${queueHeader}${' '.repeat(Math.max(0, columnWidth - strLength(queueHeader) - 1))}`;
+  headerContent += `${cacheHeader}${' '.repeat(Math.max(0, columnWidth - strLength(cacheHeader)))}`;
+  
+  // For the last column, calculate remaining width exactly like we do for data rows
+  const remainingHeaderWidth = (boxWidth - 2) - strLength(headerContent) - strLength(sessionHeader);
+  headerContent += `${sessionHeader}${' '.repeat(Math.max(0, remainingHeaderWidth))}`;
+  
+  // Ensure exact width
+  if (strLength(headerContent) < boxWidth - 2) {
+    headerContent += ' '.repeat((boxWidth - 2) - strLength(headerContent));
+  } else if (strLength(headerContent) > boxWidth - 2) {
+    headerContent = headerContent.substring(0, boxWidth - 2);
+  }
   
   // Add headers row
-  box += `║${paddedQueueHeader}${paddedCacheHeader}${paddedSessionHeader}║\n`;
+  box += `║${headerContent}║\n`;
   
   // Separator line
   box += `║${' '.repeat(boxWidth - 2)}║\n`;
@@ -314,7 +327,7 @@ function createAsciiBox(stats: StatusStats): string {
         warning(pad(item.value)) : 
         (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
       const cellContent = ` ${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      rowContent += `${cellContent}${' '.repeat(columnWidth - strLength(cellContent))}`;
+      rowContent += `${cellContent}${' '.repeat(Math.max(0, columnWidth - strLength(cellContent)))}`;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }
@@ -327,7 +340,7 @@ function createAsciiBox(stats: StatusStats): string {
         warning(pad(item.value)) : 
         (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
       const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      rowContent += `${cellContent}${' '.repeat(columnWidth - strLength(cellContent))}`;
+      rowContent += `${cellContent}${' '.repeat(Math.max(0, columnWidth - strLength(cellContent)))}`;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }
@@ -340,9 +353,22 @@ function createAsciiBox(stats: StatusStats): string {
         warning(pad(item.value)) : 
         (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
       const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      rowContent += `${cellContent}${' '.repeat(columnWidth - strLength(cellContent))}`;
+      // Make sure we pad exactly to the remaining width to ensure straight right border
+      // Use Math.max to prevent negative padding which could happen with long text
+      const remainingWidth = (boxWidth - 2) - strLength(rowContent) - strLength(cellContent);
+      rowContent += `${cellContent}${' '.repeat(Math.max(0, remainingWidth))}`;
     } else {
-      rowContent += ' '.repeat(columnWidth);
+      // Fill the remaining width exactly
+      const remainingWidth = (boxWidth - 2) - strLength(rowContent);
+      rowContent += ' '.repeat(Math.max(0, remainingWidth));
+    }
+    
+    // Ensure rowContent is exactly the right width for proper alignment
+    if (strLength(rowContent) < boxWidth - 2) {
+      rowContent += ' '.repeat((boxWidth - 2) - strLength(rowContent));
+    } else if (strLength(rowContent) > boxWidth - 2) {
+      // Trim if somehow too long (shouldn't happen with correct calculations)
+      rowContent = rowContent.substring(0, boxWidth - 2);
     }
     
     // Add the row to the box

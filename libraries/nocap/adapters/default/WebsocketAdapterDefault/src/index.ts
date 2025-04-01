@@ -31,7 +31,6 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   initialize(): void {}
 
   async check_open(): Promise<void> {
-    console.log('WebsocketAdapterDefault.check_open()', 'open');
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
 
     try {
@@ -50,8 +49,15 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         } else {
             throw new Error('Unsupported network');
         }
-        await this.base.ws.ready();
-        console.log('WebsocketAdapterDefault.check_open()', 'connected');
+        this.base.ws.ready()
+          .then(() => {
+            if(this.base.ws.CONNECTED) {
+              this.base.on_open(new Event('open'));
+            }
+          })
+          .catch((error) => {
+            this.base.on_error(error);
+          })
         this.bind_events();
     } catch (error) {
         console.error('Error in check_open:', error);
@@ -84,9 +90,8 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         throw new Error('this.base.ws is not defined.');
       }
       this.base.ws.onopen = (openEvent: Event) => {
-        console.log('WebsocketAdapterDefault.check_open()', 'complete', this.base.subid('open'));
+        // console.log('WebsocketAdapterDefault.check_open()', 'complete', this.base.subid('open'));
         this.base.on_open(openEvent);
-        this.count.event++;
       };
       this.base.ws.onmessage = (message: MessageEvent) => {
         const { data } = message;

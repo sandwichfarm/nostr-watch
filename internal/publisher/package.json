@@ -44,8 +44,7 @@
     "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/publisher-nostrtools": "workspace:^",
     "@nostrwatch/utils": "workspace:^",
-    "nostr-geotags": "^0.7.1",
-    "nostr-tools": "^1.0.0"
+    "nostr-geotags": "^0.7.1"
   },
   "devDependencies": {
     "@rollup/plugin-alias": "^5.1.1",
@@ -59,6 +58,7 @@
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "nostr-tools": "2.11.0",
     "prettier": "^3.4.2",
     "rimraf": "^5.0.0",
     "rollup": "^4.24.0",
@@ -77,5 +77,8 @@
   ],
   "engines": {
     "node": ">=14.0.0"
+  },
+  "peerDependencies": {
+    "nostr-tools": "2.11.0"
   }
 }

@@ -113,10 +113,10 @@ export class Worker {
 
   async publishResult(result: any): Promise<void> {
     try {
-      const event$ = new Kind30166(getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || ""));
-      event$.generateEvent(result);
+      const event = new Kind30166(getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || ""));
+      event.generateEvent(result);
       const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
-      const signedEvent = event$.signEvent(privkey);
+      const signedEvent = await event.signEvent(privkey);
       await this.publisher.publishEvent(signedEvent);
       this.logger.debug(`Published event for relay ${result.url}`);
     } catch (error: any) {
@@ -147,6 +147,7 @@ export class Worker {
     result: any = {},
     error: boolean = false
   ): void {
+    const maxRelayWidth = 40; // Max width for relay URLs
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray;
@@ -156,63 +157,73 @@ export class Worker {
       if (_d > 0) duration += _d;
     };
 
+    // Format the URL to a consistent width
+    let formattedUrl = url;
+    if (url.length > maxRelayWidth) {
+      // Truncate with ellipsis if too long
+      formattedUrl = url.substring(0, maxRelayWidth - 3) + '...';
+    } else {
+      // Pad with spaces if shorter
+      formattedUrl = url.padEnd(maxRelayWidth, ' ');
+    }
+
     let progress = "";
-    progress += `${url}: `;
+    progress += chalk.hex('#9F2B68').bold(`${formattedUrl}: `);
 
     const checks: string[] = this.config.relaymon.checks.enabled || [];
     if (checks.includes("open")) {
       progress += `${
-        result?.open?.data === true ? success("online") : failure("offline")
+        result?.open?.data === true ? success("online   ") : failure("offline  ")
       } `;
       incD(result?.open?.duration || 0);
     }
     if (checks.includes("read")) {
       progress += `${
-        result?.read?.data === true ? success("readable") : failure("unreadable")
+        result?.read?.data === true ? success("readable   ") : failure("unreadable ")
       } `;
       incD(result?.read?.duration || 0);
     }
     if (checks.includes("write")) {
       progress += `${
-        result?.write?.data === true ? success("writable") : failure("unwritable")
+        result?.write?.data === true ? success("writable   ") : failure("unwritable ")
       } `;
       incD(result?.write?.duration || 0);
     }
     if (checks.includes("ssl")) {
       progress += `${
         Object.keys(result?.ssl?.data || {}).length
-          ? success("ssl")
-          : failure("ssl")
+          ? success("ssl ")
+          : failure("ssl ")
       } `;
       incD(result?.ssl?.duration || 0);
     }
     if (checks.includes("dns")) {
       progress += `${
         Object.keys(result?.dns?.data || {}).length
-          ? success("dns")
-          : failure("dns")
+          ? success("dns ")
+          : failure("dns ")
       } `;
       incD(result?.dns?.duration || 0);
     }
     if (checks.includes("geo")) {
       progress += `${
         Object.keys(result?.geo?.data || {}).length
-          ? success("geo")
-          : failure("geo")
+          ? success("geo ")
+          : failure("geo ")
       } `;
       incD(result?.geo?.duration || 0);
     }
     if (checks.includes("info")) {
       progress += `${
         Object.keys(result?.info?.data || {}).length
-          ? success("info")
-          : failure("info")
+          ? success("info ")
+          : failure("info ")
       } `;
       incD(result?.info?.duration || 0);
     }
 
     if (!error) {
-      progress += `${(duration / 1000).toFixed(2)} seconds `;
+      progress += chalk.gray.italic(`${(duration / 1000).toFixed(2)} seconds `);
     }
     if (error) {
       const retries = this.relayRetries.get(url) || 0;

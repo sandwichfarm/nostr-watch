@@ -4,7 +4,6 @@
       "strict": true
     },
     "nodeModulesDir": "auto",
-    "importMap": "./import_map.json",
     "tasks": {
       "start": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write main.ts",
       "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write",
@@ -23,7 +22,43 @@
     },
     "version": "0.1.0",
     "imports": {
-      "npm:nostr-fetch": "npm:nostr-fetch@0.17.0"
+      "npm:nostr-fetch": "npm:nostr-fetch@0.17.0",
+      "npm:murmurhash": "https://esm.sh/murmurhash@latest",
+      "npm:p-queue": "https://esm.sh/p-queue@latest",
+      "npm:chalk": "https://esm.sh/chalk@latest",
+      "npm:cross-fetch": "https://esm.sh/cross-fetch@latest",
+      "npm:@nostrwatch/utils": "../../internal/utils/src/index.ts",
+      "npm:@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
+      "npm:@nostrwatch/nocap-every-adapter-default": "../../libraries/nocap/adapters/default/ZEveryAdapterDefault/src/index.ts",
+      "npm:@nostrwatch/publisher": "../../internal/publisher/src/index.ts",
+      "npm:nostr-tools": "https://esm.sh/nostr-tools@latest",
+      "@noble/hashes/utils": "https://esm.sh/@noble/hashes@1.3.2/utils",
+      "nostr-tools/pure": "https://esm.sh/nostr-tools@latest/pure",
+      "@nostrwatch/websocket": "../../libraries/websocket/src/index.ts",
+      "npm:@nostrwatch/websocket": "../../libraries/websocket/src/index.ts",
+      "@nostrwatch/utils": "../../internal/utils/src/index.ts",
+      "@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
+      "@nostrwatch/nocap-every-adapter-default": "../../libraries/nocap/adapters/default/ZEveryAdapterDefault/src/index.ts",
+      "@nostrwatch/publisher": "../../internal/publisher/src/index.ts",
+      "@nostrwatch/logger": "../../internal/logger/src/index.ts",
+      "npm:@nostrwatch/logger": "../../internal/logger/src/index.ts",
+      "ws": "https://esm.sh/ws@latest",
+      "murmurhash": "https://esm.sh/murmurhash@latest",
+      "promise-deferred": "https://esm.sh/promise-deferred@latest",
+      "npm:promise-deferred": "https://esm.sh/promise-deferred@latest",
+      "@nostrwatch/nocap-info-adapter-default": "../../libraries/nocap/adapters/default/InfoAdapterDefault/src/index.ts",
+      "@nostrwatch/nocap-ssl-adapter-default": "../../libraries/nocap/adapters/default/SslAdapterDefault/src/index.ts",
+      "@nostrwatch/nocap-dns-adapter-default": "../../libraries/nocap/adapters/default/DnsAdapterDefault/src/index.ts",
+      "@nostrwatch/nocap-geo-adapter-default": "../../libraries/nocap/adapters/default/GeoAdapterDefault/src/index.ts",
+      "@nostrwatch/nocap-websocket-adapter-default": "../../libraries/nocap/adapters/default/WebsocketAdapterDefault/src/index.ts",
+      "cross-fetch": "https://esm.sh/cross-fetch@latest",
+      "buffer": "node:buffer",
+      "socks-proxy-agent": "https://esm.sh/socks-proxy-agent@latest",
+      "./adapters/default.js": "../../internal/publisher/adapters/NostrTools/src/index.ts",
+      "@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
+      "npm:@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
+      "nostr-geotags": "https://esm.sh/nostr-geotags@latest",
+      "nostr-tools": "https://esm.sh/nostr-tools@latest"
     }
 }
   

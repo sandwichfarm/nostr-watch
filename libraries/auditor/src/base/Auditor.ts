@@ -1,4 +1,4 @@
-import { WebSocketWrapper as WebSocket } from '@nostrwatch/websocket';
+import { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 import { ISuiteResult, Suite } from "./Suite";
 import { Resulter } from './Resulter.js';
 import Logger from '#base/Logger.js'

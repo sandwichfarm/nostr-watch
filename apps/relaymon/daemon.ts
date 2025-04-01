@@ -11,9 +11,7 @@ import { formatCompactStats } from "./status.ts";
 
 export async function runDaemon(config: any): Promise<void> {
   // Set global log level from config if specified
-  console.log(config.logLevel)
   if (config.logLevel) {
-    console.log(config.logLevel)
     setGlobalLogLevel(config.logLevel);
   }
   

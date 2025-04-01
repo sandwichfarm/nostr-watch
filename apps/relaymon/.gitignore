@@ -1,3 +1,5 @@
 config.yaml
 .env
 node_modules
+*.db
+**/*.db

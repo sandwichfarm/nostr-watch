@@ -1,6 +1,5 @@
 import Queue from "npm:p-queue";
-import { getLogger, LogLevel } from "./logger.ts";
-import { RetryManager } from "./retryManager.ts";
+import { getLogger } from "./logger.ts";
 
 const logger = getLogger("QueueManager");
 
@@ -46,7 +45,7 @@ export class QueueManager {
   
   // Log the current state of the queue
   logQueueState(): void {
-    logger.info(`Queue state - Pending: ${this.checkQueue.pending}, Size: ${this.checkQueue.size}, Completed: ${this.sizeCompleted}, Failed: ${this.sizeFailed}, Enqueued relays: ${this.enqueuedRelays.size}`);
+    logger.info(`Queue state - Pending: ${this.checkQueue.pending}, Size: ${this.checkQueue.size}, Completed: ${this.sizeCompleted}, Failed: ${this.sizeFailed}, Enqueued: ${this.enqueuedRelays.size}`);
   }
 
   // Add a relay to enqueued set

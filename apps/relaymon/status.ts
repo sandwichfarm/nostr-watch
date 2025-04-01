@@ -293,6 +293,15 @@ function createAsciiBox(stats: StatusStats): string {
   // Find the max number of rows needed
   const maxRows = Math.max(queueData.length, cacheData.length, sessionData.length);
   
+  // Find the longest key in each column for better alignment
+  const findLongestKey = (data: StatsItem[]): number => {
+    return Math.max(...data.map(item => strLength(item.key)));
+  };
+  
+  const queueKeyLength = findLongestKey(queueData);
+  const cacheKeyLength = findLongestKey(cacheData);
+  const sessionKeyLength = findLongestKey(sessionData);
+  
   // Generate rows for the tables
   for (let i = 0; i < maxRows; i++) {
     let rowContent = '';
@@ -300,10 +309,12 @@ function createAsciiBox(stats: StatusStats): string {
     // Queue column
     if (i < queueData.length) {
       const item = queueData[i];
+      const keyPadding = ' '.repeat(queueKeyLength - strLength(item.key));
       const formattedValue = item.warning ? 
         warning(pad(item.value)) : 
         (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
-      rowContent += ` ${subheader(item.key)} ${formattedValue}${' '.repeat(columnWidth - strLength(` ${item.key} ${pad(item.value)}`) - 1)}`;
+      const cellContent = ` ${subheader(item.key)}${keyPadding} ${formattedValue}`;
+      rowContent += `${cellContent}${' '.repeat(columnWidth - strLength(cellContent))}`;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }
@@ -311,10 +322,12 @@ function createAsciiBox(stats: StatusStats): string {
     // Cache column
     if (i < cacheData.length) {
       const item = cacheData[i];
+      const keyPadding = ' '.repeat(cacheKeyLength - strLength(item.key));
       const formattedValue = item.warning ? 
         warning(pad(item.value)) : 
         (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
-      rowContent += `${subheader(item.key)} ${formattedValue}${' '.repeat(columnWidth - strLength(`${item.key} ${pad(item.value)}`))}`;
+      const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
+      rowContent += `${cellContent}${' '.repeat(columnWidth - strLength(cellContent))}`;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }
@@ -322,10 +335,12 @@ function createAsciiBox(stats: StatusStats): string {
     // Session column
     if (i < sessionData.length) {
       const item = sessionData[i];
+      const keyPadding = ' '.repeat(sessionKeyLength - strLength(item.key));
       const formattedValue = item.warning ? 
         warning(pad(item.value)) : 
         (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
-      rowContent += `${subheader(item.key)} ${formattedValue}${' '.repeat(columnWidth - strLength(`${item.key} ${pad(item.value)}`))}`;
+      const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
+      rowContent += `${cellContent}${' '.repeat(columnWidth - strLength(cellContent))}`;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }

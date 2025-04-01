@@ -3,7 +3,7 @@ import { getLogger, LogLevel } from "./logger.ts";
 import { RetryManager } from "./retryManager.ts";
 
 const logger = getLogger("DB");
-export let db = new DB("relay.db");
+export let db = new DB("relaymon.db");
 
 // Make sure our schema includes a retries column
 db.query(`

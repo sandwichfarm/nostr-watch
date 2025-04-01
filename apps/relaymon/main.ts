@@ -7,7 +7,6 @@ async function main() {
     const config = await loadConfig("./config.yaml");
     console.log("Configuration loaded successfully.");
     await header();
-    console.log(config)
     await runDaemon(config);
   } catch (error) {
     console.error("Error loading configuration or starting the daemon:", error);

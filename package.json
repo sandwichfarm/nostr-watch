@@ -40,6 +40,7 @@
   "author": "dskvr <dskvr@users.noreply.github.com>",
   "license": "MIT",
   "dependencies": {
+    "chalk": "5.4.1",
     "glob": "^11.0.0",
     "nostr-tools": "^2.10.4"
   }

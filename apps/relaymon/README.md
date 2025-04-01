@@ -139,7 +139,6 @@ relaymon/
 ## Environment Variables
 
 - DAEMON_PRIVKEY: The private key used to sign announcements and events.
-- DAEMON_PUBKEY: The public key of the daemon for relay identification.
 
 ## Development
 

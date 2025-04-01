@@ -1,9 +1,11 @@
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { getLogger, LogLevel } from "./logger.ts";
+import { RetryManager } from "./retryManager.ts";
 
 const logger = getLogger("DB");
 export let db = new DB("relay.db");
 
+// Make sure our schema includes a retries column
 db.query(`
   CREATE TABLE IF NOT EXISTS relay_status (
     url TEXT PRIMARY KEY,
@@ -12,9 +14,25 @@ db.query(`
     parent TEXT,
     checked_at INTEGER,
     rtt INTEGER,
-    network TEXT
+    network TEXT,
+    retries INTEGER DEFAULT 0
   )
 `);
+
+// Check if retries column exists, if not add it
+const tableInfo = db.query(`PRAGMA table_info(relay_status)`);
+let hasRetriesColumn = false;
+for (const row of tableInfo) {
+  if (row[1] === "retries") {
+    hasRetriesColumn = true;
+    break;
+  }
+}
+
+if (!hasRetriesColumn) {
+  logger.info("Adding retries column to relay_status table");
+  db.query(`ALTER TABLE relay_status ADD COLUMN retries INTEGER DEFAULT 0`);
+}
 
 // Create timestamp table to track seeder methods' last run times
 db.query(`
@@ -24,6 +42,84 @@ db.query(`
   )
 `);
 
+/**
+ * Check if a relay is ready to be checked based on its last check time, 
+ * retry count, and the retry policy
+ */
+export function isReadyToCheck(
+  checkedAt: number, 
+  retries: number, 
+  expirySeconds: number,
+  retryManager: RetryManager
+): boolean {
+  const now = Math.round(Date.now()/1000);
+  
+  // Unchecked relays are always ready to check
+  if (checkedAt === null || checkedAt === -1) {
+    return true;
+  }
+  
+  // For retry backoff, calculate when the next check should happen
+  let nextCheckTime = checkedAt + expirySeconds;
+  
+  // Apply backoff for relays with retries - the higher the retry count, the longer we wait
+  if (retries > 0) {
+    // Get the appropriate delay based on retry count (in ms)
+    const backoffDelay = retryManager.getDelay(retries);
+    // Convert from ms to seconds and add to the time when the relay was last checked
+    nextCheckTime += Math.floor(backoffDelay / 1000);
+  }
+  
+  // Return true if now is later than the next check time
+  return now >= nextCheckTime;
+}
+
+/**
+ * Get a list of relays that have expired and are ready to be checked
+ */
+export function getExpiredRelays(expires: number, allowedNetworks: string[], retryManager: RetryManager): string[] {
+  const now = Math.round(Date.now()/1000);
+  const expired: string[] = [];
+  
+  logger.debug(`getExpiredRelays called with expires=${expires}s, now=${now}`);
+  
+  if (allowedNetworks.length === 0) {
+    logger.debug("getExpiredRelays: No allowed networks provided, returning empty array");
+    return expired;
+  }
+  
+  // Create placeholders for networks
+  const networkPlaceholders = allowedNetworks.map(() => '?').join(',');
+  
+  // Get all relays that might be candidates for checking
+  // We'll apply retry backoff logic in memory
+  const query = `
+    SELECT url, checked_at, retries, online, network
+    FROM relay_status 
+    WHERE network IN (${networkPlaceholders})
+  `;
+  
+  // All parameters: just networks
+  const params = [...allowedNetworks];
+  
+  logger.debug(`Checking relays with networks=${JSON.stringify(allowedNetworks)}`);
+  
+  // Process each relay, applying backoff logic based on retry count
+  for (const [url, checkedAt, retries, online, network] of db.query(query, params)) {
+    // We've already filtered by network in the SQL query, 
+    // so we don't need to check network again here
+    
+    // Use the shared isReadyToCheck function
+    if (isReadyToCheck(checkedAt as number, retries as number, expires, retryManager)) {
+      expired.push(url as string);
+    }
+  }
+  
+  logger.debug(`Found ${expired.length} expired relays after applying retry backoff`);
+  
+  return expired;
+}
+
 export function persistResult(result: any): void {
   const online = result.open?.data ? 1 : 0;
   const ignore = result.ignore ? 1 : 0;
@@ -32,22 +128,36 @@ export function persistResult(result: any): void {
   const rtt = result.open?.duration || -1;
   const network = result.network || "clearnet";
   
+  // If a relay was online, reset its retry count; otherwise keep the existing count
+  // This ensures we only increment retries when a relay continuously fails
+  const retryUpdate = online ? "retries = 0" : "retries = retries";
+  
+  logger.debug(`Persisting result for ${result.url}: online=${online}, checked_at=${checked_at}, network=${network}`);
+  
   db.query(
     `
-    INSERT INTO relay_status (url, online, ignore, parent, checked_at, rtt, network)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO relay_status (url, online, ignore, parent, checked_at, rtt, network, retries)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 0)
     ON CONFLICT(url) DO UPDATE SET
       online = excluded.online,
       ignore = excluded.ignore,
       parent = excluded.parent,
       checked_at = excluded.checked_at,
       rtt = excluded.rtt,
-      network = excluded.network
+      network = excluded.network,
+      ${retryUpdate}
     `,
     [result.url, online, ignore, parent, checked_at, rtt, network]
   );
+}
 
-  // logger.debug(`Persisted result for ${result.url}`);
+// Increment the retry count for a relay
+export function incrementRetryCount(url: string): void {
+  db.query(
+    `UPDATE relay_status SET retries = retries + 1 WHERE url = ?`,
+    [url]
+  );
+  logger.debug(`Incremented retry count for ${url}`);
 }
 
 export function seedNewRelay(url: string, network: string): boolean {
@@ -57,8 +167,8 @@ export function seedNewRelay(url: string, network: string): boolean {
   if (!exists) {
     db.query(
       `
-      INSERT INTO relay_status (url, online, ignore, parent, checked_at, rtt, network)
-      VALUES (?, 0, 0, '', -1, -1, ?)
+      INSERT INTO relay_status (url, online, ignore, parent, checked_at, rtt, network, retries)
+      VALUES (?, 0, 0, '', -1, -1, ?, 0)
       `,
       [url, network]
     );
@@ -68,36 +178,6 @@ export function seedNewRelay(url: string, network: string): boolean {
     // logger.debug(`Skipping existing relay during seeding: ${url}`);
     return false;
   }
-}
-
-export function getExpiredRelays(expires: number, allowedNetworks: string[]): string[] {
-  const now = Math.round(Date.now()/1000);
-  const expired: string[] = [];
-  
-  if (allowedNetworks.length === 0) {
-    return expired;
-  }
-  
-  // Create placeholders for networks
-  const networkPlaceholders = allowedNetworks.map(() => '?').join(',');
-  
-  // Use SQL to filter expired relays directly
-  const query = `
-    SELECT url FROM relay_status 
-    WHERE network IN (${networkPlaceholders})
-    AND (checked_at IS NULL OR checked_at = -1 OR (? - checked_at) > ?)
-  `;
-  
-  // All parameters: networks + now timestamp + expires duration
-  const params = [...allowedNetworks, now, expires];
-  
-  logger.info(`Checking for expired relays with expires=${expires}, now=${now}`);
-  
-  for (const [url] of db.query(query, params)) {
-    expired.push(url as string);
-  }
-  
-  return expired;
 }
 
 export function getOnlineRelays(): string[] {

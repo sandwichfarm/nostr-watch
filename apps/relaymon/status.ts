@@ -1,6 +1,9 @@
 import { db } from "./db.ts";
 import { getLogger, LogLevel } from "./logger.ts";
 import chalk from "npm:chalk";
+import { getExpiredRelays } from "./db.ts";
+import { RetryManager } from "./retryManager.ts";
+import { loadConfig } from "./config.ts";
 
 const logger = getLogger("Status");
 
@@ -58,6 +61,7 @@ interface StatusStats {
   checksErrors: number;
   wentOfflineCount: number;
   newRelaysFound: number;
+  queueSize: number;
 }
 
 /**
@@ -75,7 +79,43 @@ export function getStats(queueManager: any): StatusStats {
 
   // Get database stats
   const now = Math.round(Date.now()/1000);
-  const expiryTime = 24 * 60 * 60; // 24 hours in seconds
+  
+  // Use the SAME config that the daemon uses
+  const config = queueManager.config;
+  
+  // Get expiry time from config
+  let expiryTime = 60; // Default fallback
+  if (config?.relaymon?.checks?.options?.expires) {
+    // Get seconds value
+    expiryTime = Math.round(config.relaymon.checks.options.expires/1000);
+    logger.debug(`Using config expiry time: ${expiryTime}s`);
+  } else {
+    logger.debug(`Using fallback expiry time: ${expiryTime}s`);
+  }
+  
+  // Get networks from config
+  const networks = ["clearnet"]; // Default fallback
+  if (config?.relaymon?.networks && Array.isArray(config.relaymon.networks)) {
+    networks.length = 0; // Clear default
+    networks.push(...config.relaymon.networks);
+    logger.debug(`Using config networks: ${JSON.stringify(networks)}`);
+  } else {
+    logger.debug(`Using fallback networks: ${JSON.stringify(networks)}`);
+  }
+
+  // Initialize the RetryManager to match the worker's behavior
+  // Provide a default configuration if none exists to prevent "Cannot read property 'delay' of undefined" errors
+  const defaultRetryConfig = [{ max: 999, delay: 60000 }]; // Default: retry after 1 minute
+  let retryConfig = defaultRetryConfig;
+  
+  if (config?.relaymon?.retry?.expiry && Array.isArray(config.relaymon.retry.expiry) && config.relaymon.retry.expiry.length > 0) {
+    retryConfig = config.relaymon.retry.expiry;
+    logger.debug(`Using retry config from configuration: ${JSON.stringify(retryConfig)}`);
+  } else {
+    logger.debug(`Using fallback retry config: ${JSON.stringify(retryConfig)}`);
+  }
+  
+  const retryManager = new RetryManager(retryConfig);
 
   // Query all necessary counts in one go to avoid multiple DB reads
   const dbStats = {
@@ -96,22 +136,33 @@ export function getStats(queueManager: any): StatusStats {
   // Get online count
   dbStats.online = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 1")[0][0] as number;
   
-  // Get online but expired count
-  dbStats.onlineExpired = db.query(
-    `SELECT COUNT(*) FROM relay_status 
-     WHERE online = 1 AND (? - checked_at) > ?`, 
-    [now, expiryTime]
-  )[0][0] as number;
-  
   // Get offline count
   dbStats.offline = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 0")[0][0] as number;
   
-  // Get expired count (all relays that need checking)
-  dbStats.expired = db.query(
-    `SELECT COUNT(*) FROM relay_status 
-     WHERE (? - checked_at) > ?`, 
-    [now, expiryTime]
-  )[0][0] as number;
+  // Get expired relays using the same function as the daemon - with retry logic
+  // This will correctly account for the retry backoff
+  const expiredRelays = getExpiredRelays(expiryTime, networks, retryManager);
+  
+  // Show ALL expired relays in the status display, regardless of queue state
+  dbStats.expired = expiredRelays.length;
+  
+  // Get online-only expired relays
+  if (expiredRelays.length > 0) {
+    const placeholders = expiredRelays.map(() => '?').join(',');
+    const onlineExpiredUrls = db.query(
+      `SELECT url FROM relay_status 
+       WHERE url IN (${placeholders})
+       AND online = 1`,
+      [...expiredRelays]
+    ).map(([url]) => url);
+    
+    dbStats.onlineExpired = onlineExpiredUrls.length;
+  } else {
+    dbStats.onlineExpired = 0;
+  }
+  
+  // We can show the queue size separately to indicate how many relays are being processed
+  logger.debug(`Status calculation: Found ${dbStats.expired} expired relays, ${dbStats.onlineExpired} online expired, Queue size: ${queueStats.totalQueue}`);
   
   // Get unchecked count (never checked)
   dbStats.unchecked = db.query("SELECT COUNT(*) FROM relay_status WHERE checked_at = -1")[0][0] as number;
@@ -133,7 +184,16 @@ export function getStats(queueManager: any): StatusStats {
     newRelaysFound: sessionStats.newRelaysFound
   };
 
-  return { ...queueStats, ...dbStats, ...sessionDataStats };
+  // Return combined stats
+  return {
+    ...queueStats,
+    ...dbStats,
+    checksTotal: sessionStats.checksTotal,
+    checksErrors: sessionStats.checksErrors,
+    wentOfflineCount: sessionStats.wentOffline.size,
+    newRelaysFound: sessionStats.newRelaysFound,
+    queueSize: queueStats.totalQueue
+  };
 }
 
 /**
@@ -161,6 +221,7 @@ function createAsciiBox(stats: StatusStats): string {
   
   // Box dimensions
   const boxWidth = 90;
+  const columnWidth = Math.floor((boxWidth - 2) / 3);
   const titleText = ' RELAYMON STATUS ';
   const titlePadding = Math.floor((boxWidth - 2 - titleText.length) / 2);
   
@@ -177,102 +238,101 @@ function createAsciiBox(stats: StatusStats): string {
   // Separator
   box += '╠' + '═'.repeat(boxWidth - 2) + '╣\n';
   
-  // QUEUE STATS section
-  const queueHeader = ` ${header('QUEUE STATS')}`;
-  box += `║${queueHeader}${' '.repeat(boxWidth - 2 - strLength(queueHeader))}║\n`;
+  // Headers for the three columns
+  const queueHeader = `${header('QUEUE STATS')}`;
+  const cacheHeader = `${header('CACHE STATS')}`;
+  const sessionHeader = `${header('SESSION STATS')}`;
+  
+  // Pad headers to fit column width
+  const paddedQueueHeader = ` ${queueHeader}${' '.repeat(columnWidth - strLength(queueHeader) - 1)}`;
+  const paddedCacheHeader = `${cacheHeader}${' '.repeat(columnWidth - strLength(cacheHeader))}`;
+  const paddedSessionHeader = `${sessionHeader}${' '.repeat(columnWidth - strLength(sessionHeader))}`;
+  
+  // Add headers row
+  box += `║${paddedQueueHeader}${paddedCacheHeader}${paddedSessionHeader}║\n`;
+  
+  // Separator line
   box += `║${' '.repeat(boxWidth - 2)}║\n`;
   
-  // Format each stat with consistent spacing
-  const activeLabel = `  ${subheader('Active:')} ${value(pad(stats.active))}`;
-  const waitingLabel = `${subheader('Waiting:')} ${value(pad(stats.waiting))}`;
-  const failedLabel = `${subheader('Failed:')} ${stats.failed > 0 ? warning(pad(stats.failed)) : value(pad(stats.failed))}`;
-  const pausedLabel = `${subheader('Paused:')} ${value(pad(stats.paused))}`;
+  // Define type for the data items
+  interface StatsItem {
+    key: string;
+    value: number;
+    highlight?: boolean;
+    warning?: boolean;
+  }
   
-  // Calculate consistent column widths
-  const colWidth1 = 22; // Active + value
-  const colWidth2 = 22; // Waiting + value
-  const colWidth3 = 22; // Failed + value
+  // Define the data for each table
+  const queueData: StatsItem[] = [
+    { key: 'Active:', value: stats.active },
+    { key: 'Waiting:', value: stats.waiting },
+    { key: 'Failed:', value: stats.failed, warning: stats.failed > 0 },
+    { key: 'Paused:', value: stats.paused },
+    { key: 'Total Queue:', value: stats.totalQueue }
+  ];
   
-  // Create line with proper spacing
-  const queueLine = activeLabel + ' '.repeat(Math.max(0, colWidth1 - strLength(activeLabel))) + 
-                   waitingLabel + ' '.repeat(Math.max(0, colWidth2 - strLength(waitingLabel))) + 
-                   failedLabel + ' '.repeat(Math.max(0, colWidth3 - strLength(failedLabel))) + 
-                   pausedLabel;
+  const cacheData: StatsItem[] = [
+    { key: 'Online:', value: stats.online, highlight: true },
+    { key: 'Online & Expired:', value: stats.onlineExpired, warning: true },
+    { key: 'Offline:', value: stats.offline },
+    { key: 'Expired (Total):', value: stats.expired, warning: stats.expired > 0 },
+    { key: 'Unchecked:', value: stats.unchecked },
+    { key: 'Total Relays:', value: stats.total, highlight: true },
+    { key: 'Ignored:', value: stats.ignored },
+    { key: 'Parents:', value: stats.parents },
+    { key: 'Children:', value: stats.children }
+  ];
   
-  // Add queue line with right padding
-  box += `║${queueLine}${' '.repeat(Math.max(0, boxWidth - 2 - strLength(queueLine)))}║\n`;
+  const sessionData: StatsItem[] = [
+    { key: 'Checks Total:', value: stats.checksTotal, highlight: true },
+    { key: 'Check Errors:', value: stats.checksErrors, warning: true },
+    { key: 'Went Offline:', value: stats.wentOfflineCount, warning: true },
+    { key: 'New Relays Found:', value: stats.newRelaysFound, highlight: true }
+  ];
   
-  // Total queue line
-  const queueLine2 = `  ${subheader('Total Queue:')} ${value(pad(stats.totalQueue))}`;
-  box += `║${queueLine2}${' '.repeat(boxWidth - 2 - strLength(queueLine2))}║\n`;
+  // Find the max number of rows needed
+  const maxRows = Math.max(queueData.length, cacheData.length, sessionData.length);
   
-  // Add separator line
-  box += `║${' '.repeat(boxWidth - 2)}║\n`;
-  
-  // CACHE STATS section
-  const cacheHeader = ` ${header('CACHE STATS')}`;
-  box += `║${cacheHeader}${' '.repeat(boxWidth - 2 - strLength(cacheHeader))}║\n`;
-  box += `║${' '.repeat(boxWidth - 2)}║\n`;
-  
-  // Format cache stats
-  const onlineLabel = `  ${subheader('Online:')} ${highlight(pad(stats.online))}`;
-  const onlineExpiredLabel = `${subheader('Online & Expired:')} ${warning(pad(stats.onlineExpired))}`;
-  const offlineLabel = `${subheader('Offline:')} ${value(pad(stats.offline))}`;
-  
-  // Create cache line with proper spacing
-  const cacheLine1 = onlineLabel + ' '.repeat(Math.max(0, colWidth1 - strLength(onlineLabel))) + 
-                    onlineExpiredLabel + ' '.repeat(Math.max(0, 32 - strLength(onlineExpiredLabel))) + 
-                    offlineLabel;
-  
-  box += `║${cacheLine1}${' '.repeat(Math.max(0, boxWidth - 2 - strLength(cacheLine1)))}║\n`;
-  
-  // Second cache line
-  const expiredLabel = `  ${subheader('Expired:')} ${stats.expired > 0 ? warning(pad(stats.expired)) : value(pad(stats.expired))}`;
-  const uncheckedLabel = `${subheader('Unchecked:')} ${value(pad(stats.unchecked))}`;
-  const totalLabel = `${subheader('Total:')} ${highlight(pad(stats.total))}`;
-  
-  const cacheLine2 = expiredLabel + ' '.repeat(Math.max(0, colWidth1 - strLength(expiredLabel))) + 
-                    uncheckedLabel + ' '.repeat(Math.max(0, colWidth2 - strLength(uncheckedLabel))) + 
-                    totalLabel;
-  
-  box += `║${cacheLine2}${' '.repeat(Math.max(0, boxWidth - 2 - strLength(cacheLine2)))}║\n`;
-  
-  // Third cache line
-  const ignoredLabel = `  ${subheader('Ignored:')} ${value(pad(stats.ignored))}`;
-  const parentsLabel = `${subheader('Parents:')} ${value(pad(stats.parents))}`;
-  const childrenLabel = `${subheader('Children:')} ${value(pad(stats.children))}`;
-  
-  const cacheLine3 = ignoredLabel + ' '.repeat(Math.max(0, colWidth1 - strLength(ignoredLabel))) + 
-                    parentsLabel + ' '.repeat(Math.max(0, colWidth2 - strLength(parentsLabel))) + 
-                    childrenLabel;
-  
-  box += `║${cacheLine3}${' '.repeat(Math.max(0, boxWidth - 2 - strLength(cacheLine3)))}║\n`;
-  
-  // Add separator line
-  box += `║${' '.repeat(boxWidth - 2)}║\n`;
-  
-  // SESSION STATS section
-  const sessionHeader = ` ${header('SESSION STATS')}`;
-  box += `║${sessionHeader}${' '.repeat(boxWidth - 2 - strLength(sessionHeader))}║\n`;
-  box += `║${' '.repeat(boxWidth - 2)}║\n`;
-  
-  // Format session stats  
-  const checksLabel = `  ${subheader('Checks Total:')} ${highlight(pad(stats.checksTotal))}`;
-  const errorsLabel = `${subheader('Check Errors:')} ${warning(pad(stats.checksErrors))}`;
-  
-  const sessionLine1 = checksLabel + ' '.repeat(Math.max(0, 30 - strLength(checksLabel))) + 
-                      errorsLabel;
-  
-  box += `║${sessionLine1}${' '.repeat(Math.max(0, boxWidth - 2 - strLength(sessionLine1)))}║\n`;
-  
-  // Second session line
-  const offlineCountLabel = `  ${subheader('Went Offline:')} ${warning(pad(stats.wentOfflineCount))}`;
-  const newRelaysLabel = `${subheader('New Relays Found:')} ${highlight(pad(stats.newRelaysFound))}`;
-  
-  const sessionLine2 = offlineCountLabel + ' '.repeat(Math.max(0, 30 - strLength(offlineCountLabel))) + 
-                      newRelaysLabel;
-  
-  box += `║${sessionLine2}${' '.repeat(Math.max(0, boxWidth - 2 - strLength(sessionLine2)))}║\n`;
+  // Generate rows for the tables
+  for (let i = 0; i < maxRows; i++) {
+    let rowContent = '';
+    
+    // Queue column
+    if (i < queueData.length) {
+      const item = queueData[i];
+      const formattedValue = item.warning ? 
+        warning(pad(item.value)) : 
+        (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
+      rowContent += ` ${subheader(item.key)} ${formattedValue}${' '.repeat(columnWidth - strLength(` ${item.key} ${pad(item.value)}`) - 1)}`;
+    } else {
+      rowContent += ' '.repeat(columnWidth);
+    }
+    
+    // Cache column
+    if (i < cacheData.length) {
+      const item = cacheData[i];
+      const formattedValue = item.warning ? 
+        warning(pad(item.value)) : 
+        (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
+      rowContent += `${subheader(item.key)} ${formattedValue}${' '.repeat(columnWidth - strLength(`${item.key} ${pad(item.value)}`))}`;
+    } else {
+      rowContent += ' '.repeat(columnWidth);
+    }
+    
+    // Session column
+    if (i < sessionData.length) {
+      const item = sessionData[i];
+      const formattedValue = item.warning ? 
+        warning(pad(item.value)) : 
+        (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
+      rowContent += `${subheader(item.key)} ${formattedValue}${' '.repeat(columnWidth - strLength(`${item.key} ${pad(item.value)}`))}`;
+    } else {
+      rowContent += ' '.repeat(columnWidth);
+    }
+    
+    // Add the row to the box
+    box += `║${rowContent}║\n`;
+  }
   
   // Bottom border
   box += '╚' + '═'.repeat(boxWidth - 2) + '╝\n';
@@ -304,4 +364,42 @@ export function logStatus(queueManager: any, interval: number = 20): void {
       logger.error(`Error getting stats: ${error}`);
     }
   }
+}
+
+/**
+ * Format a simple metric for inline display
+ */
+export function formatCompactStats(queueManager: any): string {
+  try {
+    const stats = getStats(queueManager);
+    return `Online: ${stats.online} | Expired: ${stats.expired} | Queued: ${stats.totalQueue}`;
+  } catch (error) {
+    return `Error: ${error.message}`;
+  }
+}
+
+// Run when executed directly
+if (import.meta.main) {
+  async function runStatus() {
+    // Load the configuration
+    try {
+      const config = await loadConfig("./config.yaml");
+      
+      // Create a minimal QueueManager for status display
+      const queueManager = {
+        checkQueue: { pending: 0, size: 0, sizeFailed: 0, isPaused: false },
+        config,
+        // Add placeholder for isRelayEnqueued
+        isRelayEnqueued: (relay: string) => false, // Assume no relays are enqueued when run standalone
+        enqueuedRelays: new Set<string>()
+      };
+      
+      const stats = getStats(queueManager);
+      console.log(createAsciiBox(stats));
+    } catch (error) {
+      logger.error(`Error getting stats: ${error}`);
+    }
+  }
+  
+  runStatus();
 } 

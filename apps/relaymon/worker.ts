@@ -2,7 +2,7 @@ import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
 import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup } from "./hostnames.ts";
-import { persistResult } from "./db.ts";
+import { persistResult, incrementRetryCount } from "./db.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { getLogger, LogLevel } from "./logger.ts";
 import { RetryManager } from "./retryManager.ts";
@@ -46,6 +46,8 @@ export class Worker {
     let wasOnline = false;
     let wentOffline = false;
 
+    this.logger.debug(`Starting check for relay: ${relayUrl}`);
+    
     try {
       const nocap = new Nocap(relayUrl, {
         timeouts: this.config.relaymon.checks.options.timeout,
@@ -64,6 +66,7 @@ export class Worker {
       const previouslyOnline = this.knownRelayStatus.get(relayUrl);
       if (previouslyOnline === true && !wasOnline) {
         wentOffline = true;
+        this.logger.debug(`Relay ${relayUrl} went offline (was previously online)`);
       }
       
       // Update known relay status
@@ -72,6 +75,8 @@ export class Worker {
       if (!dedupedResult.ignore && wasOnline) {
         await this.publishResult(dedupedResult);
       } 
+      
+      this.logger.debug(`Persisting result for relay: ${relayUrl}, online: ${wasOnline}`);
       persistResult(dedupedResult);
       
       try {
@@ -80,7 +85,9 @@ export class Worker {
         console.error("Error displaying progress:", displayError);
       }
       
+      // Success - reset retry count (already done in persistResult)
       this.relayRetries.set(relayUrl, 0);
+      this.logger.debug(`Successfully completed check for relay: ${relayUrl}`);
 
     } catch (error: any) {
       wasSuccessful = false;
@@ -92,7 +99,8 @@ export class Worker {
         console.error("Error displaying error progress:", displayError);
       }
       
-      this.scheduleRetry(relayUrl);
+      // Handle retry - increment retry count in database
+      this.handleRetryForRelay(relayUrl);
     } finally {
       try {
         updateSessionStats(relayUrl, wasSuccessful, wasOnline, wentOffline);
@@ -120,18 +128,18 @@ export class Worker {
     }
   }
 
-  scheduleRetry(relayUrl: string): void {
+  handleRetryForRelay(relayUrl: string): void {
     let currentRetries = this.relayRetries.get(relayUrl) || 0;
     currentRetries++;
     this.relayRetries.set(relayUrl, currentRetries);
+    
+    // Increment retry count in database
+    incrementRetryCount(relayUrl);
+    
     const delayMs = this.retryManager.getDelay(currentRetries);
     this.logger.debug(
-      `Scheduling retry #${currentRetries} for ${relayUrl} in ${delayMs} ms`
+      `Relay ${relayUrl} failed check, incremented retry count to ${currentRetries} (next check after ~${delayMs/1000}s based on backoff)`
     );
-    this.queueManager.addCheckJob(async () => {
-      await delay(delayMs);
-      await this.processRelay(relayUrl);
-    });
   }
 
   progressMessage(

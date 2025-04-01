@@ -128,11 +128,14 @@ export function persistResult(result: any): void {
   const rtt = result.open?.duration || -1;
   const network = result.network || "clearnet";
   
-  // If a relay was online, reset its retry count; otherwise keep the existing count
-  // This ensures we only increment retries when a relay continuously fails
+  // Check current retry count before updating
+  const currentRetries = getRetryCount(result.url);
+  
+  // If a relay was online, reset its retry count;
+  // NOTE: We don't increment retry counts here, that's handled in Worker.handleRetryForRelay
   const retryUpdate = online ? "retries = 0" : "retries = retries";
   
-  logger.debug(`Persisting result for ${result.url}: online=${online}, checked_at=${checked_at}, network=${network}`);
+  logger.debug(`Persisting result for ${result.url}: online=${online}, checked_at=${checked_at}, network=${network}, currentRetries=${currentRetries}, will ${online ? "reset" : "keep"} retries`);
   
   db.query(
     `
@@ -149,15 +152,35 @@ export function persistResult(result: any): void {
     `,
     [result.url, online, ignore, parent, checked_at, rtt, network]
   );
+  
+  // Check if retries were updated correctly
+  const newRetries = getRetryCount(result.url);
+  if (online && newRetries > 0) {
+    logger.warn(`⚠️ Retries for ${result.url} should be 0 but are ${newRetries} after online update!`);
+  } else if (!online && newRetries !== currentRetries) {
+    logger.warn(`⚠️ Retries for ${result.url} changed unexpectedly: ${currentRetries} -> ${newRetries}`);
+  }
 }
 
 // Increment the retry count for a relay
 export function incrementRetryCount(url: string): void {
+  // Get the current retry count first
+  const currentRetries = getRetryCount(url);
+  
   db.query(
     `UPDATE relay_status SET retries = retries + 1 WHERE url = ?`,
     [url]
   );
-  logger.debug(`Incremented retry count for ${url}`);
+  
+  // Get the new retry count after increment
+  const newRetries = getRetryCount(url);
+  
+  logger.debug(`Incremented retry count for ${url}: ${currentRetries} -> ${newRetries}`);
+  
+  // If the count didn't change, log a warning
+  if (currentRetries === newRetries) {
+    logger.warn(`⚠️ Retry count did not increment for ${url}!`);
+  }
 }
 
 export function seedNewRelay(url: string, network: string): boolean {
@@ -207,4 +230,15 @@ export function getSeederTimestamps(): Record<string, number> {
     timestamps[method as string] = timestamp as number;
   }
   return timestamps;
+}
+
+/**
+ * Get the current retry count for a relay
+ */
+export function getRetryCount(url: string): number {
+  const result = db.query("SELECT retries FROM relay_status WHERE url = ?", [url]);
+  if (result.length > 0) {
+    return result[0][0] as number || 0;
+  }
+  return 0;
 }

@@ -51,8 +51,8 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         }
         this.base.ws.ready()
           .then(() => {
-            if(this.base.ws.CONNECTED) {
-              this.base.on_open(new Event('open'));
+            if(this.base?.ws?.CONNECTED) {
+              this.base.on_open();
             }
           })
           .catch((error) => {
@@ -89,10 +89,6 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
       if(!this.base.ws) {
         throw new Error('this.base.ws is not defined.');
       }
-      this.base.ws.onopen = (openEvent: Event) => {
-        // console.log('WebsocketAdapterDefault.check_open()', 'complete', this.base.subid('open'));
-        this.base.on_open(openEvent);
-      };
       this.base.ws.onmessage = (message: MessageEvent) => {
         const { data } = message;
         this.handle_nostr_event(data);

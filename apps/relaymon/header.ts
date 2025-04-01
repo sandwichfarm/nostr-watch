@@ -1,5 +1,20 @@
 import chalk from "npm:chalk";
 
+/**
+ * Get the version from deno.json
+ */
+async function getVersion(): Promise<string> {
+  try {
+    // Read the deno.json file
+    const denoJsonText = await Deno.readTextFile("./deno.json");
+    const denoJson = JSON.parse(denoJsonText);
+    return denoJson.version || "0.0.0";
+  } catch (error) {
+    console.error("Error reading version:", error);
+    return "0.0.0"; // Default version if we can't read the file
+  }
+}
+
 // export async function header() {
 //   console.log(chalk.bold(`
 // npm:@nostrwatch/nocapd  
@@ -15,8 +30,10 @@ import chalk from "npm:chalk";
 // }
 
 export async function header() {
+  const version = await getVersion();
+  
   console.log(chalk.bold(`
-@nostrwatch/relaymon
+@nostrwatch/relaymon v${version}
 
 ░█▀▄░█▀▀░█░░░█▀█░█░█░█▄█░█▀█░█▀█
 ░█▀▄░█▀▀░█░░░█▀█░░█░░█░█░█░█░█░█

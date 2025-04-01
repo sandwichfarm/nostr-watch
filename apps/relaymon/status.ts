@@ -239,9 +239,9 @@ function createAsciiBox(stats: StatusStats): string {
   box += '╠' + '═'.repeat(boxWidth - 2) + '╣\n';
   
   // Headers for the three columns
-  const queueHeader = `${header('QUEUE STATS')}`;
-  const cacheHeader = `${header('CACHE STATS')}`;
-  const sessionHeader = `${header('SESSION STATS')}`;
+  const queueHeader = `${header('QUEUE')}`;
+  const cacheHeader = `${header('CACHE')}`;
+  const sessionHeader = `${header('SESSION')}`;
   
   // Create a header row with exact width
   let headerContent = '';

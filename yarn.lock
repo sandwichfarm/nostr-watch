@@ -2215,6 +2215,32 @@
     "@noble/curves" "^1.1.0"
     "@noble/hashes" "^1.2.0"
 
+"@nostrwatch/nostrawl@*":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@nostrwatch/nostrawl/-/nostrawl-0.0.4.tgz#55405a2e8f0eceb3753a135955e3dfc1fb2f4297"
+  integrity sha512-UD4Zir2zC0OYdr81HEeE/ERaISllHr8zkfsChgXN37DYN1Q6mTaQqfN1eydyC1vqNzPxJpAXepYe/zKu8DB6Dg==
+  dependencies:
+    "@nostr-fetch/adapter-nostr-tools" "0.13.1"
+    bullmq "4.14.2"
+    dotenv "16.3.1"
+    ioredis "5.3.2"
+    javascript-time-ago "2.5.9"
+    lmdb "3.0.5"
+    nostr-fetch "0.13.1"
+    nostr-tools "1.17.0"
+    p-queue "7.4.1"
+    promise-deferred "2.0.4"
+    ramda "0.30.1"
+    websocket-polyfill "0.0.3"
+
+"@nostrwatch/publisher@0.12.2":
+  version "0.12.2"
+  resolved "https://registry.yarnpkg.com/@nostrwatch/publisher/-/publisher-0.12.2.tgz#a6b258e48acf4198d66e62a7365a610082c068e6"
+  integrity sha512-hlYPXLVjtuxkB9vcezKVtI4cNS29MI39TO12cUaoijYv6Fd6hMduq0KO+43tSqHCItR30K12rrTEjOmsmTSrUg==
+  dependencies:
+    nostr-geotags "^0.7.1"
+    nostr-tools "1.17.0"
+
 "@nrwl/devkit@19.6.5":
   version "19.6.5"
   resolved "https://registry.npmjs.org/@nrwl/devkit/-/devkit-19.6.5.tgz#d2255eddcf36cc0bb04d1d99257a015e7eee96ca"
@@ -8274,6 +8300,20 @@ nostr-tools@2.10.4:
   version "2.10.4"
   resolved "https://registry.yarnpkg.com/nostr-tools/-/nostr-tools-2.10.4.tgz#2ba0a36d1f2e1b3d77c724ca8fad880c8de6844d"
   integrity sha512-biU7sk+jxHgVASfobg2T5ttxOGGSt69wEVBC51sHHOEaKAAdzHBLV/I2l9Rf61UzClhliZwNouYhqIso4a3HYg==
+  dependencies:
+    "@noble/ciphers" "^0.5.1"
+    "@noble/curves" "1.2.0"
+    "@noble/hashes" "1.3.1"
+    "@scure/base" "1.1.1"
+    "@scure/bip32" "1.3.1"
+    "@scure/bip39" "1.2.1"
+  optionalDependencies:
+    nostr-wasm "0.1.0"
+
+nostr-tools@2.11.0:
+  version "2.11.0"
+  resolved "https://registry.yarnpkg.com/nostr-tools/-/nostr-tools-2.11.0.tgz#b86d64f1fbae7c69675e8675518ab80b19ec9358"
+  integrity sha512-kRtXI9j5f45NvIcdJacQ0UEAfEb7p/jhZqhAGLQWtUd5idZJPYdSyR8hdw+MmpGH4TCMH5plZrXzFltIIZrkEA==
   dependencies:
     "@noble/ciphers" "^0.5.1"
     "@noble/curves" "1.2.0"

@@ -5,10 +5,17 @@
     },
     "nodeModulesDir": "auto",
     "tasks": {
-      "start": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write main.ts",
-      "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write",
+      "compile": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon main.ts",
+      "start": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run main.ts",
+      "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run",
       "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'",
-      "status": "deno run --allow-net --allow-env --allow-read --allow-write status.ts"
+      "status": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run status.ts",
+      "compile:macos-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-apple-darwin --output dist/relaymon-macos-x64 main.ts",
+      "compile:macos-arm64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target aarch64-apple-darwin --output dist/relaymon-macos-arm64 main.ts",
+      "compile:linux-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-unknown-linux-gnu --output dist/relaymon-linux-x64 main.ts",
+      "compile:linux-arm64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target aarch64-unknown-linux-gnu --output dist/relaymon-linux-arm64 main.ts",
+      "compile:windows-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-pc-windows-msvc --output dist/relaymon-windows-x64.exe main.ts",
+      "compile:all": "deno task compile:macos-x64 && deno task compile:macos-arm64 && deno task compile:linux-x64 && deno task compile:linux-arm64 && deno task compile:windows-x64 && deno task compile:windows-arm64"
     },
     "fmt": {
       "files": {
@@ -58,7 +65,14 @@
       "@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
       "npm:@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
       "nostr-geotags": "https://esm.sh/nostr-geotags@latest",
-      "nostr-tools": "https://esm.sh/nostr-tools@latest"
+      "nostr-tools": "https://esm.sh/nostr-tools@latest",
+      "sqlite": "https://esm.sh/sqlite@latest",
+      "npm:sqlite": "https://esm.sh/sqlite@latest",
+      "winston": "https://esm.sh/winston@latest",
+      "debug": "https://esm.sh/debug@latest",
+      "js-yaml": "https://esm.sh/js-yaml@latest",
+      "std/flags": "https://deno.land/std@0.218.2/flags/mod.ts",
+      "std/fs": "https://deno.land/std@0.218.2/fs/mod.ts"
     }
 }
   

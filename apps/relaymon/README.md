@@ -113,11 +113,41 @@ queue:
 
 Run Relaymon with the following command:
 
-    deno run --allow-net --allow-env --allow-read --allow-write main.ts
+    deno run --allow-net --allow-env --allow-read --allow-write --allow-run main.ts
 
 Or, if you have a deno.json configured with tasks:
 
     deno task start
+
+### Command Line Options
+
+- `-h, --help`: Display the help menu with usage information
+- `-c, --config`: Specify the path to the configuration file (default: ./config.yaml)
+
+Examples:
+
+    # Display help menu
+    deno run --allow-net --allow-env --allow-read --allow-write --allow-run main.ts --help
+    
+    # Use a custom config file
+    deno run --allow-net --allow-env --allow-read --allow-write --allow-run main.ts -c /path/to/custom-config.yaml
+    deno task start -- -c /path/to/custom-config.yaml
+    
+The status command also supports the config path flag:
+
+    deno run --allow-net --allow-env --allow-read --allow-write --allow-run status.ts -c /path/to/custom-config.yaml
+    deno task status -- -c /path/to/custom-config.yaml
+
+### Process Management
+
+Relaymon prevents multiple instances from running simultaneously. If you try to start a second instance, it will display an error message with the PID of the currently running instance:
+
+```
+Error: relaymon is already running with PID 12345
+To stop it, use: kill 12345
+```
+
+RelayMon creates a PID file in the system's temporary directory (e.g., `/tmp` on Linux/macOS or `%TEMP%` on Windows) to track the running instance. The file is automatically cleaned up when the process exits normally.
 
 ## Project Structure
 
@@ -144,7 +174,36 @@ relaymon/
 
 - Formatting: Run `deno fmt` to format the code.
 - Linting: Run `deno lint` to lint the code.
-- Testing: Run `deno test --allow-net --allow-env --allow-read --allow-write` to execute tests.
+- Testing: Run `deno test --allow-net --allow-env --allow-read --allow-write --allow-run` to execute tests.
+
+### Building for Different Platforms
+
+RelayMon can be compiled for different platforms using the provided Deno tasks:
+
+```bash
+# Compile for macOS (Intel/AMD64)
+deno task compile:macos-x64
+
+# Compile for macOS (ARM64/Apple Silicon)
+deno task compile:macos-arm64
+
+# Compile for Linux (x64)
+deno task compile:linux-x64
+
+# Compile for Linux (ARM64)
+deno task compile:linux-arm64
+
+# Compile for Windows (x64)
+deno task compile:windows-x64
+
+# Compile for Windows (ARM64)
+deno task compile:windows-arm64
+
+# Compile for all platforms
+deno task compile:all
+```
+
+The compiled binaries will be created in the `./dist` directory with appropriate names (e.g., `dist/relaymon-macos-x64`, `dist/relaymon-linux-x64`, etc.).
 
 ## Contributing
 

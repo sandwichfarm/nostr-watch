@@ -36,8 +36,8 @@ export async function runDaemon(config: any): Promise<void> {
     await maybeAnnounce(config);
 
     // Set concurrency based on CPU cores if not defined in config
-    let concurrency = config.queue.workerConcurrency;
-    if (concurrency === undefined) {
+    let concurrency = config?.queue?.workerConcurrency;
+    if (!concurrency) {
       // Get CPU cores and use cores-2 (min 1)
       const availableCores = navigator.hardwareConcurrency || 4; // Default to 4 if not available
       concurrency = Math.max(1, availableCores - 2); // At least 1 thread

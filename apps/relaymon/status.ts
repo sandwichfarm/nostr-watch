@@ -422,9 +422,24 @@ export function formatCompactStats(queueManager: any): string {
 // Run when executed directly
 if (import.meta.main) {
   async function runStatus() {
+    // Default config path
+    let configPath = "./config.yaml";
+    
+    // Simple command line argument parsing
+    for (let i = 0; i < Deno.args.length; i++) {
+      const arg = Deno.args[i];
+      if (arg === "-c" || arg === "--config") {
+        if (i + 1 < Deno.args.length) {
+          configPath = Deno.args[i + 1];
+          i++; // Skip the next argument as we've used it
+        }
+      }
+    }
+    
     // Load the configuration
     try {
-      const config = await loadConfig("./config.yaml");
+      const config = await loadConfig(configPath);
+      console.log(`Configuration loaded from ${configPath}`);
       
       // Create a minimal QueueManager for status display
       const queueManager = {

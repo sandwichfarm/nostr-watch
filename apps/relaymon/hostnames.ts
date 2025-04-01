@@ -1,10 +1,10 @@
 // hostnames.ts
-import Logger from "npm:@nostrwatch/logger";
+import { getLogger, LogLevel } from "./logger.ts";
 import { normalizeURL } from "npm:nostr-tools/utils";
 import hash from "npm:object-hash";
 import { getOnlineRelays } from "./db.ts"; // Import our new function from db.ts
 
-const log = new Logger("@nostrwatch/relaymon:hostname");
+const logger = getLogger("Hostnames");
 
 const isPubkey = (str: string): boolean => /^[0-9a-fA-F]{64}$/.test(str);
 const containsPubkey = (str: string): boolean => /[0-9a-fA-F]{64}/.test(str);
@@ -26,7 +26,7 @@ export const relayArrToHostnameProtocolKeyedMap = (urls: string[]): Map<string, 
       }
       urlMap.get(protocolAndHostname)?.push(url);
     } catch (error) {
-      log.error(`Invalid URL: ${url}`);
+      logger.error(`Invalid URL: ${url}`);
     }
   });
 
@@ -70,7 +70,7 @@ function isRootUrl(url: string): boolean {
  * It uses online relay data from the database (via getOnlineRelays) to determine whether the relay should be ignored
  * or marked as a child of another relay based on its NIP-11 info and URL characteristics.
  */
-export const relayHostnameDedup = async (result: any, cache: any): Promise<any> => {
+export const relayHostnameDedup = async (result: any): Promise<any> => {
   const { url: mURL, hostname: HOSTNAME, protocol: PROTOCOL } = result;
   try {
     if (!mURL || !HOSTNAME || !PROTOCOL) {
@@ -95,7 +95,7 @@ export const relayHostnameDedup = async (result: any, cache: any): Promise<any> 
     const hasInfo = Object.keys(result?.info?.data ?? {}).length > 0;
     const infoHash = hasInfo ? `RelayCheckInfo@${hash(result.info.data)}` : null;
     const relativeInfoHashes = new Map<string, any>();
-    log.debug(`target: ${mURL} w/ info id ${infoHash}`);
+    logger.debug(`target: ${mURL} w/ info id ${infoHash}`);
 
     // Collect info hashes from related relays if available.
     for (const relayRelative of hostnameRelatives) {
@@ -103,7 +103,7 @@ export const relayHostnameDedup = async (result: any, cache: any): Promise<any> 
       // this part may need adjustments.
       if (relayRelative.info === null) continue;
       const { url, info: id } = relayRelative;
-      log.debug(`relative: ${url} w/ info id ${id}`);
+      logger.debug(`relative: ${url} w/ info id ${id}`);
       relativeInfoHashes.set(relayRelative.url, id);
     }
     const relativeInfoHashesArray = Array.from(relativeInfoHashes.values());
@@ -117,18 +117,18 @@ export const relayHostnameDedup = async (result: any, cache: any): Promise<any> 
     );
     let orderedRelatives = orderedFamily.filter((r) => r !== mURL);
     if (!orderedRelatives) {
-      log.error(`Ordered relatives not found for ${PROTOCOL}//${HOSTNAME}`);
+      logger.error(`Ordered relatives not found for ${PROTOCOL}//${HOSTNAME}`);
       return result;
     }
     const index = orderedFamily.indexOf(mURL);
 
     if (index === 0) {
-      log.debug(`${mURL} has not been ignored and parent cleared, index: ${index}`);
+      logger.debug(`${mURL} has not been ignored and parent cleared, index: ${index}`);
       result.ignore = false;
       result.parent = "";
     } else if (index > 0) {
       result.parent = orderedRelatives[0];
-      log.debug(`${mURL} is a child of ${orderedRelatives[0]}`);
+      logger.debug(`${mURL} is a child of ${orderedRelatives[0]}`);
       const foundAtIndex = relativeInfoHashesArray.indexOf(infoHash);
       const eldestHasHash = Boolean(relativeInfoHashes.get(orderedRelatives[0]));
       const eldestIsRoot = isRootUrl(orderedRelatives[0]);
@@ -155,23 +155,23 @@ export const relayHostnameDedup = async (result: any, cache: any): Promise<any> 
       const reason7 = "Path includes hostname";
       const case7 = pathnameContainsHostname;
       if (case1 || case2 || case3 || case4 || case5 || case6 || case7) {
-        if (case1) log.warn(`Ignored because: ${reason1}`);
-        if (case2) log.warn(`Ignored because: ${reason2}`);
-        if (case3) log.warn(`Ignored because: ${reason3}`);
-        if (case4) log.warn(`Ignored because: ${reason4}`);
-        if (case5) log.warn(`Ignored because: ${reason5}`);
-        if (case6) log.warn(`Ignored because: ${reason6}`);
-        if (case7) log.warn(`Ignored because: ${reason7}`);
-        log.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}] [7:${case7}]`);
+        if (case1) logger.warn(`Ignored because: ${reason1}`);
+        if (case2) logger.warn(`Ignored because: ${reason2}`);
+        if (case3) logger.warn(`Ignored because: ${reason3}`);
+        if (case4) logger.warn(`Ignored because: ${reason4}`);
+        if (case5) logger.warn(`Ignored because: ${reason5}`);
+        if (case6) logger.warn(`Ignored because: ${reason6}`);
+        if (case7) logger.warn(`Ignored because: ${reason7}`);
+        logger.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}] [7:${case7}]`);
         result.ignore = true;
       } else {
         result.ignore = false;
       }
     } else {
-      log.error(`CRITICAL ERROR! relayHostnameDedup(): ${mURL} not found in hostnameGroup`);
+      logger.error(`CRITICAL ERROR! relayHostnameDedup(): ${mURL} not found in hostnameGroup`);
     }
   } catch (error) {
-    log.error(`Error in relayHostnameDedup: ${error}`);
+    logger.error(`Error in relayHostnameDedup: ${error}`);
   }
   return result;
 };

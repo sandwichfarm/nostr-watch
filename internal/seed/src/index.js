@@ -18,7 +18,7 @@ export const bootstrap = async (caller) => {
   const opts = await extractConfig(caller, 'seed')
 
   if(!Object.keys(opts).length === 0)
-    return logger.warn(`Skipping seed because there is no seeed config`)
+    return logger.warn(`Skipping seed because there is no seed config`)
 
   if(!opts?.sources)
     return logger.warn(`No seed sources specified in 'config.${caller}.seed.sources' nor in 'config.seed.sources', cannot seed`)

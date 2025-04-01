@@ -1,8 +1,10 @@
 // seeder.ts
 import { delay } from "npm:@nostrwatch/utils";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
-import { getLogger } from "./logger.ts";
-import { persistResult } from "./db.ts";
+import { getLogger, LogLevel } from "./logger.ts";
+import { persistResult, seedNewRelay, saveSeederTimestamp, getSeederTimestamps } from "./db.ts";
+import { NostrFetcher } from "npm:nostr-fetch@0.17.0";
+import { logStatus, incrementNewRelaysFound } from "./status.ts";
 
 const nostrNow = () => Math.round(Date.now() / 1000);
 
@@ -16,6 +18,7 @@ export interface SeederOptions {
     config?: string[];
     api?: { rest_api: string };
     events?: { pubkeys: string[]; relays: string[] };
+    logLevel?: LogLevel;
   };
 }
 
@@ -23,7 +26,7 @@ export class RelaySeeder {
   private interval: number;
   private sources: string[];
   private options: any;
-  private logger = getLogger("RelaySeeder");
+  private logger = getLogger("Seeder");
   private relayList: Set<string> = new Set();
   private running: boolean = false;
   private db?: DB;
@@ -36,10 +39,17 @@ export class RelaySeeder {
     this.options = options.options;
     this.allowedNetworks = options.options.allowedNetworks || [];
 
-    console.log("Seed sources:", this.sources);
-
     if ((this.sources.includes("cache") || this.sources.includes("db")) && options.options.db?.path) {
       this.db = new DB(options.options.db.path);
+    }
+    
+    // Load the last seed timestamps from the database
+    this.lastSeedTimestamps = getSeederTimestamps();
+    this.logger.debug(`Loaded last seed timestamps: ${JSON.stringify(this.lastSeedTimestamps)}`);
+
+    // Set logger level from config if available
+    if (options.options?.logLevel) {
+      this.logger.setLevel(options.options.logLevel);
     }
   }
 
@@ -52,7 +62,6 @@ export class RelaySeeder {
   }
 
   async seed(): Promise<void> {
-    console.log('seeding');
     let seeds: string[] = [];
     const timestamps: Record<string, number> = {};
 
@@ -78,29 +87,42 @@ export class RelaySeeder {
     }
     
     if (this.sources.includes("events")) {
-      console.log('seeding events');
       const [list, ts] = await this.seedFromEvents();
       seeds = seeds.concat(list);
       timestamps["events"] = ts;
     }
 
     seeds.forEach(url => this.relayList.add(url));
-    // this.lastSeedTimestamps = timestamps;
-    this.logger.info(`Seeder aggregated ${this.relayList.size} unique relays from sources.`);
+    this.logger.debug(`Seeder aggregated ${this.relayList.size} unique relays from sources.`);
 
+    // Only persist new relays
+    let newRelaysCount = 0;
     for (const relay of this.relayList) {
-      const result = {
-        url: relay,
-        checked_at: -1,
-        network: this.allowedNetworks.length > 0 ? this.allowedNetworks[0] : "clearnet"
-      };
-      persistResult(result);
+      const network = this.allowedNetworks.length > 0 ? this.allowedNetworks[0] : "clearnet";
+      if (seedNewRelay(relay, network)) {
+        newRelaysCount++;
+        this.logger.debug(`New relay found and seeded: ${relay}`);
+      }
     }
+
+    // Update and save the timestamps
+    for (const method in timestamps) {
+      this.lastSeedTimestamps[method] = timestamps[method];
+      saveSeederTimestamp(method, timestamps[method]);
+    }
+
+    // Update session stats with new relays found
+    if (newRelaysCount > 0) {
+      incrementNewRelaysFound(newRelaysCount);
+      this.logger.debug(`Added ${newRelaysCount} new relays to session stats.`);
+    }
+
+    this.logger.debug(`Seeded ${newRelaysCount} new relays out of ${this.relayList.size} total relays.`);
   }
 
   async seedFromConfig(): Promise<[string[], number]> {
     const relays = this.options.config && Array.isArray(this.options.config) ? this.options.config : [];
-    this.logger.info(`seedFromConfig: Found ${relays.length} relays from config.`);
+    this.logger.debug(`seedFromConfig: Found ${relays.length} relays from config.`);
     return [relays, nostrNow()];
   }
 
@@ -119,7 +141,7 @@ export class RelaySeeder {
         data = JSON.parse(fileContents);
       }
       const relays = data?.relays && Array.isArray(data.relays) ? data.relays : [];
-      this.logger.info(`seedFromStatic: Loaded ${relays.length} relays from static file.`);
+      this.logger.debug(`seedFromStatic: Loaded ${relays.length} relays from static file.`);
       return [relays,  nostrNow()];
     } catch (e) {
       this.logger.error(`seedFromStatic: Error reading static seed file: ${e}`);
@@ -141,7 +163,7 @@ export class RelaySeeder {
           relays.push(url as string);
         }
       });
-      this.logger.info(`seedFromCache: Found ${relays.length} relays from cache.`);
+      this.logger.debug(`seedFromCache: Found ${relays.length} relays from cache.`);
       return [relays, nostrNow()];
     } catch (e) {
       this.logger.error(`seedFromCache: Error reading from DB: ${e}`);
@@ -157,7 +179,7 @@ export class RelaySeeder {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
-      this.logger.info("seedFromAPI: Fetching relay data from API...");
+      this.logger.debug("seedFromAPI: Fetching relay data from API...");
       const response = await fetch(`${this.options.api.rest_api}/online`, { signal: controller.signal });
       clearTimeout(timeoutId);
       if (!response.ok) {
@@ -171,7 +193,7 @@ export class RelaySeeder {
       } else if (typeof responseData === "object" && responseData !== null) {
         relays = responseData.relays || [];
       }
-      this.logger.info(`seedFromAPI: Received ${relays.length} relays from API.`);
+      this.logger.debug(`seedFromAPI: Received ${relays.length} relays from API.`);
       return [relays, nostrNow()];
     } catch (e) {
       this.logger.error(`seedFromAPI: Error fetching from API: ${e}`);
@@ -180,7 +202,6 @@ export class RelaySeeder {
   }
 
   async seedFromEvents(): Promise<[string[], number]> {
-    console.log('importing events');
     if (!this.options.events?.pubkeys) {
       throw new Error("seedFromEvents: No pubkeys specified in events options.");
     }
@@ -188,32 +209,56 @@ export class RelaySeeder {
       throw new Error("seedFromEvents: No relays specified in events options.");
     }
     
-    // Retrieve the last seed timestamp for events; default to 0 if not set.
     let since = this.lastSeedTimestamps.events || 0;
-  
-    const { NostrFetcher } = await import("npm:nostr-fetch");
-    const fetcher = NostrFetcher.init();
+    this.logger.debug(`Events: Starting with timestamp ${since}`);
+    
     const kinds = [30166];
     const authors = this.options.events.pubkeys;
     const fetchFromRelays = this.options.events.relays;
+
+    this.logger.debug(`Fetching events from relays: ${fetchFromRelays.join(', ')}`);
+    this.logger.debug(`Looking for kind ${kinds[0]} events from authors: ${authors.join(', ')}`);
+    this.logger.debug(`Since timestamp: ${since}`);
     
-    // Pass the last seed timestamp to fetchAllEvents so that only new events are fetched.
-    const events = await fetcher.fetchAllEvents(fetchFromRelays, { kinds, authors }, { since });
-    const relays: string[] = [];
-    let newest = since; // Initialize with the previous since value
-    for await (const ev of events) {
-      // Update the newest timestamp if the event is later.
-      if (ev.created_at > newest) newest = ev.created_at;
-      const relay = ev.tags.find((tag: string[]) => tag[0] === "d")?.[1];
-      if (!relay) continue;
-      relays.push(relay);
+    const fetcher = NostrFetcher.init();
+    
+    try {
+      this.logger.debug('Starting to fetch events...');
+      const events = await fetcher.fetchAllEvents(
+        fetchFromRelays, 
+        { kinds, authors }, 
+        { since }
+      );
+
+      const relays: string[] = [];
+      let newest = since;
+      let eventCount = 0;
+
+      this.logger.debug('Processing events...');
+      for await (const ev of events) {
+        eventCount++;
+        this.logger.debug(`Processing event ${eventCount}: ${ev.id}`);
+        if (ev.created_at > newest) newest = ev.created_at;
+        const relay = ev.tags.find((tag: string[]) => tag[0] === "d")?.[1];
+        if (!relay) {
+          this.logger.debug(`Event ${ev.id} has no relay tag`);
+          continue;
+        }
+        this.logger.debug(`Found relay: ${relay}`);
+        relays.push(relay);
+      }
+
+      this.logger.debug(`Processed ${eventCount} events`);
+      fetcher.shutdown();
+      this.logger.debug(`seedFromEvents: Extracted ${relays.length} relays from events.`);
+      this.logger.debug(`Events: Updating timestamp from ${since} to ${newest}`);
+      
+      return [[...new Set(relays)], newest];
+    } catch (error) {
+      this.logger.error(`Error in seedFromEvents: ${error}`);
+      fetcher.shutdown();
+      return [[], since];
     }
-    fetcher.shutdown();
-    this.logger.info(`seedFromEvents: Extracted ${relays.length} relays from events.`);
-    
-    // Update the last seed timestamp for events to the newest event time.
-    this.lastSeedTimestamps.events = newest;
-    return [[...new Set(relays)], newest];
   }
   
 

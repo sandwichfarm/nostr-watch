@@ -5,7 +5,7 @@ Relaymon is a Nostr relay monitoring application written in Deno. It deduplicate
 ## Features
 
 - **Monitor Profile Announcement:**  
-  Publishes the monitor’s profile (metadata) and relay list on startup using the npm:@nostrwatch/announce package.
+  Publishes the monitor's profile (metadata) and relay list on startup using the npm:@nostrwatch/announce package.
 
 - **Relay Checks:**  
   Supports configurable tests (e.g., "open", "read") with custom timeouts and expiration settings. Expired relay checks are requeued based on configurable polling intervals and limits.
@@ -102,6 +102,7 @@ relaymon:
         open: 30000        # 30 seconds timeout for the "open" check
         read: 5000         # 5 seconds timeout for the "read" check
       max: "200"           # Enqueue up to 200 expired relays per polling iteration
+      statusInterval: 20   # Show status report every 20 checks
 
 queue:
   workerConcurrency: 20  # p-queue concurrency for check jobs
@@ -153,3 +154,29 @@ Contributions are welcome! Open an issue or submit a pull request with your chan
 ## License
 
 This project is licensed under the MIT License.
+
+## Status Reporting
+
+RelayMon includes an ASCII status report that shows statistics about the queue and relay cache. The status report is displayed after every N checks, where N is configurable in the config.yaml file:
+
+The status report includes:
+
+### Queue Stats
+- Active: Number of relay checks currently in progress
+- Completed: Number of completed relay checks
+- Failed: Number of failed relay checks
+- Waiting: Number of relay checks waiting to be processed
+- Paused: Whether the queue is paused (0 = not paused, 1 = paused)
+- Total Queue: Total number of checks in the queue
+
+### Cache Stats
+- Online: Number of relays that are currently online
+- Offline: Number of relays that are currently offline
+- Expired: Number of relays that need to be checked
+- Unchecked: Number of relays that have never been checked
+- Ignored: Number of relays that are ignored
+- Parents: Number of relays that have child relays
+- Children: Number of relays that have a parent
+- Total: Total number of relays in the database
+
+The status report provides a quick overview of the current state of RelayMon and helps monitor its performance.

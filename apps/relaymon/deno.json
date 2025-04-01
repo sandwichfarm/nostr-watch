@@ -1,15 +1,14 @@
 {
     "compilerOptions": {
       "lib": ["deno.ns", "deno.window", "esnext"],
-      "strict": true,
+      "strict": true
     },
     "nodeModulesDir": "auto",
     "importMap": "./import_map.json",
     "tasks": {
       "start": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write main.ts",
       "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write",
-      "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'",
-
+      "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'"
     },
     "fmt": {
       "files": {
@@ -21,6 +20,9 @@
         "include": ["**/*.ts", "**/*.js"]
       }
     },
-    "version": "0.1.0"
-  }
+    "version": "0.1.0",
+    "imports": {
+      "npm:nostr-fetch": "npm:nostr-fetch@0.17.0"
+    }
+}
   

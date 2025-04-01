@@ -4,9 +4,16 @@ import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup } from "./hostnames.ts";
 import { persistResult } from "./db.ts";
 import { delay } from "npm:@nostrwatch/utils";
-import { getLogger } from "./logger.ts";
+import { getLogger, LogLevel } from "./logger.ts";
 import { RetryManager } from "./retryManager.ts";
+import { statuses, updateSessionStats, incrementChecksCounter } from "./status.ts";
 import chalk from "npm:chalk";
+import { QueueManager } from "./queueManager.ts";
+import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import { getExpiredRelays } from "./db.ts";
+import { maybeAnnounce } from "./announce.ts";
+import { getPublicKey } from "npm:nostr-tools";
+
 chalk.level = 1;
 
 export class Worker {
@@ -15,6 +22,8 @@ export class Worker {
   private config: any;
   private publisher: Publisher;
   private retryManager: RetryManager;
+  private statusIntval: ReturnType<typeof setInterval>; // Default to log status every 20 checks
+  private knownRelayStatus: Map<string, boolean> = new Map(); // Track previous status (online/offline)
 
   constructor(
     private pubkey: string,
@@ -24,41 +33,84 @@ export class Worker {
     this.config = config;
     this.publisher = new Publisher(this.pubkey, config.publisher.relays);
     this.retryManager = new RetryManager(config.relaymon.retry.expiry);
+    this.statusIntval = statuses(this.queueManager, config.relaymon.checks.options.statusInterval);
+    
+    // Set logger level from config if available
+    if (config.logLevel) {
+      this.logger.setLevel(config.logLevel);
+    }
   }
 
   async processRelay(relayUrl: string): Promise<void> {
+    let wasSuccessful = true;
+    let wasOnline = false;
+    let wentOffline = false;
+
     try {
       const nocap = new Nocap(relayUrl, {
         timeouts: this.config.relaymon.checks.options.timeout,
-        logLevel: "debug",
+        logLevel: this.config.logLevel,
       });
       await nocap.useAdapters(Object.values(EveryAdapterDefault));
       const result = await nocap.check(
         this.config.relaymon.checks.enabled || ["open", "read"]
       );
       const dedupedResult = await relayHostnameDedup(result);
-      if (!dedupedResult.ignore && result.open.data === true) {
+      
+      // Update session stats - check if relay went offline
+      wasOnline = result.open?.data === true;
+      
+      // Check if the relay was previously online but is now offline
+      const previouslyOnline = this.knownRelayStatus.get(relayUrl);
+      if (previouslyOnline === true && !wasOnline) {
+        wentOffline = true;
+      }
+      
+      // Update known relay status
+      this.knownRelayStatus.set(relayUrl, wasOnline);
+      
+      if (!dedupedResult.ignore && wasOnline) {
         await this.publishResult(dedupedResult);
       } 
       persistResult(dedupedResult);
-      this.progressMessage(relayUrl, result, false);
+      
+      try {
+        this.progressMessage(relayUrl, result, false);
+      } catch (displayError) {
+        console.error("Error displaying progress:", displayError);
+      }
+      
       this.relayRetries.set(relayUrl, 0);
+
     } catch (error: any) {
+      wasSuccessful = false;
       this.logger.error(`Error processing relay ${relayUrl}: ${error.message}`);
-      this.progressMessage(relayUrl, {}, true);
+      
+      try {
+        this.progressMessage(relayUrl, {}, true);
+      } catch (displayError) {
+        console.error("Error displaying error progress:", displayError);
+      }
+      
       this.scheduleRetry(relayUrl);
+    } finally {
+      try {
+        updateSessionStats(relayUrl, wasSuccessful, wasOnline, wentOffline);
+        incrementChecksCounter();
+      } catch (statsError) {
+        console.error("Error updating stats:", statsError);
+      }
     }
   }
 
   async publishResult(result: any): Promise<void> {
     try {
-      // const event$ = new Kind30166(Deno.env.get("DAEMON_PUBKEY"));
-      // event$.generateEvent(result);
-      // const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
-      // const signedEvent = event$.signEvent(privkey);
-      // Uncomment the next two lines if you want to publish the event:
-      // await this.publisher.publishEvent(signedEvent);
-      // this.logger.info(`Published event for relay ${result.url}`);
+      const event$ = new Kind30166(getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || ""));
+      event$.generateEvent(result);
+      const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
+      const signedEvent = event$.signEvent(privkey);
+      await this.publisher.publishEvent(signedEvent);
+      this.logger.debug(`Published event for relay ${result.url}`);
     } catch (error: any) {
       this.logger.error(`Publish failed for ${result.url}: ${error.message}`);
       this.queueManager.addPublishJob(async () => {
@@ -86,7 +138,7 @@ export class Worker {
     url: string,
     result: any = {},
     error: boolean = false
-  ): Promise<void> {
+  ): void {
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray;

@@ -1,9 +1,10 @@
-import { getLogger } from "./logger.ts";
+import { getLogger, LogLevel } from "./logger.ts";
 import { AnnounceMonitor } from "npm:@nostrwatch/announce";
+import { getPublicKey } from "npm:nostr-tools";
+
+const logger = getLogger("Announce");
 
 export async function maybeAnnounce(config: any): Promise<void> {
-  const logger = getLogger("Announce");
-
   if (!config.monitor || !config.monitor.info) {
     logger.warn("Monitor metadata is missing; skipping announcement.");
     return;
@@ -29,15 +30,14 @@ export async function maybeAnnounce(config: any): Promise<void> {
   }
 
   try {
-    announcer.signEvent(privkey);
+    announcer.sign(privkey);
   } catch (error) {
     logger.error("Error signing announcement: " + error.message);
     return;
   }
 
-  const event = announcer.getEvent();
   try {
-    await announcer.publishEvent(event, config.publisher.relays);
+    await announcer.publish();
     logger.info("Monitor announcement published successfully.");
   } catch (error: any) {
     logger.error("Failed to publish monitor announcement: " + error.message);

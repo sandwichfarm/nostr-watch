@@ -25,7 +25,7 @@ export interface Config {
   relaymon: {
     networks: string[];
     retry: {
-      expiry: { max: number; delay: number }[];
+      backoff: { max: number; delay: number }[];
     };
     seed: {
       interval: number;

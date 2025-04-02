@@ -21,13 +21,15 @@ export async function maybeAnnounce(config: any): Promise<void> {
     nip05: config.monitor.info.nip05,
     owner: config.monitor.owner,
     geo: config.monitor.geo,
-  }, 'pubkey');
+  }, getPublicKey(Deno.env.get("DAEMON_PRIVKEY")));
 
   const privkey = Deno.env.get("DAEMON_PRIVKEY");
   if (!privkey) {
     logger.error("Missing DAEMON_PRIVKEY; cannot sign announcement.");
     return;
   }
+
+  announcer.generate();
 
   try {
     announcer.sign(privkey);
@@ -37,7 +39,7 @@ export async function maybeAnnounce(config: any): Promise<void> {
   }
 
   try {
-    await announcer.publish();
+    const result = await announcer.publish();
     logger.info("Monitor announcement published successfully.");
   } catch (error: any) {
     logger.error("Failed to publish monitor announcement: " + error.message);

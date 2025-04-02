@@ -23,3 +23,4 @@ packages/kinds
 .docker
 .svelte-kit
 scripts/deploy/gui-scp.sh
+.vscode

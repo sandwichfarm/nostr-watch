@@ -2,8 +2,9 @@
     "compilerOptions": {
       "lib": ["deno.ns", "deno.window", "esnext"],
       "strict": true,
-      "allowJs": true
+      "vendor": true,
     },
+    "vendor": true,
     "nodeModulesDir": "auto",
     "tasks": {
       "force-refresh": "rm -rf node_modules && rm -f deno.lock && DENO_DIR=$(deno info --json | jq -r .denoDir) && rm -rf \"$DENO_DIR/npm\" && deno task start",

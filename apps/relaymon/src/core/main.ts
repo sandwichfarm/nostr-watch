@@ -1,13 +1,13 @@
-import { header } from "./header.ts";
-import { loadConfig } from "./config.ts";
+import { header } from "../utils/header.ts";
+import { loadConfig } from "../config/config.ts";
 import { runDaemon } from "./daemon.ts";
 import { existsSync } from "https://deno.land/std@0.218.2/fs/mod.ts";
 import { join } from "https://deno.land/std@0.218.2/path/mod.ts";
-import { initializeDB } from "./db.ts";
-import { getLogger } from "./logger.ts";
+import { initializeDB } from "../db/db.ts";
+import { getLogger } from "../utils/logger.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
-import { parseRelayNetwork } from "../../internal/utils/src/network.ts";
-import { loadHostnameBlocklist } from "./blocklists.ts";
+import { parseRelayNetwork } from "npm:@nostrwatch/utils";
+import { loadHostnameBlocklist } from "../utils/blocklists.ts";
 
 const logger = getLogger("Main");
 
@@ -249,7 +249,7 @@ async function migrateNetworks(dbPath: string): Promise<void> {
   }
 }
 
-async function main() {
+export async function main() {
   // Display banner
 
   const args = Deno.args;
@@ -313,4 +313,7 @@ async function main() {
   await runDaemon(config);
 }
 
-main();
+// Call main function if this module is executed directly
+if (import.meta.main) {
+  main();
+}

@@ -178,16 +178,33 @@ RelayMon creates a PID file in the system's temporary directory (e.g., `/tmp` on
 
 ```
 relaymon/
-├── main.ts            # Main entry point
-├── config.ts          # Loads configuration from config.yaml
-├── announce.ts        # Publishes monitor announcement at startup
-├── daemon.ts          # Initializes components and starts monitoring loops
-├── queueManager.ts    # Manages job queues (check & publish)
-├── worker.ts          # Processes relay checks
-├── seeder.ts          # Aggregates relay list from multiple seed sources
-├── db.ts              # SQLite database operations
-├── retryManager.ts    # Handles retry/backoff logic
-├── logger.ts          # Logging helper
+├── index.ts           # Main entry point
+├── config.yaml        # Configuration file
+├── data/              # Data directory for database files
+├── logs/              # Log files directory
+├── src/               # Source code directory
+│   ├── core/          # Core application code
+│   │   ├── main.ts    # Main application logic
+│   │   ├── daemon.ts  # Initializes components and starts monitoring loops
+│   │   ├── worker.ts  # Processes relay checks
+│   │   ├── seeder.ts  # Aggregates relay list from multiple seed sources
+│   │   └── status.ts  # Status reporting utility
+│   ├── config/        # Configuration handling
+│   │   └── config.ts  # Loads configuration from config.yaml
+│   ├── db/            # Database functionality
+│   │   ├── db.ts      # Database operations
+│   │   └── debugdb.ts # Debug database functionality
+│   ├── utils/         # Utility functions
+│   │   ├── announce.ts    # Publishes monitor announcement at startup
+│   │   ├── queueManager.ts # Manages job queues (check & publish)
+│   │   ├── retryManager.ts # Handles retry/backoff logic
+│   │   ├── logger.ts      # Logging helper
+│   │   ├── header.ts      # Header utilities
+│   │   ├── hostnames.ts   # Hostname utilities
+│   │   ├── deletion.ts    # Deletion utilities
+│   │   └── blocklists.ts  # Blocklist management
+│   └── blocklists/    # Blocklist data
+├── tests/             # Test files
 └── deno.json          # Deno configuration file
 ```
 

@@ -1,20 +1,20 @@
 import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
 import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
-import { relayHostnameDedup, setConfig } from "./hostnames.ts";
-import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored } from "./db.ts";
+import { relayHostnameDedup, setConfig } from "../utils/hostnames.ts";
+import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored } from "../db/db.ts";
 import { delay } from "npm:@nostrwatch/utils";
-import { getLogger, LogLevel } from "./logger.ts";
-import { RetryManager } from "./retryManager.ts";
+import { getLogger, LogLevel } from "../utils/logger.ts";
+import { RetryManager } from "../utils/retryManager.ts";
 import { statuses, updateSessionStats, incrementChecksCounter } from "./status.ts";
 import chalk from "npm:chalk";
-import { QueueManager } from "./queueManager.ts";
-import { getExpiredRelays } from "./db.ts";
-import { maybeAnnounce } from "./announce.ts";
+import { QueueManager } from "../utils/queueManager.ts";
+import { getExpiredRelays } from "../db/db.ts";
+import { maybeAnnounce } from "../utils/announce.ts";
 import { getPublicKey } from "npm:nostr-tools";
-import { isHostnameBlocked } from "./blocklists.ts";
-import { createInfoHash } from "./hostnames.ts";
-import { deleteRelayCheckEvent } from "./deletion.ts";
+import { isHostnameBlocked } from "../utils/blocklists.ts";
+import { createInfoHash } from "../utils/hostnames.ts";
+import { deleteRelayCheckEvent } from "../utils/deletion.ts";
 
 chalk.level = 1;
 

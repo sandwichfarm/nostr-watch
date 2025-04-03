@@ -1,13 +1,13 @@
 // seeder.ts
 import { delay } from "https://deno.land/std@0.214.0/async/delay.ts";
-import { parseRelayNetwork } from "../../internal/utils/src/network.ts";
+import { parseRelayNetwork } from "npm:@nostrwatch/utils";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
-import { getLogger, LogLevel } from "./logger.ts";
-import { persistResult, seedNewRelay, saveSeederTimestamp, getSeederTimestamps } from "./db.ts";
+import { getLogger, LogLevel } from "../utils/logger.ts";
+import { persistResult, seedNewRelay, saveSeederTimestamp, getSeederTimestamps } from "../db/db.ts";
 import { NostrFetcher } from "npm:nostr-fetch@0.17.0";
 import { logStatus, incrementNewRelaysFound } from "./status.ts";
 import * as nostrwatchDB from "npm:@nostrwatch/db";
-import { loadHostnameBlocklist, isHostnameBlocked } from "./blocklists.ts";
+import { loadHostnameBlocklist, isHostnameBlocked } from "../utils/blocklists.ts";
 import nostrings from '@nostrwatch/nostrings';
 
 const nostrNow = () => Math.round(Date.now() / 1000);

@@ -1,14 +1,14 @@
-import { QueueManager } from "./queueManager.ts";
+import { QueueManager } from "../utils/queueManager.ts";
 import { Worker } from "./worker.ts";
 import { RelaySeeder } from "./seeder.ts";
-import { getLogger, setGlobalLogLevel } from "./logger.ts";
+import { getLogger, setGlobalLogLevel } from "../utils/logger.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { db, getExpiredRelays } from "npm:@nostrwatch/db";
-import { maybeAnnounce } from "./announce.ts";
+import { maybeAnnounce } from "../utils/announce.ts";
 import { getPublicKey } from "npm:nostr-tools";
-import { RetryManager } from "./retryManager.ts";
+import { RetryManager } from "../utils/retryManager.ts";
 import { formatCompactStats, showStatus } from "./status.ts";
-import { deleteRelayCheckEvent } from "./deletion.ts";
+import { deleteRelayCheckEvent } from "../utils/deletion.ts";
 
 export async function runDaemon(config: any): Promise<void> {
   // Set global log level from config if specified

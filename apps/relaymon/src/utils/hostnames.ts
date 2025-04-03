@@ -2,7 +2,7 @@
 import { getLogger, LogLevel } from "./logger.ts";
 import { normalizeURL } from "npm:nostr-tools/utils";
 import hash from "npm:object-hash";
-import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo } from "./db.ts";
+import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo } from "../db/db.ts";
 import { deleteRelayCheckEvent } from "./deletion.ts";
 
 // Force console output for debugging

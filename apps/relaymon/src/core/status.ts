@@ -1,9 +1,9 @@
-import { db } from "./db.ts";
-import { getLogger, LogLevel } from "./logger.ts";
+import { db } from "../db/db.ts";
+import { getLogger, LogLevel } from "../utils/logger.ts";
 import chalk from "npm:chalk";
-import { getExpiredRelays } from "./db.ts";
-import { RetryManager } from "./retryManager.ts";
-import { loadConfig } from "./config.ts";
+import { getExpiredRelays } from "../db/db.ts";
+import { RetryManager } from "../utils/retryManager.ts";
+import { loadConfig } from "../config/config.ts";
 
 const logger = getLogger("Status");
 

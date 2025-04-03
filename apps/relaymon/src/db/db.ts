@@ -1,5 +1,5 @@
 import { db, initDB } from "npm:@nostrwatch/db";
-import { getLogger } from "./logger.ts";
+import { getLogger } from "../utils/logger.ts";
 
 const logger = getLogger("DB");
 let isInitialized = false;

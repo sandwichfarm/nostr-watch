@@ -1,45 +1,76 @@
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import Logger from "npm:@nostrwatch/logger";
 
-const logger =  new Logger("DB");
-export let db = new DB("relaymon.db");
+const logger = new Logger("DB");
+export let db: DB;
 
-// Make sure our schema includes a retries column
-db.query(`
-  CREATE TABLE IF NOT EXISTS relay_status (
-    url TEXT PRIMARY KEY,
-    online INTEGER,
-    ignore INTEGER,
-    parent TEXT,
-    checked_at INTEGER,
-    rtt INTEGER,
-    network TEXT,
-    retries INTEGER DEFAULT 0
-  )
-`);
+// Default database path
+const DEFAULT_DB_PATH = "relaymon.db";
 
-// Check if retries column exists, if not add it
-const tableInfo = db.query(`PRAGMA table_info(relay_status)`);
-let hasRetriesColumn = false;
-for (const row of tableInfo) {
-  if (row[1] === "retries") {
-    hasRetriesColumn = true;
-    break;
+/**
+ * Initialize the database with an optional custom path
+ * @param dbPath Optional path to the SQLite database file
+ * @param enableWAL Optional boolean to enable WAL mode (default: true)
+ * @returns The database instance
+ */
+export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = true): DB {
+  logger.info(`Initializing database with path: ${dbPath}`);
+  db = new DB(dbPath);
+  
+  // Enable WAL mode for better performance (allows concurrent reads during writes)
+  if (enableWAL) {
+    logger.info("Enabling WAL (Write-Ahead Logging) mode for improved performance");
+    db.query(`PRAGMA journal_mode = WAL;`);
+    
+    // Set recommended pragmas for WAL mode
+    db.query(`PRAGMA synchronous = NORMAL;`); // Reduces synchronization overhead
+    db.query(`PRAGMA busy_timeout = 5000;`); // Wait up to 5 seconds when the database is busy
   }
+  
+  // Make sure our schema includes a retries column
+  db.query(`
+    CREATE TABLE IF NOT EXISTS relay_status (
+      url TEXT PRIMARY KEY,
+      online INTEGER,
+      ignore INTEGER,
+      parent TEXT,
+      checked_at INTEGER,
+      rtt INTEGER,
+      network TEXT,
+      retries INTEGER DEFAULT 0
+    )
+  `);
+
+  // Check if retries column exists, if not add it
+  const tableInfo = db.query(`PRAGMA table_info(relay_status)`);
+  let hasRetriesColumn = false;
+  for (const row of tableInfo) {
+    if (row[1] === "retries") {
+      hasRetriesColumn = true;
+      break;
+    }
+  }
+
+  if (!hasRetriesColumn) {
+    logger.info("Adding retries column to relay_status table");
+    db.query(`ALTER TABLE relay_status ADD COLUMN retries INTEGER DEFAULT 0`);
+  }
+
+  // Create timestamp table to track seeder methods' last run times
+  db.query(`
+    CREATE TABLE IF NOT EXISTS seeder_timestamps (
+      method TEXT PRIMARY KEY,
+      timestamp INTEGER
+    )
+  `);
+  
+  return db;
 }
 
-if (!hasRetriesColumn) {
-  logger.info("Adding retries column to relay_status table");
-  db.query(`ALTER TABLE relay_status ADD COLUMN retries INTEGER DEFAULT 0`);
+// Initialize with default path if not already initialized
+if (!db) {
+  initDB();
 }
-
-// Create timestamp table to track seeder methods' last run times
-db.query(`
-  CREATE TABLE IF NOT EXISTS seeder_timestamps (
-    method TEXT PRIMARY KEY,
-    timestamp INTEGER
-  )
-`);
 
 /**
  * Check if a relay is ready to be checked based on its last check time, 
@@ -92,21 +123,23 @@ export function getExpiredRelays(expires: number, allowedNetworks: string[], ret
   
   // Get all relays that might be candidates for checking
   // We'll apply retry backoff logic in memory
+  // Also exclude relays that are marked as ignored
   const query = `
     SELECT url, checked_at, retries, online, network
     FROM relay_status 
     WHERE network IN (${networkPlaceholders})
+    AND ignore = 0
   `;
   
   // All parameters: just networks
   const params = [...allowedNetworks];
   
-  logger.debug(`Checking relays with networks=${JSON.stringify(allowedNetworks)}`);
+  logger.debug(`Checking relays with networks=${JSON.stringify(allowedNetworks)}, excluding ignored relays`);
   
   // Process each relay, applying backoff logic based on retry count
   for (const [url, checkedAt, retries, online, network] of db.query(query, params)) {
-    // We've already filtered by network in the SQL query, 
-    // so we don't need to check network again here
+    // We've already filtered by network and ignored status in the SQL query, 
+    // so we don't need to check those again here
     
     // Use the shared isReadyToCheck function
     if (isReadyToCheck(checkedAt as number, retries as number, expires, retryManager)) {

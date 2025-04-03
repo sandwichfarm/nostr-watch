@@ -1,8 +1,8 @@
 import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
 import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
-import { relayHostnameDedup } from "./hostnames.ts";
-import { persistResult, incrementRetryCount, getRetryCount, db } from "./db.ts";
+import { relayHostnameDedup, setConfig } from "./hostnames.ts";
+import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored } from "./db.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { getLogger, LogLevel } from "./logger.ts";
 import { RetryManager } from "./retryManager.ts";
@@ -12,6 +12,9 @@ import { QueueManager } from "./queueManager.ts";
 import { getExpiredRelays } from "./db.ts";
 import { maybeAnnounce } from "./announce.ts";
 import { getPublicKey } from "npm:nostr-tools";
+import { isHostnameBlocked } from "./blocklists.ts";
+import { createInfoHash } from "./hostnames.ts";
+import { deleteRelayCheckEvent } from "./deletion.ts";
 
 chalk.level = 1;
 
@@ -23,6 +26,8 @@ export class Worker {
   private retryManager: RetryManager;
   private statusIntval: ReturnType<typeof setInterval>; // Default to log status every 20 checks
   private knownRelayStatus: Map<string, boolean> = new Map(); // Track previous status (online/offline)
+  private publishMaxRetries: number = 3;
+  private publishInitialBackoffMs: number = 1000;
 
   constructor(
     private pubkey: string,
@@ -39,8 +44,19 @@ export class Worker {
       this.logger.setLevel(config.logLevel);
     }
 
+    // Set publish retry configuration if available
+    if (config.publisher?.retry?.maxRetries !== undefined) {
+      this.publishMaxRetries = config.publisher.retry.maxRetries;
+    }
+    if (config.publisher?.retry?.initialBackoffMs !== undefined) {
+      this.publishInitialBackoffMs = config.publisher.retry.initialBackoffMs;
+    }
+
     // Initialize known relay status from database to maintain state between runs
     this.initializeRelayStatusFromDB();
+    
+    // Pass the config to the hostnames module for deletion events
+    setConfig(config);
   }
 
   // Initialize relay status map from database to persist knowledge between runs
@@ -71,6 +87,29 @@ export class Worker {
     let wasOnline = false;
     let wentOffline = false;
 
+    // Check if relay hostname is in blocklist
+    if (isHostnameBlocked(relayUrl)) {
+      this.logger.debug(`Skipping check for relay ${relayUrl} - hostname is in blocklist`);
+      await deleteRelayCheckEvent(relayUrl, "hostname is in blocklist", this.config, this.queueManager);
+      db.query("DELETE FROM relay_status WHERE url = ?", [relayUrl]); 
+      return;
+    }
+
+    // Check if relay is already marked as ignored in database
+    if (isRelayIgnored(relayUrl)) {
+      this.logger.debug(`Skipping check for relay ${relayUrl} - already marked as ignored in database`);
+      
+      // Generate a deletion event for this ignored relay
+      try {
+        await deleteRelayCheckEvent(relayUrl, "Relay was previously marked as ignored", this.config, this.queueManager);
+        this.logger.debug(`Published deletion event for previously ignored relay ${relayUrl}`);
+      } catch (error) {
+        this.logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
+      }
+      
+      return;
+    }
+
     this.logger.debug(`Starting check for relay: ${relayUrl}`);
     
     try {
@@ -82,6 +121,20 @@ export class Worker {
       const result = await nocap.check(
         this.config.relaymon.checks.enabled || ["open", "read"]
       );
+
+      // Store NIP-11 info in our database if it's available
+      if (result.info?.data && Object.keys(result.info.data).length > 0) {
+        try {
+          const infoHash = createInfoHash(result.info.data);
+          if (infoHash) {
+            storeRelayInfo(relayUrl, result.info.data, infoHash);
+            this.logger.debug(`Stored NIP-11 info for ${relayUrl} with hash ${infoHash}`);
+          }
+        } catch (infoError) {
+          this.logger.error(`Error storing NIP-11 info for ${relayUrl}: ${infoError}`);
+        }
+      }
+
       const dedupedResult = await relayHostnameDedup(result);
       
       // Update session stats - check if relay went offline
@@ -160,18 +213,45 @@ export class Worker {
 
   async publishResult(result: any): Promise<void> {
     try {
-      const event = new Kind30166(getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || ""));
-      event.generateEvent(result);
-      const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
-      const signedEvent = await event.signEvent(privkey);
-      await this.publisher.publishEvent(signedEvent);
-      this.logger.debug(`Published event for relay ${result.url}`);
+      const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
+        try {
+          const event = new Kind30166(getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || ""));
+          event.generateEvent(result);
+          const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
+          const signedEvent = await event.signEvent(privkey);
+          await this.publisher.publishEvent(signedEvent);
+          this.logger.debug(`Published event for relay ${result.url}`);
+          return true; // Indicate success
+        } catch (error: any) {
+          this.logger.error(`Publish failed for ${result.url}: ${error.message}`);
+          
+          // If we haven't reached max retries, create a new publish job with increased retry count
+          if (retryCount < maxRetries) {
+            const nextRetryCount = retryCount + 1;
+            // Exponential backoff
+            const nextBackoffMs = backoffMs * 2;
+            this.logger.info(`Scheduling retry ${nextRetryCount}/${maxRetries} for ${result.url} in ${nextBackoffMs}ms`);
+            
+            // Add a new job to the queue after delay with lower priority
+            setTimeout(() => {
+              this.queueManager.addPublishJob(
+                () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
+                { isRetry: true } // Mark as retry job for proper tracking and priority
+              );
+            }, nextBackoffMs);
+            
+            return false; // Indicate job didn't complete successfully but will be retried
+          } else {
+            this.logger.error(`Exceeded maximum retries (${maxRetries}) for publishing ${result.url}`);
+            return false; // Indicate permanent failure after max retries
+          }
+        }
+      };
+
+      // Add the initial publish job to the queue (not a retry)
+      this.queueManager.addPublishJob(() => publishJob(), { isRetry: false });
     } catch (error: any) {
-      this.logger.error(`Publish failed for ${result.url}: ${error.message}`);
-      this.queueManager.addPublishJob(async () => {
-        await delay(1000);
-        // Optionally, retry publishing here.
-      });
+      this.logger.error(`Failed to add publish job for ${result.url}: ${error.message}`);
     }
   }
 

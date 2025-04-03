@@ -11,21 +11,30 @@ npm install @nostrwatch/db
 ## Usage
 
 ```typescript
-import { NostrWatchDB } from "@nostrwatch/db";
+import { initDB, db } from "@nostrwatch/db";
 
-// Create a new database instance
-const db = new NostrWatchDB("path/to/database.db");
+// Initialize the database with a custom path
+initDB("path/to/database.db");
+
+// Or use the default path ("relaymon.db")
+// initDB();
 
 // Use the database methods
 db.seedNewRelay("wss://relay.example.com", "clearnet");
 db.getOnlineRelays();
 db.persistResult({ /* ... */ });
 
-// Don't forget to close the database when done
-db.close();
+// Access the db instance directly for other operations
+// db.query(...)
 ```
 
 ## API
+
+### Initialization
+```typescript
+initDB(dbPath: string = "relaymon.db"): DB
+```
+Initialize the database with an optional custom path. Returns the database instance.
 
 ### Constructor
 ```typescript

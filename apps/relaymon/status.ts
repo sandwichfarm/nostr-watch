@@ -56,6 +56,14 @@ interface StatusStats {
   parents: number;
   children: number;
   
+  // Publish queue stats
+  publishSize: number;
+  publishPending: number;
+  publishedEvents: number;
+  failedPublishes: number;
+  retryingPublishes: number;
+  successRate: string;
+  
   // Session stats (since program start)
   checksTotal: number;
   checksErrors: number;
@@ -75,6 +83,16 @@ export function getStats(queueManager: any): StatusStats {
     failed: queueManager.checkQueue.sizeFailed || 0,
     paused: queueManager.checkQueue.isPaused ? 1 : 0,
     totalQueue: (queueManager.checkQueue.pending || 0) + (queueManager.checkQueue.size || 0)
+  };
+
+  // Get publish queue stats if available
+  const publishStats = queueManager.getPublishingStats ? queueManager.getPublishingStats() : {
+    size: queueManager.publishQueue?.size || 0,
+    pending: queueManager.publishQueue?.pending || 0,
+    published: queueManager.publishedEvents || 0,
+    failed: queueManager.failedPublishes || 0,
+    retrying: queueManager.retryingPublishes || 0,
+    success_rate: 'N/A'
   };
 
   // Get database stats
@@ -188,6 +206,12 @@ export function getStats(queueManager: any): StatusStats {
   return {
     ...queueStats,
     ...dbStats,
+    publishSize: publishStats.size,
+    publishPending: publishStats.pending,
+    publishedEvents: publishStats.published,
+    failedPublishes: publishStats.failed,
+    retryingPublishes: publishStats.retrying,
+    successRate: publishStats.success_rate,
     checksTotal: sessionStats.checksTotal,
     checksErrors: sessionStats.checksErrors,
     wentOfflineCount: sessionStats.wentOffline.size,
@@ -215,8 +239,13 @@ function createAsciiBox(stats: StatusStats): string {
   };
   
   // Helper function to pad numbers and ensure consistent spacing
-  const pad = (num: number): string => {
-    return num.toString().padStart(5, ' ');
+  const pad = (value: number | string): string => {
+    if (typeof value === 'number') {
+      return value.toString().padStart(5, ' ');
+    } else if (typeof value === 'string') {
+      return value.padStart(5, ' ');
+    }
+    return '     '; // Default padding for empty or undefined values
   };
   
   // Box dimensions
@@ -270,18 +299,30 @@ function createAsciiBox(stats: StatusStats): string {
   // Define type for the data items
   interface StatsItem {
     key: string;
-    value: number;
+    value: number | string;
     highlight?: boolean;
     warning?: boolean;
   }
   
   // Define the data for each table
   const queueData: StatsItem[] = [
+    // Check queue section
+    { key: `${header('CHECK QUEUE')}`, value: '' },
     { key: 'Active:', value: stats.active },
     { key: 'Waiting:', value: stats.waiting },
     { key: 'Failed:', value: stats.failed, warning: stats.failed > 0 },
     { key: 'Paused:', value: stats.paused },
-    { key: 'Total Queue:', value: stats.totalQueue }
+    { key: 'Total:', value: stats.totalQueue },
+    // Add space between sections
+    { key: '', value: '' },
+    // Publish queue section
+    { key: `${header('PUBLISH QUEUE')}`, value: '' },
+    { key: 'Active:', value: stats.publishPending },
+    { key: 'Waiting:', value: stats.publishSize },
+    { key: 'Published:', value: stats.publishedEvents, highlight: true },
+    { key: 'Failed:', value: stats.failedPublishes, warning: stats.failedPublishes > 0 },
+    { key: 'Retrying:', value: stats.retryingPublishes, warning: stats.retryingPublishes > 0 },
+    { key: 'Success Rate:', value: stats.successRate }
   ];
   
   const cacheData: StatsItem[] = [
@@ -308,7 +349,7 @@ function createAsciiBox(stats: StatusStats): string {
   
   // Find the longest key in each column for better alignment
   const findLongestKey = (data: StatsItem[]): number => {
-    return Math.max(...data.map(item => strLength(item.key)));
+    return Math.max(...data.map(item => strLength(item.key.toString())));
   };
   
   const queueKeyLength = findLongestKey(queueData);
@@ -322,10 +363,21 @@ function createAsciiBox(stats: StatusStats): string {
     // Queue column
     if (i < queueData.length) {
       const item = queueData[i];
-      const keyPadding = ' '.repeat(queueKeyLength - strLength(item.key));
-      const formattedValue = item.warning ? 
-        warning(pad(item.value)) : 
-        (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
+      const keyPadding = ' '.repeat(queueKeyLength - strLength(item.key.toString()));
+      let formattedValue;
+      
+      if (item.key === 'Success Rate:' || typeof item.value === 'string') {
+        // Special handling for string values like success rate
+        formattedValue = item.warning ? 
+          warning(item.value.toString()) : 
+          (item.highlight ? highlight(item.value.toString()) : value(item.value.toString()));
+      } else {
+        // Number values
+        formattedValue = item.warning ? 
+          warning(pad(item.value as number)) : 
+          (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
+      }
+      
       const cellContent = ` ${subheader(item.key)}${keyPadding} ${formattedValue}`;
       rowContent += `${cellContent}${' '.repeat(Math.max(0, columnWidth - strLength(cellContent)))}`;
     } else {
@@ -335,10 +387,21 @@ function createAsciiBox(stats: StatusStats): string {
     // Cache column
     if (i < cacheData.length) {
       const item = cacheData[i];
-      const keyPadding = ' '.repeat(cacheKeyLength - strLength(item.key));
-      const formattedValue = item.warning ? 
-        warning(pad(item.value)) : 
-        (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
+      const keyPadding = ' '.repeat(cacheKeyLength - strLength(item.key.toString()));
+      let formattedValue;
+      
+      if (typeof item.value === 'string') {
+        // String values
+        formattedValue = item.warning ? 
+          warning(item.value) : 
+          (item.highlight ? highlight(item.value) : value(item.value));
+      } else {
+        // Number values
+        formattedValue = item.warning ? 
+          warning(pad(item.value as number)) : 
+          (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
+      }
+      
       const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
       rowContent += `${cellContent}${' '.repeat(Math.max(0, columnWidth - strLength(cellContent)))}`;
     } else {
@@ -348,13 +411,23 @@ function createAsciiBox(stats: StatusStats): string {
     // Session column
     if (i < sessionData.length) {
       const item = sessionData[i];
-      const keyPadding = ' '.repeat(sessionKeyLength - strLength(item.key));
-      const formattedValue = item.warning ? 
-        warning(pad(item.value)) : 
-        (item.highlight ? highlight(pad(item.value)) : value(pad(item.value)));
+      const keyPadding = ' '.repeat(sessionKeyLength - strLength(item.key.toString()));
+      let formattedValue;
+      
+      if (typeof item.value === 'string') {
+        // String values
+        formattedValue = item.warning ? 
+          warning(item.value) : 
+          (item.highlight ? highlight(item.value) : value(item.value));
+      } else {
+        // Number values
+        formattedValue = item.warning ? 
+          warning(pad(item.value as number)) : 
+          (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
+      }
+      
       const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
       // Make sure we pad exactly to the remaining width to ensure straight right border
-      // Use Math.max to prevent negative padding which could happen with long text
       const remainingWidth = (boxWidth - 2) - strLength(rowContent) - strLength(cellContent);
       rowContent += `${cellContent}${' '.repeat(Math.max(0, remainingWidth))}`;
     } else {
@@ -399,12 +472,16 @@ export function logStatus(queueManager: any, interval: number = 20): void {
   if (checksCounter >= interval) {
     checksCounter = 0; // Reset counter
     try {
-      const stats = getStats(queueManager);
-      console.log(createAsciiBox(stats));
+      showStatus(queueManager);
     } catch (error) {
       logger.error(`Error getting stats: ${error}`);
     }
   }
+}
+
+export function showStatus(queueManager: any): void {
+  const stats = getStats(queueManager);
+  console.log(createAsciiBox(stats));
 }
 
 /**

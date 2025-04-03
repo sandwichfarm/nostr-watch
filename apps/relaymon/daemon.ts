@@ -3,11 +3,12 @@ import { Worker } from "./worker.ts";
 import { RelaySeeder } from "./seeder.ts";
 import { getLogger, setGlobalLogLevel } from "./logger.ts";
 import { delay } from "npm:@nostrwatch/utils";
-import { getExpiredRelays } from "./db.ts";
+import { db, getExpiredRelays } from "npm:@nostrwatch/db";
 import { maybeAnnounce } from "./announce.ts";
 import { getPublicKey } from "npm:nostr-tools";
 import { RetryManager } from "./retryManager.ts";
-import { formatCompactStats } from "./status.ts";
+import { formatCompactStats, showStatus } from "./status.ts";
+import { deleteRelayCheckEvent } from "./deletion.ts";
 
 export async function runDaemon(config: any): Promise<void> {
   // Set global log level from config if specified
@@ -33,8 +34,6 @@ export async function runDaemon(config: any): Promise<void> {
   });
 
   try {
-    await maybeAnnounce(config);
-
     // Set concurrency based on CPU cores if not defined in config
     let concurrency = config?.queue?.workerConcurrency;
     if (!concurrency) {
@@ -49,18 +48,26 @@ export async function runDaemon(config: any): Promise<void> {
       2,
       config
     );
+    
+    // Move maybeAnnounce call after creating queueManager so we can pass it
+    await maybeAnnounce(config, queueManager);
+    
     const pubkey = Deno.env.get("DAEMON_PRIVKEY")? getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || "") : "";
     const worker = new Worker(pubkey, queueManager, config);
 
-    const seeder = new RelaySeeder({
-      interval: config.relaymon.seed.interval,
-      sources: config.relaymon.seed.sources,
-      options: {
-        ...config.relaymon.seed.options,
-        allowedNetworks: config.relaymon.networks,
-        config: config?.seed || [],
-      },
-    });
+    let seeder: RelaySeeder | undefined
+    
+    if(config?.relaymon?.seed) {
+      seeder = new RelaySeeder({
+        interval: config.relaymon.seed.interval,
+        sources: config.relaymon.seed.sources,
+        options: {
+          ...config.relaymon.seed.options,
+          allowedNetworks: config.relaymon.networks,
+          db: config.relaymon.seed.options.db || undefined
+        },
+      });
+    }
     
     async function checkExpiredRelays() {
       // No longer need the local Set - we'll use QueueManager's tracking
@@ -109,6 +116,13 @@ export async function runDaemon(config: any): Promise<void> {
 
           // Add relays to queue
           for (const relay of toEnqueue) {
+            //hotfixes
+            if(relay.includes("|")) {
+              logger.warn(`DEBUG: Skipping/Deleting relay ${relay} because it includes |`);
+              await deleteRelayCheckEvent(relay, "Skipping/Deleting relay because it includes |", config, queueManager);
+              db.query("DELETE FROM relay_status WHERE url = ?", [relay]);
+              continue;
+            }
             // We no longer need to manually track relays - QueueManager does it
             queueManager.addCheckJob(async () => {
               try {
@@ -131,30 +145,46 @@ export async function runDaemon(config: any): Promise<void> {
       }
     }
 
-    // First run the seeder to populate the database
-    logger.info("Starting seeder to populate database...");
-    try {
-      await seeder.seed(); // Run initial seed
-      logger.info("Initial seeding complete, starting monitoring...");
-    } catch (seedError) {
-      logger.error(`Error during initial seeding: ${seedError.message}`);
-      logger.error(seedError.stack || "No stack trace available");
-      // Continue anyway - we might have partial results
+    if(seeder) {
+      // First run the seeder to populate the database
+      logger.info("Starting seeder to populate database...");
+      try {
+        await seeder.seed(); // Run initial seed
+        logger.info("Initial seeding complete, starting monitoring...");
+      } catch (seedError) {
+        logger.error(`Error during initial seeding: ${seedError.message}`);
+        logger.error(seedError.stack || "No stack trace available");
+        // Continue anyway- we might have partial results
+      }
     }
-    
-    // Then start both processes in parallel, with individual error handling
-    await Promise.all([
-      seeder.start().catch(error => {
-        logger.error(`Seeder process error: ${error.message}`);
-        logger.error(error.stack || "No stack trace available");
-        // Keep running - we'll just have a failed seeder
-      }),
+    else {
+      logger.info("No seeder found, skipping initial seeding.");
+    }
+
+    const tasks: Promise<void>[] = []
+
+    if(seeder) {
+      tasks.push(
+        seeder.start().catch(error => {
+          logger.error(`Seeder process error: ${error.message}`);
+          logger.error(error.stack || "No stack trace available");
+          // Keep running - we'll just have a failed seeder
+        })
+      )
+    }
+
+    tasks.push(
       checkExpiredRelays().catch(error => {
         logger.error(`Check process error: ${error.message}`);
         logger.error(error.stack || "No stack trace available");
         // This shouldn't happen due to the try/catch inside checkExpiredRelays
       })
-    ]);
+    )
+
+    showStatus(queueManager);
+    
+    // Then start both processes in parallel, with individual error handling
+    await Promise.all(tasks);
   } catch (error) {
     logger.error(`Fatal error in daemon: ${error.message}`);
     logger.error(error.stack || "No stack trace available");

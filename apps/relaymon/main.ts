@@ -3,6 +3,13 @@ import { loadConfig } from "./config.ts";
 import { runDaemon } from "./daemon.ts";
 import { existsSync } from "https://deno.land/std@0.218.2/fs/mod.ts";
 import { join } from "https://deno.land/std@0.218.2/path/mod.ts";
+import { initializeDB } from "./db.ts";
+import { getLogger } from "./logger.ts";
+import { DB } from "https://deno.land/x/sqlite/mod.ts";
+import { parseRelayNetwork } from "../../internal/utils/src/network.ts";
+import { loadHostnameBlocklist } from "./blocklists.ts";
+
+const logger = getLogger("Main");
 
 /**
  * Display help menu with usage information
@@ -17,10 +24,12 @@ USAGE:
 OPTIONS:
   -h, --help              Show this help message
   -c, --config <PATH>     Specify a custom configuration file path (default: ./config.yaml)
+  -m, --migrate           Run network migration on existing database (updates relay network types)
 
 EXAMPLES:
   relaymon                        Run with default config (./config.yaml)
   relaymon -c custom-config.yaml  Run with a custom config file
+  relaymon --migrate              Run network migration before starting monitor
   
 RelayMon creates a PID file in the system's temporary directory to prevent multiple instances.
 When running, press Ctrl+C to stop the monitor gracefully.
@@ -148,52 +157,160 @@ async function createPidFile(): Promise<void> {
   }
 }
 
-async function main() {
+/**
+ * Migrate relay networks in the database
+ * This function fixes network types for all relay URLs
+ */
+async function migrateNetworks(dbPath: string): Promise<void> {
+  const migrationLogger = getLogger("NetworkMigration");
+  migrationLogger.info(`Initializing database: ${dbPath}`);
+  
+  // Connect directly to the database for raw queries
+  const db = new DB(dbPath);
+
   try {
-    // Simple command line argument parsing
-    let configPath = "./config.yaml";
+    migrationLogger.info("Beginning network migration...");
     
-    for (let i = 0; i < Deno.args.length; i++) {
-      const arg = Deno.args[i];
+    // Count total relays before migration
+    const countResult = db.query("SELECT COUNT(*) FROM relay_status");
+    const totalRelays = countResult[0][0] as number;
+    migrationLogger.info(`Found ${totalRelays} relays in the database`);
+
+    // Get all relay URLs and their current networks
+    const rows = db.query("SELECT url, network FROM relay_status");
+    
+    // Collect statistics
+    let updated = 0;
+    let unchanged = 0;
+    const networkStats: Record<string, number> = {};
+    const fromToStats: Record<string, Record<string, number>> = {};
+    
+    // Begin transaction for better performance
+    db.query("BEGIN TRANSACTION");
+
+    // Process each relay
+    for (const [url, storedNetwork] of rows) {
+      const relayUrl = url as string;
+      const currentNetwork = storedNetwork as string;
       
-      if (arg === "-h" || arg === "--help") {
-        displayHelpMenu();
-        Deno.exit(0);
-      } else if (arg === "-c" || arg === "--config") {
-        if (i + 1 < Deno.args.length) {
-          configPath = Deno.args[i + 1];
-          i++; // Skip the next argument as we've used it
+      // Determine the correct network using parseRelayNetwork
+      const detectedNetwork = parseRelayNetwork(relayUrl);
+      
+      // Update statistics
+      networkStats[detectedNetwork] = (networkStats[detectedNetwork] || 0) + 1;
+      
+      // Check if update is needed
+      if (currentNetwork !== detectedNetwork) {
+        // Update from->to stats
+        fromToStats[currentNetwork] = fromToStats[currentNetwork] || {};
+        fromToStats[currentNetwork][detectedNetwork] = (fromToStats[currentNetwork][detectedNetwork] || 0) + 1;
+        
+        // Update the database
+        db.query(
+          "UPDATE relay_status SET network = ? WHERE url = ?",
+          [detectedNetwork, relayUrl]
+        );
+        
+        updated++;
+        if (updated % 100 === 0) {
+          migrationLogger.info(`Progress: Updated ${updated} relays so far...`);
         }
+      } else {
+        unchanged++;
       }
     }
     
-    // Check if already running
-    const { running, pid } = await isAlreadyRunning();
-    if (running) {
-      console.error(`Error: relaymon is already running with PID ${pid}`);
-      console.error("To stop it, use: kill " + pid);
-      Deno.exit(1);
+    // Commit the transaction
+    db.query("COMMIT");
+    
+    // Log results
+    migrationLogger.info(`Migration complete!`);
+    migrationLogger.info(`Updated ${updated} relays, ${unchanged} were already correct`);
+    migrationLogger.info(`Network distribution after migration: ${JSON.stringify(networkStats)}`);
+    
+    // Log the from->to stats in a readable format
+    migrationLogger.info("Network migration details:");
+    for (const fromNetwork in fromToStats) {
+      const toNetworks = fromToStats[fromNetwork];
+      for (const toNetwork in toNetworks) {
+        const count = toNetworks[toNetwork];
+        migrationLogger.info(`  ${fromNetwork} → ${toNetwork}: ${count} relays`);
+      }
     }
     
-    // Create PID file
-    await createPidFile();
-    
-    const config = await loadConfig(configPath);
-    console.log(`Configuration loaded successfully from ${configPath}`);
-    await header(config);
-    await runDaemon(config);
   } catch (error) {
-    console.error("Error loading configuration or starting the daemon:", error);
-    // Make sure to clean up PID file on error
-    try {
-      if (existsSync(PID_FILE)) {
-        await Deno.remove(PID_FILE);
-      }
-    } catch (e) {
-      // Ignore errors removing PID file
-    }
+    migrationLogger.error(`Error during migration: ${error.message}`);
+    migrationLogger.error(error.stack);
+    db.query("ROLLBACK");
+    throw error;
+  } finally {
+    // Close the database connection
+    db.close();
+  }
+}
+
+async function main() {
+  // Display banner
+
+  const args = Deno.args;
+
+  // Process command line arguments
+  if (args.includes("-h") || args.includes("--help")) {
+    displayHelpMenu();
+    Deno.exit(0);
+  }
+
+  // Check if relaymon is already running
+  const runStatus = await isAlreadyRunning();
+  if (runStatus.running) {
+    console.error(`Error: RelayMon is already running (PID ${runStatus.pid})`);
     Deno.exit(1);
   }
+
+  // Create PID file
+  await createPidFile();
+
+  // Parse config path from arguments
+  let configPath = "./config.yaml";
+  const configArgIndex = Math.max(args.indexOf("-c"), args.indexOf("--config"));
+  if (configArgIndex !== -1 && configArgIndex < args.length - 1) {
+    configPath = args[configArgIndex + 1];
+  }
+
+  // Check if file exists
+  if (!existsSync(configPath)) {
+    console.error(`Error: Config file not found at "${configPath}"`);
+    displayHelpMenu();
+    Deno.exit(1);
+  }
+
+  // Load configuration
+  const config = await loadConfig(configPath);
+
+  //DO NOT REMOVE THIS.
+  console.log(header(config));
+
+  logger.info(`Loaded configuration from ${configPath}`);
+
+  // Load hostname blocklist
+  await loadHostnameBlocklist();
+  logger.info("Loaded hostname blocklist");
+
+  // Initialize database
+  if (config.db?.path) {
+    await initializeDB(config.db.path, config.db.enableWAL);
+  } else {
+    console.error("Error: Database path not specified in config");
+    Deno.exit(1);
+  }
+
+  // Check for network migration flag
+  if (args.includes("-m") || args.includes("--migrate")) {
+    await migrateNetworks(config.db.path);
+  }
+
+  // Start the daemon
+  await runDaemon(config);
 }
 
 main();

@@ -4,7 +4,7 @@ import { getPublicKey } from "npm:nostr-tools";
 
 const logger = getLogger("Announce");
 
-export async function maybeAnnounce(config: any): Promise<void> {
+export async function maybeAnnounce(config: any, queueManager?: any): Promise<void> {
   if (!config.monitor || !config.monitor.info) {
     logger.warn("Monitor metadata is missing; skipping announcement.");
     return;
@@ -39,9 +39,24 @@ export async function maybeAnnounce(config: any): Promise<void> {
   }
 
   try {
-    const result = await announcer.publish();
-    logger.info("Monitor announcement published successfully.");
+    if (queueManager) {
+      // Use the queue manager to publish the announcement
+      queueManager.addPublishJob(async () => {
+        try {
+          const result = await announcer.publish();
+          logger.info("Monitor announcement published successfully via queue.");
+        } catch (error: any) {
+          logger.error("Failed to publish monitor announcement via queue: " + error.message);
+          throw error; // Rethrow to trigger retry mechanism
+        }
+      });
+      logger.info("Added monitor announcement to publish queue.");
+    } else {
+      // Fallback to direct publishing if no queue manager is available
+      const result = await announcer.publish();
+      logger.info("Monitor announcement published successfully.");
+    }
   } catch (error: any) {
-    logger.error("Failed to publish monitor announcement: " + error.message);
+    logger.error("Failed to handle monitor announcement: " + error.message);
   }
 }

@@ -1,10 +1,14 @@
 // seeder.ts
-import { delay } from "npm:@nostrwatch/utils";
+import { delay } from "https://deno.land/std@0.214.0/async/delay.ts";
+import { parseRelayNetwork } from "../../internal/utils/src/network.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { getLogger, LogLevel } from "./logger.ts";
 import { persistResult, seedNewRelay, saveSeederTimestamp, getSeederTimestamps } from "./db.ts";
 import { NostrFetcher } from "npm:nostr-fetch@0.17.0";
 import { logStatus, incrementNewRelaysFound } from "./status.ts";
+import * as nostrwatchDB from "npm:@nostrwatch/db";
+import { loadHostnameBlocklist, isHostnameBlocked } from "./blocklists.ts";
+import nostrings from '@nostrwatch/nostrings';
 
 const nostrNow = () => Math.round(Date.now() / 1000);
 
@@ -13,7 +17,7 @@ export interface SeederOptions {
   sources: string[];
   options: {
     allowedNetworks?: string[];
-    db?: { path: string };
+    db?: { path: string; enableWAL?: boolean };
     static?: { path: string };
     config?: string[];
     api?: { rest_api: string };
@@ -51,6 +55,11 @@ export class RelaySeeder {
     if (options.options?.logLevel) {
       this.logger.setLevel(options.options.logLevel);
     }
+    
+    // Load hostname blocklist
+    loadHostnameBlocklist().catch(err => {
+      this.logger.error(`Failed to load hostname blocklist: ${err}`);
+    });
   }
 
   getRelays(): string[] {
@@ -65,59 +74,152 @@ export class RelaySeeder {
     let seeds: string[] = [];
     const timestamps: Record<string, number> = {};
 
-    if (this.sources.includes("config")) {
-      const [list, ts] = await this.seedFromConfig();
-      seeds = seeds.concat(list);
-      timestamps["config"] = ts;
-    }
-    if (this.sources.includes("static")) {
-      const [list, ts] = await this.seedFromStatic();
-      seeds = seeds.concat(list);
-      timestamps["static"] = ts;
-    }
-    if (this.sources.includes("cache")) {
-      const [list, ts] = await this.seedFromCache();
-      seeds = seeds.concat(list);
-      timestamps["cache"] = ts;
-    }
-    if (this.sources.includes("api")) {
-      const [list, ts] = await this.seedFromAPI();
-      seeds = seeds.concat(list);
-      timestamps["api"] = ts;
-    }
-    
-    if (this.sources.includes("events")) {
-      const [list, ts] = await this.seedFromEvents();
-      seeds = seeds.concat(list);
-      timestamps["events"] = ts;
-    }
-
-    seeds.forEach(url => this.relayList.add(url));
-    this.logger.debug(`Seeder aggregated ${this.relayList.size} unique relays from sources.`);
-
-    // Only persist new relays
-    let newRelaysCount = 0;
-    for (const relay of this.relayList) {
-      const network = this.allowedNetworks.length > 0 ? this.allowedNetworks[0] : "clearnet";
-      if (seedNewRelay(relay, network)) {
-        newRelaysCount++;
-        this.logger.debug(`New relay found and seeded: ${relay}`);
+    try {
+      // Try each seeding strategy, but don't let individual failures stop the entire process
+      if (this.sources.includes("config")) {
+        try {
+          const [list, ts] = await this.seedFromConfig();
+          seeds = seeds.concat(list);
+          timestamps["config"] = ts;
+        } catch (error) {
+          this.logger.error(`Error in seedFromConfig: ${error}`);
+        }
       }
-    }
+      
+      if (this.sources.includes("static")) {
+        try {
+          const [list, ts] = await this.seedFromStatic();
+          seeds = seeds.concat(list);
+          timestamps["static"] = ts;
+        } catch (error) {
+          this.logger.error(`Error in seedFromStatic: ${error}`);
+        }
+      }
+      
+      if (this.sources.includes("cache")) {
+        try {
+          const [list, ts] = await this.seedFromCache();
+          seeds = seeds.concat(list);
+          timestamps["cache"] = ts;
+        } catch (error) {
+          this.logger.error(`Error in seedFromCache: ${error}`);
+        }
+      }
+      
+      if (this.sources.includes("api")) {
+        try {
+          const [list, ts] = await this.seedFromAPI();
+          seeds = seeds.concat(list);
+          timestamps["api"] = ts;
+        } catch (error) {
+          this.logger.error(`Error in seedFromAPI: ${error}`);
+        }
+      }
+      
+      if (this.sources.includes("events")) {
+        try {
+          const [list, ts] = await this.seedFromEvents();
+          seeds = seeds.concat(list);
+          timestamps["events"] = ts;
+        } catch (error) {
+          this.logger.error(`Error in seedFromEvents: ${error}`);
+        }
+      }
+      
+      if (this.sources.includes("db")) {
+        try {
+          this.logger.debug("Starting seedFromDB strategy");
+          const [list, ts] = await this.seedFromDB();
+          seeds = seeds.concat(list);
+          timestamps["db"] = ts;
+          this.logger.debug(`seedFromDB completed, got ${list.length} relays`);
+        } catch (error) {
+          this.logger.error(`Error in seedFromDB: ${error}`);
+        }
+      }
 
-    // Update and save the timestamps
-    for (const method in timestamps) {
-      this.lastSeedTimestamps[method] = timestamps[method];
-      saveSeederTimestamp(method, timestamps[method]);
-    }
+      // Add all found relay URLs to the set
+      for (const url of seeds) {
+        try {
+          // nostrings.sanitize.relayUrls expects an array, but we're processing one URL at a time
+          const sanitizedUrls = nostrings.sanitize.relayUrls([url]);
+          if (sanitizedUrls && sanitizedUrls.length > 0) {
+            sanitizedUrls.forEach(sanitized => this.relayList.add(sanitized));
+          }
+        } catch (error) {
+          this.logger.error(`Error sanitizing relay URL ${url}: ${error}`);
+        }
+      }
+      this.logger.debug(`Seeder aggregated ${this.relayList.size} unique relays from sources.`);
 
-    // Update session stats with new relays found
-    if (newRelaysCount > 0) {
-      incrementNewRelaysFound(newRelaysCount);
-      this.logger.debug(`Added ${newRelaysCount} new relays to session stats.`);
-    }
+      // Validate allowed networks
+      if (!this.allowedNetworks || this.allowedNetworks.length === 0) {
+        this.logger.warn("No allowed networks specified in config, using default 'clearnet'");
+        this.allowedNetworks = ["clearnet"]; // Default to clearnet instead of failing
+      }
+      
+      this.logger.debug(`Seeding relays using allowed networks: ${this.allowedNetworks.join(', ')}`);
 
-    this.logger.debug(`Seeded ${newRelaysCount} new relays out of ${this.relayList.size} total relays.`);
+      // Only persist new relays
+      let newRelaysCount = 0;
+      for (const relay of this.relayList) {
+        try {
+          // Check if the relay hostname is in the blocklist
+          if (isHostnameBlocked(relay)) {
+            this.logger.debug(`Skipping relay ${relay} - hostname is in blocklist`);
+            continue;
+          }
+          
+          // Use parseRelayNetwork to determine the correct network for this relay URL
+          let detectedNetwork = "clearnet"; // Default
+          try {
+            detectedNetwork = parseRelayNetwork(relay);
+          } catch (parseError) {
+            this.logger.warn(`Failed to parse network for ${relay}: ${parseError}. Using '${detectedNetwork}' as fallback.`);
+          }
+          
+          // Check if the detected network is in our allowed networks
+          if (!this.allowedNetworks.includes(detectedNetwork)) {
+            this.logger.debug(`Skipping relay ${relay} - network ${detectedNetwork} not in allowed networks: ${this.allowedNetworks.join(', ')}`);
+            continue;
+          }
+          
+          // Seed with the detected network type
+          if (seedNewRelay(relay, detectedNetwork)) {
+            newRelaysCount++;
+            this.logger.debug(`New relay found and seeded: ${relay} (network: ${detectedNetwork})`);
+          }
+        } catch (relayError) {
+          this.logger.error(`Error processing relay ${relay}: ${relayError}`);
+          // Continue with other relays
+        }
+      }
+
+      // Update and save the timestamps
+      for (const method in timestamps) {
+        try {
+          this.lastSeedTimestamps[method] = timestamps[method];
+          saveSeederTimestamp(method, timestamps[method]);
+        } catch (timeError) {
+          this.logger.error(`Error saving timestamp for ${method}: ${timeError}`);
+        }
+      }
+
+      // Update session stats with new relays found
+      try {
+        if (newRelaysCount > 0) {
+          incrementNewRelaysFound(newRelaysCount);
+          this.logger.debug(`Added ${newRelaysCount} new relays to session stats.`);
+        }
+      } catch (statsError) {
+        this.logger.error(`Error updating stats: ${statsError}`);
+      }
+
+      this.logger.debug(`Seeded ${newRelaysCount} new relays out of ${this.relayList.size} total relays.`);
+    } catch (error) {
+      this.logger.error(`Unhandled error in seed method: ${error}`);
+      // Don't rethrow - allow the application to continue
+    }
   }
 
   async seedFromConfig(): Promise<[string[], number]> {
@@ -260,7 +362,171 @@ export class RelaySeeder {
       return [[], since];
     }
   }
-  
+
+  async seedFromDB(): Promise<[string[], number]> {
+    if (!this.options.db?.path) {
+      this.logger.warn("seedFromDB: No database path specified in options.");
+      return [[], nostrNow()];
+    }
+    
+    // Make sure we have some allowed networks
+    this.logger.debug(`seedFromDB: Checking allowed networks: ${JSON.stringify(this.allowedNetworks)}`);
+    if (!this.allowedNetworks || this.allowedNetworks.length === 0) {
+      this.logger.warn("seedFromDB: No allowed networks specified, using default 'clearnet'");
+      this.allowedNetworks = ["clearnet"]; // Default to clearnet instead of failing
+    }
+    
+    this.logger.debug(`seedFromDB: Using allowed networks: ${this.allowedNetworks.join(', ')}`);
+    
+    try {
+      this.logger.debug(`seedFromDB: Initializing database connection to ${this.options.db.path}`);
+      
+      // Try to open the database in read-only mode for better concurrency
+      // with other processes that might be writing to it
+      try {
+        this.logger.debug("seedFromDB: Attempting to open DB in read-only mode");
+        // First, attempt to directly query using a new temporary connection
+        // with OPEN_READONLY flag to prevent journal file issues
+        const tempDb = new DB(this.options.db.path, { mode: "read" });
+        
+        const relays: string[] = [];
+        const networkStats: Record<string, number> = {};
+        
+        try {
+          // Modified query to filter by network - use simpler query first and filter in memory
+          this.logger.debug("seedFromDB: Executing query to get all relay URLs");
+          const rows = tempDb.query("SELECT url, network FROM relay_status");
+          this.logger.debug(`seedFromDB: Retrieved ${rows.length} relays from database, filtering by network`);
+          
+          // Process results and filter by network with better error handling
+          for (const row of rows) {
+            try {
+              const url = row[0] as string;
+              const dbNetwork = row[1] as string;
+              
+              // Validate the network using parseRelayNetwork with error handling
+              let detectedNetwork = "clearnet"; // Default
+              try {
+                detectedNetwork = parseRelayNetwork(url);
+              } catch (parseError) {
+                this.logger.warn(`Failed to parse network for ${url}: ${parseError}. Using '${detectedNetwork}' as fallback.`);
+              }
+              
+              // Count networks for debugging
+              networkStats[detectedNetwork] = (networkStats[detectedNetwork] || 0) + 1;
+              
+              // Only include relay if its detected network is in allowed networks
+              if (this.allowedNetworks.includes(detectedNetwork)) {
+                relays.push(url);
+              }
+              
+              // Log a warning if the stored network doesn't match the detected network
+              if (dbNetwork !== detectedNetwork) {
+                this.logger.debug(`Network mismatch for ${url}: stored as ${dbNetwork}, detected as ${detectedNetwork}`);
+              }
+            } catch (rowError) {
+              this.logger.error(`Error processing row: ${rowError}`);
+              // Continue processing other rows
+            }
+          }
+          
+          // Log network statistics
+          this.logger.debug(`Network distribution of retrieved relays: ${JSON.stringify(networkStats)}`);
+          this.logger.debug(`seedFromDB: Filtered to ${relays.length} relays matching networks: ${this.allowedNetworks.join(', ')}`);
+          tempDb.close();
+          return [relays, nostrNow()];
+        } catch (innerError) {
+          this.logger.warn(`seedFromDB: Error querying in read-only mode: ${innerError}. Will try again with standard mode.`);
+          try {
+            tempDb.close();
+          } catch (closeError) {
+            this.logger.warn(`Error closing temp DB: ${closeError}`);
+          }
+          throw innerError; // Rethrow to trigger standard mode
+        }
+      } catch (readOnlyError) {
+        // If read-only mode fails, fall back to the standard approach
+        // but with retry logic to handle concurrent access issues
+        this.logger.warn(`seedFromDB: Read-only mode failed: ${readOnlyError}. Trying standard approach.`);
+        
+        // Initialize the DB with WAL mode for better concurrency
+        const enableWAL = this.options.db.enableWAL !== false; 
+        this.logger.debug(`seedFromDB: Initializing DB with WAL mode: ${enableWAL}`);
+        try {
+          nostrwatchDB.initDB(this.options.db.path, enableWAL);
+        } catch (dbInitError) {
+          this.logger.error(`Failed to initialize nostrwatchDB: ${dbInitError}`);
+          return [[], nostrNow()]; // Return empty array on initialization failure
+        }
+        
+        // Get all relays with retry logic
+        const relays: string[] = [];
+        const networkStats: Record<string, number> = {};
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+          try {
+            this.logger.debug(`seedFromDB: Standard query attempt ${attempts + 1}/${maxAttempts}`);
+            // Use simpler query and filter in memory to avoid SQL issues
+            const rows = nostrwatchDB.db.query("SELECT url, network FROM relay_status");
+            this.logger.debug(`seedFromDB: Retrieved ${rows.length} relays from database, filtering by network`);
+            
+            // Process results and filter by network with better error handling
+            for (const row of rows) {
+              try {
+                const url = row[0] as string;
+                const dbNetwork = row[1] as string;
+                
+                // Validate the network using parseRelayNetwork with error handling
+                let detectedNetwork = "clearnet"; // Default
+                try {
+                  detectedNetwork = parseRelayNetwork(url);
+                } catch (parseError) {
+                  this.logger.warn(`Failed to parse network for ${url}: ${parseError}. Using '${detectedNetwork}' as fallback.`);
+                }
+                
+                // Count networks for debugging
+                networkStats[detectedNetwork] = (networkStats[detectedNetwork] || 0) + 1;
+                
+                // Only include relay if its detected network is in allowed networks
+                if (this.allowedNetworks.includes(detectedNetwork)) {
+                  relays.push(url);
+                }
+              } catch (rowError) {
+                this.logger.error(`Error processing row: ${rowError}`);
+                // Continue processing other rows
+              }
+            }
+            
+            // Log network statistics
+            this.logger.debug(`Network distribution of retrieved relays: ${JSON.stringify(networkStats)}`);
+            this.logger.debug(`seedFromDB: Filtered to ${relays.length} relays matching networks: ${this.allowedNetworks.join(', ')}`);
+            return [relays, nostrNow()];
+          } catch (queryError) {
+            attempts++;
+            this.logger.warn(`seedFromDB: Query error on attempt ${attempts}/${maxAttempts}: ${queryError}`);
+            
+            if (attempts >= maxAttempts) {
+              throw queryError; // Give up after max attempts
+            }
+            
+            // Wait before retrying (exponential backoff)
+            const waitTime = Math.pow(2, attempts) * 500; // 1s, 2s, 4s...
+            this.logger.debug(`seedFromDB: Waiting ${waitTime}ms before retrying...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
+        }
+      }
+      
+      // This point should not be reached due to return/throw in the loops above
+      this.logger.error("seedFromDB: Reached unexpected code path");
+      return [[], nostrNow()];
+    } catch (e) {
+      this.logger.error(`seedFromDB: Error retrieving relays from database: ${e}`);
+      return [[], nostrNow()];
+    }
+  }
 
   async start(): Promise<void> {
     this.running = true;

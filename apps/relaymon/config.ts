@@ -1,6 +1,11 @@
 import { parse } from "jsr:@std/yaml";
 
 export interface Config {
+  logLevel?: string;
+  db?: {
+    path: string;
+    enableWAL?: boolean;
+  };
   monitor: {
     slug: string;
     info: {
@@ -33,6 +38,7 @@ export interface Config {
       options: {
         db?: {
           path: string;
+          enableWAL?: boolean;
         };
         static?: {
           path: string;

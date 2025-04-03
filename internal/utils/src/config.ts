@@ -1,5 +1,19 @@
 import { isBrowser } from './browser';
 
+// Type declaration for Deno runtime
+declare global {
+  interface Window {
+    Deno?: any;
+  }
+  
+  const Deno: {
+    env: {
+      get: (key: string) => string | undefined;
+    };
+    readTextFile: (path: string) => Promise<string>;
+  } | undefined;
+}
+
 let yaml: typeof import('js-yaml') | null = null;
 let isYamlAvailable = false;
 

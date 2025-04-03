@@ -41,6 +41,7 @@
     "publisher"
   ],
   "dependencies": {
+    "@noble/hashes": "1.5.0",
     "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/publisher-nostrtools": "workspace:^",
     "@nostrwatch/utils": "workspace:^",

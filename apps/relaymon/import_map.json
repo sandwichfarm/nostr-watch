@@ -8,6 +8,12 @@
       "npm:@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
       "npm:@nostrwatch/nocap-every-adapter-default": "../../libraries/nocap/adapters/default/index.ts",
       "npm:@nostrwatch/publisher": "../../internal/publisher/src/index.ts",
-      "npm:nostr-tools": "https://esm.sh/nostr-tools@latest"
+      "npm:nostr-tools": "https://esm.sh/nostr-tools@latest",
+      "@std/yaml": "jsr:@std/yaml",
+      "@nostrwatch/db": "npm:@nostrwatch/db",
+      "@nostrwatch/utils": "npm:@nostrwatch/utils",
+      "std/": "https://deno.land/std@0.218.2/",
+      "sqlite": "https://deno.land/x/sqlite/mod.ts",
+      "chalk": "npm:chalk"
     }
   }

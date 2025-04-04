@@ -5,6 +5,7 @@
     },
     "nodeModulesDir": "auto",
     "tasks": {
+      "interactive": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run interactive.ts",
       "compile": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon index.ts",
       "start": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run index.ts",
       "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run",

@@ -151,6 +151,9 @@ export default class Base {
     this.checksRequested = keys;
     this.evaluate_requested_checks();
     for await (const key of this.checksRequested) {
+      if(key === null){
+        this.logger.debug(`${this.url}: check(${keys}): key is null [${JSON.stringify(this.checksRequested)}]`);
+      }
       if (this.hard_fail === true) continue;
       this.logger.debug(`${key}: check(${keys}): setting current and running this._check()`);
       this.current = key;

@@ -6,21 +6,13 @@ import { getLogger } from "../../utils/logger.ts";
 
 const logger = getLogger("Renderer");
 
-// Box drawing helper
-export const renderBox = (title: string, content: string[]): string => {
-  // Ensure width is at least title length + 6 (for padding and borders) and minimum 20 characters
-  const contentWidth = Math.max(...content.map(line => line.length));
-  const width = Math.max(contentWidth + 4, title.length + 6, 20);
-  const border = "+" + "-".repeat(width - 2) + "+";
-  const titleLine = `| ${colors.bold(title)} ${" ".repeat(Math.max(0, width - title.length - 4))} |`;
+// Modern rendering helper for titles and sections
+export const renderTitle = (title: string, content: string[]): string => {
+  // Create a clean, modern title with color and subtle decoration
+  const titleDisplay = `\n${colors.bold(colors.cyan('⚡ ' + title.toUpperCase()))}\n${colors.dim('━'.repeat(title.length + 3))}\n`;
   
-  let result = `${border}\n${titleLine}\n${border}\n`;
-  content.forEach(line => {
-    result += `| ${line}${" ".repeat(Math.max(0, width - line.length - 4))} |\n`;
-  });
-  result += border;
-  
-  return result;
+  // Directly add content without boxing
+  return titleDisplay + content.join('\n') + '\n';
 };
 
 // Main render function
@@ -66,44 +58,63 @@ export function renderMainMenu(): string {
   
   // Create dynamic options list
   const options = [
-    isRunning ? "Stop Monitor" : "Start Monitor",
-    "Watch Monitor Logs",
-    "Configuration",
-    "Ignored Relays",
-    "All Relays",
+    isRunning ? `${colors.red('✖')} Stop Monitor` : `${colors.green('▶')} Start Monitor`,
+    `${colors.blue('🔍')} Watch Monitor Logs`,
+    `${colors.yellow('⚙')} Configuration`,
+    `${colors.magenta('⛔')} Ignored Relays`,
+    `${colors.cyan('📶')} All Relays`,
+  ];
+  
+  // ASCII art logo for RelayMon
+  const logo = [
+    colors.cyan('    ____       __               __  ___          '),
+    colors.cyan('   / __ \\___  / /___ ___  __   /  |/  /__  ____  '),
+    colors.cyan('  / /_/ / _ \\/ / __ `/ / / /  / /|_/ / _ \\/ __ \\ '),
+    colors.cyan(' / _, _/  __/ / /_/ / /_/ /  / /  / /  __/ / / / '),
+    colors.cyan('/_/ |_|\\___/_/\\__,_/\\__, /  /_/  /_/\\___/_/ /_/  '),
+    colors.cyan('                   /____/                       '),
+    '',
   ];
   
   // Basic stats display
   let content: string[] = [];
   
+  // Add logo
+  content.push(...logo);
+  
   // Show monitor stats if we have them
   if (state.monitorStats) {
-    content.push(`Monitor Status: ${isRunning ? colors.green('Running') : colors.red('Stopped')}${isRunning ? ` (PID: ${state.monitorPid || 'unknown'})` : ''}`);
-    content.push("");
-    content.push(`Relays: ${state.monitorStats.total} total, ${state.monitorStats.online} online, ${state.monitorStats.offline} offline`);
-    content.push(`Queue: ${state.monitorStats.active} active, ${state.monitorStats.waiting} waiting, ${state.monitorStats.expired} expired`);
-    content.push(`Checks: ${state.monitorStats.checksTotal} total, ${state.monitorStats.checksErrors} errors`);
-    content.push(`Events: ${state.monitorStats.publishedEvents} published, ${state.monitorStats.failedPublishes} failed`);
-    content.push("");
-    content.push("Menu Options:");
-    content.push("");
+    content.push(`${colors.bold('STATUS')} ${isRunning ? colors.green('● RUNNING') : colors.red('● STOPPED')}${isRunning ? ` (PID: ${state.monitorPid || 'unknown'})` : ''}`);
+    content.push('');
+    content.push(`${colors.dim('┌── NETWORK STATS ──────────────────────────────────┐')}`);
+    content.push(`${colors.dim('│')} Relays: ${colors.bold(state.monitorStats.total.toString())} total, ${colors.green(state.monitorStats.online.toString())} online, ${colors.red(state.monitorStats.offline.toString())} offline ${colors.dim('│')}`);
+    content.push(`${colors.dim('│')} Queue: ${colors.yellow(state.monitorStats.active.toString())} active, ${state.monitorStats.waiting} waiting, ${colors.magenta(state.monitorStats.expired.toString())} expired  ${colors.dim('│')}`);
+    content.push(`${colors.dim('└───────────────────────────────────────────────────┘')}`);
+    content.push('');
+    content.push(`${colors.dim('┌── ACTIVITY STATS ─────────────────────────────────┐')}`);
+    content.push(`${colors.dim('│')} Checks: ${colors.bold(state.monitorStats.checksTotal.toString())} total, ${colors.red(state.monitorStats.checksErrors.toString())} errors ${colors.dim('│')}`);
+    content.push(`${colors.dim('│')} Events: ${colors.green(state.monitorStats.publishedEvents.toString())} published, ${colors.red(state.monitorStats.failedPublishes.toString())} failed ${colors.dim('│')}`);
+    content.push(`${colors.dim('└───────────────────────────────────────────────────┘')}`);
+    content.push('');
   } else if (isRunning) {
-    content.push(`Monitor Status: ${colors.green('Running')} (PID: ${state.monitorPid || 'unknown'})`);
-    content.push("");
-    content.push("Menu Options:");
-    content.push("");
-  } else {
-    content.push("Menu Options:");
-    content.push("");
+    content.push(`${colors.bold('STATUS')} ${colors.green('● RUNNING')} (PID: ${state.monitorPid || 'unknown'})`);
+    content.push('');
   }
+  
+  content.push(colors.bold(colors.dim('MENU OPTIONS')));
+  content.push('');
   
   // Menu options
   content.push(...options.map((option, index) => {
-    const prefix = index === state.selectedIndex ? colors.green(" > ") : "   ";
-    return `${prefix}${option}`;
+    return index === state.selectedIndex 
+      ? colors.bgCyan(colors.black(` ${option} `)) 
+      : `  ${option}  `;
   }));
+
+  content.push('');
+  content.push(colors.dim('Use arrow keys to navigate and Enter to select'));
   
-  return renderBox("RelayMon Interactive Menu", content);
+  return renderTitle("RelayMon", content);
 }
 
 // Render function for the monitor menu
@@ -111,14 +122,14 @@ export function renderMonitorMenu(): string {
   const isRunning = state.monitorProcess !== null;
   
   const content = [
-    isRunning ? `Status: Running (PID: ${state.monitorPid || 'unknown'})` : "Status: Stopped",
+    isRunning ? `${colors.bold(colors.green('● RUNNING'))} (PID: ${state.monitorPid || 'unknown'})` : colors.bold(colors.red('● STOPPED')),
     "",
   ];
   
   // Get latest output if process is running
   if (isRunning && state.monitorProcess) {
-    content.push("Recent output:");
-    content.push("------------");
+    content.push(colors.bold("Recent output:"));
+    content.push(colors.dim("━━━━━━━━━━━━━━"));
     
     // Add some placeholder for output - in reality, we would read from the process
     content.push("Monitor is running in the background.");
@@ -126,11 +137,11 @@ export function renderMonitorMenu(): string {
   }
   
   content.push("");
-  content.push("[R] Restart Monitor");
-  content.push("[S] Stop Monitor");
-  content.push("[ESC] Back to Main Menu (monitor remains running in background)");
+  content.push(colors.bold("Commands:"));
+  content.push(`${colors.yellow('[R]')} Restart Monitor  ${colors.yellow('[S]')} Stop Monitor  ${colors.yellow('[ESC]')} Back to Main Menu`);
+  content.push(colors.dim("Monitor will remain running in background if you return to main menu"));
   
-  return renderBox("Monitor Status", content);
+  return renderTitle("Monitor Status", content);
 }
 
 // Render function for the configuration menu
@@ -146,7 +157,11 @@ export function renderConfigMenu(): string {
   }
   
   // Create a breadcrumb trail for navigation context
-  const breadcrumbTrail = breadcrumbs.join(" > ");
+  const breadcrumbTrail = breadcrumbs.map((crumb, index) => 
+    index === breadcrumbs.length - 1 
+      ? colors.cyan(crumb) 
+      : colors.dim(crumb)
+  ).join(colors.dim(" > "));
   
   let content: string[] = [];
   content.push(breadcrumbTrail);
@@ -154,7 +169,7 @@ export function renderConfigMenu(): string {
   
   if (state.configState.isEditing) {
     // Show editing interface
-    content.push(`Editing: ${state.configState.editingKey}`);
+    content.push(colors.bold(`Editing: ${colors.yellow(state.configState.editingKey || "")}`));
     
     // Create a box around the editable text with cursor
     const value = state.configState.editingValue;
@@ -176,63 +191,69 @@ export function renderConfigMenu(): string {
     }
     
     // Draw a box around the value
-    content.push("┌" + "─".repeat(Math.max(40, value.length + 2)) + "┐");
-    content.push("│ " + displayValue + " ".repeat(Math.max(39 - value.length, 0)) + "│");
-    content.push("└" + "─".repeat(Math.max(40, value.length + 2)) + "┘");
+    content.push(colors.dim("┌" + "─".repeat(Math.max(40, value.length + 2)) + "┐"));
+    content.push(colors.dim("│") + " " + displayValue + " ".repeat(Math.max(39 - value.length, 0)) + colors.dim("│"));
+    content.push(colors.dim("└" + "─".repeat(Math.max(40, value.length + 2)) + "┘"));
     
     content.push("");
-    content.push("[Enter] Save  [Escape] Cancel");
-    content.push("[←/→] Move Cursor  [Home/End] Start/End  [Delete] Delete at Cursor");
+    content.push(colors.bold("Commands:"));
+    content.push(`${colors.yellow('[Enter]')} Save  ${colors.yellow('[Escape]')} Cancel  ${colors.yellow('[←/→]')} Move Cursor  ${colors.yellow('[Home/End]')} Start/End`);
   } else {
     // Show current config section
     const entries = Object.entries(currentConfig);
     
     if (entries.length === 0) {
-      content.push("Empty configuration section");
+      content.push(colors.italic("Empty configuration section"));
     } else {
+      // Show scrolling indicators
+      if (state.topIndex > 0) {
+        content.push(colors.dim("↑ more above"));
+      }
+
       for (let i = state.topIndex; i < Math.min(state.topIndex + 15, entries.length); i++) {
         const [key, value] = entries[i];
         const isSelected = i === state.selectedIndex;
-        const prefix = isSelected ? colors.green(" > ") : "   ";
         
         let displayValue: string;
         
         if (typeof value === "object" && value !== null) {
           // For objects and arrays
           if (Array.isArray(value)) {
-            displayValue = `[Array: ${value.length} items]`;
+            displayValue = colors.blue(`[Array: ${value.length} items]`);
           } else {
-            displayValue = `{Object: ${Object.keys(value).length} keys}`;
+            displayValue = colors.blue(`{Object: ${Object.keys(value).length} keys}`);
           }
+        } else if (typeof value === "string") {
+          // For string values
+          displayValue = colors.green(`"${value}"`);
+        } else if (typeof value === "boolean") {
+          // For boolean values
+          displayValue = value ? colors.green("true") : colors.red("false");
         } else {
-          // For primitive values
-          displayValue = String(value);
+          // For other primitive values
+          displayValue = colors.yellow(String(value));
         }
         
-        const line = `${prefix}${key}: ${displayValue}`;
+        const line = `${isSelected ? colors.cyan('►') : ' '} ${colors.bold(key)}: ${displayValue}`;
         if (isSelected) {
-          content.push(colors.bgBlue(line));
+          content.push(colors.bgCyan(colors.black(` ${key}: ${String(displayValue)} `)));
         } else {
           content.push(line);
         }
       }
       
       // Show scrolling indicators
-      if (state.topIndex > 0) {
-        content.unshift("  ↑ (more above)");
-      }
       if (state.topIndex + 15 < entries.length) {
-        content.push("  ↓ (more below)");
+        content.push(colors.dim("↓ more below"));
       }
     }
     
     content.push("");
-    content.push("[Enter] Edit/Navigate  [A] Add Item  [D] Delete Item");
-    content.push("[S] Save Configuration  [Escape] Back");
-    content.push("[PageUp/PageDown] Navigate pages");
+    content.push(colors.bold("Commands:"));
+    content.push(`${colors.yellow('[Enter]')} Edit/Navigate  ${colors.yellow('[A]')} Add Item  ${colors.yellow('[D]')} Delete Item  ${colors.yellow('[S]')} Save  ${colors.yellow('[Escape]')} Back`);
   }
   
-  return renderBox("Configuration Editor", content);
+  return renderTitle("Configuration", content);
 }
 
 // Render function for the all relays menu
@@ -265,51 +286,55 @@ export function renderAllRelaysMenu(): string {
     
     // Show filter status if filtering
     if (state.isFiltering) {
-      content.push(`Enter filter: ${state.filter}_`);
+      content.push(`${colors.blue('🔍')} ${colors.bold('Filter')}: ${state.filter}${colors.bgWhite(colors.black('_'))}`);
       content.push("");
     } else if (state.filter) {
-      content.push(`Filter: ${state.filter} [F to change]`);
+      content.push(`${colors.blue('🔍')} ${colors.bold('Filter')}: ${colors.yellow(state.filter)} ${colors.dim('[F] to change')}`);
       content.push("");
     } else {
-      content.push("[F] Filter list");
+      content.push(`${colors.yellow('[F]')} ${colors.dim('to filter list')}`);
       content.push("");
     }
     
-    // Add debug info
-    content.push(`Database info: ${allRelays.length} relays total`);
+    // Stats summary
+    content.push(`${colors.bold(allRelays.length.toString())} ${colors.dim('relays total')}`);
     
     if (allRelays.length === 0) {
-      content.push("No relays found. Try running the monitor first.");
+      content.push(colors.italic("No relays found. Try running the monitor first."));
     } else {
       // Calculate visible range for scrolling
       const visibleItems = 15; // Adjust based on your display area
       const endIndex = Math.min(state.topIndex + visibleItems, allRelays.length);
       
       // Show pagination info
-      content.push(`Showing ${state.topIndex + 1}-${endIndex} of ${allRelays.length} relays`);
+      content.push(colors.dim(`Showing ${state.topIndex + 1}-${endIndex} of ${allRelays.length}`));
       
       // Show scrolling indicators
       if (state.topIndex > 0) {
-        content.push("  ↑ (more above)");
+        content.push(colors.dim("↑ more above"));
       }
       
       // Add column headers
       content.push("");
-      content.push("   URL                             | Network  | Last Checked                  | Status");
-      content.push("   " + "-".repeat(32) + "-+-" + "-".repeat(8) + "-+-" + "-".repeat(28) + "-+--------");
+      content.push(
+        colors.dim("URL") + " ".repeat(31) + 
+        colors.dim("│ NETWORK") + " " + 
+        colors.dim("│ LAST CHECKED") + " ".repeat(19) +
+        colors.dim("│ STATUS")
+      );
+      content.push(colors.dim("━".repeat(75)));
       
       // Display visible relays
       for (let i = state.topIndex; i < endIndex; i++) {
         const relay = allRelays[i];
         const isSelected = i === state.selectedIndex;
-        const prefix = isSelected ? colors.green(" > ") : "   ";
         
         // Get network status information
         let status;
         if (relay.online === 1) {
-          status = colors.green("✓");
+          status = colors.green("✓ ONLINE");
         } else {
-          status = colors.red("✗");
+          status = colors.red("✗ OFFLINE");
         }
         
         // Format URL to fit in column
@@ -317,26 +342,24 @@ export function renderAllRelaysMenu(): string {
         let displayUrl = relay.url;
         if (displayUrl.length > urlMaxLength) {
           displayUrl = displayUrl.substring(0, urlMaxLength - 3) + "...";
-        } else {
-          displayUrl = displayUrl.padEnd(urlMaxLength);
         }
         
         // Format network column
-        const network = (relay.network || "unknown").padEnd(8);
+        const network = (relay.network || "unknown");
         
         // Format last checked time
         let lastChecked;
         if (!relay.checked_at || relay.checked_at <= 0) {
-          lastChecked = "never".padEnd(28);
+          lastChecked = colors.dim("never");
         } else {
-          lastChecked = formatRelativeTime(relay.checked_at * 1000).padEnd(28);
+          lastChecked = formatRelativeTime(relay.checked_at * 1000);
         }
         
         // Create the line with columns
-        let line = `${prefix}${displayUrl} | ${network} | ${lastChecked} | ${status}`;
+        let line = `${isSelected ? colors.cyan('►') : ' '} ${displayUrl.padEnd(32)} │ ${network.padEnd(8)} │ ${lastChecked.padEnd(28)} │ ${status}`;
         
         if (isSelected) {
-          content.push(colors.bgBlue(line));
+          content.push(colors.bgCyan(colors.black(` ${displayUrl.padEnd(32)} │ ${network.padEnd(8)} │ ${lastChecked.padEnd(28)} │ ${status} `)));
         } else {
           content.push(line);
         }
@@ -344,12 +367,13 @@ export function renderAllRelaysMenu(): string {
       
       // Show scrolling indicators
       if (endIndex < allRelays.length) {
-        content.push("  ↓ (more below)");
+        content.push(colors.dim("↓ more below"));
       }
     }
     
     content.push("");
-    content.push("[I] Toggle Ignore  [PageUp/PageDown] Navigate pages  [ESC] Back");
+    content.push(colors.bold("Commands:"));
+    content.push(`${colors.yellow('[I]')} Toggle Ignore  ${colors.yellow('[PageUp/Down]')} Navigate  ${colors.yellow('[ESC]')} Back`);
     
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -361,7 +385,7 @@ export function renderAllRelaysMenu(): string {
     content.push("Try running the monitor first to populate the database.");
   }
   
-  return renderBox("All Relays", content);
+  return renderTitle("All Relays", content);
 }
 
 // Render function for the ignored relays menu
@@ -394,65 +418,69 @@ export function renderIgnoredRelaysMenu(): string {
     
     // Show filter status if filtering
     if (state.isFiltering) {
-      content.push(`Enter filter: ${state.filter}_`);
+      content.push(`${colors.blue('🔍')} ${colors.bold('Filter')}: ${state.filter}${colors.bgWhite(colors.black('_'))}`);
       content.push("");
     } else if (state.filter) {
-      content.push(`Filter: ${state.filter} [F to change]`);
+      content.push(`${colors.blue('🔍')} ${colors.bold('Filter')}: ${colors.yellow(state.filter)} ${colors.dim('[F] to change')}`);
       content.push("");
     } else {
-      content.push("[F] Filter list");
+      content.push(`${colors.yellow('[F]')} ${colors.dim('to filter list')}`);
       content.push("");
     }
     
-    // Add debug info
-    content.push(`Database info: ${ignoredRelays.length} ignored relays total`);
+    // Stats summary
+    content.push(`${colors.bold(ignoredRelays.length.toString())} ${colors.dim('ignored relays')}`);
     
-    // Add debugging note
-    content.push(colors.yellow("Use [I] to unignore a relay"));
-    content.push(colors.yellow("[Enter] also unignores selected relay"));
+    // Add note about unignoring relays
+    content.push(colors.dim("Use [I] or [Enter] to unignore a relay"));
     
     if (ignoredRelays.length === 0) {
-      content.push("No ignored relays found.");
+      content.push("");
+      content.push(colors.italic("No ignored relays found."));
       
       // Add more debug info when no relays are found
       const counts = getRelayCounts();
-      content.push(colors.yellow(`Database contains: ${counts.total} total, ${counts.online} online, ${counts.ignored} ignored relays`));
+      content.push(colors.dim(`Database contains: ${counts.total} total, ${counts.online} online, ${counts.ignored} ignored relays`));
       
       // Add button to create a sample ignored relay for testing
       content.push("");
-      content.push(colors.green("[C] Create a sample ignored relay for testing"));
-      content.push(colors.green("[R] Repair database ignore values"));
-      content.push(colors.yellow("This will scan and fix any inconsistent ignore values"));
+      content.push(`${colors.yellow('[C]')} ${colors.green('Create a sample ignored relay for testing')}`);
+      content.push(`${colors.yellow('[R]')} ${colors.green('Repair database ignore values')}`);
+      content.push(colors.dim("This will scan and fix any inconsistent ignore values"));
     } else {
       // Calculate visible range for scrolling
       const visibleItems = 15; // Adjust based on your display area
       const endIndex = Math.min(state.topIndex + visibleItems, ignoredRelays.length);
       
       // Show pagination info
-      content.push(`Showing ${state.topIndex + 1}-${endIndex} of ${ignoredRelays.length} relays`);
+      content.push(colors.dim(`Showing ${state.topIndex + 1}-${endIndex} of ${ignoredRelays.length}`));
       
       // Show scrolling indicators
       if (state.topIndex > 0) {
-        content.push("  ↑ (more above)");
+        content.push(colors.dim("↑ more above"));
       }
       
       // Add column headers
       content.push("");
-      content.push("   URL                             | Network  | Last Checked                  | Status");
-      content.push("   " + "-".repeat(32) + "-+-" + "-".repeat(8) + "-+-" + "-".repeat(28) + "-+--------");
+      content.push(
+        colors.dim("URL") + " ".repeat(31) + 
+        colors.dim("│ NETWORK") + " " + 
+        colors.dim("│ LAST CHECKED") + " ".repeat(19) +
+        colors.dim("│ STATUS")
+      );
+      content.push(colors.dim("━".repeat(75)));
       
       // Display visible relays
       for (let i = state.topIndex; i < endIndex; i++) {
         const relay = ignoredRelays[i];
         const isSelected = i === state.selectedIndex;
-        const prefix = isSelected ? colors.green(" > ") : "   ";
         
         // Get network status information
         let status;
         if (relay.online === 1) {
-          status = colors.green("✓");
+          status = colors.green("✓ ONLINE");
         } else {
-          status = colors.red("✗");
+          status = colors.red("✗ OFFLINE");
         }
         
         // Format URL to fit in column
@@ -460,26 +488,24 @@ export function renderIgnoredRelaysMenu(): string {
         let displayUrl = relay.url;
         if (displayUrl.length > urlMaxLength) {
           displayUrl = displayUrl.substring(0, urlMaxLength - 3) + "...";
-        } else {
-          displayUrl = displayUrl.padEnd(urlMaxLength);
         }
         
         // Format network column
-        const network = (relay.network || "unknown").padEnd(8);
+        const network = (relay.network || "unknown");
         
         // Format last checked time
         let lastChecked;
         if (!relay.checked_at || relay.checked_at <= 0) {
-          lastChecked = "never".padEnd(28);
+          lastChecked = colors.dim("never");
         } else {
-          lastChecked = formatRelativeTime(relay.checked_at * 1000).padEnd(28);
+          lastChecked = formatRelativeTime(relay.checked_at * 1000);
         }
         
         // Create the line with columns
-        let line = `${prefix}${displayUrl} | ${network} | ${lastChecked} | ${status}`;
+        let line = `${isSelected ? colors.cyan('►') : ' '} ${displayUrl.padEnd(32)} │ ${network.padEnd(8)} │ ${lastChecked.padEnd(28)} │ ${status}`;
         
         if (isSelected) {
-          content.push(colors.bgBlue(line));
+          content.push(colors.bgCyan(colors.black(` ${displayUrl.padEnd(32)} │ ${network.padEnd(8)} │ ${lastChecked.padEnd(28)} │ ${status} `)));
         } else {
           content.push(line);
         }
@@ -487,17 +513,13 @@ export function renderIgnoredRelaysMenu(): string {
       
       // Show scrolling indicators
       if (endIndex < ignoredRelays.length) {
-        content.push("  ↓ (more below)");
+        content.push(colors.dim("↓ more below"));
       }
+      
+      content.push("");
+      content.push(colors.bold("Commands:"));
+      content.push(`${colors.yellow('[I]')} Toggle Ignore  ${colors.yellow('[R]')} Repair DB  ${colors.yellow('[PageUp/Down]')} Navigate  ${colors.yellow('[ESC]')} Back`);
     }
-    
-    content.push("");
-    if (ignoredRelays.length === 0) {
-      content.push("[C] Create Sample  [R] Repair DB  [ESC] Back");
-    } else {
-      content.push("[I] Toggle Ignore  [R] Repair DB  [PageUp/PageDown] Navigate pages  [ESC] Back");
-    }
-    
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(`Error rendering Ignored Relays menu: ${errorMessage}`);
@@ -508,7 +530,7 @@ export function renderIgnoredRelaysMenu(): string {
     content.push("Try running the monitor first to populate the database.");
   }
   
-  return renderBox("Ignored Relays", content);
+  return renderTitle("Ignored Relays", content);
 }
 
 // Render function for monitor logs
@@ -517,12 +539,15 @@ export function renderMonitorLogs(): string {
   
   let content: string[] = [];
   
-  content.push(isRunning ? `Monitor Status: ${colors.green('Running')} (PID: ${state.monitorPid || 'unknown'})` : `Monitor Status: ${colors.red('Stopped')}`);
+  content.push(isRunning 
+    ? `${colors.bold('STATUS')}: ${colors.green('● RUNNING')} ${colors.dim(`(PID: ${state.monitorPid || 'unknown'})`)}` 
+    : `${colors.bold('STATUS')}: ${colors.red('● STOPPED')}`
+  );
   content.push("");
   
   if (state.monitorLogs.length > 0) {
-    content.push("Recent logs:");
-    content.push("------------");
+    content.push(colors.bold("Recent logs:"));
+    content.push(colors.dim("━".repeat(20)));
     
     // Show last 20 logs (or fewer if we don't have 20)
     const logCount = Math.min(20, state.monitorLogs.length);
@@ -539,24 +564,25 @@ export function renderMonitorLogs(): string {
       } else if (log.includes(" INFO ")) {
         content.push(colors.blue(log));
       } else if (log.includes(" DEBUG ")) {
-        content.push(colors.gray(log));
+        content.push(colors.dim(log));
       } else {
         content.push(log);
       }
     }
   } else {
-    content.push("No logs available yet.");
+    content.push(colors.italic("No logs available yet."));
     
     if (isRunning) {
-      content.push("The monitor is running but no logs have been captured.");
-      content.push("Logs will appear here as they are generated.");
+      content.push(colors.dim("The monitor is running but no logs have been captured."));
+      content.push(colors.dim("Logs will appear here as they are generated."));
     } else {
-      content.push("Start the monitor to see logs.");
+      content.push(colors.dim("Start the monitor to see logs."));
     }
   }
   
   content.push("");
-  content.push("[C] Clear Logs  [R] Refresh Logs  [ESC] Back to Main Menu");
+  content.push(colors.bold("Commands:"));
+  content.push(`${colors.yellow('[C]')} Clear Logs  ${colors.yellow('[R]')} Refresh Logs  ${colors.yellow('[ESC]')} Back to Main Menu`);
   
-  return renderBox("Monitor Logs", content);
+  return renderTitle("Monitor Logs", content);
 } 

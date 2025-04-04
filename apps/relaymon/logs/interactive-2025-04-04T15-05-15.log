@@ -1,4 +1,0 @@
-[ERROR] [InteractiveDB] Encountered 1 errors while retrieving relay details
-[ERROR] [InteractiveDB] Error retrieving ignored relay URLs: SqliteError: database disk image is malformed
-[ERROR] [InteractiveDB] Error with CAST query: SqliteError: database disk image is malformed
-[ERROR] [InteractiveDB] Error with broad match query: SqliteError: database disk image is malformed

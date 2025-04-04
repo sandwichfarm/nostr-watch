@@ -1,0 +1,2 @@
+[ERROR] [InteractiveDB] Encountered 1 errors while retrieving relay details
+[ERROR] [InteractiveDB] Error getting ignored relays: SqliteError: database disk image is malformed

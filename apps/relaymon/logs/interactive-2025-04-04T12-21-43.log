@@ -1,0 +1,4 @@
+[ERROR] [InteractiveDB] Encountered 1 errors while retrieving relay details
+[ERROR] [InteractiveDB] Encountered 1 errors while retrieving relay details
+[ERROR] [InteractiveDB] Error retrieving ignored relay URLs: SqliteError: database disk image is malformed
+[ERROR] [InteractiveDB] Encountered 1 errors while retrieving relay details

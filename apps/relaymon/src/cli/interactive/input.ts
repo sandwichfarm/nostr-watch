@@ -3,6 +3,8 @@ import { getRelays, getIgnoredRelays, toggleRelayIgnore, deleteRelay, db, create
 import { Config } from "../../config/config.ts";
 import { getLogger } from "../../utils/logger.ts";
 import { getCurrentConfigLevel } from "./state.ts";
+import { msToTimeString } from "../../config/config.ts";
+import { ColumnName } from "./state.ts";
 
 const logger = getLogger("InteractiveInput");
 
@@ -32,13 +34,8 @@ export function handlePageDown(): void {
   let maxItems = 0;
   
   // Get the maximum number of items based on current menu
-  if (state.menu === "all") {
+  if (state.menu === "relayStatus") {
     const relays = getRelays();
-    maxItems = state.filter ? 
-      relays.filter(r => r.url.toLowerCase().includes(state.filter.toLowerCase())).length : 
-      relays.length;
-  } else if (state.menu === "ignored") {
-    const relays = getIgnoredRelays();
     maxItems = state.filter ? 
       relays.filter(r => r.url.toLowerCase().includes(state.filter.toLowerCase())).length : 
       relays.length;
@@ -83,18 +80,18 @@ export const handleKeyPress = async (keyEvent: KeyEvent): Promise<void> => {
   
   // Handle PageUp and PageDown across all menus
   if (key === "PageUp") {
-    if (["ignored", "all", "config"].includes(state.menu)) {
+    if (["relayStatus", "config"].includes(state.menu)) {
       handlePageUp();
     }
     return;
   } else if (key === "PageDown") {
-    if (["ignored", "all", "config"].includes(state.menu)) {
+    if (["relayStatus", "config"].includes(state.menu)) {
       handlePageDown();
     }
     return;
   }
   
-  // Exit the application when Escape is pressed
+  // Exit the application when Escape is pressed on the main menu
   if (key === "Escape") {
     if (state.menu !== "main") {
       state.menu = "main";
@@ -102,7 +99,9 @@ export const handleKeyPress = async (keyEvent: KeyEvent): Promise<void> => {
       state.topIndex = 0;
       state.filter = "";
     } else {
+      // If we're already on the main menu, exit the app
       state.running = false;
+      logger.info("Exit requested via Escape key on main menu");
     }
     return;
   }
@@ -119,13 +118,9 @@ export const handleKeyPress = async (keyEvent: KeyEvent): Promise<void> => {
   else if (state.menu === "config") {
     handleConfigMenuInput(key);
   }
-  // Ignored relays menu handling
-  else if (state.menu === "ignored") {
-    handleIgnoredRelaysMenuInput(key);
-  }
-  // All relays menu handling
-  else if (state.menu === "all") {
-    handleAllRelaysMenuInput(key);
+  // Relay status menu handling
+  else if (state.menu === "relayStatus") {
+    handleRelayStatusMenuInput(key);
   }
   // Monitor logs menu handling
   else if (state.menu === "logs") {
@@ -137,7 +132,7 @@ export const handleKeyPress = async (keyEvent: KeyEvent): Promise<void> => {
 function handleMainMenuInput(key: string): void {
   if (key === "ArrowUp" && state.selectedIndex > 0) {
     state.selectedIndex--;
-  } else if (key === "ArrowDown" && state.selectedIndex < 4) {
+  } else if (key === "ArrowDown" && state.selectedIndex < 3) { // Adjusted for fewer menu items
     state.selectedIndex++;
   } else if (key === "Enter") {
     switch (state.selectedIndex) {
@@ -158,13 +153,8 @@ function handleMainMenuInput(key: string): void {
         state.configState.path = [];
         state.selectedIndex = 0;
         break;
-      case 3: // Ignored Relays
-        state.menu = "ignored";
-        state.selectedIndex = 0;
-        state.topIndex = 0;
-        break;
-      case 4: // All Relays
-        state.menu = "all";
+      case 3: // Relay Status
+        state.menu = "relayStatus";
         state.selectedIndex = 0;
         state.topIndex = 0;
         break;
@@ -219,17 +209,32 @@ function handleConfigEditingInput(key: string, currentConfig: any): void {
   if (key === "Enter") {
     // Save the edited value
     try {
-      const oldValue = currentConfig[state.configState.editingKey!];
+      const editingKey = state.configState.editingKey!;
+      const oldValue = currentConfig[editingKey];
       let newValue: any = state.configState.editingValue;
       
-      // Try to parse as number or boolean if applicable
-      if (newValue === "true") newValue = true;
-      else if (newValue === "false") newValue = false;
-      else if (!isNaN(Number(newValue)) && newValue.trim() !== "") newValue = Number(newValue);
+      // Check if this is likely a time-related key
+      if (isTimeKey(editingKey)) {
+        // Allow users to enter timestrings directly
+        // They get stored as numbers in the config after saving
+        if (isTimeStringFormat(newValue)) {
+          // This is a formatted timestring (like "5m", "2h"), keep it as is
+          // When we eventually save the config, it will get processed correctly
+          newValue = newValue;
+        } else if (!isNaN(Number(newValue))) {
+          // If they entered a pure number, assume milliseconds
+          newValue = Number(newValue);
+        }
+      } else {
+        // For non-time values, apply normal type conversion
+        if (newValue === "true") newValue = true;
+        else if (newValue === "false") newValue = false;
+        else if (!isNaN(Number(newValue)) && newValue.trim() !== "") newValue = Number(newValue);
+      }
       
       // Update the value
-      currentConfig[state.configState.editingKey!] = newValue;
-      logger.info(`Updated ${state.configState.editingKey}: ${oldValue} -> ${String(newValue)}`);
+      currentConfig[editingKey] = newValue;
+      logger.info(`Updated ${editingKey}: ${oldValue} -> ${String(newValue)}`);
       
       // Exit edit mode
       state.configState.isEditing = false;
@@ -245,19 +250,12 @@ function handleConfigEditingInput(key: string, currentConfig: any): void {
     state.configState.editingKey = null;
     state.configState.cursorPosition = 0;
   } else if (key === "Backspace") {
-    // Handle backspace for editing - delete character before cursor
+    // Handle backspace
     if (state.configState.cursorPosition > 0) {
-      state.configState.editingValue = 
-        state.configState.editingValue.substring(0, state.configState.cursorPosition - 1) + 
-        state.configState.editingValue.substring(state.configState.cursorPosition);
+      const value = state.configState.editingValue;
+      const cursor = state.configState.cursorPosition;
+      state.configState.editingValue = value.substring(0, cursor - 1) + value.substring(cursor);
       state.configState.cursorPosition--;
-    }
-  } else if (key === "Delete") {
-    // Delete character at cursor
-    if (state.configState.cursorPosition < state.configState.editingValue.length) {
-      state.configState.editingValue = 
-        state.configState.editingValue.substring(0, state.configState.cursorPosition) + 
-        state.configState.editingValue.substring(state.configState.cursorPosition + 1);
     }
   } else if (key === "ArrowLeft") {
     // Move cursor left
@@ -270,22 +268,63 @@ function handleConfigEditingInput(key: string, currentConfig: any): void {
       state.configState.cursorPosition++;
     }
   } else if (key === "Home") {
-    // Move cursor to beginning
+    // Move cursor to the start
     state.configState.cursorPosition = 0;
   } else if (key === "End") {
-    // Move cursor to end
+    // Move cursor to the end
     state.configState.cursorPosition = state.configState.editingValue.length;
   } else if (key.length === 1) {
     // Add character at cursor position
-    state.configState.editingValue = 
-      state.configState.editingValue.substring(0, state.configState.cursorPosition) + 
-      key + 
-      state.configState.editingValue.substring(state.configState.cursorPosition);
+    const value = state.configState.editingValue;
+    const cursor = state.configState.cursorPosition;
+    state.configState.editingValue = value.substring(0, cursor) + key + value.substring(cursor);
     state.configState.cursorPosition++;
   }
 }
 
-// Handle input while browsing config
+// Helper function to check if a key is likely to be a time-related value
+function isTimeKey(key: string): boolean {
+  const timeKeywords = [
+    'interval',
+    'timeout',
+    'expires',
+    'expiry',
+    'delay',
+    'duration',
+    'ttl',
+    'time'
+  ];
+  
+  return timeKeywords.some(keyword => 
+    key.toLowerCase().includes(keyword)
+  );
+}
+
+// Check if a string is in timestring format (e.g., "5m", "2h", "30s")
+function isTimeStringFormat(value: string): boolean {
+  return /^\d+(?:\.\d+)?(?:ms|s|m|h|d)$/.test(value.trim());
+}
+
+// When starting to edit a configuration value, prepare the edit value
+function startEditingValue(currentConfig: any, key: string): void {
+  const value = currentConfig[key];
+  let editValue: string;
+  
+  if (isTimeKey(key) && typeof value === "number" && value >= 1000) {
+    // Convert milliseconds to timestring for editing using the centralized function
+    editValue = msToTimeString(value);
+  } else {
+    // For other types, just convert to string
+    editValue = String(value);
+  }
+  
+  state.configState.isEditing = true;
+  state.configState.editingKey = key;
+  state.configState.editingValue = editValue;
+  state.configState.cursorPosition = editValue.length;
+}
+
+// Handle browsing the config menu (not in edit mode)
 function handleConfigBrowsingInput(key: string, currentConfig: any, parentConfig: any, currentKey: string): void {
   if (key === "s" || key === "S") {
     // Save config
@@ -307,21 +346,19 @@ function handleConfigBrowsingInput(key: string, currentConfig: any, parentConfig
       }
     }
   } else if (key === "Enter") {
+    // Handle enter press in browse mode
     const entries = Object.entries(currentConfig);
-    if (entries.length > 0 && state.selectedIndex < entries.length) {
-      const [selectedKey, selectedValue] = entries[state.selectedIndex];
+    if (entries.length > 0 && state.selectedIndex >= 0 && state.selectedIndex < entries.length) {
+      const [key, value] = entries[state.selectedIndex];
       
-      if (typeof selectedValue === "object" && selectedValue !== null) {
+      if (typeof value === "object" && value !== null) {
         // Navigate into the object
-        state.configState.path.push(selectedKey);
+        state.configState.path.push(key);
         state.selectedIndex = 0;
         state.topIndex = 0;
       } else {
-        // Edit the primitive value
-        state.configState.isEditing = true;
-        state.configState.editingKey = selectedKey;
-        state.configState.editingValue = String(selectedValue);
-        state.configState.cursorPosition = state.configState.editingValue.length;
+        // Start editing the value
+        startEditingValue(currentConfig, key);
       }
     }
   } else if ((key === "d" || key === "D") && currentKey && parentConfig) {
@@ -357,22 +394,99 @@ function handleConfigBrowsingInput(key: string, currentConfig: any, parentConfig
   }
 }
 
-// Ignored relays menu input handling
-function handleIgnoredRelaysMenuInput(key: string): void {
-  let ignoredRelays = getIgnoredRelays();
+// Helper function to toggle filters
+function handleFilterToggle(): void {
+  // If we're not in filter edit mode, do nothing
+  if (!state.editingFilters) return;
+  
+  // Get the status options
+  const statusOptions = ["online", "offline", "unchecked", "ignored"];
+  
+  // Get all network options as array
+  const networkOptions = Object.keys(state.networkFilters);
+  
+  // If selected index is within status options
+  if (state.filterMenuIndex < statusOptions.length) {
+    const statusKey = statusOptions[state.filterMenuIndex] as keyof typeof state.statusFilters;
+    state.statusFilters[statusKey] = !state.statusFilters[statusKey];
+    logger.debug(`Toggled ${statusKey} status filter to: ${state.statusFilters[statusKey]}`);
+  } 
+  // If selected index is within network options
+  else if (state.filterMenuIndex < statusOptions.length + networkOptions.length) {
+    const networkIndex = state.filterMenuIndex - statusOptions.length;
+    const networkKey = networkOptions[networkIndex];
+    state.networkFilters[networkKey] = !state.networkFilters[networkKey];
+    logger.debug(`Toggled ${networkKey} network filter to: ${state.networkFilters[networkKey]}`);
+  }
+}
+
+// Relay status menu input handling (combined all & ignored relays functionality)
+function handleRelayStatusMenuInput(key: string): void {
+  let relays = getRelays();
+  
+  // Apply status filters
+  relays = relays.filter(relay => {
+    // Apply online/offline/unchecked filters
+    if (relay.checked_at <= 0 && !state.statusFilters.unchecked) return false;
+    if (relay.online === 1 && !state.statusFilters.online) return false;
+    if (relay.online === 0 && relay.checked_at > 0 && !state.statusFilters.offline) return false;
+    if (relay.ignore === 1 && !state.statusFilters.ignored) return false;
+    
+    // Apply network filters
+    if (relay.network && state.networkFilters.hasOwnProperty(relay.network)) {
+      return state.networkFilters[relay.network];
+    }
+    
+    return true; // Show relays with unknown network by default
+  });
   
   // Apply filter if set
   if (state.filter) {
     const filterLower = state.filter.toLowerCase();
-    ignoredRelays = ignoredRelays.filter(relay => 
+    relays = relays.filter(relay => 
       relay.url.toLowerCase().includes(filterLower)
     );
+    
+    // Reset indices if needed
+    if (state.topIndex >= relays.length && relays.length > 0) {
+      state.topIndex = Math.max(0, relays.length - 15);
+    }
+    if (state.selectedIndex >= relays.length && relays.length > 0) {
+      state.selectedIndex = Math.max(0, relays.length - 1);
+    }
   }
   
+  // If we're in filter edit mode, handle different inputs
+  if (state.editingFilters) {
+    const statusOptions = ["online", "offline", "unchecked", "ignored"];
+    const networkOptions = Object.keys(state.networkFilters);
+    const totalOptions = statusOptions.length + networkOptions.length;
+    
+    if (key === "ArrowUp" && state.filterMenuIndex > 0) {
+      state.filterMenuIndex--;
+    } else if (key === "ArrowDown" && state.filterMenuIndex < totalOptions - 1) {
+      state.filterMenuIndex++;
+    } else if (key === " ") {
+      handleFilterToggle();
+    } else if (key === "Enter") {
+      // Apply filters and exit filter edit mode
+      state.editingFilters = false;
+    } else if (key === "Escape") {
+      // Cancel and exit filter edit mode
+      state.editingFilters = false;
+    }
+    return;
+  }
+  
+  // Handle normal navigation and column selection
   if (key === "f" || key === "F") {
     // Start filtering
     state.isFiltering = true;
     state.filter = "";
+  } else if (key === "v" || key === "V") {
+    // Start filter editing mode
+    state.editingFilters = true;
+    state.filterMenuIndex = 0;
   } else if (key === "c" || key === "C") {
     // Create a sample ignored relay for testing
     logger.info("Creating sample ignored relay for testing");
@@ -401,85 +515,6 @@ function handleIgnoredRelaysMenuInput(key: string): void {
       }
     }
   } else if (key === "ArrowDown") {
-    if (state.selectedIndex < ignoredRelays.length - 1) {
-      state.selectedIndex++;
-      // Adjust topIndex for scrolling
-      const visibleItems = 15; // Adjust based on your display area
-      if (state.selectedIndex >= state.topIndex + visibleItems) {
-        state.topIndex = state.selectedIndex - visibleItems + 1;
-      }
-    }
-  } else if (key === "i" || key === "I" || key === "Enter") {
-    // Toggle the selected relay - for ignored relays menu, we unignore it
-    if (ignoredRelays.length > 0) {
-      const selectedRelay = ignoredRelays[state.selectedIndex];
-      
-      // Log the action
-      logger.info(`Unignoring relay ${selectedRelay.url} (using ${key} key)`);
-      
-      // Use proper toggle function
-      toggleRelayIgnore(selectedRelay.url, false);
-      
-      // Force cache reset
-      resetCache();
-    } else {
-      logger.warn("No relays to toggle");
-    }
-  } else if (key === "d" || key === "D") {
-    // Delete the selected relay
-    if (ignoredRelays.length > 0) {
-      const selectedRelay = ignoredRelays[state.selectedIndex];
-      logger.info(`Deleting relay ${selectedRelay.url}`);
-      deleteRelay(selectedRelay.url);
-      
-      // Ensure selection stays within bounds
-      if (state.selectedIndex >= ignoredRelays.length - 1) {
-        state.selectedIndex = Math.max(0, ignoredRelays.length - 2);
-      }
-      
-      // Force cache reset
-      resetCache();
-    } else {
-      logger.warn("No relays to delete");
-    }
-  }
-}
-
-// All relays menu input handling
-function handleAllRelaysMenuInput(key: string): void {
-  let relays = getRelays();
-  
-  // Apply filter if set
-  if (state.filter) {
-    const filterLower = state.filter.toLowerCase();
-    relays = relays.filter(relay => 
-      relay.url.toLowerCase().includes(filterLower)
-    );
-    
-    // Reset topIndex if it would be outside the valid range for filtered results
-    if (state.topIndex >= relays.length) {
-      state.topIndex = Math.max(0, relays.length - 15);
-    }
-    
-    // Also ensure selectedIndex is valid for the filtered results
-    if (state.selectedIndex >= relays.length) {
-      state.selectedIndex = Math.max(0, relays.length - 1);
-    }
-  }
-  
-  if (key === "f" || key === "F") {
-    // Start filtering
-    state.isFiltering = true;
-    state.filter = "";
-  } else if (key === "ArrowUp") {
-    if (state.selectedIndex > 0) {
-      state.selectedIndex--;
-      // Adjust topIndex for scrolling
-      if (state.selectedIndex < state.topIndex) {
-        state.topIndex = state.selectedIndex;
-      }
-    }
-  } else if (key === "ArrowDown") {
     if (state.selectedIndex < relays.length - 1) {
       state.selectedIndex++;
       // Adjust topIndex for scrolling
@@ -488,31 +523,67 @@ function handleAllRelaysMenuInput(key: string): void {
         state.topIndex = state.selectedIndex - visibleItems + 1;
       }
     }
-  } else if (key === "Enter" && relays.length > 0) {
-    // Toggle ignore status of the selected relay
-    const selectedRelay = relays[state.selectedIndex];
-    toggleRelayIgnore(selectedRelay.url, selectedRelay.ignore === 1 ? false : true);
+  } else if (key === "ArrowLeft") {
+    // Select previous column
+    const columns: Array<ColumnName> = ["url", "network", "lastChecked", "status", "ignored"];
+    const currentIndex = columns.indexOf(state.selectedColumn);
+    if (currentIndex > 0) {
+      state.selectedColumn = columns[currentIndex - 1];
+    } else {
+      // Wrap around to the last column
+      state.selectedColumn = columns[columns.length - 1];
+    }
+  } else if (key === "ArrowRight") {
+    // Select next column
+    const columns: Array<ColumnName> = ["url", "network", "lastChecked", "status", "ignored"];
+    const currentIndex = columns.indexOf(state.selectedColumn);
+    if (currentIndex < columns.length - 1) {
+      state.selectedColumn = columns[currentIndex + 1];
+    } else {
+      // Wrap around to the first column
+      state.selectedColumn = columns[0];
+    }
+  } else if (key === "a" || key === "A") {
+    // Set sort order to ascending
+    state.sortOrder = "asc";
+    state.sortColumn = state.selectedColumn;
   } else if (key === "d" || key === "D") {
+    // Set sort order to descending
+    state.sortOrder = "desc";
+    state.sortColumn = state.selectedColumn;
+  } else if (key === "i" || key === "I" || key === "Enter") {
+    // Toggle the selected relay's ignore status
+    if (relays.length > 0) {
+      const selectedRelay = relays[state.selectedIndex];
+      
+      // Log the action
+      logger.info(`Toggling ignore for relay ${selectedRelay.url} (currently ${selectedRelay.ignore === 1 ? 'ignored' : 'not ignored'})`);
+      
+      // Use proper toggle function
+      toggleRelayIgnore(selectedRelay.url, selectedRelay.ignore === 1 ? false : true);
+      
+      // Force cache reset
+      resetCache();
+    } else {
+      logger.warn("No relays to toggle");
+    }
+  } else if (key === "Delete") {
     // Delete the selected relay
     if (relays.length > 0) {
       const selectedRelay = relays[state.selectedIndex];
+      logger.info(`Deleting relay ${selectedRelay.url}`);
       deleteRelay(selectedRelay.url);
+      
+      // Ensure selection stays within bounds
       if (state.selectedIndex >= relays.length - 1) {
         state.selectedIndex = Math.max(0, relays.length - 2);
       }
+      
+      // Force cache reset
+      resetCache();
+    } else {
+      logger.warn("No relays to delete");
     }
-  } else if (key === "s" || key === "S") {
-    // Toggle sort column
-    const sortOptions = ["url", "online", "network", "checked_at"];
-    const currentIndex = sortOptions.indexOf(state.sortColumn);
-    const nextIndex = (currentIndex + 1) % sortOptions.length;
-    state.sortColumn = sortOptions[nextIndex];
-  } else if (key === "g" || key === "G") {
-    // Toggle grouping
-    const groupOptions = [null, "network", "online"];
-    const currentIndex = groupOptions.indexOf(state.groupBy);
-    const nextIndex = (currentIndex + 1) % groupOptions.length;
-    state.groupBy = groupOptions[nextIndex];
   }
 }
 

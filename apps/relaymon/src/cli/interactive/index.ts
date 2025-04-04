@@ -1,57 +1,29 @@
-import { state, setupCursorBlink, registerBlinkCallback } from "./state.ts";
+import { state, setupCursorBlink, registerBlinkCallback, initializeNetworkFilters } from "./state.ts";
 import { exists } from "https://deno.land/std@0.218.2/fs/exists.ts";
 import { clearScreen } from "./utils.ts";
 import { loadConfig } from "../../config/config.ts";
 import { getLogger } from "../../utils/logger.ts";
 import { render } from "./renderer.ts";
 import { handleKeyPress, handleEscapeSequence, KeyEvent } from "./input.ts";
-import { initDB, getRelays, getRelayCounts, db } from "./db.ts";
+import { initDB, getRelays, getRelayCounts, db, getUniqueNetworks } from "./db.ts";
 import { join } from "https://deno.land/std@0.218.2/path/mod.ts";
 import { getStats } from "../../core/status.ts";
+import { TextLineStream } from "https://deno.land/std@0.218.2/streams/mod.ts";
 
 // Configure logger to output to a file instead of console for interactive mode
 const logger = getLogger("Interactive");
 
-// Ensure logs directory exists
+// Helper function to set up logging to file
 async function setupLogging(): Promise<void> {
+  // Implement basic logging setup
+  logger.info("Setting up logging for interactive mode");
+  
+  // Create logs directory if it doesn't exist
   try {
-    // Check if logs directory exists, create if not
-    const logsDir = join(Deno.cwd(), "logs");
-    if (!await exists(logsDir)) {
-      await Deno.mkdir(logsDir, { recursive: true });
-    }
-    
-    // Create a log file for this session
-    const timestamp = new Date().toISOString().replace(/:/g, "-").replace(/\..+/, "");
-    const logPath = join(logsDir, `interactive-${timestamp}.log`);
-    
-    // Create a log writer
-    const logFile = await Deno.open(logPath, { create: true, write: true, append: true });
-    const logWriter = logFile.writable.getWriter();
-    
-    // Override console.error to write to the log file
-    const origConsoleError = console.error;
-    console.error = (...args: any[]) => {
-      const text = args.map(a => String(a)).join(' ') + '\n';
-      logWriter.write(new TextEncoder().encode(text)).catch(() => {});
-      // We don't write to original console.error to keep the UI clean
-    };
-    
-    // Update logger.info to let user know where logs will go
-    console.info(`Logs will be written to ${logPath}`);
-    
-    // Wait a moment for the message to be seen
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Register cleanup to restore console.error on exit
-    globalThis.addEventListener("unload", () => {
-      console.error = origConsoleError;
-      logWriter.close().catch(() => {});
-    });
-    
-    return;
-  } catch (e) {
-    console.error(`Failed to set up logging: ${e}`);
+    await Deno.mkdir("logs", { recursive: true });
+    logger.info("Logs directory created/verified");
+  } catch (error) {
+    logger.error(`Failed to create logs directory: ${error}`);
   }
 }
 
@@ -149,12 +121,50 @@ function updateMonitorStats(): void {
       const stats = getStats(mockQueueManager);
       
       // Update the state
-      state.monitorStats = stats;
+      if (state.monitorStats) {
+        // If we already have stats, preserve some values to avoid UI flashing
+        // when unchanged values are updated
+        const newStats = {
+          ...stats,
+          // Keep any values that aren't changing often and just cause UI flashing
+          lastChecked: state.monitorStats.lastChecked,
+          // Add any other fields that should be preserved here
+        };
+        state.monitorStats = newStats;
+      } else {
+        // Initial stats update
+        state.monitorStats = stats;
+      }
     }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(`Error updating monitor stats: ${errorMessage}`);
   }
+}
+
+// Set up stats update interval with progressive refresh timing
+function setupStatsInterval(): number {
+  let interval = 1000; // Start with 1 second for responsive initial UI
+  
+  const updateInterval = setInterval(() => {
+    updateMonitorStats();
+    
+    // Don't redraw on every stats update to reduce flashing
+    // Only redraw if we're on a menu that shows stats
+    if (state.menu === "main" || state.menu === "monitor") {
+      renderApp();
+    }
+    
+    // Gradually increase interval for less UI flashing
+    // Eventually reaching 5 seconds
+    if (interval < 5000) {
+      clearInterval(updateInterval);
+      interval = Math.min(interval * 1.5, 5000);
+      setupStatsInterval();
+    }
+  }, interval);
+  
+  return updateInterval;
 }
 
 // Main function
@@ -238,6 +248,10 @@ export async function runInteractive(configPath: string): Promise<void> {
     // Force a query execution to make sure DB is fully ready
     const relays = getRelays();
     logger.info(`Successfully loaded ${relays.length} relays`);
+    
+    // Initialize network filters from DB and config
+    initializeNetworkFilters();
+    logger.info("Network filters initialized");
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(`Database initialization failed: ${errorMessage}`);
@@ -263,11 +277,8 @@ export async function runInteractive(configPath: string): Promise<void> {
     renderApp();
   });
   
-  // Set up stats update interval
-  const statsInterval = setInterval(() => {
-    updateMonitorStats();
-    renderApp();
-  }, 5000); // Update stats every 5 seconds
+  // Set up the adaptive stats update interval
+  const statsInterval = setupStatsInterval();
   
   // Set up keyboard event listener
   Deno.stdin.setRaw(true);
@@ -317,8 +328,26 @@ export async function runInteractive(configPath: string): Promise<void> {
     clearInterval(statsInterval);
   };
   
-  // Set up cleanup on exit
-  globalThis.addEventListener("unload", cleanup);
+  // Function to gracefully exit the application
+  const gracefulExit = () => {
+    logger.info("Gracefully exiting application");
+    cleanup();
+    console.log("\nRelayMon interactive mode exited");
+    Deno.exit(0);
+  };
+  
+  // Set up SIGINT handler (Ctrl+C)
+  const sigIntHandler = () => {
+    gracefulExit();
+  };
+  
+  // Register SIGINT handler
+  try {
+    Deno.addSignalListener("SIGINT", sigIntHandler);
+    logger.info("SIGINT handler registered");
+  } catch (error) {
+    logger.error(`Failed to register SIGINT handler: ${error}`);
+  }
   
   try {
     // Main event loop
@@ -331,6 +360,12 @@ export async function runInteractive(configPath: string): Promise<void> {
       
       // Get the first chunk of input
       const input = decoder.decode(buffer.subarray(0, numBytesRead));
+      
+      // Check for Ctrl+C (ASCII code 3)
+      if (input.includes("\x03")) {
+        gracefulExit();
+        break;
+      }
       
       // Handle escape sequences properly
       if (input.startsWith("\x1b")) {
@@ -348,6 +383,14 @@ export async function runInteractive(configPath: string): Promise<void> {
           if (bytesRead === null || bytesRead === 0) {
             // Timeout with no more bytes - it's a standalone Escape key
             await handleKeyPress({ key: "Escape" });
+            
+            // Only exit if state.running has been set to false by the key handler
+            // This is managed by the input.ts handleKeyPress function
+            if (!state.running) {
+              logger.info("Exit triggered by Escape key on main menu");
+              gracefulExit();
+              break;
+            }
           } else {
             // Got more bytes - it's an escape sequence
             const escSeq = decoder.decode(escBuffer.subarray(0, bytesRead));
@@ -374,9 +417,7 @@ export async function runInteractive(configPath: string): Promise<void> {
       }
     }
   } finally {
-    cleanup();
+    // Cleanup if we broke out of the loop
+    gracefulExit();
   }
-  
-  clearScreen();
-  console.log("RelayMon interactive mode exited");
 } 

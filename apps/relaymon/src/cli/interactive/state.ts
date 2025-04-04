@@ -10,43 +10,62 @@ export type ConfigState = {
   showCursor: boolean;      // For blinking cursor
 };
 
-// State management for the interactive CLI
-export type AppState = {
-  running: boolean;
-  config: Config;
-  configPath: string;
-  menu: string;
-  subMenu: string | null;   // For tracking sub-menus like config sections
-  selectedIndex: number;
-  topIndex: number;         // For scrolling in lists
-  monitorProcess: any;      // Store the monitor process
-  monitorPid: number | null; // Store the PID
-  monitorLogs: string[];    // Store monitor logs
-  monitorStats: any;        // Store monitor stats
-  sortColumn: string;
-  sortDirection: "asc" | "desc";
-  groupBy: string | null;
-  configState: ConfigState; // State for config editing
-  filter: string;           // Filter for lists
-  isFiltering: boolean;     // Whether we're currently entering a filter
-};
+// Valid menu names
+export type MenuName = "main" | "monitor" | "config" | "relayStatus" | "logs";
 
-// Initialize app state
-export const state: AppState = {
+// Columns for relay status display
+export type ColumnName = "url" | "network" | "lastChecked" | "status" | "ignored";
+
+// Application state
+export interface State {
+  running: boolean;                // Whether the app is running
+  menu: MenuName;                  // Current menu
+  selectedIndex: number;           // Selected item in the current menu
+  topIndex: number;                // Top index for scrolling
+  
+  config: Config;                  // Application configuration
+  configPath: string;              // Path to the config file
+  configState: ConfigState;        // Config editing state
+  
+  monitorProcess: any;             // Running monitor process
+  monitorPid: number | null;       // PID of the monitor process
+  monitorStats: any;               // Stats from the monitor
+  monitorLogs: string[];           // Monitor logs
+  
+  filter: string;                  // Text filter for lists
+  isFiltering: boolean;            // Whether we're actively filtering
+  
+  editingFilters: boolean;         // Whether we're editing filters
+  filterMenuIndex: number;         // Selected filter in the filter menu
+  
+  statusFilters: {                 // Status filters
+    online: boolean;
+    offline: boolean;
+    unchecked: boolean;
+    ignored: boolean;              // Added ignored filter
+  };
+  
+  networkFilters: {                // Network filters
+    [key: string]: boolean;
+  };
+  
+  // Added for column selection and sorting
+  selectedColumn: ColumnName;      // Currently selected column
+  sortOrder: "asc" | "desc";       // Sort order
+  sortColumn: ColumnName;          // Column to sort by
+  
+  groupBy: string | null;          // Group by column
+}
+
+// Initialize the state
+export const state: State = {
   running: true,
-  config: {} as Config,
-  configPath: "./config.yaml",
   menu: "main",
-  subMenu: null,
   selectedIndex: 0,
   topIndex: 0,
-  monitorProcess: null,
-  monitorPid: null,
-  monitorLogs: [],
-  monitorStats: null,
-  sortColumn: "url",
-  sortDirection: "asc",
-  groupBy: null,
+  
+  config: {} as Config,
+  configPath: "",
   configState: {
     path: [],
     editingKey: null,
@@ -55,13 +74,39 @@ export const state: AppState = {
     cursorPosition: 0,
     showCursor: true
   },
+  
+  monitorProcess: null,
+  monitorPid: null,
+  monitorStats: null,
+  monitorLogs: [],
+  
   filter: "",
-  isFiltering: false
+  isFiltering: false,
+  
+  editingFilters: false,
+  filterMenuIndex: 0,
+  
+  statusFilters: {
+    online: true,
+    offline: false,   // Changed to false - offline relays hidden by default
+    unchecked: true,
+    ignored: true    
+  },
+  
+  networkFilters: {},
+  
+  // Updated sort defaults
+  selectedColumn: "lastChecked",
+  sortOrder: "desc",  // Changed to descending
+  sortColumn: "lastChecked", // Changed to lastChecked
+  
+  groupBy: null
 };
 
+// Store callback for cursor blinking
 let blinkCallback: (() => void) | null = null;
 
-// Register callback for cursor blink
+// Register a callback for cursor blinking
 export function registerBlinkCallback(callback: () => void): void {
   blinkCallback = callback;
 }
@@ -84,17 +129,33 @@ export function setupCursorBlink(): number {
   return interval;
 }
 
-// Helper function to get the current level in config
+// Function to get the current level of config based on the path
 export function getCurrentConfigLevel(): any {
-  // Get the current config object based on the path
-  let currentConfig = state.config;
+  let current = state.config as Record<string, any>;
   for (const key of state.configState.path) {
-    if (currentConfig && typeof currentConfig === "object") {
-      // Use type assertion to avoid TS errors
-      currentConfig = currentConfig[key as keyof typeof currentConfig];
-    } else {
-      break;
-    }
+    current = current[key];
   }
-  return currentConfig;
+  return current;
+}
+
+// Function to initialize network filters from the database
+export function initializeNetworkFilters(): void {
+  // Get networks from config
+  const configNetworks = state.config?.relaymon?.networks || [];
+  
+  // Create the network filters object with all networks enabled by default
+  const networkFilters: {[key: string]: boolean} = {};
+  
+  // Always include these standard networks
+  ["clearnet", "tor", "i2p", "loki"].forEach(network => {
+    networkFilters[network] = true;
+  });
+  
+  // Add networks from config
+  configNetworks.forEach(network => {
+    networkFilters[network] = true;
+  });
+  
+  // Set the state
+  state.networkFilters = networkFilters;
 } 

@@ -3,6 +3,7 @@ import { state } from "./state.ts";
 import { formatRelativeTime } from "./utils.ts";
 import { getRelayCounts, getRelays, getIgnoredRelays, createSampleIgnoredRelay } from "./db.ts";
 import { getLogger } from "../../utils/logger.ts";
+import { msToTimeString } from "../../config/config.ts";
 
 const logger = getLogger("Renderer");
 
@@ -32,11 +33,8 @@ export function render(): string {
     case "config":
       result = renderConfigMenu();
       break;
-    case "ignored":
-      result = renderIgnoredRelaysMenu();
-      break;
-    case "all":
-      result = renderAllRelaysMenu();
+    case "relayStatus":
+      result = renderRelayStatusMenu();
       break;
     case "logs":
       result = renderMonitorLogs();
@@ -61,8 +59,7 @@ export function renderMainMenu(): string {
     isRunning ? `${colors.red('✖')} Stop Monitor` : `${colors.green('▶')} Start Monitor`,
     `${colors.blue('🔍')} Watch Monitor Logs`,
     `${colors.yellow('⚙')} Configuration`,
-    `${colors.magenta('⛔')} Ignored Relays`,
-    `${colors.cyan('📶')} All Relays`,
+    `${colors.cyan('📶')} Relay Status`,
   ];
   
   // ASCII art logo for RelayMon
@@ -152,7 +149,7 @@ export function renderConfigMenu(): string {
   
   // Navigate to the current path
   for (const key of state.configState.path) {
-    currentConfig = currentConfig[key];
+    currentConfig = currentConfig[key as keyof typeof currentConfig];
     breadcrumbs.push(key);
   }
   
@@ -229,6 +226,15 @@ export function renderConfigMenu(): string {
         } else if (typeof value === "boolean") {
           // For boolean values
           displayValue = value ? colors.green("true") : colors.red("false");
+        } else if (typeof value === "number") {
+          // Check if this is likely a time value based on the key name
+          if (isTimeKey(key) && value > 1000) {
+            // Convert milliseconds to timestring for display using the central utility
+            displayValue = colors.green(`"${msToTimeString(value)}"`);
+          } else {
+            // Regular number
+            displayValue = colors.yellow(String(value));
+          }
         } else {
           // For other primitive values
           displayValue = colors.yellow(String(value));
@@ -256,19 +262,243 @@ export function renderConfigMenu(): string {
   return renderTitle("Configuration", content);
 }
 
-// Render function for the all relays menu
-export function renderAllRelaysMenu(): string {
+// Helper function to check if a key is likely to be a time-related value
+function isTimeKey(key: string): boolean {
+  const timeKeywords = [
+    'interval',
+    'timeout',
+    'expires',
+    'expiry',
+    'delay',
+    'duration',
+    'ttl',
+    'time'
+  ];
+  
+  return timeKeywords.some(keyword => 
+    key.toLowerCase().includes(keyword)
+  );
+}
+
+// Render filter options UI
+function renderFilterOptions(): string[] {
+  const content: string[] = [];
+  
+  // If we're not editing filters, just show a summary
+  if (!state.editingFilters) {
+    const activeStatusFilters = [];
+    if (state.statusFilters.online) activeStatusFilters.push("online");
+    if (state.statusFilters.offline) activeStatusFilters.push("offline");
+    if (state.statusFilters.unchecked) activeStatusFilters.push("unchecked");
+    if (state.statusFilters.ignored) activeStatusFilters.push("ignored");
+    
+    const activeNetworks = Object.entries(state.networkFilters)
+      .filter(([_, enabled]) => enabled)
+      .map(([network]) => network);
+    
+    content.push(`${colors.yellow('[V]')} ${colors.dim('Value Filters:')} ${colors.cyan(activeStatusFilters.join(', '))} | ${colors.magenta(activeNetworks.join(', '))}`);
+    return content;
+  }
+  
+  // We're editing filters, show the full UI
+  content.push(colors.bold(colors.cyan("📊 Filter Options")));
+  content.push(colors.dim('━'.repeat(20)));
+  content.push("");
+  
+  // Status filters section
+  content.push(colors.bold("Status Filters:"));
+  
+  const statusOptions = [
+    { key: "online", label: "Online" },
+    { key: "offline", label: "Offline" },
+    { key: "unchecked", label: "Unchecked" },
+    { key: "ignored", label: "Ignored" }
+  ];
+  
+  statusOptions.forEach((option, index) => {
+    const isSelected = state.filterMenuIndex === index;
+    const isEnabled = state.statusFilters[option.key as keyof typeof state.statusFilters];
+    
+    const line = `${isSelected ? colors.cyan('►') : ' '} [${isEnabled ? colors.green('✓') : ' '}] ${option.label}`;
+    
+    if (isSelected) {
+      content.push(colors.bgCyan(colors.black(` [${isEnabled ? '✓' : ' '}] ${option.label} `)));
+    } else {
+      content.push(line);
+    }
+  });
+  
+  content.push("");
+  
+  // Network filters section
+  content.push(colors.bold("Network Filters:"));
+  
+  // Convert networks to array for easier indexing
+  const networkEntries = Object.entries(state.networkFilters);
+  
+  networkEntries.forEach(([network, enabled], index) => {
+    const actualIndex = index + statusOptions.length; // Offset by the number of status options
+    const isSelected = state.filterMenuIndex === actualIndex;
+    
+    const line = `${isSelected ? colors.cyan('►') : ' '} [${enabled ? colors.green('✓') : ' '}] ${network}`;
+    
+    if (isSelected) {
+      content.push(colors.bgCyan(colors.black(` [${enabled ? '✓' : ' '}] ${network} `)));
+    } else {
+      content.push(line);
+    }
+  });
+  
+  content.push("");
+  content.push(colors.dim("Press Space to toggle, Enter/ESC to apply filters"));
+  
+  return content;
+}
+
+// Function to render a column header with proper highlighting for selected column
+function renderColumnHeader(name: string, label: string, width: number): string {
+  const isSelected = state.selectedColumn === name;
+  const isSorted = state.sortColumn === name;
+  
+  // Determine the sort indicator
+  let sortIndicator = '';
+  if (isSorted) {
+    sortIndicator = state.sortOrder === 'asc' ? ' ↑' : ' ↓';
+  }
+  
+  // Create the header
+  const header = `${label}${sortIndicator}`.padEnd(width);
+  
+  // Apply styling
+  if (isSelected) {
+    return colors.bgCyan(colors.black(` ${header} `));
+  } else {
+    return colors.dim(header);
+  }
+}
+
+// Render category stats based on the relays array
+function renderRelayStats(relays: any[]): string[] {
+  const content: string[] = [];
+  
+  // Calculate stats
+  const total = relays.length;
+  const online = relays.filter(r => r.online === 1).length;
+  const offline = relays.filter(r => r.online === 0 && r.checked_at > 0).length;
+  const unchecked = relays.filter(r => r.checked_at <= 0).length;
+  const ignored = relays.filter(r => r.ignore === 1).length;
+  
+  // Network counts
+  const networks: {[key: string]: number} = {};
+  relays.forEach(relay => {
+    const network = relay.network || 'unknown';
+    networks[network] = (networks[network] || 0) + 1;
+  });
+  
+  // Format as styled output with boxes
+  content.push(`${colors.dim('┌── RELAY COUNTS ─────────────────────────────────────┐')}`);
+  content.push(`${colors.dim('│')} Total: ${colors.bold(total.toString())} | ${colors.green(`Online: ${online}`)} | ${colors.red(`Offline: ${offline}`)} | Unchecked: ${unchecked} ${colors.dim('│')}`);
+  content.push(`${colors.dim('│')} Ignored: ${ignored} ${colors.dim('│')}`);
+  content.push(`${colors.dim('└───────────────────────────────────────────────────┘')}`);
+  
+  content.push(`${colors.dim('┌── NETWORKS ────────────────────────────────────────┐')}`);
+  const networkStrs = Object.entries(networks)
+    .sort((a, b) => b[1] - a[1]) // Sort by count descending
+    .map(([name, count]) => `${name}: ${count}`)
+    .join(' | ');
+  content.push(`${colors.dim('│')} ${networkStrs} ${colors.dim('│')}`);
+  content.push(`${colors.dim('└───────────────────────────────────────────────────┘')}`);
+  
+  content.push('');
+  
+  return content;
+}
+
+// Sort relays based on the sort column and order
+function sortRelays(relays: any[]): any[] {
+  const sorted = [...relays]; // Create a copy to avoid modifying the original
+  
+  sorted.sort((a, b) => {
+    let aValue: any, bValue: any;
+    
+    switch (state.sortColumn) {
+      case "url":
+        aValue = a.url || '';
+        bValue = b.url || '';
+        break;
+      case "network":
+        aValue = a.network || 'unknown';
+        bValue = b.network || 'unknown';
+        break;
+      case "lastChecked":
+        aValue = a.checked_at || 0;
+        bValue = b.checked_at || 0;
+        break;
+      case "status":
+        // Sort by: online -> offline -> unchecked
+        if (a.checked_at <= 0 && b.checked_at <= 0) {
+          aValue = 2; // Both unchecked
+          bValue = 2;
+        } else if (a.checked_at <= 0) {
+          aValue = 2; // a is unchecked
+          bValue = b.online === 1 ? 0 : 1; // b is online or offline
+        } else if (b.checked_at <= 0) {
+          aValue = a.online === 1 ? 0 : 1; // a is online or offline
+          bValue = 2; // b is unchecked
+        } else {
+          aValue = a.online === 1 ? 0 : 1; // a is online or offline
+          bValue = b.online === 1 ? 0 : 1; // b is online or offline
+        }
+        break;
+      case "ignored":
+        aValue = a.ignore === 1 ? 1 : 0;
+        bValue = b.ignore === 1 ? 1 : 0;
+        break;
+      default:
+        aValue = a.url || '';
+        bValue = b.url || '';
+    }
+    
+    // Compare based on sort order
+    if (state.sortOrder === 'asc') {
+      return aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+    } else {
+      return aValue < bValue ? 1 : aValue > bValue ? -1 : 0;
+    }
+  });
+  
+  return sorted;
+}
+
+// Render the Relay Status menu (formerly All Relays)
+export function renderRelayStatusMenu(): string {
   let content: string[] = [];
   
   try {
-    logger.debug("Getting relays for All Relays menu");
+    logger.debug("Getting relays for Relay Status menu");
     
     // Get relays data - could be empty or an error
     let allRelays = getRelays();
     
     logger.debug(`Retrieved ${allRelays.length} relays from database`);
     
-    // Apply filter if set
+    // Apply status filters
+    allRelays = allRelays.filter(relay => {
+      // Apply online/offline/unchecked filters
+      if (relay.checked_at <= 0 && !state.statusFilters.unchecked) return false;
+      if (relay.online === 1 && !state.statusFilters.online) return false;
+      if (relay.online === 0 && relay.checked_at > 0 && !state.statusFilters.offline) return false;
+      if (relay.ignore === 1 && !state.statusFilters.ignored) return false;
+      
+      // Apply network filters
+      if (relay.network && state.networkFilters.hasOwnProperty(relay.network)) {
+        return state.networkFilters[relay.network];
+      }
+      
+      return true; // Show relays with unknown network by default
+    });
+    
+    // Apply text filter if set
     if (state.filter) {
       const filterLower = state.filter.toLowerCase();
       allRelays = allRelays.filter(relay => 
@@ -284,6 +514,9 @@ export function renderAllRelaysMenu(): string {
       }
     }
     
+    // Sort relays based on current sort settings
+    allRelays = sortRelays(allRelays);
+    
     // Show filter status if filtering
     if (state.isFiltering) {
       content.push(`${colors.blue('🔍')} ${colors.bold('Filter')}: ${state.filter}${colors.bgWhite(colors.black('_'))}`);
@@ -293,11 +526,18 @@ export function renderAllRelaysMenu(): string {
       content.push("");
     } else {
       content.push(`${colors.yellow('[F]')} ${colors.dim('to filter list')}`);
-      content.push("");
     }
     
-    // Stats summary
-    content.push(`${colors.bold(allRelays.length.toString())} ${colors.dim('relays total')}`);
+    // Show value filters UI
+    content.push(...renderFilterOptions());
+    content.push("");
+    
+    // Add detailed stats
+    content.push(...renderRelayStats(allRelays));
+    
+    // Show sort and column selection help
+    content.push(`${colors.yellow('[←/→]')} Select Column  ${colors.yellow('[A]')} Sort Ascending  ${colors.yellow('[D]')} Sort Descending`);
+    content.push('');
     
     if (allRelays.length === 0) {
       content.push(colors.italic("No relays found. Try running the monitor first."));
@@ -316,13 +556,25 @@ export function renderAllRelaysMenu(): string {
       
       // Add column headers
       content.push("");
+      
+      // Define column widths
+      const urlWidth = 32;
+      const networkWidth = 10;
+      const lastCheckedWidth = 18;
+      const statusWidth = 10;
+      const ignoredWidth = 8;
+      
+      // Render column headers with proper highlighting
+      const urlHeader = renderColumnHeader("url", "URL", urlWidth);
+      const networkHeader = renderColumnHeader("network", "NETWORK", networkWidth);
+      const lastCheckedHeader = renderColumnHeader("lastChecked", "LAST CHECKED", lastCheckedWidth);
+      const statusHeader = renderColumnHeader("status", "STATUS", statusWidth);
+      const ignoredHeader = renderColumnHeader("ignored", "IGNORED", ignoredWidth);
+      
       content.push(
-        colors.dim("URL") + " ".repeat(31) + 
-        colors.dim("│ NETWORK") + " " + 
-        colors.dim("│ LAST CHECKED") + " ".repeat(19) +
-        colors.dim("│ STATUS")
+        `${urlHeader} │ ${networkHeader} │ ${lastCheckedHeader} │ ${statusHeader} │ ${ignoredHeader}`
       );
-      content.push(colors.dim("━".repeat(75)));
+      content.push(colors.dim("━".repeat(urlWidth + networkWidth + lastCheckedWidth + statusWidth + ignoredWidth + 12)));
       
       // Display visible relays
       for (let i = state.topIndex; i < endIndex; i++) {
@@ -333,19 +585,23 @@ export function renderAllRelaysMenu(): string {
         let status;
         if (relay.online === 1) {
           status = colors.green("✓ ONLINE");
+        } else if (relay.checked_at <= 0) {
+          status = colors.dim("? UNCHECKED");
         } else {
           status = colors.red("✗ OFFLINE");
         }
         
         // Format URL to fit in column
-        const urlMaxLength = 32;
+        const urlMaxLength = urlWidth;
         let displayUrl = relay.url;
         if (displayUrl.length > urlMaxLength) {
           displayUrl = displayUrl.substring(0, urlMaxLength - 3) + "...";
+        } else {
+          displayUrl = displayUrl.padEnd(urlMaxLength);
         }
         
         // Format network column
-        const network = (relay.network || "unknown");
+        const network = (relay.network || "unknown").padEnd(networkWidth);
         
         // Format last checked time
         let lastChecked;
@@ -354,12 +610,18 @@ export function renderAllRelaysMenu(): string {
         } else {
           lastChecked = formatRelativeTime(relay.checked_at * 1000);
         }
+        lastChecked = lastChecked.padEnd(lastCheckedWidth);
+        
+        // Format ignored status
+        const ignored = relay.ignore === 1 
+          ? colors.yellow("✓ YES") 
+          : colors.dim("✗ NO");
         
         // Create the line with columns
-        let line = `${isSelected ? colors.cyan('►') : ' '} ${displayUrl.padEnd(32)} │ ${network.padEnd(8)} │ ${lastChecked.padEnd(28)} │ ${status}`;
+        let line = `${isSelected ? colors.cyan('►') : ' '} ${displayUrl} │ ${network} │ ${lastChecked} │ ${status.padEnd(statusWidth)} │ ${ignored.padEnd(ignoredWidth)}`;
         
         if (isSelected) {
-          content.push(colors.bgCyan(colors.black(` ${displayUrl.padEnd(32)} │ ${network.padEnd(8)} │ ${lastChecked.padEnd(28)} │ ${status} `)));
+          content.push(colors.bgCyan(colors.black(` ${displayUrl} │ ${network} │ ${lastChecked} │ ${status.padEnd(statusWidth)} │ ${ignored.padEnd(ignoredWidth)} `)));
         } else {
           content.push(line);
         }
@@ -373,11 +635,16 @@ export function renderAllRelaysMenu(): string {
     
     content.push("");
     content.push(colors.bold("Commands:"));
-    content.push(`${colors.yellow('[I]')} Toggle Ignore  ${colors.yellow('[PageUp/Down]')} Navigate  ${colors.yellow('[ESC]')} Back`);
+    
+    if (state.editingFilters) {
+      content.push(`${colors.yellow('[Space]')} Toggle Filter  ${colors.yellow('[Enter]')} Apply  ${colors.yellow('[ESC]')} Cancel`);
+    } else {
+      content.push(`${colors.yellow('[I]')} Toggle Ignore  ${colors.yellow('[V]')} Edit Filters  ${colors.yellow('[PageUp/Down]')} Navigate  ${colors.yellow('[ESC]')} Back`);
+    }
     
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error(`Error rendering All Relays menu: ${errorMessage}`);
+    logger.error(`Error rendering Relay Status menu: ${errorMessage}`);
     
     content.push(colors.red(`Error loading relays: ${errorMessage}`));
     content.push("");
@@ -385,152 +652,7 @@ export function renderAllRelaysMenu(): string {
     content.push("Try running the monitor first to populate the database.");
   }
   
-  return renderTitle("All Relays", content);
-}
-
-// Render function for the ignored relays menu
-export function renderIgnoredRelaysMenu(): string {
-  let content: string[] = [];
-  
-  try {
-    logger.debug("Getting relays for Ignored Relays menu");
-    
-    // Get ignored relays data
-    let ignoredRelays = getIgnoredRelays();
-    
-    logger.debug(`Retrieved ${ignoredRelays.length} ignored relays from database`);
-    
-    // Apply filter if set
-    if (state.filter) {
-      const filterLower = state.filter.toLowerCase();
-      ignoredRelays = ignoredRelays.filter(relay => 
-        relay.url.toLowerCase().includes(filterLower)
-      );
-      
-      // Reset indices if needed for filtered results
-      if (state.topIndex >= ignoredRelays.length && ignoredRelays.length > 0) {
-        state.topIndex = Math.max(0, ignoredRelays.length - 15);
-      }
-      if (state.selectedIndex >= ignoredRelays.length && ignoredRelays.length > 0) {
-        state.selectedIndex = Math.max(0, ignoredRelays.length - 1);
-      }
-    }
-    
-    // Show filter status if filtering
-    if (state.isFiltering) {
-      content.push(`${colors.blue('🔍')} ${colors.bold('Filter')}: ${state.filter}${colors.bgWhite(colors.black('_'))}`);
-      content.push("");
-    } else if (state.filter) {
-      content.push(`${colors.blue('🔍')} ${colors.bold('Filter')}: ${colors.yellow(state.filter)} ${colors.dim('[F] to change')}`);
-      content.push("");
-    } else {
-      content.push(`${colors.yellow('[F]')} ${colors.dim('to filter list')}`);
-      content.push("");
-    }
-    
-    // Stats summary
-    content.push(`${colors.bold(ignoredRelays.length.toString())} ${colors.dim('ignored relays')}`);
-    
-    // Add note about unignoring relays
-    content.push(colors.dim("Use [I] or [Enter] to unignore a relay"));
-    
-    if (ignoredRelays.length === 0) {
-      content.push("");
-      content.push(colors.italic("No ignored relays found."));
-      
-      // Add more debug info when no relays are found
-      const counts = getRelayCounts();
-      content.push(colors.dim(`Database contains: ${counts.total} total, ${counts.online} online, ${counts.ignored} ignored relays`));
-      
-      // Add button to create a sample ignored relay for testing
-      content.push("");
-      content.push(`${colors.yellow('[C]')} ${colors.green('Create a sample ignored relay for testing')}`);
-      content.push(`${colors.yellow('[R]')} ${colors.green('Repair database ignore values')}`);
-      content.push(colors.dim("This will scan and fix any inconsistent ignore values"));
-    } else {
-      // Calculate visible range for scrolling
-      const visibleItems = 15; // Adjust based on your display area
-      const endIndex = Math.min(state.topIndex + visibleItems, ignoredRelays.length);
-      
-      // Show pagination info
-      content.push(colors.dim(`Showing ${state.topIndex + 1}-${endIndex} of ${ignoredRelays.length}`));
-      
-      // Show scrolling indicators
-      if (state.topIndex > 0) {
-        content.push(colors.dim("↑ more above"));
-      }
-      
-      // Add column headers
-      content.push("");
-      content.push(
-        colors.dim("URL") + " ".repeat(31) + 
-        colors.dim("│ NETWORK") + " " + 
-        colors.dim("│ LAST CHECKED") + " ".repeat(19) +
-        colors.dim("│ STATUS")
-      );
-      content.push(colors.dim("━".repeat(75)));
-      
-      // Display visible relays
-      for (let i = state.topIndex; i < endIndex; i++) {
-        const relay = ignoredRelays[i];
-        const isSelected = i === state.selectedIndex;
-        
-        // Get network status information
-        let status;
-        if (relay.online === 1) {
-          status = colors.green("✓ ONLINE");
-        } else {
-          status = colors.red("✗ OFFLINE");
-        }
-        
-        // Format URL to fit in column
-        const urlMaxLength = 32;
-        let displayUrl = relay.url;
-        if (displayUrl.length > urlMaxLength) {
-          displayUrl = displayUrl.substring(0, urlMaxLength - 3) + "...";
-        }
-        
-        // Format network column
-        const network = (relay.network || "unknown");
-        
-        // Format last checked time
-        let lastChecked;
-        if (!relay.checked_at || relay.checked_at <= 0) {
-          lastChecked = colors.dim("never");
-        } else {
-          lastChecked = formatRelativeTime(relay.checked_at * 1000);
-        }
-        
-        // Create the line with columns
-        let line = `${isSelected ? colors.cyan('►') : ' '} ${displayUrl.padEnd(32)} │ ${network.padEnd(8)} │ ${lastChecked.padEnd(28)} │ ${status}`;
-        
-        if (isSelected) {
-          content.push(colors.bgCyan(colors.black(` ${displayUrl.padEnd(32)} │ ${network.padEnd(8)} │ ${lastChecked.padEnd(28)} │ ${status} `)));
-        } else {
-          content.push(line);
-        }
-      }
-      
-      // Show scrolling indicators
-      if (endIndex < ignoredRelays.length) {
-        content.push(colors.dim("↓ more below"));
-      }
-      
-      content.push("");
-      content.push(colors.bold("Commands:"));
-      content.push(`${colors.yellow('[I]')} Toggle Ignore  ${colors.yellow('[R]')} Repair DB  ${colors.yellow('[PageUp/Down]')} Navigate  ${colors.yellow('[ESC]')} Back`);
-    }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logger.error(`Error rendering Ignored Relays menu: ${errorMessage}`);
-    
-    content.push(colors.red(`Error loading ignored relays: ${errorMessage}`));
-    content.push("");
-    content.push("Ensure the database is properly initialized.");
-    content.push("Try running the monitor first to populate the database.");
-  }
-  
-  return renderTitle("Ignored Relays", content);
+  return renderTitle("Relay Status", content);
 }
 
 // Render function for monitor logs

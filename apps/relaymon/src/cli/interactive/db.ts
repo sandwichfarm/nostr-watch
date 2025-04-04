@@ -7,6 +7,9 @@ const logger = getLogger("InteractiveDB");
 let db = dbImport;
 export { db };
 
+// Track the highest checked_at value we've seen to enable incremental updates
+let highestCheckedAt = 0;
+
 // Initialize the database
 export function initDB(dbPath: string, enableWAL: boolean = true): void {
   logger.info(`Initializing database at path: ${dbPath} (WAL mode: ${enableWAL ? 'enabled' : 'disabled'})`);
@@ -34,6 +37,17 @@ export function initDB(dbPath: string, enableWAL: boolean = true): void {
       const relayCount = db.query(`SELECT COUNT(*) FROM relay_status`)[0][0];
       const onlineCount = db.query(`SELECT COUNT(*) FROM relay_status WHERE online = 1`)[0][0];
       const ignoredCount = db.query(`SELECT COUNT(*) FROM relay_status WHERE ignore = 1`)[0][0];
+      
+      // Get the highest checked_at value for incremental updates
+      try {
+        const maxCheckedAt = db.query(`SELECT MAX(checked_at) FROM relay_status`)[0][0];
+        // Convert to number, fallback to 0 if null or undefined
+        highestCheckedAt = maxCheckedAt !== null && maxCheckedAt !== undefined ? Number(maxCheckedAt) : 0;
+        logger.info(`Initialized with highest checked_at: ${highestCheckedAt}`);
+      } catch (e) {
+        logger.error(`Failed to get highest checked_at: ${e}`);
+        highestCheckedAt = 0;
+      }
       
       logger.info(`Database contains ${relayCount} relays (${onlineCount} online, ${ignoredCount} ignored)`);
     } catch (error) {
@@ -63,8 +77,108 @@ export function resetCache(): void {
   relayCacheTTL = 0;
 }
 
+// Get only updated relays from the database
+function getUpdatedRelays(): any[] {
+  try {
+    if (highestCheckedAt === 0) {
+      // If we don't have a highest value yet, just return empty array
+      // Full refresh will happen on next regular call
+      return [];
+    }
+    
+    // Query only relays updated since our last highest checked_at
+    const updatedUrls: string[] = [];
+    try {
+      const urlRows = db.query(`SELECT url FROM relay_status WHERE checked_at > ? ORDER BY url`, [highestCheckedAt]);
+      for (const row of urlRows) {
+        updatedUrls.push(row[0] as string);
+      }
+      
+      // If no updates, return empty array
+      if (updatedUrls.length === 0) {
+        return [];
+      }
+      
+      logger.debug(`Found ${updatedUrls.length} updated relays since timestamp ${highestCheckedAt}`);
+    } catch (e) {
+      logger.error(`Error retrieving updated relay URLs: ${e}`);
+      return [];
+    }
+    
+    // Get the new highest checked_at value
+    try {
+      const newMaxCheckedAt = db.query(`SELECT MAX(checked_at) FROM relay_status`)[0][0];
+      // Convert to number and ensure it's greater before updating
+      const newMax = newMaxCheckedAt !== null && newMaxCheckedAt !== undefined ? Number(newMaxCheckedAt) : 0;
+      if (newMax > highestCheckedAt) {
+        logger.debug(`Updating highest checked_at from ${highestCheckedAt} to ${newMax}`);
+        highestCheckedAt = newMax;
+      }
+    } catch (e) {
+      logger.error(`Failed to update highest checked_at: ${e}`);
+    }
+    
+    // Now build complete objects for the updated relays
+    const results: any[] = [];
+    
+    for (const url of updatedUrls) {
+      try {
+        // Get relay details with proper escaping to handle URLs with quotes
+        const details = db.query(`SELECT online, ignore, parent, checked_at, rtt, network, retries 
+                                FROM relay_status WHERE url = ?`, [url]);
+        
+        if (details.length > 0) {
+          const [online, ignore, parent, checked_at, rtt, network, retries] = details[0];
+          results.push({
+            url,
+            online: online as number,
+            ignore: ignore as number,
+            parent: parent as string,
+            checked_at: checked_at as number, 
+            rtt: rtt as number,
+            network: network as string,
+            retries: retries as number
+          });
+        }
+      } catch (e) {
+        logger.error(`Error getting details for updated relay ${url}: ${e}`);
+      }
+    }
+    
+    return results;
+  } catch (error) {
+    logger.error(`Error getting updated relays: ${error}`);
+    return [];
+  }
+}
+
 // Get relays from cache or database
 export function getRelays(): any[] {
+  // First check for incremental updates
+  if (relaysCache.length > 0) {
+    const updatedRelays = getUpdatedRelays();
+    
+    if (updatedRelays.length > 0) {
+      logger.debug(`Merging ${updatedRelays.length} updated relays into cache of ${relaysCache.length} relays`);
+      
+      // Create a map of existing relays for fast lookup
+      const existingRelays = new Map(relaysCache.map(relay => [relay.url, relay]));
+      
+      // Update existing relays and add new ones
+      for (const relay of updatedRelays) {
+        existingRelays.set(relay.url, relay);
+      }
+      
+      // Convert back to array
+      relaysCache = Array.from(existingRelays.values());
+      
+      // Extend cache TTL
+      relayCacheTTL = Date.now() + 10000;
+      
+      return relaysCache;
+    }
+  }
+  
   // Use cache if available and still valid
   if (relaysCache.length > 0 && isCacheValid()) {
     return relaysCache;
@@ -88,6 +202,17 @@ export function getRelays(): any[] {
     // If we couldn't get any URLs, return empty array
     if (urls.length === 0) {
       return [];
+    }
+    
+    // Get the highest checked_at value for future incremental updates
+    try {
+      const maxCheckedAt = db.query(`SELECT MAX(checked_at) FROM relay_status`)[0][0];
+      // Convert to number, fallback to 0 if null or undefined
+      const newMax = maxCheckedAt !== null && maxCheckedAt !== undefined ? Number(maxCheckedAt) : 0;
+      highestCheckedAt = newMax;
+      logger.debug(`Updated highest checked_at to: ${highestCheckedAt}`);
+    } catch (e) {
+      logger.error(`Failed to update highest checked_at: ${e}`);
     }
     
     // Now build complete objects by querying individual relays
@@ -135,8 +260,39 @@ export function getRelays(): any[] {
   }
 }
 
-// Get ignored relays from cache or database
+// Get ignored relays from cache or database with incremental updates
 export function getIgnoredRelays(): any[] {
+  // First check for incremental updates to ignored relays
+  if (ignoredRelaysCache.length > 0) {
+    const updatedRelays = getUpdatedRelays();
+    
+    if (updatedRelays.length > 0) {
+      logger.debug(`Checking ${updatedRelays.length} updated relays for ignore status changes`);
+      
+      // Create a map of existing ignored relays for fast lookup
+      const existingRelays = new Map(ignoredRelaysCache.map(relay => [relay.url, relay]));
+      
+      // Update existing relays and add new ignored ones
+      for (const relay of updatedRelays) {
+        if (relay.ignore === 1) {
+          // This is a newly ignored relay or an update to an ignored relay
+          existingRelays.set(relay.url, relay);
+        } else if (existingRelays.has(relay.url)) {
+          // This relay was previously ignored but no longer is
+          existingRelays.delete(relay.url);
+        }
+      }
+      
+      // Convert back to array
+      ignoredRelaysCache = Array.from(existingRelays.values());
+      
+      // Extend cache TTL
+      relayCacheTTL = Date.now() + 10000;
+      
+      return ignoredRelaysCache;
+    }
+  }
+  
   // Use cache if available and still valid
   if (ignoredRelaysCache.length > 0 && isCacheValid()) {
     return ignoredRelaysCache;
@@ -610,5 +766,27 @@ export function debugAndRepairIgnoredRelays(): { fixed: number, total: number } 
   } catch (error) {
     logger.error(`Error debugging/repairing relays: ${error}`);
     return { fixed: 0, total: 0 };
+  }
+}
+
+// Get all unique networks from the database
+export function getUniqueNetworks(): string[] {
+  try {
+    // Query for all distinct network values
+    const networksQuery = db.query(`SELECT DISTINCT network FROM relay_status WHERE network IS NOT NULL AND network != ''`);
+    
+    // Process the results into an array of string values
+    const networks: string[] = [];
+    for (const row of networksQuery) {
+      if (row[0] && typeof row[0] === 'string') {
+        networks.push(row[0]);
+      }
+    }
+    
+    logger.debug(`Found ${networks.length} unique networks: ${networks.join(', ')}`);
+    return networks;
+  } catch (error) {
+    logger.error(`Error getting unique networks: ${error}`);
+    return [];
   }
 } 

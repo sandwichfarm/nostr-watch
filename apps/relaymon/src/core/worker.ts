@@ -6,7 +6,7 @@ import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, 
 import { delay } from "npm:@nostrwatch/utils";
 import { getLogger, LogLevel } from "../utils/logger.ts";
 import { RetryManager } from "../utils/retryManager.ts";
-import { statuses, updateSessionStats, incrementChecksCounter } from "./status.ts";
+import { statuses, updateSessionStats, incrementChecksCounter, incrementRelaysRecovered, incrementNewRelaysFound } from "./status.ts";
 import chalk from "npm:chalk";
 import { QueueManager } from "../utils/queueManager.ts";
 import { getExpiredRelays } from "../db/db.ts";
@@ -86,6 +86,8 @@ export class Worker {
     let wasSuccessful = true;
     let wasOnline = false;
     let wentOffline = false;
+    let recovered = false;
+    let isFirstCheck = false;
 
     // Check if relay hostname is in blocklist
     if (isHostnameBlocked(relayUrl)) {
@@ -108,6 +110,17 @@ export class Worker {
       }
       
       return;
+    }
+
+    // Check if this is the first time this relay is being checked
+    try {
+      const checkedAt = db.query("SELECT checked_at FROM relay_status WHERE url = ?", [relayUrl]);
+      if (checkedAt.length > 0 && (checkedAt[0][0] === -1)) {
+        isFirstCheck = true;
+        this.logger.debug(`This is the first check for relay: ${relayUrl}`);
+      }
+    } catch (error) {
+      this.logger.error(`Error checking if first check for ${relayUrl}: ${error}`);
     }
 
     this.logger.debug(`Starting check for relay: ${relayUrl}`);
@@ -140,6 +153,12 @@ export class Worker {
       // Update session stats - check if relay went offline
       wasOnline = result.open?.data === true;
       
+      // If this is the first check and the relay is online, increment the new relays found counter
+      if (isFirstCheck && wasOnline) {
+        incrementNewRelaysFound(1, true);
+        this.logger.debug(`New relay ${relayUrl} is online - incrementing new relays found counter`);
+      }
+      
       // Check if the relay was previously online but is now offline
       const previouslyOnline = this.knownRelayStatus.get(relayUrl);
       if (previouslyOnline === true && !wasOnline) {
@@ -147,10 +166,17 @@ export class Worker {
         this.logger.debug(`Relay ${relayUrl} went offline (was previously online)`);
       }
       
-      // Check if this is a retry (was already offline and still is)
-      // Use strict comparison and handle undefined case
+      // Check if this is a recovery (was offline and now is online)
       const previousStatus = this.knownRelayStatus.get(relayUrl);
       const previouslyOffline = previousStatus === false; // only true if definitely was false before
+      if (previouslyOffline && wasOnline) {
+        recovered = true;
+        this.logger.debug(`Relay ${relayUrl} recovered (was previously offline)`);
+        // Increment the recovered relays counter
+        incrementRelaysRecovered();
+      }
+      
+      // Check if this is a retry (was already offline and still is)
       const isRetry = previouslyOffline && !wasOnline;
       
       // Update known relay status
@@ -170,7 +196,7 @@ export class Worker {
       }
       
       try {
-        this.progressMessage(relayUrl, result, false);
+        this.progressMessage(relayUrl, result, recovered, false);
       } catch (displayError) {
         console.error("Error displaying progress:", displayError);
       }
@@ -197,7 +223,7 @@ export class Worker {
       }
       
       try {
-        this.progressMessage(relayUrl, {}, true);
+        this.progressMessage(relayUrl, {}, false, true);
       } catch (displayError) {
         console.error("Error displaying error progress:", displayError);
       }
@@ -289,12 +315,14 @@ export class Worker {
   progressMessage(
     url: string,
     result: any = {},
+    recovered: boolean = false,
     error: boolean = false
   ): void {
     const maxRelayWidth = 50; // Max width for relay URLs
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray;
+    const recoverHighlight = chalk.bold.cyan;
 
     let duration = 0;
     const incD = (_d: number) => {
@@ -392,6 +420,11 @@ export class Worker {
     } else {
       // If relay is online, show duration
       progress += chalk.gray.italic(`${(duration / 1000).toFixed(2)} seconds `);
+      
+      // Add recovered status at the very end if relay recovered from being offline
+      if (recovered) {
+        progress += recoverHighlight(`[RECOVERED]`);
+      }
     }
     
     console.log(progress);

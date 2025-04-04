@@ -15,7 +15,8 @@ const sessionStats = {
   checksTotal: 0,
   checksErrors: 0,
   wentOffline: new Set<string>(), // Track unique relays that went offline
-  newRelaysFound: 0
+  newRelaysFound: 0,
+  relaysRecovered: 0 // Track relays that went from offline to online
 };
 
 // Update session stats when a relay is checked
@@ -31,9 +32,17 @@ export function updateSessionStats(relay: string, wasSuccessful: boolean, wasOnl
   }
 }
 
-// Update the count of new relays found
-export function incrementNewRelaysFound(count: number = 1): void {
-  sessionStats.newRelaysFound += count;
+// Update the count of new relays found - now only counts online relays
+export function incrementNewRelaysFound(count: number = 1, isOnline: boolean = false): void {
+  // Only increment if the relay is online
+  if (isOnline) {
+    sessionStats.newRelaysFound += count;
+  }
+}
+
+// Increment the count of relays that went from offline to online
+export function incrementRelaysRecovered(count: number = 1): void {
+  sessionStats.relaysRecovered += count;
 }
 
 // Statistics to track
@@ -69,6 +78,7 @@ interface StatusStats {
   checksErrors: number;
   wentOfflineCount: number;
   newRelaysFound: number;
+  relaysRecovered: number; // New stat for relays that recovered
   queueSize: number;
 }
 
@@ -199,7 +209,8 @@ export function getStats(queueManager: any): StatusStats {
     checksTotal: sessionStats.checksTotal,
     checksErrors: sessionStats.checksErrors,
     wentOfflineCount: sessionStats.wentOffline.size,
-    newRelaysFound: sessionStats.newRelaysFound
+    newRelaysFound: sessionStats.newRelaysFound,
+    relaysRecovered: sessionStats.relaysRecovered
   };
 
   // Return combined stats
@@ -216,6 +227,7 @@ export function getStats(queueManager: any): StatusStats {
     checksErrors: sessionStats.checksErrors,
     wentOfflineCount: sessionStats.wentOffline.size,
     newRelaysFound: sessionStats.newRelaysFound,
+    relaysRecovered: sessionStats.relaysRecovered,
     queueSize: queueStats.totalQueue
   };
 }
@@ -341,7 +353,8 @@ function createAsciiBox(stats: StatusStats): string {
     { key: 'Checks Total:', value: stats.checksTotal, highlight: true },
     { key: 'Check Errors:', value: stats.checksErrors, warning: true },
     { key: 'Went Offline:', value: stats.wentOfflineCount, warning: true },
-    { key: 'New Relays Found:', value: stats.newRelaysFound, highlight: true }
+    { key: 'New Relays Found:', value: stats.newRelaysFound, highlight: true },
+    { key: 'Relays Recovered:', value: stats.relaysRecovered, highlight: true }
   ];
   
   // Find the max number of rows needed

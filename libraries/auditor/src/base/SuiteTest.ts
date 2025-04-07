@@ -153,13 +153,12 @@ export abstract class SuiteTest implements ISuiteTest {
   private registerIngestor(ingestor: Ingestor) {  
     if(!this?.sampler)
       this.initSampler();
-    ingestor.belongsTo = this.slug;
     this.sampler.registerIngestor(ingestor);
   }
 
-  private initSampler(){
-    if(this.socket === undefined) throw new Error('socket of SuiteTest must be set');
-    this.sampler = new Sampler(this.socket);
+  initSampler(){
+    if(this.suite.socket === undefined) throw new Error('socket of Suite must be set');
+    this.sampler = new Sampler(this.suite.socket);
   }
 
   EVENT(event: Note) {
@@ -167,80 +166,48 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   REQ(filters: INip01Filter[]) {
-    return new Promise((resolve, reject) => {
-      try {
-        this.socket.send(Nip01ClientMessageGenerator.REQ(this.subId, filters));
-        resolve(undefined);
-      } catch (error) {
-        reject(error);
-      }
-    });
+    this.socket.send(Nip01ClientMessageGenerator.REQ(this.subId, filters));
   }
 
   CLOSE(){
     this.socket.send(Nip01ClientMessageGenerator.CLOSE(this.subId));
   }
 
-  async testable() {
-    while (!this.socket.CONNECTED) {
+  async testable(){
+    while(this.socket.CONNECTED){
       await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    };
   }
 
   async prepare() {
+    this.REQ(this.filters)
     await this.testable();
-    await this.REQ(this.filters);
   }
 
   async run() {
-    try {
-      if(this.slug === 'unset') throw new Error('slug of SuiteTest must be set');
-    
-      this.logger.info(`BEGIN: ${this.slug}`, 2);
-    
-      // If this test has a sampler, try to get samples
-      let samplingSuccessful = true;
-      if(this?.sampler?.samplable) {
-        samplingSuccessful = await this.sampler.sample();
-        if (!samplingSuccessful) {
-          this.logger.warn(`Sampling failed for test ${this.slug}, skipping test`, 2);
-          // Mark the test as skipped due to sampling failure
-          this.markSkipped("Sampling failed");
-          return; // Skip the rest of the test if sampling failed
-        }
-      }
-      
-      // Check if we need samples from the suite state and they're available
-      const needsSamples = this.requiresSamples();
-      if (needsSamples) {
-        const samples = this.getSamples();
-        if (!samples) {
-          this.logger.warn(`Required samples not available for test ${this.slug}, skipping test`, 2);
-          // Mark the test as skipped due to missing samples
-          this.markSkipped("Required samples not available");
-          return; // Skip the test if needed samples aren't available
-        }
-      }
-
-      this.suite.reset();
-      this.suite.testKey = this.slug;
-
-      if(this.suite.requires.includes('websocket')) {
-        await this.socket.connect();
-        this.suite.setupHandlers();
-        this.newSubId();
-      }
-      
-      this.timeoutBegin();
-      this.digest();
-      this.precheck(this.expect.conditions);
-      this.expect.evaluateConditions(true);
-      await this.prepare();
-      this.finish();
-    } catch (error) {
-      this.logger.error(`Error in run: ${error.message}`);
-      throw error;
+    if(this.slug === 'unset') throw new Error('slug of SuiteTest must be set');
+  
+    this.logger.info(`BEGIN: ${this.slug}`, 2);
+  
+    if(this?.sampler?.samplable) {
+      await this.sampler.sample();
     }
+
+    this.suite.reset()
+    this.suite.testKey = this.slug
+
+    if(this.suite.requires.includes('websocket')) {
+      await this.socket.connect();
+      this.suite.setupHandlers();
+      this.newSubId();
+    }
+    
+    this.timeoutBegin();
+    this.digest();
+    this.precheck(this.expect.conditions);
+    this.expect.evaluateConditions(true);
+    await this.prepare();
+    this.finish();
   }
 
   protected newSubId() {
@@ -322,28 +289,5 @@ export abstract class SuiteTest implements ISuiteTest {
       return false
     }
     return true;
-  }
-
-  // Check if this test requires samples to run
-  protected requiresSamples(): boolean {
-    // Default implementation - override in subclasses that need samples
-    return false;
-  }
-
-  // Helper method to mark a test as skipped with a reason
-  private markSkipped(reason: string): void {
-    // Add a skipped condition
-    this.expect.behavior.skip = true;
-    this.expect.message.skip = true;
-    this.expect.json.skip = true;
-    
-    // Create a more descriptive message
-    const contextMessage = `${this.slug}: ${reason} - Test cannot run without required data`;
-    
-    // Add a dummy condition to capture the skip reason
-    this.expect.behavior.toBeOk(true, contextMessage);
-    
-    // Generate a result with all conditions skipped
-    this.finish();
   }
 }

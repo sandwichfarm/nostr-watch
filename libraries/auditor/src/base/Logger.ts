@@ -10,7 +10,8 @@ export const LogLevelPriority: Record<string, number> = {
     info: 2,
     warn: 3,
     error: 4,
-    success: 5
+    success: 5,
+    failure: 6,
 };
 
 export type LogColors = {
@@ -54,8 +55,7 @@ export class Logger {
             debug: options.colors?.debug || chalk.gray,
             info: options.colors?.info || chalk.blue,
             warn: options.colors?.warn || chalk.yellow,
-            error: options.colors?.error || chalk.red,
-            success: options.colors?.success || chalk.green,
+            error: options.colors?.error || chalk.red
         } as Required<LogColors>;
     }
 

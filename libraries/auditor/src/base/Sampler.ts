@@ -53,44 +53,22 @@ export class Sampler {
   }
 
   setupHandlers() {
-    // Remove any existing handlers first to prevent duplicates
-    this.socket.off('message');
-    this.socket.off('error');
-    this.socket.off('close');
-    
     this.socket.on('message', (msg: MessageEvent<any>) => {
-      try {
-        const message = JSON.parse(msg.data);
-        const type = message[0];
-        this.logger.debug(`Received message type: ${type}`);
-        switch(type) {
-          case 'EVENT': {
-            const note = (message as RelayEventMessage)[2] as Note;
-            this._totalSamples++;
-            this.logger.debug(`Processing event: ${note.id}`);
-            this.runIngestors(note);
-            break;
-          }
-          case 'EOSE': {
-            this.logger.debug('Received EOSE');
-            Emitter.emit(`socket:eose:${this.subId}`);
-            break;
-          }
+      const message = JSON.parse(msg.data);
+      const type = message[0];
+      switch(type) {
+        case 'EVENT': {
+          const note = (message as RelayEventMessage)[2] as Note;
+          this._totalSamples++;
+          this.runIngestors(note);
+          break;
         }
-      } catch (error) {
-        this.logger.error(`Error processing message: ${error.message}`);
-        // Don't abort on parse errors, continue listening
+        case 'EOSE': {
+          // this.signal.emit('socket:eose');
+          Emitter.emit(`socket:eose:${this.subId}`);
+          break;
+        }
       }
-    });
-    
-    this.socket.on('error', (error: Event) => {
-      this.logger.error(`WebSocket error: ${error}`);
-      this.abort();
-    });
-    
-    this.socket.on('close', () => {
-      this.logger.debug('WebSocket closed');
-      this.abort();
     });
   }
 
@@ -100,21 +78,7 @@ export class Sampler {
 
   async sample() {
     try {
-      // Always call connect to ensure it's recorded for tests
       await this.socket.connect();
-      
-      // For sockets that are already connected, we're good
-      // For new connections, this will throw if the connection fails
-      if (!this.socket.CONNECTED) {
-        try {
-          await this.socket.ready();
-        } catch (error) {
-          this.logger.error(`WebSocket connection failed: ${error.message}`);
-          return false;
-        }
-      }
-      
-      // Make sure we have a clean start with no stale handlers
       this.setupHandlers();
   
       const timeout = this.setAbortTimeout();
@@ -124,14 +88,9 @@ export class Sampler {
   
       const result = await this.waitForEoseOrAbort(timeout);
   
-      this.logger.debug(`Sampling done, result: ${result}`);
-      return result;
+      this.logger.debug(`done`);
     } catch (error) {
       this.logger.error(`Error in sample method: ${error.message}`);
-      if (error.stack) {
-        this.logger.debug(error.stack);
-      }
-      return false;
     } finally {
       this.cleanupWebSocket();
     }
@@ -177,32 +136,8 @@ export class Sampler {
   }
   
   private async cleanupWebSocket() {
-    try {
-      // Remove all listeners before closing to prevent stale handlers
-      this.socket.off('message');
-      this.socket.off('error');
-      this.socket.off('close');
-      
-      this.socket.close();
-      
-      // Wait for the socket to be closed
-      await new Promise<void>(resolve => {
-        if (this.socket.CLOSED) {
-          resolve();
-        } else {
-          const onClose = () => resolve();
-          this.socket.on('close', onClose);
-          
-          // Fallback timeout in case close event doesn't fire
-          setTimeout(() => {
-            this.socket.off('close');
-            resolve();
-          }, 1000);
-        }
-      });
-    } catch (error) {
-      this.logger.error(`Error cleaning up WebSocket: ${error.message}`);
-    }
+    this.socket.close();
+    await this.socket.closed();
   }
   
   get aborted () {

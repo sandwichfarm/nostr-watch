@@ -198,8 +198,28 @@ export abstract class SuiteTest implements ISuiteTest {
     
       this.logger.info(`BEGIN: ${this.slug}`, 2);
     
+      // If this test has a sampler, try to get samples
+      let samplingSuccessful = true;
       if(this?.sampler?.samplable) {
-        await this.sampler.sample();
+        samplingSuccessful = await this.sampler.sample();
+        if (!samplingSuccessful) {
+          this.logger.warn(`Sampling failed for test ${this.slug}, skipping test`, 2);
+          // Mark the test as skipped due to sampling failure
+          this.markSkipped("Sampling failed");
+          return; // Skip the rest of the test if sampling failed
+        }
+      }
+      
+      // Check if we need samples from the suite state and they're available
+      const needsSamples = this.requiresSamples();
+      if (needsSamples) {
+        const samples = this.getSamples();
+        if (!samples) {
+          this.logger.warn(`Required samples not available for test ${this.slug}, skipping test`, 2);
+          // Mark the test as skipped due to missing samples
+          this.markSkipped("Required samples not available");
+          return; // Skip the test if needed samples aren't available
+        }
       }
 
       this.suite.reset();
@@ -302,5 +322,28 @@ export abstract class SuiteTest implements ISuiteTest {
       return false
     }
     return true;
+  }
+
+  // Check if this test requires samples to run
+  protected requiresSamples(): boolean {
+    // Default implementation - override in subclasses that need samples
+    return false;
+  }
+
+  // Helper method to mark a test as skipped with a reason
+  private markSkipped(reason: string): void {
+    // Add a skipped condition
+    this.expect.behavior.skip = true;
+    this.expect.message.skip = true;
+    this.expect.json.skip = true;
+    
+    // Create a more descriptive message
+    const contextMessage = `${this.slug}: ${reason} - Test cannot run without required data`;
+    
+    // Add a dummy condition to capture the skip reason
+    this.expect.behavior.toBeOk(true, contextMessage);
+    
+    // Generate a result with all conditions skipped
+    this.finish();
   }
 }

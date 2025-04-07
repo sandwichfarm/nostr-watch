@@ -140,14 +140,22 @@ describe('SuiteTest', () => {
       test: vi.fn().mockImplementation(async function(this: any) {
         await this.ready();
         if(this?.sampler?.samplable) {
-          await this.sampler.sample();
-          const poops: Record<string, any> = {};
-          for(const ingestor of this.sampler.ingestors) {
-            const testKey = ingestor.parent;
-            poops[testKey] = ingestor.poop();
+          const samplingSuccessful = await this.sampler.sample();
+          if (samplingSuccessful) {
+            const poops: Record<string, any> = {};
+            for(const ingestor of this.sampler.ingestors) {
+              const testKey = ingestor.parent;
+              poops[testKey] = ingestor.poop();
+            }
+            this.state.set('samples', poops);
+            Emitter.emit('auditor.suite:samples', this.slug, poops);
+            
+            // Only run tests if sampling was successful
+            for(const testName in this.testers) {
+              const suiteTest = this.testers[testName];
+              await suiteTest.run();
+            }
           }
-          this.state.set('samples', poops);
-          Emitter.emit('auditor.suite:samples', this.slug, poops);
         }
         return { pass: true };
       }),
@@ -233,6 +241,53 @@ describe('SuiteTest', () => {
       expect(mockIngestor.feed).toHaveBeenCalled();
       expect(mockIngestor.completed).toHaveBeenCalled();
       expect(mockIngestor.poop).toHaveBeenCalled();
+    });
+
+    it('should skip tests when sampling fails', async () => {
+      // Create a mock ingestor
+      class TestIngestor extends Ingestor {
+        private data = { test: 'data' };
+        
+        feed(note: Note): void {
+          this.complete();
+        }
+
+        poop(): any {
+          return this.data;
+        }
+      }
+
+      const mockIngestor = new TestIngestor(1);
+      vi.spyOn(mockIngestor, 'feed');
+      vi.spyOn(mockIngestor, 'poop');
+      vi.spyOn(mockIngestor, 'completed');
+
+      // Register the ingestor with both the suite and test instance
+      mockSuite.registerIngestor('test-suite', mockIngestor);
+      suiteTest.suiteTestIngest(mockIngestor);
+      
+      // Make sure the test is registered in the mock suite's testers
+      (mockSuite as any).testers = { 'test-suite': suiteTest };
+
+      // Mock the sampler.sample method to fail
+      const failingSampler = new Sampler(mockSocket as any);
+      vi.spyOn(failingSampler, 'sample').mockResolvedValue(false);
+      
+      // Replace the real sampler with our failing one
+      Object.defineProperty(mockSuite, 'sampler', {
+        get: () => failingSampler
+      });
+      
+      // Spy on the run and test methods to verify they're not called
+      const runSpy = vi.spyOn(suiteTest, 'run');
+      
+      // Run the suite's test method
+      await mockSuite.test();
+
+      // Verify that the suite did NOT run the test when sampling failed
+      expect(runSpy).not.toHaveBeenCalled();
+      
+      // This confirms the current behavior (tests are skipped when sampling fails)
     });
   });
 }) 

@@ -37,6 +37,8 @@ export interface ISuiteResult {
   tests: Record<string, ISuiteTestResult>;
   data: Record<string, any> | null; 
   messages: MessagesMapType;
+  skipped?: boolean;
+  skipReason?: string;
 }
 
 export const defaultSuiteResult: ISuiteResult = {
@@ -210,28 +212,89 @@ export abstract class Suite implements ISuite {
     this.logger.info(`BEGIN: ${this.slug} Suite`, 1);
     
     await this.ready();
+    
+    // Check if sampling is needed and get samples
+    let samplingSuccess = true;
     if(this?.sampler?.samplable) {
-      await this.sampler.sample();
-      this.toilet();
-    }
-
-    for(const test of Object.entries(this.testers)) {
-      const [testName, suiteTest] = test;
-      Emitter.emit('auditor.suite.test:start', this.slug, testName);
-      await suiteTest.run();
-      const results = suiteTest.resulter.result;
-      console.log('the results', results)
-      Emitter.emit('auditor.suite.test:finish', this.slug, results);
-      this.resulter.set('tests', testName, results);
-      if(suiteTest?.data !== null) {
-        this.resulter.set('data', { [testName]: suiteTest.data });
+      samplingSuccess = await this.sampler.sample();
+      
+      if (samplingSuccess) {
+        // Only collect samples if sampling succeeded
+        this.toilet();
+      } else {
+        this.logger.warn(`Sampling failed for ${this.slug}, skipping tests that require samples`, 1);
       }
-      await new Promise(resolve => setTimeout(resolve, 500));
     }
-    this.resulter.set('pass', this.evaluate()); 
-    this.resulter.set('messages', this.messages); 
-    this.beforeResults();
-    return this.resulter.result
+    
+    // Only run tests if sampling succeeded or wasn't needed
+    if (samplingSuccess) {
+      for(const test of Object.entries(this.testers)) {
+        const [testName, suiteTest] = test;
+        Emitter.emit('auditor.suite.test:start', this.slug, testName);
+        await suiteTest.run();
+        const testResult = suiteTest.resulter.get();
+        Emitter.emit('auditor.suite.test:finish', this.slug, testResult);
+        this.resulter.set('tests', testName, testResult);
+        if(suiteTest?.data !== null) {
+          this.resulter.set('data', { [testName]: suiteTest.data });
+        }
+      }
+      
+      this.resulter.set('pass', this.evaluate());
+      this.resulter.set('messages', this.messages);
+      this.beforeResults();
+      return this.resulter.result;
+    } else {
+      // Mark suite as skipped due to sampling failure
+      this.resulter.set('pass', false);
+      
+      // Create a detailed reason based on the circumstances
+      const samplersCount = this.sampler?.ingestors?.length || 0;
+      let reason = `Could not obtain required samples from relay`;
+      if (samplersCount > 0) {
+        reason += ` (${samplersCount} samplers failed)`;
+      }
+      
+      this.resulter.set('reason', reason);
+      this.resulter.set('skipped', true);
+      this.resulter.set('data', {});
+      this.resulter.set('messages', new Map<string, INip01RelayMessage[]>());
+      
+      // Instead of setting tests to an empty object, create skipped entries for all tests
+      const skippedTests: Record<string, ISuiteTestResult> = {};
+      for (const [testName, suiteTest] of Object.entries(this.testers)) {
+        // Create a skipped result for this test
+        // Emit test start event
+        Emitter.emit('auditor.suite.test:start', this.slug, testName);
+        
+        const skippedResult: ISuiteTestResult = {
+          testKey: testName,
+          pass: false,
+          passrate: 0,
+          passed: [],
+          failed: [],
+          skipped: [{
+            type: 'behavior',
+            code: 'SKIPPED_DUE_TO_SAMPLING',
+            message: `${testName}: Skipped because sampling failed - Test cannot run without required data`,
+            pass: false,
+            skipped: true
+          }],
+          notices: [],
+          events: [],
+          filters: [],
+          errors: []
+        };
+        
+        // Emit test finish event with skipped result
+        Emitter.emit('auditor.suite.test:finish', this.slug, skippedResult);
+        skippedTests[testName] = skippedResult;
+      }
+      
+      this.resulter.set('tests', skippedTests);
+      this.beforeResults();
+      return this.resulter.result;
+    }
   }
 
   protected beforeResults() {}

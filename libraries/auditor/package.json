@@ -1,7 +1,6 @@
 {
   "name": "@nostrwatch/auditor",
   "type": "module",
-  "packageManager": "yarn@4.5.1",
   "main": "./dist/server/index.js",
   "module": "./dist/web/index.js",
   "types": "./dist/types/index.d.ts",
@@ -38,6 +37,7 @@
     "tseep": "^1.3.1",
     "url": "^0.11.4",
     "util": "^0.12.5",
+    "vitest": "3.1.1",
     "ws": "^8.18.0"
   },
   "peerDependencies": {
@@ -73,6 +73,9 @@
     "nip50": "node --no-warnings ./example/nip50.js",
     "build": "tsc && tsc-alias && node build.js",
     "dev": "tsc --watch & tsc-alias -w & node build.js --watch",
-    "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js"
+    "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js",
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
   }
 }

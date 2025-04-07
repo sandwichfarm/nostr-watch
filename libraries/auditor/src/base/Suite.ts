@@ -55,10 +55,10 @@ export interface ISuite {
   readonly slug: string;
   readonly messageValidators: Record<string, SchemaValidator<any>>;
   readonly jsonValidators: Record<string, SchemaValidator<any>>;
-  // readonly jsons: string[];
-  // readonly behaviors: string[];
   readonly requires: string[];
   readonly doNotStoreMessageTypes: string[];
+  readonly socket: WebSocket;
+  readonly sampler: Sampler | undefined;
 
   pretest: boolean;
   testKey: string;  
@@ -72,14 +72,8 @@ export interface ISuite {
 
   registerIngestors(testSlug: string, ingestors: Ingestor[]): void;
   registerIngestor(testSlug: string, ingestor: Ingestor): void;
-  // logCode(type: 'behavior' | 'json' | 'message', code: string, result: boolean): void;
-  // getCode(type: 'behavior' | 'json' | 'message', code: string): boolean | null | undefined;  
   setupHandlers(): void;
   validateJson(key: string, json: GenericJson): void;
-
-  // collectCodes(): Partial<ISuiteTestResult>;
-  
-  readonly socket: WebSocket;
 }
 
 export abstract class Suite implements ISuite {

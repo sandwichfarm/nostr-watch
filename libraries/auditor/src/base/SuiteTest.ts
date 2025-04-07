@@ -153,12 +153,13 @@ export abstract class SuiteTest implements ISuiteTest {
   private registerIngestor(ingestor: Ingestor) {  
     if(!this?.sampler)
       this.initSampler();
+    ingestor.belongsTo = this.slug;
     this.sampler.registerIngestor(ingestor);
   }
 
-  initSampler(){
-    if(this.suite.socket === undefined) throw new Error('socket of Suite must be set');
-    this.sampler = new Sampler(this.suite.socket);
+  private initSampler(){
+    if(this.socket === undefined) throw new Error('socket of SuiteTest must be set');
+    this.sampler = new Sampler(this.socket);
   }
 
   EVENT(event: Note) {
@@ -166,48 +167,60 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   REQ(filters: INip01Filter[]) {
-    this.socket.send(Nip01ClientMessageGenerator.REQ(this.subId, filters));
+    return new Promise((resolve, reject) => {
+      try {
+        this.socket.send(Nip01ClientMessageGenerator.REQ(this.subId, filters));
+        resolve(undefined);
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 
   CLOSE(){
     this.socket.send(Nip01ClientMessageGenerator.CLOSE(this.subId));
   }
 
-  async testable(){
-    while(this.socket.CONNECTED){
+  async testable() {
+    while (!this.socket.CONNECTED) {
       await new Promise(resolve => setTimeout(resolve, 100));
-    };
+    }
   }
 
   async prepare() {
-    this.REQ(this.filters)
     await this.testable();
+    await this.REQ(this.filters);
   }
 
   async run() {
-    if(this.slug === 'unset') throw new Error('slug of SuiteTest must be set');
-  
-    this.logger.info(`BEGIN: ${this.slug}`, 2);
-  
-    if(this?.sampler?.samplable) {
-      await this.sampler.sample();
-    }
-
-    this.suite.reset()
-    this.suite.testKey = this.slug
-
-    if(this.suite.requires.includes('websocket')) {
-      await this.socket.connect();
-      this.suite.setupHandlers();
-      this.newSubId();
-    }
+    try {
+      if(this.slug === 'unset') throw new Error('slug of SuiteTest must be set');
     
-    this.timeoutBegin();
-    this.digest();
-    this.precheck(this.expect.conditions);
-    this.expect.evaluateConditions(true);
-    await this.prepare();
-    this.finish();
+      this.logger.info(`BEGIN: ${this.slug}`, 2);
+    
+      if(this?.sampler?.samplable) {
+        await this.sampler.sample();
+      }
+
+      this.suite.reset();
+      this.suite.testKey = this.slug;
+
+      if(this.suite.requires.includes('websocket')) {
+        await this.socket.connect();
+        this.suite.setupHandlers();
+        this.newSubId();
+      }
+      
+      this.timeoutBegin();
+      this.digest();
+      this.precheck(this.expect.conditions);
+      this.expect.evaluateConditions(true);
+      await this.prepare();
+      this.finish();
+    } catch (error) {
+      this.logger.error(`Error in run: ${error.message}`);
+      throw error;
+    }
   }
 
   protected newSubId() {

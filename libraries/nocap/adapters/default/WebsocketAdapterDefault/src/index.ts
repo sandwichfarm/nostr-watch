@@ -49,16 +49,20 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
         } else {
             throw new Error('Unsupported network');
         }
-        this.base.ws.ready()
-          .then(() => {
-            if(this.base?.ws?.CONNECTED) {
-              this.base.on_open();
-            }
-          })
-          .catch((error) => {
-            this.base.on_error(error);
-          })
-        this.bind_events();
+        
+        // Wait for the connection to be established
+        try {
+          await this.base.ws.ready();
+          this.base.on_open();
+          this.bind_events();
+        } catch (error: unknown) {
+          // Create a proper Event object to pass to on_error
+          const errorEvent = new Event('error');
+          // Attach the original error message for debugging
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          (errorEvent as any).message = `WebSocket connection timeout: ${errorMessage}`;
+          this.base.on_error(errorEvent);
+        }
     } catch (error) {
         console.error('Error in check_open:', error);
         throw error;

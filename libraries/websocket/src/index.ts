@@ -11,6 +11,8 @@
     private isNode: boolean;
     public _url: string;
     private connectTimeout: number;
+    private _connected: boolean = false;
+    private _eventListenersSet: boolean = false;
 
     constructor(url: string, protocols?: string | string[], options?: { agent?: any, connectTimeout?: number }) {
       this._url = url;
@@ -23,7 +25,9 @@
       if (!this.isNode) {
         return new WebSocket(this.url, protocols);
       }
-      throw new Error("WebSocket not supported in this environment");
+      
+      // This will be handled by the static create method for Node/Deno
+      throw new Error("WebSocket not supported in this environment. Use UniversalWebSocket.create() for Node.js/Deno environments");
     }
   
     static async create(url: string, protocols?: string | string[], options?: { agent?: any }): Promise<UniversalWebSocket> {
@@ -38,23 +42,68 @@
       return new UniversalWebSocket(url, protocols, options)._wrapNodeWS(nodeWS);
     }
 
-    public connect(protocols?: string | string[], options?: { agent?: any }) {
+    public connect(protocols?: string | string[], options?: { agent?: any }): void {
+      if (this._connected && this.isOpen()) {
+        return;
+      }
+      
       this.ws = this.createWebSocket(protocols, options);
+      this._connected = true; // Set connected flag when we create the WebSocket
       this.setupEventListeners();
     }
   
     private _wrapNodeWS(nodeWS: any): this {
       this.ws = nodeWS;
+      this._connected = true;
       this.setupEventListeners();
       return this;
     }
   
     private setupEventListeners(): void {
-      if (typeof (this.ws as any).on === "function") {
-        (this.ws as any).on("message", (data: any) => this.onmessage?.(new MessageEvent("message", { data })));
-        (this.ws as any).on("error", (err: any) => this.onerror?.(new Event(err)));
-        (this.ws as any).on("close", (code: number, reason: string) => this.onclose?.(new CloseEvent("close", { code, reason })));
+      // Only set event listeners once
+      if (this._eventListenersSet) {
+        return;
       }
+      
+      // For Node.js WebSockets (using the 'ws' library)
+      if (typeof (this.ws as any).on === "function") {
+        // Set up event forwarding from Node.js WebSocket to our handlers
+        (this.ws as any).on("message", (data: any) => {
+          if (this.onmessage) {
+            // Handle different formats of message data
+            let eventData;
+            if (typeof data === 'string') {
+              eventData = data;
+            } else if (data instanceof Buffer) {
+              eventData = data.toString();
+            } else {
+              eventData = data;
+            }
+            
+            this.onmessage(new MessageEvent("message", { data: eventData }));
+          }
+        });
+        
+        (this.ws as any).on("error", (err: any) => {
+          if (this.onerror) {
+            this.onerror(new Event("error"));
+          }
+        });
+        
+        (this.ws as any).on("close", (code: number, reason: string) => {
+          if (this.onclose) {
+            this.onclose(new CloseEvent("close", { code, reason }));
+          }
+        });
+        
+        (this.ws as any).on("open", () => {
+          if (this.onopen) {
+            this.onopen(new Event("open"));
+          }
+        });
+      }
+      
+      this._eventListenersSet = true;
     }
   
     public send(data: any[] | Sendable) {
@@ -129,6 +178,10 @@
         await new Promise(resolve => setTimeout(resolve, 10));
       }
       clearTimeout(timeout);
+      
+      if (timedOut && !this.isOpen()) {
+        throw new Error(`WebSocket connection timeout after ${this.connectTimeout}ms`);
+      }
     }
   
     public get readyState(): number {
@@ -162,6 +215,8 @@
         this.ws.onmessage = listener;
       } else if(event === "error") {
         this.ws.onerror = listener;
+      } else if(event === "close") {
+        this.ws.onclose = listener;
       }
     }
 

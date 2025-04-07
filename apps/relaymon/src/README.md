@@ -28,7 +28,7 @@ This directory contains the source code for RelayMon, organized into the followi
 - `config/`: Configuration management
   - `config.ts`: Configuration loading and parsing
 
-- `blocklists/`: Blocklist data and functionality
+- `blocklists/`: Blocklist data
 
 ## Usage
 

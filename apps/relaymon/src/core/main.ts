@@ -8,6 +8,7 @@ import { getLogger } from "../utils/logger.ts";
 import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { parseRelayNetwork } from "npm:@nostrwatch/utils";
 import { loadHostnameBlocklist } from "../utils/blocklists.ts";
+import { runInteractive } from "../cli/interactive.ts";
 
 const logger = getLogger("Main");
 
@@ -25,11 +26,13 @@ OPTIONS:
   -h, --help              Show this help message
   -c, --config <PATH>     Specify a custom configuration file path (default: ./config.yaml)
   -m, --migrate           Run network migration on existing database (updates relay network types)
+  -i, --interactive       Run in interactive mode with a menu-based interface
 
 EXAMPLES:
   relaymon                        Run with default config (./config.yaml)
   relaymon -c custom-config.yaml  Run with a custom config file
   relaymon --migrate              Run network migration before starting monitor
+  relaymon -i                     Run in interactive mode
   
 RelayMon creates a PID file in the system's temporary directory to prevent multiple instances.
 When running, press Ctrl+C to stop the monitor gracefully.
@@ -258,6 +261,34 @@ export async function main() {
   if (args.includes("-h") || args.includes("--help")) {
     displayHelpMenu();
     Deno.exit(0);
+  }
+
+  // Check if interactive mode is requested
+  if (args.includes("-i") || args.includes("--interactive")) {
+    // Parse config path from arguments
+    let configPath = "./config.yaml";
+    const configArgIndex = Math.max(args.indexOf("-c"), args.indexOf("--config"));
+    if (configArgIndex !== -1 && configArgIndex < args.length - 1) {
+      configPath = args[configArgIndex + 1];
+    }
+    
+    // Run in interactive mode by using Deno.run to start the interactive script
+    try {
+      // @ts-ignore - Ignore TypeScript error for runtime feature
+      const process = Deno.run({
+        cmd: ["deno", "task", "interactive"],
+        stdout: "inherit",
+        stderr: "inherit",
+      });
+      // Wait for the process to complete
+      // @ts-ignore - Ignore TypeScript error for runtime feature
+      const status = await process.status();
+      Deno.exit(status.code);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error starting interactive mode: ${errorMessage}`);
+      Deno.exit(1);
+    }
   }
 
   // Check if relaymon is already running

@@ -1,4 +1,7 @@
-import chalk from "npm:chalk";
+import chalk from "npm:chalk@5.3.0";
+import { getStats } from "../core/status.ts";
+import { Config } from "../config/config.ts";
+import { msToTimeString } from "../config/config.ts";
 
 /**
  * Get the version from deno.json
@@ -35,11 +38,17 @@ function formatConfig(config: any): string {
 
   // Helper function to convert ms to human readable format
   const formatTime = (ms: number | string): string => {
-    const msNum = typeof ms === 'string' ? parseInt(ms) : ms;
-    if (msNum >= 86400000) return `${Math.floor(msNum / 86400000)}d`;
-    if (msNum >= 3600000) return `${Math.floor(msNum / 3600000)}h`;
-    if (msNum >= 60000) return `${Math.floor(msNum / 60000)}m`;
-    return `${Math.floor(msNum / 1000)}s`;
+    if (typeof ms === 'string') {
+      // If it's already a string and looks like a timestring, return as is
+      if (/^\d+(?:\.\d+)?(?:ms|s|m|h|d)$/.test(ms.trim())) {
+        return ms;
+      }
+      // Otherwise parse it as a number
+      const msNum = parseInt(ms);
+      return msToTimeString(msNum);
+    }
+    // For numbers, use the centralized function
+    return msToTimeString(ms);
   };
 
   // Create the box

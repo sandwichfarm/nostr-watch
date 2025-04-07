@@ -21,8 +21,6 @@ export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = tr
   if (enableWAL) {
     logger.info("Enabling WAL (Write-Ahead Logging) mode for improved performance");
     db.query(`PRAGMA journal_mode = WAL;`);
-    
-    // Set recommended pragmas for WAL mode
     db.query(`PRAGMA synchronous = NORMAL;`); // Reduces synchronization overhead
     db.query(`PRAGMA busy_timeout = 5000;`); // Wait up to 5 seconds when the database is busy
   }
@@ -32,7 +30,7 @@ export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = tr
     CREATE TABLE IF NOT EXISTS relay_status (
       url TEXT PRIMARY KEY,
       online INTEGER,
-      ignore INTEGER,
+      ignore INTEGER DEFAULT 0,
       parent TEXT,
       checked_at INTEGER,
       rtt INTEGER,
@@ -67,10 +65,10 @@ export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = tr
   return db;
 }
 
-// Initialize with default path if not already initialized
-if (!db) {
-  initDB();
-}
+// // Initialize with default path if not already initialized
+// if (!db) {
+//   initDB();
+// }
 
 /**
  * Check if a relay is ready to be checked based on its last check time, 

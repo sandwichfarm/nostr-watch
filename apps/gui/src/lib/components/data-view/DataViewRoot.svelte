@@ -19,8 +19,9 @@
     export let config: Writable<DataTableConfig>;
     export let enableFilters: boolean = true;
     export let key: string;
-    export let enabledViews: DataViewViews[];
+    export let enabledViews: DataViewViews[] = ['table'];
     export let onFilterChange: (config: DataTableConfig) => void = (config) => {};
+    export let actionsComponent: any | undefined = undefined;
 
     export let sidebarPaneApi: Resizable.PaneApi | null = null;
     
@@ -121,7 +122,7 @@
     <Resizable.Pane defaultSize={75}>
         {#if $filteredData && $justData?.length && $justColumns?.length}
             {#if $activeView === 'table'}
-                <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} dataUnfilteredLength={$justData?.length} />
+                <DataTable dataKey={key} {config} data={justData} columns={justColumns} {sidebarPaneApi} dataUnfilteredLength={$justData?.length} {actionsComponent} />
             {/if}
 
             {#if $activeView === 'grid'}

@@ -1,4 +1,4 @@
-import { derived, writable, type Writable, get } from "svelte/store";
+import { derived, writable, type Writable, get, type Readable } from "svelte/store";
 import type { ICheck } from "@nostrwatch/route66/models";
 import { eventsArray } from "./events.js";
 import type { IMonitor, IEvent } from "@nostrwatch/route66/models";
@@ -21,33 +21,64 @@ export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   for(const monitor of monitorsArr) {
     const mon: Monitor | undefined = Monitor.fromCache(monitor)
     if(!mon) continue
+    console.log('monitor from cache', mon)
     publishEventsToMemoryRelay(mon.events, 'monitorsMapFromCache')
     map.set(monitor.pubkey, mon)
   }
   return map
 }
 
+// monitorsMapFromCache()
+
+export const monitorsEvents: Readable<Record<string, IEvent[]>> = derived(
+  [eventsArray],
+  ([$eventsArray]) => {
+    const eventsMap: Record<string, IEvent[]> = {};
+    $eventsArray
+      .filter((event: IEvent) => event.kind === 10166 || event.kind === 0 || event.kind === 10002)
+      .forEach((event: IEvent) => {
+        if(!eventsMap[event.pubkey]) eventsMap[event.pubkey] = []
+        eventsMap[event.pubkey].push(event)
+      });
+    Object.entries(eventsMap).forEach(([pubkey, events]) => {
+      const hasRegistration = events.some((event) => event.kind === 10166)  
+      if(!hasRegistration) delete eventsMap[pubkey]
+    })
+    return eventsMap;
+  }
+);
+
+// export const monitorsMap: Readable<Map<string, Monitor>> = derived(
+//   monitorsEvents,
+//   ($monitorsEvents) => {
+//     return monitorsMapFromCache()
+//   }
+// );
+
 export const monitorsMap: Writable<Map<string, Monitor>> = writable(monitorsMapFromCache());
 
 export const monitors = derived(
-  monitorsMap, 
-  ($monitorsMap) => {
-    let arr = Array.from($monitorsMap.values());
+  ([monitorsMap]), 
+  ([$monitorsMap]) => {
+    const liveData = $route66?.services?.monitors?.sortedMonitors
+    let arr: Monitor[] = []
+    if(liveData?.length) {
+      if(liveData && liveData.length) {
+        arr = liveData
+      }
+      if(!arr.length) {
+        arr = Array.from(monitorsMapFromCache().values());
+      }
+    }
+    else if($monitorsMap.size) {
+      arr = Array.from($monitorsMap.values());
+    }
     if(arr.length){
-      let sorted = $route66?.services?.monitors?.sortedMonitors
-      if(sorted !== undefined && sorted.length) {
-        StateManager.set('cache:monitors', sorted.map(( monitor: Monitor) => monitor.toCache()));
-      }
-      else {
-        StateManager.set('cache:monitors', arr.map(( monitor: Monitor) => monitor.toCache()));   
-      }
+      const toCache = arr.map(( monitor: Monitor) => monitor.toCache())
+      StateManager.set('cache:monitors', toCache); 
+      console.log('monitors set to cache', toCache)
     }
-    else {
-      const fromCacheValues = StateManager.get('cache:monitors');  
-      if(fromCacheValues?.length) {
-        arr = fromCacheValues.map( (cache: any) => Monitor.fromCache(cache) );
-      }
-    }
+    console.log('monitors derived', arr)
     return arr;
   }
 )
@@ -91,8 +122,8 @@ export const monitorChecksCount = derived(
 );
 
 export const monitorRows = derived(
-  [monitorsSorted, activeMonitorChecksCount, monitorChecksCount, nip05s],
-  ([$monitorsSorted, $activeMonitorChecksCount, $monitorChecksCount, $nip05s]) => {
+  [monitors, monitorsSorted, activeMonitorChecksCount, monitorChecksCount, nip05s],
+  ([$monitors, $monitorsSorted, $activeMonitorChecksCount, $monitorChecksCount, $nip05s]) => {
     return $monitorsSorted.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
       row.id = monitor.pubkey;

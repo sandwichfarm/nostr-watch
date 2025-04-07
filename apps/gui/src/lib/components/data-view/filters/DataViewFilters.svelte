@@ -32,7 +32,7 @@
     export let config: any;
 
     export const onFilterChange = (updateConfig: DataTableConfig) => {
-        Object.entries(updateConfig.filtersActive).forEach( ([key]) => {
+        Object.keys(updateConfig.filtersActive || {}).forEach( (key: string) => {
             if(!$config?.filtersShow.includes(key)) {
                 config.update( (oldConfig: DataTableConfig) => {
                     return {...oldConfig, filtersShow: [...oldConfig.filtersShow, key]}
@@ -157,7 +157,7 @@
         $relayFilters.forEach(filter => {
             const filterKey = filter.key;
             const filterMode = filter.mode || 'AND'; // Default to 'AND' if mode is not set
-            const filterValue = activeFilters[filterKey];
+            const filterValue = activeFilters?.[filterKey];
 
             if (filterValue === undefined || filterValue === null) {
                 // No active filters in this block
@@ -215,7 +215,11 @@
         $relayFilters.forEach(filter => {
             const filterKey = filter.key;
             const filterMode = filter.mode || 'AND';
-            const filterValue = activeFilters[filter.key];
+            const filterValue = activeFilters?.[filter.key];
+
+            if(!filterValue) {
+                return;
+            }
 
             newDisabledFilters[filterKey] = new Set();
 

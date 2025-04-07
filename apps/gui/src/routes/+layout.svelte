@@ -46,13 +46,12 @@
 
   window.process = process;
 
-  // if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  //   addEventListener('load', function () {
-  //     navigator.serviceWorker.register('$src/service-workers/cors.js'); 
-  //   });
-  // }
-
-  if('serviceWorker' in navigator) {
+  if(window.isSecureContext === false && "serviceWorker" in navigator && navigator.serviceWorker !== undefined) {
+    // if (import.meta.env.PROD) {
+    //   addEventListener('load', function () {
+    //     navigator.serviceWorker.register('$src/service-workers/cors.js'); 
+    //   });
+    // }
     navigator.serviceWorker.getRegistrations().then(function(registrations) {
       for (let registration of registrations) {
         registration.unregister();
@@ -63,7 +62,6 @@
       console.error("Error unregistering service workers:", error);
     });
   }
-
 
   const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -81,11 +79,11 @@
   const shutdown = async () => {
     console.log('Shutdown...');
     try {
-      const route66 = await lifecycle.instance();
+      const route66 = await instance();
       await route66.ready();
       await route66.shutdown();
       await delay(1000);
-      lifecycle.destroy();
+      destroy();
       setTabState('follower');
     } catch (error) {
       console.error('[Lifecycle] Error in onReleaseLeader:', error);
@@ -109,7 +107,7 @@
     appState.set('booting');
     await initServices();
     appState.set('running');
-    const route66 = await lifecycle.instance();
+    const route66 = await instance();
     await route66.ready();
     dataRegisterInit();
     const datas = []
@@ -123,7 +121,7 @@
   }
 
   const initServices = async () => {
-    userService.set(new UserService((await lifecycle.instance()).adapters));
+    userService.set(new UserService((await instance()).adapters));
   };
 
   // --------------------------------------------------------------------------------
@@ -152,12 +150,9 @@
       progressList = [...progressList, key];
       console.log(`Module loaded: ${key}`);
     });
-
+    ({lifecycle} = modules.lifecycle);
+    ({ instance, destroy } = modules.lifecycle);
     ({ Header, Debugger, ActivityList } = modules);
-
-    lifecycle = modules.lifecycle;
-    ({ instance, destroy } = lifecycle);
-
     ({ userService } = modules.services);
     ({ resetStores } = modules.routines);
     ({ totalMonitors } = modules.events);
@@ -166,14 +161,9 @@
     ({ ActivityManager } = modules.ActivityManager);
     ({ UserService } = modules.UserService);
     ({ dataRegisterInit } = modules.dataRegister);
-
-    // if(import.meta.env.DEV){
-    //   //similate slow loading
-    //   // await delay(1000);
-    // }
   };
 
-  let activityManager: Modules['ActivityManager']['ActivityManager'];
+  let activityManager: any;
 
   onMount(async () => {
     
@@ -201,6 +191,7 @@
       await shutdown();
     });
 
+    //hacky guard.
     setTimeout( () => {
       justBooted = false;
     }, 1000)
@@ -241,8 +232,8 @@
         .filter( item => item.complete )
         .length
   $: monitorsSynced = numMonitorsSynced === 3;
-  $: relayChecksSynced = numRelayChecksSynced === 1;
-  $: percentCompleted = percentModulesLoaded * 0.5 + (numMonitorsSynced*10) + (loadedEnough? 20: 0);
+  $: relayChecksSynced = loadedEnough
+  $: percentCompleted = percentModulesLoaded * 0.5 + (numMonitorsSynced*10) + (relayChecksSynced? 20: 0);
 
   let loadingThresholdPassed = false;
   let loadingThresholdTimeout: ReturnType<typeof setTimeout>;

@@ -95,7 +95,7 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     // await new Promise(resolve => setTimeout(resolve, 1000))
     await state.relay.init(args.databasePath);
   } catch (e) {
-    if(retries <= 3){
+    if(retries <= 10){
       state.relay?.close();
       console.warn("Sqlite relay failed, retrying in 1 second", e);
       retries++

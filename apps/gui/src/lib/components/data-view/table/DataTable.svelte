@@ -5,7 +5,6 @@
     import * as Resizable from '$lib/components/ui/resizable'; 
     import DataTableShowResults from './DataTableShowResults.svelte';
     import DataTablePaginator from './DataTablePaginator.svelte';
-    import { applyFilters, createRelayFilters, type ConsoleFilter } from '$lib/components/data-view/filters/filter-dom.js';
     import { Input } from '$lib/components/ui/input/index.js';
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
@@ -19,7 +18,6 @@
 	import type { DataTableConfig } from './DataTableTypes';
 	import { darkMode, isBootstrapped } from '$lib/stores/app';
 	import type { DataViewColumns } from '../DataTableTypes';
-	import { randomLoadingMessage } from '$utils/ux';
 	import Loading from '$lib/components/partials/Loading.svelte';
 
     export let dataKey: string;
@@ -249,6 +247,7 @@
             </Table.Header>
             <Table.Body>
                 {#each tableInstance?.rows as row (row.id)}
+                {(console.log('row data', row?.active, row?.enabled, $config.tableRowStyler(row)))}
                     <Table.Row 
                         class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
                         style="{

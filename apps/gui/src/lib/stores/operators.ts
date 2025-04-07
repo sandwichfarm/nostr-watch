@@ -4,6 +4,7 @@ import { relayCheckAggregates } from "./checks";
 import {  pubkeyUserInstance } from "./helpers/helpers-pubkey";
 import { operatorIsps, operatorRelays, operatorRelaysOperated, operatorSoftwares } from "./helpers/helpers-operator";
 import { isPubkey } from "$utils/nostr";
+import { StateManager } from "@nostrwatch/route66";
 
 export const operatorsPubkeys: Readable<string[]> = derived(
     relayCheckAggregates,
@@ -42,29 +43,39 @@ export const operatorsUserInstances: Readable<Map<string, User>> = derived(
 )
 
 
-export type OperatorsRow = Record<keyof User | 'id' | 'isps' | 'ispsCount' | 'relays' | 'relaysCount' | 'softwares' | 'softwaresCount', string | number | boolean | any[] | undefined>
+export type OperatorsRow = Record<keyof User | 'id' | 'isps' | 'ispsCount' | 'relays' | 'relaysCount' | 'softwares' | 'softwaresCount', string | number | boolean | any[] | undefined | null >
 
 export const operatorsRows: Readable<OperatorsRow[]> = derived(
     [operatorsUserInstances],
     ([$operatorsUserInstances]) => {
-        const rows: any[] = []
-        $operatorsUserInstances.forEach((userInstance) => {
-            if(!userInstance) return;   
-            const keys = userInstance.keys;
-            const row: OperatorsRow = Object.fromEntries( 
-                keys
-                    .map( (key: keyof User) => [ key, userInstance[key]] ) 
-                    .filter( (entry) => typeof entry[1] !==  'function' )
-            )
-            row.id = userInstance.pubkey;
-            row.isps = operatorIsps(userInstance.pubkey);
-            row.ispsCount = row.isps?.length || 0;
-            row.relays = operatorRelaysOperated(userInstance.pubkey);
-            row.relaysCount = row.relays?.length || 0;
-            row.softwares = operatorSoftwares(userInstance.pubkey);
-            row.softwaresCount = row.softwares?.length || 0;
-            rows.push(row);
-        });
+        let rows: OperatorsRow[] = []
+        if($operatorsUserInstances.size > 0) {
+            $operatorsUserInstances.forEach((userInstance) => {
+                if(!userInstance) return;   
+                const keys = userInstance.keys;
+                const row: OperatorsRow = Object.fromEntries( 
+                    keys
+                        .map( (key: keyof User) => [ key, userInstance[key]] ) 
+                        .filter( (entry) => typeof entry[1] !==  'function' )
+                )
+                row.id = userInstance.pubkey;
+                row.isps = operatorIsps(userInstance.pubkey);
+                row.ispsCount = row.isps?.length || 0;
+                row.relays = operatorRelaysOperated(userInstance.pubkey);
+                row.relaysCount = row.relays?.length || 0;
+                row.softwares = operatorSoftwares(userInstance.pubkey);
+                row.softwaresCount = row.softwares?.length || 0;
+                rows.push(row);
+                
+            });
+            StateManager.set('aggregate:operators', rows);
+        }
+        else {
+            const fromCacheValues: OperatorsRow[] = StateManager.get('aggregate:operators');  
+            if(fromCacheValues?.length) {
+                rows = fromCacheValues;
+            }
+        }
         return rows;
     }
 )

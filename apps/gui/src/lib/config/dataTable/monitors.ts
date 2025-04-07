@@ -57,7 +57,7 @@ export const tableFormatters: Formatters = {
         if(monitor?.photo){
             profile += `
                 <span class="inline-block rounded-full overflow-hidden w-10 h-10">
-                    <img src="${monitor.photo}?thumbnail" alt=${monitor.photo} class="w-full h-auto" />
+                    <img src="${monitor.photo}" alt=${monitor.photo} class="w-full h-auto" />
                 </span>
                 `
         }
@@ -94,14 +94,14 @@ export const filterFormatters: Formatters = {
         if(monitor?.profile?.photo){
             profile += `
             <span class="rounded-full overflow-hidden">
-                <img src="${monitor?.profile?.photo}?thumbnail" alt="${monitor?.profile?.photo}" class="w-20 h-24" />
+                <img src="${monitor?.profile?.photo}" alt="${monitor?.profile?.photo}" class="w-20 h-24" />
             </span>
             `
         }
         else {
             profile += `
             <span class="rounded-full overflow-hidden inline-block">
-                <img src="${PFP.generate(monitor.pubkey)}" alt={photo} class="w-8 h-8" />
+                <img src=${PFP.generate(monitor.pubkey)}" alt={photo} class="w-8 h-8" />
             </span>
             `
         }
@@ -147,11 +147,11 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 }
 
 export const tableRowStyler = (row: Record<string, any>) => {
-    //console.log(`tableRowStyler:`, 'active', row.active, row)
-    return {
-        'bg-green-400 bg-opacity-5': row.enabled === true && row.active > 0,
-        'opacity-20': !row.active
-    }
+    console.log(`tableRowStyler:`, 'active', row.active, row)
+    let classes = [];
+    if(row.active === false) classes.push('opacity-20');
+    if(row.enabled === true && row.active === true) classes.push('bg-green-400 bg-opacity-5');
+    return classes.join(' ');
 }
 
 export default {

@@ -153,6 +153,8 @@
                     "minPowDifficulty",
                     "restrictedWrites",
                     "maxSubscriptions",
+                    "software",
+                    "version",
                     "maxFilters",
                     "maxLimit",
                     "maxSubidLength",
@@ -179,25 +181,44 @@
 
     const active = writable(shortcuts[0].title);
 
-    if(window.location.hash){
-        const hash = window.location.hash.replace('#', '');
-        const shortcut = shortcuts.find(shortcut => shortcut.hash === hash);
-        if(shortcut) active.set(shortcut.title);
-    }
-    
-    onMount( () => {
-        if(!window.location.hash && $page.url.pathname === "/relays"){
-            setActive(shortcuts[0]);
-        }
-    })
-
     const setActive = (shortcut: any) => {
         active.set(shortcut.title)
         if(shortcut?.payload){
-            shortcut.hash = btoa(JSON.stringify(compress(shortcut.payload)))
+            try {
+                shortcut.hash = btoa(JSON.stringify(compress(shortcut.payload)))
+                onClick(`/relays#${shortcut.hash}`)
+                return 
+            }
+            catch(e){
+                onClick(`/relays`)
+                return 
+            }   
+        }
+        if(!shortcut.hash) {
+            onClick(`/relays`)
+            return 
         }
         onClick(`/relays#${shortcut.hash}`)
     }
+
+    
+
+    if(window.location.hash){
+        const hash = window.location.hash.replace('#', '');
+        const shortcut = shortcuts.find(shortcut => shortcut.hash === hash);
+        console.log('active shortcut', shortcut)    
+        if(shortcut) setActive(shortcut);
+    } 
+    else if($page.url.pathname === "/relays"){
+        setActive(shortcuts[0]);
+    }
+    
+    onMount( () => {
+        
+        
+    })
+
+    
 </script>
 <div class="leading-9 {className}">
 {#if label}

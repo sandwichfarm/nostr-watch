@@ -148,7 +148,7 @@
         $relayFilters.forEach(filter => {
             const filterKey = filter.key;
             const filterMode = filter.mode || 'AND'; // Default to 'AND' if mode is not set
-            const filterValue = activeFilters[filterKey];
+            const filterValue = activeFilters?.[filterKey];
 
             if (filterValue === undefined || filterValue === null) {
                 // No active filters in this block

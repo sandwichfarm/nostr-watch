@@ -1,0 +1,51 @@
+FROM denoland/deno:1.35.1
+
+WORKDIR /app
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    sqlite3 \
+    ca-certificates \
+    privoxy \
+    netcat \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy application code
+COPY . .
+
+# Create data directory if it doesn't exist
+RUN mkdir -p /app/data
+
+# Configure Privoxy to proxy through I2P HTTP Proxy
+RUN echo 'forward-socks4a / 127.0.0.1:4444 .' > /etc/privoxy/config && \
+    echo 'listen-address 127.0.0.1:8118' >> /etc/privoxy/config
+
+# Create a startup script to set HTTP_PROXY and HTTPS_PROXY environment variables
+RUN echo '#!/bin/bash\n\
+# Start privoxy\n\
+service privoxy start\n\
+\n\
+# Wait for I2P to be ready\n\
+echo "Waiting for I2P service..."\n\
+until nc -z i2pd 4444; do\n\
+  sleep 2\n\
+done\n\
+echo "I2P service is available"\n\
+\n\
+# Set proxy environment variables\n\
+export HTTP_PROXY="http://127.0.0.1:8118"\n\
+export HTTPS_PROXY="http://127.0.0.1:8118"\n\
+export NO_PROXY="127.0.0.1,localhost"\n\
+\n\
+# Execute the command\n\
+exec "$@"' > /usr/local/bin/start-with-i2p.sh && \
+    chmod +x /usr/local/bin/start-with-i2p.sh
+
+# Cache the dependencies
+RUN deno cache --unstable-sloppy-imports index.ts
+
+# Default command - will be overridden by docker-compose
+ENTRYPOINT ["/usr/local/bin/start-with-i2p.sh"]
+CMD ["deno", "run", "--allow-ffi", "--unstable-sloppy-imports", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--allow-run", "index.ts"] 

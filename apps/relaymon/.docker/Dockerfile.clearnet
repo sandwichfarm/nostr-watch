@@ -1,0 +1,25 @@
+FROM denoland/deno:1.35.1
+
+WORKDIR /app
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    sqlite3 \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy application code
+COPY . .
+
+# Create data directory if it doesn't exist
+RUN mkdir -p /app/data
+
+# Cache the dependencies
+RUN deno cache --unstable-sloppy-imports index.ts
+
+# Run as non-root user for better security
+USER deno
+
+# Default command - will be overridden by docker-compose command
+CMD ["deno", "run", "--allow-ffi", "--unstable-sloppy-imports", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--allow-run", "index.ts"] 

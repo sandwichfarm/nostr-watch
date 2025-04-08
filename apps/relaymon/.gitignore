@@ -12,3 +12,5 @@ blocklists/*
 data
 data/**/*.sql
 !data/.gitkeep
+
+!.docker

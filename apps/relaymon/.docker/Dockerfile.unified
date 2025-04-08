@@ -1,0 +1,55 @@
+FROM --platform=linux/amd64 debian:bullseye-slim
+
+WORKDIR /app
+
+# Install Deno and runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    unzip \
+    sqlite3 \
+    dnsmasq \
+    redsocks \
+    netcat-openbsd \
+    iptables \
+    iproute2 \
+    iputils-ping \
+    dnsutils \
+    procps \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Deno
+RUN curl -fsSL https://deno.land/x/install/install.sh | sh
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="${DENO_INSTALL}/bin:${PATH}"
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Create scripts directory
+RUN mkdir -p /usr/local/bin
+
+# Copy entrypoint script and redsocks config
+COPY apps/relaymon/.docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY apps/relaymon/.docker/config/redsocks.conf /etc/redsocks.conf
+
+# Make scripts executable
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# First, copy only the deno.lock file (if it exists) to cache dependencies
+WORKDIR /app/nostr-watch
+COPY apps/relaymon/deno.lock* ./apps/relaymon/
+
+# Now copy the entire project
+COPY . .
+
+# Cache dependencies offline without trying to verify remote
+WORKDIR /app/nostr-watch/apps/relaymon
+RUN deno cache --reload --no-remote index.ts || echo "Dependency caching failed, will try at runtime"
+
+# Use our simplified entrypoint script
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# CMD is now implicitly handled by the entrypoint script executing deno
+# CMD ["/usr/local/bin/deno-proxy-wrapper.sh", "/usr/local/bin/relaymon"]

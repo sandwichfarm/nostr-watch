@@ -1,0 +1,100 @@
+FROM --platform=linux/amd64 debian:bullseye-slim AS build
+
+WORKDIR /build
+
+# Install Deno and dependencies for compilation
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    unzip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Deno
+RUN curl -fsSL https://deno.land/x/install/install.sh | sh
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="${DENO_INSTALL}/bin:${PATH}"
+
+# Copy the entire project including libraries
+WORKDIR /build/nostr-watch
+COPY . .
+
+# Debug: Check if files exist
+RUN ls -la /build/nostr-watch/apps/relaymon/
+
+# Go to the relaymon directory
+WORKDIR /build/nostr-watch/apps/relaymon
+
+# Debug: Verify we're in the right directory with the right files
+RUN pwd && ls -la
+
+# Use cache to preload dependencies
+RUN deno cache --reload --unstable-sloppy-imports index.ts
+
+# Compile the binary with explicit architecture target
+RUN mkdir -p dist && \
+    deno compile --no-check --allow-ffi --unstable-sloppy-imports \
+    --allow-net --allow-env --allow-read --allow-write --allow-run \
+    --target x86_64-unknown-linux-gnu \
+    --output=dist/relaymon index.ts
+
+# Now create the runtime image
+FROM --platform=linux/amd64 debian:bullseye-slim
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    sqlite3 \
+    ca-certificates \
+    torsocks \
+    privoxy \
+    netcat-openbsd \
+    iptables \
+    iproute2 \
+    iputils-ping \
+    dnsutils \
+    socat \
+    procps \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Configure torsocks to use the Tor proxy
+RUN echo 'server = tor-proxy' > /etc/torsocks.conf && \
+    echo 'server_port = 9050' >> /etc/torsocks.conf && \
+    echo 'allowoutgoing = 1' >> /etc/torsocks.conf
+
+# Create scripts directory
+RUN mkdir -p /usr/local/bin
+
+# Copy scripts 
+COPY apps/relaymon/.docker/scripts/transparent-routing.sh /usr/local/bin/transparent-routing.sh
+COPY apps/relaymon/.docker/scripts/deno-proxy-wrapper.sh /usr/local/bin/deno-proxy-wrapper.sh
+COPY apps/relaymon/.docker/scripts/wsroute.sh /usr/local/bin/wsroute.sh
+
+# Copy the compiled binary from the build stage
+COPY --from=build /build/nostr-watch/apps/relaymon/dist/relaymon /usr/local/bin/relaymon
+
+# Copy application data files
+COPY apps/relaymon/config.yaml /app/config.yaml
+COPY apps/relaymon/blocklists/ /app/blocklists/
+
+# Make scripts and binary executable
+RUN chmod +x /usr/local/bin/transparent-routing.sh \
+    /usr/local/bin/deno-proxy-wrapper.sh \
+    /usr/local/bin/wsroute.sh \
+    /usr/local/bin/relaymon
+
+# Configure proxy environment variables
+ENV HTTP_PROXY="http://127.0.0.1:8118"
+ENV HTTPS_PROXY="http://127.0.0.1:8118" 
+ENV NO_PROXY="localhost,127.0.0.1"
+
+# Use our custom startup script
+ENTRYPOINT ["/usr/local/bin/transparent-routing.sh"]
+
+# Default command uses our proxy wrapper around the compiled binary
+CMD ["/usr/local/bin/deno-proxy-wrapper.sh", "/usr/local/bin/relaymon"]

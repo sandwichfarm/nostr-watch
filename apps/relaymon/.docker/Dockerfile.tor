@@ -1,0 +1,41 @@
+FROM denoland/deno:1.35.1
+
+WORKDIR /app
+
+# Install Tor and other necessary dependencies
+RUN apt-get update && apt-get install -y \
+    sqlite3 \
+    ca-certificates \
+    tor \
+    torsocks \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy application code
+COPY . .
+
+# Create data directory if it doesn't exist
+RUN mkdir -p /app/data
+
+# Configure Tor (optional customization)
+RUN echo "SOCKSPort 9050" >> /etc/tor/torrc && \
+    echo "CookieAuthentication 0" >> /etc/tor/torrc && \
+    echo "RunAsDaemon 1" >> /etc/tor/torrc
+
+# Setup a healthcheck to ensure Tor is running
+HEALTHCHECK --interval=60s --timeout=15s --start-period=20s --retries=3 \
+    CMD nc -z localhost 9050 || exit 1
+
+# Cache the dependencies
+RUN deno cache --unstable-sloppy-imports index.ts
+
+# Create a startup script to ensure Tor is running before Deno
+RUN echo '#!/bin/bash\n\
+service tor start\n\
+sleep 3\n\
+exec torsocks "$@"' > /usr/local/bin/start-with-tor.sh && \
+    chmod +x /usr/local/bin/start-with-tor.sh
+
+# Default command - will be overridden by docker-compose
+ENTRYPOINT ["/usr/local/bin/start-with-tor.sh"]
+CMD ["deno", "run", "--allow-ffi", "--unstable-sloppy-imports", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--allow-run", "index.ts"] 

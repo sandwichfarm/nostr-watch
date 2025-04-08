@@ -360,3 +360,77 @@ deno task compile:dbcheck
 ```
 
 The compiled binary will be created at `./dist/relaymon-dbcheck` and can be run directly without Deno installed.
+
+## Docker
+
+RelayMon can be run in Docker with automatic routing for different network types (clearnet, Tor, I2P, and Lokinet). The Docker setup automatically handles routing WebSocket connections through the appropriate network proxy based on the domain type.
+
+### Running with Docker Compose
+
+The Docker setup compiles the RelayMon binary directly inside the container, ensuring proper compatibility with the Linux environment. The compilation happens automatically during the Docker build process. Build caching is disabled by default to ensure clean builds.
+
+To build and run with Docker Compose:
+
+```bash
+# From the project root directory
+docker compose -f apps/relaymon/.docker/docker-compose.yml up -d
+
+# Or if you're already in the apps/relaymon directory
+cd apps/relaymon
+docker compose -f .docker/docker-compose.yml up -d
+```
+
+If you want to force a rebuild (though the no_cache option should already prevent caching):
+
+```bash
+docker compose -f apps/relaymon/.docker/docker-compose.yml up -d --build
+```
+
+### How It Works
+
+The Docker setup uses a multi-stage build process:
+1. First stage installs Deno and compiles the application in a Linux environment
+2. Second stage creates a minimal runtime container with just the compiled binary and necessary dependencies
+3. Network routing is handled by separate containers for Tor and I2P
+
+### Container Architecture
+
+The Docker setup includes:
+
+- **relaymon**: The main container that runs RelayMon with transparent network routing
+- **tor-proxy**: A Tor proxy container for `.onion` domain routing
+- **i2pd**: An I2P router container for `.i2p` domain routing
+
+All network routing happens transparently at the system level, without requiring any changes to the RelayMon application code. When RelayMon attempts to connect to a relay:
+
+- `.onion` domains automatically go through the Tor proxy
+- `.i2p` domains automatically go through the I2P router
+- Regular domains use direct connections
+
+### Checking Container Logs
+
+To view logs from the RelayMon container:
+
+```bash
+docker logs relaymon
+```
+
+### Configuration
+
+You can customize the RelayMon configuration as usual through the `config.yaml` file. Make sure to include all the network types you want to monitor:
+
+```yaml
+relaymon:
+  networks:
+    - clearnet
+    - tor
+    - i2p
+```
+
+### Troubleshooting
+
+If you encounter build issues:
+
+1. Make sure you're building from the project root (where the libraries/ and internal/ directories are located)
+2. Check the Docker build logs for any dependency errors
+3. The no_cache setting should prevent caching issues, but you can also run `docker builder prune -f` to clear all build caches

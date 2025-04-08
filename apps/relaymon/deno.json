@@ -11,6 +11,8 @@
       "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run",
       "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'",
       "status": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run src/core/status.ts",
+      "dbcheck": "deno run --unstable-sloppy-imports --allow-all src/db/dbcheck.ts",
+      "compile:dbcheck": "mkdir -p dist && deno compile --no-check --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon-dbcheck src/db/dbcheck.ts",
       "compile:macos-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-apple-darwin --output dist/relaymon-macos-x64 index.ts",
       "compile:macos-arm64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target aarch64-apple-darwin --output dist/relaymon-macos-arm64 index.ts",
       "compile:linux-x64": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --target x86_64-unknown-linux-gnu --output dist/relaymon-linux-x64 index.ts",

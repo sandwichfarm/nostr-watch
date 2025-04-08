@@ -8,3 +8,7 @@ node_modules
 logs
 blocklists/*
 !blocklists/.gitkeep
+
+data
+data/**/*.sql
+!data/.gitkeep

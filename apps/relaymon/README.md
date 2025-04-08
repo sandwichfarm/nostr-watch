@@ -310,3 +310,53 @@ After running the migration, you'll get a full report of changes made, including
 - Total relays updated vs. unchanged
 - Network distribution after migration
 - Detailed breakdown of which network types were changed and how many
+
+## Database Check Utility
+
+RelayMon includes a database check utility that helps identify and fix common database issues, particularly duplicate relay entries that can cause unexpected behavior. You can run this utility as follows:
+
+```bash
+# Run the database check
+deno task dbcheck
+
+# Run with a compiled binary
+./relaymon-dbcheck
+```
+
+### Features
+
+The dbcheck utility performs the following checks:
+
+1. **Database Integrity Check**: Verifies the overall integrity of the SQLite database
+2. **Duplicate Relay Detection**: Identifies any relay URLs that have multiple entries in the database, despite the schema having a PRIMARY KEY constraint
+3. **Detailed Reporting**: Shows comprehensive information about each duplicate, including when it was last checked, retry counts, and online status
+
+### Fixing Issues
+
+The utility offers two methods to fix duplicates:
+
+```bash
+# Automatically fix issues by keeping the most relevant entry
+deno task dbcheck -- --fix=auto
+
+# Move duplicates to a backup table for future reference
+deno task dbcheck -- --fix=backup
+```
+
+The auto-fix strategy:
+- If one record has never been checked (`checked_at=-1`) and another has been checked, it keeps the checked one
+- If multiple records have been checked, it keeps the newest one (highest rowid)
+- For all other cases, it keeps the record with the highest rowid
+
+This helps resolve issues where relays are continuously enqueued despite having high retry counts and appropriate backoff periods set.
+
+### Compiling the Utility
+
+You can compile the utility to a standalone binary:
+
+```bash
+# Compile the dbcheck utility
+deno task compile:dbcheck
+```
+
+The compiled binary will be created at `./dist/relaymon-dbcheck` and can be run directly without Deno installed.

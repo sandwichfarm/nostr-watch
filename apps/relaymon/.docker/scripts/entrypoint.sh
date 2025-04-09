@@ -65,21 +65,87 @@ fi
 # --- Start fedproxy ---
 echo "Starting fedproxy for network operations..."
 # Format: fedproxy socks [listen_addr:port] [tor_proxy_addr:port] [i2p_sam_addr:port] [lokinet_addr:port]
-# Run fedproxy in the background
+# Run fedproxy in the background with debug logging
 fedproxy socks "0.0.0.0:$FEDPROXY_PORT" "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" "$I2P_PROXY_HOST:$I2P_SAM_PORT" &
 FEDPROXY_PID=$!
 
+# Verify fedproxy is listening
+sleep 2
+if ! netstat -tlpn | grep -q ":$FEDPROXY_PORT.*LISTEN.*fedproxy"; then
+    echo "ERROR: fedproxy failed to bind to port $FEDPROXY_PORT"
+    exit 1
+fi
+
+# Start Dante SOCKS server
+echo "Starting Dante SOCKS server..."
+sockd &
+DANTE_PID=$!
+
+# Wait for Dante to start
+sleep 2
+if ! netstat -tlpn | grep -q ":12346.*LISTEN.*sockd"; then
+    echo "ERROR: Dante failed to bind to port 12346"
+    exit 1
+fi
+
 # Set proxy environment variables for the application
-export http_proxy="socks5://127.0.0.1:$FEDPROXY_PORT"
-export HTTP_PROXY="socks5://127.0.0.1:$FEDPROXY_PORT"
+export http_proxy="socks5h://127.0.0.1:12346"
+export HTTP_PROXY="socks5h://127.0.0.1:12346"
 
-export https_proxy="socks5://127.0.0.1:$FEDPROXY_PORT"
-export HTTPS_PROXY="socks5://127.0.0.1:$FEDPROXY_PORT"
+export https_proxy="socks5h://127.0.0.1:12346"
+export HTTPS_PROXY="socks5h://127.0.0.1:12346"
 
-export all_proxy="socks5://127.0.0.1:$FEDPROXY_PORT"
-export ALL_PROXY="socks5://127.0.0.1:$FEDPROXY_PORT"
+export all_proxy="socks5h://127.0.0.1:12346"
+export ALL_PROXY="socks5h://127.0.0.1:12346"
 
-# Give fedproxy a moment to start
+# Install redsocks for transparent proxying
+if ! command -v redsocks &> /dev/null; then
+  echo "Installing redsocks..."
+  apt-get update && apt-get install -y redsocks
+fi
+
+# Start redsocks with our configuration
+echo "Starting redsocks transparent proxy..."
+redsocks -c /etc/redsocks.conf &
+REDSOCKS_PID=$!
+
+# Wait for redsocks to start and verify it's running
+sleep 2
+if ! netstat -tlpn | grep -q ":12347.*LISTEN.*redsocks"; then
+    echo "ERROR: redsocks failed to bind to port 12347"
+    exit 1
+fi
+
+# Set up transparent proxy with iptables
+echo "Setting up transparent proxy with iptables..."
+
+# Flush existing rules
+iptables -t nat -F
+iptables -t nat -X FEDPROXY 2>/dev/null || true
+
+# Create a new chain for our rules
+iptables -t nat -N FEDPROXY
+
+# Don't redirect local traffic
+iptables -t nat -A FEDPROXY -d 127.0.0.0/8 -j RETURN
+iptables -t nat -A FEDPROXY -d 10.0.0.0/8 -j RETURN
+iptables -t nat -A FEDPROXY -d 172.16.0.0/12 -j RETURN
+iptables -t nat -A FEDPROXY -d 192.168.0.0/16 -j RETURN
+
+# Skip proxy for fedproxy, tor, i2p, and lokinet hosts
+iptables -t nat -A FEDPROXY -d $TOR_PROXY_HOST -j RETURN
+iptables -t nat -A FEDPROXY -d $I2P_PROXY_HOST -j RETURN
+# iptables -t nat -A FEDPROXY -d $LOKINET_PROXY_HOST -j RETURN
+
+# Route ALL TCP traffic through redsocks
+iptables -t nat -A FEDPROXY -p tcp -j REDIRECT --to-port 12347
+
+# Apply the chain to all outgoing traffic
+iptables -t nat -A OUTPUT -p tcp -j FEDPROXY
+
+echo "Transparent proxying enabled. All traffic will be routed through redsocks -> Dante -> fedproxy."
+
+# Give services a moment to start
 sleep 2
 
 # --- Verify fedproxy connectivity to different networks ---
@@ -253,6 +319,7 @@ verify_fedproxy_connectivity() {
       echo "Exiting with failure status..."
       exit $exit_code
     else
+    
       echo "Continuing despite connectivity issues..."
       echo "TIP: If you're setting up this environment, these failures are expected"
       echo "     until all services are properly configured."

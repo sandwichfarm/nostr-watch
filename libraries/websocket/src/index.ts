@@ -13,11 +13,12 @@
     private connectTimeout: number;
     private _connected: boolean = false;
     private _eventListenersSet: boolean = false;
+    private _ready: boolean = false;
 
     constructor(url: string, protocols?: string | string[], options?: { agent?: any, connectTimeout?: number }) {
       this._url = url;
       this.isNode = typeof WebSocket === "undefined";
-      this.connectTimeout = options?.connectTimeout || 10000;
+      this.connectTimeout = options?.connectTimeout || 60000;
       this.connect(protocols, options);
     }
   
@@ -207,10 +208,17 @@
     public set onclose(callback: ((event: CloseEvent) => void) | null) {
       this.ws.onclose = callback;
     }
-  
+
+    private _onopen() {
+      this._ready = true;
+    }
+
     public on(event: "open" | "message" | "error" | "close", listener: (...args: any[]) => void) {
       if(event === "open") {
-        this.ws.onopen = listener;
+        this.ws.onopen = (event: Event) => {
+          this._onopen();
+          listener(event);
+        };
       } else if(event === "message") {
         this.ws.onmessage = listener;
       } else if(event === "error") {

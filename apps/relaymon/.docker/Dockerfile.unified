@@ -8,14 +8,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     unzip \
     sqlite3 \
-    dnsmasq \
-    redsocks \
+    golang \
     netcat-openbsd \
     iptables \
     iproute2 \
     iputils-ping \
     dnsutils \
     procps \
+    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -24,15 +24,22 @@ RUN curl -fsSL https://deno.land/x/install/install.sh | sh
 ENV DENO_INSTALL="/root/.deno"
 ENV PATH="${DENO_INSTALL}/bin:${PATH}"
 
+# Install fedproxy
+ENV GOPATH="/root/go"
+ENV PATH="${GOPATH}/bin:${PATH}"
+RUN git clone https://github.com/majestrate/fedproxy.git && \
+    cd fedproxy && \
+    go build -o /usr/local/bin/fedproxy . && \
+    chmod +x /usr/local/bin/fedproxy
+
 # Create data directory
 RUN mkdir -p /app/data
 
 # Create scripts directory
 RUN mkdir -p /usr/local/bin
 
-# Copy entrypoint script and redsocks config
+# Copy entrypoint script
 COPY apps/relaymon/.docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY apps/relaymon/.docker/config/redsocks.conf /etc/redsocks.conf
 
 # Make scripts executable
 RUN chmod +x /usr/local/bin/entrypoint.sh
@@ -50,6 +57,3 @@ RUN deno cache --reload --no-remote index.ts || echo "Dependency caching failed,
 
 # Use our simplified entrypoint script
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-
-# CMD is now implicitly handled by the entrypoint script executing deno
-# CMD ["/usr/local/bin/deno-proxy-wrapper.sh", "/usr/local/bin/relaymon"]

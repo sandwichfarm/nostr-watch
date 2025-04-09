@@ -4,13 +4,15 @@ services:
   # Main relaymon service with network routing
   relaymon:
     build:
-      context: ../..  # Project root
-      dockerfile: apps/relaymon/.docker/Dockerfile.unified
+      context: ../../..  # Three levels up to reach the project root from .docker dir
+      dockerfile: ./apps/relaymon/.docker/Dockerfile.unified
       no_cache: true  # Disable build cache
     container_name: relaymon
     restart: unless-stopped
     volumes:
-      - ../data:/app/data
+      - ../data:/app/nostr-watch/apps/relaymon/data
+      - ../.env:/app/nostr-watch/apps/relaymon.env
+      - ../.config:/app/nostr-watch/apps/config.yaml
     networks:
       - relaymon-net
     depends_on:
@@ -59,7 +61,6 @@ services:
   # Lokinet proxy service
   # lokinet:
   #   image: loki-project/lokinet:latest
-  #   platform: linux/amd64
   #   container_name: lokinet
   #   restart: unless-stopped
   #   networks:

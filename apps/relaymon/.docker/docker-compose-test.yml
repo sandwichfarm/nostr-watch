@@ -1,9 +1,0 @@
-version: '3.8'
-
-services:
-  relaymon-test:
-    image: relaymon
-    container_name: relaymon-test
-    entrypoint: ["/bin/bash", "-c"]
-    command: ["ls -la /usr/local/bin && cat /usr/local/bin/run-deno.sh || echo 'run-deno.sh not found'"]
-    restart: "no" 

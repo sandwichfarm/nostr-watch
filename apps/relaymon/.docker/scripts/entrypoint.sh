@@ -1,41 +1,35 @@
 #!/bin/bash
 
-# Transparent Proxy Entrypoint using dnsmasq and redsocks
+# Transparent Proxy Entrypoint using fedproxy
 
-echo "Starting Transparent Proxy Setup..."
+echo "Starting RelayMon with fedproxy..."
+
+# --- Parse command-line arguments first ---
+VERIFY_ONLY=false
+APP_ARGS=()
+
+for arg in "$@"; do
+  if [ "$arg" = "--verify-network" ]; then
+    VERIFY_ONLY=true
+  else
+    APP_ARGS+=("$arg")
+  fi
+done
 
 # --- Configuration ---
-DNSMASQ_CONF=/etc/dnsmasq.conf
-RESOLV_CONF=/etc/resolv.conf
-REDSOCKS_CONF=/etc/redsocks.conf
-UPSTREAM_DNS="1.1.1.1" # Use a reliable public DNS
-
 TOR_PROXY_HOST="tor-proxy"
 TOR_SOCKS_PORT="9050"
-TOR_DNS_PORT="5353" # Default Tor SOCKS DNS port
 
 I2P_PROXY_HOST="i2pd"
-I2P_HTTP_PROXY_PORT="4444"
-# I2P DNS is tricky, rely on redsocks HTTP connect or specific IPs if known
+I2P_SAM_PORT="4447" # SAM bridge port for I2P
 
 LOKINET_PROXY_HOST="lokinet"
-LOKINET_SOCKS_PORT="9060" # From compose file (verify this)
-LOKINET_DNS_PORT="5353" # From compose file (verify this)
+LOKINET_SOCKS_PORT="9060"
 
-REDSOCKS_LISTEN_PORT="12345" # Port redsocks listens on (from redsocks.conf)
+FEDPROXY_PORT="12345" # Port fedproxy will listen on
 
-# IPTables User/Group Exclusions
-# Need a non-root user for redsocks (defined in redsocks.conf)
-# Create the user/group if they don't exist
-REDSOCKS_USER="redsocks"
-getent group $REDSOCKS_USER >/dev/null || groupadd $REDSOCKS_USER
-getent passwd $REDSOCKS_USER >/dev/null || useradd -r -g $REDSOCKS_USER -s /sbin/nologin $REDSOCKS_USER
-
-# We also need to exclude dnsmasq user (often dnsmasq or nobody)
-DNSMASQ_USER="dnsmasq" # Default user for dnsmasq package
-getent group $DNSMASQ_USER >/dev/null || groupadd $DNSMASQ_USER
-getent passwd $DNSMASQ_USER >/dev/null || useradd -r -g $DNSMASQ_USER -s /sbin/nologin $DNSMASQ_USER
-
+# Disable PID check in Docker environment
+export RELAYMON_SKIP_PID_CHECK=true
 
 # --- Wait for Proxies ---
 wait_for_service() {
@@ -50,118 +44,242 @@ wait_for_service() {
   echo "$name service is available."
 }
 
+echo "Waiting for proxy services..."
 wait_for_service $TOR_PROXY_HOST $TOR_SOCKS_PORT "Tor Proxy"
-wait_for_service $I2P_PROXY_HOST $I2P_HTTP_PROXY_PORT "I2P Proxy"
-wait_for_service $LOKINET_PROXY_HOST $LOKINET_SOCKS_PORT "Lokinet Proxy"
+wait_for_service $I2P_PROXY_HOST $I2P_SAM_PORT "I2P SAM Bridge"
+# Uncomment if lokinet is enabled in your docker-compose
+# wait_for_service $LOKINET_PROXY_HOST $LOKINET_SOCKS_PORT "Lokinet Proxy"
 
+# --- First, cache dependencies directly without proxy ---
+if [ "$VERIFY_ONLY" = "false" ]; then
+  cd /app/nostr-watch/apps/relaymon
 
-# --- Configure dnsmasq ---
-echo "Configuring dnsmasq..."
+  echo "Pre-caching dependencies in direct mode (no proxy)..."
+  # Make sure no proxy settings are active for this step
+  unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY all_proxy ALL_PROXY
 
-# dnsmasq config: forward special TLDs, use upstream for others
-cat > $DNSMASQ_CONF <<EOF
-port=53
-resolv-file=$RESOLV_CONF.upstream
-user=$DNSMASQ_USER
-group=$DNSMASQ_USER
-# no-resolv # Don't read /etc/resolv.conf
-# no-hosts  # Don't read /etc/hosts
+  # Cache dependencies
+  deno cache --reload index.ts || echo "Some dependency caching failed, continuing anyway"
+fi
 
-# Forward .onion to Tor DNS
-server=/.onion/$TOR_PROXY_HOST#$TOR_DNS_PORT
-# Forward .loki to Lokinet DNS
-server=/.loki/$LOKINET_PROXY_HOST#$LOKINET_DNS_PORT
-# For I2P, resolution often happens via the proxy itself or specific IPs.
-# Let redsocks handle connecting to i2pd, which resolves .i2p internally.
+# --- Start fedproxy ---
+echo "Starting fedproxy for network operations..."
+# Format: fedproxy socks [listen_addr:port] [tor_proxy_addr:port] [i2p_sam_addr:port] [lokinet_addr:port]
+# Run fedproxy in the background
+fedproxy socks "0.0.0.0:$FEDPROXY_PORT" "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" "$I2P_PROXY_HOST:$I2P_SAM_PORT" &
+FEDPROXY_PID=$!
 
-# Optional: Cache settings
-cache-size=1000
-EOF
+# Set proxy environment variables for the application
+export http_proxy="socks5://127.0.0.1:$FEDPROXY_PORT"
+export HTTP_PROXY="socks5://127.0.0.1:$FEDPROXY_PORT"
 
-# Create upstream resolv config
-echo "nameserver $UPSTREAM_DNS" > $RESOLV_CONF.upstream
+export https_proxy="socks5://127.0.0.1:$FEDPROXY_PORT"
+export HTTPS_PROXY="socks5://127.0.0.1:$FEDPROXY_PORT"
 
-# Configure local system to use dnsmasq
-echo "nameserver 127.0.0.1" > $RESOLV_CONF
+export all_proxy="socks5://127.0.0.1:$FEDPROXY_PORT"
+export ALL_PROXY="socks5://127.0.0.1:$FEDPROXY_PORT"
 
-# Start dnsmasq
-echo "Starting dnsmasq..."
-dnsmasq --conf-file=$DNSMASQ_CONF --no-daemon & # Run in background
+# Give fedproxy a moment to start
+sleep 2
 
+# --- Verify fedproxy connectivity to different networks ---
+verify_fedproxy_connectivity() {
+  echo "═════════════════════════════════════════════"
+  echo "Verifying fedproxy connectivity to anonymous networks..."
+  echo "═════════════════════════════════════════════"
+  echo "This test verifies that fedproxy can connect to Tor, I2P, and"
+  echo "Lokinet networks. It attempts to connect to known services on"
+  echo "each network through the fedproxy SOCKS5 proxy."
+  echo ""
+  echo "Usage:"
+  echo "  • Run verification at startup: VERIFY_CONNECTIVITY=true"
+  echo "  • Require successful tests:    REQUIRE_NETWORK_CONNECTIVITY=true"
+  echo "  • Run verification only:       docker exec <container> /app/nostr-watch/apps/relaymon/.docker/scripts/entrypoint.sh --verify-network"
+  echo "═════════════════════════════════════════════"
 
-# --- Configure iptables ---
-echo "Configuring iptables..."
+  # Known test domains for each network
+  local tor_domains=(
+    "duckduckgogg42xjoc72x3sjasowoarfbgcmvfimaftt6twagswzczad.onion" # DuckDuckGo
+    "vww6ybal4bd7szmgncyruucpgfkqahzddi37ktceo3ah7ngmcopnpyyd.onion" # Tor Project
+    "protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion" # ProtonMail
+  )
+  
+  local i2p_domains=(
+    "stats.i2p"
+    "i2p-projekt.i2p"
+    "planet.i2p"
+  )
+  
+  local lokinet_domains=(
+    "dw68y1xhptqbhcm5s8aaaip6dbopykagig5q5u1za4c7pzxto77y.loki"
+    "oxen.io.loki"
+  )
 
-# Flush rules
-iptables -t nat -F
-iptables -t nat -X
+  local timeout=10
+  local exit_code=0
+  
+  # Function to test connection to a domain
+  test_domain() {
+    local proxy_type=$1
+    local proxy_addr=$2
+    local domain=$3
+    local timeout=$4
+    
+    echo "  • Testing connection to $domain..."
+    if [ "$proxy_type" = "socks5" ]; then
+      curl --socks5-hostname $proxy_addr -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+      return $?
+    elif [ "$proxy_type" = "http" ]; then
+      curl -x $proxy_addr -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+      return $?
+    else
+      curl -s --head --connect-timeout $timeout http://$domain > /dev/null 2>&1
+      return $?
+    fi
+  }
+  
+  # Check Tor connectivity
+  echo "─────────────────────────────────────────────"
+  echo "Testing Tor connectivity via fedproxy..."
+  echo "─────────────────────────────────────────────"
+  
+  local tor_success=false
+  for domain in "${tor_domains[@]}"; do
+    if test_domain "socks5" "127.0.0.1:$FEDPROXY_PORT" "$domain" "$timeout"; then
+      tor_success=true
+      echo "✅ Successfully connected to Tor onion service: $domain"
+      break
+    fi
+  done
+  
+  if [ "$tor_success" = "false" ]; then
+    echo "❌ Failed to connect to any Tor onion services"
+    echo "Diagnostic information:"
+    echo "  • Checking direct Tor connection..."
+    for domain in "${tor_domains[@]}"; do
+      if test_domain "socks5" "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" "$domain" "$timeout"; then
+        echo "    ✓ Direct Tor connection works for $domain (issue is with fedproxy)"
+        break
+      fi
+    done
+    
+    echo "  • Displaying network configuration:"
+    echo "    - Tor proxy: $TOR_PROXY_HOST:$TOR_SOCKS_PORT"
+    echo "    - Fedproxy port: $FEDPROXY_PORT"
+    echo "    - HTTP_PROXY: $HTTP_PROXY"
+    exit_code=1
+  fi
+  
+  # Check I2P connectivity
+  echo "─────────────────────────────────────────────"
+  echo "Testing I2P connectivity via fedproxy..."
+  echo "─────────────────────────────────────────────"
+  
+  local i2p_success=false
+  for domain in "${i2p_domains[@]}"; do
+    if test_domain "socks5" "127.0.0.1:$FEDPROXY_PORT" "$domain" "$timeout"; then
+      i2p_success=true
+      echo "✅ Successfully connected to I2P service: $domain"
+      break
+    fi
+  done
+  
+  if [ "$i2p_success" = "false" ]; then
+    echo "❌ Failed to connect to any I2P services"
+    echo "Diagnostic information:"
+    # Check if I2P HTTP proxy is available
+    if nc -z $I2P_PROXY_HOST 4444 2>/dev/null; then
+      echo "  • I2P HTTP proxy available at $I2P_PROXY_HOST:4444"
+      echo "  • Checking direct I2P HTTP proxy connection..."
+      for domain in "${i2p_domains[@]}"; do
+        if test_domain "http" "$I2P_PROXY_HOST:4444" "$domain" "$timeout"; then
+          echo "    ✓ Direct I2P HTTP proxy works for $domain (issue is with fedproxy)"
+          break
+        fi
+      done
+    else 
+      echo "  • I2P HTTP proxy not available at $I2P_PROXY_HOST:4444"
+    fi
+    
+    echo "  • Displaying network configuration:"
+    echo "    - I2P SAM bridge: $I2P_PROXY_HOST:$I2P_SAM_PORT"
+    echo "    - Fedproxy port: $FEDPROXY_PORT"
+    echo "    - HTTP_PROXY: $HTTP_PROXY"
+    exit_code=1
+  fi
+  
+  # Check Lokinet connectivity if enabled
+  if nc -z $LOKINET_PROXY_HOST $LOKINET_SOCKS_PORT 2>/dev/null; then
+    echo "─────────────────────────────────────────────"
+    echo "Testing Lokinet connectivity via fedproxy..."
+    echo "─────────────────────────────────────────────"
+    
+    local lokinet_success=false
+    for domain in "${lokinet_domains[@]}"; do
+      if test_domain "socks5" "127.0.0.1:$FEDPROXY_PORT" "$domain" "$timeout"; then
+        lokinet_success=true
+        echo "✅ Successfully connected to Lokinet service: $domain"
+        break
+      fi
+    done
+    
+    if [ "$lokinet_success" = "false" ]; then
+      echo "❌ Failed to connect to any Lokinet services"
+      echo "Diagnostic information:"
+      echo "  • Checking direct Lokinet connection..."
+      for domain in "${lokinet_domains[@]}"; do
+        if test_domain "socks5" "$LOKINET_PROXY_HOST:$LOKINET_SOCKS_PORT" "$domain" "$timeout"; then
+          echo "    ✓ Direct Lokinet connection works for $domain (issue is with fedproxy)"
+          break
+        fi
+      done
+      
+      echo "  • Displaying network configuration:"
+      echo "    - Lokinet proxy: $LOKINET_PROXY_HOST:$LOKINET_SOCKS_PORT"
+      echo "    - Fedproxy port: $FEDPROXY_PORT"
+      echo "    - HTTP_PROXY: $HTTP_PROXY"
+      exit_code=1
+    fi
+  else
+    echo "Lokinet not enabled or available, skipping test"
+  fi
+  
+  echo "═════════════════════════════════════════════"
+  if [ $exit_code -eq 0 ]; then
+    echo "✅ All available network tests PASSED"
+  else
+    echo "⚠️ Some network tests FAILED"
+    if [ "${REQUIRE_NETWORK_CONNECTIVITY}" = "true" ] || [ "$VERIFY_ONLY" = "true" ]; then
+      echo "Exiting with failure status..."
+      exit $exit_code
+    else
+      echo "Continuing despite connectivity issues..."
+      echo "TIP: If you're setting up this environment, these failures are expected"
+      echo "     until all services are properly configured."
+    fi
+  fi
+  echo "═════════════════════════════════════════════"
+  
+  return $exit_code
+}
 
-# === NAT Table ===
+# Run connectivity verification
+if [ "${VERIFY_CONNECTIVITY}" != "false" ] || [ "$VERIFY_ONLY" = "true" ]; then
+  verify_fedproxy_connectivity
+fi
 
-# --- Exclusions (OUTPUT chain) ---
-# Don't redirect traffic from the proxy users
-iptables -t nat -A OUTPUT -m owner --uid-owner $REDSOCKS_USER -j RETURN
-iptables -t nat -A OUTPUT -m owner --uid-owner $DNSMASQ_USER -j RETURN
-
-# Don't redirect loopback traffic
-iptables -t nat -A OUTPUT -o lo -j RETURN
-
-# Don't redirect traffic to local/internal networks (adjust as needed)
-iptables -t nat -A OUTPUT -d 127.0.0.0/8 -j RETURN
-iptables -t nat -A OUTPUT -d 192.168.0.0/16 -j RETURN
-iptables -t nat -A OUTPUT -d 172.16.0.0/12 -j RETURN
-iptables -t nat -A OUTPUT -d 10.0.0.0/8 -j RETURN
-
-# Don't redirect traffic to the proxy services themselves
-iptables -t nat -A OUTPUT -d $TOR_PROXY_HOST -j RETURN
-iptables -t nat -A OUTPUT -d $I2P_PROXY_HOST -j RETURN
-iptables -t nat -A OUTPUT -d $LOKINET_PROXY_HOST -j RETURN
-
-# --- DNS Redirection (OUTPUT chain) ---
-# Redirect all DNS queries (UDP/TCP port 53) to local dnsmasq (127.0.0.1:53)
-iptables -t nat -A OUTPUT -p udp --dport 53 -j REDIRECT --to-ports 53
-iptables -t nat -A OUTPUT -p tcp --dport 53 -j REDIRECT --to-ports 53
-
-# --- TCP Redirection (OUTPUT chain) ---
-# Redirect all remaining TCP traffic to the redsocks listener port
-# redsocks will then decide which upstream proxy (Tor/I2P/Loki) to use based on its config
-# (currently redsocks.conf doesn't differentiate based on destination, needs refinement)
-# For now, it sends ALL redirected TCP to the FIRST redsocks {} block (Tor)
-#
-# !! IMPORTANT !!: The current redsocks.conf sends ALL redirected traffic to Tor.
-#    To route based on destination (.onion, .i2p, .loki), redsocks needs patching
-#    or a more complex setup (e.g., multiple redsocks instances or a different tool).
-#    As a workaround, one could use iptables rules based on resolved IPs if they are known
-#    and distinct ranges, redirecting to different redsocks ports per network.
-#
-#    Example (if Tor IPs known): iptables -t nat -A OUTPUT -p tcp -d <TOR_IP_RANGE> -j REDIRECT --to-port <TOR_REDSOCKS_PORT>
-#    Example (if I2P IPs known): iptables -t nat -A OUTPUT -p tcp -d <I2P_IP_RANGE> -j REDIRECT --to-port <I2P_REDSOCKS_PORT>
-#
-#    For now, we redirect *all* TCP traffic to the single redsocks instance.
-#    This means .i2p and .loki might not work correctly unless redsocks is enhanced
-#    or the application explicitly uses respective proxies for those.
-#
-iptables -t nat -A OUTPUT -p tcp -j REDIRECT --to-port $REDSOCKS_LISTEN_PORT
-
-echo "Warning: Current iptables rules redirect ALL TCP traffic via redsocks, which defaults to Tor." 
-echo "Routing for I2P/Loki requires redsocks configuration enhancements or specific IP-based rules."
-
-# --- Start redsocks ---
-echo "Starting redsocks..."
-redsocks -c $REDSOCKS_CONF & # Run in background
-
-# Give services a moment to start
-sleep 5
+# If only verification was requested, exit now
+if [ "$VERIFY_ONLY" = "true" ]; then
+  echo "Network verification complete, exiting as requested."
+  # Kill fedproxy before exiting
+  if [ -n "$FEDPROXY_PID" ]; then
+    kill $FEDPROXY_PID 2>/dev/null || true
+  fi
+  exit 0
+fi
 
 # --- Execute Application ---
 echo "Starting RelayMon application..."
-
+echo "Executing: deno run ... index.ts ${APP_ARGS[*]}"
 cd /app/nostr-watch/apps/relaymon
-
-# Remove potentially problematic env vars
-unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY I2P_PROXY
-
-# Execute the Deno application as the original user (often root in containers)
-# Or switch to a less privileged user if desired/possible
-echo "Executing: deno run ... index.ts $@"
-exec deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run index.ts "$@" 
+exec deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run index.ts -c /opt/config.yaml "${APP_ARGS[@]}" 

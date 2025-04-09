@@ -43,7 +43,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
                 const { SocksProxyAgent } = await import("socks-proxy-agent");
                 agent = new SocksProxyAgent(torSocksProxy);
             } else {
-                console.warn("Deno detected, ignoring SOCKS5 agent (use proxy module instead)");
+                this.base?.logger.debug("Deno detected, ignoring SOCKS5 agent (use proxy module instead)");
             }
             this.base.ws = await UniversalWebSocket.create(this.base.url, undefined, { agent });
         } else {

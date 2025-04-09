@@ -292,14 +292,19 @@ export async function main() {
   }
 
   // Check if relaymon is already running
-  const runStatus = await isAlreadyRunning();
-  if (runStatus.running) {
-    console.error(`Error: RelayMon is already running (PID ${runStatus.pid})`);
-    Deno.exit(1);
+  const skipPidCheck = Deno.env.get('RELAYMON_SKIP_PID_CHECK') === 'true';
+  if (!skipPidCheck) {
+    const runStatus = await isAlreadyRunning();
+    if (runStatus.running) {
+      console.error(`Error: RelayMon is already running (PID ${runStatus.pid})`);
+      Deno.exit(1);
+    }
+    
+    // Create PID file
+    await createPidFile();
+  } else {
+    console.log("PID check skipped (running in container mode)");
   }
-
-  // Create PID file
-  await createPidFile();
 
   // Parse config path from arguments
   let configPath = "./config.yaml";

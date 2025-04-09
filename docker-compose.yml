@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  # Main relaymon service with network routing
+  relaymon:
+    build:
+      context: .  # Context is now the project root where this file lives
+      dockerfile: ./apps/relaymon/.docker/Dockerfile.unified # Path relative to project root
+      # Platform inside build is not allowed
+      no_cache: true  # Disable build cache
+    platform: linux/amd64  # Runtime platform
+    container_name: relaymon
+    restart: unless-stopped
+    volumes:
+      # Path relative to project root
+      - ./apps/relaymon/data:/app/data 
+    networks:
+      - relaymon-net
+    depends_on: []
+
+networks:
+  relaymon-net:
+    driver: bridge
+ 

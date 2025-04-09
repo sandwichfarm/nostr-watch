@@ -1,6 +1,0 @@
-#!/bin/bash
-# Simple script to run relaymon with Deno
-# Proxy routing is handled at the network level by transparent-routing.sh
-
-cd /app/nostr-watch/apps/relaymon
-exec deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run index.ts "$@" 

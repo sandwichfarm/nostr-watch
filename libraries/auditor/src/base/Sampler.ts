@@ -77,23 +77,25 @@ export class Sampler {
   }
 
   async sample() {
-    try {
-      await this.socket.connect();
+    return new Promise((resolve, reject) => {
       this.setupHandlers();
-  
+      this.socket.connect();
       const timeout = this.setAbortTimeout();
-  
-      this.newSubId();
-      this.sendRequest();
-  
-      const result = await this.waitForEoseOrAbort(timeout);
-  
-      this.logger.debug(`done`);
-    } catch (error) {
-      this.logger.error(`Error in sample method: ${error.message}`);
-    } finally {
-      this.cleanupWebSocket();
-    }
+      this.socket.on("open", async () => {
+        let result: boolean = false;
+        try {
+          this.newSubId();
+          this.sendRequest();
+          result = await this.waitForEoseOrAbort(timeout);
+        } catch (error) {
+          this.logger.error(`Error in sample method: ${error.message}`);
+          return reject(error);
+        } finally {
+          this.cleanupWebSocket();
+        }
+        resolve(result);
+      });
+    });
   }
   
   private setAbortTimeout() {

@@ -1,13 +1,12 @@
-import { TorWebSocket } from './tor';
 import { Buffer } from 'buffer';
-import { UniversalWebSocket } from '@nostrwatch/websocket';
+import { UniversalWebSocket as WebSocket} from '@nostrwatch/websocket';
+
 
 declare global {
   interface GlobalThis {
     Deno?: any;
   }
 }
-
 
 import {
   AbstractAdapter,
@@ -16,12 +15,11 @@ import {
   AdapterType
 } from '@nostrwatch/nocap';
 
-export { TorWebSocket };
-
 class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   count: { event: number };
   static type: AdapterType = 'websocket';
   readonly slug: string = 'WebsocketAdapterDefault';
+  private abortController: AbortController = new AbortController();
 
   constructor(parent: Base) {
     super(parent);
@@ -32,33 +30,35 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
 
   async check_open(): Promise<void> {
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
-
     try {
         if (this.base.network === 'clearnet') {
-            this.base.ws = await UniversalWebSocket.create(this.base.url);
+            this.base.ws = new WebSocket(this.base.url);
         } else if (this.base.network === 'tor') {
             const torSocksProxy = 'socks5h://127.0.0.1:9050';
             let agent;
             if (!("Deno" in globalThis)) {
                 const { SocksProxyAgent } = await import("socks-proxy-agent");
                 agent = new SocksProxyAgent(torSocksProxy);
+                this.base.ws = new WebSocket(this.base.url, undefined, { agent });
             } else {
                 this.base?.logger.debug("Deno detected, ignoring SOCKS5 agent (use proxy module instead)");
+                this.base.ws = new WebSocket(this.base.url);
             }
-            this.base.ws = await UniversalWebSocket.create(this.base.url, undefined, { agent });
         } else {
             throw new Error('Unsupported network');
         }
-        
         // Wait for the connection to be established
         try {
-          await this.base.ws.ready();
-          this.base.on_open();
           this.bind_events();
+          const aborted = new Promise((reject) => {
+            this.abortController.signal.addEventListener('abort', () => {
+              reject(new Error('WebSocket connection aborted'));
+            });
+          })
+          const ready = this.base.ws.ready()
+          await Promise.race([aborted, ready]);
         } catch (error: unknown) {
-          // Create a proper Event object to pass to on_error
           const errorEvent = new Event('error');
-          // Attach the original error message for debugging
           const errorMessage = error instanceof Error ? error.message : String(error);
           (errorEvent as any).message = `WebSocket connection timeout: ${errorMessage}`;
           this.base.on_error(errorEvent);
@@ -93,17 +93,22 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
       if(!this.base.ws) {
         throw new Error('this.base.ws is not defined.');
       }
-      this.base.ws.onmessage = (message: MessageEvent) => {
+      this.base.ws.on("open", () => {
+        this.base.on_open();
+      })
+      this.base.ws.on("message", (message: MessageEvent) => {
         const { data } = message;
         this.handle_nostr_event(data);
-      };
-      this.base.ws.onclose = (closeEvent: CloseEvent) => {
+      });
+      this.base.ws.on("close", (closeEvent: CloseEvent) => {
         this.base.on_close();
-      };
-      this.base.ws.onerror = (error: Event) => {
+      });
+      this.base.ws.on("error", (error: Event) => {
+        this.abortController.abort();
         this.base.on_error(error);
-      };
+      })
     } catch (e) {
+      this.abortController.abort();
       this.base?.logger?.warn(e);
     }
   }
@@ -184,12 +189,14 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   }
 
   terminate(): void {
+    this.abortController.abort();
     if (!this.base.isConnected()) return;
     this.base?.logger?.debug('WebsocketAdapterDefault.terminate()');
     this.base?.ws?.terminate();
   }
 
   close(): void {
+    this.abortController.abort();
     if (!this.base.isConnected()) return;
     this.base?.logger?.debug('WebsocketAdapterDefault.close()');
     this.base?.ws?.close();

@@ -24,3 +24,4 @@ packages/kinds
 .svelte-kit
 scripts/deploy/gui-scp.sh
 .vscode
+.roo 

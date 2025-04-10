@@ -6,13 +6,15 @@ services:
     build:
       context: ../../..  # Three levels up to reach the project root from .docker dir
       dockerfile: ./apps/relaymon/.docker/Dockerfile.unified
-      no_cache: true  # Disable build cache
+      # no_cache: true  # Disable build cache
     container_name: relaymon
     restart: unless-stopped
     volumes:
       - ../data:/app/nostr-watch/apps/relaymon/data
       - ../.env:/app/nostr-watch/apps/relaymon.env
       - ../.config:/app/nostr-watch/apps/config.yaml
+      - ./config/danted.conf:/etc/danted.conf
+      - ./config/redsocks.conf:/etc/redsocks.conf
     networks:
       - relaymon-net
     depends_on:
@@ -27,18 +29,16 @@ services:
 
   # Tor proxy service
   tor-proxy:
-    image: dperson/torproxy:latest
+    image: alpine/tor:latest
     container_name: tor-proxy
     restart: unless-stopped
+    volumes:
+      - ./config/torrc:/etc/tor/torrc
     networks:
       - relaymon-net
     ports:
       - "9050:9050" # SOCKS proxy
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "9050"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - "9051:9051" # Control port
 
   # I2P router service
   i2pd:

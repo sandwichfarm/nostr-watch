@@ -214,8 +214,11 @@ function formatConfig(config: any): string {
       // Create a increasing height gradient
       const charIndex = Math.floor((i / (retryConfig.length - 1)) * (progressChars.length - 1));
       const char = progressChars[charIndex];
-      
-      delayLine += barColor(char.repeat(widthPortion));
+      if(typeof char === 'string') {
+        delayLine += barColor(char.repeat(widthPortion));
+      } else {
+        delayLine += barColor(char);
+      }
     }
     
     // Calculate the correct padding for the right side
@@ -224,7 +227,7 @@ function formatConfig(config: any): string {
     
     // Create a more detailed rule display
     const rulesKey = `${key('Rules:')}`;
-    let rulesLine = `║ ${rulesKey} `;
+    const rulesLine = `║ ${rulesKey} `;
     
     // Format rules for display - all on one line with specific grouping
     let allRulesDisplay = '';

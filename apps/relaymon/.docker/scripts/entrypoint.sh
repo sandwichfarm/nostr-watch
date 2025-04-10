@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# Transparent Proxy Entrypoint using fedproxy
-
-echo "Starting RelayMon with fedproxy..."
+echo "Starting RelayMon with hedproxy..."
 
 # --- Parse command-line arguments first ---
 VERIFY_ONLY=false
@@ -21,12 +19,12 @@ TOR_PROXY_HOST="tor-proxy"
 TOR_SOCKS_PORT="9050"
 
 I2P_PROXY_HOST="i2pd"
-I2P_SAM_PORT="4447" # SAM bridge port for I2P
+I2P_SAM_PORT="4447"
 
 LOKINET_PROXY_HOST="lokinet"
 LOKINET_SOCKS_PORT="9060"
 
-FEDPROXY_PORT="12345" # Port fedproxy will listen on
+HEDPROXY_PORT="12345"
 
 # Disable PID check in Docker environment
 export RELAYMON_SKIP_PID_CHECK=true
@@ -47,7 +45,8 @@ wait_for_service() {
 echo "Waiting for proxy services..."
 wait_for_service $TOR_PROXY_HOST $TOR_SOCKS_PORT "Tor Proxy"
 wait_for_service $I2P_PROXY_HOST $I2P_SAM_PORT "I2P SAM Bridge"
-# Uncomment if lokinet is enabled in your docker-compose
+
+# Uncomment if lokinet is enabled in docker-compose
 # wait_for_service $LOKINET_PROXY_HOST $LOKINET_SOCKS_PORT "Lokinet Proxy"
 
 # --- First, cache dependencies directly without proxy ---
@@ -62,100 +61,92 @@ if [ "$VERIFY_ONLY" = "false" ]; then
   deno cache --reload index.ts || echo "Some dependency caching failed, continuing anyway"
 fi
 
-# --- Start fedproxy ---
-echo "Starting fedproxy for network operations..."
-# Format: fedproxy socks [listen_addr:port] [tor_proxy_addr:port] [i2p_sam_addr:port] [lokinet_addr:port]
-# Run fedproxy in the background with debug logging
-fedproxy socks "0.0.0.0:$FEDPROXY_PORT" "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" "$I2P_PROXY_HOST:$I2P_SAM_PORT" &
-FEDPROXY_PID=$!
+# --- Start hedproxy ---
+echo "Starting hedproxy for network operations..."
 
-# Verify fedproxy is listening
+# Run hedproxy in the background with debug logging
+hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SAM_PORT" -passthrough clearnet &
+HEDPROXY_PID=$!
+
+# Verify hedproxy is listening
 sleep 2
-if ! netstat -tlpn | grep -q ":$FEDPROXY_PORT.*LISTEN.*fedproxy"; then
-    echo "ERROR: fedproxy failed to bind to port $FEDPROXY_PORT"
+if ! netstat -tlpn | grep -q ":$HEDPROXY_PORT.*LISTEN.*hedproxy"; then
+    echo "ERROR: hedproxy failed to bind to port $HEDPROXY_PORT"
     exit 1
 fi
 
-# Start Dante SOCKS server
-echo "Starting Dante SOCKS server..."
-sockd &
-DANTE_PID=$!
-
-# Wait for Dante to start
-sleep 2
-if ! netstat -tlpn | grep -q ":12346.*LISTEN.*sockd"; then
-    echo "ERROR: Dante failed to bind to port 12346"
-    exit 1
-fi
-
-# Set proxy environment variables for the application
-export http_proxy="socks5h://127.0.0.1:12346"
-export HTTP_PROXY="socks5h://127.0.0.1:12346"
-
-export https_proxy="socks5h://127.0.0.1:12346"
-export HTTPS_PROXY="socks5h://127.0.0.1:12346"
-
-export all_proxy="socks5h://127.0.0.1:12346"
-export ALL_PROXY="socks5h://127.0.0.1:12346"
-
-# Install redsocks for transparent proxying
-if ! command -v redsocks &> /dev/null; then
-  echo "Installing redsocks..."
-  apt-get update && apt-get install -y redsocks
-fi
-
-# Start redsocks with our configuration
-echo "Starting redsocks transparent proxy..."
-redsocks -c /etc/redsocks.conf &
-REDSOCKS_PID=$!
-
-# Wait for redsocks to start and verify it's running
-sleep 2
-if ! netstat -tlpn | grep -q ":12347.*LISTEN.*redsocks"; then
-    echo "ERROR: redsocks failed to bind to port 12347"
-    exit 1
-fi
-
-# Set up transparent proxy with iptables
-echo "Setting up transparent proxy with iptables..."
-
-# Flush existing rules
-iptables -t nat -F
-iptables -t nat -X FEDPROXY 2>/dev/null || true
-
-# Create a new chain for our rules
-iptables -t nat -N FEDPROXY
-
-# Don't redirect local traffic
-iptables -t nat -A FEDPROXY -d 127.0.0.0/8 -j RETURN
-iptables -t nat -A FEDPROXY -d 10.0.0.0/8 -j RETURN
-iptables -t nat -A FEDPROXY -d 172.16.0.0/12 -j RETURN
-iptables -t nat -A FEDPROXY -d 192.168.0.0/16 -j RETURN
-
-# Skip proxy for fedproxy, tor, i2p, and lokinet hosts
-iptables -t nat -A FEDPROXY -d $TOR_PROXY_HOST -j RETURN
-iptables -t nat -A FEDPROXY -d $I2P_PROXY_HOST -j RETURN
-# iptables -t nat -A FEDPROXY -d $LOKINET_PROXY_HOST -j RETURN
-
-# Route ALL TCP traffic through redsocks
-iptables -t nat -A FEDPROXY -p tcp -j REDIRECT --to-port 12347
-
-# Apply the chain to all outgoing traffic
-iptables -t nat -A OUTPUT -p tcp -j FEDPROXY
-
-echo "Transparent proxying enabled. All traffic will be routed through redsocks -> Dante -> fedproxy."
 
 # Give services a moment to start
 sleep 2
 
-# --- Verify fedproxy connectivity to different networks ---
-verify_fedproxy_connectivity() {
+# Test Tor WebSocket connectivity with websocat
+test_tor_ws_with_websocat() {
   echo "═════════════════════════════════════════════"
-  echo "Verifying fedproxy connectivity to anonymous networks..."
+  echo "Testing Tor WebSocket connectivity with websocat..."
   echo "═════════════════════════════════════════════"
-  echo "This test verifies that fedproxy can connect to Tor, I2P, and"
+
+  # Verify websocat is available
+  if ! command -v websocat &> /dev/null; then
+    echo "❌ ERROR: websocat not found! It should be installed in the Dockerfile."
+    return 1
+  fi
+
+  # Resolve Tor proxy hostname to IP address
+  echo "Resolving $TOR_PROXY_HOST..."
+  TOR_PROXY_IP=$(getent hosts $TOR_PROXY_HOST | awk '{ print $1 }')
+
+  if [ -z "$TOR_PROXY_IP" ]; then
+    echo "❌ ERROR: Could not resolve IP address for $TOR_PROXY_HOST"
+    return 1
+  fi
+  echo "Resolved $TOR_PROXY_HOST to $TOR_PROXY_IP"
+
+  # Set up test parameters
+  local timeout=30 # Keep the increased timeout
+  local success=false
+
+  # List of Tor onion relays to test
+  local tor_relays=(
+    "ws://oxtrdevav64z64yb7x6rjg4ntzqjhedm5b5zjqulugknhzr46ny2qbad.onion"
+    "ws://2jsnlhfnelig5acq6iacydmzdbdmg7xwunm4xl6qwbvzacw4lwrjmlyd.onion"
+    "ws://nostrland2gdw7g3y77ctftovvil76vquipymo7tsctlxpiwknevzfid.onion"
+  )
+
+  echo "Testing WebSocket connections to Tor onion relays using IP $TOR_PROXY_IP..."
+
+  for relay in "${tor_relays[@]}"; do
+    echo "  • Testing connection to $relay..."
+    echo "DEBUG: Using SOCKS Proxy='${TOR_PROXY_IP}:${TOR_SOCKS_PORT}'" # Updated DEBUG line
+
+    # Use the resolved IP address instead of the hostname
+    if websocat -v --socks5 "${TOR_PROXY_IP}:${TOR_SOCKS_PORT}" "$relay" -1 </dev/null > /dev/null; then
+      echo "✅ Successfully connected to WebSocket relay: $relay"
+      success=true
+      break
+    else
+      echo "❌ Failed to connect to WebSocket relay: $relay"
+    fi
+  done
+
+  echo "═════════════════════════════════════════════"
+  if [ "$success" = "true" ]; then
+    echo "✅ Tor WebSocket connectivity test PASSED"
+  else
+    echo "❌ Tor WebSocket connectivity test FAILED"
+    echo "This means WebSocket connections to .onion services will likely fail."
+    echo "Check Tor configuration and connectivity."
+  fi
+  echo "═════════════════════════════════════════════"
+}
+
+# --- Verify hedproxy connectivity to different networks ---
+verify_hedproxy_connectivity() {
+  echo "═════════════════════════════════════════════"
+  echo "Verifying hedproxy connectivity to anonymous networks..."
+  echo "═════════════════════════════════════════════"
+  echo "This test verifies that hedproxy can connect to Tor, I2P, and"
   echo "Lokinet networks. It attempts to connect to known services on"
-  echo "each network through the fedproxy SOCKS5 proxy."
+  echo "each network through the hedproxy SOCKS5 proxy."
   echo ""
   echo "Usage:"
   echo "  • Run verification at startup: VERIFY_CONNECTIVITY=true"
@@ -206,12 +197,12 @@ verify_fedproxy_connectivity() {
   
   # Check Tor connectivity
   echo "─────────────────────────────────────────────"
-  echo "Testing Tor connectivity via fedproxy..."
+  echo "Testing Tor connectivity via hedproxy..."
   echo "─────────────────────────────────────────────"
   
   local tor_success=false
   for domain in "${tor_domains[@]}"; do
-    if test_domain "socks5" "127.0.0.1:$FEDPROXY_PORT" "$domain" "$timeout"; then
+    if test_domain "socks5" "127.0.0.1:$HEDPROXY_PORT" "$domain" "$timeout"; then
       tor_success=true
       echo "✅ Successfully connected to Tor onion service: $domain"
       break
@@ -224,26 +215,26 @@ verify_fedproxy_connectivity() {
     echo "  • Checking direct Tor connection..."
     for domain in "${tor_domains[@]}"; do
       if test_domain "socks5" "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" "$domain" "$timeout"; then
-        echo "    ✓ Direct Tor connection works for $domain (issue is with fedproxy)"
+        echo "    ✓ Direct Tor connection works for $domain (issue is with hedproxy)"
         break
       fi
     done
     
     echo "  • Displaying network configuration:"
     echo "    - Tor proxy: $TOR_PROXY_HOST:$TOR_SOCKS_PORT"
-    echo "    - Fedproxy port: $FEDPROXY_PORT"
+    echo "    - Hedproxy port: $HEDPROXY_PORT"
     echo "    - HTTP_PROXY: $HTTP_PROXY"
     exit_code=1
   fi
   
   # Check I2P connectivity
   echo "─────────────────────────────────────────────"
-  echo "Testing I2P connectivity via fedproxy..."
+  echo "Testing I2P connectivity via hedproxy..."
   echo "─────────────────────────────────────────────"
   
   local i2p_success=false
   for domain in "${i2p_domains[@]}"; do
-    if test_domain "socks5" "127.0.0.1:$FEDPROXY_PORT" "$domain" "$timeout"; then
+    if test_domain "socks5" "127.0.0.1:$HEDPROXY_PORT" "$domain" "$timeout"; then
       i2p_success=true
       echo "✅ Successfully connected to I2P service: $domain"
       break
@@ -259,7 +250,7 @@ verify_fedproxy_connectivity() {
       echo "  • Checking direct I2P HTTP proxy connection..."
       for domain in "${i2p_domains[@]}"; do
         if test_domain "http" "$I2P_PROXY_HOST:4444" "$domain" "$timeout"; then
-          echo "    ✓ Direct I2P HTTP proxy works for $domain (issue is with fedproxy)"
+          echo "    ✓ Direct I2P HTTP proxy works for $domain (issue is with hedproxy)"
           break
         fi
       done
@@ -269,7 +260,7 @@ verify_fedproxy_connectivity() {
     
     echo "  • Displaying network configuration:"
     echo "    - I2P SAM bridge: $I2P_PROXY_HOST:$I2P_SAM_PORT"
-    echo "    - Fedproxy port: $FEDPROXY_PORT"
+    echo "    - Hedproxy port: $HEDPROXY_PORT"
     echo "    - HTTP_PROXY: $HTTP_PROXY"
     exit_code=1
   fi
@@ -277,12 +268,12 @@ verify_fedproxy_connectivity() {
   # Check Lokinet connectivity if enabled
   if nc -z $LOKINET_PROXY_HOST $LOKINET_SOCKS_PORT 2>/dev/null; then
     echo "─────────────────────────────────────────────"
-    echo "Testing Lokinet connectivity via fedproxy..."
+    echo "Testing Lokinet connectivity via hedproxy..."
     echo "─────────────────────────────────────────────"
     
     local lokinet_success=false
     for domain in "${lokinet_domains[@]}"; do
-      if test_domain "socks5" "127.0.0.1:$FEDPROXY_PORT" "$domain" "$timeout"; then
+      if test_domain "socks5" "127.0.0.1:$HEDPROXY_PORT" "$domain" "$timeout"; then
         lokinet_success=true
         echo "✅ Successfully connected to Lokinet service: $domain"
         break
@@ -295,14 +286,14 @@ verify_fedproxy_connectivity() {
       echo "  • Checking direct Lokinet connection..."
       for domain in "${lokinet_domains[@]}"; do
         if test_domain "socks5" "$LOKINET_PROXY_HOST:$LOKINET_SOCKS_PORT" "$domain" "$timeout"; then
-          echo "    ✓ Direct Lokinet connection works for $domain (issue is with fedproxy)"
+          echo "    ✓ Direct Lokinet connection works for $domain (issue is with hedproxy)"
           break
         fi
       done
       
       echo "  • Displaying network configuration:"
       echo "    - Lokinet proxy: $LOKINET_PROXY_HOST:$LOKINET_SOCKS_PORT"
-      echo "    - Fedproxy port: $FEDPROXY_PORT"
+      echo "    - Hedproxy port: $HEDPROXY_PORT"
       echo "    - HTTP_PROXY: $HTTP_PROXY"
       exit_code=1
     fi
@@ -326,27 +317,35 @@ verify_fedproxy_connectivity() {
     fi
   fi
   echo "═════════════════════════════════════════════"
-  
+
   return $exit_code
 }
 
 # Run connectivity verification
 if [ "${VERIFY_CONNECTIVITY}" != "false" ] || [ "$VERIFY_ONLY" = "true" ]; then
-  verify_fedproxy_connectivity
+  verify_hedproxy_connectivity
+  sleep 5
 fi
+
+test_tor_ws_with_websocat
+sleep 5
+
+# Skipping transparent proxy test
+echo "Skipping transparent proxy test. Will use proxychains4 instead."
+sleep 5
 
 # If only verification was requested, exit now
 if [ "$VERIFY_ONLY" = "true" ]; then
   echo "Network verification complete, exiting as requested."
-  # Kill fedproxy before exiting
-  if [ -n "$FEDPROXY_PID" ]; then
-    kill $FEDPROXY_PID 2>/dev/null || true
+  # Kill hedproxy before exiting
+  if [ -n "$HEDPROXY_PID" ]; then
+    kill $HEDPROXY_PID 2>/dev/null || true
   fi
   exit 0
 fi
 
 # --- Execute Application ---
 echo "Starting RelayMon application..."
-echo "Executing: deno run ... index.ts ${APP_ARGS[*]}"
+echo "Executing with proxychains4: proxychains4 -f /etc/proxychains.conf deno run ... index.ts ${APP_ARGS[*]}"
 cd /app/nostr-watch/apps/relaymon
-exec deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run index.ts -c /opt/config.yaml "${APP_ARGS[@]}" 
+exec proxychains4 -f /etc/proxychains.conf deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run index.ts -c /opt/config.yaml "${APP_ARGS[@]}"

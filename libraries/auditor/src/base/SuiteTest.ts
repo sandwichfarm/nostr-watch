@@ -197,9 +197,9 @@ export abstract class SuiteTest implements ISuiteTest {
     this.suite.testKey = this.slug
 
     if(this.suite.requires.includes('websocket')) {
-      await this.socket.connect();
       this.suite.setupHandlers();
-      this.newSubId();
+      await this.socket.connect();
+      this.newSubId();  
     }
     
     this.timeoutBegin();

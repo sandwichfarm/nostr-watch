@@ -68,7 +68,7 @@ export async function deleteRelayCheckEvent(
     const pubkey = getPublicKey(privkey);
     
     // Check if config has publish relays
-    if (!config.publisher?.relays || !Array.isArray(config.publisher.relays) || config.publisher.relays.length === 0) {
+    if (!config.monitor?.relays || !Array.isArray(config.monitor.relays) || config.monitor.relays.length === 0) {
       logger.warn("Publisher relay list is missing; skipping deletion.");
       return;
     }
@@ -94,7 +94,7 @@ export async function deleteRelayCheckEvent(
       queueManager.addPublishJob(async () => {
         try {
           // Create a publisher instance for this job
-          const publisher = new Publisher(pubkey, config.publisher.relays);
+          const publisher = new Publisher(pubkey, config.monitor.relays);
           await publisher.publishEvent(signedEvent);
           logger.info(`Queued deletion event for relay ${relayUrl} using a-tag`);
           
@@ -107,7 +107,7 @@ export async function deleteRelayCheckEvent(
       });
     } else {
       // Fallback to direct publishing if no queue manager is available
-      const publisher = new Publisher(pubkey, config.publisher.relays);
+      const publisher = new Publisher(pubkey, config.monitor.relays);
       await publisher.publishEvent(signedEvent);
       
       // Add to the set of deleted relays

@@ -280,7 +280,7 @@ export class Kind30166 extends Event {
       tags = [...tags, ...ispTags, ...geoTags]
     }
     
-    tags.push(['l', 'draft7', 'route66.draft'])
+    tags.push(['l', 'draft7', 'nip66.draft'])
 
     return tags
   }

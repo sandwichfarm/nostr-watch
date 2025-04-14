@@ -1,30 +1,52 @@
 import { getLogger, LogLevel } from "./logger.ts";
 import { AnnounceMonitor } from "npm:@nostrwatch/announce";
 import { getPublicKey } from "npm:nostr-tools";
+import { type QueueManager } from "./queueManager.ts";
+import { timeString } from "../config/config.ts";
 
 const logger = getLogger("Announce");
 
-export async function maybeAnnounce(config: any, queueManager?: any): Promise<void> {
+export async function maybeAnnounce(config: any, queueManager?: QueueManager): Promise<void> {
   if (!config.monitor || !config.monitor.info) {
     logger.warn("Monitor metadata is missing; skipping announcement.");
     return;
   }
-  if (!config.publisher?.relays || !Array.isArray(config.publisher.relays) || config.publisher.relays.length === 0) {
+  if (!config.announce?.relays || !Array.isArray(config.announce.relays) || config.announce.relays.length === 0) {
     logger.warn("Publisher relay list is missing; skipping announcement.");
     return;
   }
 
-  const announcer = new AnnounceMonitor({
-    slug: config.monitor.slug,
-    name: config.monitor.info.name,
-    about: config.monitor.info.about,
-    nip05: config.monitor.info.nip05,
-    owner: config.monitor.owner,
-    geo: config.monitor.geo,
-  }, getPublicKey(Deno.env.get("DAEMON_PRIVKEY")));
+  const { info: profile, owner, geo, relays } = config.monitor
+  const { userDataRelays } = config.announce?.relays || []
+  const { networks } = config.relaymon || []
+  const { expires, timeout: timeouts, checks } = config.relaymon?.checks?.options || {}
 
-  const privkey = Deno.env.get("DAEMON_PRIVKEY");
-  if (!privkey) {
+  if(!expires) throw new Error("Announce frequency is not set")
+
+  const frequency = (Math.round(timeString(expires)/1000)).toString()
+
+
+  const sk = Deno.env.get("DAEMON_PRIVKEY");
+  const pk = getPublicKey(sk)
+
+  const announcer = new AnnounceMonitor( 
+    pk, 
+    { 
+      profile, 
+      owner, 
+      geo, 
+      relays, 
+      networks,
+      timeouts,
+      frequency,
+      checks,
+
+      userDataRelays
+    } 
+  );
+
+  
+  if (!sk) {
     logger.error("Missing DAEMON_PRIVKEY; cannot sign announcement.");
     return;
   }
@@ -32,9 +54,9 @@ export async function maybeAnnounce(config: any, queueManager?: any): Promise<vo
   announcer.generate();
 
   try {
-    announcer.sign(privkey);
-  } catch (error) {
-    logger.error("Error signing announcement: " + error.message);
+    await announcer.sign(sk);
+  } catch (error: any) {
+    logger.error("Error signing announcement: " + error?.message);
     return;
   }
 
@@ -43,7 +65,7 @@ export async function maybeAnnounce(config: any, queueManager?: any): Promise<vo
       // Use the queue manager to publish the announcement
       queueManager.addPublishJob(async () => {
         try {
-          const result = await announcer.publish();
+          await announcer.publish();
           logger.info("Monitor announcement published successfully via queue.");
         } catch (error: any) {
           logger.error("Failed to publish monitor announcement via queue: " + error.message);
@@ -53,7 +75,7 @@ export async function maybeAnnounce(config: any, queueManager?: any): Promise<vo
       logger.info("Added monitor announcement to publish queue.");
     } else {
       // Fallback to direct publishing if no queue manager is available
-      const result = await announcer.publish();
+      await announcer.publish();
       logger.info("Monitor announcement published successfully.");
     }
   } catch (error: any) {

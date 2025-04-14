@@ -18,6 +18,13 @@ export const trawlerStats = {
   // Session stats
   sessionStart: Date.now(),
   lastUpdateTime: Date.now(),
+
+  // Queue stats
+  persistQueue: {
+    active: 0,
+    size: 0,
+    completed: 0
+  },
   
   // Reset stats for a new session
   reset: () => {
@@ -28,6 +35,9 @@ export const trawlerStats = {
     trawlerStats.uniqueRelaysFound.clear();
     trawlerStats.sessionStart = Date.now();
     trawlerStats.lastUpdateTime = Date.now();
+    trawlerStats.persistQueue.active = 0;
+    trawlerStats.persistQueue.size = 0;
+    trawlerStats.persistQueue.completed = 0;
   }
 };
 
@@ -48,6 +58,13 @@ interface TrawlerStatusData {
   runtime: string;
   eventsPerMinute: number;
   timeSinceLastEvent: string;
+
+  // Queue stats
+  persistQueue: {
+    active: number;
+    size: number;
+    completed: number;
+  }
 }
 
 /**
@@ -92,7 +109,12 @@ function getStatusData(): TrawlerStatusData {
     uniqueRelaysFound: trawlerStats.uniqueRelaysFound.size,
     runtime,
     eventsPerMinute,
-    timeSinceLastEvent
+    timeSinceLastEvent,
+    persistQueue: {
+      active: trawlerStats.persistQueue.active,
+      size: trawlerStats.persistQueue.size,
+      completed: trawlerStats.persistQueue.completed
+    }
   };
 }
 
@@ -115,7 +137,7 @@ export function createAsciiBox(): string {
   };
   
   // Box dimensions
-  const boxWidth = 70;
+  const boxWidth = 110;
   const columnWidth = Math.floor((boxWidth - 4) / 2);
   const titleText = ' NOSTR TRAWLER STATUS ';
   const titlePadding = Math.floor((boxWidth - 2 - titleText.length) / 2);
@@ -138,8 +160,8 @@ export function createAsciiBox(): string {
   
   // Headers for the two columns
   const eventsHeader = `${header('EVENTS')}`;
-  const relaysHeader = `${header('RELAYS')}`;
-  
+  const relaysHeader = `${header('SESSION')}`;
+  const queueHeader = `${header('QUEUE')}`;
   // Create a header row with exact width
   let headerContent = '';
   
@@ -147,8 +169,11 @@ export function createAsciiBox(): string {
   headerContent += ` ${eventsHeader}${' '.repeat(Math.max(0, columnWidth - strLength(eventsHeader) - 1))}`;
   
   // For the last column
-  const remainingHeaderWidth = (boxWidth - 2) - strLength(headerContent) - strLength(relaysHeader) - 1;
-  headerContent += `${relaysHeader}${' '.repeat(Math.max(0, remainingHeaderWidth))}`;
+  const col2width = (boxWidth - 2) - strLength(headerContent) - strLength(relaysHeader) - 1;
+  headerContent += `${relaysHeader}${' '.repeat(Math.max(0, col2width))}`;
+
+  const col3width = (boxWidth - 2) - strLength(headerContent) - strLength(queueHeader) - 1;
+  headerContent += `${queueHeader}${' '.repeat(Math.max(0, col3width))}`;
   
   // Add headers row
   box += `║${headerContent} ║\n`;
@@ -187,6 +212,12 @@ export function createAsciiBox(): string {
     { key: 'Unique Relays:', value: padValue(stats.uniqueRelaysFound), highlight: true },
     { key: 'Runtime:', value: stats.runtime }
   ];
+
+  const queueData: StatsItem[] = [
+    { key: 'Queue Active:', value: padValue(stats.persistQueue.active), highlight: stats.persistQueue.active > 0 },
+    { key: 'Queue Size:', value: padValue(stats.persistQueue.size), highlight: true },
+    { key: 'Queue Completed:', value: padValue(stats.persistQueue.completed), highlight: stats.persistQueue.completed > 0 },
+  ];
   
   // Find the max number of rows needed
   const maxRows = Math.max(eventsData.length, relaysData.length);
@@ -198,7 +229,7 @@ export function createAsciiBox(): string {
   
   const eventsKeyLength = findLongestKey(eventsData);
   const relaysKeyLength = findLongestKey(relaysData);
-  
+  const queueKeyLength = findLongestKey(queueData);
   // Generate rows for the tables
   for (let i = 0; i < maxRows; i++) {
     let rowContent = '';
@@ -223,6 +254,21 @@ export function createAsciiBox(): string {
       const formattedValue = item.warning ? 
         warning(item.value) : 
         (item.highlight ? highlight(item.value) : value(item.value));
+      const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
+      // Make sure we pad exactly to the remaining width to ensure straight right border
+      const remainingWidth = (boxWidth - 2) - strLength(rowContent) - strLength(cellContent) - 1;
+      rowContent += `${cellContent}${' '.repeat(Math.max(0, remainingWidth))}`;
+    } else {
+      // Fill the remaining width exactly
+      const remainingWidth = (boxWidth - 2) - strLength(rowContent);
+      rowContent += ' '.repeat(Math.max(0, remainingWidth));
+    }
+
+    // Queue column
+    if (i < queueData.length) {
+      const item = queueData[i];
+      const keyPadding = ' '.repeat(queueKeyLength - strLength(item.key));
+      const formattedValue = item.warning ? warning(item.value) : (item.highlight ? highlight(item.value) : value(item.value));
       const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
       // Make sure we pad exactly to the remaining width to ensure straight right border
       const remainingWidth = (boxWidth - 2) - strLength(rowContent) - strLength(cellContent) - 1;

@@ -22,6 +22,7 @@ try {
     dbPath: config.trawler.db?.path,
     enableWAL: config.trawler.db?.enableWAL,
     nostrawlOptions: {
+      relaysPerBatch: config?.trawler?.relaysPerBatch || 10,
       adapterOptions: {
         concurrency: config.trawler.concurrency || 2
       }

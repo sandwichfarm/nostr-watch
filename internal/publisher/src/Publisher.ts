@@ -11,7 +11,7 @@ export class Publisher {
   event: any = null;
   pubkey: string;
   logger: Logger;
-  relays: string[];
+  public relays: string[];
   ws: any;
   pool = new SimplePool();
 
@@ -21,14 +21,14 @@ export class Publisher {
     this.relays = relays;
   }
 
-  async publishEvent(signedEvent: any): Promise<any[]> {
+  async publishEvent(signedEvent: any): Promise<any> {
     return Promise.any(this.pool.publish(this.relays, signedEvent))
       .then((publish: any) => {
         return publish;
       })
       .catch((err: any) => {
-        console.log('err', err)
-        return [];
+        console.log('err', err);
+        throw err;
       })
   }
 

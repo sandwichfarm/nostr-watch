@@ -21,7 +21,8 @@ export function initDB(dbPath: string = DEFAULT_DB_PATH, enableWAL: boolean = tr
   if (enableWAL) {
     logger.info("Enabling WAL (Write-Ahead Logging) mode for improved performance");
     db.query(`PRAGMA journal_mode = WAL;`);
-    db.query(`PRAGMA synchronous = NORMAL;`); // Reduces synchronization overhead
+    db.query(`PRAGMA synchronous = normal;`); // Reduces synchronization overhead
+    db.query(`PRAGMA journal_size_limit = 10485760;`); // 10MB
     db.query(`PRAGMA busy_timeout = 5000;`); // Wait up to 5 seconds when the database is busy
   }
   
@@ -214,23 +215,22 @@ export function incrementRetryCount(url: string): void {
 }
 
 export function seedNewRelay(url: string, network: string): boolean {
-  // First check if the relay exists
-  const exists = db.query("SELECT 1 FROM relay_status WHERE url = ?", [url]).length > 0;
-  
-  if (!exists) {
-    db.query(
-      `
-      INSERT INTO relay_status (url, online, ignore, parent, checked_at, rtt, network, retries)
-      VALUES (?, 0, 0, '', -1, -1, ?, 0)
-      `,
-      [url, network]
-    );
-    logger.debug(`Seeded new relay: ${url}`);
-    return true;
-  } else {
-    // logger.debug(`Skipping existing relay during seeding: ${url}`);
-    return false;
+  return db.query(
+    `
+    INSERT INTO relay_status (url, online, ignore, parent, checked_at, rtt, network, retries)
+    VALUES (?, 0, 0, '', -1, -1, ?, 0)
+    ON CONFLICT(url) DO NOTHING
+    `,
+    [url, network]
+  );
+}
+
+export function getAllRelays(): Set<string> {
+  const onlineRelays: Set<string> = new Set();
+  for (const [url] of db.query("SELECT url FROM relay_status")) {
+    onlineRelays.add(url as string);
   }
+  return onlineRelays;
 }
 
 export function getOnlineRelays(): string[] {

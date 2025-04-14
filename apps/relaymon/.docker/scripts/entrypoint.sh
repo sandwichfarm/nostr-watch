@@ -65,7 +65,9 @@ fi
 echo "Starting hedproxy for network operations..."
 
 # Run hedproxy in the background with debug logging
+# hedproxy <proto> <bind> <...options>
 hedproxy -proto socks -bind "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SAM_PORT" -passthrough clearnet &
+# hedproxy socks "0.0.0.0:$HEDPROXY_PORT" -tor "$TOR_PROXY_HOST:$TOR_SOCKS_PORT" -i2p "$I2P_PROXY_HOST:$I2P_SAM_PORT" -passthrough clearnet -logLevel SILENT &
 HEDPROXY_PID=$!
 
 # Verify hedproxy is listening
@@ -330,10 +332,6 @@ fi
 test_tor_ws_with_websocat
 sleep 5
 
-# Skipping transparent proxy test
-echo "Skipping transparent proxy test. Will use proxychains4 instead."
-sleep 5
-
 # If only verification was requested, exit now
 if [ "$VERIFY_ONLY" = "true" ]; then
   echo "Network verification complete, exiting as requested."
@@ -348,4 +346,4 @@ fi
 echo "Starting RelayMon application..."
 echo "Executing with proxychains4: proxychains4 -f /etc/proxychains.conf deno run ... index.ts ${APP_ARGS[*]}"
 cd /app/nostr-watch/apps/relaymon
-exec proxychains4 -f /etc/proxychains.conf deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run index.ts -c /opt/config.yaml "${APP_ARGS[@]}"
+exec proxychains4 -f /etc/proxychains.conf deno run --env-file=/app/.env --unstable-sloppy-imports --allow-all index.ts -c /opt/config.yaml "${APP_ARGS[@]}"

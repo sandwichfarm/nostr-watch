@@ -6,17 +6,20 @@ interface AnnounceMonitorOptions {
     checks?: string[];
     owner?: string;
     frequency?: string;
-    relays?: string[];
     profile?: object;
+    relays?: string[];
+    userDataRelays?: string[];
 }
 export declare class AnnounceMonitor {
     events?: any;
     monReg?: any;
     monRelays: string[];
+    userDataRelays: string[];
     monProfile: any;
-    private publisher;
+    private nip66Publisher;
+    private userMetaPublisher;
     private pubkey;
-    constructor(options: AnnounceMonitorOptions, pubkey: string);
+    constructor(pubkey: string, options: AnnounceMonitorOptions);
     setup(options: AnnounceMonitorOptions): void;
     static formatChecks(checks: Array<string>): Array<string>;
     generate(): any;

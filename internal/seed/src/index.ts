@@ -17,12 +17,12 @@ export interface SeederOptions {
   interval: number;
   sources: string[];
   options: {
-    allowedNetworks?: string[];
     db?: { path: string; enableWAL?: boolean };
     static?: { path: string };
     config?: string[];
     api?: { rest_api: string };
     events?: { pubkeys: string[]; relays: string[] };
+    allowedNetworks?: string[];
     logLevel?: LogLevel;
     isRelayBlocked?: (relay: string) => boolean;
   };
@@ -66,7 +66,7 @@ export class RelaySeeder {
     return this.lastSeedTimestamps;
   }
 
-  async seed(): Promise<void> {
+  async seed(): Promise<string[]> {
     let seeds: string[] = [];
     const timestamps: Record<string, number> = {};
 
@@ -134,6 +134,11 @@ export class RelaySeeder {
         }
       }
 
+      if(!seeds.length) {
+        this.logger.warn("No seeds found, skipping seeding");
+        return [];
+      }
+
       // Add all found relay URLs to the set
       for (const url of seeds) {
         try {
@@ -158,53 +163,38 @@ export class RelaySeeder {
 
       // Only persist new relays
       let newRelaysCount = 0;
-      for (const relay of this.relayList) {
+      const relays = Array.from(this.relayList).filter(relay => {
         try {
           // Check if the relay is blocked by the passed block function
           if (this.isRelayBlocked(relay)) {
             this.logger.debug(`Skipping relay ${relay} - blocked by isRelayBlocked function`);
-            continue;
+            return;
           }
           
           // Use parseRelayNetwork to determine the correct network for this relay URL
-          let detectedNetwork = "clearnet"; // Default
+          let detectedNetwork;
           try {
             detectedNetwork = parseRelayNetwork(relay);
           } catch (parseError) {
             this.logger.warn(`Failed to parse network for ${relay}: ${parseError}. Using '${detectedNetwork}' as fallback.`);
+            return;
           }
           
           // Check if the detected network is in our allowed networks
           if (!this.allowedNetworks.includes(detectedNetwork)) {
             this.logger.debug(`Skipping relay ${relay} - network ${detectedNetwork} not in allowed networks: ${this.allowedNetworks.join(', ')}`);
-            continue;
+            return;
           }
           
-          // Seed with the detected network type
-          if (nostrwatchDB.seedNewRelay(relay, detectedNetwork)) {
-            newRelaysCount++;
-            this.logger.debug(`New relay found and seeded: ${relay} (network: ${detectedNetwork})`);
-          }
         } catch (relayError) {
           this.logger.error(`Error processing relay ${relay}: ${relayError}`);
-          // Continue with other relays
+          return;
         }
-      }
-
-      // Update and save the timestamps
-      for (const method in timestamps) {
-        try {
-          this.lastSeedTimestamps[method] = timestamps[method];
-          nostrwatchDB.saveSeederTimestamp(method, timestamps[method]);
-        } catch (timeError) {
-          this.logger.error(`Error saving timestamp for ${method}: ${timeError}`);
-        }
-      }
-
-      this.logger.debug(`Seeded ${newRelaysCount} new relays out of ${this.relayList.size} total relays.`);
+        return true;
+      }); 
+      return relays
     } catch (error) {
       this.logger.error(`Unhandled error in seed method: ${error}`);
-      // Don't rethrow - allow the application to continue
     }
   }
 
@@ -309,10 +299,10 @@ export class RelaySeeder {
     
     try {
       this.logger.debug('Starting to fetch events...');
-      const events = await fetcher.fetchAllEvents(
+      const events = fetcher.allEventsIterator(
         fetchFromRelays, 
         { kinds, authors }, 
-        { since }
+        { since: Math.round(Date.now() / 1000)-60*60*24 }
       );
 
       const relays: string[] = [];

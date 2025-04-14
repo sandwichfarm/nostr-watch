@@ -57,6 +57,12 @@
       "javascript-time-ago/locale/en": "https://esm.sh/javascript-time-ago@latest/locale/en",
       "websocket-polyfill": "https://esm.sh/websocket-polyfill@latest",
       "bullmq": "https://esm.sh/bullmq@latest",
+      "tseep": "https://esm.sh/tseep@latest",
+      "p-queue": "https://esm.sh/p-queue@latest",
+
+
+      "npm:nostrawl": "/Users/sandwich/Develop/nostrawl/src/index.ts",
+      "nostrawl": "/Users/sandwich/Develop/nostrawl/src/index.ts",
 
       "npm:@nostrwatch/utils": "../../internal/utils/src/index.ts",
       "npm:@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
@@ -67,7 +73,8 @@
       "npm:@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
       "npm:@nostrwatch/db": "../../libraries/db/src/index.ts",
       "npm:@nostrwatch/controlflow": "../../internal/controlflow/src/index.ts",
-      "npm:@nostrwatch/nostrawl": "../../libraries/nostrawl/src/index.js",
+      "npm:@nostrwatch/announce": "../../internal/announce/src/index.ts",
+      
       "npm:@nostrwatch/nostrings": "../../libraries/nostrings/src/index.ts",
       "npm:@nostrwatch/seed": "../../internal/seed/src/index.ts",
 
@@ -84,7 +91,9 @@
       "@nostrwatch/nocap-websocket-adapter-default": "../../libraries/nocap/adapters/default/WebsocketAdapterDefault/src/index.ts",
       "@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
       "@nostrwatch/controlflow": "../../internal/controlflow/src/index.ts",
-      "@nostrwatch/nostrawl": "../../libraries/nostrawl/src/index.js",
+      "@nostrwatch/announce": "../../internal/announce/src/index.ts",
+      "internal/seed": "../../internal/seed/src/index.ts",
+      
       "@nostrwatch/nostrings": "../../libraries/nostrings/src/index.ts",
       "@nostrwatch/seed": "../../internal/seed/src/index.ts",
       "@nostrwatch/db": "../../libraries/db/src/index.ts",
@@ -92,4 +101,4 @@
       "chalk": "https://esm.sh/chalk@latest",
       "timestring": "https://deno.land/x/timestring@v1.0.0/mod.ts"
     }
-} 
+}

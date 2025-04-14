@@ -35,7 +35,7 @@ export class Worker {
     config: any
   ) {
     this.config = config;
-    this.publisher = new Publisher(this.pubkey, config.publisher.relays);
+    this.publisher = new Publisher(this.pubkey, config.monitor.relays);
     this.retryManager = new RetryManager(config.relaymon.retry.expiry);
     this.statusIntval = statuses(this.queueManager, config.relaymon.checks.options.statusInterval);
     

@@ -7,7 +7,7 @@
     "tasks": {
       "interactive": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run interactive.ts",
       "compile": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon index.ts",
-      "start": "deno run --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run index.ts",
+      "start": "deno run --env-file=.env --allow-all --unstable-sloppy-imports index.ts",
       "test": "deno test --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run",
       "link:nocap": "bash -c 'if ! [ -L ./node_modules/@nostrwatch/nocap ]; then ln -sfn /Users/sandwich/Develop/nostr-watch/libraries/nocap ./node_modules/@nostrwatch/nocap; fi'",
       "status": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run src/core/status.ts",
@@ -62,6 +62,7 @@
       "js-yaml": "https://esm.sh/js-yaml@latest",
       "std/flags": "https://deno.land/std@0.218.2/flags/mod.ts",
       "std/fs": "https://deno.land/std@0.218.2/fs/mod.ts",
+      "chalk": "https://esm.sh/chalk@latest",
 
       "npm:@nostrwatch/utils": "../../internal/utils/src/index.ts",
       "npm:@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",
@@ -71,7 +72,7 @@
       "npm:@nostrwatch/logger": "../../internal/logger/src/index.ts",
       "npm:@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
       "npm:@nostrwatch/db": "../../libraries/db/src/index.ts",
-
+      "npm:@nostrwatch/announce": "../../internal/announce/src/index.ts",
 
       "@nostrwatch/nostrings": "../../libraries/nostrings/src/index.ts",
       "@nostrwatch/websocket": "../../libraries/websocket/src/index.ts",
@@ -85,7 +86,8 @@
       "@nostrwatch/nocap-dns-adapter-default": "../../libraries/nocap/adapters/default/DnsAdapterDefault/src/index.ts",
       "@nostrwatch/nocap-geo-adapter-default": "../../libraries/nocap/adapters/default/GeoAdapterDefault/src/index.ts",
       "@nostrwatch/nocap-websocket-adapter-default": "../../libraries/nocap/adapters/default/WebsocketAdapterDefault/src/index.ts",
-      "@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts"
+      "@nostrwatch/publisher-nostrtools": "../../internal/publisher/adapters/NostrTools/src/index.ts",
+      "@nostrwatch/announce": "../../internal/announce/src/index.ts"
     }
 }
   

@@ -23,7 +23,7 @@ export declare class AnnounceMonitor {
     setup(options: AnnounceMonitorOptions): void;
     static formatChecks(checks: Array<string>): Array<string>;
     generate(): any;
-    sign(sk: Uint8Array): any;
+    sign(sk: string): Promise<any>;
     publish(): Promise<string[]>;
     static verify(ev: any): boolean;
 }

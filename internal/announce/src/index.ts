@@ -112,7 +112,7 @@ export class AnnounceMonitor {
     return this.events
   }
 
-  async sign(sk: string): any {
+  async sign(sk: string): Promise<any> {
     if(!this.events) throw new Error("Event has not yet been generated (run generate() first)") 
     Object.values(this.events).forEach( async (event: any) => {  
       this.events[event.kind] = await event.signEvent(sk)

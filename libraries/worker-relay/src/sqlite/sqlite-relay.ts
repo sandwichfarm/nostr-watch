@@ -132,6 +132,26 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     }
   }
 
+  async recreate(){
+    await this.destroy();
+    await this.init(this.db?.filename ?? "");
+  }
+
+  async destroy(){
+    if (this.#pool && this.db) {
+      const root = await navigator.storage.getDirectory();
+      try {
+        this.close();
+      }
+      catch(e: any){
+        console.warn("Failed to close database", e);
+      }
+      finally {
+        await root.removeEntry(this.db.filename);
+      }
+    }
+  }
+
   /**
    * Delete all data
    */

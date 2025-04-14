@@ -69,6 +69,7 @@ export class RelaySeeder {
   async seed(): Promise<string[]> {
     let seeds: string[] = [];
     const timestamps: Record<string, number> = {};
+    let relays: string[] = [];
 
     try {
       // Try each seeding strategy, but don't let individual failures stop the entire process
@@ -163,7 +164,7 @@ export class RelaySeeder {
 
       // Only persist new relays
       let newRelaysCount = 0;
-      const relays = Array.from(this.relayList).filter(relay => {
+      relays = Array.from(this.relayList).filter(relay => {
         try {
           // Check if the relay is blocked by the passed block function
           if (this.isRelayBlocked(relay)) {
@@ -192,10 +193,10 @@ export class RelaySeeder {
         }
         return true;
       }); 
-      return relays
     } catch (error) {
       this.logger.error(`Unhandled error in seed method: ${error}`);
     }
+    return relays
   }
 
   async seedFromConfig(): Promise<[string[], number]> {
@@ -299,7 +300,7 @@ export class RelaySeeder {
     
     try {
       this.logger.debug('Starting to fetch events...');
-      const events = fetcher.allEventsIterator(
+      const events = (fetcher as any).allEventsIterator(
         fetchFromRelays, 
         { kinds, authors }, 
         { since: Math.round(Date.now() / 1000)-60*60*24 }
@@ -369,17 +370,14 @@ export class RelaySeeder {
       const networkStats: Record<string, number> = {};
       
       try {
-        // Use the database to get relay information
         const rows = [...nostrwatchDB.db.query("SELECT url, network FROM relay_status")];
         this.logger.debug(`seedFromDB: Retrieved ${rows.length} relays from database, filtering by network`);
         
-        // Process results and filter by network with better error handling
         for (const row of rows) {
           try {
             const url = row[0] as string;
             const dbNetwork = row[1] as string;
             
-            // Validate the network using parseRelayNetwork with error handling
             let detectedNetwork = "clearnet"; // Default
             try {
               detectedNetwork = parseRelayNetwork(url);
@@ -387,25 +385,19 @@ export class RelaySeeder {
               this.logger.warn(`Failed to parse network for ${url}: ${parseError}. Using '${detectedNetwork}' as fallback.`);
             }
             
-            // Count networks for debugging
             networkStats[detectedNetwork] = (networkStats[detectedNetwork] || 0) + 1;
             
-            // Only include relay if its detected network is in allowed networks
             if (this.allowedNetworks.includes(detectedNetwork)) {
               relays.push(url);
             }
             
-            // Log a warning if the stored network doesn't match the detected network
             if (dbNetwork !== detectedNetwork) {
               this.logger.debug(`Network mismatch for ${url}: stored as ${dbNetwork}, detected as ${detectedNetwork}`);
             }
           } catch (rowError) {
             this.logger.error(`Error processing row: ${rowError}`);
-            // Continue processing other rows
           }
         }
-        
-        // Log network statistics
         this.logger.debug(`Network distribution of retrieved relays: ${JSON.stringify(networkStats)}`);
         this.logger.debug(`seedFromDB: Filtered to ${relays.length} relays matching networks: ${this.allowedNetworks.join(', ')}`);
         return [relays, nostrNow()];

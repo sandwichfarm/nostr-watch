@@ -42,7 +42,7 @@
         {#if subtitle}
             <span class="ml-3 text-lg block">{@html subtitle}</span>
         {/if}
-        
+        <slot />
       </div>
     </div>
   </div>

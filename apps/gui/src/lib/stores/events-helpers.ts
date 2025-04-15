@@ -23,6 +23,14 @@ const testingUniques = new Set<string>();
 
 export const publishEventsToMemoryRelay = async (_events: IEvent[], from?: string) => {
     // if(from) console.log(`Memory Relay: Publishing ${_events.length} events to memory relay from ${from}`, deterministicHash(_events.map(eventKey)), _events);
+    if(!_events || _events.length === 0) {
+        console.error("No events to publish to memory relay", _events);
+        return
+    }
+    const torEvent = _events.filter(event => event.kind === 30166).find(event => event.tags.find(tag => tag[0] === 'n' && tag[1] === 'tor'));
+    if(torEvent) {
+        console.log("TOR EVENT", torEvent);
+    }
     if(!_events?.length) return;
     const key = deterministicHash(_events.map( event => event.id));
     if(testingUniques.has(key)) return 

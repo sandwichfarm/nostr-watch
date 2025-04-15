@@ -20,7 +20,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
    * Initialize the SQLite driver
    */
   async init(path: string) {
-    console.log('WebAssembly.instantiateStreaming', typeof WebAssembly?.instantiateStreaming !== undefined ? 'Supported' : 'Not Supported');
+    this.#log('WebAssembly.instantiateStreaming', typeof WebAssembly?.instantiateStreaming !== undefined ? 'Supported' : 'Not Supported');
     if (this.#sqlite) return;
     this.#sqlite = await sqlite3InitModule({
       locateFile: (path, prefix) => {
@@ -351,6 +351,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
 
     const [sql, params] = this.#buildQuery(req);
     const res = this.db?.selectArrays(sql, params);
+    
     if(!res?.length) return [];
     const results =
       res?.map(a => {
@@ -373,6 +374,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
    * Count results by nostr filter
    */
   count(req: ReqFilter) {
+
     const start = unixNowMs();
     const [sql, params] = this.#buildQuery(req, true);
     const rows = this.db?.exec(sql, {
@@ -380,6 +382,7 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
       returnValue: "resultRows",
     });
     const results = (rows?.at(0)?.at(0) as number | undefined) ?? 0;
+
     const time = unixNowMs() - start;
     this.#log(`Query count results took ${time.toLocaleString()}ms`);
     return results;
@@ -463,6 +466,16 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
       params.push(key.slice(1));
       params.push(...vArray);
       tx++;
+    }
+    const andTags = Object.entries(req).filter(([k]) => k.startsWith("&"));
+    for (const [key, values] of andTags) {
+      const vArray = values as Array<string>;
+      for (const value of vArray) {
+        sql += ` inner join tags t_${tx} on events.id = t_${tx}.event_id and t_${tx}.key = ? and t_${tx}.value = ?`;
+        params.push(key.slice(1));
+        params.push(value);
+        tx++;
+      }
     }
     if (req.search) {
       sql += " inner join search_content on search_content.id = events.id";

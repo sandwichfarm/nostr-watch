@@ -144,6 +144,9 @@
         addDebug('cacheAdapter:count1111', await $route66?.cacheAdapter?.COUNT([{ kinds: [1111]}]));
         addDebug('cacheAdapter:9735,9321', await $route66?.cacheAdapter?.COUNT([{ kinds: [9735, 9321] }]));
 
+        addDebug('cacheAdapter:tor', await $route66?.cacheAdapter?.COUNT([{ "#n": ["tor"] }]));
+        addDebug('cacheAdapter:clearnet', await $route66?.cacheAdapter?.COUNT([{ "#n": ["clearnet"] }]));
+
         addDebug('cacheAdapter:nip11s', await $route66?.cacheAdapter?.countNip11s());
         addDebug('cacheAdapter:nip11sUnique', await $route66?.cacheAdapter?.countUniqueNip11s());
     }

@@ -20,13 +20,14 @@ setGlobalLogLevel(LogLevel.DEBUG);
 let RELAYS = [
   'wss://purplepag.es',
   'wss://user.kindpag.es',
-  'wss://relay.damus.io',
-  'wss://relay.nostr.band',
-  'wss://nos.lol',
-  'wss://nostrue.com',
-  'wss://relay.primal.net',
-  'wss://relay.snort.social',
-  'cache2.primal.net/v1'
+  'wss://relaydiscovery.com'
+  // 'wss://relay.damus.io',
+  // 'wss://relay.nostr.band',
+  // 'wss://nos.lol',
+  // 'wss://nostrue.com',
+  // 'wss://relay.primal.net',
+  // 'wss://relay.snort.social',
+  // 'cache2.primal.net/v1'
 ];
 
 function dropProcessedEventsTable(): void {
@@ -64,12 +65,13 @@ function processRelayList(event: any ): Promise<void> {
           return false;
         }
         seedNewRelay(relay.url, relay.network);
-        trawlerStats.uniqueRelaysFound.add(relay.url);
         allRelays.add(relay.url);
+        return true;
       });
 
       if (newRelays.length > 0) {
         trawlerStats.newRelaysFound += newRelays.length;
+        trawlerStats.uniqueRelaysFound.add(relay.url);
         logger.info(`Found ${newRelays.length} new relays: ${newRelays.map(relay => relay.url).join(', ')} | ${formatCompactStats()}`);
       }
       trawlerStats.persistQueue.completed += 1;
@@ -127,11 +129,11 @@ export const trawl = async (options: TrawlOptions = {}) => {
 
   const config = await loadConfig();
   // Deno.exit(0)
-  if(config?.seed) {
-    const seeder = new RelaySeeder(config.seed)
-    RELAYS = [ ...RELAYS, ...(await seeder.seed())] 
-    logger.info(`trawling ${RELAYS.length} relays`)
-  }
+  // if(config?.seed) {
+  //   const seeder = new RelaySeeder(config.seed)
+  //   RELAYS = [ ...RELAYS, ...(await seeder.seed())] 
+  //   logger.info(`trawling ${RELAYS.length} relays`)
+  // }
   
   setupStatusReporting(30);
   

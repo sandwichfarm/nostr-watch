@@ -34,6 +34,7 @@
       data={operatorRelayAggregates as Readable<any[]>} 
       {config} 
       key={dataKey} 
+      enableFilters={false}
       bind:activeView
       />
   {:else}

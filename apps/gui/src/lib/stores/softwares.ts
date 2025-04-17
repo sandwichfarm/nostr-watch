@@ -6,6 +6,7 @@ import { relayCheckAggregates } from './checks.js';
 import { doAggregateCache } from './app.js';
 import type { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import { deterministicHash } from '@nostrwatch/route66/utils';
+import type { Pubkey } from '$lib/models/User.js';
 
 export const softwareKey = (software: string) => {
   return software?.toLowerCase()
@@ -149,8 +150,7 @@ export const ispsBySoftware: Readable<Map<string, Set<string>>> = derived(relayC
 })
 
 export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($softwareOperatorPubkeysMap) => {
-  const operatorSoftware: MapStringSet = new Map<string, Set<string>>();
-
+  const operatorSoftware: MapStringSet = new Map<Pubkey, Set<string>>();
   $softwareOperatorPubkeysMap.forEach((pubkeys, software) => {
     pubkeys.forEach((pubkey) => {
       if (!operatorSoftware.has(pubkey)) {
@@ -161,6 +161,14 @@ export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($
   });
 
   return operatorSoftware;
+})
+
+export const operatorPubkeySoftwareCounts = derived(operatorPubkeySoftwaresMap, ($operatorPubkeySoftwaresMap) => {
+  const counts = new Map();
+  $operatorPubkeySoftwaresMap.forEach((software) => {
+    counts.set(software, pubkeys.size);
+  });
+  return counts;
 })
 
 export const softwareGeocodesStore = derived(relayCheckAggregates, ($relayCheckAggregates) => {

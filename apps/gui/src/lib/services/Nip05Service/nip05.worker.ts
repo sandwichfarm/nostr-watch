@@ -9,7 +9,13 @@ const check = (pubkey: string, value: Nip05) => {
 }
 
 self.onmessage = ({ data }) => {
-    const { pubkey, nip05 } = data;
+    let { nip05 } = data;
+    const { pubkey } = data;
+    
+    if(!nip05.includes('@')){
+        nip05 = `_@${nip05}`
+    }
+    
     const valid = check(pubkey, nip05)
     if(valid instanceof Promise) {
         return valid.then( (valid: boolean) => self.postMessage({pubkey, nip05, valid}) )

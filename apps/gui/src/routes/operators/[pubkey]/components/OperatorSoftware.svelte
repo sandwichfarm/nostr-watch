@@ -1,25 +1,33 @@
 <script lang="ts">
-	import { operatorSoftwares$, operatorSoftwareCount, operatorIsps$, operatorIspCount } from "$stores/helpers/helpers-operator";
+	import { operatorSoftwares$, operatorSoftwareCount } from "$stores/helpers/helpers-operator";
 	import { onMount } from "svelte";
 	import { writable, type Readable, type Writable } from "svelte/store";
 
   import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
   import { default as softwareTableConfig } from '$lib/config/dataTable/softwares.js';
+  import DataView from '$lib/components/data-view/DataViewRoot.svelte';
 	import Badge from "$ui/badge/badge.svelte";
 
   export let pubkey: string;
 
-  let operatorIsps: Readable<any[] | undefined>;
+  const config = writable({...defaultDataTableConfig, ...softwareTableConfig})
+  const dataKey = 'operator-softwares'
+
+  let operatorSoftwares: Readable<any[] | undefined>;
 
   onMount(() => {
-    operatorIsps = operatorIsps$(pubkey)
+    operatorSoftwares = operatorSoftwares$(pubkey)
   })
+
+  $: softwareCount = $operatorSoftwares?.length
+
+  let activeView: Writable<'table' | 'map' | 'grid'> = writable('table');
 </script>
 
-{#if $operatorIsps}
+{#if $operatorSoftwares}
    <ul>
-  {#if $operatorIsps?.length}
-    {#each $operatorIsps as isp}
+  {#if $operatorSoftwares?.length}
+    {#each $operatorSoftwares as software}
       <li class="text-lg px-2 py-2 border-b border-white/10">
         <Badge class="
           mr-2 p-0 rounded-full 
@@ -29,9 +37,9 @@
           bg-purple-800/10 text-black 
           text-sm 
           ">
-          {operatorIspCount(pubkey, isp)}
+          {operatorSoftwareCount(pubkey, software)}
         </Badge>
-        <span class="text-sm font-mono font-bold">{isp}</span>
+        <span class="text-sm font-mono font-bold">{software}</span>
       </li>
     {/each}
   {/if}

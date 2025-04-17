@@ -6,7 +6,7 @@
 	import PageHeader from "$lib/components/layout/PageHeader.svelte";
     import type { User } from "$lib/models/User";
 	import { dataRegister } from "$stores/data-register";
-	import { pubkeyUserInstance$ } from "$stores/helpers/helpers-pubkey";
+	import { pubkeyProfile$, pubkeyUserInstance$, type StorePubkeyProfile, type StoreUser } from "$stores/helpers/helpers-pubkey";
 	import { truncateWithEllipsis } from "$utils/strings";
 	
     import * as Card from '$lib/components/ui/card';
@@ -18,11 +18,14 @@
 	import OperatorRelays from "./components/OperatorRelays.svelte";
 	import OperatorSoftware from "./components/OperatorSoftware.svelte";
 	import OperatorIsps from "./components/OperatorIsps.svelte";
+	import PubkeyZap from "$lib/components/partials/PubkeyZap.svelte";
+	import PubkeyNip05 from "$lib/components/partials/PubkeyNip05.svelte";
+	import type { PubkeyProfile } from "@nostrwatch/route66/models/PubkeyProfile";
 	
-
     let pubkey = $page.params.pubkey;
     
-    const user: Readable<User> = pubkeyUserInstance$(pubkey);
+    const user: Readable<StoreUser> = pubkeyUserInstance$(pubkey);
+    const profile: Readable<StorePubkeyProfile> = pubkeyProfile$(pubkey);
 
     onMount(async ()=>{
         await $dataRegister.require(
@@ -39,6 +42,7 @@
     $: name = $user?.name || undefined;
     $: npub = $user?.npub || undefined;
     $: about = $user?.about || undefined;
+    $: nip05 = $user?.profile?.nip05 || undefined;
     $: nprofile = $user?.reference || undefined;
     $: photo = $user?.photo || undefined;
     $: banner = $user?.banner || undefined;
@@ -51,99 +55,121 @@
             ? truncateWithEllipsis(npub, 21)
             : truncateWithEllipsis(pubkey, 21)
 
-    $: subtitle = about? truncateWithEllipsis(about, 100): undefined
+    // $: subtitle = about? truncateWithEllipsis(about, 100): undefined
 
 </script>
 
 <PageHeader 
     {title} 
-    subtitle={subtitle} 
     icon={photo}
     {banner}
     bgOpacity={0.5}
-    >
-        <Badge>
-            <span class="cursor-pointer" use:clickToCopy>{npub}</span>
-        </Badge>
-    </PageHeader>   
+    />
 
-    <div class="flex flex-col gap-4 p-4">
-        <!-- Basic Info -->
-        <div class="card p-4">
-            <h2 class="text-xl font-bold mb-2">Operator Info</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {#if name}
-                    <div>
-                        <span class="font-semibold">Name:</span> {name}
-                    </div>
-                {/if}
-                {#if npub}
-                    <div>
-                        <span class="font-semibold">Npub:</span> {truncateWithEllipsis(npub, 21)}
-                    </div>
-                {/if}
-                {#if nprofile}
-                    <div>
-                        <span class="font-semibold">Nprofile:</span> {truncateWithEllipsis(nprofile, 21)}
-                    </div>
-                {/if}
-                {#if lud16}
-                    <div>
-                        <span class="font-semibold">Lightning Address:</span> {lud16}
-                    </div>
-                {/if}
-                {#if lud06}
-                    <div>
-                        <span class="font-semibold">LNURL:</span> {truncateWithEllipsis(lud06, 21)}
-                    </div>
-                {/if}
-                {#if about}
-                    <div class="col-span-2">
-                        <span class="font-semibold">About:</span> {about}
-                    </div>
-                {/if}
+<div class="flex flex-col gap-4 p-4 overflow-y-auto">
+
+    <Card.Root class="bg-gray-800/50">
+        <Card.Header>
+            <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                about
+            </Card.Title>  
+        </Card.Header>  
+        <Card.Content class="text-2xl text-black/80 dark:text-white/80">
+            <div class="flex flex-row gap-2">
+                {about} 
             </div>
-        </div>
-
-        <!-- Relay Statistics -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card.Root>
-                <Card.Header>
-                    <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
-                        softwares
-                    </Card.Title>  
-                </Card.Header>  
-                <Card.Content>
-                    <OperatorSoftware {pubkey} />
-                </Card.Content>
-                <Card.Footer>
-                </Card.Footer>
-            </Card.Root>
-
-            <div class="card p-4">
-                <h2 class="text-xl font-bold mb-4">Geographic Distribution</h2>
-                <OperatorCountries {pubkey} />
+            <div class="mt-4 pt-2 border-t border-white/10">
+                <div class="">
+                    {#if $user?.lud16}
+                        <PubkeyZap 
+                            {pubkey} 
+                            showLud16={true}
+                            />
+                    {/if}
+                </div>
+                <div class="text-sm p-2">
+                    {#if nip05}
+                        <PubkeyNip05 {pubkey} {profile} showNip05={true}/>
+                    {/if}
+                </div>
+                <div class="">
+                    <span class="font-mono uppercase text-xs inline-block w-16">pubkey</span>
+                    <Badge class="truncate text-white/50 bg-black/5 hover:bg-black/10      dark:bg-purple-100/5 dark:hover:bg-purple-100/30">
+                        <span class="cursor-pointer truncate max-w-[450px]" use:clickToCopy>{pubkey}</span>
+                    </Badge>
+                </div>
+                
+                <div class="">
+                    <span class="font-mono uppercase text-xs inline-block w-16">npub</span>
+                    <Badge class="truncate text-white/50 bg-black/5 hover:bg-black/10      dark:bg-purple-100/5 dark:hover:bg-purple-100/30">
+                        
+                        <span class="cursor-pointer truncate max-w-[450px]" use:clickToCopy>{npub}</span>
+                    </Badge>
+                </div>
+                <div>
+                    <span class="font-mono uppercase text-xs inline-block w-16">nprofile</span>
+                    <Badge class="truncate  text-white/50 bg-black/5 hover:bg-black/10 dark:bg-purple-100/5 dark:hover:bg-purple-100/30">
+                        <span class="cursor-pointer truncate max-w-[450px]" use:clickToCopy>{nprofile}</span>  
+                    </Badge>
+                </div>
             </div>
+        </Card.Content>
+    </Card.Root>
 
-            <div class="card p-4">
-                <h2 class="text-xl font-bold mb-4">ISP Distribution</h2>
-                <OperatorIsps {pubkey} />
-            </div>
-
-            
-        </div>
-
+    <!-- Relay Statistics -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card.Root>
             <Card.Header>
                 <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
-                    operator relays
+                    deployed software
                 </Card.Title>  
             </Card.Header>  
             <Card.Content>
-                <OperatorRelays {pubkey} />
+                <OperatorSoftware {pubkey} />
             </Card.Content>
             <Card.Footer>
             </Card.Footer>
         </Card.Root>
 
+        <Card.Root>
+            <Card.Header>
+                <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                    geographic distribution
+                </Card.Title>  
+            </Card.Header>  
+            <Card.Content>
+                <OperatorCountries {pubkey} />
+            </Card.Content>
+            <Card.Footer>
+            </Card.Footer>
+        </Card.Root>
+
+        <Card.Root>
+            <Card.Header>
+                <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                    isp distribution
+                </Card.Title>  
+            </Card.Header>  
+            <Card.Content>
+                <OperatorIsps {pubkey} />
+            </Card.Content>
+            <Card.Footer>
+            </Card.Footer>
+        </Card.Root>
+        
     </div>
+
+    <Card.Root>
+        <Card.Header>
+            <Card.Title class='[text-shadow:_2px_2px_0_rgb(99_102_241_/_0.2)] font-mono text-white/80 text-shad'>
+                operator relays
+            </Card.Title>  
+        </Card.Header>  
+        <Card.Content>
+            <OperatorRelays {pubkey} />
+        </Card.Content>
+        <Card.Footer>
+        </Card.Footer>
+    </Card.Root>
+
+</div>

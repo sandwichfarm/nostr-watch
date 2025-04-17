@@ -1,5 +1,5 @@
 import { derived, get, type Readable } from "svelte/store";
-import { operatorPubkeySoftwaresMap } from "../softwares"
+import { operatorPubkeySoftwareCounts, operatorPubkeySoftwaresMap } from "../softwares"
 import { relayCheckAggregates } from "../checks";
 import {
   pubkeyProfile,
@@ -57,6 +57,20 @@ export const operatorRelaysOperated$ = (pubkey: string): Readable<string[] | und
     })
 }
 
+export const operatorSoftwareCount = (pubkey: string, software: string): number => {
+    return get(relayCheckAggregates)
+        .filter((aggregate) => aggregate?.operatorPubkey === pubkey && aggregate?.software === software)
+        .length
+}
+
+export const operatorSoftwareCount$ = (pubkey: string, software: string): Readable<number> => {
+    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
+        return $relayCheckAggregates
+            .filter((aggregate) => aggregate?.operatorPubkey === pubkey && aggregate?.software === software)
+            .length
+    })
+}
+
 
 export const operatorIsps = (pubkey: string): string[] | undefined => {
     const uniques: Set<string> = new Set();
@@ -80,11 +94,19 @@ export const operatorIsps$ = (pubkey: string): Readable<string[] | undefined> =>
     })
 }
 
+export const operatorIspCount = (pubkey: string, isp: string): number => {
+    return get(relayCheckAggregates)
+        .filter((aggregate) => aggregate?.operatorPubkey === pubkey && aggregate?.isp === isp)
+        .length
+}
+
+
+
 export const operatorCountries = (pubkey: string): string[] | undefined => {
     const uniques: Set<string> = new Set();
     const result = get(relayCheckAggregates)
         .filter((aggregate: any) => aggregate?.operatorPubkey === pubkey )
-        .map((aggregate: any) => aggregate?.geocodes )
+        .map((aggregate: any) => aggregate?.geocode )
         .filter((code: string) => !!code )
     result.forEach((code: string) => uniques.add(code))
     return Array.from(uniques);
@@ -96,6 +118,11 @@ export const operatorCountries$ = (pubkey: string): Readable<string[] | undefine
     })
 }
 
+export const operatorCountryCount = (pubkey: string, country: string): number => {
+    return get(relayCheckAggregates)
+        .filter((aggregate) => aggregate?.operatorPubkey === pubkey && aggregate?.geocode === country)
+        .length
+}
 
 //convenience, namespaced wrappers
 export const operatorUser = (pubkey: string): StoreUser => {

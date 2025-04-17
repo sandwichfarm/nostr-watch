@@ -202,6 +202,13 @@ jobs:
           PKG_PATH=$(find libraries internal apps -type d -name "${{ matrix.package }}" -print -quit)
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
 
+      # - name: Get package version (GUI)
+      #   if: matrix.package == 'gui'
+      #   id: get_version
+      #   run: |
+      #     VERSION=$(jq -r '.version' ./apps/gui/package.json)
+      #     echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
       - name: Publish Package
         id: publish
         if: matrix.package != 'gui'

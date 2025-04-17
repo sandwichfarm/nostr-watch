@@ -15,7 +15,7 @@ export class ValidateSchema extends SuiteTest implements ISuiteTest {
   }
 
   async prepare() {
-    const relay = this.socket.relay.toString()
+    const relay = this.socket.url.toString()
     const url = new URL(relay);
     url.protocol = 'https:';
     const controller = new AbortController();

@@ -1,0 +1,40 @@
+## Basic Tor configuration for improved WebSocket connectivity
+SOCKSPort 0.0.0.0:9050
+ControlPort 9051
+
+## Circuit build settings
+CircuitBuildTimeout 60
+LearnCircuitBuildTimeout 0
+MaxCircuitDirtiness 600
+
+## Connection handling
+KeepalivePeriod 60
+NewCircuitPeriod 90
+
+## Stream settings to help with WebSockets
+ClientUseIPv4 1
+ClientUseIPv6 0
+ClientPreferIPv6ORPort 0
+
+## Logging
+Log info stdout
+
+## Performance settings
+NumEntryGuards 6
+NumDirectoryGuards 6
+
+## Web socket specific settings
+WarnUnsafeSocks 0
+AllowSingleHopCircuits 0
+
+## DNS settings
+AutomapHostsOnResolve 1
+DNSPort 0.0.0.0:5353
+
+## Allow connections from Docker network
+SocksPolicy accept 172.16.0.0/12
+SocksPolicy accept 10.0.0.0/8
+SocksPolicy accept 192.168.0.0/16
+SocksPolicy accept 127.0.0.0/8
+SocksPolicy accept *
+Nickname Tor4oosaisou

@@ -1,4 +1,5 @@
 node_modules 
+vendor
 *.config.yaml
 docker-compose.yaml
 lmdb
@@ -7,3 +8,8 @@ cache
 .env*
 !.env.sample
 config*
+*.db
+*.db-shm
+*.db-wal
+*.db-lock
+*.db-journal

@@ -110,13 +110,14 @@ export const sanitizeRelayUrl = (relay: string): string => {
     return decodeURI(relay)
       .toLowerCase()
       .trim()
+      .replace('|', '') //remove pipe
       .replace(/[\s\t|]+/, '') // Consolidate whitespace and tab removal
       .replace(/\/+$/, '') // Remove trailing slashes
       .replace(/\.(?=\/|$)/, '')  // Remove trailing dots, if they are before a slash or end of string
       .replace('(blob_hash)', '')
       .split(',')[0]; // Get the first part before any comma
   } catch (e: any) {
-    logger.warn(`Failed to sanitize relay ${relay}: ${e.message}`);
+    logger.debug(`Failed to sanitize relay ${relay}: ${e.message}`);
     return '';
   }
 };
@@ -130,13 +131,32 @@ export const sanitizeRelayUrl = (relay: string): string => {
  * @returns {boolean} Whether the relay URL qualifies based on various criteria
  */
 export const qualifyRelayUrl = (maybeRelay: string): boolean => {
-  if( typeof maybeRelay !== "string" ) return false; 
 
-  if( maybeRelay.length === 0 ) return false;
+  let url: URL;
+
+  try {
+    url = new URL(maybeRelay);
+  } catch (e: any) {
+    logger.debug(`Failed to qualify relay ${maybeRelay}: ${e.message}`);
+    return false;
+  }
+
+  const hostname = url.hostname;  
+  const pathname = url.pathname;  
 
   if ( isLocalNet(maybeRelay) ) return false;
 
   if ( isLocal(maybeRelay) ) return false;
+
+  if( maybeRelay.length === 0 ) return false;
+  
+  if( hostname.includes("|") || pathname.includes("|") ) return false;
+
+  if( hostname.includes("https/") || hostname.includes("http/") || hostname.includes("wss/") || hostname.includes("ws/") ) return false;
+
+  if( pathname.includes("https/") || pathname.includes("http/") || pathname.includes("wss/") || pathname.includes("ws/") ) return false;
+
+  if( typeof maybeRelay !== "string" ) return false; 
 
   if ( /^(wss:\/\/)(.*)(:\/\/)(.*)$/.test(maybeRelay) ) return false; // multiple protocols
 

@@ -1,4 +1,4 @@
-import type { WebSocketWrapper as WebSocket } from '@nostrwatch/websocket';
+import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 
 import { Suite } from '#base/Suite.js';
 import { SchemaValidator } from '#base/SchemaValidator.js';

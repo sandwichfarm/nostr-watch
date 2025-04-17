@@ -1,0 +1,84 @@
+import { getLogger, LogLevel } from "./logger.ts";
+import { AnnounceMonitor } from "npm:@nostrwatch/announce";
+import { getPublicKey } from "npm:nostr-tools";
+import { type QueueManager } from "./queueManager.ts";
+import { timeString } from "../config/config.ts";
+
+const logger = getLogger("Announce");
+
+export async function maybeAnnounce(config: any, queueManager?: QueueManager): Promise<void> {
+  if (!config.monitor || !config.monitor.info) {
+    logger.warn("Monitor metadata is missing; skipping announcement.");
+    return;
+  }
+  if (!config.announce?.relays || !Array.isArray(config.announce.relays) || config.announce.relays.length === 0) {
+    logger.warn("Publisher relay list is missing; skipping announcement.");
+    return;
+  }
+
+  const { info: profile, owner, geo, relays } = config.monitor
+  const { userDataRelays } = config.announce?.relays || []
+  const { networks } = config.relaymon || []
+  const { expires, timeout: timeouts, checks } = config.relaymon?.checks?.options || {}
+
+  if(!expires) throw new Error("Announce frequency is not set")
+
+  const frequency = (Math.round(timeString(expires)/1000)).toString()
+
+
+  const sk = Deno.env.get("DAEMON_PRIVKEY");
+  const pk = getPublicKey(sk)
+
+  const announcer = new AnnounceMonitor( 
+    pk, 
+    { 
+      profile, 
+      owner, 
+      geo, 
+      relays, 
+      networks,
+      timeouts,
+      frequency,
+      checks,
+
+      userDataRelays
+    } 
+  );
+
+  
+  if (!sk) {
+    logger.error("Missing DAEMON_PRIVKEY; cannot sign announcement.");
+    return;
+  }
+
+  announcer.generate();
+
+  try {
+    await announcer.sign(sk);
+  } catch (error: any) {
+    logger.error("Error signing announcement: " + error?.message);
+    return;
+  }
+
+  try {
+    if (queueManager) {
+      // Use the queue manager to publish the announcement
+      queueManager.addPublishJob(async () => {
+        try {
+          await announcer.publish();
+          logger.info("Monitor announcement published successfully via queue.");
+        } catch (error: any) {
+          logger.error("Failed to publish monitor announcement via queue: " + error.message);
+          throw error; // Rethrow to trigger retry mechanism
+        }
+      });
+      logger.info("Added monitor announcement to publish queue.");
+    } else {
+      // Fallback to direct publishing if no queue manager is available
+      await announcer.publish();
+      logger.info("Monitor announcement published successfully.");
+    }
+  } catch (error: any) {
+    logger.error("Failed to handle monitor announcement: " + error.message);
+  }
+}

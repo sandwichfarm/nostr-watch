@@ -8,10 +8,12 @@ vi.mock('@nostrwatch/logger', () => ({
   },
 }));
 
-vi.mock('@nostrwatch/publisher-nostrtools', () => ({
-  default: class {
-    publish = vi.fn().mockResolvedValue('published');
-  },
+vi.mock('nostr-tools', () => ({
+  SimplePool: class {
+    publish() {
+      return Promise.resolve('published');
+    }
+  }
 }));
 
 describe('Publisher Class', () => {
@@ -29,67 +31,51 @@ describe('Publisher Class', () => {
       expect(publisher.pubkey).toBe(pubkey);
       expect(publisher.relays).toEqual(relays);
       expect(publisher.logger).toBeDefined();
-      expect(publisher.ws).toBeDefined();
+      expect(publisher.pool).toBeDefined();
     });
   });
 
   describe('publishEvent()', () => {
     it('should publish a signed event', async () => {
+      publisher.pool.publish = vi.fn().mockResolvedValue('published');
+      
       const signedEvent = { id: 'event1', content: 'test event' };
       const result = await publisher.publishEvent(signedEvent);
       expect(result).toBe('published');
-      expect(publisher.ws.publish).toHaveBeenCalledWith(signedEvent);
+      expect(publisher.pool.publish).toHaveBeenCalledWith(relays, signedEvent);
     });
 
-    it('should handle errors during publish', async () => {
+    it('should propagate errors during publish', async () => {
       const error = new Error('Publish failed');
-      publisher.ws.publish = vi.fn().mockRejectedValue(error);
+      publisher.pool.publish = vi.fn().mockRejectedValue(error);
       const signedEvent = { id: 'event1', content: 'test event' };
 
-      await publisher.publishEvent(signedEvent);
-      expect(publisher.logger.warn).toHaveBeenCalledWith(
-        `Publisher::publishEvent(): Error: ${error}`
-      );
+      await expect(publisher.publishEvent(signedEvent)).rejects.toThrow(error);
+      expect(publisher.pool.publish).toHaveBeenCalledWith(relays, signedEvent);
     });
   });
 
   describe('publishEvents()', () => {
-    it('should publish multiple signed events', async () => {
+    it('should publish multiple events', async () => {
+      const publishEventSpy = vi.spyOn(publisher, 'publishEvent')
+        .mockResolvedValueOnce('published1')
+        .mockResolvedValueOnce('published2');
+      
       const signedEvents = [
         { id: 'event1', content: 'test event 1' },
-        { id: 'event2', content: 'test event 2' },
+        { id: 'event2', content: 'test event 2' }
       ];
-      const asyncIterable = {
-        async *[Symbol.asyncIterator]() {
-          for (const event of signedEvents) {
-            yield event;
-          }
-        },
-      };
-
-      const result = await publisher.publishEvents(asyncIterable);
-      expect(result).toEqual(['published', 'published']);
-      expect(publisher.ws.publish).toHaveBeenCalledTimes(2);
-    });
-
-    it('should handle errors during multiple publishes', async () => {
-      const error = new Error('Publish failed');
-      publisher.ws.publish = vi.fn().mockRejectedValue(error);
-      const signedEvents = [
-        { id: 'event1', content: 'test event 1' },
-        { id: 'event2', content: 'test event 2' },
-      ];
-      const asyncIterable = {
-        async *[Symbol.asyncIterator]() {
-          for (const event of signedEvents) {
-            yield event;
-          }
-        },
-      };
-
-      const result = await publisher.publishEvents(asyncIterable);
-      expect(result).toEqual([undefined, undefined]);
-      expect(publisher.logger.warn).toHaveBeenCalledTimes(2);
+      
+      const result = await publisher.publishEvents((async function* () {
+        for (const event of signedEvents) {
+          yield event;
+        }
+      })());
+      
+      expect(result).toEqual(['published1', 'published2']);
+      expect(publishEventSpy).toHaveBeenCalledTimes(2);
+      expect(publishEventSpy).toHaveBeenCalledWith(signedEvents[0]);
+      expect(publishEventSpy).toHaveBeenCalledWith(signedEvents[1]);
     });
   });
 });

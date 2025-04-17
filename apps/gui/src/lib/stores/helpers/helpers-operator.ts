@@ -1,8 +1,25 @@
 import { derived, get, type Readable } from "svelte/store";
-import { operatorPubkeySoftwaresMap } from "../softwares"
+import { operatorPubkeySoftwareCounts, operatorPubkeySoftwaresMap } from "../softwares"
 import { relayCheckAggregates } from "../checks";
-import { pubkeyProfile, pubkeyProfile$, pubkeyRelays, pubkeyRelays$, pubkeyUserInstance, pubkeyUserInstance$, type StorePubkeyProfile, type StorePubkeyRelays, type StorePubkeyRelaysReadable, type StoreUser, type StoreUserReadable } from "./helpers-pubkey";
+import {
+  pubkeyProfile,
+  pubkeyProfile$,
+  pubkeyRelays,
+  pubkeyRelays$,
+  pubkeyUserInstance,
+  pubkeyUserInstance$,
+  type StorePubkeyEvents,
+  type StorePubkeyProfile,
+  type StorePubkeyRelays,
+  type StoreUser,
+  type StoreUserReadable
+} from "./helpers-pubkey";
+
+
+import { eventsStoreMemoryRelay } from "../memory-relays/memory-relay-events";
+
 import { isps } from "$lib/stores/isps";
+import { formatPubkeyForIndex } from "$utils/event-keys";
 
 //aggregates
 export const operatorSoftwares = (pubkey: string): string[] | undefined => {
@@ -25,6 +42,13 @@ export const operatorRelaysOperated = (pubkey: string): string[] | undefined => 
         .map((aggregate: any) => aggregate.relay)
 }
 
+export const operatorRelaysOperatedAggregate$ = (pubkey: string): Readable<any[] | undefined> => {
+    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
+        return $relayCheckAggregates
+            .filter((aggregate) => aggregate?.operatorPubkey === pubkey )
+    })
+}
+
 export const operatorRelaysOperated$ = (pubkey: string): Readable<string[] | undefined> => {
     return derived(relayCheckAggregates, ($relayCheckAggregates) => {
         return $relayCheckAggregates
@@ -32,6 +56,21 @@ export const operatorRelaysOperated$ = (pubkey: string): Readable<string[] | und
             .map((aggregate) => aggregate.relay)
     })
 }
+
+export const operatorSoftwareCount = (pubkey: string, software: string): number => {
+    return get(relayCheckAggregates)
+        .filter((aggregate) => aggregate?.operatorPubkey === pubkey && aggregate?.software === software)
+        .length
+}
+
+export const operatorSoftwareCount$ = (pubkey: string, software: string): Readable<number> => {
+    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
+        return $relayCheckAggregates
+            .filter((aggregate) => aggregate?.operatorPubkey === pubkey && aggregate?.software === software)
+            .length
+    })
+}
+
 
 export const operatorIsps = (pubkey: string): string[] | undefined => {
     const uniques: Set<string> = new Set();
@@ -53,6 +92,36 @@ export const operatorIsps$ = (pubkey: string): Readable<string[] | undefined> =>
             .forEach((isp: string) => uniques.add(isp))
         return Array.from(uniques)
     })
+}
+
+export const operatorIspCount = (pubkey: string, isp: string): number => {
+    return get(relayCheckAggregates)
+        .filter((aggregate) => aggregate?.operatorPubkey === pubkey && aggregate?.isp === isp)
+        .length
+}
+
+
+
+export const operatorCountries = (pubkey: string): string[] | undefined => {
+    const uniques: Set<string> = new Set();
+    const result = get(relayCheckAggregates)
+        .filter((aggregate: any) => aggregate?.operatorPubkey === pubkey )
+        .map((aggregate: any) => aggregate?.geocode )
+        .filter((code: string) => !!code )
+    result.forEach((code: string) => uniques.add(code))
+    return Array.from(uniques);
+}
+
+export const operatorCountries$ = (pubkey: string): Readable<string[] | undefined> => {
+    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
+        return operatorCountries(pubkey)
+    })
+}
+
+export const operatorCountryCount = (pubkey: string, country: string): number => {
+    return get(relayCheckAggregates)
+        .filter((aggregate) => aggregate?.operatorPubkey === pubkey && aggregate?.geocode === country)
+        .length
 }
 
 //convenience, namespaced wrappers

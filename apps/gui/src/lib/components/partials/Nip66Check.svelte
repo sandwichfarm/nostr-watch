@@ -116,7 +116,7 @@
       </tbody>
     </table>
     
-    {#if check.networks.includes('clearnet')}
+    {#if check?.networks?.includes('clearnet')}
     <table>
       <thead>
         <tr>

@@ -13,7 +13,6 @@ interface LifecycleMessage {
   sourceId: string;
 }
 
-/** A simple delay helper. */
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -22,7 +21,6 @@ export class ActivityManager {
   private currentState: ActivityState;
   private transitioning: boolean = false;
 
-  // External handlers return Promise<void>
   private externalHandlers: { active: () => Promise<void>; inactive: () => Promise<void> } = {
     active: async () => {},
     inactive: async () => {},
@@ -36,18 +34,13 @@ export class ActivityManager {
   private leaderId: string | null = null;
   private isLeader: boolean = false;
   private releaseWaitTimeoutId: number | null = null;
-  // Reduced forced takeover timeout.
   private releaseWaitTimeoutMs: number = 500;
 
-  // Reduced leadership confirmation delay.
   private LEADERSHIP_CONFIRM_DELAY_MS: number = 500;
-  // Reduced hidden delay.
   private HIDDEN_DELAY_MS: number = 3000;
 
-  // Heartbeat settings.
   private heartbeatIntervalId: number | null = null;
   private HEARTBEAT_INTERVAL_MS: number = 1000;
-  // Reduced stale threshold.
   private STALE_THRESHOLD_MS: number = 5000;
 
   private boundVisibilityHandler: () => void;
@@ -55,12 +48,10 @@ export class ActivityManager {
   private boundChannelMessageHandler: (ev: MessageEvent) => void;
   private boundBeforeUnloadHandler: () => void;
 
-  // Timeout ID for delayed hidden action.
   private visibilityHiddenTimeoutId: number | null = null;
 
   constructor(idleTimeoutMs: number = 5 * 60 * 1000) {
     this.idleTimeoutMs = idleTimeoutMs;
-    // Initialize state: if visible, start as follower (not yet leader), otherwise inactive.
     this.currentState =
       document.visibilityState === 'visible' ? 'follower' : 'inactive';
     this.updateTabState(this.currentState);
@@ -85,7 +76,6 @@ export class ActivityManager {
 
     this.startIdleTimer();
 
-    // Delay the initial onActivity() to allow external handler registration.
     if (document.visibilityState === 'visible') {
       setTimeout(() => { this.onActivity(); }, 0);
     }
@@ -98,15 +88,10 @@ export class ActivityManager {
     }
   }
 
-  // We define "active" as being the leader.
   private isActiveState(state: ActivityState): boolean {
     return state === 'leader';
   }
 
-  /**
-   * Transition to a new state.
-   * Awaits the external active/inactive handler before updating the state.
-   */
   private async transitionState(newState: ActivityState) {
     if (this.transitioning || this.currentState === newState) return;
     this.transitioning = true;
@@ -272,7 +257,6 @@ export class ActivityManager {
       localStorage.removeItem('leaderId');
     }
   
-    // POLL: Wait if the stored leader is shutting down.
     const MAX_SHUTDOWN_WAIT_MS = 2500;
     let shutdownWaitTime = 0;
     while (true) {

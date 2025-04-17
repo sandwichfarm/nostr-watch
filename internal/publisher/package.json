@@ -71,7 +71,7 @@
     "tsc-alias": "^1.8.10",
     "tslib": "^2.7.0",
     "typescript": "^5.6.2",
-    "vitest": "^0.34.1"
+    "vitest": "^0.34.6"
   },
   "files": [
     "dist/**/*"

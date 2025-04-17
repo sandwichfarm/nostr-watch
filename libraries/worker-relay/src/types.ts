@@ -90,6 +90,8 @@ export interface RelayHandler extends EventEmitter<RelayHandlerEvents> {
   delete(req: ReqFilter): Array<string>;
   setEventMetadata(id: string, meta: EventMetadata): void;
   wipe(): Promise<void>;
+  destroy(): Promise<void>;
+  recreate(): Promise<void>;
 }
 
 export interface RelayHandlerEvents {

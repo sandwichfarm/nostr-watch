@@ -140,8 +140,9 @@
         {/if}
     
     </Resizable.Pane>
+    
+    {#if enableFilters}
     <Resizable.Handle withHandle />
-
     <Resizable.Pane 
         class="min-h-[100%]"
         defaultSize={25} 
@@ -184,7 +185,8 @@
                 {/if}
             {/if}
           
-    </Resizable.Pane>
+    </Resizable.Pane>   
+    {/if}
 </Resizable.PaneGroup>
 
 <style lang="postcss" global>

@@ -36,7 +36,8 @@ export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($ov
     "monitorPubkey",
     "operatorPubkey",
     "hasNip11",
-    "dd"
+    "dd",
+    "network"
   ]
   const derivedKeys = [
     'nip11IsValid', 
@@ -71,13 +72,12 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   
 
   $checks.forEach((check: Nip66CheckEvent) => {
-    let relay: string;
     if(!check?.relay) return;
-    // if(check.tags.find( (tag: string[]) => tag[0] === 'a' && tag[1]?.startsWith('30166:'))) {
-    //   return;
-    // } 
+
+    let relay: string = check?.relay
+
     try {
-      relay = new URL(check?.relay).toString();
+      relay = new URL(relay).toString();
     }
     catch(e){
       console.warn('could not normalize relay:', check.relay)

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "NodeNext",
-    "lib": ["ES6", "DOM"],
+    "lib": ["es2021", "DOM"],
     "declaration": true,
     "sourceMap": true,
     "outDir": "./dist",

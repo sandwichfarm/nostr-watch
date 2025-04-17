@@ -1,5 +1,5 @@
 import { IAdapter, TAdapterCount } from '../interfaces/IAdapter';
-import Base from '../classes/Base';
+import Base from '../classes/Base.js';
 
 export type AdapterType = 'websocket' | 'dns' | 'geo' | 'info' | 'ssl';
 

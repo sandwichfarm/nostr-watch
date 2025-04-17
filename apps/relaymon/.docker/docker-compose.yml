@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # Main relaymon service with network routing
+  relaymon:
+    build:
+      context: ../../..  # Three levels up to reach the project root from .docker dir
+      dockerfile: ./apps/relaymon/.docker/Dockerfile.unified
+      # no_cache: true  # Disable build cache
+    container_name: relaymon
+    restart: unless-stopped
+    volumes:
+      - ../data:/app/nostr-watch/apps/relaymon/data
+      - ../.env:/app/nostr-watch/apps/relaymon.env
+      - ../.config:/app/nostr-watch/apps/config.yaml
+      - ./config/danted.conf:/etc/danted.conf
+      - ./config/redsocks.conf:/etc/redsocks.conf
+    networks:
+      - relaymon-net
+    depends_on:
+      - tor-proxy
+      - i2pd
+      # - lokinet
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Tor proxy service
+  tor-proxy:
+    image: alpine/tor:latest
+    container_name: tor-proxy
+    restart: unless-stopped
+    volumes:
+      - ./config/torrc:/etc/tor/torrc
+    networks:
+      - relaymon-net
+    ports:
+      - "9050:9050" # SOCKS proxy
+      - "9051:9051" # Control port
+
+  # I2P router service
+  i2pd:
+    image: purplei2p/i2pd:latest
+    container_name: i2pd
+    restart: unless-stopped
+    volumes:
+      - i2pd-data:/home/i2pd/data
+    ports:
+      - "4444:4444" # HTTP proxy
+      - "4447:4447" # SAM bridge
+    networks:
+      - relaymon-net
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "4444"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Lokinet proxy service
+  # lokinet:
+  #   image: loki-project/lokinet:latest
+  #   container_name: lokinet
+  #   restart: unless-stopped
+  #   networks:
+  #     - relaymon-net
+  #   cap_add:
+  #     - NET_ADMIN
+  #   ports:
+  #     - "9060:9060"
+  #     - "5353:5353"
+  #   healthcheck:
+  #     test: ["CMD", "nc", "-z", "localhost", "9060"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+networks:
+  relaymon-net:
+    driver: bridge
+
+volumes:
+  i2pd-data:
+    driver: local 

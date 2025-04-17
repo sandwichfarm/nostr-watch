@@ -2,7 +2,7 @@ import { EventEmitter } from "tseep";
 
 import { Ingestor } from "#base/Ingestor.js";
 import Logger from "#base/Logger.js";  
-import type { WebSocketWrapper as WebSocket } from '@nostrwatch/websocket';
+import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 
 import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/utils/generators.js";
 import type { Note, RelayEventMessage } from "#src/nips/Nip01/interfaces/index.js";
@@ -77,23 +77,25 @@ export class Sampler {
   }
 
   async sample() {
-    try {
-      await this.socket.connect();
+    return new Promise((resolve, reject) => {
       this.setupHandlers();
-  
+      this.socket.connect();
       const timeout = this.setAbortTimeout();
-  
-      this.newSubId();
-      this.sendRequest();
-  
-      const result = await this.waitForEoseOrAbort(timeout);
-  
-      this.logger.debug(`done`);
-    } catch (error) {
-      this.logger.error(`Error in sample method: ${error.message}`);
-    } finally {
-      this.cleanupWebSocket();
-    }
+      this.socket.on("open", async () => {
+        let result: boolean = false;
+        try {
+          this.newSubId();
+          this.sendRequest();
+          result = await this.waitForEoseOrAbort(timeout);
+        } catch (error) {
+          this.logger.error(`Error in sample method: ${error.message}`);
+          return reject(error);
+        } finally {
+          this.cleanupWebSocket();
+        }
+        resolve(result);
+      });
+    });
   }
   
   private setAbortTimeout() {

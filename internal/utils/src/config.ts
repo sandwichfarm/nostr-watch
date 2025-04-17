@@ -1,5 +1,19 @@
 import { isBrowser } from './browser';
 
+// Type declaration for Deno runtime
+declare global {
+  interface Window {
+    Deno?: any;
+  }
+  
+  const Deno: {
+    env: {
+      get: (key: string) => string | undefined;
+    };
+    readTextFile: (path: string) => Promise<string>;
+  } | undefined;
+}
+
 let yaml: typeof import('js-yaml') | null = null;
 let isYamlAvailable = false;
 
@@ -49,24 +63,26 @@ export const loadConfig = async (): Promise<any> => {
     return {};
   }
 
-  let fsp: typeof import('fs/promises') | undefined;
-
-  try {
-    const importedFsp = await import('fs/promises');
-    fsp = importedFsp.default || importedFsp;
-  } catch (error) {
-    console.error('Failed to import fs/promises module:', error);
-  }
-
   const handleError = (e: any) => {
     throw new Error('config.yaml not found');
   };
 
-  const configPath = process.env.CONFIG_PATH || './config.yaml';
+  // Get config path from environment
+  const configPath = (typeof Deno !== 'undefined' ? Deno.env.get('CONFIG_PATH') : process.env.CONFIG_PATH) || './config.yaml';
   if (!configPath) return {};
 
   try {
-    const fileContents = await fsp!.readFile(configPath, 'utf8');
+    let fileContents: string;
+    
+    if (typeof Deno !== 'undefined') {
+      // Deno environment
+      fileContents = await Deno.readTextFile(configPath);
+    } else {
+      // Node.js environment
+      const fsp = await import('fs/promises');
+      fileContents = await fsp.readFile(configPath, 'utf8');
+    }
+
     if(isYamlAvailable) {
       return yaml?.load(fileContents);
     }

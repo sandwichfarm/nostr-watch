@@ -24,9 +24,10 @@ async function cleanDist() {
   const distBrowserPath = path.join(distDir, 'web');
   const distWorkerPath  = path.join(distDir, 'worker');
   const distServerPath  = path.join(distDir, 'server');
+  const distDenoPath    = path.join(distDir, 'deno');
 
   try {
-    for (const dirPath of [distBrowserPath, distWorkerPath, distServerPath]) {
+    for (const dirPath of [distBrowserPath, distWorkerPath, distServerPath, distDenoPath]) {
       if (fs.existsSync(dirPath)) {
         console.log('Removing:', dirPath);
         await fsp.rm(dirPath, { recursive: true, force: true });
@@ -38,11 +39,8 @@ async function cleanDist() {
   }
 }
 
-
 /**
  * Browser Build
- * - Bundles for browser usage
- * - Includes Node polyfills (including `global`)
  */
 const browserConfig = {
   entryPoints: ['src/index.ts'],
@@ -65,8 +63,6 @@ const browserConfig = {
 
 /**
  * Worker Build
- * - Specifically for Web Workers
- * - Omits `global` polyfill to avoid `ReferenceError: global is not defined`
  */
 const workerConfig = {
   entryPoints: ['src/index.ts'],
@@ -88,9 +84,7 @@ const workerConfig = {
 };
 
 /**
- * Server Build
- * - For Node.js usage
- * - No need for Node polyfills because Node is the native environment
+ * Server Build (Node.js)
  */
 const serverConfig = {
   entryPoints: ['src/index.ts'],
@@ -103,13 +97,25 @@ const serverConfig = {
   plugins: []
 };
 
+/**
+ * Deno Build (NEW)
+ * - Uses platform: "neutral" to avoid Node.js-specific optimizations
+ * - Excludes "ws" from being bundled (Deno has native WebSockets)
+ */
+const denoConfig = {
+  entryPoints: ['src/index.ts'],
+  bundle: true,
+  outdir: 'dist/deno',
+  format: 'esm',
+  platform: 'neutral',
+  sourcemap: false,
+  allowOverwrite: true,
+  external: ['ws'],
+  plugins: []
+};
 
 /**
- * This runs all three builds:
- *   - Browser
- *   - Worker
- *   - Server
- * If `--watch` is enabled, it watches for changes.
+ * Run all builds
  */
 async function buildAll() {
   await cleanDist();
@@ -118,11 +124,13 @@ async function buildAll() {
     const browserContext = await esbuild.context(browserConfig);
     const workerContext  = await esbuild.context(workerConfig);
     const serverContext  = await esbuild.context(serverConfig);
+    const denoContext    = await esbuild.context(denoConfig);
 
     await Promise.all([
       browserContext.watch(),
       workerContext.watch(),
       serverContext.watch(),
+      denoContext.watch(),
     ]);
 
     console.log('[build.js] Watching for changes...');
@@ -135,9 +143,11 @@ async function buildAll() {
 
     await esbuild.build(serverConfig);
     console.log('[build.js] Server build complete');
+
+    await esbuild.build(denoConfig);
+    console.log('[build.js] Deno build complete');
   }
 }
-
 
 buildAll().catch(err => {
   console.error('[build.js] Build failed:', err);

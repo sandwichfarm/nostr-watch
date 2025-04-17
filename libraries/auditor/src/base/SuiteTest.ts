@@ -7,7 +7,7 @@ import Logger from '#base/Logger.js';
 import type { ISuite, ISuiteSampleData } from "#base/Suite.js";
 import { generateSubId } from "#src/utils/nostr.js";
 
-import { WebSocketWrapper as WebSocket } from "@nostrwatch/websocket";
+import { UniversalWebSocket as WebSocket } from "@nostrwatch/websocket";
 
 import { AssertWrap, Expect, type IExpectErrors, type IExpectResults } from "./Expect.js";
 
@@ -197,9 +197,9 @@ export abstract class SuiteTest implements ISuiteTest {
     this.suite.testKey = this.slug
 
     if(this.suite.requires.includes('websocket')) {
-      await this.socket.connect();
       this.suite.setupHandlers();
-      this.newSubId();
+      await this.socket.connect();
+      this.newSubId();  
     }
     
     this.timeoutBegin();

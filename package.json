@@ -1,16 +1,21 @@
 {
   "name": "@nostrwatch/monorepo",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "scripts": {
     "build": "pnpm -r build",
     "preinstall": "npx only-allow pnpm",
     "prerelease": "./scripts/prerelease.sh",
     "release": "pnpm run prerelease && ./scripts/release.sh",
     "dry-prerelease": "./scripts/prerelease.sh --dry-run",
+
     "dev:setup": "node ./scripts/dev-link-deps.js",
-    "deploy:gui": "pnpm run workspace @nostrwatch/gui build && gh-pages -d apps/gui/dist -t true",
     "packages:update": "node ./scripts/upkg.js",
+
+    "deno:compile@relaymon": "deno compile --unstable-sloppy-imports  --no-check --allow-ffi --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon apps/relaymon/src/index.ts",
+    "docker:build@relaymon": "docker compose -f apps/relaymon/.docker/docker-compose.yml build",
+
+    "deploy:gui": "pnpm run workspace @nostrwatch/gui build && gh-pages -d apps/gui/dist -t true",
     "deploy:nocapd@all": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney",
     "deploy:nocapd@amsterdam": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/amsterdam",
     "deploy:nocapd@newyork": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/newyork",
@@ -20,8 +25,9 @@
     "deploy:nocapd@saopaulo": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/saopaulo",
     "deploy:nocapd@siliconvalley": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/siliconvalley",
     "nukecache@all": "ansible-playbook .ansible/nocapd/nuke-cache.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney"
+    
   },
-  "packageManager": "pnpm@9",
+  "packageManager": "pnpm@10.7.1",
   "devDependencies": {
     "@changesets/cli": "2.27.11",
     "esbuild": "^0.24.0",
@@ -40,6 +46,7 @@
   "author": "dskvr <dskvr@users.noreply.github.com>",
   "license": "MIT",
   "dependencies": {
+    "chalk": "5.4.1",
     "glob": "^11.0.0",
     "nostr-tools": "^2.10.4"
   }

@@ -33,8 +33,16 @@ const config = {
         '/monitors/[pubkey]',
         '/operators',
         '/operators/[operator]',
+
         '/relays',
         '/relays/map',
+        '/relays/software',
+        '/relays/software/[name]',
+        '/relays/geography',
+        '/relays/geography/[country]',
+        '/relays/isps',
+        
+        '/relays/[protocol]',
         '/relays/[protocol]/[...relay]',
         '/relays/[protocol]/[...relay]/audits',
         '/relays/[protocol]/[...relay]/checks',
@@ -42,14 +50,11 @@ const config = {
         '/relays/[protocol]/[...relay]/insights',
         '/relays/[protocol]/[...relay]/nip-11',
         '/relays/[protocol]/[...relay]/operator',
+        
         '/reload/[...path]',
         '/unsupported',
         '/mobile',
-        '/relays/software',
-        '/relays/software/[name]',
-        '/relays/geography',
-        '/relays/geography/[country]',
-        '/relays/isps',
+        
         '/relays/isps/[isp]',
 
         '/note/[id]',

@@ -94,14 +94,32 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     }
     // await new Promise(resolve => setTimeout(resolve, 1000))
     await state.relay.init(args.databasePath);
-  } catch (e) {
-    if(retries <= 10){
-      state.relay?.close();
-      console.warn("Sqlite relay failed, retrying in 1 second", e);
-      retries++
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      await relayInit(state, args)
-      return
+  } catch (e: any) {
+    const code = e.code || e.result?.code;
+    const corrupt = code === "SQLITE_CORRUPT" || code === 11;
+    const message = e.message || (e.result && e.result.message) || String(e);
+    if (corrupt || message.includes("malformed") || message.includes("not a database")) {
+      const root = await navigator.storage.getDirectory();
+      try {
+        await state.relay?.destroy();
+      } catch(e) {
+        console.warn("Failed to destroy relay", e);
+        await relayInit(state, args)
+        return;
+      }
+      finally {
+        await relayInit(state, args)
+        return;
+      }
+    } else {
+      if(retries <= 5){
+        state.relay?.close();
+        console.warn("Sqlite relay failed, retrying in 1 second", e);
+        retries++
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        await relayInit(state, args)
+        return
+      }
     }
     console.error("Fallback to InMemoryRelay", e);
     state.relay = new InMemoryRelay();

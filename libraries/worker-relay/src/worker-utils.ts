@@ -266,36 +266,36 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
         state.relay!.setEventMetadata(id, metadata);
         break;
       }
-      case "upsertNip11": {
-        const res = await state.relay!.upsertNip11(msg.args);
-        reply(msg.id, res);
-        break;
-      }
-      case "getNip11": {
-        const res = await state.relay!.getNip11(msg.args);
-        reply(msg.id, res);
-        break;
-      }
-      case "countNip11s": {
-        const res = await state.relay!.countNip11s();
-        reply(msg.id, res);
-        break;
-      }
-      case "countUniqueNip11s": {
-        const res = await state.relay!.countUniqueNip11s();
-        reply(msg.id, res);
-        break;
-      }
-      case "dumpNip11s": {
-        const res = await state.relay!.dumpNip11s();
-        reply(msg.id, res);
-        break;
-      }
-      case "batchUpsertNip11": {
-        const res = await state.relay!.batchUpsertNip11(msg.args);
-        reply(msg.id, res);
-        break;
-      }
+      // case "upsertNip11": {
+      //   const res = await state.relay!.upsertNip11(msg.args);
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "getNip11": {
+      //   const res = await state.relay!.getNip11(msg.args);
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "countNip11s": {
+      //   const res = await state.relay!.countNip11s();
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "countUniqueNip11s": {
+      //   const res = await state.relay!.countUniqueNip11s();
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "dumpNip11s": {
+      //   const res = await state.relay!.dumpNip11s();
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "batchUpsertNip11": {
+      //   const res = await state.relay!.batchUpsertNip11(msg.args);
+      //   reply(msg.id, res);
+      //   break;
+      // }
       default: {
         reply(msg.id, { error: "Unknown command" });
         break;

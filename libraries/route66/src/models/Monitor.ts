@@ -206,12 +206,15 @@ export class Monitor {
 
   get checkFilter(): Filter {
     const kinds = [30166];
-    const since = Math.round(Date.now() / 1000) - this?.frequency;
-    const until = Math.round(Date.now() / 1000);
+    const now = Math.round(Date.now() / 1000);
+    const since = now - this?.frequency;
+    const until = now;
     const authors = [this.pubkey];
+    console.log('enabledMonitor:checkFilter', {kinds, since, until, authors})
     return { kinds, since, until, authors };
   }
 
+  //@deprecated
   get checkFilterSync(): Filter {
     const kind = 30166
     const kinds = [kind];

@@ -52,70 +52,70 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     this.#log(`Opened ${this.db.filename}`);
   }
 
-  dumpNip11s() {
-    if (this.db) {
-      const res = this.db.selectArrays(`SELECT relay, json FROM relay_nip11s`);
-      return Promise.resolve(res?.map(a => {
-        return {
-          relay: a[0] as string,
-          nip11: JSON.parse(a[1] as string),
-        };
-      }) ?? []);
-    }
-    return Promise.resolve([]);
-  }
+  // dumpNip11s() {
+  //   if (this.db) {
+  //     const res = this.db.selectArrays(`SELECT relay, json FROM relay_nip11s`);
+  //     return Promise.resolve(res?.map(a => {
+  //       return {
+  //         relay: a[0] as string,
+  //         nip11: JSON.parse(a[1] as string),
+  //       };
+  //     }) ?? []);
+  //   }
+  //   return Promise.resolve([]);
+  // }
 
-  countUniqueNip11s() {
-    if (this.db) {
-      const res = this.db.selectArrays(`SELECT COUNT(*) FROM nip11s`);
-      const count = res?.at(0)?.at(0) as number
-      return Promise.resolve(count || 0);
-    }
-    return Promise.resolve(0 as number);
-  }
+  // countUniqueNip11s() {
+  //   if (this.db) {
+  //     const res = this.db.selectArrays(`SELECT COUNT(*) FROM nip11s`);
+  //     const count = res?.at(0)?.at(0) as number
+  //     return Promise.resolve(count || 0);
+  //   }
+  //   return Promise.resolve(0 as number);
+  // }
 
-  countNip11s() {
-    if (this.db) {
-      const res = this.db.selectArrays(`SELECT COUNT(*) FROM relay_nip11s`);
-      const count = res?.at(0)?.at(0) as number
-      return Promise.resolve(count || 0);
-    }
-    return Promise.resolve(0 as number);
-  }
+  // countNip11s() {
+  //   if (this.db) {
+  //     const res = this.db.selectArrays(`SELECT COUNT(*) FROM relay_nip11s`);
+  //     const count = res?.at(0)?.at(0) as number
+  //     return Promise.resolve(count || 0);
+  //   }
+  //   return Promise.resolve(0 as number);
+  // }
 
-  batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean> {
-    for (const { relay, nip11 } of relayNip11s) {
-      this.upsertNip11({ relay, nip11 });
-    }
-    return Promise.resolve(true);
-  }
+  // batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean> {
+  //   for (const { relay, nip11 } of relayNip11s) {
+  //     this.upsertNip11({ relay, nip11 });
+  //   }
+  //   return Promise.resolve(true);
+  // }
 
-  async upsertNip11(nip11Args: Nip11Args) {
-    console.log('upsertNip11', nip11Args);  
-    const { relay, nip11 } = nip11Args;
-    const hash = deterministicHash(nip11);
-    if (this.db) {
-      try { 
-        this.db.exec(
-          `INSERT OR REPLACE INTO nip11s(hash, json) VALUES(?,?)`,
-          {
-            bind: [hash, JSON.stringify(nip11)],
-          },
-        );
-        this.db.exec(
-          `INSERT OR REPLACE INTO relay_nip11s(relay, hash) VALUES(?,?)`,
-          {
-            bind: [relay, hash],
-          },
-        );
-      } catch (e) {
-        console.error(e);
-        return false;
-      }
-      return true;
-    }
-    return false;
-  }
+  // async upsertNip11(nip11Args: Nip11Args) {
+  //   console.log('upsertNip11', nip11Args);  
+  //   const { relay, nip11 } = nip11Args;
+  //   const hash = deterministicHash(nip11);
+  //   if (this.db) {
+  //     try { 
+  //       this.db.exec(
+  //         `INSERT OR REPLACE INTO nip11s(hash, json) VALUES(?,?)`,
+  //         {
+  //           bind: [hash, JSON.stringify(nip11)],
+  //         },
+  //       );
+  //       this.db.exec(
+  //         `INSERT OR REPLACE INTO relay_nip11s(relay, hash) VALUES(?,?)`,
+  //         {
+  //           bind: [relay, hash],
+  //         },
+  //       );
+  //     } catch (e) {
+  //       console.error(e);
+  //       return false;
+  //     }
+  //     return true;
+  //   }
+  //   return false;
+  // }
 
   async getNip11(relay: string) {
     if (this.db) {
@@ -347,26 +347,26 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
    * Query relay by nostr filter
    */
   req(id: string, req: ReqFilter) {
+
+
     const start = unixNowMs();
 
     const [sql, params] = this.#buildQuery(req);
     const res = this.db?.selectArrays(sql, params);
     
     if(!res?.length) return [];
-    const results =
-      res?.map(a => {
+
+    const results = res?.map(a => {
         if (req.ids_only === true) {
           return a[0] as string;
         }
-        const ev = JSON.parse(a[0] as string) as NostrEvent;
-        return {
-          ...ev,
-          relays: (a[1] as string | null)?.split(","),
-        };
+        return JSON.parse(a[0] as string) as NostrEvent
       });
+      
     if(!results?.length) return [];
     const time = unixNowMs() - start;
     this.#log(`Query ${id} results took ${time.toLocaleString()}ms`, req, `${results?.length} results`);
+
     return results;
   }
 
@@ -381,6 +381,12 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
       bind: params,
       returnValue: "resultRows",
     });
+
+    if(req?.['#n']){
+      console.log('count:sql', sql, params)
+      console.log('count:rows', rows)
+    }
+
     const results = (rows?.at(0)?.at(0) as number | undefined) ?? 0;
 
     const time = unixNowMs() - start;
@@ -517,24 +523,6 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
       ret.push("?");
     }
     return ret.join(", ");
-  }
-
-  #replaceParamsDebug(sql: string, params: Array<number | string>) {
-    let res = "";
-    let cIdx = 0;
-    for (const chr of sql) {
-      if (chr === "?") {
-        const px = params[cIdx++];
-        if (typeof px === "number") {
-          res += px.toString();
-        } else if (typeof px === "string") {
-          res += `'${px}'`;
-        }
-      } else {
-        res += chr;
-      }
-    }
-    return res;
   }
 
   insertIntoSearchIndex(db: Database, ev: NostrEvent) {

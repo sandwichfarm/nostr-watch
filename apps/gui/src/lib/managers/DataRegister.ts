@@ -206,7 +206,6 @@ export class DataRegister {
     }
 
     private async execute(keys: string[], _params: Record<string, any> = {}): Promise<DataRegister> {
-        console.log('execute', keys, _params)
         for (const key of keys) {
             if(this.busy(key)) continue;
             const params = this.extractParams(key, _params);
@@ -222,7 +221,6 @@ export class DataRegister {
             }
             this.stop(key, params);
         }
-        console.log('execute', 'done')
         return this;
     }
 

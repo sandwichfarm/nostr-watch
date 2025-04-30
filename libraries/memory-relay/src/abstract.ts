@@ -182,6 +182,6 @@ export abstract class AbstractMemoryRelay<
     if (type === "replaceable" || type === "parameterized") {
       return (event.created_at as number) > (existing.created_at as number)
     }
-    return false;
+    return true;
   }
 }

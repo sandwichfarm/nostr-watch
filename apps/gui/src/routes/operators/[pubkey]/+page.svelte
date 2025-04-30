@@ -21,7 +21,7 @@
 	import PubkeyZap from "$lib/components/partials/PubkeyZap.svelte";
 	import PubkeyNip05 from "$lib/components/partials/PubkeyNip05.svelte";
 	import type { PubkeyProfile } from "@nostrwatch/route66/models/PubkeyProfile";
-	
+	import { decode } from "html-entities";
     let pubkey = $page.params.pubkey;
     
     const user: Readable<StoreUser> = pubkeyUserInstance$(pubkey);
@@ -75,9 +75,11 @@
             </Card.Title>  
         </Card.Header>  
         <Card.Content class="text-2xl text-black/80 dark:text-white/80">
+            {#if about && typeof about === 'string'}
             <div class="flex flex-row gap-2">
-                {about} 
-            </div>
+                {decode(about)} 
+                </div>
+            {/if}
             <div class="mt-4 pt-2 border-t border-white/10">
                 <div class="">
                     {#if $user?.lud16}

@@ -167,6 +167,9 @@
             let filterRecordIDs: Set<string> = new Set();
 
             if (filter.type === 'boolean' || filter.type === 'string' || filter.type === 'array') {
+                if(filterKey === 'network'){
+                    console.log('network filter', filterValue)
+                }
                 const options = Array.isArray(filterValue) ? filterValue : [filterValue];
                 options.forEach(option => {
                     const normalizedOption = String(option).toLowerCase();

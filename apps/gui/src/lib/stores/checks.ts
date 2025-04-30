@@ -63,7 +63,7 @@ export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($ov
 export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const countMap: Record<
     string,
-    { a: Record<string, any>; checks: Check[]; aggregate?: any }
+    { a: Record<string, any>; checks: Nip66CheckEvent[]; aggregate?: any }
   > = {};
 
   const relayAverages: Record<string, number> = {};
@@ -83,9 +83,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
       console.warn('could not normalize relay:', check.relay)
     }
 
-    const monitor = get(monitorsMap).get(check.pubkey);
-
-    if(monitor?.checks.includes('open')) {
+    if(check?.rtt) {
       if (!relayAverages[relay]) {
         relayAverages[relay] = 0;
         relayCounts[relay] = 0;
@@ -104,6 +102,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
     }
   });
 
+
   Object.keys(relayAverages).forEach((relay) => {
     const sum = relayAverages[relay];
     const count = relayCounts[relay];
@@ -115,6 +114,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const globalMin = Math.min(...averageValues);
   const globalMax = Math.max(...averageValues);
   const range = globalMax - globalMin || 1;
+  
 
   Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {

@@ -117,7 +117,6 @@
     linkableKeys.subscribe(keys => {
       keys.forEach(key => {
         const checkbox = document.getElementById(key) as HTMLInputElement
-        console.log(`checkbox exists?: ${key}: ${checkbox? 'true' : 'false'}`)    
         if(checkbox) {
           checkbox.checked = true;
         }

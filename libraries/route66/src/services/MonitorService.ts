@@ -425,13 +425,13 @@ export class MonitorService extends Service {
     { 
       const monitor = this.monitors.get(pubkey);
       if (!monitor) return [];
-      let checkFilter: Filter;
-      if(from === 'cache')  {
-        checkFilter = {...monitor.checkFilterSync}
-      }
-      else {
-        checkFilter = {...monitor.checkFilter};
-      }
+      let checkFilter: Filter = {...monitor.checkFilter};
+      // if(from === 'cache')  {
+      //   checkFilter = {...monitor.checkFilterSync}
+      // }
+      // else {
+      //    checkFilter = {...monitor.checkFilter};
+      // }
       const filters = [checkFilter];
       const options: WebsocketAdapterOptions = (
           _options? 

@@ -6,7 +6,7 @@
 	import { isLivesyncing } from "$lib/stores/app";
 	import { doBootstrap } from "$lib/stores/routines";
 	import { appState, isBootstrapping, isSeeded, tabState, isIdle } from "$lib/stores/app";
-	import { writable, type Writable } from "svelte/store";
+	import { get, writable, type Writable } from "svelte/store";
 	import { route66 } from "$lib/stores";
 	import { Value } from "svelte-radix";
 	import { shouldSync as _shouldSync } from "$lib/stores/app";
@@ -120,6 +120,13 @@
                 return parts[1] === kind.toString();
             }).length);
         });
+
+        addDebug('store:events:tor', Array.from($events.values()).filter(event => event.tags.find(tag => tag[0] === 'n' && tag[1] === 'tor')).length)
+        addDebug('store:events:clearnet', Array.from($events.values()).filter(event => event.tags.find(tag => tag[0] === 'n' && tag[1] === 'clearnet')).length)
+
+        addDebug('store:memoryRelay:all', get(eventsStoreMemoryRelay).count([{kinds: [30166]}]));
+        addDebug('store:memoryRelay:clearnet', get(eventsStoreMemoryRelay).count([{kinds: [30166], "#n": ["clearnet"]}]));
+        addDebug('store:memoryRelay:tor', get(eventsStoreMemoryRelay).count([{kinds: [30166], "#n": ["tor"]}]));
     }
 
     

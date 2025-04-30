@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { writable, derived, type Writable, type Readable } from 'svelte/store';
+    import { writable, derived, type Writable, type Readable, type Unsubscriber } from 'svelte/store';
     import { DataTable } from '$lib/components/@Careswitch/svelte-data-table';
     import * as Resizable from '$lib/components/ui/resizable'; 
     import DataTableShowResults from './DataTableShowResults.svelte';
@@ -41,7 +41,7 @@
     export const recordChanged = writable(new Map<string, boolean>())
     export const recordWatchValue = writable(new Map<string, any>())
 
-    let dataSubscription;
+    let dataSubscription: Unsubscriber;
 
     if(watchValue && $isBootstrapped) {
         const triggerFlash = (id: string) => {
@@ -247,11 +247,11 @@
             </Table.Header>
             <Table.Body>
                 {#each tableInstance?.rows as row (row.id)}
-                {(console.log('row data', row?.active, row?.enabled, $config.tableRowStyler(row)))}
+                <!-- {(console.log('row data', row?.active, row?.enabled, $config.tableRowStyler(row)))} -->
                     <Table.Row 
                         class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
                         style="{
-                            row.banner
+                            row.banner && row.banner !== ''
                                 ? 
                                     $darkMode
                                         ? 

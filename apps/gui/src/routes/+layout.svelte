@@ -211,9 +211,10 @@
 
   $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
 
-  $: {
-    console.log(progressList.length, Object.keys(modules || {}).length, `progressList.length / Object.keys(modules || {}).length`, progressList.length / Object.keys(modules || {}).length)
-  }
+  // $: {
+  //   console.log(progressList.length, Object.keys(modules || {}).length, `progressList.length / Object.keys(modules || {}).length`, progressList.length / Object.keys(modules || {}).length)
+  // }
+
   $: percentModulesLoaded = Math.round((progressList.length / Object.keys(moduleLoaders || {}).length) * 100);
   $: numMonitorsSynced = 
       activities

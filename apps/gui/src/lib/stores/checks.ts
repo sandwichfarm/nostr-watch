@@ -120,7 +120,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
       [...Nip66CheckEvent.keys, 'nip11ValidationErrors', 'nip11IsValid'].forEach((key: string) => {
       // get(relayChecksActiveKeys).forEach((key: string) => {
-        const value = nip66Event[key];
+        const value = nip66Event?.[key as keyof Nip66CheckEvent];
         
         const isNonNull = value !== null && value !== undefined;
   

@@ -156,6 +156,14 @@ export class Nip11 {
    * Returns the supported NIPs (Nostr Implementation Possibilities) by the relay.
    */
   get supportedNips(): number[] | undefined {
+    if(!Array.isArray(this.json?.supported_nips)){
+      if(typeof this.json?.supported_nips === 'number'){
+        return [this.json?.supported_nips]
+      }
+      else {
+        return;
+      }
+    }
     return this.json?.supported_nips;
   }
 

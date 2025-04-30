@@ -51,7 +51,7 @@ StateManager.on('wipe', () => { lastCompleteSync.set(0) })
 //     const now = Math.round(Date.now()/1000)
 //     lastCompleteSync.set(now)
 //     StateManager.set('lastCompleteSync', now)
-//     isSeeded.set(true)
+//     isSeeded.set(true)   
 // }
 
 export const shouldSync = () => {

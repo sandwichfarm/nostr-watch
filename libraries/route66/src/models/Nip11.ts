@@ -107,27 +107,33 @@ export class Nip11 {
   }
 
   /**
-   * Indicates whether payment is required to use the relay.
-   */
-  get paymentRequired(): boolean {
-    return this.json.limitation?.payment_required ?? false;
-  }
-
-  /**
-   * Indicates whether authentication is required to use the relay.
-   */
-  get authRequired(): boolean {
-    return this.json.limitation?.auth_required ?? false;
-  }
-
-  /**
    * Indicates whether the relay is restricted to read-only.
    * If true, the relay will not accept writes.
    * If false, the relay will accept writes.
    * If undefined, the relay may accept writes.
   */
   get restrictedWrites(): boolean {
-    return this.json.limitation?.restricted_writes ?? false;
+    return typeof this.json?.limitation?.restricted_writes === 'boolean' 
+      ? this.json.limitation?.restricted_writes 
+      : false;
+  }
+
+  /**
+   * Indicates whether payment is required to use the relay.
+   */
+  get paymentRequired(): boolean {
+    return typeof this.json?.limitation?.payment_required === 'boolean' 
+      ? this.json.limitation?.payment_required 
+      : false;
+  }
+
+  /**
+   * Indicates whether authentication is required to use the relay.
+   */
+  get authRequired(): boolean {
+    return typeof this.json?.limitation?.auth_required === 'boolean' 
+      ? this.json.limitation?.auth_required 
+      : false;
   }
 
   /**
@@ -137,12 +143,13 @@ export class Nip11 {
     return typeof this.minPowDifficulty === 'number' && this.minPowDifficulty > 0;
   }
 
-
   /**
    * Returns required pow difficulty for the relay.
    */
   get minPowDifficulty(): number | undefined {
-    return this.json.limitation?.min_pow_difficulty ?? undefined;
+    return typeof this.json?.limitation?.min_pow_difficulty === 'number'
+      ? this.json.limitation?.min_pow_difficulty 
+      : undefined;
   }
 
   /**

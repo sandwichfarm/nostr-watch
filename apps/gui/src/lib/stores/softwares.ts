@@ -164,9 +164,11 @@ export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($
 })
 
 export const operatorPubkeySoftwareCounts = derived(operatorPubkeySoftwaresMap, ($operatorPubkeySoftwaresMap) => {
-  const counts = new Map();
-  $operatorPubkeySoftwaresMap.forEach((software) => {
-    counts.set(software, pubkeys.size);
+  const result = new Map<Pubkey, Map<string, number>>();   
+  $operatorPubkeySoftwaresMap.forEach((softwares, pubkey) => {
+    const counts = new Map();
+    softwares.forEach((software) => {
+      
   });
   return counts;
 })

@@ -3,6 +3,7 @@ import type { Readable, Writable } from "svelte/store";
 import { writable, derived, get } from "svelte/store";
 import { route66 } from "./route66";
 import { delay } from "@nostrwatch/utils";
+import { isProduction } from "./env";
 
 export type AppStateType = 'booting' | 'running' | 'shutdown'
 export const appState: Writable<AppStateType> = writable()
@@ -20,8 +21,16 @@ export const isBootstrapping: Writable<boolean> = writable(false)
 export const lastCompleteSync: Writable<number> = writable(StateManager.get('lastCompleteSync') ?? 0)
 
 export const darkMode: Writable<boolean> = writable(false)
-const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-darkMode.set(darkModeQuery.matches);
+let darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+//HOTFIX: force dark mode in production
+if(isProduction()) {
+    darkMode.set(true)
+}
+else {
+    darkMode.set(darkModeQuery.matches);
+}
+
 darkModeQuery.addEventListener('change', (event) => {
   if (event.matches) {
     darkMode.set(true);

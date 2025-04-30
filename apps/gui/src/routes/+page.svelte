@@ -36,7 +36,7 @@
         placeholderText={"find your relays"}
         inputClass="
           
-          w-[85%] md:w-full py-2 px-4 mx-4 
+          w-[85%] md:w-full py-2 px-4
           text-center
           border border-black/20 
           text-2xl md:text-3xl 

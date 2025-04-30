@@ -9,10 +9,8 @@ import { Nip11Service } from "$lib/services/Nip11Service";
 
 import { doAggregateCache, hasBeenBootstrapped, hasBeenSeeded } from "./app.js";
 
-import { relayCheckAggregates } from "./checks.js";
 import { isPubkey } from "../utils/nostr.js";
 import { throttledDerived } from "$utils/stores.js";
-import type { SchemaValidationServiceResponse } from "$lib/services/SchemaValidationService/index.js";
 
 import { eventsArray } from './events.js'; 
 

@@ -24,10 +24,10 @@ export class Worker {
   private config: any;
   private publisher: Publisher;
   private retryManager: RetryManager;
-  private statusIntval: ReturnType<typeof setInterval>; // Default to log status every 20 checks
-  private knownRelayStatus: Map<string, boolean> = new Map(); // Track previous status (online/offline)
-  private publishMaxRetries: number = 3;
-  private publishInitialBackoffMs: number = 1000;
+  private statusIntval: ReturnType<typeof setInterval>;
+  private knownRelayStatus: Map<string, boolean> = new Map();
+  private publishMaxRetries: number = 5;
+  private publishInitialBackoffMs: number = 1000*60;
 
   constructor(
     private pubkey: string,
@@ -39,12 +39,10 @@ export class Worker {
     this.retryManager = new RetryManager(config.relaymon.retry.expiry);
     this.statusIntval = statuses(this.queueManager, config.relaymon.checks.options.statusInterval);
     
-    // Set logger level from config if available
     if (config.logLevel) {
       this.logger.setLevel(config.logLevel);
     }
 
-    // Set publish retry configuration if available
     if (config.publisher?.retry?.maxRetries !== undefined) {
       this.publishMaxRetries = config.publisher.retry.maxRetries;
     }
@@ -52,24 +50,18 @@ export class Worker {
       this.publishInitialBackoffMs = config.publisher.retry.initialBackoffMs;
     }
 
-    // Initialize known relay status from database to maintain state between runs
     this.initializeRelayStatusFromDB();
     
-    // Pass the config to the hostnames module for deletion events
     setConfig(config);
   }
 
-  // Initialize relay status map from database to persist knowledge between runs
   private initializeRelayStatusFromDB(): void {
     try {
-      // Use the existing db instance instead of creating a new connection
       const results = db.query(`SELECT url, online, retries FROM relay_status`);
       
       for (const [url, online, retries] of results) {
-        // Get online status
         this.knownRelayStatus.set(url as string, (online as number) === 1);
         
-        // Also initialize retry counts directly from the query
         if ((retries as number) > 0) {
           this.relayRetries.set(url as string, retries as number);
           this.logger.debug(`Loaded retry count for ${url}: ${retries}`);
@@ -89,7 +81,6 @@ export class Worker {
     let recovered = false;
     let isFirstCheck = false;
 
-    // Check if relay hostname is in blocklist
     if (isHostnameBlocked(relayUrl)) {
       this.logger.debug(`Skipping check for relay ${relayUrl} - hostname is in blocklist`);
       await deleteRelayCheckEvent(relayUrl, "hostname is in blocklist", this.config, this.queueManager);
@@ -97,11 +88,9 @@ export class Worker {
       return;
     }
 
-    // Check if relay is already marked as ignored in database
     if (isRelayIgnored(relayUrl)) {
       this.logger.debug(`Skipping check for relay ${relayUrl} - already marked as ignored in database`);
       
-      // Generate a deletion event for this ignored relay
       try {
         await deleteRelayCheckEvent(relayUrl, "Relay was previously marked as ignored", this.config, this.queueManager);
         this.logger.debug(`Published deletion event for previously ignored relay ${relayUrl}`);
@@ -112,7 +101,6 @@ export class Worker {
       return;
     }
 
-    // Check if this is the first time this relay is being checked
     try {
       const checkedAt = db.query("SELECT checked_at FROM relay_status WHERE url = ?", [relayUrl]);
       if (checkedAt.length > 0 && (checkedAt[0][0] === -1)) {
@@ -135,7 +123,6 @@ export class Worker {
         this.config.relaymon.checks.enabled || ["open", "read"]
       );
 
-      // Store NIP-11 info in our database if it's available
       if (result.info?.data && Object.keys(result.info.data).length > 0) {
         try {
           const infoHash = createInfoHash(result.info.data);
@@ -150,46 +137,38 @@ export class Worker {
 
       const dedupedResult = await relayHostnameDedup(result);
       
-      // Update session stats - check if relay went offline
       wasOnline = result.open?.data === true;
       
-      // If this is the first check and the relay is online, increment the new relays found counter
       if (isFirstCheck && wasOnline) {
         incrementNewRelaysFound(1, true);
         this.logger.debug(`New relay ${relayUrl} is online - incrementing new relays found counter`);
       }
       
-      // Check if the relay was previously online but is now offline
       const previouslyOnline = this.knownRelayStatus.get(relayUrl);
       if (previouslyOnline === true && !wasOnline) {
         wentOffline = true;
         this.logger.debug(`Relay ${relayUrl} went offline (was previously online)`);
       }
       
-      // Check if this is a recovery (was offline and now is online)
       const previousStatus = this.knownRelayStatus.get(relayUrl);
-      const previouslyOffline = previousStatus === false; // only true if definitely was false before
+      const previouslyOffline = previousStatus === false;
       if (previouslyOffline && wasOnline) {
         recovered = true;
         this.logger.debug(`Relay ${relayUrl} recovered (was previously offline)`);
-        // Increment the recovered relays counter
         incrementRelaysRecovered();
       }
       
-      // Check if this is a retry (was already offline and still is)
       const isRetry = previouslyOffline && !wasOnline;
       
-      // Update known relay status
       this.knownRelayStatus.set(relayUrl, wasOnline);
       
       if (!dedupedResult.ignore && wasOnline) {
-        await this.publishResult(dedupedResult);
+        this.publishResult(dedupedResult);
       } 
       
       this.logger.debug(`Persisting result for relay: ${relayUrl}, online: ${wasOnline}`);
       persistResult(dedupedResult);
       
-      // Only increment retry count if this is a retry (relay was already offline before)
       if (isRetry) {
         this.logger.debug(`Incrementing retry count for ${relayUrl} as it's still offline`);
         this.handleRetryForRelay(relayUrl);
@@ -201,7 +180,6 @@ export class Worker {
         console.error("Error displaying progress:", displayError);
       }
       
-      // Success - reset retry count (already done in persistResult)
       if (wasOnline) {
         this.relayRetries.set(relayUrl, 0);
       }
@@ -211,13 +189,11 @@ export class Worker {
       wasSuccessful = false;
       this.logger.error(`Error processing relay ${relayUrl}: ${error.message}`);
       
-      // Only increment retry count if this is a genuine retry (not first error)
       const currentRetryCount = this.relayRetries.get(relayUrl) || 0;
       if (currentRetryCount > 0) {
         this.logger.debug(`Incrementing retry count for ${relayUrl} after repeated error (current: ${currentRetryCount})`);
         this.handleRetryForRelay(relayUrl);
       } else {
-        // First time error - set to 0 but don't increment yet
         this.logger.debug(`First error for ${relayUrl}, not incrementing retry count yet`);
         this.relayRetries.set(relayUrl, 0);
       }
@@ -247,34 +223,30 @@ export class Worker {
           const signedEvent = await event.signEvent(privkey);
           await this.publisher.publishEvent(signedEvent);
           this.logger.debug(`Published event for relay ${result.url}`);
-          return true; // Indicate success
+          return true;
         } catch (error: any) {
           this.logger.error(`Publish failed for ${result.url}: ${error.message}`);
           
-          // If we haven't reached max retries, create a new publish job with increased retry count
           if (retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
-            // Exponential backoff
             const nextBackoffMs = backoffMs * 2;
             this.logger.info(`Scheduling retry ${nextRetryCount}/${maxRetries} for ${result.url} in ${nextBackoffMs}ms`);
             
-            // Add a new job to the queue after delay with lower priority
             setTimeout(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
-                { isRetry: true } // Mark as retry job for proper tracking and priority
+                { isRetry: true }
               );
             }, nextBackoffMs);
             
-            return false; // Indicate job didn't complete successfully but will be retried
+            return false;
           } else {
             this.logger.error(`Exceeded maximum retries (${maxRetries}) for publishing ${result.url}`);
-            return false; // Indicate permanent failure after max retries
+            return false;
           }
         }
       };
 
-      // Add the initial publish job to the queue (not a retry)
       this.queueManager.addPublishJob(() => publishJob(), { isRetry: false });
     } catch (error: any) {
       this.logger.error(`Failed to add publish job for ${result.url}: ${error.message}`);
@@ -286,7 +258,6 @@ export class Worker {
     currentRetries++;
     this.relayRetries.set(relayUrl, currentRetries);
     
-    // Increment retry count in database
     incrementRetryCount(relayUrl);
     
     const delayMs = this.retryManager.getDelay(currentRetries);
@@ -318,7 +289,7 @@ export class Worker {
     recovered: boolean = false,
     error: boolean = false
   ): void {
-    const maxRelayWidth = 50; // Max width for relay URLs
+    const maxRelayWidth = 50;
     const failure = chalk.red;
     const success = chalk.bold.green;
     const mute = chalk.gray;
@@ -329,13 +300,10 @@ export class Worker {
       if (_d > 0) duration += _d;
     };
 
-    // Format the URL to a consistent width
     let formattedUrl = url;
     if (url.length > maxRelayWidth) {
-      // Truncate with ellipsis if too long
       formattedUrl = url.substring(0, maxRelayWidth - 3) + '...';
     } else {
-      // Pad with spaces if shorter
       formattedUrl = url.padEnd(maxRelayWidth, ' ');
     }
 
@@ -394,34 +362,26 @@ export class Worker {
       incD(result?.info?.duration || 0);
     }
 
-    // Get retry count from database for accuracy instead of in-memory map
     const retries = getRetryCount(url);
     const isOnline = result?.open?.data === true;
 
     if (error) {
-      // If there's an error, show error status
       progress += `${chalk.gray.italic("error")} `;
       
-      // Only show retry count if greater than 0 (actual retries)
       if (retries > 0) {
-        // Calculate time until next retry based on retry count
         const nextRetryDelay = this.retryManager.getDelay(retries);
         const formattedDelay = this.formatDuration(nextRetryDelay);
         progress += chalk.yellow(`[retries: ${retries}, next: ${formattedDelay}]`);
       }
     } else if (!isOnline) {
-      // If relay is offline, show retries instead of duration, but only if > 0
       if (retries > 0) {
-        // Calculate time until next retry based on retry count
         const nextRetryDelay = this.retryManager.getDelay(retries);
         const formattedDelay = this.formatDuration(nextRetryDelay);
         progress += chalk.yellow(`[retries: ${retries}, next: ${formattedDelay}]`);
       }
     } else {
-      // If relay is online, show duration
       progress += chalk.gray.italic(`${(duration / 1000).toFixed(2)} seconds `);
       
-      // Add recovered status at the very end if relay recovered from being offline
       if (recovered) {
         progress += recoverHighlight(`[RECOVERED]`);
       }

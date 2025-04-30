@@ -22,6 +22,7 @@ interface CheckData {
       limitation?: {
         auth_required?: boolean;
         payment_required?: boolean;
+        pow_required?: boolean;
       };
       software?: string;
       version?: string;
@@ -68,12 +69,12 @@ export class Kind30166 extends Event {
       err: console.error,
       info: console.info
     }
-  }
+  };
 
   _generateEvent(check: CheckData): NostrEvent {
-    let content = "{}"
-    const tags = this.generateTags(check)
-    const nip11 = check.info?.data
+    let content = "{}";
+    const tags = this.generateTags(check);
+    const nip11 = check.info?.data;
 
     if(nip11) {
       try {
@@ -82,54 +83,54 @@ export class Kind30166 extends Event {
         this.logger.err(`generateEvent(): Error: ${e}`)
         this.logger.info(nip11)
       }
-    }
+    };
 
     const event = {
       ...this.tpl(),
       content,
       tags
-    }
+    };
 
-    return event
-  }
+    return event;
+  };
 
   generateTags(check: CheckData): NostrEventTags {
-    const protocol = new URL(check.url).protocol
+    const protocol = new URL(check.url).protocol;
 
-    const info = check?.info?.data
-    const geo = check?.geo?.data
-    const ssl = check?.ssl?.data
-    const dns = check?.dns?.data
+    const info = check?.info?.data;
+    const geo = check?.geo?.data;
+    const ssl = check?.ssl?.data;
+    const dns = check?.dns?.data;
 
-    const open = check?.open?.duration
-    const read = check?.read?.duration
-    const write = check?.write?.duration
+    const open = check?.open?.duration;
+    const read = check?.read?.duration;
+    const write = check?.write?.duration;
 
-    let tags: NostrEventTags = []
+    let tags: NostrEventTags = [];
 
-    tags.push(['d', check.url])
+    tags.push(['d', check.url]);
 
-    if( open && open > 0 ){
-      tags.push(['rtt-open', String(Math.round(open))])
+    if( open && typeof open === 'number' && open > 0 ){
+      tags.push(['rtt-open', String(Math.round(open))]);
     }
 
-    if( read && read > 0 ){
-      tags.push(['rtt-read', String(Math.round(read))])
+    if( read && typeof open === 'number' && read > 0 ){
+      tags.push(['rtt-read', String(Math.round(read))]);
     }
 
-    if( write && write > 0 ){
-      tags.push(['rtt-write', String(Math.round(write))])
+    if( write && typeof open === 'number' && write > 0 ){
+      tags.push(['rtt-write', String(Math.round(write))]);
     }
       
-    if (check?.network){
-      tags.push(['n', check.network])
+    if (check?.network && typeof check.network === 'string'){
+      tags.push(['n', check.network]);
     }
 
     if (info){
       if (info?.pubkey && typeof info?.pubkey === 'string'){
         const regex = /^(?:[0-9a-f]{64})$/;
         if( regex.test(info.pubkey) ) {
-          tags.push(['p', info.pubkey])
+          tags.push(['p', info.pubkey]);
         }
         else {
           // console.warn(`generateTags(): Invalid pubkey: ${info.pubkey}`)
@@ -137,8 +138,13 @@ export class Kind30166 extends Event {
       }
 
       if(info?.supported_nips) {
-        for(const nip of info.supported_nips){
-          tags.push(['N', String(nip)])
+        if(info.supported_nips instanceof Array) {
+          for(const nip of info.supported_nips){
+            tags.push(['N', String(nip)])
+          }
+        }
+        else if(typeof info.supported_nips === 'number') {
+          tags.push(['N', String(info.supported_nips)])
         }
       }
 
@@ -152,7 +158,9 @@ export class Kind30166 extends Event {
     
       if(info?.tags) {
         for(const tag of info.tags){
-          tags.push(['t', String(tag)])
+          if(typeof tag === 'string'){
+            tags.push(['t', String(tag)])
+          }
         }
       }      
 
@@ -170,22 +178,29 @@ export class Kind30166 extends Event {
         tags.push(['R', '!payment'])
       }
 
-      if (info?.software){
+      if (info?.limitation?.pow_required === true){
+        tags.push(['R', 'pow'])
+      }
+      else {
+        tags.push(['R', '!pow'])
+      }
+
+      if (info?.software && typeof info.software === 'string'){
         tags.push(['s', info.software])
       }
 
-      if (info?.version ){
+      if (info?.version && typeof info.version === 'string'){
         tags.push(['L', 'nip11.version'])
         tags.push(['l', info.version, 'nip11.version'])
       }
     }
 
-    if(ssl) {
+    if(ssl && typeof ssl?.valid_from === 'string' && typeof ssl?.valid_to === 'string') {
       if (protocol === 'wss:') {
         const validFrom = new Date(ssl.valid_from).getTime()
         const validTo = new Date(ssl.valid_to).getTime()
-        const current = validFrom < Date.now() && validTo > Date.now()
-        tags.push(['R', current  ? 'ssl' : '!ssl'])
+        const isCurrent = validFrom < Date.now() && validTo > Date.now()
+        tags.push(['R', isCurrent  ? 'ssl' : '!ssl'])
       }
       else {
         tags.push(['R', '!ssl'])

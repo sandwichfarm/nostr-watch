@@ -1,4 +1,5 @@
 config*.yaml
+!*.sample.*
 *.env*
 node_modules
 *.db
@@ -20,3 +21,4 @@ data/*
 .docker/*.yaml 
 !.docker/docker-compose.yml
 !.docker/Dockerfile.unified
+

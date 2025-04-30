@@ -4,17 +4,19 @@ services:
   # Main relaymon service with network routing
   relaymon:
     build:
-      context: ../../..  # Three levels up to reach the project root from .docker dir
+      context: ../../.. 
       dockerfile: ./apps/relaymon/.docker/Dockerfile.unified
-      # no_cache: true  # Disable build cache
+      no_cache: true 
     container_name: relaymon
     restart: unless-stopped
     volumes:
-      - ../data:/app/nostr-watch/apps/relaymon/data
-      - ../.env:/app/nostr-watch/apps/relaymon.env
-      - ../.config:/app/nostr-watch/apps/config.yaml
-      - ./config/danted.conf:/etc/danted.conf
-      - ./config/redsocks.conf:/etc/redsocks.conf
+      - ../data:/opt/data
+      - ../.docker.env:/app/.env
+      - ../.docker.env:/app/nostr-watch/apps/relaymon/.env
+      - ../config.docker.yaml:/opt/config.yaml
+      - ../data/relays.db:/opt/relays.db
+      - ./config/danted.conf:/etc/danted.conf 
+      - ./config/proxychains.conf:/etc/proxychains.conf 
     networks:
       - relaymon-net
     depends_on:
@@ -29,7 +31,7 @@ services:
 
   # Tor proxy service
   tor-proxy:
-    image: alpine/tor:latest
+    image: chriswayg/tor-alpine:latest
     container_name: tor-proxy
     restart: unless-stopped
     volumes:

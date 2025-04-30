@@ -5,7 +5,7 @@ A Typescript stack for monitoring, auditing, describing and validating anything 
 
 # packages
 | package                     | type     | description                                                                                                      | status | web | nodejs | deno | cli |notes                                                 |
-|-----------------------------|----------|------------------------------------------------------------------------------------------------------------------|--------|-----|--------|------|-------------------------------------------------------|
+|-----------------------------|----------|------------------------------------------------------------------------------------------------------------------|--------|-----|--------|------|------|-------------------------------------------------|
 | @nostrwatch/gui             | webapp   | NIP-66 nostr client.                                                                                             | alpha  | ✓   |        |      |     |                                                       |
 | @nostrwatch/trawler         | agent    | Scraps all of the known nostr-verse for relays, sanitizes and dedupes them.                                      | alpha  |     |        | ✓    |     | rewrite imminent                                      |
 | @nostrwatch/relaymon        | agent    | Persistently checks relays on a regular interval with many configuration options.                                | alpha  |     |        | ✓    | ✓   |                                                       |

@@ -8,12 +8,9 @@ export class JsonHighlighter {
     try {
       parsed = parse(jsonString);
     } catch (err: any) {
-      return this.renderTable(
-        jsonString,
-        [],
-        [], // No global warnings initially
-        [`Invalid JSON: ${err?.message ?? String(err)}`]
-      );
+      // Format the initial JSON parse error
+      const globalErrors = [`Invalid JSON: ${err?.message ?? String(err)}`];
+      return this.renderTable(jsonString, [], [], globalErrors);
     }
 
     const { pointers } = parsed;
@@ -28,9 +25,11 @@ export class JsonHighlighter {
     }
 
     const additionalPropNames: string[] = [];
+    const errorMessages: string[] = [];
 
-    // Process errors
+    // Process errors - Collect messages and highlight lines
     for (const error of errors) {
+      errorMessages.push(error.message || 'Unknown validation error'); // Collect error messages
       const instancePath = error.instancePath ?? '';
       const pointer = pointers[instancePath];
       
@@ -56,7 +55,6 @@ export class JsonHighlighter {
         if (propFound !== -1) {
           lineData[propFound].warnings.push(warning.message || `Additional property "${propName}"`);
         } else {
-          // Fallback if property line not found (less likely but possible)
           const instancePath = warning.instancePath ?? '';
           const pointer = pointers[instancePath];
           if (pointer) {
@@ -67,7 +65,6 @@ export class JsonHighlighter {
           }
         }
       } else {
-        // Standard handling for other warnings (if any in the future)
         const instancePath = warning.instancePath ?? '';
         const pointer = pointers[instancePath];
         if (pointer) {
@@ -82,44 +79,43 @@ export class JsonHighlighter {
       }
     }
 
-    // Format the global warning message for additional properties
+    // Format the global messages
     const globalWarningMessage = this.formatAdditionalPropertiesMessage(additionalPropNames);
+    const globalErrorMessage = this.formatErrorMessages(errorMessages);
+    
     const globalWarnings = globalWarningMessage ? [globalWarningMessage] : [];
+    const globalErrors = globalErrorMessage ? [globalErrorMessage] : [];
 
-    return this.renderTable(jsonString, lineData, globalWarnings, errors.length ? [] : undefined); // Pass global warnings
+    // Pass formatted global messages to renderTable
+    return this.renderTable(jsonString, lineData, globalWarnings, globalErrors);
   }
 
   // Helper to format the list of additional properties
   private static formatAdditionalPropertiesMessage(propNames: string[]): string | null {
-    if (propNames.length === 0) {
-      return null;
-    }
-
-    const uniqueNames = [...new Set(propNames)]; // Ensure unique names
+    if (propNames.length === 0) return null;
+    const uniqueNames = [...new Set(propNames)];
     const formattedNames = uniqueNames.map(name => `"${name}"`);
-
     let message = 'Additional propert';
-    if (formattedNames.length === 1) {
-      message += `y ${formattedNames[0]} exists`;
-    } else if (formattedNames.length === 2) {
-      message += `ies ${formattedNames[0]} and ${formattedNames[1]} exist`;
-    } else {
-      const last = formattedNames.pop();
-      message += `ies ${formattedNames.join(', ')}, and ${last} exist`;
-    }
+    if (formattedNames.length === 1) message += `y ${formattedNames[0]} is`;
+    else if (formattedNames.length === 2) message += `ies ${formattedNames[0]} and ${formattedNames[1]} are`;
+    else { const last = formattedNames.pop(); message += `ies ${formattedNames.join(', ')}, and ${last} are`; }
+    return `${message} defined in the payload that ${formattedNames.length === 1 ? 'is' : 'are'} not defined in the specification.`;
+  }
 
-    return `${message} but are not defined in the schema.`;
+  // Helper to format the list of error messages
+  private static formatErrorMessages(errorMessages: string[]): string | null {
+    if (errorMessages.length === 0) return null;
+    const uniqueMessages = [...new Set(errorMessages)];
+    if (uniqueMessages.length === 1) return uniqueMessages[0];
+    // Simple list for multiple errors, could be enhanced
+    return `Multiple validation errors: ${uniqueMessages.join('; ')}`;
   }
 
   // Helper method to find the line that contains a specific property
   private static findLineWithProperty(lines: string[], propName: string): number {
     const regex = new RegExp(`"${propName}"\s*:`, 'i');
-    for (let i = 0; i < lines.length; i++) {
-      if (regex.test(lines[i])) {
-        return i;
-      }
-    }
-    return -1; // Property not found
+    for (let i = 0; i < lines.length; i++) if (regex.test(lines[i])) return i;
+    return -1;
   }
 
   private static renderTable(
@@ -129,8 +125,6 @@ export class JsonHighlighter {
     globalErrors: string[] = []
   ): string {
     const lines = jsonString.split(/\r?\n/);
-    
-    // Note: Filtering for 'no pointer info' removed as we now generate a single banner message
 
     let html = `
 <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 
@@ -138,17 +132,17 @@ export class JsonHighlighter {
             text-slate-800 dark:text-slate-200 p-2 
             font-mono text-sm leading-tight">
 `;
-    // Render Global Errors First
+    // Render Global Error Banner (if it exists)
     for (const errMsg of globalErrors) {
+      // Use red banner style
       html += `
-  <div class="mb-2 text-red-600 dark:text-red-400 font-semibold">
+  <div class="mb-2 p-2 rounded bg-red-600/80 dark:bg-red-700/80 text-white font-semibold">
     ${escapeHtml(errMsg)}
   </div>`;
     }
 
     // Render the single Global Warning Banner (if it exists)
     for (const warnMsg of globalWarnings) {
-      // Use blue for the warning banner background
       html += `
   <div class="mb-2 p-2 rounded bg-blue-500/70 dark:bg-blue-700/70 text-white font-semibold">
     ${escapeHtml(warnMsg)}
@@ -163,37 +157,27 @@ export class JsonHighlighter {
     lines.forEach((line, idx) => {
       const lineNumber = idx + 1;
       const isEven = lineNumber % 2 === 0;
-
       const hasErrors = lineData[idx].errors.length > 0;
       const hasWarnings = lineData[idx].warnings.length > 0;
       let rowClasses = '';
       let rowTitle = '';
 
       if (hasErrors) {
-        rowClasses = 'bg-red-600 text-white';
+        rowClasses = 'bg-red-600 text-white'; // Row highlight remains red
         const combined = lineData[idx].errors.join(' | ');
         rowTitle = `title="${escapeHtml(combined)}"`;
       } else if (hasWarnings) {
-        // Change warning row color to blue
-        rowClasses = 'bg-blue-500 dark:bg-blue-700 text-white'; 
+        rowClasses = 'bg-blue-500 dark:bg-blue-700 text-white'; // Row highlight remains blue
         const combined = lineData[idx].warnings.join(' | ');
         rowTitle = `title="${escapeHtml(combined)}"`;
       } else {
-        rowClasses = isEven
-          ? 'bg-slate-50 dark:bg-slate-800'
-          : 'bg-white dark:bg-slate-900';
+        rowClasses = isEven ? 'bg-slate-50 dark:bg-slate-800' : 'bg-white dark:bg-slate-900';
       }
 
       html += `
       <tr class="${rowClasses}" ${rowTitle}>
-        <!-- Line Number -->
-        <td class="py-1 pr-3 text-right align-top select-none opacity-70 w-10">
-          ${lineNumber}
-        </td>
-        <!-- Actual JSON text in a <pre> to preserve indentation -->
-        <td class="py-1 w-full align-top">
-          <pre class="whitespace-pre m-0">${escapeHtml(line)}</pre>
-        </td>
+        <td class="py-1 pr-3 text-right align-top select-none opacity-70 w-10">${lineNumber}</td>
+        <td class="py-1 w-full align-top"><pre class="whitespace-pre m-0">${escapeHtml(line)}</pre></td>
       </tr>
 `;
     });
@@ -208,9 +192,5 @@ export class JsonHighlighter {
 }
 
 function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

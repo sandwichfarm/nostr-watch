@@ -25,11 +25,9 @@ export class JsonHighlighter {
     }
 
     const additionalPropNames: string[] = [];
-    const errorMessages: string[] = [];
 
-    // Process errors - Collect messages and highlight lines
+    // Process errors - Don't group them, just highlight the lines
     for (const error of errors) {
-      errorMessages.push(error.message || 'Unknown validation error'); // Collect error messages
       const instancePath = error.instancePath ?? '';
       const pointer = pointers[instancePath];
       
@@ -79,15 +77,12 @@ export class JsonHighlighter {
       }
     }
 
-    // Format the global messages
+    // Format the global additional properties message (only for warnings)
     const globalWarningMessage = this.formatAdditionalPropertiesMessage(additionalPropNames);
-    const globalErrorMessage = this.formatErrorMessages(errorMessages);
-    
     const globalWarnings = globalWarningMessage ? [globalWarningMessage] : [];
-    const globalErrors = globalErrorMessage ? [globalErrorMessage] : [];
 
-    // Pass formatted global messages to renderTable
-    return this.renderTable(jsonString, lineData, globalWarnings, globalErrors);
+    // No global error messages - they're displayed individually
+    return this.renderTable(jsonString, lineData, globalWarnings, []);
   }
 
   // Helper to format the list of additional properties
@@ -96,19 +91,10 @@ export class JsonHighlighter {
     const uniqueNames = [...new Set(propNames)];
     const formattedNames = uniqueNames.map(name => `"${name}"`);
     let message = 'Additional propert';
-    if (formattedNames.length === 1) message += `y ${formattedNames[0]} is`;
-    else if (formattedNames.length === 2) message += `ies ${formattedNames[0]} and ${formattedNames[1]} are`;
-    else { const last = formattedNames.pop(); message += `ies ${formattedNames.join(', ')}, and ${last} are`; }
-    return `${message} defined in the payload that ${formattedNames.length === 1 ? 'is' : 'are'} not defined in the specification.`;
-  }
-
-  // Helper to format the list of error messages
-  private static formatErrorMessages(errorMessages: string[]): string | null {
-    if (errorMessages.length === 0) return null;
-    const uniqueMessages = [...new Set(errorMessages)];
-    if (uniqueMessages.length === 1) return uniqueMessages[0];
-    // Simple list for multiple errors, could be enhanced
-    return `Multiple validation errors: ${uniqueMessages.join('; ')}`;
+    if (formattedNames.length === 1) message += `y ${formattedNames[0]} exists`;
+    else if (formattedNames.length === 2) message += `ies ${formattedNames[0]} and ${formattedNames[1]} exist`;
+    else { const last = formattedNames.pop(); message += `ies ${formattedNames.join(', ')}, and ${last} exist`; }
+    return `${message} but are not defined in the schema.`;
   }
 
   // Helper method to find the line that contains a specific property
@@ -132,16 +118,15 @@ export class JsonHighlighter {
             text-slate-800 dark:text-slate-200 p-2 
             font-mono text-sm leading-tight">
 `;
-    // Render Global Error Banner (if it exists)
+    // Render error messages if any (typically just for JSON parse errors)
     for (const errMsg of globalErrors) {
-      // Use red banner style
       html += `
   <div class="mb-2 p-2 rounded bg-red-600/80 dark:bg-red-700/80 text-white font-semibold">
     ${escapeHtml(errMsg)}
   </div>`;
     }
 
-    // Render the single Global Warning Banner (if it exists)
+    // Render the additional properties warning banner
     for (const warnMsg of globalWarnings) {
       html += `
   <div class="mb-2 p-2 rounded bg-blue-500/70 dark:bg-blue-700/70 text-white font-semibold">

@@ -11,6 +11,7 @@ on:
       - 'package.json'
       - '.github/workflows/publish-package.yml'
       - 'apps/gui/**'
+      - 'pnpm-lock.yaml'
 
 jobs:
   build:

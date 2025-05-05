@@ -159,7 +159,6 @@ export const operatorPubkeySoftwaresMap = derived(softwareOperatorPubkeysMap, ($
       operatorSoftware.get(pubkey)?.add(software);
     });
   });
-
   return operatorSoftware;
 })
 
@@ -168,9 +167,12 @@ export const operatorPubkeySoftwareCounts = derived(operatorPubkeySoftwaresMap, 
   $operatorPubkeySoftwaresMap.forEach((softwares, pubkey) => {
     const counts = new Map();
     softwares.forEach((software) => {
-      
+      const count = counts.get(software) || 0;
+      counts.set(software, count + 1);
+    });
+    result.set(pubkey, counts)
   });
-  return counts;
+  return result;
 })
 
 export const softwareGeocodesStore = derived(relayCheckAggregates, ($relayCheckAggregates) => {

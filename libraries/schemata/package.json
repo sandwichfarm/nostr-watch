@@ -6,7 +6,6 @@
   "license": "MIT",
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.7.2",
-    "@nostrwatch/schemata": "workspace:^",
     "ajv": "8.17.1",
     "esbuild-yaml": "^1.2.0",
     "json-loader": "0.5.7",

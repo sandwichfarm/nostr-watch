@@ -80,9 +80,6 @@
 {#if $nip11}
 <div in:fade>
 {#if $validationResult} 
-    <div>
-        NIP-11 last synced {lastSyncedTimestamp? lastSyncedTimestamp: 'wtf?'} {lastSyncedTimeAgo}
-    </div>
     <div class="mb-4">
     {#if $nip11Valid}
         <div class="bg-green-500/30 text-white p-4 rounded-lg">

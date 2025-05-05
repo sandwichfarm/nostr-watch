@@ -21,7 +21,7 @@
     "dist"
   ],
   "dependencies": {
-    "@nostrwatch/utils": "^0.1.9",
+    "@nostrwatch/utils": "workspace:^",
     "@sqlite.org/sqlite-wasm": "^3.46.1-build3",
     "eventemitter3": "^5.0.1",
     "uuid": "^9.0.1"

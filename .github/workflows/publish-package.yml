@@ -101,6 +101,11 @@ jobs:
         with:
           version: 9
 
+      - name: Check Lockfile Consistency (Diagnostics)
+        run: |
+          pnpm install --no-frozen-lockfile
+          git diff pnpm-lock.yaml || echo "No lockfile changes needed."
+
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:

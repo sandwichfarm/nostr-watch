@@ -42,17 +42,25 @@
             <p class="text-lg font-bold">NIP-11 has no issues</p>
         </div>
     {:else}
-        <div class="bg-red-500/50 text-white p-4 rounded-lg">
+        <!-- <div class="bg-red-500/50 text-white p-4 rounded-lg">
             <p class="text-lg font-bold">NIP-11 requires attention</p>
-        </div>
+        </div> -->
+
+        <!-- {#if $validationResult?.result?.errors}
+        {#each $validationResult?.result?.errors as result, index}
+            <div class="bg-red-500/70 p-4 rounded-lg mt-4">
+                <p class="text-sm">#{index+1}: {result.message}</p>
+            </div>
+        {/each}
+        {/if} -->
     {/if}
 
     <!-- Add warning banner for additional properties -->
-    {#if $nip11Warnings && $nip11Valid}
-        <div class="bg-blue-500/70 dark:bg-blue-700/70 text-white p-4 rounded-lg mt-4">
-            <p class="text-lg font-bold">NIP-11 object contains additional properties</p>
+    <!-- {#if $nip11Warnings && $nip11Valid}
+        <div class="bg-gray-400/70 text-white p-4 rounded-lg mt-4">
+            <p class="text-lg font-bold">NIP-11 object contains additional properties (not errors)</p>
         </div>
-    {/if}
+    {/if} -->
     </div>
 {/if}
 

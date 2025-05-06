@@ -18,7 +18,7 @@
     flex flex-col justify-center items-center relative z-[200]
     h-[450px] lg:h-[420px] 
     pt-26 md:pt-16 md:pb-0 gradient-purple">
-x
+    
     <div class="
       absolute top-0 right-0 left-0 bottom-0 z-[10]
       bg-black/20 dark:bg-white/5 

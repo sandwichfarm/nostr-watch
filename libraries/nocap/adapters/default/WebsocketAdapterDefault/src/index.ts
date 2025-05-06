@@ -1,7 +1,6 @@
 import { Buffer } from 'buffer';
 import { UniversalWebSocket as WebSocket} from '@nostrwatch/websocket';
 
-
 declare global {
   interface GlobalThis {
     Deno?: any;
@@ -31,7 +30,7 @@ class WebsocketAdapterDefault extends AbstractAdapter implements IAdapter {
   async check_open(): Promise<void> {
     this.base?.logger?.debug(`${this.base.url}: WebsocketAdapterDefault.check_open()`);
     try {
-        if (this.base.network === 'clearnet') {
+        if (this.base.network === 'clearnet' || this.base.network === 'i2p' || this.base.network === 'loki') {
             this.base.ws = new WebSocket(this.base.url);
         } else if (this.base.network === 'tor') {
             const torSocksProxy = 'socks5h://127.0.0.1:9050';

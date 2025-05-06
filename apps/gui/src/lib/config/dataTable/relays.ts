@@ -312,6 +312,16 @@ export const tableFormatters: Formatters = {
     //     profile += '</div>'
     //     return profile
     // },
+    networks: (networks: string[]) => {
+        if(!networks || !networks.length) return '';
+        return networks.map(network => {
+            const icon = `${network}.svg`
+            const iconDark = `${network}-dark.svg`
+            const iconPath = '/icon/network/'
+            const iconClass = `background-image: url('${iconPath}${iconDark}'); background-size: contain; background-position: center; background-repeat: no-repeat; width: 24px; height: 24px; display: inline-block;`
+            return `<span style="${iconClass}"></span>`
+        }).join('');
+    },
     dd: (dd: DD ) => {
         if(!dd?.lat || !dd?.lon) return '';
         return `<span class="text-xs font-bold white/50">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`

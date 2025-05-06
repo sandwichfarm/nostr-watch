@@ -5,7 +5,7 @@
       "vendor": true,
     },
     "vendor": true,
-    "nodeModulesDir": "auto",
+    "nodeModulesDir": true,
     "tasks": {
       "force-refresh": "rm -rf node_modules && rm -f deno.lock && DENO_DIR=$(deno info --json | jq -r .denoDir) && rm -rf \"$DENO_DIR/npm\" && deno task start",
       "compile": "mkdir -p dist && deno compile --no-check --allow-ffi --unstable-sloppy-imports --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/trawler src/main.ts",

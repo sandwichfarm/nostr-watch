@@ -473,9 +473,9 @@ export const tableFormatters: Formatters = {
         let image = ''
         let name = ''
         if(profile?.photo) {
-            image = `<span class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
+            image = `<a href="/operators/${profile.pubkey}" class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
                 <img src=${profile.photo} alt=${profile.photo} class="w-full h-auto" />
-            </span>`
+            </a>`
         }
         return `<div class="flex">${image}</div>`
     },

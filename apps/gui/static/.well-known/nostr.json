@@ -1,0 +1,18 @@
+{
+  "names": {
+    "_": "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019",
+    "amsterdam": "9bbbb845e5b6c831c29789900769843ab43bb5047abe697870cb50b6fc9bf923",
+    "johannesburg": "9b85d54cc4bc886d60782f80d676e41bc637ed3ecc73d2bb5aabadc499d6a340",
+    "mumbai": "9bb7cd94d7b688a4070205d9fb5e9cca6bd781fe7cabe780e19fdd23a036e0a1",
+    "newyork": "9ba6484003e8e88600f97ebffd897b2fe82753082e8e0cd8ea19aac0ff2b712b",
+    "saopaulo": "9ba1d7892cd057f5aca5d629a5a601f64bc3e0f1fc6ed9c939845e25d5e1e254",
+    "seoul": "9bac3d58ef5a34c7c4a9b05b07c98e4afc56655542387b4d36c9d270f898592e",
+    "siliconvalley": "9ba0ce3dcc28c26da0d0d87fa460c78b602a180b61eb70b62aba04505c6331f4",
+    "sydney": "9ba046db56b8e6682c48af8d6425ffe80430a3cd0854d95381af27c5d27ca0f7"
+  },
+  "relays": [
+    "wss://relay.nostr.watch",
+    "wss://relaypag.es",
+    "wss://monitorlizard.nostr1.com"
+  ]
+}

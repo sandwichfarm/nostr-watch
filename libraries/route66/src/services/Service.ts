@@ -210,14 +210,15 @@ export class Service {
     await this.ready();
     let cacheEvents: IEvent[] = [];
     cacheEvents = await this.cacheAdapter.REQ(filters);
-
     if(cacheEvents?.length){
-      StateManager.emit('events', cacheEvents);
+      // StateManager.emit('events', cacheEvents);
       if (callbacks?.onevents) {
         callbacks.onevents(cacheEvents);
       }
       if (callbacks?.onevent) {
-        callbacks.onevent(event);
+        cacheEvents.forEach(event => {
+          callbacks.onevent?.(event);
+        });
       }
   
     }

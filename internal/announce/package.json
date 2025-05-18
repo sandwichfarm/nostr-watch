@@ -21,7 +21,7 @@
     "nostr-tools": "2.1.4"
   },
   "devDependencies": {
-    "@nostrwatch/publisher": "*",
+    "@nostrwatch/publisher": "workspace:^",
     "@types/node": "^20.11.24",
     "@types/ws": "8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.1.1",

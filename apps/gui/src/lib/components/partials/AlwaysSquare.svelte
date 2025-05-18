@@ -12,16 +12,11 @@
             height = squareEl.offsetHeight;
 
       if (reference === 'width') {
-        console.log('always square: changing height to', width);
         squareEl.classList.add(`h-[${width}px]`);
         // squareEl.style.height = `${width}px`;
       } else if (reference === 'height') {
-        console.log('always square: changing width to', height);
         squareEl.style.width = `${height}px`;
         // squareEl.classList.add(`w-[${height}px]`);
-      }
-      else {
-        console.log('always square: no changes made');
       }
     }
   

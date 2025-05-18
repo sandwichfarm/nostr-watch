@@ -78,6 +78,14 @@ export class InMemoryRelay extends EventEmitter<RelayHandlerEvents> implements R
     return Promise.resolve();
   }
 
+  destroy(): Promise<void> {
+    return this.wipe();
+  }
+
+  recreate(): Promise<void> {
+    return this.wipe();
+  }
+
   event(ev: NostrEvent) {
     if (this.#events.has(ev.id)) return false;
     this.#events.set(ev.id, ev);

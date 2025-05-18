@@ -6,7 +6,6 @@ import { type IEvent } from '@nostrwatch/route66/models';
 
 import { eventKey } from '$lib/utils/event-keys.js';
 import { route66, events, monitorsMap, monitors, eventsArray } from '$lib/stores/index.js';
-import { shouldSync, updateLastSync } from '$lib/stores/app.js';
 
 import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers.js';
 
@@ -58,8 +57,8 @@ export const bindBootstrapEmitters = (from?: string) => {
     }
 
     const onMonitorUpdate = (monitor: Monitor) => {
-        console.log('onMonitorUpdate')
-        console.log('monitor.events', monitor.events)
+        // console.log('onMonitorUpdate')
+        // console.log('monitor.events', monitor.events)
         if(monitor?.events) {
             publishEventsToMemoryRelay(monitor.events, 'onMonitorUpdate')
         }
@@ -324,7 +323,7 @@ export const canSeedFromCache = async (): boolean => {
         $route66 = await instance();
     }
     if(!$route66) return false;
-    if(get(isSeeded)) return false;
+    // if(get(isSeeded)) return false;
     if(!hasBeenBootstrapped()) return false;
     return true
 }
@@ -332,7 +331,7 @@ export const canSeedFromCache = async (): boolean => {
 export const seedFromCache = async (): Promise<IEvent[]> => {
     const checks = await seedChecksFromCache()
     const meta = await seedMetaFromCache()
-    console.log('seedFromCache', [checks, meta].flat())
+    // console.log('seedFromCache', [checks, meta].flat())
     return [checks, meta].flat().filter(  (e) => e !== undefined )
 }   
 
@@ -342,6 +341,7 @@ export const seedChecksFromCache = async () => {
     }
     await $route66.ready();
     const promises: Promise<any>[] = [];
+    console.log('enabledMonitors', $route66?.services?.monitors?.enabledMonitors.map( m => m.pubkey ))
     $route66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
         promises.push(new Promise( resolve => {
             $route66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey).then(resolve)

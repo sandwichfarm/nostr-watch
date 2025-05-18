@@ -11,6 +11,7 @@ on:
       - 'package.json'
       - '.github/workflows/publish-package.yml'
       - 'apps/gui/**'
+      - 'pnpm-lock.yaml'
 
 jobs:
   build:
@@ -99,6 +100,11 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 9
+
+      - name: Check Lockfile Consistency (Diagnostics)
+        run: |
+          pnpm install --no-frozen-lockfile
+          git diff pnpm-lock.yaml || echo "No lockfile changes needed."
 
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -201,6 +207,13 @@ jobs:
         run: |
           PKG_PATH=$(find libraries internal apps -type d -name "${{ matrix.package }}" -print -quit)
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
+
+      # - name: Get package version (GUI)
+      #   if: matrix.package == 'gui'
+      #   id: get_version
+      #   run: |
+      #     VERSION=$(jq -r '.version' ./apps/gui/package.json)
+      #     echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Publish Package
         id: publish

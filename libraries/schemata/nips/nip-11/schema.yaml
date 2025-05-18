@@ -108,9 +108,9 @@ properties:
       publication:
         $ref: "#/$defs/fee"
     additionalProperties: false
-additionalProperties:
-  not: true
-  errorMessage: "NIP-11 Relay Information Document should not have any additional properties, invalid property is ${0#}"
+# additionalProperties:
+#   not: true
+#   errorMessage: "NIP-11 Relay Information Document should not have any additional properties, invalid property is ${0#}"
 allOf:
   - if:
       properties:

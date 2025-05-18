@@ -1,6 +1,6 @@
 import { EventEmitter } from "tseep";
 
-import type { WebSocketWrapper as WebSocket } from '@nostrwatch/websocket';
+import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 import { SchemaValidator } from "./SchemaValidator.js";
 import { SuiteResulter } from "./Resulter.js";
 import type { ISuiteTest, ISuiteTestResult } from "./SuiteTest.js";

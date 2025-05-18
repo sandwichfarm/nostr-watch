@@ -11,14 +11,14 @@ import { operatorRelays } from "$stores/helpers/helpers-operator"
 import { instance } from "$utils/lifecycle"
 
 export const fetchRelayChecks = async (relay: string) => {
-    console.log('fetchRelayChecks', relay)
+    // console.log('fetchRelayChecks', relay)
     const $route66 = await instance()
     await $route66.ready();
     $route66?.services?.relay?.getRelayData(relay, 'online')
 }
 
 export const fetchRelayNip11 = async (relay: string): Promise<Nip11 | undefined> => {
-    console.log('n11s fetchRelayNip11', relay, typeof relay)
+    // console.log('n11s fetchRelayNip11', relay, typeof relay)
     return get(nip11Service).check(relay)
 }
 

@@ -32,7 +32,7 @@
         errors: any[];
         status: 'running' | 'finished';
         notices: string[][];
-        events: Note[];
+        events: any[];
     }
 
     interface SuiteResult {
@@ -42,6 +42,7 @@
         tests: TestResult[];
         samples: Record<string, any[]>; // Dynamic samples data
         status: 'running' | 'finished';
+        skipped?: boolean;
     }
 
     // Writable store to hold audit results as a list of suites
@@ -61,7 +62,8 @@
                     reason: '',
                     tests: [],
                     samples: {},
-                    status: 'running'
+                    status: 'running',
+                    skipped: false
                 }];
             }
             return suites;
@@ -77,6 +79,11 @@
                 suite.pass = result.pass;
                 suite.reason = result.reason;
                 suite.status = 'finished';
+                
+                // Add skipped status if the suite was skipped
+                if (result.skipped) {
+                    suite.skipped = true;
+                }
             }
             return suites;
         });
@@ -248,6 +255,11 @@
                         <span class="text-xl font-semibold text-black dark:text-white bg-black/20 dark:bg-white/20">
                             Suite: {suite.suiteKey}
                         </span>
+                        {#if suite.skipped}
+                            <span class="ml-2 px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-sm font-medium">
+                                Skipped
+                            </span>
+                        {/if}
                     </div>
                     {#if suite.status !== 'running'}
                         <!-- Compute metrics -->
@@ -267,13 +279,14 @@
                                 Failed: {suite.tests.filter(t => !t.pass && t.status === 'finished').length}
                             </span>
                             <span class="text-yellow-400 font-medium">
+                                <!-- Count tests with skipped conditions -->
                                 Skipped: {suite.tests.filter(t => t.skipped.length > 0).length}
                             </span>
                         </div>
                     {/if}
                 </div>
                 {#if suite.reason}
-                    <div class="mt-2 text-sm text-gray-400">
+                    <div class="mt-2 text-sm {suite.skipped ? 'text-yellow-400' : 'text-gray-400'}">
                         Reason: {suite.reason}
                     </div>
                 {/if}
@@ -331,8 +344,7 @@
                                     <span class="inline-block mr-2">
                                     {#if test.status === 'running'}
                                         <div class="w-4 h-4 border-2 border-t-2 border-gray-400 rounded-sm animate-spin"></div>
-                                    {:else}
-                                        
+                                    {:else} 
                                         {#if test.pass && test.skipped.length === 0}
                                             <svg class="w-6 h-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
@@ -431,16 +443,20 @@
                                                     </div>
                                                 {/if}
 
-                                                <!-- Notices -->
+                                                <!-- Events -->
                                                 {#if test.events && test.events.length > 0}
                                                     <div>
                                                         <span class="font-semibold">{test.events.length} Events Returned:</span>
                                                         <ul class="list-disc list-insid pl-6">
                                                             {#each test.events as note}
                                                                <li class="list-outside list-item">
-                                                                ID: {note.id} <br />
-                                                                Kind: {note.kind} <br />
-                                                                Author: {note.author}
+                                                                {#if typeof note === 'object' && note !== null}
+                                                                    ID: {note.id || 'Unknown'} <br />
+                                                                    Kind: {note.kind || 'Unknown'} <br />
+                                                                    Author: {note.pubkey || note.author || 'Unknown'}
+                                                                {:else}
+                                                                    {JSON.stringify(note)}
+                                                                {/if}
                                                                </li>
                                                             {/each}
                                                         </ul>

@@ -1,6 +1,6 @@
 {
   "name": "@nostrwatch/schemata-js-ajv",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "type": "module",
   "exports": {
@@ -30,6 +30,7 @@
     "@hyrious/esbuild-plugin-commonjs": "^0.2.4",
     "esbuild": "^0.24.2",
     "esbuild-plugin-polyfill-node": "^0.3.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "3.1.2"
   }
 }

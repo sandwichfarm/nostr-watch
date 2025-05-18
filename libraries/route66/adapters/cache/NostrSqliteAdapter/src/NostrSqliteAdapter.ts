@@ -98,7 +98,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         
         
         const ready = await this.relay.setup().catch((err?: any) => this.handleWorkerError('setup', err)) as boolean
-        console.log('ready?', ready  );
+        // console.log('ready?', ready  );
         if(!ready ) {
             throw new Error('NostrSqliteAdapter: failed to setup')
         }

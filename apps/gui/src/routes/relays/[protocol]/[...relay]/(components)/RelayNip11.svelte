@@ -20,6 +20,11 @@
         return $validationResult?.status === 'success' && $validationResult?.result?.valid === true;
     });
 
+    // Add derived store for warnings
+    const nip11Warnings: Readable<boolean> = derived(validationResult, $validationResult => {
+        return Array.isArray($validationResult?.result?.warnings) && $validationResult?.result?.warnings.length > 0;
+    });
+
     onMount(() => {
         schemaValidationService.validateNip11($nip11?.json, $nip11?.hash).then( (result: SchemaValidationServiceResponse) => {
             validationResult.set(result);
@@ -37,18 +42,25 @@
             <p class="text-lg font-bold">NIP-11 has no issues</p>
         </div>
     {:else}
-        <div class="bg-red-500/50 text-white p-4 rounded-lg">
+        <!-- <div class="bg-red-500/50 text-white p-4 rounded-lg">
             <p class="text-lg font-bold">NIP-11 requires attention</p>
-        </div>
+        </div> -->
 
-        {#if $validationResult?.result?.errors}
+        <!-- {#if $validationResult?.result?.errors}
         {#each $validationResult?.result?.errors as result, index}
             <div class="bg-red-500/70 p-4 rounded-lg mt-4">
                 <p class="text-sm">#{index+1}: {result.message}</p>
             </div>
         {/each}
-        {/if}
+        {/if} -->
     {/if}
+
+    <!-- Add warning banner for additional properties -->
+    <!-- {#if $nip11Warnings && $nip11Valid}
+        <div class="bg-gray-400/70 text-white p-4 rounded-lg mt-4">
+            <p class="text-lg font-bold">NIP-11 object contains additional properties (not errors)</p>
+        </div>
+    {/if} -->
     </div>
 {/if}
 

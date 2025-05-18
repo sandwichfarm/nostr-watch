@@ -29,11 +29,10 @@ eventsStoreMemoryRelay_.on('instantiate', (event: StoreEventType) => {
 
 //!!NOTICE: THE EVENTS RELAY IS ONLY STORING NIP-66 EVENTS
 // TO MAINTAIN FUNCTIONALITY UNTIL EVERYTHING IT FLETCHED OUT:
-eventsStoreMemoryRelay_.on('qualify', (event: StoreEventType, key: string, $relay: SvelteMemoryRelay<IEvent, StoreEventType>) => { 
-    const kind = event.kind
+eventsStoreMemoryRelay_.on('qualify', (event: StoreEventType, key: string, $relay: SvelteMemoryRelay<IEvent, StoreEventType>) => {     
     if(!event) return false 
+    const kind = event.kind
     if(kind === undefined) return false
-    if(![0, 10002, 30166, 10166].includes(kind)) return false;
     if(kind === 30166) {
         const monitor = getMonitor(event.pubkey);
         const online = monitor?.relayIsOnline(event);

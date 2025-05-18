@@ -94,14 +94,32 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     }
     // await new Promise(resolve => setTimeout(resolve, 1000))
     await state.relay.init(args.databasePath);
-  } catch (e) {
-    if(retries <= 10){
-      state.relay?.close();
-      console.warn("Sqlite relay failed, retrying in 1 second", e);
-      retries++
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      await relayInit(state, args)
-      return
+  } catch (e: any) {
+    const code = e.code || e.result?.code;
+    const corrupt = code === "SQLITE_CORRUPT" || code === 11;
+    const message = e.message || (e.result && e.result.message) || String(e);
+    if (corrupt || message.includes("malformed") || message.includes("not a database")) {
+      const root = await navigator.storage.getDirectory();
+      try {
+        await state.relay?.destroy();
+      } catch(e) {
+        console.warn("Failed to destroy relay", e);
+        await relayInit(state, args)
+        return;
+      }
+      finally {
+        await relayInit(state, args)
+        return;
+      }
+    } else {
+      if(retries <= 5){
+        state.relay?.close();
+        console.warn("Sqlite relay failed, retrying in 1 second", e);
+        retries++
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        await relayInit(state, args)
+        return
+      }
     }
     console.error("Fallback to InMemoryRelay", e);
     state.relay = new InMemoryRelay();
@@ -248,36 +266,36 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
         state.relay!.setEventMetadata(id, metadata);
         break;
       }
-      case "upsertNip11": {
-        const res = await state.relay!.upsertNip11(msg.args);
-        reply(msg.id, res);
-        break;
-      }
-      case "getNip11": {
-        const res = await state.relay!.getNip11(msg.args);
-        reply(msg.id, res);
-        break;
-      }
-      case "countNip11s": {
-        const res = await state.relay!.countNip11s();
-        reply(msg.id, res);
-        break;
-      }
-      case "countUniqueNip11s": {
-        const res = await state.relay!.countUniqueNip11s();
-        reply(msg.id, res);
-        break;
-      }
-      case "dumpNip11s": {
-        const res = await state.relay!.dumpNip11s();
-        reply(msg.id, res);
-        break;
-      }
-      case "batchUpsertNip11": {
-        const res = await state.relay!.batchUpsertNip11(msg.args);
-        reply(msg.id, res);
-        break;
-      }
+      // case "upsertNip11": {
+      //   const res = await state.relay!.upsertNip11(msg.args);
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "getNip11": {
+      //   const res = await state.relay!.getNip11(msg.args);
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "countNip11s": {
+      //   const res = await state.relay!.countNip11s();
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "countUniqueNip11s": {
+      //   const res = await state.relay!.countUniqueNip11s();
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "dumpNip11s": {
+      //   const res = await state.relay!.dumpNip11s();
+      //   reply(msg.id, res);
+      //   break;
+      // }
+      // case "batchUpsertNip11": {
+      //   const res = await state.relay!.batchUpsertNip11(msg.args);
+      //   reply(msg.id, res);
+      //   break;
+      // }
       default: {
         reply(msg.id, { error: "Unknown command" });
         break;

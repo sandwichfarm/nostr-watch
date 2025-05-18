@@ -145,8 +145,8 @@ export const dataRegisterInit = async () => {
         },
         fn: seedFromCache,
         onComplete: async (events: IEvent[]): Promise<any> => {
-            publishEventsToMemoryRelay(events, 'cache')
             if(!events?.length) return 
+            publishEventsToMemoryRelay(events, 'cache')
             isSeeded.set(true)
             return events?.length ?? 0;
         }

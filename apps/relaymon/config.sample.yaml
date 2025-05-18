@@ -1,0 +1,90 @@
+logLevel: info
+
+db:
+  path: ./data/relays.db
+  enableWAL: true
+
+monitor:
+  slug: relaymon
+  info:
+    name: a monitor
+    about: monitors nostr relays
+    # nip05: 
+    # lud16: 
+  owner: 9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019
+    # geo:
+    #   city: Frankfurt am Main
+    #   country: Germany
+    #   countryCode: DE
+    #   lat: 50.1169
+    #   lon: 8.6821
+    #   region: Hesse
+    #   continent: Europe
+  relays:
+    - 'wss://relay.nostr.watch'
+    - 'wss://relaypag.es'
+
+announce:
+  relays: 
+    - 'wss://purplepag.es'
+    - 'wss://user.kindpag.es'
+
+relaymon:
+
+  # which networks are monitored?
+  networks:
+    - clearnet
+    #- tor #presently requires a transparent proxy for tor.
+    #- i2pd #presently requires a transparent proxy for i2pd.
+    #- lokinet #presently requires a transparent proxy for lokinet.
+
+  # backoff strategy for failed connections
+  retry:
+    expiry:
+      - max: 2
+        delay: 1m
+      - max: 5
+        delay: 20m
+      - max: 8
+        delay: 3h
+      - max: 22
+        delay: 24h
+      - max: 99
+        delay: 7d
+        
+  # The seed determines which relays are populated into the database, and therefor monitored. 
+  seed:
+    interval: 1m
+    sources:
+      - events #30166 events from specific pubkeys and relays
+      # - config #statically defined relays 
+      # - db #relays from a @nostrwatch/db database, such as a trawler's db.
+    options:
+
+      #config: 
+        # - 'wss://a.relay.i.want.to.monitor'
+
+      # db:
+        # path: /path/to/nostrwatch/db.sqlite
+        
+      events:
+        pubkeys:
+          - 9e81fadfe8c07351d806b47bc6c0d0dfb189343656e400e207a2be9b37411e79
+        relays:
+          - 'wss://relay.nostr.watch'
+          - 'wss://relaypag.es'
+
+  checks:
+    enabled:
+      - open
+      - read
+      - info
+      - dns
+    options:
+      expires: 1d
+      interval: 30s
+      statusInterval: 100
+      timeout:
+        open: 30000
+        read: 5000
+      max: 200

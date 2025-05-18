@@ -1,0 +1,24 @@
+config*.yaml
+!*.sample.*
+*.env*
+node_modules
+*.db
+*.db-journal    
+**/*.db
+
+logs
+blocklists/*
+!blocklists/.gitkeep
+
+data/*
+!data/.gitkeep
+
+# this is ignored in root by default
+!.docker
+
+# ignore custom docker compose files, leave the defaults
+.docker/*.yml
+.docker/*.yaml 
+!.docker/docker-compose.yml
+!.docker/Dockerfile.unified
+

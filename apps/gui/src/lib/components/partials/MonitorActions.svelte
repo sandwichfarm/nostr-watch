@@ -59,10 +59,10 @@
             disabled.set(true);
             const { publishEventsToMemoryRelay } = await import('$lib/stores/events-helpers.js');
             const resumer = await pauseLiveSync();
-            console.log('monitors: toggleEnableMonitor', $monitor.enabled)
+            // console.log('monitors: toggleEnableMonitor', $monitor.enabled)
             if(!$monitor) return console.warn('Monitor not found');
             if($monitor?.enabled) {
-                console.log('monitors:  disabling monitor')
+                // console.log('monitors:  disabling monitor')
                 $monitor.disable();
                 events.update($events => {
                     $events.entries().forEach( ([key, event]) => {
@@ -77,7 +77,7 @@
                 disabled.set(false);
             } 
             else {
-                console.log('monitors: enabling monitor')
+                // console.log('monitors: enabling monitor')
                 $monitor?.enable()
                 const options = {
                     filters: [ $monitor.checkFilter ],

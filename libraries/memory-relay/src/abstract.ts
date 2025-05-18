@@ -118,6 +118,9 @@ export abstract class AbstractMemoryRelay<
   eventBatch(evs: Input[]): number {
     const inserted = [];
     for (const ev of evs) {
+      if(ev.tags?.find(tag => tag[1] === "tor")){
+        console.log('TOR RELAY', ev.id)
+      }
       const inserts: number = this.maybeInsert(ev);
       if (!inserts) continue;
       inserted.push(ev);
@@ -179,6 +182,6 @@ export abstract class AbstractMemoryRelay<
     if (type === "replaceable" || type === "parameterized") {
       return (event.created_at as number) > (existing.created_at as number)
     }
-    return false;
+    return true;
   }
 }

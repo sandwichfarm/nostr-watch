@@ -12,7 +12,8 @@ packages:
     - "libraries/validators/**/*"
     - "libraries/schemata/*"
     
-    #exlusions
-    - '!apps/nocapd'
-    - '!libraries/nocap-route66'
-    - '!apps/umon'
+    #skip 
+    - '!apps/nocapd' #node
+    - '!libraries/nocap-route66' #deprecated
+    - '!apps/umon' #experimental
+    - '!apps/relaymon' #deno

@@ -80,9 +80,6 @@
 {#if $nip11}
 <div in:fade>
 {#if $validationResult} 
-    <div>
-        NIP-11 last synced {lastSyncedTimestamp? lastSyncedTimestamp: 'wtf?'} {lastSyncedTimeAgo}
-    </div>
     <div class="mb-4">
     {#if $nip11Valid}
         <div class="bg-green-500/30 text-white p-4 rounded-lg">
@@ -93,13 +90,13 @@
             <p class="text-lg font-bold">NIP-11 requires attention</p>
         </div>
 
-        {#if $validationResult?.result?.errors}
+        <!-- {#if $validationResult?.result?.errors}
         {#each $validationResult?.result?.errors as result, index}
             <div class="bg-red-500/70 p-4 rounded-lg mt-4">
                 <p class="text-sm">#{index+1}: {result.message}</p>
             </div>
         {/each}
-        {/if}
+        {/if} -->
     {/if}
     </div>
 {/if}

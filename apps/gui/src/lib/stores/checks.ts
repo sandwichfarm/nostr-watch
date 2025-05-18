@@ -36,7 +36,8 @@ export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($ov
     "monitorPubkey",
     "operatorPubkey",
     "hasNip11",
-    "dd"
+    "dd",
+    "network"
   ]
   const derivedKeys = [
     'nip11IsValid', 
@@ -62,7 +63,7 @@ export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($ov
 export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const countMap: Record<
     string,
-    { a: Record<string, any>; checks: Check[]; aggregate?: any }
+    { a: Record<string, any>; checks: Nip66CheckEvent[]; aggregate?: any }
   > = {};
 
   const relayAverages: Record<string, number> = {};
@@ -71,21 +72,18 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   
 
   $checks.forEach((check: Nip66CheckEvent) => {
-    let relay: string;
     if(!check?.relay) return;
-    // if(check.tags.find( (tag: string[]) => tag[0] === 'a' && tag[1]?.startsWith('30166:'))) {
-    //   return;
-    // } 
+
+    let relay: string = check?.relay
+
     try {
-      relay = new URL(check?.relay).toString();
+      relay = new URL(relay).toString();
     }
     catch(e){
       console.warn('could not normalize relay:', check.relay)
     }
 
-    const monitor = get(monitorsMap).get(check.pubkey);
-
-    if(monitor?.checks.includes('open')) {
+    if(check?.rtt) {
       if (!relayAverages[relay]) {
         relayAverages[relay] = 0;
         relayCounts[relay] = 0;
@@ -104,6 +102,7 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
     }
   });
 
+
   Object.keys(relayAverages).forEach((relay) => {
     const sum = relayAverages[relay];
     const count = relayCounts[relay];
@@ -115,12 +114,13 @@ export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
   const globalMin = Math.min(...averageValues);
   const globalMax = Math.max(...averageValues);
   const range = globalMax - globalMin || 1;
+  
 
   Object.keys(countMap).forEach((relay) => {
     countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
       [...Nip66CheckEvent.keys, 'nip11ValidationErrors', 'nip11IsValid'].forEach((key: string) => {
       // get(relayChecksActiveKeys).forEach((key: string) => {
-        const value = nip66Event[key];
+        const value = nip66Event?.[key as keyof Nip66CheckEvent];
         
         const isNonNull = value !== null && value !== undefined;
   

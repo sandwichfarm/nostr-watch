@@ -72,12 +72,12 @@ export interface RelayHandler extends EventEmitter<RelayHandlerEvents> {
   event(ev: NostrEvent): boolean;
   eventBatch(evs: Array<NostrEvent>): boolean;
 
-  countNip11s(): Promise<number>;
-  countUniqueNip11s(): Promise<number>;
-  dumpNip11s(): Promise<any[]>;
-  batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean>;
-  upsertNip11(nip11Args: Nip11Args): Promise<boolean>;
-  getNip11(relay: string): Promise<any>;
+  // countNip11s(): Promise<number>;
+  // countUniqueNip11s(): Promise<number>;
+  // dumpNip11s(): Promise<any[]>;
+  // batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean>;
+  // upsertNip11(nip11Args: Nip11Args): Promise<boolean>;
+  // getNip11(relay: string): Promise<any>;
 
   /**
    * Run any SQL command
@@ -90,6 +90,8 @@ export interface RelayHandler extends EventEmitter<RelayHandlerEvents> {
   delete(req: ReqFilter): Array<string>;
   setEventMetadata(id: string, meta: EventMetadata): void;
   wipe(): Promise<void>;
+  destroy(): Promise<void>;
+  recreate(): Promise<void>;
 }
 
 export interface RelayHandlerEvents {

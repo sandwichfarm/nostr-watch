@@ -36,7 +36,7 @@
       if(this.child)
         tags = this.addParentReferenceTags(tags, check);
 
-      tags.push(['l', 'draft7', 'route66.draft']);
+      tags.push(['l', 'draft7', 'nip66.draft']);
 
       return this.dedupLabels(tags);
     }

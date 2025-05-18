@@ -2,3 +2,10 @@ node_modules/
 dist/
 .git
 yarn.lock
+
+*.env*
+apps/**/*.env*
+apps/**/config.yaml
+apps/**/config.docker.yaml
+
+apps/**/.docker/config/*

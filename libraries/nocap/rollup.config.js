@@ -13,32 +13,32 @@ const onwarn = (warning, warn) => {
 }
 
 export default [
-  {
-    input: 'dist/server/index.js',
-    output: {
-      dir: 'dist/server/cjs',
-      format: 'cjs',
-      sourcemap: true,
-      entryFileNames: '[name].cjs.js',
-      strict: false,
-      exports: 'named',
-    },
-    plugins: [
-      importMetaAssets(),
-      resolve({
-        extensions: ['.js'],
-        preferBuiltins: true,
-      }),
-      commonjs({
-        sourceMap: true,
-      }),
-      json({
-        sourceMap: true,
-      }),
-      terser(),
-    ],
-    onwarn
-  },
+  // {
+  //   input: 'dist/server/index.js',
+  //   output: {
+  //     dir: 'dist/server/cjs',
+  //     format: 'cjs',
+  //     sourcemap: true,
+  //     entryFileNames: '[name].cjs.js',
+  //     strict: false,
+  //     exports: 'named',
+  //   },
+  //   plugins: [
+  //     importMetaAssets(),
+  //     resolve({
+  //       extensions: ['.js'],
+  //       preferBuiltins: true,
+  //     }),
+  //     commonjs({
+  //       sourceMap: true,
+  //     }),
+  //     json({
+  //       sourceMap: true,
+  //     }),
+  //     terser(),
+  //   ],
+  //   onwarn
+  // },
   {
     input: 'dist/web/index.js',
     output: {

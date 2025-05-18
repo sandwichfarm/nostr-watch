@@ -141,6 +141,7 @@ export class Nip66CheckEvent extends Geocoded implements IEvent {
     }
   
     get supportedNips(): string[] | null {
+      if(!this.nip11) return null;
       const nip11Nips = this.nip11?.supportedNips?.map( n => n.toString() ) || []
       if(nip11Nips) {
         return Array.from(new Set( this.nip11?.supportedNips?.map( n => n.toString() ) || [] ));

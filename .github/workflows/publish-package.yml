@@ -115,6 +115,11 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Debug relays/servers
+        run: |
+          echo "Relays: $NSITE_RELAYS"
+          echo "Servers: $NSITE_SERVERS"
+
       - name: Deploy to nsite
         if: matrix.package == 'gui'
         uses: sandwichfarm/nsite-action@v0.1.1

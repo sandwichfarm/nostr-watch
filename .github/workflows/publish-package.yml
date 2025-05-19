@@ -122,8 +122,10 @@ jobs:
         with:
           directory: "./apps/gui/dist"
           nbunksec: ${{ secrets.NBUNKSEC }}
-          relays: ${{ env.NSITE_RELAYS }}
-          servers: ${{ env.NSITE_SERVERS }}
+          relays: | 
+            ${{ env.NSITE_RELAYS }}
+          servers: |
+            ${{ env.NSITE_SERVERS }}
           purge: true
 
       - name: Deploy to Bunny

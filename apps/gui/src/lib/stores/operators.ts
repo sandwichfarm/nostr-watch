@@ -38,7 +38,7 @@ export const operatorsUserInstances: Readable<Map<string, User>> = derived(
                     return;
                 }
                 const userInstance = pubkeyUserInstance(operator);
-                console.log('userinstance', operator, userInstance)
+                // console.log('userinstance', operator, userInstance)
                 operatorsEvents.set(operator, userInstance);
             });
         }

@@ -13,7 +13,7 @@ const topMemoryRelay = () => get(eventsStoreMemoryRelay);
 export const pubkeyUserInstance = (pubkey: string): StoreUser => {
     const profileEvent = pubkeyProfile(pubkey);
     const relayListEvent = pubkeyRelays(pubkey);
-    console.log('pubkeyUserInstance', pubkey, profileEvent, relayListEvent)
+    // console.log('pubkeyUserInstance', pubkey, profileEvent, relayListEvent)
     if(profileEvent && relayListEvent) {
         return User.from(profileEvent.json, relayListEvent.json);
     }
@@ -35,7 +35,7 @@ export const pubkeyUserInstance$ = (pubkey: string): Readable<StoreUser> => {
 export type StorePubkeyProfile = PubkeyProfile | undefined
 
 export const pubkeyProfile = (pubkey: string): StorePubkeyProfile | undefined => {
-    console.log( 'pubkeyProfile', `${formatPubkeyForIndex(pubkey)}:0`, get(events).get(`${formatPubkeyForIndex(pubkey)}:0`));
+    // console.log( 'pubkeyProfile', `${formatPubkeyForIndex(pubkey)}:0`, get(events).get(`${formatPubkeyForIndex(pubkey)}:0`));
     return topMemoryRelay().get(`${formatPubkeyForIndex(pubkey)}:0`) as PubkeyProfile | undefined;
 }
 

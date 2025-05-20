@@ -1,10 +1,18 @@
 import { isParameterizedReplaceableKind, isReplaceableKind, Metadata } from 'nostr-tools/kinds';
 
 export const formatPubkeyForIndex = (pubkey: string) => {
-    return pubkey.slice(0,16);
+    // if(!pubkey || typeof pubkey !== 'string') {
+    //     console.log('formatPubkeyForIndex', pubkey)
+    //     return undefined;
+    // }
+    return pubkey!.slice(0,16);
 }
 export const eventAddr = ( event: any ) => {
     let { pubkey, kind } = event;
+    if(!pubkey) {
+        console.log('eventAddr', event)
+        return undefined;
+    }
     pubkey = formatPubkeyForIndex(pubkey);
     if(isParameterizedReplaceableKind(kind)) {
         const relay = event.tags.find(t => t[0] === 'd')?.[1]

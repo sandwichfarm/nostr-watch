@@ -3,7 +3,6 @@ import { derived, get, type Readable } from "svelte/store";
 import { eventsStoreMemoryRelay } from "../memory-relays/memory-relay-events";
 import { events, type StoreEventType } from "../events";
 import { User } from "../../models/User";
-import type { NostrEvent } from "@nostrwatch/route66/models";
 import { formatPubkeyForIndex } from "$lib/utils/event-keys";
 
 export type StoreUser = User | undefined
@@ -14,7 +13,7 @@ const topMemoryRelay = () => get(eventsStoreMemoryRelay);
 export const pubkeyUserInstance = (pubkey: string): StoreUser => {
     const profileEvent = pubkeyProfile(pubkey);
     const relayListEvent = pubkeyRelays(pubkey);
-    //console.log('pubkeyUserInstance', profileEvent, relayListEvent)
+    console.log('pubkeyUserInstance', pubkey, profileEvent, relayListEvent)
     if(profileEvent && relayListEvent) {
         return User.from(profileEvent.json, relayListEvent.json);
     }
@@ -36,8 +35,8 @@ export const pubkeyUserInstance$ = (pubkey: string): Readable<StoreUser> => {
 export type StorePubkeyProfile = PubkeyProfile | undefined
 
 export const pubkeyProfile = (pubkey: string): StorePubkeyProfile | undefined => {
-    //console.log( 'pubkeyProfile', `${formatPubkeyForIndex(pubkey)}:${0}`, get(events).get(`${formatPubkeyForIndex(pubkey)}:${0}`));
-    return topMemoryRelay().get(`${formatPubkeyForIndex(pubkey)}:${0}`) as PubkeyProfile | undefined;
+    console.log( 'pubkeyProfile', `${formatPubkeyForIndex(pubkey)}:0`, get(events).get(`${formatPubkeyForIndex(pubkey)}:0`));
+    return topMemoryRelay().get(`${formatPubkeyForIndex(pubkey)}:0`) as PubkeyProfile | undefined;
 }
 
 
@@ -45,13 +44,13 @@ export const pubkeyProfile = (pubkey: string): StorePubkeyProfile | undefined =>
 export const pubkeyProfile$ = (pubkey: string): Readable<StorePubkeyProfile> => {
     return derived([get(eventsStoreMemoryRelay).store], ([$store]) => {
         // if(count < 1) {
-        //     const key = `${formatPubkeyForIndex(pubkey)}:${0}`
+        //     const key = `${formatPubkeyForIndex(pubkey)}:0`
         //     console.log(key)
         //     console.dir(Array.from($store.keys()).filter(k => k.endsWith(':0')))
-        //     // console.log('pubkeyProfile', `${formatPubkeyForIndex(pubkey)}:${0}`, $storeRelay.get(`${formatPubkeyForIndex(pubkey)}:${0}`))
+        //     // console.log('pubkeyProfile', `${formatPubkeyForIndex(pubkey)}:0`, $storeRelay.get(`${formatPubkeyForIndex(pubkey)}:0`))
         // }
         // count++
-        return $store.get(`${formatPubkeyForIndex(pubkey)}:${0}`);
+        return $store.get(`${formatPubkeyForIndex(pubkey)}:0`);
     }) as Readable<StorePubkeyProfile> 
 }
 

@@ -3,7 +3,7 @@ import type { User } from "../models/User";
 import { relayCheckAggregates } from "./checks";
 import {  pubkeyUserInstance } from "./helpers/helpers-pubkey";
 import { operatorIsps, operatorRelays, operatorRelaysOperated, operatorSoftwares } from "./helpers/helpers-operator";
-import { isPubkey } from "$utils/nostr";
+import { isHex, isPubkey } from "$utils/nostr";
 import { StateManager } from "@nostrwatch/route66";
 
 export const operatorsPubkeys: Readable<string[]> = derived(
@@ -33,8 +33,12 @@ export const operatorsUserInstances: Readable<Map<string, User>> = derived(
         const operatorsEvents = new Map();
         if($operatorsPubkeys.length > 0) {
             $operatorsPubkeys.forEach((operator) => {
+                if(typeof operator !== 'string' || !isHex(operator)) {
+                    console.error('Invalid pubkey:', operator)
+                    return;
+                }
                 const userInstance = pubkeyUserInstance(operator);
-                //console.log('userinstance', operator, userInstance)
+                console.log('userinstance', operator, userInstance)
                 operatorsEvents.set(operator, userInstance);
             });
         }

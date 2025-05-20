@@ -115,6 +115,24 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Debug relays/servers
+        run: |
+          echo "Relays: $NSITE_RELAYS"
+          echo "Servers: $NSITE_SERVERS"
+
+      - name: Deploy to nsite
+        if: matrix.package == 'gui'
+        uses: sandwichfarm/nsite-action@v0.1.1
+        id: nsite_deploy
+        with:
+          directory: "./apps/gui/dist"
+          nbunksec: ${{ secrets.NBUNKSEC }}
+          relays: | 
+            ${{ env.NSITE_RELAYS }}
+          servers: |
+            ${{ env.NSITE_SERVERS }}
+          purge: true
+
       - name: Deploy to Bunny
         if: matrix.package == 'gui'
         uses: R-J-dev/bunny-deploy@v2.0.3 
@@ -129,6 +147,7 @@ jobs:
           enable-purge-pull-zone: true
           pull-zone-id: "3313140"
           replication-timeout: "15000"  
+
 
       # - name: Install jq
       #   if: matrix.package == 'gui'

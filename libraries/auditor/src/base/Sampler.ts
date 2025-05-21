@@ -2,7 +2,7 @@ import { EventEmitter } from "tseep";
 
 import { Ingestor } from "#base/Ingestor.js";
 import Logger from "#base/Logger.js";  
-import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
+import { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 
 import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/utils/generators.js";
 import type { Note, RelayEventMessage } from "#src/nips/Nip01/interfaces/index.js";
@@ -79,13 +79,14 @@ export class Sampler {
   async sample() {
     return new Promise((resolve, reject) => {
       this.setupHandlers();
-      this.socket.connect();
+      
       const timeout = this.setAbortTimeout();
       this.socket.on("open", async () => {
         let result: boolean = false;
         try {
           this.newSubId();
           this.sendRequest();
+          this.logger.info(`Sampling ${this._maximumSamples} events...`);
           result = await this.waitForEoseOrAbort(timeout);
         } catch (error) {
           this.logger.error(`Error in sample method: ${error.message}`);
@@ -95,6 +96,7 @@ export class Sampler {
         }
         resolve(result);
       });
+      this.socket.connect();
     });
   }
   
@@ -138,8 +140,12 @@ export class Sampler {
   }
   
   private async cleanupWebSocket() {
-    this.socket.close();
-    await this.socket.closed();
+    if (this.socket.isOpen()) {
+      this.socket.close();
+      await this.socket.closed();
+    }
+    // Reset the WebSocket to ensure it's ready for the next test
+    this.socket = await WebSocket.create(this.socket._url);
   }
   
   get aborted () {

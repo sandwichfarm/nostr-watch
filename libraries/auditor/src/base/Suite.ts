@@ -14,7 +14,7 @@ import { SuiteState } from './SuiteState.js';
 import { Ingestor } from './Ingestor.js';
 import { Sampler } from './Sampler.js';
 import chalk from 'chalk';
-import { messageKey } from '#src/utils/nostr.js';
+// import { messageKey } from '#src/utils/nostr.js';
 
 import { Emitter } from '#base/Emitter.js';
 

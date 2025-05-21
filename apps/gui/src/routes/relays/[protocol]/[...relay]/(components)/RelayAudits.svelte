@@ -194,15 +194,17 @@
     };
 
     onMount(async () => {
-        const auditConfig: Record<string, any> = {}
-           
-        if ($nip11 && $nip11?.supportedNips) {
-            auditConfig.nips = $nip11.supportedNips
-        } else {
-            auditConfig.detectNips = true
-        }
+        // const resumer = await pauseLiveSync();
+
+        ////console.log('Starting relay audits...');
         
         const audit = new Auditor();
+
+        if ($nip11 && $nip11?.supportedNips) {
+            audit.applySupportedNips($nip11.supportedNips);
+        } else {
+            await audit.detectSupportedNips()
+        }
 
         // Register event listeners
         audit.on('auditor.suite:start', (suiteKey: string) => onSuiteStart(suiteKey));

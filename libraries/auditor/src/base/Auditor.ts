@@ -11,14 +11,12 @@ type SuiteSet = Set<string>;
 
 const defaultAuditorConf: IAuditorConf = {
   nips: new Set<string>(["Nip01"]) as SuiteSet,
-  detectNips: false,
   options: {}
 };
 
 export interface IAuditorConf {
   nips: SuiteSet;
   options: Record<string, any>;
-  detectNips?: boolean;
 }
 
 export interface IAuditorResult {
@@ -117,22 +115,16 @@ export class Auditor {
   async test(relay: string): Promise<IAuditorResult> {
     this.logger.info(`Auditor: ${relay}`);  
     this.socket = new WebSocket(relay);
-    if(this._conf.detectNips) {
-      await this.detectSupportedNips(relay);  
-    }
     const suites = Array.from(this.suites);
     this.logger.debug(`Auditor: testing suites: ${suites.join(', ')}`);  
     const SuiteInstances = [];
     for (const suite of suites) { 
         try {
-            const loader = nipManifest?.[suite]
-            if(!loader) continue;
-            const Suite = await loader()
+            const Suite = await nipManifest?.[suite]?.()
             if(!Suite) continue;
-            const constructor = Suite?.default || Suite?.[suite];
-            console.log('suite', suite, Suite)
             this.logger.info(`Auditor: suite ${suite} loaded.`);
-            const $Suite = new constructor(this.socket as WebSocket);
+            const $Suite = new Suite.default(this.socket as WebSocket);
+            console.log('$suite', $Suite)
             if (!$Suite.pretest) {
               console.log('no pretest')
               SuiteInstances.push($Suite);

@@ -22,10 +22,8 @@ Test detected NIPs (will also test NIP-11 against schema)
 import Auditor from "@nostrwatch/auditor"
 
 const relay = "wss://relay.damus.io"
-const auditorConfig = {
-  detectNips: true
-}
-const audit = new Auditor(auditorConfig)
+const audit = new Auditor(options)
+await audit.detectSupportedNips()
 const results = audit.test(relay)
 ```
 

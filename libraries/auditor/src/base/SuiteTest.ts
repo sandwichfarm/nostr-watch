@@ -191,7 +191,6 @@ export abstract class SuiteTest implements ISuiteTest {
   
     if(this?.sampler?.samplable) {
       await this.sampler.sample();
-      this.logger.info(`${this.slug} sampler complete`, 2);
     }
 
     this.suite.reset()
@@ -263,7 +262,7 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   abort() {
-    this.socket!.terminate();
+    this.socket.terminate();
   }
 
   onMessageNotice(notice: RelayNoticeMessage) {

@@ -99,7 +99,7 @@ export class JsonHighlighter {
     if (formattedNames.length === 1) message += `y ${formattedNames[0]} is`;
     else if (formattedNames.length === 2) message += `ies ${formattedNames[0]} and ${formattedNames[1]} are`;
     else { const last = formattedNames.pop(); message += `ies ${formattedNames.join(', ')}, and ${last} are`; }
-    return `${message} defined in the payload but ${formattedNames.length === 1 ? 'is' : 'are'} not defined in NIP-11; clients will not know what to do with these values.`;
+    return `${message} defined in the payload that ${formattedNames.length === 1 ? 'is' : 'are'} not defined in the specification.`;
   }
 
   // Helper to format the list of error messages

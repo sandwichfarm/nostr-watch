@@ -1,12 +1,14 @@
-import { isParameterizedReplaceableKind, isReplaceableKind, Metadata } from 'nostr-tools/kinds';
+import type { NostrTag } from '@nostrwatch/route66/models/Event';
+import { isAddressableKind, isReplaceableKind, Metadata } from 'nostr-tools/kinds';
 
 export const formatPubkeyForIndex = (pubkey: string) => pubkey!.slice(0,16);
 
 export const eventAddr = ( event: any ) => {
     let { pubkey, kind } = event;
+    if(!pubkey || typeof pubkey !== 'string') return '';
     pubkey = formatPubkeyForIndex(pubkey);
-    if(isParameterizedReplaceableKind(kind)) {
-        const relay = event.tags.find(t => t[0] === 'd')?.[1]
+    if(isAddressableKind(kind)) {
+        const relay = event.tags.find((t: NostrTag) => t[0] === 'd')?.[1]
         const key = `${pubkey}:${kind}:${relay}`
         return `${pubkey}:${kind}:${relay}`;
     }
@@ -20,7 +22,7 @@ export const eventKey = (event: any) =>{
     if(isReplaceableKind(event.kind)) {
         return eventAddr(event);
     }
-    else if(isParameterizedReplaceableKind(event.kind)){
+    else if(isAddressableKind(event.kind)){
         return eventAddr(event);
     }
     else {

@@ -13,6 +13,7 @@ packages:
     - "libraries/schemata/*"
     
     #skip 
+    - '!internal/controlflow'
     - '!apps/nocapd' #node
     - '!libraries/nocap-route66' #deprecated
     - '!apps/umon' #experimental

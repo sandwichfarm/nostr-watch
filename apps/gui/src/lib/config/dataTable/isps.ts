@@ -19,6 +19,7 @@ export const prettyNames: NameFormatter = {
 };
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
+    if(!text || typeof text !== 'string') return '';
     if (text.length > maxLength) {
         return text.slice(0, maxLength) + '...';    
     }

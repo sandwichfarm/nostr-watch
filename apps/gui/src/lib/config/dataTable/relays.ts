@@ -12,7 +12,7 @@ import type { Monitor } from '@nostrwatch/route66/models';
 import type { Nip11Fee, RetentionDetails } from '@nostrwatch/route66/models/Nip11';
 import type { DD } from '@nostrwatch/route66/models/Geocoded';
 import { Nip66CheckEvent, PubkeyProfile } from '@nostrwatch/route66/models';
-import { pubkeyProfile, pubkeyUserInstance } from '$lib/stores/helpers/helpers-pubkey';
+import { pubkeyProfile, pubkeyUserInstance, type StorePubkeyProfile } from '$lib/stores/helpers/helpers-pubkey';
 import type { DataFormatters, DataTableConfigDependencies, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 import { nip11 } from 'nostr-tools';
 import { nip11ValidationErrorCount } from '$stores/nip11-validations';
@@ -358,7 +358,7 @@ export const tableFormatters: Formatters = {
         let i = 0;
         let z = 500;
 
-        if(!pubkeys || !pubkeys.length) return '';
+        if(!pubkeys || !pubkeys.length || !Array.isArray(pubkeys)) return '';
     
         const displayedPubkeys = pubkeys.slice(0, 5);
         const extra = pubkeys.length > 5 ? pubkeys.slice(5) : [];
@@ -467,8 +467,8 @@ export const tableFormatters: Formatters = {
                     : `<span class="text-red-500">✗</span>`;
     },
     operatorPubkey: (pk: string): string => {
-        if(!pk) return '';
-        const profile: PubkeyProfile = pubkeyProfile(pk);
+        if(!pk || typeof pk !== 'string') return '';
+        const profile: StorePubkeyProfile = pubkeyProfile(pk);
         if(!profile) return '';
         let image = ''
         let name = ''
@@ -525,6 +525,7 @@ export const filterFormatters: Formatters = {
 
 
 function truncateWithEllipsis(text: string, maxLength: number): string {
+    if(!text || typeof text !== 'string') return '';
     if (text.length > maxLength) {
         return text.slice(0, maxLength) + '...';
     }

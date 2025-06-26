@@ -1,5 +1,6 @@
 > @nostrwatch is in heavy development. Legacy nostr.watch is **deprecated and no longer maintained**.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sandwichfarm/nostr-watch)
 # @nostrwatch 
 A Typescript stack for monitoring, auditing, describing and validating anything related to nostr relays. `@nostrwatch` is an [OpenSats](http://opensats.org) grant recipient.
 

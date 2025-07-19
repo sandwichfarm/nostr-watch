@@ -205,7 +205,7 @@ export function applyFilters(
             // **Array Filters**
             if (filter.type === 'array') {
                 if (!Array.isArray(itemValue)) {
-                    console.warn(`Expected array for key "${key}", but got:`, itemValue);
+                    console.debug(`Expected array for key "${key}", but got:`, itemValue);
                     return false;
                 }
                 if (filter.mode === 'OR') {

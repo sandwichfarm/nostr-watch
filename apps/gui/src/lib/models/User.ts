@@ -135,10 +135,43 @@ export class User {
     }
 
     get reference(): string | undefined {
-        const pointer: nip19.ProfilePointer = {
-            pubkey: this.#pubkey,
-            relays: this.relays
+        try {
+            const relayList = this.relays || [];
+            let limitedRelays = relayList;
+            
+            // Start with all relays and progressively reduce if encoding fails
+            while (limitedRelays.length > 0) {
+                const pointer: nip19.ProfilePointer = {
+                    pubkey: this.#pubkey,
+                    relays: limitedRelays
+                }
+                
+                try {
+                    const encoded = nip19.nprofileEncode(pointer);
+                    if (encoded.length <= 5000) {
+                        return encoded;
+                    }
+                    // If still too long, reduce relay count
+                    limitedRelays = limitedRelays.slice(0, Math.floor(limitedRelays.length * 0.8));
+                } catch (e: any) {
+                    if (e.message?.includes('exceeds limit')) {
+                        // Reduce relay count and try again
+                        limitedRelays = limitedRelays.slice(0, Math.floor(limitedRelays.length * 0.8));
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+            
+            // If no relays work, encode without relays
+            const pointer: nip19.ProfilePointer = {
+                pubkey: this.#pubkey,
+                relays: []
+            }
+            return nip19.nprofileEncode(pointer);
+        } catch (e) {
+            console.error('Failed to encode nprofile:', e);
+            return undefined;
         }
-        return nip19.nprofileEncode(pointer)
     }
 }

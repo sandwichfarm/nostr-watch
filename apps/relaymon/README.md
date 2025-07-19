@@ -60,8 +60,8 @@ monitor:
 publisher:
   relays:
     - "wss://relay.nostr.watch"
-    - "wss://history.nostr.watch"
     - "wss://relaypag.es"
+    - "wss://monitorlizard.nostr1.com"
 
 relaymon:
   networks:

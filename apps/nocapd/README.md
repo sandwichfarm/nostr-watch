@@ -7,7 +7,7 @@ deamon that monitors nostr relays discovered by `trawler`. s
 ```yaml
 publisher: 
   to_relays: #which relays to publish NIP-66 events to.
-    - 'wss://history.nostr.watch'
+    - 'wss://relay.nostr.watch'
 
 nocapd: 
   loglevel: info 
@@ -32,7 +32,7 @@ nocapd:
         events:
           interval: 15m
           relays: 
-            - 'wss://history.nostr.watch'
+            - 'wss://relay.nostr.watch'
           pubkeys:
             - '6cd206fb5517a77497b53a4c64219fd8b5bce845231ecd271e74a96b03afdcda'
           

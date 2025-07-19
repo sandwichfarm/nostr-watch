@@ -154,8 +154,17 @@
         addDebug('cacheAdapter:tor', await $route66?.cacheAdapter?.COUNT([{ "#n": ["tor"] }]));
         addDebug('cacheAdapter:clearnet', await $route66?.cacheAdapter?.COUNT([{ "#n": ["clearnet"] }]));
 
-        addDebug('cacheAdapter:nip11s', await $route66?.cacheAdapter?.countNip11s());
-        addDebug('cacheAdapter:nip11sUnique', await $route66?.cacheAdapter?.countUniqueNip11s());
+        try {
+            addDebug('cacheAdapter:nip11s', await $route66?.cacheAdapter?.countNip11s());
+        } catch (e) {
+            console.warn('countNip11s not available:', e);
+        }
+        
+        try {
+            addDebug('cacheAdapter:nip11sUnique', await $route66?.cacheAdapter?.countUniqueNip11s());
+        } catch (e) {
+            console.warn('countUniqueNip11s not available:', e);
+        }
     }
 
     

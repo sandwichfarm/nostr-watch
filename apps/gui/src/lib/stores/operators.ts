@@ -34,11 +34,10 @@ export const operatorsUserInstances: Readable<Map<string, User>> = derived(
         if($operatorsPubkeys.length > 0) {
             $operatorsPubkeys.forEach((operator) => {
                 if(typeof operator !== 'string' || !isHex(operator)) {
-                    console.error('Invalid pubkey:', operator)
+                    console.debug('Invalid pubkey:', operator)
                     return;
                 }
                 const userInstance = pubkeyUserInstance(operator);
-                // console.log('userinstance', operator, userInstance)
                 operatorsEvents.set(operator, userInstance);
             });
         }

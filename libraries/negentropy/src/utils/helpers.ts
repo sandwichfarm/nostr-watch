@@ -23,8 +23,10 @@ export function computeFingerprint(rangeItems: RecordItem[]): Uint8Array {
 
   const lengthVarint = encodeVarint(rangeItems.length);
 
-  const concatBuffer = Buffer.concat([sumBuffer, lengthVarint]);
+  const concatBuffer = new Uint8Array(sumBuffer.length + lengthVarint.length);
+  concatBuffer.set(sumBuffer, 0);
+  concatBuffer.set(lengthVarint, sumBuffer.length);
 
   const hash = crypto.createHash('sha256').update(concatBuffer).digest();
-  return hash.subarray(0, 16);
+  return new Uint8Array(hash.subarray(0, 16));
 }

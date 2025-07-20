@@ -17,10 +17,9 @@
       <a
         href="{link.href}"
         class={`${
-          $currentPath.includes(link.href) && link.href !== '/'
-          || $currentPath === link.href
-            ? 'bg-white/10'
-            : ''
+          link.href === '/' 
+            ? $currentPath === link.href ? 'bg-white/10' : ''
+            : $currentPath.startsWith(link.href) ? 'bg-white/10' : ''
         }`}
       >
         {link.label}

@@ -15,18 +15,18 @@ Utilities for implementing the Negentropy Syncing protocol (NIP-77) for Nostr cl
 
 ## Installation
 
-**Using Yarn Workspaces:**
+**Using pnpm Workspaces:**
 
 ```sh
 # Install development dependencies
-yarn workspace @nostrwatch/negentropy-utils add -D esbuild vitest typescript @types/node
+pnpm --filter @nostrwatch/negentropy-utils add -D esbuild vitest typescript @types/node
 ```
 
 **Standalone Installation:**
 
 ```sh
 # Install dependencies
-yarn add @nostrwatch/negentropy-utils
+pnpm add @nostrwatch/negentropy-utils
 ```
 
 ## Building
@@ -34,7 +34,7 @@ yarn add @nostrwatch/negentropy-utils
 To build the project for both Node.js and browser environments:
 
 ```sh
-yarn build
+pnpm build
 ```
 
 This will generate:
@@ -47,7 +47,7 @@ This will generate:
 Run the test suite using Vitest:
 
 ```sh
-yarn test
+pnpm test
 ```
 
 ## Usage
@@ -143,8 +143,8 @@ wss.on('connection', (ws: WebSocket) => {
 
 ### Scripts
 
-- **Build**: `yarn build` - Builds the project for Node.js and browser.
-- **Test**: `yarn test` - Runs the test suite with Vitest.
+- **Build**: `pnpm build` - Builds the project for Node.js and browser.
+- **Test**: `pnpm test` - Runs the test suite with Vitest.
 
 ## License
 

@@ -10,7 +10,11 @@ export function encodeMessage(ranges: Range[]): Uint8Array {
     const timestampOffset = range.upperBound.timestampOffset;
     const timestampVarint = encodeVarint(Number(timestampOffset));
     const idPrefixLengthVarint = encodeVarint(range.upperBound.idPrefix.length);
-    const upperBoundBuffer = Buffer.concat([timestampVarint, idPrefixLengthVarint, range.upperBound.idPrefix]);
+    const upperBoundBuffer = new Uint8Array([
+      ...timestampVarint,
+      ...idPrefixLengthVarint,
+      ...range.upperBound.idPrefix
+    ]);
 
     const modeVarint = encodeVarint(range.mode);
 
@@ -25,7 +29,15 @@ export function encodeMessage(ranges: Range[]): Uint8Array {
     }
     prevTimestamp += timestampOffset;
   }
-  return Buffer.concat(buffers);
+  // Concatenate all buffers into a single Uint8Array
+  const totalLength = buffers.reduce((sum, buf) => sum + buf.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const buf of buffers) {
+    result.set(buf, offset);
+    offset += buf.length;
+  }
+  return result;
 }
 
 export function decodeMessage(buffer: Uint8Array): Range[] {
@@ -44,7 +56,7 @@ export function decodeMessage(buffer: Uint8Array): Range[] {
     const idPrefixLengthResult = decodeVarint(buffer, offset);
     offset += idPrefixLengthResult.bytesRead;
     const idPrefixLength = idPrefixLengthResult.value;
-    const idPrefix = buffer.subarray(offset, offset + idPrefixLength);
+    const idPrefix = new Uint8Array(buffer.subarray(offset, offset + idPrefixLength));
     offset += idPrefixLength;
 
     const upperBound: Bound = {
@@ -59,7 +71,7 @@ export function decodeMessage(buffer: Uint8Array): Range[] {
     let payload: Uint8Array = new Uint8Array();
     if (mode === 0) {
     } else if (mode === 1) {
-      payload = buffer.subarray(offset, offset + 16);
+      payload = new Uint8Array(buffer.subarray(offset, offset + 16));
       offset += 16;
     } else if (mode === 2) {
       const lengthResult = decodeVarint(buffer, offset);
@@ -71,7 +83,16 @@ export function decodeMessage(buffer: Uint8Array): Range[] {
         ids.push(id);
         offset += 32;
       }
-      payload = Buffer.concat([encodeVarint(idCount), ...ids]);
+      // Concatenate varint count and IDs
+      const countBytes = encodeVarint(idCount);
+      const totalLength = countBytes.length + idCount * 32;
+      payload = new Uint8Array(totalLength);
+      payload.set(countBytes, 0);
+      let payloadOffset = countBytes.length;
+      for (const id of ids) {
+        payload.set(id, payloadOffset);
+        payloadOffset += 32;
+      }
     } else {
       throw new Error(`Unknown mode: ${mode}`);
     }

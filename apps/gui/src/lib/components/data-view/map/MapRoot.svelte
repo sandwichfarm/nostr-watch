@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { readable, type Readable, type Writable } from "svelte/store";
 	import type { DataViewMapViews } from "../DataTableTypes";
-	import MapBasic from "./MapBasic.svelte";
-	import MapHeat from "./MapHeat.svelte";
+	import MapBasic from "./MapBasic.lazy.svelte";
+	import MapHeat from "./MapHeat.lazy.svelte";
 	import MapViewSelector from "./MapViewSelector.svelte";
 
     export let data: Readable<any[]> | undefined;

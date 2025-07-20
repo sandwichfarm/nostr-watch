@@ -12,8 +12,6 @@
 	import type { DataTableConfig } from './DataTableTypes.svelte';
 	import type { DataViewColumns, DataViewData, DataViewViews } from './DataTableTypes';
 	import DataViewSelector from './partials/DataViewSelector.svelte';
-	import MapBasic from './map/MapBasic.svelte';
-	import MapRoot from './map/MapRoot.svelte';
 
     export let data: Readable<any[]>;
     export let config: Writable<DataTableConfig>;
@@ -130,7 +128,23 @@
             {/if}
 
             {#if $activeView === 'map'} 
-                <MapRoot data={justData} {filters} />
+                {#await import('./map/MapRoot.svelte')}
+                    <div class="flex items-center justify-center h-[400px]">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                            <p class="text-sm text-muted-foreground">Loading map view...</p>
+                        </div>
+                    </div>
+                {:then module}
+                    <svelte:component this={module.default} data={justData} {filters} />
+                {:catch error}
+                    <div class="flex items-center justify-center h-[400px] bg-destructive/10 rounded-lg">
+                        <div class="text-center">
+                            <p class="text-sm text-destructive">Failed to load map view</p>
+                            <p class="text-xs text-muted-foreground mt-1">{error.message}</p>
+                        </div>
+                    </div>
+                {/await}
             {/if}
         {:else if $isBootstrapping && !$isSeeded}
             <div class="flex flex-col items-center justify-center h-screen px-4">

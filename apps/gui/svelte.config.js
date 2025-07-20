@@ -24,42 +24,10 @@ const config = {
       assets: "dist",
       strict: false,
       fallback: 'index.html',
+      precompress: true
     }),
     prerender: {
-      crawl: false,
-      entries: [
-        '/',
-        '/monitors',
-        '/monitors/[pubkey]',
-        '/operators',
-        '/operators/[operator]',
-
-        '/relays',
-        '/relays/map',
-        '/relays/software',
-        '/relays/software/[name]',
-        '/relays/geography',
-        '/relays/geography/[country]',
-        '/relays/isps',
-        
-        '/relays/[protocol]',
-        '/relays/[protocol]/[...relay]',
-        '/relays/[protocol]/[...relay]/audits',
-        '/relays/[protocol]/[...relay]/checks',
-        '/relays/[protocol]/[...relay]/feed',
-        '/relays/[protocol]/[...relay]/insights',
-        '/relays/[protocol]/[...relay]/nip-11',
-        '/relays/[protocol]/[...relay]/operator',
-        
-        '/reload/[...path]',
-        '/unsupported',
-        '/mobile',
-        
-        '/relays/isps/[isp]',
-
-        '/note/[id]',
-        '/preferences',
-      ]
+      entries: [] // Disable prerendering for pure SPA
     },
   }
 };

@@ -27,6 +27,8 @@ export const operatorsPubkeysValid: Readable<string[]> = derived(
     }
 )
 
+export const invalidOperatorsPubkeys: Writable<string[]> = writable([]);
+
 export const operatorsUserInstances: Readable<Map<string, User>> = derived(
     operatorsPubkeys,
     ($operatorsPubkeys) => {
@@ -34,7 +36,7 @@ export const operatorsUserInstances: Readable<Map<string, User>> = derived(
         if($operatorsPubkeys.length > 0) {
             $operatorsPubkeys.forEach((operator) => {
                 if(typeof operator !== 'string' || !isHex(operator)) {
-                    console.debug('Invalid pubkey:', operator)
+                    invalidOperatorsPubkeys.update((current) => [...current, operator]);
                     return;
                 }
                 const userInstance = pubkeyUserInstance(operator);

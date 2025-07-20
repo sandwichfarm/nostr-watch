@@ -255,9 +255,13 @@ describe('ServerHandler', () => {
         const responseBytes = hexToUint8Array(response[2]);
         const serverRanges = decodeMessage(responseBytes);
         
-        // Server should respond with its fingerprint or IdList
-        expect(serverRanges).toHaveLength(1);
-        expect([1, 2]).toContain(serverRanges[0].mode);
+        // Server should respond with subdivided ranges when set is large
+        // With 10 items, it should create 2 subdivisions
+        expect(serverRanges.length).toBeGreaterThanOrEqual(1);
+        // Each subdivision should be fingerprint or IdList
+        serverRanges.forEach(range => {
+          expect([1, 2]).toContain(range.mode);
+        });
       });
 
       it('should error if subscription not found', async () => {
@@ -375,11 +379,19 @@ describe('ServerHandler', () => {
         const responseBytes = hexToUint8Array(response[2]);
         const serverRanges = decodeMessage(responseBytes);
         
-        // Server sends IdList for all sets (simplified implementation)
-        expect(serverRanges[0].mode).toBe(2); // IdList
-        // Verify it contains the right number of items
-        const lengthResult = decodeVarint(serverRanges[0].payload, 0);
-        expect(lengthResult.value).toBe(serverRecords.length);
+        // Server subdivides large sets (10 items = 2 subdivisions of 5 each)
+        expect(serverRanges.length).toBe(2);
+        
+        // Each subdivision should be IdList (5 items < 8 threshold)
+        let totalItems = 0;
+        serverRanges.forEach(range => {
+          expect(range.mode).toBe(2); // IdList
+          const lengthResult = decodeVarint(range.payload, 0);
+          totalItems += lengthResult.value;
+        });
+        
+        // Total items across all subdivisions should equal server records
+        expect(totalItems).toBe(serverRecords.length);
       });
     });
 

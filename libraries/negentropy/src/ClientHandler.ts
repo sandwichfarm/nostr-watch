@@ -195,8 +195,16 @@ export class ClientHandler {
         // Small range - send IDs directly
         ranges.push(createIdListRange(itemsInRange, bound));
       } else {
-        // Large range - send as IdList (valid per NIP-77)
-        ranges.push(createIdListRange(itemsInRange, bound));
+        // Large range - subdivide it
+        const subdivisionResult = subdivideRange(
+          itemsInRange,
+          rangeToProcess.lowerBound,
+          rangeToProcess.upperBound,
+          this.lastTimestamp
+        );
+        ranges.push(...subdivisionResult.ranges);
+        this.lastTimestamp = subdivisionResult.lastTimestamp;
+        continue; // Skip the timestamp update below since subdivideRange already handled it
       }
 
       this.lastTimestamp = rangeToProcess.upperBound.timestamp;
@@ -253,6 +261,7 @@ export class ClientHandler {
         }
 
         // Find what we have that server doesn't
+        // Only check items that are actually within the range the server is reporting for
         const ourItems = findItemsInRange(this.records, currentLowerBound, upperBound);
         for (const item of ourItems) {
           const idHex = uint8ArrayToHex(item.id);

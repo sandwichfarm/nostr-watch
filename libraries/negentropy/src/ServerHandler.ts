@@ -223,8 +223,17 @@ export class ServerHandler {
           // Small set - send IDs directly
           ranges.push(createIdListRange(serverItems, bound));
         } else {
-          // Large set - send as IdList (valid per NIP-77)
-          ranges.push(createIdListRange(serverItems, bound));
+          // Large set - subdivide it
+          const subdivisionResult = subdivideRange(
+            serverItems,
+            currentLowerBound,
+            upperBound,
+            subscription.lastTimestamp
+          );
+          ranges.push(...subdivisionResult.ranges);
+          subscription.lastTimestamp = subdivisionResult.lastTimestamp;
+          currentLowerBound = upperBound;
+          continue; // Skip the normal updates since subdivideRange handled them
         }
       } else if (clientRange.mode === 2) {
         // Client sent IdList - respond with our items

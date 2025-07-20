@@ -22,9 +22,12 @@ export class MonitorService extends Service {
     this.addRelay('route66', 'wss://relay.nostr.watch');
     this.addRelay('route66', 'wss://relaypag.es');
     this.addRelay('route66', 'wss://monitorlizard.nostr1.com/')
+    this.addRelay('route66', 'wss://relay.primal.net/')
     this.addRelay('userMeta', 'wss://purplepag.es');
     this.addRelay('userMeta', 'wss://user.kindpag.es');
     this.addRelay('userMeta', 'wss://relay.nostr.band');
+    this.addRelay('userMeta', 'wss://relay.primal.net');
+    this.addRelay('userMeta', 'wss://relay.damus.io');
     this.init()
   }
 

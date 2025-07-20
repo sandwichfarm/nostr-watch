@@ -13,6 +13,57 @@ export interface SubdivisionResult {
 }
 
 /**
+ * Find optimal subdivision boundaries that avoid splitting items with same timestamp
+ */
+function findSubdivisionBoundaries(items: RecordItem[], numSubdivisions: number): number[] {
+  if (items.length === 0 || numSubdivisions <= 1) return [0, items.length];
+  
+  const boundaries = [0];
+  const targetSize = Math.ceil(items.length / numSubdivisions);
+  
+  let currentIdx = 0;
+  for (let i = 1; i < numSubdivisions && currentIdx < items.length; i++) {
+    let targetIdx = Math.min(currentIdx + targetSize, items.length);
+    
+    // Adjust targetIdx to not split items with the same timestamp
+    if (targetIdx < items.length && targetIdx > 0) {
+      const boundaryTimestamp = items[targetIdx].timestamp;
+      
+      // Check if there are more items with the same timestamp after targetIdx
+      let hasMoreWithSameTimestamp = false;
+      for (let j = targetIdx + 1; j < items.length; j++) {
+        if (items[j].timestamp === boundaryTimestamp) {
+          hasMoreWithSameTimestamp = true;
+          break;
+        }
+        if (items[j].timestamp > boundaryTimestamp) {
+          break;
+        }
+      }
+      
+      if (hasMoreWithSameTimestamp) {
+        // Move to after all items with this timestamp
+        const originalTarget = targetIdx;
+        while (targetIdx < items.length && items[targetIdx].timestamp === boundaryTimestamp) {
+          targetIdx++;
+        }
+      }
+    }
+    
+    if (targetIdx > currentIdx && targetIdx < items.length) {
+      boundaries.push(targetIdx);
+      currentIdx = targetIdx;
+    }
+  }
+  
+  if (boundaries[boundaries.length - 1] !== items.length) {
+    boundaries.push(items.length);
+  }
+  
+  return boundaries;
+}
+
+/**
  * Subdivide a range into smaller ranges for efficient reconciliation
  * @param items Items in the range to subdivide
  * @param lowerBound Lower bound of the range
@@ -38,18 +89,20 @@ export function subdivideRange(
     return { ranges, lastTimestamp: upperBound.timestamp };
   }
 
-  // Otherwise, subdivide into smaller ranges
+  // Calculate optimal number of subdivisions
   const numSubdivisions = Math.max(2, Math.ceil(Math.sqrt(items.length / targetSize)));
-  const itemsPerSubdivision = Math.ceil(items.length / numSubdivisions);
-
-  for (let i = 0; i < numSubdivisions; i++) {
-    const startIdx = i * itemsPerSubdivision;
-    const endIdx = Math.min((i + 1) * itemsPerSubdivision, items.length);
+  
+  // Find subdivision boundaries that respect timestamp groups
+  const boundaries = findSubdivisionBoundaries(items, numSubdivisions);
+  
+  // Create ranges based on the boundaries
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const startIdx = boundaries[i];
+    const endIdx = boundaries[i + 1];
     
-    if (startIdx >= items.length) break;
+    if (startIdx >= endIdx) continue;
     
     const subdivisionItems = items.slice(startIdx, endIdx);
-    if (subdivisionItems.length === 0) continue;
 
     // Determine bounds for this subdivision
     const subdivLowerBound = i === 0 ? lowerBound : {
@@ -60,7 +113,7 @@ export function subdivideRange(
     // For the upper bound:
     // - If this is the last subdivision, use the original upperBound
     // - Otherwise, use the first item of the next subdivision as exclusive upper bound
-    const subdivUpperBound = i === numSubdivisions - 1 || endIdx >= items.length ? 
+    const subdivUpperBound = i === boundaries.length - 2 || endIdx >= items.length ? 
       upperBound : {
         timestamp: items[endIdx].timestamp,
         id: items[endIdx].id

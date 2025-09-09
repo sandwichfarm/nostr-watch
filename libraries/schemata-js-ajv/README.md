@@ -4,14 +4,14 @@ A simple library written in Typescript for validating nostr JSON payloads. Prese
 
 # important notes
 
-- Very early development
-- a lot of false negatives and positives. 
-- Less than 5 note kinds have been implemented. 
-- API requires some work. 
+- Early development
+- False negatives and positives. 
+- Only common note kinds are supported (you can add new ones here: https://github.com/nostrability/schemata)
+- No support for multi-stage validation yet (IE: validating the stringified json in content) 
 
 # install
 ```
-pnpm install @nostrwatch/schemata-js-ajv
+pnpm install ajv @nostrwatch/schemata-js-ajv
 ```
 
 # usage 

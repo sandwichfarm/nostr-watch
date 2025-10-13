@@ -800,7 +800,25 @@ export default class Base {
    * @returns null
   */
   handle_auth(challenge){
-    challenge;
+    this.logger.debug(`handle_auth(): Relay sent AUTH challenge but NIP-42 authentication is not yet supported: ${challenge}`)
+
+    // If we're in the middle of a check, fail it gracefully
+    if(this.current && this.promises.exists(this.current)) {
+      const key = this.current
+      const message = 'Relay requires NIP-42 authentication which is not yet supported'
+
+      // For websocket checks, only fail if the promise is still pending
+      // If it's already fulfilled (e.g., open check completed), don't create a false negative
+      if(this.isWebsocketKey(key)) {
+        const promiseState = this.promises.reflect(key).state
+        if(promiseState.isPending) {
+          this.logger.warn(`${key}: ${message}`)
+          this.websocket_hard_fail({ message })
+        } else {
+          this.logger.debug(`${key}: AUTH received but ${key} check already completed with status: ${promiseState.isFulfilled ? 'fulfilled' : 'rejected'}`)
+        }
+      }
+    }
   }
 
   /**

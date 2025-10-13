@@ -84,9 +84,10 @@ export class Kind30166 extends Event {
         for(const nip of info.supported_nips){
           tags.push(['N', String(nip)])
         }
-      } if(info?.supported_nips && !Array.isArray(info?.supported_nips)) {
+      } 
+      else if(info?.supported_nips && !Array.isArray(info?.supported_nips)) {
         if(typeof info?.supported_nips === 'number') {
-          tags.push(['N', String(info.supported_nips)])
+          tags.push(['N', info.supported_nips.toString()])
         }
         tags.push(['error', 'nip11: supported_nips is not an array'])
       }

@@ -30,7 +30,11 @@
     "deploy:nocapd/config@saopaulo": "ansible-playbook .ansible/nocapd/deploy-config.yaml -i .ansible/inventories/saopaulo",
     "deploy:nocapd/config@siliconvalley": "ansible-playbook .ansible/nocapd/deploy-config.yaml -i .ansible/inventories/siliconvalley",
     "deploy:nocapd/config@ghost": "ansible-playbook .ansible/nocapd/deploy-config.yaml -i .ansible/inventories/ghost --ask-vault-pass",
-    "nukecache@all": "ansible-playbook .ansible/nocapd/nuke-cache.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney"
+    "nukecache@all": "ansible-playbook .ansible/nocapd/nuke-cache.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney",
+    "system:upgrade-ubuntu@all": "ansible-playbook .ansible/system/upgrade-ubuntu.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney -i .ansible/inventories/frankfurt",
+    "system:upgrade-ubuntu@newyork": "ansible-playbook .ansible/system/upgrade-ubuntu.yaml -i .ansible/inventories/newyork",
+    "system:update-ca-certs@all": "ansible-playbook .ansible/system/update-ca-certificates.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney -i .ansible/inventories/frankfurt",
+    "system:update-ca-certs@newyork": "ansible-playbook .ansible/system/update-ca-certificates.yaml -i .ansible/inventories/newyork"
   },
   "packageManager": "yarn@1.22.22",
   "devDependencies": {

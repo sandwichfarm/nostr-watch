@@ -126,6 +126,7 @@ const maybeAnnounce = async () => {
     "monitor.info": "profile"
   }
   const conf = mapper(config, map)
+  console.log(conf)
   // console.dir(config.nocapd.checks.enabled)
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf, process.env.DAEMON_PUBKEY)

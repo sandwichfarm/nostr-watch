@@ -115,7 +115,7 @@ export class Kind30166 extends Event {
       }
 
       if (typeof info?.limitation?.min_pow_difficulty === 'number'){
-        tags.push(['R', 'pow', info.limitation.min_pow_difficulty])
+        tags.push(['R', 'pow', info.limitation.min_pow_difficulty?.toString()])
       }
       else {
         tags.push(['R', '!pow'])

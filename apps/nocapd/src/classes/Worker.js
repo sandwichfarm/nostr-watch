@@ -132,34 +132,44 @@ export class NWWorker {
   }
 
   async work(job){
-    let timeout;
+    const startTime = Date.now()
     this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
-    const failure = (err) => { this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+    const failure = (err) => { this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }
     let result = {}
-    try {
-      let nocap
-      timeout = setTimeout( //needed to prevent hanging jobs
-        () => { 
-          const message = `Job Timeout: ${job.id} after ${TIMEOUT/1000}s`
-          console.log(message)
-          throw Error(message) 
-        }, 
-        TIMEOUT
-      );
-      const { relay:url } = job.data 
-      nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
+    let checkStartTime
+
+    // Create timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+        const checkElapsed = checkStartTime ? ((Date.now() - checkStartTime) / 1000).toFixed(1) : 'N/A'
+        const message = `Job Timeout: ${job.id} after ${TIMEOUT/1000}s (total: ${elapsed}s, check: ${checkElapsed}s)`
+        this.log.error(message)
+        this.log.error(`Timeout details: url=${job.data?.relay}, checks=${JSON.stringify(this.opts?.checks?.enabled)}`)
+        reject(new Error(message))
+      }, TIMEOUT)
+    })
+
+    // Create work promise
+    const workPromise = (async () => {
+      const { relay:url } = job.data
+      const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
       await nocap.useAdapters([...Object.values(nocapAdapters)]).catch(failure)
       const alteredChecks = Array.from(new Set([ ...this.opts.checks.enabled, 'info']))
+      checkStartTime = Date.now()
+      this.log.debug(`${job.id}: Starting nocap.check() with checks: ${JSON.stringify(alteredChecks)}`)
       result = await nocap.check(alteredChecks).catch(failure)
-      clearTimeout(timeout)
-      return { result } 
-    } 
+      const checkDuration = ((Date.now() - checkStartTime) / 1000).toFixed(1)
+      this.log.debug(`${job.id}: Completed nocap.check() in ${checkDuration}s`)
+      return { result }
+    })()
+
+    try {
+      return await Promise.race([workPromise, timeoutPromise])
+    }
     catch(err) {
       this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`)
       return { result: { url: job.data.relay, open: { data: false }} }
-    }
-    finally {
-      clearTimeout(timeout)
     }
   }
 

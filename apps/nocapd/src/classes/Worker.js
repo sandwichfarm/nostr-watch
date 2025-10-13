@@ -403,7 +403,9 @@ export class NWWorker {
   }
 
   jobId(relay){
-    return `${this.id()}:${relay}`
+    // BullMQ doesn't allow colons in job IDs, so replace them
+    const sanitizedRelay = relay.replace(/:/g, '_')
+    return `${this.id()}__${sanitizedRelay}`
   }
 
   setWorkerTimeouts(config){

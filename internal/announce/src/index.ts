@@ -27,7 +27,7 @@ interface AnnounceMonitorOptions {
 export class AnnounceMonitor {
   public events?: any = {};
   public monReg?: any;
-  public metaRelays: string[] = [ 'wss://user.kindpag.es', 'wss://purplepag.es' ];
+  public metaRelays: string[] = [ 'wss://user.kindpag.es', 'wss://purplepag.es', 'wss://profiles.nostr1.com' ];
   public monRelays: string[] = [ ];
   public monProfile: any;
   private publisher: Publisher;
@@ -138,19 +138,13 @@ export class AnnounceMonitor {
       }
       try {
         const publisher = new Publisher(this.pubkey, relays)
-        const publishPromises = publisher.publishEvent( this.events[kind] )
+        // publishEvent returns a single promise that resolves to relay responses
+        const result = await publisher.publishEvent( this.events[kind] )
 
-        // publishEvent returns an array of promises, wait for all with error handling
-        const results = await Promise.allSettled(publishPromises)
-        const successful = results.filter(r => r.status === 'fulfilled').length
-        const failed = results.filter(r => r.status === 'rejected').length
-
-        if(successful > 0) {
-          log.info(`${chalk.yellow.bold(kind)} ${chalk.gray.italic(`published to ${successful}/${relays.length} relays`)} ${chalk.white.bold(relays.join(','))}`)
-        }
-        if(failed > 0) {
-          const errors = results.filter(r => r.status === 'rejected').map((r: any) => r.reason?.message || r.reason)
-          log.warn(`${chalk.yellow.bold(kind)} ${chalk.gray.italic(`failed ${failed}/${relays.length} relays:`)} ${errors.join(', ')}`)
+        if(result) {
+          log.info(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(relays.join(','))}`)
+        } else {
+          log.warn(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(relays.join(','))}`)
         }
       }
       catch(e: any){

@@ -15,7 +15,10 @@ export class Publisher {
   }
 
   async publishEvent(signedEvent){
-    return this.ws.publish(signedEvent).catch( e => { this.logger.warn(`Publisher::publishEvent(): Error: ${e}`) })
+    return this.ws.publish(signedEvent).catch( e => {
+      this.logger.warn(`Publisher::publishEvent(): ${e?.message || e}`)
+      return null
+    })
   }
 
   async publishEvents(signedEvents){

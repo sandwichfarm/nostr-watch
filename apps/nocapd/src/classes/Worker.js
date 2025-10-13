@@ -206,11 +206,16 @@ export class NWWorker {
     // else {
     const k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
     // }
-    // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
+    // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))
     k30166.generateEvent( result )
     k30166.signEvent( process.env.DAEMON_PRIVKEY )
-    const id = await this.publisher.publishEvent( k30166.json() ).catch(console.error)
-    log.debug(`on_success(): ${result.url} published${result?.parent? ' child of '+result.parent: ''}: ${id}`)  
+    const id = await this.publisher.publishEvent( k30166.json() ).catch(e => {
+      log.warn(`on_success(): Failed to publish event for ${result.url}: ${e?.message || e}`)
+      return null
+    })
+    if(id) {
+      log.debug(`on_success(): ${result.url} published${result?.parent? ' child of '+result.parent: ''}: ${id}`)
+    }  
   }
 
   async on_fail(result){

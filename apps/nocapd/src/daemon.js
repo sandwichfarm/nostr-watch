@@ -293,10 +293,9 @@ const globalHandlers = () => {
   });
   
   process.on('unhandledRejection', async (reason, promise) => {
-    log.error('!! Unhandled Rejection:', promise.catch(console.error));
     log.error('UNHANDLED REJECTION:\n', reason?.stack || reason);
-    // Force it to blow up with a real stack trace:
-    throw reason;
+    // Don't throw - just log it to avoid crashing the daemon
+    // The error is already handled and logged above
   });  
 
   $q.worker.on('error', async (err) => {

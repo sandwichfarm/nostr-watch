@@ -168,7 +168,32 @@ export class NWWorker {
     })()
 
     try {
-      return await Promise.race([workPromise, timeoutPromise])
+      // Wait for either work to complete or timeout
+      const raceResult = await Promise.race([
+        workPromise.then(r => ({ status: 'completed', result: r })),
+        timeoutPromise.then(() => ({ status: 'timeout' }))
+      ])
+
+      // If timeout won, wait a bit more for work to finish and use whatever result we have
+      if (raceResult.status === 'timeout') {
+        this.log.warn(`${job.id}: Timeout reached, waiting for partial results...`)
+        // Give it 5 more seconds to finish gracefully
+        await Promise.race([
+          workPromise,
+          new Promise(resolve => setTimeout(() => resolve(), 5000))
+        ]).catch(() => {})
+
+        // Use whatever result nocap managed to collect
+        if (result && Object.keys(result).length > 0) {
+          this.log.info(`${job.id}: Using partial results from nocap despite timeout`)
+          return { result }
+        }
+
+        // If truly no result, return failure
+        return { result: { url: job.data.relay, open: { data: false }} }
+      }
+
+      return raceResult.result
     }
     catch(err) {
       this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`)

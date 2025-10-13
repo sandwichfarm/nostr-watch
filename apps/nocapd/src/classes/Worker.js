@@ -61,7 +61,8 @@ export class NWWorker {
 
     this.nocapOpts = {
       timeout: this.timeout,
-      checked_by: this.pubkey
+      checked_by: this.pubkey,
+      authPrivateKey: process.env.DAEMON_PRIVKEY // Enable NIP-42 authentication
     }
 
     this.jobOpts = {

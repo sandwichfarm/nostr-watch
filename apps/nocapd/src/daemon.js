@@ -320,7 +320,7 @@ export const Nocapd = async () => {
   concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb', lmdbOpts)
   // console.dir(config)
-  // await maybeAnnounce();
+  await maybeAnnounce();
   log.info('Loaded cache...')
   await delay(5000)
   await migrate(rcache)

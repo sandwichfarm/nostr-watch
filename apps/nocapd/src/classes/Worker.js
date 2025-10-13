@@ -37,6 +37,18 @@ export class NWWorker {
   }
 
   setup(){
+    // Set default timeouts first
+    this.timeout = {
+      open: 3000,
+      read: 3000,
+      write: 3000,
+      info: 2000,
+      dns: 1000,
+      geo: 1000,
+      ssl: 1000
+    }
+
+    // Then let config override them
     this.setupConfig()
 
     this.cb = {}
@@ -47,7 +59,7 @@ export class NWWorker {
     this.jobs = {}
     this.hard_stop = false
 
-    this.nocapOpts = { 
+    this.nocapOpts = {
       timeout: this.timeout,
       checked_by: this.pubkey
     }
@@ -60,16 +72,6 @@ export class NWWorker {
       removeOnFail: {
         age: timestring('10m', 's')
       }
-    }
-  
-    this.timeout = {
-      open: 3000,
-      read: 3000,
-      write: 3000,
-      info: 2000,
-      dns: 1000,
-      geo: 1000,
-      ssl: 1000
     }
 
     this.setupInstances()

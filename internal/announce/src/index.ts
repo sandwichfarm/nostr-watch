@@ -138,16 +138,25 @@ export class AnnounceMonitor {
       }
       try {
         const publisher = new Publisher(this.pubkey, relays)
-        const promises = publisher.publishEvent( this.events[kind] )
-        console.log('promises', typeof promises)
-        console.dir(promises)
-        await promises
+        const publishPromises = publisher.publishEvent( this.events[kind] )
+
+        // publishEvent returns an array of promises, wait for all with error handling
+        const results = await Promise.allSettled(publishPromises)
+        const successful = results.filter(r => r.status === 'fulfilled').length
+        const failed = results.filter(r => r.status === 'rejected').length
+
+        if(successful > 0) {
+          log.info(`${chalk.yellow.bold(kind)} ${chalk.gray.italic(`published to ${successful}/${relays.length} relays`)} ${chalk.white.bold(relays.join(','))}`)
+        }
+        if(failed > 0) {
+          const errors = results.filter(r => r.status === 'rejected').map((r: any) => r.reason?.message || r.reason)
+          log.warn(`${chalk.yellow.bold(kind)} ${chalk.gray.italic(`failed ${failed}/${relays.length} relays:`)} ${errors.join(', ')}`)
+        }
       }
-      catch(e){
-        log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(this.monRelays.join(','))}`)
+      catch(e: any){
+        log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(relays.join(','))}`)
         console.error(e)
-      }   
-      log.info(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(this.monRelays.join(','))}`)  
+      }  
       pubbedIds.push(this.events[kind].id)
     }    
     return pubbedIds

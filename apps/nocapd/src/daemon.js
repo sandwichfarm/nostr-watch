@@ -379,16 +379,15 @@ export const Nocapd = async () => {
   await migrate(rcache)
   log.info('ran migrations...')
 
-  const metaRelays = [ 
-    'wss://user.kindpag.es', 
-    'wss://purplepag.es', 
-    'wss://profiles.nostr1.com', 
-    'wss://relay.nostr.band',
+  // Initialize ignore list sync
+  const ignoreListRelays = config?.nocapd?.ignorelist?.relays || [
+    'wss://relay.damus.io',
+    'wss://nos.lol',
+    'wss://relay.snort.social',
     'wss://relay.primal.net',
-    'wss://relay.damus.io' 
-  ];
-
-  ignoreListSync = new IgnoreListSync(config, metaRelays)
+    'wss://relay.nostr.band'
+  ]
+  ignoreListSync = new IgnoreListSync(config, ignoreListRelays)
   if (ignoreListSync.enabled) {
     log.info('Performing initial ignore list sync...')
     await ignoreListSync.sync().catch(log.error)

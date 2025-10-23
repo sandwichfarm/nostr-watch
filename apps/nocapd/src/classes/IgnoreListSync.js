@@ -12,13 +12,14 @@ import { normalizeURL } from 'nostr-tools/utils'
  * 4. Publishes this monitor's kind 10006 to configured relays
  */
 export class IgnoreListSync {
-  constructor(config, metaRelays) {
+  constructor(config, metaRelays, rcache) {
     this.log = new Logger('@nostrwatch/nocapd:ignorelist')
     this.config = config?.nocapd?.ignorelist || {}
     this.enabled = this.config.enabled || false
     this.publishRelays = this.config?.relays || []
     this.syncPubkeys = this.config?.pubkeys || []
     this.metaRelays = metaRelays // Where to find kind 10002 events
+    this.rcache = rcache // LMDB cache to read/write ignored relays
     this.pool = new SimplePool()
     this.ignoredRelays = new Set() // Merged ignore list from all monitors
     this.localIgnoredRelays = new Set() // This monitor's own ignore list
@@ -27,6 +28,41 @@ export class IgnoreListSync {
     if (this.enabled) {
       this.log.info(`IgnoreListSync initialized with ${this.syncPubkeys.length} pubkeys`)
       this.log.info(`Publishing kind 10006 to: ${this.publishRelays.join(', ')}`)
+      // Load existing ignored relays from LMDB
+      this.loadLocalIgnoresFromCache()
+    }
+  }
+
+  /**
+   * Load local ignored relays from LMDB cache
+   */
+  async loadLocalIgnoresFromCache() {
+    if (!this.rcache) {
+      this.log.warn('No rcache provided, cannot load ignored relays from LMDB')
+      return
+    }
+
+    try {
+      const allRelays = await this.rcache.relay.get.all()
+      const ignoredRelays = allRelays.filter(r => r.ignore === true)
+
+      const previousSize = this.localIgnoredRelays.size
+
+      // Clear and repopulate the sets
+      this.localIgnoredRelays.clear()
+      ignoredRelays.forEach(relay => {
+        this.localIgnoredRelays.add(relay.url)
+        this.ignoredRelays.add(relay.url)
+      })
+
+      // If size changed or this is first load, mark as changed
+      if (this.localIgnoredRelays.size !== previousSize) {
+        this.localIgnoreListChanged = true
+      }
+
+      this.log.info(`Loaded ${this.localIgnoredRelays.size} ignored relays from LMDB`)
+    } catch (e) {
+      this.log.error(`Error loading ignored relays from LMDB: ${e.message}`)
     }
   }
 
@@ -153,6 +189,9 @@ export class IgnoreListSync {
     }
 
     this.log.info(`Starting ignore list sync from ${this.syncPubkeys.length} monitors...`)
+
+    // Reload local ignores from LMDB first
+    await this.loadLocalIgnoresFromCache()
 
     // Reset the synced portion of ignore list (keep local ones)
     this.ignoredRelays = new Set(this.localIgnoredRelays)

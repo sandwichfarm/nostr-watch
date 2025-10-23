@@ -386,7 +386,7 @@ export const Nocapd = async () => {
     'wss://user.kindpag.es',
     'wss://profiles.nostr1.com'
   ]
-  ignoreListSync = new IgnoreListSync(config, ignoreListRelays)
+  ignoreListSync = new IgnoreListSync(config, ignoreListRelays, rcache)
   if (ignoreListSync.enabled) {
     log.info('Performing initial ignore list sync...')
     await ignoreListSync.sync().catch(log.error)

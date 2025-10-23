@@ -17,8 +17,9 @@ nocapd:
 
   ignorelist:  #synchronize ignore lists across monitors
     enabled: true
-    interval: 15m  #how often to sync and publish
-    relays:  #where THIS monitor publishes its kind 10006 (blocked relays)
+    interval: 15m  #how often to sync and publish kind 10006
+    deletion_interval: 24h  #how often to publish NIP-09 deletion events (default: 24h)
+    relays:  #where THIS monitor publishes its kind 10006 (blocked relays) and kind 5 (deletions)
       - 'wss://relay1.example.com'
       - 'wss://relay2.example.com'
     pubkeys:  #other monitors to sync blocked relays from (via NIP-65 inbox/outbox)
@@ -101,7 +102,8 @@ Monitors can share their ignore lists (deduplicated relays) with each other usin
 
 1. **Publishing**: Each monitor publishes:
    - kind 10002 (relay list) to `publisher.to_relays` - includes relays from `ignorelist.relays`
-   - kind 10006 (blocked relays) to `ignorelist.relays` - contains deduplicated relay URLs
+   - kind 10006 (blocked relays) to `ignorelist.relays` - contains deduplicated relay URLs (only when local list changes)
+   - kind 5 (NIP-09 deletion) to `ignorelist.relays` - requests deletion of kind 30166 events for ignored relays (periodic, default 24h)
 
 2. **Syncing** (uses NIP-65 inbox/outbox pattern):
    - For each pubkey in `ignorelist.pubkeys`:
@@ -114,8 +116,15 @@ Monitors can share their ignore lists (deduplicated relays) with each other usin
    - If a relay is in the synced ignore list → skip immediately
    - If local deduplication marks it as ignored → add to this monitor's kind 10006
 
+4. **Deletion Requests** (NIP-09):
+   - Periodically publishes kind 5 events with "a" tags for each ignored relay
+   - Format: `30166:pubkey:relay_url` (addressable event coordinate)
+   - Relays will delete all versions of kind 30166 events for those relay URLs
+   - No need to know specific event IDs
+
 ## Benefits
 
 - Prevents wasted checks on relays already identified as duplicates by other monitors
 - Solves race conditions where monitors haven't checked the parent relay yet
 - Distributed knowledge sharing across the monitor network
+- Automatic cleanup of duplicate relay reports via NIP-09 deletions

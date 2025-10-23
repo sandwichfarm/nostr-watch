@@ -50,7 +50,8 @@ const setSchedules = async () => {
   const relayPopulator = await scheduleRelayPopulator()
   const jobPopulator = await scheduleJobPopulator()
   const ignoreListSyncSchedule = await scheduleIgnoreListSync()
-  return { relayPopulator, jobPopulator, ignoreListSyncSchedule }
+  const ignoreListDeletionsSchedule = await scheduleIgnoreListDeletions()
+  return { relayPopulator, jobPopulator, ignoreListSyncSchedule, ignoreListDeletionsSchedule }
 }
 
 const initBus = () => {
@@ -221,6 +222,22 @@ const scheduleIgnoreListSync = () => {
   return scheduleSeconds(name, seconds, job)
 }
 
+const scheduleIgnoreListDeletions = () => {
+  const name = "scheduleIgnoreListDeletions()"
+  const ignoreListOpts = config?.nocapd?.ignorelist
+  if(!ignoreListOpts?.enabled) return
+
+  // Default to 24h if not specified
+  const interval = ignoreListOpts.deletion_interval || '24h'
+  const seconds = timestring(interval, "s")
+
+  const job = async () => {
+    log.debug(`Scheduled: ignoreListSync.publishDeletions()`)
+    await ignoreListSync.publishDeletions(process.env.DAEMON_PRIVKEY).catch(log.error)
+  }
+  return scheduleSeconds(name, seconds, job)
+}
+
 const pause = async (caller = "unknown") => {
   log.info(`${caller} pausing: all queues/workers`)
   await $q.queue.pause()
@@ -359,6 +376,9 @@ export const Nocapd = async () => {
   if (ignoreListSync.enabled) {
     log.info('Performing initial ignore list sync...')
     await ignoreListSync.sync().catch(log.error)
+    // Publish initial deletions on startup
+    log.info('Publishing initial NIP-09 deletions...')
+    await ignoreListSync.publishDeletions(process.env.DAEMON_PRIVKEY).catch(log.error)
   }
 
   await populateRelays( true )

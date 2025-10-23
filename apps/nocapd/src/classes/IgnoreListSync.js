@@ -187,12 +187,12 @@ export class IgnoreListSync {
    */
   async publish(privkey) {
     if (!this.enabled) {
-      this.log.debug('IgnoreListSync is disabled, skipping publish')
+      this.log.info('IgnoreListSync is disabled, skipping publish')
       return
     }
 
     if (!this.localIgnoreListChanged) {
-      this.log.debug('Local ignore list has not changed, skipping publish')
+      this.log.info(`Local ignore list has not changed (${this.localIgnoredRelays.size} total local ignores), skipping publish`)
       return
     }
 
@@ -202,7 +202,7 @@ export class IgnoreListSync {
     }
 
     if (this.localIgnoredRelays.size === 0) {
-      this.log.debug('No local ignored relays to publish')
+      this.log.info('No local ignored relays to publish')
       return
     }
 
@@ -239,6 +239,67 @@ export class IgnoreListSync {
 
     } catch (e) {
       this.log.error(`Error publishing kind 10006: ${e.message}`)
+    }
+  }
+
+  /**
+   * Publish NIP-09 deletion events for all locally ignored relays
+   * Uses "a" tags to delete addressable events (kind 30166) without knowing event IDs
+   */
+  async publishDeletions(privkey) {
+    if (!this.enabled) {
+      this.log.debug('IgnoreListSync is disabled, skipping deletion publish')
+      return
+    }
+
+    if (this.publishRelays.length === 0) {
+      this.log.warn('No relays configured for publishing deletions')
+      return
+    }
+
+    if (this.localIgnoredRelays.size === 0) {
+      this.log.debug('No local ignored relays to publish deletions for')
+      return
+    }
+
+    try {
+      const { getPublicKey, finalizeEvent } = await import('nostr-tools')
+      const pubkey = getPublicKey(privkey)
+
+      // Build kind 5 (deletion) event with "a" tags for each ignored relay
+      // Format: kind:pubkey:d-identifier where d-identifier is the relay URL
+      const aTags = Array.from(this.localIgnoredRelays).map(relayUrl =>
+        ['a', `30166:${pubkey}:${relayUrl}`]
+      )
+
+      const event = {
+        kind: 5,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [
+          ['k', '30166'], // Indicate we're deleting kind 30166 events
+          ...aTags
+        ],
+        content: 'Deleting duplicate/ignored relay reports',
+        pubkey
+      }
+
+      const signedEvent = finalizeEvent(event, privkey)
+
+      this.log.info(`Publishing NIP-09 deletion for ${this.localIgnoredRelays.size} ignored relays to ${this.publishRelays.length} relays`)
+
+      // Publish to configured relays
+      const publishPromises = this.publishRelays.map(relay =>
+        this.pool.publish([relay], signedEvent).catch(e => {
+          this.log.error(`Failed to publish deletion to ${relay}: ${e.message}`)
+          return null
+        })
+      )
+
+      await Promise.allSettled(publishPromises)
+      this.log.info('NIP-09 deletion events published successfully')
+
+    } catch (e) {
+      this.log.error(`Error publishing deletion events: ${e.message}`)
     }
   }
 

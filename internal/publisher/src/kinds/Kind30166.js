@@ -119,7 +119,7 @@ export class Kind30166 extends Event {
         tags.push(['R', '!payment'])
       }
 
-      if (typeof info?.limitation?.min_pow_difficulty === 'number'){
+      if (typeof info?.limitation?.min_pow_difficulty === 'number' && info.limitation.min_pow_difficulty > 0){
         tags.push(['R', 'pow', info.limitation.min_pow_difficulty?.toString()])
       }
       else {

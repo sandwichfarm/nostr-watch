@@ -9,11 +9,21 @@ publisher:
   to_relays: #which relays to publish NIP-66 events to.
     - 'wss://history.nostr.watch'
 
-nocapd: 
-  loglevel: info 
+nocapd:
+  loglevel: info
 
   networks:  #which networks to monitor
     - clearnet
+
+  ignorelist:  #synchronize ignore lists across monitors
+    enabled: true
+    interval: 15m  #how often to sync and publish
+    relays:  #where THIS monitor publishes its kind 10006 (blocked relays)
+      - 'wss://relay1.example.com'
+      - 'wss://relay2.example.com'
+    pubkeys:  #other monitors to sync blocked relays from (via NIP-65 inbox/outbox)
+      - 'abc123...'  #monitor 1 pubkey
+      - 'def456...'  #monitor 2 pubkey
 
   retry: 
     expiry: [ #backoff
@@ -82,3 +92,30 @@ REDIS_LOGLEVEL="warning"
 ```shell
 yarn launch
 ```
+
+# ignore list synchronization
+
+Monitors can share their ignore lists (deduplicated relays) with each other using NIP-51 kind 10006 (Blocked relays) and NIP-65 (relay lists) for discovery.
+
+## How it works
+
+1. **Publishing**: Each monitor publishes:
+   - kind 10002 (relay list) to `publisher.to_relays` - includes relays from `ignorelist.relays`
+   - kind 10006 (blocked relays) to `ignorelist.relays` - contains deduplicated relay URLs
+
+2. **Syncing** (uses NIP-65 inbox/outbox pattern):
+   - For each pubkey in `ignorelist.pubkeys`:
+     - Fetch their kind 10002 from `publisher.to_relays` (static discovery)
+     - Extract relay URLs from their kind 10002
+     - Fetch their kind 10006 from THOSE relays (inbox/outbox)
+     - Merge blocked relays into local ignore list
+
+3. **Deduplication**: When checking relays:
+   - If a relay is in the synced ignore list → skip immediately
+   - If local deduplication marks it as ignored → add to this monitor's kind 10006
+
+## Benefits
+
+- Prevents wasted checks on relays already identified as duplicates by other monitors
+- Solves race conditions where monitors haven't checked the parent relay yet
+- Distributed knowledge sharing across the monitor network

@@ -24,12 +24,14 @@ export class NWWorker {
   rcache
   pubkey
   bus
-  
-  constructor(pubkey, $q, rcache, bus, config){
+  ignoreListSync
+
+  constructor(pubkey, $q, rcache, bus, config, ignoreListSync = null){
     this.pubkey = pubkey
     this.$ = $q
     this.rcache = rcache
     this.config = config
+    this.ignoreListSync = ignoreListSync
     this.setup()
     this.log.info(`${this.id()} initialized`)
     this.bus = bus
@@ -222,7 +224,13 @@ export class NWWorker {
       await this.on_fail( result ).catch(console.error)
     }
     else {
-      result = await relayHostnameDedup( result, this.rcache ).catch(console.error)
+      result = await relayHostnameDedup( result, this.rcache, this.ignoreListSync ).catch(console.error)
+
+      // If relay was marked as ignored by deduplication, add it to the ignore list
+      if (result.ignore && this.ignoreListSync && result.parent) {
+        this.ignoreListSync.addToIgnoreList(result.url)
+      }
+
       await this.on_success( result ).catch(console.error)
     }
     await this.after_completed( result ).catch(console.error)

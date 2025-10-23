@@ -14,6 +14,7 @@ import { parseRelayNetwork, delay, loadConfig, RedisConnectionDetails, parseUrl 
 import { NWWorker } from './classes/Worker.js'
 import { ShortBus } from './classes/ShortBus.js'
 import { NocapdQueues } from './classes/NocapdQueues.js'
+import { IgnoreListSync } from './classes/IgnoreListSync.js'
 
 import migrate from './migrate/index.js'
 
@@ -21,11 +22,12 @@ const PUBKEY = process.env.DAEMON_PUBKEY
 const log = new Logger('@nostrwatch/nocapd')
 
 let rcache,
-    config, 
+    config,
     $q,
     bus,
     jobs,
-    concurrency = 1
+    concurrency = 1,
+    ignoreListSync
 
 const populateJobQueue = async () => { 
   const activeJobs = (await $q.checker.getActiveJobs()).map( j => j.id )
@@ -47,7 +49,8 @@ const maybePopulateJobs = async (queue) => {
 const setSchedules = async () => {
   const relayPopulator = await scheduleRelayPopulator()
   const jobPopulator = await scheduleJobPopulator()
-  return { relayPopulator, jobPopulator }
+  const ignoreListSyncSchedule = await scheduleIgnoreListSync()
+  return { relayPopulator, jobPopulator, ignoreListSyncSchedule }
 }
 
 const initBus = () => {
@@ -57,7 +60,7 @@ const initBus = () => {
 }
 
 const initQueue = async () => {
-  
+
   const connection = RedisConnectionDetails()
   log.info(`initQueue(): connecting to redis at`, connection)
   const ncdq = NocapdQueue(`nocapd/${config?.monitor?.slug}` || null)
@@ -67,18 +70,18 @@ const initQueue = async () => {
   await $q
     .set( 'queue'  , ncdq.$Queue )
     .set( 'events' , ncdq.$QueueEvents )
-    .set( 'checker', new NWWorker(PUBKEY, $q, rcache, bus, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }) )
+    .set( 'checker', new NWWorker(PUBKEY, $q, rcache, bus, {...config, logger: new Logger('@nostrwatch/nocapd:worker'), pubkey: PUBKEY }, ignoreListSync) )
     .set( 'worker' , new BullMQ.Worker($q.queue.name, $q.checker.work.bind($q.checker), { concurrency, connection, ...queueOpts() } ) )
 
   await pause('initQueue()')
-  
+
   await $q.checker.syncQueue()
   await $q.checker.drainSmart()
   await $q.drain()
 
   jobs = await setSchedules()
 
-  await maybePopulateJobs($q.checker)  
+  await maybePopulateJobs($q.checker)
   log.info(`initialized: ${$q.queue.name}`)
 }
 
@@ -195,10 +198,25 @@ const scheduleRelayPopulator = () =>{
   const seedOpts = config?.nocapd?.seed
   if(!seedOpts || !config?.nocapd?.seed?.sources?.length) return
   const seconds = timestring(seedOpts.interval, "s")
-  
+
   const job = async () => {
     log.debug(`Scheduled: populateRelays()`)
     await populateRelays().catch(log.error)
+  }
+  return scheduleSeconds(name, seconds, job)
+}
+
+const scheduleIgnoreListSync = () => {
+  const name = "scheduleIgnoreListSync()"
+  const ignoreListOpts = config?.nocapd?.ignorelist
+  if(!ignoreListOpts?.enabled || !ignoreListOpts?.interval) return
+
+  const seconds = timestring(ignoreListOpts.interval, "s")
+
+  const job = async () => {
+    log.debug(`Scheduled: ignoreListSync.sync()`)
+    await ignoreListSync.sync().catch(log.error)
+    await ignoreListSync.publish(process.env.DAEMON_PRIVKEY).catch(log.error)
   }
   return scheduleSeconds(name, seconds, job)
 }
@@ -335,6 +353,14 @@ export const Nocapd = async () => {
   await migrate(rcache)
   log.info('ran migrations...')
 
+  // Initialize ignore list sync
+  const staticRelays = config?.publisher?.to_relays || []
+  ignoreListSync = new IgnoreListSync(config, staticRelays)
+  if (ignoreListSync.enabled) {
+    log.info('Performing initial ignore list sync...')
+    await ignoreListSync.sync().catch(log.error)
+  }
+
   await populateRelays( true )
 
   initBus()
@@ -349,6 +375,7 @@ export const Nocapd = async () => {
   await resume('initQueue()')
   return {
     $q,
-    stop
-  } 
+    stop,
+    ignoreListSync
+  }
 }

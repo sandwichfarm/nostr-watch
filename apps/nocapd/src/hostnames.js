@@ -41,10 +41,10 @@ export const relayArrToHostnameProtocolKeyedMap = (urls) => {
   return ordered
 }
 
-export const relayListHostnameDedup = (relays, cache) => {
+export const relayListHostnameDedup = (relays, cache, ignoreListSync = null) => {
   const maybeModifiedRelays = []
   for(let relay of relays) {
-    maybeModifiedRelays.push( relayHostnameDedup( relay, cache ) )
+    maybeModifiedRelays.push( relayHostnameDedup( relay, cache, ignoreListSync ) )
   }
   return maybeModifiedRelays
 }
@@ -60,17 +60,25 @@ function isRootUrl(url) {
   }
 }
 
-export const relayHostnameDedup = async ( result, cache ) => {
+export const relayHostnameDedup = async ( result, cache, ignoreListSync = null ) => {
     const { url:mURL, hostname:HOSTNAME, protocol:PROTOCOL } = result
     try {
       if (!mURL || !HOSTNAME || !PROTOCOL) {
         throw new Error(`Invalid result object: ${JSON.stringify(result)}`);
       }
 
+      // Check if this relay is in the synced ignore list from other monitors
+      if (ignoreListSync && ignoreListSync.isIgnored(mURL)) {
+        log.warn(`${mURL} is in synced ignore list from other monitors`)
+        result.ignore = true
+        result.parent = '' // We don't know the parent from synced lists
+        return result
+      }
+
       // Get online relays and filter them down to ones that share a hostname with target relay (result)
       // ...and is not the target relay (result)
-      const online = cache.relay.get.online()    
-      const hostnameFamily = online.filter( r => r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL ) 
+      const online = cache.relay.get.online()
+      const hostnameFamily = online.filter( r => r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL )
       const hostnameRelatives = [...hostnameFamily]
 
       //It has no relatives, exit now.

@@ -116,28 +116,38 @@ export class IgnoreListSync {
    */
   async fetchKind10002(pubkey) {
     try {
-      this.log.debug(`Fetching kind 10002 for ${pubkey.slice(0, 8)}...`)
+      this.log.info(`Fetching kind 10002 for ${pubkey.slice(0, 8)}... from ${this.metaRelays.length} relays`)
+      this.log.info(`  Meta relays: ${this.metaRelays.join(', ')}`)
 
       const events = await this.pool.querySync(
         this.metaRelays,
         { kinds: [10002], authors: [pubkey], limit: 1 }
       )
 
+      this.log.info(`  Received ${events?.length || 0} kind 10002 events for ${pubkey.slice(0, 8)}...`)
+
       if (!events || events.length === 0) {
-        this.log.warn(`No kind 10002 found for ${pubkey.slice(0, 8)}...`)
+        this.log.warn(`No kind 10002 found for ${pubkey.slice(0, 8)}... on relays: ${this.metaRelays.join(', ')}`)
         return []
       }
 
       const event = events[0]
+      this.log.info(`  Event created_at: ${new Date(event.created_at * 1000).toISOString()}`)
+      this.log.info(`  Total tags: ${event.tags.length}`)
+
       const relays = event.tags
         .filter(tag => tag[0] === 'relay' || tag[0] === 'r')
         .map(tag => tag[1])
         .filter(Boolean)
 
-      this.log.debug(`Found ${relays.length} relays in kind 10002 for ${pubkey.slice(0, 8)}...`)
+      this.log.info(`Found ${relays.length} relays in kind 10002 for ${pubkey.slice(0, 8)}...`)
+      if (relays.length > 0) {
+        this.log.info(`  First 3 relays: ${relays.slice(0, 3).join(', ')}`)
+      }
       return relays
     } catch (e) {
       this.log.error(`Error fetching kind 10002 for ${pubkey.slice(0, 8)}...: ${e.message}`)
+      this.log.error(`  Stack: ${e.stack}`)
       return []
     }
   }

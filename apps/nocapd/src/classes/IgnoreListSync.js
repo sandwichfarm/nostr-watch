@@ -22,6 +22,7 @@ export class IgnoreListSync {
     this.pool = new SimplePool()
     this.ignoredRelays = new Set() // Merged ignore list from all monitors
     this.localIgnoredRelays = new Set() // This monitor's own ignore list
+    this.localIgnoreListChanged = false // Track if local list has changed
 
     if (this.enabled) {
       this.log.info(`IgnoreListSync initialized with ${this.syncPubkeys.length} pubkeys`)
@@ -41,9 +42,15 @@ export class IgnoreListSync {
    */
   addToIgnoreList(relayUrl) {
     const normalized = normalizeURL(relayUrl)
+    const sizeBefore = this.localIgnoredRelays.size
     this.localIgnoredRelays.add(normalized)
     this.ignoredRelays.add(normalized)
-    this.log.debug(`Added ${normalized} to local ignore list`)
+
+    // Mark as changed if this is a new entry
+    if (this.localIgnoredRelays.size > sizeBefore) {
+      this.localIgnoreListChanged = true
+      this.log.debug(`Added ${normalized} to local ignore list`)
+    }
   }
 
   /**
@@ -175,11 +182,17 @@ export class IgnoreListSync {
   }
 
   /**
-   * Publish this monitor's kind 10006 (blocked relays)
+   * Publish this monitor's kind 10006 (blocked relays) - ONLY if local list changed
+   * Only publishes LOCAL ignores, not synced ones from other monitors
    */
   async publish(privkey) {
     if (!this.enabled) {
       this.log.debug('IgnoreListSync is disabled, skipping publish')
+      return
+    }
+
+    if (!this.localIgnoreListChanged) {
+      this.log.debug('Local ignore list has not changed, skipping publish')
       return
     }
 
@@ -197,7 +210,7 @@ export class IgnoreListSync {
       const { getPublicKey, finalizeEvent } = await import('nostr-tools')
       const pubkey = getPublicKey(privkey)
 
-      // Build kind 10006 event
+      // Build kind 10006 event - ONLY with LOCAL ignores, not synced ones
       const event = {
         kind: 10006,
         created_at: Math.floor(Date.now() / 1000),
@@ -208,7 +221,7 @@ export class IgnoreListSync {
 
       const signedEvent = finalizeEvent(event, privkey)
 
-      this.log.info(`Publishing kind 10006 with ${this.localIgnoredRelays.size} blocked relays to ${this.publishRelays.length} relays`)
+      this.log.info(`Publishing kind 10006 with ${this.localIgnoredRelays.size} LOCAL blocked relays to ${this.publishRelays.length} relays`)
 
       // Publish to configured relays
       const publishPromises = this.publishRelays.map(relay =>
@@ -219,6 +232,9 @@ export class IgnoreListSync {
       )
 
       await Promise.allSettled(publishPromises)
+
+      // Reset change flag after successful publish
+      this.localIgnoreListChanged = false
       this.log.info('Kind 10006 published successfully')
 
     } catch (e) {

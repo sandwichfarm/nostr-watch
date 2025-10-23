@@ -155,15 +155,25 @@ function secondsToCron(seconds) {
       throw new Error("Seconds value must be non-negative.");
   }
 
-  let sec = seconds % 60; 
-  let minutes = Math.floor(seconds / 60) % 60;
-  let hours = Math.floor(seconds / 3600) % 24;
+  // For intervals >= 1 day, run daily at midnight
+  if (seconds >= 86400) {
+    return "0 0 0 * * *"; // Every day at midnight
+  }
 
-  let cronSeconds = sec ? `*/${sec}` : "0";
-  let cronMinutes = minutes ? `*/${minutes}` : "*";
-  let cronHours = hours ? `*/${hours}` : "*";
+  // For intervals >= 1 hour, calculate the hour interval
+  if (seconds >= 3600) {
+    const hourInterval = Math.floor(seconds / 3600);
+    return `0 0 */${hourInterval} * * *`; // Every N hours at the top of the hour
+  }
 
-  return `${cronSeconds} ${cronMinutes} ${cronHours} * * *`;
+  // For intervals >= 1 minute, calculate the minute interval
+  if (seconds >= 60) {
+    const minuteInterval = Math.floor(seconds / 60);
+    return `0 */${minuteInterval} * * * *`; // Every N minutes at the top of the minute
+  }
+
+  // For intervals < 1 minute, use second interval
+  return `*/${seconds} * * * * *`; // Every N seconds
 }
 
 const scheduleSeconds = async (name, seconds, cb) => {

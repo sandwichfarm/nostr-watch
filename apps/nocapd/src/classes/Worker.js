@@ -18,6 +18,94 @@ const TIMEOUT = 2*60*1000
 
 let errors = 0
 
+/**
+ * Count path segments in a URL
+ * wss://relay.com/ = 0 segments
+ * wss://relay.com/path = 1 segment
+ * wss://relay.com/path/to/relay = 3 segments
+ */
+const countPathSegments = (url) => {
+  try {
+    const parsedUrl = new URL(url)
+    const pathname = parsedUrl.pathname
+    // Remove leading/trailing slashes and split
+    const segments = pathname.split('/').filter(Boolean)
+    return segments.length
+  } catch (e) {
+    return 999 // Invalid URLs go last
+  }
+}
+
+/**
+ * Sort relays by path segment count, with hostname distribution
+ * Strategy:
+ * 1. Group by segment count
+ * 2. Within each segment group, interleave relays from different hostnames
+ * 3. This minimizes the chance of checking same-hostname relays concurrently
+ */
+const sortBySegmentCount = (relays) => {
+  // Group relays by segment count
+  const segmentGroups = new Map()
+
+  relays.forEach(relay => {
+    const segments = countPathSegments(relay)
+    if (!segmentGroups.has(segments)) {
+      segmentGroups.set(segments, [])
+    }
+    segmentGroups.get(segments).push(relay)
+  })
+
+  // Sort segment groups by count
+  const sortedSegments = Array.from(segmentGroups.keys()).sort((a, b) => a - b)
+
+  // For each segment group, distribute by hostname
+  const result = []
+  for (const segmentCount of sortedSegments) {
+    const groupRelays = segmentGroups.get(segmentCount)
+
+    // Group by hostname within this segment
+    const hostnameMap = new Map()
+    groupRelays.forEach(relay => {
+      try {
+        const hostname = new URL(relay).hostname
+        if (!hostnameMap.has(hostname)) {
+          hostnameMap.set(hostname, [])
+        }
+        hostnameMap.get(hostname).push(relay)
+      } catch (e) {
+        // Invalid URL, add to end
+        result.push(relay)
+      }
+    })
+
+    // Sort each hostname's relays alphabetically
+    hostnameMap.forEach(relays => relays.sort())
+
+    // Sort hostnames alphabetically for consistency
+    const sortedHostnames = Array.from(hostnameMap.keys()).sort()
+
+    // Interleave: take one from each hostname in round-robin fashion
+    let hasMore = true
+    let index = 0
+    while (hasMore) {
+      hasMore = false
+      for (const hostname of sortedHostnames) {
+        const relays = hostnameMap.get(hostname)
+        if (index < relays.length) {
+          result.push(relays[index])
+          hasMore = true
+        }
+      }
+      index++
+    }
+  }
+
+  // Mutate original array to match expected behavior
+  relays.length = 0
+  relays.push(...result)
+  return relays
+}
+
 export class NWWorker {
   key = 'relay-check'
   $
@@ -586,11 +674,17 @@ export class NWWorker {
 
     if(errors > 0)
       this.log.debug(`DATA INTEGRITY ERRORS #: ${errors}`)
-  
+
+    // Sort expired by retries, then by segment count
     expiredRelays = expiredRelays.sort((a, b) => a.retries - b.retries).map(r => r.url);
-  
+    expiredRelays = sortBySegmentCount(expiredRelays);
+
+    // Sort each group by segment count to prioritize root URLs
+    sortBySegmentCount(onlineExpiredRelays);
+    sortBySegmentCount(uncheckedRelays);
+
     await this.store_cache_counts(allRelays.length, onlineRelays.length, onlineExpiredRelays.length, expiredRelays.length, uncheckedRelays.length, ignoredRelays.length, relaysWithParents.length, relaysAreParents.length)
-  
+
     const deduped = [...new Set([...onlineExpiredRelays, ...uncheckedRelays, ...expiredRelays])];
     const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));
     

@@ -380,13 +380,14 @@ export const Nocapd = async () => {
   log.info('ran migrations...')
 
   // Initialize ignore list sync
-  const ignoreListRelays = [
-    ...(config?.nocapd?.ignorelist?.relays || []),
+  // Meta relays store kind 0, 3, and 10002 events
+  const staticMetaRelays = [
+    ...(config?.publisher?.to_relays || []),
     'wss://purplepag.es',
     'wss://user.kindpag.es',
     'wss://profiles.nostr1.com'
   ]
-  ignoreListSync = new IgnoreListSync(config, ignoreListRelays, rcache)
+  ignoreListSync = new IgnoreListSync(config, staticMetaRelays, rcache)
   if (ignoreListSync.enabled) {
     log.info('Performing initial ignore list sync...')
     await ignoreListSync.sync().catch(log.error)

@@ -127,11 +127,16 @@ const maybeAnnounce = async () => {
     "nocapd.networks": "networks",
     "monitor.owner": "owner",
     "publisher.to_relays": "relays",
-    "monitor.info": "profile"
+    "monitor.info": "profile",
+    "nocapd.ignorelist.relays": "ignorelist_relays"
   }
   const conf = mapper(config, map)
-  console.log(conf)
+  // console.log(conf)
   // console.dir(config.nocapd.checks.enabled)
+  conf.relays = [
+    ...(conf?.relays || []),
+    ...(conf?.ignorelist_relays || [])
+  ]
   conf.frequency = timestring(conf.frequency, 's').toString()
   const announce = new AnnounceMonitor(conf, process.env.DAEMON_PUBKEY)
   try {

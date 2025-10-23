@@ -345,7 +345,7 @@ export class IgnoreListSync {
 
       const signedEvent = finalizeEvent(event, privkey)
 
-      this.log.info(`Publishing NIP-09 deletion for ${this.localIgnoredRelays.size} ignored relays to ${this.nip66Relays.length} relays`)
+      this.log.info(`Publishing NIP-09 deletion for ${this.localIgnoredRelays.size} ignored relays to ${this.nip66Relays.length} relays: [${this.nip66Relays.join(', ')}]`)
 
       // pool.publish() returns an array of Promises (one per relay)
       const publishPromises = this.pool.publish(this.nip66Relays, signedEvent)

@@ -350,6 +350,7 @@ const persistRelays = async (job) => {
     if (ignoreListSync && ignoreListSync.isIgnored(relay.url)) {
       log.debug(`Marking ${relay.url} as ignored - found in synced ignore list`)
       relay.ignore = true
+      relay.parent = '' // Empty parent indicates remote ignore (not deduplication)
     }
 
     relaysToInsert.push(relay)

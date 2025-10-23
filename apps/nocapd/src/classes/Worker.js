@@ -629,13 +629,13 @@ export class NWWorker {
     const ignoredRelays = allRelays.filter(r => r.ignore === true);
 
     // Separate local and remote ignores
-    const localIgnoredRelays = ignoredRelays.filter(r => {
-      // Local ignores are those with a parent (deduplication) or not in remote sync list
-      return (r.parent && r.parent.length > 0) || (this.ignoreListSync && !this.ignoreListSync.isIgnored(r.url))
-    });
     const remoteIgnoredRelays = ignoredRelays.filter(r => {
       // Remote ignores are those in the synced ignore list
       return this.ignoreListSync && this.ignoreListSync.isIgnored(r.url)
+    });
+    const localIgnoredRelays = ignoredRelays.filter(r => {
+      // Local ignores are those NOT in remote sync list (i.e., from deduplication)
+      return !this.ignoreListSync || !this.ignoreListSync.isIgnored(r.url)
     });
 
     const relaysWithParents = allRelays.filter(r => typeof r.parent === 'string' && r.parent.length > 0);

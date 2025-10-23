@@ -12,13 +12,13 @@ import { normalizeURL } from 'nostr-tools/utils'
  * 4. Publishes this monitor's kind 10006 to configured relays
  */
 export class IgnoreListSync {
-  constructor(config, staticRelays) {
+  constructor(config, metaRelays) {
     this.log = new Logger('@nostrwatch/nocapd:ignorelist')
     this.config = config?.nocapd?.ignorelist || {}
     this.enabled = this.config.enabled || false
-    this.publishRelays = this.config.relays || []
-    this.syncPubkeys = this.config.pubkeys || []
-    this.staticRelays = staticRelays // Where to find kind 10002 events
+    this.publishRelays = this.config?.relays || []
+    this.syncPubkeys = this.config?.pubkeys || []
+    this.metaRelays = metaRelays // Where to find kind 10002 events
     this.pool = new SimplePool()
     this.ignoredRelays = new Set() // Merged ignore list from all monitors
     this.localIgnoredRelays = new Set() // This monitor's own ignore list
@@ -83,7 +83,7 @@ export class IgnoreListSync {
       this.log.debug(`Fetching kind 10002 for ${pubkey.slice(0, 8)}...`)
 
       const events = await this.pool.querySync(
-        this.staticRelays,
+        this.metaRelays,
         { kinds: [10002], authors: [pubkey], limit: 1 }
       )
 
@@ -309,7 +309,7 @@ export class IgnoreListSync {
    * Close the pool connections
    */
   close() {
-    this.pool.close(this.staticRelays)
+    this.pool.close(this.metaRelays)
     this.pool.close(this.publishRelays)
   }
 }

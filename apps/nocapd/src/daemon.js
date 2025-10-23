@@ -380,12 +380,11 @@ export const Nocapd = async () => {
   log.info('ran migrations...')
 
   // Initialize ignore list sync
-  const ignoreListRelays = config?.nocapd?.ignorelist?.relays || [
-    'wss://relay.damus.io',
-    'wss://nos.lol',
-    'wss://relay.snort.social',
-    'wss://relay.primal.net',
-    'wss://relay.nostr.band'
+  const ignoreListRelays = [
+    ...(config?.nocapd?.ignorelist?.relays || []),
+    'wss://purplepag.es',
+    'wss://user.kindpag.es',
+    'wss://profiles.nostr1.com'
   ]
   ignoreListSync = new IgnoreListSync(config, ignoreListRelays)
   if (ignoreListSync.enabled) {

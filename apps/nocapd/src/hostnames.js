@@ -60,6 +60,197 @@ function isRootUrl(url) {
   }
 }
 
+/**
+ * Deduplication logic that works with cached relay objects (that only have info hashes, not data)
+ * @param {Object} relay - Cached relay object from LMDB
+ * @param {Object} cache - The relay cache
+ * @param {Object} ignoreListSync - The ignore list sync instance
+ * @returns {Promise<Object>} Updated relay object with ignore/parent status
+ */
+const relayHostnameDedupFromCache = async (relay, cache, ignoreListSync = null) => {
+  const log = new Logger('@nostrwatch/nocapd:hostname')
+  const { url: mURL, hostname: HOSTNAME, protocol: PROTOCOL, info: infoHash } = relay
+  const result = { url: mURL, ignore: relay.ignore, parent: relay.parent }
+
+  try {
+    if (!mURL || !HOSTNAME || !PROTOCOL) {
+      throw new Error(`Invalid relay object: ${JSON.stringify(relay)}`)
+    }
+
+    // Check if this relay is in the synced ignore list from other monitors
+    if (ignoreListSync && ignoreListSync.isIgnored(mURL)) {
+      log.warn(`${mURL} is in synced ignore list from other monitors`)
+      result.ignore = true
+      result.parent = ''
+      return result
+    }
+
+    // Get ALL relays and filter to hostname family
+    const allRelays = await cache.relay.get.all()
+    const hostnameFamily = allRelays.filter(r => r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL && r.online === true)
+
+    if (!hostnameFamily?.length) return result
+
+    // Build map of relative info hashes (they're already hashes in the cache)
+    const relativeInfoHashes = new Map()
+    for (let relayRelative of hostnameFamily) {
+      if (relayRelative.info === null) continue
+      relativeInfoHashes.set(relayRelative.url, relayRelative.info)
+    }
+
+    const relativeInfoHashesArray = Array.from(relativeInfoHashes.values())
+
+    // Order relays by path segment length
+    const urlSegmentOrderedMap = relayArrToHostnameProtocolKeyedMap([...hostnameFamily.map(r => r.url), mURL])
+    const orderedFamily = (urlSegmentOrderedMap.get(`${PROTOCOL}//${HOSTNAME}`)).map(r => normalizeURL(r))
+    const normalizedURL = normalizeURL(mURL)
+    let orderedRelatives = orderedFamily.filter(r => r !== normalizedURL)
+
+    if (!orderedRelatives) {
+      log.error(`Ordered relatives not found for ${PROTOCOL}//${HOSTNAME}`)
+      return result
+    }
+
+    const index = orderedFamily.indexOf(normalizedURL)
+
+    if (index === 0) {
+      result.ignore = false
+      result.parent = ''
+    } else if (index > 0) {
+      result.parent = orderedRelatives[0]
+      const eldestHasHash = relativeInfoHashes.get(orderedRelatives[0]) ? true : false
+      const eldestIsRoot = isRootUrl(orderedRelatives[0])
+      const isSameAsEldest = infoHash === relativeInfoHashes.get(orderedRelatives[0])
+      const isSameAsAnyRelative = relativeInfoHashesArray.includes(infoHash)
+
+      // Check if any older relative has the same hash
+      let isSameAsOlderRelative = false
+      let isSameAsYoungerRelative = false
+      for (let i = 0; i < orderedFamily.length; i++) {
+        const relativeUrl = orderedFamily[i]
+        const relativeHash = relativeInfoHashes.get(relativeUrl)
+        if (relativeHash === infoHash) {
+          if (i < index) isSameAsOlderRelative = true
+          if (i > index) isSameAsYoungerRelative = true
+        }
+      }
+
+      const pathnameIsPubkey = new URL(mURL).pathname.split('/').some(p => isPubkey(p))
+      const pathnameContainsPubkey = containsPubkey(new URL(mURL).pathname)
+      const pathnameContainsHostname = new URL(mURL).pathname.includes(HOSTNAME)
+
+      const case1 = eldestIsRoot && eldestHasHash && isSameAsEldest
+      const case2 = eldestIsRoot && infoHash && (isSameAsAnyRelative || isSameAsEldest)
+      const case3 = !eldestIsRoot && isSameAsOlderRelative && isSameAsYoungerRelative
+      const case4 = eldestIsRoot && eldestHasHash && !infoHash
+      const case5 = !eldestIsRoot && !eldestHasHash && !infoHash
+      const case6 = pathnameIsPubkey || pathnameContainsPubkey
+      const case7 = pathnameContainsHostname
+
+      if (case1 || case2 || case3 || case4 || case5 || case6 || case7) {
+        result.ignore = true
+      } else {
+        result.ignore = false
+      }
+    } else {
+      log.error(`CRITICAL ERROR! relayHostnameDedupFromCache(): ${mURL} not found in hostnameGroup`)
+    }
+  } catch (error) {
+    log.error(`Error in relayHostnameDedupFromCache: ${error}`)
+  }
+
+  return result
+}
+
+/**
+ * Re-evaluate deduplication for all online relays in the cache
+ * This should be run periodically to catch relays that were checked before their relatives
+ * Fetches fresh NIP-11 data to ensure accuracy
+ * @param {Object} cache - The relay cache
+ * @param {Object} ignoreListSync - The ignore list sync instance
+ * @returns {Promise<Array>} Array of relays that had their ignore status changed
+ */
+export const reevaluateAllDeduplication = async (cache, ignoreListSync = null) => {
+  const log = new Logger('@nostrwatch/nocapd:hostname')
+  log.info('Starting periodic deduplication re-evaluation for all relays...')
+
+  const allRelays = await cache.relay.get.all()
+  const onlineRelays = allRelays.filter(r => r.online === true)
+
+  log.info(`Re-evaluating ${onlineRelays.length} online relays - fetching fresh NIP-11 data...`)
+
+  // Import nocap dynamically
+  const { default: Nocap } = await import('@nostrwatch/nocap')
+  const nocapAdapters = await import('@nostrwatch/nocap/adapters')
+
+  const changedRelays = []
+
+  for (const relay of onlineRelays) {
+    const previousIgnoreStatus = relay.ignore
+
+    try {
+      // Fetch fresh NIP-11 data
+      const nocap = new Nocap(relay.url, { timeout: 10000, logLevel: 'error' })
+      await nocap.useAdapters([nocapAdapters.info])
+      const checkResult = await nocap.check(['info']).catch(err => {
+        log.debug(`Failed to fetch NIP-11 for ${relay.url}: ${err.message}`)
+        return null
+      })
+
+      if (!checkResult) {
+        log.debug(`Skipping ${relay.url} - could not fetch NIP-11`)
+        continue
+      }
+
+      // Build result object with fresh NIP-11 data
+      const result = {
+        url: relay.url,
+        hostname: relay.hostname,
+        protocol: relay.protocol,
+        info: checkResult.info,
+        ignore: relay.ignore,
+        parent: relay.parent
+      }
+
+      // Run deduplication with fresh data
+      const updatedResult = await relayHostnameDedup(result, cache, ignoreListSync).catch(err => {
+        log.error(`Error re-evaluating ${relay.url}: ${err.message}`)
+        return { url: relay.url, ignore: relay.ignore, parent: relay.parent }
+      })
+
+      // If ignore status changed, update the cache and track it
+      if (updatedResult.ignore !== previousIgnoreStatus) {
+        log.info(`${relay.url}: ignore status changed from ${previousIgnoreStatus} to ${updatedResult.ignore}`)
+
+        await cache.relay.patch({
+          url: relay.url,
+          ignore: updatedResult.ignore,
+          parent: updatedResult.parent || null
+        }).catch(err => {
+          log.error(`Failed to update ${relay.url}: ${err.message}`)
+        })
+
+        changedRelays.push({
+          url: relay.url,
+          previousIgnore: previousIgnoreStatus,
+          newIgnore: updatedResult.ignore,
+          parent: updatedResult.parent
+        })
+
+        // If newly ignored and has a parent, add to ignore list
+        if (updatedResult.ignore && !previousIgnoreStatus && ignoreListSync && updatedResult.parent) {
+          ignoreListSync.addToIgnoreList(relay.url)
+        }
+      }
+    } catch (err) {
+      log.error(`Error processing ${relay.url}: ${err.message}`)
+    }
+  }
+
+  log.info(`Deduplication re-evaluation complete. ${changedRelays.length} relays changed status.`)
+  return changedRelays
+}
+
 export const relayHostnameDedup = async ( result, cache, ignoreListSync = null ) => {
     const { url:mURL, hostname:HOSTNAME, protocol:PROTOCOL } = result
     try {
@@ -75,10 +266,11 @@ export const relayHostnameDedup = async ( result, cache, ignoreListSync = null )
         return result
       }
 
-      // Get online relays and filter them down to ones that share a hostname with target relay (result)
+      // Get ALL relays (including ignored ones) and filter them down to ones that share a hostname with target relay (result)
       // ...and is not the target relay (result)
-      const online = cache.relay.get.online()
-      const hostnameFamily = online.filter( r => r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL )
+      // We need to check ALL relays, not just online ones, to ensure consistent deduplication across all monitors
+      const allRelays = await cache.relay.get.all()
+      const hostnameFamily = allRelays.filter( r => r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL && r.online === true)
       const hostnameRelatives = [...hostnameFamily]
 
       //It has no relatives, exit now.
@@ -174,6 +366,10 @@ export const relayHostnameDedup = async ( result, cache, ignoreListSync = null )
         //ignore when pathname includes the hostname (stopgap!)
         const reason7 = `path includes hostname`
         const case7 = pathnameContainsHostname
+
+        log.debug(`[${mURL}] eldestIsRoot: ${eldestIsRoot}, eldestHasHash: ${eldestHasHash}, isSameAsEldest: ${isSameAsEldest}`)
+        log.debug(`[${mURL}] isSameAsAnyRelative: ${isSameAsAnyRelative}, isSameAsOlderRelative: ${isSameAsOlderRelative}, isSameAsYoungerRelative: ${isSameAsYoungerRelative}`)
+        log.debug(`[${mURL}] case1: ${case1}, case2: ${case2}, case3: ${case3}, case4: ${case4}, case5: ${case5}, case6: ${case6}, case7: ${case7}`)
 
         //set ignore to true, this will prevent the tests from running next time around.
         if( case1 || case2 || case3 || case4 || case5 || case6 || case7 ) {

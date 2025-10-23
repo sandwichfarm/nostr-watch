@@ -51,7 +51,8 @@ const setSchedules = async () => {
   const jobPopulator = await scheduleJobPopulator()
   const ignoreListSyncSchedule = await scheduleIgnoreListSync()
   const ignoreListDeletionsSchedule = await scheduleIgnoreListDeletions()
-  return { relayPopulator, jobPopulator, ignoreListSyncSchedule, ignoreListDeletionsSchedule }
+  const dedupReevaluationSchedule = await scheduleDedupReevaluation()
+  return { relayPopulator, jobPopulator, ignoreListSyncSchedule, ignoreListDeletionsSchedule, dedupReevaluationSchedule }
 }
 
 const initBus = () => {
@@ -251,6 +252,28 @@ const scheduleIgnoreListDeletions = () => {
   return scheduleSeconds(name, seconds, job)
 }
 
+const scheduleDedupReevaluation = () => {
+  const name = "scheduleDedupReevaluation()"
+  const dedupOpts = config?.nocapd?.deduplication
+
+  // Default to 24h if not specified
+  const interval = dedupOpts?.reevaluation_interval || '24h'
+  const seconds = timestring(interval, "s")
+  log.info(`Scheduling deduplication re-evaluation every ${interval} (${seconds}s)`)
+
+  const job = async () => {
+    log.info(`Running scheduled deduplication re-evaluation...`)
+    const { reevaluateAllDeduplication } = await import('./hostnames.js')
+    const changedRelays = await reevaluateAllDeduplication(rcache, ignoreListSync).catch(log.error)
+    if (changedRelays && changedRelays.length > 0) {
+      log.info(`Re-evaluation changed ${changedRelays.length} relay(s) ignore status`)
+      // Publish deletions for newly ignored relays
+      await ignoreListSync.publishDeletions(process.env.DAEMON_PRIVKEY).catch(log.error)
+    }
+  }
+  return scheduleSeconds(name, seconds, job)
+}
+
 const pause = async (caller = "unknown") => {
   log.info(`${caller} pausing: all queues/workers`)
   await $q.queue.pause()
@@ -305,10 +328,25 @@ const populateRelays = async ( skipJob = false ) => {
 
 const persistRelays = async (job) => {
   let { relays } = job.data
-  // relays = relayListHostnameDedup(relays, rcache)
-  const persisted = await rcache.relay.batch.insertIfNotExists(relays).catch(console.error)
+
+  // Only check against synced ignore list - do NOT do hostname deduplication here
+  // Deduplication happens later in hostnames.js with proper NIP-11 hash comparison
+  const relaysToInsert = []
+  for (const relay of relays) {
+    // Check if relay is in synced ignore list from other monitors
+    if (ignoreListSync && ignoreListSync.isIgnored(relay.url)) {
+      log.debug(`Marking ${relay.url} as ignored - found in synced ignore list`)
+      relay.ignore = true
+    }
+
+    relaysToInsert.push(relay)
+  }
+
+  const persisted = await rcache.relay.batch.insertIfNotExists(relaysToInsert).catch(console.error)
   if(persisted.length === 0) return 0
-  log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays`))
+
+  const ignoredCount = relaysToInsert.filter(r => r.ignore).length
+  log.info(chalk.yellow.bold(`Persisted ${persisted.length} new relays${ignoredCount > 0 ? ` (${ignoredCount} from synced ignore list)` : ''}`))
 }
 
 const queueOpts = () => {

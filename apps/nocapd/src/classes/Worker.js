@@ -627,6 +627,17 @@ export class NWWorker {
     const onlineExpiredRelays = [];
     const uncheckedRelays = [];
     const ignoredRelays = allRelays.filter(r => r.ignore === true);
+
+    // Separate local and remote ignores
+    const localIgnoredRelays = ignoredRelays.filter(r => {
+      // Local ignores are those with a parent (deduplication) or not in remote sync list
+      return (r.parent && r.parent.length > 0) || (this.ignoreListSync && !this.ignoreListSync.isIgnored(r.url))
+    });
+    const remoteIgnoredRelays = ignoredRelays.filter(r => {
+      // Remote ignores are those in the synced ignore list
+      return this.ignoreListSync && this.ignoreListSync.isIgnored(r.url)
+    });
+
     const relaysWithParents = allRelays.filter(r => typeof r.parent === 'string' && r.parent.length > 0);
     const relaysAreParents = Array.from(new Set(relaysWithParents.map(r => r.parent)));
 
@@ -683,7 +694,7 @@ export class NWWorker {
     sortBySegmentCount(onlineExpiredRelays);
     sortBySegmentCount(uncheckedRelays);
 
-    await this.store_cache_counts(allRelays.length, onlineRelays.length, onlineExpiredRelays.length, expiredRelays.length, uncheckedRelays.length, ignoredRelays.length, relaysWithParents.length, relaysAreParents.length)
+    await this.store_cache_counts(allRelays.length, onlineRelays.length, onlineExpiredRelays.length, expiredRelays.length, uncheckedRelays.length, ignoredRelays.length, localIgnoredRelays.length, remoteIgnoredRelays.length, relaysWithParents.length, relaysAreParents.length)
 
     const deduped = [...new Set([...onlineExpiredRelays, ...uncheckedRelays, ...expiredRelays])];
     const relaysFiltered = deduped.filter(this.qualifyNetwork.bind(this));
@@ -695,8 +706,8 @@ export class NWWorker {
     return relaysFiltered   
   }
 
-  async store_cache_counts( allRelays, online, onlineExpired, expired, unchecked, ignoredRelays, relaysWithParents, relaysAreParents ){
-      this.cache_counts = { allRelays, online, onlineExpired, expired, unchecked, ignoredRelays, relaysWithParents, relaysAreParents }
+  async store_cache_counts( allRelays, online, onlineExpired, expired, unchecked, ignoredRelays, localIgnoredRelays, remoteIgnoredRelays, relaysWithParents, relaysAreParents ){
+      this.cache_counts = { allRelays, online, onlineExpired, expired, unchecked, ignoredRelays, localIgnoredRelays, remoteIgnoredRelays, relaysWithParents, relaysAreParents }
   }
 
   show_cache_counts(){
@@ -707,10 +718,11 @@ export class NWWorker {
       cacheMessage += `expired: ${this.cache_counts.expired}  -  `
       cacheMessage += `unchecked: ${this.cache_counts.unchecked}  -  `
       cacheMessage += `total: ${this.cache_counts.allRelays}  |   `
-      cacheMessage += `ignored: ${this.cache_counts.ignoredRelays} -  `
+      cacheMessage += `ignored (local): ${this.cache_counts.localIgnoredRelays} -  `
+      cacheMessage += `ignored (remote): ${this.cache_counts.remoteIgnoredRelays} -  `
       cacheMessage += `parents: ${this.cache_counts.relaysAreParents} -  `
       cacheMessage += `children: ${this.cache_counts.relaysWithParents} ===`
-      
+
 
       this.log.info(chalk.blue.bold(cacheMessage));
     })

@@ -16,7 +16,8 @@ export class IgnoreListSync {
     this.log = new Logger('@nostrwatch/nocapd:ignorelist')
     this.config = config?.nocapd?.ignorelist || {}
     this.enabled = this.config.enabled || false
-    this.publishRelays = this.config?.relays || []
+    this.nip66Relays = config?.publisher?.to_relays || []
+    this.listRelays = this.config?.relays || []
     this.syncPubkeys = this.config?.pubkeys || []
     this.metaRelays = metaRelays // Where to find kind 10002 events
     this.rcache = rcache // LMDB cache to read/write ignored relays
@@ -27,7 +28,7 @@ export class IgnoreListSync {
 
     if (this.enabled) {
       this.log.info(`IgnoreListSync initialized with ${this.syncPubkeys.length} pubkeys`)
-      this.log.info(`Publishing kind 10006 to: ${this.publishRelays.join(', ')}`)
+      this.log.info(`Publishing kind 10006 to: ${this.listRelays.join(', ')}`)
       // Load existing ignored relays from LMDB
       this.loadLocalIgnoresFromCache()
     }
@@ -70,7 +71,7 @@ export class IgnoreListSync {
    * Get relays to append to this monitor's kind 10002
    */
   getRelaysForKind10002() {
-    return this.enabled ? this.publishRelays : []
+    return this.enabled ? this.listRelays : []
   }
 
   /**
@@ -237,7 +238,7 @@ export class IgnoreListSync {
       return
     }
 
-    if (this.publishRelays.length === 0) {
+    if (this.listRelays.length === 0) {
       this.log.warn('No relays configured for publishing kind 10006')
       return
     }
@@ -262,10 +263,10 @@ export class IgnoreListSync {
 
       const signedEvent = finalizeEvent(event, privkey)
 
-      this.log.info(`Publishing kind 10006 with ${this.localIgnoredRelays.size} LOCAL blocked relays to ${this.publishRelays.length} relays`)
+      this.log.info(`Publishing kind 10006 with ${this.localIgnoredRelays.size} LOCAL blocked relays to ${this.listRelays.length} relays`)
 
       // pool.publish() returns an array of Promises (one per relay)
-      const publishPromises = this.pool.publish(this.publishRelays, signedEvent)
+      const publishPromises = this.pool.publish(this.listRelays, signedEvent)
 
       // Wait for all relays to respond (or fail)
       const results = await Promise.allSettled(publishPromises)
@@ -273,7 +274,7 @@ export class IgnoreListSync {
       // Log results
       let successCount = 0
       results.forEach((result, index) => {
-        const relay = this.publishRelays[index]
+        const relay = this.listRelays[index]
         if (result.status === 'fulfilled') {
           successCount++
           this.log.debug(`Published kind 10006 to ${relay}`)
@@ -284,7 +285,7 @@ export class IgnoreListSync {
 
       // Reset change flag after successful publish
       this.localIgnoreListChanged = false
-      this.log.info(`Kind 10006 published to ${successCount}/${this.publishRelays.length} relays`)
+      this.log.info(`Kind 10006 published to ${successCount}/${this.listRelays.length} relays`)
 
     } catch (e) {
       this.log.error(`Error publishing kind 10006: ${e.message}`)
@@ -301,7 +302,7 @@ export class IgnoreListSync {
       return
     }
 
-    if (this.publishRelays.length === 0) {
+    if (this.listRelays.length === 0) {
       this.log.warn('No relays configured for publishing deletions')
       return
     }
@@ -334,10 +335,10 @@ export class IgnoreListSync {
 
       const signedEvent = finalizeEvent(event, privkey)
 
-      this.log.info(`Publishing NIP-09 deletion for ${this.localIgnoredRelays.size} ignored relays to ${this.publishRelays.length} relays`)
+      this.log.info(`Publishing NIP-09 deletion for ${this.localIgnoredRelays.size} ignored relays to ${this.nip66Relays.length} relays`)
 
       // pool.publish() returns an array of Promises (one per relay)
-      const publishPromises = this.pool.publish(this.publishRelays, signedEvent)
+      const publishPromises = this.pool.publish(this.nip66Relays, signedEvent)
 
       // Wait for all relays to respond (or fail)
       const results = await Promise.allSettled(publishPromises)
@@ -345,7 +346,7 @@ export class IgnoreListSync {
       // Log results
       let successCount = 0
       results.forEach((result, index) => {
-        const relay = this.publishRelays[index]
+        const relay = this.listRelays[index]
         if (result.status === 'fulfilled') {
           successCount++
           this.log.debug(`Published deletion to ${relay}`)
@@ -354,7 +355,7 @@ export class IgnoreListSync {
         }
       })
 
-      this.log.info(`NIP-09 deletions published to ${successCount}/${this.publishRelays.length} relays`)
+      this.log.info(`NIP-09 deletions published to ${successCount}/${this.listRelays.length} relays`)
 
     } catch (e) {
       this.log.error(`Error publishing deletion events: ${e.message}`)
@@ -366,6 +367,6 @@ export class IgnoreListSync {
    */
   close() {
     this.pool.close(this.metaRelays)
-    this.pool.close(this.publishRelays)
+    this.pool.close(this.listRelays)
   }
 }

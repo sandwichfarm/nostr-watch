@@ -225,19 +225,27 @@ export class IgnoreListSync {
 
       this.log.info(`Publishing kind 10006 with ${this.localIgnoredRelays.size} LOCAL blocked relays to ${this.publishRelays.length} relays`)
 
-      // Publish to configured relays
-      const publishPromises = this.publishRelays.map(relay =>
-        this.pool.publish([relay], signedEvent).catch(e => {
-          this.log.error(`Failed to publish to ${relay}: ${e.message}`)
-          return null
-        })
-      )
+      // pool.publish() returns an array of Promises (one per relay)
+      const publishPromises = this.pool.publish(this.publishRelays, signedEvent)
 
-      await Promise.allSettled(publishPromises)
+      // Wait for all relays to respond (or fail)
+      const results = await Promise.allSettled(publishPromises)
+
+      // Log results
+      let successCount = 0
+      results.forEach((result, index) => {
+        const relay = this.publishRelays[index]
+        if (result.status === 'fulfilled') {
+          successCount++
+          this.log.debug(`Published kind 10006 to ${relay}`)
+        } else {
+          this.log.error(`Failed to publish kind 10006 to ${relay}: ${result.reason}`)
+        }
+      })
 
       // Reset change flag after successful publish
       this.localIgnoreListChanged = false
-      this.log.info('Kind 10006 published successfully')
+      this.log.info(`Kind 10006 published to ${successCount}/${this.publishRelays.length} relays`)
 
     } catch (e) {
       this.log.error(`Error publishing kind 10006: ${e.message}`)
@@ -289,16 +297,25 @@ export class IgnoreListSync {
 
       this.log.info(`Publishing NIP-09 deletion for ${this.localIgnoredRelays.size} ignored relays to ${this.publishRelays.length} relays`)
 
-      // Publish to configured relays
-      const publishPromises = this.publishRelays.map(relay =>
-        this.pool.publish([relay], signedEvent).catch(e => {
-          this.log.error(`Failed to publish deletion to ${relay}: ${e.message}`)
-          return null
-        })
-      )
+      // pool.publish() returns an array of Promises (one per relay)
+      const publishPromises = this.pool.publish(this.publishRelays, signedEvent)
 
-      await Promise.allSettled(publishPromises)
-      this.log.info('NIP-09 deletion events published successfully')
+      // Wait for all relays to respond (or fail)
+      const results = await Promise.allSettled(publishPromises)
+
+      // Log results
+      let successCount = 0
+      results.forEach((result, index) => {
+        const relay = this.publishRelays[index]
+        if (result.status === 'fulfilled') {
+          successCount++
+          this.log.debug(`Published deletion to ${relay}`)
+        } else {
+          this.log.error(`Failed to publish deletion to ${relay}: ${result.reason}`)
+        }
+      })
+
+      this.log.info(`NIP-09 deletions published to ${successCount}/${this.publishRelays.length} relays`)
 
     } catch (e) {
       this.log.error(`Error publishing deletion events: ${e.message}`)

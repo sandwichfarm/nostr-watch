@@ -2,6 +2,7 @@ import WebSocket from 'ws'
 
 import Logger from "@nostrwatch/logger"
 import { parseRelayNetwork } from "../utils.js"
+import { finalizeEvent, getPublicKey } from 'nostr-tools/pure'
 
 import { ConfigInterface } from "../interfaces/ConfigInterface.js";
 import { ResultInterface } from "../interfaces/ResultInterface.js";
@@ -795,12 +796,62 @@ export default class Base {
 
   /**
    * handle_auth
-   * Nostr handler triggered by Hooks proxy-handler
+   * Nostr handler triggered by Hooks proxy-handler (NIP-42)
    * @private
    * @returns null
   */
-  handle_auth(challenge){
-    challenge;
+  async handle_auth(challenge){
+    this.logger.debug(`handle_auth(): Relay sent AUTH challenge: ${challenge}`)
+
+    // Only authenticate during read/write checks, not during open
+    // The open check just verifies websocket connectivity
+    if(this.current && ['read', 'write'].includes(this.current)) {
+      const key = this.current
+      const promiseState = this.promises.reflect(key).state
+
+      // Only proceed if the check is still pending
+      if(!promiseState.isPending) {
+        this.logger.debug(`${key}: AUTH received but ${key} check already completed`)
+        return
+      }
+
+      // Check if we have auth credentials configured
+      const authPrivkey = this.config.get('authPrivateKey')
+
+      if(!authPrivkey) {
+        this.logger.warn(`${key}: Relay requires NIP-42 authentication but no authPrivateKey configured`)
+        return // Don't fail - just skip auth and let the check timeout naturally if relay won't respond
+      }
+
+      try {
+        // Create NIP-42 AUTH event (kind 22242)
+        const authPubkey = getPublicKey(authPrivkey)
+        const authEvent = finalizeEvent({
+          kind: 22242,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [
+            ['relay', this.url],
+            ['challenge', challenge]
+          ],
+          content: ''
+        }, authPrivkey)
+
+        this.logger.debug(`${key}: Sending NIP-42 AUTH response for pubkey ${authPubkey}`)
+
+        // Send AUTH response
+        if(this.isConnected()) {
+          this.ws.send(JSON.stringify(['AUTH', authEvent]))
+          this.logger.debug(`${key}: NIP-42 AUTH response sent successfully`)
+        } else {
+          this.logger.warn(`${key}: Cannot send AUTH response - websocket not connected`)
+        }
+      } catch(err) {
+        this.logger.error(`${key}: Failed to create/send NIP-42 AUTH response: ${err.message}`)
+      }
+    } else if(this.current === 'open') {
+      // For open check, just log that auth was requested but don't fail
+      this.logger.debug(`open: Relay sent AUTH challenge during open check - ignoring (auth only for read/write)`)
+    }
   }
 
   /**

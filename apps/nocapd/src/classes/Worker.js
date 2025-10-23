@@ -37,6 +37,18 @@ export class NWWorker {
   }
 
   setup(){
+    // Set default timeouts first
+    this.timeout = {
+      open: 3000,
+      read: 3000,
+      write: 3000,
+      info: 2000,
+      dns: 1000,
+      geo: 1000,
+      ssl: 1000
+    }
+
+    // Then let config override them
     this.setupConfig()
 
     this.cb = {}
@@ -47,9 +59,10 @@ export class NWWorker {
     this.jobs = {}
     this.hard_stop = false
 
-    this.nocapOpts = { 
+    this.nocapOpts = {
       timeout: this.timeout,
-      checked_by: this.pubkey
+      checked_by: this.pubkey,
+      authPrivateKey: process.env.DAEMON_PRIVKEY // Enable NIP-42 authentication
     }
 
     this.jobOpts = {
@@ -60,16 +73,6 @@ export class NWWorker {
       removeOnFail: {
         age: timestring('10m', 's')
       }
-    }
-  
-    this.timeout = {
-      open: 3000,
-      read: 3000,
-      write: 3000,
-      info: 2000,
-      dns: 1000,
-      geo: 1000,
-      ssl: 1000
     }
 
     this.setupInstances()
@@ -132,34 +135,69 @@ export class NWWorker {
   }
 
   async work(job){
-    let timeout;
+    const startTime = Date.now()
     this.log.debug(`${this.id()}: work(): ${job.id} checking ${job.data?.relay} for ${this.opts?.checks?.enabled || "unknown checks"}`)
-    const failure = (err) => { this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }  
+    const failure = (err) => { this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`) }
     let result = {}
-    try {
-      let nocap
-      timeout = setTimeout( //needed to prevent hanging jobs
-        () => { 
-          const message = `Job Timeout: ${job.id} after ${TIMEOUT/1000}s`
-          console.log(message)
-          throw Error(message) 
-        }, 
-        TIMEOUT
-      );
-      const { relay:url } = job.data 
-      nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
+    let checkStartTime
+
+    // Create timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+        const checkElapsed = checkStartTime ? ((Date.now() - checkStartTime) / 1000).toFixed(1) : 'N/A'
+        const message = `Job Timeout: ${job.id} after ${TIMEOUT/1000}s (total: ${elapsed}s, check: ${checkElapsed}s)`
+        this.log.error(message)
+        this.log.error(`Timeout details: url=${job.data?.relay}, checks=${JSON.stringify(this.opts?.checks?.enabled)}`)
+        reject(new Error(message))
+      }, TIMEOUT)
+    })
+
+    // Create work promise
+    const workPromise = (async () => {
+      const { relay:url } = job.data
+      const nocap = new Nocap(url, {...this.nocapOpts, logLevel: 'debug'})
       await nocap.useAdapters([...Object.values(nocapAdapters)]).catch(failure)
       const alteredChecks = Array.from(new Set([ ...this.opts.checks.enabled, 'info']))
+      checkStartTime = Date.now()
+      this.log.debug(`${job.id}: Starting nocap.check() with checks: ${JSON.stringify(alteredChecks)}`)
       result = await nocap.check(alteredChecks).catch(failure)
-      clearTimeout(timeout)
-      return { result } 
-    } 
+      const checkDuration = ((Date.now() - checkStartTime) / 1000).toFixed(1)
+      this.log.debug(`${job.id}: Completed nocap.check() in ${checkDuration}s`)
+      return { result }
+    })()
+
+    try {
+      // Wait for either work to complete or timeout
+      const raceResult = await Promise.race([
+        workPromise.then(r => ({ status: 'completed', result: r })),
+        timeoutPromise.then(() => ({ status: 'timeout' }))
+      ])
+
+      // If timeout won, wait a bit more for work to finish and use whatever result we have
+      if (raceResult.status === 'timeout') {
+        this.log.warn(`${job.id}: Timeout reached, waiting for partial results...`)
+        // Give it 5 more seconds to finish gracefully
+        await Promise.race([
+          workPromise,
+          new Promise(resolve => setTimeout(() => resolve(), 5000))
+        ]).catch(() => {})
+
+        // Use whatever result nocap managed to collect
+        if (result && Object.keys(result).length > 0) {
+          this.log.info(`${job.id}: Using partial results from nocap despite timeout`)
+          return { result }
+        }
+
+        // If truly no result, return failure
+        return { result: { url: job.data.relay, open: { data: false }} }
+      }
+
+      return raceResult.result
+    }
     catch(err) {
       this.log.error(`Could not run ${this.pubkey} check for ${job.data.relay}: ${err.message}`)
       return { result: { url: job.data.relay, open: { data: false }} }
-    }
-    finally {
-      clearTimeout(timeout)
     }
   }
 
@@ -206,11 +244,16 @@ export class NWWorker {
     // else {
     const k30166 = new Kind30166(process.env.DAEMON_PUBKEY)
     // }
-    // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))  
+    // const id = await publish30166.one( result, process.env.DAEMON_PRIVKEY ).catch(this.log.error.bind(this.log))
     k30166.generateEvent( result )
     k30166.signEvent( process.env.DAEMON_PRIVKEY )
-    const id = await this.publisher.publishEvent( k30166.json() ).catch(console.error)
-    log.debug(`on_success(): ${result.url} published${result?.parent? ' child of '+result.parent: ''}: ${id}`)  
+    const id = await this.publisher.publishEvent( k30166.json() ).catch(e => {
+      log.warn(`on_success(): Failed to publish event for ${result.url}: ${e?.message || e}`)
+      return null
+    })
+    if(id) {
+      log.debug(`on_success(): ${result.url} published${result?.parent? ' child of '+result.parent: ''}: ${id}`)
+    }  
   }
 
   async on_fail(result){

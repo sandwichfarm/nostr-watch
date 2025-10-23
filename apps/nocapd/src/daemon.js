@@ -237,6 +237,7 @@ const populateRelays = async ( skipJob = false ) => {
 
     const { Relay } = Schemas
     const syncData = await bootstrap('nocapd').catch( () => log.warn('bootstrap() failed') );
+    console.log('after syncData')
 
     if(!syncData?.[0]) return log.error(`populateRelays(): no relays found in bootstrap data`)
     
@@ -250,6 +251,7 @@ const populateRelays = async ( skipJob = false ) => {
     else {
       await persistRelays({ data: { relays } }).catch(e => log.error(e))
     }
+    console.log('after persistRelays')
     
 }
 
@@ -278,21 +280,26 @@ const maybeBootstrap = async () => {
   }
 }
 
-const globalHandlers = () => {
-  const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
-  
-  signals.forEach(signal => {
-    process.on(signal, async () => await gracefulShutdown(signal));
-  });
-
+// Install early handlers before any async operations
+const installEarlyHandlers = () => {
   process.on('uncaughtException', async (err) => {
     log.error('!! Uncaught Exception:', err);
     // log.error('Uncaught Exception:', err.stack);
   });
-  
+
   process.on('unhandledRejection', async (reason, promise) => {
-    log.error('!! Unhandled Rejection:', promise.catch(console.error));
-  });  
+    log.error('UNHANDLED REJECTION:\n', reason?.stack || reason);
+    // Don't throw - just log it to avoid crashing the daemon
+    // The error is already handled and logged above
+  });
+}
+
+const globalHandlers = () => {
+  const signals = ['SIGINT', 'SIGTERM', 'SIGHUP'];
+
+  signals.forEach(signal => {
+    process.on(signal, async () => await gracefulShutdown(signal));
+  });
 
   $q.worker.on('error', async (err) => {
     console.error('Worker Error: ', err);
@@ -315,8 +322,14 @@ export const Nocapd = async () => {
   const lmdbOpts = config?.lmdb ?? {}
   concurrency = config?.nocapd?.bullmq?.worker?.concurrency? config.nocapd.bullmq.worker.concurrency: 1
   rcache = relaycache(process.env.NWCACHE_PATH || './.lmdb', lmdbOpts)
+
+  // Install global error handlers BEFORE any async operations that might fail
+  installEarlyHandlers()
+
   // console.dir(config)
-  // await maybeAnnounce();
+  await maybeAnnounce();
+  // Give async promises time to settle before continuing
+  await delay(1000)
   log.info('Loaded cache...')
   await delay(5000)
   await migrate(rcache)

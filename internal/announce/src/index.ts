@@ -27,7 +27,7 @@ interface AnnounceMonitorOptions {
 export class AnnounceMonitor {
   public events?: any = {};
   public monReg?: any;
-  public metaRelays: string[] = [ 'wss://user.kindpag.es', 'wss://purplepag.es' ];
+  public metaRelays: string[] = [ 'wss://user.kindpag.es', 'wss://purplepag.es', 'wss://profiles.nostr1.com' ];
   public monRelays: string[] = [ ];
   public monProfile: any;
   private publisher: Publisher;
@@ -138,16 +138,25 @@ export class AnnounceMonitor {
       }
       try {
         const publisher = new Publisher(this.pubkey, relays)
-        const promises = publisher.publishEvent( this.events[kind] )
-        console.log('promises', typeof promises)
-        console.dir(promises)
-        await promises
+        // publishEvent returns an object with successful/failed arrays
+        const result: any = await publisher.publishEvent( this.events[kind] )
+
+        if(result && result.successful && result.successful.length > 0) {
+          log.info(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.green.bold(result.successful.length)}/${result.total} relays`)
+        }
+
+        if(result && result.failed && result.failed.length > 0) {
+          log.warn(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('failed on')} ${chalk.red.bold(result.failed.length)}/${result.total} relays`)
+        }
+
+        if(!result || (result.successful?.length === 0 && result.failed?.length === result.total)) {
+          log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to all relays')}`)
+        }
       }
-      catch(e){
-        log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('failed to publish to')} ${chalk.white.bold(this.monRelays.join(','))}`)
+      catch(e: any){
+        log.error(`${chalk.red.bold(kind)} ${chalk.gray.italic('exception during publish:')} ${e?.message || e}`)
         console.error(e)
-      }   
-      log.info(`${chalk.yellow.bold(kind)} ${chalk.gray.italic('published to')} ${chalk.white.bold(this.monRelays.join(','))}`)  
+      }  
       pubbedIds.push(this.events[kind].id)
     }    
     return pubbedIds

@@ -80,15 +80,20 @@ export class Kind30166 extends Event {
         }
       }
 
-      if(info?.supported_nips) {
+      if(info?.supported_nips && Array.isArray(info.supported_nips)) {
         for(const nip of info.supported_nips){
           tags.push(['N', String(nip)])
         }
+      } 
+      else if(info?.supported_nips && !Array.isArray(info?.supported_nips)) {
+        if(typeof info?.supported_nips === 'number') {
+          tags.push(['N', info.supported_nips.toString()])
+        }
+        tags.push(['error', 'nip11: supported_nips is not an array'])
       }
 
       if(info?.language_tags) {
         for(const lang of info.language_tags){
-          //TODO: validate language tags, attempt transform on invalids.
           tags.push(['L', 'ISO-639-1'])
           tags.push(['l', String(lang), 'ISO-639-1'])
         }

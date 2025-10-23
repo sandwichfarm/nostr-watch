@@ -210,12 +210,16 @@ const scheduleRelayPopulator = () =>{
 const scheduleIgnoreListSync = () => {
   const name = "scheduleIgnoreListSync()"
   const ignoreListOpts = config?.nocapd?.ignorelist
-  if(!ignoreListOpts?.enabled || !ignoreListOpts?.interval) return
+  if(!ignoreListOpts?.enabled || !ignoreListOpts?.interval) {
+    log.info('IgnoreListSync is not enabled or interval not configured, skipping schedule')
+    return
+  }
 
   const seconds = timestring(ignoreListOpts.interval, "s")
+  log.info(`Scheduling ignore list sync every ${ignoreListOpts.interval} (${seconds}s)`)
 
   const job = async () => {
-    log.debug(`Scheduled: ignoreListSync.sync()`)
+    log.info(`Running scheduled ignore list sync and publish...`)
     await ignoreListSync.sync().catch(log.error)
     await ignoreListSync.publish(process.env.DAEMON_PRIVKEY).catch(log.error)
   }
@@ -225,14 +229,18 @@ const scheduleIgnoreListSync = () => {
 const scheduleIgnoreListDeletions = () => {
   const name = "scheduleIgnoreListDeletions()"
   const ignoreListOpts = config?.nocapd?.ignorelist
-  if(!ignoreListOpts?.enabled) return
+  if(!ignoreListOpts?.enabled) {
+    log.info('IgnoreListSync is not enabled, skipping deletion schedule')
+    return
+  }
 
   // Default to 24h if not specified
   const interval = ignoreListOpts.deletion_interval || '24h'
   const seconds = timestring(interval, "s")
+  log.info(`Scheduling ignore list deletions every ${interval} (${seconds}s)`)
 
   const job = async () => {
-    log.debug(`Scheduled: ignoreListSync.publishDeletions()`)
+    log.info(`Running scheduled ignore list deletion publish...`)
     await ignoreListSync.publishDeletions(process.env.DAEMON_PRIVKEY).catch(log.error)
   }
   return scheduleSeconds(name, seconds, job)

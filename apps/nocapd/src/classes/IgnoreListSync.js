@@ -49,7 +49,7 @@ export class IgnoreListSync {
     // Mark as changed if this is a new entry
     if (this.localIgnoredRelays.size > sizeBefore) {
       this.localIgnoreListChanged = true
-      this.log.debug(`Added ${normalized} to local ignore list`)
+      this.log.info(`Added ${normalized} to local ignore list (total: ${this.localIgnoredRelays.size})`)
     }
   }
 
@@ -143,12 +143,12 @@ export class IgnoreListSync {
    */
   async sync() {
     if (!this.enabled) {
-      this.log.debug('IgnoreListSync is disabled, skipping sync')
+      this.log.info('IgnoreListSync is disabled, skipping sync')
       return
     }
 
     if (this.syncPubkeys.length === 0) {
-      this.log.debug('No pubkeys configured for sync')
+      this.log.info('No pubkeys configured for sync, skipping')
       return
     }
 
@@ -160,6 +160,7 @@ export class IgnoreListSync {
     for (const pubkey of this.syncPubkeys) {
       try {
         // Step 1: Fetch their kind 10002 from static relays
+        this.log.info(`Fetching kind 10002 for monitor ${pubkey.slice(0, 8)}...`)
         const theirRelays = await this.fetchKind10002(pubkey)
 
         if (theirRelays.length === 0) {
@@ -168,6 +169,7 @@ export class IgnoreListSync {
         }
 
         // Step 2: Fetch their kind 10006 from their relays
+        this.log.info(`Fetching kind 10006 for monitor ${pubkey.slice(0, 8)}... from ${theirRelays.length} relays`)
         const blockedRelays = await this.fetchKind10006(pubkey, theirRelays)
 
         // Step 3: Merge into our ignore list
@@ -178,7 +180,7 @@ export class IgnoreListSync {
       }
     }
 
-    this.log.info(`Sync complete. Total ignored relays: ${this.ignoredRelays.size}`)
+    this.log.info(`Sync complete. Total ignored relays: ${this.ignoredRelays.size} (${this.localIgnoredRelays.size} local, ${this.ignoredRelays.size - this.localIgnoredRelays.size} synced)`)
   }
 
   /**
@@ -248,7 +250,7 @@ export class IgnoreListSync {
    */
   async publishDeletions(privkey) {
     if (!this.enabled) {
-      this.log.debug('IgnoreListSync is disabled, skipping deletion publish')
+      this.log.info('IgnoreListSync is disabled, skipping deletion publish')
       return
     }
 
@@ -258,7 +260,7 @@ export class IgnoreListSync {
     }
 
     if (this.localIgnoredRelays.size === 0) {
-      this.log.debug('No local ignored relays to publish deletions for')
+      this.log.info('No local ignored relays to publish deletions for')
       return
     }
 

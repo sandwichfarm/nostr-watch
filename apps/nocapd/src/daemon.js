@@ -283,7 +283,8 @@ const persistRelays = async (job) => {
 
 const queueOpts = () => {
   return {
-    lockDuration: 30*1000
+    lockDuration: 180*1000, // 3 minutes - jobs can take up to 120s + buffer
+    lockRenewTime: 60*1000   // Renew lock every 60s to keep it alive
   }
 }
 

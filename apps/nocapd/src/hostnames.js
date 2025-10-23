@@ -221,8 +221,9 @@ export const reevaluateAllDeduplication = async (cache, ignoreListSync = null, n
         if (!Nocap) {
           // Lazy load nocap only when needed
           const nocapModule = await import('@nostrwatch/nocap')
-          Nocap = nocapModule.default
-          nocapAdapters = await import('@nostrwatch/nocap/adapters')
+          Nocap = nocapModule.Nocap
+          const InfoAdapterDefault = (await import('@nostrwatch/nocap-info-adapter-default')).default
+          nocapAdapters = { info: InfoAdapterDefault }
         }
 
         const nocap = new Nocap(sampleRelay.url, { timeout: 10000, logLevel: 'error' })

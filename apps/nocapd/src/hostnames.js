@@ -165,89 +165,144 @@ const relayHostnameDedupFromCache = async (relay, cache, ignoreListSync = null) 
 /**
  * Re-evaluate deduplication for all online relays in the cache
  * This should be run periodically to catch relays that were checked before their relatives
- * Fetches fresh NIP-11 data to ensure accuracy
+ * Only fetches fresh NIP-11 data when stale (older than nip11_cache_ttl)
  * @param {Object} cache - The relay cache
  * @param {Object} ignoreListSync - The ignore list sync instance
+ * @param {Number} nip11CacheTtl - How long to consider NIP-11 fresh (milliseconds), default 24 hours
  * @returns {Promise<Array>} Array of relays that had their ignore status changed
  */
-export const reevaluateAllDeduplication = async (cache, ignoreListSync = null) => {
+export const reevaluateAllDeduplication = async (cache, ignoreListSync = null, nip11CacheTtl = 24 * 60 * 60 * 1000) => {
   const log = new Logger('@nostrwatch/nocapd:hostname')
   log.info('Starting periodic deduplication re-evaluation for all relays...')
 
   const allRelays = await cache.relay.get.all()
   const onlineRelays = allRelays.filter(r => r.online === true)
 
-  log.info(`Re-evaluating ${onlineRelays.length} online relays - fetching fresh NIP-11 data...`)
+  log.info(`Re-evaluating ${onlineRelays.length} online relays`)
 
-  // Import nocap dynamically
-  const { default: Nocap } = await import('@nostrwatch/nocap')
-  const nocapAdapters = await import('@nostrwatch/nocap/adapters')
+  // Import nocap dynamically (only if needed)
+  let Nocap, nocapAdapters
+
+  // Group relays by hostname to batch NIP-11 checks
+  const relaysByHostname = new Map()
+  for (const relay of onlineRelays) {
+    const hostnameKey = `${relay.protocol}//${relay.hostname}`
+    if (!relaysByHostname.has(hostnameKey)) {
+      relaysByHostname.set(hostnameKey, [])
+    }
+    relaysByHostname.get(hostnameKey).push(relay)
+  }
+
+  log.info(`Found ${relaysByHostname.size} unique hostnames`)
 
   const changedRelays = []
+  const now = Date.now()
+  let nip11ChecksPerformed = 0
 
-  for (const relay of onlineRelays) {
-    const previousIgnoreStatus = relay.ignore
-
+  for (const [hostnameKey, relaysInGroup] of relaysByHostname.entries()) {
     try {
-      // Fetch fresh NIP-11 data
-      const nocap = new Nocap(relay.url, { timeout: 10000, logLevel: 'error' })
-      await nocap.useAdapters([nocapAdapters.info])
-      const checkResult = await nocap.check(['info']).catch(err => {
-        log.debug(`Failed to fetch NIP-11 for ${relay.url}: ${err.message}`)
-        return null
-      })
+      // For each hostname group, only fetch NIP-11 once if any relay is stale
+      let needsNip11Refresh = false
+      let nip11Data = null
 
-      if (!checkResult) {
-        log.debug(`Skipping ${relay.url} - could not fetch NIP-11`)
-        continue
+      // Check if any relay in this hostname group has stale NIP-11
+      for (const relay of relaysInGroup) {
+        const age = relay.checked_at ? (now - relay.checked_at) : Infinity
+        if (age > nip11CacheTtl || !relay.info) {
+          needsNip11Refresh = true
+          break
+        }
       }
 
-      // Build result object with fresh NIP-11 data
-      const result = {
-        url: relay.url,
-        hostname: relay.hostname,
-        protocol: relay.protocol,
-        info: checkResult.info,
-        ignore: relay.ignore,
-        parent: relay.parent
+      if (needsNip11Refresh) {
+        // Fetch fresh NIP-11 once for this hostname (using any relay from the group)
+        const sampleRelay = relaysInGroup[0]
+
+        if (!Nocap) {
+          // Lazy load nocap only when needed
+          const nocapModule = await import('@nostrwatch/nocap')
+          Nocap = nocapModule.default
+          nocapAdapters = await import('@nostrwatch/nocap/adapters')
+        }
+
+        const nocap = new Nocap(sampleRelay.url, { timeout: 10000, logLevel: 'error' })
+        await nocap.useAdapters([nocapAdapters.info])
+        const checkResult = await nocap.check(['info']).catch(err => {
+          log.debug(`Failed to fetch NIP-11 for ${hostnameKey}: ${err.message}`)
+          return null
+        })
+
+        if (checkResult?.info?.data) {
+          nip11Data = checkResult.info
+          nip11ChecksPerformed++
+          log.debug(`Fetched fresh NIP-11 for ${hostnameKey} (${relaysInGroup.length} relays in group)`)
+        }
       }
 
-      // Run deduplication with fresh data
-      const updatedResult = await relayHostnameDedup(result, cache, ignoreListSync).catch(err => {
-        log.error(`Error re-evaluating ${relay.url}: ${err.message}`)
-        return { url: relay.url, ignore: relay.ignore, parent: relay.parent }
-      })
+      // Re-evaluate each relay in the group
+      for (const relay of relaysInGroup) {
+        const previousIgnoreStatus = relay.ignore
 
-      // If ignore status changed, update the cache and track it
-      if (updatedResult.ignore !== previousIgnoreStatus) {
-        log.info(`${relay.url}: ignore status changed from ${previousIgnoreStatus} to ${updatedResult.ignore}`)
-
-        await cache.relay.patch({
+        // Build result object - use fresh NIP-11 if fetched, otherwise use cached hash
+        const result = {
           url: relay.url,
-          ignore: updatedResult.ignore,
-          parent: updatedResult.parent || null
-        }).catch(err => {
-          log.error(`Failed to update ${relay.url}: ${err.message}`)
-        })
+          hostname: relay.hostname,
+          protocol: relay.protocol,
+          info: nip11Data || (relay.info ? { data: null } : null),
+          ignore: relay.ignore,
+          parent: relay.parent
+        }
 
-        changedRelays.push({
-          url: relay.url,
-          previousIgnore: previousIgnoreStatus,
-          newIgnore: updatedResult.ignore,
-          parent: updatedResult.parent
-        })
+        // If we don't have fresh NIP-11 data, use the cached hash-based dedup
+        let updatedResult
+        if (!nip11Data && relay.info) {
+          // Use cached hash-based deduplication
+          updatedResult = await relayHostnameDedupFromCache(relay, cache, ignoreListSync).catch(err => {
+            log.error(`Error re-evaluating ${relay.url}: ${err.message}`)
+            return { url: relay.url, ignore: relay.ignore, parent: relay.parent }
+          })
+        } else if (nip11Data) {
+          // Use fresh NIP-11 data-based deduplication
+          updatedResult = await relayHostnameDedup(result, cache, ignoreListSync).catch(err => {
+            log.error(`Error re-evaluating ${relay.url}: ${err.message}`)
+            return { url: relay.url, ignore: relay.ignore, parent: relay.parent }
+          })
+        } else {
+          // No NIP-11 available, skip
+          continue
+        }
 
-        // If newly ignored and has a parent, add to ignore list
-        if (updatedResult.ignore && !previousIgnoreStatus && ignoreListSync && updatedResult.parent) {
-          ignoreListSync.addToIgnoreList(relay.url)
+        // If ignore status changed, update the cache and track it
+        if (updatedResult.ignore !== previousIgnoreStatus) {
+          log.info(`${relay.url}: ignore status changed from ${previousIgnoreStatus} to ${updatedResult.ignore}`)
+
+          await cache.relay.patch({
+            url: relay.url,
+            ignore: updatedResult.ignore,
+            parent: updatedResult.parent || null
+          }).catch(err => {
+            log.error(`Failed to update ${relay.url}: ${err.message}`)
+          })
+
+          changedRelays.push({
+            url: relay.url,
+            previousIgnore: previousIgnoreStatus,
+            newIgnore: updatedResult.ignore,
+            parent: updatedResult.parent
+          })
+
+          // If newly ignored and has a parent, add to ignore list
+          if (updatedResult.ignore && !previousIgnoreStatus && ignoreListSync && updatedResult.parent) {
+            ignoreListSync.addToIgnoreList(relay.url)
+          }
         }
       }
     } catch (err) {
-      log.error(`Error processing ${relay.url}: ${err.message}`)
+      log.error(`Error processing hostname group ${hostnameKey}: ${err.message}`)
     }
   }
 
-  log.info(`Deduplication re-evaluation complete. ${changedRelays.length} relays changed status.`)
+  log.info(`Deduplication re-evaluation complete. Performed ${nip11ChecksPerformed} NIP-11 checks for ${relaysByHostname.size} hostnames. ${changedRelays.length} relays changed status.`)
   return changedRelays
 }
 

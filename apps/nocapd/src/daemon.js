@@ -258,13 +258,16 @@ const scheduleDedupReevaluation = () => {
 
   // Default to 24h if not specified
   const interval = dedupOpts?.reevaluation_interval || '24h'
+  const nip11CacheTtl = dedupOpts?.nip11_cache_ttl || '24h'
   const seconds = timestring(interval, "s")
+  const ttlMs = timestring(nip11CacheTtl, "ms")
   log.info(`Scheduling deduplication re-evaluation every ${interval} (${seconds}s)`)
+  log.info(`NIP-11 cache TTL: ${nip11CacheTtl} (${ttlMs}ms)`)
 
   const job = async () => {
     log.info(`Running scheduled deduplication re-evaluation...`)
     const { reevaluateAllDeduplication } = await import('./hostnames.js')
-    const changedRelays = await reevaluateAllDeduplication(rcache, ignoreListSync).catch(log.error)
+    const changedRelays = await reevaluateAllDeduplication(rcache, ignoreListSync, ttlMs).catch(log.error)
     if (changedRelays && changedRelays.length > 0) {
       log.info(`Re-evaluation changed ${changedRelays.length} relay(s) ignore status`)
       // Publish deletions for newly ignored relays

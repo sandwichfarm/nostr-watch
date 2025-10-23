@@ -95,15 +95,15 @@ export const relayHostnameDedup = async ( result, cache ) => {
 
       //Check if the target relay is the parent or child of any other relay in the hostname group.
       const orderedFamily = (urlSegmentOrderedMap.get(`${PROTOCOL}//${HOSTNAME}`)).map( r => normalizeURL(r) )
-      let orderedRelatives = orderedFamily.filter( r => r !== mURL )
+      const normalizedURL = normalizeURL(mURL)
+      let orderedRelatives = orderedFamily.filter( r => r !== normalizedURL )
 
       if (!orderedRelatives) {
         log.error(`Ordered relatives not found for ${PROTOCOL}//${HOSTNAME}`);
         return result
       }
 
-      orderedRelatives = orderedRelatives
-      const index = orderedFamily.indexOf( mURL )
+      const index = orderedFamily.indexOf( normalizedURL )
 
       //if target relay index is 0, we can call it the parent for now.
       if(index === 0) {
@@ -115,7 +115,6 @@ export const relayHostnameDedup = async ( result, cache ) => {
       else if(index > 0) {
         result.parent = orderedRelatives[0]
         log.debug(`${mURL} is a child of ${orderedRelatives[0]}`)
-        const foundAtIndex = relativeInfoHashesArray.indexOf( infoHash )
         const eldestHasHash = relativeInfoHashes.get(orderedRelatives[0])? true: false
         // const hasAnyRelativeHash = relativeInfoHashes.some( r => r? true: false )?.length > 0? true: false
 
@@ -123,8 +122,18 @@ export const relayHostnameDedup = async ( result, cache ) => {
 
         const isSameAsEldest = infoHash === relativeInfoHashes.get(orderedRelatives[0])
         const isSameAsAnyRelative = relativeInfoHashesArray.includes(infoHash)
-        const isSameAsOlderRelative = foundAtIndex < index
-        const isSameAsYoungerRelative = foundAtIndex > index
+
+        // Check if any older relative (lower index) has the same hash
+        let isSameAsOlderRelative = false
+        let isSameAsYoungerRelative = false
+        for(let i = 0; i < orderedFamily.length; i++) {
+          const relativeUrl = orderedFamily[i]
+          const relativeHash = relativeInfoHashes.get(relativeUrl)
+          if(relativeHash === infoHash) {
+            if(i < index) isSameAsOlderRelative = true
+            if(i > index) isSameAsYoungerRelative = true
+          }
+        }
         // const pathnameIsPubkey = isPubkey(new URL(mURL).pathname.split('/')?.[0] || '')
         const pathnameIsPubkey = new URL(mURL).pathname.split('/')?.some( p => isPubkey(p) )
         const pathnameContainsPubkey = containsPubkey(new URL(mURL).pathname)

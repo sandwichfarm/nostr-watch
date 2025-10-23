@@ -459,8 +459,6 @@ export class NWWorker {
 
   async updateRelayCache(result){
     const { url } = result
-    // const relay_id = this.rcache.relay.id(result.url)
-    // const promises = new Array()
     let   record = new Object()
 
     record.url = url
@@ -470,31 +468,14 @@ export class NWWorker {
     record.checked_at = result?.checked_at > 0? result.checked_at: Date.now()
     record.rtt = result?.open?.duration? result.open.duration: -1;
 
-    // for( const key of ['info', 'dns', 'geo', 'ssl'] ){
-    //   const resultHasKey = result?.[key]?.data && Object.keys(result[key].data)?.length > 0
-    //   if(resultHasKey){
-    //     const persist_result = async (resolve, reject) => { 
-          
-    //       this.log.debug(`persist_result(${key})`)
-    //       const checked_at = result.checked_at
-    //       const data = (key === 'ssl' && result.ssl.duration > 0)? JSON.stringify(sslData(result?.ssl?.data ?? {})): JSON.stringify( result[key].data ?? {} )
-    //       const check_record = { url, relay_id, checked_at, data, hash: hash( result[key].data) }
-    //       const check_id = await this.rcache.check[key].insert(check_record).catch( (e) => {
-    //         this.log.error(`Could not persist ${url} to ${key} check: ${e}`)
-    //         console.dir(check_record)
-    //       })
-          
-    //       // if(!check_id)
-    //       //   reject(new Error(`Could not persist ${check_id} check`))
+    // Store info hash directly on relay record for deduplication
+    const hasInfo = result?.info?.data && Object.keys(result.info.data)?.length > 0
+    if(hasInfo){
+      record.info = `RelayCheckInfo@${hash(result.info.data)}`
+    } else {
+      record.info = null
+    }
 
-    //       record[key] = check_id
-    //       resolve()
-    //     }
-    //     promises.push( new Promise( persist_result ) )
-    //   }
-    // }
-
-    // await Promise.all(promises)
     const $id = await this.rcache.relay.patch(record)
     return $id
   }

@@ -7,7 +7,7 @@ RUN git clone https://github.com/sandwichfarm/nostr-watch.git
 
 WORKDIR /app/nostr-watch
 # RUN git checkout functional-monitors-pre-nip66-merge
-RUN git checkout hotfix/dedupe-relays
+RUN git checkout hotfix/host-dedupe
 RUN yarn install 
 
 WORKDIR /app/nostr-watch/apps/nocapd

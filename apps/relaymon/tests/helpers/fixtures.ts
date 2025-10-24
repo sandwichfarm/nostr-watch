@@ -21,7 +21,11 @@ export const mockConfig = {
       lon: 0,
       region: "Test Region",
       continent: "Test Continent"
-    }
+    },
+    relays: [
+      "wss://monitor-relay.test1.com",
+      "wss://monitor-relay.test2.com"
+    ]
   },
   publisher: {
     relays: [

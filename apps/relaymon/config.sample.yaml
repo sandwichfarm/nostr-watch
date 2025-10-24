@@ -93,3 +93,10 @@ relaymon:
   # delta:
   #   enabled: false
   #   max_retries: 10  # Stop publishing delta events after N offline retries
+  #   periods:
+  #     enabled: false
+  #     definitions:
+  #       - '6h'   # 6 hour aggregates
+  #       - '1d'   # Daily aggregates
+  #       - '7d'   # Weekly aggregates
+  #       - '30d'  # Monthly aggregates (approximate)

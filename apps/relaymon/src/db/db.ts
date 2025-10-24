@@ -52,6 +52,22 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
     logger.error(`Failed to create relay_delta_state table: ${e}`);
   }
 
+  // Create the relay_period_snapshots table for period aggregates
+  try {
+    db.query(`
+      CREATE TABLE IF NOT EXISTS relay_period_snapshots (
+        url TEXT NOT NULL,
+        period TEXT NOT NULL,
+        state_json TEXT,
+        snapshot_at INTEGER,
+        PRIMARY KEY (url, period)
+      )
+    `);
+    logger.info("Created relay_period_snapshots table if it didn't exist");
+  } catch (e) {
+    logger.error(`Failed to create relay_period_snapshots table: ${e}`);
+  }
+
   isInitialized = true;
 }
 
@@ -258,6 +274,123 @@ export function clearDeltaState(url: string): void {
   } catch (e) {
     logger.error(`Failed to clear delta state for ${url}: ${e}`);
   }
+}
+
+/**
+ * Period Snapshot Management Functions
+ */
+
+export interface PeriodSnapshot {
+  state: RelayInfo;
+  snapshotAt: number;
+}
+
+/**
+ * Get the period snapshot for a relay
+ * @param url The relay URL
+ * @param period The period (e.g., "6h", "1d", "7d")
+ * @returns The period snapshot or null if not found
+ */
+export function getPeriodSnapshot(url: string, period: string): PeriodSnapshot | null {
+  try {
+    const result = db.query(`
+      SELECT state_json, snapshot_at
+      FROM relay_period_snapshots
+      WHERE url = ? AND period = ?
+    `, [url, period]);
+
+    if (!result || result.length === 0) {
+      return null;
+    }
+
+    const [stateJson, snapshotAt] = result[0];
+
+    let state = null;
+    try {
+      if (stateJson && typeof stateJson === 'string') {
+        state = JSON.parse(stateJson);
+      }
+    } catch (e) {
+      logger.warn(`Failed to parse period snapshot JSON for relay ${url}, period ${period}: ${e}`);
+      return null;
+    }
+
+    return {
+      state,
+      snapshotAt: snapshotAt as number
+    };
+  } catch (e) {
+    logger.error(`Error getting period snapshot for ${url}, period ${period}: ${e}`);
+    return null;
+  }
+}
+
+/**
+ * Store a period snapshot for a relay
+ * @param url The relay URL
+ * @param period The period (e.g., "6h", "1d", "7d")
+ * @param state The relay state to snapshot
+ */
+export function storePeriodSnapshot(url: string, period: string, state: RelayInfo): void {
+  try {
+    const stateJson = JSON.stringify(state);
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    db.query(`
+      REPLACE INTO relay_period_snapshots (url, period, state_json, snapshot_at)
+      VALUES (?, ?, ?, ?)
+    `, [url, period, stateJson, timestamp]);
+
+    logger.debug(`Stored period snapshot for ${url}, period ${period}`);
+  } catch (e) {
+    logger.error(`Failed to store period snapshot for ${url}, period ${period}: ${e}`);
+  }
+}
+
+/**
+ * Clear all period snapshots for a relay (used when relay is deleted)
+ * @param url The relay URL
+ */
+export function clearPeriodSnapshots(url: string): void {
+  try {
+    db.query(`DELETE FROM relay_period_snapshots WHERE url = ?`, [url]);
+    logger.debug(`Cleared period snapshots for ${url}`);
+  } catch (e) {
+    logger.error(`Failed to clear period snapshots for ${url}: ${e}`);
+  }
+}
+
+/**
+ * Get all period snapshots for a relay
+ * @param url The relay URL
+ * @returns Map of period to snapshot
+ */
+export function getAllPeriodSnapshots(url: string): Map<string, PeriodSnapshot> {
+  const snapshots = new Map<string, PeriodSnapshot>();
+
+  try {
+    const results = db.query(`
+      SELECT period, state_json, snapshot_at
+      FROM relay_period_snapshots
+      WHERE url = ?
+    `, [url]);
+
+    for (const [period, stateJson, snapshotAt] of results) {
+      try {
+        const state = JSON.parse(stateJson as string);
+        snapshots.set(period as string, {
+          state,
+          snapshotAt: snapshotAt as number
+        });
+      } catch (e) {
+        logger.warn(`Failed to parse snapshot for ${url}, period ${period}: ${e}`);
+      }
+    }
+  } catch (e) {
+    logger.error(`Error getting all period snapshots for ${url}: ${e}`);
+  }
+
+  return snapshots;
 }
 
 // Re-export everything from the DB package

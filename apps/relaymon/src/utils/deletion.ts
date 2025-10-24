@@ -3,7 +3,7 @@ import { Publisher, Event } from "npm:@nostrwatch/publisher";
 import { getEventHash, getPublicKey } from "npm:nostr-tools";
 import type { Config } from "../config/config.ts";
 import type { QueueManager } from "./queueManager.ts";
-import { clearDeltaState } from "../db/db.ts";
+import { clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
 
 const logger = getLogger("Deletion");
 
@@ -111,8 +111,9 @@ export async function deleteRelayCheckEvent(
           // Add to the set of deleted relays on successful publish
           deletedRelays.add(relayUrl);
 
-          // Clear delta state for this relay
+          // Clear delta state and period snapshots for this relay
           clearDeltaState(relayUrl);
+          clearPeriodSnapshots(relayUrl);
         } catch (error) {
           logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
           throw error; // Rethrow to trigger retry mechanism
@@ -126,8 +127,9 @@ export async function deleteRelayCheckEvent(
       // Add to the set of deleted relays
       deletedRelays.add(relayUrl);
 
-      // Clear delta state for this relay
+      // Clear delta state and period snapshots for this relay
       clearDeltaState(relayUrl);
+      clearPeriodSnapshots(relayUrl);
 
       logger.info(`Published deletion event for relay ${relayUrl} using a-tag`);
     }

@@ -2,7 +2,7 @@ import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
 import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup, setConfig } from "../utils/hostnames.ts";
-import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored, getLastDeltaState, storeDeltaState } from "../db/db.ts";
+import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored, getLastDeltaState, storeDeltaState, getPeriodSnapshot, storePeriodSnapshot } from "../db/db.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { getLogger, LogLevel } from "../utils/logger.ts";
 import { RetryManager } from "../utils/retryManager.ts";
@@ -20,6 +20,7 @@ import type { NocapCheckResult, RelayCheckResult } from "../types/relay.ts";
 import { getErrorMessage } from "../types/errors.ts";
 import { detectDeltas } from "../delta/detector.ts";
 import { Kind1066 } from "../delta/kind1066.ts";
+import { getPeriodsToEmit, validatePeriods } from "../delta/periods.ts";
 
 chalk.level = 1;
 
@@ -56,8 +57,22 @@ export class Worker {
     }
 
     this.initializeRelayStatusFromDB();
-    
+
     setConfig(config);
+
+    // Validate period configuration if periods are enabled
+    if (config.relaymon.delta?.periods?.enabled) {
+      const checkIntervalMs = config.relaymon.checks.options.interval;
+      const periods = config.relaymon.delta.periods.definitions;
+      const warnings = validatePeriods(periods, checkIntervalMs);
+
+      if (warnings.length > 0) {
+        this.logger.warn("Period configuration warnings:");
+        warnings.forEach(w => this.logger.warn(`  - ${w}`));
+      } else {
+        this.logger.info(`Period aggregates enabled: ${periods.join(', ')}`);
+      }
+    }
   }
 
   private initializeRelayStatusFromDB(): void {
@@ -284,7 +299,7 @@ export class Worker {
       // Get current NIP-11 info (use empty object if not available)
       const currentInfo = result.info?.data || {};
 
-      // Detect deltas
+      // Detect deltas from last check
       const deltas = detectDeltas(lastState?.state || null, currentInfo);
 
       // Store current state for next comparison
@@ -294,6 +309,43 @@ export class Worker {
         rttRead: result.read?.duration,
         rttWrite: result.write?.duration,
       });
+
+      // Handle period aggregates if enabled
+      let periodsToEmit: string[] = [];
+      const periodsEnabled = this.config.relaymon.delta.periods?.enabled;
+
+      if (periodsEnabled && this.config.relaymon.delta.periods) {
+        const checkIntervalMs = this.config.relaymon.checks.options.interval;
+        const configuredPeriods = this.config.relaymon.delta.periods.definitions;
+        const nowTs = Math.floor(Date.now() / 1000);
+
+        // Get period snapshots for this relay
+        const periodSnapshotTimes = new Map<string, number>();
+        for (const period of configuredPeriods) {
+          const snapshot = getPeriodSnapshot(relayUrl, period);
+          if (snapshot) {
+            periodSnapshotTimes.set(period, snapshot.snapshotAt);
+          } else {
+            periodSnapshotTimes.set(period, 0); // Never emitted
+          }
+        }
+
+        // Determine which periods should be emitted on this check
+        periodsToEmit = getPeriodsToEmit(
+          configuredPeriods,
+          checkIntervalMs,
+          periodSnapshotTimes,
+          nowTs
+        );
+
+        // Store snapshots for all periods that are being emitted
+        if (periodsToEmit.length > 0) {
+          this.logger.debug(`Emitting period aggregates for ${relayUrl}: ${periodsToEmit.join(', ')}`);
+          for (const period of periodsToEmit) {
+            storePeriodSnapshot(relayUrl, period, currentInfo);
+          }
+        }
+      }
 
       // Generate and publish delta event
       const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
@@ -307,10 +359,12 @@ export class Worker {
             retryCount: wasOnline ? 0 : retryCount,
             rttOpen: result.open?.duration,
             deltas: wasOnline ? deltas : [], // Only include deltas when online
+            periods: periodsToEmit.length > 0 ? periodsToEmit : undefined, // Cascading period tags
           }, privkey);
 
           await this.publisher.publishEvent(signedEvent);
-          this.logger.debug(`Published delta event (Kind 1066) for relay ${relayUrl}`);
+          this.logger.debug(`Published delta event (Kind 1066) for relay ${relayUrl}` +
+            (periodsToEmit.length > 0 ? ` with periods: ${periodsToEmit.join(', ')}` : ''));
           return true;
         } catch (error: unknown) {
           this.logger.error(`Delta event publish failed for ${relayUrl}: ${getErrorMessage(error)}`);

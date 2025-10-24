@@ -153,11 +153,20 @@ export interface DeduplicationConfig {
 }
 
 /**
+ * Period configuration for delta aggregates
+ */
+export interface PeriodConfig {
+  enabled: boolean;
+  definitions: string[];  // e.g., ["6h", "1d", "7d", "30d"]
+}
+
+/**
  * Delta events configuration (Kind 1066)
  */
 export interface DeltaConfig {
   enabled: boolean;
   max_retries?: number;  // Stop publishing delta events after N offline retries
+  periods?: PeriodConfig;  // Period aggregate configuration
 }
 
 /**

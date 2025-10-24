@@ -61,9 +61,15 @@ describe("Database Check Utility", () => {
     `);
     
     // Mock the dbModule's db object
+    try {
+      delete (dbModule as any).db;
+    } catch (e) {
+      // Property might not exist yet or not deletable
+    }
     Object.defineProperty(dbModule, "db", {
       value: db,
       writable: true,
+      configurable: true,
     });
     
     // Mock the getLogger function to return a mock logger
@@ -75,9 +81,15 @@ describe("Database Check Utility", () => {
       setLevel: () => {}
     };
     
+    try {
+      delete (loggerModule as any).getLogger;
+    } catch (e) {
+      // Property might not exist yet or not deletable
+    }
     Object.defineProperty(loggerModule, "getLogger", {
       value: () => mockLogger,
       writable: true,
+      configurable: true,
     });
   });
   

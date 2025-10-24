@@ -1,6 +1,5 @@
-import { describe, it, beforeAll, afterAll } from "vitest";
 import { UniversalWebSocket } from "../../../libraries/websocket/src/index.ts";
-import { assert, assertEquals, assertNotEquals } from "https://deno.land/std/testing/asserts.ts";
+import { assert } from "https://deno.land/std/testing/asserts.ts";
 
 // Test configuration
 const TEST_TIMEOUT = 30000; // 30 seconds
@@ -73,76 +72,88 @@ async function testWebsocketConnection(url: string, timeout = CONNECTION_TIMEOUT
   });
 }
 
-describe("Proxy Connectivity Tests", () => {
-  // Test clearnet websocket connections
-  describe("Clearnet WebSocket Connectivity", () => {
-    for (const url of CLEARNET_WS_URLS) {
-      it(`should connect to ${url}`, async () => {
-        const result = await testWebsocketConnection(url);
-        assert(result.success, result.error?.message);
-      }, TEST_TIMEOUT);
-    }
+// Proxy Connectivity Tests
+
+// Test clearnet websocket connections
+for (const url of CLEARNET_WS_URLS) {
+  Deno.test({
+    name: `Clearnet WebSocket Connectivity: should connect to ${url}`,
+    async fn() {
+      const result = await testWebsocketConnection(url);
+      assert(result.success, result.error?.message);
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
   });
-  
-  // Test Tor websocket connections
-  describe("Tor WebSocket Connectivity", () => {
-    for (const url of TOR_WS_URLS) {
-      it(`should connect to ${url}`, async () => {
-        const result = await testWebsocketConnection(url);
-        assert(result.success, result.error?.message);
-      }, TEST_TIMEOUT);
-    }
+}
+
+// Test Tor websocket connections
+for (const url of TOR_WS_URLS) {
+  Deno.test({
+    name: `Tor WebSocket Connectivity: should connect to ${url}`,
+    async fn() {
+      const result = await testWebsocketConnection(url);
+      assert(result.success, result.error?.message);
+    },
+    sanitizeResources: false,
+    sanitizeOps: false,
   });
-  
-  // Test detailed error diagnostics for Tor
-  describe("Tor WebSocket Diagnostic", () => {
-    it("should diagnose exact error in proxy chain", async () => {
-      // Select one Tor URL for detailed diagnostics
-      const testUrl = TOR_WS_URLS[0];
-      
-      // Step 1: Test with standard connection
-      const standardResult = await testWebsocketConnection(testUrl);
-      console.log(`Standard connection to ${testUrl}: ${standardResult.success ? "SUCCESS" : "FAILED"}`);
-      
-      if (!standardResult.success) {
-        console.error(`Error: ${standardResult.error?.message}`);
-        
-        // Step 2: Test if connection is actually reaching the proxy
-        try {
-          // Manually check DNS resolution for .onion domain
-          console.log(`Testing DNS resolution for ${new URL(testUrl).hostname}...`);
-          
-          // We'll use a timeout with the connection attempt to log when it fails
-          const connectionStartTime = Date.now();
-          await testWebsocketConnection(testUrl, 5000);
-          const connectionEndTime = Date.now();
-          
-          console.log(`Connection attempt lasted for ${connectionEndTime - connectionStartTime}ms`);
-          
-          // The actual assertion will always pass - this test is for diagnostics only
-          assert(true, "Diagnostic test complete");
-        } catch (err) {
-          console.error(`Diagnostic error: ${err instanceof Error ? err.message : String(err)}`);
-          assert(true, "Diagnostic test complete with errors");
-        }
+}
+
+// Test detailed error diagnostics for Tor
+Deno.test({
+  name: "Tor WebSocket Diagnostic: should diagnose exact error in proxy chain",
+  async fn() {
+    // Select one Tor URL for detailed diagnostics
+    const testUrl = TOR_WS_URLS[0];
+
+    // Step 1: Test with standard connection
+    const standardResult = await testWebsocketConnection(testUrl);
+    console.log(`Standard connection to ${testUrl}: ${standardResult.success ? "SUCCESS" : "FAILED"}`);
+
+    if (!standardResult.success) {
+      console.error(`Error: ${standardResult.error?.message}`);
+
+      // Step 2: Test if connection is actually reaching the proxy
+      try {
+        // Manually check DNS resolution for .onion domain
+        console.log(`Testing DNS resolution for ${new URL(testUrl).hostname}...`);
+
+        // We'll use a timeout with the connection attempt to log when it fails
+        const connectionStartTime = Date.now();
+        await testWebsocketConnection(testUrl, 5000);
+        const connectionEndTime = Date.now();
+
+        console.log(`Connection attempt lasted for ${connectionEndTime - connectionStartTime}ms`);
+
+        // The actual assertion will always pass - this test is for diagnostics only
+        assert(true, "Diagnostic test complete");
+      } catch (err) {
+        console.error(`Diagnostic error: ${err instanceof Error ? err.message : String(err)}`);
+        assert(true, "Diagnostic test complete with errors");
       }
-    }, TEST_TIMEOUT);
-  });
-  
-  // Compare direct Tor connection vs proxy chain
-  describe("Proxy Chain Analysis", () => {
-    it("should identify which part of the proxy chain is failing", async () => {
-      // This test requires that we run it inside the container
-      // where we can access all parts of the proxy chain
-      
-      console.log("Proxy chain analysis:");
-      console.log("1. Testing end-to-end websocket connection (application -> tor)");
-      console.log("2. Testing direct socks5 connection without dante (redsocks -> tor)");
-      console.log("3. Testing direct connection to tor (bypassing all intermediaries)");
-      
-      // Instead of actual assertions, this test provides detailed logs
-      // that can help identify which component in the chain is failing
-      assert(true, "Proxy chain analysis complete");
-    }, TEST_TIMEOUT);
-  });
+    }
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+// Compare direct Tor connection vs proxy chain
+Deno.test({
+  name: "Proxy Chain Analysis: should identify which part of the proxy chain is failing",
+  async fn() {
+    // This test requires that we run it inside the container
+    // where we can access all parts of the proxy chain
+
+    console.log("Proxy chain analysis:");
+    console.log("1. Testing end-to-end websocket connection (application -> tor)");
+    console.log("2. Testing direct socks5 connection without dante (redsocks -> tor)");
+    console.log("3. Testing direct connection to tor (bypassing all intermediaries)");
+
+    // Instead of actual assertions, this test provides detailed logs
+    // that can help identify which component in the chain is failing
+    assert(true, "Proxy chain analysis complete");
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
 }); 

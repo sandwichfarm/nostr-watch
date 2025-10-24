@@ -1,8 +1,10 @@
 import { getLogger } from "./logger.ts";
 import { SimplePool, nip19, getPublicKey } from "npm:nostr-tools";
+import type { Event } from "npm:nostr-tools";
 import { normalizeURL } from "npm:nostr-tools/utils";
 import { db } from "../db/db.ts";
 import type { Config, IgnoreListConfig } from "../types/config.ts";
+import { getErrorMessage } from "../types/errors.ts";
 
 /**
  * IgnoreListSync - Manages synchronization of relay ignore lists across monitors
@@ -71,8 +73,8 @@ export class IgnoreListSync {
       }
 
       this.logger.info(`Loaded ${this.localIgnoredRelays.size} ignored relays from database`);
-    } catch (e: any) {
-      this.logger.error(`Error loading ignored relays from database: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(`Error loading ignored relays from database: ${getErrorMessage(e)}`);
     }
   }
 
@@ -114,8 +116,8 @@ export class IgnoreListSync {
     try {
       const normalized = normalizeURL(relayUrl);
       return this.ignoredRelays.has(normalized);
-    } catch (e: any) {
-      this.logger.error(`Error checking if relay is ignored: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(`Error checking if relay is ignored: ${getErrorMessage(e)}`);
       return false;
     }
   }
@@ -154,8 +156,8 @@ export class IgnoreListSync {
         this.logger.info(`  First 3 relays: ${relays.slice(0, 3).join(", ")}`);
       }
       return relays;
-    } catch (e: any) {
-      this.logger.error(`Error fetching kind 10002 for ${pubkey.slice(0, 8)}...: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(`Error fetching kind 10002 for ${pubkey.slice(0, 8)}...: ${getErrorMessage(e)}`);
       this.logger.error(`  Stack: ${e.stack}`);
       return [];
     }
@@ -187,8 +189,8 @@ export class IgnoreListSync {
 
       this.logger.info(`Found ${blockedRelays.length} blocked relays from ${pubkey.slice(0, 8)}...`);
       return blockedRelays;
-    } catch (e: any) {
-      this.logger.error(`Error fetching kind 10006 for ${pubkey.slice(0, 8)}...: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(`Error fetching kind 10006 for ${pubkey.slice(0, 8)}...: ${getErrorMessage(e)}`);
       return [];
     }
   }
@@ -226,8 +228,8 @@ export class IgnoreListSync {
         for (const relay of blockedRelays) {
           allIgnoredRelays.add(relay);
         }
-      } catch (e: any) {
-        this.logger.error(`Error syncing ignore list for ${pubkey.slice(0, 8)}...: ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.error(`Error syncing ignore list for ${pubkey.slice(0, 8)}...: ${getErrorMessage(e)}`);
       }
     }
 
@@ -251,7 +253,7 @@ export class IgnoreListSync {
 
     try {
       const pubkey = getPublicKey(privkey);
-      const event: any = {
+      const event: Partial<Event> = {
         kind: 10006,
         created_at: Math.floor(Date.now() / 1000),
         tags: Array.from(this.localIgnoredRelays).map((url) => ["r", url]),
@@ -268,16 +270,16 @@ export class IgnoreListSync {
         try {
           await this.pool.publish([relay], signedEvent);
           this.logger.debug(`Published kind 10006 to ${relay}`);
-        } catch (e: any) {
-          this.logger.error(`Failed to publish kind 10006 to ${relay}: ${e.message}`);
+        } catch (e: unknown) {
+          this.logger.error(`Failed to publish kind 10006 to ${relay}: ${getErrorMessage(e)}`);
         }
       });
 
       await Promise.all(publishPromises);
       this.logger.info(`Published kind 10006 with ${this.localIgnoredRelays.size} ignored relays`);
       this.localIgnoreListChanged = false;
-    } catch (e: any) {
-      this.logger.error(`Error publishing kind 10006: ${e.message}`);
+    } catch (e: unknown) {
+      this.logger.error(`Error publishing kind 10006: ${getErrorMessage(e)}`);
     }
   }
 
@@ -304,8 +306,8 @@ export class IgnoreListSync {
           this.config
         );
         deletionCount++;
-      } catch (e: any) {
-        this.logger.error(`Error publishing deletion for ${relayUrl}: ${e.message}`);
+      } catch (e: unknown) {
+        this.logger.error(`Error publishing deletion for ${relayUrl}: ${getErrorMessage(e)}`);
       }
     }
 

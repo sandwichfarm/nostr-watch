@@ -17,6 +17,7 @@ import { createInfoHash } from "../utils/hostnames.ts";
 import { deleteRelayCheckEvent } from "../utils/deletion.ts";
 import type { Config } from "../config/config.ts";
 import type { NocapCheckResult, RelayCheckResult } from "../types/relay.ts";
+import { getErrorMessage } from "../types/errors.ts";
 
 chalk.level = 1;
 
@@ -33,7 +34,7 @@ export class Worker {
 
   constructor(
     private pubkey: string,
-    private queueManager: any,
+    private queueManager: QueueManager,
     config: Config
   ) {
     this.config = config;
@@ -187,9 +188,9 @@ export class Worker {
       }
       this.logger.debug(`Successfully completed check for relay: ${relayUrl}`);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       wasSuccessful = false;
-      this.logger.error(`Error processing relay ${relayUrl}: ${error.message}`);
+      this.logger.error(`Error processing relay ${relayUrl}: ${getErrorMessage(error)}`);
       
       const currentRetryCount = this.relayRetries.get(relayUrl) || 0;
       if (currentRetryCount > 0) {
@@ -226,8 +227,8 @@ export class Worker {
           await this.publisher.publishEvent(signedEvent);
           this.logger.debug(`Published event for relay ${result.url}`);
           return true;
-        } catch (error: any) {
-          this.logger.error(`Publish failed for ${result.url}: ${error.message}`);
+        } catch (error: unknown) {
+          this.logger.error(`Publish failed for ${result.url}: ${getErrorMessage(error)}`);
           
           if (retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
@@ -250,8 +251,8 @@ export class Worker {
       };
 
       this.queueManager.addPublishJob(() => publishJob(), { isRetry: false });
-    } catch (error: any) {
-      this.logger.error(`Failed to add publish job for ${result.url}: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`Failed to add publish job for ${result.url}: ${getErrorMessage(error)}`);
     }
   }
 

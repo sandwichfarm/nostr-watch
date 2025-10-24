@@ -4,6 +4,7 @@ import { getPublicKey } from "npm:nostr-tools";
 import { type QueueManager } from "./queueManager.ts";
 import { timeString } from "../config/config.ts";
 import type { Config } from "../config/config.ts";
+import { getErrorMessage } from "../types/errors.ts";
 
 const logger = getLogger("Announce");
 
@@ -56,8 +57,8 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
 
   try {
     await announcer.sign(sk);
-  } catch (error: any) {
-    logger.error("Error signing announcement: " + error?.message);
+  } catch (error: unknown) {
+    logger.error("Error signing announcement: " + getErrorMessage(error));
     return;
   }
 
@@ -68,8 +69,8 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
         try {
           await announcer.publish();
           logger.info("Monitor announcement published successfully via queue.");
-        } catch (error: any) {
-          logger.error("Failed to publish monitor announcement via queue: " + error.message);
+        } catch (error: unknown) {
+          logger.error("Failed to publish monitor announcement via queue: " + getErrorMessage(error));
           throw error; // Rethrow to trigger retry mechanism
         }
       });
@@ -79,7 +80,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
       await announcer.publish();
       logger.info("Monitor announcement published successfully.");
     }
-  } catch (error: any) {
-    logger.error("Failed to handle monitor announcement: " + error.message);
+  } catch (error: unknown) {
+    logger.error("Failed to handle monitor announcement: " + getErrorMessage(error));
   }
 }

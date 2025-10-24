@@ -420,13 +420,220 @@ TIME: 118ms
 - **Type Safety Improvement:** 4 `any` → typed relay results
 - **Test Execution Time:** 118ms
 
-### Next Steps
+---
 
-**Phase 1.3: Additional Type Safety Improvements**
-1. Create QueueManager interface/type
-2. Replace `queueManager: any` occurrences
-3. Create typed error classes
-4. Replace `error: any` in catch blocks
+## Phase 1.3: QueueManager Type Safety ✅ COMPLETED
+
+### Objective
+Replace `queueManager: any` occurrences with proper QueueManager type
+
+### What Was Completed
+
+#### 1.3.1 QueueManager Type Integration ✅
+
+Since QueueManager is already a concrete class with full type information, no separate interface was needed. The class itself serves as the type.
+
+**Files Modified:**
+
+1. **`src/core/worker.ts`** ✅
+   - Replaced `queueManager: any` with `queueManager: QueueManager` in constructor parameter
+   - QueueManager class was already imported
+
+2. **`src/core/status.ts`** ✅
+   - Added import for QueueManager type
+   - Replaced `queueManager: any` with `queueManager: QueueManager` in:
+     - `getStats()` function
+     - `statuses()` function
+     - `logStatus()` function
+     - `showStatus()` function
+     - `formatCompactStats()` function
+
+3. **`src/utils/deletion.ts`** ✅
+   - Added import for QueueManager type
+   - Replaced `queueManager?: any` with `queueManager?: QueueManager` in `deleteRelayCheckEvent()`
+
+**Refactoring Summary:**
+- **Total files modified:** 3
+- **QueueManager type occurrences replaced:** 7 (1 in Worker + 5 in status.ts + 1 in deletion.ts)
+- **No new type definitions needed:** QueueManager class provides full type information
+
+#### 1.3.2 Test Verification ✅
+
+**All tests still passing:**
+```bash
+deno test tests/unit/ tests/integration/baseline.test.ts \
+  --allow-read --allow-write --allow-net --allow-env --no-lock
+
+PASSED: 51/51 tests (14 config + 30 relay + 7 baseline)
+TIME: 114ms
+```
+
+### Deliverables Summary
+
+- ✅ All 7 `queueManager: any` occurrences replaced with QueueManager type
+- ✅ Zero regressions - all existing tests still pass
+- ✅ Leveraged existing QueueManager class as type
+
+### Success Criteria Met
+
+- ✅ All config type tests still pass (14/14)
+- ✅ All relay type tests still pass (30/30)
+- ✅ All baseline tests still pass (7/7)
+- ✅ All `queueManager: any` replaced with proper type
+- ✅ No regressions introduced
+
+### Metrics
+
+- **Files Modified:** 3
+- **Tests Passing:** 51/51 (100%)
+- **Type Safety Improvement:** 7 `any` → QueueManager types
+- **Test Execution Time:** 114ms
+
+---
+
+## Phase 1.4: Error Handling Types ✅ COMPLETED
+
+### Objective
+Create type-safe error handling utilities and replace `error: any` with proper `unknown` typing
+
+### What Was Completed
+
+#### 1.4.1 Error Type Utilities Created ✅
+
+**Files Created:**
+
+1. **`src/types/errors.ts`** ✅ (150 lines)
+   - `isError()` type guard - runtime check for Error instances
+   - `getErrorMessage()` - safely extract error messages from unknown values
+   - `getErrorStack()` - safely extract stack traces
+   - `formatError()` - format errors with optional context
+   - Custom error classes:
+     - `RelayCheckError` - for relay check failures (includes relayUrl, checkType, originalError)
+     - `ConfigError` - for configuration issues (includes field, originalError)
+     - `DatabaseError` - for database operations (includes operation, originalError)
+     - `PublishError` - for publishing operations (includes eventKind, relayUrl, originalError)
+   - Type guards for custom errors:
+     - `isRelayCheckError()`
+     - `isConfigError()`
+     - `isDatabaseError()`
+     - `isPublishError()`
+
+2. **`tests/unit/error-types.test.ts`** ✅ (217 lines)
+   - 26 passing tests for error handling utilities
+   - Tests for `isError()` type guard (2 tests)
+   - Tests for `getErrorMessage()` utility (4 tests)
+   - Tests for `getErrorStack()` utility (2 tests)
+   - Tests for `formatError()` utility (3 tests)
+   - Tests for custom error class creation (4 tests)
+   - Tests for custom error type guards (8 tests)
+   - Tests for error inheritance validation (3 tests)
+
+**Tests Run:**
+```
+✅ isError - returns true for Error instance
+✅ isError - returns false for non-Error values
+✅ getErrorMessage - extracts message from Error
+✅ getErrorMessage - returns string error as-is
+✅ getErrorMessage - converts unknown to string
+✅ getErrorMessage - stringifies objects
+✅ getErrorStack - extracts stack from Error
+✅ getErrorStack - returns undefined for non-Error
+✅ formatError - formats error without context
+✅ formatError - formats error with context
+✅ formatError - formats string error with context
+✅ RelayCheckError - creates with all fields
+✅ RelayCheckError - creates with minimal fields
+✅ ConfigError - creates with all fields
+✅ DatabaseError - creates with operation
+✅ PublishError - creates with event details
+✅ isRelayCheckError - identifies RelayCheckError
+✅ isRelayCheckError - rejects other errors
+✅ isConfigError - identifies ConfigError
+✅ isConfigError - rejects other errors
+✅ isDatabaseError - identifies DatabaseError
+✅ isDatabaseError - rejects other errors
+✅ isPublishError - identifies PublishError
+✅ isPublishError - rejects other errors
+✅ Custom errors are instanceof Error
+✅ Custom errors work with isError type guard
+
+PASSED: 26/26 tests
+TIME: 9ms
+```
+
+#### 1.4.2 Error Type Integration ✅
+
+**Files Modified:**
+
+1. **`src/core/worker.ts`** ✅
+   - Added import for `getErrorMessage`
+   - Replaced 3 occurrences of `error: any` → `error: unknown`:
+     - Line 191: Main relay check processing catch block
+     - Line 230: Publishing results catch block
+     - Line 254: Adding publish job catch block
+   - All error logging now uses `getErrorMessage()` for type-safe extraction
+
+2. **`src/utils/announce.ts`** ✅
+   - Added import for `getErrorMessage`
+   - Replaced 3 occurrences of `error: any` → `error: unknown`:
+     - Line 60: Signing announcement catch block
+     - Line 72: Publishing via queue catch block
+     - Line 83: Overall announcement handling catch block
+   - All error logging now uses `getErrorMessage()` for type-safe extraction
+
+**Refactoring Summary:**
+- **Total files modified:** 2
+- **Error type occurrences replaced:** 6 (3 in worker.ts + 3 in announce.ts)
+- **All `error: any` instances eliminated from core modules:** ✅
+- **Custom error classes available for future use:** 4 domain-specific error types
+
+#### 1.4.3 Test Verification ✅
+
+**All Phase 1.4 tests passing:**
+```bash
+deno test tests/unit/ tests/integration/baseline.test.ts \
+  --allow-read --allow-write --allow-net --allow-env --no-lock
+
+PASSED: 77/77 tests (14 config + 30 relay + 26 error + 7 baseline)
+TIME: 168ms
+```
+
+### Deliverables Summary
+
+- ✅ Error type utilities (150 lines)
+- ✅ Error type validation tests (217 lines, 26 passing tests)
+- ✅ 4 custom error classes with type guards
+- ✅ All 6 `error: any` occurrences in core modules replaced with proper `unknown` typing
+- ✅ Zero regressions - all existing tests still pass
+- ✅ Type-safe error message extraction using `getErrorMessage()`
+
+### Success Criteria Met
+
+- ✅ All error type tests pass (26/26)
+- ✅ All config type tests still pass (14/14)
+- ✅ All relay type tests still pass (30/30)
+- ✅ All baseline tests still pass (7/7)
+- ✅ Runtime error utilities implemented
+- ✅ All `error: any` in core modules replaced with `unknown`
+- ✅ No regressions introduced
+
+### Metrics
+
+- **Lines Added:** 367 (150 types + 217 tests)
+- **Files Created:** 2
+- **Files Modified:** 2
+- **Tests Passing:** 77/77 (100%)
+- **Type Safety Improvement:** 6 `any` → `unknown` with proper error handling
+- **Test Execution Time:** 168ms
+
+### Known Remaining `error: any` Occurrences
+
+The following files still have `error: any` occurrences that can be addressed in future phases:
+- `src/cli/interactive/commands.ts` - Interactive CLI error handling
+- `src/utils/seeder.ts` - Seeder error handling
+- Other catch blocks in utility files
+
+These can be updated incrementally as those modules are refactored in subsequent phases.
 
 ---
 
@@ -436,12 +643,13 @@ TIME: 118ms
 - Mock implementations match real interfaces for drop-in replacement
 - Custom assertions provide domain-specific test clarity
 - Baseline tests establish that testing infrastructure is functional
-- Ready to proceed with Phase 1: Type Safety
+- Phase 1 (Type Safety Foundation) core work complete
 
 ---
 
 **Last Updated:** October 24, 2025
-**Current Phase:** Phase 1.2 Complete (Config + Relay Types)
+**Current Phase:** Phase 1.4 Complete (Error Handling Types)
 **Overall Status:** On Track ✅
-**Tests Passing:** 51/51 (100%)
-**Type Safety Progress:** 16 `any` types eliminated (12 Config + 4 Relay Results)
+**Tests Passing:** 77/77 (100%)
+**Type Safety Progress:** 29 `any` types eliminated (12 Config + 4 Relay + 7 QueueManager + 6 Error)
+**Next Phase:** Phase 2 - Comprehensive Testing (hostname deduplication)

@@ -2,6 +2,7 @@ import { getLogger } from "./logger.ts";
 import { Publisher, Event } from "npm:@nostrwatch/publisher";
 import { getEventHash, getPublicKey } from "npm:nostr-tools";
 import type { Config } from "../config/config.ts";
+import type { QueueManager } from "./queueManager.ts";
 
 const logger = getLogger("Deletion");
 
@@ -55,7 +56,7 @@ export async function deleteRelayCheckEvent(
   relayUrl: string,
   reason: string,
   config: Config,
-  queueManager?: any
+  queueManager?: QueueManager
 ): Promise<void> {
   try {
     // Get the private key from environment

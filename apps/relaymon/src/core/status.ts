@@ -4,6 +4,7 @@ import chalk from "npm:chalk";
 import { getExpiredRelays } from "../db/db.ts";
 import { RetryManager } from "../utils/retryManager.ts";
 import { loadConfig } from "../config/config.ts";
+import type { QueueManager } from "../utils/queueManager.ts";
 
 const logger = getLogger("Status");
 
@@ -85,7 +86,7 @@ interface StatusStats {
 /**
  * Get current statistics from the database and queue
  */
-export function getStats(queueManager: any): StatusStats {
+export function getStats(queueManager: QueueManager): StatusStats {
   // Get queue stats from queueManager
   const queueStats = {
     active: queueManager.checkQueue.pending || 0,
@@ -471,7 +472,7 @@ export function incrementChecksCounter(): void {
   checksCounter++;
 }
 
-export function statuses(queueManager: any, interval: number = 20): ReturnType<typeof setInterval> {
+export function statuses(queueManager: QueueManager, interval: number = 20): ReturnType<typeof setInterval> {
   return setInterval(() => {
     logStatus(queueManager, interval);
   }, interval * 100);
@@ -480,7 +481,7 @@ export function statuses(queueManager: any, interval: number = 20): ReturnType<t
 /**
  * Log status information every N checks
  */
-export function logStatus(queueManager: any, interval: number = 20): void {
+export function logStatus(queueManager: QueueManager, interval: number = 20): void {
   checksCounter++;
   if (checksCounter >= interval) {
     checksCounter = 0; // Reset counter
@@ -492,7 +493,7 @@ export function logStatus(queueManager: any, interval: number = 20): void {
   }
 }
 
-export function showStatus(queueManager: any): void {
+export function showStatus(queueManager: QueueManager): void {
   const stats = getStats(queueManager);
   console.log(createAsciiBox(stats));
 }
@@ -500,7 +501,7 @@ export function showStatus(queueManager: any): void {
 /**
  * Format a simple metric for inline display
  */
-export function formatCompactStats(queueManager: any): string {
+export function formatCompactStats(queueManager: QueueManager): string {
   try {
     const stats = getStats(queueManager);
     return `Online: ${stats.online} | Expired: ${stats.expired} | Queued: ${stats.totalQueue}`;

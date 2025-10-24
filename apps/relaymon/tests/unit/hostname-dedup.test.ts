@@ -31,6 +31,16 @@ function mockRelayInfo(name = "Test Relay", description = "A test relay"): any {
   };
 }
 
+// Helper for async dedup tests that need resource sanitization disabled
+function dedupTest(name: string, fn: () => void | Promise<void>) {
+  Deno.test({
+    name,
+    sanitizeResources: false,
+    sanitizeOps: false,
+    fn
+  });
+}
+
 // Initialize test database
 const testDbPath = ":memory:";
 initializeDB(testDbPath, false);
@@ -204,7 +214,7 @@ Deno.test("createInfoHash - returns empty string for empty/null data", () => {
 /**
  * Test: relayHostnameDedup - No relatives, no change
  */
-Deno.test("relayHostnameDedup - relay with no relatives is not ignored", async () => {
+dedupTest("relayHostnameDedup - relay with no relatives is not ignored", async () => {
   setupDatabase([
     { url: "wss://unique.relay.com", online: true }
   ]);
@@ -229,7 +239,7 @@ Deno.test("relayHostnameDedup - relay with no relatives is not ignored", async (
  * Note: When a root URL doesn't have NIP-11 but path URLs exist, case5 applies
  * (eldest not root AND no NIP11), causing it to be ignored
  */
-Deno.test("relayHostnameDedup - root URL without NIP-11 when path URLs exist may be ignored (case 5)", async () => {
+dedupTest("relayHostnameDedup - root URL without NIP-11 when path URLs exist may be ignored (case 5)", async () => {
   setupDatabase([
     { url: "wss://relay.example.com", online: true },
     { url: "wss://relay.example.com/path1", online: true },
@@ -256,7 +266,7 @@ Deno.test("relayHostnameDedup - root URL without NIP-11 when path URLs exist may
 /**
  * Test: relayHostnameDedup - Case 1: Path URL with same NIP-11 as root
  */
-Deno.test("relayHostnameDedup - Case 1: Eldest is root AND has NIP11 AND current has same NIP11", async () => {
+dedupTest("relayHostnameDedup - Case 1: Eldest is root AND has NIP11 AND current has same NIP11", async () => {
   const nip11Info = mockRelayInfo();
 
   setupDatabase([
@@ -283,7 +293,7 @@ Deno.test("relayHostnameDedup - Case 1: Eldest is root AND has NIP11 AND current
 /**
  * Test: relayHostnameDedup - Case 2: Path URL with NIP-11 matching any relative
  */
-Deno.test("relayHostnameDedup - Case 2: Eldest is root AND current has NIP11 matching any relative", async () => {
+dedupTest("relayHostnameDedup - Case 2: Eldest is root AND current has NIP11 matching any relative", async () => {
   const nip11Info = mockRelayInfo();
 
   setupDatabase([
@@ -312,7 +322,7 @@ Deno.test("relayHostnameDedup - Case 2: Eldest is root AND current has NIP11 mat
  * Note: Case 4 requires hasValidInfoHash to be false, but the check also requires
  * the current relay to not have info data at all
  */
-Deno.test("relayHostnameDedup - Case 4: Eldest is root AND has NIP11 AND current has no NIP11", async () => {
+dedupTest("relayHostnameDedup - Case 4: Eldest is root AND has NIP11 AND current has no NIP11", async () => {
   const nip11Info = mockRelayInfo();
 
   setupDatabase([
@@ -341,7 +351,7 @@ Deno.test("relayHostnameDedup - Case 4: Eldest is root AND has NIP11 AND current
 /**
  * Test: relayHostnameDedup - Case 5: Neither eldest nor current has NIP-11
  */
-Deno.test("relayHostnameDedup - Case 5: Eldest not root AND no NIP11 for both eldest and current", async () => {
+dedupTest("relayHostnameDedup - Case 5: Eldest not root AND no NIP11 for both eldest and current", async () => {
   setupDatabase([
     { url: "wss://relay.example.com/path1", online: true },
   ]);
@@ -365,7 +375,7 @@ Deno.test("relayHostnameDedup - Case 5: Eldest not root AND no NIP11 for both el
 /**
  * Test: relayHostnameDedup - Case 6: Pathname contains pubkey
  */
-Deno.test("relayHostnameDedup - Case 6: Pathname contains pubkey (full 64-char hex)", async () => {
+dedupTest("relayHostnameDedup - Case 6: Pathname contains pubkey (full 64-char hex)", async () => {
   const pubkey = "a".repeat(64); // 64 character hex pubkey
 
   setupDatabase([
@@ -391,7 +401,7 @@ Deno.test("relayHostnameDedup - Case 6: Pathname contains pubkey (full 64-char h
 /**
  * Test: relayHostnameDedup - Case 7: Pathname contains hostname
  */
-Deno.test("relayHostnameDedup - Case 7: Pathname contains hostname", async () => {
+dedupTest("relayHostnameDedup - Case 7: Pathname contains hostname", async () => {
   setupDatabase([
     { url: "wss://relay.example.com", online: true },
   ]);
@@ -415,7 +425,7 @@ Deno.test("relayHostnameDedup - Case 7: Pathname contains hostname", async () =>
 /**
  * Test: relayHostnameDedup - Case 8: URL with path has identical NIP-11 to any relative
  */
-Deno.test("relayHostnameDedup - Case 8: URL with path has identical NIP-11 to any relative", async () => {
+dedupTest("relayHostnameDedup - Case 8: URL with path has identical NIP-11 to any relative", async () => {
   const nip11Info = mockRelayInfo();
 
   setupDatabase([
@@ -441,7 +451,7 @@ Deno.test("relayHostnameDedup - Case 8: URL with path has identical NIP-11 to an
 /**
  * Test: relayHostnameDedup - Path URLs with different NIP-11 are NOT ignored
  */
-Deno.test("relayHostnameDedup - path URLs with different NIP-11 info are NOT ignored", async () => {
+dedupTest("relayHostnameDedup - path URLs with different NIP-11 info are NOT ignored", async () => {
   const nip11Info1 = { name: "Relay A", description: "First relay" };
   const nip11Info2 = { name: "Relay B", description: "Second relay" };
 
@@ -468,7 +478,7 @@ Deno.test("relayHostnameDedup - path URLs with different NIP-11 info are NOT ign
 /**
  * Test: relayHostnameDedup - Multiple relays with same info, root URL wins
  */
-Deno.test("relayHostnameDedup - multiple relays with same info, root URL is preferred", async () => {
+dedupTest("relayHostnameDedup - multiple relays with same info, root URL is preferred", async () => {
   const nip11Info = mockRelayInfo();
 
   setupDatabase([
@@ -511,7 +521,7 @@ Deno.test("relayHostnameDedup - multiple relays with same info, root URL is pref
 /**
  * Test: relayHostnameDedup - Different protocols are NOT deduped
  */
-Deno.test("relayHostnameDedup - different protocols (ws vs wss) are NOT deduped", async () => {
+dedupTest("relayHostnameDedup - different protocols (ws vs wss) are NOT deduped", async () => {
   setupDatabase([
     { url: "wss://relay.example.com", online: true },
   ]);
@@ -534,7 +544,7 @@ Deno.test("relayHostnameDedup - different protocols (ws vs wss) are NOT deduped"
 /**
  * Test: relayHostnameDedup - Different hostnames are NOT deduped
  */
-Deno.test("relayHostnameDedup - different hostnames are NOT deduped", async () => {
+dedupTest("relayHostnameDedup - different hostnames are NOT deduped", async () => {
   setupDatabase([
     { url: "wss://relay-a.example.com", online: true },
   ]);

@@ -1,0 +1,22 @@
+{
+  "bunkerPubkey": "e771af0b05c8e95fcdf6feb3500544d2fb1ccd384788e9f490bb3ee28e8ed66f",
+  "relays": [
+    "wss://relay.nsyte.run",
+    "wss://relay.nsite.lol"
+  ],
+  "servers": [
+    "https://cdn.hzrd149.com",
+    "https://nosto.re",
+    "https://24242.io",
+    "https://blossom.band",
+    "https://blossom.sector01.com"
+  ],
+  "profile": {
+    "name": "nostr.watch",
+    "display_name": "nostr.watch",
+    "about": "A NIP-66 nostr client for browsing nostr relays"
+  },
+  "publishProfile": false,
+  "publishRelayList": true,
+  "publishServerList": true
+}

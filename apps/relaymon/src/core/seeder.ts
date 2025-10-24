@@ -29,7 +29,7 @@ export interface SeederOptions {
 export class RelaySeeder {
   private interval: number;
   private sources: string[];
-  private options: any;
+  private options: SeederOptions['options'];
   private logger = getLogger("Seeder");
   private relayList: Set<string> = new Set();
   private running: boolean = false;
@@ -235,7 +235,7 @@ export class RelaySeeder {
         return [[], nostrNow()];
       }
       const fileContents = await Deno.readTextFile(this.options.static.path);
-      let data: any;
+      let data: unknown;
       if (this.options.static.path.endsWith(".yaml") || this.options.static.path.endsWith(".yml")) {
         const { parse } = await import("https://deno.land/std@0.203.0/encoding/yaml.ts");
         data = parse(fileContents);

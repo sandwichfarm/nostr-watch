@@ -19,7 +19,14 @@ export class Kind5Event extends Event {
    * @param data Object containing relayUrl and content
    * @returns The generated NIP-09 event
    */
-  protected _generateEvent(data: { relayUrl: string, pubkey: string, content: string }): any {
+  protected _generateEvent(data: { relayUrl: string, pubkey: string, content: string }): {
+    kind: number;
+    created_at: number;
+    pubkey: string;
+    content: string;
+    tags: string[][];
+    id: string;
+  } {
     // Create an a-tag for the relay check event using the format <kind>:<pubkey>:<d-identifier>
     const aTag = `30166:${data.pubkey}:${data.relayUrl}`;
 

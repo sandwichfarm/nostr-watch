@@ -87,7 +87,7 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
   
   if (Array.isArray(config.relaymon?.retry?.expiry)) {
     config.relaymon.retry.expiry = config.relaymon.retry.expiry.map(
-      (entry: any, index: number) => {
+      (entry: { delay: string | number; retries: number }, index: number) => {
         const entryPath = `${parentPath}.relaymon.retry.expiry[${index}].delay`;
         const originalDelay = entry.delay;
         

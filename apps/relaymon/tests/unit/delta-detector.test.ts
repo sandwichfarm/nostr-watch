@@ -184,4 +184,108 @@ deltaTest("Delta Detector: Multiple changes should all be detected", () => {
   assert(!deltas.some(d => d.key === "description"), "Should not detect unchanged description");
 });
 
+deltaTest("Delta Detector: Complex array - retention should be JSON stringified", () => {
+  const previousState = createMockRelayInfo({
+    retention: [
+      [{ kinds: [0, 1], time: 3600 }]
+    ]
+  });
+  const currentState = createMockRelayInfo({
+    retention: [
+      [{ kinds: [0, 1, 2], time: 3600 }]
+    ]
+  });
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  // Should detect retention as a single change with JSON value
+  const retentionDelta = deltas.find(d => d.key === "retention");
+  assertExists(retentionDelta, "Should detect retention change");
+  assertEquals(retentionDelta.type, "change", "Should be a change type");
+  assert(retentionDelta.value.includes("kinds"), "Value should be JSON string containing 'kinds'");
+  assert(retentionDelta.value.includes("time"), "Value should be JSON string containing 'time'");
+});
+
+deltaTest("Delta Detector: Complex array - fees.subscription should be JSON stringified", () => {
+  const previousState = createMockRelayInfo({
+    fees: {
+      subscription: [{ amount: 1000, unit: "msats" }]
+    }
+  });
+  const currentState = createMockRelayInfo({
+    fees: {
+      subscription: [{ amount: 2000, unit: "msats" }]
+    }
+  });
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  // Should detect fees.subscription as a single change
+  const feesDelta = deltas.find(d => d.key === "fees.subscription");
+  assertExists(feesDelta, "Should detect fees.subscription change");
+  assertEquals(feesDelta.type, "change", "Should be a change type");
+  assert(feesDelta.value.includes("amount"), "Value should contain amount");
+  assert(feesDelta.value.includes("2000"), "Value should contain new amount");
+});
+
+deltaTest("Delta Detector: Complex array - no change should not emit delta", () => {
+  const previousState = createMockRelayInfo({
+    retention: [
+      [{ kinds: [0, 1], time: 3600 }]
+    ]
+  });
+  const currentState = createMockRelayInfo({
+    retention: [
+      [{ kinds: [0, 1], time: 3600 }]
+    ]
+  });
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  // Should not detect any retention changes
+  const retentionDelta = deltas.find(d => d.key === "retention");
+  assertEquals(retentionDelta, undefined, "Should not detect unchanged retention");
+});
+
+deltaTest("Delta Detector: Complex array - fees with multiple types", () => {
+  const previousState = createMockRelayInfo({
+    fees: {
+      admission: [{ amount: 5000, unit: "msats" }],
+      subscription: [{ amount: 1000, unit: "msats", period: 2592000 }]
+    }
+  });
+  const currentState = createMockRelayInfo({
+    fees: {
+      admission: [{ amount: 5000, unit: "msats" }], // unchanged
+      subscription: [{ amount: 1500, unit: "msats", period: 2592000 }] // changed
+    }
+  });
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  // Should only detect subscription change, not admission
+  assert(!deltas.some(d => d.key.includes("admission")), "Should not detect unchanged admission");
+  assert(deltas.some(d => d.key === "fees.subscription"), "Should detect subscription change");
+
+  const subDelta = deltas.find(d => d.key === "fees.subscription");
+  assert(subDelta!.value.includes("1500"), "Should have new subscription amount");
+});
+
+deltaTest("Delta Detector: Complex array - retention removal", () => {
+  const previousState = createMockRelayInfo({
+    retention: [
+      [{ kinds: [0, 1], time: 3600 }]
+    ]
+  });
+  const currentState = createMockRelayInfo({});
+  delete currentState.retention;
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  // Should detect retention removal
+  const retentionDelta = deltas.find(d => d.key === "-retention");
+  assertExists(retentionDelta, "Should detect retention removal");
+  assertEquals(retentionDelta.type, "remove", "Should be a remove type");
+});
+
 console.log("Delta detector tests completed");

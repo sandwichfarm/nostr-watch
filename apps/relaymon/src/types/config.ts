@@ -153,6 +153,14 @@ export interface DeduplicationConfig {
 }
 
 /**
+ * Delta events configuration (Kind 1066)
+ */
+export interface DeltaConfig {
+  enabled: boolean;
+  max_retries?: number;  // Stop publishing delta events after N offline retries
+}
+
+/**
  * RelayMon configuration
  */
 export interface RelaymonConfig {
@@ -162,6 +170,7 @@ export interface RelaymonConfig {
   checks: ChecksConfig;
   ignorelist?: IgnoreListConfig;
   deduplication?: DeduplicationConfig;
+  delta?: DeltaConfig;
 }
 
 /**

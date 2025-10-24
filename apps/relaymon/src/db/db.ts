@@ -35,6 +35,23 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
     logger.error(`Failed to create relay_info table: ${e}`);
   }
 
+  // Create the relay_delta_state table for tracking state changes
+  try {
+    db.query(`
+      CREATE TABLE IF NOT EXISTS relay_delta_state (
+        url TEXT PRIMARY KEY,
+        state_json TEXT,
+        rtt_open INTEGER,
+        rtt_read INTEGER,
+        rtt_write INTEGER,
+        last_updated INTEGER
+      )
+    `);
+    logger.info("Created relay_delta_state table if it didn't exist");
+  } catch (e) {
+    logger.error(`Failed to create relay_delta_state table: ${e}`);
+  }
+
   isInitialized = true;
 }
 
@@ -151,6 +168,95 @@ export function isRelayIgnored(url: string): boolean {
   } catch (e) {
     logger.error(`Error checking if relay ${url} is ignored: ${e}`);
     return false;
+  }
+}
+
+/**
+ * Delta State Management Functions
+ */
+
+export interface DeltaState {
+  state: RelayInfo;
+  rttOpen?: number;
+  rttRead?: number;
+  rttWrite?: number;
+}
+
+/**
+ * Get the last delta state for a relay
+ * @param url The relay URL
+ * @returns The last delta state or null if not found
+ */
+export function getLastDeltaState(url: string): DeltaState | null {
+  try {
+    const result = db.query(`
+      SELECT state_json, rtt_open, rtt_read, rtt_write
+      FROM relay_delta_state
+      WHERE url = ?
+    `, [url]);
+
+    if (!result || result.length === 0) {
+      return null;
+    }
+
+    const [stateJson, rttOpen, rttRead, rttWrite] = result[0];
+
+    let state = null;
+    try {
+      if (stateJson && typeof stateJson === 'string') {
+        state = JSON.parse(stateJson);
+      }
+    } catch (e) {
+      logger.warn(`Failed to parse delta state JSON for relay ${url}: ${e}`);
+      return null;
+    }
+
+    return {
+      state,
+      rttOpen: rttOpen !== null && rttOpen !== -1 ? rttOpen as number : undefined,
+      rttRead: rttRead !== null && rttRead !== -1 ? rttRead as number : undefined,
+      rttWrite: rttWrite !== null && rttWrite !== -1 ? rttWrite as number : undefined,
+    };
+  } catch (e) {
+    logger.error(`Error getting delta state for ${url}: ${e}`);
+    return null;
+  }
+}
+
+/**
+ * Store the current delta state for a relay
+ * @param url The relay URL
+ * @param deltaState The state to store
+ */
+export function storeDeltaState(url: string, deltaState: DeltaState): void {
+  try {
+    const stateJson = JSON.stringify(deltaState.state);
+    const timestamp = Math.floor(Date.now() / 1000);
+    const rttOpen = deltaState.rttOpen ?? -1;
+    const rttRead = deltaState.rttRead ?? -1;
+    const rttWrite = deltaState.rttWrite ?? -1;
+
+    db.query(`
+      REPLACE INTO relay_delta_state (url, state_json, rtt_open, rtt_read, rtt_write, last_updated)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [url, stateJson, rttOpen, rttRead, rttWrite, timestamp]);
+
+    logger.debug(`Stored delta state for ${url}`);
+  } catch (e) {
+    logger.error(`Failed to store delta state for ${url}: ${e}`);
+  }
+}
+
+/**
+ * Clear the delta state for a relay (used when relay is deleted)
+ * @param url The relay URL
+ */
+export function clearDeltaState(url: string): void {
+  try {
+    db.query(`DELETE FROM relay_delta_state WHERE url = ?`, [url]);
+    logger.debug(`Cleared delta state for ${url}`);
+  } catch (e) {
+    logger.error(`Failed to clear delta state for ${url}: ${e}`);
   }
 }
 

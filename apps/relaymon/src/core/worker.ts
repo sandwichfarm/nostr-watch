@@ -2,7 +2,7 @@ import { Nocap } from "npm:@nostrwatch/nocap";
 import EveryAdapterDefault from "npm:@nostrwatch/nocap-every-adapter-default";
 import { Publisher, Kind30166 } from "npm:@nostrwatch/publisher";
 import { relayHostnameDedup, setConfig } from "../utils/hostnames.ts";
-import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored } from "../db/db.ts";
+import { persistResult, incrementRetryCount, getRetryCount, db, storeRelayInfo, isRelayIgnored, getLastDeltaState, storeDeltaState } from "../db/db.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { getLogger, LogLevel } from "../utils/logger.ts";
 import { RetryManager } from "../utils/retryManager.ts";
@@ -18,6 +18,8 @@ import { deleteRelayCheckEvent } from "../utils/deletion.ts";
 import type { Config } from "../config/config.ts";
 import type { NocapCheckResult, RelayCheckResult } from "../types/relay.ts";
 import { getErrorMessage } from "../types/errors.ts";
+import { detectDeltas } from "../delta/detector.ts";
+import { Kind1066 } from "../delta/kind1066.ts";
 
 chalk.level = 1;
 
@@ -167,8 +169,11 @@ export class Worker {
       
       if (!dedupedResult.ignore && wasOnline) {
         this.publishResult(dedupedResult);
-      } 
-      
+      }
+
+      // Publish delta event (Kind 1066) if enabled
+      this.publishDeltaEvent(relayUrl, dedupedResult);
+
       this.logger.debug(`Persisting result for relay: ${relayUrl}, online: ${wasOnline}`);
       persistResult(dedupedResult);
       
@@ -253,6 +258,86 @@ export class Worker {
       this.queueManager.addPublishJob(() => publishJob(), { isRetry: false });
     } catch (error: unknown) {
       this.logger.error(`Failed to add publish job for ${result.url}: ${getErrorMessage(error)}`);
+    }
+  }
+
+  async publishDeltaEvent(relayUrl: string, result: RelayCheckResult): Promise<void> {
+    // Check if delta events are enabled
+    if (!this.config.relaymon.delta?.enabled) {
+      return;
+    }
+
+    try {
+      const wasOnline = result.open?.data === true;
+      const retryCount = getRetryCount(relayUrl);
+
+      // Check if we should stop publishing delta events (exceeded max retries for offline relay)
+      const maxRetries = this.config.relaymon.delta.max_retries ?? 10;
+      if (!wasOnline && retryCount > maxRetries) {
+        this.logger.debug(`Skipping delta event for ${relayUrl} - exceeded max_retries (${maxRetries})`);
+        return;
+      }
+
+      // Get the last delta state
+      const lastState = getLastDeltaState(relayUrl);
+
+      // Get current NIP-11 info (use empty object if not available)
+      const currentInfo = result.info?.data || {};
+
+      // Detect deltas
+      const deltas = detectDeltas(lastState?.state || null, currentInfo);
+
+      // Store current state for next comparison
+      storeDeltaState(relayUrl, {
+        state: currentInfo,
+        rttOpen: result.open?.duration,
+        rttRead: result.read?.duration,
+        rttWrite: result.write?.duration,
+      });
+
+      // Generate and publish delta event
+      const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
+        try {
+          const event = new Kind1066(getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || ""));
+          const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
+
+          const signedEvent = await event.generateAndSignEvent({
+            url: relayUrl,
+            online: wasOnline,
+            retryCount: wasOnline ? 0 : retryCount,
+            rttOpen: result.open?.duration,
+            deltas: wasOnline ? deltas : [], // Only include deltas when online
+          }, privkey);
+
+          await this.publisher.publishEvent(signedEvent);
+          this.logger.debug(`Published delta event (Kind 1066) for relay ${relayUrl}`);
+          return true;
+        } catch (error: unknown) {
+          this.logger.error(`Delta event publish failed for ${relayUrl}: ${getErrorMessage(error)}`);
+
+          if (retryCount < maxRetries) {
+            const nextRetryCount = retryCount + 1;
+            const nextBackoffMs = backoffMs * 2;
+            this.logger.info(`Scheduling delta event retry ${nextRetryCount}/${maxRetries} for ${relayUrl} in ${nextBackoffMs}ms`);
+
+            setTimeout(() => {
+              this.queueManager.addPublishJob(
+                () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
+                { isRetry: true }
+              );
+            }, nextBackoffMs);
+
+            return false;
+          } else {
+            this.logger.error(`Exceeded maximum retries (${maxRetries}) for publishing delta event for ${relayUrl}`);
+            return false;
+          }
+        }
+      };
+
+      this.queueManager.addPublishJob(() => publishJob(), { isRetry: false });
+    } catch (error: unknown) {
+      this.logger.error(`Failed to publish delta event for ${relayUrl}: ${getErrorMessage(error)}`);
     }
   }
 

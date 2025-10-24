@@ -4,6 +4,7 @@ import { normalizeURL } from "npm:nostr-tools/utils";
 import hash from "npm:object-hash";
 import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo } from "../db/db.ts";
 import { deleteRelayCheckEvent } from "./deletion.ts";
+import type { Config } from "../config/config.ts";
 
 // Force console output for debugging
 
@@ -11,13 +12,13 @@ import { deleteRelayCheckEvent } from "./deletion.ts";
 const logger = getLogger("Hostnames");
 
 // Global variable to store the application config
-let appConfig: any = null;
+let appConfig: Config | null = null;
 
 /**
  * Set the application config for use in deletion
  * @param config The application config
  */
-export function setConfig(config: any): void {
+export function setConfig(config: Config): void {
   appConfig = config;
 }
 

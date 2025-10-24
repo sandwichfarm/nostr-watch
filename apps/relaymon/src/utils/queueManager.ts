@@ -1,5 +1,6 @@
 import Queue from "npm:p-queue";
 import { getLogger } from "./logger.ts";
+import type { Config } from "../config/config.ts";
 
 const logger = getLogger("QueueManager");
 
@@ -8,8 +9,8 @@ export class QueueManager {
   publishQueue: Queue;
   public sizeCompleted: number = 0;
   public sizeFailed: number = 0;
-  public config: any; // Store config for status display
-  
+  public config: Config | undefined; // Store config for status display
+
   // Keep track of enqueued relays across different runs
   public enqueuedRelays: Set<string> = new Set();
 
@@ -18,7 +19,7 @@ export class QueueManager {
   public failedPublishes: number = 0;
   public retryingPublishes: number = 0;
 
-  constructor(checkConcurrency: number = 5, publishConcurrency: number = 2, config?: any) {
+  constructor(checkConcurrency: number = 5, publishConcurrency: number = 2, config?: Config) {
     this.checkQueue = new Queue({ 
       concurrency: checkConcurrency,
       autoStart: true

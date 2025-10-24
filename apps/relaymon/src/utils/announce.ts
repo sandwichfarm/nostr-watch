@@ -3,10 +3,11 @@ import { AnnounceMonitor } from "npm:@nostrwatch/announce";
 import { getPublicKey } from "npm:nostr-tools";
 import { type QueueManager } from "./queueManager.ts";
 import { timeString } from "../config/config.ts";
+import type { Config } from "../config/config.ts";
 
 const logger = getLogger("Announce");
 
-export async function maybeAnnounce(config: any, queueManager?: QueueManager): Promise<void> {
+export async function maybeAnnounce(config: Config, queueManager?: QueueManager): Promise<void> {
   if (!config.monitor || !config.monitor.info) {
     logger.warn("Monitor metadata is missing; skipping announcement.");
     return;

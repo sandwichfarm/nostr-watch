@@ -1,6 +1,7 @@
 import { getLogger } from "./logger.ts";
 import { Publisher, Event } from "npm:@nostrwatch/publisher";
 import { getEventHash, getPublicKey } from "npm:nostr-tools";
+import type { Config } from "../config/config.ts";
 
 const logger = getLogger("Deletion");
 
@@ -20,7 +21,7 @@ export class Kind5Event extends Event {
   protected _generateEvent(data: { relayUrl: string, pubkey: string, content: string }): any {
     // Create an a-tag for the relay check event using the format <kind>:<pubkey>:<d-identifier>
     const aTag = `30166:${data.pubkey}:${data.relayUrl}`;
-    
+
     const tags = [
       ["a", aTag],
       ["k", "30166"] // Add k tag for the kind of event being deleted
@@ -51,9 +52,9 @@ const deletedRelays = new Set<string>();
  * @param queueManager Optional queue manager for publish jobs
  */
 export async function deleteRelayCheckEvent(
-  relayUrl: string, 
-  reason: string, 
-  config: any, 
+  relayUrl: string,
+  reason: string,
+  config: Config,
   queueManager?: any
 ): Promise<void> {
   try {

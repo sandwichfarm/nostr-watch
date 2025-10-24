@@ -1,5 +1,6 @@
 import { db, initDB } from "npm:@nostrwatch/db";
 import { getLogger } from "../utils/logger.ts";
+import type { RelayInfo } from "../types/relay.ts";
 
 const logger = getLogger("DB");
 let isInitialized = false;
@@ -14,11 +15,11 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
     logger.warn("Database already initialized, ignoring repeated initialization");
     return;
   }
-  
+
   const path = dbPath || "relaymon.db";
   logger.info(`Initializing database with path: ${path}, WAL mode: ${enableWAL ? "enabled" : "disabled"}`);
   initDB(path, enableWAL);
-  
+
   // Create the relay_info table if it doesn't exist
   try {
     db.query(`
@@ -33,7 +34,7 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
   } catch (e) {
     logger.error(`Failed to create relay_info table: ${e}`);
   }
-  
+
   isInitialized = true;
 }
 
@@ -43,7 +44,7 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
  * @param info The NIP-11 info object
  * @param infoHash Hash of the NIP-11 info for comparison
  */
-export function storeRelayInfo(url: string, info: any, infoHash: string): void {
+export function storeRelayInfo(url: string, info: RelayInfo, infoHash: string): void {
   try {
     const infoJson = JSON.stringify(info);
     const timestamp = Math.floor(Date.now() / 1000);
@@ -65,7 +66,7 @@ export function storeRelayInfo(url: string, info: any, infoHash: string): void {
  * @param url The relay URL
  * @returns Object with info and infoHash, or null if not found
  */
-export function getRelayInfo(url: string): { info: any; infoHash: string } | null {
+export function getRelayInfo(url: string): { info: RelayInfo; infoHash: string } | null {
   try {
     const result = db.query(`
       SELECT info_json, info_hash FROM relay_info

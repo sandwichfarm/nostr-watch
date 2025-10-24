@@ -15,13 +15,15 @@ import { getPublicKey } from "npm:nostr-tools";
 import { isHostnameBlocked } from "../utils/blocklists.ts";
 import { createInfoHash } from "../utils/hostnames.ts";
 import { deleteRelayCheckEvent } from "../utils/deletion.ts";
+import type { Config } from "../config/config.ts";
+import type { NocapCheckResult, RelayCheckResult } from "../types/relay.ts";
 
 chalk.level = 1;
 
 export class Worker {
   private relayRetries: Map<string, number> = new Map();
   private logger = getLogger("Worker");
-  private config: any;
+  private config: Config;
   private publisher: Publisher;
   private retryManager: RetryManager;
   private statusIntval: ReturnType<typeof setInterval>;
@@ -32,7 +34,7 @@ export class Worker {
   constructor(
     private pubkey: string,
     private queueManager: any,
-    config: any
+    config: Config
   ) {
     this.config = config;
     this.publisher = new Publisher(this.pubkey, config.monitor.relays);
@@ -213,7 +215,7 @@ export class Worker {
     }
   }
 
-  async publishResult(result: any): Promise<void> {
+  async publishResult(result: RelayCheckResult): Promise<void> {
     try {
       const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
         try {
@@ -285,7 +287,7 @@ export class Worker {
 
   progressMessage(
     url: string,
-    result: any = {},
+    result: NocapCheckResult | Record<string, never> = {},
     recovered: boolean = false,
     error: boolean = false
   ): void {

@@ -2,6 +2,7 @@ import { getLogger } from "./logger.ts";
 import { SimplePool, nip19, getPublicKey } from "npm:nostr-tools";
 import { normalizeURL } from "npm:nostr-tools/utils";
 import { db } from "../db/db.ts";
+import type { Config, IgnoreListConfig } from "../types/config.ts";
 
 /**
  * IgnoreListSync - Manages synchronization of relay ignore lists across monitors
@@ -14,7 +15,8 @@ import { db } from "../db/db.ts";
  */
 export class IgnoreListSync {
   private logger = getLogger("IgnoreListSync");
-  private config: any;
+  private fullConfig: Config;
+  private config: IgnoreListConfig;
   private enabled: boolean;
   private nip66Relays: string[];
   private listRelays: string[];
@@ -25,8 +27,15 @@ export class IgnoreListSync {
   private localIgnoredRelays: Set<string> = new Set();
   private localIgnoreListChanged: boolean = false;
 
-  constructor(config: any, metaRelays: string[]) {
-    this.config = config?.relaymon?.ignorelist || {};
+  constructor(config: Config, metaRelays: string[]) {
+    this.fullConfig = config;
+    this.config = config?.relaymon?.ignorelist || {
+      enabled: false,
+      interval: "6h",
+      deletion_interval: "24h",
+      relays: [],
+      pubkeys: []
+    };
     this.enabled = this.config.enabled || false;
     this.nip66Relays = config?.publisher?.relays || [];
     this.listRelays = this.config?.relays || [];

@@ -237,7 +237,7 @@ export class RelaySeeder {
       const fileContents = await Deno.readTextFile(this.options.static.path);
       let data: unknown;
       if (this.options.static.path.endsWith(".yaml") || this.options.static.path.endsWith(".yml")) {
-        const { parse } = await import("https://deno.land/std@0.203.0/encoding/yaml.ts");
+        const { parse } = await import("https://deno.land/std@0.218.2/yaml/mod.ts");
         data = parse(fileContents);
       } else {
         data = JSON.parse(fileContents);

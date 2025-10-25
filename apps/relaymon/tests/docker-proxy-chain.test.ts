@@ -4,6 +4,10 @@ import { assert } from "https://deno.land/std/testing/asserts.ts";
 // Test configuration
 const TEST_TIMEOUT = 60000; // 60 seconds
 
+// Check if network tests should run
+const SKIP_NETWORK_TESTS = Deno.env.get("SKIP_NETWORK_TESTS") === "true";
+const HAS_TOR = Deno.env.get("TOR_PROXY") !== undefined;
+
 // Test URLs for different networks
 const CLEARNET_WS_URL = "wss://relay.damus.io";
 const TOR_WS_URL = "ws://oxtrdevav64z64yb7x6rjg4ntzqjhedm5b5zjqulugknhzr46ny2qbad.onion"; // Replace with actual Tor relay if known
@@ -36,6 +40,7 @@ const PROXY_CHAIN: ProxyConfig[] = [
 
 Deno.test({
   name: "Docker Proxy Chain: should diagnose clearnet websocket connection through proxy chain",
+  ignore: SKIP_NETWORK_TESTS,
   async fn() {
     // First verify that the clearnet connection works
     console.log("\n===== TESTING CLEARNET CONNECTION =====");
@@ -51,6 +56,7 @@ Deno.test({
 
 Deno.test({
   name: "Docker Proxy Chain: should diagnose Tor websocket connection through proxy chain",
+  ignore: !HAS_TOR || SKIP_NETWORK_TESTS,
   async fn() {
     console.log("\n===== TESTING TOR ONION CONNECTION =====");
     const torResults = await diagnoseProxyChain(TOR_WS_URL, PROXY_CHAIN);
@@ -66,6 +72,7 @@ Deno.test({
 // Test direct connections to each proxy component
 Deno.test({
   name: "Docker Proxy Chain: should test component connectivity",
+  ignore: SKIP_NETWORK_TESTS,
   async fn() {
     console.log("\n===== COMPONENT CONNECTIVITY TESTS =====");
 
@@ -96,6 +103,7 @@ Deno.test({
 // Special test for DNS resolution of .onion domains
 Deno.test({
   name: "Docker Proxy Chain: should test .onion DNS resolution through the proxy chain",
+  ignore: !HAS_TOR || SKIP_NETWORK_TESTS,
   async fn() {
     console.log("\n===== ONION DNS RESOLUTION TEST =====");
 
@@ -129,6 +137,7 @@ Deno.test({
 // Test to check if Tor SOCKS connections are being rejected
 Deno.test({
   name: "Docker Proxy Chain: should test if Tor SOCKS connections are being rejected",
+  ignore: !HAS_TOR || SKIP_NETWORK_TESTS,
   async fn() {
     console.log("\n===== TOR CONNECTION REJECTION TEST =====");
 

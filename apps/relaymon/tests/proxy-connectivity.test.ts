@@ -5,6 +5,10 @@ import { assert } from "https://deno.land/std/testing/asserts.ts";
 const TEST_TIMEOUT = 30000; // 30 seconds
 const CONNECTION_TIMEOUT = 10000; // 10 seconds
 
+// Check if network tests should run
+const SKIP_NETWORK_TESTS = Deno.env.get("SKIP_NETWORK_TESTS") === "true";
+const HAS_TOR = Deno.env.get("TOR_PROXY") !== undefined;
+
 // Test URLs for different networks
 const CLEARNET_WS_URLS = [
   "wss://relay.damus.io",
@@ -78,6 +82,7 @@ async function testWebsocketConnection(url: string, timeout = CONNECTION_TIMEOUT
 for (const url of CLEARNET_WS_URLS) {
   Deno.test({
     name: `Clearnet WebSocket Connectivity: should connect to ${url}`,
+    ignore: SKIP_NETWORK_TESTS,
     async fn() {
       const result = await testWebsocketConnection(url);
       assert(result.success, result.error?.message);
@@ -91,6 +96,7 @@ for (const url of CLEARNET_WS_URLS) {
 for (const url of TOR_WS_URLS) {
   Deno.test({
     name: `Tor WebSocket Connectivity: should connect to ${url}`,
+    ignore: !HAS_TOR || SKIP_NETWORK_TESTS,
     async fn() {
       const result = await testWebsocketConnection(url);
       assert(result.success, result.error?.message);
@@ -103,6 +109,7 @@ for (const url of TOR_WS_URLS) {
 // Test detailed error diagnostics for Tor
 Deno.test({
   name: "Tor WebSocket Diagnostic: should diagnose exact error in proxy chain",
+  ignore: !HAS_TOR || SKIP_NETWORK_TESTS,
   async fn() {
     // Select one Tor URL for detailed diagnostics
     const testUrl = TOR_WS_URLS[0];
@@ -141,6 +148,7 @@ Deno.test({
 // Compare direct Tor connection vs proxy chain
 Deno.test({
   name: "Proxy Chain Analysis: should identify which part of the proxy chain is failing",
+  ignore: !HAS_TOR || SKIP_NETWORK_TESTS,
   async fn() {
     // This test requires that we run it inside the container
     // where we can access all parts of the proxy chain

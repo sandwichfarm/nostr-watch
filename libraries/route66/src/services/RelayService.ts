@@ -68,6 +68,35 @@ export class RelayService extends Service {
     return filters;
   }
 
+  /**
+   * Create filters for Kind 1066 delta events for a relay
+   * Used for querying relay history and time series data
+   *
+   * @param relay - Relay URL to create filters for
+   * @param options - Optional filter parameters
+   * @returns Array of filters for Kind 1066 events
+   */
+  deltaFilters(relay: WebsocketUrlType, options?: { since?: number; until?: number; limit?: number }): Filter[] {
+    const filter: Filter = {
+      kinds: [1066],
+      '#r': getNormalizedWebsocketVariants(relay),
+    };
+
+    if (options?.since) {
+      filter.since = options.since;
+    }
+
+    if (options?.until) {
+      filter.until = options.until;
+    }
+
+    if (options?.limit) {
+      filter.limit = options.limit;
+    }
+
+    return [filter];
+  }
+
   async getRelayData(relay: string, liveness: string = 'online'): Promise<[ Nip66CheckEvent[], Map<string, Monitor> ] | undefined> {
     await this.ready();
     await this.monitors.ready();

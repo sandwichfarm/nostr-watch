@@ -20,6 +20,7 @@ import type { NocapCheckResult, RelayCheckResult } from "../types/relay.ts";
 import { getErrorMessage } from "../types/errors.ts";
 import { detectDeltas } from "../delta/detector.ts";
 import { Kind1066 } from "../delta/kind1066.ts";
+import { Kind20066 } from "../delta/kind20066.ts";
 import { getPeriodsToEmit, validatePeriods } from "../delta/periods.ts";
 
 chalk.level = 1;
@@ -42,6 +43,7 @@ export class Worker {
   ) {
     this.config = config;
     this.publisher = new Publisher(this.pubkey, config.monitor.relays);
+
     this.retryManager = new RetryManager(config.relaymon.retry.expiry);
     this.statusIntval = statuses(this.queueManager, config.relaymon.checks.options.statusInterval);
     
@@ -408,6 +410,27 @@ export class Worker {
           await this.publisher.publishEvent(signedEvent);
           this.logger.debug(`Published delta event (Kind 1066) for relay ${relayUrl}` +
             (periodsToEmit.length > 0 ? ` with periods: ${periodsToEmit.join(', ')}` : ''));
+
+          // Publish ephemeral state change event (Kind 20066) if status changed
+          if (operationalStatus) {
+            try {
+              const ephemeralEvent = new Kind20066(getPublicKey(privkey));
+              const ephemeralSigned = await ephemeralEvent.generateAndSignEvent({
+                url: relayUrl,
+                operationalStatus,
+                online: wasOnline,
+                rttOpen: result.open?.duration,
+                retryCount: wasOnline ? undefined : retryCount,
+              }, privkey);
+
+              await this.publisher.publishEvent(ephemeralSigned);
+              this.logger.debug(`Published ephemeral state change event (Kind 20066) for relay ${relayUrl}: ${operationalStatus}`);
+            } catch (ephemeralError: unknown) {
+              // Don't fail the whole job if ephemeral publish fails
+              this.logger.warn(`Failed to publish ephemeral event for ${relayUrl}: ${getErrorMessage(ephemeralError)}`);
+            }
+          }
+
           return true;
         } catch (error: unknown) {
           this.logger.error(`Delta event publish failed for ${relayUrl}: ${getErrorMessage(error)}`);

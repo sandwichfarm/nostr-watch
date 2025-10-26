@@ -723,3 +723,161 @@ For issues or questions:
 
 **Version:** 1.1.0 (Phase 1, 2 & Operational Status Complete)
 **Last Updated:** 2025-10-26
+
+---
+
+## Ephemeral State Change Events (Kind 20066)
+
+### Overview
+
+Kind 20066 events are **ephemeral** (not stored by relays) real-time notifications of relay state transitions. Published only when operational status changes: `init`, `down`, or `up`.
+
+**Key Differences from Kind 1066:**
+- **Ephemeral** - Not stored by relays, only broadcast to connected clients
+- **State changes only** - Only published during transitions (init/down/up)
+- **Simplified** - No deltas, no periods, just state change notification
+- **Real-time monitoring** - Ideal for live status dashboards
+
+### Configuration
+
+Kind 20066 events are published to the same relays as Kind 1066:
+
+```yaml
+publisher:
+  relays:  # Both Kind 1066 and Kind 20066 published here
+    - wss://relay.nostr.band
+    - wss://relay.damus.io
+```
+
+**Use Cases:**
+- Live monitoring dashboards that need instant notifications
+- Real-time alerts for relay state changes
+- Low-latency status updates without querying historical data
+- Complement to Kind 1066 for real-time + historical tracking
+
+### Event Structure
+
+**Example - Relay comes online:**
+```json
+{
+  "kind": 20066,
+  "tags": [
+    ["r", "wss://relay.example.com"],
+    ["O", "init"],
+    ["rtt-open", "145"]
+  ],
+  "content": "",
+  "created_at": 1699000000
+}
+```
+
+**Example - Relay goes offline:**
+```json
+{
+  "kind": 20066,
+  "tags": [
+    ["r", "wss://relay.example.com"],
+    ["O", "down"],
+    ["retry", "3"]
+  ],
+  "content": "",
+  "created_at": 1699000123
+}
+```
+
+**Example - Relay recovers:**
+```json
+{
+  "kind": 20066,
+  "tags": [
+    ["r", "wss://relay.example.com"],
+    ["O", "up"],
+    ["rtt-open", "180"]
+  ],
+  "content": "",
+  "created_at": 1699000456
+}
+```
+
+### Tags Reference
+
+| Tag | Description | When Present |
+|-----|-------------|--------------|
+| `r` | Relay URL | Always |
+| `O` | Operational status (`init`, `down`, `up`) | Always |
+| `rtt-open` | Round-trip time in milliseconds | When online |
+| `retry` | Retry count | When offline |
+
+### Querying Ephemeral Events
+
+Since ephemeral events aren't stored, you must be **subscribed** when they're published:
+
+```javascript
+// Subscribe to state changes for specific relay
+pool.subscribe(relays, [{
+  kinds: [20066],
+  "#r": ["wss://relay.example.com"]
+}], {
+  onevent: (event) => {
+    const status = event.tags.find(t => t[0] === 'O')?.[1];
+    const url = event.tags.find(t => t[0] === 'r')?.[1];
+    console.log(`${url} status: ${status}`);
+  }
+});
+
+// Subscribe to all state changes from a monitor
+pool.subscribe(relays, [{
+  kinds: [20066],
+  authors: [monitorPubkey]
+}], {
+  onevent: handleStateChange
+});
+```
+
+### Use Cases
+
+1. **Live Status Dashboard**
+   - Subscribe to Kind 20066 for instant updates
+   - No need to poll or query historical data
+   - Update UI immediately when relay status changes
+
+2. **Alert Systems**
+   - Monitor specific relays for downtime
+   - Trigger notifications on `O:down` events
+   - Track recovery with `O:up` events
+
+3. **Real-time Analytics**
+   - Count state transitions
+   - Measure time between events
+   - Track relay stability patterns
+
+4. **Development/Testing**
+   - Test state change detection without storage overhead
+   - Debug operational status transitions
+   - Verify monitor behavior in real-time
+
+### Best Practices
+
+✅ **Do:**
+- Subscribe before expecting events (ephemeral = not stored)
+- Use for real-time monitoring and alerts
+- Keep subscriptions open to receive notifications
+- Handle missed events gracefully (unavoidable with ephemeral)
+
+❌ **Don't:**
+- Rely on querying historical ephemeral events (they're not stored)
+- Use for historical analysis (use Kind 1066 instead)
+- Expect guaranteed delivery (ephemeral events can be missed)
+- Use as primary data source (complement with Kind 1066)
+
+### Publishing Behavior
+
+Relaymon publishes Kind 20066 events:
+- ✅ To the same relays as Kind 1066 (`publisher.relays`)
+- ✅ Only during state transitions (`init`, `down`, `up`)
+- ✅ After successfully publishing Kind 1066 event
+- ✅ Without retries (fire-and-forget for ephemeral)
+
+Kind 20066 events are always published when operational status changes.
+
+---

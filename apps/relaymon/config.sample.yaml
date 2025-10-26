@@ -24,6 +24,15 @@ monitor:
     - 'wss://relay.nostr.watch'
     - 'wss://relaypag.es'
 
+# Publisher configuration for publishing check results and delta events
+publisher:
+  relays:  # Relays for Kind 1066 delta events and Kind 20066 ephemeral state change events
+    - 'wss://relay.nostr.watch'
+    - 'wss://relaypag.es'
+  # retry:
+  #   maxRetries: 5
+  #   initialBackoffMs: 60000
+
 announce:
   relays: 
     - 'wss://purplepag.es'

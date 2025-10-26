@@ -13,6 +13,7 @@ export interface Kind1066EventData {
   rttOpen?: number;
   deltas: Delta[];
   periods?: string[];  // Period tags (e.g., ["6h", "1d", "7d"])
+  operationalStatus?: "init" | "down" | "up";  // Liveness state transition
 }
 
 /**
@@ -33,8 +34,14 @@ export class Kind1066 extends Event {
   private generateTags(data: Kind1066EventData): string[][] {
     const tags: string[][] = [];
 
-    // Always include the relay URL as 'd' tag (identifier)
-    tags.push(['d', data.url]);
+    // Always include the relay URL as 'r' tag (reference)
+    tags.push(['r', data.url]);
+
+    // Add operational status tag if this is a state transition
+    if (data.operationalStatus) {
+      tags.push(['O', data.operationalStatus]);
+      logger.debug(`Added operational status tag: O:${data.operationalStatus}`);
+    }
 
     // Add period tags (T tags) if provided - cascading from shortest to longest
     if (data.periods && data.periods.length > 0) {

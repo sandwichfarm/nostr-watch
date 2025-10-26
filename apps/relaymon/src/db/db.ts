@@ -44,10 +44,26 @@ export function initializeDB(dbPath?: string, enableWAL: boolean = true): void {
         rtt_open INTEGER,
         rtt_read INTEGER,
         rtt_write INTEGER,
+        dns_json TEXT,
+        geo_json TEXT,
         last_updated INTEGER
       )
     `);
     logger.info("Created relay_delta_state table if it didn't exist");
+
+    // Migrate existing tables to add dns_json and geo_json columns if they don't exist
+    try {
+      db.query(`ALTER TABLE relay_delta_state ADD COLUMN dns_json TEXT`);
+      logger.info("Added dns_json column to relay_delta_state");
+    } catch (e) {
+      // Column already exists, ignore
+    }
+    try {
+      db.query(`ALTER TABLE relay_delta_state ADD COLUMN geo_json TEXT`);
+      logger.info("Added geo_json column to relay_delta_state");
+    } catch (e) {
+      // Column already exists, ignore
+    }
   } catch (e) {
     logger.error(`Failed to create relay_delta_state table: ${e}`);
   }
@@ -196,6 +212,8 @@ export interface DeltaState {
   rttOpen?: number;
   rttRead?: number;
   rttWrite?: number;
+  dns?: import("../types/relay.ts").DnsResult;
+  geo?: import("../types/relay.ts").GeoResult;
 }
 
 /**
@@ -206,7 +224,7 @@ export interface DeltaState {
 export function getLastDeltaState(url: string): DeltaState | null {
   try {
     const result = db.query(`
-      SELECT state_json, rtt_open, rtt_read, rtt_write
+      SELECT state_json, rtt_open, rtt_read, rtt_write, dns_json, geo_json
       FROM relay_delta_state
       WHERE url = ?
     `, [url]);
@@ -215,7 +233,7 @@ export function getLastDeltaState(url: string): DeltaState | null {
       return null;
     }
 
-    const [stateJson, rttOpen, rttRead, rttWrite] = result[0];
+    const [stateJson, rttOpen, rttRead, rttWrite, dnsJson, geoJson] = result[0];
 
     let state = null;
     try {
@@ -227,11 +245,31 @@ export function getLastDeltaState(url: string): DeltaState | null {
       return null;
     }
 
+    let dns = undefined;
+    try {
+      if (dnsJson && typeof dnsJson === 'string') {
+        dns = JSON.parse(dnsJson);
+      }
+    } catch (e) {
+      logger.warn(`Failed to parse DNS JSON for relay ${url}: ${e}`);
+    }
+
+    let geo = undefined;
+    try {
+      if (geoJson && typeof geoJson === 'string') {
+        geo = JSON.parse(geoJson);
+      }
+    } catch (e) {
+      logger.warn(`Failed to parse geo JSON for relay ${url}: ${e}`);
+    }
+
     return {
       state,
       rttOpen: rttOpen !== null && rttOpen !== -1 ? rttOpen as number : undefined,
       rttRead: rttRead !== null && rttRead !== -1 ? rttRead as number : undefined,
       rttWrite: rttWrite !== null && rttWrite !== -1 ? rttWrite as number : undefined,
+      dns,
+      geo,
     };
   } catch (e) {
     logger.error(`Error getting delta state for ${url}: ${e}`);
@@ -251,11 +289,13 @@ export function storeDeltaState(url: string, deltaState: DeltaState): void {
     const rttOpen = deltaState.rttOpen ?? -1;
     const rttRead = deltaState.rttRead ?? -1;
     const rttWrite = deltaState.rttWrite ?? -1;
+    const dnsJson = deltaState.dns ? JSON.stringify(deltaState.dns) : null;
+    const geoJson = deltaState.geo ? JSON.stringify(deltaState.geo) : null;
 
     db.query(`
-      REPLACE INTO relay_delta_state (url, state_json, rtt_open, rtt_read, rtt_write, last_updated)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [url, stateJson, rttOpen, rttRead, rttWrite, timestamp]);
+      REPLACE INTO relay_delta_state (url, state_json, rtt_open, rtt_read, rtt_write, dns_json, geo_json, last_updated)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [url, stateJson, rttOpen, rttRead, rttWrite, dnsJson, geoJson, timestamp]);
 
     logger.debug(`Stored delta state for ${url}`);
   } catch (e) {

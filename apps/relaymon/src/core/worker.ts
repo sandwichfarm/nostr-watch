@@ -179,15 +179,26 @@ export class Worker {
       }
       
       const isRetry = previouslyOffline && !wasOnline;
-      
+
+      // Determine operational status transition for delta events
+      let operationalStatus: "init" | "down" | "up" | undefined;
+      if (previousStatus === undefined) {
+        operationalStatus = "init"; // First check ever
+      } else if (previousStatus === true && !wasOnline) {
+        operationalStatus = "down"; // Went offline
+      } else if (previousStatus === false && wasOnline) {
+        operationalStatus = "up"; // Recovered
+      }
+      // If no state change, operationalStatus remains undefined
+
       this.knownRelayStatus.set(relayUrl, wasOnline);
-      
+
       if (!dedupedResult.ignore && wasOnline) {
         this.publishResult(dedupedResult);
       }
 
       // Publish delta event (Kind 1066) if enabled
-      this.publishDeltaEvent(relayUrl, dedupedResult);
+      this.publishDeltaEvent(relayUrl, dedupedResult, operationalStatus);
 
       this.logger.debug(`Persisting result for relay: ${relayUrl}, online: ${wasOnline}`);
       persistResult(dedupedResult);
@@ -276,7 +287,11 @@ export class Worker {
     }
   }
 
-  async publishDeltaEvent(relayUrl: string, result: RelayCheckResult): Promise<void> {
+  async publishDeltaEvent(
+    relayUrl: string,
+    result: RelayCheckResult,
+    operationalStatus?: "init" | "down" | "up"
+  ): Promise<void> {
     // Check if delta events are enabled
     if (!this.config.relaymon.delta?.enabled) {
       return;
@@ -299,8 +314,33 @@ export class Worker {
       // Get current NIP-11 info (use empty object if not available)
       const currentInfo = result.info?.data || {};
 
+      // Get current DNS and geo data
+      const currentDns = result.dns?.data;
+      const currentGeo = result.geo?.data;
+
+      // Create composite state objects for delta detection
+      const lastCompositeState = lastState ? {
+        ...lastState.state,
+        ...(lastState.dns ? Object.fromEntries(
+          Object.entries(lastState.dns).map(([k, v]) => [`dns.${k}`, v])
+        ) : {}),
+        ...(lastState.geo ? Object.fromEntries(
+          Object.entries(lastState.geo).map(([k, v]) => [`geo.${k}`, v])
+        ) : {}),
+      } : null;
+
+      const currentCompositeState = {
+        ...currentInfo,
+        ...(currentDns ? Object.fromEntries(
+          Object.entries(currentDns).map(([k, v]) => [`dns.${k}`, v])
+        ) : {}),
+        ...(currentGeo ? Object.fromEntries(
+          Object.entries(currentGeo).map(([k, v]) => [`geo.${k}`, v])
+        ) : {}),
+      };
+
       // Detect deltas from last check
-      const deltas = detectDeltas(lastState?.state || null, currentInfo);
+      const deltas = detectDeltas(lastCompositeState, currentCompositeState);
 
       // Store current state for next comparison
       storeDeltaState(relayUrl, {
@@ -308,6 +348,8 @@ export class Worker {
         rttOpen: result.open?.duration,
         rttRead: result.read?.duration,
         rttWrite: result.write?.duration,
+        dns: currentDns,
+        geo: currentGeo,
       });
 
       // Handle period aggregates if enabled
@@ -360,6 +402,7 @@ export class Worker {
             rttOpen: result.open?.duration,
             deltas: wasOnline ? deltas : [], // Only include deltas when online
             periods: periodsToEmit.length > 0 ? periodsToEmit : undefined, // Cascading period tags
+            operationalStatus, // Add operational status for O tag
           }, privkey);
 
           await this.publisher.publishEvent(signedEvent);

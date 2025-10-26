@@ -288,4 +288,157 @@ deltaTest("Delta Detector: Complex array - retention removal", () => {
   assertEquals(retentionDelta.type, "remove", "Should be a remove type");
 });
 
+deltaTest("Delta Detector: DNS changes should be detected with dns prefix", () => {
+  const previousState = {
+    ...createMockRelayInfo(),
+    "dns.address": "1.2.3.4",
+  } as any;
+
+  const currentState = {
+    ...createMockRelayInfo(),
+    "dns.address": "5.6.7.8",
+  } as any;
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  const dnsDelta = deltas.find(d => d.key === "dns.address");
+  assertExists(dnsDelta, "Should detect DNS address change");
+  assertEquals(dnsDelta.value, "5.6.7.8", "Should have new DNS address");
+  assertEquals(dnsDelta.type, "change", "Should be a change type");
+});
+
+deltaTest("Delta Detector: DNS addition should be detected", () => {
+  const previousState = createMockRelayInfo();
+
+  const currentState = {
+    ...createMockRelayInfo(),
+    "dns.address": "1.2.3.4",
+    "dns.addresses": ["1.2.3.4", "5.6.7.8"],
+  } as any;
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  const addressDelta = deltas.find(d => d.key === "+dns.address");
+  assertExists(addressDelta, "Should detect DNS address addition");
+  assertEquals(addressDelta.value, "1.2.3.4", "Should have DNS address value");
+
+  const addressesDelta = deltas.find(d => d.key === "+dns.addresses");
+  assertExists(addressesDelta, "Should detect DNS addresses addition");
+});
+
+deltaTest("Delta Detector: Geo changes should be detected with geo prefix", () => {
+  const previousState = {
+    ...createMockRelayInfo(),
+    "geo.country": "US",
+    "geo.city": "New York",
+  } as any;
+
+  const currentState = {
+    ...createMockRelayInfo(),
+    "geo.country": "US",
+    "geo.city": "San Francisco",
+  } as any;
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  const cityDelta = deltas.find(d => d.key === "geo.city");
+  assertExists(cityDelta, "Should detect city change");
+  assertEquals(cityDelta.value, "San Francisco", "Should have new city");
+  assertEquals(cityDelta.type, "change", "Should be a change type");
+
+  // Country should not change
+  const countryDelta = deltas.find(d => d.key === "geo.country");
+  assertEquals(countryDelta, undefined, "Should not detect country change when it's the same");
+});
+
+deltaTest("Delta Detector: Geo addition with geohash", () => {
+  const previousState = createMockRelayInfo();
+
+  const currentState = {
+    ...createMockRelayInfo(),
+    "geo.country": "DE",
+    "geo.city": "Berlin",
+    "geo.lat": 52.52,
+    "geo.lon": 13.405,
+  } as any;
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  assert(deltas.some(d => d.key === "+geo.country"), "Should detect country addition");
+  assert(deltas.some(d => d.key === "+geo.city"), "Should detect city addition");
+  assert(deltas.some(d => d.key === "+geo.lat"), "Should detect latitude addition");
+  assert(deltas.some(d => d.key === "+geo.lon"), "Should detect longitude addition");
+});
+
+deltaTest("Delta Detector: Combined NIP-11, DNS, and geo changes", () => {
+  const previousState = {
+    ...createMockRelayInfo(),
+    "dns.address": "1.2.3.4",
+    "geo.country": "US",
+  } as any;
+
+  const currentState = {
+    ...createMockRelayInfo({ name: "Updated Relay" }),
+    "dns.address": "5.6.7.8",
+    "geo.country": "US",
+    "geo.city": "Seattle",
+  } as any;
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  // NIP-11 change
+  const nameDelta = deltas.find(d => d.key === "name");
+  assertExists(nameDelta, "Should detect name change");
+  assertEquals(nameDelta.value, "Updated Relay");
+
+  // DNS change
+  const dnsDelta = deltas.find(d => d.key === "dns.address");
+  assertExists(dnsDelta, "Should detect DNS change");
+  assertEquals(dnsDelta.value, "5.6.7.8");
+
+  // Geo addition
+  const geoDelta = deltas.find(d => d.key === "+geo.city");
+  assertExists(geoDelta, "Should detect geo city addition");
+  assertEquals(geoDelta.value, "Seattle");
+});
+
+deltaTest("Delta Detector: ASN and geohash tracking", () => {
+  const previousState = {
+    ...createMockRelayInfo(),
+    "dns.asn": "15169",
+    "dns.as": "GOOGLE",
+    "geo.isp": "Google LLC",
+  } as any;
+
+  const currentState = {
+    ...createMockRelayInfo(),
+    "dns.asn": "13335",
+    "dns.as": "CLOUDFLARE",
+    "geo.isp": "Cloudflare Inc",
+    "geo.geohash": "9q8yy",
+  } as any;
+
+  const deltas = detectDeltas(previousState, currentState);
+
+  // ASN change in DNS
+  const asnDelta = deltas.find(d => d.key === "dns.asn");
+  assertExists(asnDelta, "Should detect ASN change");
+  assertEquals(asnDelta.value, "13335");
+
+  // AS name change
+  const asDelta = deltas.find(d => d.key === "dns.as");
+  assertExists(asDelta, "Should detect AS name change");
+  assertEquals(asDelta.value, "CLOUDFLARE");
+
+  // ISP change
+  const ispDelta = deltas.find(d => d.key === "geo.isp");
+  assertExists(ispDelta, "Should detect ISP change");
+  assertEquals(ispDelta.value, "Cloudflare Inc");
+
+  // Geohash addition
+  const geohashDelta = deltas.find(d => d.key === "+geo.geohash");
+  assertExists(geohashDelta, "Should detect geohash addition");
+  assertEquals(geohashDelta.value, "9q8yy");
+});
+
 console.log("Delta detector tests completed");

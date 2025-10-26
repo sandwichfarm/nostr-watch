@@ -155,7 +155,7 @@ export class ChronicleService extends Service {
       options: {
         cache: true,
         stream: true,
-        keepAlive: options?.keepAlive ?? this.options.autoSync,
+        keepAlive: options?.keepAlive ?? this.options.autoSync ?? false,
         returnResults: false,
       },
     };
@@ -232,21 +232,26 @@ export class ChronicleService extends Service {
     // Extract appropriate time series based on type
     switch (options.type) {
       case 'rtt':
-        timeSeries = await generateRttSeries(this.storage, options.relay, {
+        timeSeries = await generateRttSeries({
+          storage: this.storage,
+          relay: options.relay,
           since: options.since,
           until: options.until,
         });
         break;
 
       case 'uptime': {
-        const uptimeSeries = await generateUptimeSeries(this.storage, options.relay, {
+        const uptimeSeries = await generateUptimeSeries({
+          storage: this.storage,
+          relay: options.relay,
           since: options.since,
           until: options.until,
         });
-        // Convert UptimeState[] to TimeSeriesPoint[]
-        timeSeries = uptimeSeries.map((state) => ({
-          timestamp: state.timestamp,
-          value: state.online ? 1 : 0,
+        // Convert UptimePoint[] to TimeSeriesPoint[]
+        timeSeries = uptimeSeries.map((point) => ({
+          timestamp: point.timestamp,
+          date: point.date,
+          value: point.value === 'online' ? 1 : 0,
         }));
         break;
       }

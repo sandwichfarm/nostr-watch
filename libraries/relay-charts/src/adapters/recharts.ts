@@ -193,18 +193,7 @@ export class RechartsAdapter implements ChartAdapter<RechartsConfig, null> {
           fill: colors.primary,
           isAnimationActive: options?.animation !== false,
           // Custom cell coloring based on status
-          shape: (props: any) => {
-            const { fill, x, y, width, height, payload } = props;
-            return (
-              <rect
-                x={x}
-                y={y}
-                width={width}
-                height={height}
-                fill={payload.status === 'Online' ? colors.online : colors.offline}
-              />
-            );
-          },
+          // Note: shape function would need to be added at runtime with JSX
         }],
       },
       containerProps: {

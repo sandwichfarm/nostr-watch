@@ -92,7 +92,7 @@ export class Service {
       let cacheCallbacks: SubscribeHandlers = {}
       if(callbacks) {
         cacheCallbacks = this.addSymbolToCallbacks(callbacks, 'cache');
-        await this.fetchFromCache(filters, cacheCallbacks);
+        this.fetchFromCache(filters, cacheCallbacks);
       }
       else {
         result = this.addSymbolToEvents(await this.fetchFromCache(filters), 'cache');

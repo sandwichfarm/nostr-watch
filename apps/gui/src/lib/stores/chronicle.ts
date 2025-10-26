@@ -5,8 +5,8 @@
  */
 
 import { writable, type Writable } from 'svelte/store';
-import { ChronicleService, type TimeSeriesOptions } from '@nostrwatch/route66';
-import type { TimeSeriesPoint, UptimePeriod } from '@nostrwatch/route66';
+import { ChronicleService, type TimeSeriesOptions, type ChronicleServiceOptions, type UptimePeriod } from '@nostrwatch/route66/services';
+import type { TimeSeriesPoint } from '@nostrwatch/relay-chronicle';
 import { route66 } from './route66';
 import { get } from 'svelte/store';
 

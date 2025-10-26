@@ -6,7 +6,6 @@ export { MonitorManager, type MonitorPriorities, type MonitorPriority } from './
 export * from './factory/cache.shared.worker';
 export type * from './interfaces/index';
 export { Service } from './services/Service';
-export { ChronicleService, type ChronicleServiceOptions, type TimeSeriesOptions, type UptimePeriod } from './services/ChronicleService';
 
 export { Base as Route66 };
 

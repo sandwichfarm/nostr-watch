@@ -119,3 +119,11 @@ export function getSyncedRelays(): string[] {
 
   return service.getSyncedRelays();
 }
+
+/**
+ * Get ChronicleService storage for direct queries
+ */
+export function getChronicleStorage() {
+  const service = getChronicleService();
+  return service?.storage;
+}

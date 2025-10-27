@@ -93,7 +93,7 @@ export interface UptimePeriod {
  * ```
  */
 export class ChronicleService extends Service {
-  private storage: Route66EventStorage;
+  public storage: Route66EventStorage;
   private options: ChronicleServiceOptions;
   private kind1066Subscriptions: Map<string, string> = new Map();
 

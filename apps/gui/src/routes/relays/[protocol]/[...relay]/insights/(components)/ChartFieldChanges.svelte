@@ -4,8 +4,10 @@
 	import {
 		syncRelay,
 		unsyncRelay,
-		isSyncing
+		isSyncing,
+		getChronicleStorage
 	} from '$lib/stores/chronicle';
+	import { generateChangeTimeline, parseDeltas } from '@nostrwatch/relay-chronicle';
 
 	export let relayUrl: string;
 	export let timeRange: string;
@@ -15,6 +17,10 @@
 	let error: string | null = null;
 	let syncing = false;
 	let changes: any[] = [];
+	let showAnyways = false;
+
+	// Minimum data points for meaningful chart
+	const MIN_DATA_POINTS = 3;
 
 	onMount(async () => {
 		await loadData();
@@ -43,9 +49,32 @@
 				syncing = false;
 			}
 
-			// TODO: Parse Kind 1066 events for field changes
-			// Look for delta events where fields changed (not just operational status)
-			changes = generateFieldChangesData(since);
+			// Get real field changes from Kind 1066 events
+			const storage = getChronicleStorage();
+			if (storage) {
+				const timeline = await generateChangeTimeline({
+					storage,
+					relay: relayUrl,
+					since,
+				});
+
+				// Filter to only field/infrastructure changes (not operational)
+				changes = timeline
+					.filter(change => change.type !== 'operational')
+					.flatMap(change => {
+						// Parse deltas from the change event
+						if (!change.deltas || change.deltas.length === 0) return [];
+
+						return change.deltas.map(delta => ({
+							timestamp: change.timestamp,
+							field: delta.key,
+							from: delta.type === 'change' ? '(previous value)' : undefined,
+							to: String(delta.value),
+						}));
+					});
+			} else {
+				console.warn('[ChartFieldChanges] Chronicle storage not available');
+			}
 
 			loading = false;
 		} catch (err: any) {
@@ -55,37 +84,12 @@
 		}
 	}
 
-	function generateFieldChangesData(since: number) {
-		// TODO: Parse actual field changes from Kind 1066 events
-		// For now, return mock changes
-		const now = Date.now() / 1000;
-		return [
-			{
-				timestamp: since + (now - since) * 0.2,
-				field: 'info.name',
-				from: 'My Relay',
-				to: 'My Awesome Relay',
-			},
-			{
-				timestamp: since + (now - since) * 0.5,
-				field: 'info.supported_nips',
-				from: '[1, 2, 4]',
-				to: '[1, 2, 4, 9, 11]',
-			},
-			{
-				timestamp: since + (now - since) * 0.8,
-				field: 'info.version',
-				from: '1.0.0',
-				to: '1.1.0',
-			},
-		];
-	}
-
 	function formatTimestamp(ts: number): string {
 		return new Date(ts * 1000).toLocaleString();
 	}
 
 	$: if (timeRange) {
+		showAnyways = false; // Reset override when time range changes
 		loadData();
 	}
 </script>
@@ -113,7 +117,22 @@
 			</div>
 		{:else if changes.length === 0}
 			<div class="p-8 text-center text-white/50">
-				No field changes detected in this time range
+				<p class="mb-2">No field changes detected in this time range</p>
+				<p class="text-xs text-white/40">This relay may be new or hasn't had any configuration updates</p>
+			</div>
+		{:else if changes.length < MIN_DATA_POINTS && !showAnyways}
+			<div class="bg-yellow-900/20 border border-yellow-500/30 rounded p-4">
+				<p class="text-yellow-300 font-semibold mb-2">Limited Data</p>
+				<p class="text-sm text-yellow-200/80 mb-4">
+					Only {changes.length} field {changes.length === 1 ? 'change' : 'changes'} detected.
+					This may indicate a new relay or limited monitoring history.
+				</p>
+				<button
+					on:click={() => showAnyways = true}
+					class="px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/40 rounded text-yellow-200 text-sm transition-colors"
+				>
+					Show it anyways
+				</button>
 			</div>
 		{:else}
 			<div class="space-y-3">

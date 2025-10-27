@@ -4,7 +4,8 @@
 	import {
 		syncRelay,
 		unsyncRelay,
-		isSyncing
+		isSyncing,
+		getChronicleStorage
 	} from '$lib/stores/chronicle';
 	import { createChartJsAdapter } from '@nostrwatch/relay-charts/chartjs';
 	import Chart from 'chart.js/auto';
@@ -18,6 +19,11 @@
 	let loading = true;
 	let error: string | null = null;
 	let syncing = false;
+	let checkData: any[] = [];
+	let showAnyways = false;
+
+	// Minimum data points for meaningful chart
+	const MIN_DATA_POINTS = 5; // At least 5 buckets to show a trend
 
 	// Make Chart.js available globally
 	if (typeof window !== 'undefined') {
@@ -57,9 +63,34 @@
 				syncing = false;
 			}
 
-			// Get delta events and calculate check frequency
-			// For now, create mock data - will implement actual data fetching
-			const checkData = generateCheckFrequencyData(since);
+			// Get real check frequency from Kind 1066 events
+			const storage = getChronicleStorage();
+			checkData = [];
+
+			if (storage) {
+				const events = await storage.query({ relay: relayUrl, since });
+
+				// Calculate bucket size based on time range (20 buckets)
+				const now = Date.now() / 1000;
+				const bucketSize = Math.max(60, (now - since) / 20); // Min 1 minute buckets
+				const buckets = new Map<number, number>();
+
+				// Count events in each time bucket
+				for (const event of events) {
+					const bucketStart = Math.floor(event.created_at / bucketSize) * bucketSize;
+					buckets.set(bucketStart, (buckets.get(bucketStart) || 0) + 1);
+				}
+
+				// Convert to array format for chart
+				checkData = Array.from(buckets.entries())
+					.map(([timestamp, count]) => ({
+						timestamp,
+						value: count,
+					}))
+					.sort((a, b) => a.timestamp - b.timestamp);
+			} else {
+				console.warn('[ChartCheckFrequency] Chronicle storage not available');
+			}
 
 			if (checkData && checkData.length > 0) {
 				const chartConfig = adapter.createTimeSeriesChart(checkData, {
@@ -87,24 +118,8 @@
 		}
 	}
 
-	function generateCheckFrequencyData(since: number) {
-		// TODO: Implement actual check frequency calculation from Kind 1066 events
-		// For now, return mock data
-		const now = Date.now() / 1000;
-		const points = [];
-		const bucketSize = (now - since) / 20;
-
-		for (let i = 0; i < 20; i++) {
-			points.push({
-				timestamp: since + (i * bucketSize),
-				value: Math.floor(Math.random() * 10) + 5,
-			});
-		}
-
-		return points;
-	}
-
 	$: if (timeRange) {
+		showAnyways = false; // Reset override when time range changes
 		loadChart();
 	}
 </script>
@@ -129,6 +144,25 @@
 			<div class="bg-red-900/20 border border-red-500/30 rounded p-4 text-red-300">
 				<p class="font-semibold">Error loading chart</p>
 				<p class="text-sm mt-1">{error}</p>
+			</div>
+		{:else if checkData.length === 0}
+			<div class="p-8 text-center text-white/50">
+				<p class="mb-2">No check events detected in this time range</p>
+				<p class="text-xs text-white/40">This relay may not have been monitored during this period</p>
+			</div>
+		{:else if checkData.length < MIN_DATA_POINTS && !showAnyways}
+			<div class="bg-yellow-900/20 border border-yellow-500/30 rounded p-4">
+				<p class="text-yellow-300 font-semibold mb-2">Limited Data</p>
+				<p class="text-sm text-yellow-200/80 mb-4">
+					Only {checkData.length} time {checkData.length === 1 ? 'bucket' : 'buckets'} with data.
+					This may not provide enough data for a meaningful frequency analysis.
+				</p>
+				<button
+					on:click={() => showAnyways = true}
+					class="px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/40 rounded text-yellow-200 text-sm transition-colors"
+				>
+					Show it anyways
+				</button>
 			</div>
 		{:else}
 			<div class="bg-black/30 p-4 rounded">

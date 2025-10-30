@@ -1,0 +1,81 @@
+{
+  "name": "@nostrwatch/relay-charts",
+  "version": "0.1.0",
+  "description": "Chart adapters for visualizing relay data from @nostrwatch/relay-chronicle",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./chartjs": {
+      "types": "./dist/adapters/chartjs.d.ts",
+      "import": "./dist/adapters/chartjs.js",
+      "require": "./dist/adapters/chartjs.cjs"
+    },
+    "./echarts": {
+      "types": "./dist/adapters/echarts.d.ts",
+      "import": "./dist/adapters/echarts.js",
+      "require": "./dist/adapters/echarts.cjs"
+    },
+    "./recharts": {
+      "types": "./dist/adapters/recharts.d.ts",
+      "import": "./dist/adapters/recharts.js",
+      "require": "./dist/adapters/recharts.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npm run clean && node build.js && npm run build:types",
+    "build:types": "tsc --project tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "test": "deno test --allow-read"
+  },
+  "peerDependencies": {
+    "@nostrwatch/relay-chronicle": "^0.1.0",
+    "chart.js": "^4.0.0",
+    "echarts": "^5.0.0",
+    "recharts": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "chart.js": {
+      "optional": true
+    },
+    "echarts": {
+      "optional": true
+    },
+    "recharts": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.19.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "nostr",
+    "relay",
+    "monitoring",
+    "charts",
+    "visualization",
+    "chart.js",
+    "echarts",
+    "recharts"
+  ],
+  "author": "nostr.watch",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sandwichfarm/nostr-watch"
+  }
+}

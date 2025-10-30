@@ -23,35 +23,35 @@ interface DuplicateGroup {
 /**
  * Find duplicate relay entries in the database
  */
-function findDuplicateRelays(): DuplicateGroup[] {
+function findDuplicateRelays(dbInstance = db): DuplicateGroup[] {
   logger.info("Checking for duplicate relay entries in database...");
-  
+
   // First, get all URLs and count occurrences
-  const urlCounts = db.query(`
-    SELECT url, COUNT(*) as count 
-    FROM relay_status 
-    GROUP BY url 
+  const urlCounts = dbInstance.query(`
+    SELECT url, COUNT(*) as count
+    FROM relay_status
+    GROUP BY url
     HAVING count > 1
   `);
-  
+
   if (urlCounts.length === 0) {
     logger.info("No duplicate relay entries found!");
     return [];
   }
-  
+
   logger.warn(`Found ${urlCounts.length} URLs with duplicate entries!`);
-  
+
   // For each URL with duplicates, get the full records
   const duplicateGroups: DuplicateGroup[] = [];
-  
+
   for (const [url, count] of urlCounts) {
-    const records = db.query(`
+    const records = dbInstance.query(`
       SELECT rowid, url, checked_at, retries, online, ignore, network
       FROM relay_status
       WHERE url = ?
       ORDER BY rowid
     `, [url as string]);
-    
+
     const relayRecords: RelayRecord[] = records.map(row => ({
       rowid: row[0] as number,
       url: row[1] as string,
@@ -61,13 +61,13 @@ function findDuplicateRelays(): DuplicateGroup[] {
       ignore: row[5] as number,
       network: row[6] as string
     }));
-    
+
     duplicateGroups.push({
       url: url as string,
       records: relayRecords
     });
   }
-  
+
   return duplicateGroups;
 }
 
@@ -102,9 +102,9 @@ function displayDuplicateGroups(groups: DuplicateGroup[]): void {
 /**
  * Check if the database is corrupted - basic checks
  */
-function checkDatabaseIntegrity(): boolean {
+function checkDatabaseIntegrity(dbInstance = db): boolean {
   try {
-    const integrityCheck = db.query("PRAGMA integrity_check");
+    const integrityCheck = dbInstance.query("PRAGMA integrity_check");
     if (integrityCheck.length === 1 && integrityCheck[0][0] === "ok") {
       logger.info("Database integrity check passed.");
       return true;
@@ -127,33 +127,33 @@ function checkDatabaseIntegrity(): boolean {
  * Fix duplicate relay entries using a simple strategy:
  * - For each duplicate group, keep the entry with the most information
  */
-async function fixDuplicateRelays(groups: DuplicateGroup[], fixMethod: string): Promise<void> {
+async function fixDuplicateRelays(groups: DuplicateGroup[], fixMethod: string, dbInstance = db): Promise<void> {
   if (groups.length === 0) return;
-  
+
   let fixedCount = 0;
-  
+
   for (const group of groups) {
     try {
       if (fixMethod === "auto") {
         // Auto-fix strategy:
         // 1. If one record has checked_at=-1 (never checked) and another has been checked, delete the unchecked one
         // 2. If multiple records have been checked, keep the one with the highest rowid (newest)
-        
+
         let keepRecord: RelayRecord | null = null;
         const deleteRowIds: number[] = [];
-        
+
         // First check if we have both checked and unchecked records
         const checkedRecords = group.records.filter(r => r.checked_at !== -1);
         const uncheckedRecords = group.records.filter(r => r.checked_at === -1);
-        
+
         if (checkedRecords.length > 0 && uncheckedRecords.length > 0) {
           // Keep the record with the highest rowid from the checked records
-          keepRecord = checkedRecords.reduce((max, record) => 
+          keepRecord = checkedRecords.reduce((max, record) =>
             record.rowid > max.rowid ? record : max, checkedRecords[0]);
-          
+
           // All unchecked records should be deleted
           deleteRowIds.push(...uncheckedRecords.map(r => r.rowid));
-          
+
           // Add all checked records except the one we're keeping
           deleteRowIds.push(...checkedRecords
             .filter(r => r.rowid !== (keepRecord?.rowid || 0))
@@ -161,27 +161,27 @@ async function fixDuplicateRelays(groups: DuplicateGroup[], fixMethod: string): 
         } else {
           // Either all records are checked or all are unchecked
           // Keep the record with the highest rowid
-          keepRecord = group.records.reduce((max, record) => 
+          keepRecord = group.records.reduce((max, record) =>
             record.rowid > max.rowid ? record : max, group.records[0]);
-          
+
           // Delete all other records
           deleteRowIds.push(...group.records
             .filter(r => r.rowid !== (keepRecord?.rowid || 0))
             .map(r => r.rowid));
         }
-        
+
         if (deleteRowIds.length > 0 && keepRecord) {
           const placeholders = deleteRowIds.map(() => "?").join(",");
-          db.query(`DELETE FROM relay_status WHERE rowid IN (${placeholders})`, deleteRowIds);
+          dbInstance.query(`DELETE FROM relay_status WHERE rowid IN (${placeholders})`, deleteRowIds);
           logger.info(`Fixed duplicates for ${group.url}: Kept rowid ${keepRecord.rowid}, deleted ${deleteRowIds.join(", ")}`);
           fixedCount++;
         }
       } else if (fixMethod === "backup") {
-        // Backup strategy: 
+        // Backup strategy:
         // Create a backup table, move all duplicates there, then keep just the newest in the main table
-        
+
         // Create backup table if it doesn't exist
-        db.query(`
+        dbInstance.query(`
           CREATE TABLE IF NOT EXISTS relay_status_duplicates (
             rowid INTEGER PRIMARY KEY,
             url TEXT,
@@ -195,25 +195,25 @@ async function fixDuplicateRelays(groups: DuplicateGroup[], fixMethod: string): 
             original_rowid INTEGER
           )
         `);
-        
+
         // Find the newest record (highest rowid)
-        const keepRecord = group.records.reduce((max, record) => 
+        const keepRecord = group.records.reduce((max, record) =>
           record.rowid > max.rowid ? record : max, group.records[0]);
-        
+
         // Move all other records to the backup table
         for (const record of group.records) {
           if (record.rowid !== keepRecord.rowid) {
-            // Insert into backup table
-            db.query(`
-              INSERT INTO relay_status_duplicates 
-              SELECT *, ? FROM relay_status WHERE rowid = ?
+            // Insert into backup table with explicit columns
+            dbInstance.query(`
+              INSERT INTO relay_status_duplicates (url, online, ignore, parent, checked_at, rtt, network, retries, original_rowid)
+              SELECT url, online, ignore, parent, checked_at, rtt, network, retries, ? FROM relay_status WHERE rowid = ?
             `, [record.rowid, record.rowid]);
-            
+
             // Delete from main table
-            db.query(`DELETE FROM relay_status WHERE rowid = ?`, [record.rowid]);
+            dbInstance.query(`DELETE FROM relay_status WHERE rowid = ?`, [record.rowid]);
           }
         }
-        
+
         logger.info(`Fixed duplicates for ${group.url}: Kept rowid ${keepRecord.rowid}, moved ${group.records.length - 1} records to backup`);
         fixedCount++;
       }
@@ -221,35 +221,35 @@ async function fixDuplicateRelays(groups: DuplicateGroup[], fixMethod: string): 
       logger.error(`Error fixing duplicates for ${group.url}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  
+
   logger.info(`Fixed ${fixedCount} duplicate URL entries.`);
 }
 
 /**
  * Check for specific problematic relay URLs and fix them
  */
-export async function checkSpecificProblems(): Promise<void> {
+export async function checkSpecificProblems(dbInstance = db): Promise<void> {
   logger.info("Checking for specific problematic relay URLs...");
-  
+
   // Check for the problematic 100.100.* IP addresses
-  const problematicUrls = db.query(`
-    SELECT url, COUNT(*) as count 
-    FROM relay_status 
+  const problematicUrls = dbInstance.query(`
+    SELECT url, COUNT(*) as count
+    FROM relay_status
     WHERE url LIKE 'ws://100.100.%'
     GROUP BY url
     HAVING count > 1
   `);
-  
+
   if (problematicUrls.length === 0) {
     logger.info("No specific problematic relay URLs found.");
     return;
   }
-  
+
   logger.warn(`Found ${problematicUrls.length} problematic relay URLs with duplicate entries!`);
-  
+
   // For each problematic URL, get all rows and fix
   for (const [url, count] of problematicUrls) {
-    const records = db.query(`
+    const records = dbInstance.query(`
       SELECT rowid, url, checked_at, retries, online, ignore, network
       FROM relay_status
       WHERE url = ?
@@ -312,9 +312,9 @@ export async function checkSpecificProblems(): Promise<void> {
     
     if (deleteRowIds.length > 0 && keepRecord) {
       logger.info(`Fixing ${url}: Keeping rowid ${keepRecord.rowid}, deleting rowids: ${deleteRowIds.join(", ")}`);
-      
+
       // Backup the records we're going to delete
-      db.query(`
+      dbInstance.query(`
         CREATE TABLE IF NOT EXISTS relay_status_duplicates (
           rowid INTEGER PRIMARY KEY,
           url TEXT,
@@ -328,22 +328,22 @@ export async function checkSpecificProblems(): Promise<void> {
           original_rowid INTEGER
         )
       `);
-      
+
       // Move records to backup before deleting
       for (const rowid of deleteRowIds) {
         try {
           // Insert into backup table - using string concatenation to avoid parameter typing issues
-          db.query(
+          dbInstance.query(
             `INSERT INTO relay_status_duplicates SELECT *, ${rowid} FROM relay_status WHERE rowid = ${rowid}`
           );
         } catch (error) {
           logger.error(`Error backing up record ${rowid}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
-      
+
       // Delete the duplicate records
       const placeholders = deleteRowIds.map(() => "?").join(",");
-      db.query(`DELETE FROM relay_status WHERE rowid IN (${placeholders})`, deleteRowIds);
+      dbInstance.query(`DELETE FROM relay_status WHERE rowid IN (${placeholders})`, deleteRowIds);
       
       logger.info(`Successfully fixed ${url}`);
     } else {
@@ -357,11 +357,12 @@ export async function checkSpecificProblems(): Promise<void> {
 /**
  * Main database check function
  */
-export async function checkDatabase(options: { fix?: string } = {}): Promise<void> {
+export async function checkDatabase(options: { fix?: string; dbInstance?: any } = {}): Promise<void> {
+  const dbInstance = options.dbInstance || db;
   logger.info("Starting database check...");
-  
+
   // First check integrity
-  const integrityOk = checkDatabaseIntegrity();
+  const integrityOk = checkDatabaseIntegrity(dbInstance);
   if (!integrityOk) {
     if (!options.fix) {
       logger.warn("Database integrity issues detected. Run with --fix to attempt repairs.");
@@ -369,18 +370,18 @@ export async function checkDatabase(options: { fix?: string } = {}): Promise<voi
       logger.warn("Database integrity issues detected. Will try to fix specific issues...");
     }
   }
-  
+
   // Check for duplicate relays
-  const duplicateGroups = findDuplicateRelays();
+  const duplicateGroups = findDuplicateRelays(dbInstance);
   if (duplicateGroups.length > 0) {
     displayDuplicateGroups(duplicateGroups);
-    
+
     if (options.fix) {
       logger.info(`Fixing duplicate entries using '${options.fix}' method...`);
-      await fixDuplicateRelays(duplicateGroups, options.fix);
-      
+      await fixDuplicateRelays(duplicateGroups, options.fix, dbInstance);
+
       // Re-check after fixing
-      const remainingDuplicates = findDuplicateRelays();
+      const remainingDuplicates = findDuplicateRelays(dbInstance);
       if (remainingDuplicates.length > 0) {
         logger.warn(`${remainingDuplicates.length} duplicate groups remain after fix attempt.`);
         displayDuplicateGroups(remainingDuplicates);
@@ -392,12 +393,12 @@ export async function checkDatabase(options: { fix?: string } = {}): Promise<voi
       logger.info("Run with --fix=backup to move duplicates to a backup table");
     }
   }
-  
+
   // Check for specific problematic relay URLs
   if (options.fix) {
-    await checkSpecificProblems();
+    await checkSpecificProblems(dbInstance);
   }
-  
+
   logger.info("Database check complete!");
 }
 

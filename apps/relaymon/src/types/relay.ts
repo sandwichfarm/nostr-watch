@@ -60,6 +60,8 @@ export interface RelayInfo {
 export interface DnsResult {
   address?: string;
   addresses?: string[];
+  asn?: string | number;  // Autonomous System Number
+  as?: string;            // Autonomous System name
   [key: string]: unknown;
 }
 
@@ -75,6 +77,9 @@ export interface GeoResult {
   lon?: number;
   timezone?: string;
   isp?: string;
+  asn?: string | number;  // Autonomous System Number
+  as?: string;            // Autonomous System name
+  geohash?: string;       // NIP-52 geohash
   [key: string]: unknown;
 }
 

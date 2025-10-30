@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay Chronicle - Browser Example</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+    }
+    .status {
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      background: #f5f5f5;
+    }
+    .status.online {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+    }
+    .status.offline {
+      background: #f8d7da;
+      border-left: 4px solid #dc3545;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .loading {
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>Relay Chronicle - Browser Example</h1>
+
+  <p>This example demonstrates using the relay-chronicle library directly in the browser.</p>
+
+  <button onclick="fetchRelayStatus()">Fetch Relay Status</button>
+
+  <div id="output"></div>
+
+  <!-- Import library from CDN (in production, use a proper CDN like unpkg or jsdelivr) -->
+  <script type="module">
+    // In production, you would import from CDN:
+    // import { composeState, liveness, whenInit } from 'https://cdn.jsdelivr.net/npm/@nostrwatch/relay-chronicle/dist/browser.js';
+
+    // For local testing, we'll simulate the library
+    const mockStorage = {
+      async query(options) {
+        // In production, this would fetch from Nostr relays or an API
+        // For demo, return mock data
+        const baseTime = Math.floor(Date.now() / 1000) - 86400 * 7;
+
+        return [
+          {
+            id: 'event1',
+            pubkey: 'monitor',
+            created_at: baseTime,
+            kind: 1066,
+            tags: [
+              ['r', options.relay],
+              ['O', 'init'],
+              ['rtt-open', '145'],
+              ['+name', 'Example Relay'],
+              ['+software', 'strfry'],
+              ['+version', '1.0.0'],
+              ['+dns.asn', '13335'],
+              ['+geo.city', 'San Francisco'],
+              ['+geo.country', 'US'],
+            ],
+            content: '',
+            sig: 'sig1',
+          },
+          {
+            id: 'event2',
+            pubkey: 'monitor',
+            created_at: baseTime + 86400,
+            kind: 1066,
+            tags: [
+              ['r', options.relay],
+              ['rtt-open', '150'],
+            ],
+            content: '',
+            sig: 'sig2',
+          },
+        ];
+      }
+    };
+
+    window.fetchRelayStatus = async function() {
+      const output = document.getElementById('output');
+      output.innerHTML = '<p class="loading">Fetching relay status...</p>';
+
+      try {
+        // Simulate importing the real library
+        // In production with the built library:
+        // const { composeState, liveness, whenInit } = await import('./dist/browser.js');
+
+        // For demo, show the mock data structure
+        const relay = 'wss://relay.example.com';
+        const events = await mockStorage.query({ relay });
+
+        output.innerHTML = `
+          <div class="status online">
+            <h2>🟢 Relay Status</h2>
+            <p><strong>URL:</strong> ${relay}</p>
+            <p><strong>Status:</strong> Online</p>
+            <p><strong>RTT:</strong> 150ms</p>
+            <p><strong>Software:</strong> strfry v1.0.0</p>
+            <p><strong>Location:</strong> San Francisco, US</p>
+            <p><strong>ASN:</strong> 13335 (Cloudflare)</p>
+          </div>
+
+          <h3>Raw Delta Events (${events.length})</h3>
+          <pre>${JSON.stringify(events, null, 2)}</pre>
+
+          <h3>Usage Example</h3>
+          <pre>
+// Import library from CDN
+import {
+  composeState,
+  liveness,
+  whenInit,
+  lastDowntime,
+  generateUptimeSeries
+} from 'https://cdn.jsdelivr.net/npm/@nostrwatch/relay-chronicle/dist/browser.js';
+
+// Implement storage that fetches from Nostr relays or API
+const storage = {
+  async query(options) {
+    const response = await fetch(\`/api/delta-events?\${new URLSearchParams(options)}\`);
+    return response.json();
+  }
+};
+
+// Get current state
+const result = await composeState({
+  storage,
+  relay: 'wss://relay.example.com'
+});
+
+console.log('Relay status:', result.state);
+
+// Check liveness
+const status = await liveness(storage, 'wss://relay.example.com');
+console.log('Live:', status.live);
+
+// Get uptime series for charts
+const series = await generateUptimeSeries({
+  storage,
+  relay: 'wss://relay.example.com',
+  since: Date.now() / 1000 - 86400 * 7 // Last 7 days
+});
+
+// Use with Chart.js or any charting library
+// ...
+          </pre>
+        `;
+      } catch (error) {
+        output.innerHTML = `
+          <div class="status offline">
+            <h2>❌ Error</h2>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    };
+  </script>
+
+  <h2>Using with CDN</h2>
+  <p>To use the library in your browser application, import it from a CDN:</p>
+  <pre>
+&lt;script type="module"&gt;
+  import {
+    composeState,
+    liveness,
+    whenInit,
+    generateUptimeSeries
+  } from 'https://cdn.jsdelivr.net/npm/@nostrwatch/relay-chronicle/dist/browser.js';
+
+  // Your code here...
+&lt;/script&gt;
+  </pre>
+
+  <h2>Using with npm + Bundler (Vite, Webpack, etc.)</h2>
+  <pre>
+npm install @nostrwatch/relay-chronicle
+
+// In your code
+import { composeState, liveness } from '@nostrwatch/relay-chronicle';
+  </pre>
+</body>
+</html>

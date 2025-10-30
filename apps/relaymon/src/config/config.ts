@@ -1,72 +1,12 @@
 import { parse } from "https://deno.land/std@0.218.2/yaml/mod.ts";
+import { validateConfig } from "../types/config.ts";
+import type { Config } from "../types/config.ts";
+
+// Re-export Config type for backwards compatibility
+export type { Config };
 
 // Store original timestring values so they can be preserved in the UI
 const originalTimeValues = new Map<string, string>();
-
-export interface Config {
-  logLevel?: string;
-  db?: {
-    path: string;
-    enableWAL?: boolean;
-  };
-  monitor: {
-    slug: string;
-    info: {
-      name: string;
-      about: string;
-      nip05: string;
-    };
-    owner: string;
-    geo: {
-      city: string;
-      country: string;
-      countryCode: string;
-      lat: number;
-      lon: number;
-      region: string;
-      continent: string;
-    };
-  };
-  publisher: {
-    relays: string[];
-  };
-  relaymon: {
-    networks: string[];
-    retry: {
-      backoff: { max: number; delay: number }[];
-    };
-    seed: {
-      interval: number;
-      sources: string[];
-      options: {
-        db?: {
-          path: string;
-          enableWAL?: boolean;
-        };
-        static?: {
-          path: string;
-        };
-        config?: string[];
-      };
-    };
-    checks: {
-      enabled: string[];
-      options: {
-        expires: number;
-        interval: number;
-        timeout: {
-          open: number;
-          read: number;
-          [key: string]: number;
-        };
-        max: string;
-      };
-    };
-  };
-  queue: {
-    workerConcurrency: number;
-  };
-}
 
 export function timeString(input: number | string): number {
   if (typeof input === "number") return input;
@@ -110,7 +50,7 @@ export function getOriginalTimeString(ms: number): string | null {
   return null;
 }
 
-function processConfigTimeValues(config: any, parentPath = ""): void {
+function processConfigTimeValues(config: Config, parentPath = ""): void {
   if (config.relaymon?.seed?.interval) {
     const path = `${parentPath}.relaymon.seed.interval`;
     const originalValue = config.relaymon.seed.interval;
@@ -147,7 +87,7 @@ function processConfigTimeValues(config: any, parentPath = ""): void {
   
   if (Array.isArray(config.relaymon?.retry?.expiry)) {
     config.relaymon.retry.expiry = config.relaymon.retry.expiry.map(
-      (entry: any, index: number) => {
+      (entry: { delay: string | number; retries: number }, index: number) => {
         const entryPath = `${parentPath}.relaymon.retry.expiry[${index}].delay`;
         const originalDelay = entry.delay;
         
@@ -173,7 +113,11 @@ export async function loadConfig(path: string): Promise<Config> {
   const fileText = await Deno.readTextFile(path);
   const config = parse(fileText);
   processConfigTimeValues(config);
-  return config as Config;
+
+  // Validate config structure and types
+  const validatedConfig = validateConfig(config);
+
+  return validatedConfig;
 }
 
 // Function to convert milliseconds back to a human-readable timestring

@@ -24,6 +24,15 @@ monitor:
     - 'wss://relay.nostr.watch'
     - 'wss://relaypag.es'
 
+# Publisher configuration for publishing check results and delta events
+publisher:
+  relays:  # Relays for Kind 1066 delta events and Kind 20066 ephemeral state change events
+    - 'wss://relay.nostr.watch'
+    - 'wss://relaypag.es'
+  # retry:
+  #   maxRetries: 5
+  #   initialBackoffMs: 60000
+
 announce:
   relays: 
     - 'wss://purplepag.es'
@@ -88,3 +97,15 @@ relaymon:
         open: 30000
         read: 5000
       max: 200
+
+  # Delta events (Kind 1066) - track changes in relay state over time
+  # delta:
+  #   enabled: false
+  #   max_retries: 10  # Stop publishing delta events after N offline retries
+  #   periods:
+  #     enabled: false
+  #     definitions:
+  #       - '6h'   # 6 hour aggregates
+  #       - '1d'   # Daily aggregates
+  #       - '7d'   # Weekly aggregates
+  #       - '30d'  # Monthly aggregates (approximate)

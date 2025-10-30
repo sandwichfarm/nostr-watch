@@ -1,6 +1,9 @@
 import { getLogger } from "./logger.ts";
 import { Publisher, Event } from "npm:@nostrwatch/publisher";
 import { getEventHash, getPublicKey } from "npm:nostr-tools";
+import type { Config } from "../config/config.ts";
+import type { QueueManager } from "./queueManager.ts";
+import { clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
 
 const logger = getLogger("Deletion");
 
@@ -17,10 +20,17 @@ export class Kind5Event extends Event {
    * @param data Object containing relayUrl and content
    * @returns The generated NIP-09 event
    */
-  protected _generateEvent(data: { relayUrl: string, pubkey: string, content: string }): any {
+  protected _generateEvent(data: { relayUrl: string, pubkey: string, content: string }): {
+    kind: number;
+    created_at: number;
+    pubkey: string;
+    content: string;
+    tags: string[][];
+    id: string;
+  } {
     // Create an a-tag for the relay check event using the format <kind>:<pubkey>:<d-identifier>
     const aTag = `30166:${data.pubkey}:${data.relayUrl}`;
-    
+
     const tags = [
       ["a", aTag],
       ["k", "30166"] // Add k tag for the kind of event being deleted
@@ -51,10 +61,10 @@ const deletedRelays = new Set<string>();
  * @param queueManager Optional queue manager for publish jobs
  */
 export async function deleteRelayCheckEvent(
-  relayUrl: string, 
-  reason: string, 
-  config: any, 
-  queueManager?: any
+  relayUrl: string,
+  reason: string,
+  config: Config,
+  queueManager?: QueueManager
 ): Promise<void> {
   try {
     // Get the private key from environment
@@ -97,9 +107,13 @@ export async function deleteRelayCheckEvent(
           const publisher = new Publisher(pubkey, config.monitor.relays);
           await publisher.publishEvent(signedEvent);
           logger.info(`Queued deletion event for relay ${relayUrl} using a-tag`);
-          
+
           // Add to the set of deleted relays on successful publish
           deletedRelays.add(relayUrl);
+
+          // Clear delta state and period snapshots for this relay
+          clearDeltaState(relayUrl);
+          clearPeriodSnapshots(relayUrl);
         } catch (error) {
           logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
           throw error; // Rethrow to trigger retry mechanism
@@ -109,10 +123,14 @@ export async function deleteRelayCheckEvent(
       // Fallback to direct publishing if no queue manager is available
       const publisher = new Publisher(pubkey, config.monitor.relays);
       await publisher.publishEvent(signedEvent);
-      
+
       // Add to the set of deleted relays
       deletedRelays.add(relayUrl);
-      
+
+      // Clear delta state and period snapshots for this relay
+      clearDeltaState(relayUrl);
+      clearPeriodSnapshots(relayUrl);
+
       logger.info(`Published deletion event for relay ${relayUrl} using a-tag`);
     }
   } catch (error) {

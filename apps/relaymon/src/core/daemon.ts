@@ -11,6 +11,7 @@ import { formatCompactStats, showStatus } from "./status.ts";
 import { deleteRelayCheckEvent } from "../utils/deletion.ts";
 import { IgnoreListSync } from "../utils/IgnoreListSync.ts";
 import { setIgnoreListSync, reevaluateAllDeduplication } from "../utils/hostnames.ts";
+import type { Config } from "../config/config.ts";
 
 /**
  * Parse interval string like "1h", "30m", "24h" to milliseconds
@@ -33,7 +34,7 @@ function parseInterval(interval: string): number {
   }
 }
 
-export async function runDaemon(config: any): Promise<void> {
+export async function runDaemon(config: Config): Promise<void> {
   // Set global log level from config if specified
   if (config.logLevel) {
     setGlobalLogLevel(config.logLevel);

@@ -16,15 +16,16 @@ export async function loadHostnameBlocklist(path = "./blocklists/hostname"): Pro
       .split("\n")
       .map(line => line.trim())
       .filter(line => line && !line.startsWith("#")); // Skip empty lines and comments
-    
+
     // Clear existing blocklist and add new entries
     blockedHostnames.clear();
     hostnames.forEach(hostname => blockedHostnames.add(hostname));
-    
+
     logger.info(`Loaded ${blockedHostnames.size} hostnames to blocklist: ${Array.from(blockedHostnames).join(', ')}`);
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      logger.warn(`Hostname blocklist file not found at ${path}`);
+      // Use debug instead of warn - file is optional, absence is normal
+      logger.debug(`Hostname blocklist file not found at ${path} (optional)`);
     } else {
       logger.error(`Error loading hostname blocklist: ${error}`);
     }

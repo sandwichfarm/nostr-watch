@@ -1,0 +1,26 @@
+{
+  "relays": [
+    "wss://nostrue.com",
+    "wss://relay.damus.io",
+    "wss://relay.primal.net",
+    "wss://relay.nostr.band",
+    "wss://nos.lol"
+  ],
+  "servers": [
+    "https://cdn.hzrd149.com",
+    "https://cdn.sovbit.host/"
+  ],
+  "profile": {
+    "name": "nostr.watch",
+    "picture": "https://nostr.watch/logo.png",
+    "about": "tirelessly watching nostr relays since 2022",
+    "website": "https://nostr.watch",
+    "nip05": "_@nostr.watch",
+    "lud16": "bread@sandwich.farm"
+  },
+  "publishServerList": true,
+  "publishRelayList": false,
+  "publishProfile": true,
+  "fallback": "./index.html",
+  "bunkerPubkey": "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019"
+}

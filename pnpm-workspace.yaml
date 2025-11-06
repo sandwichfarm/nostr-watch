@@ -18,3 +18,4 @@ packages:
     - '!libraries/nocap-route66' #deprecated
     - '!apps/umon' #experimental
     - '!apps/relaymon' #deno
+    - '!apps/rstate'

@@ -1,0 +1,9 @@
+{
+  "defaults": { "priceMsat": 0, "methods": ["L402", "P2PK"], "ttlSeconds": 3600 },
+  "routes": {
+    "/relays": { "priceMsat": 0 },
+    "/relays/search": { "priceMsat": 5000 },
+    "/relays/compare": { "priceMsat": 15000, "methods": ["L402"] },
+    "/monitors/analytics": { "priceMsat": 1000 }
+  }
+}

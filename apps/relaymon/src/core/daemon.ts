@@ -9,8 +9,32 @@ import { getPublicKey } from "npm:nostr-tools";
 import { RetryManager } from "../utils/retryManager.ts";
 import { formatCompactStats, showStatus } from "./status.ts";
 import { deleteRelayCheckEvent } from "../utils/deletion.ts";
+import { IgnoreListSync } from "../utils/IgnoreListSync.ts";
+import { setIgnoreListSync, reevaluateAllDeduplication } from "../utils/hostnames.ts";
+import type { Config } from "../config/config.ts";
 
-export async function runDaemon(config: any): Promise<void> {
+/**
+ * Parse interval string like "1h", "30m", "24h" to milliseconds
+ */
+function parseInterval(interval: string): number {
+  const match = interval.match(/^(\d+)([smhd])$/);
+  if (!match) {
+    throw new Error(`Invalid interval format: ${interval}`);
+  }
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+
+  switch (unit) {
+    case 's': return value * 1000;
+    case 'm': return value * 60 * 1000;
+    case 'h': return value * 60 * 60 * 1000;
+    case 'd': return value * 24 * 60 * 60 * 1000;
+    default: throw new Error(`Unknown time unit: ${unit}`);
+  }
+}
+
+export async function runDaemon(config: Config): Promise<void> {
   // Set global log level from config if specified
   if (config.logLevel) {
     setGlobalLogLevel(config.logLevel);
@@ -53,10 +77,30 @@ export async function runDaemon(config: any): Promise<void> {
       1,
       config
     );
-    
+
+    // Initialize ignore list sync
+    const staticMetaRelays = [
+      ...(config?.publisher?.relays || []),
+      "wss://purplepag.es",
+      "wss://user.kindpag.es",
+      "wss://profiles.nostr1.com"
+    ];
+    const ignoreListSync = new IgnoreListSync(config, staticMetaRelays);
+
+    // Set the global IgnoreListSync instance for use in hostname deduplication
+    setIgnoreListSync(ignoreListSync);
+
+    if (ignoreListSync && config?.relaymon?.ignorelist?.enabled) {
+      logger.info("Performing initial ignore list sync...");
+      await ignoreListSync.sync().catch((err) => logger.error(`Initial sync error: ${err.message}`));
+      // Publish initial deletions on startup
+      logger.info("Publishing initial NIP-09 deletions...");
+      await ignoreListSync.publishDeletions(Deno.env.get("DAEMON_PRIVKEY") || "").catch((err) => logger.error(`Initial deletions error: ${err.message}`));
+    }
+
     // Move maybeAnnounce call after creating queueManager so we can pass it
     await maybeAnnounce(config, queueManager);
-    
+
     const pubkey = Deno.env.get("DAEMON_PRIVKEY")? getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || "") : "";
     const worker = new Worker(pubkey, queueManager, config);
 
@@ -166,6 +210,84 @@ export async function runDaemon(config: any): Promise<void> {
       logger.info("No seeder found, skipping initial seeding.");
     }
 
+    // Schedule ignore list sync if enabled
+    async function runIgnoreListSync() {
+      if (!ignoreListSync || !config?.relaymon?.ignorelist?.enabled) {
+        logger.debug("IgnoreListSync is disabled, skipping");
+        return;
+      }
+
+      const interval = config.relaymon.ignorelist.interval || "24h";
+      const intervalMs = parseInterval(interval);
+      logger.info(`Scheduling ignore list sync every ${interval}`);
+
+      while (true) {
+        try {
+          await delay(intervalMs);
+          logger.info("Running scheduled ignore list sync and publish...");
+          await ignoreListSync.sync().catch((err) => logger.error(`Sync error: ${err.message}`));
+          await ignoreListSync.publish(Deno.env.get("DAEMON_PRIVKEY") || "").catch((err) => logger.error(`Publish error: ${err.message}`));
+        } catch (error) {
+          logger.error(`Error in runIgnoreListSync: ${error.message}`);
+          await delay(60000); // Wait 1 minute before retrying
+        }
+      }
+    }
+
+    // Schedule ignore list deletions if enabled
+    async function runIgnoreListDeletions() {
+      if (!ignoreListSync || !config?.relaymon?.ignorelist?.enabled) {
+        logger.debug("IgnoreListSync is disabled, skipping deletions");
+        return;
+      }
+
+      const interval = config.relaymon.ignorelist.deletion_interval || "24h";
+      const intervalMs = parseInterval(interval);
+      logger.info(`Scheduling ignore list deletions every ${interval}`);
+
+      while (true) {
+        try {
+          await delay(intervalMs);
+          logger.info("Running scheduled ignore list deletion publish...");
+          await ignoreListSync.publishDeletions(Deno.env.get("DAEMON_PRIVKEY") || "").catch((err) => logger.error(`Deletions error: ${err.message}`));
+        } catch (error) {
+          logger.error(`Error in runIgnoreListDeletions: ${error.message}`);
+          await delay(60000); // Wait 1 minute before retrying
+        }
+      }
+    }
+
+    // Schedule deduplication re-evaluation
+    async function runDedupReevaluation() {
+      const interval = config?.relaymon?.deduplication?.reevaluation_interval || "24h";
+      const nip11CacheTtl = config?.relaymon?.deduplication?.nip11_cache_ttl || "24h";
+      const intervalMs = parseInterval(interval);
+      const ttlMs = parseInterval(nip11CacheTtl);
+      logger.info(`Scheduling deduplication re-evaluation every ${interval}`);
+      logger.info(`NIP-11 cache TTL: ${nip11CacheTtl}`);
+
+      while (true) {
+        try {
+          await delay(intervalMs);
+          logger.info("Running scheduled deduplication re-evaluation...");
+          const changedRelays = await reevaluateAllDeduplication(ttlMs).catch((err) => {
+            logger.error(`Re-evaluation error: ${err.message}`);
+            return [];
+          });
+          if (changedRelays && changedRelays.length > 0) {
+            logger.info(`Re-evaluation changed ${changedRelays.length} relay(s) ignore status`);
+            // Publish deletions for newly ignored relays
+            if (ignoreListSync) {
+              await ignoreListSync.publishDeletions(Deno.env.get("DAEMON_PRIVKEY") || "").catch((err) => logger.error(`Deletions after re-eval error: ${err.message}`));
+            }
+          }
+        } catch (error) {
+          logger.error(`Error in runDedupReevaluation: ${error.message}`);
+          await delay(60000); // Wait 1 minute before retrying
+        }
+      }
+    }
+
     const tasks: Promise<void>[] = []
 
     if(seeder) {
@@ -183,6 +305,26 @@ export async function runDaemon(config: any): Promise<void> {
         logger.error(`Check process error: ${error.message}`);
         logger.error(error.stack || "No stack trace available");
         // This shouldn't happen due to the try/catch inside checkExpiredRelays
+      })
+    )
+
+    // Add scheduled tasks
+    if (config?.relaymon?.ignorelist?.enabled) {
+      tasks.push(
+        runIgnoreListSync().catch(error => {
+          logger.error(`Ignore list sync process error: ${error.message}`);
+        })
+      );
+      tasks.push(
+        runIgnoreListDeletions().catch(error => {
+          logger.error(`Ignore list deletions process error: ${error.message}`);
+        })
+      );
+    }
+
+    tasks.push(
+      runDedupReevaluation().catch(error => {
+        logger.error(`Dedup re-evaluation process error: ${error.message}`);
       })
     )
 

@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "build": "deno run -A build.js && deno run -A npm run build:types",
+    "test": "deno test --allow-read"
+  },
+  "compilerOptions": {
+    "lib": ["ES2020", "DOM"],
+    "strict": true
+  }
+}

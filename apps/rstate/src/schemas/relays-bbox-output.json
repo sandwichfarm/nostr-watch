@@ -5,8 +5,17 @@
     "relays": {
       "type": "array",
       "items": {
-        "type": "object",
-        "description": "RelayState object - see tool-schemas.ts for full structure"
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Relay URL (format=simple)"
+          },
+          {
+            "type": "object",
+            "description": "RelayState object (format=full or format=detailed)",
+            "additionalProperties": true
+          }
+        ]
       }
     },
     "bbox": {

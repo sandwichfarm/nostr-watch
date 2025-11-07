@@ -44,40 +44,16 @@ const logger = getLogger().child({ module: 'tools-relays' })
 
 /**
  * Helper to resolve format parameter for CVM tools
- * Handles legacy 'compact' param (both string and boolean) for backward compatibility
  *
- * @param formatParam - The format parameter ('full' | 'detailed' | 'simple' | 'compact' | undefined)
- * @param compactParam - Legacy compact parameter (boolean | undefined)
+ * @param formatParam - The format parameter ('full' | 'detailed' | 'simple' | undefined)
  * @returns ResponseShape - Resolved shape ('full' | 'detailed' | 'simple')
  */
-function resolveFormat(
-  formatParam: string | undefined,
-  compactParam: boolean | string | undefined
-): ResponseShape {
-  // If format parameter is provided and valid, it takes precedence
+function resolveFormat(formatParam: string | undefined): ResponseShape {
   if (formatParam === 'full' || formatParam === 'detailed' || formatParam === 'simple') {
     return formatParam
   }
 
-  // Handle legacy boolean/string compact parameter
-  if (compactParam !== undefined) {
-    logger.warn('Legacy boolean compact parameter used in CVM tool, will be removed in future version')
-
-    // Convert string "true"/"false" to boolean
-    const compactBool = typeof compactParam === 'string'
-      ? compactParam === 'true'
-      : compactParam
-
-    return compactBool ? 'detailed' : 'full'
-  }
-
-  // Handle legacy string 'compact' value (map to 'detailed' for now)
-  if (formatParam === 'compact') {
-    logger.warn('Legacy format=compact used in CVM tool, use format=detailed instead')
-    return 'detailed'
-  }
-
-  // Default to 'detailed' (current behavior)
+  // Default to 'detailed'
   return 'detailed'
 }
 
@@ -101,7 +77,7 @@ export function createRelaysListTool(ctx: RelayToolsContext): CVMTool {
         offset: { type: 'number', default: 0 },
         sortBy: { type: 'string', enum: ['url', 'updated', 'observationCount'], default: 'url' },
         sortOrder: { type: 'string', enum: ['asc', 'desc'], default: 'asc' },
-        format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated, use detailed)' },
+        format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (URLs only)' },
       },
     },
     outputSchema: loadSchema('relays-list-output.json'),
@@ -111,8 +87,8 @@ export function createRelaysListTool(ctx: RelayToolsContext): CVMTool {
       const sortBy = params.sortBy || 'url'
       const sortOrder = params.sortOrder || 'asc'
 
-      // Resolve format with backward compatibility
-      const shape = resolveFormat((params as any).format, (params as any).compact)
+      // Resolve format
+      const shape = resolveFormat((params as any).format)
 
       let relays = ctx.core.query.relays.getAll()
 
@@ -161,8 +137,8 @@ export function createRelaysGetStateTool(ctx: RelayToolsContext): CVMTool {
     handler: async (params: RelaysGetStateInput): Promise<RelaysGetStateOutput> => {
       let relay = ctx.core.query.relays.getState(params.relayUrl)
 
-      // Resolve format with backward compatibility
-      const shape = resolveFormat((params as any).format, (params as any).compact)
+      // Resolve format
+      const shape = resolveFormat((params as any).format)
 
       // Apply three-level shaping (simple is treated as detailed for single endpoints)
       const formatted = applyShapeSingle(relay, shape)
@@ -214,7 +190,7 @@ export function createRelaysSearchTool(ctx: RelayToolsContext): CVMTool {
         minSupport: { type: 'number' },
         limit: { type: 'number', default: 100 },
         offset: { type: 'number', default: 0 },
-        format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated, use detailed)' },
+        format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (URLs only)' },
       },
     },
     outputSchema: loadSchema('relays-list-output.json'),
@@ -222,8 +198,8 @@ export function createRelaysSearchTool(ctx: RelayToolsContext): CVMTool {
       const limit = params.limit || 100
       const offset = params.offset || 0
 
-      // Resolve format with backward compatibility
-      const shape = resolveFormat((params as any).format, (params as any).compact)
+      // Resolve format
+      const shape = resolveFormat((params as any).format)
 
       let relays = ctx.core.query.relays.search(params)
       const total = relays.length
@@ -253,7 +229,7 @@ export function createRelaysNearbyTool(ctx: RelayToolsContext): CVMTool {
         lon: { type: 'number' },
         radius: { type: 'number', default: 100 },
         maxResults: { type: 'number', default: 50 },
-        format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated, use detailed)' },
+        format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (URLs only)' },
       },
       required: ['lat', 'lon'],
     },
@@ -262,8 +238,8 @@ export function createRelaysNearbyTool(ctx: RelayToolsContext): CVMTool {
       const radiusKm = params.radius || 100
       const maxResults = params.maxResults || 50
 
-      // Resolve format with backward compatibility
-      const shape = resolveFormat((params as any).format, (params as any).compact)
+      // Resolve format
+      const shape = resolveFormat((params as any).format)
 
       const nearby = ctx.core.query.relays.nearby(params.lat, params.lon, radiusKm)
 
@@ -427,7 +403,7 @@ export function createRelaysByLabelTool(ctx: RelayToolsContext): CVMTool {
         value: { type: 'string' },
         limit: { type: 'number', default: 100 },
         offset: { type: 'number', default: 0 },
-        format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated, use detailed)' },
+        format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (URLs only)' },
       },
       required: ['namespace', 'value'],
     },
@@ -436,8 +412,8 @@ export function createRelaysByLabelTool(ctx: RelayToolsContext): CVMTool {
       const limit = params.limit || 100
       const offset = params.offset || 0
 
-      // Resolve format with backward compatibility
-      const shape = resolveFormat((params as any).format, (params as any).compact)
+      // Resolve format
+      const shape = resolveFormat((params as any).format)
 
       const relayUrls = ctx.core.query.relays.byLabel(params.namespace, params.value)
       let relays = relayUrls

@@ -16,47 +16,17 @@ import { normalizeRelayUrl } from '../../utils/url.js'
 const logger = getLogger().child({ module: 'rest-relays' })
 
 /**
- * Helper to resolve format parameter and emit deprecation headers
- * Handles legacy 'compact' param (both string and boolean) for backward compatibility
+ * Helper to resolve format parameter
  *
- * @param formatParam - The format query/body parameter ('full' | 'detailed' | 'simple' | 'compact' | undefined)
- * @param compactParam - Legacy compact parameter (boolean | undefined)
- * @param reply - Fastify reply object for setting deprecation headers
+ * @param formatParam - The format query/body parameter ('full' | 'detailed' | 'simple' | undefined)
  * @returns ResponseShape - Resolved shape ('full' | 'detailed' | 'simple')
  */
-function resolveFormatAndEmitDeprecation(
-  formatParam: string | undefined,
-  compactParam: boolean | string | undefined,
-  reply: FastifyReply
-): ResponseShape {
-  // If format parameter is provided and valid, it takes precedence
+function resolveFormat(formatParam: string | undefined): ResponseShape {
   if (formatParam === 'full' || formatParam === 'detailed' || formatParam === 'simple') {
     return formatParam
   }
 
-  // Handle legacy boolean/string compact parameter
-  if (compactParam !== undefined) {
-    reply.header('Deprecation', 'true')
-    reply.header('Link', '</docs/migration#response-format>; rel="deprecation"')
-    logger.warn('Legacy boolean compact parameter used, will be removed in future version')
-
-    // Convert string "true"/"false" to boolean
-    const compactBool = typeof compactParam === 'string'
-      ? compactParam === 'true'
-      : compactParam
-
-    return compactBool ? 'detailed' : 'full'
-  }
-
-  // Handle legacy string 'compact' value (map to 'detailed' for now)
-  if (formatParam === 'compact') {
-    reply.header('Deprecation', 'true')
-    reply.header('Link', '</docs/migration#response-format>; rel="deprecation"')
-    logger.warn('Legacy format=compact used, use format=detailed instead')
-    return 'detailed'
-  }
-
-  // Default to 'detailed' (current behavior)
+  // Default to 'detailed'
   return 'detailed'
 }
 
@@ -77,7 +47,6 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       sortBy?: string
       sortOrder?: 'asc' | 'desc'
       format?: string
-      compact?: boolean | string
     }
   }>('/relays', {
     schema: {
@@ -90,7 +59,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
           offset: { type: 'number', default: 0, minimum: 0 },
           sortBy: { type: 'string', enum: ['url', 'updated', 'observationCount', 'lastSeen'], default: 'url' },
           sortOrder: { type: 'string', enum: ['asc', 'desc'], default: 'asc' },
-          format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated, use detailed)' },
+          format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (URLs only)' },
         },
       },
       response: {
@@ -100,8 +69,8 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
   }, async (request, reply) => {
     const { limit = 50, offset = 0, sortBy = 'url', sortOrder = 'asc' } = request.query
 
-    // Resolve format with backward compatibility and deprecation handling
-    const shape = resolveFormatAndEmitDeprecation(request.query.format, request.query.compact, reply)
+    // Resolve format
+    const shape = resolveFormat(request.query.format)
 
     const allStates = core.query.relays.getAll()
 
@@ -135,7 +104,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
 
   // GET /relays/state - Get single relay state (detailed by default)
   app.get<{
-    Querystring: { relayUrl: string; format?: string; compact?: boolean | string }
+    Querystring: { relayUrl: string; format?: string }
   }>('/relays/state', {
     schema: {
       tags: ['relays'],
@@ -144,7 +113,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
         type: 'object',
         properties: {
           relayUrl: { type: 'string', format: 'uri' },
-          format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (treated as detailed for single relay), compact (deprecated, use detailed)' },
+          format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (treated as detailed for single relay)' },
         },
         required: ['relayUrl'],
       },
@@ -155,8 +124,8 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
   }, async (request, reply) => {
     const { relayUrl } = request.query
 
-    // Resolve format with backward compatibility and deprecation handling
-    const shape = resolveFormatAndEmitDeprecation(request.query.format, request.query.compact, reply)
+    // Resolve format
+    const shape = resolveFormat(request.query.format)
 
     let state = core.query.relays.getState(relayUrl)
 
@@ -187,7 +156,6 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       limit?: number
       offset?: number
       format?: string
-      compact?: boolean | string
     }
   }>('/relays/search', {
     schema: {
@@ -236,7 +204,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
           minSupport: { type: 'number', minimum: 0, maximum: 1 },
           limit: { type: 'number', default: 100, maximum: 500 },
           offset: { type: 'number', default: 0, minimum: 0 },
-          format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated, use detailed)' },
+          format: { type: 'string', enum: ['full', 'detailed', 'simple'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, no attribution), simple (URLs only)' },
         },
       },
       response: {
@@ -254,10 +222,10 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
     },
     preHandler: paymentsPreHandler ? [paymentsPreHandler] : undefined,
   }, async (request, reply) => {
-    const { limit = 100, offset = 0, format: reqFormat, compact, ...filters } = request.body
+    const { limit = 100, offset = 0, format: reqFormat, ...filters } = request.body
 
-    // Resolve format with backward compatibility and deprecation handling
-    const shape = resolveFormatAndEmitDeprecation(reqFormat, compact, reply)
+    // Resolve format
+    const shape = resolveFormat(reqFormat)
 
     const results = core.query.relays.search(filters)
     const total = results.length
@@ -278,7 +246,6 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       lon: number
       radius?: number
       format?: string
-      compact?: boolean | string
     }
   }>('/relays/nearby', {
     schema: {
@@ -301,8 +268,8 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
   }, async (request, reply) => {
     const { lat, lon, radius = 100 } = request.query
 
-    // Resolve format with backward compatibility and deprecation handling
-    const shape = resolveFormatAndEmitDeprecation(request.query.format, request.query.compact, reply)
+    // Resolve format
+    const shape = resolveFormat(request.query.format)
 
     let results = core.query.relays.nearby(lat, lon, radius)
 
@@ -324,7 +291,6 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       'ne.lat': number
       'ne.lon': number
       format?: string
-      compact?: boolean | string
     }
   }>('/relays/bbox', {
     schema: {
@@ -350,8 +316,8 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
     const sw = { lat: query['sw.lat'], lon: query['sw.lon'] }
     const ne = { lat: query['ne.lat'], lon: query['ne.lon'] }
 
-    // Resolve format with backward compatibility and deprecation handling
-    const shape = resolveFormatAndEmitDeprecation(query.format, query.compact, reply)
+    // Resolve format
+    const shape = resolveFormat(query.format)
 
     let results = core.query.relays.bbox(sw, ne)
 
@@ -445,7 +411,6 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       limit?: number
       offset?: number
       format?: string
-      compact?: boolean | string
     }
   }>('/relays/by/label', {
     schema: {
@@ -469,8 +434,8 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
   }, async (request, reply) => {
     const { namespace, value, limit = 100, offset = 0 } = request.query
 
-    // Resolve format with backward compatibility and deprecation handling
-    const shape = resolveFormatAndEmitDeprecation(request.query.format, request.query.compact, reply)
+    // Resolve format
+    const shape = resolveFormat(request.query.format)
 
     const relayUrls = core.query.relays.byLabel(namespace, value)
     const relays = relayUrls

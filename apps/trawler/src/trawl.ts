@@ -15,8 +15,6 @@ const persistQueue = new pQueue({ concurrency: 20 });
 
 let allRelays: Set<string>;
 
-setGlobalLogLevel(LogLevel.DEBUG);
-
 let RELAYS = [
   'wss://purplepag.es',
   'wss://user.kindpag.es',
@@ -71,8 +69,9 @@ function processRelayList(event: any ): Promise<void> {
 
       if (newRelays.length > 0) {
         trawlerStats.newRelaysFound += newRelays.length;
-        trawlerStats.uniqueRelaysFound.add(relay.url);
-        logger.info(`Found ${newRelays.length} new relays: ${newRelays.map(relay => relay.url).join(', ')} | ${formatCompactStats()}`);
+        // Track each newly discovered relay in the unique set for this session
+        newRelays.forEach(r => trawlerStats.uniqueRelaysFound.add(r.url));
+        logger.info(`Found ${newRelays.length} new relays: ${newRelays.map(r => r.url).join(', ')} | ${formatCompactStats()}`);
       }
       trawlerStats.persistQueue.completed += 1;
     } catch (err) {
@@ -111,6 +110,17 @@ export const trawl = async (options: TrawlOptions = {}) => {
   logger.info('│               Starting Nostr Trawler for Relays                │');
   logger.info('╰────────────────────────────────────────────────────────────────╯');
   
+  // Load configuration first, to set log level and seeding
+  const config = await loadConfig();
+
+  // Respect configured log level (default to INFO)
+  try {
+    const level = (config?.logLevel || config?.trawler?.logLevel || 'info') as string;
+    setGlobalLogLevel(level);
+  } catch (_) {
+    setGlobalLogLevel(LogLevel.INFO);
+  }
+
   if (options.dbPath) {
     const enableWAL = options.enableWAL !== undefined ? options.enableWAL : true;
     logger.info(`Using custom database path: ${options.dbPath} (WAL mode: ${enableWAL ? 'enabled' : 'disabled'})`);
@@ -127,13 +137,24 @@ export const trawl = async (options: TrawlOptions = {}) => {
   
   trawlerStats.reset();
 
-  const config = await loadConfig();
-  // Deno.exit(0)
-  // if(config?.seed) {
-  //   const seeder = new RelaySeeder(config.seed)
-  //   RELAYS = [ ...RELAYS, ...(await seeder.seed())] 
-  //   logger.info(`trawling ${RELAYS.length} relays`)
-  // }
+  // Seed initial relay list from configured sources if available
+  try {
+    const seedCfg = config?.trawler?.seed || config?.seed;
+    if (seedCfg) {
+      const seeder = new RelaySeeder(seedCfg);
+      const seeded = await seeder.seed();
+      if (Array.isArray(seeded) && seeded.length > 0) {
+        RELAYS = Array.from(new Set([...RELAYS, ...seeded]));
+        logger.info(`Seeding complete. Trawling ${RELAYS.length} relays`);
+      } else {
+        logger.warn(`No relays returned by seeder; proceeding with ${RELAYS.length} defaults`);
+      }
+    } else {
+      logger.warn(`No seed configuration found; proceeding with ${RELAYS.length} default relays`);
+    }
+  } catch (e) {
+    logger.error(`Error during seeding: ${e instanceof Error ? e.message : String(e)}`);
+  }
   
   setupStatusReporting(30);
   
@@ -150,6 +171,8 @@ export const trawl = async (options: TrawlOptions = {}) => {
   const trawler = nostrawl(RELAYS, nostrawlOptions);
 
   trawler.on('event', (event: any) => {
+    // Track totals and progress timestamps
+    trawlerStats.totalEvents++;
     trawlerStats.eventsProcessed++;
     trawlerStats.lastUpdateTime = Date.now();
     

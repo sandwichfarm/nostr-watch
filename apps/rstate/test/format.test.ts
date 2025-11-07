@@ -5,7 +5,6 @@
  * - full: Complete RelayState with contributor attribution
  * - detailed: CompactRelayState without attribution (default)
  * - simple: String array of relay URLs only
- * - compact: Legacy format (maps to detailed)
  *
  * Tests both ContextVM tools and REST endpoints
  */
@@ -213,30 +212,6 @@ describe('Response Format Comprehensive Tests', () => {
       }
     })
 
-    it('format=compact should behave same as detailed (legacy)', async () => {
-      const compactResponse = await app.inject({
-        method: 'GET',
-        url: '/relays?format=compact&limit=1',
-      })
-
-      const detailedResponse = await app.inject({
-        method: 'GET',
-        url: '/relays?format=detailed&limit=1',
-      })
-
-      expect(compactResponse.statusCode).toBe(200)
-      expect(detailedResponse.statusCode).toBe(200)
-
-      const compactBody = JSON.parse(compactResponse.body)
-      const detailedBody = JSON.parse(detailedResponse.body)
-
-      // Should have same structure
-      expect(compactBody.relays[0].network?.contributingAuthors).toBeUndefined()
-      expect(detailedBody.relays[0].network?.contributingAuthors).toBeUndefined()
-
-      // Deprecation header should be present for compact
-      expect(compactResponse.headers['deprecation']).toBe('true')
-    })
 
     it('no format parameter should default to detailed', async () => {
       const response = await app.inject({
@@ -290,27 +265,6 @@ describe('Response Format Comprehensive Tests', () => {
       expect(body.relay.network?.contributingAuthors).toBeUndefined()
     })
 
-    it('format=compact should behave same as detailed (legacy)', async () => {
-      const compactResponse = await app.inject({
-        method: 'GET',
-        url: '/relays/state?relayUrl=wss://relay1.example.com&format=compact',
-      })
-
-      const detailedResponse = await app.inject({
-        method: 'GET',
-        url: '/relays/state?relayUrl=wss://relay1.example.com&format=detailed',
-      })
-
-      expect(compactResponse.statusCode).toBe(200)
-      expect(detailedResponse.statusCode).toBe(200)
-
-      const compactBody = JSON.parse(compactResponse.body)
-      const detailedBody = JSON.parse(detailedResponse.body)
-
-      expect(compactBody.relay.network?.contributingAuthors).toBeUndefined()
-      expect(detailedBody.relay.network?.contributingAuthors).toBeUndefined()
-      expect(compactResponse.headers['deprecation']).toBe('true')
-    })
   })
 
   describe('REST API: POST /relays/search', () => {
@@ -356,31 +310,6 @@ describe('Response Format Comprehensive Tests', () => {
       }
     })
 
-    it('format=compact should behave same as detailed (legacy)', async () => {
-      const compactResponse = await app.inject({
-        method: 'POST',
-        url: '/relays/search',
-        payload: { format: 'compact', limit: 1 },
-      })
-
-      const detailedResponse = await app.inject({
-        method: 'POST',
-        url: '/relays/search',
-        payload: { format: 'detailed', limit: 1 },
-      })
-
-      expect(compactResponse.statusCode).toBe(200)
-      expect(detailedResponse.statusCode).toBe(200)
-
-      const compactBody = JSON.parse(compactResponse.body)
-      const detailedBody = JSON.parse(detailedResponse.body)
-
-      if (compactBody.relays.length > 0) {
-        expect(compactBody.relays[0].network?.contributingAuthors).toBeUndefined()
-        expect(detailedBody.relays[0].network?.contributingAuthors).toBeUndefined()
-      }
-      expect(compactResponse.headers['deprecation']).toBe('true')
-    })
   })
 
   describe('ContextVM Tools: relays/list', () => {
@@ -412,15 +341,6 @@ describe('Response Format Comprehensive Tests', () => {
       }
     })
 
-    it('format=compact should behave same as detailed (legacy)', async () => {
-      const compactResult = await listTool.handler({ format: 'compact', limit: 1 } as any)
-      const detailedResult = await listTool.handler({ format: 'detailed', limit: 1 } as any)
-
-      if (compactResult.relays.length > 0) {
-        expect(compactResult.relays[0].network?.contributingAuthors).toBeUndefined()
-        expect(detailedResult.relays[0].network?.contributingAuthors).toBeUndefined()
-      }
-    })
 
     it('no format parameter should default to detailed', async () => {
       const result = await listTool.handler({ limit: 1 } as any)
@@ -465,19 +385,6 @@ describe('Response Format Comprehensive Tests', () => {
       expect(result.relay.network?.contributingAuthors).toBeUndefined()
     })
 
-    it('format=compact should behave same as detailed (legacy)', async () => {
-      const compactResult = await getStateTool.handler({
-        relayUrl: 'wss://relay1.example.com',
-        format: 'compact',
-      } as any)
-      const detailedResult = await getStateTool.handler({
-        relayUrl: 'wss://relay1.example.com',
-        format: 'detailed',
-      } as any)
-
-      expect(compactResult.relay.network?.contributingAuthors).toBeUndefined()
-      expect(detailedResult.relay.network?.contributingAuthors).toBeUndefined()
-    })
   })
 
   describe('ContextVM Tools: relays/search', () => {
@@ -508,14 +415,5 @@ describe('Response Format Comprehensive Tests', () => {
       }
     })
 
-    it('format=compact should behave same as detailed (legacy)', async () => {
-      const compactResult = await searchTool.handler({ format: 'compact', limit: 1 } as any)
-      const detailedResult = await searchTool.handler({ format: 'detailed', limit: 1 } as any)
-
-      if (compactResult.relays.length > 0) {
-        expect(compactResult.relays[0].network?.contributingAuthors).toBeUndefined()
-        expect(detailedResult.relays[0].network?.contributingAuthors).toBeUndefined()
-      }
-    })
   })
 })

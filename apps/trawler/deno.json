@@ -61,8 +61,8 @@
       "p-queue": "https://esm.sh/p-queue@latest",
 
 
-      "npm:nostrawl": "/Users/sandwich/Develop/nostrawl/src/index.ts",
-      "nostrawl": "/Users/sandwich/Develop/nostrawl/src/index.ts",
+      "npm:nostrawl": "../../libraries/nostrawl/src/index.ts",
+      "nostrawl": "../../libraries/nostrawl/src/index.ts",
 
       "npm:@nostrwatch/utils": "../../internal/utils/src/index.ts",
       "npm:@nostrwatch/nocap": "../../libraries/nocap/src/index.ts",

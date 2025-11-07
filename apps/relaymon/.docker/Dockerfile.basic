@@ -1,0 +1,43 @@
+FROM debian:bullseye-slim
+
+WORKDIR /app
+
+# Install Deno and runtime dependencies (basic mode - no proxy tools)
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    curl \
+    unzip \
+    sqlite3 \
+    netcat-openbsd \
+    dnsutils \
+    procps \
+    wget \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install websocat for WebSocket testing
+RUN wget -q https://github.com/vi/websocat/releases/download/v1.11.0/websocat.x86_64-unknown-linux-musl -O /usr/local/bin/websocat \
+    && chmod +x /usr/local/bin/websocat \
+    && websocat --version
+
+# Install Deno
+RUN curl -fsSL https://deno.land/x/install/install.sh | sh
+ENV DENO_INSTALL="/root/.deno"
+ENV PATH="${DENO_INSTALL}/bin:${PATH}"
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# First, copy only the deno.lock file (if it exists) to cache dependencies
+WORKDIR /app/nostr-watch
+COPY apps/relaymon/deno.lock* ./apps/relaymon/
+
+# Now copy the entire project
+COPY . .
+
+# Cache dependencies offline without trying to verify remote
+WORKDIR /app/nostr-watch/apps/relaymon
+RUN deno cache --reload --no-remote index.ts || echo "Dependency caching failed, will try at runtime"
+
+# Simple entrypoint - just run relaymon directly
+CMD ["deno", "run", "--allow-all", "index.ts"]

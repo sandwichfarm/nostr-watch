@@ -444,7 +444,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       limit?: number
       offset?: number
       format?: string
-      compact?: boolean
+      compact?: boolean | string
     }
   }>('/relays/by/label', {
     schema: {

@@ -12,10 +12,9 @@ packages:
     - "libraries/validators/**/*"
     - "libraries/schemata/*"
     
-    #skip 
+    #skip
     - '!internal/controlflow'
     - '!apps/nocapd' #node
     - '!libraries/nocap-route66' #deprecated
     - '!apps/umon' #experimental
     - '!apps/relaymon' #deno
-    - '!apps/rstate'

@@ -144,7 +144,7 @@ export class Kind30166 extends Event {
             tags.push(['N', String(nip)])
           }
         }
-        else if(typeof info.supported_nips === 'number') {
+        else if(typeof info.supported_nips === 'number') { //re:pablo and his scalar values.
           tags.push(['N', String(info.supported_nips)])
         }
       }

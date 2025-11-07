@@ -13,21 +13,11 @@ import type {
 } from '../types/tool-schemas.js'
 import type { StateCore } from '../core/index.js'
 import { getLogger } from '../utils/logger.js'
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { loadSchema } from '../utils/schema-loader.js'
 
 const logger = getLogger().child({ module: 'tools-monitors' })
 
-// Load output schemas
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const monitorsGetOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'monitors-get-output.json'), 'utf-8')
-)
-const monitorsListOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'monitors-list-output.json'), 'utf-8')
-)
+// Schemas are loaded lazily via loadSchema() utility
 
 interface MonitorToolsContext {
   core: StateCore
@@ -47,7 +37,7 @@ export function createMonitorsGetTool(ctx: MonitorToolsContext): CVMTool {
       },
       required: ['pubkey'],
     },
-    outputSchema: monitorsGetOutputSchema,
+    outputSchema: loadSchema('monitors-get-output.json'),
     handler: async (params: MonitorsGetInput): Promise<MonitorsGetOutput> => {
       const monitor = ctx.core.query.monitors.get(params.pubkey)
 
@@ -120,7 +110,7 @@ export function createMonitorsListTool(ctx: MonitorToolsContext): CVMTool {
         offset: { type: 'number', default: 0 },
       },
     },
-    outputSchema: monitorsListOutputSchema,
+    outputSchema: loadSchema('monitors-list-output.json'),
     handler: async (params: MonitorsListInput): Promise<MonitorsListOutput> => {
       const limit = params.limit || 100
       const offset = params.offset || 0

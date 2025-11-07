@@ -37,10 +37,8 @@ import type {
 } from '../types/tool-schemas.js'
 import type { StateCore } from '../core/index.js'
 import { getLogger } from '../utils/logger.js'
-import { toCompact, toCompactArray, type ResponseFormat, type ResponseShape, applyShapeList, applyShapeSingle } from '../types/response-formats.js'
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { toCompactArray, type ResponseFormat, type ResponseShape, applyShapeList, applyShapeSingle } from '../types/response-formats.js'
+import { loadSchema } from '../utils/schema-loader.js'
 
 const logger = getLogger().child({ module: 'tools-relays' })
 
@@ -83,48 +81,7 @@ function resolveFormat(
   return 'detailed'
 }
 
-// Load output schemas
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const relaysListOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-list-output.json'), 'utf-8')
-)
-const relaysGetStateOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-get-state-output.json'), 'utf-8')
-)
-const relaysAvailabilityOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-availability-output.json'), 'utf-8')
-)
-const relaysNearbyOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-nearby-output.json'), 'utf-8')
-)
-const relaysBboxOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-bbox-output.json'), 'utf-8')
-)
-const relaysGetLabelsOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-get-labels-output.json'), 'utf-8')
-)
-const relaysListLabelsOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-list-labels-output.json'), 'utf-8')
-)
-const relaysByLabelOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-by-label-output.json'), 'utf-8')
-)
-const relaysBySoftwareOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-by-software-output.json'), 'utf-8')
-)
-const relaysByNetworkOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-by-network-output.json'), 'utf-8')
-)
-const relaysByNipOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-by-nip-output.json'), 'utf-8')
-)
-const relaysByCountryOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-by-country-output.json'), 'utf-8')
-)
-const relaysCompareOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-compare-output.json'), 'utf-8')
-)
+// Schemas are loaded lazily via loadSchema() utility
 
 interface RelayToolsContext {
   core: StateCore
@@ -147,7 +104,7 @@ export function createRelaysListTool(ctx: RelayToolsContext): CVMTool {
         format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated, use detailed)' },
       },
     },
-    outputSchema: relaysListOutputSchema,
+    outputSchema: loadSchema('relays-list-output.json'),
     handler: async (params: RelaysListInput): Promise<RelaysListOutput> => {
       const limit = params.limit || 50
       const offset = params.offset || 0
@@ -200,7 +157,7 @@ export function createRelaysGetStateTool(ctx: RelayToolsContext): CVMTool {
       },
       required: ['relayUrl'],
     },
-    outputSchema: relaysGetStateOutputSchema,
+    outputSchema: loadSchema('relays-get-state-output.json'),
     handler: async (params: RelaysGetStateInput): Promise<RelaysGetStateOutput> => {
       let relay = ctx.core.query.relays.getState(params.relayUrl)
 
@@ -260,7 +217,7 @@ export function createRelaysSearchTool(ctx: RelayToolsContext): CVMTool {
         format: { type: 'string', enum: ['full', 'detailed', 'simple', 'compact'], default: 'detailed', description: 'Response format: full (all attribution), detailed (default, aggregated), simple (URLs only), compact (deprecated, use detailed)' },
       },
     },
-    outputSchema: relaysListOutputSchema,
+    outputSchema: loadSchema('relays-list-output.json'),
     handler: async (params: RelaysSearchInput): Promise<RelaysSearchOutput> => {
       const limit = params.limit || 100
       const offset = params.offset || 0
@@ -300,7 +257,7 @@ export function createRelaysNearbyTool(ctx: RelayToolsContext): CVMTool {
       },
       required: ['lat', 'lon'],
     },
-    outputSchema: relaysNearbyOutputSchema,
+    outputSchema: loadSchema('relays-nearby-output.json'),
     handler: async (params: RelaysNearbyInput): Promise<RelaysNearbyOutput> => {
       const radiusKm = params.radius || 100
       const maxResults = params.maxResults || 50
@@ -365,7 +322,7 @@ export function createRelaysBboxTool(ctx: RelayToolsContext): CVMTool {
       },
       required: ['sw', 'ne'],
     },
-    outputSchema: relaysBboxOutputSchema,
+    outputSchema: loadSchema('relays-bbox-output.json'),
     handler: async (params: RelaysBboxInput): Promise<RelaysBboxOutput> => {
       const limit = params.limit || 100
       const compact = params.compact || false
@@ -406,7 +363,7 @@ export function createRelaysGetLabelsTool(ctx: RelayToolsContext): CVMTool {
       },
       required: ['relayUrl'],
     },
-    outputSchema: relaysGetLabelsOutputSchema,
+    outputSchema: loadSchema('relays-get-labels-output.json'),
     handler: async (params: RelaysGetLabelsInput): Promise<RelaysGetLabelsOutput> => {
       let labels = ctx.core.query.relays.getLabels(params.relayUrl)
 
@@ -432,7 +389,7 @@ export function createRelaysListLabelsTool(ctx: RelayToolsContext): CVMTool {
         namespace: { type: 'string' },
       },
     },
-    outputSchema: relaysListLabelsOutputSchema,
+    outputSchema: loadSchema('relays-list-labels-output.json'),
     handler: async (params: RelaysListLabelsInput): Promise<RelaysListLabelsOutput> => {
       const labelsList = ctx.core.query.relays.listLabels(params.namespace)
 
@@ -474,7 +431,7 @@ export function createRelaysByLabelTool(ctx: RelayToolsContext): CVMTool {
       },
       required: ['namespace', 'value'],
     },
-    outputSchema: relaysByLabelOutputSchema,
+    outputSchema: loadSchema('relays-by-label-output.json'),
     handler: async (params: RelaysByLabelInput): Promise<RelaysByLabelOutput> => {
       const limit = params.limit || 100
       const offset = params.offset || 0
@@ -515,7 +472,7 @@ export function createRelaysBySoftwareTool(ctx: RelayToolsContext): CVMTool {
         family: { type: 'string' },
       },
     },
-    outputSchema: relaysBySoftwareOutputSchema,
+    outputSchema: loadSchema('relays-by-software-output.json'),
     handler: async (): Promise<RelaysBySoftwareOutput> => {
       const groupsMap = ctx.core.query.relays.bySoftware()
 
@@ -541,7 +498,7 @@ export function createRelaysByNetworkTool(ctx: RelayToolsContext): CVMTool {
       type: 'object',
       properties: {},
     },
-    outputSchema: relaysByNetworkOutputSchema,
+    outputSchema: loadSchema('relays-by-network-output.json'),
     handler: async (): Promise<RelaysByNetworkOutput> => {
       const groupsMap = ctx.core.query.relays.byNetwork()
 
@@ -570,7 +527,7 @@ export function createRelaysByNipTool(ctx: RelayToolsContext): CVMTool {
         minSupport: { type: 'number', default: 0.5 },
       },
     },
-    outputSchema: relaysByNipOutputSchema,
+    outputSchema: loadSchema('relays-by-nip-output.json'),
     handler: async (params: RelaysByNipInput): Promise<RelaysByNipOutput> => {
       const nipData = ctx.core.query.relays.byNip()
       const minSupport = params.minSupport || 0.5
@@ -609,7 +566,7 @@ export function createRelaysByCountryTool(ctx: RelayToolsContext): CVMTool {
         countryCode: { type: 'string' },
       },
     },
-    outputSchema: relaysByCountryOutputSchema,
+    outputSchema: loadSchema('relays-by-country-output.json'),
     handler: async (params: RelaysByCountryInput): Promise<RelaysByCountryOutput> => {
       const groupsMap = ctx.core.query.relays.byCountry()
 
@@ -657,7 +614,7 @@ export function createRelaysCompareTool(ctx: RelayToolsContext): CVMTool {
       },
       required: ['relayUrls'],
     },
-    outputSchema: relaysCompareOutputSchema,
+    outputSchema: loadSchema('relays-compare-output.json'),
     handler: async (params: RelaysCompareInput): Promise<RelaysCompareOutput> => {
       const relays = ctx.core.query.relays.compare(params.relayUrls)
         .filter((r): r is NonNullable<typeof r> => r !== null)
@@ -755,7 +712,7 @@ export function createRelaysOnlineTool(ctx: RelayToolsContext): CVMTool {
         offset: { type: 'number' },
       },
     },
-    outputSchema: relaysAvailabilityOutputSchema,
+    outputSchema: loadSchema('relays-availability-output.json'),
     handler: async (params: RelaysAvailabilityOnlineInput): Promise<RelaysAvailabilityOutput> => {
       const urls = ctx.core.query.relays.online({ onlineWindowSeconds: params.onlineWindowSeconds, filters: params.filters })
       const limit = params.limit ?? 100
@@ -793,7 +750,7 @@ export function createRelaysOfflineTool(ctx: RelayToolsContext): CVMTool {
         offset: { type: 'number' },
       },
     },
-    outputSchema: relaysAvailabilityOutputSchema,
+    outputSchema: loadSchema('relays-availability-output.json'),
     handler: async (params: RelaysAvailabilityOfflineInput): Promise<RelaysAvailabilityOutput> => {
       const urls = ctx.core.query.relays.offline({
         offlineSeenSeconds: params.offlineSeenSeconds,
@@ -834,7 +791,7 @@ export function createRelaysDeadTool(ctx: RelayToolsContext): CVMTool {
         offset: { type: 'number' },
       },
     },
-    outputSchema: relaysAvailabilityOutputSchema,
+    outputSchema: loadSchema('relays-availability-output.json'),
     handler: async (params: RelaysAvailabilityDeadInput): Promise<RelaysAvailabilityOutput> => {
       const urls = ctx.core.query.relays.dead({ deadThresholdSeconds: params.deadThresholdSeconds, filters: params.filters })
       const limit = params.limit ?? 100

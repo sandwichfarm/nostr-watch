@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "family": { "type": "string" },
+          "version": { "type": "string" },
+          "count": { "type": "number" },
+          "relays": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["family", "count"]
+      }
+    }
+  },
+  "required": ["groups"]
+}
+

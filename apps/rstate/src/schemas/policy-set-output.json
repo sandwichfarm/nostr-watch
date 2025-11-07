@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "success": { "type": "boolean" },
+    "policy": { "type": "object", "description": "AggregationPolicy" },
+    "message": { "type": "string" }
+  },
+  "required": ["success", "policy"]
+}
+

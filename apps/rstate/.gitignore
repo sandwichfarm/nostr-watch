@@ -7,7 +7,8 @@ pnpm-lock.yaml
 # Build output
 dist/
 *.tsbuildinfo
-schemas
+/schemas
+dist/schemas
 
 # Environment
 .env

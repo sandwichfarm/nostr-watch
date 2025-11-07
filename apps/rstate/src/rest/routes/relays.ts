@@ -25,15 +25,26 @@ const logger = getLogger().child({ module: 'rest-relays' })
  */
 function resolveFormatAndEmitDeprecation(
   formatParam: string | undefined,
-  compactParam: boolean | undefined,
+  compactParam: boolean | string | undefined,
   reply: FastifyReply
 ): ResponseShape {
-  // Handle legacy boolean compact parameter
+  // If format parameter is provided and valid, it takes precedence
+  if (formatParam === 'full' || formatParam === 'detailed' || formatParam === 'simple') {
+    return formatParam
+  }
+
+  // Handle legacy boolean/string compact parameter
   if (compactParam !== undefined) {
     reply.header('Deprecation', 'true')
     reply.header('Link', '</docs/migration#response-format>; rel="deprecation"')
     logger.warn('Legacy boolean compact parameter used, will be removed in future version')
-    return compactParam ? 'detailed' : 'full'
+
+    // Convert string "true"/"false" to boolean
+    const compactBool = typeof compactParam === 'string'
+      ? compactParam === 'true'
+      : compactParam
+
+    return compactBool ? 'detailed' : 'full'
   }
 
   // Handle legacy string 'compact' value (map to 'detailed' for now)
@@ -42,11 +53,6 @@ function resolveFormatAndEmitDeprecation(
     reply.header('Link', '</docs/migration#response-format>; rel="deprecation"')
     logger.warn('Legacy format=compact used, use format=detailed instead')
     return 'detailed'
-  }
-
-  // Handle new three-level format
-  if (formatParam === 'full' || formatParam === 'detailed' || formatParam === 'simple') {
-    return formatParam
   }
 
   // Default to 'detailed' (current behavior)
@@ -70,7 +76,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       sortBy?: string
       sortOrder?: 'asc' | 'desc'
       format?: string
-      compact?: boolean
+      compact?: boolean | string
     }
   }>('/relays', {
     schema: {
@@ -128,7 +134,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
 
   // GET /relays/state - Get single relay state (detailed by default)
   app.get<{
-    Querystring: { relayUrl: string; format?: string; compact?: boolean }
+    Querystring: { relayUrl: string; format?: string; compact?: boolean | string }
   }>('/relays/state', {
     schema: {
       tags: ['relays'],
@@ -180,7 +186,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       limit?: number
       offset?: number
       format?: string
-      compact?: boolean
+      compact?: boolean | string
     }
   }>('/relays/search', {
     schema: {
@@ -271,7 +277,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       lon: number
       radius?: number
       format?: string
-      compact?: boolean
+      compact?: boolean | string
     }
   }>('/relays/nearby', {
     schema: {
@@ -317,7 +323,7 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
       'ne.lat': number
       'ne.lon': number
       format?: string
-      compact?: boolean
+      compact?: boolean | string
     }
   }>('/relays/bbox', {
     schema: {

@@ -54,23 +54,29 @@ const logger = getLogger().child({ module: 'tools-relays' })
  */
 function resolveFormat(
   formatParam: string | undefined,
-  compactParam: boolean | undefined
+  compactParam: boolean | string | undefined
 ): ResponseShape {
-  // Handle legacy boolean compact parameter
+  // If format parameter is provided and valid, it takes precedence
+  if (formatParam === 'full' || formatParam === 'detailed' || formatParam === 'simple') {
+    return formatParam
+  }
+
+  // Handle legacy boolean/string compact parameter
   if (compactParam !== undefined) {
     logger.warn('Legacy boolean compact parameter used in CVM tool, will be removed in future version')
-    return compactParam ? 'detailed' : 'full'
+
+    // Convert string "true"/"false" to boolean
+    const compactBool = typeof compactParam === 'string'
+      ? compactParam === 'true'
+      : compactParam
+
+    return compactBool ? 'detailed' : 'full'
   }
 
   // Handle legacy string 'compact' value (map to 'detailed' for now)
   if (formatParam === 'compact') {
     logger.warn('Legacy format=compact used in CVM tool, use format=detailed instead')
     return 'detailed'
-  }
-
-  // Handle new three-level format
-  if (formatParam === 'full' || formatParam === 'detailed' || formatParam === 'simple') {
-    return formatParam
   }
 
   // Default to 'detailed' (current behavior)

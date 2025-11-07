@@ -5,8 +5,8 @@
  * Preserves security, caching, and metrics wrappers
  */
 
-import type { Server } from '@contextvm/sdk/server/index.js'
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@contextvm/sdk/types.js'
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import type { SecurityService } from '../services/security.js'
 import type { QueryCache } from '../services/cache.js'
 import type { MetricsService } from '../services/metrics.js'

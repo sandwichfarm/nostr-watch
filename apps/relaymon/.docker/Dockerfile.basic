@@ -39,5 +39,5 @@ COPY . .
 WORKDIR /app/nostr-watch/apps/relaymon
 RUN deno cache --reload --no-remote index.ts || echo "Dependency caching failed, will try at runtime"
 
-# Simple entrypoint - just run relaymon directly
-CMD ["deno", "run", "--allow-all", "index.ts"]
+# Simple entrypoint - just run relaymon directly with sloppy-imports
+CMD ["deno", "run", "--allow-all", "--sloppy-imports", "index.ts"]

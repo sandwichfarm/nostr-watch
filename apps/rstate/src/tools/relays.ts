@@ -39,6 +39,7 @@ import type { StateCore } from '../core/index.js'
 import { getLogger } from '../utils/logger.js'
 import { toCompactArray, type ResponseFormat, type ResponseShape, applyShapeList, applyShapeSingle } from '../types/response-formats.js'
 import { loadSchema } from '../utils/schema-loader.js'
+import { normalizeRelayUrl } from '../utils/url.js'
 
 const logger = getLogger().child({ module: 'tools-relays' })
 
@@ -592,7 +593,17 @@ export function createRelaysCompareTool(ctx: RelayToolsContext): CVMTool {
     },
     outputSchema: loadSchema('relays-compare-output.json'),
     handler: async (params: RelaysCompareInput): Promise<RelaysCompareOutput> => {
-      const relays = ctx.core.query.relays.compare(params.relayUrls)
+      // Normalize relay URLs
+      const normalizedUrls: string[] = []
+      for (const url of params.relayUrls) {
+        try {
+          normalizedUrls.push(normalizeRelayUrl(url))
+        } catch (err) {
+          logger.warn({ url, error: String(err) }, 'Invalid relay URL')
+        }
+      }
+
+      const relays = ctx.core.query.relays.compare(normalizedUrls)
         .filter((r): r is NonNullable<typeof r> => r !== null)
 
       if (relays.length === 0) {

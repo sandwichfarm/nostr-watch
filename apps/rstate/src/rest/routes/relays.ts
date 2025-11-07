@@ -11,6 +11,7 @@ import { getLogger } from '../../utils/logger.js'
 import { compactRelayStates } from '../../utils/compact.js'
 import { toCompact, toCompactArray, type ResponseFormat, type ResponseShape, applyShapeList, applyShapeSingle } from '../../types/response-formats.js'
 import { schemas } from '../schemas.js'
+import { normalizeRelayUrl } from '../../utils/url.js'
 
 const logger = getLogger().child({ module: 'rest-relays' })
 
@@ -680,8 +681,84 @@ export async function registerRelayRoutes(app: FastifyInstance, context: RestCon
     preHandler: paymentsPreHandler ? [paymentsPreHandler] : undefined,
   }, async (request, reply) => {
     const { relayUrls } = request.body
-    const results = core.query.relays.compare(relayUrls)
-    return { relays: results }
+
+    // Normalize relay URLs
+    const normalizedUrls: string[] = []
+    for (const url of relayUrls) {
+      try {
+        normalizedUrls.push(normalizeRelayUrl(url))
+      } catch (err) {
+        logger.warn({ url, error: String(err) }, 'Invalid relay URL')
+      }
+    }
+
+    const relays = core.query.relays.compare(normalizedUrls)
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+
+    if (relays.length === 0) {
+      return {
+        relays: [],
+        comparison: {
+          common: { nips: [], requirements: [] },
+          differences: { network: false, software: false, latency: false },
+        },
+      }
+    }
+
+    // Find common NIPs
+    const nipSets = relays.map((r) => new Set(r.nips?.list || []))
+    const commonNips = Array.from(nipSets[0]).filter((nip) =>
+      nipSets.every((set) => set.has(nip))
+    )
+
+    // Find common requirements
+    const reqKeys = new Set<string>()
+    relays.forEach((r) => {
+      if (r.requirements) {
+        Object.keys(r.requirements).forEach((key) => reqKeys.add(key))
+      }
+    })
+    const commonReqs = Array.from(reqKeys).filter((key) => {
+      const values = relays
+        .map((r) => r.requirements?.[key]?.value)
+        .filter((v) => v !== undefined)
+      return values.length === relays.length && values.every((v) => v === values[0])
+    })
+
+    // Check for differences
+    const networks = new Set(relays.map((r) => r.network?.value).filter(Boolean))
+    const softwareFamilies = new Set(relays.map((r) => r.software?.family?.value).filter(Boolean))
+
+    // Check latency differences (consider different if > 20% variance)
+    let latencyDiff = false
+    for (const key of ['open', 'read', 'write'] as const) {
+      const latencies = relays
+        .map((r) => r.rtt?.[key]?.value)
+        .filter((v): v is number => v !== undefined)
+      if (latencies.length > 1) {
+        const avg = latencies.reduce((a, b) => a + b, 0) / latencies.length
+        const maxDiff = Math.max(...latencies.map((l) => Math.abs(l - avg)))
+        if (maxDiff / avg > 0.2) {
+          latencyDiff = true
+          break
+        }
+      }
+    }
+
+    return {
+      relays,
+      comparison: {
+        common: {
+          nips: commonNips,
+          requirements: commonReqs,
+        },
+        differences: {
+          network: networks.size > 1,
+          software: softwareFamilies.size > 1,
+          latency: latencyDiff,
+        },
+      },
+    }
   })
 
   // POST /relays/online - Get online relays (supports label filtering)

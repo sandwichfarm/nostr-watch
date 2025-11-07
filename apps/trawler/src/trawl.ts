@@ -97,11 +97,13 @@ const defaultNostrawlOptions: TrawlerOptions = {
   sinceStrict: false,
   logLevel: 5,
   relaysPerBatch: 10,
+  cache: {
+    enabled: true,
+    path: './cache'
+  },
   adapterOptions: {
     concurrency: 5,
-    cache: {
-      path: './cache'
-    }
+    // p-queue specific options go here (concurrency, timeout, etc.)
   }
 };
 

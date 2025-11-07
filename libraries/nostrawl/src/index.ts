@@ -1,5 +1,4 @@
 import PQueueAdapter from './adapters/PQueueAdapter';
-import BullMqAdapter from './adapters/BullMqAdapter';
 import { TrawlerOptions, PQueueAdapterOptions } from './types';
 import { logger, LogLevel, configureLogger } from './utils';
 
@@ -26,19 +25,14 @@ export const nostrawl = (relays: string[], options: Partial<TrawlerOptions> = {}
   logger.debug('Options:', mergedOptions);
   
   let $adapter;
-  switch (mergedOptions.adapter) {
-    case 'bullmq':
-      logger.info('Using BullMQ adapter');
-      $adapter = new BullMqAdapter(relays, mergedOptions);
-      $adapter.init();
-      return $adapter;
-    case 'pqueue':
-    default:
-      logger.info('Using PQueue adapter');
-      $adapter = new PQueueAdapter(relays, mergedOptions as PQueueAdapterOptions);
-      $adapter.init();
-      return $adapter;
+  // Only support pqueue in this monorepo build; default if unspecified
+  if (mergedOptions.adapter && mergedOptions.adapter !== 'pqueue') {
+    logger.warn(`Adapter '${mergedOptions.adapter}' is not available in this build. Falling back to 'pqueue'.`);
   }
+  logger.info('Using PQueue adapter');
+  $adapter = new PQueueAdapter(relays, mergedOptions as PQueueAdapterOptions);
+  $adapter.init();
+  return $adapter;
 };
 
 export * from './types';

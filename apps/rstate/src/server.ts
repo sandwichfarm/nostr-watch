@@ -51,22 +51,25 @@ import {
 const logger = getLogger().child({ module: 'server' })
 
 export class CVMServer {
-  private mcpServer: Server
-  private transport: NostrServerTransport
-  private transportPool: ApplesauceRelayPool
+  // CVM transport components (optional - only if CVM enabled)
+  private mcpServer?: Server
+  private transport?: NostrServerTransport
+  private transportPool?: ApplesauceRelayPool
+  private signer?: PrivateKeySigner
+  private toolRegistry?: ToolRegistry
+  private transportContext?: TransportContext
+  private notificationDelivery?: NotificationDeliveryService
+
+  // Core components (always required)
   private ingestionPool: RelayPoolAdapter
-  private signer: PrivateKeySigner
-  private toolRegistry: ToolRegistry
-  private transportContext: TransportContext
   private startTime: number = Date.now()
 
   // Core services
   private core: StateCore
 
-  // CVM-specific services
+  // Shared services
   private ingestionService: IngestionService
   private subscriptionManager: SubscriptionManager
-  private notificationDelivery: NotificationDeliveryService
   private rateLimiter: RateLimiterService
   private security: SecurityService
   private metrics: MetricsService
@@ -79,34 +82,27 @@ export class CVMServer {
   private aggregationTimer?: ReturnType<typeof setInterval>
 
   constructor(private config: Config) {
-    logger.info('Initializing CVM server with real SDK')
+    logger.info('Initializing RelayVM server')
 
-    // Create relay pools
-    // Transport pool is used directly by NostrServerTransport (implements RelayHandler)
-    this.transportPool = new ApplesauceRelayPool(config.cvmRelays)
-    // Ingestion pool is wrapped in adapter for our RelayPool interface
+    // Initialize ingestion pool (always required)
     this.ingestionPool = new RelayPoolAdapter(new ApplesauceRelayPool(config.ingestRelays))
 
-    // Create signer (real SDK implementation)
-    this.signer = new PrivateKeySigner(config.serverKey)
-
-    // Initialize State Core
+    // Initialize State Core (transport-agnostic)
     this.core = initStateCore({
       aggregation: config.aggregation,
     })
 
-    // Create CVM-specific services
+    // Create shared services (transport-agnostic)
     this.rateLimiter = new RateLimiterService()
     this.metrics = new MetricsService()
     this.queryCache = new QueryCache(config.cache.ttlSeconds, config.cache.maxSize)
     this.security = new SecurityService(this.rateLimiter, {
-      allowedPubkeys: config.allowedPubkeys,
+      allowedPubkeys: config.cvm?.allowedPubkeys || [],
       queryShape: DEFAULT_QUERY_SHAPE,
       enableRateLimiting: true,
-      enableAuth: config.auth.enabled,
-      allowAnyPubkey: config.auth.allowAny || config.allowedPubkeys.includes('*'),
+      enableAuth: config.cvm?.auth.enabled ?? false,
+      allowAnyPubkey: config.cvm?.auth.allowAny || false,
     })
-    // Query cache initialized above
     this.ingestionService = new IngestionService(
       this.ingestionPool,
       this.core,
@@ -115,20 +111,46 @@ export class CVMServer {
     )
     this.subscriptionManager = new SubscriptionManager()
 
+    // Initialize CVM transport if enabled
+    if (config.cvm?.enabled) {
+      this.initializeCVMTransport(config.cvm)
+    }
+
+    // Initialize REST server if enabled
+    if (config.rest.enabled) {
+      this.initializeRESTServer()
+    }
+
+    logger.info({
+      cvmEnabled: !!config.cvm?.enabled,
+      restEnabled: config.rest.enabled,
+      ingestionRelays: config.ingestRelays.length,
+    }, 'RelayVM server initialized')
+  }
+
+  /**
+   * Initialize CVM transport and MCP server
+   */
+  private initializeCVMTransport(cvmConfig: NonNullable<Config['cvm']>): void {
+    logger.info('Initializing CVM transport')
+
+    // Create CVM relay pool and signer
+    this.transportPool = new ApplesauceRelayPool(cvmConfig.cvmRelays)
+    this.signer = new PrivateKeySigner(cvmConfig.serverKey)
+
     // Create tool registry first (before transport context)
-    // We'll wire the transport context to use the registry's client pubkey
     this.toolRegistry = new ToolRegistry({
       security: this.security,
       queryCache: this.queryCache,
       metrics: this.metrics,
       transport: {
-        getClientPubkey: () => this.toolRegistry.getCurrentClientPubkey(),
+        getClientPubkey: () => this.toolRegistry!.getCurrentClientPubkey(),
       },
     })
 
     // Store transport context reference for subscription tools
     this.transportContext = {
-      getClientPubkey: () => this.toolRegistry.getCurrentClientPubkey(),
+      getClientPubkey: () => this.toolRegistry!.getCurrentClientPubkey(),
     }
 
     // Create MCP Server instance
@@ -144,17 +166,17 @@ export class CVMServer {
       }
     )
 
-    // Create Nostr transport (real SDK implementation)
+    // Create Nostr transport
     this.transport = new NostrServerTransport({
       signer: this.signer,
       relayHandler: this.transportPool,
-      encryptionMode: this.getEncryptionMode(config.encryptionMode),
+      encryptionMode: this.getEncryptionMode(cvmConfig.encryptionMode),
       serverInfo: {
         name: 'RelayVM',
         about: 'ContextVM server that aggregates NIP-66 relay intelligence and exposes it via MCP over Nostr. Service provided by nostr.watch',
       },
-      isPublicServer: config.allowedPubkeys.length === 0,
-      allowedPublicKeys: config.allowedPubkeys.length > 0 ? config.allowedPubkeys : undefined,
+      isPublicServer: cvmConfig.allowedPubkeys.length === 0,
+      allowedPublicKeys: cvmConfig.allowedPubkeys.length > 0 ? cvmConfig.allowedPubkeys : undefined,
     })
 
     // Create notification delivery service
@@ -163,16 +185,50 @@ export class CVMServer {
       this.transport
     )
 
-    // Register tools (will be migrated to MCP pattern)
-    // Verify critical schemas exist (non-fatal), to avoid silent runtime failures in dev/prod
+    // Register tools
     verifyCriticalSchemas()
     this.registerTools()
 
     logger.info({
-      transportRelays: config.cvmRelays.length,
-      ingestionRelays: config.ingestRelays.length,
-      encryptionMode: config.encryptionMode,
-    }, 'CVM server initialized')
+      transportRelays: cvmConfig.cvmRelays.length,
+      encryptionMode: cvmConfig.encryptionMode,
+    }, 'CVM transport initialized')
+  }
+
+  /**
+   * Initialize REST server
+   */
+  private initializeRESTServer(): void {
+    logger.info('Initializing REST server')
+
+    // Create SSE delivery service for REST subscriptions
+    const sseDelivery = new SSEDeliveryService(this.subscriptionManager)
+
+    this.restServer = new RestServer(
+      {
+        host: this.config.rest.host,
+        port: this.config.rest.port,
+        corsOrigins: this.config.rest.corsOrigins,
+        enableSwagger: this.config.rest.enableSwagger,
+        allowPolicyUpdate: this.config.rest.allowPolicyUpdate,
+        rateLimit: this.config.rest.rateLimit,
+      },
+      {
+        core: this.core,
+        metrics: this.metrics,
+        security: this.security,
+        subscriptionManager: this.subscriptionManager,
+        sseDelivery,
+        queryCache: this.queryCache,
+        allowPolicyUpdate: this.config.rest.allowPolicyUpdate,
+        getUptime: () => this.getUptime(),
+        getRelayCount: () => this.getRelayCount(),
+        getMetricsSnapshot: () => this.getMetricsSnapshot(),
+        getReady: () => this.getReady(),
+      }
+    )
+
+    logger.info('REST server initialized')
   }
 
   /**
@@ -191,16 +247,20 @@ export class CVMServer {
 
   /**
    * Register all MCP tools via the adapter
+   * Note: Only called from initializeCVMTransport(), so toolRegistry is guaranteed to be defined
    */
   private registerTools(): void {
     logger.debug('Registering MCP tools via adapter')
+
+    // toolRegistry is guaranteed to be defined when this method is called
+    const registry = this.toolRegistry!
 
     const toolsContext = {
       core: this.core,
     }
 
     // Handshake probe tool - minimal tool for testing MCP pipeline
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       {
         name: 'handshake/ping',
         description: 'Minimal handshake probe to verify MCP pipeline is operational',
@@ -231,7 +291,7 @@ export class CVMServer {
     )
 
     // Health tool (no caching, always fresh)
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createHealthTool({
         getRelayCount: () => this.getRelayCount(),
         getObservationCount: () => this.core.stats.get().observations.count,
@@ -245,55 +305,55 @@ export class CVMServer {
     )
 
     // Relay tools (cached)
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysListTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:list:${p.sortBy || 'url'}:${p.sortOrder || 'asc'}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysGetStateTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:state:${p.relayUrl}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysSearchTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:search:${JSON.stringify(p)}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysNearbyTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `nearby:${p.lat}:${p.lon}:${p.radius || 100}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysBboxTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `bbox:${p.sw.lat}:${p.sw.lon}:${p.ne.lat}:${p.ne.lon}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysGetLabelsTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `labels:${p.relayUrl}:${p.namespace || 'all'}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysListLabelsTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `list-labels:${p.namespace || 'all'}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysByLabelTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:group:label:${p.namespace}:${p.value}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysBySoftwareTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:group:software${p.family ? ':' + p.family : ''}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysByNetworkTool(toolsContext),
       { enabled: true, cacheKeyFn: () => `relays:group:network` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysByNipTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:group:nip${p.nip ? ':' + p.nip : ''}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysByCountryTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `relays:group:country${p.countryCode ? ':' + p.countryCode : ''}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysCompareTool(toolsContext),
       { enabled: true, cacheKeyFn: (p) => `compare:${p.relayUrls.sort().join(',')}` }
     )
@@ -302,104 +362,73 @@ export class CVMServer {
     const availabilityTtl = 30 // seconds
     const filterHash = (filters: any) => (filters ? JSON.stringify(filters) : 'none')
     const defaultLookback = this.core.query.policy.get().lookbackSeconds
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysOnlineTool(toolsContext),
       { enabled: true, cacheKeyFn: (p: any) => `availability:online:${p.onlineWindowSeconds || defaultLookback}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysOfflineTool(toolsContext),
       { enabled: true, cacheKeyFn: (p: any) => `availability:offline:${p.offlineSeenSeconds || 86400}:${p.offlineThresholdSeconds || 3600}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysDeadTool(toolsContext),
       { enabled: true, cacheKeyFn: (p: any) => `availability:dead:${p.deadThresholdSeconds || 604800}:${filterHash(p.filters)}`, ttlSeconds: availabilityTtl }
     )
 
     // Monitor tools (cached)
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createMonitorsGetTool({ core: this.core }),
       { enabled: true, cacheKeyFn: (p) => `monitor:${p.pubkey}` }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createMonitorsListTool({ core: this.core }),
       { enabled: true, cacheKeyFn: (p) => `monitors:${p.limit || 100}:${p.offset || 0}` }
     )
 
     // Policy tools (no caching, requires auth)
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createPolicyGetTool({
         core: this.core,
-        allowedPubkeys: this.config.allowedPubkeys,
+        allowedPubkeys: this.config.cvm?.allowedPubkeys || [],
       }),
       { enabled: false }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createPolicySetTool({
         core: this.core,
-        allowedPubkeys: this.config.allowedPubkeys,
+        allowedPubkeys: this.config.cvm?.allowedPubkeys || [],
       }),
       { enabled: false }
     )
 
     // Subscription tools (no caching, stateful operations)
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysSubscribeStateTool({
         subscriptionManager: this.subscriptionManager,
-        getClientPubkey: () => this.transportContext.getClientPubkey(),
+        getClientPubkey: () => this.transportContext!.getClientPubkey(),
         requireAuth: ((): boolean => {
           const env = process.env.CVM_SUBS_REQUIRE_AUTH
           if (env !== undefined) {
             const v = env.toLowerCase()
             return !(v === 'false' || v === '0' || v === 'off')
           }
-          return this.config.auth.enabled
+          return this.config.cvm?.auth.enabled ?? false
         })(),
       }),
       { enabled: false }
     )
-    this.toolRegistry.registerTool(
+    registry.registerTool(
       createRelaysUnsubscribeTool({
         subscriptionManager: this.subscriptionManager,
-        getClientPubkey: () => this.transportContext.getClientPubkey(),
+        getClientPubkey: () => this.transportContext!.getClientPubkey(),
       }),
       { enabled: false }
     )
 
     // Register MCP handlers (tools/list and tools/call)
-    registerToolset(this.mcpServer, this.toolRegistry)
+    registerToolset(this.mcpServer!, registry)
 
-    logger.info({ toolCount: this.toolRegistry.getAllTools().length }, 'MCP tools registered via adapter')
-
-    // Initialize REST server if enabled
-    if (this.config.rest.enabled) {
-      // Create SSE delivery service for REST subscriptions
-      const sseDelivery = new SSEDeliveryService(this.subscriptionManager)
-
-      this.restServer = new RestServer(
-        {
-          host: this.config.rest.host,
-          port: this.config.rest.port,
-          corsOrigins: this.config.rest.corsOrigins,
-          enableSwagger: this.config.rest.enableSwagger,
-          allowPolicyUpdate: this.config.rest.allowPolicyUpdate,
-          rateLimit: this.config.rest.rateLimit,
-        },
-        {
-          core: this.core,
-          metrics: this.metrics,
-          security: this.security,
-          subscriptionManager: this.subscriptionManager,
-          sseDelivery,
-          queryCache: this.queryCache,
-          allowPolicyUpdate: this.config.rest.allowPolicyUpdate,
-          getUptime: () => this.getUptime(),
-          getRelayCount: () => this.getRelayCount(),
-          getMetricsSnapshot: () => this.getMetricsSnapshot(),
-          getReady: () => this.getReady(),
-        }
-      )
-      logger.info('REST server initialized with subscription support')
-    }
+    logger.info({ toolCount: registry.getAllTools().length }, 'MCP tools registered via adapter')
   }
 
 
@@ -407,44 +436,44 @@ export class CVMServer {
    * Start the server
    */
   async start(): Promise<void> {
-    logger.info('Starting CVM server')
+    logger.info('Starting RelayVM server')
 
     try {
-      // Log detailed startup configuration for debugging
-      const pubkey = await this.signer.getPublicKey()
-      logger.info({
-        serverPubkey: pubkey,
-        transportRelays: this.config.cvmRelays,
-        ingestionRelays: this.config.ingestRelays,
-        encryptionMode: this.config.encryptionMode,
-        isPublicServer: this.config.allowedPubkeys.length === 0,
-        allowedPubkeys: this.config.allowedPubkeys,
-        authEnabled: this.config.auth.enabled,
-        allowAnyPubkey: this.config.auth.allowAny,
-        toolCount: this.toolRegistry.getAllTools().length,
-      }, 'Server configuration before transport start')
+      // Start CVM transport if enabled
+      if (this.transport && this.mcpServer && this.signer) {
+        const pubkey = await this.signer.getPublicKey()
+        logger.info({
+          serverPubkey: pubkey,
+          transportRelays: this.config.cvm?.cvmRelays,
+          encryptionMode: this.config.cvm?.encryptionMode,
+          isPublicServer: (this.config.cvm?.allowedPubkeys.length || 0) === 0,
+          allowedPubkeys: this.config.cvm?.allowedPubkeys,
+          authEnabled: this.config.cvm?.auth.enabled,
+          allowAnyPubkey: this.config.cvm?.auth.allowAny,
+          toolCount: this.toolRegistry?.getAllTools().length || 0,
+        }, 'CVM transport configuration')
 
-      // Start Nostr transport
-      logger.info('Starting Nostr transport...')
-      const transportStartTime = Date.now()
-      await this.transport.start()
-      logger.info({ durationMs: Date.now() - transportStartTime }, 'Nostr transport started')
+        logger.info('Starting CVM transport...')
+        const transportStartTime = Date.now()
+        await this.transport.start()
+        logger.info({ durationMs: Date.now() - transportStartTime }, 'CVM transport started')
 
-      // Connect MCP Server to transport
-      logger.info('Connecting MCP server to transport...')
-      const connectStartTime = Date.now()
-      await this.mcpServer.connect(this.transport)
-      logger.info({ durationMs: Date.now() - connectStartTime }, 'MCP server connected to transport')
+        logger.info('Connecting MCP server to transport...')
+        const connectStartTime = Date.now()
+        await this.mcpServer.connect(this.transport)
+        logger.info({ durationMs: Date.now() - connectStartTime }, 'MCP server connected to transport')
 
-      // Start ingestion
+        // Start notification delivery (CVM-specific)
+        this.notificationDelivery?.start()
+        logger.info('CVM notification delivery started')
+      }
+
+      // Start ingestion (always required)
       await this.ingestionService.start()
       logger.info('Ingestion started')
 
-      // Start periodic aggregation
+      // Start periodic aggregation (always required)
       this.startAggregationTimer()
-
-      // Start notification delivery
-      this.notificationDelivery.start()
 
       // Start REST server if enabled
       if (this.restServer) {
@@ -453,13 +482,12 @@ export class CVMServer {
       }
 
       logger.info({
-        pubkey,
-        cvmRelays: this.config.cvmRelays.length,
-        ingestRelays: this.config.ingestRelays.length,
+        cvmEnabled: !!this.transport,
         restEnabled: !!this.restServer,
-      }, 'CVM server started successfully')
+        ingestRelays: this.config.ingestRelays.length,
+      }, 'RelayVM server started successfully')
     } catch (err) {
-      logger.error({ err }, 'Failed to start CVM server')
+      logger.error({ err }, 'Failed to start RelayVM server')
       throw err
     }
   }
@@ -468,7 +496,7 @@ export class CVMServer {
    * Stop the server gracefully
    */
   async stop(): Promise<void> {
-    logger.info('Stopping CVM server')
+    logger.info('Stopping RelayVM server')
 
     try {
       // Stop aggregation timer
@@ -477,8 +505,13 @@ export class CVMServer {
         this.aggregationTimer = undefined
       }
 
-      // Stop services
-      this.notificationDelivery.stop()
+      // Stop CVM notification delivery if running
+      if (this.notificationDelivery) {
+        this.notificationDelivery.stop()
+        logger.info('CVM notification delivery stopped')
+      }
+
+      // Stop ingestion (always running)
       await this.ingestionService.stop()
 
       // Stop REST server if running
@@ -487,15 +520,20 @@ export class CVMServer {
         logger.info('REST API stopped')
       }
 
-      // Close MCP server connection
-      await this.mcpServer.close()
+      // Close CVM transport if running
+      if (this.mcpServer) {
+        await this.mcpServer.close()
+        logger.info('MCP server closed')
+      }
 
-      // Close transport
-      await this.transport.close()
+      if (this.transport) {
+        await this.transport.close()
+        logger.info('CVM transport closed')
+      }
 
-      logger.info('CVM server stopped')
+      logger.info('RelayVM server stopped')
     } catch (err) {
-      logger.error({ err }, 'Error stopping CVM server')
+      logger.error({ err }, 'Error stopping RelayVM server')
       throw err
     }
   }

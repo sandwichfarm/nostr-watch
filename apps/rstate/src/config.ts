@@ -154,8 +154,18 @@ function validatePrivateKey(key: string | undefined): string {
 
 /**
  * Validate that transport relays are local only (prevent production pollution)
+ * Can be bypassed with CVM_ALLOW_PRODUCTION_RELAYS=true or NODE_ENV=production
  */
 function validateLocalRelaysOnly(relays: string[], env: string): void {
+  // Allow production relays if explicitly enabled
+  const allowProductionRelays =
+    process.env.CVM_ALLOW_PRODUCTION_RELAYS?.toLowerCase() === 'true' ||
+    process.env.NODE_ENV === 'production'
+
+  if (allowProductionRelays) {
+    return
+  }
+
   const productionHosts = [
     'relay.contextvm.org',
     'relay.nostr.watch',
@@ -182,7 +192,8 @@ function validateLocalRelaysOnly(relays: string[], env: string): void {
           `CRITICAL: ${env} contains PRODUCTION relay: ${relay}\n` +
           `Transport relays MUST be local to prevent polluting production with test data!\n` +
           `Use: ws://localhost:6969 (start with: nak serve --port 6969)\n` +
-          `See .env.development.safe for safe configuration.`
+          `See .env.development.safe for safe configuration.\n` +
+          `To allow production relays, set: CVM_ALLOW_PRODUCTION_RELAYS=true or NODE_ENV=production`
         )
       }
 

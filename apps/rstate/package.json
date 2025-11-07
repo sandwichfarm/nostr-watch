@@ -38,6 +38,7 @@
     "@fastify/cors": "^11.1.0",
     "@fastify/swagger": "^9.5.2",
     "@fastify/swagger-ui": "^5.2.3",
+    "@modelcontextprotocol/sdk": "^1.21.0",
     "@noble/hashes": "^1.5.0",
     "@noble/secp256k1": "^2.1.0",
     "ajv": "^8.17.1",

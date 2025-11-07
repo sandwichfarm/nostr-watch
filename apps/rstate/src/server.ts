@@ -4,7 +4,7 @@
  * Manages the Nostr Server Transport and tool registration
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { Server } from '@contextvm/sdk/server/index.js'
 import { NostrServerTransport, ApplesauceRelayPool, PrivateKeySigner, EncryptionMode } from '@contextvm/sdk'
 import { RelayPoolAdapter } from './sdk-adapters.js'
 import type { Config } from './config.js'

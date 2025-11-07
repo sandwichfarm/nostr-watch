@@ -23,6 +23,7 @@ interface CheckData {
         auth_required?: boolean;
         payment_required?: boolean;
         pow_required?: boolean;
+        min_pow_difficulty?: number;
       };
       software?: string;
       version?: string;
@@ -178,8 +179,8 @@ export class Kind30166 extends Event {
         tags.push(['R', '!payment'])
       }
 
-      if (info?.limitation?.pow_required === true){
-        tags.push(['R', 'pow'])
+      if (typeof info?.limitation?.min_pow_difficulty === 'number' && info?.limitation?.min_pow_difficulty > 0){
+        tags.push(['R', 'pow', info.limitation.min_pow_difficulty.toString() ])
       }
       else {
         tags.push(['R', '!pow'])

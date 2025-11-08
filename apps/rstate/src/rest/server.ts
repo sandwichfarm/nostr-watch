@@ -173,8 +173,16 @@ export class RestServer {
       // Referrer policy
       reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
 
-      // Content Security Policy (restrictive for API)
-      reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
+      // Content Security Policy
+      // Relaxed CSP for Swagger UI routes, strict for API endpoints
+      const isSwaggerRoute = request.url === '/' || request.url.startsWith('/static/')
+      if (isSwaggerRoute && this.config.enableSwagger) {
+        // Allow Swagger UI to load scripts, styles, and images from same origin
+        reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'")
+      } else {
+        // Strict CSP for API endpoints
+        reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
+      }
 
       // HSTS - Force HTTPS for 2 years (only if request is via HTTPS)
       // Check if request is via HTTPS (either directly or via proxy)

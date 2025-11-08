@@ -66,6 +66,7 @@ export class RestServer {
   private app: FastifyInstance
   private context: RestContext
   private rateLimiter?: RateLimiterService
+  private routesReady: Promise<void>
 
   constructor(
     private config: RestServerConfig,
@@ -97,20 +98,22 @@ export class RestServer {
       logger.info({ config: config.rateLimit }, 'REST rate limiting enabled')
     }
 
-    this.setupPlugins()
+    this.setupCorePlugins()
     this.setupSecurityHeaders()
     this.setupRateLimiting()
     this.setupRequestLogging()
     this.setupCaching()
-    // setupRoutes may require async initialization (e.g., dynamic imports)
-    void this.setupRoutes()
     this.setupErrorHandling()
+
+    // Setup routes asynchronously - must complete before Swagger can generate spec
+    this.routesReady = this.setupRoutes()
   }
 
   /**
-   * Setup Fastify plugins
+   * Setup core Fastify plugins (CORS, etc.)
+   * Called during construction before routes are registered
    */
-  private setupPlugins(): void {
+  private setupCorePlugins(): void {
     // CORS
     this.app.register(cors, {
       origin: this.config.corsOrigins === '*' ? '*' : this.config.corsOrigins,
@@ -118,42 +121,51 @@ export class RestServer {
       credentials: true,
     })
 
-    // Swagger/OpenAPI
-    if (this.config.enableSwagger) {
-      this.app.register(swagger, {
-        openapi: {
-          info: {
-            title: 'RelayVM REST API',
-            description: 'HTTP REST interface to relay state aggregation',
-            version: process.env.npm_package_version || '0.1.0',
-          },
-          servers: [
-            {
-              url: `http://${this.config.host}:${this.config.port}`,
-              description: 'Development server',
-            },
-          ],
-          tags: [
-            { name: 'health', description: 'Health check endpoints' },
-            { name: 'relays', description: 'Relay state queries' },
-            { name: 'monitors', description: 'Monitor information' },
-            { name: 'policy', description: 'Policy management' },
-            { name: 'subscriptions', description: 'Relay state subscriptions' },
-          ],
-        },
-      })
+    logger.info('Core plugins registered')
+  }
 
-      this.app.register(swaggerUi, {
-        routePrefix: '/',
-        uiConfig: {
-          docExpansion: 'list',
-          deepLinking: true,
-        },
-        staticCSP: true,
-      })
+  /**
+   * Setup Swagger/OpenAPI documentation
+   * Must be called AFTER routes are registered so the spec includes all endpoints
+   */
+  private async setupSwagger(): Promise<void> {
+    if (!this.config.enableSwagger) {
+      return
     }
 
-    logger.info('Plugins registered')
+    await this.app.register(swagger, {
+      openapi: {
+        info: {
+          title: 'RelayVM REST API',
+          description: 'HTTP REST interface to relay state aggregation',
+          version: process.env.npm_package_version || '0.1.0',
+        },
+        servers: [
+          {
+            url: `http://${this.config.host}:${this.config.port}`,
+            description: 'Development server',
+          },
+        ],
+        tags: [
+          { name: 'health', description: 'Health check endpoints' },
+          { name: 'relays', description: 'Relay state queries' },
+          { name: 'monitors', description: 'Monitor information' },
+          { name: 'policy', description: 'Policy management' },
+          { name: 'subscriptions', description: 'Relay state subscriptions' },
+        ],
+      },
+    })
+
+    await this.app.register(swaggerUi, {
+      routePrefix: '/',
+      uiConfig: {
+        docExpansion: 'list',
+        deepLinking: true,
+      },
+      staticCSP: true,
+    })
+
+    logger.info('Swagger documentation registered')
   }
 
   /**
@@ -457,6 +469,13 @@ export class RestServer {
    */
   async start(): Promise<void> {
     try {
+      // Wait for routes to be registered
+      await this.routesReady
+      logger.info('Routes registered, setting up Swagger')
+
+      // Setup Swagger AFTER routes are ready
+      await this.setupSwagger()
+
       // Start SSE delivery service
       this.context.sseDelivery.start()
 

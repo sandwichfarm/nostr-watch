@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.17.30",
+    "node-fetch": "^3.3.2",
     "typescript": "^5.6.3"
   }
 }

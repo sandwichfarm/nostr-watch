@@ -2169,6 +2169,25 @@ importers:
         specifier: 3.1.2
         version: 3.1.2(@types/debug@4.1.12)(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.39.0)
 
+  libraries/uptime-kuma-monitor:
+    dependencies:
+      '@nostrwatch/nocap':
+        specifier: workspace:^
+        version: link:../nocap
+      '@nostrwatch/nocap-websocket-adapter-default':
+        specifier: workspace:^
+        version: link:../nocap/adapters/default/WebsocketAdapterDefault
+    devDependencies:
+      '@types/node':
+        specifier: ^20.17.30
+        version: 20.17.32
+      node-fetch:
+        specifier: ^3.3.2
+        version: 3.3.2
+      typescript:
+        specifier: ^5.6.3
+        version: 5.8.3
+
   libraries/websocket:
     dependencies:
       https-browserify:

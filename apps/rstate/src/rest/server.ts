@@ -328,16 +328,8 @@ export class RestServer {
    * Setup routes
    */
   private async setupRoutes(): Promise<void> {
-    // Health check
-    this.app.get('/health/ping', {
-      schema: {
-        tags: ['health'],
-        description: 'Health check with system metrics',
-        response: {
-          200: schemas.health.ping,
-        },
-      },
-    }, async (_request, _reply) => {
+    // Health check handler (shared by GET and POST)
+    const healthPingHandler = async (_request: any, _reply: any) => {
       const stats = this.context.core.stats.get()
       const relayCount = this.context.getRelayCount()
       const metricsSnapshot = this.context.getMetricsSnapshot()
@@ -368,7 +360,21 @@ export class RestServer {
           hitRatePercent: Math.round(cacheStats.hitRate * 100 * 100) / 100, // Round to 2 decimals
         },
       }
-    })
+    }
+
+    const healthPingSchema = {
+      tags: ['health'],
+      description: 'Health check with system metrics',
+      response: {
+        200: schemas.health.ping,
+      },
+    }
+
+    // Health check - GET
+    this.app.get('/health/ping', { schema: healthPingSchema }, healthPingHandler)
+
+    // Health check - POST (for monitoring tools that use POST)
+    this.app.post('/health/ping', { schema: healthPingSchema }, healthPingHandler)
 
     // Register route modules
     await registerRelayRoutes(this.app, this.context)

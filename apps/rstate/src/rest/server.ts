@@ -144,7 +144,7 @@ export class RestServer {
       })
 
       this.app.register(swaggerUi, {
-        routePrefix: '/docs',
+        routePrefix: '/',
         uiConfig: {
           docExpansion: 'list',
           deepLinking: true,
@@ -458,7 +458,7 @@ export class RestServer {
       }, 'REST server started')
 
       if (this.config.enableSwagger) {
-        logger.info(`API docs available at http://${this.config.host}:${this.config.port}/docs`)
+        logger.info(`API docs available at http://${this.config.host}:${this.config.port}/`)
       }
     } catch (err) {
       logger.error({ err }, 'Failed to start REST server')

@@ -585,8 +585,8 @@ export class CVMServer {
    */
   private getRelayCount(): { transport: number; ingestion: number } {
     return {
-      transport: this.config.cvmRelays.length,
-      ingestion: this.config.ingestRelays.length,
+      transport: this.config.cvm?.cvmRelays?.length ?? 0,
+      ingestion: this.config.ingestRelays?.length ?? 0,
     }
   }
 

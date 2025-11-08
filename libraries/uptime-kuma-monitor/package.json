@@ -1,0 +1,35 @@
+{
+  "name": "@nostrwatch/kuma",
+  "version": "0.1.0",
+  "description": "Uptime Kuma PUSH monitor for Nostr relays using @nostrwatch/nocap (websocket adapter).",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./cli": {
+      "import": "./dist/cli.js",
+      "types": "./dist/cli.d.ts"
+    }
+  },
+  "bin": {
+    "nostrwatch-kuma": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -w -p tsconfig.json",
+    "bun:compile": "bun build --compile ./src/cli.ts --outfile ./dist/nostrwatch-kuma",
+    "build:bin:bun": "pnpm build && pnpm bun:compile"
+  },
+  "dependencies": {
+    "@nostrwatch/nocap": "workspace:^",
+    "@nostrwatch/nocap-websocket-adapter-default": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.30",
+    "typescript": "^5.6.3"
+  }
+}

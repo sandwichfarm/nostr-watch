@@ -284,6 +284,8 @@ export function loadConfig(): Config {
     (process.env.NODE_ENV === 'production'
       ? 'https://api.nostr.watch'
       : undefined)  // undefined = use host:port format
+  console.log('[CONFIG DEBUG] API_BASE_URL env:', process.env.API_BASE_URL)
+  console.log('[CONFIG DEBUG] restApiBaseUrl:', restApiBaseUrl)
 
   const restCorsOrigins = process.env.REST_CORS_ORIGINS === '*'
     ? '*'

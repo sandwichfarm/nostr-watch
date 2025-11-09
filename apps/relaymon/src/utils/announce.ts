@@ -49,6 +49,8 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
 
   const pk = getPublicKey(sk);
 
+  const relays = Array.from(relaySet)
+
   const announcer = new AnnounceMonitor(
     pk,
     {
@@ -60,7 +62,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
       timeouts,
       frequency,
       checks,
-      userMetaRelays
+      relays
     }
   );
 

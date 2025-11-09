@@ -210,7 +210,7 @@ relaymon/
 
 ## Environment Variables
 
-- DAEMON_PRIVKEY: The private key used to sign announcements and events.
+- `RELAYMON_NSEC`: The private key used to sign announcements and events.
 
 ## Development
 

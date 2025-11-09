@@ -30,6 +30,7 @@ export interface Config {
     enabled: boolean
     host: string
     port: number
+    apiBaseUrl?: string  // Base URL for OpenAPI spec (e.g., https://api.nostr.watch)
     corsOrigins: string[] | '*'
     enableSwagger: boolean
     allowPolicyUpdate: boolean
@@ -277,6 +278,13 @@ export function loadConfig(): Config {
   // REST API
   const restHost = process.env.REST_HOST || '127.0.0.1'
   const restPort = parseNumber(process.env.REST_PORT, 3000)
+
+  // API Base URL for OpenAPI spec - defaults to production URL in production, otherwise local
+  const restApiBaseUrl = process.env.API_BASE_URL ||
+    (process.env.NODE_ENV === 'production'
+      ? 'https://api.nostr.watch'
+      : undefined)  // undefined = use host:port format
+
   const restCorsOrigins = process.env.REST_CORS_ORIGINS === '*'
     ? '*'
     : parseList(process.env.REST_CORS_ORIGINS, ['http://localhost:3000'])
@@ -305,6 +313,7 @@ export function loadConfig(): Config {
       enabled: restEnabled,
       host: restHost,
       port: restPort,
+      apiBaseUrl: restApiBaseUrl,
       corsOrigins: restCorsOrigins,
       enableSwagger: restEnableSwagger,
       allowPolicyUpdate: restAllowPolicyUpdate,

@@ -27,6 +27,15 @@ function loadSchema(filename: string): object {
 
   const schemaPath = join(__dirname, '..', 'schemas', filename)
 
+  // Debug logging
+  const debug = process.env.LOG_LEVEL === 'debug' || process.env.LOG_LEVEL === 'trace'
+  if (debug) {
+    console.log(`[Schema Debug] Loading schema: ${filename}`)
+    console.log(`[Schema Debug] __dirname: ${__dirname}`)
+    console.log(`[Schema Debug] Resolved path: ${schemaPath}`)
+    console.log(`[Schema Debug] File exists: ${existsSync(schemaPath)}`)
+  }
+
   // Check if file exists before trying to read
   if (!existsSync(schemaPath)) {
     console.warn(`Schema file not found: ${schemaPath}, using empty schema`)
@@ -38,6 +47,11 @@ function loadSchema(filename: string): object {
   try {
     const schemaContent = readFileSync(schemaPath, 'utf-8')
     const schema = JSON.parse(schemaContent)
+
+    if (debug) {
+      console.log(`[Schema Debug] Successfully loaded ${filename}, keys:`, Object.keys(schema))
+    }
+
     schemaCache.set(filename, schema)
     return schema
   } catch (err) {

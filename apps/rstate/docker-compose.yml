@@ -38,6 +38,7 @@ services:
       REST_ENABLED: ${REST_ENABLED:-true}
       REST_HOST: 0.0.0.0
       REST_PORT: 3000
+      API_BASE_URL: ${API_BASE_URL:-https://api.nostr.watch}
       REST_CORS_ORIGINS: ${REST_CORS_ORIGINS:-*}
       REST_ENABLE_SWAGGER: ${REST_ENABLE_SWAGGER:-true}
       REST_ALLOW_POLICY_UPDATE: ${REST_ALLOW_POLICY_UPDATE:-false}

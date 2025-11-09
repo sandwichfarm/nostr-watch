@@ -32,6 +32,7 @@ const logger = getLogger().child({ module: 'rest-server' })
 export interface RestServerConfig {
   host: string
   port: number
+  apiBaseUrl?: string  // Base URL for OpenAPI spec (e.g., https://api.nostr.watch)
   corsOrigins: string[] | '*'
   enableSwagger: boolean
   allowPolicyUpdate: boolean
@@ -133,6 +134,12 @@ export class RestServer {
       return
     }
 
+    // Determine server URL - use apiBaseUrl if provided, otherwise construct from host:port
+    const serverUrl = this.config.apiBaseUrl || `http://${this.config.host}:${this.config.port}`
+    const serverDescription = this.config.apiBaseUrl
+      ? (process.env.NODE_ENV === 'production' ? 'Production API' : 'API Server')
+      : 'Development server'
+
     await this.app.register(swagger, {
       openapi: {
         info: {
@@ -142,8 +149,8 @@ export class RestServer {
         },
         servers: [
           {
-            url: `http://${this.config.host}:${this.config.port}`,
-            description: 'Development server',
+            url: serverUrl,
+            description: serverDescription,
           },
         ],
         tags: [

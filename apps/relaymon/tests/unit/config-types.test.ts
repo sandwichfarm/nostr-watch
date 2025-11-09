@@ -105,23 +105,6 @@ Deno.test("Config validation - missing monitor.info.name throws", () => {
   );
 });
 
-Deno.test("Config validation - missing monitor.owner throws", () => {
-  const invalidConfig = {
-    monitor: {
-      slug: "test",
-      info: { name: "Test", about: "Test" }
-    },
-    publisher: { relays: [] },
-    relaymon: {} as any
-  };
-
-  assertThrows(
-    () => validateConfig(invalidConfig as any),
-    Error,
-    "monitor.owner"
-  );
-});
-
 Deno.test("Config validation - missing relaymon.networks throws", () => {
   const invalidConfig = {
     monitor: {

@@ -207,7 +207,7 @@ export class RestServer {
   <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
 </body>
 </html>`
-      reply.type('text/html').send(html)
+      return reply.type('text/html').send(html)
     })
 
     logger.info('OpenAPI documentation routes registered')

@@ -9,11 +9,11 @@ import { SSEDeliveryService } from '../src/rest/sse-delivery.js'
 import { QueryCache } from '../src/services/cache.js'
 import { DEFAULT_QUERY_SHAPE } from '../src/utils/validation.js'
 
-describe('Swagger 402 documentation', () => {
+describe('OpenAPI 402 documentation', () => {
   let server: RestServer
   let app: any
 
-  beforeAll(() => {
+  beforeAll(async () => {
     const core = initStateCore({
       aggregation: {
         windowStrategy: 'global',
@@ -63,7 +63,13 @@ describe('Swagger 402 documentation', () => {
       }
     )
 
+    // Wait for routes and swagger to be ready
+    await (server as any).routesReady
+
     app = server.getApp()
+
+    // Call ready() to finalize all routes for swagger introspection
+    await app.ready()
   })
 
   afterAll(async () => {

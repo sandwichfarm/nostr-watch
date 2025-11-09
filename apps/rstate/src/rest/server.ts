@@ -7,7 +7,7 @@
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import cors from '@fastify/cors'
 import swagger from '@fastify/swagger'
-import swaggerUi from '@fastify/swagger-ui'
+import apiReference from '@scalar/fastify-api-reference'
 import type { StateCore } from '../core/index.js'
 import type { MetricsService } from '../services/metrics.js'
 import type { SecurityService } from '../services/security.js'
@@ -107,7 +107,8 @@ export class RestServer {
     this.setupErrorHandling()
 
     // Setup routes asynchronously - must complete before Swagger can generate spec
-    this.routesReady = this.setupRoutes()
+    // Register swagger FIRST so routes can be documented as they're added
+    this.routesReady = this.setupSwaggerPlugin().then(() => this.setupRoutes()).then(() => this.setupSwaggerRoutes())
   }
 
   /**
@@ -126,10 +127,10 @@ export class RestServer {
   }
 
   /**
-   * Setup Swagger/OpenAPI documentation
-   * Must be called AFTER routes are registered so the spec includes all endpoints
+   * Setup OpenAPI plugin (via @fastify/swagger)
+   * Must be called BEFORE routes are registered so it can introspect them
    */
-  private async setupSwagger(): Promise<void> {
+  private async setupSwaggerPlugin(): Promise<void> {
     if (!this.config.enableSwagger) {
       return
     }
@@ -163,27 +164,53 @@ export class RestServer {
       },
     })
 
-    await this.app.register(swaggerUi, {
-      routePrefix: '/',
-      uiConfig: {
-        docExpansion: 'list',
-        deepLinking: true,
-      },
-      staticCSP: true,
-    })
+    logger.info('OpenAPI plugin registered')
+  }
 
-    // Log the generated spec for debugging
-    const spec = this.app.swagger()
-    logger.info({
-      pathCount: Object.keys(spec.paths || {}).length,
-      schemaCount: Object.keys(spec.components?.schemas || {}).length,
-    }, 'OpenAPI spec generated')
-
-    if (Object.keys(spec.paths || {}).length === 0) {
-      logger.warn('OpenAPI spec has no paths - routes may not have been registered with schemas')
+  /**
+   * Setup OpenAPI documentation routes (Scalar UI + JSON/YAML endpoints)
+   * Must be called AFTER both OpenAPI plugin and API routes are registered
+   */
+  private setupSwaggerRoutes(): void {
+    if (!this.config.enableSwagger) {
+      return
     }
 
-    logger.info('Swagger documentation registered')
+    // Expose OpenAPI JSON spec at /docs/json for compatibility
+    this.app.get('/docs/json', async () => {
+      return this.app.swagger()
+    })
+
+    // Expose OpenAPI YAML spec at /docs/yaml
+    this.app.get('/docs/yaml', async () => {
+      return this.app.swagger({ yaml: true })
+    })
+
+    // Register Scalar UI at /docs (root of docs, not a prefix)
+    // Using a GET route instead of routePrefix to avoid conflicts
+    this.app.get('/docs', async (request, reply) => {
+      // Generate Scalar HTML that loads the spec from /docs/json
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>RelayVM API Documentation</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <script
+    id="api-reference"
+    data-url="/docs/json"
+    data-configuration='${JSON.stringify({
+      theme: 'default',
+    })}'></script>
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>`
+      reply.type('text/html').send(html)
+    })
+
+    logger.info('OpenAPI documentation routes registered')
   }
 
   /**
@@ -204,10 +231,10 @@ export class RestServer {
       reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
 
       // Content Security Policy
-      // Relaxed CSP for Swagger UI routes, strict for API endpoints
-      const isSwaggerRoute = request.url === '/' || request.url.startsWith('/static/')
-      if (isSwaggerRoute && this.config.enableSwagger) {
-        // Allow Swagger UI to load scripts, styles, and images from same origin
+      // Relaxed CSP for API docs routes, strict for API endpoints
+      const isDocsRoute = request.url === '/docs' || request.url.startsWith('/docs/')
+      if (isDocsRoute && this.config.enableSwagger) {
+        // Allow Scalar API docs to load scripts, styles, and images from same origin
         reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'")
       } else {
         // Strict CSP for API endpoints
@@ -487,12 +514,9 @@ export class RestServer {
    */
   async start(): Promise<void> {
     try {
-      // Wait for routes to be registered
+      // Wait for routes and swagger to be ready (both set up in constructor)
       await this.routesReady
-      logger.info('Routes registered, setting up Swagger')
-
-      // Setup Swagger AFTER routes are ready
-      await this.setupSwagger()
+      logger.info('Routes and API documentation ready')
 
       // Start SSE delivery service
       this.context.sseDelivery.start()
@@ -509,7 +533,7 @@ export class RestServer {
       }, 'REST server started')
 
       if (this.config.enableSwagger) {
-        logger.info(`API docs available at http://${this.config.host}:${this.config.port}/`)
+        logger.info(`API docs available at http://${this.config.host}:${this.config.port}/docs`)
       }
     } catch (err) {
       logger.error({ err }, 'Failed to start REST server')

@@ -31,9 +31,12 @@ export interface GeoConfig {
  * Monitor profile information
  */
 export interface MonitorInfoConfig {
-  name: string;
-  about: string;
+  name?: string;
+  about?: string;
   nip05?: string;
+  lud16?: string; 
+  picture?: string; 
+  banner?: string;
 }
 
 /**
@@ -42,7 +45,7 @@ export interface MonitorInfoConfig {
 export interface MonitorConfig {
   slug: string;
   info: MonitorInfoConfig;
-  owner: string;
+  owner?: string;
   geo?: GeoConfig;
 }
 
@@ -267,9 +270,9 @@ export function validateConfig(config: unknown): Config {
     throw new Error("Missing required field: monitor.info.about");
   }
 
-  if (!c.monitor.owner || typeof c.monitor.owner !== "string") {
-    throw new Error("Missing required field: monitor.owner");
-  }
+  // if (!c.monitor.owner || typeof c.monitor.owner !== "string") {
+  //   throw new Error("Missing required field: monitor.owner");
+  // }
 
   // Validate publisher section
   if (!c.publisher || typeof c.publisher !== "object") {

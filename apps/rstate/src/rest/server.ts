@@ -233,8 +233,8 @@ export class RestServer {
       // Relaxed CSP for API docs at root, strict for API endpoints
       const isDocsRoute = request.url === '/' || request.url === '/openapi.json' || request.url === '/openapi.yaml'
       if (isDocsRoute && this.config.enableSwagger) {
-        // Allow Scalar API docs to load scripts from CDN
-        reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; frame-ancestors 'none'")
+        // Allow Scalar API docs to load all required resources
+        reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net https://fonts.scalar.com; connect-src 'self'; frame-ancestors 'none'")
       } else {
         // Strict CSP for API endpoints
         reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")

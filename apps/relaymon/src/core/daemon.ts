@@ -101,7 +101,22 @@ export async function runDaemon(config: Config): Promise<void> {
     // Move maybeAnnounce call after creating queueManager so we can pass it
     await maybeAnnounce(config, queueManager);
 
-    const pubkey = Deno.env.get("DAEMON_PRIVKEY")? getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || "") : "";
+    // Safely derive pubkey from DAEMON_PRIVKEY with error handling
+    let pubkey = "";
+    const privkey = Deno.env.get("DAEMON_PRIVKEY");
+    if (privkey) {
+      try {
+        pubkey = getPublicKey(privkey);
+        logger.info("Successfully derived public key from DAEMON_PRIVKEY");
+      } catch (error) {
+        logger.warn(`Invalid DAEMON_PRIVKEY, cannot derive public key: ${error.message}`);
+        logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
+      }
+    } else {
+      logger.warn("Missing DAEMON_PRIVKEY environment variable");
+      logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
+    }
+
     const worker = new Worker(pubkey, queueManager, config);
 
     let seeder: RelaySeeder | undefined

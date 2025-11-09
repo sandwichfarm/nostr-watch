@@ -253,33 +253,33 @@ export class Worker {
     try {
       const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
         try {
-          const event = new Kind30166(getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || ""));
+          const event = new Kind30166(this.pubkey);
           event.generateEvent(result);
           const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
           const signedEvent = await event.signEvent(privkey);
           await this.publisher.publishEvent(signedEvent);
           this.logger.debug(`Published event for relay ${result.url}`);
-          return true;
         } catch (error: unknown) {
-          this.logger.error(`Publish failed for ${result.url}: ${getErrorMessage(error)}`);
-          
+          const errorMsg = getErrorMessage(error);
+          this.logger.error(`Publish failed for ${result.url} (attempt ${retryCount + 1}/${maxRetries + 1}): ${errorMsg}`);
+
           if (retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
             const nextBackoffMs = backoffMs * 2;
-            this.logger.info(`Scheduling retry ${nextRetryCount}/${maxRetries} for ${result.url} in ${nextBackoffMs}ms`);
-            
+            this.logger.info(`Scheduling retry ${nextRetryCount}/${maxRetries} for ${result.url} in ${(nextBackoffMs / 1000).toFixed(1)}s`);
+
             setTimeout(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
                 { isRetry: true }
               );
             }, nextBackoffMs);
-            
-            return false;
           } else {
             this.logger.error(`Exceeded maximum retries (${maxRetries}) for publishing ${result.url}`);
-            return false;
           }
+
+          // Always throw to properly count failures in queue metrics
+          throw error;
         }
       };
 
@@ -394,7 +394,7 @@ export class Worker {
       // Generate and publish delta event
       const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
         try {
-          const event = new Kind1066(getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || ""));
+          const event = new Kind1066(this.pubkey);
           const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
 
           const signedEvent = await event.generateAndSignEvent({
@@ -414,7 +414,7 @@ export class Worker {
           // Publish ephemeral state change event (Kind 20066) if status changed
           if (operationalStatus) {
             try {
-              const ephemeralEvent = new Kind20066(getPublicKey(privkey));
+              const ephemeralEvent = new Kind20066(this.pubkey);
               const ephemeralSigned = await ephemeralEvent.generateAndSignEvent({
                 url: relayUrl,
                 operationalStatus,
@@ -430,15 +430,14 @@ export class Worker {
               this.logger.warn(`Failed to publish ephemeral event for ${relayUrl}: ${getErrorMessage(ephemeralError)}`);
             }
           }
-
-          return true;
         } catch (error: unknown) {
-          this.logger.error(`Delta event publish failed for ${relayUrl}: ${getErrorMessage(error)}`);
+          const errorMsg = getErrorMessage(error);
+          this.logger.error(`Delta event publish failed for ${relayUrl} (attempt ${retryCount + 1}/${maxRetries + 1}): ${errorMsg}`);
 
           if (retryCount < maxRetries) {
             const nextRetryCount = retryCount + 1;
             const nextBackoffMs = backoffMs * 2;
-            this.logger.info(`Scheduling delta event retry ${nextRetryCount}/${maxRetries} for ${relayUrl} in ${nextBackoffMs}ms`);
+            this.logger.info(`Scheduling delta event retry ${nextRetryCount}/${maxRetries} for ${relayUrl} in ${(nextBackoffMs / 1000).toFixed(1)}s`);
 
             setTimeout(() => {
               this.queueManager.addPublishJob(
@@ -446,12 +445,12 @@ export class Worker {
                 { isRetry: true }
               );
             }, nextBackoffMs);
-
-            return false;
           } else {
             this.logger.error(`Exceeded maximum retries (${maxRetries}) for publishing delta event for ${relayUrl}`);
-            return false;
           }
+
+          // Always throw to properly count failures in queue metrics
+          throw error;
         }
       };
 

@@ -29,29 +29,29 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
 
 
   const sk = Deno.env.get("DAEMON_PRIVKEY");
-  const pk = getPublicKey(sk)
 
-  const announcer = new AnnounceMonitor( 
-    pk, 
-    { 
-      profile, 
-      owner, 
-      geo, 
-      relays, 
+  if (!sk) {
+    logger.error("Missing DAEMON_PRIVKEY; cannot sign announcement.");
+    return;
+  }
+
+  const pk = getPublicKey(sk);
+
+  const announcer = new AnnounceMonitor(
+    pk,
+    {
+      profile,
+      owner,
+      geo,
+      relays,
       networks,
       timeouts,
       frequency,
       checks,
 
       userDataRelays
-    } 
+    }
   );
-
-  
-  if (!sk) {
-    logger.error("Missing DAEMON_PRIVKEY; cannot sign announcement.");
-    return;
-  }
 
   announcer.generate();
 

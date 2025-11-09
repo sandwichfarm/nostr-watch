@@ -176,20 +176,19 @@ export class RestServer {
       return
     }
 
-    // Expose OpenAPI JSON spec at /docs/json for compatibility
-    this.app.get('/docs/json', async () => {
+    // Expose OpenAPI JSON spec at /openapi.json
+    this.app.get('/openapi.json', async () => {
       return this.app.swagger()
     })
 
-    // Expose OpenAPI YAML spec at /docs/yaml
-    this.app.get('/docs/yaml', async () => {
+    // Expose OpenAPI YAML spec at /openapi.yaml
+    this.app.get('/openapi.yaml', async () => {
       return this.app.swagger({ yaml: true })
     })
 
-    // Register Scalar UI at /docs (root of docs, not a prefix)
-    // Using a GET route instead of routePrefix to avoid conflicts
-    this.app.get('/docs', async (request, reply) => {
-      // Generate Scalar HTML that loads the spec from /docs/json
+    // Register Scalar UI at root path /
+    this.app.get('/', async (request, reply) => {
+      // Generate Scalar HTML that loads the spec from /openapi.json
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -200,7 +199,7 @@ export class RestServer {
 <body>
   <script
     id="api-reference"
-    data-url="/docs/json"
+    data-url="/openapi.json"
     data-configuration='${JSON.stringify({
       theme: 'default',
     })}'></script>
@@ -231,11 +230,11 @@ export class RestServer {
       reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
 
       // Content Security Policy
-      // Relaxed CSP for API docs routes, strict for API endpoints
-      const isDocsRoute = request.url === '/docs' || request.url.startsWith('/docs/')
+      // Relaxed CSP for API docs at root, strict for API endpoints
+      const isDocsRoute = request.url === '/' || request.url === '/openapi.json' || request.url === '/openapi.yaml'
       if (isDocsRoute && this.config.enableSwagger) {
-        // Allow Scalar API docs to load scripts, styles, and images from same origin
-        reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'")
+        // Allow Scalar API docs to load scripts from CDN
+        reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; frame-ancestors 'none'")
       } else {
         // Strict CSP for API endpoints
         reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
@@ -536,7 +535,7 @@ export class RestServer {
       }, 'REST server started')
 
       if (this.config.enableSwagger) {
-        logger.info(`API docs available at http://${this.config.host}:${this.config.port}/docs`)
+        logger.info(`API docs available at http://${this.config.host}:${this.config.port}/`)
       }
     } catch (err) {
       logger.error({ err }, 'Failed to start REST server')

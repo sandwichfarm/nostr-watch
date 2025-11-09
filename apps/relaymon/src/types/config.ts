@@ -197,6 +197,11 @@ export interface DbConfig {
   enableWAL?: boolean;
 }
 
+export interface AnnounceConfig {
+  userMetaRelays?: string[];
+  nip66Relays?: string[];
+}
+
 /**
  * Complete RelayMon configuration
  */
@@ -204,6 +209,7 @@ export interface Config {
   monitor: MonitorConfig;
   publisher: PublisherConfig;
   relaymon: RelaymonConfig;
+  announce: AnnounceConfig;
   queue?: QueueConfig;
   logLevel?: LogLevel;
   db?: DbConfig;

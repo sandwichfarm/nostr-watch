@@ -6,6 +6,7 @@ import type { RelayCheckResult } from "../../src/types/relay.ts";
 import { db, initDB } from "../../src/db/db.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
 import { getPublicKey, nip19 } from "npm:nostr-tools";
+import { hexToBytes } from "npm:@noble/hashes/utils";
 
 /**
  * Test helper to disable resource/ops sanitization
@@ -163,7 +164,7 @@ retryTest("Worker - publishResult with retry configuration", async () => {
   // Set up environment for signing
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
   const originalEnv = Deno.env.get("RELAYMON_NSEC");
-  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(hexToBytes(testPrivkey)));
 
   try {
     const config = createTestConfig({
@@ -346,7 +347,7 @@ retryTest("Worker - multiple publish attempts for different relays", async () =>
 
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
   const originalEnv = Deno.env.get("RELAYMON_NSEC");
-  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(hexToBytes(testPrivkey)));
 
   try {
     const config = createTestConfig({

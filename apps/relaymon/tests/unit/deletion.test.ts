@@ -1,6 +1,7 @@
 import { assertEquals, assertExists, assert } from "https://deno.land/std@0.218.2/assert/mod.ts";
 import { Kind5Event, deleteRelayCheckEvent } from "../../src/utils/deletion.ts";
 import { getPublicKey, nip19 } from "npm:nostr-tools";
+import { hexToBytes } from "npm:@noble/hashes/utils";
 import type { Config } from "../../src/types/config.ts";
 
 /**
@@ -71,7 +72,7 @@ function createMockConfig(relays: string[] = ["wss://relay.example.com"]): Confi
 // Use a valid test private key and derive pubkey from it
 const TEST_PRIVKEY = "0000000000000000000000000000000000000000000000000000000000000001";
 const TEST_PUBKEY = getPublicKey(TEST_PRIVKEY);
-const TEST_NSEC = nip19.nsecEncode(TEST_PRIVKEY);
+const TEST_NSEC = nip19.nsecEncode(hexToBytes(TEST_PRIVKEY));
 
 // Test suite
 deletionTest("Kind5Event - constructor creates event with correct kind", () => {
@@ -217,7 +218,7 @@ deletionTest("deleteRelayCheckEvent - returns early if config.publisher.relays i
   // Set up environment
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
   const originalEnv = Deno.env.get("RELAYMON_NSEC");
-  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(hexToBytes(testPrivkey)));
 
   try {
     const config = createMockConfig([]);
@@ -245,7 +246,7 @@ deletionTest("deleteRelayCheckEvent - returns early if config.publisher.relays i
   // Set up environment
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
   const originalEnv = Deno.env.get("RELAYMON_NSEC");
-  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(hexToBytes(testPrivkey)));
 
   try {
     const config = createMockConfig();
@@ -275,7 +276,7 @@ deletionTest("deleteRelayCheckEvent - skips duplicate deletion for same relay", 
   // Set up environment
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
   const originalEnv = Deno.env.get("RELAYMON_NSEC");
-  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(hexToBytes(testPrivkey)));
 
   try {
     const config = createMockConfig();

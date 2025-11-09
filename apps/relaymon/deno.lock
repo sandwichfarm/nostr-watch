@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@noble/hashes@*": "1.8.0",
     "npm:@nostrwatch/nocap-info-adapter-default@*": "1.2.0",
     "npm:nostr-fetch@0.17.0": "0.17.0",
     "npm:nostr-tools@*": "2.17.0",

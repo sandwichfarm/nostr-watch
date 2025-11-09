@@ -10,19 +10,30 @@ import { getPrivateKey } from "../core/daemon.ts";
 const logger = getLogger("Announce");
 
 export async function maybeAnnounce(config: Config, queueManager?: QueueManager): Promise<void> {
+  let relaySet: Set<string>= new Set
+
   if (!config.monitor || !config.monitor.info) {
     logger.warn("Monitor metadata is missing; skipping announcement.");
     return;
   }
-  if (!config.announce?.relays || !Array.isArray(config.announce.relays) || config.announce.relays.length === 0) {
-    logger.warn("Publisher relay list is missing; skipping announcement.");
-    return;
-  }
 
-  const { info: profile, owner, geo, relays } = config.monitor
-  const { userDataRelays } = config.announce?.relays || []
+  // if (!config.announce?.relays || !Array.isArray(config.announce.relays) || config.announce.relays.length === 0) {
+  //   logger.warn("Publisher relay list is missing; skipping announcement.");
+  //   return;
+  // }
+  
+  const { info: profile, owner, geo, relays:outboxRelays } = config.monitor
+  const { userMetaRelays } = config.announce || []
   const { networks } = config.relaymon || []
   const { expires, timeout: timeouts, checks } = config.relaymon?.checks?.options || {}
+
+  if(outboxRelays?.length) {
+    outboxRelays.forEach( (relay:string) => relaySet.add(relay) )
+  }
+
+  if(userMetaRelays?.length) {
+    userMetaRelays.forEach( (relay:string) => relaySet.add(relay) )
+  }
 
   if(!expires) throw new Error("Announce frequency is not set")
 
@@ -43,13 +54,12 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
       profile,
       owner,
       geo,
-      relays,
+      outboxRelays,
       networks,
       timeouts,
       frequency,
       checks,
-
-      userDataRelays
+      userMetaRelays
     }
   );
 

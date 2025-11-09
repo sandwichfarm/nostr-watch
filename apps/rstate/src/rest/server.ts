@@ -188,7 +188,8 @@ export class RestServer {
 
     // Register Scalar UI at root path /
     this.app.get('/', async (request, reply) => {
-      // Generate Scalar HTML that loads the spec from /openapi.json
+      // Use relative URL (without leading slash) so it works behind reverse proxy
+      // When served at /v2/, this will resolve to /v2/openapi.json
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -199,7 +200,7 @@ export class RestServer {
 <body>
   <script
     id="api-reference"
-    data-url="/openapi.json"
+    data-url="./openapi.json"
     data-configuration='${JSON.stringify({
       theme: 'default',
     })}'></script>

@@ -172,6 +172,17 @@ export class RestServer {
       staticCSP: true,
     })
 
+    // Log the generated spec for debugging
+    const spec = this.app.swagger()
+    logger.info({
+      pathCount: Object.keys(spec.paths || {}).length,
+      schemaCount: Object.keys(spec.components?.schemas || {}).length,
+    }, 'OpenAPI spec generated')
+
+    if (Object.keys(spec.paths || {}).length === 0) {
+      logger.warn('OpenAPI spec has no paths - routes may not have been registered with schemas')
+    }
+
     logger.info('Swagger documentation registered')
   }
 

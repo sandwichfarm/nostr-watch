@@ -4,6 +4,7 @@ import { getEventHash, getPublicKey } from "npm:nostr-tools";
 import type { Config } from "../config/config.ts";
 import type { QueueManager } from "./queueManager.ts";
 import { clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
+import { getPrivateKey } from "../core/daemon.ts";
 
 const logger = getLogger("Deletion");
 
@@ -68,12 +69,12 @@ export async function deleteRelayCheckEvent(
 ): Promise<void> {
   try {
     // Get the private key from environment
-    const privkey = Deno.env.get("DAEMON_PRIVKEY");
+    const privkey = getPrivateKey();
     if (!privkey) {
-      logger.error("Missing DAEMON_PRIVKEY; cannot sign deletion event.");
+      logger.error("Missing RELAYMON_NSEC; cannot sign deletion event.");
       return;
     }
-    
+
     // Get the public key
     const pubkey = getPublicKey(privkey);
     

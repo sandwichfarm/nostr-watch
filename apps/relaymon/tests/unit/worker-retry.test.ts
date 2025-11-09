@@ -5,7 +5,7 @@ import type { Config } from "../../src/types/config.ts";
 import type { RelayCheckResult } from "../../src/types/relay.ts";
 import { db, initDB } from "../../src/db/db.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
-import { getPublicKey } from "npm:nostr-tools";
+import { getPublicKey, nip19 } from "npm:nostr-tools";
 
 /**
  * Test helper to disable resource/ops sanitization
@@ -162,8 +162,8 @@ retryTest("Worker - publishResult with retry configuration", async () => {
 
   // Set up environment for signing
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
-  const originalEnv = Deno.env.get("DAEMON_PRIVKEY");
-  Deno.env.set("DAEMON_PRIVKEY", testPrivkey);
+  const originalEnv = Deno.env.get("RELAYMON_NSEC");
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
 
   try {
     const config = createTestConfig({
@@ -186,18 +186,18 @@ retryTest("Worker - publishResult with retry configuration", async () => {
     assert(true, "publishResult should execute without throwing");
   } finally {
     if (originalEnv) {
-      Deno.env.set("DAEMON_PRIVKEY", originalEnv);
+      Deno.env.set("RELAYMON_NSEC", originalEnv);
     } else {
-      Deno.env.delete("DAEMON_PRIVKEY");
+      Deno.env.delete("RELAYMON_NSEC");
     }
   }
 });
 
-retryTest("Worker - publishResult handles missing DAEMON_PRIVKEY", async () => {
+retryTest("Worker - publishResult handles missing RELAYMON_NSEC", async () => {
   ensureTestDB();
 
-  const originalEnv = Deno.env.get("DAEMON_PRIVKEY");
-  Deno.env.delete("DAEMON_PRIVKEY");
+  const originalEnv = Deno.env.get("RELAYMON_NSEC");
+  Deno.env.delete("RELAYMON_NSEC");
 
   try {
     const config = createTestConfig();
@@ -207,10 +207,10 @@ retryTest("Worker - publishResult handles missing DAEMON_PRIVKEY", async () => {
     // Should handle missing privkey gracefully
     await worker.publishResult(result);
 
-    assert(true, "Should handle missing DAEMON_PRIVKEY gracefully");
+    assert(true, "Should handle missing RELAYMON_NSEC gracefully");
   } finally {
     if (originalEnv) {
-      Deno.env.set("DAEMON_PRIVKEY", originalEnv);
+      Deno.env.set("RELAYMON_NSEC", originalEnv);
     }
   }
 });
@@ -345,8 +345,8 @@ retryTest("Worker - multiple publish attempts for different relays", async () =>
   ensureTestDB();
 
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
-  const originalEnv = Deno.env.get("DAEMON_PRIVKEY");
-  Deno.env.set("DAEMON_PRIVKEY", testPrivkey);
+  const originalEnv = Deno.env.get("RELAYMON_NSEC");
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
 
   try {
     const config = createTestConfig({
@@ -373,9 +373,9 @@ retryTest("Worker - multiple publish attempts for different relays", async () =>
     assert(true, "Should handle multiple publish attempts");
   } finally {
     if (originalEnv) {
-      Deno.env.set("DAEMON_PRIVKEY", originalEnv);
+      Deno.env.set("RELAYMON_NSEC", originalEnv);
     } else {
-      Deno.env.delete("DAEMON_PRIVKEY");
+      Deno.env.delete("RELAYMON_NSEC");
     }
   }
 });

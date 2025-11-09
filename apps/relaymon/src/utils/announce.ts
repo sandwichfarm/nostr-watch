@@ -5,6 +5,7 @@ import { type QueueManager } from "./queueManager.ts";
 import { timeString } from "../config/config.ts";
 import type { Config } from "../config/config.ts";
 import { getErrorMessage } from "../types/errors.ts";
+import { getPrivateKey } from "../core/daemon.ts";
 
 const logger = getLogger("Announce");
 
@@ -27,11 +28,10 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
 
   const frequency = (Math.round(timeString(expires)/1000)).toString()
 
-
-  const sk = Deno.env.get("DAEMON_PRIVKEY");
+  const sk = getPrivateKey();
 
   if (!sk) {
-    logger.error("Missing DAEMON_PRIVKEY; cannot sign announcement.");
+    logger.error("Missing or invalid RELAYMON_NSEC; cannot sign announcement.");
     return;
   }
 

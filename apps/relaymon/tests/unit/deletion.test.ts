@@ -1,6 +1,6 @@
 import { assertEquals, assertExists, assert } from "https://deno.land/std@0.218.2/assert/mod.ts";
 import { Kind5Event, deleteRelayCheckEvent } from "../../src/utils/deletion.ts";
-import { getPublicKey } from "npm:nostr-tools";
+import { getPublicKey, nip19 } from "npm:nostr-tools";
 import type { Config } from "../../src/types/config.ts";
 
 /**
@@ -71,6 +71,7 @@ function createMockConfig(relays: string[] = ["wss://relay.example.com"]): Confi
 // Use a valid test private key and derive pubkey from it
 const TEST_PRIVKEY = "0000000000000000000000000000000000000000000000000000000000000001";
 const TEST_PUBKEY = getPublicKey(TEST_PRIVKEY);
+const TEST_NSEC = nip19.nsecEncode(TEST_PRIVKEY);
 
 // Test suite
 deletionTest("Kind5Event - constructor creates event with correct kind", () => {
@@ -188,9 +189,9 @@ deletionTest("Kind5Event - generateEvent creates different IDs for different rel
   assert(event1.id !== event2.id, "Different relay URLs should produce different event IDs");
 });
 
-deletionTest("deleteRelayCheckEvent - returns early if DAEMON_PRIVKEY missing", async () => {
-  const originalEnv = Deno.env.get("DAEMON_PRIVKEY");
-  Deno.env.delete("DAEMON_PRIVKEY");
+deletionTest("deleteRelayCheckEvent - returns early if RELAYMON_NSEC missing", async () => {
+  const originalEnv = Deno.env.get("RELAYMON_NSEC");
+  Deno.env.delete("RELAYMON_NSEC");
 
   try {
     const config = createMockConfig();
@@ -207,7 +208,7 @@ deletionTest("deleteRelayCheckEvent - returns early if DAEMON_PRIVKEY missing", 
   } finally {
     // Restore environment
     if (originalEnv) {
-      Deno.env.set("DAEMON_PRIVKEY", originalEnv);
+      Deno.env.set("RELAYMON_NSEC", originalEnv);
     }
   }
 });
@@ -215,8 +216,8 @@ deletionTest("deleteRelayCheckEvent - returns early if DAEMON_PRIVKEY missing", 
 deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is empty", async () => {
   // Set up environment
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
-  const originalEnv = Deno.env.get("DAEMON_PRIVKEY");
-  Deno.env.set("DAEMON_PRIVKEY", testPrivkey);
+  const originalEnv = Deno.env.get("RELAYMON_NSEC");
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
 
   try {
     const config = createMockConfig([]);
@@ -233,9 +234,9 @@ deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is 
   } finally {
     // Restore environment
     if (originalEnv) {
-      Deno.env.set("DAEMON_PRIVKEY", originalEnv);
+      Deno.env.set("RELAYMON_NSEC", originalEnv);
     } else {
-      Deno.env.delete("DAEMON_PRIVKEY");
+      Deno.env.delete("RELAYMON_NSEC");
     }
   }
 });
@@ -243,8 +244,8 @@ deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is 
 deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is not an array", async () => {
   // Set up environment
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
-  const originalEnv = Deno.env.get("DAEMON_PRIVKEY");
-  Deno.env.set("DAEMON_PRIVKEY", testPrivkey);
+  const originalEnv = Deno.env.get("RELAYMON_NSEC");
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
 
   try {
     const config = createMockConfig();
@@ -263,9 +264,9 @@ deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is 
   } finally {
     // Restore environment
     if (originalEnv) {
-      Deno.env.set("DAEMON_PRIVKEY", originalEnv);
+      Deno.env.set("RELAYMON_NSEC", originalEnv);
     } else {
-      Deno.env.delete("DAEMON_PRIVKEY");
+      Deno.env.delete("RELAYMON_NSEC");
     }
   }
 });
@@ -273,8 +274,8 @@ deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is 
 deletionTest("deleteRelayCheckEvent - skips duplicate deletion for same relay", async () => {
   // Set up environment
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
-  const originalEnv = Deno.env.get("DAEMON_PRIVKEY");
-  Deno.env.set("DAEMON_PRIVKEY", testPrivkey);
+  const originalEnv = Deno.env.get("RELAYMON_NSEC");
+  Deno.env.set("RELAYMON_NSEC", nip19.nsecEncode(testPrivkey));
 
   try {
     const config = createMockConfig();
@@ -302,9 +303,9 @@ deletionTest("deleteRelayCheckEvent - skips duplicate deletion for same relay", 
   } finally {
     // Restore environment
     if (originalEnv) {
-      Deno.env.set("DAEMON_PRIVKEY", originalEnv);
+      Deno.env.set("RELAYMON_NSEC", originalEnv);
     } else {
-      Deno.env.delete("DAEMON_PRIVKEY");
+      Deno.env.delete("RELAYMON_NSEC");
     }
   }
 });
@@ -312,8 +313,8 @@ deletionTest("deleteRelayCheckEvent - skips duplicate deletion for same relay", 
 deletionTest("deleteRelayCheckEvent - derives correct pubkey from privkey", async () => {
   // Set up environment with a known test key
   const expectedPubkey = getPublicKey(TEST_PRIVKEY);
-  const originalEnv = Deno.env.get("DAEMON_PRIVKEY");
-  Deno.env.set("DAEMON_PRIVKEY", TEST_PRIVKEY);
+  const originalEnv = Deno.env.get("RELAYMON_NSEC");
+  Deno.env.set("RELAYMON_NSEC", TEST_NSEC);
 
   try {
     const config = createMockConfig();
@@ -330,9 +331,9 @@ deletionTest("deleteRelayCheckEvent - derives correct pubkey from privkey", asyn
   } finally {
     // Restore environment
     if (originalEnv) {
-      Deno.env.set("DAEMON_PRIVKEY", originalEnv);
+      Deno.env.set("RELAYMON_NSEC", originalEnv);
     } else {
-      Deno.env.delete("DAEMON_PRIVKEY");
+      Deno.env.delete("RELAYMON_NSEC");
     }
   }
 });

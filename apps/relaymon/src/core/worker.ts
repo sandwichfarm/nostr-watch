@@ -22,6 +22,7 @@ import { detectDeltas } from "../delta/detector.ts";
 import { Kind1066 } from "../delta/kind1066.ts";
 import { Kind20066 } from "../delta/kind20066.ts";
 import { getPeriodsToEmit, validatePeriods } from "../delta/periods.ts";
+import { getPrivateKey } from "./daemon.ts";
 
 chalk.level = 1;
 
@@ -254,8 +255,8 @@ export class Worker {
       const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
         try {
           const event = new Kind30166(this.pubkey);
+          const privkey = getPrivateKey();
           event.generateEvent(result);
-          const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
           const signedEvent = await event.signEvent(privkey);
           await this.publisher.publishEvent(signedEvent);
           this.logger.debug(`Published event for relay ${result.url}`);
@@ -395,7 +396,7 @@ export class Worker {
       const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
         try {
           const event = new Kind1066(this.pubkey);
-          const privkey = Deno.env.get("DAEMON_PRIVKEY") || "";
+          const privkey = getPrivateKey();
 
           const signedEvent = await event.generateAndSignEvent({
             url: relayUrl,

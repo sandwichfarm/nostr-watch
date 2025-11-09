@@ -5,13 +5,43 @@ import { getLogger, setGlobalLogLevel } from "../utils/logger.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { db, getExpiredRelays } from "npm:@nostrwatch/db";
 import { maybeAnnounce } from "../utils/announce.ts";
-import { getPublicKey } from "npm:nostr-tools";
+import { getPublicKey, nip19 } from "npm:nostr-tools";
 import { RetryManager } from "../utils/retryManager.ts";
 import { formatCompactStats, showStatus } from "./status.ts";
 import { deleteRelayCheckEvent } from "../utils/deletion.ts";
 import { IgnoreListSync } from "../utils/IgnoreListSync.ts";
 import { setIgnoreListSync, reevaluateAllDeduplication } from "../utils/hostnames.ts";
 import type { Config } from "../config/config.ts";
+
+/**
+ * Get hex private key from RELAYMON_NSEC environment variable
+ * Supports both NIP-19 encoded nsec format and raw hex format
+ * @returns hex-encoded private key string, or empty string on error
+ */
+export function getPrivateKey(): string {
+  const key = Deno.env.get("RELAYMON_NSEC");
+  if (!key) return "";
+
+  // Check if it's nsec format (starts with "nsec1")
+  if (key.startsWith("nsec1")) {
+    try {
+      const decoded = nip19.decode(key);
+      if (decoded.type === "nsec") {
+        return decoded.data as string;
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
+  // Otherwise treat as raw hex (64 characters)
+  if (key.length === 64 && /^[0-9a-f]+$/i.test(key)) {
+    return key;
+  }
+
+  return "";
+}
 
 /**
  * Parse interval string like "1h", "30m", "24h" to milliseconds
@@ -95,25 +125,26 @@ export async function runDaemon(config: Config): Promise<void> {
       await ignoreListSync.sync().catch((err) => logger.error(`Initial sync error: ${err.message}`));
       // Publish initial deletions on startup
       logger.info("Publishing initial NIP-09 deletions...");
-      await ignoreListSync.publishDeletions(Deno.env.get("DAEMON_PRIVKEY") || "").catch((err) => logger.error(`Initial deletions error: ${err.message}`));
+      await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Initial deletions error: ${err.message}`));
     }
 
     // Move maybeAnnounce call after creating queueManager so we can pass it
     await maybeAnnounce(config, queueManager);
 
-    // Safely derive pubkey from DAEMON_PRIVKEY with error handling
+    // Safely derive pubkey from RELAYMON_NSEC with error handling
+    // Supports both nsec (NIP-19) and hex formats
     let pubkey = "";
-    const privkey = Deno.env.get("DAEMON_PRIVKEY");
+    const privkey = getPrivateKey();
     if (privkey) {
       try {
         pubkey = getPublicKey(privkey);
-        logger.info("Successfully derived public key from DAEMON_PRIVKEY");
+        logger.info("Successfully derived public key from RELAYMON_NSEC");
       } catch (error) {
-        logger.warn(`Invalid DAEMON_PRIVKEY, cannot derive public key: ${error.message}`);
+        logger.warn(`Invalid RELAYMON_NSEC, cannot derive public key: ${error.message}`);
         logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
       }
     } else {
-      logger.warn("Missing DAEMON_PRIVKEY environment variable");
+      logger.warn("Missing or invalid RELAYMON_NSEC environment variable");
       logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
     }
 
@@ -241,7 +272,7 @@ export async function runDaemon(config: Config): Promise<void> {
           await delay(intervalMs);
           logger.info("Running scheduled ignore list sync and publish...");
           await ignoreListSync.sync().catch((err) => logger.error(`Sync error: ${err.message}`));
-          await ignoreListSync.publish(Deno.env.get("DAEMON_PRIVKEY") || "").catch((err) => logger.error(`Publish error: ${err.message}`));
+          await ignoreListSync.publish(getPrivateKey()).catch((err) => logger.error(`Publish error: ${err.message}`));
         } catch (error) {
           logger.error(`Error in runIgnoreListSync: ${error.message}`);
           await delay(60000); // Wait 1 minute before retrying
@@ -264,7 +295,7 @@ export async function runDaemon(config: Config): Promise<void> {
         try {
           await delay(intervalMs);
           logger.info("Running scheduled ignore list deletion publish...");
-          await ignoreListSync.publishDeletions(Deno.env.get("DAEMON_PRIVKEY") || "").catch((err) => logger.error(`Deletions error: ${err.message}`));
+          await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Deletions error: ${err.message}`));
         } catch (error) {
           logger.error(`Error in runIgnoreListDeletions: ${error.message}`);
           await delay(60000); // Wait 1 minute before retrying
@@ -293,7 +324,7 @@ export async function runDaemon(config: Config): Promise<void> {
             logger.info(`Re-evaluation changed ${changedRelays.length} relay(s) ignore status`);
             // Publish deletions for newly ignored relays
             if (ignoreListSync) {
-              await ignoreListSync.publishDeletions(Deno.env.get("DAEMON_PRIVKEY") || "").catch((err) => logger.error(`Deletions after re-eval error: ${err.message}`));
+              await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Deletions after re-eval error: ${err.message}`));
             }
           }
         } catch (error) {

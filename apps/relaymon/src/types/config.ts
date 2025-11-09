@@ -123,6 +123,7 @@ export interface CheckOptionsConfig {
   timeout: CheckTimeoutConfig;
   max: number | string;
   statusInterval: number;
+  checks: string[];
 }
 
 /**

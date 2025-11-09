@@ -213,7 +213,7 @@ deletionTest("deleteRelayCheckEvent - returns early if RELAYMON_NSEC missing", a
   }
 });
 
-deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is empty", async () => {
+deletionTest("deleteRelayCheckEvent - returns early if config.publisher.relays is empty", async () => {
   // Set up environment
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
   const originalEnv = Deno.env.get("RELAYMON_NSEC");
@@ -241,7 +241,7 @@ deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is 
   }
 });
 
-deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is not an array", async () => {
+deletionTest("deleteRelayCheckEvent - returns early if config.publisher.relays is not an array", async () => {
   // Set up environment
   const testPrivkey = "0000000000000000000000000000000000000000000000000000000000000001";
   const originalEnv = Deno.env.get("RELAYMON_NSEC");
@@ -250,7 +250,7 @@ deletionTest("deleteRelayCheckEvent - returns early if config.monitor.relays is 
   try {
     const config = createMockConfig();
     // Intentionally break the relays array
-    (config.monitor as any).relays = null;
+    (config.publisher as any).relays = null;
 
     // Should return without error, just log a warning
     await deleteRelayCheckEvent(

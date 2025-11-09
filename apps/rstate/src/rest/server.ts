@@ -136,10 +136,7 @@ export class RestServer {
     }
 
     // Determine server URL - use apiBaseUrl if provided, otherwise construct from host:port
-    console.log('[SERVER DEBUG] config.apiBaseUrl:', this.config.apiBaseUrl)
-    console.log('[SERVER DEBUG] config.host:', this.config.host, 'config.port:', this.config.port)
     const serverUrl = this.config.apiBaseUrl || `http://${this.config.host}:${this.config.port}`
-    console.log('[SERVER DEBUG] final serverUrl:', serverUrl)
     const serverDescription = this.config.apiBaseUrl
       ? (process.env.NODE_ENV === 'production' ? 'Production API' : 'API Server')
       : 'Development server'

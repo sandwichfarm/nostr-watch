@@ -208,6 +208,7 @@ export class CVMServer {
       {
         host: this.config.rest.host,
         port: this.config.rest.port,
+        apiBaseUrl: this.config.rest.apiBaseUrl,
         corsOrigins: this.config.rest.corsOrigins,
         enableSwagger: this.config.rest.enableSwagger,
         allowPolicyUpdate: this.config.rest.allowPolicyUpdate,

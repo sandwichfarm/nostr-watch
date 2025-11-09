@@ -26,7 +26,8 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
   const { userMetaRelays } = config?.announce || []
   const { relays:outboxRelays } = config?.publisher;
   const { networks } = config.relaymon || []
-  const { expires, timeout: timeouts, checks } = config.relaymon?.checks?.options || {}
+  const { expires, timeout: timeouts } = config.relaymon?.checks?.options || {}
+  const checks = config.relaymon?.checks?.enabled || []
 
   if(outboxRelays?.length) {
     outboxRelays.forEach( (relay:string) => relaySet.add(relay) )

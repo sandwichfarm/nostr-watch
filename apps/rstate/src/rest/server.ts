@@ -365,6 +365,9 @@ export class RestServer {
       // Skip if already sent a status other than 200
       if (reply.statusCode !== 200) return payload
 
+      // Skip if payload is null or undefined
+      if (payload == null) return payload
+
       // Generate ETag from payload
       const body = typeof payload === 'string' ? payload : JSON.stringify(payload)
       const etag = generateETag(body)

@@ -221,9 +221,9 @@ export interface HealthServerConfig {
  */
 export interface KumaConfig {
   enabled: boolean;
-  intervalMs: number;
+  intervalMs: number | string;
   degradedAsUp: boolean;
-  startupGraceMs: number;
+  startupGraceMs: number | string;
   msgVerbosity: "summary" | "detailed";
 }
 
@@ -231,10 +231,10 @@ export interface KumaConfig {
  * Health check thresholds
  */
 export interface HealthThresholdsConfig {
-  checkIdleMs: number;
+  checkIdleMs: number | string;
   publishBacklogMax: number;
   errorRatePerMin: number;
-  startupGraceMs: number;
+  startupGraceMs: number | string;
 }
 
 /**
@@ -427,16 +427,16 @@ export function validateConfig(config: unknown): Config {
         throw new Error("Missing required field: health.kuma.enabled (must be boolean)");
       }
 
-      if (typeof c.health.kuma.intervalMs !== "number") {
-        throw new Error("Missing required field: health.kuma.intervalMs (must be number)");
+      if (typeof c.health.kuma.intervalMs !== "number" && typeof c.health.kuma.intervalMs !== "string") {
+        throw new Error("Missing required field: health.kuma.intervalMs (must be number or timestring)");
       }
 
       if (typeof c.health.kuma.degradedAsUp !== "boolean") {
         throw new Error("Missing required field: health.kuma.degradedAsUp (must be boolean)");
       }
 
-      if (typeof c.health.kuma.startupGraceMs !== "number") {
-        throw new Error("Missing required field: health.kuma.startupGraceMs (must be number)");
+      if (typeof c.health.kuma.startupGraceMs !== "number" && typeof c.health.kuma.startupGraceMs !== "string") {
+        throw new Error("Missing required field: health.kuma.startupGraceMs (must be number or timestring)");
       }
 
       if (!["summary", "detailed"].includes(c.health.kuma.msgVerbosity)) {
@@ -448,8 +448,8 @@ export function validateConfig(config: unknown): Config {
         throw new Error("Missing required field: health.thresholds");
       }
 
-      if (typeof c.health.thresholds.checkIdleMs !== "number") {
-        throw new Error("Missing required field: health.thresholds.checkIdleMs (must be number)");
+      if (typeof c.health.thresholds.checkIdleMs !== "number" && typeof c.health.thresholds.checkIdleMs !== "string") {
+        throw new Error("Missing required field: health.thresholds.checkIdleMs (must be number or timestring)");
       }
 
       if (typeof c.health.thresholds.publishBacklogMax !== "number") {
@@ -460,8 +460,8 @@ export function validateConfig(config: unknown): Config {
         throw new Error("Missing required field: health.thresholds.errorRatePerMin (must be number)");
       }
 
-      if (typeof c.health.thresholds.startupGraceMs !== "number") {
-        throw new Error("Missing required field: health.thresholds.startupGraceMs (must be number)");
+      if (typeof c.health.thresholds.startupGraceMs !== "number" && typeof c.health.thresholds.startupGraceMs !== "string") {
+        throw new Error("Missing required field: health.thresholds.startupGraceMs (must be number or timestring)");
       }
     }
   }

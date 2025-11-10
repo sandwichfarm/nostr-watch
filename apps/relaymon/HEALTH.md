@@ -52,17 +52,19 @@ health:
 
   kuma:
     enabled: true
-    intervalMs: 60000
+    intervalMs: 1m          # Push every minute (timestring format)
     degradedAsUp: true
-    startupGraceMs: 30000
+    startupGraceMs: 30s     # 30 second startup grace period
     msgVerbosity: "summary"
 
   thresholds:
-    checkIdleMs: 300000
+    checkIdleMs: 5m         # 5 minutes idle threshold
     publishBacklogMax: 100
     errorRatePerMin: 10
-    startupGraceMs: 30000
+    startupGraceMs: 30s     # 30 second startup grace
 ```
+
+**Timestring Support:** All time fields (`intervalMs`, `startupGraceMs`, `checkIdleMs`) accept human-readable timestrings like `30s`, `5m`, `1h`, or numeric milliseconds. Supported units: `ms`, `s`, `m`, `h`, `d`.
 
 See `health-config.example.yaml` for a complete example with documentation.
 
@@ -262,8 +264,9 @@ The health system pushes status to Uptime Kuma automatically when enabled.
      enabled: true
      kuma:
        enabled: true
-       intervalMs: 60000
+       intervalMs: 1m        # Push every minute
        degradedAsUp: true
+       startupGraceMs: 30s   # Wait 30s before first push
        msgVerbosity: "summary"
    ```
 
@@ -516,7 +519,7 @@ Signing self-test passed
 ```yaml
 health:
   thresholds:
-    startupGraceMs: 30000  # 30 seconds
+    startupGraceMs: 30s    # 30 seconds (or 30000 as milliseconds)
 ```
 
 **Check for errors in logs:**
@@ -560,15 +563,15 @@ relaymon --health | jq .
 
 ## Health Check Thresholds
 
-Tune thresholds based on your deployment:
+Tune thresholds based on your deployment. All time values support both timestrings (`5m`, `30s`) and numeric milliseconds.
 
 ```yaml
 health:
   thresholds:
-    # Check loop idle threshold (ms)
+    # Check loop idle threshold
     # How long without heartbeat before considering stalled
-    # Default: 300000 (5 minutes)
-    checkIdleMs: 300000
+    # Default: 5m (300000ms)
+    checkIdleMs: 5m
 
     # Publish queue backlog threshold
     # Max pending events before degraded state
@@ -580,10 +583,10 @@ health:
     # Default: 10
     errorRatePerMin: 10
 
-    # Startup grace period (ms)
+    # Startup grace period
     # Don't report Down during initial startup
-    # Default: 30000 (30 seconds)
-    startupGraceMs: 30000
+    # Default: 30s (30000ms)
+    startupGraceMs: 30s
 ```
 
 ### Tuning Guidelines
@@ -592,17 +595,25 @@ health:
 ```yaml
 publishBacklogMax: 500   # More events expected
 errorRatePerMin: 50      # More tolerance for transient errors
+checkIdleMs: 10m         # Longer idle tolerance
 ```
 
 **Low-traffic monitors:**
 ```yaml
 publishBacklogMax: 50    # Sensitive to backlog
 errorRatePerMin: 5       # Strict error tolerance
+checkIdleMs: 3m          # Tighter idle detection
 ```
 
 **Slow startup:**
 ```yaml
-startupGraceMs: 60000    # 1 minute grace period
+startupGraceMs: 1m       # 1 minute grace period
+```
+
+**Using numeric milliseconds (backward compatible):**
+```yaml
+checkIdleMs: 300000       # 5 minutes
+startupGraceMs: 30000     # 30 seconds
 ```
 
 ## Architecture

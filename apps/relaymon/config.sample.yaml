@@ -129,17 +129,18 @@ health:
   # Uptime Kuma push configuration
   kuma:
     enabled: true
-    intervalMs: 60000        # Push interval (60 seconds)
+    intervalMs: 1m           # Push interval (supports timestrings: 1m = 60000ms)
     degradedAsUp: true       # Report "degraded" state as "up" to Kuma (with message)
-    startupGraceMs: 30000    # Wait 30s after startup before first push
+    startupGraceMs: 30s      # Wait 30s after startup before first push (30s = 30000ms)
     msgVerbosity: "summary"  # Message verbosity: "summary" or "detailed"
 
   # Health check thresholds
+  # Note: All time values support timestrings (ms, s, m, h, d) or numeric milliseconds
   thresholds:
-    checkIdleMs: 300000         # Check loop idle threshold (5 minutes)
+    checkIdleMs: 5m             # Check loop idle threshold (5m = 300000ms)
     publishBacklogMax: 100      # Max pending publish events before degraded
     errorRatePerMin: 10         # Max errors per minute before degraded
-    startupGraceMs: 30000       # Startup grace period (30 seconds)
+    startupGraceMs: 30s         # Startup grace period (30s = 30000ms)
 
 # Environment variables for secrets (DO NOT put secrets in this file):
 #

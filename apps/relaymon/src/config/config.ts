@@ -90,7 +90,7 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
       (entry: { delay: string | number; retries: number }, index: number) => {
         const entryPath = `${parentPath}.relaymon.retry.expiry[${index}].delay`;
         const originalDelay = entry.delay;
-        
+
         const result = {
           ...entry,
           delay:
@@ -98,14 +98,51 @@ function processConfigTimeValues(config: Config, parentPath = ""): void {
               ? timeString(entry.delay)
               : entry.delay,
         };
-        
+
         if (typeof originalDelay === "string") {
           originalTimeValues.set(entryPath, originalDelay);
         }
-        
+
         return result;
       },
     );
+  }
+
+  // Process health config time values
+  if (config.health?.kuma?.intervalMs) {
+    const path = `${parentPath}.health.kuma.intervalMs`;
+    const originalValue = config.health.kuma.intervalMs;
+    config.health.kuma.intervalMs = timeString(config.health.kuma.intervalMs);
+    if (typeof originalValue === "string") {
+      originalTimeValues.set(path, originalValue);
+    }
+  }
+
+  if (config.health?.kuma?.startupGraceMs) {
+    const path = `${parentPath}.health.kuma.startupGraceMs`;
+    const originalValue = config.health.kuma.startupGraceMs;
+    config.health.kuma.startupGraceMs = timeString(config.health.kuma.startupGraceMs);
+    if (typeof originalValue === "string") {
+      originalTimeValues.set(path, originalValue);
+    }
+  }
+
+  if (config.health?.thresholds?.checkIdleMs) {
+    const path = `${parentPath}.health.thresholds.checkIdleMs`;
+    const originalValue = config.health.thresholds.checkIdleMs;
+    config.health.thresholds.checkIdleMs = timeString(config.health.thresholds.checkIdleMs);
+    if (typeof originalValue === "string") {
+      originalTimeValues.set(path, originalValue);
+    }
+  }
+
+  if (config.health?.thresholds?.startupGraceMs) {
+    const path = `${parentPath}.health.thresholds.startupGraceMs`;
+    const originalValue = config.health.thresholds.startupGraceMs;
+    config.health.thresholds.startupGraceMs = timeString(config.health.thresholds.startupGraceMs);
+    if (typeof originalValue === "string") {
+      originalTimeValues.set(path, originalValue);
+    }
   }
 }
 

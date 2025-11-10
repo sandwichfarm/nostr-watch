@@ -207,6 +207,47 @@ export interface AnnounceConfig {
 }
 
 /**
+ * Health server configuration
+ */
+export interface HealthServerConfig {
+  enabled: boolean;
+  host: string;
+  port: number;
+  authEnabled: boolean;
+}
+
+/**
+ * Uptime Kuma push configuration
+ */
+export interface KumaConfig {
+  enabled: boolean;
+  intervalMs: number;
+  degradedAsUp: boolean;
+  startupGraceMs: number;
+  msgVerbosity: "summary" | "detailed";
+}
+
+/**
+ * Health check thresholds
+ */
+export interface HealthThresholdsConfig {
+  checkIdleMs: number;
+  publishBacklogMax: number;
+  errorRatePerMin: number;
+  startupGraceMs: number;
+}
+
+/**
+ * Health monitoring configuration
+ */
+export interface HealthConfig {
+  enabled: boolean;
+  server: HealthServerConfig;
+  kuma: KumaConfig;
+  thresholds: HealthThresholdsConfig;
+}
+
+/**
  * Complete RelayMon configuration
  */
 export interface Config {
@@ -217,6 +258,7 @@ export interface Config {
   queue?: QueueConfig;
   logLevel?: LogLevel;
   db?: DbConfig;
+  health?: HealthConfig;
 }
 
 /**
@@ -342,6 +384,86 @@ export function validateConfig(config: unknown): Config {
 
   if (!c.relaymon.checks.options || typeof c.relaymon.checks.options !== "object") {
     throw new Error("Missing required field: relaymon.checks.options");
+  }
+
+  // Validate health configuration if present (optional)
+  if (c.health !== undefined) {
+    if (typeof c.health !== "object") {
+      throw new Error("health must be an object");
+    }
+
+    if (typeof c.health.enabled !== "boolean") {
+      throw new Error("Missing required field: health.enabled (must be boolean)");
+    }
+
+    if (c.health.enabled) {
+      // Validate server config
+      if (!c.health.server || typeof c.health.server !== "object") {
+        throw new Error("Missing required field: health.server");
+      }
+
+      if (typeof c.health.server.enabled !== "boolean") {
+        throw new Error("Missing required field: health.server.enabled (must be boolean)");
+      }
+
+      if (typeof c.health.server.host !== "string") {
+        throw new Error("Missing required field: health.server.host (must be string)");
+      }
+
+      if (typeof c.health.server.port !== "number") {
+        throw new Error("Missing required field: health.server.port (must be number)");
+      }
+
+      if (typeof c.health.server.authEnabled !== "boolean") {
+        throw new Error("Missing required field: health.server.authEnabled (must be boolean)");
+      }
+
+      // Validate kuma config
+      if (!c.health.kuma || typeof c.health.kuma !== "object") {
+        throw new Error("Missing required field: health.kuma");
+      }
+
+      if (typeof c.health.kuma.enabled !== "boolean") {
+        throw new Error("Missing required field: health.kuma.enabled (must be boolean)");
+      }
+
+      if (typeof c.health.kuma.intervalMs !== "number") {
+        throw new Error("Missing required field: health.kuma.intervalMs (must be number)");
+      }
+
+      if (typeof c.health.kuma.degradedAsUp !== "boolean") {
+        throw new Error("Missing required field: health.kuma.degradedAsUp (must be boolean)");
+      }
+
+      if (typeof c.health.kuma.startupGraceMs !== "number") {
+        throw new Error("Missing required field: health.kuma.startupGraceMs (must be number)");
+      }
+
+      if (!["summary", "detailed"].includes(c.health.kuma.msgVerbosity)) {
+        throw new Error("health.kuma.msgVerbosity must be 'summary' or 'detailed'");
+      }
+
+      // Validate thresholds config
+      if (!c.health.thresholds || typeof c.health.thresholds !== "object") {
+        throw new Error("Missing required field: health.thresholds");
+      }
+
+      if (typeof c.health.thresholds.checkIdleMs !== "number") {
+        throw new Error("Missing required field: health.thresholds.checkIdleMs (must be number)");
+      }
+
+      if (typeof c.health.thresholds.publishBacklogMax !== "number") {
+        throw new Error("Missing required field: health.thresholds.publishBacklogMax (must be number)");
+      }
+
+      if (typeof c.health.thresholds.errorRatePerMin !== "number") {
+        throw new Error("Missing required field: health.thresholds.errorRatePerMin (must be number)");
+      }
+
+      if (typeof c.health.thresholds.startupGraceMs !== "number") {
+        throw new Error("Missing required field: health.thresholds.startupGraceMs (must be number)");
+      }
+    }
   }
 
   // All required validations passed, return typed config

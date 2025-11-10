@@ -11,7 +11,15 @@ import { formatCompactStats, showStatus } from "./status.ts";
 import { deleteRelayCheckEvent } from "../utils/deletion.ts";
 import { IgnoreListSync } from "../utils/IgnoreListSync.ts";
 import { setIgnoreListSync, reevaluateAllDeduplication } from "../utils/hostnames.ts";
+import { checkSigning } from "../health/index.ts";
+import { ErrorTracker } from "../health/index.ts";
+import { loadHealthAuthToken, loadKumaPushUrl, redactUrl } from "../health/index.ts";
+import { startHealthServer } from "../health/server.ts";
+import { startKumaPusher } from "../health/kuma.ts";
 import type { Config } from "../config/config.ts";
+import type { HeartbeatTracker } from "../health/types.ts";
+import type { HealthServer } from "../health/server.ts";
+import type { KumaPusher } from "../health/kuma.ts";
 
 /**
  * Get hex private key from RELAYMON_NSEC environment variable
@@ -64,6 +72,14 @@ function parseInterval(interval: string): number {
   }
 }
 
+// Global heartbeat tracker for health monitoring
+export const heartbeatTracker: HeartbeatTracker = {
+  startupTime: Date.now(),
+};
+
+// Global error tracker for health monitoring
+export const errorTracker = new ErrorTracker();
+
 export async function runDaemon(config: Config): Promise<void> {
   // Set global log level from config if specified
   if (config.logLevel) {
@@ -74,8 +90,12 @@ export async function runDaemon(config: Config): Promise<void> {
 
   // Set up global error handlers
   const processError = (error: Error, source: string): void => {
-    logger.error(`Unhandled error in ${source}: ${error?.message || JSON.stringify(error)}`);
+    const message = error?.message || JSON.stringify(error);
+    logger.error(`Unhandled error in ${source}: ${message}`);
     logger.error(error?.stack || "No stack trace available");
+
+    // Track error for health monitoring
+    errorTracker.track(message, source);
   };
 
   // In Deno, we need to use self which is the global scope
@@ -139,13 +159,29 @@ export async function runDaemon(config: Config): Promise<void> {
       try {
         pubkey = getPublicKey(privkey);
         logger.info("Successfully derived public key from RELAYMON_NSEC");
+
+        // Run signing self-test if health monitoring is enabled
+        if (config.health?.enabled) {
+          logger.info("Running signing self-test...");
+          const signingCheck = await checkSigning(privkey);
+          if (signingCheck.status === "fail") {
+            logger.error(`Signing self-test failed: ${signingCheck.message}`);
+            logger.error(`Error: ${signingCheck.error}`);
+            logger.error("Daemon will start but publish jobs will fail");
+            errorTracker.track(`Signing self-test failed: ${signingCheck.message}`, "daemon");
+          } else {
+            logger.info("Signing self-test passed");
+          }
+        }
       } catch (error) {
         logger.warn(`Invalid RELAYMON_NSEC, cannot derive public key: ${error.message}`);
         logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
+        errorTracker.track(`Invalid RELAYMON_NSEC: ${error.message}`, "daemon");
       }
     } else {
       logger.warn("Missing or invalid RELAYMON_NSEC environment variable");
       logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
+      errorTracker.track("Missing or invalid RELAYMON_NSEC", "daemon");
     }
 
     const worker = new Worker(pubkey, queueManager, config);
@@ -225,15 +261,20 @@ export async function runDaemon(config: Config): Promise<void> {
                 await worker.processRelay(relay);
               } catch (error) {
                 logger.error(`Error processing relay ${relay}: ${error.message}`);
+                errorTracker.track(`Error processing relay ${relay}: ${error.message}`, "worker");
               }
             }, relay); // Pass the relay URL to QueueManager
           }
-          
+
+          // Update heartbeat after enqueuing work
+          heartbeatTracker.checkLoop = Date.now();
+
           logger.info(`Waiting for ${config.relaymon.checks.options.interval} before checking for more expired relays`);
           await delay(config.relaymon.checks.options.interval);
         } catch (error) {
           logger.error(`Error in checkExpiredRelays: ${error.message}`);
           logger.error(error.stack || "No stack trace available");
+          errorTracker.track(`Error in checkExpiredRelays: ${error.message}`, "daemon");
           // If there was an error, wait a bit before retrying
           await delay(30000); // Wait 30 seconds before retrying after an error
         }
@@ -331,6 +372,70 @@ export async function runDaemon(config: Config): Promise<void> {
           logger.error(`Error in runDedupReevaluation: ${error.message}`);
           await delay(60000); // Wait 1 minute before retrying
         }
+      }
+    }
+
+    // Initialize health server if enabled
+    let healthServer: HealthServer | null = null;
+    if (config.health?.enabled && config.health.server.enabled) {
+      try {
+        logger.info("Starting health server...");
+
+        // Load auth token if auth is enabled
+        let authToken: string | undefined;
+        if (config.health.server.authEnabled) {
+          authToken = await loadHealthAuthToken();
+          if (!authToken) {
+            logger.warn("Health server auth enabled but no token configured (RELAYMON_HEALTH_AUTH_TOKEN)");
+          }
+        }
+
+        healthServer = await startHealthServer(
+          config.health.server,
+          {
+            queueManager,
+            privkey,
+            heartbeat: heartbeatTracker,
+            errorTracker,
+            authToken,
+            thresholds: config.health.thresholds,
+          },
+        );
+      } catch (error) {
+        logger.error(`Failed to start health server: ${error.message}`);
+        errorTracker.track(`Failed to start health server: ${error.message}`, "daemon");
+      }
+    }
+
+    // Initialize Kuma pusher if enabled
+    let kumaPusher: KumaPusher | null = null;
+    if (config.health?.enabled && config.health.kuma.enabled) {
+      try {
+        logger.info("Starting Kuma pusher...");
+
+        // Load Kuma push URL
+        const kumaPushUrl = await loadKumaPushUrl();
+        if (!kumaPushUrl) {
+          logger.error("Kuma pusher enabled but no push URL configured");
+          logger.error("Set RELAYMON_KUMA_PUSH_URL or RELAYMON_KUMA_BASE_URL + RELAYMON_KUMA_TOKEN");
+        } else {
+          logger.info(`Kuma push URL configured: ${redactUrl(kumaPushUrl)}`);
+
+          kumaPusher = await startKumaPusher(
+            config.health.kuma,
+            {
+              queueManager,
+              privkey,
+              heartbeat: heartbeatTracker,
+              errorTracker,
+              thresholds: config.health.thresholds,
+            },
+            kumaPushUrl,
+          );
+        }
+      } catch (error) {
+        logger.error(`Failed to start Kuma pusher: ${error.message}`);
+        errorTracker.track(`Failed to start Kuma pusher: ${error.message}`, "daemon");
       }
     }
 

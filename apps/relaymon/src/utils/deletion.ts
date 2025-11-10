@@ -119,7 +119,7 @@ export async function deleteRelayCheckEvent(
           logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
           throw error; // Rethrow to trigger retry mechanism
         }
-      });
+      }, { category: 'deletion' });
       // Consider successful queuing as success
       return true;
     } else {

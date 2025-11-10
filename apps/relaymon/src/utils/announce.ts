@@ -87,7 +87,7 @@ export async function maybeAnnounce(config: Config, queueManager?: QueueManager)
           logger.error("Failed to publish monitor announcement via queue: " + getErrorMessage(error));
           throw error; // Rethrow to trigger retry mechanism
         }
-      });
+      }, { category: 'announce' });
       logger.info("Added monitor announcement to publish queue.");
     } else {
       // Fallback to direct publishing if no queue manager is available

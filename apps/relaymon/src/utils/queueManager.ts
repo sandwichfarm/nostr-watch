@@ -19,6 +19,17 @@ export class QueueManager {
   public failedPublishes: number = 0;
   public retryingPublishes: number = 0;
 
+  // Breakdown counters by category
+  public publishedByCategory: Record<
+    'check' | 'delta' | 'deletion' | 'announce' | 'other',
+    number
+  > = { check: 0, delta: 0, deletion: 0, announce: 0, other: 0 };
+
+  public failedByCategory: Record<
+    'check' | 'delta' | 'deletion' | 'announce' | 'other',
+    number
+  > = { check: 0, delta: 0, deletion: 0, announce: 0, other: 0 };
+
   constructor(checkConcurrency: number = 5, publishConcurrency: number = 2, config?: Config) {
     this.checkQueue = new Queue({ 
       concurrency: checkConcurrency,
@@ -103,9 +114,13 @@ export class QueueManager {
     this.checkQueue.add(safeJob);
   }
 
-  addPublishJob(job: () => Promise<void>, options: { isRetry?: boolean, priority?: number } = {}): void {
+  addPublishJob(
+    job: () => Promise<void>,
+    options: { isRetry?: boolean; priority?: number; category?: 'check' | 'delta' | 'deletion' | 'announce' | 'other' } = {}
+  ): void {
     // Default priority is 1, retry jobs get lower priority (higher number = lower priority)
     const priority = options.isRetry ? 2 : 1;
+    const category = options.category ?? 'other';
     
     // Update retry counter if this is a retry job
     if (options.isRetry) {
@@ -116,6 +131,8 @@ export class QueueManager {
       try {
         await job();
         this.publishedEvents++;
+        // Increment breakdown counter
+        this.publishedByCategory[category] = (this.publishedByCategory[category] || 0) + 1;
         
         // If it was a retry job and succeeded, decrement the retry counter
         if (options.isRetry) {
@@ -126,6 +143,8 @@ export class QueueManager {
         // as it was already counted on the first attempt
         if (!options.isRetry) {
           this.failedPublishes++;
+          // Increment breakdown failure counter
+          this.failedByCategory[category] = (this.failedByCategory[category] || 0) + 1;
         } else {
           // But we do need to decrement the retrying counter since the retry is complete
           this.retryingPublishes = Math.max(0, this.retryingPublishes - 1);
@@ -170,6 +189,12 @@ export class QueueManager {
     success_rate: string;
     // Numeric success rate in range [0,1]; NaN if not enough data
     successRate: number;
+    // Breakdown
+    publishedChecks: number;
+    publishedDeltas: number;
+    publishedDeletions: number;
+    publishedAnnouncements: number;
+    publishedOther: number;
   } {
     const attempts = this.publishedEvents + this.failedPublishes;
     const successRateNum = attempts > 0
@@ -187,6 +212,11 @@ export class QueueManager {
       retrying: this.retryingPublishes,
       success_rate,
       successRate: successRateNum,
+      publishedChecks: this.publishedByCategory.check || 0,
+      publishedDeltas: this.publishedByCategory.delta || 0,
+      publishedDeletions: this.publishedByCategory.deletion || 0,
+      publishedAnnouncements: this.publishedByCategory.announce || 0,
+      publishedOther: this.publishedByCategory.other || 0,
     };
   }
   

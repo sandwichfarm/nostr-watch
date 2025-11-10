@@ -57,6 +57,8 @@ interface StatusStats {
   
   // Cache stats
   online: number;
+  onlinePublishable: number;
+  onlineIgnored: number;
   onlineExpired: number;
   offline: number;
   expired: number;
@@ -70,6 +72,11 @@ interface StatusStats {
   publishSize: number;
   publishPending: number;
   publishedEvents: number;
+  publishedChecks: number;
+  publishedDeltas: number;
+  publishedDeletions: number;
+  publishedAnnouncements: number;
+  publishedOther: number;
   failedPublishes: number;
   retryingPublishes: number;
   successRate: string;
@@ -101,6 +108,11 @@ export function getStats(queueManager: QueueManager): StatusStats {
     size: queueManager.publishQueue?.size || 0,
     pending: queueManager.publishQueue?.pending || 0,
     published: queueManager.publishedEvents || 0,
+    publishedChecks: 0,
+    publishedDeltas: 0,
+    publishedDeletions: 0,
+    publishedAnnouncements: 0,
+    publishedOther: 0,
     failed: queueManager.failedPublishes || 0,
     retrying: queueManager.retryingPublishes || 0,
     success_rate: 'N/A'
@@ -149,6 +161,8 @@ export function getStats(queueManager: QueueManager): StatusStats {
   // Query all necessary counts in one go to avoid multiple DB reads
   const dbStats = {
     online: 0,
+    onlinePublishable: 0,
+    onlineIgnored: 0,
     onlineExpired: 0,
     offline: 0,
     expired: 0,
@@ -167,6 +181,10 @@ export function getStats(queueManager: QueueManager): StatusStats {
   
   // Get offline count
   dbStats.offline = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 0")[0][0] as number;
+
+  // Get online ignored and publishable counts
+  dbStats.onlineIgnored = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 1 AND ignore = 1")[0][0] as number;
+  dbStats.onlinePublishable = Math.max(0, (dbStats.online as number) - (dbStats.onlineIgnored as number));
   
   // Get expired relays using the same function as the daemon - with retry logic
   // This will correctly account for the retry backoff
@@ -221,6 +239,11 @@ export function getStats(queueManager: QueueManager): StatusStats {
     publishSize: publishStats.size,
     publishPending: publishStats.pending,
     publishedEvents: publishStats.published,
+    publishedChecks: publishStats.publishedChecks,
+    publishedDeltas: publishStats.publishedDeltas,
+    publishedDeletions: publishStats.publishedDeletions,
+    publishedAnnouncements: publishStats.publishedAnnouncements,
+    publishedOther: publishStats.publishedOther,
     failedPublishes: publishStats.failed,
     retryingPublishes: publishStats.retrying,
     successRate: publishStats.success_rate,
@@ -333,6 +356,8 @@ function createAsciiBox(stats: StatusStats): string {
     { key: 'Active:', value: stats.publishPending },
     { key: 'Waiting:', value: stats.publishSize },
     { key: 'Published:', value: stats.publishedEvents, highlight: true },
+    { key: 'Published (checks):', value: stats.publishedChecks },
+    { key: 'Published (other):', value: (stats.publishedEvents as number) - (stats.publishedChecks as number) },
     { key: 'Failed:', value: stats.failedPublishes, warning: stats.failedPublishes > 0 },
     { key: 'Retrying:', value: stats.retryingPublishes, warning: stats.retryingPublishes > 0 },
     { key: 'Success Rate:', value: stats.successRate }
@@ -340,6 +365,8 @@ function createAsciiBox(stats: StatusStats): string {
   
   const cacheData: StatsItem[] = [
     { key: 'Online:', value: stats.online, highlight: true },
+    { key: 'Online (publishable):', value: stats.onlinePublishable },
+    { key: 'Online (ignored):', value: stats.onlineIgnored },
     { key: 'Online & Expired:', value: stats.onlineExpired, warning: true },
     { key: 'Offline:', value: stats.offline },
     { key: 'Expired (Total):', value: stats.expired, warning: stats.expired > 0 },

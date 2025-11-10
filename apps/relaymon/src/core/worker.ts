@@ -272,7 +272,7 @@ export class Worker {
             setTimeout(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
-                { isRetry: true }
+                { isRetry: true, category: 'delta' }
               );
             }, nextBackoffMs);
           } else {
@@ -284,7 +284,7 @@ export class Worker {
         }
       };
 
-      this.queueManager.addPublishJob(() => publishJob(), { isRetry: false });
+      this.queueManager.addPublishJob(() => publishJob(), { isRetry: false, category: 'check' });
     } catch (error: unknown) {
       this.logger.error(`Failed to add publish job for ${result.url}: ${getErrorMessage(error)}`);
     }
@@ -443,7 +443,7 @@ export class Worker {
             setTimeout(() => {
               this.queueManager.addPublishJob(
                 () => publishJob(nextRetryCount, maxRetries, nextBackoffMs),
-                { isRetry: true }
+                { isRetry: true, category: 'check' }
               );
             }, nextBackoffMs);
           } else {
@@ -455,7 +455,7 @@ export class Worker {
         }
       };
 
-      this.queueManager.addPublishJob(() => publishJob(), { isRetry: false });
+      this.queueManager.addPublishJob(() => publishJob(), { isRetry: false, category: 'delta' });
     } catch (error: unknown) {
       this.logger.error(`Failed to publish delta event for ${relayUrl}: ${getErrorMessage(error)}`);
     }

@@ -166,10 +166,17 @@ export class QueueManager {
     published: number;
     failed: number;
     retrying: number;
+    // Legacy, string formatted percentage (e.g., "95.00%" or "N/A")
     success_rate: string;
+    // Numeric success rate in range [0,1]; NaN if not enough data
+    successRate: number;
   } {
-    const success_rate = this.publishedEvents + this.failedPublishes > 0 
-      ? ((this.publishedEvents / (this.publishedEvents + this.failedPublishes)) * 100).toFixed(2) + '%'
+    const attempts = this.publishedEvents + this.failedPublishes;
+    const successRateNum = attempts > 0
+      ? (this.publishedEvents / attempts)
+      : NaN;
+    const success_rate = attempts > 0
+      ? (successRateNum * 100).toFixed(2) + '%'
       : 'N/A';
       
     return {
@@ -178,7 +185,8 @@ export class QueueManager {
       published: this.publishedEvents,
       failed: this.failedPublishes,
       retrying: this.retryingPublishes,
-      success_rate
+      success_rate,
+      successRate: successRateNum,
     };
   }
   

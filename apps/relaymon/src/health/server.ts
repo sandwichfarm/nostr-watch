@@ -8,7 +8,8 @@ import { getLogger } from "../utils/logger.ts";
 import { buildHealthSnapshot } from "./snapshot.ts";
 import type { HealthServerConfig } from "./types.ts";
 import type { HealthSnapshot } from "./types.ts";
-import type { HeartbeatTracker, ErrorTracker as ErrorTrackerType } from "./types.ts";
+import type { HeartbeatTracker } from "./types.ts";
+import type { ErrorTracker } from "./snapshot.ts";
 import type { QueueManager } from "../utils/queueManager.ts";
 
 const logger = getLogger("HealthServer");
@@ -20,7 +21,7 @@ export interface HealthServerContext {
   queueManager: QueueManager;
   privkey: string | undefined;
   heartbeat: HeartbeatTracker;
-  errorTracker: ErrorTrackerType;
+  errorTracker: ErrorTracker;
   authToken?: string;
   thresholds: {
     checkIdleMs: number;
@@ -165,7 +166,7 @@ export class HealthServer {
         privkey: this.context.privkey,
         heartbeat: this.context.heartbeat,
         thresholds: this.context.thresholds,
-        errorTracker: this.context.errorTracker as any,
+        errorTracker: this.context.errorTracker,
       });
 
       const status = snapshot.state === "down" ? 503 : 200;
@@ -211,7 +212,7 @@ export class HealthServer {
         privkey: this.context.privkey,
         heartbeat: this.context.heartbeat,
         thresholds: this.context.thresholds,
-        errorTracker: this.context.errorTracker as any,
+        errorTracker: this.context.errorTracker,
       });
 
       return new Response(

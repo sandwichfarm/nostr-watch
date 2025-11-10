@@ -5,6 +5,8 @@
  */
 
 import { getLogger } from "../utils/logger.ts";
+import { getExpiredRelays } from "npm:@nostrwatch/db";
+import { RetryManager } from "../utils/retryManager.ts";
 import {
   checkDatabase,
   checkSigning,
@@ -90,6 +92,29 @@ export async function buildHealthSnapshot(options: {
     expiredRelaysCount,
   } = options;
 
+  // Determine expired relays waiting, if not provided
+  let expiredWaiting = expiredRelaysCount;
+  try {
+    if (expiredWaiting === undefined) {
+      const cfg: any = queueManager.config;
+      // Defaults align with status.ts fallbacks
+      const expirySecs = cfg?.relaymon?.checks?.options?.expires
+        ? Math.round(cfg.relaymon.checks.options.expires / 1000)
+        : 60;
+      const networks = Array.isArray(cfg?.relaymon?.networks)
+        ? cfg.relaymon.networks
+        : ["clearnet"];
+      const retryCfg = Array.isArray(cfg?.relaymon?.retry?.expiry) && cfg.relaymon.retry.expiry.length > 0
+        ? cfg.relaymon.retry.expiry
+        : [{ max: 999, delay: 60000 }];
+      const retryMgr = new RetryManager(retryCfg);
+      const expired = getExpiredRelays(expirySecs, networks, retryMgr);
+      expiredWaiting = expired.length;
+    }
+  } catch (e) {
+    logger.debug(`Failed to compute expired relays count: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   // Run all checks in parallel
   const [dbCheck, signingCheck, checkQueueCheck, publishQueueCheck, checkLoopCheck] =
     await Promise.all([
@@ -97,7 +122,7 @@ export async function buildHealthSnapshot(options: {
       checkSigning(privkey),
       Promise.resolve(checkCheckQueue(queueManager, thresholds)),
       Promise.resolve(checkPublishQueue(queueManager, thresholds)),
-      Promise.resolve(checkCheckLoop(heartbeat, thresholds, expiredRelaysCount)),
+      Promise.resolve(checkCheckLoop(heartbeat, thresholds, expiredWaiting)),
     ]);
 
   // Get error counts
@@ -134,7 +159,7 @@ export async function buildHealthSnapshot(options: {
       timeSinceHeartbeat: heartbeat.checkLoop
         ? Date.now() - heartbeat.checkLoop
         : undefined,
-      expiredRelaysWaiting: expiredRelaysCount,
+      expiredRelaysWaiting: expiredWaiting,
     },
   };
 

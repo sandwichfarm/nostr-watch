@@ -312,14 +312,29 @@ export function checkCheckLoop(
     };
   }
 
-  // If we've never seen a heartbeat, that's a problem (after grace period)
+  // If we've never seen a heartbeat after grace period
   if (!heartbeat.checkLoop) {
+    // Only fail if there is work waiting; otherwise it's fine to be idle
+    if (expiredRelaysCount && expiredRelaysCount > 0) {
+      return {
+        name: "checkLoop",
+        status: "fail",
+        message: `Check loop never started with ${expiredRelaysCount} expired relays waiting`,
+        data: {
+          uptimeMs: uptime,
+          expiredRelaysWaiting: expiredRelaysCount,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+
     return {
       name: "checkLoop",
-      status: "fail",
-      message: "Check loop never started",
+      status: "pass",
+      message: "Check loop idle; no expired relays waiting",
       data: {
         uptimeMs: uptime,
+        expiredRelaysWaiting: 0,
       },
       timestamp: new Date().toISOString(),
     };

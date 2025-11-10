@@ -109,3 +109,54 @@ relaymon:
   #       - '1d'   # Daily aggregates
   #       - '7d'   # Weekly aggregates
   #       - '30d'  # Monthly aggregates (approximate)
+
+
+# RelayMon Health Monitoring Configuration Example
+#
+# Add this section to your config.yaml to enable health monitoring
+
+health:
+  # Enable health monitoring system
+  enabled: true
+
+  # HTTP health server configuration
+  server:
+    enabled: true
+    host: "127.0.0.1"  # Bind to localhost (use 0.0.0.0 for all interfaces)
+    port: 8080         # Health server port
+    authEnabled: false # Enable token authentication (requires RELAYMON_HEALTH_AUTH_TOKEN env var)
+
+  # Uptime Kuma push configuration
+  kuma:
+    enabled: true
+    intervalMs: 60000        # Push interval (60 seconds)
+    degradedAsUp: true       # Report "degraded" state as "up" to Kuma (with message)
+    startupGraceMs: 30000    # Wait 30s after startup before first push
+    msgVerbosity: "summary"  # Message verbosity: "summary" or "detailed"
+
+  # Health check thresholds
+  thresholds:
+    checkIdleMs: 300000         # Check loop idle threshold (5 minutes)
+    publishBacklogMax: 100      # Max pending publish events before degraded
+    errorRatePerMin: 10         # Max errors per minute before degraded
+    startupGraceMs: 30000       # Startup grace period (30 seconds)
+
+# Environment variables for secrets (DO NOT put secrets in this file):
+#
+# Kuma push URL (choose one pattern):
+#   RELAYMON_KUMA_PUSH_URL=https://uptime.example.com/api/push/YOUR_TOKEN
+#     OR
+#   RELAYMON_KUMA_BASE_URL=https://uptime.example.com
+#   RELAYMON_KUMA_TOKEN=YOUR_TOKEN
+#
+# Optional: Use _FILE variants for Docker/Kubernetes secrets:
+#   RELAYMON_KUMA_PUSH_URL_FILE=/run/secrets/kuma_push_url
+#   RELAYMON_KUMA_TOKEN_FILE=/run/secrets/kuma_token
+#
+# Health server authentication (optional):
+#   RELAYMON_HEALTH_AUTH_TOKEN=your-secret-token
+#   RELAYMON_HEALTH_AUTH_TOKEN_FILE=/run/secrets/health_auth_token
+#
+# Signing key (already supported):
+#   RELAYMON_NSEC=nsec1... or hex
+#   RELAYMON_NSEC_FILE=/run/secrets/nsec

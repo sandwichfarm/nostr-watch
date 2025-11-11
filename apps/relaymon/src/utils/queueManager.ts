@@ -10,6 +10,8 @@ export class QueueManager {
   public sizeCompleted: number = 0;
   public sizeFailed: number = 0;
   public config: Config | undefined; // Store config for status display
+  // Warmup status flag for status UI
+  public warmupActive: boolean = false;
 
   // Keep track of enqueued relays across different runs
   public enqueuedRelays: Set<string> = new Set();
@@ -60,6 +62,11 @@ export class QueueManager {
     }, 10000);
   }
   
+  // Update warmup status (used by daemon/status display)
+  setWarmupActive(active: boolean): void {
+    this.warmupActive = active;
+  }
+
   // Log the current state of the queue
   logQueueState(): void {
     logger.debug(`Queue state - Check Queue: [Pending: ${this.checkQueue.pending}, Size: ${this.checkQueue.size}, Completed: ${this.sizeCompleted}, Failed: ${this.sizeFailed}], Enqueued: ${this.enqueuedRelays.size}, Publish Queue: [Size: ${this.publishQueue.size}, Published: ${this.publishedEvents}, Failed: ${this.failedPublishes}, Retrying: ${this.retryingPublishes}]`);

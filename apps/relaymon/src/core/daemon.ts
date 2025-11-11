@@ -308,6 +308,7 @@ export async function runDaemon(config: Config): Promise<void> {
       try {
         // Turn on warmup mode in the worker to suppress publishing and bypass DB-ignore for first checks
         worker.setWarmupMode(true);
+        queueManager.setWarmupActive(true);
         while (true) {
           // Build network filter from config
           const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
@@ -345,11 +346,57 @@ export async function runDaemon(config: Config): Promise<void> {
         // Disable warmup mode and re-enable deletion publishing
         worker.setWarmupMode(false);
         setDeletionPublishSuppressed(false);
+        queueManager.setWarmupActive(false);
       }
     }
 
     // Run warmup before starting normal loops
     await runWarmup();
+
+    // Kickstart publishing immediately after warmup so we don't wait for expiry
+    async function kickstartPublishing(): Promise<void> {
+      try {
+        const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
+        const placeholders = networks.map(() => '?').join(',');
+        const query = `SELECT url FROM relay_status WHERE network IN (${placeholders})`;
+        const rows = db.query(query, networks);
+        const allUrls: string[] = rows.map(([url]) => url as string).filter(u => typeof u === 'string' && !u.includes('|'));
+
+        if (allUrls.length === 0) {
+          logger.info("Kickoff: no relays found to enqueue after warmup");
+          return;
+        }
+
+        let toEnqueue: string[] = [];
+        const maxValue = config.relaymon.checks.options.max;
+        if (typeof maxValue === "number") {
+          toEnqueue = allUrls.slice(0, maxValue);
+          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays (numeric max: ${maxValue}) for immediate publishing`);
+        } else if (typeof maxValue === "string" && maxValue.trim().endsWith("%")) {
+          const percentage = parseFloat(maxValue) / 100;
+          const count = Math.ceil(allUrls.length * percentage);
+          toEnqueue = allUrls.slice(0, count);
+          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays (percentage: ${maxValue}, count: ${count}) for immediate publishing`);
+        } else {
+          toEnqueue = allUrls;
+          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays for immediate publishing`);
+        }
+
+        for (const url of toEnqueue) {
+          queueManager.addCheckJob(async () => {
+            try {
+              await worker.processRelay(url);
+            } catch (error) {
+              logger.error(`Kickoff error processing ${url}: ${error?.message || error}`);
+            }
+          }, url);
+        }
+      } catch (e) {
+        logger.error(`Kickoff publishing failed: ${e?.message || e}`);
+      }
+    }
+
+    await kickstartPublishing();
 
     // Schedule ignore list sync if enabled
     async function runIgnoreListSync() {

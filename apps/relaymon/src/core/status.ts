@@ -88,6 +88,8 @@ interface StatusStats {
   newRelaysFound: number;
   relaysRecovered: number; // New stat for relays that recovered
   queueSize: number;
+  // Warmup indicator
+  warmingUp?: boolean;
 }
 
 /**
@@ -252,7 +254,8 @@ export function getStats(queueManager: QueueManager): StatusStats {
     wentOfflineCount: sessionStats.wentOffline.size,
     newRelaysFound: sessionStats.newRelaysFound,
     relaysRecovered: sessionStats.relaysRecovered,
-    queueSize: queueStats.totalQueue
+    queueSize: queueStats.totalQueue,
+    warmingUp: (queueManager as any).warmupActive === true
   };
 }
 
@@ -357,13 +360,19 @@ function createAsciiBox(stats: StatusStats): string {
     { key: 'Waiting:', value: stats.publishSize },
     { key: 'Published:', value: stats.publishedEvents, highlight: true },
     { key: 'Published (checks):', value: stats.publishedChecks },
-    { key: 'Published (other):', value: (stats.publishedEvents as number) - (stats.publishedChecks as number) },
+    { key: 'Published (deltas):', value: stats.publishedDeltas },
+    { key: 'Published (deletions):', value: stats.publishedDeletions },
+    { key: 'Published (announcements):', value: stats.publishedAnnouncements },
+    { key: 'Published (other):', value: stats.publishedOther },
     { key: 'Failed:', value: stats.failedPublishes, warning: stats.failedPublishes > 0 },
     { key: 'Retrying:', value: stats.retryingPublishes, warning: stats.retryingPublishes > 0 },
     { key: 'Success Rate:', value: stats.successRate }
   ];
   
   const cacheData: StatsItem[] = [
+    { key: `${header('WARMUP')}`, value: '' },
+    { key: 'Warming Up:', value: (stats.warmingUp ? 'Yes' : 'No') + (stats.warmingUp ? ` (${stats.unchecked} unchecked)` : '') , warning: !!stats.warmingUp },
+    { key: '', value: '' },
     { key: 'Online:', value: stats.online, highlight: true },
     { key: 'Online (publishable):', value: stats.onlinePublishable },
     { key: 'Online (ignored):', value: stats.onlineIgnored },

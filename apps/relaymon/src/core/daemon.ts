@@ -8,7 +8,7 @@ import { maybeAnnounce } from "../utils/announce.ts";
 import { getPublicKey, nip19 } from "npm:nostr-tools";
 import { RetryManager } from "../utils/retryManager.ts";
 import { formatCompactStats, showStatus } from "./status.ts";
-import { deleteRelayCheckEvent } from "../utils/deletion.ts";
+import { deleteRelayCheckEvent, setDeletionPublishSuppressed } from "../utils/deletion.ts";
 import { IgnoreListSync } from "../utils/IgnoreListSync.ts";
 import { setIgnoreListSync, reevaluateAllDeduplication } from "../utils/hostnames.ts";
 import { checkSigning } from "../health/index.ts";
@@ -139,6 +139,9 @@ export async function runDaemon(config: Config): Promise<void> {
 
     // Set the global IgnoreListSync instance for use in hostname deduplication
     setIgnoreListSync(ignoreListSync);
+
+    // Suppress deletion publishing during warmup (set true early to catch initial deletion publish call)
+    setDeletionPublishSuppressed(true);
 
     if (ignoreListSync && config?.relaymon?.ignorelist?.enabled) {
       logger.info("Performing initial ignore list sync...");
@@ -281,6 +284,9 @@ export async function runDaemon(config: Config): Promise<void> {
       }
     }
 
+    // Enable deletion publish suppression immediately to prevent any deletions during warmup
+    setDeletionPublishSuppressed(true);
+
     if(seeder) {
       // First run the seeder to populate the database
       logger.info("Starting seeder to populate database...");
@@ -296,6 +302,54 @@ export async function runDaemon(config: Config): Promise<void> {
     else {
       logger.info("No seeder found, skipping initial seeding.");
     }
+
+    // Warmup runner - checks all unchecked relays (checked_at = -1) for configured networks
+    async function runWarmup(): Promise<void> {
+      try {
+        // Turn on warmup mode in the worker to suppress publishing and bypass DB-ignore for first checks
+        worker.setWarmupMode(true);
+        while (true) {
+          // Build network filter from config
+          const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
+          const placeholders = networks.map(() => '?').join(',');
+          const query = `SELECT url FROM relay_status WHERE checked_at = -1 AND network IN (${placeholders})`;
+          const rows = db.query(query, networks);
+          const urls: string[] = rows.map(([url]) => url as string);
+
+          if (urls.length === 0) {
+            logger.info("Warmup complete: no unchecked relays remain");
+            break;
+          }
+
+          logger.info(`Warmup: processing ${urls.length} unchecked relays`);
+          // Enqueue all unchecked relays
+          for (const url of urls) {
+            // Skip any malformed items defensively
+            if (typeof url !== 'string' || url.includes('|')) continue;
+            queueManager.addCheckJob(async () => {
+              try {
+                await worker.processRelay(url);
+              } catch (error) {
+                logger.error(`Warmup error processing ${url}: ${error?.message || error}`);
+              }
+            }, url);
+          }
+
+          // Wait for warmup batch to drain
+          await queueManager.waitEmpty([queueManager.checkQueue]);
+          // Loop to re-check in case seeder or other inputs added more unchecked
+        }
+      } catch (e) {
+        logger.error(`Warmup runner failed: ${e?.message || e}`);
+      } finally {
+        // Disable warmup mode and re-enable deletion publishing
+        worker.setWarmupMode(false);
+        setDeletionPublishSuppressed(false);
+      }
+    }
+
+    // Run warmup before starting normal loops
+    await runWarmup();
 
     // Schedule ignore list sync if enabled
     async function runIgnoreListSync() {

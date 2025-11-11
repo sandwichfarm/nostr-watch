@@ -8,6 +8,14 @@ import { getPrivateKey } from "../core/daemon.ts";
 
 const logger = getLogger("Deletion");
 
+// Global flag to suppress deletion publishing (used during warmup)
+let suppressDeletionPublishing = false;
+
+export function setDeletionPublishSuppressed(suppressed: boolean): void {
+  suppressDeletionPublishing = suppressed;
+  logger.info(`Deletion publishing ${suppressed ? "suppressed" : "enabled"}`);
+}
+
 /**
  * Kind5 event class for deletion events (NIP-09)
  */
@@ -68,6 +76,12 @@ export async function deleteRelayCheckEvent(
   queueManager?: QueueManager
 ): Promise<boolean> {
   try {
+    // Respect warmup suppression
+    if (suppressDeletionPublishing) {
+      logger.debug(`Suppressed deletion publish for ${relayUrl} (reason: ${reason})`);
+      return false;
+    }
+
     // Get the private key from environment
     const privkey = getPrivateKey();
     if (!privkey) {

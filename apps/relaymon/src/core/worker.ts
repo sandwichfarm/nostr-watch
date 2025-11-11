@@ -20,7 +20,7 @@ import type { NocapCheckResult, RelayCheckResult } from "../types/relay.ts";
 import { getErrorMessage } from "../types/errors.ts";
 import { detectDeltas } from "../delta/detector.ts";
 import { Kind1066 } from "../delta/kind1066.ts";
-import { Kind20066 } from "../delta/kind20066.ts";
+import { Kind20166 } from "../delta/kind20166.ts";
 import { getPeriodsToEmit, validatePeriods } from "../delta/periods.ts";
 import { getPrivateKey } from "./daemon.ts";
 
@@ -36,6 +36,7 @@ export class Worker {
   private knownRelayStatus: Map<string, boolean> = new Map();
   private publishMaxRetries: number = 5;
   private publishInitialBackoffMs: number = 1000*60;
+  private warmupMode: boolean = false;
 
   constructor(
     private pubkey: string,
@@ -78,6 +79,13 @@ export class Worker {
     }
   }
 
+  // Enable/disable warmup mode. When enabled, monitor event publishing is suppressed
+  // and first-checks bypass DB ignore gating to ensure all relays are checked at least once.
+  public setWarmupMode(enabled: boolean): void {
+    this.warmupMode = enabled;
+    this.logger.info(`Warmup mode ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
   private initializeRelayStatusFromDB(): void {
     try {
       const results = db.query(`SELECT url, online, retries FROM relay_status`);
@@ -111,19 +119,7 @@ export class Worker {
       return;
     }
 
-    if (isRelayIgnored(relayUrl)) {
-      this.logger.debug(`Skipping check for relay ${relayUrl} - already marked as ignored in database`);
-      
-      try {
-        await deleteRelayCheckEvent(relayUrl, "Relay was previously marked as ignored", this.config, this.queueManager);
-        this.logger.debug(`Published deletion event for previously ignored relay ${relayUrl}`);
-      } catch (error) {
-        this.logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
-      }
-      
-      return;
-    }
-
+    // Determine if this is the first-ever check for this relay
     try {
       const checkedAt = db.query("SELECT checked_at FROM relay_status WHERE url = ?", [relayUrl]);
       if (checkedAt.length > 0 && (checkedAt[0][0] === -1)) {
@@ -132,6 +128,22 @@ export class Worker {
       }
     } catch (error) {
       this.logger.error(`Error checking if first check for ${relayUrl}: ${error}`);
+    }
+
+    if (isRelayIgnored(relayUrl)) {
+      this.logger.debug(`Skipping check for relay ${relayUrl} - already marked as ignored in database`);
+      // During warmup, if this is the first check, bypass the ignore and continue
+      if (this.warmupMode && isFirstCheck) {
+        this.logger.debug(`Warmup: bypassing DB ignore for first check of ${relayUrl}`);
+      } else {
+        try {
+          await deleteRelayCheckEvent(relayUrl, "Relay was previously marked as ignored", this.config, this.queueManager);
+          this.logger.debug(`Published deletion event for previously ignored relay ${relayUrl}`);
+        } catch (error) {
+          this.logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
+        }
+        return;
+      }
     }
 
     this.logger.debug(`Starting check for relay: ${relayUrl}`);
@@ -252,6 +264,10 @@ export class Worker {
 
   async publishResult(result: RelayCheckResult): Promise<void> {
     try {
+      if (this.warmupMode) {
+        this.logger.debug(`Warmup mode active; suppressing check event publish for ${result.url}`);
+        return;
+      }
       const publishJob = async (retryCount = 0, maxRetries = this.publishMaxRetries, backoffMs = this.publishInitialBackoffMs) => {
         try {
           const event = new Kind30166(this.pubkey);
@@ -412,10 +428,10 @@ export class Worker {
           this.logger.debug(`Published delta event (Kind 1066) for relay ${relayUrl}` +
             (periodsToEmit.length > 0 ? ` with periods: ${periodsToEmit.join(', ')}` : ''));
 
-          // Publish ephemeral state change event (Kind 20066) if status changed
+          // Publish ephemeral state change event (Kind 20166) if status changed
           if (operationalStatus) {
             try {
-              const ephemeralEvent = new Kind20066(this.pubkey);
+              const ephemeralEvent = new Kind20166(this.pubkey);
               const ephemeralSigned = await ephemeralEvent.generateAndSignEvent({
                 url: relayUrl,
                 operationalStatus,
@@ -425,7 +441,7 @@ export class Worker {
               }, privkey);
 
               await this.publisher.publishEvent(ephemeralSigned);
-              this.logger.debug(`Published ephemeral state change event (Kind 20066) for relay ${relayUrl}: ${operationalStatus}`);
+              this.logger.debug(`Published ephemeral state change event (Kind 20166) for relay ${relayUrl}: ${operationalStatus}`);
             } catch (ephemeralError: unknown) {
               // Don't fail the whole job if ephemeral publish fails
               this.logger.warn(`Failed to publish ephemeral event for ${relayUrl}: ${getErrorMessage(ephemeralError)}`);
@@ -455,6 +471,10 @@ export class Worker {
         }
       };
 
+      if (this.warmupMode) {
+        this.logger.debug(`Warmup mode active; suppressing delta event publish for ${relayUrl}`);
+        return;
+      }
       this.queueManager.addPublishJob(() => publishJob(), { isRetry: false, category: 'delta' });
     } catch (error: unknown) {
       this.logger.error(`Failed to publish delta event for ${relayUrl}: ${getErrorMessage(error)}`);

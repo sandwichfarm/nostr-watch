@@ -3,9 +3,9 @@ import { finalizeEvent } from "nostr-tools/pure";
 import { hexToBytes } from "@noble/hashes/utils";
 import { getLogger } from "../utils/logger.ts";
 
-const logger = getLogger("Kind20066");
+const logger = getLogger("Kind20166");
 
-export interface Kind20066EventData {
+export interface Kind20166EventData {
   url: string;
   operationalStatus: "init" | "down" | "up";  // State transition (required)
   online: boolean;
@@ -14,21 +14,21 @@ export interface Kind20066EventData {
 }
 
 /**
- * Kind 20066 Event Builder for Ephemeral Relay State Changes
+ * Kind 20166 Event Builder for Ephemeral Relay State Changes
  *
  * Ephemeral events (20000-29999) that broadcast state changes in real-time.
  * Only published when operational status changes (init/down/up).
  * Not stored by relays - for live monitoring only.
  */
-export class Kind20066 extends Event {
+export class Kind20166 extends Event {
   constructor(pubkey: string) {
-    super(20066, pubkey);
+    super(20166, pubkey);
   }
 
   /**
-   * Generate tags for the Kind 20066 event
+   * Generate tags for the Kind 20166 event
    */
-  private generateTags(data: Kind20066EventData): string[][] {
+  private generateTags(data: Kind20166EventData): string[][] {
     const tags: string[][] = [];
 
     // Always include the relay URL as 'r' tag (reference)
@@ -53,14 +53,14 @@ export class Kind20066 extends Event {
   }
 
   /**
-   * Generate an unsigned Kind 20066 event (override from Event class)
+   * Generate an unsigned Kind 20166 event (override from Event class)
    */
-  protected _generateEvent(data: Kind20066EventData): NostrEvent {
+  protected _generateEvent(data: Kind20166EventData): NostrEvent {
     const tags = this.generateTags(data);
     const now = Math.floor(Date.now() / 1000);
 
     return {
-      kind: 20066,
+      kind: 20166,
       pubkey: this.pubkey,
       created_at: now,
       tags,
@@ -69,9 +69,9 @@ export class Kind20066 extends Event {
   }
 
   /**
-   * Generate and sign a Kind 20066 event in one call
+   * Generate and sign a Kind 20166 event in one call
    */
-  async generateAndSignEvent(data: Kind20066EventData, privkey: string): Promise<any> {
+  async generateAndSignEvent(data: Kind20166EventData, privkey: string): Promise<any> {
     const unsignedEvent = this.generateEvent(data);
     const signedEvent = finalizeEvent(unsignedEvent, hexToBytes(privkey));
     return signedEvent;
@@ -79,13 +79,13 @@ export class Kind20066 extends Event {
 }
 
 /**
- * Helper function to create a Kind 20066 event
+ * Helper function to create a Kind 20166 event
  */
-export async function createKind20066Event(
+export async function createKind20166Event(
   pubkey: string,
-  data: Kind20066EventData,
+  data: Kind20166EventData,
   privkey: string
 ): Promise<any> {
-  const builder = new Kind20066(pubkey);
+  const builder = new Kind20166(pubkey);
   return builder.generateAndSignEvent(data, privkey);
 }

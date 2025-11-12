@@ -276,6 +276,64 @@ function createAsciiBox(stats: StatusStats): string {
     // Remove ANSI escape codes when calculating length
     return str.replace(/\u001b\[.*?m/g, '').length;
   };
+
+  // Truncate a possibly ANSI-colored string to a target visible length
+  const truncateAnsi = (input: string, maxVisible: number): string => {
+    if (maxVisible <= 0) return '';
+    let out = '';
+    let visible = 0;
+    for (let i = 0; i < input.length; i++) {
+      const ch = input[i];
+      if (ch === "\u001b") { // start of ANSI sequence
+        // copy through the end of the sequence (ending at 'm')
+        const match = /\u001b\[[0-9;]*m/.exec(input.slice(i));
+        if (match) {
+          out += match[0];
+          i += match[0].length - 1; // -1 because for-loop will i++
+          continue;
+        }
+      }
+      if (visible < maxVisible) {
+        out += ch;
+        visible += 1;
+      } else {
+        break;
+      }
+    }
+    return out;
+  };
+
+  // Render a cell to exactly fit the given width, truncating label if needed
+  const renderCell = (
+    labelStyled: string,
+    valueStyled: string,
+    colWidth: number,
+    withLeftGap = true,
+  ): string => {
+    // compute allowed space for label considering value
+    const leftPad = withLeftGap ? 1 : 0;
+    const valuePart = valueStyled ? ` ${valueStyled}` : '';
+    const valueLen = strLength(valuePart);
+    const allowedLabel = Math.max(0, colWidth - leftPad - valueLen);
+
+    // truncate label to fit
+    const labelTrunc = truncateAnsi(labelStyled, allowedLabel);
+    const labelPad = ' '.repeat(Math.max(0, allowedLabel - strLength(labelTrunc)));
+
+    let cell = '';
+    if (withLeftGap) cell += ' ';
+    cell += labelTrunc + labelPad + valuePart;
+
+    // right pad to fill colWidth exactly
+    const padRight = Math.max(0, colWidth - strLength(cell));
+    cell += ' '.repeat(padRight);
+    // if cell somehow exceeded, truncate raw (rare due to ANSI), last resort
+    if (strLength(cell) > colWidth) {
+      // Try to trim without breaking ANSI by truncating visible
+      cell = truncateAnsi(cell, colWidth);
+    }
+    return cell;
+  };
   
   // Helper function to pad numbers and ensure consistent spacing
   const pad = (value: number | string): string => {
@@ -409,91 +467,67 @@ function createAsciiBox(stats: StatusStats): string {
   // Generate rows for the tables
   for (let i = 0; i < maxRows; i++) {
     let rowContent = '';
-    
+
     // Queue column
     if (i < queueData.length) {
       const item = queueData[i];
-      const keyPadding = ' '.repeat(queueKeyLength - strLength(item.key.toString()));
-      let formattedValue;
-      
+      let formattedValue: string;
       if (item.key === 'Success Rate:' || typeof item.value === 'string') {
-        // Special handling for string values like success rate
-        formattedValue = item.warning ? 
-          warning(item.value.toString()) : 
+        formattedValue = item.warning ?
+          warning(item.value.toString()) :
           (item.highlight ? highlight(item.value.toString()) : value(item.value.toString()));
       } else {
-        // Number values
-        formattedValue = item.warning ? 
-          warning(pad(item.value as number)) : 
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
           (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
       }
-      
-      const cellContent = ` ${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      rowContent += `${cellContent}${' '.repeat(Math.max(0, columnWidth - strLength(cellContent)))}`;
+      const cell = renderCell(subheader(item.key), formattedValue, columnWidth, true);
+      rowContent += cell;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }
-    
+
     // Cache column
     if (i < cacheData.length) {
       const item = cacheData[i];
-      const keyPadding = ' '.repeat(cacheKeyLength - strLength(item.key.toString()));
-      let formattedValue;
-      
+      let formattedValue: string;
       if (typeof item.value === 'string') {
-        // String values
-        formattedValue = item.warning ? 
-          warning(item.value) : 
+        formattedValue = item.warning ?
+          warning(item.value) :
           (item.highlight ? highlight(item.value) : value(item.value));
       } else {
-        // Number values
-        formattedValue = item.warning ? 
-          warning(pad(item.value as number)) : 
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
           (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
       }
-      
-      const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      rowContent += `${cellContent}${' '.repeat(Math.max(0, columnWidth - strLength(cellContent)))}`;
+      const cell = renderCell(subheader(item.key), formattedValue, columnWidth, false);
+      rowContent += cell;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }
-    
+
     // Session column
     if (i < sessionData.length) {
       const item = sessionData[i];
-      const keyPadding = ' '.repeat(sessionKeyLength - strLength(item.key.toString()));
-      let formattedValue;
-      
+      let formattedValue: string;
       if (typeof item.value === 'string') {
-        // String values
-        formattedValue = item.warning ? 
-          warning(item.value) : 
+        formattedValue = item.warning ?
+          warning(item.value) :
           (item.highlight ? highlight(item.value) : value(item.value));
       } else {
-        // Number values
-        formattedValue = item.warning ? 
-          warning(pad(item.value as number)) : 
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
           (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
       }
-      
-      const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      // Make sure we pad exactly to the remaining width to ensure straight right border
-      const remainingWidth = (boxWidth - 2) - strLength(rowContent) - strLength(cellContent);
-      rowContent += `${cellContent}${' '.repeat(Math.max(0, remainingWidth))}`;
+      // Remaining width for last column in this row
+      const remainingWidth = (boxWidth - 2) - strLength(rowContent);
+      const cell = renderCell(subheader(item.key), formattedValue, remainingWidth, false);
+      rowContent += cell;
     } else {
-      // Fill the remaining width exactly
       const remainingWidth = (boxWidth - 2) - strLength(rowContent);
       rowContent += ' '.repeat(Math.max(0, remainingWidth));
     }
-    
-    // Ensure rowContent is exactly the right width for proper alignment
-    if (strLength(rowContent) < boxWidth - 2) {
-      rowContent += ' '.repeat((boxWidth - 2) - strLength(rowContent));
-    } else if (strLength(rowContent) > boxWidth - 2) {
-      // Trim if somehow too long (shouldn't happen with correct calculations)
-      rowContent = rowContent.substring(0, boxWidth - 2);
-    }
-    
+
     // Add the row to the box
     box += `║${rowContent}║\n`;
   }

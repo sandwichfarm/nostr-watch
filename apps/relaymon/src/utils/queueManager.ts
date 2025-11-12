@@ -169,10 +169,9 @@ export class QueueManager {
   async waitEmpty(queues: Queue[] = [this.checkQueue]): Promise<void> {
     const promises: Promise<void>[] = [];
     queues.forEach((queue) => {
-      promises.push(new Promise<void>((resolve) => queue.on('empty', () => resolve())));
+      promises.push(queue.onIdle());
     });
     await Promise.all(promises);
-    return;
   }
 
   pause(): void {

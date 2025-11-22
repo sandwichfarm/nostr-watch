@@ -179,7 +179,7 @@ export class Kind30166 extends Event {
         kinds.length = 21;
         for(const kind of info.kinds){
           if(typeof attr === 'string') {
-            tags.push(['K', kind]);
+            tags.push(['k', kind]);
           }
         }
       }

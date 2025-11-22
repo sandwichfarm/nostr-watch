@@ -163,7 +163,26 @@ export class Kind30166 extends Event {
             tags.push(['t', String(tag)])
           }
         }
-      }      
+      }     
+      
+      if(info?.attributes && Array.isArray(info.attributes)) {
+        info.attributes.length = 9
+        for(const attr of info.attributes){
+          if(typeof attr === 'string') {
+            tags.push(['W', attr]);
+          }
+        }
+      }
+
+      if(info?.kinds && Array.isArray(info.kinds)){
+        const { kinds } = info 
+        kinds.length = 21;
+        for(const kind of info.kinds){
+          if(typeof attr === 'string') {
+            tags.push(['K', kind]);
+          }
+        }
+      }
 
       if (info?.limitation?.auth_required === true){
         tags.push(['R', 'auth'])

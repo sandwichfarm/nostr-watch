@@ -1,0 +1,24 @@
+{
+  "$schema": "https://contextvm.com/schemas/ctxcn-config.json",
+  "servers": [
+    {
+      "name": "nostr-watch-cvm",
+      "description": "RelayVM - Relay intelligence aggregator",
+      "pubkey": "REPLACE_WITH_CVM_SERVER_PUBKEY",
+      "relays": [
+        "wss://relay.damus.io",
+        "wss://relay.nostr.band",
+        "wss://nos.lol"
+      ],
+      "encryptionMode": "optional",
+      "outputDir": "./generated-client"
+    }
+  ],
+  "generation": {
+    "typescript": {
+      "enabled": true,
+      "target": "es2022",
+      "module": "esnext"
+    }
+  }
+}

@@ -9,18 +9,9 @@ import type { HealthPingInput, HealthPingOutput } from '../types/tool-schemas.js
 import type { MetricsService } from '../services/metrics.js'
 import type { QueryCache } from '../services/cache.js'
 import { getLogger } from '../utils/logger.js'
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { loadSchema } from '../utils/schema-loader.js'
 
 const logger = getLogger().child({ module: 'health' })
-
-// Load output schema
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const healthPingOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'health-ping-output.json'), 'utf-8')
-)
 
 interface HealthToolContext {
   getRelayCount: () => { transport: number; ingestion: number }
@@ -44,7 +35,7 @@ export function createHealthTool(context: HealthToolContext): CVMTool {
       properties: {},
       required: [],
     },
-    outputSchema: healthPingOutputSchema,
+    outputSchema: loadSchema('health-ping-output.json'),
     handler: async (_params: HealthPingInput): Promise<HealthPingOutput> => {
       logger.debug('Health check requested')
 

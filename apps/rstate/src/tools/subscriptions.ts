@@ -13,22 +13,11 @@ import type {
 } from '../types/tool-schemas.js'
 import type { SubscriptionManager } from '../services/subscription-manager.js'
 import { getLogger } from '../utils/logger.js'
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { loadSchema } from '../utils/schema-loader.js'
 
 const logger = getLogger().child({ module: 'tools-subscriptions' })
 
-// Load output schemas
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-// Load from central schemas directory (src/schemas)
-const relaysSubscribeStateOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-subscribe-state-output.json'), 'utf-8')
-)
-const relaysUnsubscribeOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'relays-unsubscribe-output.json'), 'utf-8')
-)
+// Schemas are loaded lazily via loadSchema() utility
 
 interface SubscriptionToolsContext {
   subscriptionManager: SubscriptionManager
@@ -107,7 +96,7 @@ export function createRelaysSubscribeStateTool(ctx: SubscriptionToolsContext): C
         },
       },
     },
-    outputSchema: relaysSubscribeStateOutputSchema,
+    outputSchema: loadSchema('relays-subscribe-state-output.json'),
     handler: async (params: RelaysSubscribeStateInput): Promise<RelaysSubscribeStateOutput> => {
       const clientPubkey = ctx.getClientPubkey()
       if ((ctx.requireAuth ?? true) && !clientPubkey) {
@@ -144,7 +133,7 @@ export function createRelaysUnsubscribeTool(ctx: SubscriptionToolsContext): CVMT
       },
       required: ['subscriptionId'],
     },
-    outputSchema: relaysUnsubscribeOutputSchema,
+    outputSchema: loadSchema('relays-unsubscribe-output.json'),
     handler: async (params: RelaysUnsubscribeInput): Promise<RelaysUnsubscribeOutput> => {
       const success = ctx.subscriptionManager.unsubscribe(params.subscriptionId)
 

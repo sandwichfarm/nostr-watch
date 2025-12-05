@@ -7,6 +7,15 @@
 // Load environment variables from .env file
 import 'dotenv/config'
 
+// Polyfill WebSocket for Node.js environment
+// Node.js v20+ has WebSocket built-in, but it needs to be made available globally
+// for libraries that expect it (like applesauce-relay via rxjs)
+import { WebSocket } from 'ws'
+if (typeof globalThis.WebSocket === 'undefined') {
+  // @ts-ignore - WebSocket types are compatible
+  globalThis.WebSocket = WebSocket
+}
+
 import { getConfig } from './config.js'
 import { getLogger } from './utils/logger.js'
 import { CVMServer } from './server.js'

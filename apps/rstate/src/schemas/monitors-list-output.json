@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "monitors": {
+      "type": "array",
+      "items": { "type": "object", "description": "MonitorAnnouncement" }
+    },
+    "total": { "type": "number" },
+    "analytics": {
+      "type": "array",
+      "items": { "type": "object", "description": "MonitorAnalytics" }
+    }
+  },
+  "required": ["monitors", "total"]
+}
+

@@ -17,17 +17,27 @@ export default defineConfig({
   target: 'node20',
   platform: 'node',
   onSuccess: async () => {
-    // Copy all JSON schemas to dist
-    mkdirSync('dist/schemas', { recursive: true })
+    // Copy all JSON schemas to dist (if schemas directory exists)
     const srcDir = 'src/schemas'
-    const files = readdirSync(srcDir).filter((f) => f.endsWith('.json'))
-    for (const file of files) {
-      copyFileSync(
-        join(srcDir, file),
-        join('dist', 'schemas', file)
-      )
+    try {
+      const files = readdirSync(srcDir).filter((f) => f.endsWith('.json'))
+      if (files.length > 0) {
+        mkdirSync('dist/schemas', { recursive: true })
+        for (const file of files) {
+          copyFileSync(
+            join(srcDir, file),
+            join('dist', 'schemas', file)
+          )
+        }
+        console.log(`✓ JSON schemas copied to dist/schemas (${files.length} files)`)
+      }
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        console.log('⚠ No schemas directory found, skipping schema copy')
+      } else {
+        throw err
+      }
     }
-    console.log(`✓ JSON schemas copied to dist/schemas (${files.length} files)`)
 
     // Make CLI executable
     try {

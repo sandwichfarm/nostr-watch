@@ -7,7 +7,7 @@
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import cors from '@fastify/cors'
 import swagger from '@fastify/swagger'
-import swaggerUi from '@fastify/swagger-ui'
+import apiReference from '@scalar/fastify-api-reference'
 import type { StateCore } from '../core/index.js'
 import type { MetricsService } from '../services/metrics.js'
 import type { SecurityService } from '../services/security.js'
@@ -32,6 +32,7 @@ const logger = getLogger().child({ module: 'rest-server' })
 export interface RestServerConfig {
   host: string
   port: number
+  apiBaseUrl?: string  // Base URL for OpenAPI spec (e.g., https://api.nostr.watch)
   corsOrigins: string[] | '*'
   enableSwagger: boolean
   allowPolicyUpdate: boolean
@@ -66,6 +67,7 @@ export class RestServer {
   private app: FastifyInstance
   private context: RestContext
   private rateLimiter?: RateLimiterService
+  private routesReady: Promise<void>
 
   constructor(
     private config: RestServerConfig,
@@ -97,20 +99,23 @@ export class RestServer {
       logger.info({ config: config.rateLimit }, 'REST rate limiting enabled')
     }
 
-    this.setupPlugins()
+    this.setupCorePlugins()
     this.setupSecurityHeaders()
     this.setupRateLimiting()
     this.setupRequestLogging()
     this.setupCaching()
-    // setupRoutes may require async initialization (e.g., dynamic imports)
-    void this.setupRoutes()
     this.setupErrorHandling()
+
+    // Setup routes asynchronously - must complete before Swagger can generate spec
+    // Register swagger FIRST so routes can be documented as they're added
+    this.routesReady = this.setupSwaggerPlugin().then(() => this.setupRoutes()).then(() => this.setupSwaggerRoutes())
   }
 
   /**
-   * Setup Fastify plugins
+   * Setup core Fastify plugins (CORS, etc.)
+   * Called during construction before routes are registered
    */
-  private setupPlugins(): void {
+  private setupCorePlugins(): void {
     // CORS
     this.app.register(cors, {
       origin: this.config.corsOrigins === '*' ? '*' : this.config.corsOrigins,
@@ -118,42 +123,94 @@ export class RestServer {
       credentials: true,
     })
 
-    // Swagger/OpenAPI
-    if (this.config.enableSwagger) {
-      this.app.register(swagger, {
-        openapi: {
-          info: {
-            title: 'RelayVM REST API',
-            description: 'HTTP REST interface to relay state aggregation',
-            version: process.env.npm_package_version || '0.1.0',
-          },
-          servers: [
-            {
-              url: `http://${this.config.host}:${this.config.port}`,
-              description: 'Development server',
-            },
-          ],
-          tags: [
-            { name: 'health', description: 'Health check endpoints' },
-            { name: 'relays', description: 'Relay state queries' },
-            { name: 'monitors', description: 'Monitor information' },
-            { name: 'policy', description: 'Policy management' },
-            { name: 'subscriptions', description: 'Relay state subscriptions' },
-          ],
-        },
-      })
+    logger.info('Core plugins registered')
+  }
 
-      this.app.register(swaggerUi, {
-        routePrefix: '/docs',
-        uiConfig: {
-          docExpansion: 'list',
-          deepLinking: true,
-        },
-        staticCSP: true,
-      })
+  /**
+   * Setup OpenAPI plugin (via @fastify/swagger)
+   * Must be called BEFORE routes are registered so it can introspect them
+   */
+  private async setupSwaggerPlugin(): Promise<void> {
+    if (!this.config.enableSwagger) {
+      return
     }
 
-    logger.info('Plugins registered')
+    // Determine server URL - use apiBaseUrl if provided, otherwise construct from host:port
+    const serverUrl = this.config.apiBaseUrl || `http://${this.config.host}:${this.config.port}`
+    const serverDescription = this.config.apiBaseUrl
+      ? (process.env.NODE_ENV === 'production' ? 'Production API' : 'API Server')
+      : 'Development server'
+
+    await this.app.register(swagger, {
+      openapi: {
+        info: {
+          title: 'RelayVM REST API',
+          description: 'HTTP REST interface to relay state aggregation',
+          version: process.env.npm_package_version || '0.1.0',
+        },
+        servers: [
+          {
+            url: serverUrl,
+            description: serverDescription,
+          },
+        ],
+        tags: [
+          { name: 'health', description: 'Health check endpoints' },
+          { name: 'relays', description: 'Relay state queries' },
+          { name: 'monitors', description: 'Monitor information' },
+          { name: 'policy', description: 'Policy management' },
+          { name: 'subscriptions', description: 'Relay state subscriptions' },
+        ],
+      },
+    })
+
+    logger.info('OpenAPI plugin registered')
+  }
+
+  /**
+   * Setup OpenAPI documentation routes (Scalar UI + JSON/YAML endpoints)
+   * Must be called AFTER both OpenAPI plugin and API routes are registered
+   */
+  private setupSwaggerRoutes(): void {
+    if (!this.config.enableSwagger) {
+      return
+    }
+
+    // Expose OpenAPI JSON spec at /openapi.json
+    this.app.get('/openapi.json', async () => {
+      return this.app.swagger()
+    })
+
+    // Expose OpenAPI YAML spec at /openapi.yaml
+    this.app.get('/openapi.yaml', async () => {
+      return this.app.swagger({ yaml: true })
+    })
+
+    // Register Scalar UI at root path /
+    this.app.get('/', async (request, reply) => {
+      // Use relative URL (without leading slash) so it works behind reverse proxy
+      // When served at /v2/, this will resolve to /v2/openapi.json
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>RelayVM API Documentation</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+  <script
+    id="api-reference"
+    data-url="./openapi.json"
+    data-configuration='${JSON.stringify({
+      theme: 'default',
+    })}'></script>
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>`
+      return reply.type('text/html').send(html)
+    })
+
+    logger.info('OpenAPI documentation routes registered')
   }
 
   /**
@@ -173,8 +230,16 @@ export class RestServer {
       // Referrer policy
       reply.header('Referrer-Policy', 'strict-origin-when-cross-origin')
 
-      // Content Security Policy (restrictive for API)
-      reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
+      // Content Security Policy
+      // Relaxed CSP for API docs at root, strict for API endpoints
+      const isDocsRoute = request.url === '/' || request.url === '/openapi.json' || request.url === '/openapi.yaml'
+      if (isDocsRoute && this.config.enableSwagger) {
+        // Allow Scalar API docs to load all required resources
+        reply.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; font-src 'self' https://cdn.jsdelivr.net https://fonts.scalar.com; connect-src 'self'; frame-ancestors 'none'")
+      } else {
+        // Strict CSP for API endpoints
+        reply.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'")
+      }
 
       // HSTS - Force HTTPS for 2 years (only if request is via HTTPS)
       // Check if request is via HTTPS (either directly or via proxy)
@@ -300,6 +365,9 @@ export class RestServer {
       // Skip if already sent a status other than 200
       if (reply.statusCode !== 200) return payload
 
+      // Skip if payload is null or undefined
+      if (payload == null) return payload
+
       // Generate ETag from payload
       const body = typeof payload === 'string' ? payload : JSON.stringify(payload)
       const etag = generateETag(body)
@@ -328,16 +396,8 @@ export class RestServer {
    * Setup routes
    */
   private async setupRoutes(): Promise<void> {
-    // Health check
-    this.app.get('/health/ping', {
-      schema: {
-        tags: ['health'],
-        description: 'Health check with system metrics',
-        response: {
-          200: schemas.health.ping,
-        },
-      },
-    }, async (_request, _reply) => {
+    // Health check handler (shared by GET and POST)
+    const healthPingHandler = async (_request: any, _reply: any) => {
       const stats = this.context.core.stats.get()
       const relayCount = this.context.getRelayCount()
       const metricsSnapshot = this.context.getMetricsSnapshot()
@@ -368,7 +428,21 @@ export class RestServer {
           hitRatePercent: Math.round(cacheStats.hitRate * 100 * 100) / 100, // Round to 2 decimals
         },
       }
-    })
+    }
+
+    const healthPingSchema = {
+      tags: ['health'],
+      description: 'Health check with system metrics',
+      response: {
+        200: schemas.health.ping,
+      },
+    }
+
+    // Health check - GET
+    this.app.get('/health/ping', { schema: healthPingSchema }, healthPingHandler)
+
+    // Health check - POST (for monitoring tools that use POST)
+    this.app.post('/health/ping', { schema: healthPingSchema }, healthPingHandler)
 
     // Register route modules
     await registerRelayRoutes(this.app, this.context)
@@ -443,6 +517,10 @@ export class RestServer {
    */
   async start(): Promise<void> {
     try {
+      // Wait for routes and swagger to be ready (both set up in constructor)
+      await this.routesReady
+      logger.info('Routes and API documentation ready')
+
       // Start SSE delivery service
       this.context.sseDelivery.start()
 
@@ -458,7 +536,7 @@ export class RestServer {
       }, 'REST server started')
 
       if (this.config.enableSwagger) {
-        logger.info(`API docs available at http://${this.config.host}:${this.config.port}/docs`)
+        logger.info(`API docs available at http://${this.config.host}:${this.config.port}/`)
       }
     } catch (err) {
       logger.error({ err }, 'Failed to start REST server')

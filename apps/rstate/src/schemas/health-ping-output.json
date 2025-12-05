@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "ready": {
+      "type": "boolean",
+      "description": "Server indicates initial compute is complete"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "degraded", "error"]
+    },
+    "version": {
+      "type": "string"
+    },
+    "uptime": {
+      "type": "number",
+      "description": "Uptime in seconds"
+    },
+    "relayCount": {
+      "type": "object",
+      "properties": {
+        "transport": {
+          "type": "number"
+        },
+        "ingestion": {
+          "type": "number"
+        }
+      },
+      "required": ["transport", "ingestion"]
+    },
+    "observationCount": {
+      "type": "number"
+    },
+    "timestamp": {
+      "type": "number"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Optional metrics snapshot"
+    },
+    "cache": {
+      "type": "object",
+      "description": "Optional cache statistics",
+      "properties": {
+        "size": { "type": "number" },
+        "maxSize": { "type": "number" },
+        "expired": { "type": "number" },
+        "hits": { "type": "number" },
+        "misses": { "type": "number" },
+        "evictions": { "type": "number" },
+        "expirations": { "type": "number" },
+        "hitRate": { "type": "number" },
+        "utilizationPercent": { "type": "number" },
+        "hitRatePercent": { "type": "number" }
+      }
+    }
+  },
+  "required": ["status", "version", "uptime", "relayCount", "observationCount", "timestamp"]
+}

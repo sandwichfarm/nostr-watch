@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "countryCode": { "type": "string" },
+          "countryName": { "type": "string" },
+          "count": { "type": "number" },
+          "relays": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["countryCode", "count"]
+      }
+    }
+  },
+  "required": ["groups"]
+}
+

@@ -4,8 +4,17 @@ import { getEventHash, getPublicKey } from "npm:nostr-tools";
 import type { Config } from "../config/config.ts";
 import type { QueueManager } from "./queueManager.ts";
 import { clearDeltaState, clearPeriodSnapshots } from "../db/db.ts";
+import { getPrivateKey } from "../core/daemon.ts";
 
 const logger = getLogger("Deletion");
+
+// Global flag to suppress deletion publishing (used during warmup)
+let suppressDeletionPublishing = false;
+
+export function setDeletionPublishSuppressed(suppressed: boolean): void {
+  suppressDeletionPublishing = suppressed;
+  logger.info(`Deletion publishing ${suppressed ? "suppressed" : "enabled"}`);
+}
 
 /**
  * Kind5 event class for deletion events (NIP-09)
@@ -65,28 +74,34 @@ export async function deleteRelayCheckEvent(
   reason: string,
   config: Config,
   queueManager?: QueueManager
-): Promise<void> {
+): Promise<boolean> {
   try {
-    // Get the private key from environment
-    const privkey = Deno.env.get("DAEMON_PRIVKEY");
-    if (!privkey) {
-      logger.error("Missing DAEMON_PRIVKEY; cannot sign deletion event.");
-      return;
+    // Respect warmup suppression
+    if (suppressDeletionPublishing) {
+      logger.debug(`Suppressed deletion publish for ${relayUrl} (reason: ${reason})`);
+      return false;
     }
-    
+
+    // Get the private key from environment
+    const privkey = getPrivateKey();
+    if (!privkey) {
+      logger.error("Missing RELAYMON_NSEC; cannot sign deletion event.");
+      return false;
+    }
+
     // Get the public key
     const pubkey = getPublicKey(privkey);
     
     // Check if config has publish relays
-    if (!config.monitor?.relays || !Array.isArray(config.monitor.relays) || config.monitor.relays.length === 0) {
+    if (!config.publisher?.relays || !Array.isArray(config.publisher.relays) || config.publisher.relays.length === 0) {
       logger.warn("Publisher relay list is missing; skipping deletion.");
-      return;
+      return false;
     }
     
     // Check if we've already deleted this relay
     if (deletedRelays.has(relayUrl)) {
       logger.debug(`Relay ${relayUrl} already has deletion event, skipping.`);
-      return;
+      return false;
     }
     
     // Create and sign a Kind 5 deletion event
@@ -104,7 +119,7 @@ export async function deleteRelayCheckEvent(
       queueManager.addPublishJob(async () => {
         try {
           // Create a publisher instance for this job
-          const publisher = new Publisher(pubkey, config.monitor.relays);
+          const publisher = new Publisher(pubkey, config.publisher.relays);
           await publisher.publishEvent(signedEvent);
           logger.info(`Queued deletion event for relay ${relayUrl} using a-tag`);
 
@@ -118,10 +133,12 @@ export async function deleteRelayCheckEvent(
           logger.error(`Error publishing deletion event for ${relayUrl}: ${error}`);
           throw error; // Rethrow to trigger retry mechanism
         }
-      });
+      }, { category: 'deletion' });
+      // Consider successful queuing as success
+      return true;
     } else {
       // Fallback to direct publishing if no queue manager is available
-      const publisher = new Publisher(pubkey, config.monitor.relays);
+      const publisher = new Publisher(pubkey, config.publisher.relays);
       await publisher.publishEvent(signedEvent);
 
       // Add to the set of deleted relays
@@ -132,8 +149,10 @@ export async function deleteRelayCheckEvent(
       clearPeriodSnapshots(relayUrl);
 
       logger.info(`Published deletion event for relay ${relayUrl} using a-tag`);
+      return true;
     }
   } catch (error) {
     logger.error(`Error creating deletion event for ${relayUrl}: ${error}`);
+    return false;
   }
-} 
+}

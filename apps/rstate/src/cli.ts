@@ -53,21 +53,23 @@ async function validateConfig() {
     const errors: string[] = []
     const warnings: string[] = []
 
-    // Check required fields
-    if (!config.serverKey) {
-      errors.push('CVM_SERVER_NSEC is required')
-    } else if (!config.serverKey.startsWith('nsec1')) {
-      warnings.push('CVM_SERVER_NSEC should be in nsec1... format (hex also supported)')
-    }
+    // Check CVM configuration (only if enabled)
+    if (config.cvm?.enabled) {
+      if (!config.cvm.serverKey) {
+        errors.push('CVM_SERVER_NSEC is required when CVM_ENABLED=true')
+      } else if (!config.cvm.serverKey.startsWith('nsec1')) {
+        warnings.push('CVM_SERVER_NSEC should be in nsec1... format (hex also supported)')
+      }
 
-    if (!config.cvmRelays || config.cvmRelays.length === 0) {
-      errors.push('CVM_RELAYS must contain at least one relay')
-    } else {
-      config.cvmRelays.forEach((relay, i) => {
-        if (!relay.startsWith('wss://') && !relay.startsWith('ws://')) {
-          errors.push(`CVM_RELAYS[${i}]: Invalid WebSocket URL: ${relay}`)
-        }
-      })
+      if (!config.cvm.cvmRelays || config.cvm.cvmRelays.length === 0) {
+        errors.push('CVM_RELAYS must contain at least one relay when CVM_ENABLED=true')
+      } else {
+        config.cvm.cvmRelays.forEach((relay, i) => {
+          if (!relay.startsWith('wss://') && !relay.startsWith('ws://')) {
+            errors.push(`CVM_RELAYS[${i}]: Invalid WebSocket URL: ${relay}`)
+          }
+        })
+      }
     }
 
     if (!config.ingestRelays || config.ingestRelays.length === 0) {
@@ -122,13 +124,20 @@ async function validateConfig() {
     if (errors.length === 0 && warnings.length === 0) {
       console.log('✓ Configuration is valid!\n')
       console.log('Configuration summary:')
-      console.log(`  Transport relays: ${config.cvmRelays.length}`)
+      if (config.cvm?.enabled) {
+        console.log(`  CVM Transport: enabled`)
+        console.log(`  Transport relays: ${config.cvm.cvmRelays.length}`)
+      } else {
+        console.log(`  CVM Transport: disabled`)
+      }
+      if (config.rest.enabled) {
+        console.log(`  REST API: enabled on ${config.rest.host}:${config.rest.port}`)
+      } else {
+        console.log(`  REST API: disabled`)
+      }
       console.log(`  Ingestion relays: ${config.ingestRelays.length}`)
       console.log(`  Lookback window: ${config.aggregation.lookbackSeconds}s (${Math.round(config.aggregation.lookbackSeconds / 3600)}h)`)
       console.log(`  Cache: ${config.cache.maxSize} entries, ${config.cache.ttlSeconds}s TTL`)
-      if (config.rest.enabled) {
-        console.log(`  REST API: enabled on ${config.rest.host}:${config.rest.port}`)
-      }
       return 0
     }
 
@@ -162,14 +171,24 @@ async function showConfig() {
 
     console.log('RelayVM Configuration:\n')
 
-    console.log('Server:')
-    console.log(`  Identity: ${config.serverKey.substring(0, 10)}...`)
-    console.log(`  Encryption: ${config.encryptionMode}`)
+    console.log('Transports:')
+    if (config.cvm?.enabled) {
+      console.log(`  CVM: enabled`)
+      console.log(`    Identity: ${config.cvm.serverKey.substring(0, 10)}...`)
+      console.log(`    Encryption: ${config.cvm.encryptionMode}`)
+      console.log(`    Transport Relays (${config.cvm.cvmRelays.length}):`)
+      config.cvm.cvmRelays.forEach(relay => console.log(`      - ${relay}`))
+    } else {
+      console.log(`  CVM: disabled`)
+    }
+    if (config.rest.enabled) {
+      console.log(`  REST: enabled on ${config.rest.host}:${config.rest.port}`)
+    } else {
+      console.log(`  REST: disabled`)
+    }
 
-    console.log('\nRelays:')
-    console.log(`  Transport (${config.cvmRelays.length}):`)
-    config.cvmRelays.forEach(relay => console.log(`    - ${relay}`))
-    console.log(`  Ingestion (${config.ingestRelays.length}):`)
+    console.log('\nIngestion:')
+    console.log(`  Relays (${config.ingestRelays.length}):`)
     config.ingestRelays.forEach(relay => console.log(`    - ${relay}`))
 
     console.log('\nAggregation Policy:')
@@ -196,10 +215,12 @@ async function showConfig() {
       }
     }
 
-    console.log('\nSecurity:')
-    console.log(`  Auth Enabled: ${config.auth.enabled}`)
-    console.log(`  Allow Any Pubkey: ${config.auth.allowAny}`)
-    console.log(`  Allowed Pubkeys: ${config.allowedPubkeys.length}`)
+    if (config.cvm?.enabled) {
+      console.log('\nCVM Security:')
+      console.log(`  Auth Enabled: ${config.cvm.auth.enabled}`)
+      console.log(`  Allow Any Pubkey: ${config.cvm.auth.allowAny}`)
+      console.log(`  Allowed Pubkeys: ${config.cvm.allowedPubkeys.length}`)
+    }
 
     console.log('\nLogging:')
     console.log(`  Level: ${config.log.level}`)

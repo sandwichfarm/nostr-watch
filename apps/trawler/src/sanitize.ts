@@ -8,7 +8,7 @@ const BLOCK_HOSTNAMES: string[] = [];
 
 export const normalizeRelays = (relays: string[]): string[] => {
   if (!relays?.length) {
-    console.log('!relays?.length', relays);
+    // No relays provided; nothing to normalize
     return [];
   }
   const splitRelays = maybeSplitRelayList(relays);

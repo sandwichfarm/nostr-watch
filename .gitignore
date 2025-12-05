@@ -25,3 +25,5 @@ packages/kinds
 scripts/deploy/gui-scp.sh
 .vscode
 .roo 
+
+.data

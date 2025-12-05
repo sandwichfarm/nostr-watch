@@ -13,21 +13,11 @@ import type {
 } from '../types/tool-schemas.js'
 import type { StateCore } from '../core/index.js'
 import { getLogger } from '../utils/logger.js'
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import { loadSchema } from '../utils/schema-loader.js'
 
 const logger = getLogger().child({ module: 'tools-policy' })
 
-// Load output schemas
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const policyGetOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'policy-get-output.json'), 'utf-8')
-)
-const policySetOutputSchema = JSON.parse(
-  readFileSync(join(__dirname, '..', 'schemas', 'policy-set-output.json'), 'utf-8')
-)
+// Schemas are loaded lazily via loadSchema() utility
 
 interface PolicyToolsContext {
   core: StateCore
@@ -46,7 +36,7 @@ export function createPolicyGetTool(ctx: PolicyToolsContext): CVMTool {
       type: 'object',
       properties: {},
     },
-    outputSchema: policyGetOutputSchema,
+    outputSchema: loadSchema('policy-get-output.json'),
     handler: async (_params: PolicyGetInput): Promise<PolicyGetOutput> => {
       const policy = ctx.core.query.policy.get()
       logger.info('Policy requested')
@@ -85,7 +75,7 @@ export function createPolicySetTool(ctx: PolicyToolsContext): CVMTool {
       },
       required: ['policy'],
     },
-    outputSchema: policySetOutputSchema,
+    outputSchema: loadSchema('policy-set-output.json'),
     handler: async (params: PolicySetInput): Promise<PolicySetOutput> => {
       // Check authorization
       if (ctx.allowedPubkeys.length > 0) {

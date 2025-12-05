@@ -16,7 +16,8 @@ import { QueueManager } from "../../src/utils/queueManager.ts";
 import { initializeDB, db } from "../../src/db/db.ts";
 import { mockConfig } from "../helpers/fixtures.ts";
 import type { Config } from "../../src/types/config.ts";
-import { getPublicKey } from "npm:nostr-tools";
+import { getPublicKey, nip19 } from "npm:nostr-tools";
+import { hexToBytes } from "npm:@noble/hashes/utils";
 
 // Initialize test database
 const testDbPath = ":memory:";
@@ -26,8 +27,9 @@ initializeDB(testDbPath, false);
 const testPrivkey = "a".repeat(64);
 const testPubkey = getPublicKey(testPrivkey);
 
-// Set env var for tests
-Deno.env.set("DAEMON_PRIVKEY", testPrivkey);
+// Set env var for tests (convert to nsec format)
+const testNsec = nip19.nsecEncode(hexToBytes(testPrivkey));
+Deno.env.set("RELAYMON_NSEC", testNsec);
 
 /**
  * Helper to create a Worker instance with test config

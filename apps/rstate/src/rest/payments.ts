@@ -63,7 +63,14 @@ async function initGateway(): Promise<any | null> {
   const mintUrl = process.env.CASHU_MINT_URL
   const cashuP2pkPubkey = process.env.CASHU_P2PK_PUBKEY
   const cashuPriv = process.env.CASHU_P2PK_PRIVATE_KEY
-  const cashu = enableP2PK && mintUrl ? new CashuNutshellProvider({ mintUrl, p2pkPrivateKeyHex: cashuPriv }) : undefined
+  let cashu: any = undefined
+  if (enableP2PK && mintUrl) {
+    const accepted = (process.env.CASHU_ACCEPTED_MINTS || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+    cashu = new CashuNutshellProvider({ mintUrl, p2pkPrivateKeyHex: cashuPriv, acceptedMints: accepted })
+  }
 
   const l402RootKeyHex = process.env.L402_ROOT_KEY
 

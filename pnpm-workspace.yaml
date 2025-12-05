@@ -12,7 +12,7 @@ packages:
     - "libraries/validators/**/*"
     - "libraries/schemata/*"
     
-    #skip 
+    #skip
     - '!internal/controlflow'
     - '!apps/nocapd' #node
     - '!libraries/nocap-route66' #deprecated

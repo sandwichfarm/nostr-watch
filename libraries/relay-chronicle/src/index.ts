@@ -97,3 +97,7 @@ export {
   parseValue,
   separateByNamespace,
 } from './utils.ts';
+
+// Export storage adapters
+export { Route66EventStorage } from './storage/index.ts';
+export type { Route66CacheAdapter } from './storage/index.ts';

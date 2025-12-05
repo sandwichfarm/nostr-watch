@@ -193,7 +193,7 @@ export class RechartsAdapter implements ChartAdapter<RechartsConfig, null> {
           name: 'Duration (minutes)',
           // Note: fill color is provided in the data for each bar
           // Consumers should handle this via Cell components in their React code
-          isAnimationActive: options?.animation !== false,
+          isAnimationActive: options?.animation !== false
         }],
       },
       containerProps: {

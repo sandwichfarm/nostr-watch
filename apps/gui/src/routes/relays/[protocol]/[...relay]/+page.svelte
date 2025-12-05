@@ -15,6 +15,8 @@
 		operator: cardModules['./(components)/cards/CardOperator.svelte'],
 		insights: cardModules['./(components)/cards/CardInsights.svelte'],
 		checks: cardModules['./(components)/cards/CardChecks.svelte'],
+		rtt: cardModules['./(components)/cards/CardRtt.svelte'],
+		uptime: cardModules['./(components)/cards/CardUptime.svelte'],
 		nip11Limitation: cardModules['./(components)/cards/CardLimitation.svelte'],
 		nip11SupportedNips: cardModules['./(components)/cards/CardNips.svelte'],
 		issues: cardModules['./(components)/cards/CardIssues.svelte'],
@@ -30,7 +32,9 @@
 	  'operator',
 	  'similarRelays',
 	  'insights',
-	  'checks'
+	  'checks',
+	  'rtt',
+	  'uptime'
 	];
 
 	const defaultCardsView = [
@@ -38,7 +42,9 @@
 	  'fees',
 	  'operator',
 	  'insights',
-	  'checks'
+	  'checks',
+	  'rtt',
+	  'uptime'
 	];
 
 	const unHidableCards = ['fees'];

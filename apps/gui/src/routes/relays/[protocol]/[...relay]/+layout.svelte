@@ -80,7 +80,7 @@
       },
       {
         title: "Insights",
-        // href: `/relays/${generateRelayPathFromUrl(relayUrl)}/insights`,
+        href: `/relays/${generateRelayPathFromUrl(relayUrl)}/insights`,
       },
       {
         title: "Operator",

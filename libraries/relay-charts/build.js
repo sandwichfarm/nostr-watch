@@ -9,12 +9,16 @@ const sharedConfig = {
   sourcemap: true,
   minify: false,
   target: 'es2020',
+  jsx: 'automatic',
+  jsxImportSource: 'react',
+  loader: { '.ts': 'tsx' },
   external: [
     '@nostrwatch/relay-chronicle',
     'chart.js',
     'echarts',
     'recharts',
     'react',
+    'react/jsx-runtime',
   ],
 };
 

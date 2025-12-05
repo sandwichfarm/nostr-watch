@@ -1,4 +1,4 @@
-> @nostrwatch is in heavy development. Legacy nostr.watch is **deprecated and no longer maintained**.
+> @nostrwatch future is uncertain, services will remain functional for the forseeable future. development has haulted effective immediately**.
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sandwichfarm/nostr-watch)
 # @nostrwatch 

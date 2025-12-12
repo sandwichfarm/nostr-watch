@@ -16,7 +16,7 @@ Relaymon is a Nostr relay monitoring application written in Deno. It deduplicate
     - **Static File:** YAML or JSON seed file.
     - **Cache:** Relay data stored in a SQLite database.
     - **API:** Fetching relay information from a REST API.
-    - **Events:** Extracting relay URLs from Nostr events.
+    - **Events:** Extracting relay URLs from NIP-66 30166 events. 
     - **External DB:** Connect to another @nostrwatch/db compatible database to seed relays from all its stored relay URLs.
     - **Subscription:** (Dummy implementation available, extendable for real-time updates.)
 

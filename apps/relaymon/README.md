@@ -42,7 +42,7 @@ Relaymon is fully configurable via a YAML file (config.yaml). Below is a sample 
 
 ```
 monitor:
-  slug: trawler.eighteen
+  slug: tor-i2p-clearnet-monitor
   info:
     name: "trawler"
     about: "Trrawls nostr for relays, dedupes, validates, checks liveness, and publishes events."

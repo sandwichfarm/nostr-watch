@@ -568,33 +568,6 @@ npm test -- --coverage
 - `security.test.ts`: Input validation, injection prevention
 - `rest-integration.test.ts`: REST endpoint security and features
 
-## Implementation Status
-
-### ✅ Completed Milestones
-
-- [x] **Milestone 101: Foundations** - Project scaffold, config, logging, server transport
-- [x] **Milestone 102: NIP-66 Ingestion** - Subscribe to 10166/30166, normalize, store
-- [x] **Milestone 103: Aggregation** - Conflict resolution and RelayState computation
-- [x] **Milestone 104: Labels & Geo** - NIP-32 label index and geospatial queries
-- [x] **Milestone 105: Method Surface** - 18 MCP tools implemented
-- [x] **Milestone 106: Subscriptions** - State change notifications via MCP/SSE
-- [x] **Milestone 107: Monitor Scoring** - Reliability and coverage analytics
-- [x] **Milestone 108: Performance** - Caching, LRU eviction, monitoring
-- [x] **Milestone 109: Security & Testing** - Hardening, validation, test suites
-
-### ✅ All Milestones Complete!
-
-- [x] **Milestone 110: Documentation** - Comprehensive guides and API docs
-  - Main README with REST API documentation
-  - Deployment guide (DEPLOYMENT.md)
-  - Monitoring and observability guide (MONITORING.md)
-  - API examples in multiple languages (API-EXAMPLES.md)
-- [x] **Milestone 111: Tooling** - Developer tools and utilities
-  - CLI tool with config validation, health checks, key generation
-  - ctxcn client generation configuration
-  - Development utilities (profiling, mock data, state validation)
-  - Comprehensive tooling documentation (TOOLING.md)
-
 ## Troubleshooting
 
 ### Common Issues

@@ -1,4 +1,4 @@
-> @nostrwatch/nocapd is deprecated. Do not use it. It has been replaced by [@nostrwatch/relaymon](https://github.com/sandwichfarm/nostr-watch/tree/next/apps/relaymon)
+> ⚠️ @nostrwatch/nocapd is deprecated. Do not use it. It has been replaced by [@nostrwatch/relaymon](https://github.com/sandwichfarm/nostr-watch/tree/next/apps/relaymon)
 
 # nocapd 
 

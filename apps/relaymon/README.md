@@ -1,3 +1,5 @@
+> `@nostrwatch/relaymon` requires domain knowledge to run. It is highly configurable and the documentation required to express how to configure the variety of configurations does not yet exist. Additionally, `@nostrwatch/relaymon` relies on external data to know which relays to check, and `@nostrwatch/trawler` (relay URL scraper) is not presently stable.
+
 # Relaymon
 
 Relaymon is a Nostr relay monitoring application written in Deno. It deduplicates, validates, and checks the liveness of relays, then publishes events (such as monitor announcements and relay lists) based on configurable settings. Relaymon leverages modular seeding from multiple sources (static configuration, files, database, API, events, subscriptions) and uses SQLite for caching relay statuses. It also implements configurable retry/backoff logic and job scheduling using p-queue.

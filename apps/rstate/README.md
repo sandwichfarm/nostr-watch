@@ -7,7 +7,7 @@ State machine that derives a subjective truth from an inclusive aggregate of NIP
 Aggregates relay monitoring data from multiple independent NIP-66 monitors, resolves conflicts using configurable policies, and exposes a rich query interface via two complementary interfaces:
 
 - **MCP over Nostr (ContextVM)**: JSON-RPC over Nostr for AI agents and MCP clients
-- **REST API**: HTTP REST with Swagger docs for web/mobile apps
+- **REST API**: HTTP REST with full documentation for web/mobile apps
 
 ## Features
 

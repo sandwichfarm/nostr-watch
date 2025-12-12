@@ -46,10 +46,10 @@ Relaymon is fully configurable via a YAML file (config.yaml). Below is a sample 
 monitor:
   slug: tor-i2p-clearnet-monitor
   info:
-    name: "trawler"
-    about: "Trrawls nostr for relays, dedupes, validates, checks liveness, and publishes events."
-    nip05: trawler@nostr.watch
-  owner: "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019"
+    name: "tor i2p clearnet relay monitor"
+    about: ""
+    nip05: ""
+  owner: ""
   geo:
     city: "Frankfurt am Main"
     country: "Germany"
@@ -84,33 +84,32 @@ relaymon:
     sources:
       - config              # Seed from a static list provided in the config
       - static              # Seed from a static file (YAML or JSON)
-      - cache               # Seed from the SQLite database (relay cache)
       - api                 # Seed from a REST API
       - events              # Seed from Nostr events
       - db                  # Seed from an external @nostrwatch/db database (retrieves all relays regardless of status)
-      - subscription        # Seed from relay subscriptions (if available)
     options:
       db:
-        path: "./relay.db"  # SQLite database path for storing relay information
+        path: "./relay.db"  # @nostrwatch/db path for storing relay information
         enableWAL: true     # Enable Write-Ahead Logging for the database (for db seeding)
       static:
         path: "./seed.yaml"
-      config: []            # Optional static relay list provided in the config
+      api:
+        remote: ""          # api.nostr.watch/v1 api
   checks:
     enabled:
       - open
       - read
     options:
-      expires: "24h"       # A relay's check is considered expired after 24 hours
-      interval: "15s"      # Poll the database for expired relays every 15 seconds
+      expires: "6h"       # A relay's check is considered expired after 24 hours
+      interval: "5m"      # Poll the database for expired relays every 15 seconds
       timeout:
         open: 30000        # 30 seconds timeout for the "open" check
         read: 5000         # 5 seconds timeout for the "read" check
-      max: "200"           # Enqueue up to 200 expired relays per polling iteration
+      max: "100"           # Enqueue up to 200 expired relays per polling iteration
       statusInterval: 20   # Show status report every 20 checks
 
 queue:
-  workerConcurrency: 20  # p-queue concurrency for check jobs
+  workerConcurrency: 10  # p-queue concurrency for check jobs
 
 ## Database Configuration
 

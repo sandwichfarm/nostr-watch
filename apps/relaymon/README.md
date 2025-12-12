@@ -42,7 +42,7 @@ Clone the repository:
 
 Relaymon is fully configurable via a YAML file (config.yaml). Below is a sample configuration:
 
-```
+```yaml
 monitor:
   slug: tor-i2p-clearnet-monitor
   info:

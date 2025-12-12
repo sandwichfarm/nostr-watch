@@ -1,5 +1,6 @@
+> @nostrwatch/nocapd is deprecated. Do not use it. It has been replaced by [@nostrwatch/relaymon](https://github.com/sandwichfarm/nostr-watch/tree/next/apps/relaymon)
+
 # nocapd 
-> nocapd is alpha, config and env format will change. Migrations could be breaking. Not suggested for the faint of heart.
 
 deamon that monitors nostr relays discovered by `trawler`. s
 

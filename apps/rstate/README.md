@@ -21,8 +21,7 @@ Aggregates relay monitoring data from multiple independent NIP-66 monitors, reso
 
 ### Dual Interface
 - **MCP over Nostr** (21 tools): For AI agents, Claude Desktop, MCP clients
-- **REST API**: OpenAPI/Swagger docs at `/docs` when enabled
-- **Real-time Subscriptions**: SSE (Server-Sent Events) for push notifications
+- **REST API**: REST docs at `/v2/` path when enabled.
 - **Full Parity**: Both interfaces expose identical functionality
 
 ### Performance & Security

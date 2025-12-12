@@ -1,5 +1,3 @@
-> @nostrwatch future is uncertain, but services will remain functional for the forseeable future. development has haulted effective immediately.
-
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sandwichfarm/nostr-watch)
 # @nostrwatch 
 A Typescript stack for monitoring, auditing, describing and validating anything related to nostr relays. `@nostrwatch` is an [OpenSats](http://opensats.org) grant recipient.

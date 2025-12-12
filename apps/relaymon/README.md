@@ -1,4 +1,4 @@
-> `@nostrwatch/relaymon` requires domain knowledge to run. It is highly configurable and the documentation required to express how to configure the variety of configurations does not yet exist. Additionally, `@nostrwatch/relaymon` relies on external data to know which relays to check, and `@nostrwatch/trawler` (relay URL scraper) is not presently stable.
+> `@nostrwatch/relaymon` requires domain knowledge to run. It is highly configurable and the documentation required to express how to configure the variety of configurations does not yet exist. Additionally, `@nostrwatch/relaymon` relies on external data to know which relays to check, and `@nostrwatch/trawler` (relay URL scraper) is not presently stable. It can be seeded with static relays, from other NIP-66 events and relays from nostr.watch api's for now.
 
 # Relaymon
 

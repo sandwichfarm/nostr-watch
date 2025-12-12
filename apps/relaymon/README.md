@@ -110,18 +110,6 @@ relaymon:
 
 queue:
   workerConcurrency: 10  # p-queue concurrency for check jobs
-
-## Database Configuration
-
-RelayMon uses SQLite to store relay data. You can specify the database path and other settings in the configuration file:
-
-```yaml
-relaymon:
-  seed:
-    options:
-      db:
-        path: "./custom-database-path.db"  # Custom database path
-        enableWAL: true                    # Enable Write-Ahead Logging for better performance (default: true)
 ```
 
 If no path is specified, RelayMon will use the default database location ("relaymon.db") in the current directory.

@@ -1,15 +1,13 @@
 {
-  "bunkerPubkey": "e771af0b05c8e95fcdf6feb3500544d2fb1ccd384788e9f490bb3ee28e8ed66f",
+  "bunkerPubkey": "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019",
   "relays": [
-    "wss://relay.nsyte.run",
-    "wss://relay.nsite.lol"
+    "wss://relay.nosto.re",
+    "wss://relay.nsite.lol",
+    "wss://nos.lol"
   ],
   "servers": [
     "https://cdn.hzrd149.com",
-    "https://nosto.re",
-    "https://24242.io",
-    "https://blossom.band",
-    "https://blossom.sector01.com"
+    "https://blossom.yakihonne.com"
   ],
   "profile": {
     "name": "nostr.watch",
@@ -18,5 +16,8 @@
   },
   "publishProfile": false,
   "publishRelayList": true,
-  "publishServerList": true
+  "publishServerList": true,
+  "gatewayHostnames": [
+    "nsite.lol"
+  ]
 }

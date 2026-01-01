@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Skip npm publish + GitHub releases/deploys'
+        description: 'Deploy GUI only (skip npm publish + GitHub releases)'
         type: boolean
         default: true
   push:
@@ -71,6 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment: ${{ matrix.package == 'gui' && 'next.nostr.watch' || 'default' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true || matrix.package == 'gui' }}
     strategy:
       fail-fast: false
       matrix:
@@ -124,7 +125,7 @@ jobs:
           echo "Servers: $NSITE_SERVERS"
 
       - name: Deploy to nsite
-        if: matrix.package == 'gui' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+        if: matrix.package == 'gui'
         uses: sandwichfarm/nsite-action@v0.1.1
         id: nsite_deploy
         with:
@@ -137,7 +138,7 @@ jobs:
           purge: true
 
       - name: Deploy to Bunny
-        if: matrix.package == 'gui' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+        if: matrix.package == 'gui'
         uses: R-J-dev/bunny-deploy@v2.0.3 
         with:
           access-key: ${{ secrets.BUNNY_API_KEY }}

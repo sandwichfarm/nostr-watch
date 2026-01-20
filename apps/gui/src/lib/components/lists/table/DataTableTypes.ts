@@ -16,6 +16,7 @@ export type DataTableConfig = {
     tableRowStyler: (row: any) => string;
 
     availableColumnKeys: string[];
+    dataFormatters?: Formatters;
     tableFormatters: Formatters;
     columnsDisable: string[];
     columnsShow: string[];

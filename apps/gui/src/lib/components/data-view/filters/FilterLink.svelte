@@ -10,9 +10,10 @@
     import { linkableState, type LinkableState } from '$utils/linkable-state';
 	import Checkbox from '$ui/checkbox/checkbox.svelte';
 	import Label from '$ui/label/label.svelte';
-	import { sharableConfig, type SharableConfigKeys } from '../table/utils';
+    import { sharableConfig, type SharableConfigKeys } from '../table/utils';
 	import type { DataTableConfig, SortState } from '../DataTableTypes';
 	import Button from '$ui/button/button.svelte';
+    const DEV = import.meta.env.DEV;
   
     export let filters: Writable<Record<string, any>>;
     export let config: Writable<DataTableConfig>;
@@ -42,7 +43,7 @@
 
     const syncLinkStateWithConfig = (state: LinkableDataView) => {
         config.update( (oldConfig) => {
-            console.log('config compare', oldConfig, state)
+            if (DEV) console.log('config compare', oldConfig, state)
             return { ...oldConfig, ...state }
         });
     }

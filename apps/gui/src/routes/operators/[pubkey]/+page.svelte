@@ -8,6 +8,8 @@
 	import { dataRegister } from "$stores/data-register";
 	import { pubkeyProfile$, pubkeyUserInstance$, type StorePubkeyProfile, type StoreUser } from "$stores/helpers/helpers-pubkey";
 	import { truncateWithEllipsis } from "$utils/strings";
+	import { StateManager } from "@nostrwatch/route66";
+	import { nip19 } from "nostr-tools";
 	
     import * as Card from '$lib/components/ui/card';
     import Badge from "$ui/badge/badge.svelte";
@@ -27,27 +29,35 @@
     const user: Readable<StoreUser> = pubkeyUserInstance$(pubkey);
     const profile: Readable<StorePubkeyProfile> = pubkeyProfile$(pubkey);
 
+	$: cachedOperator = (() => {
+		const rows = StateManager.get('aggregate:operators') as any[] | undefined;
+		if (!Array.isArray(rows)) return undefined;
+		return rows.find((row) => row?.pubkey === pubkey);
+	})();
+
     onMount(async ()=>{
-        await $dataRegister.require(
-            [ 
-                'sync:cache',
-                'sync:relay:operator' 
-            ], 
-            {
-                'sync:relay:operator': [pubkey]
-            }
-        )
+        void $dataRegister
+            .require(
+                [ 
+                    'sync:cache',
+                    'sync:operator:meta' 
+                ], 
+                {
+                    'sync:operator:meta': [pubkey]
+                }
+            )
+            .catch((err) => console.error('[DataRegister] require failed', err));
     })
 
-    $: name = $user?.name || undefined;
-    $: npub = $user?.npub || undefined;
-    $: about = $user?.about || undefined;
-    $: nip05 = $user?.profile?.nip05 || undefined;
-    $: nprofile = $user?.reference || undefined;
-    $: photo = $user?.photo || undefined;
-    $: banner = $user?.banner || undefined;
-    $: lud16 = $user?.lud16 || undefined;
-    $: lud06 = $user?.lud06 || undefined;
+    $: name = $user?.name ?? cachedOperator?.name ?? undefined;
+    $: npub = $user?.npub ?? (pubkey ? nip19.npubEncode(pubkey) : undefined);
+    $: about = $user?.about ?? cachedOperator?.about ?? undefined;
+    $: nip05 = $user?.profile?.nip05 ?? undefined;
+    $: nprofile = $user?.reference ?? cachedOperator?.reference ?? undefined;
+    $: photo = $user?.photo ?? cachedOperator?.photo ?? undefined;
+    $: banner = $user?.banner ?? cachedOperator?.banner ?? undefined;
+    $: lud16 = $user?.lud16 ?? cachedOperator?.lud16 ?? undefined;
+    $: lud06 = $user?.lud06 ?? cachedOperator?.lud06 ?? undefined;
 
     $: title = name
         ? name

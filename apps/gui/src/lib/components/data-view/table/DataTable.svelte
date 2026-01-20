@@ -23,6 +23,7 @@
     export let dataKey: string;
     export let data: Readable<any[]>;
     export let dataUnfilteredLength: number | undefined = undefined;
+    export let livenessCounts: { online: number; offline: number; dead: number } | null = null;
     export let columns: Readable<DataViewColumns[]>;
     export let config: Writable<DataTableConfig>;
     export let enableFilters: boolean | undefined = true;
@@ -87,6 +88,9 @@
     $: {
         if (tableInstance) {
             (tableInstance as DataTable<any>).baseRows = $data;
+        } else if ($data?.length && $columns?.length) {
+            // Create table reactively when data becomes available after mount
+            createTable();
         }
     }
 
@@ -95,6 +99,7 @@
             pageSize: $config.pageSize,
             columns: $columns,
             data: $data,
+            dataFormatters: $config.dataFormatters,
         }
 
         if($config?.sortState) {
@@ -117,19 +122,34 @@
     }
 
     onMount(async (): Promise<any> => {
+        let isInitialMount = true;
+        let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+        let tableTimeout: ReturnType<typeof setTimeout> | null = null;
+
+        // Debounced config save - skip initial, debounce 300ms
         const unsubConfig = config.subscribe( (newConfig: DataTableConfig) => {
-            StateManager.set(`preferences:${dataKey}:tableConfig`, cachableConfig(newConfig));
-            if(resultsPerPage !== newConfig.pageSize) {
-                resultsPerPage = newConfig.pageSize;
-            }
+            if (isInitialMount) return;
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                StateManager.set(`preferences:${dataKey}:tableConfig`, cachableConfig(newConfig));
+                if(resultsPerPage !== newConfig.pageSize) {
+                    resultsPerPage = newConfig.pageSize;
+                }
+            }, 300);
         })
-        const unsubTableConfig = config.subscribe( () =>  setTimeout( () => createTable(true), 10 ) );
-        let timedOut = false;
-        const interval = setInterval(() => timedOut = true, 5000);
-        while($data.length === 0 && !timedOut) {
-            await new Promise(r => setTimeout(r, 100));
-        }
+
+        // Debounced table recreation - skip initial, debounce 100ms
+        const unsubTableConfig = config.subscribe( () => {
+            if (isInitialMount) return;
+            if (tableTimeout) clearTimeout(tableTimeout);
+            tableTimeout = setTimeout(() => createTable(true), 100);
+        });
+
+        // Create table once on mount
         createTable();
+
+        // Mark initial mount complete after a tick
+        setTimeout(() => { isInitialMount = false; }, 0);
         return () => {
             unsubConfig();
             unsubTableConfig();
@@ -182,7 +202,7 @@
         />
 
         <DataTableShowResults {config}  />
-        <DataTablePaginator {tableInstance} />
+        <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
         <Popover.Root>
             <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">
                 <Badge variant="secondary" class="cursor-pointer text-sm">Column Visiblity</Badge>
@@ -293,7 +313,7 @@
         </Table.Root>
 
         <DataTableShowResults />
-        <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} />
+        <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
     </div>
 {:else}
     <Loading />

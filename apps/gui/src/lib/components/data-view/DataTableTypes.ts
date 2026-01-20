@@ -37,6 +37,7 @@ export type DataTableConfig = {
     columnsDisable: string[];
     columnsShow: string[];
 
+    dataFormatters?: DataFormatters;
     tableFormatters: Formatters;
     filterDataFormatters: Formatters;
 

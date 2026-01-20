@@ -1,14 +1,14 @@
 import { get } from 'svelte/store';
 import { tabState, type TabStateType } from '$stores/app';
 
-export type ActivityState = 'leader' | 'follower' | 'idle' | 'inactive';
+export type ActivityState = 'leader' | 'follower';
+
+type LeaderStorageRecord = { id: string; ts: number; shutdown?: boolean };
+
+const DEV = import.meta.env.DEV;
 
 interface LifecycleMessage {
-  type:
-    | 'leader-claimed'
-    | 'request-leader-release'
-    | 'leader-released'
-    | 'shutdown-complete';
+  type: 'leader-claimed' | 'leader-released';
   payload?: Record<string, any>;
   sourceId: string;
 }
@@ -17,356 +17,289 @@ function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function parseLeaderStorage(raw: string | null): LeaderStorageRecord | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as LeaderStorageRecord;
+    if (!parsed?.id || !parsed?.ts) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export class ActivityManager {
-  private currentState: ActivityState;
-  private transitioning: boolean = false;
+  private currentState: ActivityState = 'follower';
+  private transitioning = false;
 
-  private externalHandlers: { active: () => Promise<void>; inactive: () => Promise<void> } = {
-    active: async () => {},
-    inactive: async () => {},
+  private externalHandlers: {
+    leader: () => Promise<void>;
+    follower: () => Promise<void>;
+  } = {
+    leader: async () => {},
+    follower: async () => {},
   };
-
-  private idleTimeoutMs: number;
-  private idleTimer: number | null = null;
 
   private channel: BroadcastChannel | null = null;
   private myId: string;
-  private leaderId: string | null = null;
-  private isLeader: boolean = false;
-  private releaseWaitTimeoutId: number | null = null;
-  private releaseWaitTimeoutMs: number = 500;
+  private isLeader = false;
+  private destroyed = false;
 
-  private LEADERSHIP_CONFIRM_DELAY_MS: number = 500;
-  private HIDDEN_DELAY_MS: number = 3000;
+  private leaderLockRelease: (() => void) | null = null;
+  private readonly LOCK_NAME = 'nostrwatch:route66-leader';
 
   private heartbeatIntervalId: number | null = null;
-  private HEARTBEAT_INTERVAL_MS: number = 1000;
-  private STALE_THRESHOLD_MS: number = 5000;
+  private readonly HEARTBEAT_INTERVAL_MS = 1000;
+  private readonly STALE_THRESHOLD_MS = 5000;
 
-  private boundVisibilityHandler: () => void;
-  private boundIdleEventHandler: (e: Event) => void;
-  private boundChannelMessageHandler: (ev: MessageEvent) => void;
-  private boundBeforeUnloadHandler: () => void;
+  private leaderWatchIntervalId: number | null = null;
+  private readonly LEADER_CONFIRM_DELAY_MS = 100;
 
-  private visibilityHiddenTimeoutId: number | null = null;
+  private readonly STORAGE_KEY = 'leaderId';
 
-  constructor(idleTimeoutMs: number = 5 * 60 * 1000) {
-    this.idleTimeoutMs = idleTimeoutMs;
-    this.currentState =
-      document.visibilityState === 'visible' ? 'follower' : 'inactive';
-    this.updateTabState(this.currentState);
+  private readonly boundChannelMessageHandler: (ev: MessageEvent) => void;
+  private readonly boundBeforeUnloadHandler: () => void;
+  private readonly boundVisibilityHandler: () => void;
+
+  constructor(_idleTimeoutMs: number = 5 * 60 * 1000) {
     this.myId = crypto.randomUUID();
+
+    this.boundChannelMessageHandler = this.handleChannelMessage.bind(this);
+    this.boundBeforeUnloadHandler = this.handleBeforeUnload.bind(this);
+    this.boundVisibilityHandler = this.handleVisibilityChange.bind(this);
+
+    this.updateTabState('follower');
+
+    // Prefer Web Locks API where available (strong single-leader guarantee).
+    const locks = (navigator as any)?.locks as { request?: Function } | undefined;
+    if (typeof locks?.request === 'function') {
+      void this.runWebLocksElection();
+      return;
+    }
 
     if (typeof BroadcastChannel !== 'undefined') {
       this.channel = new BroadcastChannel('myAppLifecycle');
-      this.boundChannelMessageHandler = this.handleChannelMessage.bind(this);
       this.channel.addEventListener('message', this.boundChannelMessageHandler);
     }
 
-    this.boundVisibilityHandler = this.handleVisibilityChange.bind(this);
     document.addEventListener('visibilitychange', this.boundVisibilityHandler);
-
-    this.boundIdleEventHandler = this.resetIdleTimer.bind(this);
-    ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'].forEach(eventName => {
-      window.addEventListener(eventName, this.boundIdleEventHandler, true);
-    });
-
-    this.boundBeforeUnloadHandler = this.handleBeforeUnload.bind(this);
     window.addEventListener('beforeunload', this.boundBeforeUnloadHandler);
 
-    this.startIdleTimer();
+    this.startLeaderWatch();
 
+    // Attempt leadership as soon as possible in visible tabs.
     if (document.visibilityState === 'visible') {
-      setTimeout(() => { this.onActivity(); }, 0);
+      setTimeout(() => void this.acquireLeadership(), 0);
     }
   }
 
   private updateTabState(newState: TabStateType) {
     if (get(tabState) !== newState) {
       tabState.update(() => newState);
-      console.log(`Tab state updated to: ${newState}`);
+      if (DEV) console.log(`Tab state updated to: ${newState}`);
     }
-  }
-
-  private isActiveState(state: ActivityState): boolean {
-    return state === 'leader';
   }
 
   private async transitionState(newState: ActivityState) {
     if (this.transitioning || this.currentState === newState) return;
     this.transitioning = true;
-    console.log(`ActivityManager: Transitioning from ${this.currentState} to ${newState}`);
-    if (this.isActiveState(newState)) {
-      await this.externalHandlers.active();
+    if (DEV) console.log(`ActivityManager: Transitioning from ${this.currentState} to ${newState}`);
+    if (newState === 'leader') {
+      await this.externalHandlers.leader();
     } else {
-      await this.externalHandlers.inactive();
+      await this.externalHandlers.follower();
     }
     this.currentState = newState;
     this.updateTabState(newState);
     this.transitioning = false;
   }
 
-  private startIdleTimer() {
-    this.clearIdleTimer();
-    this.idleTimer = window.setTimeout(() => {
-      void this.onIdle();
-    }, this.idleTimeoutMs);
-  }
-
-  private clearIdleTimer() {
-    if (this.idleTimer !== null) {
-      clearTimeout(this.idleTimer);
-      this.idleTimer = null;
-    }
-  }
-
-  private async resetIdleTimer() {
-    if (this.currentState === 'idle' || this.currentState === 'inactive') {
-      await this.onActivity();
-    }
-    this.startIdleTimer();
-  }
-
-  private async onIdle() {
-    console.log('ActivityManager: User is idle.');
-    if (this.isLeader) {
-      await this.releaseLeadership();
-    }
-    if (document.visibilityState !== 'visible') {
-      await this.transitionState('inactive');
-    } else {
-      await this.transitionState('idle');
-    }
-  }
-
-  private async onActivity() {
-    if (document.visibilityState !== 'visible') return;
-    console.log('ActivityManager: User is active.');
-    await this.acquireLeadership();
-    this.startIdleTimer();
-  }
-
-  private async handleVisibilityChange() {
-    console.log('ActivityManager: Visibility changed:', document.visibilityState);
-    if (document.visibilityState === 'hidden') {
-      if (this.visibilityHiddenTimeoutId) {
-        clearTimeout(this.visibilityHiddenTimeoutId);
-      }
-      this.visibilityHiddenTimeoutId = window.setTimeout(async () => {
-        if (document.visibilityState === 'hidden') {
-          if (this.isLeader) {
-            await this.releaseLeadership();
-          } else {
-            await this.transitionState('inactive');
-          }
-          this.clearIdleTimer();
-        }
-      }, this.HIDDEN_DELAY_MS);
-    } else if (document.visibilityState === 'visible') {
-      if (this.visibilityHiddenTimeoutId) {
-        clearTimeout(this.visibilityHiddenTimeoutId);
-        this.visibilityHiddenTimeoutId = null;
-      }
-      await this.onActivity();
-    }
-  }
-
-  private async handleChannelMessage(ev: MessageEvent) {
-    const message: LifecycleMessage = ev.data;
-    if (message.sourceId === this.myId) return;
-    switch (message.type) {
-      case 'leader-claimed': {
-        const newLeaderId = message.payload?.leaderId as string;
-        this.leaderId = newLeaderId;
-        if (newLeaderId === this.myId) {
-          this.isLeader = true;
-          await delay(this.LEADERSHIP_CONFIRM_DELAY_MS);
-          await this.transitionState('leader');
-        } else {
-          this.isLeader = false;
-          if (document.visibilityState === 'visible') {
-            await this.transitionState('inactive');
-          }
-        }
-        this.clearReleaseWaitTimeout();
-        break;
-      }
-      case 'request-leader-release': {
-        if (this.isLeader) {
-          console.log('ActivityManager: Received request to release leadership.');
-          await this.releaseLeadership();
-        }
-        break;
-      }
-      case 'leader-released': {
-        if (!this.isLeader && document.visibilityState === 'visible') {
-          await delay(100);
-          await this.acquireLeadership();
-        }
-        break;
-      }
-      case 'shutdown-complete': {
-        console.log('ActivityManager: Received shutdown-complete.');
-        await delay(100);
-        await this.acquireLeadership();
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  private sendMessage(
-    type: LifecycleMessage['type'],
-    payload: Record<string, any> = {}
-  ) {
-    const message: LifecycleMessage = {
-      type,
-      payload,
-      sourceId: this.myId,
-    };
-    if (this.channel) {
-      this.channel.postMessage(message);
-    }
+  private sendMessage(type: LifecycleMessage['type'], payload: Record<string, any> = {}) {
+    const message: LifecycleMessage = { type, payload, sourceId: this.myId };
+    this.channel?.postMessage(message);
   }
 
   private startHeartbeat() {
-    this.clearHeartbeat();
+    this.stopHeartbeat();
     this.heartbeatIntervalId = window.setInterval(() => {
-      if (this.isLeader) {
-        localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now() }));
-      }
+      if (!this.isLeader) return;
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now() }));
     }, this.HEARTBEAT_INTERVAL_MS);
   }
 
-  private clearHeartbeat() {
+  private stopHeartbeat() {
     if (this.heartbeatIntervalId !== null) {
       clearInterval(this.heartbeatIntervalId);
       this.heartbeatIntervalId = null;
     }
   }
 
-  private async acquireLeadership() {
-    if (this.isLeader) return;
-  
-    if (
-      document.visibilityState === 'visible' &&
-      performance.getEntriesByType('navigation')[0]?.type === 'reload'
-    ) {
-      console.log('ActivityManager: Detected page refresh; clearing stale leader.');
-      localStorage.removeItem('leaderId');
-    }
-  
-    const MAX_SHUTDOWN_WAIT_MS = 2500;
-    let shutdownWaitTime = 0;
-    while (true) {
-      const leaderDataRaw = localStorage.getItem('leaderId');
-      if (leaderDataRaw) {
-        try {
-          const parsed = JSON.parse(leaderDataRaw);
-          if (parsed.shutdown) {
-            console.log('ActivityManager: Detected leader is shutting down, waiting for shutdown completion.');
-            await delay(250);
-            shutdownWaitTime += 250;
-            if (shutdownWaitTime >= MAX_SHUTDOWN_WAIT_MS) {
-              console.warn('ActivityManager: Waited too long for shutdown; forcing clear.');
-              localStorage.removeItem('leaderId');
-              break;
-            }
-            continue;
-          }
-        } catch (e) {
-          break;
-        }
-      }
-      break;
-    }
-  
-    let currentLeader: string | null = null;
-    let leaderTimestamp: number | null = null;
-    const leaderData = localStorage.getItem('leaderId');
-    if (leaderData) {
-      try {
-        const parsed = JSON.parse(leaderData);
-        currentLeader = parsed.id;
-        leaderTimestamp = parsed.ts;
-      } catch (e) {
-        currentLeader = leaderData;
-      }
-    }
-  
-    if (
-      document.visibilityState === 'visible' &&
-      currentLeader &&
-      currentLeader !== this.myId
-    ) {
-      if (leaderTimestamp && Date.now() - leaderTimestamp > this.STALE_THRESHOLD_MS) {
-        console.log('ActivityManager: Detected stale leader. Clearing it.');
-        localStorage.removeItem('leaderId');
-        currentLeader = null;
-      } else {
-        await this.transitionState('inactive');
+  private startLeaderWatch() {
+    this.stopLeaderWatch();
+    this.leaderWatchIntervalId = window.setInterval(() => {
+      if (this.destroyed) return;
+      if (this.isLeader) return;
+      if (document.visibilityState !== 'visible') return;
+
+      const leader = parseLeaderStorage(localStorage.getItem(this.STORAGE_KEY));
+      if (!leader) {
+        void this.acquireLeadership();
         return;
       }
-    }
-  
-    if (!currentLeader) {
-      this.leaderId = this.myId;
-      this.isLeader = true;
-      localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now() }));
-      this.sendMessage('leader-claimed', { leaderId: this.myId });
-      await this.transitionState('leader');
-      this.startHeartbeat();
-    } else if (currentLeader !== this.myId) {
-      await this.transitionState('inactive');
-    } else {
-      this.isLeader = true;
-      await this.transitionState('leader');
-      this.startHeartbeat();
+      if (leader.shutdown) return;
+      if (this.isStale(leader)) {
+        try {
+          localStorage.removeItem(this.STORAGE_KEY);
+        } catch {}
+        void this.acquireLeadership();
+      }
+    }, this.HEARTBEAT_INTERVAL_MS);
+  }
+
+  private stopLeaderWatch() {
+    if (this.leaderWatchIntervalId !== null) {
+      clearInterval(this.leaderWatchIntervalId);
+      this.leaderWatchIntervalId = null;
     }
   }
-  
-  private clearReleaseWaitTimeout() {
-    if (this.releaseWaitTimeoutId !== null) {
-      clearTimeout(this.releaseWaitTimeoutId);
-      this.releaseWaitTimeoutId = null;
-    }
+
+  private isStale(record: LeaderStorageRecord): boolean {
+    return Date.now() - record.ts > this.STALE_THRESHOLD_MS;
   }
-  
+
+  private async becomeLeader() {
+    if (this.isLeader) return;
+    this.isLeader = true;
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now() }));
+    this.sendMessage('leader-claimed', { leaderId: this.myId });
+
+    // In fallback mode, we may "race" other visible tabs. Confirm we actually won.
+    await delay(this.LEADER_CONFIRM_DELAY_MS);
+    const leader = parseLeaderStorage(localStorage.getItem(this.STORAGE_KEY));
+    if (!leader || leader.id !== this.myId) {
+      this.isLeader = false;
+      await this.transitionState('follower');
+      return;
+    }
+
+    await this.transitionState('leader');
+    this.startHeartbeat();
+  }
+
+  private async becomeFollower(_leaderId?: string) {
+    if (this.isLeader) {
+      this.isLeader = false;
+      this.stopHeartbeat();
+    }
+    await this.transitionState('follower');
+  }
+
+  private async acquireLeadership() {
+    const leader = parseLeaderStorage(localStorage.getItem(this.STORAGE_KEY));
+    if (leader && leader.id !== this.myId && !this.isStale(leader) && !leader.shutdown) {
+      await this.becomeFollower(leader.id);
+      return;
+    }
+    await this.becomeLeader();
+  }
+
   private async releaseLeadership() {
     if (!this.isLeader) return;
-    localStorage.setItem('leaderId', JSON.stringify({ id: this.myId, ts: Date.now(), shutdown: true }));
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now(), shutdown: true }));
     this.sendMessage('leader-released', { oldLeaderId: this.myId });
-    await this.transitionState('inactive');
-    localStorage.removeItem('leaderId');
-    this.sendMessage('shutdown-complete', {});
+    localStorage.removeItem(this.STORAGE_KEY);
     this.isLeader = false;
-    this.clearHeartbeat();
+    this.stopHeartbeat();
+    await this.transitionState('follower');
   }
-  
+
+  private async handleChannelMessage(ev: MessageEvent) {
+    const message: LifecycleMessage = ev.data;
+    if (!message || message.sourceId === this.myId) return;
+
+    if (message.type === 'leader-claimed') {
+      // localStorage is the source of truth for who won the race in fallback mode.
+      // Reconcile from storage to avoid split-brain or "both demote" outcomes.
+      await this.acquireLeadership();
+      return;
+    }
+
+    if (message.type === 'leader-released') {
+      // Small delay to allow the old leader to finish teardown.
+      await delay(100);
+      if (document.visibilityState === 'visible') {
+        await this.acquireLeadership();
+      }
+    }
+  }
+
+  private async handleVisibilityChange() {
+    if ((navigator as any)?.locks?.request) return;
+    if (document.visibilityState === 'visible') {
+      await this.acquireLeadership();
+    }
+  }
+
   private async handleBeforeUnload() {
     if (this.isLeader) {
       await this.releaseLeadership();
     }
   }
-  
-  public on(which: 'active' | 'inactive', handler: () => Promise<void>) {
+
+  public on(which: 'leader' | 'follower', handler: () => Promise<void>) {
     this.externalHandlers[which] = handler;
-    if (which === 'active' && this.isActiveState(this.currentState)) {
+    if (which === this.currentState) {
       handler();
     }
   }
-  
+
   public destroy() {
-    this.clearIdleTimer();
+    this.stopHeartbeat();
+    this.stopLeaderWatch();
+    this.destroyed = true;
+    this.leaderLockRelease?.();
+    this.leaderLockRelease = null;
+    if (this.isLeader) {
+      try {
+        this.sendMessage('leader-released', { oldLeaderId: this.myId });
+        localStorage.removeItem(this.STORAGE_KEY);
+      } catch {}
+      this.isLeader = false;
+    }
     if (this.channel) {
       this.channel.removeEventListener('message', this.boundChannelMessageHandler);
       this.channel.close();
     }
     document.removeEventListener('visibilitychange', this.boundVisibilityHandler);
-    ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'].forEach(eventName => {
-      window.removeEventListener(eventName, this.boundIdleEventHandler, true);
-    });
     window.removeEventListener('beforeunload', this.boundBeforeUnloadHandler);
+  }
+
+  private async runWebLocksElection() {
+    const locks = (navigator as any)?.locks as { request?: Function } | undefined;
+    if (typeof locks?.request !== 'function') return;
+
+    while (!this.destroyed) {
+      try {
+        await locks.request(
+          this.LOCK_NAME,
+          { mode: 'exclusive' },
+          async () => {
+            this.isLeader = true;
+            await this.transitionState('leader');
+
+            await new Promise<void>((resolve) => {
+              this.leaderLockRelease = resolve;
+            });
+
+            this.isLeader = false;
+            await this.transitionState('follower');
+          }
+        );
+      } catch {
+        // ignore and retry
+      }
+
+      await delay(50);
+    }
   }
 }

@@ -64,7 +64,7 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['id', 'created_at', 'fees']
 export const filtersDisable: DataKeys = ['relay', 'as', 'asname', 'icon', 'banner', 'created_at', 'subscriptionFee', 'publicationFee', 'admissionFee']
 export const columnsShow: DataKeys = ['relay', 'lastSeen', 'geocode', 'paymentRequired', 'authRequired']
-export const filtersShow: DataKeys = ['networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
+export const filtersShow: DataKeys = ['liveness', 'networks', 'hasNip11', 'paymentRequired', 'authRequired', 'isp', 'software', 'supportedNips', 'geocode', 'operatorPubkeyValid']
 
 const availableKeys: string[] = [
     ...(columnsDisable
@@ -73,6 +73,7 @@ const availableKeys: string[] = [
     "seenBy",
     "lastSeen",
     "seenTimes",
+    "liveness",
     "nip11IsValid",
     "nip11ValidationErrors"
 ]
@@ -111,6 +112,10 @@ export const prettyNames: NameFormatter = {
     },
     networks: {
         long: 'Network'
+    },
+    liveness: {
+        short: 'Live',
+        long: 'Liveness'
     },
     lastSeen: {
         long: 'Last Seen'
@@ -532,6 +537,14 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
     return text;
 }
 
+export const tableRowStyler = (row: Record<string, any>) => {
+    if(!row) return ''
+    const liveness = row?.liveness;
+    if(liveness === 'offline') return 'opacity-60';
+    if(liveness === 'dead') return 'opacity-50 line-through';
+    return '';
+}
+
 export default {
     prettyNames,
     dataFormatters,
@@ -543,8 +556,9 @@ export default {
     filtersShow,
     availableColumnKeys,
     availableFilterKeys,
+    tableRowStyler,
     sortState: {
         columnId: 'lastSeen',
         direction: 'desc'
     }
-}
+} 

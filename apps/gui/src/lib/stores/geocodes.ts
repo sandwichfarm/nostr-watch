@@ -1,16 +1,31 @@
 
 import { derived, get, type Readable } from 'svelte/store';
-import { eventsArray } from './events.js'; 
-import { relayCheckAggregates } from './checks.js'; 
+import { eventsArray } from './events.js';
+import { relayCheckAggregates } from './checks.js';
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
 import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import type { lte } from 'lodash';
 import { doAggregateCache } from './app.js';
 import softwares from '../config/dataTable/softwares.js';
+import {
+  useWorkerGeocodes,
+  workerGeocodes,
+  workerGeocodeCounts,
+  workerGeocodePercentages,
+  workerRelaysByGeo,
+  workerSoftwaresByGeo,
+  workerGeoRows,
+} from './dimension-stores.js';
+import type { GeoRow } from '$lib/workers/dimensions-derivation.worker';
 
-export const geocodes: Readable<string[]> = derived(
-  relayCheckAggregates, 
+// ============================================================================
+// LEGACY DERIVED STORES (Main thread computation)
+// These are kept as fallback and for comparison testing
+// ============================================================================
+
+export const geocodes_legacy: Readable<string[]> = derived(
+  relayCheckAggregates,
   ($relayCheckAggregates) => {
     if (!$relayCheckAggregates.length) return [];
     const codes: Set<string> = new Set();
@@ -30,13 +45,13 @@ export const geocodes: Readable<string[]> = derived(
     }
     else {
       geocodesArray = StateManager.get('aggregate:geocodes')
-    }    
+    }
 
     return geocodesArray;
   }
 );
 
-export const geocodeCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+export const geocodeCounts_legacy = derived(relayCheckAggregates, ($relayCheckAggregates) => {
     const counts = new Map();
     $relayCheckAggregates.forEach((relayCheck) => {
         const geocode = relayCheck?.geocode || 'unknown';
@@ -47,7 +62,7 @@ export const geocodeCounts = derived(relayCheckAggregates, ($relayCheckAggregate
     return counts;
 });
 
-export const geocodePercentages = derived(geocodeCounts, ($geocodeCounts) => {
+export const geocodePercentages_legacy = derived(geocodeCounts_legacy, ($geocodeCounts) => {
     const total = Array.from($geocodeCounts.values()).reduce((sum, count) => sum + count, 0);
     const percentages = new Map();
     $geocodeCounts.forEach((count, geocode) => {
@@ -57,7 +72,7 @@ export const geocodePercentages = derived(geocodeCounts, ($geocodeCounts) => {
     return percentages;
 });
 
-export const relaysByGeo: Readable<Map<string, string[]>> = derived(
+export const relaysByGeo_legacy: Readable<Map<string, string[]>> = derived(
   [relayCheckAggregates],
   ([$relayCheckAggregates]) => {
     const relaysByGeo = new Map();
@@ -70,7 +85,7 @@ export const relaysByGeo: Readable<Map<string, string[]>> = derived(
     return relaysByGeo;
 })
 
-export const softwaresByGeo: Readable<Map<string, string[]>> = derived(
+export const softwaresByGeo_legacy: Readable<Map<string, string[]>> = derived(
   [relayCheckAggregates],
   ([$relayCheckAggregates]) => {
     const softwaresByGeo: Map<string, string[] | Set<string>> = new Map();
@@ -88,8 +103,8 @@ export const softwaresByGeo: Readable<Map<string, string[]>> = derived(
 })
 
 
-export const geoRows = derived(
-  [geocodes, geocodeCounts, geocodePercentages, relaysByGeo, softwaresByGeo],
+export const geoRows_legacy = derived(
+  [geocodes_legacy, geocodeCounts_legacy, geocodePercentages_legacy, relaysByGeo_legacy, softwaresByGeo_legacy],
   ([$geocodes, $geocodeCounts, $geocodePercentages, $relaysByGeo, $softwaresByGeo]) => {
     const rows: Record<string, any> = [];
     $geocodes.forEach((geocode: string) => {
@@ -103,5 +118,84 @@ export const geoRows = derived(
       rows.push({ id, geocode, count, percent, relays, relaysCount, softwares, softwaresCount });
     });
     return rows;
+  }
+);
+
+// ============================================================================
+// HYBRID STORES (Switch between worker and legacy based on feature flag)
+// ============================================================================
+
+/**
+ * Geocodes store - uses worker-computed values when enabled, falls back to legacy.
+ */
+export const geocodes: Readable<string[]> = derived(
+  [useWorkerGeocodes, workerGeocodes, geocodes_legacy],
+  ([$useWorker, $worker, $legacy]) => {
+    if ($useWorker && $worker.length > 0) return $worker;
+    return $legacy;
+  }
+);
+
+/**
+ * Geocode counts store - uses worker-computed values when enabled.
+ * Note: Worker returns Record<string, number>, legacy returns Map<string, number>
+ */
+export const geocodeCounts: Readable<Map<string, number>> = derived(
+  [useWorkerGeocodes, workerGeocodeCounts, geocodeCounts_legacy],
+  ([$useWorker, $worker, $legacy]) => {
+    if ($useWorker && Object.keys($worker).length > 0) {
+      return new Map(Object.entries($worker));
+    }
+    return $legacy;
+  }
+);
+
+/**
+ * Geocode percentages store - uses worker-computed values when enabled.
+ */
+export const geocodePercentages: Readable<Map<string, number>> = derived(
+  [useWorkerGeocodes, workerGeocodePercentages, geocodePercentages_legacy],
+  ([$useWorker, $worker, $legacy]) => {
+    if ($useWorker && Object.keys($worker).length > 0) {
+      return new Map(Object.entries($worker));
+    }
+    return $legacy;
+  }
+);
+
+/**
+ * Relays by geo store - uses worker-computed values when enabled.
+ */
+export const relaysByGeo: Readable<Map<string, string[]>> = derived(
+  [useWorkerGeocodes, workerRelaysByGeo, relaysByGeo_legacy],
+  ([$useWorker, $worker, $legacy]) => {
+    if ($useWorker && Object.keys($worker).length > 0) {
+      return new Map(Object.entries($worker));
+    }
+    return $legacy;
+  }
+);
+
+/**
+ * Softwares by geo store - uses worker-computed values when enabled.
+ */
+export const softwaresByGeo: Readable<Map<string, string[]>> = derived(
+  [useWorkerGeocodes, workerSoftwaresByGeo, softwaresByGeo_legacy],
+  ([$useWorker, $worker, $legacy]) => {
+    if ($useWorker && Object.keys($worker).length > 0) {
+      return new Map(Object.entries($worker));
+    }
+    return $legacy;
+  }
+);
+
+/**
+ * Geo rows store - uses worker-computed values when enabled.
+ */
+export const geoRows: Readable<GeoRow[]> = derived(
+  [useWorkerGeocodes, workerGeoRows, geoRows_legacy],
+  ([$useWorker, $worker, $legacy]) => {
+    if ($useWorker && $worker.length > 0) return $worker;
+    return $legacy as GeoRow[];
   }
 );

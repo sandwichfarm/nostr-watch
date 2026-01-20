@@ -3,7 +3,7 @@
     import { StateManager } from '@nostrwatch/route66';
     import { doBootstrap } from '$lib/stores/routines';
     import { doAggregateCache } from '$lib/stores/app';
-    import { writable, type Writable } from 'svelte/store';
+    import { get, writable, type Writable } from 'svelte/store';
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/operators.js'
 	import { operatorsRows as data } from '$lib/stores/operators';
@@ -15,6 +15,7 @@
 	import { seedMetaFromCache } from '$lib/utils/lifecycle';
 	import { dataRegister } from '$stores/data-register';
 	import DataViewRoot from '$lib/components/data-view/DataViewRoot.svelte';
+	import { tabState } from '$lib/stores/app';
 
     let DataTable: DataTableType;
     const componentsLoaded: Writable<boolean> = writable(false);
@@ -53,10 +54,11 @@
         // console.log('OPERATORS: LOADING COMPONENTS')
         loadComponents().then( () => {
             setConfig()
-            $dataRegister.require([
-                'sync:cache',
-                'sync:all',
-            ]); 
+            const keys = ['sync:cache'];
+            if (get(tabState) === 'leader') keys.push('sync:all');
+            void $dataRegister
+                .require(keys)
+                .catch((err) => console.error('[DataRegister] require failed', err));
         });
     });
 

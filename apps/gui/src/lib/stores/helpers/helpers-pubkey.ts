@@ -1,4 +1,5 @@
 import type { PubkeyProfile } from "@nostrwatch/route66/models/PubkeyProfile";
+import type { PubkeyRelays } from "@nostrwatch/route66/models/PubkeyRelays";
 import { derived, get, type Readable } from "svelte/store";
 import { eventsStoreMemoryRelay } from "../memory-relays/memory-relay-events";
 import { events, type StoreEventType } from "../events";
@@ -14,8 +15,15 @@ export const pubkeyUserInstance = (pubkey: string): StoreUser => {
     const profileEvent = pubkeyProfile(pubkey);
     const relayListEvent = pubkeyRelays(pubkey);
     // console.log('pubkeyUserInstance', pubkey, profileEvent, relayListEvent)
-    if(profileEvent && relayListEvent) {
+    if (profileEvent && relayListEvent) {
         return User.from(profileEvent.json, relayListEvent.json);
+    }
+    if (profileEvent || relayListEvent) {
+        const instance = new User(pubkey);
+        if (profileEvent) instance.profile = profileEvent;
+        if (relayListEvent) instance.relays = relayListEvent;
+        instance.forceReady();
+        return instance;
     }
 }
 
@@ -25,8 +33,15 @@ export const pubkeyUserInstance$ = (pubkey: string): Readable<StoreUser> => {
         () => {
             const profileEvent = pubkeyProfile(pubkey);
             const relayListEvent = pubkeyRelays(pubkey);
-            if(profileEvent && relayListEvent) {
+            if (profileEvent && relayListEvent) {
                 return User.from(profileEvent.json, relayListEvent.json);
+            }
+            if (profileEvent || relayListEvent) {
+                const instance = new User(pubkey);
+                if (profileEvent) instance.profile = profileEvent;
+                if (relayListEvent) instance.relays = relayListEvent;
+                instance.forceReady();
+                return instance;
             }
         }
     ) as StoreUserReadable
@@ -54,10 +69,10 @@ export const pubkeyProfile$ = (pubkey: string): Readable<StorePubkeyProfile> => 
     }) as Readable<StorePubkeyProfile> 
 }
 
-export type StorePubkeyRelays = PubkeyProfile | undefined
+export type StorePubkeyRelays = PubkeyRelays | undefined
 
 export const pubkeyRelays = (pubkey: string): StorePubkeyRelays => {
-    return topMemoryRelay()?.get(`${formatPubkeyForIndex(pubkey)}:${10002}`) as StorePubkeyRelays;
+    return topMemoryRelay()?.get(`${formatPubkeyForIndex(pubkey)}:${10002}`) as PubkeyRelays | undefined;
 }
 
 export const pubkeyRelays$ = (pubkey: string): Readable<StorePubkeyRelays> => {

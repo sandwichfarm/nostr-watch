@@ -98,6 +98,24 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     const code = e.code || e.result?.code;
     const corrupt = code === "SQLITE_CORRUPT" || code === 11;
     const message = e.message || (e.result && e.result.message) || String(e);
+
+    const opfsUnavailable =
+      code === "OPFS_TIMEOUT" ||
+      message.includes("OPFS") ||
+      message.includes("SharedArrayBuffer") ||
+      message.includes("crossOriginIsolated") ||
+      message.includes("installOpfsSAHPoolVfs");
+
+    if (opfsUnavailable) {
+      console.warn("OPFS/SQLite unavailable, falling back to InMemoryRelay", e);
+      try {
+        state.relay?.close();
+      } catch {}
+      state.relay = new InMemoryRelay();
+      await state.relay.init(args.databasePath);
+      return;
+    }
+
     if (corrupt || message.includes("malformed") || message.includes("not a database")) {
       const root = await navigator.storage.getDirectory();
       try {
@@ -266,36 +284,36 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
         state.relay!.setEventMetadata(id, metadata);
         break;
       }
-      // case "upsertNip11": {
-      //   const res = await state.relay!.upsertNip11(msg.args);
-      //   reply(msg.id, res);
-      //   break;
-      // }
-      // case "getNip11": {
-      //   const res = await state.relay!.getNip11(msg.args);
-      //   reply(msg.id, res);
-      //   break;
-      // }
-      // case "countNip11s": {
-      //   const res = await state.relay!.countNip11s();
-      //   reply(msg.id, res);
-      //   break;
-      // }
-      // case "countUniqueNip11s": {
-      //   const res = await state.relay!.countUniqueNip11s();
-      //   reply(msg.id, res);
-      //   break;
-      // }
-      // case "dumpNip11s": {
-      //   const res = await state.relay!.dumpNip11s();
-      //   reply(msg.id, res);
-      //   break;
-      // }
-      // case "batchUpsertNip11": {
-      //   const res = await state.relay!.batchUpsertNip11(msg.args);
-      //   reply(msg.id, res);
-      //   break;
-      // }
+      case "upsertNip11": {
+        const res = await state.relay!.upsertNip11(msg.args as any);
+        reply(msg.id, res);
+        break;
+      }
+      case "getNip11": {
+        const res = await state.relay!.getNip11(msg.args as any);
+        reply(msg.id, res);
+        break;
+      }
+      case "countNip11s": {
+        const res = await state.relay!.countNip11s();
+        reply(msg.id, res);
+        break;
+      }
+      case "countUniqueNip11s": {
+        const res = await state.relay!.countUniqueNip11s();
+        reply(msg.id, res);
+        break;
+      }
+      case "dumpNip11s": {
+        const res = await state.relay!.dumpNip11s();
+        reply(msg.id, res);
+        break;
+      }
+      case "batchUpsertNip11": {
+        const res = await state.relay!.batchUpsertNip11(msg.args as any);
+        reply(msg.id, res);
+        break;
+      }
       default: {
         reply(msg.id, { error: "Unknown command" });
         break;

@@ -83,24 +83,25 @@ export async function loadModules(
 ): Promise<Modules> {
   const loadedModules = {} as Partial<Modules>;
 
-  for (const key of Object.keys(moduleLoaders) as ModuleKey[]) {
-    const { loader, path } = moduleLoaders[key];
-    try {
-      const mod = await loader();
-      const loaded: Modules[typeof key] = mod.default ?? mod;
-      loadedModules[key] = loaded;
-      if (onProgress) {
-        onProgress(key, loaded);
+  const keys = Object.keys(moduleLoaders) as ModuleKey[];
+  await Promise.all(
+    keys.map(async (key) => {
+      const { loader, path } = moduleLoaders[key];
+      try {
+        const mod = await loader();
+        const loaded: Modules[typeof key] = mod.default ?? mod;
+        loadedModules[key] = loaded;
+        onProgress?.(key, loaded);
+      } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(
+          `Failed to load module "${key}" from path "${path}". Error: ${errorMsg}\n` +
+            `Please verify that the file exists and that the import path is correct.`
+        );
+        throw new Error(`Failed to load module "${key}" from path "${path}": ${errorMsg}`);
       }
-    } catch (error: unknown) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(
-        `Failed to load module "${key}" from path "${path}". Error: ${errorMsg}\n` +
-        `Please verify that the file exists and that the import path is correct.`
-      );
-      throw new Error(`Failed to load module "${key}" from path "${path}": ${errorMsg}`);
-    }
-  }
+    })
+  );
 
   return loadedModules as Modules;
 }

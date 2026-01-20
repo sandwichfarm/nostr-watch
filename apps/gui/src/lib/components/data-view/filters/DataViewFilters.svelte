@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
-    import { derived, get, type Readable } from 'svelte/store';
+    import { get, type Readable } from 'svelte/store';
     import { writable, type Writable } from 'svelte/store';
 
     import { Input } from '$lib/components/ui/input/index.js';
@@ -22,6 +22,7 @@
     import type { DataTableConfig, Formatters } from './DataTableTypes';
 	import { linkableState, type LinkableState } from '$utils/linkable-state.js';
 	import FilterLink from './FilterLink.svelte';
+	import SavePreset from './SavePreset.svelte';
 	import { throttledDerived } from '$utils/stores.js';
 	import { delay } from '@nostrwatch/utils';
 
@@ -30,6 +31,7 @@
     export let dataExtended: Readable<{ data: any[] }>;
     export let filters: Writable<Record<string, any>>;
     export let config: any;
+    export let onPresetSave: () => void = () => {};
 
     export const onFilterChange = (updateConfig: DataTableConfig) => {
         Object.keys(updateConfig.filtersActive || {}).forEach( (key: string) => {
@@ -98,33 +100,35 @@
         updateDisabledFilters($filters)
     }
 
-    const unsub = derived([filters, dataExtended], ([newFilters]) => {
-        if(!$dataExtended.data || !filtersInclude) return;
-        buildInvertedIndex( $dataExtended.data, filtersInclude);
-        createRelayFilters( $dataExtended.data, filtersInclude, $config.prettyNames);
-        updateDisabledFilters($filters)
-    });
-
     const filtersInit = () => {
         const { data } = $dataExtended;
         if(!data) return;
         buildInvertedIndex(data, filtersInclude);
-        const initialFilters = createRelayFilters(data, filtersInclude, $config.prettyNames);
+        const initialFilters = createRelayFilters(data, filtersInclude, $config.prettyNames, get(relayFilters));
         relayFilters.set(initialFilters);
-        const initialShowAll: Record<string, boolean> = {};
-        initialFilters.forEach( (filter: any) => {
-            initialShowAll[filter.key] = false;
+        showAllFilters.update((current) => {
+            const next = { ...current };
+            initialFilters.forEach((filter: any) => {
+                if (typeof next[filter.key] !== 'boolean') next[filter.key] = false;
+            });
+            return next;
         });
-        showAllFilters.set(initialShowAll);
-        updateDisabledFilters($filters)
-        filters.set( $config.filtersActive )
+        updateDisabledFilters($filters);
     }
 
-    onMount(async () => {
-        filtersInit()
+    const scheduleFiltersInit = debounce(() => {
+        filtersInit();
+    }, 200);
+
+    $: if ($dataExtended?.data && filtersInclude) {
+        scheduleFiltersInit();
+    }
+
+    onMount(() => {
+        filtersInit();
     });
     onDestroy( () => {
-        // tableDataUnsub()
+        scheduleFiltersInit.cancel?.();
     })
 
     // **Build Inverted Index**
@@ -154,7 +158,8 @@
         let activeRecordIDs: Set<string> | null = null;
 
         // Iterate over each filter block
-        $relayFilters.forEach(filter => {
+        const currentFilters = get(relayFilters);
+        currentFilters.forEach(filter => {
             const filterKey = filter.key;
             const filterMode = filter.mode || 'AND'; // Default to 'AND' if mode is not set
             const filterValue = activeFilters?.[filterKey];
@@ -215,7 +220,8 @@
         const activeRecordIDs = computeActiveRecordIDs(activeFilters);
         const newDisabledFilters: Record<string, Set<string>> = {};
 
-        $relayFilters.forEach(filter => {
+        const currentFilters = get(relayFilters);
+        currentFilters.forEach(filter => {
             const filterKey = filter.key;
             const filterMode = filter.mode || 'AND';
             const filterValue = activeFilters?.[filter.key];
@@ -517,6 +523,7 @@
 
 
 <FilterLink {filters} {config} {onFilterChange} />
+<SavePreset {config} onSave={onPresetSave} />
 
 <!-- <pre class="absolute top-1 left-1 bg-black border border-white p-10 z-[9999]">{JSON.stringify($disabledFilters, null, 2)}</pre> -->
 

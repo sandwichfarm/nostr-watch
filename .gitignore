@@ -1,6 +1,7 @@
 .turbo
 **/node_modules
 *.wasm
+*.backup
 **/dist
 yarn-error.log
 .env*
@@ -22,6 +23,7 @@ packages/kinds
 .configs
 .docker
 .svelte-kit
+test-results
 scripts/deploy/gui-scp.sh
 .vscode
 .roo 

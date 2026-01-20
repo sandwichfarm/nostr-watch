@@ -98,7 +98,7 @@ export class WorkerRelayInterface {
   }
 
   async dumpNip11s() {
-    return await this.#workerRpc<void, Uint8Array>("dumpNip11s");
+    return await this.#workerRpc<void, any[]>("dumpNip11s");
   }
 
   async batchUpsertNip11(relayNip11s: batchNip11s) {
@@ -106,11 +106,11 @@ export class WorkerRelayInterface {
   }
 
   async upsertNip11(nip11Args: Nip11Args) {
-    return await this.#workerRpc<Nip11Args, OkResponse>("upsertNip11", nip11Args);
+    return await this.#workerRpc<Nip11Args, boolean>("upsertNip11", nip11Args);
   }
 
   async getNip11(relay: string) {
-    return await this.#workerRpc<string, OkResponse>("getNip11", relay);
+    return await this.#workerRpc<string, any>("getNip11", relay);
   }
 
   async event(ev: NostrEvent) {

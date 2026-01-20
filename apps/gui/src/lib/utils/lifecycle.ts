@@ -11,7 +11,7 @@ import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers.js';
 
 import type { Monitor, Nip11, NostrEvent } from "@nostrwatch/route66/models"
 import { nip05Service } from '$lib/stores/nip05s.js';
-import { hasBeenBootstrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready } from '../stores/app';
+import { hasBeenBootstrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready, tabState } from '../stores/app';
 import type { SubscribeHandlers, WebsocketAdapterOptions } from '@nostrwatch/route66/core/WebsocketAdapter';
 import { Batcher } from '@nostrwatch/route66/core';
 
@@ -24,6 +24,7 @@ import { nip11Service, operatorPubkeysValid } from '../stores';
 import type { Filter } from 'nostr-tools';
 import type { Nip11Service } from '../services/Nip11Service';
 import { relaysWithNip11s$, relaysWithoutNip11s$ } from '$stores/helpers/helpers-nip11s';
+import { TabClientCacheAdapter, TabClientWebsocketAdapter } from '$lib/runtime/tab-client-adapters';
 
 let $monitorsMap: Map<string, Monitor>;
 let emittersBound: boolean = false; 
@@ -32,6 +33,7 @@ monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
 
 let $route66: Route66 | null;
 let initializing: boolean = false;
+let runtimeMode: 'leader' | 'client' | null = null;
 
 let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
     maxLength: 3, 
@@ -75,6 +77,18 @@ export const bindBootstrapEmitters = (from?: string) => {
             }
             return monitorsMap;
         });
+
+        try {
+            const all: any[] | undefined = ($route66 as any)?.services?.monitors?.array;
+            if (all?.length) {
+                const cached = all
+                    .map((m: any) => (typeof m?.toCache === 'function' ? m.toCache() : null))
+                    .filter(Boolean);
+                if (cached.length) {
+                    StateManager.set('cache:monitors', cached);
+                }
+            }
+        } catch {}
     }
 
 
@@ -92,6 +106,13 @@ export const instance = async (): Promise<Route66> => {
         throw new Error('Window or navigator not available.');
     }
 
+    const desiredMode: 'leader' | 'client' = get(tabState) === 'leader' ? 'leader' : 'client';
+
+    // If mode changed (follower -> leader takeover), force a fresh instance.
+    if ($route66 && runtimeMode && runtimeMode !== desiredMode) {
+        destroy();
+    }
+
     if(initializing) {
         await route66Ready();
         return get(route66)
@@ -105,22 +126,35 @@ export const instance = async (): Promise<Route66> => {
     }
 
     $route66 = $route66 || get(route66);
+    if ($route66 && !runtimeMode) {
+        const cacheCtor = ($route66 as any)?.adapters?.cacheAdapter?.constructor?.name as
+            | string
+            | undefined;
+        runtimeMode = cacheCtor === 'TabClientCacheAdapter' ? 'client' : 'leader';
+    }
 
     if (!$route66) {
         //console.log('creating new route66 instance');
-        const adapters = {
-            cacheAdapter: new NostrSqliteAdapter(),
-            websocketAdapter: new NostrToolsAdapter(),
-        }; 
+        const adapters =
+            desiredMode === 'leader'
+                ? {
+                      cacheAdapter: new NostrSqliteAdapter(),
+                      websocketAdapter: new NostrToolsAdapter(),
+                  }
+                : {
+                      cacheAdapter: new TabClientCacheAdapter(),
+                      websocketAdapter: new TabClientWebsocketAdapter(),
+                  };
 
         route66.set(new Route66(adapters));
         $route66 = get(route66)
+        runtimeMode = desiredMode;
     }
 
     if (!$route66.initialized) {
         await $route66.init();
         //console.log('route66 initialized');
-        loadMonitorsFromCache($route66);
+        loadMonitorsFromCache();
     }
     
     await $route66.ready();
@@ -308,6 +342,7 @@ export const bootstrapOperatorsMeta = async (pubkeys?: string[]) => {
 export const destroy = () => {
     initializing = false;
     $route66 = null;
+    runtimeMode = null;
     route66.update( ($route66) => {
         if ($route66 && typeof $route66.destroy === 'function') {
             $route66.destroy();

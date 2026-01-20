@@ -52,83 +52,101 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     this.#log(`Opened ${this.db.filename}`);
   }
 
-  // dumpNip11s() {
-  //   if (this.db) {
-  //     const res = this.db.selectArrays(`SELECT relay, json FROM relay_nip11s`);
-  //     return Promise.resolve(res?.map(a => {
-  //       return {
-  //         relay: a[0] as string,
-  //         nip11: JSON.parse(a[1] as string),
-  //       };
-  //     }) ?? []);
-  //   }
-  //   return Promise.resolve([]);
-  // }
+  async dumpNip11s(): Promise<any[]> {
+    if (!this.db) return [];
+    try {
+      const rows = this.db.selectArrays(`SELECT json FROM nip11s`) ?? [];
+      return rows
+        .map((row) => {
+          const raw = row?.[0];
+          if (typeof raw !== "string") return undefined;
+          try {
+            return JSON.parse(raw);
+          } catch {
+            return undefined;
+          }
+        })
+        .filter(Boolean) as any[];
+    } catch (e) {
+      console.error(e);
+      return [];
+    }
+  }
 
-  // countUniqueNip11s() {
-  //   if (this.db) {
-  //     const res = this.db.selectArrays(`SELECT COUNT(*) FROM nip11s`);
-  //     const count = res?.at(0)?.at(0) as number
-  //     return Promise.resolve(count || 0);
-  //   }
-  //   return Promise.resolve(0 as number);
-  // }
+  async countUniqueNip11s(): Promise<number> {
+    if (!this.db) return 0;
+    try {
+      const res = this.db.selectArrays(`SELECT COUNT(*) FROM nip11s`);
+      const count = res?.at(0)?.at(0);
+      return typeof count === "number" ? count : Number(count ?? 0);
+    } catch (e) {
+      console.error(e);
+      return 0;
+    }
+  }
 
-  // countNip11s() {
-  //   if (this.db) {
-  //     const res = this.db.selectArrays(`SELECT COUNT(*) FROM relay_nip11s`);
-  //     const count = res?.at(0)?.at(0) as number
-  //     return Promise.resolve(count || 0);
-  //   }
-  //   return Promise.resolve(0 as number);
-  // }
+  async countNip11s(): Promise<number> {
+    if (!this.db) return 0;
+    try {
+      const res = this.db.selectArrays(`SELECT COUNT(*) FROM relay_nip11s`);
+      const count = res?.at(0)?.at(0);
+      return typeof count === "number" ? count : Number(count ?? 0);
+    } catch (e) {
+      console.error(e);
+      return 0;
+    }
+  }
 
-  // batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean> {
-  //   for (const { relay, nip11 } of relayNip11s) {
-  //     this.upsertNip11({ relay, nip11 });
-  //   }
-  //   return Promise.resolve(true);
-  // }
+  async batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean> {
+    if (!this.db) return false;
+    try {
+      this.db.transaction((db) => {
+        for (const { relay, nip11 } of relayNip11s) {
+          const hash = deterministicHash(nip11);
+          db.exec(`INSERT OR REPLACE INTO nip11s(hash, json) VALUES(?,?)`, {
+            bind: [hash, JSON.stringify(nip11)],
+          });
+          db.exec(`DELETE FROM relay_nip11s WHERE relay = ?`, {
+            bind: [relay],
+          });
+          db.exec(`INSERT OR REPLACE INTO relay_nip11s(relay, hash) VALUES(?,?)`, {
+            bind: [relay, hash],
+          });
+        }
+      });
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  }
 
-  // async upsertNip11(nip11Args: Nip11Args) {
-  //   console.log('upsertNip11', nip11Args);  
-  //   const { relay, nip11 } = nip11Args;
-  //   const hash = deterministicHash(nip11);
-  //   if (this.db) {
-  //     try { 
-  //       this.db.exec(
-  //         `INSERT OR REPLACE INTO nip11s(hash, json) VALUES(?,?)`,
-  //         {
-  //           bind: [hash, JSON.stringify(nip11)],
-  //         },
-  //       );
-  //       this.db.exec(
-  //         `INSERT OR REPLACE INTO relay_nip11s(relay, hash) VALUES(?,?)`,
-  //         {
-  //           bind: [relay, hash],
-  //         },
-  //       );
-  //     } catch (e) {
-  //       console.error(e);
-  //       return false;
-  //     }
-  //     return true;
-  //   }
-  //   return false;
-  // }
+  async upsertNip11(nip11Args: Nip11Args): Promise<boolean> {
+    return await this.batchUpsertNip11([nip11Args]);
+  }
 
   async getNip11(relay: string) {
-    if (this.db) {
+    if (!this.db) return undefined;
+    try {
+      const res = this.db.selectArrays(
+        `SELECT nip11s.json
+        FROM relay_nip11s
+        JOIN nip11s ON nip11s.hash = relay_nip11s.hash
+        WHERE relay_nip11s.relay = ?
+        ORDER BY relay_nip11s.rowid DESC
+        LIMIT 1`,
+        [relay],
+      );
+      const raw = res?.at(0)?.at(0);
+      if (typeof raw !== "string") return raw;
       try {
-        const res = this.db.selectArrays(
-          `SELECT json FROM nip11s WHERE hash = (SELECT hash FROM relay_nip11s WHERE relay = ?)`,
-          [relay],
-        );
-        return res?.at(0)?.at(0);
-      } 
-      catch (e) {
-        console.error(e);
+        return JSON.parse(raw);
+      } catch {
+        return raw;
       }
+    } catch (e) {
+      console.error(e);
+      return undefined;
     }
   }
 

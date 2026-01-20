@@ -9,6 +9,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { writable, type Writable, get } from 'svelte/store';
   import { loadModules, type ModuleKey, type Modules, moduleLoaders } from './layout.modules.js';
+  import { startLeaderTabRpcServer } from '$lib/runtime/leader-tab-server';
 
   import { type ActivityItem } from '$lib/stores/activity.js';
   import { doBootstrap } from '$lib/stores/routines.js';
@@ -84,18 +85,11 @@
       await route66.shutdown();
       await delay(1000);
       destroy();
-      setTabState('follower');
     } catch (error) {
-      console.error('[Lifecycle] Error in onReleaseLeader:', error);
-      setTabState('follower');
+      console.error('[Lifecycle] Error during shutdown:', error);
+      destroy();
     }
-  }
-
-  function setTabState(newState: TabStateType) {
-    if (get(tabState) === newState) return;
-    tabState.update(() => newState);
-    console.log(`Tab state updated to: ${newState}`);
-  }
+  };
 
   // --------------------------------------------------------------------------------
   // Boot function (with concurrency & unsupported check)
@@ -110,12 +104,9 @@
     const route66 = await instance();
     await route66.ready();
     dataRegisterInit();
-    const datas = []
-    datas.push('sync:cache')
-    if(hasBeenBootstrapped()){
-      datas.push('sync:all')
-    } else {
-      datas.push('sync:all-force')
+    const datas: string[] = ['sync:cache'];
+    if (get(tabState) === 'leader') {
+      datas.push(hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
     }
     await get(dataRegister).require(datas)
   }
@@ -164,6 +155,17 @@
   };
 
   let activityManager: any;
+  let unsubscribeTabState: (() => void) | null = null;
+  let lastRole: TabStateType | null = null;
+  let bootInFlight: Promise<void> | null = null;
+
+  const runBoot = async () => {
+    if (bootInFlight) return bootInFlight;
+    bootInFlight = boot().finally(() => {
+      bootInFlight = null;
+    });
+    return bootInFlight;
+  };
 
   onMount(async () => {
     
@@ -176,33 +178,44 @@
       doBootstrap.set(true);
     }
 
-    let justBooted = true;
-    await boot();
+    // Leader-tab runtime RPC server (only answers when this tab is leader).
+    startLeaderTabRpcServer({
+      isLeader: () => get(tabState) === 'leader',
+      getRoute66: async () => await instance(),
+    });
 
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
-    activityManager.on('active', async () => {
-      console.log('active.')
-      if(justBooted) return;
-      boot();
-    });
-    
-    activityManager.on('inactive', async () => {
-      if(justBooted) return;
-      await shutdown();
+
+    // Give the ActivityManager a tick to claim/follow leadership before boot.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    lastRole = get(tabState);
+    await runBoot();
+
+    // React to leader/follower role changes after initial boot.
+    unsubscribeTabState = tabState.subscribe(async (role) => {
+      if (!role || role === lastRole) return;
+
+      // If we were the leader and got demoted, release heavy resources.
+      if (lastRole === 'leader' && role === 'follower') {
+        await shutdown();
+      }
+
+      if (role === 'leader' || role === 'follower') {
+        await runBoot();
+      }
+
+      lastRole = role;
     });
 
-    //hacky guard.
-    setTimeout( () => {
-      justBooted = false;
-    }, 1000)
-    
     isReady = true;
   });
 
   onDestroy(() => {
     console.log('DESTROY')
     resetStores();
-    activityManager.destroy();
+    unsubscribeTabState?.();
+    activityManager?.destroy?.();
   });
 
 
@@ -281,25 +294,13 @@
       <div class="text-xs opacity-30">[{$tabState}]</div>
     </div>
   {:else if isReady}
-    {#if $tabState === 'leader'}
+    {#if $tabState === 'leader' || $tabState === 'follower'}
       {#if loadedEnoughSignal}
         <Header />
         <div id="content-wrapper" class="block">
           <slot />
         </div>
       {/if}
-    {:else if $tabState === 'follower'}
-      <div class="flex flex-col items-center justify-center h-screen px-4">
-        <div class="text-7xl mb-3">taking charge</div>
-        <div class="text-xl opacity-50">nostr.watch can only run in one tab at a time, shutting down other tab.</div>
-        <div class="text-xs opacity-30">[{$tabState}]</div>
-      </div>
-    {:else if $tabState === 'idle'}
-      <div class="flex flex-col items-center justify-center h-screen px-4">
-        <div class="text-7xl mb-3">you were sleeping</div>
-        <div class="text-xl opacity-50">nostr.watch shutdown while you were gone, restarting</div>
-        <div class="text-xs opacity-30">[{$tabState}]</div>
-      </div>
     {:else}
       <div class="flex flex-col items-center justify-center h-screen px-4">
         <div class="text-7xl mb-3">booting.</div>

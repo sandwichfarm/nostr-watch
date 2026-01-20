@@ -1,7 +1,7 @@
 import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
-import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded } from "$stores/app";
+import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, tabState } from "$stores/app";
 import { fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
@@ -103,7 +103,7 @@ export const dataRegisterInit = async () => {
     data.register({
         key: 'sync:live',
         priority: 200,
-        condition: async () => get(doLiveSync) === true,
+        condition: async () => get(doLiveSync) === true && get(tabState) === 'leader',
         fn: async () => liveSync()
     })
 

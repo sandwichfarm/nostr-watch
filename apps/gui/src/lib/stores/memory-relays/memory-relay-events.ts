@@ -35,9 +35,11 @@ eventsStoreMemoryRelay_.on('qualify', (event: StoreEventType, key: string, $rela
     if(kind === undefined) return false
     if(kind === 30166) {
         const monitor = getMonitor(event.pubkey);
-        const online = monitor?.relayIsOnline(event);
-        monitor?.maybeUpdateLastActive?.(event);
-        if(!online) return false;
+        if(monitor) {
+            const online = monitor.relayIsOnline(event);
+            monitor.maybeUpdateLastActive?.(event);
+            if(!online) return false;
+        }
         if(event.tags.find( tag => tag[0] === 'd')?.[1]?.includes('echo.websocket.org')) return false;
     }
     return true

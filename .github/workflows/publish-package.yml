@@ -1,6 +1,11 @@
 name: GH Release and NPM Publish
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Deploy GUI only (skip npm publish + GitHub releases)'
+        type: boolean
+        default: true
   push:
     branches:
       - 'next'
@@ -66,6 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment: ${{ matrix.package == 'gui' && 'next.nostr.watch' || 'default' }}
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true || matrix.package == 'gui' }}
     strategy:
       fail-fast: false
       matrix:
@@ -73,7 +79,6 @@ jobs:
           - package: 'nostrings'
           - package: 'nocap'
           - package: 'nocap-websocket-adapter-default'
-          - package: 'nocap-websocket-browser-adapter-default'
           - package: 'nocap-info-adapter-default'
           - package: 'nocap-dns-adapter-default'
           - package: 'nocap-geo-adapter-default'
@@ -103,8 +108,7 @@ jobs:
 
       - name: Check Lockfile Consistency (Diagnostics)
         run: |
-          pnpm install --no-frozen-lockfile
-          git diff pnpm-lock.yaml || echo "No lockfile changes needed."
+          pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
@@ -223,8 +227,46 @@ jobs:
         
       - name: Find Package
         id: find_package
+        shell: bash
         run: |
-          PKG_PATH=$(find libraries internal apps -type d -name "${{ matrix.package }}" -print -quit)
+          set -euo pipefail
+
+          PKG_INPUT="${{ matrix.package }}"
+
+          if [[ "$PKG_INPUT" == "gui" ]]; then
+            echo "the_path=apps/gui" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # For nested entries, treat the matrix value as a relative path under a workspace root.
+          if [[ "$PKG_INPUT" == */* ]]; then
+            for root in libraries internal apps; do
+              if [[ -f "$root/$PKG_INPUT/package.json" ]]; then
+                echo "the_path=$root/$PKG_INPUT" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            done
+
+            echo "::error::Could not locate package directory for '$PKG_INPUT' (expected <root>/$PKG_INPUT/package.json under libraries/internal/apps)." >&2
+            exit 1
+          fi
+
+          # Otherwise resolve by workspace package name (directory names don't always match package names).
+          EXPECTED_NAME="@nostrwatch/$PKG_INPUT"
+
+          PKG_PATH="$(
+            pnpm -r list --depth -1 --json | EXPECTED="$EXPECTED_NAME" node -e "const fs=require('fs');const expected=process.env.EXPECTED;const pkgs=JSON.parse(fs.readFileSync(0,'utf8'));const match=pkgs.find((p)=>p&&p.name===expected);if(match&&match.path)process.stdout.write(match.path);"
+          )"
+
+          if [[ -z "$PKG_PATH" ]]; then
+            echo "::error::Could not find workspace package '$EXPECTED_NAME' for matrix.package '$PKG_INPUT'." >&2
+            exit 1
+          fi
+
+          if [[ -n "${GITHUB_WORKSPACE:-}" ]]; then
+            PKG_PATH="${PKG_PATH#"$GITHUB_WORKSPACE"/}"
+          fi
+
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
 
       # - name: Get package version (GUI)
@@ -236,7 +278,7 @@ jobs:
 
       - name: Publish Package
         id: publish
-        if: matrix.package != 'gui'
+        if: matrix.package != 'gui' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
@@ -245,12 +287,42 @@ jobs:
           access: public
         
 
+      - name: Read Package Version
+        if: matrix.package != 'gui'
+        id: pkg_version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PKG_JSON="${{ steps.find_package.outputs.the_path }}/package.json"
+
+          if [[ ! -f "$PKG_JSON" ]]; then
+            echo "::error::Missing package.json at: $PKG_JSON" >&2
+            exit 1
+          fi
+
+          VERSION="$(node -e "const fs=require('fs');const p=process.argv[1];const j=JSON.parse(fs.readFileSync(p,'utf8'));process.stdout.write(String(j.version||''));" "$PKG_JSON")"
+
+          if [[ -z "$VERSION" ]]; then
+            echo "::error::Missing or empty version in: $PKG_JSON" >&2
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Set Meta
         if: matrix.package != 'gui'
         id: meta
+        shell: bash
         run: |
-          RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"
+          set -euo pipefail
+
+          RELEASE_SLUG="${{ matrix.package }}@v${{ steps.pkg_version.outputs.version }}"
+          ASSET_BASENAME="${RELEASE_SLUG//\//-}"
+
           echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
+          echo "asset_basename=$ASSET_BASENAME" >> "$GITHUB_OUTPUT"
+          echo "asset_file=${ASSET_BASENAME}.zip" >> "$GITHUB_OUTPUT"
 
 
       - name: Debug Directory Before Zipping
@@ -262,34 +334,62 @@ jobs:
       - name: Archive Subdirectory
         if: matrix.package != 'gui'
         id: archive
+        shell: bash
         run: |
-          if [ -d "${{ steps.find_package.outputs.the_path }}" ]; then
-            cd "$(dirname "${{ steps.find_package.outputs.the_path }}")"
-            zip -r "${{ matrix.package }}@v${{ steps.publish.outputs.version }}.zip" "$(basename "${{ steps.find_package.outputs.the_path }}")"/*
-          else
-            echo "Directory not found: ${{ steps.find_package.outputs.the_path }}"
+          set -euo pipefail
+
+          PKG_DIR="${{ steps.find_package.outputs.the_path }}"
+          ASSET_FILE="${{ steps.meta.outputs.asset_file }}"
+
+          if [[ ! -d "$PKG_DIR" ]]; then
+            echo "::error::Directory not found: $PKG_DIR" >&2
             exit 1
           fi
 
-      - name: Create Release ${{ steps.meta.outputs.release_slug }}
-        if: matrix.package != 'gui'
-        uses: actions/create-release@latest
+          pushd "$PKG_DIR" >/dev/null
+
+          files=("package.json")
+          [[ -d "dist" ]] && files+=("dist")
+
+          for f in README.md LICENSE CHANGELOG.md; do
+            [[ -f "$f" ]] && files+=("$f")
+          done
+
+          zip -r "$GITHUB_WORKSPACE/$ASSET_FILE" "${files[@]}"
+          popd >/dev/null
+
+      - name: Create/Update GitHub Release
+        if: matrix.package != 'gui' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.meta.outputs.release_slug }}
-          release_name: ${{ steps.meta.outputs.release_slug }}
-          body: ""
-          draft: false
-          prerelease: true
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.meta.outputs.release_slug }}"
+
+          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "Release already exists: $TAG"
+            exit 0
+          fi
+
+          gh release create "$TAG" \
+            --repo "$GH_REPO" \
+            --title "$TAG" \
+            --notes "" \
+            --prerelease
 
       - name: Upload Release Asset
-        if: matrix.package != 'gui'
-        uses: actions/upload-release-asset@v1
+        if: matrix.package != 'gui' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ steps.meta.outputs.release_slug }}.zip
-          asset_name: ${{ steps.meta.outputs.release_slug }}.zip
-          asset_content_type: application/zip
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.meta.outputs.release_slug }}"
+          ASSET_FILE="${{ steps.meta.outputs.asset_file }}"
+
+          gh release upload "$TAG" "$ASSET_FILE" --repo "$GH_REPO" --clobber

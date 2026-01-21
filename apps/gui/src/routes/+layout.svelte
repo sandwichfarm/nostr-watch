@@ -46,6 +46,7 @@
   let modulesLoaded: boolean = false;
 
   window.process = process;
+  const DEV = import.meta.env.DEV;
 
   if(window.isSecureContext === false && "serviceWorker" in navigator && navigator.serviceWorker !== undefined) {
     // if (import.meta.env.PROD) {
@@ -58,7 +59,7 @@
         registration.unregister();
       }
     }).then(() => {
-      console.log("Service workers unregistered");
+      if (DEV) console.log("Service workers unregistered");
     }).catch(error => {
       console.error("Error unregistering service workers:", error);
     });
@@ -75,10 +76,9 @@
       isDebuggerVisible.update(visible => !visible);
     }
   };
-  window.addEventListener('keydown', toggleDebugger);
 
   const shutdown = async () => {
-    console.log('Shutdown...');
+    if (DEV) console.log('Shutdown...');
     try {
       const route66 = await instance();
       await route66.ready();
@@ -95,7 +95,7 @@
   // Boot function (with concurrency & unsupported check)
   // --------------------------------------------------------------------------------
   async function boot() {
-    console.log('Booting...');
+    if (DEV) console.log('Booting...');
     if (get(unsupported)) return;
     
     appState.set('booting');
@@ -141,7 +141,7 @@
   const load = async () => {
     modules = await loadModules((key, mod) => {
       progressList = [...progressList, key];
-      console.log(`Module loaded: ${key}`);
+      if (DEV) console.log(`Module loaded: ${key}`);
     });
     ({lifecycle} = modules.lifecycle);
     ({ instance, destroy } = modules.lifecycle);
@@ -176,6 +176,8 @@
   onMount(async () => {
     
     await load();
+
+    window.addEventListener('keydown', toggleDebugger);
 
     checkSupport();
     if (get(unsupported)) return;
@@ -219,7 +221,7 @@
   });
 
   onDestroy(() => {
-    console.log('DESTROY')
+    window.removeEventListener('keydown', toggleDebugger);
     stopLeaderTabRpcServer();
     resetStores();
     unsubscribeTabState?.();
@@ -262,12 +264,12 @@
 
   $: {
     if($navigating?.to){
-      console.log('navigating to:', $navigating.to)
+      if (DEV) console.log('navigating to:', $navigating.to)
       clearTimeout(loadingThresholdTimeout)
       loadingThresholdPassed = false
     }
     if($navigating?.from){
-      console.log('navigating from:', $navigating.from)
+      if (DEV) console.log('navigating from:', $navigating.from)
       loadingThresholdTimeout = setTimeout(() => loadingThresholdPassed = true, 1000 )
     }
   }
@@ -279,7 +281,7 @@
   $: {
     if(loadedEnough){
       setTimeout(() => { 
-        console.log('loaded enough.')
+        if (DEV) console.log('loaded enough.')
         loadedEnoughSignal = true;
       }, 1000);
     }

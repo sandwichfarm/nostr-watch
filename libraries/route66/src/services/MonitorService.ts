@@ -270,7 +270,12 @@ export class MonitorService extends Service {
   async fetchDisabledMonitorsChecks(): Promise<IEvent[] | boolean | undefined> {
     return this.syncMonitorsChecks({
       cache: true,
-      returnResults: false, 
+      // NOTE: `syncMonitorsChecks()` always supplies callbacks to the underlying
+      // websocket adapter, which forces `stream=true`. With `returnResults=false`
+      // the worker will *not* forward streamed events back to the adapter, so the
+      // callbacks never fire and the GUI never receives these checks (they only
+      // land in cache). We need results forwarded for streaming callbacks.
+      returnResults: true,
       keepAlive: false,
       stream: false,
       batch: 20

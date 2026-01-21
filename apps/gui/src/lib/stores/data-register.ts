@@ -2,7 +2,7 @@ import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
 import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, tabState } from "$stores/app";
-import { fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
+import { fetchDisabledMonitorsChecks, fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
 import { publishEventsToMemoryRelay } from "./events-helpers";
@@ -87,14 +87,21 @@ export const dataRegisterInit = async () => {
         onComplete: publishEventsToMemoryRelay
     });
     data.register({
-        key: 'sync:nip11s',
+        key: 'sync:checks:disabled',
         priority: 22,
+        expiry: SYNC_CHECKS_EXPIRY,
+        fn: fetchDisabledMonitorsChecks,
+        onComplete: publishEventsToMemoryRelay
+    });
+    data.register({
+        key: 'sync:nip11s',
+        priority: 23,
         expiry: SYNC_NIP11_EXPIRY,
         fn: fetchNip11s
     });
     data.register({
         key: 'sync:operators',
-        priority: 23,
+        priority: 24,
         expiry: SYNC_OPERATORS_EXPIRY,
         condition: async () => !get(isSeeded), 
         fn: fetchOperators,
@@ -164,7 +171,8 @@ export const dataRegisterInit = async () => {
         key: 'sync:all',
         keys: [
             'sync:monitors', 
-            'sync:checks', 
+            'sync:checks',
+            'sync:checks:disabled',
             'sync:operators', 
             'sync:live', 
             'sync:nip11s', 
@@ -187,7 +195,8 @@ export const dataRegisterInit = async () => {
         key: 'sync:all-force',
         keys: [
             'sync:monitors', 
-            'sync:checks', 
+            'sync:checks',
+            'sync:checks:disabled',
             'sync:operators', 
             'sync:live', 
             'sync:nip11s', 
@@ -206,12 +215,14 @@ export const dataRegisterInit = async () => {
         ignoreConditions: {
             'sync:monitors': true,
             'sync:checks': true,
+            'sync:checks:disabled': true,
             'sync:nip11s': true,
             'sync:operators': true
         },
         ignoreExpiries: {
             'sync:monitors': true,
             'sync:checks': true,
+            'sync:checks:disabled': true,
             'sync:nip11s': true,
             'sync:operators': true
         }

@@ -11,7 +11,11 @@ import { delay } from '@nostrwatch/utils'
 import { eventsStoreMemoryRelay } from "./memory-relays/memory-relay-events.js";
 import { deterministicHash } from "@nostrwatch/route66/utils";
 import { getLeaderTabRpcClient } from "$lib/runtime/leader-tab-client";
-import { getSignatureVerificationService } from "$lib/services/SignatureVerificationService";
+import {
+    getSignatureVerificationService,
+    stopSignatureVerificationService,
+} from "$lib/services/SignatureVerificationService";
+import { recordLeaderTabEvents } from "$lib/runtime/leader-tab-snapshot";
 
 const queue = new PQueue({concurrency: 1});
 
@@ -39,6 +43,9 @@ export const publishEventsToMemoryRelay = async (_events: IEvent[], from?: strin
 
     if (get(tabState) === 'leader') {
         try {
+            recordLeaderTabEvents(_events);
+        } catch {}
+        try {
             getLeaderTabRpcClient().broadcast('events', _events);
         } catch {}
         try {
@@ -62,6 +69,19 @@ if (typeof window !== 'undefined') {
             const events = msg.data as IEvent[] | undefined;
             if (!events?.length) return;
             void publishEventsToMemoryRelay(events, 'leader-broadcast');
+        });
+    } catch {}
+}
+
+// Ensure the signature verification worker pool doesn't survive a demotion.
+if (typeof window !== 'undefined') {
+    try {
+        tabState.subscribe((role) => {
+            if (role !== 'leader') {
+                try {
+                    stopSignatureVerificationService();
+                } catch {}
+            }
         });
     } catch {}
 }

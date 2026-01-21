@@ -3,6 +3,8 @@ import { delay } from '@nostrwatch/utils';
 import { minimatch } from 'minimatch';
 import timestring from 'timestring';
 
+const DEV = import.meta.env.DEV;
+
 export type DataRegisterDataSet = {
     key: string;
     priority: number;
@@ -213,9 +215,9 @@ export class DataRegister {
             if(!this.isExpired(key)) continue;
             this.start(key);
             if (this.isComposite(key)) {
-                console.log('execute', 'composite', key)
+                if (DEV) console.log('execute', 'composite', key)
                 await this.executeComposite({ key, params });
-                console.log('execute', 'composite done', key)
+                if (DEV) console.log('execute', 'composite done', key)
             } else {
                 await this.executeFunction({ key, params });
             }
@@ -288,12 +290,13 @@ export class DataRegister {
     }
 
     debug() {
+        if (!DEV) return;
         console.log('DataRegister', {
             dataSets: this._dataSets,
             composite: this._composite,
             timestamps: this._timestamps,
             busy: this._busy,
             seeded: this._seeded
-        })
+        });
     }
 }

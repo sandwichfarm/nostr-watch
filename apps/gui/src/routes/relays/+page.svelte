@@ -120,7 +120,7 @@
 	// 	}).filter( res => res !== undefined );
 	// });
 
-	let onFilterChange: (config: DataTableConfig) => void = (config) => { console.log('function was not bound') }
+	let onFilterChange: (config: DataTableConfig) => void = (_config) => {}
 
 	let showDataView = true; // Controls opacity transition
 

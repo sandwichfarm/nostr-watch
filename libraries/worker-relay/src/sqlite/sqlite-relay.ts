@@ -9,6 +9,19 @@ import SqlitePath from "./sqlite3.wasm?url";
 import { runFixers } from "./fixers";
 import { batchNip11s, Nip11Args } from "interface";
 
+const OPFS_INIT_TIMEOUT_MS = 10_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, onTimeout: () => Error): Promise<T> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<T>((_resolve, reject) => {
+    timeoutId = setTimeout(() => reject(onTimeout()), timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+  });
+}
+
 export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements RelayHandler {
   #sqlite?: Sqlite3Static;
   #log = (msg: string, ...args: Array<any>) => debugLog("SqliteRelay", msg, ...args);
@@ -47,7 +60,15 @@ export class SqliteRelay extends EventEmitter<RelayHandlerEvents> implements Rel
     if (!this.#sqlite) throw new Error("Must call init first");
     if (this.db) return;
 
-    this.#pool = await this.#sqlite.installOpfsSAHPoolVfs({});
+    this.#pool = await withTimeout(
+      this.#sqlite.installOpfsSAHPoolVfs({}),
+      OPFS_INIT_TIMEOUT_MS,
+      () => {
+        const err = new Error(`Timed out waiting for OPFS SAH pool VFS (${OPFS_INIT_TIMEOUT_MS}ms)`);
+        (err as any).code = "OPFS_TIMEOUT";
+        return err;
+      },
+    );
     this.db = new this.#pool.OpfsSAHPoolDb(path);
     this.#log(`Opened ${this.db.filename}`);
   }

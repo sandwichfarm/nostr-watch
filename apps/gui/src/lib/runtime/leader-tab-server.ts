@@ -17,6 +17,7 @@ import {
   type RpcResponseMessage,
   type RpcStreamMessage,
 } from './leader-tab-protocol';
+import { clearLeaderTabSnapshot, getLeaderTabSnapshot } from './leader-tab-snapshot';
 
 export type LeaderTabServerOptions = {
   isLeader: () => boolean;
@@ -131,6 +132,19 @@ export class LeaderTabRpcServer {
         termId: this.termId,
         serverId: this.id,
         now: Date.now(),
+      });
+      return;
+    }
+
+    // Fast-path: follower hydration snapshot does not require Route66.
+    if (req.op === 'sys.snapshot') {
+      const opts = Array.isArray(req.args) ? (req.args[0] as any) : undefined;
+      const snapshot = getLeaderTabSnapshot(opts ?? {});
+      this.replyOk(req.sourceId, req.requestId, {
+        termId: this.termId,
+        serverId: this.id,
+        now: Date.now(),
+        ...snapshot,
       });
       return;
     }
@@ -347,6 +361,27 @@ export class LeaderTabRpcServer {
     if (!this.channel) return;
     this.channel.close();
     this.channel = null;
+    // Ensure we detach any keepAlive multiplex listeners to avoid leaking this server instance.
+    try {
+      for (const [hash, entry] of this.keepAliveSubs.entries()) {
+        if (entry.listener) {
+          try {
+            StateManager.off(hash, entry.listener);
+          } catch {}
+        } else {
+          // For owned keepAlive subs, the underlying WebsocketAdapter attaches an internal
+          // StateManager listener that closes over this server. Removing all listeners by
+          // hash is the safest best-effort teardown.
+          try {
+            StateManager.off(hash);
+          } catch {}
+        }
+      }
+      this.keepAliveSubs.clear();
+    } catch {}
+    try {
+      clearLeaderTabSnapshot();
+    } catch {}
   }
 }
 

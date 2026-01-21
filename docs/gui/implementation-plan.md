@@ -48,9 +48,10 @@ Status: implemented (MVP).
 
 Remaining work:
 
-- Add protocol versioning + stricter schemas (see Phase 2).
-- Add explicit snapshots (HELLO/WELCOME) so a newly opened follower can hydrate without running sync tasks.
-- Reduce follower-initiated sync work further (prefer leader broadcasts + snapshots).
+- Add stricter schemas/validation for RPC envelopes (see Phase 2).
+- Expand follower hydration beyond the current `sys.snapshot` (e.g., derived-state snapshots/diffs, not just recent events).
+- Reduce follower-initiated sync work further (prefer leader broadcasts + snapshots; avoid follower cache scans).
+- KeepAlive subscriptions should survive leader changes (implemented for the websocket proxy adapter; ensure other streaming channels adopt the same pattern).
 
 Expected impact: multi-tab stability, better UX, fewer duplicated connections.
 

@@ -25,9 +25,11 @@ import type { Filter } from 'nostr-tools';
 import type { Nip11Service } from '../services/Nip11Service';
 import { relaysWithNip11s$, relaysWithoutNip11s$ } from '$stores/helpers/helpers-nip11s';
 import { TabClientCacheAdapter, TabClientWebsocketAdapter } from '$lib/runtime/tab-client-adapters';
+import { getLeaderTabRpcClient } from '$lib/runtime/leader-tab-client';
 
 let $monitorsMap: Map<string, Monitor>;
 let emittersBoundTo: Route66 | null = null;
+const DEV = import.meta.env.DEV;
 
 monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
 
@@ -365,6 +367,32 @@ export const canSeedFromCache = async (): boolean => {
 }
 
 export const seedFromCache = async (): Promise<IEvent[]> => {
+    // Followers should avoid heavy cache seeding work by default; prefer a lightweight
+    // leader-provided snapshot and/or cached aggregates already in StateManager.
+    if (get(tabState) !== 'leader') {
+        const hasCachedAggregates = Boolean(StateManager.get('aggregate:complete'));
+        const hasCachedMonitors = Boolean(StateManager.get('cache:monitors'));
+
+        try {
+            const res = await getLeaderTabRpcClient().call(
+                'sys.snapshot',
+                [{ kinds: [30166], limit: 750 }],
+                { timeoutMs: 2500 }
+            );
+            const events = (res?.events ?? []) as IEvent[];
+            if (events?.length) {
+                return events;
+            }
+        } catch {}
+
+        // If we already have persisted UI-friendly caches, treat this tab as "seeded"
+        // and let live leader broadcasts fill in the rest.
+        if (hasCachedAggregates || hasCachedMonitors) {
+            isSeeded.set(true);
+            return [];
+        }
+    }
+
     const checks = await seedChecksFromCache()
     const meta = await seedMetaFromCache()
     // console.log('seedFromCache', [checks, meta].flat())
@@ -377,7 +405,7 @@ export const seedChecksFromCache = async () => {
     }
     await $route66.ready();
     const promises: Promise<any>[] = [];
-    console.log('enabledMonitors', $route66?.services?.monitors?.enabledMonitors.map( m => m.pubkey ))
+    if (DEV) console.log('enabledMonitors', $route66?.services?.monitors?.enabledMonitors.map( m => m.pubkey ))
     $route66?.services?.monitors?.enabledMonitors?.forEach( async (monitor: Monitor) => {
         promises.push(new Promise( resolve => {
             $route66?.services?.monitors?.fetchMonitorChecksFromCache(monitor.pubkey).then(resolve)
@@ -397,7 +425,7 @@ export const seedMetaFromCache = async () => {
     // if(!$route66) return [];
     const cachedEvents = await $route66.REQ([{ kinds: [ 0, 10002 ]}])
     if(!cachedEvents?.length) return [];
-    console.log('seedMetaFromCache:events', cachedEvents.length)
+    if (DEV) console.log('seedMetaFromCache:events', cachedEvents.length)
     return cachedEvents
 }
 

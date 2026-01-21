@@ -25,7 +25,9 @@ The root entry is `apps/gui/src/routes/+layout.svelte`:
   - Falls back to a `localStorage` heartbeat (`leaderId`) + `BroadcastChannel('myAppLifecycle')`.
 - Boots the app after leadership is settled:
   - **Leader** runs full sync (`sync:all` / `sync:all-force`).
-  - **Follower** runs a light boot (mostly `sync:cache`) and stays usable.
+  - **Follower** runs a light boot and stays usable:
+    - attempts a fast `sys.snapshot` hydration from the leader (recent check events)
+    - otherwise relies on persisted aggregates (`StateManager`) until leader broadcasts fill in
 - Route66 adapter selection is driven by tab role:
   - `apps/gui/src/lib/utils/lifecycle.ts` creates Route66 with real adapters as leader, or TabClient proxy adapters as follower.
 
@@ -41,9 +43,14 @@ The multi-tab solution is a “leader-tab runtime”:
     - `apps/gui/src/lib/runtime/leader-tab-server.ts`
     - `apps/gui/src/lib/runtime/leader-tab-client.ts`
     - proxy adapters: `apps/gui/src/lib/runtime/tab-client-adapters.ts`
-    - protocol: `apps/gui/src/lib/runtime/leader-tab-protocol.ts` (versioned; includes `sys.hello` liveness handshake)
+    - protocol: `apps/gui/src/lib/runtime/leader-tab-protocol.ts` (versioned; includes `sys.hello` liveness handshake and `sys.snapshot` hydration)
   - **Event broadcast** from leader → followers for UI reactivity:
     - `apps/gui/src/lib/stores/events-helpers.ts` broadcasts `events` batches from the leader and followers ingest them.
+  - **Leader snapshot buffer** (for late-joining tabs):
+    - `apps/gui/src/lib/runtime/leader-tab-snapshot.ts` buffers recent NIP-66 check events; followers can request them via `sys.snapshot`.
+  - **Leader change resilience**:
+    - follower keepAlive subscriptions (e.g. relay live-sync) are automatically re-established when the leader changes.
+    - implemented via `sys.hello` polling + resubscribe in `apps/gui/src/lib/runtime/leader-tab-client.ts` and `apps/gui/src/lib/runtime/tab-client-adapters.ts`.
 
 Net effect: multiple tabs are usable without OPFS/SQLite contention; only one tab ever opens the DB.
 
@@ -77,3 +84,13 @@ Not exhaustive, but the main workers involved are:
 - Some dev-time noise exists (e.g. livereload connection attempts in console during dev).
 - `crossOriginIsolated` depends on COOP/COEP headers (dev sets them in `apps/gui/vite.config.ts`, production hosting must also set them). `COEP: require-corp` can break cross-origin images/icons unless proxied or served with proper CORS/CORP.
 - NIP-11 cache operations are now handled end-to-end (worker-relay sqlite + in-memory implement `upsertNip11/batchUpsertNip11/countNip11s/getNip11`).
+
+## Manual smoke tests (multi-tab)
+
+- Start dev server: `pnpm --filter @nostrwatch/gui dev`
+- Open two tabs to the same URL.
+  - Verify only one tab is `tabState=leader` in the Debugger overlay.
+  - Verify the follower still renders and can query data (no “inactive tab” UX).
+- Leader change:
+  - Close the leader tab and ensure another tab becomes leader.
+  - On a relay page (which uses keepAlive live-sync), verify updates resume after leadership changes.

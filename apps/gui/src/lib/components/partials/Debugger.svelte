@@ -15,6 +15,7 @@
 	import { relaysWithNip11s$, relaysWithoutNip11s$ } from "$stores/helpers/helpers-nip11s";
     import { relayChecksDerivationStats } from "$lib/stores/checks";
     import { getSignatureVerificationService } from "$lib/services/SignatureVerificationService";
+    import { getLeaderTabRpcClient } from "$lib/runtime/leader-tab-client";
 
 
     const debug: Writable<Map<string, any>> = writable(new Map());
@@ -143,6 +144,15 @@
         addDebug('route66:initialized', $route66?.initialized? true: false);
         addDebug('route66:numSubscriptions', $route66?.websocketAdapter?.subscriptions.size);
         // addDebug('route66:subscriptions', Array.from($route66?.websocketAdapter?.subscriptions));
+
+        const leaderInfo = getLeaderTabRpcClient().getLeaderInfo?.();
+        if (leaderInfo) {
+            addDebug('leader:termId', leaderInfo.termId);
+            addDebug('leader:serverId', leaderInfo.serverId);
+        } else {
+            addDebug('leader:termId', null);
+            addDebug('leader:serverId', null);
+        }
 
         const verifier = getSignatureVerificationService({ create: false });
         addDebug('sigverify:verified', verifier?.verifiedCount ?? 0);

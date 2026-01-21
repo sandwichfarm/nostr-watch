@@ -23,6 +23,15 @@ export const fetchMonitorsChecks = async () => {
     await $route66?.services?.monitors?.bootstrapMonitorsChecks();
 }
 
+// Fetch additional checks from active-but-disabled monitors to broaden relay coverage.
+// This should run after `fetchMonitors()` has populated monitors + active status.
+export const fetchDisabledMonitorsChecks = async () => {
+    const $route66 = await instance();
+    await $route66.ready();
+    bindBootstrapEmitters();
+    await $route66?.services?.monitors?.fetchDisabledMonitorsChecks();
+}
+
 export const fetchNip11s = async () => {
     const $nip11Service: Nip11Service = get(nip11Service);
     const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s$());

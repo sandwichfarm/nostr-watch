@@ -155,7 +155,7 @@ export class DataRegister {
         this.abort()
         await this.ready();
         this.validateRequest(dataSets);
-        this.execute(dataSets, _params)
+        return await this.execute(dataSets, _params)
     }
 
     private start(key: string) {

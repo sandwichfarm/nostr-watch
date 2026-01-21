@@ -13,6 +13,8 @@
 	import { eventsStoreMemoryRelay } from "$lib/stores/memory-relays/memory-relay-events";
 	import { calculateSize, type ObjectSizeType } from "$lib/utils/cache";
 	import { relaysWithNip11s$, relaysWithoutNip11s$ } from "$stores/helpers/helpers-nip11s";
+    import { relayChecksDerivationStats } from "$lib/stores/checks";
+    import { getSignatureVerificationService } from "$lib/services/SignatureVerificationService";
 
 
     const debug: Writable<Map<string, any>> = writable(new Map());
@@ -72,6 +74,10 @@
 
     subs.push(relayCheckAggregates.subscribe((value) => {
         addDebug('relayCheckAggregates', value.length);
+    }));
+
+    subs.push(relayChecksDerivationStats.subscribe((value) => {
+        addDebug('relayChecksDerivation', value);
     }));
 
     subs.push(nip11s.subscribe((value) => {
@@ -137,6 +143,10 @@
         addDebug('route66:initialized', $route66?.initialized? true: false);
         addDebug('route66:numSubscriptions', $route66?.websocketAdapter?.subscriptions.size);
         // addDebug('route66:subscriptions', Array.from($route66?.websocketAdapter?.subscriptions));
+
+        const verifier = getSignatureVerificationService({ create: false });
+        addDebug('sigverify:verified', verifier?.verifiedCount ?? 0);
+        addDebug('sigverify:invalid', verifier?.invalidCount ?? 0);
     }
 
     const debugCacheAdapter = async () => {
@@ -167,11 +177,13 @@
         }
     }
 
-    
 
+    
     onMount( async () => {
         await $route66?.cacheAdapter?.ready()
-        await $route66?.cacheAdapter?.relay.debug();
+        try {
+            await ($route66 as any)?.cacheAdapter?.relay?.debug?.();
+        } catch {}
         await new Promise((resolve) => setTimeout(resolve, 1000));
         debugRoute66()
         debugCacheAdapter()
@@ -182,13 +194,20 @@
         }
     })
 
-    onDestroy( () => clearInterval(debugRoute66) )
+    const debugRoute66IntervalId = setInterval(() => {
+        try {
+            debugRoute66()
+        } catch {}
+    }, 1000*1);
 
-    setInterval(debugRoute66, 1000*1);
-
-    setInterval( () => {
-        debugCacheAdapter()
+    const debugCacheAdapterIntervalId = setInterval(() => {
+        void debugCacheAdapter().catch(() => {})
     }, 1000*60);
+
+    onDestroy(() => {
+        clearInterval(debugRoute66IntervalId)
+        clearInterval(debugCacheAdapterIntervalId)
+    })
 
     $: iterableDebug = Array.from($debug);
 

@@ -9,7 +9,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { writable, type Writable, get } from 'svelte/store';
   import { loadModules, type ModuleKey, type Modules, moduleLoaders } from './layout.modules.js';
-  import { startLeaderTabRpcServer } from '$lib/runtime/leader-tab-server';
+  import { startLeaderTabRpcServer, stopLeaderTabRpcServer } from '$lib/runtime/leader-tab-server';
 
   import { type ActivityItem } from '$lib/stores/activity.js';
   import { doBootstrap } from '$lib/stores/routines.js';
@@ -108,7 +108,9 @@
     if (get(tabState) === 'leader') {
       datas.push(hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
     }
-    await get(dataRegister).require(datas)
+    void get(dataRegister)
+      .require(datas)
+      .catch((err) => console.error('[DataRegister] require failed', err));
   }
 
   const initServices = async () => {
@@ -158,6 +160,10 @@
   let unsubscribeTabState: (() => void) | null = null;
   let lastRole: TabStateType | null = null;
   let bootInFlight: Promise<void> | null = null;
+  const leaderRpcOptions = {
+    isLeader: () => get(tabState) === 'leader',
+    getRoute66: async () => await instance(),
+  };
 
   const runBoot = async () => {
     if (bootInFlight) return bootInFlight;
@@ -178,16 +184,14 @@
       doBootstrap.set(true);
     }
 
-    // Leader-tab runtime RPC server (only answers when this tab is leader).
-    startLeaderTabRpcServer({
-      isLeader: () => get(tabState) === 'leader',
-      getRoute66: async () => await instance(),
-    });
-
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
 
     // Give the ActivityManager a tick to claim/follow leadership before boot.
     await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Leader-tab runtime RPC server (only runs in the elected leader tab).
+    if (get(tabState) === 'leader') startLeaderTabRpcServer(leaderRpcOptions);
+    else stopLeaderTabRpcServer();
 
     lastRole = get(tabState);
     await runBoot();
@@ -195,6 +199,9 @@
     // React to leader/follower role changes after initial boot.
     unsubscribeTabState = tabState.subscribe(async (role) => {
       if (!role || role === lastRole) return;
+
+      if (role === 'leader') startLeaderTabRpcServer(leaderRpcOptions);
+      else stopLeaderTabRpcServer();
 
       // If we were the leader and got demoted, release heavy resources.
       if (lastRole === 'leader' && role === 'follower') {
@@ -213,6 +220,7 @@
 
   onDestroy(() => {
     console.log('DESTROY')
+    stopLeaderTabRpcServer();
     resetStores();
     unsubscribeTabState?.();
     activityManager?.destroy?.();

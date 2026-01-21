@@ -14,6 +14,72 @@ import { deterministicHash } from '@nostrwatch/route66/utils';
 
 import { getLeaderTabRpcClient } from './leader-tab-client';
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function leaderCall(op: string, args: any[] = [], timeoutMs = 30_000): Promise<any> {
+  const client = getLeaderTabRpcClient();
+  const delays = [0, 50, 150, 400];
+
+  let lastError: unknown = undefined;
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (attempt > 0) {
+      await sleep(delays[attempt]);
+    }
+
+    try {
+      return await client.call(op, args, { timeoutMs });
+    } catch (e) {
+      lastError = e;
+      try {
+        await client.waitForLeader({ timeoutMs: 2_500 });
+      } catch {
+        // ignore; next retry handles it
+      }
+    }
+  }
+
+  throw lastError ?? new Error(`Leader RPC failed: ${op}`);
+}
+
+async function leaderCallStream(
+  op: string,
+  args: any[] = [],
+  requestId: string,
+  onStream: (msg: any) => void,
+  timeoutMs: number,
+  autoCloseOnResponse: boolean
+): Promise<any> {
+  const client = getLeaderTabRpcClient();
+  const delays = [0, 50, 150, 400];
+
+  let lastError: unknown = undefined;
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (attempt > 0) {
+      await sleep(delays[attempt]);
+    }
+
+    try {
+      return await client.callStream(op, args, {
+        requestId,
+        timeoutMs,
+        autoCloseOnResponse,
+        onStream: onStream as any,
+      });
+    } catch (e) {
+      lastError = e;
+      try {
+        await client.waitForLeader({ timeoutMs: 2_500 });
+      } catch {
+        // ignore; next retry handles it
+      }
+    }
+  }
+
+  throw lastError ?? new Error(`Leader stream RPC failed: ${op}`);
+}
+
 export class TabClientCacheAdapter extends CacheAdapter implements ICacheAdapter {
   readonly slug: string = 'tab-client-cache';
   useWorker: boolean = false;
@@ -39,59 +105,59 @@ export class TabClientCacheAdapter extends CacheAdapter implements ICacheAdapter
   }
 
   async REQ(filters: any[]): Promise<IEvent[]> {
-    return (await getLeaderTabRpcClient().call('cache.REQ', [filters])) as IEvent[];
+    return (await leaderCall('cache.REQ', [filters])) as IEvent[];
   }
 
   async COUNT(filters: any[]): Promise<number> {
-    return (await getLeaderTabRpcClient().call('cache.COUNT', [filters])) as number;
+    return (await leaderCall('cache.COUNT', [filters])) as number;
   }
 
   async DELETE(filters: any[]): Promise<string[]> {
-    return (await getLeaderTabRpcClient().call('cache.DELETE', [filters])) as string[];
+    return (await leaderCall('cache.DELETE', [filters])) as string[];
   }
 
   async DUMP(): Promise<Uint8Array> {
-    return (await getLeaderTabRpcClient().call('cache.DUMP', [])) as Uint8Array;
+    return (await leaderCall('cache.DUMP', [])) as Uint8Array;
   }
 
   async CLOSE(subId: string): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('cache.CLOSE', [subId])) as boolean;
+    return (await leaderCall('cache.CLOSE', [subId])) as boolean;
   }
 
   async WIPE(): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('cache.WIPE', [])) as boolean;
+    return (await leaderCall('cache.WIPE', [])) as boolean;
   }
 
   async addEvent(event: IEvent): Promise<void> {
-    await getLeaderTabRpcClient().call('cache.addEvent', [event]);
+    await leaderCall('cache.addEvent', [event]);
   }
 
   async addEvents(events: IEvent[]): Promise<void> {
-    await getLeaderTabRpcClient().call('cache.addEvents', [events]);
+    await leaderCall('cache.addEvents', [events]);
   }
 
   async putEvent(event: IEvent): Promise<void> {
-    await getLeaderTabRpcClient().call('cache.putEvent', [event]);
+    await leaderCall('cache.putEvent', [event]);
   }
 
   async upsertNip11(relay: string, nip11: any): Promise<void> {
-    await getLeaderTabRpcClient().call('cache.upsertNip11', [relay, nip11]);
+    await leaderCall('cache.upsertNip11', [relay, nip11]);
   }
 
   async batchUpsertNip11(relayNip11s: { relay: string; nip11: any }[]): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('cache.batchUpsertNip11', [relayNip11s])) as boolean;
+    return (await leaderCall('cache.batchUpsertNip11', [relayNip11s])) as boolean;
   }
 
   async countNip11s(): Promise<number> {
-    return (await getLeaderTabRpcClient().call('cache.countNip11s', [])) as number;
+    return (await leaderCall('cache.countNip11s', [])) as number;
   }
 
   async countUniqueNip11s(): Promise<number> {
-    return (await getLeaderTabRpcClient().call('cache.countUniqueNip11s', [])) as number;
+    return (await leaderCall('cache.countUniqueNip11s', [])) as number;
   }
 
   async getNip11(relay: any): Promise<any> {
-    return await getLeaderTabRpcClient().call('cache.getNip11', [relay]);
+    return await leaderCall('cache.getNip11', [relay]);
   }
 }
 
@@ -146,15 +212,18 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
       }
     };
 
-    return (await getLeaderTabRpcClient().callStream(op, [args], {
-      requestId: hash,
-      autoCloseOnResponse: !keepAlive,
-      onStream: onStream as any,
-    })) as IEvent[] | boolean;
+    return (await leaderCallStream(
+      op,
+      [args],
+      hash,
+      onStream as any,
+      30_000,
+      !keepAlive
+    )) as IEvent[] | boolean;
   }
 
   async publish(args: Partial<WebsocketRequestBody>): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('ws.publish', [args])) as boolean;
+    return (await leaderCall('ws.publish', [args])) as boolean;
   }
 
   async subscribe(
@@ -166,7 +235,7 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
       return this.streamWs('ws.subscribe', args, callbacks);
     }
     this.ensureHash(args);
-    return (await getLeaderTabRpcClient().call('ws.subscribe', [args])) as IEvent[] | boolean;
+    return (await leaderCall('ws.subscribe', [args])) as IEvent[] | boolean;
   }
 
   async fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
@@ -175,7 +244,7 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
       return this.streamWs('ws.fetch', args, callbacks);
     }
     this.ensureHash(args);
-    return (await getLeaderTabRpcClient().call('ws.fetch', [args])) as IEvent[] | boolean;
+    return (await leaderCall('ws.fetch', [args])) as IEvent[] | boolean;
   }
 
   unsubscribe(hash?: string): void {
@@ -185,10 +254,10 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
   }
 
   unsubscribeAll(): void {
-    void getLeaderTabRpcClient().call('ws.unsubscribeAll', []).catch(() => {});
+    void leaderCall('ws.unsubscribeAll', []).catch(() => {});
   }
 
   async abort(): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('ws.abort', [])) as boolean;
+    return (await leaderCall('ws.abort', [])) as boolean;
   }
 }

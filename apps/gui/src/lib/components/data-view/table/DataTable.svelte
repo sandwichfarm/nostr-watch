@@ -95,6 +95,7 @@
             pageSize: $config.pageSize,
             columns: $columns,
             data: $data,
+            dataFormatters: $config.dataFormatters,
         }
 
         if($config?.sortState) {

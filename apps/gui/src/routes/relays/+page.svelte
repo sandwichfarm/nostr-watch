@@ -21,6 +21,7 @@
 	import { DataTable } from '$lib/components/@Careswitch/svelte-data-table';
 	import { delay } from '@nostrwatch/utils';
 	import { fade } from 'svelte/transition';
+	import { tabState } from '$lib/stores/app';
 
 	const TRANSITION_DURATION = 100;
 
@@ -93,10 +94,11 @@
 
 	const mount = async ( ) => {
 		loadComponents().then(setConfig);
-		await $dataRegister.require([
-			'sync:cache',
-			'sync:all'
-		])
+		const keys = ['sync:cache'];
+		if (get(tabState) === 'leader') keys.push('sync:all');
+		void $dataRegister
+			.require(keys)
+			.catch((err) => console.error('[DataRegister] require failed', err));
 	}
 
 	const destroy = () => {

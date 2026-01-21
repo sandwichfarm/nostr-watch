@@ -28,15 +28,17 @@
     const profile: Readable<StorePubkeyProfile> = pubkeyProfile$(pubkey);
 
     onMount(async ()=>{
-        await $dataRegister.require(
-            [ 
-                'sync:cache',
-                'sync:relay:operator' 
-            ], 
-            {
-                'sync:relay:operator': [pubkey]
-            }
-        )
+        void $dataRegister
+            .require(
+                [ 
+                    'sync:cache',
+                    'sync:relay:operator' 
+                ], 
+                {
+                    'sync:relay:operator': [pubkey]
+                }
+            )
+            .catch((err) => console.error('[DataRegister] require failed', err));
     })
 
     $: name = $user?.name || undefined;

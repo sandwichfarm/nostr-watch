@@ -11,6 +11,7 @@ import { delay } from '@nostrwatch/utils'
 import { eventsStoreMemoryRelay } from "./memory-relays/memory-relay-events.js";
 import { deterministicHash } from "@nostrwatch/route66/utils";
 import { getLeaderTabRpcClient } from "$lib/runtime/leader-tab-client";
+import { getSignatureVerificationService } from "$lib/services/SignatureVerificationService";
 
 const queue = new PQueue({concurrency: 1});
 
@@ -22,6 +23,7 @@ const getMonitor = (pubkey: string): Monitor => {
 }
 
 const testingUniques = new Set<string>();
+const MAX_UNIQUE_BATCHES = 5000;
 
 export const publishEventsToMemoryRelay = async (_events: IEvent[], from?: string) => {
     // if(from) console.log(`Memory Relay: Publishing ${_events.length} events to memory relay from ${from}`, deterministicHash(_events.map(eventKey)), _events);
@@ -30,10 +32,18 @@ export const publishEventsToMemoryRelay = async (_events: IEvent[], from?: strin
     const key = deterministicHash(_events.map( event => event.id));
     if(testingUniques.has(key)) return 
     testingUniques.add(key);
+    if (testingUniques.size > MAX_UNIQUE_BATCHES) {
+        testingUniques.clear();
+        testingUniques.add(key);
+    }
 
     if (get(tabState) === 'leader') {
         try {
             getLeaderTabRpcClient().broadcast('events', _events);
+        } catch {}
+        try {
+            const verifier = getSignatureVerificationService();
+            if (verifier) void verifier.verifyEvents(_events, { kinds: [30166] });
         } catch {}
     }
 

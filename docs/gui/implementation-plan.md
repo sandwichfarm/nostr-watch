@@ -61,6 +61,8 @@ Expected impact: multi-tab stability, better UX, fewer duplicated connections.
 
 ## Phase 5 — Derivation engine + signature verification pool
 
+Status: in progress (relay check aggregation moved off the main thread via `apps/gui/src/lib/workers/relay-checks-aggregation.worker.ts`; signature verification pool added via `apps/gui/src/lib/services/SignatureVerificationService/signature-verification.worker.ts`).
+
 - Move expensive derivations out of the UI into `DerivationEngine` inside runtime.
 - Introduce `VerifyPool` (worker pool) for signature checks and other CPU tasks.
 - Store verification results alongside events/metadata and expose to UI.

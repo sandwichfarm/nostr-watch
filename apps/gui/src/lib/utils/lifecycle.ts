@@ -27,7 +27,7 @@ import { relaysWithNip11s$, relaysWithoutNip11s$ } from '$stores/helpers/helpers
 import { TabClientCacheAdapter, TabClientWebsocketAdapter } from '$lib/runtime/tab-client-adapters';
 
 let $monitorsMap: Map<string, Monitor>;
-let emittersBound: boolean = false; 
+let emittersBoundTo: Route66 | null = null;
 
 monitorsMap.subscribe( ($m: Map<string, Monitor>) => $monitorsMap = $m )
 
@@ -44,7 +44,7 @@ let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
 let count = 0
 
 export const bindBootstrapEmitters = (from?: string) => {
-    if(emittersBound) return;
+    if (emittersBoundTo === $route66) return;
     // if(from) console.log('Lifecycle:bindBootstrapEmitters', from)
     const $nip05Service: Nip05Service = get(nip05Service)
     
@@ -97,7 +97,7 @@ export const bindBootstrapEmitters = (from?: string) => {
     $route66.on('monitor:update', onMonitorUpdate);    
     $route66.on('events', onEvents);
 
-    emittersBound = true;
+    emittersBoundTo = $route66;
 };
 
 export const instance = async (): Promise<Route66> => {
@@ -343,6 +343,7 @@ export const destroy = () => {
     initializing = false;
     $route66 = null;
     runtimeMode = null;
+    emittersBoundTo = null;
     route66.update( ($route66) => {
         if ($route66 && typeof $route66.destroy === 'function') {
             $route66.destroy();

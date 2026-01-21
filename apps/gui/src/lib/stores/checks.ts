@@ -1,11 +1,5 @@
-import { derived, writable, type Writable, type Readable, get } from "svelte/store";
+import { derived, readable, writable, type Writable, type Readable, get } from "svelte/store";
 import { compress, decompress } from 'compress-json'
-
-interface Check {
-  relay: string;
-  monitorPubkey: string;
-  [id: string]: any;
-}
 
 import { eventsArray } from './events.js';
 
@@ -14,15 +8,18 @@ import { StateManager } from "@nostrwatch/route66";
 import { doAggregateCache, isBootstrapping } from "./app.js";
 import { throttledDerived } from "$utils/stores.js";
 import { nip11ValidationErrorCount } from "./nip11-validations.js";
-import { monitorsMap } from "./monitors.js";
-
-let nip11Errors: Map<string, number> = new Map();
-
-nip11ValidationErrorCount.subscribe((value) => {
-  nip11Errors = value;
-})
+import { eventKey } from "$lib/utils/event-keys";
+import { relayCheckAggregator as aggregateRelayChecks, type RelayChecksByRelay } from "$lib/derivations/relay-checks-aggregate";
 
 export const overrideRelayChecksActiveKeys: Writable<string[]> = writable([]);
+
+export type RelayChecksDerivationStats = {
+  checks: number;
+  relays: number;
+  computeMs: number;
+} | null;
+
+export const relayChecksDerivationStats: Writable<RelayChecksDerivationStats> = writable(null);
 
 export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($overrideRelayChecksActiveKeys) => {
   const alwaysKeys = [
@@ -60,136 +57,7 @@ export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($ov
   return Array.from(new Set(keys))
 })
 
-export const relayCheckAggregator = ($checks: Nip66CheckEvent[]) => {
-  const countMap: Record<
-    string,
-    { a: Record<string, any>; checks: Nip66CheckEvent[]; aggregate?: any }
-  > = {};
-
-  const relayAverages: Record<string, number> = {};
-  const relayCounts: Record<string, number> = {};
-
-  
-
-  $checks.forEach((check: Nip66CheckEvent) => {
-    if(!check?.relay) return;
-
-    let relay: string = check?.relay
-
-    try {
-      relay = new URL(relay).toString();
-    }
-    catch(e){
-      console.warn('could not normalize relay:', check.relay)
-    }
-
-    if(check?.rtt) {
-      if (!relayAverages[relay]) {
-        relayAverages[relay] = 0;
-        relayCounts[relay] = 0;
-      }
-
-      const rtt = check.rtt;
-      if (typeof rtt === 'number') {
-        relayAverages[relay] += rtt;
-        relayCounts[relay] += 1;
-      }
-
-      if (!countMap[relay]) {
-        countMap[relay] = { a: {}, checks: [] };
-      }
-      countMap[relay].checks.push(check);
-    }
-  });
-
-
-  Object.keys(relayAverages).forEach((relay) => {
-    const sum = relayAverages[relay];
-    const count = relayCounts[relay];
-    const avg = count > 0 ? sum / count : 0;
-    relayAverages[relay] = avg;
-  });
-
-  const averageValues = Object.values(relayAverages);
-  const globalMin = Math.min(...averageValues);
-  const globalMax = Math.max(...averageValues);
-  const range = globalMax - globalMin || 1;
-  
-
-  Object.keys(countMap).forEach((relay) => {
-    countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66CheckEvent) => {
-      [...Nip66CheckEvent.keys, 'nip11ValidationErrors', 'nip11IsValid'].forEach((key: string) => {
-      // get(relayChecksActiveKeys).forEach((key: string) => {
-        const value = nip66Event?.[key as keyof Nip66CheckEvent];
-        
-        const isNonNull = value !== null && value !== undefined;
-  
-        const isArray = Array.isArray(value);
-        const isAccArray = Array.isArray(acc[key]);
-
-        if(key === 'nip11ValidationErrors'){
-          const nip11ValidationErrors = nip11Errors.get(relay)
-          acc.nip11ValidationErrors = nip11ValidationErrors? nip11ValidationErrors: 0;
-          return acc
-        }
-        else if(key === 'nip11IsValid'){
-          const nip11ValidationErrors = nip11Errors.get(relay)
-          if(typeof nip11ValidationErrors === 'number') {
-            acc.nip11IsValid = nip11ValidationErrors === 0? true: false;  
-          }
-          else {
-            acc.nip11IsValid = null;
-          }
-          
-          return acc
-        }
-        else if(key === 'seenTimes') {
-          if(!acc?.seenTimes) {
-            acc.seenTimes = 1;
-          }
-          else {
-            acc.seenTimes += 1;
-          }
-          return acc;
-        }
-        else if(key === 'monitorPubkey'){
-          if(!acc?.seenBy) {
-            acc.seenBy = [];
-          }
-          acc.seenBy.push(value);
-        }
-        else if(key === 'created_at'){
-          if(!acc?.lastSeen) {
-            acc.lastSeen = value;
-          }
-          else if(value > acc.lastSeen) {
-            acc.lastSeen = value;
-          }
-        }
-        else if (isNonNull && (key === 'fees' || key === 'retention')) {
-          acc[key] = value;
-        }
-        else if (isArray) {
-          acc[key] = isAccArray
-            ? [...new Set([...acc[key], ...value])]
-            : value;
-        } else if (!isArray && isNonNull) {
-          acc[key] = value;
-        }
-      });
-      return acc;
-    }, {});
-  });
-
-  Object.keys(relayAverages).forEach((relay) => {
-    const avg = relayAverages[relay];
-    const normalized = (avg - globalMin) / range;
-    countMap[relay].aggregate.rtt = avg
-    countMap[relay].aggregate.rttNormalized = Math.round(normalized * 10000) / 10000
-  });
-
-  return countMap;
-}
+export const relayCheckAggregator = aggregateRelayChecks;
 
 export const eventsChecks: Readable<Nip66CheckEvent[]> = derived(eventsArray, ($events) => {
   return $events.filter(event => event.kind === 30166) as Nip66CheckEvent[];
@@ -197,12 +65,126 @@ export const eventsChecks: Readable<Nip66CheckEvent[]> = derived(eventsArray, ($
 
 
 
-export const relayChecks: Readable<
-  Record<string, { a: Record<string, any>; checks: Check[]; aggregate?: any }>
-> = derived(eventsChecks, ($eventsChecks) => {
-  if(!$eventsChecks.length) return {};
-  return relayCheckAggregator($eventsChecks);
-});
+const canUseDerivationWorker = typeof window !== 'undefined' && typeof Worker !== 'undefined';
+
+function createRelayChecksWorkerStore(): Readable<RelayChecksByRelay> {
+  return readable<RelayChecksByRelay>({}, (set) => {
+    // Seed from cached aggregates for fast first paint.
+    try {
+      const cached = StateManager.get('aggregate:complete');
+      if (cached) {
+        const aggDecompressed = decompress(cached) as any;
+        if (Array.isArray(aggDecompressed)) {
+          const seeded: RelayChecksByRelay = {};
+          for (const item of aggDecompressed) {
+            const relay = item?.relay;
+            if (!relay) continue;
+            const { relay: _relay, id: _id, ...rest } = item;
+            seeded[relay] = { aggregate: rest };
+          }
+          if (Object.keys(seeded).length) set(seeded);
+        }
+      }
+    } catch {}
+
+    let worker: Worker | null = null;
+    try {
+      worker = new Worker(new URL('../workers/relay-checks-aggregation.worker.ts', import.meta.url), {
+        type: 'module',
+      });
+    } catch (e) {
+      console.error('[relayChecks] failed to start derivation worker, falling back', e);
+    }
+
+    if (!worker) {
+      relayChecksDerivationStats.set(null);
+      const unsub = derived(
+        [eventsChecks, relayChecksActiveKeys, nip11ValidationErrorCount],
+        ([$eventsChecks, $relayChecksActiveKeys, $nip11Errors]) => {
+          if (!$eventsChecks.length) return {};
+          return relayCheckAggregator($eventsChecks as any, $relayChecksActiveKeys, $nip11Errors);
+        }
+      ).subscribe(set);
+      return () => unsub();
+    }
+
+    const onMessage = (ev: MessageEvent) => {
+      const data = ev.data as any;
+      if (!data || typeof data !== 'object') return;
+      if (data.type !== 'result') return;
+      set((data.relayChecks ?? {}) as RelayChecksByRelay);
+      relayChecksDerivationStats.set((data.stats ?? null) as any);
+    };
+    worker.addEventListener('message', onMessage);
+
+    const unsubActiveKeys = relayChecksActiveKeys.subscribe((keys) => {
+      try {
+        worker!.postMessage({ type: 'setActiveKeys', activeKeys: keys });
+      } catch {}
+    });
+
+    const unsubNip11Errors = nip11ValidationErrorCount.subscribe((map) => {
+      try {
+        worker!.postMessage({ type: 'setNip11Errors', entries: Array.from(map.entries()) });
+      } catch {}
+    });
+
+    let prevByKey = new Map<string, string>();
+
+    const unsubChecks = eventsChecks.subscribe(($checks) => {
+      const nextByKey = new Map<string, string>();
+      const upserts: { key: string; event: any }[] = [];
+
+      for (const check of $checks) {
+        const raw: any = (check as any)?.json ?? check;
+        if (!raw) continue;
+        const key = eventKey(raw);
+        if (!key) continue;
+        const id = raw?.id;
+        if (!id) continue;
+
+        nextByKey.set(key, id);
+        if (prevByKey.get(key) !== id) {
+          upserts.push({ key, event: raw });
+        }
+      }
+
+      const removals: string[] = [];
+      for (const key of prevByKey.keys()) {
+        if (!nextByKey.has(key)) removals.push(key);
+      }
+
+      prevByKey = nextByKey;
+
+      if (upserts.length || removals.length) {
+        try {
+          worker!.postMessage({ type: 'patch', upserts, removals });
+        } catch {}
+      }
+    });
+
+    return () => {
+      unsubChecks();
+      unsubActiveKeys();
+      unsubNip11Errors();
+      worker?.removeEventListener('message', onMessage);
+      relayChecksDerivationStats.set(null);
+      try {
+        worker?.terminate();
+      } catch {}
+    };
+  });
+}
+
+export const relayChecks: Readable<RelayChecksByRelay> = canUseDerivationWorker
+  ? createRelayChecksWorkerStore()
+  : derived(
+      [eventsChecks, relayChecksActiveKeys, nip11ValidationErrorCount],
+      ([$eventsChecks, $relayChecksActiveKeys, $nip11Errors]) => {
+        if (!$eventsChecks.length) return {};
+        return relayCheckAggregator($eventsChecks as any, $relayChecksActiveKeys, $nip11Errors);
+      }
+    );
 
 export const relayCheckMap: Readable<Map<string, any>> = derived(relayChecks, ($relayChecks) => {
   const map = new Map();
@@ -212,7 +194,7 @@ export const relayCheckMap: Readable<Map<string, any>> = derived(relayChecks, ($
   return map;
 })
 
-export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
+export const relayCheckAggregates: Readable<any[]> = derived([relayChecks, overrideRelayChecksActiveKeys], ([$relayChecks, $overrideRelayChecksActiveKeys]) => {
   let aggregates = Object.entries($relayChecks).map(([relay, item], index) => {
     try {
       relay = new URL(relay).toString();
@@ -240,7 +222,9 @@ export const relayCheckAggregates: Readable<any[]> = derived(relayChecks, ($rela
     return agg? aggDecompressed: aggregates? aggregates: [];
   }
   else {
-    if(get(doAggregateCache) === true) StateManager.set('aggregate:complete', compress(aggregates))
+    if(get(doAggregateCache) === true && $overrideRelayChecksActiveKeys.length === 0) {
+      StateManager.set('aggregate:complete', compress(aggregates))
+    }
   }
   return aggregates 
 });

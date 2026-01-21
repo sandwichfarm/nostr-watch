@@ -2,6 +2,7 @@ import {
   createId,
   isBrowser,
   LEADER_TAB_RPC_CHANNEL,
+  LEADER_TAB_PROTOCOL_VERSION,
   type LeaderTabRpcMessage,
   type BroadcastMessage,
   type RpcRequestMessage,
@@ -20,6 +21,11 @@ type StreamHandler = (msg: RpcStreamMessage) => void;
 export type CallOptions = {
   requestId?: string;
   timeoutMs?: number;
+};
+
+export type WaitForLeaderOptions = {
+  timeoutMs?: number;
+  pollMs?: number;
 };
 
 export type CallStreamOptions = CallOptions & {
@@ -47,6 +53,7 @@ export class LeaderTabRpcClient {
 
   private onMessage(message: LeaderTabRpcMessage) {
     if (!message || typeof message !== 'object') return;
+    if ('v' in message && message.v !== LEADER_TAB_PROTOCOL_VERSION) return;
 
     // Ignore messages sent by this same client instance
     if ('sourceId' in message && message.sourceId === this.id) return;
@@ -104,6 +111,7 @@ export class LeaderTabRpcClient {
       this.pending.set(requestId, { resolve, reject, timeoutId });
 
       const req: RpcRequestMessage = {
+        v: LEADER_TAB_PROTOCOL_VERSION,
         type: 'rpc',
         requestId,
         sourceId: this.id,
@@ -112,6 +120,25 @@ export class LeaderTabRpcClient {
       };
       this.post(req);
     });
+  }
+
+  async waitForLeader(options: WaitForLeaderOptions = {}) {
+    const timeoutMs = options.timeoutMs ?? 5_000;
+    const pollMs = options.pollMs ?? 100;
+    const start = Date.now();
+
+    let lastError: unknown = undefined;
+    while (Date.now() - start < timeoutMs) {
+      try {
+        // `sys.hello` is handled as a fast-path by the leader (no Route66 required).
+        return await this.call('sys.hello', [], { timeoutMs: Math.min(750, timeoutMs) });
+      } catch (e) {
+        lastError = e;
+        await new Promise((resolve) => setTimeout(resolve, pollMs));
+      }
+    }
+
+    throw lastError ?? new Error('No leader available');
   }
 
   callStream(op: string, args: any[] = [], options: CallStreamOptions): Promise<any> {
@@ -130,7 +157,9 @@ export class LeaderTabRpcClient {
         timeoutMs > 0
           ? window.setTimeout(() => {
               this.pending.delete(requestId);
-              if (autoCloseOnResponse) this.streams.delete(requestId);
+              // If a stream never establishes, keeping it around just leaks.
+              // Established keepAlive streams should resolve quickly (leader returns immediately).
+              this.streams.delete(requestId);
               reject(new Error(`Leader RPC timeout: ${op}`));
             }, timeoutMs)
           : undefined;
@@ -141,13 +170,14 @@ export class LeaderTabRpcClient {
           resolve(value);
         },
         reject: (err) => {
-          if (autoCloseOnResponse) this.streams.delete(requestId);
+          this.streams.delete(requestId);
           reject(err);
         },
         timeoutId,
       });
 
       const req: RpcRequestMessage = {
+        v: LEADER_TAB_PROTOCOL_VERSION,
         type: 'rpc',
         requestId,
         sourceId: this.id,
@@ -170,6 +200,7 @@ export class LeaderTabRpcClient {
 
   broadcast(kind: string, data?: any) {
     const msg: BroadcastMessage = {
+      v: LEADER_TAB_PROTOCOL_VERSION,
       type: 'broadcast',
       sourceId: this.id,
       kind,

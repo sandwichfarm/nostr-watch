@@ -1,6 +1,10 @@
 export const LEADER_TAB_RPC_CHANNEL = 'nostrwatch:route66:leader-tab-rpc:v1';
+export const LEADER_TAB_PROTOCOL_VERSION = 1 as const;
+
+export type LeaderTabProtocolVersion = typeof LEADER_TAB_PROTOCOL_VERSION;
 
 export type RpcRequestMessage = {
+  v: LeaderTabProtocolVersion;
   type: 'rpc';
   requestId: string;
   sourceId: string;
@@ -10,6 +14,7 @@ export type RpcRequestMessage = {
 };
 
 export type RpcResponseMessage = {
+  v: LeaderTabProtocolVersion;
   type: 'rpc-res';
   requestId: string;
   sourceId: string;
@@ -20,6 +25,7 @@ export type RpcResponseMessage = {
 };
 
 export type RpcStreamMessage = {
+  v: LeaderTabProtocolVersion;
   type: 'rpc-stream';
   requestId: string;
   sourceId: string;
@@ -29,6 +35,7 @@ export type RpcStreamMessage = {
 };
 
 export type BroadcastMessage = {
+  v: LeaderTabProtocolVersion;
   type: 'broadcast';
   sourceId: string;
   kind: string;

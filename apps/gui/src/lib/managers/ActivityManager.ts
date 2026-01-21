@@ -50,6 +50,9 @@ export class ActivityManager {
   private readonly HEARTBEAT_INTERVAL_MS = 1000;
   private readonly STALE_THRESHOLD_MS = 5000;
 
+  private leaderWatchIntervalId: number | null = null;
+  private readonly LEADER_CONFIRM_DELAY_MS = 100;
+
   private readonly STORAGE_KEY = 'leaderId';
 
   private readonly boundChannelMessageHandler: (ev: MessageEvent) => void;
@@ -79,6 +82,8 @@ export class ActivityManager {
 
     document.addEventListener('visibilitychange', this.boundVisibilityHandler);
     window.addEventListener('beforeunload', this.boundBeforeUnloadHandler);
+
+    this.startLeaderWatch();
 
     // Attempt leadership as soon as possible in visible tabs.
     if (document.visibilityState === 'visible') {
@@ -127,6 +132,35 @@ export class ActivityManager {
     }
   }
 
+  private startLeaderWatch() {
+    this.stopLeaderWatch();
+    this.leaderWatchIntervalId = window.setInterval(() => {
+      if (this.destroyed) return;
+      if (this.isLeader) return;
+      if (document.visibilityState !== 'visible') return;
+
+      const leader = parseLeaderStorage(localStorage.getItem(this.STORAGE_KEY));
+      if (!leader) {
+        void this.acquireLeadership();
+        return;
+      }
+      if (leader.shutdown) return;
+      if (this.isStale(leader)) {
+        try {
+          localStorage.removeItem(this.STORAGE_KEY);
+        } catch {}
+        void this.acquireLeadership();
+      }
+    }, this.HEARTBEAT_INTERVAL_MS);
+  }
+
+  private stopLeaderWatch() {
+    if (this.leaderWatchIntervalId !== null) {
+      clearInterval(this.leaderWatchIntervalId);
+      this.leaderWatchIntervalId = null;
+    }
+  }
+
   private isStale(record: LeaderStorageRecord): boolean {
     return Date.now() - record.ts > this.STALE_THRESHOLD_MS;
   }
@@ -136,6 +170,16 @@ export class ActivityManager {
     this.isLeader = true;
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now() }));
     this.sendMessage('leader-claimed', { leaderId: this.myId });
+
+    // In fallback mode, we may "race" other visible tabs. Confirm we actually won.
+    await delay(this.LEADER_CONFIRM_DELAY_MS);
+    const leader = parseLeaderStorage(localStorage.getItem(this.STORAGE_KEY));
+    if (!leader || leader.id !== this.myId) {
+      this.isLeader = false;
+      await this.transitionState('follower');
+      return;
+    }
+
     await this.transitionState('leader');
     this.startHeartbeat();
   }
@@ -172,14 +216,9 @@ export class ActivityManager {
     if (!message || message.sourceId === this.myId) return;
 
     if (message.type === 'leader-claimed') {
-      const newLeaderId = message.payload?.leaderId as string | undefined;
-      if (!newLeaderId) return;
-
-      if (newLeaderId === this.myId) {
-        await this.becomeLeader();
-      } else {
-        await this.becomeFollower(newLeaderId);
-      }
+      // localStorage is the source of truth for who won the race in fallback mode.
+      // Reconcile from storage to avoid split-brain or "both demote" outcomes.
+      await this.acquireLeadership();
       return;
     }
 
@@ -214,6 +253,7 @@ export class ActivityManager {
 
   public destroy() {
     this.stopHeartbeat();
+    this.stopLeaderWatch();
     this.destroyed = true;
     this.leaderLockRelease?.();
     this.leaderLockRelease = null;

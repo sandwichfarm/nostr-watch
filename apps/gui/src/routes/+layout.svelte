@@ -8,10 +8,9 @@
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
   import { writable, type Writable, get } from 'svelte/store';
-  import { loadModules, type ModuleKey, type Modules, moduleLoaders } from './layout.modules.js';
+  import { loadModules, type ModuleKey, type Modules } from './layout.modules.js';
   import { startLeaderTabRpcServer, stopLeaderTabRpcServer } from '$lib/runtime/leader-tab-server';
 
-  import { type ActivityItem } from '$lib/stores/activity.js';
   import { doBootstrap } from '$lib/stores/routines.js';
   import {
     type TabStateType,
@@ -19,9 +18,15 @@
     appState,
     tabState,
     hasBeenBootstrapped,
+    isSeeded,
   } from '$lib/stores/app';
   import { showDebugButton } from '$lib/stores/preferences';
   import BootstrapLoading from './(components)/BootstrapLoading.svelte';
+  import {
+    startBootActivity,
+    completeBootActivity,
+    resetBootActivities,
+  } from '$lib/stores/boot-activity';
 
 
   let modules: Record<ModuleKey, any> | null = null;
@@ -87,10 +92,10 @@
       await route66.ready();
       await route66.shutdown();
       await delay(1000);
-      destroy();
+      await destroy();
     } catch (error) {
       console.error('[Lifecycle] Error during shutdown:', error);
-      destroy();
+      await destroy();
     }
   };
 
@@ -101,11 +106,14 @@
     if (DEV) console.log('Booting...');
     if (get(unsupported)) return;
 
+    startBootActivity('init', 'Initializing app');
     appState.set('booting');
     await initServices();
     appState.set('running');
     const route66 = await instance();
     await route66.ready();
+    completeBootActivity('init');
+
     dataRegisterInit();
     const datas: string[] = ['sync:cache'];
     if (get(tabState) === 'leader') {
@@ -142,6 +150,10 @@
   // --------------------------------------------------------------------------------
 
   const load = async () => {
+    // Reset and start tracking asset loading
+    resetBootActivities();
+    startBootActivity('assets', 'Loading assets');
+
     modules = await loadModules((key, mod) => {
       progressList = [...progressList, key];
       if (DEV) console.log(`Module loaded: ${key}`);
@@ -157,6 +169,8 @@
     ({ ActivityManager } = modules.ActivityManager);
     ({ UserService } = modules.UserService);
     ({ dataRegisterInit } = modules.dataRegister);
+
+    completeBootActivity('assets');
   };
 
   let activityManager: any;
@@ -233,34 +247,7 @@
 
 
 
-  let activities: ActivityItem[] = [];
-
-  $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
-
-  // $: {
-  //   console.log(progressList.length, Object.keys(modules || {}).length, `progressList.length / Object.keys(modules || {}).length`, progressList.length / Object.keys(modules || {}).length)
-  // }
-
-  $: percentModulesLoaded = Math.round((progressList.length / Object.keys(moduleLoaders || {}).length) * 100);
-  $: numMonitorsSynced =
-      activities
-        .filter( item =>
-          item.slug === "monitors/bootstrap/registrations"
-          || item.slug === "monitors/bootstrap/meta"
-          || item.slug === "monitors/bootstrap/ensureActive"
-        )
-        .filter( item => item.complete )
-        .length
-  $: numRelayChecksSynced =
-      activities
-        .filter( item =>
-          item.slug === "monitors/bootstrap/checks"
-        )
-        .filter( item => item.complete )
-        .length
-  $: monitorsSynced = numMonitorsSynced === 3;
-  $: relayChecksSynced = loadedEnough
-  $: percentCompleted = percentModulesLoaded * 0.5 + (numMonitorsSynced*10) + (relayChecksSynced? 20: 0);
+  $: loadedEnough = hasBeenBootstrapped() || $isSeeded || $totalMonitors > 1
 
   let loadingThresholdPassed = false;
   let loadingThresholdTimeout: ReturnType<typeof setTimeout>;
@@ -299,14 +286,8 @@
   <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
 </div>
 {:else}
-  {#if loading && !hasBeenBootstrapped()}
-    <BootstrapLoading
-      {isReady}
-      {monitorsSynced}
-      {relayChecksSynced}
-      {percentCompleted}
-      {activities}
-    />
+  {#if loading && !hasBeenBootstrapped() && !$isSeeded}
+    <BootstrapLoading {isReady} />
   {:else if isReady}
     {#if $tabState === 'leader' || $tabState === 'follower'}
       {#if loadedEnoughSignal}

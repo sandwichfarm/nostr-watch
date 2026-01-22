@@ -41,8 +41,34 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         // ////console.log('NostrSqliteAdapter constructor')
     }
 
-    destroy(){
-       this.abort()
+    async destroy(){
+       await this.shutdown();
+    }
+
+    /**
+     * Properly shutdown the adapter by closing the SQLite database before terminating the worker.
+     * This ensures the OPFS SAH Pool is released properly.
+     * This method is idempotent - calling it multiple times is safe.
+     */
+    async shutdown(): Promise<void> {
+        const relay = this._relay;
+        if (!relay) return;
+
+        // Clear reference first to prevent double-shutdown
+        this._relay = undefined;
+        this._ready = false;
+
+        try {
+            // Close the database properly before terminating the worker
+            // This releases the OPFS SAH Pool lock
+            await relay.close('shutdown');
+            // Give time for the database to fully close
+            await delay(100);
+        } catch (e) {
+            console.warn('[NostrSqliteAdapter] Error closing relay during shutdown:', e);
+        }
+        // Now terminate the worker
+        relay.abort();
     }
 
     setup(){}

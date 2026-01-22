@@ -317,6 +317,15 @@ async function computeAndUpdateRelayLiveness(): Promise<void> {
 
   const result = await computeRelayLivenessFromCache(monitorsList);
 
+  // Don't overwrite cached values with empty results
+  // This can happen if the cache adapter isn't ready yet
+  const hasAnyData = Object.values(result).some(counts =>
+    counts.online > 0 || counts.offline > 0 || counts.dead > 0
+  );
+  if (Object.keys(result).length === 0 || !hasAnyData) {
+    return;
+  }
+
   monitorRelayLivenessCounts.set(result);
 
   // Cache the result (leader tab only)
@@ -334,8 +343,15 @@ async function computeAndUpdateRelayLiveness(): Promise<void> {
 
 if (typeof window !== "undefined") {
   // Re-compute when monitors change or on a timer
-  monitorsSorted.subscribe(() => {
-    scheduleRelayLivenessCompute(500);
+  // Use a longer initial delay to give the cache time to seed
+  let isFirstMonitorUpdate = true;
+  monitorsSorted.subscribe((monitors) => {
+    // Skip if no monitors yet
+    if (!monitors?.length) return;
+    // Use longer delay on first update to allow cache to fully seed
+    const delay = isFirstMonitorUpdate ? 2000 : 500;
+    isFirstMonitorUpdate = false;
+    scheduleRelayLivenessCompute(delay);
   });
   monitorsLivenessLeniency.subscribe(() => {
     scheduleRelayLivenessCompute(250);

@@ -4,7 +4,7 @@
 	import { events, nip11s, nip11sLocal, operatorPubkeys, operatorPubkeysInvalid, operatorPubkeysValid, relayCheckAggregates } from "$lib/stores";
 	import { isLivesyncing } from "$lib/stores/app";
 	import { doBootstrap } from "$lib/stores/routines";
-	import { appState, isBootstrapping, isSeeded, tabState, isIdle } from "$lib/stores/app";
+	import { appState, isBootstrapping, isSeeded, tabState, isIdle, opfsStatus, opfsError } from "$lib/stores/app";
 	import { get, writable, type Writable } from "svelte/store";
 	import { route66 } from "$lib/stores";
 	import { shouldSync as _shouldSync } from "$lib/stores/app";
@@ -42,7 +42,7 @@
 	const categoryKeys: Record<DebugCategory, string[]> = {
 		app: ['shouldSync', 'doBootstrap', 'isBootstrapping', 'isSeeded', 'appState', 'tabState', 'isIdle', 'isLivesyncing', 'relayChecksDerivation'],
 		stores: ['store:', 'relayCheckAggregates', 'nip11s', 'nip11sLocal', 'operatorPubkeys', 'operatorPubkeysValid', 'operatorPubkeysInvalid', 'relaysWithNip11s', 'relaysWithoutNip11s'],
-		route66: ['route66:', 'leader:', 'sigverify:'],
+		route66: ['route66:', 'leader:', 'sigverify:', 'opfs:'],
 		cache: ['cacheAdapter:']
 	};
 
@@ -83,6 +83,14 @@
 
     subs.push(isLivesyncing.subscribe((value) => {
         addDebug('isLivesyncing', value);
+    }));
+
+    subs.push(opfsStatus.subscribe((value) => {
+        addDebug('opfs:globalStatus', value);
+    }));
+
+    subs.push(opfsError.subscribe((value) => {
+        addDebug('opfs:error', value);
     }));
 
     subs.push(relayCheckAggregates.subscribe((value) => {
@@ -150,6 +158,25 @@
         addDebug('route66:websocketAdapter', $route66?.websocketAdapter.isReady? true: false);
         addDebug('route66:initialized', $route66?.initialized? true: false);
         addDebug('route66:numSubscriptions', $route66?.websocketAdapter?.subscriptions.size);
+
+        // OPFS/SQLite status
+        const cacheAdapter = $route66?.adapters?.cacheAdapter;
+        const adapterType = cacheAdapter?.constructor?.name ?? 'unknown';
+        addDebug('opfs:adapterType', adapterType);
+
+        // Check if it's the SQLite adapter and if the relay is available
+        if (adapterType === 'NostrSqliteAdapter') {
+            const relay = (cacheAdapter as any)?._relay;
+            const relayType = relay?.worker ? 'SQLite (OPFS)' : 'unknown';
+            addDebug('opfs:status', relay ? 'online' : 'offline');
+            addDebug('opfs:backend', relayType);
+        } else if (adapterType === 'TabClientCacheAdapter') {
+            addDebug('opfs:status', 'n/a (follower)');
+            addDebug('opfs:backend', 'RPC to leader');
+        } else {
+            addDebug('opfs:status', 'unknown');
+            addDebug('opfs:backend', adapterType);
+        }
 
         const leaderInfo = getLeaderTabRpcClient().getLeaderInfo?.();
         if (leaderInfo) {

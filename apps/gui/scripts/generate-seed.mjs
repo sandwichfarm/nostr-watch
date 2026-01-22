@@ -175,6 +175,10 @@ async function main() {
   const filtersPerReq = envNumber('SEED_MAX_FILTERS_PER_REQ', 10);
   const checksChunkSize = envNumber('SEED_CHECKS_CHUNK_SIZE', 2_500);
   const operatorsChunkSize = envNumber('SEED_OPERATORS_CHUNK_SIZE', 2_500);
+  const nip11sChunkSize = envNumber('SEED_NIP11S_CHUNK_SIZE', 500);
+  const maxNip11Relays = envNumber('SEED_MAX_NIP11_RELAYS', 2_000);
+  const nip11TimeoutMs = envNumber('SEED_NIP11_TIMEOUT_MS', 5_000);
+  const nip11Concurrency = envNumber('SEED_NIP11_CONCURRENCY', 20);
 
   console.log('[seed] relays', { nip66: nip66Relays.length, userMeta: userMetaRelays.length });
 
@@ -369,7 +373,59 @@ async function main() {
   console.log('[seed] operator meta', operatorMeta.length);
 
   // ---------------------------------------------------------------------------
-  // 6) Write output
+  // 6) Fetch NIP-11 relay info documents
+  // ---------------------------------------------------------------------------
+  const relayUrls = new Set();
+  for (const ev of checks) {
+    const d = dTagValue(ev);
+    const url = normalizeRelayUrl(d);
+    if (url) relayUrls.add(url);
+  }
+
+  const relayUrlsArray = Array.from(relayUrls).slice(0, maxNip11Relays);
+  console.log('[seed] relay URLs for NIP-11', relayUrlsArray.length);
+
+  async function fetchNip11(wsUrl) {
+    try {
+      // Convert wss:// to https:// and ws:// to http://
+      const httpUrl = wsUrl.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), nip11TimeoutMs);
+
+      const response = await fetch(httpUrl, {
+        signal: controller.signal,
+        headers: { Accept: 'application/nostr+json' },
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok) return null;
+      const json = await response.json();
+      if (!json || typeof json !== 'object') return null;
+      return { relay: wsUrl, nip11: json };
+    } catch {
+      return null;
+    }
+  }
+
+  const nip11Results = [];
+  const nip11Batches = chunk(relayUrlsArray, nip11Concurrency);
+  let nip11Progress = 0;
+
+  for (const batch of nip11Batches) {
+    const results = await Promise.all(batch.map(fetchNip11));
+    for (const result of results) {
+      if (result) nip11Results.push(result);
+    }
+    nip11Progress += batch.length;
+    if (nip11Progress % 100 === 0 || nip11Progress === relayUrlsArray.length) {
+      console.log(`[seed] NIP-11 progress: ${nip11Progress}/${relayUrlsArray.length} (${nip11Results.length} successful)`);
+    }
+  }
+
+  console.log('[seed] NIP-11s fetched', nip11Results.length);
+
+  // ---------------------------------------------------------------------------
+  // 7) Write output
   // ---------------------------------------------------------------------------
   await fs.rm(outDir, { recursive: true, force: true });
   await fs.mkdir(outDir, { recursive: true });
@@ -397,6 +453,14 @@ async function main() {
     await fs.writeFile(path.join(outDir, filename), JSON.stringify(operatorChunks[i]));
   }
 
+  const nip11Files = [];
+  const nip11Chunks = chunk(nip11Results, nip11sChunkSize);
+  for (let i = 0; i < nip11Chunks.length; i++) {
+    const filename = `nip11s-${i}.json`;
+    nip11Files.push(`/seed/${filename}`);
+    await fs.writeFile(path.join(outDir, filename), JSON.stringify(nip11Chunks[i]));
+  }
+
   const manifest = {
     version: 1,
     generatedAt: new Date().toISOString(),
@@ -410,11 +474,14 @@ async function main() {
       filtersPerReq,
       checksChunkSize,
       operatorsChunkSize,
+      nip11sChunkSize,
+      maxNip11Relays,
     },
     groups: {
       monitors: { files: ['/seed/monitors.json'], events: monitorsPayload.length },
       checks: { files: checksFiles, events: checks.length },
       operators: { files: operatorFiles, events: operatorMeta.length },
+      nip11s: { files: nip11Files, count: nip11Results.length },
     },
   };
 
@@ -426,7 +493,8 @@ async function main() {
     monitors: monitorsPayload.length,
     checks: checks.length,
     operators: operatorMeta.length,
-    files: { checks: checksFiles.length, operators: operatorFiles.length },
+    nip11s: nip11Results.length,
+    files: { checks: checksFiles.length, operators: operatorFiles.length, nip11s: nip11Files.length },
   });
 }
 

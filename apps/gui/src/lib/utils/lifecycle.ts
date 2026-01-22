@@ -12,7 +12,7 @@ import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers.js';
 
 import type { Monitor, Nip11, NostrEvent } from "@nostrwatch/route66/models"
 import { nip05Service } from '$lib/stores/nip05s.js';
-import { hasBeenBootstrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready, tabState } from '../stores/app';
+import { hasBeenBootstrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready, tabState, opfsStatus, opfsError } from '../stores/app';
 import type { SubscribeHandlers, WebsocketAdapterOptions } from '@nostrwatch/route66/core/WebsocketAdapter';
 import { Batcher } from '@nostrwatch/route66/core';
 
@@ -48,6 +48,57 @@ let liveSyncBatcher: Batcher<IEvent, any> = new Batcher<IEvent, any>({
 })
 
 let count = 0
+
+/**
+ * Update OPFS status stores based on the cache adapter type
+ */
+const updateOpfsStatus = (r66: Route66 | null) => {
+    if (!r66) {
+        opfsStatus.set('pending');
+        return;
+    }
+
+    const cacheAdapter = r66.adapters?.cacheAdapter;
+    const adapterName = cacheAdapter?.constructor?.name;
+
+    if (adapterName === 'TabClientCacheAdapter') {
+        // Follower tab using RPC - OPFS not applicable
+        opfsStatus.set('online'); // Consider it "online" since it's working via RPC
+        opfsError.set(null);
+    } else if (adapterName === 'NostrSqliteAdapter') {
+        // Check if the relay is using SQLite or InMemoryRelay
+        const relay = (cacheAdapter as any)?._relay;
+        if (relay) {
+            // Try to detect if it's using InMemoryRelay (fallback)
+            // The relay.worker exists for both, but we can check the relay state
+            const state = (relay as any)?.state;
+            const relayHandler = state?.relay;
+            const relayType = relayHandler?.constructor?.name;
+
+            if (relayType === 'InMemoryRelay') {
+                opfsStatus.set('fallback');
+                opfsError.set('OPFS unavailable, using in-memory storage');
+            } else if (relayType === 'SqliteRelay') {
+                opfsStatus.set('online');
+                opfsError.set(null);
+            } else {
+                // Worker-based relay - we can't easily check the type
+                // Assume it's working if the adapter is ready
+                if (cacheAdapter.isReady) {
+                    opfsStatus.set('online');
+                    opfsError.set(null);
+                } else {
+                    opfsStatus.set('pending');
+                }
+            }
+        } else {
+            opfsStatus.set('error');
+            opfsError.set('Cache adapter relay not initialized');
+        }
+    } else {
+        opfsStatus.set('pending');
+    }
+};
 
 /**
  * Configure Route66 with user's NIP-66 relay preferences
@@ -200,6 +251,9 @@ export const instance = async (): Promise<Route66> => {
     }
 
     await $route66.ready();
+
+    // Update OPFS status based on which adapter is in use
+    updateOpfsStatus($route66);
 
     // Configure NIP-66 relays from user preferences
     configureNip66Relays();
@@ -384,8 +438,9 @@ export const bootstrapOperatorsMeta = async (pubkeys?: string[]) => {
 //     }
 // }
 
-export const destroy = () => {
+export const destroy = async () => {
     initializing = false;
+    const r66 = $route66;
     $route66 = null;
     runtimeMode = null;
     emittersBoundTo = null;
@@ -396,14 +451,16 @@ export const destroy = () => {
         nip66RelayUnsubscriber = null;
     }
 
-    route66.update( ($route66) => {
-        if ($route66 && typeof $route66.destroy === 'function') {
-            $route66.destroy();
-        } else {
-            console.error('route66 instance is missing or does not have a destroy method.');
+    // Properly shutdown the route66 instance (closes SQLite database and releases OPFS pool)
+    if (r66 && typeof r66.shutdown === 'function') {
+        try {
+            await r66.shutdown();
+        } catch (e) {
+            console.warn('[lifecycle] Error during route66 shutdown:', e);
         }
-        return null;
-    });
+    }
+
+    route66.set(null);
 };
 
 export const canSeedFromCache = async (): boolean => {

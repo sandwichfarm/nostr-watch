@@ -23,7 +23,7 @@ export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
 export const dataRegisterInit = async () => {
     const data = get(dataRegister);
-    
+
     //state
     data.register({
         key: 'seed:build',
@@ -161,7 +161,7 @@ export const dataRegisterInit = async () => {
 
     data.register({
         key: 'validate:nip11s',
-        expiry: VALIDATE_NIP11S_EXPIRY,    
+        expiry: VALIDATE_NIP11S_EXPIRY,
         priority: 200,
         fn: async () => {
             const validator = new SchemaValidationService();
@@ -179,10 +179,10 @@ export const dataRegisterInit = async () => {
             validations.forEach( (validation, index) => {
                 validationsMap.set(keysIndex[index], validation)
             })
-            return validationsMap;  
+            return validationsMap;
         },
         onComplete: async (validationsMap: Map<string, SchemaValidationServiceResponse>) => {
-            console.log('validationsMap', validationsMap)   
+            console.log('validationsMap', validationsMap)
             relayNip11Validations.update(() => validationsMap)
         }
     })
@@ -193,15 +193,22 @@ export const dataRegisterInit = async () => {
         key: 'sync:cache',
         priority: 3,
         condition: async () => {
-            if (get(isSeeded)) return false;
+            if (get(isSeeded)) {
+                console.log('[DataRegister] skipping sync:cache: already seeded');
+                return false;
+            }
             // Followers should always try to hydrate from the leader/cache, even
             // when this origin hasn't been "bootstrapped" yet.
             if (get(tabState) !== 'leader') return true;
-            return get(isBootstrapped);
+            const bootstrapped = get(isBootstrapped);
+            if (!bootstrapped) {
+                console.log('[DataRegister] skipping sync:cache: fresh state');
+            }
+            return bootstrapped;
         },
         fn: seedFromCache,
         onComplete: async (events: IEvent[]): Promise<any> => {
-            if(!events?.length) return 
+            if(!events?.length) return
             publishEventsToMemoryRelay(events, 'cache')
             isSeeded.set(true)
             return events?.length ?? 0;
@@ -237,6 +244,10 @@ export const dataRegisterInit = async () => {
         onComplete: async () => {
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            // Ensure isSeeded is set so UI can progress
+            if (!get(isSeeded)) {
+                isSeeded.set(true)
+            }
         },
         ignoreConditions: {},
         ignoreExpiries: {}
@@ -264,6 +275,10 @@ export const dataRegisterInit = async () => {
         onComplete: async () => {
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            // Ensure isSeeded is set so UI can progress even without seed files
+            if (!get(isSeeded)) {
+                isSeeded.set(true)
+            }
         },
         ignoreConditions: {
             'sync:monitors': true,

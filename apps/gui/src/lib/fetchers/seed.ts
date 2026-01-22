@@ -126,16 +126,51 @@ export const seedBuildData = async (): Promise<void> => {
   // Load monitors
   if (monitorFiles.length > 0) {
     startBootActivity('seed:monitors', 'Loading monitors');
+    const monitorEventsByPubkey = new Map<string, { registration?: IEvent; profile?: IEvent; relays?: IEvent }>();
+
     for (const url of monitorFiles) {
       const events = await fetchJson<IEvent[]>(url);
       if (!Array.isArray(events) || events.length === 0) continue;
       totalMonitors += events.length;
       updateBootActivity('seed:monitors', totalMonitors);
+
+      // Group events by pubkey for cache:monitors
+      for (const event of events) {
+        if (!event?.pubkey) continue;
+        let entry = monitorEventsByPubkey.get(event.pubkey);
+        if (!entry) {
+          entry = {};
+          monitorEventsByPubkey.set(event.pubkey, entry);
+        }
+        if (event.kind === 10166) entry.registration = event;
+        else if (event.kind === 0) entry.profile = event;
+        else if (event.kind === 10002) entry.relays = event;
+      }
+
       for (const batch of chunk(events, 500)) {
         void publishEventsToMemoryRelay(batch, 'seed:build');
       }
       await seedEventsToCache(events, 250);
     }
+
+    // Build MonitorCached array and store in StateManager
+    const monitorsCache = Array.from(monitorEventsByPubkey.entries())
+      .filter(([_, data]) => data.registration) // Must have registration
+      .map(([pubkey, data]) => ({
+        pubkey,
+        registration: data.registration,
+        profile: data.profile,
+        relays: data.relays,
+        priority: 0,
+        enabled: true,
+        lastActive: data.registration?.created_at ?? -1,
+      }));
+
+    if (monitorsCache.length > 0) {
+      StateManager.set('cache:monitors', monitorsCache);
+      console.log('[seed] cached monitors to StateManager:', monitorsCache.length);
+    }
+
     completeBootActivity('seed:monitors', totalMonitors);
   }
 

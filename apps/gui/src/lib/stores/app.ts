@@ -71,9 +71,15 @@ export const hasBeenBootstrapped = (): boolean => {
 }
 
 export const isBootstrapped: Writable<boolean> = writable(hasBeenBootstrapped())
-export const isSeeded: Writable<boolean> = writable(false)    
+
+// Initialize isSeeded based on whether seed data was previously imported
+const checkIfSeeded = (): boolean => {
+    // If seed:build:generatedAt exists, seed data has been imported
+    return !!StateManager.get('seed:build:generatedAt');
+}
+export const isSeeded: Writable<boolean> = writable(checkIfSeeded())
 export const hasBeenSeeded = (): boolean => {
-    return get(isSeeded)    
+    return get(isSeeded)
 }
 
 export const doAggregateCache: Writable<boolean> = writable(true)

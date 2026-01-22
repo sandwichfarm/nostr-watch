@@ -57,6 +57,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: built-packages
+          include-hidden-files: true
           path: |
             libraries/**/dist/
             libraries/**/src/sqlite/sqlite3.wasm

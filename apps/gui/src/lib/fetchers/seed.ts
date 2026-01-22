@@ -97,7 +97,8 @@ export const seedBuildData = async (): Promise<void> => {
   } catch {}
 
   if (cacheHasData && generatedAt && StateManager.get(STATE_KEY_GENERATED_AT) === generatedAt) {
-    // Already seeded, show quick completion
+    // Already seeded, show quick completion and set isSeeded
+    isSeeded.set(true);
     startBootActivity('seed:monitors', 'Loading monitors');
     completeBootActivity('seed:monitors', 'cached');
     startBootActivity('seed:checks', 'Loading relay checks');

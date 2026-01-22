@@ -42,7 +42,7 @@ export class Nip11Service {
         let $nip11sLocal: Map<string, Nip11Type> = get(nip11sLocal)
         return $nip11sLocal.get(relay)
     }
-    
+
     async check(relay: string, options: { timeoutMs?: number } = {}): Promise<Nip11Type | undefined> {
         const timeoutMs = options.timeoutMs ?? 5_000;
 

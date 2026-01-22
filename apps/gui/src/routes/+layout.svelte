@@ -30,7 +30,7 @@
   let Header: Modules['Header'];
   let Debugger: Modules['Debugger'];
   let ActivityList: Modules['ActivityList'];
-  
+
   let lifecycle: Modules['lifecycle'];
   let instance: Modules['lifecycle']['instance'];
   let destroy: Modules['lifecycle']['destroy'];
@@ -52,7 +52,7 @@
   if(window.isSecureContext === false && "serviceWorker" in navigator && navigator.serviceWorker !== undefined) {
     // if (import.meta.env.PROD) {
     //   addEventListener('load', function () {
-    //     navigator.serviceWorker.register('$src/service-workers/cors.js'); 
+    //     navigator.serviceWorker.register('$src/service-workers/cors.js');
     //   });
     // }
     navigator.serviceWorker.getRegistrations().then(function(registrations) {
@@ -100,7 +100,7 @@
   async function boot() {
     if (DEV) console.log('Booting...');
     if (get(unsupported)) return;
-    
+
     appState.set('booting');
     await initServices();
     appState.set('running');
@@ -177,7 +177,7 @@
   };
 
   onMount(async () => {
-    
+
     await load();
 
     window.addEventListener('keydown', toggleDebugger);
@@ -242,7 +242,7 @@
   // }
 
   $: percentModulesLoaded = Math.round((progressList.length / Object.keys(moduleLoaders || {}).length) * 100);
-  $: numMonitorsSynced = 
+  $: numMonitorsSynced =
       activities
         .filter( item =>
           item.slug === "monitors/bootstrap/registrations"
@@ -251,7 +251,7 @@
         )
         .filter( item => item.complete )
         .length
-  $: numRelayChecksSynced = 
+  $: numRelayChecksSynced =
       activities
         .filter( item =>
           item.slug === "monitors/bootstrap/checks"
@@ -283,13 +283,13 @@
 
   $: {
     if(loadedEnough){
-      setTimeout(() => { 
+      setTimeout(() => {
         if (DEV) console.log('loaded enough.')
         loadedEnoughSignal = true;
       }, 1000);
     }
   }
-  
+
   $: loading = loadingThresholdPassed && (!isReady || !loadedEnoughSignal);
 </script>
 
@@ -309,10 +309,12 @@
     />
   {:else if isReady}
     {#if $tabState === 'leader' || $tabState === 'follower'}
-      <Header />
-      <div id="content-wrapper" class="block">
-        <slot />
-      </div>
+      {#if loadedEnoughSignal}
+        <Header />
+        <div id="content-wrapper" class="block">
+          <slot />
+        </div>
+      {/if}
     {:else}
       <div class="flex flex-col items-center justify-center h-screen px-4">
         <div class="text-7xl mb-3">booting.</div>

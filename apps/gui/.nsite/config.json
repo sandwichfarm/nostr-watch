@@ -1,5 +1,5 @@
 {
-  "bunkerPubkey": "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019",
+  "fallback": "index.html",
   "relays": [
     "wss://relay.nosto.re",
     "wss://relay.nsite.lol",
@@ -9,15 +9,5 @@
     "https://cdn.hzrd149.com",
     "https://blossom.yakihonne.com"
   ],
-  "profile": {
-    "name": "nostr.watch",
-    "display_name": "nostr.watch",
-    "about": "A NIP-66 nostr client for browsing nostr relays"
-  },
-  "publishProfile": false,
-  "publishRelayList": true,
-  "publishServerList": true,
-  "gatewayHostnames": [
-    "nsite.lol"
-  ]
+  "bunkerPubkey": "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019"
 }

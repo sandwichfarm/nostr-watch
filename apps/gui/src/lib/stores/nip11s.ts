@@ -5,9 +5,8 @@ import { derived, get, writable, type Readable, type Writable } from "svelte/sto
 import type { StateManager as StateManagerType } from "@nostrwatch/route66";
 import type { Nip66CheckEvent as Nip66CheckEventType, Nip11 as Nip11Type, RelayInformation } from "@nostrwatch/route66/models"
 
-import { Nip11Service } from "$lib/services/Nip11Service";
-
 import { doAggregateCache, hasBeenBootstrapped, hasBeenSeeded } from "./app.js";
+import { nip11sLocal } from "./nip11s-local.js";
 
 import { isPubkey } from "../utils/nostr.js";
 import { throttledDerived } from "$utils/stores.js";
@@ -52,8 +51,9 @@ loadModules();
 
 type RelayUrl = string
 
-export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
-export const nip11sLocal: Writable<Map<string, Nip11Type>> = writable(new Map())
+// Re-export from separate files to avoid circular dependencies
+export { nip11sLocal } from "./nip11s-local.js";
+export { nip11Service } from "./nip11-service.js";
 
 export const nip11s: Readable<Map<string, Nip11Type[]>> = derived(
   [eventsArray, nip11sLocal, importsReady, importedModules],

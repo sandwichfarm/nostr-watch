@@ -37,8 +37,11 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build Packages
-        run: pnpm -r build
+      - name: Build Libraries
+        run: pnpm -r --filter '!@nostrwatch/gui' build
+
+      - name: Build Seeded GUI
+        run: pnpm --filter @nostrwatch/gui build:seeded
 
       # - name: Build Worker Relay
       #   run: |

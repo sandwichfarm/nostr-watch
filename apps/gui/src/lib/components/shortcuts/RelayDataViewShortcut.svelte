@@ -7,13 +7,23 @@
 	import { compress } from "compress-json";
 	import { filter } from "lodash";
 	import { onMount } from "svelte";
-	import { writable } from "svelte/store";
-
+	import { writable, type Writable } from "svelte/store";
+	import { StateManager } from "@nostrwatch/route66";
 
     // Built-in Presets
 	import AllRelays from "./presets/AllRelays";
 	import CommunityRelays from "./presets/CommunityRelays";
     import ClientDevView from "./presets/ClientDevView";
+
+	const LAST_PRESET_KEY = "preferences:relays:lastPreset";
+	const USER_PRESETS_KEY = "preferences:relays:userPresets";
+
+	type UserPreset = {
+		title: string;
+		hash: string;
+		payload: any;
+		createdAt: number;
+	};
 
     const className = $$props.class;
 
@@ -24,7 +34,8 @@
     export let onClick = (hash:string) => { goto(hash) }
     export let label = ""
 
-    const shortcuts = [
+    // Built-in presets (static)
+    const builtInPresets = [
         AllRelays,
         {
             title: "paid relays",
@@ -52,46 +63,90 @@
             hash: "W1siY29sdW1uc1Nob3ciLCJmaWx0ZXJzU2hvdyIsImZpbHRlcnNBY3RpdmUiLCJzb3J0U3RhdGUiLCJhfDB8MXwyfDMiLCJyZWxheSIsIm9wZXJhdG9yUHVia2V5IiwiZGVzY3JpcHRpb24iLCJuaXAxMUlzVmFsaWQiLCJuaXAxMVZhbGlkYXRpb25FcnJvcnMiLCJhfDV8Nnw3fDh8OSIsIm9wZXJhdG9yUHVia2V5VmFsaWQiLCJpY29uIiwiaGFzTmlwMTEiLCJhfEJ8Q3xEfDh8OSIsImF8OCIsImJ8RiIsIm98RnxHIiwiY29sdW1uSWQiLCJkaXJlY3Rpb24iLCJhfEl8SiIsImRlc2MiLCJvfEt8OXxMIiwib3w0fEF8RXxIfE0iXSwiTiJd",
         },
         ClientDevView,
-    ]
+    ];
 
-    const active = writable(shortcuts[0].title);
+    // User presets (loaded from storage)
+    const userPresets: Writable<UserPreset[]> = writable([]);
 
-    const setActive = (shortcut: any) => {
+    // Load user presets from storage
+    const loadUserPresets = () => {
+        const stored = StateManager.get(USER_PRESETS_KEY) || [];
+        userPresets.set(stored);
+    };
+
+    // Combined shortcuts (built-in + user)
+    $: shortcuts = [...builtInPresets, ...$userPresets.map(p => ({ ...p, isUserPreset: true }))];
+
+    const active = writable(builtInPresets[0].title);
+
+    // Delete a user preset
+    const deleteUserPreset = (title: string, event: Event) => {
+        event.stopPropagation();
+        const stored: UserPreset[] = StateManager.get(USER_PRESETS_KEY) || [];
+        const updated = stored.filter(p => p.title !== title);
+        StateManager.set(USER_PRESETS_KEY, updated);
+        userPresets.set(updated);
+
+        // If deleted preset was active, switch to default
+        if ($active === title) {
+            setActive(builtInPresets[0], false);
+        }
+    };
+
+    // Export for parent component to trigger reload
+    export const reloadPresets = loadUserPresets;
+
+    const setActive = (shortcut: any, persist: boolean = true) => {
         active.set(shortcut.title)
+
+        // Persist the selected preset
+        if (persist) {
+            try {
+                StateManager.set(LAST_PRESET_KEY, shortcut.title);
+            } catch {}
+        }
+
         if(shortcut?.payload){
             try {
                 shortcut.hash = btoa(JSON.stringify(compress(shortcut.payload)))
                 onClick(`/relays#${shortcut.hash}`)
-                return 
+                return
             }
             catch(e){
                 onClick(`/relays`)
-                return 
-            }   
+                return
+            }
         }
         if(!shortcut.hash) {
             onClick(`/relays`)
-            return 
+            return
         }
         onClick(`/relays#${shortcut.hash}`)
     }
 
-    
+    onMount(() => {
+        loadUserPresets();
 
-    if(window.location.hash){
-        const hash = window.location.hash.replace('#', '');
-        const shortcut = shortcuts.find(shortcut => shortcut.hash === hash);
-        // console.log('active shortcut', shortcut)    
-        if(shortcut) setActive(shortcut);
-    } 
-    else if($page.url.pathname === "/relays"){
-        setActive(shortcuts[0]);
-    }
-    
-    onMount( () => {
-        
-        
-    })
+        // Initialize from URL hash, persisted preference, or default
+        if (window.location.hash) {
+            const hash = window.location.hash.replace('#', '');
+            // Use builtInPresets for initial check since userPresets may not be loaded yet
+            const shortcut = builtInPresets.find(s => s.hash === hash);
+            if (shortcut) setActive(shortcut);
+        } else if ($page.url.pathname === "/relays") {
+            // Try to load last used preset from storage
+            const lastPresetTitle = StateManager.get(LAST_PRESET_KEY);
+            const lastPreset = lastPresetTitle
+                ? builtInPresets.find(s => s.title === lastPresetTitle)
+                : null;
+
+            if (lastPreset) {
+                setActive(lastPreset, false); // Don't re-persist, just restore
+            } else {
+                setActive(builtInPresets[0], false); // Default to first preset
+            }
+        }
+    });
 
     
 </script>
@@ -102,13 +157,24 @@
     </span>
 {/if}
 {#each shortcuts as shortcut}
-    <Button 
-        size="small" 
-        variant={buttonVariant} 
-        on:click={() => setActive(shortcut)}
-        class="{buttonClass} {$active === shortcut.title? buttonActiveClass: ''}"
+    <span class="inline-flex items-center mr-1 mb-1">
+        <Button
+            size="small"
+            variant={buttonVariant}
+            on:click={() => setActive(shortcut)}
+            class="{buttonClass} {$active === shortcut.title ? buttonActiveClass : ''} {shortcut.isUserPreset ? 'pr-1 border border-dashed border-purple-500/40 text-purple-300' : ''}"
         >
-        {shortcut.title}
-    </Button>
+            {shortcut.title}
+            {#if shortcut.isUserPreset}
+                <button
+                    on:click={(e) => deleteUserPreset(shortcut.title, e)}
+                    class="ml-1 px-1 opacity-40 hover:opacity-100 hover:text-red-400"
+                    title="Delete preset"
+                >
+                    ×
+                </button>
+            {/if}
+        </Button>
+    </span>
 {/each}
 </div>

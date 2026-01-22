@@ -18,8 +18,8 @@ const production = process.env.NODE_ENV === 'production';
 const watchMode = process.argv.includes('--watch');
 
 export async function build() {
-  const livereloadPortBrowser = await getPort({ port: [53101, 53102] });
-  const livereloadPortNode = await getPort({ port: [53103, 53104] });
+  const livereloadPortBrowser = watchMode ? await getPort({ port: [53101, 53102] }) : null;
+  const livereloadPortNode = watchMode ? await getPort({ port: [53103, 53104] }) : null;
 
   const commonPlugins = [
     clean({ patterns: ['./dist'] }),
@@ -40,18 +40,26 @@ export async function build() {
       ],
     }),
     ...commonPlugins,
-    livereloadPlugin({
-      port: livereloadPortBrowser,
-      watch: 'dist/browser',
-    }),
+    ...(watchMode
+      ? [
+          livereloadPlugin({
+            port: livereloadPortBrowser,
+            watch: 'dist/browser',
+          }),
+        ]
+      : []),
   ];
 
   const nodePlugins = [
     ...commonPlugins,
-    livereloadPlugin({
-      port: livereloadPortNode,
-      watch: 'dist/node',
-    }),
+    ...(watchMode
+      ? [
+          livereloadPlugin({
+            port: livereloadPortNode,
+            watch: 'dist/node',
+          }),
+        ]
+      : []),
   ];
 
   const browserBuildOptions = {

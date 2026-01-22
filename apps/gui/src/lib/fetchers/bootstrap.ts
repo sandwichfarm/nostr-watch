@@ -23,6 +23,15 @@ export const fetchMonitorsChecks = async () => {
     await $route66?.services?.monitors?.bootstrapMonitorsChecks();
 }
 
+// Fetch additional checks from active-but-disabled monitors to broaden relay coverage.
+// This should run after `fetchMonitors()` has populated monitors + active status.
+export const fetchDisabledMonitorsChecks = async () => {
+    const $route66 = await instance();
+    await $route66.ready();
+    bindBootstrapEmitters();
+    await $route66?.services?.monitors?.fetchDisabledMonitorsChecks();
+}
+
 export const fetchNip11s = async () => {
     const $nip11Service: Nip11Service = get(nip11Service);
     const $relaysWithoutNip11s: string[] = get(relaysWithoutNip11s$());
@@ -39,6 +48,66 @@ export const fetchNip11s = async () => {
     }
     return Promise.allSettled(promises);
 }
+
+/**
+ * Backfill historical check events for offline/dead relay counts.
+ * Fetches events older than the "online" window up to the dead threshold (30 days).
+ * Runs at low priority after initial sync completes.
+ */
+export const backfillMonitorChecks = async () => {
+    const $route66 = await instance();
+    await $route66.ready();
+    bindBootstrapEmitters();
+
+    const monitorService = $route66?.services?.monitors;
+    if (!monitorService) return;
+
+    const enabledMonitors = monitorService.enabledMonitors || [];
+    if (!enabledMonitors.length) return;
+
+    const now = Math.round(Date.now() / 1000);
+    const DEAD_THRESHOLD_SECONDS = 30 * 24 * 60 * 60; // 30 days
+
+    // Build filters for historical events (between online window and dead threshold)
+    const filters: Filter[] = [];
+    for (const monitor of enabledMonitors) {
+        const frequency = monitor?.registration?.frequency || (12 * 60 * 60);
+        const onlineAfter = now - frequency;
+        const deadBefore = now - DEAD_THRESHOLD_SECONDS;
+
+        // Get events from dead threshold up to online window (offline + dead range)
+        filters.push({
+            kinds: [30166],
+            authors: [monitor.pubkey],
+            since: deadBefore,
+            until: onlineAfter - 1, // Don't overlap with online window
+        });
+    }
+
+    if (!filters.length) return;
+
+    const relays = monitorService.nip66Relays || [];
+    const options: WebsocketAdapterOptions = {
+        cache: true,
+        returnResults: true,
+        keepAlive: false,
+        stream: true,
+        batch: 50, // Smaller batches for background work
+    };
+
+    // Fetch in chunks to avoid overwhelming relays
+    const chunkSize = 5;
+    for (let i = 0; i < filters.length; i += chunkSize) {
+        const chunk = filters.slice(i, i + chunkSize);
+        try {
+            await $route66.fetch({ relays, filters: chunk, options, priority: 10 });
+        } catch (e) {
+            console.warn('[backfillMonitorChecks] chunk failed:', e);
+        }
+        // Yield to browser between chunks
+        await delay(100);
+    }
+};
 
 export const fetchOperators = async (pubkeys?: string[]) => {
     // await delay(1000)

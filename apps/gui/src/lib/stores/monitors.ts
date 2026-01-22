@@ -1,18 +1,98 @@
 import { derived, writable, type Writable, get, type Readable } from "svelte/store";
-import type { ICheck } from "@nostrwatch/route66/models";
 import { eventsArray } from "./events.js";
-import type { IMonitor, IEvent } from "@nostrwatch/route66/models";
-import { throttledDerived } from "$lib/utils/stores.js";
-import { MonitorManager, StateManager } from "@nostrwatch/route66";
+import type { IEvent } from "@nostrwatch/route66/models";
+import { StateManager } from "@nostrwatch/route66";
 import { Monitor } from '@nostrwatch/route66/models'
-import { nip05s, validNip05s } from "./nip05s.js";
+import { nip05s } from "./nip05s.js";
 import { route66 } from "./route66.js";
 import type Route66 from "@nostrwatch/route66";
 import { publishEventsToMemoryRelay } from "./events-helpers.js";
+import { doAggregateCache, tabState } from "./app.js";
+import timestring from "timestring";
 
 let $route66: Route66 | null;
 
 route66.subscribe(instance => $route66 = instance)
+
+export const MONITOR_LIVENESS_LENIENCY_KEY = "preferences:monitors:liveness:leniency";
+export const MONITOR_LIVENESS_DEAD_THRESHOLD_KEY = "preferences:monitors:liveness:deadThreshold";
+
+export const DEFAULT_MONITOR_LIVENESS_LENIENCY = 1.2;
+export const DEFAULT_MONITOR_LIVENESS_DEAD_THRESHOLD = "30d";
+
+function clampLeniency(value: unknown): number {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed)) return DEFAULT_MONITOR_LIVENESS_LENIENCY;
+  return Math.min(2, Math.max(1, parsed));
+}
+
+function normalizeDeadThreshold(value: unknown): string {
+  if (typeof value !== "string") return DEFAULT_MONITOR_LIVENESS_DEAD_THRESHOLD;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : DEFAULT_MONITOR_LIVENESS_DEAD_THRESHOLD;
+}
+
+export function parseDeadThresholdSeconds(value: string): number {
+  try {
+    const seconds = timestring(value);
+    if (!Number.isFinite(seconds) || seconds <= 0) return timestring(DEFAULT_MONITOR_LIVENESS_DEAD_THRESHOLD);
+    return seconds;
+  } catch {
+    return timestring(DEFAULT_MONITOR_LIVENESS_DEAD_THRESHOLD);
+  }
+}
+
+function storageKey(key: string): string {
+  const prefix = (StateManager as any)?.localStorage?.prefix ?? "state";
+  return `${prefix}:${key}`;
+}
+
+const initialLeniency =
+  typeof window === "undefined" ? DEFAULT_MONITOR_LIVENESS_LENIENCY : clampLeniency(StateManager.get(MONITOR_LIVENESS_LENIENCY_KEY));
+
+const initialDeadThreshold =
+  typeof window === "undefined"
+    ? DEFAULT_MONITOR_LIVENESS_DEAD_THRESHOLD
+    : normalizeDeadThreshold(StateManager.get(MONITOR_LIVENESS_DEAD_THRESHOLD_KEY));
+
+export const monitorsLivenessLeniency = writable<number>(initialLeniency);
+export const monitorsLivenessDeadThreshold = writable<string>(initialDeadThreshold);
+
+if (typeof window !== "undefined") {
+  monitorsLivenessLeniency.subscribe((value) => {
+    const next = clampLeniency(value);
+    if (next !== value) {
+      monitorsLivenessLeniency.set(next);
+      return;
+    }
+    try {
+      if (StateManager.get(MONITOR_LIVENESS_LENIENCY_KEY) !== next) StateManager.set(MONITOR_LIVENESS_LENIENCY_KEY, next);
+    } catch {}
+  });
+
+  monitorsLivenessDeadThreshold.subscribe((value) => {
+    const next = normalizeDeadThreshold(value);
+    if (next !== value) {
+      monitorsLivenessDeadThreshold.set(next);
+      return;
+    }
+    try {
+      if (StateManager.get(MONITOR_LIVENESS_DEAD_THRESHOLD_KEY) !== next) StateManager.set(MONITOR_LIVENESS_DEAD_THRESHOLD_KEY, next);
+    } catch {}
+  });
+
+  window.addEventListener("storage", (event) => {
+    if (!event.key) return;
+    if (event.key === storageKey(MONITOR_LIVENESS_LENIENCY_KEY)) {
+      const next = clampLeniency(StateManager.get(MONITOR_LIVENESS_LENIENCY_KEY));
+      if (get(monitorsLivenessLeniency) !== next) monitorsLivenessLeniency.set(next);
+    }
+    if (event.key === storageKey(MONITOR_LIVENESS_DEAD_THRESHOLD_KEY)) {
+      const next = normalizeDeadThreshold(StateManager.get(MONITOR_LIVENESS_DEAD_THRESHOLD_KEY));
+      if (get(monitorsLivenessDeadThreshold) !== next) monitorsLivenessDeadThreshold.set(next);
+    }
+  });
+}
 
 export const monitorsMapFromCache = (): Map<string, Monitor>  => {
   const monitorsArr = StateManager.get('cache:monitors');  
@@ -110,22 +190,188 @@ const activeMonitorChecksCountReadable = derived(
   (value) => value
 );
 
-export const monitorChecksCount = derived(
-  [eventsArray],
-  ([$eventsArray]) => {
-    const countMap: Record<string, number> = {};
-    $eventsArray.forEach((event: any) => {
-      countMap[event.pubkey] = (countMap?.[event.pubkey] || 0) + 1;
-    });
-    return countMap;
+export type MonitorRelayLivenessCounts = {
+  online: number;
+  offline: number;
+  dead: number;
+};
+
+export type MonitorRelayLivenessMap = Record<string, MonitorRelayLivenessCounts>;
+
+const MONITOR_RELAY_LIVENESS_CACHE_KEY = "aggregate:monitors:relayLiveness:v1";
+
+function readCachedRelayLiveness(): MonitorRelayLivenessMap {
+  if (typeof window === "undefined") return {};
+  try {
+    const cached = StateManager.get(MONITOR_RELAY_LIVENESS_CACHE_KEY) as MonitorRelayLivenessMap | undefined;
+    if (cached && typeof cached === "object") return cached;
+  } catch {}
+  return {};
+}
+
+export const monitorRelayLivenessCounts: Writable<MonitorRelayLivenessMap> = writable(readCachedRelayLiveness());
+
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (!event.key) return;
+    if (event.key !== storageKey(MONITOR_RELAY_LIVENESS_CACHE_KEY)) return;
+    try {
+      const cached = StateManager.get(MONITOR_RELAY_LIVENESS_CACHE_KEY) as MonitorRelayLivenessMap | undefined;
+      if (cached && typeof cached === "object") monitorRelayLivenessCounts.set(cached);
+    } catch {}
+  });
+}
+
+function monitorFrequencySeconds(monitor: Monitor): number {
+  const raw = (monitor as any)?.registration?.frequency;
+  if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) return raw;
+  // If a monitor is missing a frequency, fall back to the Monitor model default (12h).
+  return 60 * 60 * 12;
+}
+
+/**
+ * Compute per-monitor relay liveness counts by getting the latest event per relay
+ * and classifying by timestamp. Fetches all monitors' events in a single query for efficiency.
+ */
+async function computeRelayLivenessFromCache(
+  monitorsList: Monitor[]
+): Promise<MonitorRelayLivenessMap> {
+  const result: MonitorRelayLivenessMap = {};
+  if (!$route66?.adapters?.cacheAdapter) return result;
+
+  const cacheAdapter = $route66.adapters.cacheAdapter;
+
+  // Build a map of monitor pubkeys to their Monitor objects for quick lookup
+  const monitorMap = new Map<string, Monitor>();
+  const pubkeys: string[] = [];
+  for (const monitor of monitorsList) {
+    const pubkey = monitor?.pubkey;
+    if (typeof pubkey !== "string" || !pubkey.length) continue;
+    monitorMap.set(pubkey, monitor);
+    pubkeys.push(pubkey);
+    // Initialize result
+    result[pubkey] = { online: 0, offline: 0, dead: 0 };
   }
-);
+
+  if (pubkeys.length === 0) return result;
+
+  // Fetch ALL check events for all monitors in a single query
+  const filter = { kinds: [30166], authors: pubkeys };
+  let events: IEvent[];
+  try {
+    events = await cacheAdapter.REQ([filter]) as IEvent[];
+  } catch {
+    return result;
+  }
+
+  if (!Array.isArray(events) || events.length === 0) return result;
+
+  // Group events by (monitor pubkey, relay d-tag) and keep only the latest
+  // Key format: "pubkey:relay"
+  const latestByMonitorRelay = new Map<string, IEvent>();
+  for (const event of events) {
+    const relay = event.tags?.find(t => t[0] === 'd')?.[1];
+    if (!relay) continue;
+    const key = `${event.pubkey}:${relay}`;
+    const existing = latestByMonitorRelay.get(key);
+    if (!existing || (event.created_at as number) > (existing.created_at as number)) {
+      latestByMonitorRelay.set(key, event);
+    }
+  }
+
+  // Classify each relay by its latest event timestamp for each monitor
+  for (const event of latestByMonitorRelay.values()) {
+    const monitor = monitorMap.get(event.pubkey);
+    if (!monitor) continue;
+
+    const timestamp = event.created_at as number;
+    const onlineAfter = monitor.isOnlineAfter;
+    const deadBefore = monitor.isDeadBefore;
+
+    if (timestamp >= onlineAfter) {
+      result[event.pubkey].online++;
+    } else if (timestamp < deadBefore) {
+      result[event.pubkey].dead++;
+    } else {
+      result[event.pubkey].offline++;
+    }
+  }
+
+  return result;
+}
+
+let relayLivenessScheduled: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRelayLivenessCompute(delayMs = 250) {
+  if (typeof window === "undefined") return;
+  if (relayLivenessScheduled) return;
+  relayLivenessScheduled = setTimeout(() => {
+    relayLivenessScheduled = null;
+    computeAndUpdateRelayLiveness();
+  }, delayMs);
+}
+
+async function computeAndUpdateRelayLiveness(): Promise<void> {
+  const monitorsList = get(monitorsSorted) as Monitor[];
+  if (!Array.isArray(monitorsList) || monitorsList.length === 0) return;
+
+  const result = await computeRelayLivenessFromCache(monitorsList);
+
+  // Don't overwrite cached values with empty results
+  // This can happen if the cache adapter isn't ready yet
+  const hasAnyData = Object.values(result).some(counts =>
+    counts.online > 0 || counts.offline > 0 || counts.dead > 0
+  );
+  if (Object.keys(result).length === 0 || !hasAnyData) {
+    return;
+  }
+
+  monitorRelayLivenessCounts.set(result);
+
+  // Cache the result (leader tab only)
+  if (get(tabState) === "leader" && get(doAggregateCache)) {
+    try {
+      const existing = StateManager.get(MONITOR_RELAY_LIVENESS_CACHE_KEY) as MonitorRelayLivenessMap | undefined;
+      const existingJson = existing ? JSON.stringify(existing) : "";
+      const nextJson = JSON.stringify(result);
+      if (existingJson !== nextJson) {
+        StateManager.set(MONITOR_RELAY_LIVENESS_CACHE_KEY, result);
+      }
+    } catch {}
+  }
+}
+
+if (typeof window !== "undefined") {
+  // Re-compute when monitors change or on a timer
+  // Use a longer initial delay to give the cache time to seed
+  let isFirstMonitorUpdate = true;
+  monitorsSorted.subscribe((monitors) => {
+    // Skip if no monitors yet
+    if (!monitors?.length) return;
+    // Use longer delay on first update to allow cache to fully seed
+    const delay = isFirstMonitorUpdate ? 2000 : 500;
+    isFirstMonitorUpdate = false;
+    scheduleRelayLivenessCompute(delay);
+  });
+  monitorsLivenessLeniency.subscribe(() => {
+    scheduleRelayLivenessCompute(250);
+  });
+  monitorsLivenessDeadThreshold.subscribe(() => {
+    scheduleRelayLivenessCompute(250);
+  });
+
+  // Also trigger periodic refresh since cache data changes independently
+  setInterval(() => {
+    scheduleRelayLivenessCompute(100);
+  }, 30000); // Refresh every 30 seconds
+}
 
 export const monitorRows = derived(
-  [monitors, monitorsSorted, activeMonitorChecksCount, monitorChecksCount, nip05s],
-  ([$monitors, $monitorsSorted, $activeMonitorChecksCount, $monitorChecksCount, $nip05s]) => {
+  [monitorsSorted, monitorRelayLivenessCounts, nip05s],
+  ([$monitorsSorted, $monitorRelayLivenessCounts, $nip05s]) => {
     return $monitorsSorted.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
+      const liveness = $monitorRelayLivenessCounts?.[monitor.pubkey] ?? { online: 0, offline: 0, dead: 0 };
       row.id = monitor.pubkey;
       row.active = monitor.active;
       row.pubkey = monitor.pubkey;
@@ -142,10 +388,10 @@ export const monitorRows = derived(
       row.relays = monitor.relays ?? null
       row.enabled = monitor.enabled ?? false
       row.priority = monitor.priority ?? 0
-      row.reportingOnline = $monitorChecksCount?.[monitor.pubkey] ?? $activeMonitorChecksCount?.[monitor.pubkey] ?? 0
+      row.reportingOnline = liveness?.online ?? 0
+      row.reportingOffline = liveness?.offline ?? 0
+      row.likelyDead = liveness?.dead ?? 0
       return row;
     })
   }
 );
-
-

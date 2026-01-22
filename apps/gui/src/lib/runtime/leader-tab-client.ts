@@ -2,8 +2,12 @@ import {
   createId,
   isBrowser,
   LEADER_TAB_RPC_CHANNEL,
+  LEADER_TAB_PROTOCOL_VERSION,
   type LeaderTabRpcMessage,
   type BroadcastMessage,
+  type LeaderTabHello,
+  type LeaderTabRpcOp,
+  type LeaderTabRpcOpMap,
   type RpcRequestMessage,
   type RpcResponseMessage,
   type RpcStreamMessage,
@@ -22,9 +26,21 @@ export type CallOptions = {
   timeoutMs?: number;
 };
 
+export type WaitForLeaderOptions = {
+  timeoutMs?: number;
+  pollMs?: number;
+};
+
 export type CallStreamOptions = CallOptions & {
   onStream: StreamHandler;
   autoCloseOnResponse?: boolean;
+};
+
+export type LeaderInfo = LeaderTabHello;
+
+type LeaderMonitorOptions = {
+  pollMs?: number;
+  timeoutMs?: number;
 };
 
 export class LeaderTabRpcClient {
@@ -33,7 +49,15 @@ export class LeaderTabRpcClient {
   private channel: BroadcastChannel | null = null;
   private pending = new Map<string, PendingCall>();
   private streams = new Map<string, StreamHandler>();
+  private streamSources = new Map<string, string>();
   private broadcasts = new Set<(msg: BroadcastMessage) => void>();
+
+  private leaderInfo: LeaderInfo | null = null;
+  private leaderListeners = new Set<(info: LeaderInfo | null) => void>();
+
+  private monitorRefCount = 0;
+  private monitorIntervalId: number | null = null;
+  private monitorInFlight = false;
 
   constructor() {
     this.id = createId();
@@ -47,6 +71,7 @@ export class LeaderTabRpcClient {
 
   private onMessage(message: LeaderTabRpcMessage) {
     if (!message || typeof message !== 'object') return;
+    if ('v' in message && message.v !== LEADER_TAB_PROTOCOL_VERSION) return;
 
     // Ignore messages sent by this same client instance
     if ('sourceId' in message && message.sourceId === this.id) return;
@@ -64,6 +89,10 @@ export class LeaderTabRpcClient {
       if (!pending) return;
       this.pending.delete(res.requestId);
       if (pending.timeoutId) clearTimeout(pending.timeoutId);
+      // For streaming calls, lock streams to the responding leader instance.
+      if (this.streams.has(res.requestId)) {
+        this.streamSources.set(res.requestId, res.sourceId);
+      }
       if (res.ok) pending.resolve(res.result);
       else pending.reject(new Error(res.error || 'Leader RPC failed'));
       return;
@@ -72,6 +101,8 @@ export class LeaderTabRpcClient {
     if (message.type === 'rpc-stream') {
       const stream = message as RpcStreamMessage;
       if (stream.targetId !== this.id) return;
+      const expectedSource = this.streamSources.get(stream.requestId);
+      if (expectedSource && stream.sourceId !== expectedSource) return;
       const handler = this.streams.get(stream.requestId);
       if (!handler) return;
       handler(stream);
@@ -84,7 +115,11 @@ export class LeaderTabRpcClient {
     this.channel.postMessage(message);
   }
 
-  call(op: string, args: any[] = [], options: CallOptions = {}): Promise<any> {
+  call<K extends LeaderTabRpcOp>(
+    op: K,
+    args: LeaderTabRpcOpMap[K]['args'],
+    options: CallOptions = {}
+  ): Promise<LeaderTabRpcOpMap[K]['result']> {
     const requestId = options.requestId ?? createId();
     const timeoutMs = options.timeoutMs ?? 30_000;
 
@@ -104,17 +139,100 @@ export class LeaderTabRpcClient {
       this.pending.set(requestId, { resolve, reject, timeoutId });
 
       const req: RpcRequestMessage = {
+        v: LEADER_TAB_PROTOCOL_VERSION,
         type: 'rpc',
         requestId,
         sourceId: this.id,
         op,
-        args,
+        args: args as unknown as any[],
       };
       this.post(req);
     });
   }
 
-  callStream(op: string, args: any[] = [], options: CallStreamOptions): Promise<any> {
+  async waitForLeader(options: WaitForLeaderOptions = {}) {
+    const timeoutMs = options.timeoutMs ?? 5_000;
+    const pollMs = options.pollMs ?? 100;
+    const start = Date.now();
+
+    let lastError: unknown = undefined;
+    while (Date.now() - start < timeoutMs) {
+      try {
+        // `sys.hello` is handled as a fast-path by the leader (no Route66 required).
+        const hello = (await this.call('sys.hello', [], {
+          timeoutMs: Math.min(750, timeoutMs),
+        })) as LeaderInfo;
+        this.updateLeaderInfo(hello);
+        return hello;
+      } catch (e) {
+        lastError = e;
+        await new Promise((resolve) => setTimeout(resolve, pollMs));
+      }
+    }
+
+    throw lastError ?? new Error('No leader available');
+  }
+
+  private updateLeaderInfo(next: LeaderInfo | null) {
+    const prev = this.leaderInfo;
+    const changed =
+      (prev?.termId ?? null) !== (next?.termId ?? null) ||
+      (prev?.serverId ?? null) !== (next?.serverId ?? null);
+
+    this.leaderInfo = next;
+    if (changed) {
+      this.leaderListeners.forEach((fn) => fn(next));
+    }
+  }
+
+  getLeaderInfo(): LeaderInfo | null {
+    return this.leaderInfo;
+  }
+
+  onLeaderChange(handler: (info: LeaderInfo | null) => void): () => void {
+    this.leaderListeners.add(handler);
+    return () => this.leaderListeners.delete(handler);
+  }
+
+  startLeaderMonitor(options: LeaderMonitorOptions = {}): () => void {
+    if (!isBrowser()) return () => {};
+    const pollMs = options.pollMs ?? 2000;
+    const timeoutMs = options.timeoutMs ?? 750;
+
+    this.monitorRefCount++;
+    if (this.monitorIntervalId === null) {
+      const tick = async () => {
+        if (this.monitorInFlight) return;
+        this.monitorInFlight = true;
+        try {
+          const hello = (await this.call('sys.hello', [], { timeoutMs })) as LeaderInfo;
+          this.updateLeaderInfo(hello);
+        } catch {
+          this.updateLeaderInfo(null);
+        } finally {
+          this.monitorInFlight = false;
+        }
+      };
+
+      void tick();
+      this.monitorIntervalId = window.setInterval(() => void tick(), pollMs);
+    }
+
+    return () => {
+      this.monitorRefCount = Math.max(0, this.monitorRefCount - 1);
+      if (this.monitorRefCount === 0 && this.monitorIntervalId !== null) {
+        clearInterval(this.monitorIntervalId);
+        this.monitorIntervalId = null;
+        this.monitorInFlight = false;
+      }
+    };
+  }
+
+  callStream<K extends LeaderTabRpcOp>(
+    op: K,
+    args: LeaderTabRpcOpMap[K]['args'],
+    options: CallStreamOptions
+  ): Promise<LeaderTabRpcOpMap[K]['result']> {
     const requestId = options.requestId ?? createId();
     const timeoutMs = options.timeoutMs ?? 30_000;
     const autoCloseOnResponse = options.autoCloseOnResponse ?? true;
@@ -130,29 +248,36 @@ export class LeaderTabRpcClient {
         timeoutMs > 0
           ? window.setTimeout(() => {
               this.pending.delete(requestId);
-              if (autoCloseOnResponse) this.streams.delete(requestId);
+              // If a stream never establishes, keeping it around just leaks.
+              // Established keepAlive streams should resolve quickly (leader returns immediately).
+              this.streams.delete(requestId);
               reject(new Error(`Leader RPC timeout: ${op}`));
             }, timeoutMs)
           : undefined;
 
       this.pending.set(requestId, {
         resolve: (value) => {
-          if (autoCloseOnResponse) this.streams.delete(requestId);
+          if (autoCloseOnResponse) {
+            this.streams.delete(requestId);
+            this.streamSources.delete(requestId);
+          }
           resolve(value);
         },
         reject: (err) => {
-          if (autoCloseOnResponse) this.streams.delete(requestId);
+          this.streams.delete(requestId);
+          this.streamSources.delete(requestId);
           reject(err);
         },
         timeoutId,
       });
 
       const req: RpcRequestMessage = {
+        v: LEADER_TAB_PROTOCOL_VERSION,
         type: 'rpc',
         requestId,
         sourceId: this.id,
         op,
-        args,
+        args: args as unknown as any[],
         stream: true,
       };
       this.post(req);
@@ -161,6 +286,7 @@ export class LeaderTabRpcClient {
 
   closeStream(requestId: string) {
     this.streams.delete(requestId);
+    this.streamSources.delete(requestId);
   }
 
   onBroadcast(handler: (msg: BroadcastMessage) => void): () => void {
@@ -170,6 +296,7 @@ export class LeaderTabRpcClient {
 
   broadcast(kind: string, data?: any) {
     const msg: BroadcastMessage = {
+      v: LEADER_TAB_PROTOCOL_VERSION,
       type: 'broadcast',
       sourceId: this.id,
       kind,
@@ -184,7 +311,14 @@ export class LeaderTabRpcClient {
     this.channel = null;
     this.pending.clear();
     this.streams.clear();
+    this.streamSources.clear();
     this.broadcasts.clear();
+    this.leaderListeners.clear();
+    this.updateLeaderInfo(null);
+    if (this.monitorIntervalId !== null) clearInterval(this.monitorIntervalId);
+    this.monitorIntervalId = null;
+    this.monitorRefCount = 0;
+    this.monitorInFlight = false;
   }
 }
 

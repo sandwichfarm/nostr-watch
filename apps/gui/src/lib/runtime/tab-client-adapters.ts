@@ -1,4 +1,5 @@
 import type { IEvent } from '@nostrwatch/route66/models';
+import { StateManager } from '@nostrwatch/route66';
 
 import {
   CacheAdapter,
@@ -13,6 +14,77 @@ import {
 import { deterministicHash } from '@nostrwatch/route66/utils';
 
 import { getLeaderTabRpcClient } from './leader-tab-client';
+import type { LeaderTabRpcOp, LeaderTabRpcOpMap } from './leader-tab-protocol';
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function leaderCall<K extends LeaderTabRpcOp>(
+  op: K,
+  args: LeaderTabRpcOpMap[K]['args'],
+  timeoutMs = 30_000
+): Promise<LeaderTabRpcOpMap[K]['result']> {
+  const client = getLeaderTabRpcClient();
+  const delays = [0, 50, 150, 400];
+
+  let lastError: unknown = undefined;
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (attempt > 0) {
+      await sleep(delays[attempt]);
+    }
+
+    try {
+      return await client.call(op, args, { timeoutMs });
+    } catch (e) {
+      lastError = e;
+      try {
+        await client.waitForLeader({ timeoutMs: 2_500 });
+      } catch {
+        // ignore; next retry handles it
+      }
+    }
+  }
+
+  throw lastError ?? new Error(`Leader RPC failed: ${op}`);
+}
+
+async function leaderCallStream<K extends LeaderTabRpcOp>(
+  op: K,
+  args: LeaderTabRpcOpMap[K]['args'],
+  requestId: string,
+  onStream: (msg: any) => void,
+  timeoutMs: number,
+  autoCloseOnResponse: boolean
+): Promise<LeaderTabRpcOpMap[K]['result']> {
+  const client = getLeaderTabRpcClient();
+  const delays = [0, 50, 150, 400];
+
+  let lastError: unknown = undefined;
+  for (let attempt = 0; attempt < delays.length; attempt++) {
+    if (attempt > 0) {
+      await sleep(delays[attempt]);
+    }
+
+    try {
+      return await client.callStream(op, args, {
+        requestId,
+        timeoutMs,
+        autoCloseOnResponse,
+        onStream: onStream as any,
+      });
+    } catch (e) {
+      lastError = e;
+      try {
+        await client.waitForLeader({ timeoutMs: 2_500 });
+      } catch {
+        // ignore; next retry handles it
+      }
+    }
+  }
+
+  throw lastError ?? new Error(`Leader stream RPC failed: ${op}`);
+}
 
 export class TabClientCacheAdapter extends CacheAdapter implements ICacheAdapter {
   readonly slug: string = 'tab-client-cache';
@@ -39,59 +111,59 @@ export class TabClientCacheAdapter extends CacheAdapter implements ICacheAdapter
   }
 
   async REQ(filters: any[]): Promise<IEvent[]> {
-    return (await getLeaderTabRpcClient().call('cache.REQ', [filters])) as IEvent[];
+    return (await leaderCall('cache.REQ', [filters])) as IEvent[];
   }
 
   async COUNT(filters: any[]): Promise<number> {
-    return (await getLeaderTabRpcClient().call('cache.COUNT', [filters])) as number;
+    return (await leaderCall('cache.COUNT', [filters])) as number;
   }
 
   async DELETE(filters: any[]): Promise<string[]> {
-    return (await getLeaderTabRpcClient().call('cache.DELETE', [filters])) as string[];
+    return (await leaderCall('cache.DELETE', [filters])) as string[];
   }
 
   async DUMP(): Promise<Uint8Array> {
-    return (await getLeaderTabRpcClient().call('cache.DUMP', [])) as Uint8Array;
+    return (await leaderCall('cache.DUMP', [])) as Uint8Array;
   }
 
   async CLOSE(subId: string): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('cache.CLOSE', [subId])) as boolean;
+    return (await leaderCall('cache.CLOSE', [subId])) as boolean;
   }
 
   async WIPE(): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('cache.WIPE', [])) as boolean;
+    return (await leaderCall('cache.WIPE', [])) as boolean;
   }
 
   async addEvent(event: IEvent): Promise<void> {
-    await getLeaderTabRpcClient().call('cache.addEvent', [event]);
+    await leaderCall('cache.addEvent', [event]);
   }
 
   async addEvents(events: IEvent[]): Promise<void> {
-    await getLeaderTabRpcClient().call('cache.addEvents', [events]);
+    await leaderCall('cache.addEvents', [events]);
   }
 
   async putEvent(event: IEvent): Promise<void> {
-    await getLeaderTabRpcClient().call('cache.putEvent', [event]);
+    await leaderCall('cache.putEvent', [event]);
   }
 
   async upsertNip11(relay: string, nip11: any): Promise<void> {
-    await getLeaderTabRpcClient().call('cache.upsertNip11', [relay, nip11]);
+    await leaderCall('cache.upsertNip11', [relay, nip11]);
   }
 
   async batchUpsertNip11(relayNip11s: { relay: string; nip11: any }[]): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('cache.batchUpsertNip11', [relayNip11s])) as boolean;
+    return (await leaderCall('cache.batchUpsertNip11', [relayNip11s])) as boolean;
   }
 
   async countNip11s(): Promise<number> {
-    return (await getLeaderTabRpcClient().call('cache.countNip11s', [])) as number;
+    return (await leaderCall('cache.countNip11s', [])) as number;
   }
 
   async countUniqueNip11s(): Promise<number> {
-    return (await getLeaderTabRpcClient().call('cache.countUniqueNip11s', [])) as number;
+    return (await leaderCall('cache.countUniqueNip11s', [])) as number;
   }
 
   async getNip11(relay: any): Promise<any> {
-    return await getLeaderTabRpcClient().call('cache.getNip11', [relay]);
+    return await leaderCall('cache.getNip11', [relay]);
   }
 }
 
@@ -99,6 +171,24 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
   readonly slug: string = 'tab-client-websocket';
   useWorker: boolean = false;
   handleSetupInternally: boolean = true;
+
+  private readonly keepAliveSubs = new Map<
+    string,
+    { args: WebsocketRequestBody; callbacks?: SubscribeHandlers }
+  >();
+  private stopLeaderMonitor: (() => void) | null = null;
+  private stopLeaderListener: (() => void) | null = null;
+  private readonly destroyListener: () => void;
+
+  private resubscribeInFlight: Promise<void> | null = null;
+
+  constructor() {
+    super();
+    this.destroyListener = this.cleanup.bind(this);
+    try {
+      StateManager.on('destroy', this.destroyListener);
+    } catch {}
+  }
 
   protected bindWorkerHandlers(): void {}
 
@@ -116,6 +206,59 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
 
   disconnect(): void {}
   terminate(): void {}
+
+  async shutdown(): Promise<void> {
+    this.cleanup();
+  }
+
+  private ensureLeaderMonitoring() {
+    const client = getLeaderTabRpcClient();
+
+    if (!this.stopLeaderMonitor) {
+      this.stopLeaderMonitor = client.startLeaderMonitor({ pollMs: 2000, timeoutMs: 750 });
+    }
+
+    if (!this.stopLeaderListener) {
+      this.stopLeaderListener = client.onLeaderChange((info) => {
+        if (!info) return;
+        void this.resubscribeKeepAlive().catch(() => {});
+      });
+    }
+  }
+
+  private stopLeaderMonitoringIfIdle() {
+    if (this.keepAliveSubs.size > 0) return;
+    this.stopLeaderListener?.();
+    this.stopLeaderListener = null;
+    this.stopLeaderMonitor?.();
+    this.stopLeaderMonitor = null;
+  }
+
+  private async resubscribeKeepAlive() {
+    if (this.resubscribeInFlight) return this.resubscribeInFlight;
+
+    this.resubscribeInFlight = (async () => {
+      for (const [hash, entry] of this.keepAliveSubs.entries()) {
+        const args = entry.args;
+        args.hash = hash;
+        args.options = {
+          ...defaultWebsocketAdapterOptions,
+          ...(args.options ?? {}),
+          stream: true,
+          keepAlive: true,
+        };
+        try {
+          await this.streamWs('ws.subscribe', args, entry.callbacks);
+        } catch {
+          // best-effort; will retry on next leader change
+        }
+      }
+    })().finally(() => {
+      this.resubscribeInFlight = null;
+    });
+
+    return this.resubscribeInFlight;
+  }
 
   private ensureHash(args: WebsocketRequestBody): string {
     if (args.hash) return args.hash;
@@ -146,15 +289,18 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
       }
     };
 
-    return (await getLeaderTabRpcClient().callStream(op, [args], {
-      requestId: hash,
-      autoCloseOnResponse: !keepAlive,
-      onStream: onStream as any,
-    })) as IEvent[] | boolean;
+    return (await leaderCallStream(
+      op,
+      [args],
+      hash,
+      onStream as any,
+      30_000,
+      !keepAlive
+    )) as IEvent[] | boolean;
   }
 
   async publish(args: Partial<WebsocketRequestBody>): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('ws.publish', [args])) as boolean;
+    return (await leaderCall('ws.publish', [args])) as boolean;
   }
 
   async subscribe(
@@ -163,10 +309,19 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
   ): Promise<IEvent[] | boolean> {
     if (callbacks && Object.keys(callbacks).length > 0) {
       args.options = { ...defaultWebsocketAdapterOptions, ...(args.options ?? {}), stream: true };
+      const hash = this.ensureHash(args);
+      if (args?.options?.keepAlive) {
+        this.keepAliveSubs.set(hash, { args, callbacks });
+        this.ensureLeaderMonitoring();
+      }
       return this.streamWs('ws.subscribe', args, callbacks);
     }
     this.ensureHash(args);
-    return (await getLeaderTabRpcClient().call('ws.subscribe', [args])) as IEvent[] | boolean;
+    if (args?.options?.keepAlive) {
+      // keepAlive subscriptions without callbacks would hang in the leader's underlying adapter.
+      throw new Error('TabClientWebsocketAdapter: keepAlive subscribe requires callbacks (stream mode)');
+    }
+    return (await leaderCall('ws.subscribe', [args])) as IEvent[] | boolean;
   }
 
   async fetch(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
@@ -175,20 +330,47 @@ export class TabClientWebsocketAdapter extends WebsocketAdapter implements IWebs
       return this.streamWs('ws.fetch', args, callbacks);
     }
     this.ensureHash(args);
-    return (await getLeaderTabRpcClient().call('ws.fetch', [args])) as IEvent[] | boolean;
+    return (await leaderCall('ws.fetch', [args])) as IEvent[] | boolean;
   }
 
   unsubscribe(hash?: string): void {
     if (!hash) return;
+    this.keepAliveSubs.delete(hash);
+    this.stopLeaderMonitoringIfIdle();
     getLeaderTabRpcClient().closeStream(hash);
     void getLeaderTabRpcClient().call('ws.unsubscribe', [hash]).catch(() => {});
   }
 
   unsubscribeAll(): void {
-    void getLeaderTabRpcClient().call('ws.unsubscribeAll', []).catch(() => {});
+    this.keepAliveSubs.clear();
+    this.stopLeaderMonitoringIfIdle();
+    void leaderCall('ws.unsubscribeAll', []).catch(() => {});
   }
 
   async abort(): Promise<boolean> {
-    return (await getLeaderTabRpcClient().call('ws.abort', [])) as boolean;
+    this.keepAliveSubs.clear();
+    this.stopLeaderMonitoringIfIdle();
+    return (await leaderCall('ws.abort', [])) as boolean;
+  }
+
+  private cleanup() {
+    try {
+      StateManager.off('destroy', this.destroyListener);
+    } catch {}
+
+    for (const hash of this.keepAliveSubs.keys()) {
+      try {
+        getLeaderTabRpcClient().closeStream(hash);
+      } catch {}
+      try {
+        void getLeaderTabRpcClient().call('ws.unsubscribe', [hash]).catch(() => {});
+      } catch {}
+    }
+
+    this.keepAliveSubs.clear();
+    this.stopLeaderListener?.();
+    this.stopLeaderListener = null;
+    this.stopLeaderMonitor?.();
+    this.stopLeaderMonitor = null;
   }
 }

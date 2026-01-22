@@ -2,7 +2,8 @@ import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
 import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, tabState } from "$stores/app";
-import { fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
+import { backfillMonitorChecks, fetchDisabledMonitorsChecks, fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
+import { seedBuildData } from "$lib/fetchers/seed";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
 import { publishEventsToMemoryRelay } from "./events-helpers";
@@ -16,13 +17,20 @@ import { relayNip11Validations } from "./nip11-validations";
 import { page } from "$app/stores";
 import { relayLiveSync } from "$utils/live-sync";
 import { SYNC_CHECKS_EXPIRY, SYNC_MONITORS_EXPIRY, SYNC_NIP11_EXPIRY, SYNC_OPERATORS_EXPIRY, SYNC_RELAY_ALL_EXPIRY, SYNC_RELAY_CHECKS_EXPIRY, SYNC_RELAY_NIP11_EXPIRY, SYNC_RELAY_OPERATOR_EXPIRY, VALIDATE_NIP11S_EXPIRY } from "$lib/constants/synchronization";
+import { initDimensionsWorker } from "$lib/workers/dimensions-worker-manager";
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
 export const dataRegisterInit = async () => {
     const data = get(dataRegister);
-    
+
     //state
+    data.register({
+        key: 'seed:build',
+        priority: 0,
+        fn: seedBuildData
+    });
+
     data.register({
         key: 'set:bootstrapped',
         priority: 1,
@@ -87,17 +95,61 @@ export const dataRegisterInit = async () => {
         onComplete: publishEventsToMemoryRelay
     });
     data.register({
-        key: 'sync:nip11s',
+        key: 'sync:checks:disabled',
         priority: 22,
+        expiry: SYNC_CHECKS_EXPIRY,
+        fn: fetchDisabledMonitorsChecks,
+        onComplete: publishEventsToMemoryRelay
+    });
+    data.register({
+        key: 'sync:nip11s',
+        priority: 23,
         expiry: SYNC_NIP11_EXPIRY,
         fn: fetchNip11s
     });
     data.register({
         key: 'sync:operators',
-        priority: 23,
+        priority: 24,
         expiry: SYNC_OPERATORS_EXPIRY,
-        condition: async () => !get(isSeeded), 
+        // Always keep operator meta fresh in the leader tab; followers should
+        // rely on leader broadcasts and cache snapshots.
+        condition: async () => get(tabState) === 'leader',
         fn: fetchOperators,
+        onComplete: publishEventsToMemoryRelay
+    });
+
+    // Backfill historical check events for accurate offline/dead counts.
+    // Runs at lower priority after initial sync, only in leader tab.
+    data.register({
+        key: 'sync:checks:backfill',
+        priority: 50,
+        expiry: SYNC_CHECKS_EXPIRY,
+        condition: async () => get(tabState) === 'leader',
+        fn: backfillMonitorChecks,
+        onComplete: publishEventsToMemoryRelay
+    });
+
+    const operatorKeyFn = (key: string, params: string[]) => {
+        const pubkey = params?.[0];
+        if (!pubkey) return key;
+        return `${key}:${pubkey}`;
+    }
+
+    // Targeted operator meta fetch (used by /operators/[pubkey]).
+    data.register({
+        key: 'sync:operator:meta',
+        priority: 25,
+        expiry: SYNC_OPERATORS_EXPIRY,
+        keyFn: operatorKeyFn,
+        fn: async (pubkey: string) => {
+            const $route66 = await instance();
+            await $route66.ready();
+            try {
+                const cached = await $route66.REQ([{ kinds: [0, 10002], authors: [pubkey] }]);
+                if (cached?.length) return cached;
+            } catch {}
+            return fetchOperators([pubkey]);
+        },
         onComplete: publishEventsToMemoryRelay
     });
     data.register({
@@ -109,7 +161,7 @@ export const dataRegisterInit = async () => {
 
     data.register({
         key: 'validate:nip11s',
-        expiry: VALIDATE_NIP11S_EXPIRY,    
+        expiry: VALIDATE_NIP11S_EXPIRY,
         priority: 200,
         fn: async () => {
             const validator = new SchemaValidationService();
@@ -127,10 +179,10 @@ export const dataRegisterInit = async () => {
             validations.forEach( (validation, index) => {
                 validationsMap.set(keysIndex[index], validation)
             })
-            return validationsMap;  
+            return validationsMap;
         },
         onComplete: async (validationsMap: Map<string, SchemaValidationServiceResponse>) => {
-            console.log('validationsMap', validationsMap)   
+            console.log('validationsMap', validationsMap)
             relayNip11Validations.update(() => validationsMap)
         }
     })
@@ -141,11 +193,22 @@ export const dataRegisterInit = async () => {
         key: 'sync:cache',
         priority: 3,
         condition: async () => {
-            return !get(isSeeded) && get(isBootstrapped)
+            if (get(isSeeded)) {
+                console.log('[DataRegister] skipping sync:cache: already seeded');
+                return false;
+            }
+            // Followers should always try to hydrate from the leader/cache, even
+            // when this origin hasn't been "bootstrapped" yet.
+            if (get(tabState) !== 'leader') return true;
+            const bootstrapped = get(isBootstrapped);
+            if (!bootstrapped) {
+                console.log('[DataRegister] skipping sync:cache: fresh state');
+            }
+            return bootstrapped;
         },
         fn: seedFromCache,
         onComplete: async (events: IEvent[]): Promise<any> => {
-            if(!events?.length) return 
+            if(!events?.length) return
             publishEventsToMemoryRelay(events, 'cache')
             isSeeded.set(true)
             return events?.length ?? 0;
@@ -163,11 +226,14 @@ export const dataRegisterInit = async () => {
     data.composite({
         key: 'sync:all',
         keys: [
-            'sync:monitors', 
-            'sync:checks', 
-            'sync:operators', 
-            'sync:live', 
-            'sync:nip11s', 
+            'seed:build',
+            'sync:monitors',
+            'sync:checks',
+            'sync:checks:disabled',
+            'sync:checks:backfill',
+            'sync:operators',
+            'sync:live',
+            'sync:nip11s',
             'validate:nip11s'
         ],
         priority: -10,
@@ -178,19 +244,26 @@ export const dataRegisterInit = async () => {
         onComplete: async () => {
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            // Ensure isSeeded is set so UI can progress
+            if (!get(isSeeded)) {
+                isSeeded.set(true)
+            }
         },
         ignoreConditions: {},
         ignoreExpiries: {}
     });
-    
+
     data.composite({
         key: 'sync:all-force',
         keys: [
-            'sync:monitors', 
-            'sync:checks', 
-            'sync:operators', 
-            'sync:live', 
-            'sync:nip11s', 
+            'seed:build',
+            'sync:monitors',
+            'sync:checks',
+            'sync:checks:disabled',
+            'sync:checks:backfill',
+            'sync:operators',
+            'sync:live',
+            'sync:nip11s',
             'validate:nip11s'
         ],
         // condition: async () => !get(doBootstrap),
@@ -202,16 +275,24 @@ export const dataRegisterInit = async () => {
         onComplete: async () => {
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            // Ensure isSeeded is set so UI can progress even without seed files
+            if (!get(isSeeded)) {
+                isSeeded.set(true)
+            }
         },
         ignoreConditions: {
             'sync:monitors': true,
             'sync:checks': true,
+            'sync:checks:disabled': true,
+            'sync:checks:backfill': true,
             'sync:nip11s': true,
             'sync:operators': true
         },
         ignoreExpiries: {
             'sync:monitors': true,
             'sync:checks': true,
+            'sync:checks:disabled': true,
+            'sync:checks:backfill': true,
             'sync:nip11s': true,
             'sync:operators': true
         }
@@ -232,4 +313,7 @@ export const dataRegisterInit = async () => {
     await (await instance()).ready()
     await delay(20)
     data.unlock();
+
+    // Initialize dimensions worker for off-thread derivations
+    initDimensionsWorker();
 }

@@ -98,6 +98,24 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     const code = e.code || e.result?.code;
     const corrupt = code === "SQLITE_CORRUPT" || code === 11;
     const message = e.message || (e.result && e.result.message) || String(e);
+
+    const opfsUnavailable =
+      code === "OPFS_TIMEOUT" ||
+      message.includes("OPFS") ||
+      message.includes("SharedArrayBuffer") ||
+      message.includes("crossOriginIsolated") ||
+      message.includes("installOpfsSAHPoolVfs");
+
+    if (opfsUnavailable) {
+      console.warn("OPFS/SQLite unavailable, falling back to InMemoryRelay", e);
+      try {
+        state.relay?.close();
+      } catch {}
+      state.relay = new InMemoryRelay();
+      await state.relay.init(args.databasePath);
+      return;
+    }
+
     if (corrupt || message.includes("malformed") || message.includes("not a database")) {
       const root = await navigator.storage.getDirectory();
       try {

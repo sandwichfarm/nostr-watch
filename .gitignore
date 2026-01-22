@@ -27,5 +27,6 @@ test-results
 scripts/deploy/gui-scp.sh
 .vscode
 .roo 
+apps/gui/static/seed
 
 .data

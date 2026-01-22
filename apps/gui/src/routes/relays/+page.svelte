@@ -21,6 +21,7 @@
 	import { DataTable } from '$lib/components/@Careswitch/svelte-data-table';
 	import { delay } from '@nostrwatch/utils';
 	import { fade } from 'svelte/transition';
+	import { tabState } from '$lib/stores/app';
 
 	const TRANSITION_DURATION = 100;
 
@@ -39,28 +40,33 @@
 
 
 	/***
-	 * This sets active keys override, which optimizes the data view by only aggregating keys 
+	 * This sets active keys override, which optimizes the data view by only aggregating keys
 	 * needed by the table or filters. Huge improvement to performance, reduces clock-time
 	 * of aggregate derived by ~85% in default view. The more columns/filters/monitors enabled,
 	 * the worse the performance. It can be measured, and hints can be given to user.
 	*/
+	let activeKeysTimeout: ReturnType<typeof setTimeout> | null = null;
 	const configUnsub: Unsubscriber = config.subscribe(($config) => {
 		if(!$config) return;
-		const oldKeys = [...get(overrideRelayChecksActiveKeys)]
-		const { columnsShow, filtersShow, dataDependencies } = $config;
-		let keys = []
-		if(columnsShow?.length) {
-			keys.push(...columnsShow)
-		}
-		if(filtersShow?.length) {
-			keys.push(...filtersShow)
-		}
-		keys.forEach((key) => {
-			if(dataDependencies?.[key]) {
-				keys.unshift(...dataDependencies[key])
+
+		// Debounce to avoid cascading re-aggregations during init
+		if (activeKeysTimeout) clearTimeout(activeKeysTimeout);
+		activeKeysTimeout = setTimeout(() => {
+			const { columnsShow, filtersShow, dataDependencies } = $config;
+			let keys: string[] = []
+			if(columnsShow?.length) {
+				keys.push(...columnsShow)
 			}
-		})
-		overrideRelayChecksActiveKeys.set( Array.from(new Set(keys)) )
+			if(filtersShow?.length) {
+				keys.push(...filtersShow)
+			}
+			keys.forEach((key) => {
+				if(dataDependencies?.[key]) {
+					keys.unshift(...dataDependencies[key])
+				}
+			})
+			overrideRelayChecksActiveKeys.set( Array.from(new Set(keys)) )
+		}, 50);
 	})
 		
 
@@ -81,10 +87,23 @@
 		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
+			// Ensure newly-added relay liveness filter exists even for older saved configs.
+			conf.filtersShow = Array.isArray(conf.filtersShow)? conf.filtersShow: [];
+			if(!conf.filtersShow.includes('liveness')) conf.filtersShow.unshift('liveness');
+
+			conf.filtersActive = (conf.filtersActive && typeof conf.filtersActive === 'object')? conf.filtersActive: {};
+			if(!conf.filtersActive?.liveness) conf.filtersActive.liveness = ['online'];
+
 			////console.log('setting config with user config', conf)
 			config.set(conf)
 		}
 		else {
+			conf.filtersShow = Array.isArray(conf.filtersShow)? conf.filtersShow: [];
+			if(!conf.filtersShow.includes('liveness')) conf.filtersShow.unshift('liveness');
+
+			conf.filtersActive = (conf.filtersActive && typeof conf.filtersActive === 'object')? conf.filtersActive: {};
+			if(!conf.filtersActive?.liveness) conf.filtersActive.liveness = ['online'];
+
 			////console.log('setting config without user config', conf)
 			config.set(conf)
 		}
@@ -93,10 +112,11 @@
 
 	const mount = async ( ) => {
 		loadComponents().then(setConfig);
-		await $dataRegister.require([
-			'sync:cache',
-			'sync:all'
-		])
+		const keys = ['sync:cache'];
+		if (get(tabState) === 'leader') keys.push('sync:all');
+		void $dataRegister
+			.require(keys)
+			.catch((err) => console.error('[DataRegister] require failed', err));
 	}
 
 	const destroy = () => {
@@ -118,9 +138,13 @@
 	// 	}).filter( res => res !== undefined );
 	// });
 
-	let onFilterChange: (config: DataTableConfig) => void = (config) => { console.log('function was not bound') }
+	let onFilterChange: (config: DataTableConfig) => void = (_config) => {}
+	let onPresetSave: () => void = () => {}
 
 	let showDataView = true; // Controls opacity transition
+
+	// Reference to the shortcut component to reload presets
+	let shortcutComponent: any;
 
 	const loadPreset = (path: string) => { 
 			const hash = path.split('#')?.[1]
@@ -159,27 +183,29 @@
 	{#if $ready}
 	
 	<RelayDimensions />
-	<RelayDataViewShortcut 
-		class="ml-3 my-4 opacity-70" 
+	<RelayDataViewShortcut
+		bind:this={shortcutComponent}
+		class="ml-3 my-4 opacity-70"
 		buttonClass=" py-1 px-2 mr-2 text-sm bg-transparent hover:bg-white/20"
 		buttonActiveClass="bg-white/20"
-		buttonVariant="secondary" 
-		buttonSize="sm" 
+		buttonVariant="secondary"
+		buttonSize="sm"
 		onClick={loadPreset}
 		label="Filter Presets"
-		/>
+	/>
 	<!-- I need this to fade in and out every time I trigger pseudo transition, without unmounting the component -->
 	<div
 		style="opacity: {showDataView || $activeView !== 'table' ? 1 : 0}; transition: opacity {TRANSITION_DURATION}ms ease-in-out;"
 			>
-		<DataView 
+		<DataView
 			bind:onFilterChange
-			data={relayCheckAggregates} 
-			{config} 
-			key={dataKey} 
-			{enabledViews} 
+			onPresetSave={() => shortcutComponent?.reloadPresets?.()}
+			data={relayCheckAggregates}
+			{config}
+			key={dataKey}
+			{enabledViews}
 			bind:activeView
-			/>
+		/>
 	</div>
 	<!-- <Stats /> -->
 	<!-- <DataTable data={relayCheckAggregates} {config} {dataKey} /> -->

@@ -4,6 +4,7 @@ import { Route66 } from "@nostrwatch/route66";
 import { SvelteMemoryRelay } from "@nostrwatch/memory-relay"
 import { route66 } from "../route66";
 import { events, type StoreEventType } from "../events";
+import { isBootstrapping } from "../app";
 
 let $route66: Route66 | null = null;
 route66.subscribe(value => $route66 = value);
@@ -29,16 +30,14 @@ eventsStoreMemoryRelay_.on('instantiate', (event: StoreEventType) => {
 
 //!!NOTICE: THE EVENTS RELAY IS ONLY STORING NIP-66 EVENTS
 // TO MAINTAIN FUNCTIONALITY UNTIL EVERYTHING IT FLETCHED OUT:
-eventsStoreMemoryRelay_.on('qualify', (event: StoreEventType, key: string, $relay: SvelteMemoryRelay<IEvent, StoreEventType>) => {     
-    if(!event) return false 
+eventsStoreMemoryRelay_.on('qualify', (event: StoreEventType, key: string, $relay: SvelteMemoryRelay<IEvent, StoreEventType>) => {
+    if(!event) return false
     const kind = event.kind
     if(kind === undefined) return false
     if(kind === 30166) {
         const monitor = getMonitor(event.pubkey);
         if(monitor) {
-            const online = monitor.relayIsOnline(event);
             monitor.maybeUpdateLastActive?.(event);
-            if(!online) return false;
         }
         if(event.tags.find( tag => tag[0] === 'd')?.[1]?.includes('echo.websocket.org')) return false;
     }

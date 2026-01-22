@@ -19,7 +19,10 @@
 
     onMount(mount)
 
-    const countRelays = derived(relayCheckAggregates, $relayCheckAggregates => $relayCheckAggregates?.length  || null);
+    const countRelays = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+        if(!$relayCheckAggregates?.length) return null;
+        return $relayCheckAggregates.filter((relay: any) => relay?.liveness === 'online').length || null;
+    });
     const countMonitorsEnabled = derived(enabledMonitors, $enabledMonitors => $enabledMonitors || null);
     const countMonitorsActive = derived(activeMonitors, $activeMonitors => $activeMonitors || null);
     const countMonitors = derived([countMonitorsEnabled, countMonitorsActive], ([$countMonitorsEnabled, $countMonitorsActive]) => {

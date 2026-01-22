@@ -111,6 +111,7 @@
             pageSize: $config.pageSize,
             columns: $filteredTableData.columns,
             data: $filteredTableData.data,
+            dataFormatters: $config.dataFormatters,
         }
 
         if($config?.sortState) {

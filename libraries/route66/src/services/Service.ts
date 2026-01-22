@@ -318,4 +318,23 @@ export class Service {
     if (!this._groupedRelays?.[from]) return;
     this._groupedRelays[from] = this._groupedRelays[from].filter((r) => r !== relay);
   }
+
+  /**
+   * Replace all relays in a group with new ones
+   * Note: Empty arrays are ignored to prevent accidentally wiping out relay lists
+   */
+  setRelays(group: keyof IGroupedRelays, relays: string[]): void {
+    if (!relays || relays.length === 0) {
+      console.warn(`setRelays called with empty array for group '${group}', ignoring`);
+      return;
+    }
+    this._groupedRelays[group] = [...relays];
+  }
+
+  /**
+   * Clear all relays from a group
+   */
+  clearRelays(group: keyof IGroupedRelays): void {
+    this._groupedRelays[group] = [];
+  }
 }

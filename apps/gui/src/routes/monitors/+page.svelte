@@ -9,8 +9,8 @@
 
     import { StateManager } from '@nostrwatch/route66';
     import { doBootstrap } from '$lib/stores/routines';
-    import { doAggregateCache } from '$lib/stores/app';
-    import { writable, type Writable } from 'svelte/store';
+    import { doAggregateCache, tabState } from '$lib/stores/app';
+    import { get, writable, type Writable } from 'svelte/store';
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
 	import { bootstrapMonitorData } from '$utils/lifecycle';
@@ -28,6 +28,12 @@
 		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
+			// Keep newly-added columns visible even when a user has an older saved table config.
+			const ensureColumns = ['reportingOffline', 'likelyDead']
+			conf.columnsShow = Array.isArray(conf.columnsShow)? conf.columnsShow: []
+			for(const col of ensureColumns){
+				if(!conf.columnsShow.includes(col)) conf.columnsShow.push(col)
+			}
 			config.set(conf)
 		}
 		else {
@@ -41,11 +47,13 @@
         doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
-        $dataRegister.require([
-        	'sync:cache',
-        	'sync:monitors',
-            'sync:checks',
-    	]); 
+        const keys = ['sync:cache'];
+        if (get(tabState) === 'leader') {
+            keys.push('sync:monitors', 'sync:checks');
+        }
+        void $dataRegister
+            .require(keys)
+            .catch((err) => console.error('[DataRegister] require failed', err));
     });
 
     $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: any) => { return !monitor.active && monitor.enabled }).length;

@@ -11,8 +11,9 @@ export const operatorsPubkeys: Readable<string[]> = derived(
     ($relayCheckAggregates) => {
         const operators = new Set<string>();
         $relayCheckAggregates.forEach((relayCheck) => {
-            const { operatorPubkey } = relayCheck;
-            if (operatorPubkey) {
+            const { operatorPubkey, liveness } = relayCheck;
+            // Only include operators who have at least one online relay
+            if (operatorPubkey && liveness === 'online') {
                 operators.add(operatorPubkey);
             }
         });
@@ -51,35 +52,44 @@ export type OperatorsRow = Record<keyof User | 'id' | 'isps' | 'ispsCount' | 're
 export const operatorsRows: Readable<OperatorsRow[]> = derived(
     [operatorsUserInstances],
     ([$operatorsUserInstances]) => {
-        let rows: OperatorsRow[] = []
-        if($operatorsUserInstances.size > 0) {
-            $operatorsUserInstances.forEach((userInstance) => {
-                if(!userInstance) return;   
-                const keys = userInstance.keys;
-                const row: OperatorsRow = Object.fromEntries( 
-                    keys
-                        .map( (key: keyof User) => [ key, userInstance[key]] ) 
-                        .filter( (entry) => typeof entry[1] !==  'function' )
-                )
-                row.id = userInstance.pubkey;
-                row.isps = operatorIsps(userInstance.pubkey);
-                row.ispsCount = row.isps?.length || 0;
-                row.relays = operatorRelaysOperated(userInstance.pubkey);
-                row.relaysCount = row.relays?.length || 0;
-                row.softwares = operatorSoftwares(userInstance.pubkey);
-                row.softwaresCount = row.softwares?.length || 0;
-                rows.push(row);
-                
-            });
-            StateManager.set('aggregate:operators', rows);
-        }
-        else {
-            const fromCacheValues: OperatorsRow[] = StateManager.get('aggregate:operators');  
-            if(fromCacheValues?.length) {
-                rows = fromCacheValues;
+        const fromCacheValues: OperatorsRow[] = StateManager.get('aggregate:operators');
+        const cachedByPubkey = new Map<string, OperatorsRow>();
+        if (Array.isArray(fromCacheValues)) {
+            for (const row of fromCacheValues) {
+                const pubkey = (row as any)?.pubkey;
+                if (typeof pubkey === 'string') cachedByPubkey.set(pubkey, row);
             }
         }
-        return rows;
+
+        let rows: OperatorsRow[] = [];
+        let hasAnyMetadata = false;
+
+        if ($operatorsUserInstances.size > 0) {
+            $operatorsUserInstances.forEach((userInstance, pubkey) => {
+                if (userInstance) hasAnyMetadata = true;
+                const row: OperatorsRow = userInstance
+                    ? (Object.fromEntries(
+                          userInstance.keys
+                              .map((key: keyof User) => [key, userInstance[key]])
+                              .filter((entry) => typeof entry[1] !== 'function')
+                      ) as OperatorsRow)
+                    : ((cachedByPubkey.get(pubkey) ?? { pubkey, name: pubkey }) as unknown as OperatorsRow);
+
+                row.id = pubkey;
+                row.pubkey = pubkey;
+                row.isps = operatorIsps(pubkey);
+                row.ispsCount = row.isps?.length || 0;
+                row.relays = operatorRelaysOperated(pubkey);
+                row.relaysCount = row.relays?.length || 0;
+                row.softwares = operatorSoftwares(pubkey);
+                row.softwaresCount = row.softwares?.length || 0;
+                rows.push(row);
+            });
+
+            if (rows.length && hasAnyMetadata) StateManager.set('aggregate:operators', rows);
+            if (rows.length) return rows;
+        }
+
+        return fromCacheValues?.length ? fromCacheValues : [];
     }
 )
-

@@ -49,7 +49,8 @@ export default defineConfig(({ mode }) => {
         "@nostrwatch/worker-relay",
         "@sqlite.org/sqlite-wasm",
         "@nostrwatch/auditor",
-        "@nostrwatch/nocap"
+        "@nostrwatch/nocap",
+        "sveaflet"
       ],
       esbuildOptions: {
         target: "esnext",

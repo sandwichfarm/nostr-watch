@@ -66,7 +66,8 @@ export const shouldSync = () => {
 }
 
 export const hasBeenBootstrapped = (): boolean => {
-    return StateManager.get('register:sync:all')? true: false
+    // Check for both 'sync:all' (re-sync) and 'sync:all-force' (fresh bootstrap)
+    return StateManager.get('register:sync:all') || StateManager.get('register:sync:all-force') ? true : false
 }
 
 export const isBootstrapped: Writable<boolean> = writable(hasBeenBootstrapped())
@@ -80,4 +81,9 @@ export const doAggregateCache: Writable<boolean> = writable(true)
 export const shouldAggregate = (): boolean => {
     return !get(doAggregateCache)
 }
+
+// OPFS/SQLite status tracking
+export type OpfsStatusType = 'pending' | 'online' | 'fallback' | 'error';
+export const opfsStatus: Writable<OpfsStatusType> = writable('pending');
+export const opfsError: Writable<string | null> = writable(null);
 

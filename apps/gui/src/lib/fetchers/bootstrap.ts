@@ -8,6 +8,7 @@ import type { WebsocketAdapterOptions } from "@nostrwatch/route66/core/Websocket
 import { operatorsPubkeys, operatorsPubkeysValid } from "$stores/operators";
 import { delay } from "@nostrwatch/utils";
 import { relaysWithNip11s$, relaysWithoutNip11s$ } from "$stores/helpers/helpers-nip11s";
+import { setStatsAsOf } from "$lib/stores/app";
 
 export const fetchMonitors = async () => {
     const $route66 = await instance();
@@ -21,6 +22,8 @@ export const fetchMonitorsChecks = async () => {
     await $route66.ready();
     bindBootstrapEmitters();
     await $route66?.services?.monitors?.bootstrapMonitorsChecks();
+    // At this point we have a fresh checks snapshot; switch UI stats to "live".
+    setStatsAsOf(Math.round(Date.now() / 1000), { persist: true });
 }
 
 // Fetch additional checks from active-but-disabled monitors to broaden relay coverage.

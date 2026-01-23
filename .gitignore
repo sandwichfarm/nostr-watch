@@ -30,3 +30,4 @@ scripts/deploy/gui-scp.sh
 apps/gui/static/seed
 
 .data
+.playwright-mcp/

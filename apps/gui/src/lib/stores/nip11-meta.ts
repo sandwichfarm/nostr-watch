@@ -2,7 +2,7 @@ import { derived, get, readable } from 'svelte/store';
 import { relayCheckAggregates } from './checks.js';
 import { StateManager } from '@nostrwatch/route66';
 import type { Readable } from 'svelte/store';
-import { doAggregateCache } from './app.js';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
 import {
     useWorkerNips,
     workerNips,
@@ -52,7 +52,9 @@ export const nipCounts_legacy = derived(relayCheckAggregates, ($relayCheckAggreg
             }
         }
     } else {
-        if(get(doAggregateCache)) StateManager.set('aggregate:nipCounts', Object.fromEntries(counts));
+        if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+            StateManager.set('aggregate:nipCounts', Object.fromEntries(counts));
+        }
     }
 
     return counts;

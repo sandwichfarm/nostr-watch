@@ -7,7 +7,7 @@ import { nip05s } from "./nip05s.js";
 import { route66 } from "./route66.js";
 import type Route66 from "@nostrwatch/route66";
 import { publishEventsToMemoryRelay } from "./events-helpers.js";
-import { doAggregateCache, tabState } from "./app.js";
+import { doAggregateCache, statsAsOf, tabState } from "./app.js";
 import timestring from "timestring";
 
 let $route66: Route66 | null;
@@ -246,7 +246,9 @@ async function computeRelayLivenessFromCache(
   const leniency = get(monitorsLivenessLeniency);
   const deadThresholdStr = get(monitorsLivenessDeadThreshold);
   const deadThresholdSeconds = parseDeadThresholdSeconds(deadThresholdStr);
-  const now = Math.round(Date.now() / 1000);
+  const wallNow = Math.round(Date.now() / 1000);
+  const refNow = get(statsAsOf);
+  const now = refNow > 0 ? Math.min(wallNow, refNow) : wallNow;
 
   // Build a map of monitor pubkeys to their Monitor objects for quick lookup
   const monitorMap = new Map<string, Monitor>();
@@ -382,6 +384,9 @@ if (typeof window !== "undefined") {
   monitorsLivenessDeadThreshold.subscribe(() => {
     scheduleRelayLivenessCompute(250);
   });
+  statsAsOf.subscribe(() => {
+    scheduleRelayLivenessCompute(250);
+  });
 
   // Also trigger periodic refresh since cache data changes independently
   setInterval(() => {
@@ -390,13 +395,19 @@ if (typeof window !== "undefined") {
 }
 
 export const monitorRows = derived(
-  [monitorsSorted, monitorRelayLivenessCounts, nip05s],
-  ([$monitorsSorted, $monitorRelayLivenessCounts, $nip05s]) => {
+  [monitorsSorted, monitorRelayLivenessCounts, nip05s, statsAsOf],
+  ([$monitorsSorted, $monitorRelayLivenessCounts, _nip05s, $statsAsOf]) => {
+    const wallNow = Math.round(Date.now() / 1000);
+    const now = $statsAsOf > 0 ? Math.min(wallNow, $statsAsOf) : wallNow;
     return $monitorsSorted.map((monitor: Monitor) => {
       const row: Record<string, any> = new Object();
       const liveness = $monitorRelayLivenessCounts?.[monitor.pubkey] ?? { online: 0, offline: 0, dead: 0 };
       row.id = monitor.pubkey;
-      row.active = monitor.active;
+      const lastActive = monitor?.lastActive ?? -1;
+      const frequency = monitor?.frequency ?? 0;
+      row.active = typeof lastActive === "number" && lastActive > 0 && typeof frequency === "number" && frequency > 0
+        ? now - frequency < lastActive
+        : false;
       row.pubkey = monitor.pubkey;
       row.name = monitor.profile?.name ?? null
       row.photo = monitor.photo ?? null

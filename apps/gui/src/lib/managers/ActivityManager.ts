@@ -5,8 +5,6 @@ export type ActivityState = 'leader' | 'follower';
 
 type LeaderStorageRecord = { id: string; ts: number; shutdown?: boolean };
 
-const DEV = import.meta.env.DEV;
-
 interface LifecycleMessage {
   type: 'leader-claimed' | 'leader-released';
   payload?: Record<string, any>;
@@ -96,14 +94,12 @@ export class ActivityManager {
   private updateTabState(newState: TabStateType) {
     if (get(tabState) !== newState) {
       tabState.update(() => newState);
-      if (DEV) console.log(`Tab state updated to: ${newState}`);
     }
   }
 
   private async transitionState(newState: ActivityState) {
     if (this.transitioning || this.currentState === newState) return;
     this.transitioning = true;
-    if (DEV) console.log(`ActivityManager: Transitioning from ${this.currentState} to ${newState}`);
     if (newState === 'leader') {
       await this.externalHandlers.leader();
     } else {

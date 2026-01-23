@@ -5,6 +5,7 @@ export type BootActivityItem = {
   text: string;
   index: number;
   complete: boolean;
+  active: boolean;
   value?: string | number;
 };
 
@@ -35,10 +36,12 @@ export function startBootActivity(slug: string, text: string): void {
         text,
         index: activityIndex++,
         complete: false,
+        active: true
       });
     } else {
       const existing = $activities.get(slug)!;
       existing.complete = false;
+      existing.active = true;
       $activities.set(slug, existing);
     }
     return $activities;
@@ -61,6 +64,7 @@ export function completeBootActivity(slug: string, value?: string | number): voi
     const item = $activities.get(slug);
     if (item) {
       item.complete = true;
+      item.active = false;
       if (value !== undefined) {
         item.value = value;
       }

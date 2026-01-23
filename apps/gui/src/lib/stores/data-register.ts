@@ -3,7 +3,6 @@ import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
 import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, tabState } from "$stores/app";
 import { backfillMonitorChecks, fetchDisabledMonitorsChecks, fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
-import { seedBuildData } from "$lib/fetchers/seed";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
 import { publishEventsToMemoryRelay } from "./events-helpers";
@@ -63,7 +62,11 @@ export const dataRegisterInit = async () => {
     data.register({
         key: 'seed:build',
         priority: 0,
-        fn: seedBuildData
+        condition: async () => !get(isBootstrapped) && !get(isSeeded),
+        fn: async () => {
+            const mod = await import("$lib/fetchers/seed");
+            return mod.seedBuildData();
+        }
     });
 
     data.register({
@@ -245,18 +248,15 @@ export const dataRegisterInit = async () => {
         key: 'sync:cache',
         priority: 3,
         condition: async () => {
-            if (get(isSeeded)) {
-                console.log('[DataRegister] skipping sync:cache: already seeded');
-                return false;
-            }
             // Followers should always try to hydrate from the leader/cache, even
             // when this origin hasn't been "bootstrapped" yet.
             if (get(tabState) !== 'leader') return true;
             const bootstrapped = get(isBootstrapped);
             if (!bootstrapped) {
                 console.log('[DataRegister] skipping sync:cache: fresh state');
+                return false;
             }
-            return bootstrapped;
+            return true;
         },
         fn: seedFromCache,
         onComplete: async (events: IEvent[]): Promise<any> => {

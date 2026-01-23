@@ -126,8 +126,16 @@ const configureNip66Relays = () => {
     // Subscribe to changes (only once)
     if (!nip66RelayUnsubscriber) {
         nip66RelayUnsubscriber = enabledNip66RelayUrls.subscribe((urls) => {
-            if ($route66?.services?.monitors && urls.length > 0) {
-                $route66.services.monitors.setRelays('route66', urls);
+            if (urls.length > 0) {
+                if ($route66?.services?.monitors) {
+                    $route66.services.monitors.setRelays('route66', urls);
+                }
+                if (($route66 as any)?.services?.relay) {
+                    ($route66 as any).services.relay.setRelays('route66', urls);
+                }
+                if (($route66 as any)?.services?.trustAssertions) {
+                    ($route66 as any).services.trustAssertions.setRelays('route66', urls);
+                }
                 if (DEV) {
                     console.log('NIP-66 relays updated:', urls);
                 }

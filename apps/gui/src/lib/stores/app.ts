@@ -18,7 +18,70 @@ export const unsupported: Writable<boolean> = writable(false)
 export const doLiveSync: Writable<boolean> = writable(true) 
 export const isLivesyncing: Writable<boolean> = writable(false)
 export const isBootstrapping: Writable<boolean> = writable(false)
-export const lastCompleteSync: Writable<number> = writable(StateManager.get('lastCompleteSync') ?? 0)
+
+function normalizeSyncSeconds(value: unknown): number {
+    const parsed = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+    return Math.round(parsed);
+}
+
+export const lastCompleteSync: Writable<number> = writable(normalizeSyncSeconds(StateManager.get('lastCompleteSync')));
+
+const STATS_AS_OF_KEY = "stats:asOf";
+
+function normalizeStatsAsOf(value: unknown): number {
+    const numeric = normalizeSyncSeconds(value);
+    if (numeric) return numeric;
+
+    // Back-compat: allow ISO strings (e.g. seed `generatedAt`) to seed the reference.
+    if (typeof value === "string") {
+        const ms = Date.parse(value);
+        if (Number.isFinite(ms) && ms > 0) return Math.round(ms / 1000);
+    }
+
+    return 0;
+}
+
+function readStatsAsOf(): number {
+    try {
+        const direct = normalizeStatsAsOf(StateManager.get(STATS_AS_OF_KEY));
+        if (direct) return direct;
+    } catch {}
+
+    // Fall back to last known "complete" sync marker if present.
+    try {
+        const fromLastSync = normalizeSyncSeconds(StateManager.get("lastCompleteSync"));
+        if (fromLastSync) return fromLastSync;
+    } catch {}
+
+    // Fall back to seed build timestamp if available.
+    try {
+        const seededAt = StateManager.get("seed:build:generatedAt");
+        return normalizeStatsAsOf(seededAt);
+    } catch {}
+
+    return 0;
+}
+
+// Stable reference timestamp for UI liveness + "cached stats" display.
+// This MUST NOT advance during an in-flight sync; it should only update when a sync is considered "complete".
+export const statsAsOf: Writable<number> = writable(readStatsAsOf());
+
+export function setStatsAsOf(nextSeconds: number, opts: { persist?: boolean } = {}): void {
+    const next = normalizeSyncSeconds(nextSeconds);
+    if (!next) return;
+
+    const current = get(statsAsOf);
+    if (next <= current) return;
+
+    statsAsOf.set(next);
+
+    const shouldPersist = opts.persist ?? (get(tabState) === "leader");
+    if (!shouldPersist) return;
+    try {
+        StateManager.set(STATS_AS_OF_KEY, next);
+    } catch {}
+}
 
 export const darkMode: Writable<boolean> = writable(false)
 let darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -45,7 +108,10 @@ export const route66Ready = async () => {
     }
 }
 
-StateManager.on('wipe', () => { lastCompleteSync.set(0) })
+StateManager.on('wipe', () => {
+    lastCompleteSync.set(0);
+    statsAsOf.set(0);
+})
 
 // export const updateLastSync = () => {
 //     const now = Math.round(Date.now()/1000)
@@ -82,6 +148,33 @@ export const hasBeenSeeded = (): boolean => {
     return get(isSeeded)
 }
 
+function storageKey(key: string): string {
+    const prefix = (StateManager as any)?.localStorage?.prefix ?? "state";
+    return `${prefix}:${key}`;
+}
+
+// Keep cross-tab bootstrap/seed flags in sync (leader tab writes, followers react).
+if (typeof window !== "undefined") {
+    window.addEventListener("storage", (event) => {
+        if (!event.key) return;
+        if (event.key === storageKey("seed:build:generatedAt")) {
+            isSeeded.set(checkIfSeeded());
+        }
+        if (
+            event.key === storageKey("register:sync:all") ||
+            event.key === storageKey("register:sync:all-force")
+        ) {
+            isBootstrapped.set(hasBeenBootstrapped());
+        }
+        if (event.key === storageKey("lastCompleteSync")) {
+            lastCompleteSync.set(normalizeSyncSeconds(StateManager.get("lastCompleteSync")));
+        }
+        if (event.key === storageKey(STATS_AS_OF_KEY)) {
+            statsAsOf.set(normalizeStatsAsOf(StateManager.get(STATS_AS_OF_KEY)));
+        }
+    });
+}
+
 export const doAggregateCache: Writable<boolean> = writable(true)
 
 export const shouldAggregate = (): boolean => {
@@ -92,4 +185,3 @@ export const shouldAggregate = (): boolean => {
 export type OpfsStatusType = 'pending' | 'online' | 'fallback' | 'error';
 export const opfsStatus: Writable<OpfsStatusType> = writable('pending');
 export const opfsError: Writable<string | null> = writable(null);
-

@@ -3,7 +3,7 @@ import { derived, get, type Readable } from 'svelte/store';
 import { eventsArray } from './events.js';
 import { relayCheckAggregates, relayChecks } from './checks.js';
 import { StateManager } from '@nostrwatch/route66';
-import { doAggregateCache } from './app.js';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
 import softwares from '../config/dataTable/softwares.js';
 import {
   useWorkerIsps,
@@ -42,10 +42,13 @@ export const isps_legacy: Readable<StoreIsp[]> = derived(relayCheckAggregates, (
     });
     let ispsArray = Array.from(ispsMap.values()).sort((a, b) => a.asname.localeCompare(b.asname));
     if(ispsArray.length) {
-        if(get(doAggregateCache)) StateManager.set('aggregate:isps', ispsArray);
+        if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+            StateManager.set('aggregate:isps', ispsArray);
+        }
     }
     else {
-        ispsArray = StateManager.get('aggregate:isps');
+        const cached = StateManager.get('aggregate:isps');
+        ispsArray = Array.isArray(cached) ? cached : [];
     }
 
     return ispsArray;
@@ -59,17 +62,20 @@ export const ispCounts_legacy = derived(relayCheckAggregates, ($relayCheckAggreg
         counts.set(isp, (counts.get(isp) || 0) + 1);
     });
 
-    let countsLength = !Array.from(counts.keys()).length
-
-    if(countsLength) {
-        const cachedCounts = StateManager.get('aggregate:ispCounts')
-        if(cachedCounts && cachedCounts?.length) {
-            for(const [isp, count] of cachedCounts){
-                counts.set(isp, count);
-            }
+    if (!counts.size) {
+        const cachedCounts = StateManager.get('aggregate:ispCounts') as
+            | Record<string, number>
+            | [string, number][]
+            | undefined;
+        if (Array.isArray(cachedCounts)) {
+            for (const [isp, count] of cachedCounts) counts.set(isp, count);
+        } else if (cachedCounts && typeof cachedCounts === 'object') {
+            for (const [isp, count] of Object.entries(cachedCounts)) counts.set(isp, count);
         }
     } else {
-        if(get(doAggregateCache)) StateManager.set('aggregate:ispCounts', Object.fromEntries(counts));
+        if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+            StateManager.set('aggregate:ispCounts', Object.fromEntries(counts));
+        }
     }
 
     return counts;

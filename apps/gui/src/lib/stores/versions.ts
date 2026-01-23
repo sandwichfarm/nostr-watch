@@ -2,7 +2,7 @@ import { derived, get, type Readable } from 'svelte/store';
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
 import { relayCheckAggregates } from './checks.js';
-import { doAggregateCache, tabState } from './app.js';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
 import { useWorkerVersions, workerVersions } from './dimension-stores';
 
 // ============================================================================
@@ -16,14 +16,16 @@ export const versions_legacy = throttledDerived(relayCheckAggregates, ($relayChe
         if(relayCheck?.version)
             versions.add(relayCheck.version);
     });
-    let finalVersions = Array.from(versions).sort()
+    const finalVersions = Array.from(versions).sort()
     if(finalVersions.length){
-        if(get(doAggregateCache) && get(tabState) === 'leader') StateManager.set('aggregate:versions', finalVersions);
+        if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+            StateManager.set('aggregate:versions', finalVersions);
+        }
+        return finalVersions;
     }
-    else {
-        finalVersions = StateManager.get('aggregate:versions')
-    }
-    return finalVersions
+
+    const cached = StateManager.get('aggregate:versions');
+    return Array.isArray(cached) ? cached : [];
 });
 
 // ============================================================================

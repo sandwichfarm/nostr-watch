@@ -6,7 +6,7 @@ import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
 import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import type { lte } from 'lodash';
-import { doAggregateCache } from './app.js';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
 import softwares from '../config/dataTable/softwares.js';
 import {
   useWorkerGeocodes,
@@ -27,7 +27,10 @@ import type { GeoRow } from '$lib/workers/dimensions-derivation.worker';
 export const geocodes_legacy: Readable<string[]> = derived(
   relayCheckAggregates,
   ($relayCheckAggregates) => {
-    if (!$relayCheckAggregates.length) return [];
+    if (!$relayCheckAggregates.length) {
+      const cached = StateManager.get('aggregate:geocodes');
+      return Array.isArray(cached) ? cached : [];
+    }
     const codes: Set<string> = new Set();
 
     codes.add('unknown');
@@ -41,10 +44,13 @@ export const geocodes_legacy: Readable<string[]> = derived(
     let geocodesArray: string[] = Array.from(codes).sort();
 
     if(geocodesArray.length){
-      if(get(doAggregateCache)) StateManager.set('aggregate:geocodes', geocodesArray);
+      if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+        StateManager.set('aggregate:geocodes', geocodesArray);
+      }
     }
     else {
-      geocodesArray = StateManager.get('aggregate:geocodes')
+      const cached = StateManager.get('aggregate:geocodes')
+      geocodesArray = Array.isArray(cached) ? cached : [];
     }
 
     return geocodesArray;
@@ -57,8 +63,23 @@ export const geocodeCounts_legacy = derived(relayCheckAggregates, ($relayCheckAg
         const geocode = relayCheck?.geocode || 'unknown';
         counts.set(geocode, (counts.get(geocode) || 0) + 1);
     });
-    const countsObject = Object.fromEntries(counts);
-    if(get(doAggregateCache)) StateManager.set('aggregate:geocodeCounts', countsObject);
+
+    if (!counts.size) {
+      const cachedCounts = StateManager.get('aggregate:geocodeCounts') as
+        | Record<string, number>
+        | [string, number][]
+        | undefined;
+      if (Array.isArray(cachedCounts)) {
+        for (const [geocode, count] of cachedCounts) counts.set(geocode, count);
+      } else if (cachedCounts && typeof cachedCounts === 'object') {
+        for (const [geocode, count] of Object.entries(cachedCounts)) counts.set(geocode, count);
+      }
+    } else {
+      const countsObject = Object.fromEntries(counts);
+      if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+        StateManager.set('aggregate:geocodeCounts', countsObject);
+      }
+    }
     return counts;
 });
 

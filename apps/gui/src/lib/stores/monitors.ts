@@ -326,16 +326,29 @@ async function computeAndUpdateRelayLiveness(): Promise<void> {
     return;
   }
 
-  monitorRelayLivenessCounts.set(result);
+  // Merge with existing cached values - only update monitors that have non-zero counts
+  // This prevents overwriting good cached data with zeros when cache is still loading
+  const existingCounts = get(monitorRelayLivenessCounts);
+  const merged: MonitorRelayLivenessMap = { ...existingCounts };
 
-  // Cache the result (leader tab only)
+  for (const [pubkey, counts] of Object.entries(result)) {
+    const hasData = counts.online > 0 || counts.offline > 0 || counts.dead > 0;
+    if (hasData) {
+      merged[pubkey] = counts;
+    }
+    // If no data for this monitor but we have existing cached data, keep the cached data
+  }
+
+  monitorRelayLivenessCounts.set(merged);
+
+  // Cache the merged result (leader tab only)
   if (get(tabState) === "leader" && get(doAggregateCache)) {
     try {
-      const existing = StateManager.get(MONITOR_RELAY_LIVENESS_CACHE_KEY) as MonitorRelayLivenessMap | undefined;
-      const existingJson = existing ? JSON.stringify(existing) : "";
-      const nextJson = JSON.stringify(result);
-      if (existingJson !== nextJson) {
-        StateManager.set(MONITOR_RELAY_LIVENESS_CACHE_KEY, result);
+      const cachedJson = StateManager.get(MONITOR_RELAY_LIVENESS_CACHE_KEY);
+      const existingJson = cachedJson ? JSON.stringify(cachedJson) : "";
+      const mergedJson = JSON.stringify(merged);
+      if (existingJson !== mergedJson) {
+        StateManager.set(MONITOR_RELAY_LIVENESS_CACHE_KEY, merged);
       }
     } catch {}
   }

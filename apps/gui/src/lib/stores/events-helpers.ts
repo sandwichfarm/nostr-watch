@@ -16,7 +16,31 @@ import {
     stopSignatureVerificationService,
 } from "$lib/services/SignatureVerificationService";
 import { recordLeaderTabEvents } from "$lib/runtime/leader-tab-snapshot";
-import { filterBlockedEvents } from "./blocklist";
+
+// Lazy-loaded blocklist filter to avoid circular dependency
+// chain: checks.ts → monitors.ts → events-helpers.ts → blocklist.ts
+let _filterBlockedEvents: ((events: IEvent[]) => IEvent[]) | null = null;
+
+async function getFilterBlockedEvents() {
+    if (!_filterBlockedEvents) {
+        const { filterBlockedEvents } = await import("./blocklist");
+        _filterBlockedEvents = filterBlockedEvents;
+    }
+    return _filterBlockedEvents;
+}
+
+// Synchronous filter that uses cached function or returns events as-is
+function filterBlockedEventsSync(events: IEvent[]): IEvent[] {
+    if (_filterBlockedEvents) {
+        return _filterBlockedEvents(events);
+    }
+    return events;
+}
+
+// Pre-load the filter function
+if (typeof window !== 'undefined') {
+    getFilterBlockedEvents().catch(() => {});
+}
 
 const queue = new PQueue({concurrency: 1});
 
@@ -35,8 +59,8 @@ export const publishEventsToMemoryRelay = async (_events: IEvent[], from?: strin
     if(!_events || _events.length === 0) return
     if(!_events?.length) return;
 
-    // Filter out events for blocked relays
-    const filteredEvents = filterBlockedEvents(_events);
+    // Filter out events for blocked relays (uses cached function or no-op if not loaded yet)
+    const filteredEvents = filterBlockedEventsSync(_events);
     if (filteredEvents.length === 0) return;
     if (filteredEvents.length !== _events.length) {
         console.log(`[blocklist] Filtered ${_events.length - filteredEvents.length} blocked relay events on ingress`);

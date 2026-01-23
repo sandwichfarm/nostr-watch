@@ -232,6 +232,7 @@ function monitorFrequencySeconds(monitor: Monitor): number {
 /**
  * Compute per-monitor relay liveness counts by getting the latest event per relay
  * and classifying by timestamp. Fetches all monitors' events in a single query for efficiency.
+ * Uses the user-configurable leniency and dead threshold from stores.
  */
 async function computeRelayLivenessFromCache(
   monitorsList: Monitor[]
@@ -240,6 +241,12 @@ async function computeRelayLivenessFromCache(
   if (!$route66?.adapters?.cacheAdapter) return result;
 
   const cacheAdapter = $route66.adapters.cacheAdapter;
+
+  // Get current threshold settings from stores
+  const leniency = get(monitorsLivenessLeniency);
+  const deadThresholdStr = get(monitorsLivenessDeadThreshold);
+  const deadThresholdSeconds = parseDeadThresholdSeconds(deadThresholdStr);
+  const now = Math.round(Date.now() / 1000);
 
   // Build a map of monitor pubkeys to their Monitor objects for quick lookup
   const monitorMap = new Map<string, Monitor>();
@@ -280,13 +287,16 @@ async function computeRelayLivenessFromCache(
   }
 
   // Classify each relay by its latest event timestamp for each monitor
+  // Use store-based thresholds instead of Monitor's internal values
   for (const event of latestByMonitorRelay.values()) {
     const monitor = monitorMap.get(event.pubkey);
     if (!monitor) continue;
 
     const timestamp = event.created_at as number;
-    const onlineAfter = monitor.isOnlineAfter;
-    const deadBefore = monitor.isDeadBefore;
+    // Calculate thresholds using store values
+    const frequency = monitorFrequencySeconds(monitor);
+    const onlineAfter = now - Math.round(frequency * leniency);
+    const deadBefore = now - deadThresholdSeconds;
 
     if (timestamp >= onlineAfter) {
       result[event.pubkey].online++;

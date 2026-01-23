@@ -231,16 +231,55 @@ export const seedBuildData = async (): Promise<void> => {
   // Load operators
   if (operatorFiles.length > 0) {
     startBootActivity('seed:operators', 'Operators');
+    const operatorProfiles = new Map<string, any>(); // pubkey -> profile content
+
     for (const url of operatorFiles) {
       const events = await fetchJson<IEvent[]>(url);
       if (!Array.isArray(events) || events.length === 0) continue;
       totalOperators += events.length;
       updateBootActivity('seed:operators', totalOperators);
+
+      // Extract profile data for cache
+      for (const event of events) {
+        if (event.kind === 0 && event.pubkey) {
+          try {
+            const content = typeof event.content === 'string' ? JSON.parse(event.content) : event.content;
+            operatorProfiles.set(event.pubkey, content);
+          } catch {}
+        }
+      }
+
       for (const batch of chunk(events, 2000)) {
         void publishEventsToMemoryRelay(batch, 'seed:build');
       }
       await seedEventsToCache(events, 500);
     }
+
+    // Build operator rows cache so UI shows profiles immediately
+    if (operatorProfiles.size > 0) {
+      const operatorRows = Array.from(operatorProfiles.entries()).map(([pubkey, profile]) => ({
+        id: pubkey,
+        pubkey,
+        name: profile?.name || profile?.display_name || null,
+        displayName: profile?.display_name || null,
+        about: profile?.about || null,
+        picture: profile?.picture || null,
+        banner: profile?.banner || null,
+        nip05: profile?.nip05 || null,
+        lud16: profile?.lud16 || null,
+        website: profile?.website || null,
+        // Placeholder counts - will be updated by live data
+        relays: [],
+        relaysCount: 0,
+        isps: [],
+        ispsCount: 0,
+        softwares: [],
+        softwaresCount: 0,
+      }));
+      StateManager.set('aggregate:operators', operatorRows);
+      console.log('[seed] cached operator profiles:', operatorRows.length);
+    }
+
     completeBootActivity('seed:operators', totalOperators);
   }
 

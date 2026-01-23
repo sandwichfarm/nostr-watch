@@ -49,15 +49,15 @@ export const dataRegisterInit = async () => {
     await loadBootActivityFunctions();
 
     // Register boot activities upfront so user sees what's coming
-    startBootActivity('data:register', 'Registering data sources');
+    startBootActivity('data:register', 'Data sources');
 
     // Pre-register seed activities so progress bar shows them as pending
     // These will be updated/completed by seedBuildData when it runs
-    startBootActivity('seed:manifest', 'Loading seed manifest');
-    startBootActivity('seed:monitors', 'Loading monitors');
-    startBootActivity('seed:checks', 'Loading relay checks');
-    startBootActivity('seed:operators', 'Loading operator profiles');
-    startBootActivity('seed:nip11s', 'Loading NIP-11 relay info');
+    startBootActivity('seed:manifest', 'Manifest');
+    startBootActivity('seed:monitors', 'Monitors');
+    startBootActivity('seed:checks', 'Relay checks');
+    startBootActivity('seed:operators', 'Operators');
+    startBootActivity('seed:nip11s', 'NIP-11 info');
 
     //state
     data.register({
@@ -292,7 +292,7 @@ export const dataRegisterInit = async () => {
         priority: -10,
         fn: async () => {
             isBootstrapping.set(true);
-            startBootActivity('sync:network', 'Syncing from network');
+            startBootActivity('sync:network', 'Network sync');
         },
         onComplete: async () => {
             completeBootActivity('sync:network');
@@ -325,7 +325,7 @@ export const dataRegisterInit = async () => {
         priority: -10,
         fn: async () => {
             isBootstrapping.set(true)
-            startBootActivity('sync:network', 'Syncing from network');
+            startBootActivity('sync:network', 'Network sync');
             return true;
         },
         onComplete: async () => {
@@ -371,7 +371,7 @@ export const dataRegisterInit = async () => {
 
     completeBootActivity('data:register');
 
-    startBootActivity('data:ready', 'Preparing database');
+    startBootActivity('data:ready', 'Database');
     await (await instance()).ready()
     completeBootActivity('data:ready');
 

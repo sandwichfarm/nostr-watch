@@ -106,7 +106,7 @@
     if (DEV) console.log('Booting...');
     if (get(unsupported)) return;
 
-    startBootActivity('init', 'Initializing app');
+    startBootActivity('init', 'Initialization');
     appState.set('booting');
     await initServices();
     appState.set('running');
@@ -152,7 +152,7 @@
   const load = async () => {
     // Reset and start tracking asset loading
     resetBootActivities();
-    startBootActivity('assets', 'Loading assets');
+    startBootActivity('assets', 'Assets');
 
     modules = await loadModules((key, mod) => {
       progressList = [...progressList, key];
@@ -247,7 +247,9 @@
 
 
 
-  $: loadedEnough = hasBeenBootstrapped() || $isSeeded || $totalMonitors > 1
+  // Only exit boot screen when we have explicit confirmation that boot completed.
+  // Do NOT use $totalMonitors > 1 - it can be true from partial/interrupted boots.
+  $: loadedEnough = hasBeenBootstrapped() || $isSeeded
 
   let loadingThresholdPassed = false;
   let loadingThresholdTimeout: ReturnType<typeof setTimeout>;

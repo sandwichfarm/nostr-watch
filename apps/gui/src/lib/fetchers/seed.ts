@@ -3,7 +3,7 @@ import { get } from 'svelte/store';
 import type { IEvent } from '@nostrwatch/route66/models';
 import { StateManager } from '@nostrwatch/route66';
 
-import { instance } from '$lib/utils/lifecycle';
+import { instance, loadMonitorsFromCache } from '$lib/utils/lifecycle';
 import { hasBeenBootstrapped, isSeeded } from '$lib/stores/app';
 import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers';
 import { monitorsMap, monitorsMapFromCache } from '$lib/stores/monitors';
@@ -74,7 +74,7 @@ export const seedBuildData = async (): Promise<void> => {
   // Note: We intentionally do NOT check tabState here. Build seed data is static
   // and read-only, so any tab can safely load it for fast first paint.
 
-  startBootActivity('seed:manifest', 'Loading seed manifest');
+  startBootActivity('seed:manifest', 'Manifest');
 
   const manifest = await fetchJson<SeedManifestV1>(SEED_MANIFEST_URL);
   if (!manifest || manifest.version !== 1) {
@@ -102,13 +102,13 @@ export const seedBuildData = async (): Promise<void> => {
   if (cacheHasData && generatedAt && StateManager.get(STATE_KEY_GENERATED_AT) === generatedAt) {
     // Already seeded, show quick completion and set isSeeded
     isSeeded.set(true);
-    startBootActivity('seed:monitors', 'Loading monitors');
+    startBootActivity('seed:monitors', 'Monitors');
     completeBootActivity('seed:monitors', 'cached');
-    startBootActivity('seed:checks', 'Loading relay checks');
+    startBootActivity('seed:checks', 'Relay checks');
     completeBootActivity('seed:checks', 'cached');
-    startBootActivity('seed:operators', 'Loading operator profiles');
+    startBootActivity('seed:operators', 'Operators');
     completeBootActivity('seed:operators', 'cached');
-    startBootActivity('seed:nip11s', 'Loading NIP-11 relay info');
+    startBootActivity('seed:nip11s', 'NIP-11 info');
     completeBootActivity('seed:nip11s', 'cached');
     return;
   }
@@ -130,7 +130,7 @@ export const seedBuildData = async (): Promise<void> => {
 
   // Load monitors
   if (monitorFiles.length > 0) {
-    startBootActivity('seed:monitors', 'Loading monitors');
+    startBootActivity('seed:monitors', 'Monitors');
     const monitorEventsByPubkey = new Map<string, { registration?: IEvent; profile?: IEvent; relays?: IEvent }>();
 
     for (const url of monitorFiles) {
@@ -159,15 +159,27 @@ export const seedBuildData = async (): Promise<void> => {
     }
 
     // Build MonitorCached array and store in StateManager
-    const monitorsCache = Array.from(monitorEventsByPubkey.entries())
-      .filter(([_, data]) => data.registration) // Must have registration
-      .map(([pubkey, data]) => ({
+    const DEFAULT_ENABLED_MONITORS = 3;
+
+    // Sort monitors by number of checks (more checks = higher priority)
+    const sortedMonitorEntries = Array.from(monitorEventsByPubkey.entries())
+      .filter(([_, data]) => data.registration)
+      .sort((a, b) => {
+        const aChecks = (a[1].registration as any)?.tags?.filter((t: any) => t[0] === 'c')?.length ?? 0;
+        const bChecks = (b[1].registration as any)?.tags?.filter((t: any) => t[0] === 'c')?.length ?? 0;
+        return bChecks - aChecks; // Descending by check count
+      });
+
+    // Only enable the top 3 monitors by default (like maybeEnableMonitors)
+    // lastActive uses registration timestamp - network sync will update with actual check times
+    const monitorsCache = sortedMonitorEntries
+      .map(([pubkey, data], index) => ({
         pubkey,
         registration: data.registration,
         profile: data.profile,
         relays: data.relays,
         priority: 0,
-        enabled: true,
+        enabled: index < DEFAULT_ENABLED_MONITORS,
         lastActive: data.registration?.created_at ?? -1,
       }));
 
@@ -175,6 +187,8 @@ export const seedBuildData = async (): Promise<void> => {
       StateManager.set('cache:monitors', monitorsCache);
       // Update the monitorsMap store so UI reacts immediately
       monitorsMap.set(monitorsMapFromCache());
+      // Also load into MonitorService so route66.services.monitors is populated
+      loadMonitorsFromCache();
       console.log('[seed] cached monitors to StateManager:', monitorsCache.length);
     }
 
@@ -183,7 +197,7 @@ export const seedBuildData = async (): Promise<void> => {
 
   // Load blocklist (must be before checks so filtering works)
   if (blocklistFiles.length > 0) {
-    startBootActivity('seed:blocklist', 'Loading blocklist');
+    startBootActivity('seed:blocklist', 'Blocklist');
     let totalBlocked = 0;
     for (const url of blocklistFiles) {
       const blockedUrls = await fetchJson<string[]>(url);
@@ -198,7 +212,7 @@ export const seedBuildData = async (): Promise<void> => {
 
   // Load checks
   if (checkFiles.length > 0) {
-    startBootActivity('seed:checks', 'Loading relay checks');
+    startBootActivity('seed:checks', 'Relay checks');
     for (const url of checkFiles) {
       const events = await fetchJson<IEvent[]>(url);
       if (!Array.isArray(events) || events.length === 0) continue;
@@ -216,7 +230,7 @@ export const seedBuildData = async (): Promise<void> => {
 
   // Load operators
   if (operatorFiles.length > 0) {
-    startBootActivity('seed:operators', 'Loading operator profiles');
+    startBootActivity('seed:operators', 'Operators');
     for (const url of operatorFiles) {
       const events = await fetchJson<IEvent[]>(url);
       if (!Array.isArray(events) || events.length === 0) continue;
@@ -232,7 +246,7 @@ export const seedBuildData = async (): Promise<void> => {
 
   // Seed NIP-11s to cache
   if (nip11Files.length > 0) {
-    startBootActivity('seed:nip11s', 'Loading NIP-11 relay info');
+    startBootActivity('seed:nip11s', 'NIP-11 info');
     for (const url of nip11Files) {
       const entries = await fetchJson<Nip11Entry[]>(url);
       if (!Array.isArray(entries) || entries.length === 0) continue;

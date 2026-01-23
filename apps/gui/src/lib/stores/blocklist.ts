@@ -1,8 +1,19 @@
 import { writable, derived, get, type Writable, type Readable } from "svelte/store";
 import type { IEvent } from "@nostrwatch/route66/models";
 import { StateManager } from "@nostrwatch/route66";
-import { instance } from "$lib/utils/lifecycle";
-import { monitors } from "./monitors";
+
+// Dynamic import to avoid circular dependency
+// lifecycle.ts → stores/index.js → checks.ts → monitors.ts → events-helpers.ts → blocklist.ts
+async function getInstance() {
+  const { instance } = await import("$lib/utils/lifecycle");
+  return instance();
+}
+
+// Dynamic import for monitors to avoid circular dependency
+async function getMonitors() {
+  const { monitors } = await import("./monitors");
+  return get(monitors);
+}
 
 const BLOCKLIST_CACHE_KEY = "cache:blocklist:relays";
 
@@ -137,10 +148,10 @@ function parseBlocklistEvent(event: IEvent): string[] {
  * Fetches kind 10006 events from monitors' relay lists.
  */
 export async function syncBlocklists(): Promise<void> {
-  const $route66 = await instance();
+  const $route66 = await getInstance();
   await $route66.ready();
 
-  const monitorList = get(monitors);
+  const monitorList = await getMonitors();
   if (!monitorList?.length) {
     console.log("[blocklist] No monitors to sync blocklists from");
     return;
@@ -208,7 +219,7 @@ export async function syncBlocklists(): Promise<void> {
  * Removes check events for blocked relay URLs.
  */
 export async function cleanBlockedRelaysFromCache(): Promise<number> {
-  const $route66 = await instance();
+  const $route66 = await getInstance();
   await $route66.ready();
   const cache = $route66.adapters.cacheAdapter;
 

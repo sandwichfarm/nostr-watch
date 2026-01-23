@@ -20,10 +20,44 @@ import { SYNC_CHECKS_EXPIRY, SYNC_MONITORS_EXPIRY, SYNC_NIP11_EXPIRY, SYNC_OPERA
 import { initDimensionsWorker } from "$lib/workers/dimensions-worker-manager";
 import { syncBlocklists, cleanBlockedRelaysFromCache } from "./blocklist";
 
+// Dynamic import to avoid circular dependency issues
+let _startBootActivity: ((slug: string, text: string) => void) | null = null;
+let _completeBootActivity: ((slug: string, value?: string | number) => void) | null = null;
+
+async function loadBootActivityFunctions() {
+    if (!_startBootActivity) {
+        const mod = await import('$lib/stores/boot-activity');
+        _startBootActivity = mod.startBootActivity;
+        _completeBootActivity = mod.completeBootActivity;
+    }
+}
+
+function startBootActivity(slug: string, text: string) {
+    if (_startBootActivity) _startBootActivity(slug, text);
+}
+
+function completeBootActivity(slug: string, value?: string | number) {
+    if (_completeBootActivity) _completeBootActivity(slug, value);
+}
+
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
 export const dataRegisterInit = async () => {
     const data = get(dataRegister);
+
+    // Load boot activity functions (dynamic import to avoid circular deps)
+    await loadBootActivityFunctions();
+
+    // Register boot activities upfront so user sees what's coming
+    startBootActivity('data:register', 'Registering data sources');
+
+    // Pre-register seed activities so progress bar shows them as pending
+    // These will be updated/completed by seedBuildData when it runs
+    startBootActivity('seed:manifest', 'Loading seed manifest');
+    startBootActivity('seed:monitors', 'Loading monitors');
+    startBootActivity('seed:checks', 'Loading relay checks');
+    startBootActivity('seed:operators', 'Loading operator profiles');
+    startBootActivity('seed:nip11s', 'Loading NIP-11 relay info');
 
     //state
     data.register({
@@ -256,11 +290,12 @@ export const dataRegisterInit = async () => {
             'validate:nip11s'
         ],
         priority: -10,
-        // fn: async () => {
-        //     isBootstrapping.set(true)
-        //     return true;
-        // },
+        fn: async () => {
+            isBootstrapping.set(true);
+            startBootActivity('sync:network', 'Syncing from network');
+        },
         onComplete: async () => {
+            completeBootActivity('sync:network');
             isBootstrapping.set(false)
             isBootstrapped.set(true)
             // Ensure isSeeded is set so UI can progress
@@ -290,9 +325,11 @@ export const dataRegisterInit = async () => {
         priority: -10,
         fn: async () => {
             isBootstrapping.set(true)
+            startBootActivity('sync:network', 'Syncing from network');
             return true;
         },
         onComplete: async () => {
+            completeBootActivity('sync:network');
             isBootstrapping.set(false)
             isBootstrapped.set(true)
             // Ensure isSeeded is set so UI can progress even without seed files
@@ -332,7 +369,12 @@ export const dataRegisterInit = async () => {
         priority: -20
     });
 
+    completeBootActivity('data:register');
+
+    startBootActivity('data:ready', 'Preparing database');
     await (await instance()).ready()
+    completeBootActivity('data:ready');
+
     await delay(20)
     data.unlock();
 

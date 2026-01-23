@@ -20,6 +20,7 @@
     hasBeenBootstrapped,
     isSeeded,
   } from '$lib/stores/app';
+  import { relayCheckAggregates } from '$lib/stores';
   import { showDebugButton } from '$lib/stores/preferences';
   import BootstrapLoading from './(components)/BootstrapLoading.svelte';
   import {
@@ -247,9 +248,11 @@
 
 
 
-  // Only exit boot screen when we have explicit confirmation that boot completed.
-  // Do NOT use $totalMonitors > 1 - it can be true from partial/interrupted boots.
-  $: loadedEnough = hasBeenBootstrapped() || $isSeeded
+  // Only exit boot screen when we have explicit confirmation that boot completed
+  // AND actual data is present. localStorage flags alone are not enough - they can
+  // persist across refreshes when data is not yet loaded.
+  $: hasActualData = $relayCheckAggregates?.length > 0;
+  $: loadedEnough = hasActualData && (hasBeenBootstrapped() || $isSeeded)
 
   let loadingThresholdPassed = false;
   let loadingThresholdTimeout: ReturnType<typeof setTimeout>;

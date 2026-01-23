@@ -18,6 +18,7 @@ import { page } from "$app/stores";
 import { relayLiveSync } from "$utils/live-sync";
 import { SYNC_CHECKS_EXPIRY, SYNC_MONITORS_EXPIRY, SYNC_NIP11_EXPIRY, SYNC_OPERATORS_EXPIRY, SYNC_RELAY_ALL_EXPIRY, SYNC_RELAY_CHECKS_EXPIRY, SYNC_RELAY_NIP11_EXPIRY, SYNC_RELAY_OPERATOR_EXPIRY, VALIDATE_NIP11S_EXPIRY } from "$lib/constants/synchronization";
 import { initDimensionsWorker } from "$lib/workers/dimensions-worker-manager";
+import { syncBlocklists, cleanBlockedRelaysFromCache } from "./blocklist";
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
@@ -87,6 +88,23 @@ export const dataRegisterInit = async () => {
         fn: fetchMonitors,
         onComplete: publishEventsToMemoryRelay
     });
+
+    // Sync blocklists from monitors (kind 10006) - must run after monitors are loaded
+    data.register({
+        key: 'sync:blocklists',
+        priority: 20.5,
+        expiry: SYNC_MONITORS_EXPIRY, // Same expiry as monitors
+        condition: async () => get(tabState) === 'leader',
+        fn: syncBlocklists,
+        onComplete: async () => {
+            // Clean blocked relays from cache after syncing
+            const cleaned = await cleanBlockedRelaysFromCache();
+            if (cleaned > 0) {
+                console.log(`[blocklist] Cleaned ${cleaned} blocked relay events from cache`);
+            }
+        }
+    });
+
     data.register({
         key: 'sync:checks',
         priority: 21,
@@ -228,6 +246,7 @@ export const dataRegisterInit = async () => {
         keys: [
             'seed:build',
             'sync:monitors',
+            'sync:blocklists',
             'sync:checks',
             'sync:checks:disabled',
             'sync:checks:backfill',
@@ -258,6 +277,7 @@ export const dataRegisterInit = async () => {
         keys: [
             'seed:build',
             'sync:monitors',
+            'sync:blocklists',
             'sync:checks',
             'sync:checks:disabled',
             'sync:checks:backfill',
@@ -282,6 +302,7 @@ export const dataRegisterInit = async () => {
         },
         ignoreConditions: {
             'sync:monitors': true,
+            'sync:blocklists': true,
             'sync:checks': true,
             'sync:checks:disabled': true,
             'sync:checks:backfill': true,
@@ -290,6 +311,7 @@ export const dataRegisterInit = async () => {
         },
         ignoreExpiries: {
             'sync:monitors': true,
+            'sync:blocklists': true,
             'sync:checks': true,
             'sync:checks:disabled': true,
             'sync:checks:backfill': true,

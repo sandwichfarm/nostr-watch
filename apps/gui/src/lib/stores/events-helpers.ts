@@ -16,6 +16,7 @@ import {
     stopSignatureVerificationService,
 } from "$lib/services/SignatureVerificationService";
 import { recordLeaderTabEvents } from "$lib/runtime/leader-tab-snapshot";
+import { filterBlockedEvents } from "./blocklist";
 
 const queue = new PQueue({concurrency: 1});
 
@@ -33,8 +34,16 @@ export const publishEventsToMemoryRelay = async (_events: IEvent[], from?: strin
     // if(from) console.log(`Memory Relay: Publishing ${_events.length} events to memory relay from ${from}`, deterministicHash(_events.map(eventKey)), _events);
     if(!_events || _events.length === 0) return
     if(!_events?.length) return;
-    const key = deterministicHash(_events.map( event => event.id));
-    if(testingUniques.has(key)) return 
+
+    // Filter out events for blocked relays
+    const filteredEvents = filterBlockedEvents(_events);
+    if (filteredEvents.length === 0) return;
+    if (filteredEvents.length !== _events.length) {
+        console.log(`[blocklist] Filtered ${_events.length - filteredEvents.length} blocked relay events on ingress`);
+    }
+
+    const key = deterministicHash(filteredEvents.map( event => event.id));
+    if(testingUniques.has(key)) return
     testingUniques.add(key);
     if (testingUniques.size > MAX_UNIQUE_BATCHES) {
         testingUniques.clear();
@@ -43,20 +52,20 @@ export const publishEventsToMemoryRelay = async (_events: IEvent[], from?: strin
 
     if (get(tabState) === 'leader') {
         try {
-            recordLeaderTabEvents(_events);
+            recordLeaderTabEvents(filteredEvents);
         } catch {}
         try {
-            getLeaderTabRpcClient().broadcast('events', _events);
+            getLeaderTabRpcClient().broadcast('events', filteredEvents);
         } catch {}
         try {
             const verifier = getSignatureVerificationService();
-            if (verifier) void verifier.verifyEvents(_events, { kinds: [30166] });
+            if (verifier) void verifier.verifyEvents(filteredEvents, { kinds: [30166] });
         } catch {}
     }
 
     queue.add(async () => {
         await delay(20);
-        get(eventsStoreMemoryRelay).eventBatch(_events)
+        get(eventsStoreMemoryRelay).eventBatch(filteredEvents)
     });
 };
 

@@ -231,6 +231,41 @@ async function main() {
   const monitorMeta = Array.from(monitorMetaByKey.values());
   console.log('[seed] monitor meta', monitorMeta.length);
 
+  // ---------------------------------------------------------------------------
+  // 2b) Monitor blocklists (kind 10006)
+  // ---------------------------------------------------------------------------
+  const monitorBlocklistsByKey = new Map();
+  for (const authors of authorChunks) {
+    const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
+    const { events, closes } = await queryMany(
+      pool,
+      [...userMetaRelays, ...nip66Relays],
+      [{ kinds: [10006], authors, limit }],
+      { maxWaitMs }
+    );
+    if (closes.length) console.warn('[seed] monitor-blocklists closes:', closes);
+    for (const ev of events) {
+      if (ev?.kind !== 10006) continue;
+      if (typeof ev?.pubkey !== 'string') continue;
+      upsertNewest(monitorBlocklistsByKey, ev.pubkey, ev);
+    }
+  }
+
+  const monitorBlocklists = Array.from(monitorBlocklistsByKey.values());
+  console.log('[seed] monitor blocklists (10006)', monitorBlocklists.length);
+
+  // Extract all blocked relay URLs from blocklists for filtering
+  const blockedRelayUrls = new Set();
+  for (const ev of monitorBlocklists) {
+    const tags = Array.isArray(ev?.tags) ? ev.tags : [];
+    for (const tag of tags) {
+      if (!Array.isArray(tag) || (tag[0] !== 'r' && tag[0] !== 'relay')) continue;
+      const url = normalizeRelayUrl(tag[1]);
+      if (url) blockedRelayUrls.add(url);
+    }
+  }
+  console.log('[seed] blocked relay URLs from blocklists:', blockedRelayUrls.size);
+
   // Bootstrap logic adds monitors' own relay lists to the nip66 relay pool.
   // This improves coverage for check events that may not land on the defaults.
   const maxExtraRelays = envNumber('SEED_MAX_EXTRA_NIP66_RELAYS', 50);
@@ -334,6 +369,9 @@ async function main() {
       if (typeof ev?.pubkey !== 'string') continue;
       const d = dTagValue(ev);
       if (typeof d === 'string' && d.includes('echo.websocket.org')) continue;
+      // Filter out blocked relays
+      const normalizedD = d ? normalizeRelayUrl(d) : null;
+      if (normalizedD && blockedRelayUrls.has(normalizedD)) continue;
       const key = d ? `${ev.pubkey}:${d}` : ev.id;
       upsertNewest(checksByKey, key, ev);
       if (checksByKey.size >= maxCheckEvents) break;
@@ -439,12 +477,16 @@ async function main() {
   await fs.rm(outDir, { recursive: true, force: true });
   await fs.mkdir(outDir, { recursive: true });
 
-  const monitorsPayload = [...registrations, ...monitorMeta].sort((a, b) => {
+  const monitorsPayload = [...registrations, ...monitorMeta, ...monitorBlocklists].sort((a, b) => {
     const ak = `${a.kind}:${a.pubkey}:${a.created_at ?? 0}`;
     const bk = `${b.kind}:${b.pubkey}:${b.created_at ?? 0}`;
     return ak.localeCompare(bk);
   });
   await fs.writeFile(path.join(outDir, 'monitors.json'), JSON.stringify(monitorsPayload));
+
+  // Write blocklist URLs as a simple array for quick loading
+  const blocklistUrls = Array.from(blockedRelayUrls);
+  await fs.writeFile(path.join(outDir, 'blocklist.json'), JSON.stringify(blocklistUrls));
 
   const checksFiles = [];
   const checkChunks = chunk(checks, checksChunkSize);
@@ -488,6 +530,7 @@ async function main() {
     },
     groups: {
       monitors: { files: ['/seed/monitors.json'], events: monitorsPayload.length },
+      blocklist: { files: ['/seed/blocklist.json'], count: blocklistUrls.length },
       checks: { files: checksFiles, events: checks.length },
       operators: { files: operatorFiles, events: operatorMeta.length },
       nip11s: { files: nip11Files, count: nip11Results.length },
@@ -500,6 +543,7 @@ async function main() {
   console.log('[seed] wrote', {
     outDir,
     monitors: monitorsPayload.length,
+    blocklist: blocklistUrls.length,
     checks: checks.length,
     operators: operatorMeta.length,
     nip11s: nip11Results.length,

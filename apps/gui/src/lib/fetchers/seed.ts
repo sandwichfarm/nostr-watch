@@ -7,6 +7,7 @@ import { instance } from '$lib/utils/lifecycle';
 import { hasBeenBootstrapped, isSeeded } from '$lib/stores/app';
 import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers';
 import { monitorsMap, monitorsMapFromCache } from '$lib/stores/monitors';
+import { addToBlocklist } from '$lib/stores/blocklist';
 import {
   startBootActivity,
   updateBootActivity,
@@ -22,6 +23,7 @@ type SeedManifestV1 = {
   generatedAt?: string;
   groups?: {
     monitors?: SeedGroup;
+    blocklist?: SeedGroup;
     checks?: SeedGroup;
     operators?: SeedGroup;
     nip11s?: SeedGroup;
@@ -113,6 +115,7 @@ export const seedBuildData = async (): Promise<void> => {
 
   const groups = manifest.groups ?? {};
   const monitorFiles = groups.monitors?.files ?? [];
+  const blocklistFiles = groups.blocklist?.files ?? [];
   const checkFiles = groups.checks?.files ?? [];
   const operatorFiles = groups.operators?.files ?? [];
   const nip11Files = groups.nip11s?.files ?? [];
@@ -176,6 +179,21 @@ export const seedBuildData = async (): Promise<void> => {
     }
 
     completeBootActivity('seed:monitors', totalMonitors);
+  }
+
+  // Load blocklist (must be before checks so filtering works)
+  if (blocklistFiles.length > 0) {
+    startBootActivity('seed:blocklist', 'Loading blocklist');
+    let totalBlocked = 0;
+    for (const url of blocklistFiles) {
+      const blockedUrls = await fetchJson<string[]>(url);
+      if (!Array.isArray(blockedUrls) || blockedUrls.length === 0) continue;
+      totalBlocked += blockedUrls.length;
+      addToBlocklist(blockedUrls);
+      updateBootActivity('seed:blocklist', totalBlocked);
+    }
+    console.log('[seed] loaded blocklist with', totalBlocked, 'blocked relay URLs');
+    completeBootActivity('seed:blocklist', totalBlocked);
   }
 
   // Load checks

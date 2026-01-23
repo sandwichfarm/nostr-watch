@@ -167,18 +167,18 @@ async function main() {
       .filter(Boolean)
   );
 
-  const maxWaitMs = envNumber('SEED_MAX_WAIT_MS', 15_000);
-  const maxActiveMonitors = envNumber('SEED_MAX_ACTIVE_MONITORS', 200);
+  const maxWaitMs = envNumber('SEED_MAX_WAIT_MS', 30_000);
+  const maxActiveMonitors = envNumber('SEED_MAX_ACTIVE_MONITORS', 500);
   const checksPerMonitorLimit = envNumber('SEED_CHECKS_PER_MONITOR_LIMIT', 500);
-  const maxCheckEvents = envNumber('SEED_MAX_CHECK_EVENTS', 20_000);
-  const operatorPubkeyLimit = envNumber('SEED_MAX_OPERATOR_PUBKEYS', 2_000);
+  const maxCheckEvents = envNumber('SEED_MAX_CHECK_EVENTS', 100_000);
+  const operatorPubkeyLimit = envNumber('SEED_MAX_OPERATOR_PUBKEYS', 5_000);
   const filtersPerReq = envNumber('SEED_MAX_FILTERS_PER_REQ', 10);
-  const checksChunkSize = envNumber('SEED_CHECKS_CHUNK_SIZE', 2_500);
+  const checksChunkSize = envNumber('SEED_CHECKS_CHUNK_SIZE', 5_000);
   const operatorsChunkSize = envNumber('SEED_OPERATORS_CHUNK_SIZE', 2_500);
   const nip11sChunkSize = envNumber('SEED_NIP11S_CHUNK_SIZE', 500);
-  const maxNip11Relays = envNumber('SEED_MAX_NIP11_RELAYS', 2_000);
+  const maxNip11Relays = envNumber('SEED_MAX_NIP11_RELAYS', 5_000);
   const nip11TimeoutMs = envNumber('SEED_NIP11_TIMEOUT_MS', 5_000);
-  const nip11Concurrency = envNumber('SEED_NIP11_CONCURRENCY', 20);
+  const nip11Concurrency = envNumber('SEED_NIP11_CONCURRENCY', 30);
 
   console.log('[seed] relays', { nip66: nip66Relays.length, userMeta: userMetaRelays.length });
 
@@ -287,26 +287,35 @@ async function main() {
     }
   }
 
+  // Sort by most recently active, but include ALL registered monitors up to cap
+  // This ensures we get data from all monitors, not just the most active
+  const allMonitorPubkeys = registrations.map((ev) => ev.pubkey).filter((v) => typeof v === 'string');
+
   const activeMonitorsSorted = Array.from(activeLastSeen.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, maxActiveMonitors)
     .map(([pubkey]) => pubkey);
 
-  console.log('[seed] active monitors (capped)', activeMonitorsSorted.length);
+  // Include monitors that weren't detected as "active" but have registrations
+  const inactiveMonitors = allMonitorPubkeys.filter((pk) => !activeLastSeen.has(pk));
+  const monitorsToFetch = [...activeMonitorsSorted, ...inactiveMonitors.slice(0, Math.max(0, maxActiveMonitors - activeMonitorsSorted.length))];
+
+  console.log('[seed] monitors to fetch checks from:', monitorsToFetch.length, '(active:', activeMonitorsSorted.length, ', inactive:', inactiveMonitors.length, ')');
 
   // ---------------------------------------------------------------------------
   // 4) Checks (kind 30166) for active monitors
   // ---------------------------------------------------------------------------
   const checksByKey = new Map(); // `${pubkey}:${d}` -> event
 
+  // Use a 7-day window to get comprehensive seed data
+  const checksSinceSeconds = envNumber('SEED_CHECKS_SINCE_DAYS', 7) * 24 * 60 * 60;
+
   const checkFilters = [];
-  for (const pubkey of activeMonitorsSorted) {
-    const reg = registrationsByPubkey.get(pubkey);
-    const freq = extractFrequencySeconds(reg);
+  for (const pubkey of monitorsToFetch) {
     const filter = {
       kinds: [30166],
       authors: [pubkey],
-      since: now - freq,
+      since: now - checksSinceSeconds,
       until: now,
     };
     if (Number.isFinite(checksPerMonitorLimit) && checksPerMonitorLimit > 0) {

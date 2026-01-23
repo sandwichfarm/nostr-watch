@@ -6,6 +6,7 @@ import { StateManager } from '@nostrwatch/route66';
 import { instance } from '$lib/utils/lifecycle';
 import { hasBeenBootstrapped, isSeeded } from '$lib/stores/app';
 import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers';
+import { monitorsMap, monitorsMapFromCache } from '$lib/stores/monitors';
 import {
   startBootActivity,
   updateBootActivity,
@@ -169,6 +170,8 @@ export const seedBuildData = async (): Promise<void> => {
 
     if (monitorsCache.length > 0) {
       StateManager.set('cache:monitors', monitorsCache);
+      // Update the monitorsMap store so UI reacts immediately
+      monitorsMap.set(monitorsMapFromCache());
       console.log('[seed] cached monitors to StateManager:', monitorsCache.length);
     }
 

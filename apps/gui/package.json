@@ -22,6 +22,8 @@
 		"dev": "vite dev",
 		"build": "rm -rf dist && vite build -c vite.production.js",
 		"seed": "node ./scripts/generate-seed.mjs",
+		"deploy:bunny": "node ./scripts/deploy-bunny.mjs",
+		"deploy:seeded:bunny": "pnpm run build:seeded && pnpm run deploy:bunny",
 		"nip05": "node ./scripts/generate-nip05.mjs",
 		"nip66:config": "node ./scripts/generate-nip66-config.mjs",
 		"prebuild": "pnpm run nip05 && pnpm run nip66:config",

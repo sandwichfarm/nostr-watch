@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SimplePool } from 'nostr-tools';
+import { SimplePool, useWebSocketImplementation } from 'nostr-tools/pool';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -143,7 +143,10 @@ async function queryMany(pool, relays, filters, { maxWaitMs }) {
 
 async function main() {
   const websocketImplementation = await ensureWebSocketImpl();
-  const pool = new SimplePool({ websocketImplementation });
+  // nostr-tools' SimplePool reads a module-level WebSocket implementation.
+  // In Node (especially <=20), global WebSocket may be missing.
+  useWebSocketImplementation(websocketImplementation);
+  const pool = new SimplePool();
   const allowEmpty = envString('SEED_ALLOW_EMPTY', 'false').toLowerCase() === 'true';
 
   let nip66Relays = uniq(

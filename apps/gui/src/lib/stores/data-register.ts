@@ -62,7 +62,27 @@ export const dataRegisterInit = async () => {
     data.register({
         key: 'seed:build',
         priority: 0,
-        condition: async () => !get(isBootstrapped) && !get(isSeeded),
+        condition: async () => {
+            // Only the leader tab should download + ingest the (potentially large) build-seed payload.
+            if (get(tabState) !== 'leader') return false;
+
+            // Normal first-run: no bootstrap markers and no prior seed import.
+            if (!get(isBootstrapped) && !get(isSeeded)) return true;
+
+            // Recovery path: localStorage can say "seeded/bootstrapped" while the actual cache
+            // is empty (e.g. OPFS/SQLite fallback, corruption reset, or user wiped SQLite only).
+            try {
+                const $route66 = await instance();
+                await $route66.ready();
+                const cache = $route66.adapters.cacheAdapter;
+                await cache.ready();
+                const checkCount = await cache.COUNT([{ kinds: [30166] }]);
+                return !Number.isFinite(checkCount) || checkCount < 100;
+            } catch {
+                // If we cannot verify cache health, attempt build-seed so the UI can recover.
+                return true;
+            }
+        },
         fn: async () => {
             const mod = await import("$lib/fetchers/seed");
             return mod.seedBuildData();

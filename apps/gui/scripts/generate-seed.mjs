@@ -20,6 +20,8 @@ const USER_META_RELAYS_DEFAULT = [
   'wss://purplepag.es',
   'wss://user.kindpag.es',
   'wss://relay.nostr.band',
+  'wss://relay.damus.io',
+  'wss://relay.primal.net',
 ];
 
 function envNumber(name, fallback) {
@@ -142,6 +144,7 @@ async function queryMany(pool, relays, filters, { maxWaitMs }) {
 async function main() {
   const websocketImplementation = await ensureWebSocketImpl();
   const pool = new SimplePool({ websocketImplementation });
+  const allowEmpty = envString('SEED_ALLOW_EMPTY', 'false').toLowerCase() === 'true';
 
   let nip66Relays = uniq(
     (envString('SEED_NIP66_RELAYS', '').split(',').map((s) => s.trim()).filter(Boolean).length
@@ -201,6 +204,11 @@ async function main() {
   }
   const registrations = Array.from(registrationsByPubkey.values());
   console.log('[seed] registrations', registrations.length);
+  if (!allowEmpty && registrations.length === 0) {
+    throw new Error(
+      `[seed] No registrations received. This usually means the build environment cannot connect to the configured NIP-66 relays over WebSocket (wss://), or maxWaitMs (${maxWaitMs}) is too low. Set SEED_ALLOW_EMPTY=true to write empty seed files anyway.`
+    );
+  }
 
   const monitorPubkeys = registrations.map((ev) => ev.pubkey).filter((v) => typeof v === 'string');
 
@@ -382,6 +390,11 @@ async function main() {
     (a, b) => (b?.created_at ?? 0) - (a?.created_at ?? 0)
   );
   console.log('[seed] checks', checks.length);
+  if (!allowEmpty && checks.length === 0) {
+    throw new Error(
+      `[seed] No check events (kind 30166) received. This usually means monitor relays are unreachable from this environment. Set SEED_ALLOW_EMPTY=true to write empty seed files anyway.`
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // 5) Operator pubkeys -> meta (kinds 0 + 10002)

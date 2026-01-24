@@ -82,14 +82,22 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 async function fetchJson<T>(
   url: string,
-  opts: { timeoutMs?: number } = {}
+  opts: { timeoutMs?: number; cache?: RequestCache } = {}
 ): Promise<T | null> {
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? Math.max(0, opts.timeoutMs as number) : 15_000;
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId =
     controller && timeoutMs > 0 ? globalThis.setTimeout(() => controller.abort(), timeoutMs) : null;
   try {
-    const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
+    const res = await fetch(
+      url,
+      controller
+        ? {
+            signal: controller.signal,
+            cache: opts.cache,
+          }
+        : { cache: opts.cache }
+    );
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
@@ -106,6 +114,22 @@ async function yieldToBrowser(): Promise<void> {
 function formatProgress(loaded: number, total?: number): string {
   if (typeof total === 'number' && Number.isFinite(total) && total > 0) return `${loaded}/${total}`;
   return `${loaded}`;
+}
+
+function withSeedVersion(url: string, seedKey: string): string {
+  if (!seedKey) return url;
+  try {
+    const base = typeof window !== 'undefined' ? window.location.href : 'https://example.invalid/';
+    const u = new URL(url, base);
+    u.searchParams.set('v', seedKey);
+    if (typeof window !== 'undefined' && u.origin === window.location.origin) {
+      return `${u.pathname}${u.search}${u.hash}`;
+    }
+    return u.toString();
+  } catch {
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}v=${encodeURIComponent(seedKey)}`;
+  }
 }
 
 async function seedEventsToCache(
@@ -142,7 +166,12 @@ export const seedBuildData = async (): Promise<void> => {
   try {
     const manifestUrl = resolveSeedAssetUrl(SEED_MANIFEST_URL);
     updateBootActivity('seed:manifest', `fetching (${manifestUrl})`);
-    const manifest = await fetchJson<SeedManifestV1>(manifestUrl, { timeoutMs: 5_000 });
+    // Manifest should always be fetched fresh so a bad/stale cached response doesn't "stick" for
+    // months (some CDNs ship extremely long max-age values for JSON assets).
+    const manifest = await fetchJson<SeedManifestV1>(manifestUrl, {
+      timeoutMs: 5_000,
+      cache: 'no-store',
+    });
     if (!manifest || manifest.version !== 1) {
       completeBootActivity('seed:manifest', `not found (${manifestUrl})`);
       completeBootActivity('seed:monitors', 'skipped');
@@ -176,20 +205,15 @@ export const seedBuildData = async (): Promise<void> => {
     } catch {}
 
     if (cacheHasData && StateManager.get(STATE_KEY_GENERATED_AT) === seedKey) {
-      // Already seeded, show quick completion and set isSeeded
-      // isSeeded.set(true);
-      // setSeedBootComplete(seedKey);
-      // startBootActivity('seed:monitors', 'Monitors');
-      // completeBootActivity('seed:monitors', 'cached');
-      // startBootActivity('seed:blocklist', 'Blocklist'); 
-      // completeBootActivity('seed:blocklist', 'cached');
-      // startBootActivity('seed:checks', 'Relay checks');
-      // completeBootActivity('seed:checks', 'cached');
-      // startBootActivity('seed:operators', 'Operators');
-      // completeBootActivity('seed:operators', 'cached');
-      // startBootActivity('seed:nip11s', 'NIP-11 info');
-      // completeBootActivity('seed:nip11s', 'cached');
-      // return; 
+      // Already seeded for this manifest; avoid re-downloading large JSON blobs.
+      isSeeded.set(true);
+      setSeedBootComplete(seedKey);
+      completeBootActivity('seed:monitors', 'cached');
+      completeBootActivity('seed:blocklist', 'cached');
+      completeBootActivity('seed:checks', 'cached');
+      completeBootActivity('seed:operators', 'cached');
+      completeBootActivity('seed:nip11s', 'cached');
+      return;
     }
 
     // We are about to do real seed work (fresh/broken state).
@@ -221,7 +245,10 @@ export const seedBuildData = async (): Promise<void> => {
       >();
 
       for (const url of monitorFiles) {
-        const events = await fetchJson<IEvent[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
+        const resolved = resolveSeedAssetUrl(url);
+        const events = await fetchJson<IEvent[]>(withSeedVersion(resolved, seedKey), {
+          timeoutMs: 15_000,
+        });
         if (!Array.isArray(events) || events.length === 0) continue;
         seededSomething = true;
         // Group events by pubkey for cache:monitors
@@ -296,7 +323,10 @@ export const seedBuildData = async (): Promise<void> => {
       updateBootActivity('seed:blocklist', formatProgress(0, groups.blocklist?.count));
       let totalBlocked = 0;
       for (const url of blocklistFiles) {
-        const blockedUrls = await fetchJson<string[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
+        const resolved = resolveSeedAssetUrl(url);
+        const blockedUrls = await fetchJson<string[]>(withSeedVersion(resolved, seedKey), {
+          timeoutMs: 15_000,
+        });
         if (!Array.isArray(blockedUrls) || blockedUrls.length === 0) continue;
         seededSomething = true;
         totalBlocked += blockedUrls.length;
@@ -317,7 +347,10 @@ export const seedBuildData = async (): Promise<void> => {
       startBootActivity('seed:nip11s', 'NIP-11 info');
       updateBootActivity('seed:nip11s', formatProgress(0, groups.nip11s?.count));
       for (const url of nip11Files) {
-        const entries = await fetchJson<Nip11Entry[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
+        const resolved = resolveSeedAssetUrl(url);
+        const entries = await fetchJson<Nip11Entry[]>(withSeedVersion(resolved, seedKey), {
+          timeoutMs: 15_000,
+        });
         if (!Array.isArray(entries) || entries.length === 0) continue;
         seededSomething = true;
         const expected = groups.nip11s?.count;
@@ -355,7 +388,10 @@ export const seedBuildData = async (): Promise<void> => {
       startBootActivity('seed:checks', 'Relay checks');
       updateBootActivity('seed:checks', formatProgress(0, groups.checks?.events));
       for (const url of checkFiles) {
-        const events = await fetchJson<IEvent[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
+        const resolved = resolveSeedAssetUrl(url);
+        const events = await fetchJson<IEvent[]>(withSeedVersion(resolved, seedKey), {
+          timeoutMs: 30_000,
+        });
         if (!Array.isArray(events) || events.length === 0) continue;
         seededSomething = true;
         for (const event of events as any[]) {
@@ -394,7 +430,10 @@ export const seedBuildData = async (): Promise<void> => {
       const operatorProfiles = new Map<string, any>(); // pubkey -> profile content
 
       for (const url of operatorFiles) {
-        const events = await fetchJson<IEvent[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
+        const resolved = resolveSeedAssetUrl(url);
+        const events = await fetchJson<IEvent[]>(withSeedVersion(resolved, seedKey), {
+          timeoutMs: 15_000,
+        });
         if (!Array.isArray(events) || events.length === 0) continue;
         seededSomething = true;
 

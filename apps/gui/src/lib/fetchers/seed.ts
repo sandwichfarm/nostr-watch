@@ -1,6 +1,7 @@
 import type { IEvent } from '@nostrwatch/route66/models';
 import { StateManager } from '@nostrwatch/route66';
 
+import { assets } from '$app/paths';
 import { instance, loadMonitorsFromCache } from '$lib/utils/lifecycle';
 import { isSeeded, setStatsAsOf } from '$lib/stores/app';
 import { publishEventsToMemoryRelay } from '$lib/stores/events-helpers';
@@ -31,6 +32,18 @@ type SeedManifestV1 = {
 
 const SEED_MANIFEST_URL = '/seed/manifest.json';
 const STATE_KEY_GENERATED_AT = 'seed:build:generatedAt';
+
+function resolveSeedAssetUrl(pathOrUrl: string): string {
+  if (/^[a-z]+:\/\//i.test(pathOrUrl)) return pathOrUrl;
+
+  const prefix = (assets ?? '').replace(/\/$/, '');
+
+  if (pathOrUrl.startsWith('/')) return prefix ? `${prefix}${pathOrUrl}` : pathOrUrl;
+
+  const clean = pathOrUrl.replace(/^\/+/, '');
+  if (!prefix) return `/${clean}`;
+  return `${prefix}/${clean}`;
+}
 
 function hashString(input: string): string {
   // djb2 xor hash (fast + stable for small strings)
@@ -127,9 +140,10 @@ export const seedBuildData = async (): Promise<void> => {
   updateBootActivity('seed:manifest', 'fetching');
 
   try {
-    const manifest = await fetchJson<SeedManifestV1>(SEED_MANIFEST_URL, { timeoutMs: 5_000 });
+    const manifestUrl = resolveSeedAssetUrl(SEED_MANIFEST_URL);
+    const manifest = await fetchJson<SeedManifestV1>(manifestUrl, { timeoutMs: 5_000 });
     if (!manifest || manifest.version !== 1) {
-      completeBootActivity('seed:manifest', 'not found');
+      completeBootActivity('seed:manifest', `not found (${manifestUrl})`);
       completeBootActivity('seed:monitors', 'skipped');
       completeBootActivity('seed:blocklist', 'skipped');
       completeBootActivity('seed:checks', 'skipped');
@@ -206,7 +220,7 @@ export const seedBuildData = async (): Promise<void> => {
       >();
 
       for (const url of monitorFiles) {
-        const events = await fetchJson<IEvent[]>(url, { timeoutMs: 15_000 });
+        const events = await fetchJson<IEvent[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
         if (!Array.isArray(events) || events.length === 0) continue;
         seededSomething = true;
         // Group events by pubkey for cache:monitors
@@ -281,7 +295,7 @@ export const seedBuildData = async (): Promise<void> => {
       updateBootActivity('seed:blocklist', formatProgress(0, groups.blocklist?.count));
       let totalBlocked = 0;
       for (const url of blocklistFiles) {
-        const blockedUrls = await fetchJson<string[]>(url, { timeoutMs: 15_000 });
+        const blockedUrls = await fetchJson<string[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
         if (!Array.isArray(blockedUrls) || blockedUrls.length === 0) continue;
         seededSomething = true;
         totalBlocked += blockedUrls.length;
@@ -302,7 +316,7 @@ export const seedBuildData = async (): Promise<void> => {
       startBootActivity('seed:nip11s', 'NIP-11 info');
       updateBootActivity('seed:nip11s', formatProgress(0, groups.nip11s?.count));
       for (const url of nip11Files) {
-        const entries = await fetchJson<Nip11Entry[]>(url, { timeoutMs: 15_000 });
+        const entries = await fetchJson<Nip11Entry[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
         if (!Array.isArray(entries) || entries.length === 0) continue;
         seededSomething = true;
         const expected = groups.nip11s?.count;
@@ -340,7 +354,7 @@ export const seedBuildData = async (): Promise<void> => {
       startBootActivity('seed:checks', 'Relay checks');
       updateBootActivity('seed:checks', formatProgress(0, groups.checks?.events));
       for (const url of checkFiles) {
-        const events = await fetchJson<IEvent[]>(url, { timeoutMs: 15_000 });
+        const events = await fetchJson<IEvent[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
         if (!Array.isArray(events) || events.length === 0) continue;
         seededSomething = true;
         for (const event of events as any[]) {
@@ -379,7 +393,7 @@ export const seedBuildData = async (): Promise<void> => {
       const operatorProfiles = new Map<string, any>(); // pubkey -> profile content
 
       for (const url of operatorFiles) {
-        const events = await fetchJson<IEvent[]>(url, { timeoutMs: 15_000 });
+        const events = await fetchJson<IEvent[]>(resolveSeedAssetUrl(url), { timeoutMs: 15_000 });
         if (!Array.isArray(events) || events.length === 0) continue;
         seededSomething = true;
 

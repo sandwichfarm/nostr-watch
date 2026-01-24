@@ -33,14 +33,20 @@
     </div>
       <div class="">
         <h1 class="copy-this relative">
-          <span
-            class="inline-block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg cursor-pointer hover:bg-white/50 hover:dark:bg-black/50"
-            {...(copyable ? { use: clickToCopy } : {})}
-            aria-label="Copy software descriptor"
-          >
-            {title}
-          </span>
-          <span class="copy-message">click to copy</span>
+          {#if copyable}
+            <span
+              class="inline-block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg cursor-pointer hover:bg-white/50 hover:dark:bg-black/50"
+              use:clickToCopy
+              aria-label="Copy to clipboard"
+            >
+              {title}
+            </span>
+            <span class="copy-message">click to copy</span>
+          {:else}
+            <span class="inline-block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg">
+              {title}
+            </span>
+          {/if}
         </h1>
         {#if subtitle}
             <span class="ml-3 text-lg block">{@html subtitle}</span>
@@ -61,4 +67,3 @@
         @apply block -top-1;
     }
 </style>
-

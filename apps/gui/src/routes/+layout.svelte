@@ -251,7 +251,6 @@
   // --------------------------------------------------------------------------------
 	  // Render gating
 	  // --------------------------------------------------------------------------------
-	  // Only exit boot UI when we have actual data.
 	  $: hasActualData = $relayCheckAggregates?.length > 0;
 	  $: seedInProgress = $seedBootStatus === 'in_progress';
 	  // "bootloaded" === seed import completed (or no seed payload available).
@@ -261,15 +260,14 @@
 	  // This supports old installs (bootstrapped pre-seed) without forcing seed boot UI.
 	  $: isFreshState = !hasBeenBootstrapped() && !$isSeeded;
 
-	  $: loadedEnough = hasActualData && (!isFreshState || seedReady);
-
 	  // Bootloader = build-seed import (first run / after reset).
 	  $: needsSeedBootstrap = isFreshState && !seedReady;
-	  $: showBootstrapLoading = needsSeedBootstrap && $tabState === 'leader';
-	  $: showFollowerWaiting = $tabState === 'follower' && !showContent;
 
+	  // Only show full-screen boot UI when a seed import is required.
 	  // After seed is loaded, show the app immediately; network sync continues in background.
-	  $: showContent = isReady && loadedEnough && !seedInProgress;
+	  $: showBootstrapLoading = needsSeedBootstrap && ($tabState === 'leader' || !seedInProgress);
+	  $: showFollowerWaiting = needsSeedBootstrap && seedInProgress && $tabState === 'follower';
+	  $: showContent = !needsSeedBootstrap;
 </script>
 
 {#if $unsupported}
@@ -278,20 +276,16 @@
   <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
 </div>
 {:else}
-	  <HeaderComponent navDisabled={!loadedEnough || needsSeedBootstrap || seedInProgress} />
+	  <HeaderComponent navDisabled={!hasActualData || needsSeedBootstrap || seedInProgress} />
 	  {#if showBootstrapLoading}
 	    <BootstrapLoading {isReady} />
 	  {:else if showFollowerWaiting}
 	    <FollowerLoading />
 	  {:else if showContent}
-    <div id="content-wrapper" class="block">
-      <slot />
-    </div>
-  {:else}
-    <div class="flex flex-col items-center justify-center h-screen px-4">
-      <div class="text-7xl mb-3">booting.</div>
-    </div>
-  {/if}
+	    <div id="content-wrapper" class="block">
+	      <slot />
+	    </div>
+	  {/if}
 {/if}
 
 {#if $showDebugButton}

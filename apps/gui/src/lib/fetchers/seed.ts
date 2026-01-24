@@ -141,6 +141,7 @@ export const seedBuildData = async (): Promise<void> => {
 
   try {
     const manifestUrl = resolveSeedAssetUrl(SEED_MANIFEST_URL);
+    updateBootActivity('seed:manifest', `fetching (${manifestUrl})`);
     const manifest = await fetchJson<SeedManifestV1>(manifestUrl, { timeoutMs: 5_000 });
     if (!manifest || manifest.version !== 1) {
       completeBootActivity('seed:manifest', `not found (${manifestUrl})`);

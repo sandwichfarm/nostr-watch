@@ -167,7 +167,7 @@ async function main() {
       .filter(Boolean)
   );
 
-  const maxWaitMs = envNumber('SEED_MAX_WAIT_MS', 30_000);
+  const maxWaitMs = envNumber('SEED_MAX_WAIT_MS', 120_000);
   const maxActiveMonitors = envNumber('SEED_MAX_ACTIVE_MONITORS', 500);
   const checksPerMonitorLimit = envNumber('SEED_CHECKS_PER_MONITOR_LIMIT', 500);
   const maxCheckEvents = envNumber('SEED_MAX_CHECK_EVENTS', 100_000);

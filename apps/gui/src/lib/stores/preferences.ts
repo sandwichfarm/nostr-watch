@@ -6,6 +6,9 @@
 
 import { writable, get } from 'svelte/store';
 import { browser } from '$app/environment';
+import { tabState } from './app';
+import { getLeaderTabRpcClient } from '$lib/runtime/leader-tab-client';
+import { leaderRpcCall } from '$lib/runtime/leader-tab-rpc';
 
 const STORAGE_KEY = 'nostrwatch:preferences';
 
@@ -17,6 +20,16 @@ const DEFAULT_PREFERENCES: AppPreferences = {
     showDebugButton: false
 };
 
+function normalizePreferences(value: unknown): AppPreferences {
+    if (!value || typeof value !== 'object') return { ...DEFAULT_PREFERENCES };
+    const raw = value as Partial<AppPreferences>;
+    return {
+        ...DEFAULT_PREFERENCES,
+        ...raw,
+        showDebugButton: Boolean(raw.showDebugButton)
+    };
+}
+
 function loadPreferences(): AppPreferences {
     if (!browser) return { ...DEFAULT_PREFERENCES };
 
@@ -24,7 +37,7 @@ function loadPreferences(): AppPreferences {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             const parsed = JSON.parse(stored);
-            return { ...DEFAULT_PREFERENCES, ...parsed };
+            return normalizePreferences(parsed);
         }
     } catch (e) {
         console.warn('Failed to load preferences:', e);
@@ -38,13 +51,64 @@ function createPreferencesStore() {
 
     // Persist to localStorage on changes
     if (browser) {
-        subscribe(prefs => {
+        let suppressPersist = false;
+        let isInitial = true;
+
+        const applyRemote = (next: AppPreferences) => {
+            suppressPersist = true;
+            set(next);
+            suppressPersist = false;
+        };
+
+        subscribe((prefs) => {
+            if (suppressPersist) return;
+            if (isInitial) {
+                isInitial = false;
+                return;
+            }
+
+            const role = get(tabState);
+            if (role === 'leader') {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+                } catch (e) {
+                    console.warn('Failed to persist preferences:', e);
+                }
+                try {
+                    getLeaderTabRpcClient().broadcast('state.localStorage', { key: STORAGE_KEY, value: prefs });
+                } catch {}
+                return;
+            }
+
+            void leaderRpcCall('state.localStorageSet', [STORAGE_KEY, prefs], { timeoutMs: 5_000 }).catch(() => {
+                // Best-effort fallback: persist locally if leader RPC is unavailable.
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+                } catch {}
+            });
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key !== STORAGE_KEY) return;
+            if (typeof event.newValue !== 'string') {
+                applyRemote({ ...DEFAULT_PREFERENCES });
+                return;
+            }
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-            } catch (e) {
-                console.warn('Failed to persist preferences:', e);
+                applyRemote(normalizePreferences(JSON.parse(event.newValue)));
+            } catch {
+                applyRemote({ ...DEFAULT_PREFERENCES });
             }
         });
+
+        try {
+            getLeaderTabRpcClient().onBroadcast((msg) => {
+                if (msg.kind !== 'state.localStorage') return;
+                const data = msg.data as any;
+                if (data?.key !== STORAGE_KEY) return;
+                applyRemote(normalizePreferences(data?.value));
+            });
+        } catch {}
     }
 
     return {

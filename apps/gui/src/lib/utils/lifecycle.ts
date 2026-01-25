@@ -180,13 +180,15 @@ export const bindBootstrapEmitters = (from?: string) => {
         });
 
         try {
-            const all: any[] | undefined = ($route66 as any)?.services?.monitors?.array;
-            if (all?.length) {
-                const cached = all
-                    .map((m: any) => (typeof m?.toCache === 'function' ? m.toCache() : null))
-                    .filter(Boolean);
-                if (cached.length) {
-                    StateManager.set('cache:monitors', cached);
+            if (get(tabState) === 'leader') {
+                const all: any[] | undefined = ($route66 as any)?.services?.monitors?.array;
+                if (all?.length) {
+                    const cached = all
+                        .map((m: any) => (typeof m?.toCache === 'function' ? m.toCache() : null))
+                        .filter(Boolean);
+                    if (cached.length) {
+                        StateManager.set('cache:monitors', cached);
+                    }
                 }
             }
         } catch {}

@@ -10,6 +10,9 @@
 import { writable, derived, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import { DEFAULT_NIP66_RELAYS, type Nip66RelayConfig } from '$lib/config/nip66-defaults';
+import { tabState } from './app';
+import { getLeaderTabRpcClient } from '$lib/runtime/leader-tab-client';
+import { leaderRpcCall } from '$lib/runtime/leader-tab-rpc';
 
 const STORAGE_KEY = 'nostrwatch:nip66-relays';
 
@@ -17,46 +20,50 @@ export interface Nip66RelayState {
     relays: Nip66RelayConfig[];
 }
 
-function createInitialState(): Nip66RelayState {
-    // Start with defaults
-    const state: Nip66RelayState = {
-        relays: [...DEFAULT_NIP66_RELAYS]
-    };
+function normalizeRelayState(value: unknown): Nip66RelayState {
+    const state: Nip66RelayState = { relays: [...DEFAULT_NIP66_RELAYS] };
 
-    // Load user customizations from localStorage
-    if (browser) {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored) as Nip66RelayState;
+    const stored = value as Partial<Nip66RelayState> | null;
+    const relays = Array.isArray(stored?.relays) ? stored?.relays : [];
 
-                // Merge: keep all defaults, apply enabled state from storage
-                const storedUrlMap = new Map(
-                    parsed.relays.map(r => [r.url, r])
-                );
+    if (relays.length) {
+        const storedUrlMap = new Map(relays.map((r) => [r.url, r]));
 
-                // Update default relays with stored enabled state
-                state.relays = DEFAULT_NIP66_RELAYS.map(defaultRelay => {
-                    const stored = storedUrlMap.get(defaultRelay.url);
-                    return {
-                        ...defaultRelay,
-                        enabled: stored?.enabled ?? defaultRelay.enabled
-                    };
-                });
+        state.relays = DEFAULT_NIP66_RELAYS.map((defaultRelay) => {
+            const stored = storedUrlMap.get(defaultRelay.url);
+            return {
+                ...defaultRelay,
+                enabled: stored?.enabled ?? defaultRelay.enabled,
+            };
+        });
 
-                // Add any custom (non-default) relays from storage
-                for (const storedRelay of parsed.relays) {
-                    if (!storedRelay.isDefault) {
-                        state.relays.push(storedRelay);
-                    }
-                }
+        for (const storedRelay of relays) {
+            if (!storedRelay?.isDefault) {
+                state.relays.push(storedRelay as Nip66RelayConfig);
             }
-        } catch (e) {
-            console.warn('Failed to load NIP-66 relay config from storage:', e);
         }
     }
 
+    // Safety: ensure at least one relay remains enabled.
+    if (!state.relays.some((r) => r.enabled)) {
+        const first = state.relays.find((r) => r.isDefault) ?? state.relays[0];
+        if (first) first.enabled = true;
+    }
+
     return state;
+}
+
+function createInitialState(): Nip66RelayState {
+    if (!browser) return normalizeRelayState(null);
+
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) return normalizeRelayState(JSON.parse(stored));
+    } catch (e) {
+        console.warn('Failed to load NIP-66 relay config from storage:', e);
+    }
+
+    return normalizeRelayState(null);
 }
 
 function createNip66RelaysStore() {
@@ -64,13 +71,65 @@ function createNip66RelaysStore() {
 
     // Persist to localStorage on changes
     if (browser) {
-        subscribe(state => {
+        let suppressPersist = false;
+        let isInitial = true;
+
+        const applyRemote = (next: Nip66RelayState) => {
+            suppressPersist = true;
+            set(next);
+            suppressPersist = false;
+        };
+
+        subscribe((state) => {
+            if (suppressPersist) return;
+            if (isInitial) {
+                isInitial = false;
+                return;
+            }
+
+            const normalized = normalizeRelayState(state);
+            const role = get(tabState);
+
+            if (role === 'leader') {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+                } catch (e) {
+                    console.warn('Failed to persist NIP-66 relay config:', e);
+                }
+                try {
+                    getLeaderTabRpcClient().broadcast('state.localStorage', { key: STORAGE_KEY, value: normalized });
+                } catch {}
+                return;
+            }
+
+            void leaderRpcCall('state.localStorageSet', [STORAGE_KEY, normalized], { timeoutMs: 5_000 }).catch(() => {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+                } catch {}
+            });
+        });
+
+        window.addEventListener('storage', (event) => {
+            if (event.key !== STORAGE_KEY) return;
+            if (typeof event.newValue !== 'string') {
+                applyRemote(normalizeRelayState(null));
+                return;
+            }
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            } catch (e) {
-                console.warn('Failed to persist NIP-66 relay config:', e);
+                applyRemote(normalizeRelayState(JSON.parse(event.newValue)));
+            } catch {
+                applyRemote(normalizeRelayState(null));
             }
         });
+
+        try {
+            getLeaderTabRpcClient().onBroadcast((msg) => {
+                if (msg.kind !== 'state.localStorage') return;
+                const data = msg.data as any;
+                if (data?.key !== STORAGE_KEY) return;
+                applyRemote(normalizeRelayState(data?.value));
+            });
+        } catch {}
     }
 
     return {

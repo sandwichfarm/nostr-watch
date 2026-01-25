@@ -13,6 +13,7 @@ import {
   LEADER_TAB_RPC_CHANNEL,
   LEADER_TAB_PROTOCOL_VERSION,
   type LeaderTabRpcMessage,
+  type BroadcastMessage,
   type RpcRequestMessage,
   type RpcResponseMessage,
   type RpcStreamMessage,
@@ -50,6 +51,11 @@ const WS_METHOD_ALLOWLIST = new Set([
   'abort',
 ]);
 
+const LOCAL_STORAGE_KEY_ALLOWLIST = new Set([
+  'nostrwatch:preferences',
+  'nostrwatch:nip66-relays',
+]);
+
 export class LeaderTabRpcServer {
   private readonly id = createId();
   private readonly termId = createId();
@@ -71,6 +77,17 @@ export class LeaderTabRpcServer {
 
   private post(message: RpcResponseMessage | RpcStreamMessage) {
     this.channel?.postMessage(message);
+  }
+
+  private broadcast(kind: string, data?: any) {
+    const msg: BroadcastMessage = {
+      v: LEADER_TAB_PROTOCOL_VERSION,
+      type: 'broadcast',
+      sourceId: this.id,
+      kind,
+      data,
+    };
+    this.channel?.postMessage(msg);
   }
 
   private replyOk(targetId: string, requestId: string, result: any) {
@@ -149,6 +166,29 @@ export class LeaderTabRpcServer {
       return;
     }
 
+    // Fast-path: leader-only persistence of cross-tab localStorage-backed state.
+    if (req.op === 'state.localStorageSet') {
+      try {
+        const key = req.args?.[0];
+        const value = req.args?.[1];
+        if (typeof key !== 'string' || !key.length) throw new Error('localStorage key missing');
+        if (!LOCAL_STORAGE_KEY_ALLOWLIST.has(key)) throw new Error(`localStorage key not allowed: ${key}`);
+
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+          throw new Error(`localStorage.setItem failed: ${key}`);
+        }
+
+        // Ensure the leader tab also receives the change (storage events do not fire in same tab).
+        this.broadcast('state.localStorage', { key, value });
+        this.replyOk(req.sourceId, req.requestId, true);
+      } catch (e) {
+        this.replyErr(req.sourceId, req.requestId, e);
+      }
+      return;
+    }
+
     try {
       const r66 = await this.options.getRoute66();
       await r66.ready();
@@ -170,6 +210,55 @@ export class LeaderTabRpcServer {
   ) {
     const [namespace, methodRaw] = req.op.split('.', 2);
     const args = Array.isArray(req.args) ? req.args : [];
+
+    if (namespace === 'monitors') {
+      const method = methodRaw;
+      if (method !== 'setEnabled') throw new Error(`monitors method not allowed: ${method}`);
+
+      const pubkey = args[0];
+      const enabled = args[1];
+      if (typeof pubkey !== 'string' || !pubkey.length) throw new Error('monitors.setEnabled: pubkey missing');
+      if (typeof enabled !== 'boolean') throw new Error('monitors.setEnabled: enabled must be boolean');
+
+      const service: any = (r66 as any)?.services?.monitors;
+      if (!service) throw new Error('monitors service missing');
+
+      try {
+        const monitor = service?.map?.get?.(pubkey);
+        if (monitor) {
+          monitor.enabled = enabled;
+          service?.manager?.updateMonitor?.(monitor);
+        }
+      } catch {}
+
+      // Persist the updated selection into shared StateManager storage.
+      let nextCache: any[] = [];
+      try {
+        const existing = StateManager.get('cache:monitors');
+        if (Array.isArray(existing)) nextCache = existing.slice();
+      } catch {}
+
+      const idx = nextCache.findIndex((m: any) => m?.pubkey === pubkey);
+      if (idx >= 0) {
+        nextCache[idx] = { ...(nextCache[idx] as any), enabled };
+      } else {
+        try {
+          const monitor = service?.map?.get?.(pubkey);
+          const cached = typeof monitor?.toCache === 'function' ? monitor.toCache() : { pubkey };
+          nextCache.push({ ...(cached as any), enabled });
+        } catch {
+          nextCache.push({ pubkey, enabled });
+        }
+      }
+
+      try {
+        StateManager.set('cache:monitors', nextCache);
+      } catch {}
+
+      // Broadcast the new cache value so the leader tab (and any followers) can update immediately.
+      this.broadcast('state.stateManager', { key: 'cache:monitors', value: nextCache });
+      return true;
+    }
 
     if (namespace === 'cache') {
       const cache: any = r66.adapters?.cacheAdapter;

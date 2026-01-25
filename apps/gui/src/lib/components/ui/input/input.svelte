@@ -3,11 +3,14 @@
 	import type { InputEvents } from './index.js';
 	import { cn } from '$lib/utils/ui.js';
 
-	type $$Props = HTMLInputAttributes;
+	type $$Props = HTMLInputAttributes & {
+		input?: HTMLInputElement | null;
+	};
 	type $$Events = InputEvents;
 
 	let className: $$Props['class'] = undefined;
 	export let value: $$Props['value'] = undefined;
+	export let input: $$Props['input'] = null;
 	export { className as class };
 
 	// Workaround for https://github.com/sveltejs/svelte/issues/9305
@@ -20,6 +23,7 @@
 		'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
 		className
 	)}
+	bind:this={input}
 	bind:value
 	{readonly}
 	on:blur

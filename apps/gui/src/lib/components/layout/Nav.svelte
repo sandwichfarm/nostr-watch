@@ -3,11 +3,11 @@
     import { derived } from 'svelte/store';
     
     export let navLinks = [
-      { href: '/', label: 'home' },
-      { href: '/relays', label: 'relays' },
-      { href: '/operators', label: 'operators' },
-      { href: '/monitors', label: 'monitors' },
-      { href: '/preferences', label: 'preferences' }
+      // { href: '/', label: 'relays' },
+      // { href: '/relays', label: 'relays' },
+      // { href: '/operators', label: 'operators' },
+      // { href: '/monitors', label: 'monitors' },
+      { href: '/preferences', label: '⚙', class: 'text-xl' }
     ];
 
     export let disabledHrefs = [];
@@ -31,6 +31,7 @@
         <span
           aria-disabled="true"
           class={`disabled ${
+            (link?.class? link.class: ''),
             isActive(link.href, $currentPath)
               ? 'bg-white/10'
               : ''
@@ -61,7 +62,7 @@
 
     nav > a,
     nav > span {
-        @apply ml-1 py-1.5 px-3 rounded-md;
+        @apply ml-1 py-1.5 px-3 text-sm font-mono font-bold text-purple-200;
     }
 
     nav > a:hover {

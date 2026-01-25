@@ -13,11 +13,13 @@
     import { sharableConfig, type SharableConfigKeys } from '../table/utils';
 	import type { DataTableConfig, SortState } from '../DataTableTypes';
 	import Button from '$ui/button/button.svelte';
+	import { cn } from '$lib/utils/ui.js';
     const DEV = import.meta.env.DEV;
   
     export let filters: Writable<Record<string, any>>;
     export let config: Writable<DataTableConfig>;
     export let onFilterChange: (config: DataTableConfig) => void = (config) => {}
+	export let triggerClass: string | undefined = undefined;
 
     type LinkableDataView = {
         filters: Record<string, any>;
@@ -128,9 +130,9 @@
   </script>
 
   <Dialog.Root bind:open={dialogOpen}>
-    <Dialog.Trigger>
-        <Button variant="secondary"  size="small"  class="mb-2 text-sm font-bold py-1 px-2 mr-1">
-        Share View
+    <Dialog.Trigger asChild let:builder>
+        <Button builders={[builder]} variant="secondary" size="sm" class={cn("whitespace-nowrap", triggerClass)}>
+          Share
         </Button>
     </Dialog.Trigger>
     <Dialog.Content class="p-10 z-[9999]">
@@ -148,7 +150,7 @@
             for="filtersActive"
             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-[disabled=true]:cursor-not-allowed peer-data-[disabled=true]:opacity-70"
         >
-            Share Active Filters
+            Include Active Filters
         </Label>
         </div>
 
@@ -158,7 +160,7 @@
             for="filtersShow"
             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-[disabled=true]:cursor-not-allowed peer-data-[disabled=true]:opacity-70"
         >
-            Share Visibile Filters
+            Include Visibile Filters
         </Label>
         </div>
 
@@ -168,7 +170,7 @@
             for="columnsShow"
             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-[disabled=true]:cursor-not-allowed peer-data-[disabled=true]:opacity-70"
         >
-            Share Visible Columns
+            Include Visible Columns
         </Label>
         </div>
 
@@ -178,7 +180,7 @@
             for="sortState"
             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-[disabled=true]:cursor-not-allowed peer-data-[disabled=true]:opacity-70"
         >
-            Share Sort State
+            Include Sort State
         </Label>
         </div>
 

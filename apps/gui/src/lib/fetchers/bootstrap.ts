@@ -8,7 +8,8 @@ import type { WebsocketAdapterOptions } from "@nostrwatch/route66/core/Websocket
 import { operatorsPubkeys, operatorsPubkeysValid } from "$stores/operators";
 import { delay } from "@nostrwatch/utils";
 import { relaysWithNip11s$, relaysWithoutNip11s$ } from "$stores/helpers/helpers-nip11s";
-import { setStatsAsOf } from "$lib/stores/app";
+import { isBootstrapping, lastCompleteSync, setStatsAsOf } from "$lib/stores/app";
+import { StateManager } from "@nostrwatch/route66";
 
 export const fetchMonitors = async () => {
     const $route66 = await instance();
@@ -17,22 +18,40 @@ export const fetchMonitors = async () => {
     await $route66?.services?.monitors?.bootstrapMonitors();
 }
 
-export const fetchMonitorsChecks = async () => {
+export const fetchMonitorsChecks = async (): Promise<IEvent[]> => {
     const $route66 = await instance();
     await $route66.ready();
     bindBootstrapEmitters();
-    await $route66?.services?.monitors?.bootstrapMonitorsChecks();
-    // At this point we have a fresh checks snapshot; switch UI stats to "live".
-    setStatsAsOf(Math.round(Date.now() / 1000), { persist: true });
+    const res = await $route66?.services?.monitors?.bootstrapMonitorsChecks();
+    const events = Array.isArray(res) ? (res as IEvent[]) : [];
+
+    // Only advance the UI "as of" reference when this sync is not part of a larger
+    // bootstrapping composite; composites update `statsAsOf` on completion.
+    if (!get(isBootstrapping) && events.length) {
+        const now = Math.round(Date.now() / 1000);
+        let maxCreatedAt = 0;
+        for (const ev of events as any[]) {
+            const seconds = typeof (ev as any)?.created_at === "number" ? (ev as any).created_at : Number((ev as any)?.created_at);
+            if (Number.isFinite(seconds) && seconds > maxCreatedAt) maxCreatedAt = seconds;
+        }
+        lastCompleteSync.set(now);
+        try {
+            StateManager.set('lastCompleteSync', now);
+        } catch {}
+        setStatsAsOf(maxCreatedAt > 0 ? maxCreatedAt : now, { persist: true });
+    }
+
+    return events;
 }
 
 // Fetch additional checks from active-but-disabled monitors to broaden relay coverage.
 // This should run after `fetchMonitors()` has populated monitors + active status.
-export const fetchDisabledMonitorsChecks = async () => {
+export const fetchDisabledMonitorsChecks = async (): Promise<IEvent[]> => {
     const $route66 = await instance();
     await $route66.ready();
     bindBootstrapEmitters();
-    await $route66?.services?.monitors?.fetchDisabledMonitorsChecks();
+    const res = await $route66?.services?.monitors?.fetchDisabledMonitorsChecks();
+    return Array.isArray(res) ? (res as IEvent[]) : [];
 }
 
 export const fetchNip11s = async () => {

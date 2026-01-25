@@ -12,10 +12,13 @@
 	import { onMount } from 'svelte';
 	import { eventKey } from '$lib/utils/event-keys';
 	import { activeMonitorChecksCount } from '$lib/stores';
-	import { pauseLiveSync } from '$lib/utils/live-sync';
+    import { pauseLiveSync } from '$lib/utils/live-sync';
 	import { delay } from '@nostrwatch/utils';
 	import type { Nip05 } from 'nostr-tools/nip05';
 	import { nip05Service } from '$stores/nip05s';
+	import { tabState } from '$lib/stores/app';
+	import { leaderRpcCall } from '$lib/runtime/leader-tab-rpc';
+	import { StateManager } from '@nostrwatch/route66';
 
     export let data: any;
     export let view: 'head' | 'cell' = 'cell';
@@ -48,6 +51,24 @@
             }
             return monitorsMap;
         });
+
+		// Followers should route monitor selection changes through the leader tab so the
+		// leader's MonitorService + persisted monitor cache stay authoritative.
+		if ($tabState !== 'leader') {
+			void leaderRpcCall('monitors.setEnabled', [monitor.pubkey, enable], { timeoutMs: 10_000 }).catch(() => {
+				// Fallback: if leader RPC is unavailable, persist directly to shared storage so
+				// other tabs (including the leader) can still observe the change via `storage`.
+				try {
+					const existing = StateManager.get('cache:monitors');
+					const nextCache = Array.isArray(existing) ? existing.slice() : [];
+					const idx = nextCache.findIndex((m: any) => m?.pubkey === monitor.pubkey);
+					if (idx >= 0) nextCache[idx] = { ...(nextCache[idx] as any), enabled: enable };
+					else if (typeof (monitor as any)?.toCache === 'function') nextCache.push({ ...(monitor as any).toCache(), enabled: enable });
+					else nextCache.push({ pubkey: monitor.pubkey, enabled: enable });
+					StateManager.set('cache:monitors', nextCache);
+				} catch {}
+			});
+		}
     }
 
     

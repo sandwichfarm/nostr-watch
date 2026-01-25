@@ -34,6 +34,18 @@ eventsStoreMemoryRelay_.on('qualify', (event: StoreEventType, key: string, $rela
     if(!event) return false
     const kind = event.kind
     if(kind === undefined) return false
+
+    // Avoid overwriting a newer event with an older one for the same derived key
+    // (e.g. backfills or out-of-order streams).
+    try {
+        const existing: any = $relay.events.get(key);
+        const existingCreatedAt = typeof existing?.created_at === 'number' ? existing.created_at : Number(existing?.created_at);
+        const nextCreatedAt = typeof (event as any)?.created_at === 'number' ? (event as any).created_at : Number((event as any)?.created_at);
+        if (Number.isFinite(existingCreatedAt) && Number.isFinite(nextCreatedAt) && nextCreatedAt <= existingCreatedAt) {
+            return false;
+        }
+    } catch {}
+
     if(kind === 30166) {
         const monitor = getMonitor(event.pubkey);
         if(monitor) {

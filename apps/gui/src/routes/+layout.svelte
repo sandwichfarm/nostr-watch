@@ -20,6 +20,7 @@
 	    tabState,
 	    hasBeenBootstrapped,
 	    isSeeded,
+	    opfsStatus,
 	  } from '$lib/stores/app';
 	  import { relayCheckAggregates } from '$lib/stores';
 	  import { showDebugButton } from '$lib/stores/preferences';
@@ -117,15 +118,17 @@
     await route66.ready();
     // completeBootActivity('init');
 
-    dataRegisterInit();
-    const datas: string[] = ['sync:cache'];
-    if (get(tabState) === 'leader') {
-      datas.push(hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
-    }
-    void get(dataRegister)
-      .require(datas)
-      .catch((err) => console.error('[DataRegister] require failed', err));
-  }
+	    dataRegisterInit();
+	    const datas: string[] = ['sync:cache'];
+	    if (get(tabState) === 'leader') {
+	      const opfs = get(opfsStatus);
+	      const forceFullSync = opfs === 'fallback' || opfs === 'error';
+	      datas.push(forceFullSync ? 'sync:all-force' : hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
+	    }
+	    void get(dataRegister)
+	      .require(datas)
+	      .catch((err) => console.error('[DataRegister] require failed', err));
+	  }
 
   const initServices = async () => {
     userService.set(new UserService((await instance()).adapters));
@@ -208,17 +211,10 @@
 
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
 
-    // Give the ActivityManager a tick to claim/follow leadership before boot.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    // Leader-tab runtime RPC server (only runs in the elected leader tab).
-    if (get(tabState) === 'leader') startLeaderTabRpcServer(leaderRpcOptions);
-    else stopLeaderTabRpcServer();
-
     lastRole = get(tabState);
-    await runBoot();
 
-    // React to leader/follower role changes after initial boot.
+    // React to leader/follower role changes immediately (even during boot),
+    // so follower tabs don't time out waiting for a leader RPC server.
     unsubscribeTabState = tabState.subscribe(async (role) => {
       if (!role || role === lastRole) return;
 
@@ -230,12 +226,24 @@
         await shutdown();
       }
 
+      lastRole = role;
+
       if (role === 'leader' || role === 'follower') {
+        // If boot was running while we changed roles, complete it and then run again
+        // so Route66/leader RPC reflects the current leader/follower mode.
+        if (bootInFlight) await bootInFlight;
         await runBoot();
       }
-
-      lastRole = role;
     });
+
+    // Leader-tab runtime RPC server (only runs in the elected leader tab).
+    if (get(tabState) === 'leader') startLeaderTabRpcServer(leaderRpcOptions);
+    else stopLeaderTabRpcServer();
+
+    // Give the ActivityManager a tick to claim/follow leadership before boot.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await runBoot();
 
     isReady = true;
   });

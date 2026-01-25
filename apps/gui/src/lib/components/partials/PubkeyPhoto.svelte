@@ -3,6 +3,7 @@
 	import { PFP } from "$utils/pfp";
 	import type { PubkeyProfile } from "@nostrwatch/route66/models/PubkeyProfile";
 	import type { Readable } from "svelte/store";
+	import { onDestroy } from "svelte";
 
 	export let pubkey: string;
 	export let size: number = 10;
@@ -11,47 +12,24 @@
 	let photo: string | undefined;
 	let loading: boolean = true;
 
+	let unsubscribe: (() => void) | null = null;
+
+	$: profile = pubkeyProfile$(pubkey);
 	$: {
-		if (profile) {
-			const unsubscribe = profile.subscribe((p) => {
-				if (p?.photo) {
-					fetchWithTimeout(p.photo, 10000)
-						.then(() => {
-							photo = p.photo;
-							loading = false;
-						})
-						.catch(() => {
-							photo = PFP.generate(pubkey);
-							loading = false;
-						});
-				} else {
-					photo = PFP.generate(pubkey);
-					loading = false;
-				}
-			});
-			unsubscribe();
-		}
-	}
+		unsubscribe?.();
+		loading = true;
+		photo = undefined;
 
-	function fetchWithTimeout(url: string, timeout: number): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const img = new Image();
-			const timer = setTimeout(() => {
-				img.src = ""; // Cancel image loading
-				reject(new Error("Image fetch timed out"));
-			}, timeout);
-
-			img.onload = () => {
-				clearTimeout(timer);
-				resolve();
-			};
-			img.onerror = () => {
-				clearTimeout(timer);
-				reject(new Error("Image fetch failed"));
-			};
-			img.src = url;
+		unsubscribe = profile.subscribe((p) => {
+			photo = p?.photo || p?.picture || PFP.generate(pubkey);
+			loading = false;
 		});
 	}
+
+	onDestroy(() => {
+		unsubscribe?.();
+		unsubscribe = null;
+	});
 </script>
 
 {#if loading}
@@ -61,11 +39,26 @@
 {:else}
 	{#if photo}
 		<span class="overflow-hidden inline-block mr-3">
-			<img src="{photo}" alt={pubkey} class="w-{size} h-{size} block rounded-full" />
+			<img
+				src="{photo}"
+				alt={pubkey}
+				loading="lazy"
+				decoding="async"
+				referrerpolicy="no-referrer"
+				on:error={() => (photo = PFP.generate(pubkey))}
+				class="w-{size} h-{size} block rounded-full"
+			/>
 		</span>
 	{:else}
 		<span class="rounded-full overflow-hidden inline-block mr-3">
-			<img src="{PFP.generate(pubkey)}" alt={pubkey} class="w-{size} h-{size}" />
+			<img
+				src="{PFP.generate(pubkey)}"
+				alt={pubkey}
+				loading="lazy"
+				decoding="async"
+				referrerpolicy="no-referrer"
+				class="w-{size} h-{size}"
+			/>
 		</span>
 	{/if}
 {/if}

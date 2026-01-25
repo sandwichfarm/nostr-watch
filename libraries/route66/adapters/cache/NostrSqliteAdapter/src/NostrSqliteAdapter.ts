@@ -1,6 +1,6 @@
 /// <reference types="vite/types/importMeta.d.ts" />
 
-import { delay, isBrowser } from "@nostrwatch/utils";
+import { delay, getGlobalLogLevel, isBrowser, normalizeLogLevel, type LogLevel } from "@nostrwatch/utils";
 
 import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAdapter } from "@nostrwatch/route66/core";
 import { IEvent } from "@nostrwatch/route66/models";
@@ -35,10 +35,23 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     private _relay?: WorkerRelayInterface;
     protected _ready: boolean = false;
     handleSetupInternally: boolean = true;
+    private logLevelListener?: (event: Event) => void;
 
     constructor(worker?: Worker | URL) {
         super(worker)
         // ////console.log('NostrSqliteAdapter constructor')
+        if (isBrowser()) {
+            this.logLevelListener = (event: Event) => {
+                const level = normalizeLogLevel(
+                    (event as CustomEvent<LogLevel>).detail,
+                    getGlobalLogLevel()
+                );
+                void this._relay?.setLogLevel(level).catch(() => {});
+            };
+            try {
+                window.addEventListener('nostrwatch:loglevel', this.logLevelListener);
+            } catch {}
+        }
     }
 
     async destroy(){
@@ -52,6 +65,12 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
      */
     async shutdown(): Promise<void> {
         const relay = this._relay;
+        if (this.logLevelListener) {
+            try {
+                window.removeEventListener('nostrwatch:loglevel', this.logLevelListener);
+            } catch {}
+            this.logLevelListener = undefined;
+        }
         if (!relay) return;
 
         // Clear reference first to prevent double-shutdown
@@ -128,6 +147,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         if(!ready ) {
             throw new Error('NostrSqliteAdapter: failed to setup')
         }
+        void this.relay.setLogLevel(getGlobalLogLevel()).catch(() => {});
         setTimeout(() => this._ready = ready, 500)
         return this.relay.worker; 
     }

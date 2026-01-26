@@ -28,7 +28,7 @@ import { onMount } from "svelte";
 			<div class="content" in:fade>
                 <div in:fly={{ y: 20, duration: 300 }}>
 					{#if topText}
-                    <div class="label text-center px-4">{@html topText}</div>
+                    <div class="label text-center">{@html topText}</div>
 					{/if}
                     <div class="value text-7xl font-bold text-center">
 						{#if link}
@@ -39,7 +39,7 @@ import { onMount } from "svelte";
                         
                     </div>
 					{#if bottomText}
-                    <div class="label text-center px-4">{@html bottomText}</div>
+                    <div class="label text-center">{@html bottomText}</div>
 					{/if}
                 </div>
 			</div>

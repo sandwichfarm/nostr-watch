@@ -8,6 +8,7 @@
 	import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { default as relaysTableConfig } from '$lib/config/dataTable/relays.js';
 	import RelayDimensions from '$routes/relays/relay-dimensions.svelte';
+	import DataViewSelector from '$lib/components/data-view/partials/DataViewSelector.svelte';
 	import type { DataTableConfig, DataViewViews } from '$lib/components/data-view/DataTableTypes';
 	import { dataRegister } from '$stores/data-register';
 	import RelayDataViewShortcut from '$lib/components/shortcuts/RelayDataViewShortcut.svelte';
@@ -155,6 +156,8 @@
 
 	let showDataView = true; // Controls opacity transition
 
+	const activeView: Writable<DataViewViews> = writable(enabledViews.length === 1 ? enabledViews[0] : 'table');
+
 	// Reference to the shortcut component to reload presets
 	let shortcutComponent: any;
 
@@ -184,9 +187,6 @@
 			})
 			//trigger a pseudo transition 
 		}
-
-		let activeView: Writable<'table' | 'map' | 'grid'>;
-
 </script>
 
 
@@ -194,15 +194,15 @@
 	{#if $ready}
 
   <Counts />
-	
-	<RelayDimensions />
-
-	<RelayDataViewShortcut
-		bind:this={shortcutComponent}
-		class="ml-2 opacity-70"
-		onClick={loadPreset}
-		label="Presets"
-	/>
+	<div class="flex flex-wrap items-center gap-3 px-3 pt-2">
+		<RelayDimensions />
+		<RelayDataViewShortcut
+			bind:this={shortcutComponent}
+			onClick={loadPreset}
+			label="Presets"
+		/>
+		<DataViewSelector {enabledViews} {activeView} />
+	</div>
 
 	<!-- I need this to fade in and out every time I trigger pseudo transition, without unmounting the component -->
 	<div
@@ -215,7 +215,8 @@
 			{config}
 			key={dataKey}
 			{enabledViews}
-			bind:activeView
+			{activeView}
+			showViewSelector={false}
 		/>
 	</div>
 

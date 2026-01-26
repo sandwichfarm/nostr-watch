@@ -69,7 +69,7 @@
     ]
 </script>
 
-<div class="grid lg:grid-cols-3 xl:grid-cols-6 mt-9 mx-10">
+<div class="grid lg:grid-cols-3 xl:grid-cols-6 mt-9">
     {#each values as { topText, bottomText, value, link }, index}
         <CountCard {topText} {value} {bottomText} {link} {index} class="" innerClass={'gradient-purple'} />
     {/each}

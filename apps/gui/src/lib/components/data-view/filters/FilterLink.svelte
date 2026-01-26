@@ -132,7 +132,7 @@
   <Dialog.Root bind:open={dialogOpen}>
     <Dialog.Trigger asChild let:builder>
         <Button builders={[builder]} variant="secondary" size="sm" class={cn("whitespace-nowrap", triggerClass)}>
-          Share View
+          Share
         </Button>
     </Dialog.Trigger>
     <Dialog.Content class="p-10 z-[9999]">
@@ -150,7 +150,7 @@
             for="filtersActive"
             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-[disabled=true]:cursor-not-allowed peer-data-[disabled=true]:opacity-70"
         >
-            Share Active Filters
+            Include Active Filters
         </Label>
         </div>
 
@@ -160,7 +160,7 @@
             for="filtersShow"
             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-[disabled=true]:cursor-not-allowed peer-data-[disabled=true]:opacity-70"
         >
-            Share Visibile Filters
+            Include Visibile Filters
         </Label>
         </div>
 
@@ -170,7 +170,7 @@
             for="columnsShow"
             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-[disabled=true]:cursor-not-allowed peer-data-[disabled=true]:opacity-70"
         >
-            Share Visible Columns
+            Include Visible Columns
         </Label>
         </div>
 
@@ -180,7 +180,7 @@
             for="sortState"
             class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 peer-data-[disabled=true]:cursor-not-allowed peer-data-[disabled=true]:opacity-70"
         >
-            Share Sort State
+            Include Sort State
         </Label>
         </div>
 

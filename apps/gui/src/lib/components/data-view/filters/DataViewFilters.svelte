@@ -516,8 +516,8 @@
     }
 
     // **Reactive Statements for Styling Classes**
-    $: buttonClass = 'mb-2 text-sm font-bold py-1 px-2 mr-1';
-    $: buttonClassSelected = 'bg-blue-500 text-white';
+    $: buttonClass = 'mb-2 text-sm font-bold py-1 px-2 mr-1 opacity-50';
+    $: buttonClassSelected = 'opacity-80 text-white bg-purple-200/5';
 	$: toolbarButtonClass = 'shrink-0 whitespace-nowrap';
 </script>  
 
@@ -603,7 +603,7 @@
                     <!-- **Accordion Trigger Layout with Active Filters Badge and List** -->
                     <div class="flex items-center w-full py-3 px-2">
                         <!-- Filter Title -->
-                        <span class="flex-shrink-0 overflow-hidden text-ellipsis font-mono text-xs lowercase">
+                        <span class="flex-shrink-0 overflow-hidden text-ellipsis font-mono text-xs lowercase opacity-50">
                             {filter.prettyName}
                         </span>
                         

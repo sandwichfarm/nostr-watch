@@ -494,7 +494,7 @@
     }
 
     // **Reactive Statements for Styling Classes**
-    $: buttonClass = 'mb-2 text-sm font-bold py-1 px-2 mr-1';
+    $: buttonClass = 'mb-2 text-sm font-bold py-0 px-1 mr-0.5 lowercase';
     $: buttonClassSelected = 'bg-blue-500 text-white';
 </script>  
 
@@ -505,11 +505,11 @@
     size="small" 
     variant="destructive" 
     on:click={clearAllFilters} 
-    class="{buttonClass} ml-2" 
+    class="{buttonClass} ml-1" 
     disabled={Object.keys(activeFilters || {}).length > 0 ? false : true}
 >
     {#if Object.keys(activeFilters || {}).length > 0}
-        Clear {Object.keys(activeFilters || {}).length} Filters
+        Reset ({Object.keys(activeFilters || {}).length} active)
     {:else}
         No Filters Applied
     {/if}
@@ -518,7 +518,7 @@
 
 <Popover.Root>
     <Popover.Trigger class="text-lg inline-block ml-2 relative">
-        <Button size="small"  variant="secondary" class="relative cursor-pointer {buttonClass}">Filter Visiblity</Button>
+        <Button size="small"  variant="secondary" class="relative cursor-pointer {buttonClass}">Filters</Button>
     </Popover.Trigger>
     <Popover.Content class="z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
         <Tabs.Root value="visiblity" class="">
@@ -637,7 +637,8 @@
                 <div class="filter-mode-toggle mb-2">
                     {#if filter.type !== 'boolean'}
                         {#if filter.type === 'array'}
-                            <Button size="small"
+                            <Button 
+                                size="sm"
                                 variant="secondary"
                                 class="{buttonClass} {filter.mode === 'AND' ? 'active' : ''}"
                                 on:click={() => setFilterMode(filter.key, 'AND')}
@@ -645,14 +646,14 @@
                                 AND
                             </Button>
                         {/if}
-                        <Button size="small"
+                        <Button size="sm"
                             variant="secondary"
                             class="{buttonClass} {filter.mode === 'OR' ? 'active' : ''}"
                             on:click={() => setFilterMode(filter.key, 'OR')}
                         >
                             OR
                         </Button>
-                        <Button size="small"
+                        <Button size="sm"
                             variant="secondary"
                             class="{buttonClass} {filter.mode === 'UNIQUE' ? 'active' : ''}"
                             on:click={() => setFilterMode(filter.key, 'UNIQUE')}

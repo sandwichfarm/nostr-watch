@@ -117,7 +117,7 @@
 <Dialog.Root bind:open={dialogOpen}>
     <Dialog.Trigger asChild let:builder>
         <Button builders={[builder]} variant="secondary" size="sm" class={cn("whitespace-nowrap", triggerClass)}>
-            Save Preset
+            Save
         </Button>
     </Dialog.Trigger>
     <Dialog.Content class="p-10 z-[9999]">

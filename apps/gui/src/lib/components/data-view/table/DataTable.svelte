@@ -230,7 +230,7 @@
 <!-- <pre>{JSON.stringify($config.filtersShow, null, 2)}</pre> -->
 
 {#if tableInstance !== null}
-    <div class="relative z-0 shadow-md my-4">
+    <div class="relative z-0 shadow-md mb-4">
 
         <div id="dataViewTopBar" class="border-b-[1px] mb-2">
         <!-- **Search Input for Global Filtering** -->

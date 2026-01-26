@@ -58,7 +58,7 @@
     <RelayDataViewShortcut
         bind:this={shortcutComponent}
         onClick={loadPreset}
-        label="Presets"
+        label="presets"
     />
     <DataViewSelector {enabledViews} {activeView} />
 </div>

@@ -34,4 +34,4 @@
 	export { className as class };
 </script>
 
-<DropdownSelect class={cn(className)} label="Dimension" value={current} {options} on:change={(e) => onDimensionChange(e.detail.value)} />
+<DropdownSelect class={cn(className)} label="dimension" value={current} {options} on:change={(e) => onDimensionChange(e.detail.value)} />

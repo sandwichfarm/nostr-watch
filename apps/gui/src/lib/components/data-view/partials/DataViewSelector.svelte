@@ -10,9 +10,9 @@
 	);
 
 	const viewLabels: Record<DataViewViews, string> = {
-		table: "Table",
-		grid: "Grid",
-		map: "Map",
+		table: "table",
+		grid: "grid",
+		map: "map",
 	};
 
 	$: viewOptions = (enabledViews || []).map((view) => {
@@ -29,7 +29,7 @@
 {#if enabledViews && enabledViews.length > 1}
 	<DropdownSelect
 		class={cn(className)}
-		label="View"
+		label="view"
 		value={$activeView}
 		options={viewOptions}
 		on:change={(e) => {

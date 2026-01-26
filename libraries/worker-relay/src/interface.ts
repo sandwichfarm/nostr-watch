@@ -1,4 +1,4 @@
-import { EventMetadata, NostrEvent, OkResponse, ReqCommand, WorkerMessage, WorkerMessageCommand } from "./types";
+import { EventMetadata, NostrEvent, OkResponse, ReqCommand, RelayStorageStatus, WorkerMessage, WorkerMessageCommand } from "./types";
 import { v4 as uuid } from "uuid";
 
 export interface InitAargs {
@@ -87,6 +87,10 @@ export class WorkerRelayInterface {
 
   async init(args: InitAargs) {
     return await this.#workerRpc<InitAargs, boolean>("init", args);
+  }
+
+  async status() {
+    return await this.#workerRpc<void, RelayStorageStatus>("status");
   }
 
   async countNip11s() {

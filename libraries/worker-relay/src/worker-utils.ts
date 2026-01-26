@@ -6,6 +6,7 @@ import {
     NostrEvent,
     ReqCommand,
     ReqFilter,
+    RelayStorageStatus,
     WorkerMessage,
     unixNowMs,
     EventMetadata,
@@ -28,6 +29,8 @@ export interface WorkerState {
   relay: RelayHandler | undefined;
   eventWriteQueue: Array<NostrEvent>;
   messageChannel?: MessagePort;
+
+  storageStatus?: RelayStorageStatus;
 
   insertBatchSize: number;
   insertBatchEvery: number;
@@ -82,11 +85,23 @@ let retries = 0;
 export const relayInit = async (state: WorkerState, args: InitAargs) => {
   console.log("Relay init", args)
   state.insertBatchSize = args.insertBatchSize ?? 10;
+  const opfsCapable =
+    (globalThis as any).crossOriginIsolated === true &&
+    typeof (globalThis as any).SharedArrayBuffer !== "undefined" &&
+    typeof (globalThis as any).Atomics !== "undefined";
   try {
-    if ("WebAssembly" in state.self) {
+    if ("WebAssembly" in state.self && opfsCapable) {
       state.relay = new SqliteRelay();
+      state.storageStatus = { kind: "sqlite" };
     } else {
       state.relay = new InMemoryRelay();
+      state.storageStatus = opfsCapable
+        ? { kind: "memory", reason: "no-wasm" }
+        : {
+            kind: "memory",
+            reason: "opfs-unavailable",
+            errorMessage: "Missing SharedArrayBuffer/Atomics (COOP/COEP required)",
+          };
     }
     if(args.channelPort) {
       console.log("Channel port init")
@@ -94,6 +109,9 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     }
     // await new Promise(resolve => setTimeout(resolve, 1000))
     await state.relay.init(args.databasePath);
+    if (!state.storageStatus) {
+      state.storageStatus = state.relay instanceof InMemoryRelay ? { kind: "memory" } : { kind: "sqlite" };
+    }
   } catch (e: any) {
     const code = e.code || e.result?.code;
     const corrupt = code === "SQLITE_CORRUPT" || code === 11;
@@ -104,7 +122,9 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
       message.includes("OPFS") ||
       message.includes("SharedArrayBuffer") ||
       message.includes("crossOriginIsolated") ||
-      message.includes("installOpfsSAHPoolVfs");
+      message.includes("installOpfsSAHPoolVfs") ||
+      message.includes("NoModificationAllowedError") ||
+      message.includes("No modification allowed");
 
     if (opfsUnavailable) {
       console.warn("OPFS/SQLite unavailable, falling back to InMemoryRelay", e);
@@ -112,23 +132,23 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
         state.relay?.close();
       } catch {}
       state.relay = new InMemoryRelay();
+      state.storageStatus = {
+        kind: "memory",
+        reason: "opfs-unavailable",
+        errorMessage: message,
+      };
       await state.relay.init(args.databasePath);
       return;
     }
 
     if (corrupt || message.includes("malformed") || message.includes("not a database")) {
-      const root = await navigator.storage.getDirectory();
       try {
         await state.relay?.destroy();
-      } catch(e) {
+      } catch (e) {
         console.warn("Failed to destroy relay", e);
-        await relayInit(state, args)
-        return;
       }
-      finally {
-        await relayInit(state, args)
-        return;
-      }
+      await relayInit(state, args);
+      return;
     } else {
       if(retries <= 5){
         state.relay?.close();
@@ -141,6 +161,7 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     }
     console.error("Fallback to InMemoryRelay", e);
     state.relay = new InMemoryRelay();
+    state.storageStatus = { kind: "memory", reason: "error", errorMessage: message };
     await state.relay.init(args.databasePath);
   }
   
@@ -224,6 +245,17 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
         const args = msg.args as InitAargs; 
         await relayInit(state, args)
         reply(msg.id, true);
+        break;
+      }
+      case "status": {
+        const status =
+          state.storageStatus ??
+          (state.relay instanceof InMemoryRelay
+            ? ({ kind: "memory" } as RelayStorageStatus)
+            : state.relay
+              ? ({ kind: "sqlite" } as RelayStorageStatus)
+              : ({ kind: "unknown", reason: "not-initialized" } as RelayStorageStatus));
+        reply(msg.id, status);
         break;
       }
       case "event": {

@@ -241,7 +241,7 @@
   bind:this={detailsEl}
   open={open}
   class={cn(
-    "nw-dropdown relative inline-block text-sm",
+    "font-mono nw-dropdown relative inline-block text-sm",
     // When callers pass `opacity-*` for a dimmed trigger, it also affects the
     // panel. Force full opacity while open.
     open && "!opacity-100",
@@ -266,7 +266,7 @@
     on:keydown={onSummaryKeydown}
   >
     <span class="italic opacity-80">{label}:</span>
-    <span class="opacity-90">{display}</span>
+    <span class="opacity-90 font-bold">{display}</span>
     <span class={cn("nw-dropdown__chevron ml-1 opacity-60 transition-transform", open && "rotate-180")}>
       ▼
     </span>

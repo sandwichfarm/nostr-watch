@@ -35,7 +35,7 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableFormatters: Formatters = {
     name: (software: string, row: any) => {
         if(typeof software !== 'string') return '-';
-        const htmlName = `<span class="my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(makeSoftwareReadable(software), 33)}</span>`;
+        const htmlName = `<span class="my-1 text-sm font-mono" style="color:${pastelPairFromString(software)?.dark}">${truncateWithEllipsis(makeSoftwareReadable(software), 33)}</span>`;
         const icon = row.icon? 
             `<img src="${row.icon}" alt="${software}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-6 h-6 inline-block mr-2">` 
             :'<span class="w-6 h-6 inline-block mr-2"></span>';

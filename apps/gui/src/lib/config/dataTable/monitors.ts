@@ -120,7 +120,7 @@ export const tableFormatters: Formatters = {
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
-            profile += `<span class="inline-block my-1 text-md bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${monitor.profile.name}</span>`
+            profile += `<span class="inline-block my-1 text-sm font-mono lowercase">${monitor.profile.name}</span>`
         }
         profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis">${monitor.pubkey}</div>`
         profile += '</div>'
@@ -148,14 +148,14 @@ export const filterFormatters: Formatters = {
         profile += '<div class="flex-grow-0 mr-2">'
 	        if(monitor?.profile?.photo){
 	            profile += `
-	            <span class="rounded-full overflow-hidden">
-	                <img src="${monitor?.profile?.photo}" alt="${monitor?.profile?.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-20 h-24" />
+	            <span class="overflow-hidden">
+	                <img src="${monitor?.profile?.photo}" alt="${monitor?.profile?.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-16 h-16" />
 	            </span>
 	            `
 	        }
 	        else {
 	            profile += `
-	            <span class="rounded-full overflow-hidden inline-block">
+	            <span class="overflow-hidden inline-block">
 	                <img src="${PFP.generate(monitor.pubkey)}" alt="${monitor.pubkey}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8" />
 	            </span>
 	            `

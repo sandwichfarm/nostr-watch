@@ -9,15 +9,23 @@ import { browser } from '$app/environment';
 import { tabState } from './app';
 import { getLeaderTabRpcClient } from '$lib/runtime/leader-tab-client';
 import { leaderRpcCall } from '$lib/runtime/leader-tab-rpc';
+import {
+    installConsoleLogLevelFilter,
+    normalizeLogLevel,
+    setGlobalLogLevel,
+    type LogLevel
+} from '@nostrwatch/utils';
 
 const STORAGE_KEY = 'nostrwatch:preferences';
 
 export interface AppPreferences {
     showDebugButton: boolean;
+    logLevel: LogLevel;
 }
 
 const DEFAULT_PREFERENCES: AppPreferences = {
-    showDebugButton: false
+    showDebugButton: false,
+    logLevel: 'warn'
 };
 
 function normalizePreferences(value: unknown): AppPreferences {
@@ -26,7 +34,8 @@ function normalizePreferences(value: unknown): AppPreferences {
     return {
         ...DEFAULT_PREFERENCES,
         ...raw,
-        showDebugButton: Boolean(raw.showDebugButton)
+        showDebugButton: Boolean(raw.showDebugButton),
+        logLevel: normalizeLogLevel((raw as any).logLevel, DEFAULT_PREFERENCES.logLevel)
     };
 }
 
@@ -47,7 +56,16 @@ function loadPreferences(): AppPreferences {
 }
 
 function createPreferencesStore() {
-    const { subscribe, set, update } = writable<AppPreferences>(loadPreferences());
+    const initial = loadPreferences();
+    const { subscribe, set, update } = writable<AppPreferences>(initial);
+
+    const applyLogLevel = (prefs: AppPreferences) => {
+        try {
+            setGlobalLogLevel(prefs.logLevel);
+            installConsoleLogLevelFilter();
+            window.dispatchEvent(new CustomEvent('nostrwatch:loglevel', { detail: prefs.logLevel }));
+        } catch {}
+    };
 
     // Persist to localStorage on changes
     if (browser) {
@@ -61,6 +79,7 @@ function createPreferencesStore() {
         };
 
         subscribe((prefs) => {
+            applyLogLevel(prefs);
             if (suppressPersist) return;
             if (isInitial) {
                 isInitial = false;
@@ -118,6 +137,10 @@ function createPreferencesStore() {
             update(p => ({ ...p, showDebugButton: value }));
         },
 
+        setLogLevel(value: LogLevel) {
+            update(p => ({ ...p, logLevel: value }));
+        },
+
         reset() {
             set({ ...DEFAULT_PREFERENCES });
         }
@@ -130,5 +153,11 @@ export const preferences = createPreferencesStore();
 export const showDebugButton = {
     subscribe: (fn: (value: boolean) => void) => {
         return preferences.subscribe(p => fn(p.showDebugButton));
+    }
+};
+
+export const logLevel = {
+    subscribe: (fn: (value: LogLevel) => void) => {
+        return preferences.subscribe(p => fn(p.logLevel));
     }
 };

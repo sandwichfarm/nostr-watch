@@ -16,6 +16,7 @@ export type WorkerMessageCommand =
   | "forYouFeed"
   | "setEventMetadata"
   | "debug"
+  | "logLevel"
   | "delete"
   | "countNip11s"
   | "countUniqueNip11s"

@@ -1,5 +1,6 @@
 import { EventMetadata, NostrEvent, OkResponse, ReqCommand, RelayStorageStatus, WorkerMessage, WorkerMessageCommand } from "./types";
 import { v4 as uuid } from "uuid";
+import type { LogLevel } from "@nostrwatch/utils";
 
 export interface InitAargs {
   /**
@@ -159,6 +160,10 @@ export class WorkerRelayInterface {
 
   async debug(v: string) {
     return await this.#workerRpc<string, boolean>("debug", v);
+  }
+
+  async setLogLevel(level: LogLevel) {
+    return await this.#workerRpc<LogLevel, boolean>("logLevel", level);
   }
 
   abort() {

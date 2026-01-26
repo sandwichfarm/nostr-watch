@@ -339,6 +339,27 @@
 			Options for debugging and development.
 		</p>
 
+		<div class="flex items-start justify-between gap-4 p-3 border rounded-md mb-3">
+			<div class="flex-1">
+				<div class="font-medium">Console log level</div>
+				<div class="text-sm opacity-70">
+					Controls how verbose console output is. Default is <span class="font-mono">warn</span>.
+				</div>
+			</div>
+
+			<select
+				class="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+				value={$preferences.logLevel}
+				on:change={(e) =>
+					preferences.setLogLevel((e.currentTarget as HTMLSelectElement).value as any)}
+			>
+				<option value="error">error</option>
+				<option value="warn">warn</option>
+				<option value="info">info</option>
+				<option value="debug">debug</option>
+			</select>
+		</div>
+
 		<label class="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors {$preferences.showDebugButton ? 'border-primary bg-primary/5' : ''}">
 			<button
 				type="button"

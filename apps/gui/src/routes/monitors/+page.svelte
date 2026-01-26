@@ -63,7 +63,7 @@
     $: warnHasLessThanRecommendedMonitors = countEnabledMonitors < 3;
     $: warnHasMoreThanRecommendedMonitors = countEnabledMonitors > 8;
 </script>
-<main class="pt-16">
+<main class="pt-8">
 <!-- {$ready? 'true': 'false'}
 <pre>{countEnabledMonitors}</pre>
 <pre>{JSON.stringify($monitorRows, null, 2)}</pre>

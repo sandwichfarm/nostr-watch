@@ -1,6 +1,7 @@
 import { SqliteRelay } from "./sqlite/sqlite-relay";
 import { InMemoryRelay } from "./memory-relay";
 import { setLogging } from "./debug";
+import { installConsoleLogLevelFilter, normalizeLogLevel, setGlobalLogLevel } from "@nostrwatch/utils";
 
 import {
     NostrEvent,
@@ -16,7 +17,7 @@ import {
 
 import { getForYouFeed } from "./forYouFeed";
 
-let processed = 0
+installConsoleLogLevelFilter();
 
 export interface InitAargs {
   databasePath: string;
@@ -68,8 +69,6 @@ export async function insertBatch(state: WorkerState) {
         state.eventWriteQueue = state.eventWriteQueue.slice(batch.length);
         state.relay.eventBatch(batch);
         state.lastBatch = Date.now();
-        console.log("batches processed:", processed);
-        processed++
       }
     }
   }
@@ -83,7 +82,7 @@ export const messageChannelInit = (state: WorkerState, channelPort: MessagePort)
 let retries = 0;
 
 export const relayInit = async (state: WorkerState, args: InitAargs) => {
-  console.log("Relay init", args)
+  console.debug("[worker-relay] Relay init", args);
   state.insertBatchSize = args.insertBatchSize ?? 10;
   const opfsCapable =
     (globalThis as any).crossOriginIsolated === true &&
@@ -104,7 +103,7 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
           };
     }
     if(args.channelPort) {
-      console.log("Channel port init")
+      console.debug("[worker-relay] Channel port init");
       messageChannelInit(state, args.channelPort)
     }
     // await new Promise(resolve => setTimeout(resolve, 1000))
@@ -152,7 +151,11 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
     } else {
       if(retries <= 5){
         state.relay?.close();
-        console.warn("Sqlite relay failed, retrying in 1 second", e);
+        if (retries === 0) {
+          console.warn("Sqlite relay failed, retrying in 1 second", e);
+        } else {
+          console.debug("Sqlite relay failed, retrying in 1 second", e);
+        }
         retries++
         await new Promise(resolve => setTimeout(resolve, 1000))
         await relayInit(state, args)
@@ -238,6 +241,15 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
     switch (msg.cmd) {
       case "debug": {
         setLogging(true);
+        setGlobalLogLevel("debug");
+        installConsoleLogLevelFilter();
+        reply(msg.id, true);
+        break;
+      }
+      case "logLevel": {
+        const nextLevel = normalizeLogLevel(msg.args, "warn");
+        setGlobalLogLevel(nextLevel);
+        installConsoleLogLevelFilter();
         reply(msg.id, true);
         break;
       }

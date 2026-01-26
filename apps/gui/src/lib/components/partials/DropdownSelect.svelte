@@ -57,6 +57,10 @@
       })
     : options;
 
+  function firstEnabledIndex(list: DropdownSelectOption[]): number {
+    return list.findIndex((opt) => !opt.disabled);
+  }
+
   type RenderItem =
     | { kind: "separator"; key: string }
     | { kind: "option"; key: string; option: DropdownSelectOption; optionIndex: number };
@@ -80,6 +84,18 @@
   $: selected = options.find((opt) => opt.value === value) ?? null;
   $: display = selected?.label ?? placeholder;
   $: summaryText = `${label}: ${display}`;
+
+  // When the filter changes, auto-highlight the first matching option so Enter can select it.
+  let lastNormalizedFilter = "";
+  $: if (open && normalizedFilter !== lastNormalizedFilter) {
+    lastNormalizedFilter = normalizedFilter;
+    if (normalizedFilter.length) {
+      activeIndex = firstEnabledIndex(filteredOptions);
+    } else {
+      const idx = findSelectedIndex();
+      activeIndex = idx >= 0 ? idx : firstEnabledIndex(filteredOptions);
+    }
+  }
 
   function findSelectedIndex(): number {
     if (!value) return -1;
@@ -187,8 +203,9 @@
       else queueMicrotask(() => optionEls[activeIndex]?.focus?.());
       return;
     }
-    if (e.key === "Enter" && activeIndex >= 0) {
-      const opt = filteredOptions[activeIndex];
+    if (e.key === "Enter") {
+      const idx = activeIndex >= 0 ? activeIndex : firstEnabledIndex(filteredOptions);
+      const opt = idx >= 0 ? filteredOptions[idx] : undefined;
       if (opt && !opt.disabled) {
         e.preventDefault();
         selectValue(opt.value);

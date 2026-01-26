@@ -8,6 +8,8 @@
 
 	const options: DropdownSelectOption<DimensionKey>[] = [
 		{ value: "relay", label: "relay", searchText: "relays", meta: { href: "/" } },
+        { value: "operators", label: "operators", searchText: "operators", meta: { href: "/operators" } },
+        { value: "monitors", label: "monitors", searchText: "monitors", meta: { href: "/monitors" } },
 		{ value: "software", label: "software", meta: { href: "/relays/software" } },
 		{ value: "geo", label: "geo", searchText: "geography", meta: { href: "/relays/geography" } },
 		{ value: "isps", label: "isps", meta: { href: "/relays/isps" } },

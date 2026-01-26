@@ -21,16 +21,33 @@ const miniSearch = new MiniSearch({
   },
 });
 
-export function initializeIndex(data) {
-  if(miniSearch.documentCount === 0) {
-    miniSearch.addAll(data);
+function uniqueById(data: any[]) {
+  const unique: any[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of data || []) {
+    const id = entry?.id;
+    if (typeof id !== "string" || id.length === 0) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    unique.push(entry);
   }
-  else {
-    for(const entry of data) {
-      if(!miniSearch.has(entry.id)) {
-        miniSearch.add(entry);
-      }
-    } 
+
+  return unique;
+}
+
+export function initializeIndex(data) {
+  const unique = uniqueById(data);
+
+  if(miniSearch.documentCount === 0) {
+    miniSearch.addAll(unique);
+    return;
+  }
+
+  for(const entry of unique) {
+    if(!miniSearch.has(entry.id)) {
+      miniSearch.add(entry);
+    }
   }
 }
 

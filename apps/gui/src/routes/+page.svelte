@@ -12,6 +12,7 @@
 
   $: isHomepage = $page.url.pathname === '/'
 </script> 
+<div class="mt-14">
 {#if false}
 
   <section class="
@@ -65,7 +66,7 @@
 {/if}
   <Counts />
 
-
+</div>
 <style lang="postcss" global>
   .result-wrapper > div {
     @apply rounded-sm bg-transparent bg-gradient-to-b from-black/90 to-black/0; 

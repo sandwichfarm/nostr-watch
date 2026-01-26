@@ -7,7 +7,7 @@
       { href: '/relays', label: 'relays' },
       { href: '/operators', label: 'operators' },
       { href: '/monitors', label: 'monitors' },
-      { href: '/preferences', label: 'preferences' }
+      { href: '/preferences', label: '⚙', class: 'text-xl' }
     ];
 
     export let disabledHrefs = [];
@@ -31,6 +31,7 @@
         <span
           aria-disabled="true"
           class={`disabled ${
+            (link?.class? link.class: ''),
             isActive(link.href, $currentPath)
               ? 'bg-white/10'
               : ''

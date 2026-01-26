@@ -70,11 +70,13 @@ export const defaultDataTableConfig: DataTableConfig = {
     filtersDisable: [],
     filtersShow: [],
     filterFormatters: {},
+    filterDataFormatters: {},
 
-    sidebarCollapsed: false,
+    // Filters drawer: collapsed by default (user preference in stored config wins).
+    sidebarCollapsed: true,
     sortState: { columnId: '', direction: 'desc' },
 
-    activeFilters: {},
+    filtersActive: {},
 
     maxBadgeLength: 0,
     pageSize: 50

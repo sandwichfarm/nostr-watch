@@ -61,7 +61,7 @@
 
     nav > a,
     nav > span {
-        @apply ml-1 py-1.5 px-3 rounded-md;
+        @apply ml-1 py-1.5 px-3 rounded-md text-sm font-mono font-bold text-purple-200;
     }
 
     nav > a:hover {

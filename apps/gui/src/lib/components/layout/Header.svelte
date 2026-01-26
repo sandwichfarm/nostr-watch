@@ -14,7 +14,8 @@
     {#if !$unsupported}
         <h1>nostr.watch</h1>
         <Nav {disabledHrefs} />
-        {#if !isHomepage && !navDisabled}
+        <!-- {#if !isHomepage && !navDisabled} -->
+         {#if !navDisabled}
             <div class="search-container">
                 <search>
                     <AutoSuggestRelays maxResults={6} />
@@ -26,11 +27,11 @@
 
 <style lang="postcss" global>
     #site-header {
-        @apply fixed top-0 right-0 left-0 flex items-center h-16 bg-black/25 dark:bg-white/25 backdrop-blur-lg text-white dark:text-black z-[999];
+        @apply fixed top-0 right-0 left-0 flex items-center h-12 bg-black/25 dark:bg-white/25 backdrop-blur-lg text-white dark:text-black z-[999];
     }
 
     #site-header h1 {
-        @apply ml-4 text-xl;
+        @apply ml-4 text-sm font-bold font-mono;
     }
 
     nav {

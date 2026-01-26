@@ -12,7 +12,7 @@
 
   $: isHomepage = $page.url.pathname === '/'
 </script> 
-{#if isHomepage}
+{#if false}
 
   <section class="
     flex flex-col justify-center items-center relative z-[200]
@@ -62,8 +62,9 @@
         />
     </div>
   </section>
-  <Counts />
 {/if}
+  <Counts />
+
 
 <style lang="postcss" global>
   .result-wrapper > div {

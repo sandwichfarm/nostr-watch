@@ -107,14 +107,14 @@ export const tableFormatters: Formatters = {
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
         if(!monitor) return pubkey;
         let profile: string = `<a href="/monitors/${pubkey}" class="flex hover:opacity-80 transition-opacity">`;
-        profile += '<div class="flex-shrink-0 mr-2">'
-        if(monitor?.photo){
-            profile += `
-                <span class="inline-block rounded-full overflow-hidden w-10 h-10">
-                    <img src="${monitor.photo}" alt=${monitor.photo} class="w-full h-auto" />
-                </span>
-                `
-        }
+	        profile += '<div class="flex-shrink-0 mr-2">'
+	        if(monitor?.photo){
+	            profile += `
+	                <span class="inline-block rounded-full overflow-hidden w-10 h-10">
+	                    <img src="${monitor.photo}" alt="${monitor.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
+	                </span>
+	                `
+	        }
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
@@ -144,20 +144,20 @@ export const filterFormatters: Formatters = {
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
         let profile: string = '<div class="flex">';
         profile += '<div class="flex-grow-0 mr-2">'
-        if(monitor?.profile?.photo){
-            profile += `
-            <span class="rounded-full overflow-hidden">
-                <img src="${monitor?.profile?.photo}" alt="${monitor?.profile?.photo}" class="w-20 h-24" />
-            </span>
-            `
-        }
-        else {
-            profile += `
-            <span class="rounded-full overflow-hidden inline-block">
-                <img src=${PFP.generate(monitor.pubkey)}" alt={photo} class="w-8 h-8" />
-            </span>
-            `
-        }
+	        if(monitor?.profile?.photo){
+	            profile += `
+	            <span class="rounded-full overflow-hidden">
+	                <img src="${monitor?.profile?.photo}" alt="${monitor?.profile?.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-20 h-24" />
+	            </span>
+	            `
+	        }
+	        else {
+	            profile += `
+	            <span class="rounded-full overflow-hidden inline-block">
+	                <img src="${PFP.generate(monitor.pubkey)}" alt="${monitor.pubkey}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8" />
+	            </span>
+	            `
+	        }
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){

@@ -50,7 +50,7 @@ export const tableFormatters: Formatters = {
             // Has kind 0 profile - use name and photo
             displayName = truncateWithEllipsis(name, 55);
             photo = row.photo
-                ? `<img src="${row.photo}" alt="${name}" class="w-12 h-12 inline-block mr-2 rounded-full object-cover">`
+                ? `<img src="${row.photo}" alt="${name}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-12 h-12 inline-block mr-2 rounded-full object-cover">`
                 : '<span class="w-12 h-12 inline-block mr-2"></span>';
         } else {
             // No kind 0 profile - generate PFP and use truncated pubkey with color
@@ -67,7 +67,7 @@ export const tableFormatters: Formatters = {
             }
 
             photo = pfpSrc
-                ? `<img src="${pfpSrc}" alt="${truncated}" class="w-12 h-12 inline-block mr-2 rounded-full object-cover">`
+                ? `<img src="${pfpSrc}" alt="${truncated}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-12 h-12 inline-block mr-2 rounded-full object-cover">`
                 : '<span class="w-12 h-12 inline-block mr-2"></span>';
 
             // Use two spans for dark/light mode color switching

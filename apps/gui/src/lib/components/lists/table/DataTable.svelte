@@ -334,7 +334,7 @@
                             <Table.Row 
                                 class="{$rowStyles.get(row.pubkey)}" 
                                 style="{
-                                    row.banner
+                                    $config.rowBannerEnabled !== false && row.banner
                                         ? 
                                             $darkMode
                                                 ? 

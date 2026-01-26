@@ -293,8 +293,10 @@ export const dataFormatters: DataFormatters = {
 export const tableFormatters: Formatters = {
     relay: (relay: string, row: any) => {
         const { icon } = row;
-        const formatted = `<span class="inline-block my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
-        const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: '<span class="inline-block mr-2 h-6 w-6"></span>'
+        const formatted = `<span class="inline-block my-1 text-sm font-mono py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
+        const iconHtml = icon
+            ? `<img src="${icon}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`
+            : '<span class="inline-block mr-2 h-6 w-6"></span>';
         return `<a class="text-lg" href="/relays/${generateRelayPathFromUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
     // monitorPubkey: (pubkey) => {
@@ -372,7 +374,7 @@ export const tableFormatters: Formatters = {
             const monitor = $monitorsMap.get(pk);
             if (!monitor) return;
     
-            str += `<img src="${monitor.photo}" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
+            str += `<img src="${monitor.photo}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
             i++;
             z--;
         });
@@ -479,7 +481,7 @@ export const tableFormatters: Formatters = {
         let name = ''
         if(profile?.photo) {
             image = `<a href="/operators/${profile.pubkey}" class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
-                <img src=${profile.photo} alt=${profile.photo} class="w-full h-auto" />
+                <img src="${profile.photo}" alt="${profile.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
             </a>`
         }
         return `<div class="flex">${image}</div>`
@@ -487,7 +489,7 @@ export const tableFormatters: Formatters = {
     operatorPubkeyValid: (value?: boolean) => {
         if(!value) return ''
         const icon =  value? IconCheckGreen: IconCheckRed;
-        return `<img src="${icon}" />`
+        return `<img src="${icon}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`
     },
     software: (software) => {
         if(typeof software !== 'string') return '-';
@@ -519,7 +521,7 @@ export const filterFormatters: Formatters = {
             name = truncateWithEllipsis(profile.name, 33);
         }
         let image = `<span class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
-             <img src="${profile.photo}" alt="${profile.photo}" class="w-full h-auto" />
+             <img src="${profile.photo}" alt="${profile.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
             </span>`
         return `<div class="flex">
             <div>${image}</div>
@@ -557,6 +559,7 @@ export default {
     availableColumnKeys,
     availableFilterKeys,
     tableRowStyler,
+    rowBannerEnabled: false,
     sortState: {
         columnId: 'lastSeen',
         direction: 'desc'

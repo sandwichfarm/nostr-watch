@@ -7,7 +7,7 @@
 	type DimensionKey = "relay" | "software" | "geo" | "isps";
 
 	const options: DropdownSelectOption<DimensionKey>[] = [
-		{ value: "relay", label: "relay", searchText: "relays", meta: { href: "/relays" } },
+		{ value: "relay", label: "relay", searchText: "relays", meta: { href: "/" } },
 		{ value: "software", label: "software", meta: { href: "/relays/software" } },
 		{ value: "geo", label: "geo", searchText: "geography", meta: { href: "/relays/geography" } },
 		{ value: "isps", label: "isps", meta: { href: "/relays/isps" } },
@@ -15,7 +15,7 @@
 
 	$: pathname = $page.url.pathname;
 	$: current = ((): DimensionKey => {
-		if (pathname === "/relays") return "relay";
+		if (pathname === "/" || pathname === "/relays") return "relay";
 		if (pathname.startsWith("/relays/software")) return "software";
 		if (pathname.startsWith("/relays/geography")) return "geo";
 		if (pathname.startsWith("/relays/isps")) return "isps";

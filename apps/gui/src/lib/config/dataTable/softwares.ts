@@ -35,7 +35,7 @@ export const tableFormatters: Formatters = {
         if(typeof software !== 'string') return '-';
         const htmlName = `<span class="my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(makeSoftwareReadable(software), 33)}</span>`;
         const icon = row.icon? 
-            `<img src="${row.icon}" alt="${software}" class="w-6 h-6 inline-block mr-2">` 
+            `<img src="${row.icon}" alt="${software}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-6 h-6 inline-block mr-2">` 
             :'<span class="w-6 h-6 inline-block mr-2"></span>';
         return `${icon}<a href="/relays/software/${btoa(software)}">${htmlName}</a>`;
     },

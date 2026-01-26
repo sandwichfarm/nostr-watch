@@ -129,7 +129,7 @@
             const hash = window.location.hash.replace('#', '');
             const shortcut = allShortcuts.find(s => s.hash === hash);
             if (shortcut) setActive(shortcut);
-        } else if ($page.url.pathname === "/relays") {
+        } else if ($page.url.pathname === "/" || $page.url.pathname === "/relays") {
             // Try to load last used preset from storage
             const lastPresetTitle = StateManager.get(LAST_PRESET_KEY);
             const lastPreset = lastPresetTitle

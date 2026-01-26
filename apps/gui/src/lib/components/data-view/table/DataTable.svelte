@@ -317,7 +317,7 @@
                     <Table.Row 
                         class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
                         style="{
-                            row.banner && row.banner !== ''
+                            $config.rowBannerEnabled !== false && row.banner && row.banner !== ''
                                 ? 
                                     $darkMode
                                         ? 

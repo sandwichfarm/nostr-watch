@@ -20,6 +20,7 @@
 	import { delay } from '@nostrwatch/utils';
 	import { fade } from 'svelte/transition';
 	import { tabState } from '$lib/stores/app';
+	import { HeaderConfigStore } from '$stores/header-config';
 
   import RelayDimensions from '$routes/relays/relay-dimensions.svelte';
 	import DataViewSelector from '$lib/components/data-view/partials/DataViewSelector.svelte';
@@ -111,9 +112,10 @@
 
 			////console.log('setting config without user config', conf)
 			config.set(conf)
+			}
+			ready.set(true)
+			setHeaderSelectors('full');
 		}
-		ready.set(true)
-	}
 
   	onMount(() => {
         
@@ -121,21 +123,23 @@
 
   $: isHomepage = $page.url.pathname === '/'
 
-	const mount = async ( ) => {
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-    if(!isHomepage) return;
-		loadComponents().then(setConfig);
-		const keys = ['sync:cache'];
+		const mount = async ( ) => {
+	    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+	    if(!isHomepage) return;
+			setHeaderSelectors('dimension');
+			loadComponents().then(setConfig);
+			const keys = ['sync:cache'];
 		if (get(tabState) === 'leader') keys.push('sync:all');
 		void $dataRegister
 			.require(keys)
 			.catch((err) => console.error('[DataRegister] require failed', err));
 	}
 
-	const destroy = () => {
-		overrideRelayChecksActiveKeys.set([])
-		configUnsub()
-	}
+		const destroy = () => {
+			overrideRelayChecksActiveKeys.set([])
+			clearHeaderSelectors();
+			configUnsub()
+		}
 	
 	onMount(mount)  
 	onDestroy(destroy)  
@@ -157,6 +161,30 @@
 	let showDataView = true; // Controls opacity transition
 
 	const activeView: Writable<DataViewViews> = writable(enabledViews.length === 1 ? enabledViews[0] : 'table');
+
+	const HEADER_SELECTORS_ID = 'relays:list';
+
+	const setHeaderSelectors = (mode: 'dimension' | 'full' = 'full') => {
+		HeaderConfigStore.set({
+			selectors: {
+				id: HEADER_SELECTORS_ID,
+				className: 'ml-2',
+				showDimension: true,
+				showPresets: mode === 'full',
+				showView: mode === 'full',
+				enabledViews,
+				activeView,
+				onPresetSelect: loadPreset,
+			},
+		});
+	};
+
+	const clearHeaderSelectors = () => {
+		HeaderConfigStore.update((current) => {
+			if (current.selectors?.id !== HEADER_SELECTORS_ID) return current;
+			return { ...current, selectors: null };
+		});
+	};
 
 	// Reference to the shortcut component to reload presets
 	let shortcutComponent: any;

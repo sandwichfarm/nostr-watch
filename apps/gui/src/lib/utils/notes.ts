@@ -31,7 +31,7 @@ const defaultConfig: ParseConfig = {
   videos: true,
   truncate: false,
   truncateLength: 50,
-  sanitize: false,
+  sanitize: true,
   replaceAmpersand: true,
 };
 
@@ -209,16 +209,16 @@ export function parseNote(input: string, config: ParseConfig = defaultConfig): W
     parser.addAsync(replaceNip19);
   }
 
-  if (config.markdown) {
-    parser.addAsync(async (text: string, update: (output: string) => void) => {
-      await applyMarkdown(text, update, config.markdownOptions!);
-    });
-  }
-
   if (config.sanitize) {
     parser.addAsync((text: string, update: (output: string) => void) => {
       applySanitize(text, update);
       return Promise.resolve();
+    });
+  }
+
+  if (config.markdown) {
+    parser.addAsync(async (text: string, update: (output: string) => void) => {
+      await applyMarkdown(text, update, config.markdownOptions!);
     });
   }
 

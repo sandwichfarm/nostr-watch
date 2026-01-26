@@ -88,7 +88,7 @@
                 </Alert.Root>
             {/if}
         
-            {#if criticalInactiveMonitorsEnabled}
+            <!-- {#if criticalInactiveMonitorsEnabled}
                 <Alert.Root class="mb-2">
                     <Alert.Title class="text-orange-500 font-bold" >Warning</Alert.Title>
                     <Alert.Description class="opacity-80">
@@ -104,7 +104,7 @@
                         You have more than 8 monitors enabled, this might cause performance issues and consume extraneous bandwidth.
                     </Alert.Description>
                 </Alert.Root>
-            {/if}
+            {/if} -->
 
         </div>
         <!-- <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {dataKey} /> -->

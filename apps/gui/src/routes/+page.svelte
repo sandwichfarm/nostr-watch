@@ -200,12 +200,8 @@
 	<RelayDataViewShortcut
 		bind:this={shortcutComponent}
 		class="ml-2 opacity-70"
-		buttonClass=" py-1 px-2 mr-2 text-sm bg-transparent hover:bg-white/20"
-		buttonActiveClass="bg-white/20"
-		buttonVariant="secondary"
-		buttonSize="sm"
 		onClick={loadPreset}
-		label="Filter Presets"
+		label="Presets"
 	/>
 
 	<!-- I need this to fade in and out every time I trigger pseudo transition, without unmounting the component -->

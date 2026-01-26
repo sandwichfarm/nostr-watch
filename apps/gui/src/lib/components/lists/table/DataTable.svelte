@@ -11,6 +11,8 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
 	import { StateManager } from '@nostrwatch/route66';
+	import { getLeaderTabRpcClient } from '$lib/runtime/leader-tab-client';
+	import { stateManagerSet, stateManagerStorageKey } from '$lib/runtime/state-manager-sync';
     
     import TableOptions from './TableOptions.svelte';
     import * as Popover from "$lib/components/ui/popover";
@@ -148,10 +150,44 @@
 
     // **DataTable Subscription**
     onMount(async (): Promise<any> => {
+        let suppressPersist = false;
+        const TABLE_CONFIG_KEY = `preferences:${dataKey}:tableConfig`;
+
+        const applyRemoteConfig = (next: any) => {
+            if (!next || typeof next !== 'object') return;
+            suppressPersist = true;
+            config.update((current) => ({ ...current, ...next }));
+            queueMicrotask(() => {
+                suppressPersist = false;
+            });
+        };
+
+        const onStorage = (event: StorageEvent) => {
+            if (event.key !== stateManagerStorageKey(TABLE_CONFIG_KEY)) return;
+            try {
+                const next = StateManager.get(TABLE_CONFIG_KEY);
+                applyRemoteConfig(next);
+            } catch {}
+        };
+
+        window.addEventListener('storage', onStorage);
+
+        let stopBroadcast: (() => void) | null = null;
+        try {
+            stopBroadcast = getLeaderTabRpcClient().onBroadcast((msg) => {
+                if (msg.kind !== 'state.stateManager') return;
+                const data = msg.data as any;
+                if (data?.key !== TABLE_CONFIG_KEY) return;
+                applyRemoteConfig(data?.value);
+            });
+        } catch {}
+
         const unsubConfig = config.subscribe( (newConfig: DataTableConfig) => {
-            StateManager.set(`preferences:${dataKey}:tableConfig`, cachableConfig(newConfig));
             if(resultsPerPage !== newConfig.pageSize) {
                 resultsPerPage = newConfig.pageSize;
+            }
+            if (!suppressPersist) {
+                void stateManagerSet(TABLE_CONFIG_KEY, cachableConfig(newConfig));
             }
             if(!newConfig?.availableColumnKeys || newConfig.availableColumnKeys?.length === 0) {
                 newConfig.availableColumnKeys = [ 
@@ -178,6 +214,8 @@
             if (tableInstance) {
                 tableInstance = null;
             }
+            stopBroadcast?.();
+            window.removeEventListener('storage', onStorage);
         };
     });
 

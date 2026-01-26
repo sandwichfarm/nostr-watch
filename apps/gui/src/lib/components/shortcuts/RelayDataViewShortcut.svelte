@@ -7,6 +7,8 @@
 	import { StateManager } from "@nostrwatch/route66";
 	import DropdownSelect, { type DropdownSelectOption } from "$lib/components/partials/DropdownSelect.svelte";
 	import { cn } from "$lib/utils/ui.js";
+	import { getLeaderTabRpcClient } from "$lib/runtime/leader-tab-client";
+	import { stateManagerSet, stateManagerStorageKey } from "$lib/runtime/state-manager-sync";
 
     // Built-in Presets
 	import AllRelays from "./presets/AllRelays";
@@ -78,7 +80,7 @@
     const deleteUserPreset = (title: string) => {
         const stored: UserPreset[] = StateManager.get(USER_PRESETS_KEY) || [];
         const updated = stored.filter(p => p.title !== title);
-        StateManager.set(USER_PRESETS_KEY, updated);
+        void stateManagerSet(USER_PRESETS_KEY, updated);
         userPresets.set(updated);
 
         // If deleted preset was active, switch to default
@@ -96,7 +98,7 @@
         // Persist the selected preset
         if (persist) {
             try {
-                StateManager.set(LAST_PRESET_KEY, shortcut.title);
+                void stateManagerSet(LAST_PRESET_KEY, shortcut.title);
             } catch {}
         }
 
@@ -140,6 +142,35 @@
                 setActive(builtInPresets[0], false); // Default to first preset
             }
         }
+
+		const onStorage = (event: StorageEvent) => {
+			if (!event.key) return;
+			if (event.key === stateManagerStorageKey(USER_PRESETS_KEY)) loadUserPresets();
+			if (event.key === stateManagerStorageKey(LAST_PRESET_KEY)) {
+				const next = StateManager.get(LAST_PRESET_KEY);
+				if (typeof next === "string" && next.length) active.set(next);
+			}
+		};
+
+		window.addEventListener("storage", onStorage);
+
+		let stopBroadcast: (() => void) | null = null;
+		try {
+			stopBroadcast = getLeaderTabRpcClient().onBroadcast((msg) => {
+				if (msg.kind !== "state.stateManager") return;
+				const data = msg.data as any;
+				if (data?.key === USER_PRESETS_KEY) loadUserPresets();
+				if (data?.key === LAST_PRESET_KEY) {
+					const next = data?.value;
+					if (typeof next === "string" && next.length) active.set(next);
+				}
+			});
+		} catch {}
+
+		return () => {
+			stopBroadcast?.();
+			window.removeEventListener("storage", onStorage);
+		};
     });
 
 	$: dropdownOptions = shortcuts.map((shortcut) => {

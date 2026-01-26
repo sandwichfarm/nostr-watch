@@ -7,6 +7,7 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import DataTable from '$lib/components/data-view/table/DataTable.svelte';
     import { StateManager } from '@nostrwatch/route66';
+    import { stateManagerSet } from '$lib/runtime/state-manager-sync';
 
 	import Button from '$lib/components/ui/button/button.svelte';
 	import type { DataTableConfig } from './DataTableTypes.svelte';
@@ -174,14 +175,35 @@
     const persistSidebarState = (collapsed: boolean) => {
         if (sidebarPersistTimeout) clearTimeout(sidebarPersistTimeout);
         sidebarPersistTimeout = setTimeout(() => {
-            try { StateManager.set(SIDEBAR_COLLAPSED_KEY, collapsed); } catch {}
+            void stateManagerSet(SIDEBAR_COLLAPSED_KEY, collapsed);
         }, 500);
     };
 
-    // Load initial sidebar state from separate storage key
-    const initialSidebarCollapsed = typeof window !== 'undefined'
-        ? (StateManager.get(SIDEBAR_COLLAPSED_KEY) ?? $config?.sidebarCollapsed ?? false)
-        : false;
+    function readInitialSidebarCollapsed(): boolean {
+        if (typeof window === 'undefined') return true;
+
+        // 1) New dedicated key (authoritative).
+        try {
+            const stored = StateManager.get(SIDEBAR_COLLAPSED_KEY);
+            if (typeof stored === 'boolean') return stored;
+        } catch {}
+
+        // 2) Back-compat: older persisted tableConfig value.
+        try {
+            const tableConfig = StateManager.get(`preferences:${key}:tableConfig`);
+            const legacy = (tableConfig as any)?.sidebarCollapsed;
+            if (typeof legacy === 'boolean') return legacy;
+        } catch {}
+
+        // 3) Fall back to current config value when present.
+        const fromConfig = ($config as any)?.sidebarCollapsed;
+        if (typeof fromConfig === 'boolean') return fromConfig;
+
+        // 4) Default: collapsed.
+        return true;
+    }
+
+    const initialSidebarCollapsed = readInitialSidebarCollapsed();
 
     let sidebarHidden = initialSidebarCollapsed;
     $: isCollapsed = sidebarHidden;

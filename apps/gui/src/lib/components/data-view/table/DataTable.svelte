@@ -9,6 +9,8 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import * as Table from '$lib/components/ui/table/index.js';
 	import { StateManager } from '@nostrwatch/route66';
+    import { getLeaderTabRpcClient } from '$lib/runtime/leader-tab-client';
+    import { stateManagerSet, stateManagerStorageKey } from '$lib/runtime/state-manager-sync';
 
     import { cachableConfig } from './utils.js'
     
@@ -123,18 +125,53 @@
 
     onMount(async (): Promise<any> => {
         let isInitialMount = true;
+        let suppressPersist = false;
         let saveTimeout: ReturnType<typeof setTimeout> | null = null;
         let tableTimeout: ReturnType<typeof setTimeout> | null = null;
+        const TABLE_CONFIG_KEY = `preferences:${dataKey}:tableConfig`;
+
+        const applyRemoteConfig = (next: any) => {
+            if (!next || typeof next !== 'object') return;
+            suppressPersist = true;
+            config.update((current) => {
+                if (!current) return current;
+                return { ...current, ...next };
+            });
+            queueMicrotask(() => {
+                suppressPersist = false;
+            });
+        };
+
+        const onStorage = (event: StorageEvent) => {
+            if (event.key !== stateManagerStorageKey(TABLE_CONFIG_KEY)) return;
+            try {
+                const next = StateManager.get(TABLE_CONFIG_KEY);
+                applyRemoteConfig(next);
+            } catch {}
+        };
+
+        window.addEventListener('storage', onStorage);
+
+        let stopBroadcast: (() => void) | null = null;
+        try {
+            stopBroadcast = getLeaderTabRpcClient().onBroadcast((msg) => {
+                if (msg.kind !== 'state.stateManager') return;
+                const data = msg.data as any;
+                if (data?.key !== TABLE_CONFIG_KEY) return;
+                applyRemoteConfig(data?.value);
+            });
+        } catch {}
 
         // Debounced config save - skip initial, debounce 300ms
         const unsubConfig = config.subscribe( (newConfig: DataTableConfig) => {
             if (isInitialMount) return;
+            if(resultsPerPage !== newConfig.pageSize) {
+                resultsPerPage = newConfig.pageSize;
+            }
+            if (suppressPersist) return;
             if (saveTimeout) clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
-                StateManager.set(`preferences:${dataKey}:tableConfig`, cachableConfig(newConfig));
-                if(resultsPerPage !== newConfig.pageSize) {
-                    resultsPerPage = newConfig.pageSize;
-                }
+                void stateManagerSet(TABLE_CONFIG_KEY, cachableConfig(newConfig));
             }, 300);
         })
 
@@ -157,6 +194,8 @@
             if (tableInstance) {
                 tableInstance = null;
             }
+            stopBroadcast?.();
+            window.removeEventListener('storage', onStorage);
         };
     });
 

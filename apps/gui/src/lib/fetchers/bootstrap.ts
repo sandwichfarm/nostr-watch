@@ -29,11 +29,16 @@ export const fetchMonitorsChecks = async (): Promise<IEvent[]> => {
     // bootstrapping composite; composites update `statsAsOf` on completion.
     if (!get(isBootstrapping) && events.length) {
         const now = Math.round(Date.now() / 1000);
+        let maxCreatedAt = 0;
+        for (const ev of events as any[]) {
+            const seconds = typeof (ev as any)?.created_at === "number" ? (ev as any).created_at : Number((ev as any)?.created_at);
+            if (Number.isFinite(seconds) && seconds > maxCreatedAt) maxCreatedAt = seconds;
+        }
         lastCompleteSync.set(now);
         try {
             StateManager.set('lastCompleteSync', now);
         } catch {}
-        setStatsAsOf(now, { persist: true });
+        setStatsAsOf(maxCreatedAt > 0 ? maxCreatedAt : now, { persist: true });
     }
 
     return events;

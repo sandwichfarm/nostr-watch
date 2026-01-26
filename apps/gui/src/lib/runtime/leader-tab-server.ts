@@ -56,6 +56,13 @@ const LOCAL_STORAGE_KEY_ALLOWLIST = new Set([
   'nostrwatch:nip66-relays',
 ]);
 
+function isAllowedStateManagerKey(key: string): boolean {
+  // Keep the allowlist intentionally narrow: only user preference keys and
+  // the shared monitor selection cache.
+  if (key === 'cache:monitors') return true;
+  return key.startsWith('preferences:');
+}
+
 export class LeaderTabRpcServer {
   private readonly id = createId();
   private readonly termId = createId();
@@ -182,6 +189,29 @@ export class LeaderTabRpcServer {
 
         // Ensure the leader tab also receives the change (storage events do not fire in same tab).
         this.broadcast('state.localStorage', { key, value });
+        this.replyOk(req.sourceId, req.requestId, true);
+      } catch (e) {
+        this.replyErr(req.sourceId, req.requestId, e);
+      }
+      return;
+    }
+
+    // Fast-path: leader-only persistence of cross-tab StateManager-backed preference keys.
+    if (req.op === 'state.stateManagerSet') {
+      try {
+        const key = req.args?.[0];
+        const value = req.args?.[1];
+        if (typeof key !== 'string' || !key.length) throw new Error('StateManager key missing');
+        if (!isAllowedStateManagerKey(key)) throw new Error(`StateManager key not allowed: ${key}`);
+
+        try {
+          StateManager.set(key, value);
+        } catch {
+          throw new Error(`StateManager.set failed: ${key}`);
+        }
+
+        // Ensure the leader tab also receives the change (storage events do not fire in same tab).
+        this.broadcast('state.stateManager', { key, value });
         this.replyOk(req.sourceId, req.requestId, true);
       } catch (e) {
         this.replyErr(req.sourceId, req.requestId, e);

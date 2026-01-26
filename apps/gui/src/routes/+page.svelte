@@ -195,7 +195,7 @@
 	{#if $ready}
 
   <!-- <Counts /> -->
-	<div class="flex flex-wrap items-center gap-3 px-3 pt-2">
+	<!-- <div class="flex flex-wrap items-center gap-3 px-3 pt-2">
 		<RelayDimensions />
 		<RelayDataViewShortcut
 			bind:this={shortcutComponent}
@@ -203,7 +203,7 @@
 			label="Presets"
 		/>
 		<DataViewSelector {enabledViews} {activeView} />
-	</div>
+	</div> -->
 
 	<!-- I need this to fade in and out every time I trigger pseudo transition, without unmounting the component -->
 	<div

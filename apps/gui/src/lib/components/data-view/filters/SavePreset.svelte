@@ -7,6 +7,7 @@
     import Button from '$ui/button/button.svelte';
 	import { cn } from '$lib/utils/ui.js';
     import { StateManager } from '@nostrwatch/route66';
+    import { stateManagerSet } from '$lib/runtime/state-manager-sync';
     import { sharableConfig, type SharableConfigKeys } from '../table/utils';
     import type { DataTableConfig } from '../DataTableTypes';
     import { compress } from 'compress-json';
@@ -95,7 +96,7 @@
         };
 
         // Save to storage
-        StateManager.set(USER_PRESETS_KEY, [...existingPresets, newPreset]);
+        void stateManagerSet(USER_PRESETS_KEY, [...existingPresets, newPreset]);
 
         // Reset form
         presetName.set('');

@@ -16,6 +16,7 @@ import type { Nip11 } from "@nostrwatch/route66/models/Nip11";
 import { relayNip11Validations } from "./nip11-validations";
 import { page } from "$app/stores";
 import { relayLiveSync } from "$utils/live-sync";
+import { eventsArray } from "$lib/stores/events";
 import { SYNC_CHECKS_EXPIRY, SYNC_MONITORS_EXPIRY, SYNC_NIP11_EXPIRY, SYNC_OPERATORS_EXPIRY, SYNC_RELAY_ALL_EXPIRY, SYNC_RELAY_CHECKS_EXPIRY, SYNC_RELAY_NIP11_EXPIRY, SYNC_RELAY_OPERATOR_EXPIRY, VALIDATE_NIP11S_EXPIRY } from "$lib/constants/synchronization";
 import { initDimensionsWorker } from "$lib/workers/dimensions-worker-manager";
 import { syncBlocklists, cleanBlockedRelaysFromCache } from "./blocklist";
@@ -38,6 +39,22 @@ function startBootActivity(slug: string, text: string) {
 
 function completeBootActivity(slug: string, value?: string | number) {
     if (_completeBootActivity) _completeBootActivity(slug, value);
+}
+
+function computeMaxCheckTimestampSeconds(): number {
+    try {
+        const arr = get(eventsArray) as any[];
+        let max = 0;
+        for (const raw of arr) {
+            const event = (raw as any)?.json ?? raw;
+            if (event?.kind !== 30166) continue;
+            const seconds = typeof event?.created_at === "number" ? event.created_at : Number(event?.created_at);
+            if (Number.isFinite(seconds) && seconds > max) max = seconds;
+        }
+        return max;
+    } catch {
+        return 0;
+    }
 }
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
@@ -324,7 +341,8 @@ export const dataRegisterInit = async () => {
             try {
                 StateManager.set('lastCompleteSync', now);
             } catch {}
-            setStatsAsOf(now, { persist: true });
+            const maxCheck = computeMaxCheckTimestampSeconds();
+            setStatsAsOf(maxCheck > 0 ? maxCheck : now, { persist: true });
             // Ensure isSeeded is set so UI can progress
             if (!get(isSeeded)) {
                 isSeeded.set(true)
@@ -364,7 +382,8 @@ export const dataRegisterInit = async () => {
             try {
                 StateManager.set('lastCompleteSync', now);
             } catch {}
-            setStatsAsOf(now, { persist: true });
+            const maxCheck = computeMaxCheckTimestampSeconds();
+            setStatsAsOf(maxCheck > 0 ? maxCheck : now, { persist: true });
             // Ensure isSeeded is set so UI can progress even without seed files
             if (!get(isSeeded)) {
                 isSeeded.set(true)

@@ -4,13 +4,14 @@
 	import { unsupported } from '$lib/stores/app';
 	import Nav from './Nav.svelte';
     import { HeaderConfigStore } from '$stores/header-config';
-
-    export let navDisabled: boolean = false;
+	import RelayDataViewSelectors from '$routes/(components)/RelayDataViewSelectors.svelte';
 
     HeaderConfigStore.update( p => {
-        p.showDataViewModifiers = true;
+        p.showSelectors = true;
         return p
     })
+
+    export let navDisabled: boolean = false;
 
     $: isHomepage = $page.url.pathname === '/';
     $: disabledHrefs = navDisabled ? ['/relays', '/operators', '/monitors'] : [];
@@ -20,6 +21,10 @@
     {#if !$unsupported}
         <h1>nostr.watch</h1>
         <Nav {disabledHrefs} />
+        {#if $HeaderConfigStore.showSelectors} 
+            <RelayDataViewSelectors />
+            <!-- modifiers -->
+        {/if}
          {#if !navDisabled}
             <div class="search-container">
                 <search>
@@ -27,9 +32,7 @@
                 </search>
             </div>
         {/if}
-        {#if $HeaderConfigStore.showDataViewModifiers} 
-            <!-- modifiers -->
-        {/if}
+        
     {/if}
 </header>
 

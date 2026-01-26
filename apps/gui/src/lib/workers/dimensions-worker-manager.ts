@@ -212,6 +212,7 @@ function restartWorker(): void {
   const currentAggregates = get(relayCheckAggregates);
   if (currentAggregates && currentAggregates.length > 0) {
     const rows: AggregateRow[] = currentAggregates.map((agg) => ({
+      id: agg.relay,
       relay: agg.relay,
       operatorPubkey: agg.operatorPubkey,
       software: agg.software,
@@ -403,6 +404,7 @@ function subscribeToAggregates(): void {
 
     // Transform to AggregateRow format (already matches)
     const rows: AggregateRow[] = $aggregates.map((agg) => ({
+      id: agg.relay,
       relay: agg.relay,
       operatorPubkey: agg.operatorPubkey,
       software: agg.software,

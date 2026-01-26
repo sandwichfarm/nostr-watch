@@ -69,7 +69,7 @@
     $: eventsArray = Array.from( $events.entries() ) 
 
 </script>
-<main class="mt-16">
+<main class="mt-8">
 {#if $ready}
     <DataViewRoot {data} {config} key={dataKey} />
 {/if}

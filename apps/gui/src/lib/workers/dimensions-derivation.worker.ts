@@ -10,6 +10,7 @@
 // ============================================================================
 
 export type AggregateRow = {
+  id: string;
   relay: string;
   operatorPubkey?: string;
   software?: string;

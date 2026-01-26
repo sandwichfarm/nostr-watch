@@ -3,9 +3,15 @@
 	import AutoSuggestRelays from '../partials/AutoSuggestRelaysCompact.svelte';
 	import { unsupported } from '$lib/stores/app';
 	import Nav from './Nav.svelte';
+    import { HeaderConfigStore } from '$stores/header-config';
 
     export let navDisabled: boolean = false;
-  
+
+    HeaderConfigStore.update( p => {
+        p.showDataViewModifiers = true;
+        return p
+    })
+
     $: isHomepage = $page.url.pathname === '/';
     $: disabledHrefs = navDisabled ? ['/relays', '/operators', '/monitors'] : [];
 </script>
@@ -14,13 +20,15 @@
     {#if !$unsupported}
         <h1>nostr.watch</h1>
         <Nav {disabledHrefs} />
-        <!-- {#if !isHomepage && !navDisabled} -->
          {#if !navDisabled}
             <div class="search-container">
                 <search>
                     <AutoSuggestRelays maxResults={6} />
                 </search>
             </div>
+        {/if}
+        {#if $HeaderConfigStore.showDataViewModifiers} 
+            <!-- modifiers -->
         {/if}
     {/if}
 </header>

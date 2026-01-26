@@ -177,15 +177,15 @@
 
 </script>
 
-<!-- <pre class="mt-20">{JSON.stringify($shapeshift, null, 2)}</pre> -->
 
-<main class="mt-20"> 
+<main class="mt-12"> 
 	{#if $ready}
 	
 	<RelayDimensions />
+
 	<RelayDataViewShortcut
 		bind:this={shortcutComponent}
-		class="ml-3 my-4 opacity-70"
+		class="ml-2 opacity-70"
 		buttonClass=" py-1 px-2 mr-2 text-sm bg-transparent hover:bg-white/20"
 		buttonActiveClass="bg-white/20"
 		buttonVariant="secondary"
@@ -193,6 +193,7 @@
 		onClick={loadPreset}
 		label="Filter Presets"
 	/>
+
 	<!-- I need this to fade in and out every time I trigger pseudo transition, without unmounting the component -->
 	<div
 		style="opacity: {showDataView || $activeView !== 'table' ? 1 : 0}; transition: opacity {TRANSITION_DURATION}ms ease-in-out;"
@@ -207,6 +208,7 @@
 			bind:activeView
 		/>
 	</div>
+
 	<!-- <Stats /> -->
 	<!-- <DataTable data={relayCheckAggregates} {config} {dataKey} /> -->
 	{/if}

@@ -5,7 +5,7 @@
 </script>
 
 <div class="flex flex-row ml-3 opacity-70">
-    <span class="py-1 px-2 text-sm italic">Dimension</span>
+    <span class="ml-1 mr-1 text-sm italic">Dimension</span>
     <a href="/relays" class="dimension-link {$page.url.pathname === '/relays'? 'dimension-link-active': ''}">relay</a>
     <a href="/relays/software" class="dimension-link {$page.url.pathname === '/relays/software'? 'dimension-link-active': ''}">software</a>
     <a href="/relays/geography" class="dimension-link {$page.url.pathname === '/relays/geography'? 'dimension-link-active': ''}">geo</a>

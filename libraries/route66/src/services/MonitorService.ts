@@ -590,7 +590,11 @@ export class MonitorService extends Service {
     const sorted = monitorsWithRegistrations.sort((a, b) => (b.priority || 0) - (a.priority || 0));
 
     for(let i=0; i < this.DEFAULT_ENABLED_MONITORS && i < sorted.length; i++) {
-      sorted[i].enabled = true;
+      try {
+        sorted[i].enable();
+      } catch {
+        sorted[i].enabled = true;
+      }
     }
   }
 

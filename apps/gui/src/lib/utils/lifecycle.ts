@@ -153,6 +153,14 @@ export const bindBootstrapEmitters = (from?: string) => {
         throw new Error('Invalid nip66Instance: missing `on` method.');
     }
 
+    const onEvent = (event: IEvent) => {
+        if (!event) return;
+        // Check events are expected to arrive in batches via the `events` emitter; handling
+        // them here would create a hot path during cache hydration.
+        if ((event as any)?.kind === 30166) return;
+        publishEventsToMemoryRelay([event], 'onEvent')
+    }
+
     const onEvents = (_events: IEvent[]) => {
         // console.log('onEvents', from)
         count++
@@ -197,8 +205,10 @@ export const bindBootstrapEmitters = (from?: string) => {
 
     $route66.off('monitor:update', onMonitorUpdate);
     $route66.off('events', onEvents);
+    $route66.off('event', onEvent);
     $route66.on('monitor:update', onMonitorUpdate);    
     $route66.on('events', onEvents);
+    $route66.on('event', onEvent);
 
     emittersBoundTo = $route66;
 };

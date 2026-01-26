@@ -1,13 +1,14 @@
 import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
-import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, tabState } from "$stores/app";
+import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, lastCompleteSync, setStatsAsOf, tabState } from "$stores/app";
 import { backfillMonitorChecks, fetchDisabledMonitorsChecks, fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
 import { publishEventsToMemoryRelay } from "./events-helpers";
 import { delay } from "@nostrwatch/utils";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
+import { StateManager } from "@nostrwatch/route66";
 import { fetchRelayChecks, fetchRelayNip11, fetchRelayOperator } from "$lib/fetchers/relay";
 import { SchemaValidationService, type SchemaValidationServiceResponse } from "$lib/services/SchemaValidationService";
 import { nip11s } from "./nip11s";
@@ -318,6 +319,12 @@ export const dataRegisterInit = async () => {
             completeBootActivity('sync:network');
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            const now = Math.round(Date.now() / 1000);
+            lastCompleteSync.set(now);
+            try {
+                StateManager.set('lastCompleteSync', now);
+            } catch {}
+            setStatsAsOf(now, { persist: true });
             // Ensure isSeeded is set so UI can progress
             if (!get(isSeeded)) {
                 isSeeded.set(true)
@@ -352,6 +359,12 @@ export const dataRegisterInit = async () => {
             completeBootActivity('sync:network');
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            const now = Math.round(Date.now() / 1000);
+            lastCompleteSync.set(now);
+            try {
+                StateManager.set('lastCompleteSync', now);
+            } catch {}
+            setStatsAsOf(now, { persist: true });
             // Ensure isSeeded is set so UI can progress even without seed files
             if (!get(isSeeded)) {
                 isSeeded.set(true)

@@ -9,8 +9,8 @@
 </script>
 
 {#if enabledViews && enabledViews.length > 1}
-<div class="flex flex-row ml-3 opacity-70 my-5">
-    <span class="py-1 px-2 text-sm italic">View</span>
+<div class="flex flex-row ml-3 opacity-70">
+    <span class="py-1 pr-1 text-sm italic">View</span>
     {#if enabledViews.includes('table')}
         <button 
             on:click={() => activeView.set('table')}
@@ -41,7 +41,7 @@
 <style lang="postcss">
 
 	.dimension-link {
-		@apply py-1 px-2 ml-3 text-sm rounded-sm bg-black/5 dark:bg-white/5 hover:bg-white/20;
+		@apply pr-1 px-2 ml-3 text-sm rounded-sm bg-black/5 dark:bg-white/5 hover:bg-white/20;
 	}
 
     .dimension-link-active {

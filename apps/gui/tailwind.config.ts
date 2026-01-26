@@ -152,6 +152,15 @@ const config: Config = {
 			  '.gradient-purple': {
 				'@apply bg-gradient-to-br from-purple-300/5 to-purple-300/30 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
 			  },
+			  '.gradient-purple-200': {
+				'@apply bg-gradient-to-br from-purple-200/5 to-purple-200/10 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.gradient-purple-500': {
+				'@apply bg-gradient-to-br from-purple-500/5 to-purple-500/10 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
+			  '.gradient-purple-600': {
+				'@apply bg-gradient-to-br from-purple-600/5 to-purple-600/10 transition-all duration-500 bg-size-200 bg-pos-0 hover:bg-pos-100': {},
+			  },
 			  '.dark .gradient-purple': {
 				'@apply from-purple-600/5 to-purple-600/30': {},
 			  },

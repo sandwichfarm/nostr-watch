@@ -1,7 +1,21 @@
-import { derived, writable, readable, get, type Writable } from 'svelte/store'
+import type { Writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 
-interface HeaderConfigStore {
-    showDataViewModifiers?: true;
-}
+import type { DataViewViews } from '$lib/components/data-view/DataTableTypes';
 
-export const HeaderConfigStore: Writable<HeaderConfigStore> = writable({})
+export type HeaderDataViewSelectorsConfig = {
+    id: string;
+    showDimension?: boolean;
+    showPresets?: boolean;
+    showView?: boolean;
+    enabledViews?: DataViewViews[];
+    activeView?: Writable<DataViewViews>;
+    onPresetSelect?: (path: string) => void;
+    className?: string;
+};
+
+export type HeaderConfig = {
+    selectors: HeaderDataViewSelectorsConfig | null;
+};
+
+export const HeaderConfigStore: Writable<HeaderConfig> = writable({ selectors: null });

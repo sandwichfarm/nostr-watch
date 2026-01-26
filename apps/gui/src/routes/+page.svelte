@@ -11,7 +11,6 @@
 	import { dataRegister } from '$stores/data-register';
 	import RelayDataViewShortcut from '$lib/components/shortcuts/RelayDataViewShortcut.svelte';
 	import { deterministicHash } from '@nostrwatch/route66/utils';
-	import { pushState, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { linkableState } from '$utils/linkable-state';
 	import { decompress } from 'compress-json';
@@ -162,32 +161,35 @@
 	// Reference to the shortcut component to reload presets
 	let shortcutComponent: any;
 
-	const loadPreset = (path: string) => { 
-			const hash = path.split('#')?.[1]
-			if(!hash) return;
-			replaceState(`#${hash}`, $page.state)
-			const linkableData = decompress(JSON.parse(atob(hash))) as Partial<DataTableConfig>
-			replaceState(``, $page.state)
+		const loadPreset = (path: string) => { 
+				const hash = path.split('#')?.[1]
+				if(!hash) return;
+				let linkableData: Partial<DataTableConfig> | null = null;
+				try {
+					linkableData = decompress(JSON.parse(atob(hash))) as Partial<DataTableConfig>;
+				} catch {
+					return;
+				}
 
-			showDataView = false;
-			delay(TRANSITION_DURATION).then(() => {
-				config.update( (currentConfig: DataTableConfig) => {
-					return { ...currentConfig, ...linkableData }
-				}) 
-				delay(1).then(() => {
-					if(!$config) return;
-					onFilterChange($config)
-				})
+				showDataView = false;
 				delay(TRANSITION_DURATION).then(() => {
-					showDataView = true;
-					delay(1).then(() => {
-						if(!$config) return;
-						onFilterChange($config)
+					config.update((currentConfig: DataTableConfig | null) => {
+						if (!currentConfig || !linkableData) return currentConfig;
+						const merged = { ...currentConfig, ...linkableData } as DataTableConfig;
+						const filtersActive =
+							merged.filtersActive && typeof merged.filtersActive === 'object' ? merged.filtersActive : {};
+						const filtersShow = Array.isArray(merged.filtersShow) ? [...merged.filtersShow] : [];
+						for (const key of Object.keys(filtersActive)) {
+							if (!filtersShow.includes(key)) filtersShow.push(key);
+						}
+						return { ...merged, filtersShow };
+					});
+					delay(TRANSITION_DURATION).then(() => {
+						showDataView = true;
 					})
 				})
-			})
-			//trigger a pseudo transition 
-		}
+				//trigger a pseudo transition 
+			}
 </script>
 
 

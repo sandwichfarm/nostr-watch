@@ -232,7 +232,7 @@
 {#if tableInstance !== null}
     <div class="relative z-0 shadow-md my-4">
 
-        <div id="dataViewTopBar" class="border-t-[1px] border-b-[1px] my-2">
+        <div id="dataViewTopBar" class="border-b-[1px] mb-2">
         <!-- **Search Input for Global Filtering** -->
         <Input
             type="text"

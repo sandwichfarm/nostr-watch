@@ -254,7 +254,7 @@
   <summary
     bind:this={summaryEl}
     class={cn(
-      "nw-dropdown__summary inline-flex items-center gap-2 rounded-sm px-2 py-1 border border-border bg-popover text-popover-foreground hover:bg-muted select-none",
+      "nw-dropdown__summary inline-flex items-center gap-0 py-1 px-2 border border-none text-popover-foreground hover:bg-muted/20 select-none",
       disabled && "opacity-50 cursor-not-allowed pointer-events-none"
     )}
     aria-haspopup="listbox"

@@ -281,7 +281,7 @@
     {#if enableFilters}
     <Resizable.Handle withHandle />
     <Resizable.Pane
-        class="min-h-[100%] overflow-hidden"
+        class="min-h-[100%] overflow-hidden gradient-purple-200"
         defaultSize={25}
         collapsedSize={5}
         collapsible={true}

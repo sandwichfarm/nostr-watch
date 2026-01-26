@@ -1,15 +1,10 @@
-<script lang="ts">;
+<script lang="ts">
     import { page } from '$app/stores';
 	import AutoSuggestRelays from '../partials/AutoSuggestRelaysCompact.svelte';
 	import { unsupported } from '$lib/stores/app';
 	import Nav from './Nav.svelte';
     import { HeaderConfigStore } from '$stores/header-config';
 	import RelayDataViewSelectors from '$routes/(components)/RelayDataViewSelectors.svelte';
-
-    HeaderConfigStore.update( p => {
-        p.showSelectors = true;
-        return p
-    })
 
     export let navDisabled: boolean = false;
 
@@ -21,9 +16,16 @@
     {#if !$unsupported}
         <h1>nostr.watch</h1>
         <Nav {disabledHrefs} />
-        {#if $HeaderConfigStore.showSelectors} 
-            <RelayDataViewSelectors />
-            <!-- modifiers -->
+        {#if $HeaderConfigStore.selectors}
+            <RelayDataViewSelectors
+                class={$HeaderConfigStore.selectors.className}
+                showDimension={$HeaderConfigStore.selectors.showDimension}
+                showPresets={$HeaderConfigStore.selectors.showPresets}
+                showView={$HeaderConfigStore.selectors.showView}
+                enabledViews={$HeaderConfigStore.selectors.enabledViews}
+                activeView={$HeaderConfigStore.selectors.activeView}
+                onPresetSelect={$HeaderConfigStore.selectors.onPresetSelect}
+            />
         {/if}
          {#if !navDisabled}
             <div class="search-container">

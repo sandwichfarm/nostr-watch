@@ -7,15 +7,9 @@
 	import { type default as StatsType } from '$lib/components/layout/Stats.svelte';
 	import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { default as relaysTableConfig } from '$lib/config/dataTable/relays.js';
-	import RelayDimensions from './relay-dimensions.svelte';
-	import DataViewSelector from '$lib/components/data-view/partials/DataViewSelector.svelte';
 	import type { DataTableConfig, DataViewViews } from '$lib/components/data-view/DataTableTypes';
 	import { dataRegister } from '$stores/data-register';
-	import RelayDataViewShortcut from '$lib/components/shortcuts/RelayDataViewShortcut.svelte';
 	import { deterministicHash } from '@nostrwatch/route66/utils';
-	import { pushState, replaceState } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { linkableState } from '$utils/linkable-state';
 	import { decompress } from 'compress-json';
 	import { replace } from 'lodash';
 	import { ConfigDefaults } from '@nostrwatch/nocap';
@@ -23,6 +17,7 @@
 	import { delay } from '@nostrwatch/utils';
 	import { fade } from 'svelte/transition';
 	import { tabState } from '$lib/stores/app';
+	import { HeaderConfigStore } from '$stores/header-config';
 
 	const TRANSITION_DURATION = 100;
 
@@ -82,7 +77,7 @@
 		componentsLoaded.set(true);
 	}
 
-	const setConfig = () => {
+		const setConfig = () => {
 		let conf = {...defaultDataTableConfig, ...relaysTableConfig}
 		const userTableConfig = StateManager.get(`preferences:${dataKey}:tableConfig`);
 		
@@ -107,23 +102,26 @@
 
 			////console.log('setting config without user config', conf)
 			config.set(conf)
+			}
+			ready.set(true)
+			setHeaderSelectors('full');
 		}
-		ready.set(true)
-	}
 
-	const mount = async ( ) => {
-		loadComponents().then(setConfig);
-		const keys = ['sync:cache'];
-		if (get(tabState) === 'leader') keys.push('sync:all');
-		void $dataRegister
+		const mount = async ( ) => {
+			setHeaderSelectors('dimension');
+			loadComponents().then(setConfig);
+			const keys = ['sync:cache'];
+			if (get(tabState) === 'leader') keys.push('sync:all');
+			void $dataRegister
 			.require(keys)
 			.catch((err) => console.error('[DataRegister] require failed', err));
 	}
 
-	const destroy = () => {
-		overrideRelayChecksActiveKeys.set([])
-		configUnsub()
-	}
+		const destroy = () => {
+			overrideRelayChecksActiveKeys.set([])
+			clearHeaderSelectors();
+			configUnsub()
+		}
 	
 	onMount(mount)  
 	onDestroy(destroy)  
@@ -146,31 +144,55 @@
 
 	const activeView: Writable<DataViewViews> = writable(enabledViews.length === 1 ? enabledViews[0] : 'table');
 
-	// Reference to the shortcut component to reload presets
-	let shortcutComponent: any;
+	const HEADER_SELECTORS_ID = 'relays:list';
+
+	const setHeaderSelectors = (mode: 'dimension' | 'full' = 'full') => {
+		HeaderConfigStore.set({
+			selectors: {
+				id: HEADER_SELECTORS_ID,
+				className: 'ml-2',
+				showDimension: true,
+				showPresets: mode === 'full',
+				showView: mode === 'full',
+				enabledViews,
+				activeView,
+				onPresetSelect: loadPreset,
+			},
+		});
+	};
+
+	const clearHeaderSelectors = () => {
+		HeaderConfigStore.update((current) => {
+			if (current.selectors?.id !== HEADER_SELECTORS_ID) return current;
+			return { ...current, selectors: null };
+		});
+	};
 
 	const loadPreset = (path: string) => { 
 			const hash = path.split('#')?.[1]
 			if(!hash) return;
-			replaceState(`#${hash}`, $page.state)
-			const linkableData = decompress(JSON.parse(atob(hash))) as Partial<DataTableConfig>
-			replaceState(``, $page.state)
+			let linkableData: Partial<DataTableConfig> | null = null;
+			try {
+				linkableData = decompress(JSON.parse(atob(hash))) as Partial<DataTableConfig>;
+			} catch {
+				return;
+			}
 
 			showDataView = false;
 			delay(TRANSITION_DURATION).then(() => {
-				config.update( (currentConfig: DataTableConfig) => {
-					return { ...currentConfig, ...linkableData }
-				}) 
-				delay(1).then(() => {
-					if(!$config) return;
-					onFilterChange($config)
-				})
+				config.update((currentConfig: DataTableConfig | null) => {
+					if (!currentConfig || !linkableData) return currentConfig;
+					const merged = { ...currentConfig, ...linkableData } as DataTableConfig;
+					const filtersActive =
+						merged.filtersActive && typeof merged.filtersActive === 'object' ? merged.filtersActive : {};
+					const filtersShow = Array.isArray(merged.filtersShow) ? [...merged.filtersShow] : [];
+					for (const key of Object.keys(filtersActive)) {
+						if (!filtersShow.includes(key)) filtersShow.push(key);
+					}
+					return { ...merged, filtersShow };
+				});
 				delay(TRANSITION_DURATION).then(() => {
 					showDataView = true;
-					delay(1).then(() => {
-						if(!$config) return;
-						onFilterChange($config)
-					})
 				})
 			})
 			//trigger a pseudo transition 
@@ -181,23 +203,12 @@
 
 <main class="mt-12"> 
 	{#if $ready}
-	<div class="flex flex-wrap items-center gap-3 px-3 pt-2">
-		<RelayDimensions />
-		<RelayDataViewShortcut
-			bind:this={shortcutComponent}
-			onClick={loadPreset}
-			label="presets"
-		/>
-		<DataViewSelector {enabledViews} {activeView} />
-	</div>
-
 	<!-- I need this to fade in and out every time I trigger pseudo transition, without unmounting the component -->
 	<div
 		style="opacity: {showDataView || $activeView !== 'table' ? 1 : 0}; transition: opacity {TRANSITION_DURATION}ms ease-in-out;"
 			>
 		<DataView
 			bind:onFilterChange
-			onPresetSave={() => shortcutComponent?.reloadPresets?.()}
 			data={relayCheckAggregates}
 			{config}
 			key={dataKey}

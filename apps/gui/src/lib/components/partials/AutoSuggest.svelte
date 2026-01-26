@@ -22,7 +22,7 @@
   export let maxResults: number | undefined;
   export let autoFocus: boolean = false;
 
-  export let inputClass: string = "mr-2 font-mono text-sm w-full p-1 mr-4 border border-black/10 dark:bg-white/5 dark:border-white/10 dark:text-white/60 focus:border-transparent focus:ring-0" 
+  export let inputClass: string = "mr-0 font-mono text-sm w-full p-1 border-l-[1px] border-black/10 dark:bg-white/5 dark:border-white/10 dark:text-white/60 focus:border-transparent focus:ring-0" 
   export let resultWrapperClass: string = "shadow-md absolute top-full left-0 right-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-black/60 dark:border-white/10"
   export let placeholderText: string = "find relays";
 
@@ -152,7 +152,7 @@
   }
 </script>
 
-<div class="relative mr-2 w-full h-full">
+<div class="relative mr-0 w-full h-full">
   <!-- Input Field -->
   <input
     type="text"

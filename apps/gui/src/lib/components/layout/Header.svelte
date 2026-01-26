@@ -27,7 +27,7 @@
 
 <style lang="postcss" global>
     #site-header {
-        @apply fixed top-0 right-0 left-0 flex items-center h-12 bg-black/25 dark:bg-white/25 backdrop-blur-lg text-white dark:text-black z-[999];
+        @apply !h-[30px] gradient-purple border-b-[1px] border-white/10 fixed top-0 right-0 left-0 flex items-center h-12 bg-black/25 dark:bg-white/25 backdrop-blur-lg text-white dark:text-black z-[999];
     }
 
     #site-header h1 {

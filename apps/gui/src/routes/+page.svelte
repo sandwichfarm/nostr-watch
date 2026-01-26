@@ -7,8 +7,6 @@
 	import { type default as StatsType } from '$lib/components/layout/Stats.svelte';
 	import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
 	import { default as relaysTableConfig } from '$lib/config/dataTable/relays.js';
-	import RelayDimensions from '$routes/relays/relay-dimensions.svelte';
-	import DataViewSelector from '$lib/components/data-view/partials/DataViewSelector.svelte';
 	import type { DataTableConfig, DataViewViews } from '$lib/components/data-view/DataTableTypes';
 	import { dataRegister } from '$stores/data-register';
 	import RelayDataViewShortcut from '$lib/components/shortcuts/RelayDataViewShortcut.svelte';
@@ -23,6 +21,9 @@
 	import { delay } from '@nostrwatch/utils';
 	import { fade } from 'svelte/transition';
 	import { tabState } from '$lib/stores/app';
+
+  import RelayDimensions from '$routes/relays/relay-dimensions.svelte';
+	import DataViewSelector from '$lib/components/data-view/partials/DataViewSelector.svelte';
 
   	import AutoSuggestRelaysCompact from '$lib/components/partials/AutoSuggestRelaysCompact.svelte';
 	import Counts from '$routes/(components)/Counts.svelte';
@@ -193,7 +194,7 @@
 <main class="mt-12"> 
 	{#if $ready}
 
-  <Counts />
+  <!-- <Counts /> -->
 	<div class="flex flex-wrap items-center gap-3 px-3 pt-2">
 		<RelayDimensions />
 		<RelayDataViewShortcut

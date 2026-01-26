@@ -518,50 +518,52 @@
     // **Reactive Statements for Styling Classes**
     $: buttonClass = 'mb-2 text-sm font-bold py-1 px-2 mr-1';
     $: buttonClassSelected = 'bg-blue-500 text-white';
+	$: toolbarButtonClass = 'shrink-0 whitespace-nowrap';
 </script>  
 
 
 
-<FilterLink {filters} {config} {onFilterChange} />
-<SavePreset {config} onSave={onPresetSave} />
+<div class="flex w-full flex-nowrap items-center gap-2 overflow-x-auto pb-3">
+	<FilterLink {filters} {config} {onFilterChange} triggerClass={toolbarButtonClass} />
+	<SavePreset {config} onSave={onPresetSave} triggerClass={toolbarButtonClass} />
 
-<!-- <pre class="absolute top-1 left-1 bg-black border border-white p-10 z-[9999]">{JSON.stringify($disabledFilters, null, 2)}</pre> -->
+	<!-- <pre class="absolute top-1 left-1 bg-black border border-white p-10 z-[9999]">{JSON.stringify($disabledFilters, null, 2)}</pre> -->
 
-<!-- **Clear All Filters Button** -->
-<Button 
-    size="small" 
-    variant="destructive" 
-    on:click={clearAllFilters} 
-    class="{buttonClass} ml-2" 
-    disabled={Object.keys(activeFilters || {}).length > 0 ? false : true}
->
-    {#if Object.keys(activeFilters || {}).length > 0}
-        Clear {Object.keys(activeFilters || {}).length} Filters
-    {:else}
-        No Filters Applied
-    {/if}
-</Button>
+	<!-- **Clear All Filters Button** -->
+	<Button
+		size="sm"
+		variant="destructive"
+		on:click={clearAllFilters}
+		class={toolbarButtonClass}
+		disabled={Object.keys(activeFilters || {}).length > 0 ? false : true}
+	>
+		{#if Object.keys(activeFilters || {}).length > 0}
+			Clear {Object.keys(activeFilters || {}).length} Filters
+		{:else}
+			No Filters Applied
+		{/if}
+	</Button>
 
-
-<Popover.Root>
-    <Popover.Trigger class="text-lg inline-block ml-2 relative">
-        <Button size="small"  variant="secondary" class="relative cursor-pointer {buttonClass}">Filter Visiblity</Button>
-    </Popover.Trigger>
-    <Popover.Content class="z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
-        <Tabs.Root value="visiblity" class="">
-            <Tabs.List>
-                <Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>
-                <Tabs.Trigger value="order">Order</Tabs.Trigger>
-            </Tabs.List>
-            <Tabs.Content value="visiblity"  class="py-4 px-8">
-                <FilterOptions {config} {dataKey} onChange={onFilterChange} />
-            </Tabs.Content>
-            <Tabs.Content value="order" class=" bg-white/20 dark:bg-black/20">
-                coming soon...
-            </Tabs.Content>
-        </Tabs.Root>
-    </Popover.Content>
-</Popover.Root>
+	<Popover.Root>
+		<Popover.Trigger asChild let:builder>
+			<Button builders={[builder]} size="sm" variant="secondary" class={toolbarButtonClass}>Filter Visibility</Button>
+		</Popover.Trigger>
+		<Popover.Content class="z-[5999] mt-3 min-w-[600px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg">
+			<Tabs.Root value="visiblity" class="">
+				<Tabs.List>
+					<Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>
+					<Tabs.Trigger value="order">Order</Tabs.Trigger>
+				</Tabs.List>
+				<Tabs.Content value="visiblity" class="py-4 px-8">
+					<FilterOptions {config} {dataKey} onChange={onFilterChange} />
+				</Tabs.Content>
+				<Tabs.Content value="order" class=" bg-white/20 dark:bg-black/20">
+					coming soon...
+				</Tabs.Content>
+			</Tabs.Root>
+		</Popover.Content>
+	</Popover.Root>
+</div>
 
 <!-- **Active Filters Display (Enabled)** -->
 {#if false && Object.keys(activeFilters || {}).length > 0}

@@ -39,7 +39,7 @@ import { onMount } from "svelte";
                         
                     </div>
 					{#if bottomText}
-                    <div class="label text-center">{@html bottomText}</div>
+                    <div class="label text-center px-4">{@html bottomText}</div>
 					{/if}
                 </div>
 			</div>

@@ -3,6 +3,8 @@ import { makeSoftwareReadable } from '$lib/synonyms/software';
 import countryCodeToFlagEmoji from 'country-code-to-flag-emoji';
 import { getCountryName } from '$lib/stores/iso3166';
 
+import { pastelPairFromString } from '$utils/colors'; 
+
 export const columnsDisable: DataKeys = ['id']
 export const filtersDisable: DataKeys = []
 

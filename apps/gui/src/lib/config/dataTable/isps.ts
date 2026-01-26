@@ -1,6 +1,8 @@
 import type { DataKeys, Formatters, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 import { makeSoftwareReadable } from '$lib/synonyms/software';
 
+import { pastelPairFromString } from '$utils/colors'; 
+
 export const columnsDisable: DataKeys = ['id']
 export const filtersDisable: DataKeys = []
 
@@ -29,7 +31,7 @@ function truncateWithEllipsis(text: string, maxLength: number): string {
 export const tableFormatters: Formatters = {
     prettyName: (prettyName: string, row: any) => {
         if(typeof prettyName !== 'string') return '-';
-        prettyName = `<span class="my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${prettyName}</span>`;
+        prettyName = `<span class="my-1 text-sm font-mono" style="color:${pastelPairFromString(prettyName)?.dark};">${prettyName}</span>`;
         const icon = row.icon? 
             `<img src="${row.icon}" alt="${prettyName}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-6 h-6 inline-block mr-2">` 
             :'<span class="w-6 h-6 inline-block mr-2"></span>';

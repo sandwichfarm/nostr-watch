@@ -1,6 +1,8 @@
 import type { DataKeys, Formatters, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 import { makeSoftwareReadable } from '$lib/synonyms/software';
 
+import { pastelPairFromString } from '$utils/colors'; 
+
 export const columnsDisable: DataKeys = []
 export const filtersDisable: DataKeys = []
 

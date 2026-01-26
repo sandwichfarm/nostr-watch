@@ -90,11 +90,22 @@ export const dataRegisterInit = async () => {
             // Recovery path: localStorage can say "seeded/bootstrapped" while the actual cache
             // is empty (e.g. OPFS/SQLite fallback, corruption reset, or user wiped SQLite only).
             try {
+                const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+                    const ms = Number.isFinite(timeoutMs) ? Math.max(0, timeoutMs) : 0;
+                    if (ms === 0) return await promise;
+                    return await Promise.race([
+                        promise,
+                        new Promise<T>((_resolve, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)),
+                    ]);
+                };
+
                 const $route66 = await instance();
                 await $route66.ready();
-                const cache = $route66.adapters.cacheAdapter;
-                await cache.ready();
-                const checkCount = await cache.COUNT([{ kinds: [30166] }]);
+                const cache: any = $route66.adapters.cacheAdapter;
+                if (typeof cache?.ready === 'function') {
+                    await withTimeout(cache.ready(), 5_000);
+                }
+                const checkCount = await withTimeout(cache.COUNT([{ kinds: [30166] }]), 5_000);
                 return !Number.isFinite(checkCount) || checkCount < 100;
             } catch {
                 // If we cannot verify cache health, attempt build-seed so the UI can recover.

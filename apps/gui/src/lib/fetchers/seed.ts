@@ -107,6 +107,32 @@ async function fetchJson<T>(
   }
 }
 
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  onTimeout?: () => void
+): Promise<T> {
+  const ms = Number.isFinite(timeoutMs) ? Math.max(0, timeoutMs) : 0;
+  if (ms === 0) return await promise;
+
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_resolve, reject) => {
+        timeoutId = setTimeout(() => {
+          try {
+            onTimeout?.();
+          } catch {}
+          reject(new Error(`Timeout after ${ms}ms`));
+        }, ms);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 async function yieldToBrowser(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
@@ -135,18 +161,22 @@ function withSeedVersion(url: string, seedKey: string): string {
 async function seedEventsToCache(
   events: IEvent[],
   batchSize = 500,
-  onBatch?: (count: number) => void
+  onBatch?: (count: number) => void,
+  opts: { cache?: any; cacheReady?: boolean } = {}
 ): Promise<void> {
   if (!events?.length) return;
-  const $route66 = await instance();
-  await $route66.ready();
-  const cache = $route66.adapters.cacheAdapter;
-  await cache.ready();
+  const cache = opts.cache;
+  let cacheReady = opts.cacheReady ?? false;
 
   for (const batch of chunk(events, batchSize)) {
-    try {
-      await cache.addEvents(batch);
-    } catch {}
+    if (cache && cacheReady) {
+      try {
+        // Prevent bootstrap deadlocks if the cache worker is unresponsive.
+        await withTimeout(cache.addEvents(batch), 5_000);
+      } catch {
+        cacheReady = false;
+      }
+    }
     try {
       onBatch?.(batch.length);
     } catch {}
@@ -186,42 +216,57 @@ export const seedBuildData = async (): Promise<void> => {
     }
     
     updateBootActivity('seed:manifest', 'found');
-    completeBootActivity('seed:manifest');
+	    completeBootActivity('seed:manifest');
 
-    const seedKey = computeSeedKey(manifest);
+	    const seedKey = computeSeedKey(manifest);
 
-    // Check if cache actually has data before skipping seed.
-    // This handles the case where localStorage says "bootstrapped" but cache was cleared.
-    const $route66 = await instance();
-    await $route66.ready();
-    const cache = $route66.adapters.cacheAdapter;
-    await cache.ready();
+	    // Mark seed boot as started early so follower tabs can display "waiting" UI even if
+	    // cache initialization is slow/unavailable.
+	    setSeedBootInProgress();
 
-    let cacheHasData = false;
-    try {
-      const checkCount = await cache.COUNT([{ kinds: [30166] }]);
-      // If cache has at least 100 check events, consider it seeded
-      cacheHasData = checkCount >= 100;
-    } catch {}
+	    // Best-effort cache readiness. If the cache worker is unavailable or wedged,
+	    // we still want to seed into memory and allow the app to render.
+	    const $route66 = await instance();
+	    await $route66.ready();
+	    const cache: any = $route66.adapters.cacheAdapter;
 
-    if (cacheHasData && StateManager.get(STATE_KEY_GENERATED_AT) === seedKey) {
-      // Already seeded for this manifest; avoid re-downloading large JSON blobs.
-      isSeeded.set(true);
-      setSeedBootComplete(seedKey);
-      completeBootActivity('seed:monitors', 'cached');
+	    let cacheReady = false;
+	    try {
+	      if (typeof cache?.ready === 'function') {
+	        await withTimeout(cache.ready(), 5_000);
+	        cacheReady = true;
+	      }
+	    } catch {
+	      cacheReady = false;
+	    }
+
+	    let cacheHasData = false;
+	    if (cacheReady && typeof cache?.COUNT === 'function') {
+	      try {
+	        const checkCount = await withTimeout(cache.COUNT([{ kinds: [30166] }]), 5_000);
+	        // If cache has at least 100 check events, consider it seeded
+	        cacheHasData = typeof checkCount === 'number' && checkCount >= 100;
+	      } catch {
+	        cacheHasData = false;
+	        cacheReady = false;
+	      }
+	    }
+
+	    if (cacheReady && cacheHasData && StateManager.get(STATE_KEY_GENERATED_AT) === seedKey) {
+	      // Already seeded for this manifest; avoid re-downloading large JSON blobs.
+	      isSeeded.set(true);
+	      setSeedBootComplete(seedKey);
+	      completeBootActivity('seed:monitors', 'cached');
       completeBootActivity('seed:blocklist', 'cached');
       completeBootActivity('seed:checks', 'cached');
       completeBootActivity('seed:operators', 'cached');
       completeBootActivity('seed:nip11s', 'cached');
-      return;
-    }
+	      return;
+	    }
 
-    // We are about to do real seed work (fresh/broken state).
-    setSeedBootInProgress();
-
-    const groups = manifest.groups ?? {};
-    const monitorFiles = groups.monitors?.files ?? [];
-    const blocklistFiles = groups.blocklist?.files ?? [];
+	    const groups = manifest.groups ?? {};
+	    const monitorFiles = groups.monitors?.files ?? [];
+	    const blocklistFiles = groups.blocklist?.files ?? [];
     const checkFiles = groups.checks?.files ?? [];
     const operatorFiles = groups.operators?.files ?? [];
     const nip11Files = groups.nip11s?.files ?? [];
@@ -267,10 +312,10 @@ export const seedBuildData = async (): Promise<void> => {
         for (const batch of chunk(events, 500)) {
           void publishEventsToMemoryRelay(batch, 'seed:build');
         }
-        await seedEventsToCache(events, 250, (count) => {
-          totalMonitors += count;
-          updateBootActivity('seed:monitors', formatProgress(totalMonitors, groups.monitors?.events));
-        });
+	        await seedEventsToCache(events, 250, (count) => {
+	          totalMonitors += count;
+	          updateBootActivity('seed:monitors', formatProgress(totalMonitors, groups.monitors?.events));
+	        }, { cache, cacheReady });
 
         completeBootActivity('seed:monitors', events.length)
       }
@@ -355,26 +400,31 @@ export const seedBuildData = async (): Promise<void> => {
         seededSomething = true;
         const expected = groups.nip11s?.count;
 
-        // Batch upsert NIP-11s to cache
-        try {
-          const batchSize = 100;
-          for (const batch of chunk(entries, batchSize)) {
-            await cache.batchUpsertNip11(batch);
-            totalNip11s += batch.length;
-            updateBootActivity('seed:nip11s', formatProgress(totalNip11s, expected));
-            await yieldToBrowser();
-          }
-        } catch (e) {
-          console.warn('[seed] NIP-11 batch upsert failed, trying individually:', e);
-          // Fallback to individual upserts if batch fails
-          for (const entry of entries) {
-            try {
-              await cache.upsertNip11(entry.relay, entry.nip11);
-              totalNip11s += 1;
-              updateBootActivity('seed:nip11s', formatProgress(totalNip11s, expected));
-            } catch {}
-          }
-        }
+	        // Batch upsert NIP-11s to cache
+	        try {
+	          const batchSize = 100;
+	          for (const batch of chunk(entries, batchSize)) {
+	            if (cacheReady && typeof cache?.batchUpsertNip11 === 'function') {
+	              await withTimeout(cache.batchUpsertNip11(batch), 10_000);
+	            }
+	            totalNip11s += batch.length;
+	            updateBootActivity('seed:nip11s', formatProgress(totalNip11s, expected));
+	            await yieldToBrowser();
+	          }
+	        } catch (e) {
+	          console.warn('[seed] NIP-11 batch upsert failed, trying individually:', e);
+	          cacheReady = false;
+	          // Fallback to individual upserts if batch fails
+	          for (const entry of entries) {
+	            try {
+	              if (cacheReady && typeof cache?.upsertNip11 === 'function') {
+	                await withTimeout(cache.upsertNip11(entry.relay, entry.nip11), 5_000);
+	              }
+	              totalNip11s += 1;
+	              updateBootActivity('seed:nip11s', formatProgress(totalNip11s, expected));
+	            } catch {}
+	          }
+	        }
       }
       completeBootActivity('seed:nip11s', formatProgress(totalNip11s, groups.nip11s?.count));
     } else {
@@ -402,10 +452,10 @@ export const seedBuildData = async (): Promise<void> => {
         for (const batch of chunk(events, 1000)) {
           void publishEventsToMemoryRelay(batch, 'seed:build');
         }
-        await seedEventsToCache(events, 100, (count) => {
-          totalChecks += count;
-          updateBootActivity('seed:checks', formatProgress(totalChecks, groups.checks?.events));
-        });
+	        await seedEventsToCache(events, 100, (count) => {
+	          totalChecks += count;
+	          updateBootActivity('seed:checks', formatProgress(totalChecks, groups.checks?.events));
+	        }, { cache, cacheReady });
       }
       completeBootActivity('seed:checks', formatProgress(totalChecks, groups.checks?.events));
     } else {
@@ -450,10 +500,10 @@ export const seedBuildData = async (): Promise<void> => {
         for (const batch of chunk(events, 2000)) {
           void publishEventsToMemoryRelay(batch, 'seed:build');
         }
-        await seedEventsToCache(events, 500, (count) => {
-          totalOperators += count;
-          updateBootActivity('seed:operators', formatProgress(totalOperators, groups.operators?.events));
-        });
+	        await seedEventsToCache(events, 500, (count) => {
+	          totalOperators += count;
+	          updateBootActivity('seed:operators', formatProgress(totalOperators, groups.operators?.events));
+	        }, { cache, cacheReady });
       }
 
       await new Promise(resolve => setTimeout(resolve,500))
@@ -488,13 +538,18 @@ export const seedBuildData = async (): Promise<void> => {
       completeBootActivity('seed:operators', 'none');
     }
 
-    await new Promise(resolve => setTimeout(resolve,500))
+	    await new Promise(resolve => setTimeout(resolve,500))
 
-    if (seededSomething) {
-      StateManager.set(STATE_KEY_GENERATED_AT, seedKey);
-      isSeeded.set(true);
-      setSeedBootComplete(seedKey);
-    } else {
+	    if (seededSomething) {
+	      // Only persist the seed marker when we have a responsive cache adapter.
+	      // When the cache worker is unavailable (e.g. OPFS fallback / init failure),
+	      // persisting this key can cause future boots to incorrectly skip seeding.
+	      if (cacheReady) {
+	        StateManager.set(STATE_KEY_GENERATED_AT, seedKey);
+	      }
+	      isSeeded.set(true);
+	      setSeedBootComplete(seedKey);
+	    } else {
       // Nothing was seeded, but we did finish attempting; mark as complete so followers
       // don't wait forever on a missing/empty seed payload.
       setSeedBootComplete(seedKey);

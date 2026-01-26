@@ -6,6 +6,8 @@ import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 import { validNip05s } from '$lib/stores/nip05s.js';
 import type { DataKeys, Formatters, NameFormatter } from '$lib/components/data-view/DataTableTypes';
 
+import { pastelPairFromString } from '$utils/colors'; 
+
 export const normalizeKeys = (keys: DataKeys | string) => {
     if(typeof keys === 'string') 
         return keys.toLowerCase()
@@ -161,9 +163,9 @@ export const filterFormatters: Formatters = {
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
-            profile += `<div class="text-sm">${monitor.profile.name}</div>`
+            profile += `<div class="text-sm font-mono" style="color:${pastelPairFromString(pubkey)?.dark};">${monitor.profile.name}</div>`
         }
-        profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis">${monitor.pubkey}</div>`
+        profile += `<div class="text-xs block max-w-44 overflow-hidden overflow-ellipsis opacity-50"  style="color:${pastelPairFromString(pubkey)?.dark};">${monitor.pubkey}</div>`
         profile += '</div>'
         profile += '</div>'
         return profile

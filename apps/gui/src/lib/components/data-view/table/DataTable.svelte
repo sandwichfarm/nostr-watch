@@ -191,18 +191,23 @@
 <!-- <pre>{JSON.stringify($config.filtersShow, null, 2)}</pre> -->
 
 {#if tableInstance !== null}
-    <div class="relative z-0 px-4 shadow-md my-4">
+    <div class="relative z-0 shadow-md my-4">
+
+        <div id="dataViewTopBar" class="border-t-[1px] border-b-[1px] my-2">
         <!-- **Search Input for Global Filtering** -->
         <Input
             type="text"
             placeholder="Search"
-            class="md:ml-auto md:max-w-[300px] inline-block float-right"
+            class="md:ml-auto md:max-w-[300px] inline-block float-right mt-2 mr-2"
             bind:value={globalFilter}
             on:input={handleGlobalFilterChange}
         />
 
         <DataTableShowResults {config}  />
         <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
+
+        </div>
+
         <Popover.Root>
             <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">
                 <Badge variant="secondary" class="cursor-pointer text-sm">Column Visiblity</Badge>
@@ -222,6 +227,8 @@
                 </Tabs.Root>
             </Popover.Content>
         </Popover.Root>
+
+
 
         <!-- **Data Table Structure** -->
         <Table.Root>

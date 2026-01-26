@@ -66,10 +66,11 @@
     const loadUserPresets = () => {
         const stored = StateManager.get(USER_PRESETS_KEY) || [];
         userPresets.set(stored);
+		return stored as UserPreset[];
     };
 
     // Combined shortcuts (built-in + user)
-    $: shortcuts = [...builtInPresets, ...$userPresets.map(p => ({ ...p, isUserPreset: true }))];
+    $: shortcuts = [...$userPresets.map(p => ({ ...p, isUserPreset: true })), ...builtInPresets];
 
     const active = writable(builtInPresets[0].title);
 
@@ -118,19 +119,19 @@
     }
 
     onMount(() => {
-        loadUserPresets();
+        const storedUserPresets = loadUserPresets();
+		const allShortcuts = [...storedUserPresets.map(p => ({ ...p, isUserPreset: true })), ...builtInPresets] as any[];
 
         // Initialize from URL hash, persisted preference, or default
         if (window.location.hash) {
             const hash = window.location.hash.replace('#', '');
-            // Use builtInPresets for initial check since userPresets may not be loaded yet
-            const shortcut = builtInPresets.find(s => s.hash === hash);
+            const shortcut = allShortcuts.find(s => s.hash === hash);
             if (shortcut) setActive(shortcut);
         } else if ($page.url.pathname === "/relays") {
             // Try to load last used preset from storage
             const lastPresetTitle = StateManager.get(LAST_PRESET_KEY);
             const lastPreset = lastPresetTitle
-                ? builtInPresets.find(s => s.title === lastPresetTitle)
+                ? allShortcuts.find(s => s.title === lastPresetTitle)
                 : null;
 
             if (lastPreset) {
@@ -142,11 +143,14 @@
     });
 
 	$: dropdownOptions = shortcuts.map((shortcut) => {
+		const isUserPreset = Boolean(shortcut.isUserPreset);
 		return {
 			value: shortcut.title,
 			label: shortcut.title,
-			searchText: shortcut.isUserPreset ? "user" : "built-in",
-			meta: { isUserPreset: Boolean(shortcut.isUserPreset) },
+			group: isUserPreset ? "user" : "built-in",
+			searchText: isUserPreset ? "user" : "built-in",
+			className: isUserPreset ? "font-medium text-primary" : undefined,
+			meta: { isUserPreset },
 		} satisfies DropdownSelectOption;
 	});
 
@@ -168,6 +172,9 @@
 >
 	<svelte:fragment slot="optionRight" let:option>
 		{#if option?.meta?.isUserPreset}
+			<span class="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-sm bg-primary/15 text-primary">
+				user
+			</span>
 			<button
 				type="button"
 				class="ml-2 px-1 opacity-50 hover:opacity-100 hover:text-red-300"

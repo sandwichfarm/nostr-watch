@@ -6,8 +6,10 @@
   export type DropdownSelectOption<T extends string = string> = {
     value: T;
     label: string;
+    group?: string;
     searchText?: string;
     disabled?: boolean;
+    className?: string;
     meta?: any;
   };
 
@@ -55,6 +57,26 @@
       })
     : options;
 
+  type RenderItem =
+    | { kind: "separator"; key: string }
+    | { kind: "option"; key: string; option: DropdownSelectOption; optionIndex: number };
+
+  $: renderItems = (() => {
+    const items: RenderItem[] = [];
+    let prevGroup: string | undefined = undefined;
+    for (let idx = 0; idx < filteredOptions.length; idx++) {
+      const opt = filteredOptions[idx];
+      const nextGroup = opt?.group ?? "";
+      const prev = prevGroup ?? nextGroup;
+      if (idx > 0 && nextGroup !== prev) {
+        items.push({ kind: "separator", key: `sep-${idx}-${prev}-${nextGroup}` });
+      }
+      items.push({ kind: "option", key: `opt-${opt.value}`, option: opt, optionIndex: idx });
+      prevGroup = nextGroup;
+    }
+    return items;
+  })();
+
   $: selected = options.find((opt) => opt.value === value) ?? null;
   $: display = selected?.label ?? placeholder;
   $: summaryText = `${label}: ${display}`;
@@ -71,12 +93,19 @@
     filterEl?.select?.();
   }
 
+  async function focusActiveOption() {
+    await tick();
+    const idx = activeIndex >= 0 ? activeIndex : 0;
+    queueMicrotask(() => optionEls[idx]?.focus?.());
+  }
+
   async function openDropdown() {
     if (disabled) return;
     open = true;
     filterText = "";
     activeIndex = findSelectedIndex();
-    await focusFilter();
+    if (showFilter) await focusFilter();
+    else await focusActiveOption();
   }
 
   function closeDropdown({ restoreFocus = true } = {}) {
@@ -96,9 +125,21 @@
 
   function moveActive(delta: number) {
     if (!filteredOptions.length) return;
-    const next = Math.max(0, Math.min(filteredOptions.length - 1, activeIndex + delta));
-    activeIndex = next;
-    queueMicrotask(() => optionEls[next]?.focus?.());
+
+    const max = filteredOptions.length - 1;
+    let next = activeIndex;
+    if (next < 0) next = delta > 0 ? -1 : max + 1;
+
+    for (let i = 0; i < filteredOptions.length; i++) {
+      next = Math.max(0, Math.min(max, next + delta));
+      const opt = filteredOptions[next];
+      if (opt && !opt.disabled) {
+        activeIndex = next;
+        queueMicrotask(() => optionEls[next]?.focus?.());
+        return;
+      }
+      if ((delta < 0 && next === 0) || (delta > 0 && next === max)) return;
+    }
   }
 
   function onSummaryKeydown(e: KeyboardEvent) {
@@ -133,13 +174,17 @@
     if (e.key === "Home") {
       e.preventDefault();
       activeIndex = 0;
-      queueMicrotask(() => optionEls[0]?.focus?.());
+      // Skip disabled entries.
+      if (filteredOptions[0]?.disabled) moveActive(1);
+      else queueMicrotask(() => optionEls[0]?.focus?.());
       return;
     }
     if (e.key === "End") {
       e.preventDefault();
       activeIndex = Math.max(0, filteredOptions.length - 1);
-      queueMicrotask(() => optionEls[activeIndex]?.focus?.());
+      // Skip disabled entries.
+      if (filteredOptions[activeIndex]?.disabled) moveActive(-1);
+      else queueMicrotask(() => optionEls[activeIndex]?.focus?.());
       return;
     }
     if (e.key === "Enter" && activeIndex >= 0) {
@@ -241,7 +286,7 @@
       {#if showFilter}
         <div class="px-3 pb-2">
           <Input
-            bind:this={filterEl}
+            bind:input={filterEl}
             value={filterText}
             on:input={(e) => (filterText = (e.currentTarget as HTMLInputElement).value)}
             placeholder={filterPlaceholder}
@@ -262,25 +307,30 @@
         {#if filteredOptions.length === 0}
           <div class="px-2 py-2 text-xs opacity-60">{emptyText}</div>
         {:else}
-          {#each filteredOptions as opt, index (opt.value)}
-            <button
-              bind:this={optionEls[index]}
-              type="button"
-              role="option"
-              aria-selected={opt.value === value}
-              disabled={disabled || opt.disabled}
-              class={cn(
-                "nw-dropdown__option w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-left",
-                opt.value === value && "bg-accent text-accent-foreground",
-                index === activeIndex && "bg-accent/70",
-                !(disabled || opt.disabled) && "hover:bg-accent hover:text-accent-foreground"
-              )}
-              on:click={() => selectValue(opt.value)}
-              on:mouseenter={() => (activeIndex = index)}
-            >
-              <span class="flex-1">{opt.label}</span>
-              <slot name="optionRight" option={opt} />
-            </button>
+          {#each renderItems as item (item.key)}
+            {#if item.kind === "separator"}
+              <div class="mx-2 my-1 border-t border-border/60" role="separator" aria-hidden="true" />
+            {:else}
+              <button
+                bind:this={optionEls[item.optionIndex]}
+                type="button"
+                role="option"
+                aria-selected={item.option.value === value}
+                disabled={disabled || item.option.disabled}
+                class={cn(
+                  "nw-dropdown__option w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-left",
+                  item.option.className,
+                  item.option.value === value && "bg-accent text-accent-foreground",
+                  item.optionIndex === activeIndex && "bg-accent/70",
+                  !(disabled || item.option.disabled) && "hover:bg-accent hover:text-accent-foreground"
+                )}
+                on:click={() => selectValue(item.option.value)}
+                on:mouseenter={() => (activeIndex = item.optionIndex)}
+              >
+                <span class="flex-1">{item.option.label}</span>
+                <slot name="optionRight" option={item.option} />
+              </button>
+            {/if}
           {/each}
         {/if}
       </div>

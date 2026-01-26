@@ -20,6 +20,7 @@
 	    tabState,
 	    hasBeenBootstrapped,
 	    isSeeded,
+	    opfsStatus,
 	  } from '$lib/stores/app';
 	  import { relayCheckAggregates } from '$lib/stores';
 	  import { showDebugButton } from '$lib/stores/preferences';
@@ -117,15 +118,17 @@
     await route66.ready();
     // completeBootActivity('init');
 
-    dataRegisterInit();
-    const datas: string[] = ['sync:cache'];
-    if (get(tabState) === 'leader') {
-      datas.push(hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
-    }
-    void get(dataRegister)
-      .require(datas)
-      .catch((err) => console.error('[DataRegister] require failed', err));
-  }
+	    dataRegisterInit();
+	    const datas: string[] = ['sync:cache'];
+	    if (get(tabState) === 'leader') {
+	      const opfs = get(opfsStatus);
+	      const forceFullSync = opfs === 'fallback' || opfs === 'error';
+	      datas.push(forceFullSync ? 'sync:all-force' : hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
+	    }
+	    void get(dataRegister)
+	      .require(datas)
+	      .catch((err) => console.error('[DataRegister] require failed', err));
+	  }
 
   const initServices = async () => {
     userService.set(new UserService((await instance()).adapters));

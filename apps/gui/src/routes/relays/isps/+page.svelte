@@ -62,10 +62,10 @@
     });
 
 </script>
-<main class="mt-20"> 
+<main class="mt-14"> 
 <!-- <pre>{JSON.stringify(Array.from($ispCounts), null, 2)}</pre> -->
 {#if $ready}
-    <RelayDimensions />
+    <RelayDimensions class="ml-4" />
     <DataTable {data} {config} {dataKey} />
 {/if}
 </main>

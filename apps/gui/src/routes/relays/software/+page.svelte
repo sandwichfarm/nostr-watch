@@ -61,10 +61,10 @@
     });
 
 </script>
-<main class="mt-20"> 
+<main class="mt-14"> 
 <!-- <pre>{JSON.stringify($data, null, 4)}</pre> -->
 {#if $ready}
-    <RelayDimensions />
+    <RelayDimensions class="ml-4" />
     <DataViewRoot {data} {config} key={dataKey} activeView={writable("table")} />
     <!-- <DataTable {data} {config} {dataKey} /> -->
 {/if}

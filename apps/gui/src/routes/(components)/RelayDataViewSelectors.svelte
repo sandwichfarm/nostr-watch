@@ -20,7 +20,8 @@
 	export { className as class };
 </script>
 
-<div class={cn("flex flex-nowrap items-center gap-3 overflow-x-auto px-3", className)}>
+<!-- NOTE: Avoid `overflow-x-auto` here; it clips absolutely-positioned dropdown panels. -->
+<div class={cn("flex flex-nowrap items-center gap-3 px-3 overflow-visible", className)}>
 	{#if showDimension}
 		<RelayDimensions />
 	{/if}

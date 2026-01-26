@@ -621,7 +621,8 @@
                     <div class="w-max-[100px] mb-2">
                         <Input
                             type="text"
-                            placeholder={`Search ${filter.prettyName}`}
+                            class="font-mono lowercase"
+                            placeholder={`search ${filter.prettyName}`}
                             on:input={(e) => {
                                 if (e.target instanceof HTMLInputElement) {
                                     const searchTerm = e.target.value;

@@ -597,13 +597,13 @@
     disabled={rootDisabled} 
 >
     {#each $relayFilters as filter (filter.key)}
-        <Accordion.Item class="accordion-item max-h-none overflow-x-auto" value={filter.key}>
+        <Accordion.Item class="accordion-item max-h-none overflow-x-auto font-mono" value={filter.key}>
             <Accordion.Header class="py-2 px-2 border-b-2">
                 <Accordion.Trigger>
                     <!-- **Accordion Trigger Layout with Active Filters Badge and List** -->
-                    <div class="flex items-center w-full text-sm py-3 px-2">
+                    <div class="flex items-center w-full py-3 px-2">
                         <!-- Filter Title -->
-                        <span class="flex-shrink-0 overflow-hidden text-ellipsis font-mono">
+                        <span class="flex-shrink-0 overflow-hidden text-ellipsis font-mono text-xs lowercase">
                             {filter.prettyName}
                         </span>
                         

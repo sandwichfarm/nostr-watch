@@ -259,8 +259,8 @@
                 <!-- **Search Input for Global Filtering** -->
                 <Input
                     type="text"
-                    placeholder="Search"
-                    class="md:ml-auto md:max-w-[300px] inline-block float-right"
+                    placeholder="search"
+                    class="lowercase font-mono md:ml-auto md:max-w-[300px] inline-block float-right"
                     bind:value={globalFilter}
                     on:input={handleGlobalFilterChange}
                 />
@@ -360,7 +360,7 @@
                                             </Badge>
                                         </Table.Cell>
                                     {:else}
-                                        <Table.Cell>
+                                        <Table.Cell class="font-mono">
                                             {#if $config.tableFormatters?.[column.key]}
                                                 {@html $config.tableFormatters[column.key](row[column.key], row)}
                                             {:else}

@@ -19,6 +19,95 @@ import { nip11ValidationErrorCount } from '$stores/nip11-validations';
 
 import pickaxe from 'lucide-svelte/icons/pickaxe';
 
+/**
+ * Deterministic pastel color pair from an arbitrary string.
+ * Returns two pastels: one tuned for light UI, one for dark UI.
+ */
+function pastelPairFromString(input) {
+  const str = String(input);
+  const bytes = utf8Bytes(str);
+  const seed = fnv1a32(bytes);
+  const rand = mulberry32(seed);
+
+  // Base "color identity" from the string
+  const hue = Math.floor(rand() * 360);
+
+  // Normalize into pastel territory (muted saturation + high-ish lightness)
+  const baseSat = 45 + rand() * 20;        // 45–65%
+  const lightL  = 82 + rand() * 8;         // 82–90% (very light pastel)
+  const darkL   = 62 + rand() * 10;        // 62–72% (still pastel, works on dark UI)
+  const darkSat = Math.max(35, baseSat - 10); // 35–55% (slightly more muted)
+
+  return {
+    light: hslToHex(hue, baseSat, lightL),
+    dark:  hslToHex(hue, darkSat, darkL),
+  };
+}
+
+function utf8Bytes(str) {
+  if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(str);
+
+  // Fallback UTF‑8 encoder (covers full Unicode)
+  const out = [];
+  for (const ch of str) {
+    const cp = ch.codePointAt(0);
+    if (cp <= 0x7f) out.push(cp);
+    else if (cp <= 0x7ff) out.push(0xc0 | (cp >> 6), 0x80 | (cp & 0x3f));
+    else if (cp <= 0xffff)
+      out.push(
+        0xe0 | (cp >> 12),
+        0x80 | ((cp >> 6) & 0x3f),
+        0x80 | (cp & 0x3f)
+      );
+    else
+      out.push(
+        0xf0 | (cp >> 18),
+        0x80 | ((cp >> 12) & 0x3f),
+        0x80 | ((cp >> 6) & 0x3f),
+        0x80 | (cp & 0x3f)
+      );
+  }
+  return Uint8Array.from(out);
+}
+
+// FNV-1a 32-bit hash
+function fnv1a32(bytes) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) {
+    h ^= bytes[i];
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+// Deterministic PRNG from a 32-bit seed
+function mulberry32(a) {
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// HSL (degrees, %, %) -> #RRGGBB
+function hslToHex(h, s, l) {
+  s /= 100;
+  l /= 100;
+
+  const k = (n) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+
+  const r = Math.round(255 * f(0));
+  const g = Math.round(255 * f(8));
+  const b = Math.round(255 * f(4));
+
+  return "#" + [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
 let $monitorsMap: Map<string, Monitor>;
 
 monitorsMap.subscribe(value => $monitorsMap = value)
@@ -291,9 +380,11 @@ export const dataFormatters: DataFormatters = {
 }
 
 export const tableFormatters: Formatters = {
+    
+
     relay: (relay: string, row: any) => {
         const { icon } = row;
-        const formatted = `<span class="inline-block my-1 text-sm font-mono py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
+        const formatted = `<span style="color: ${pastelPairFromString(relay)?.dark};" class="inline-block my-1 text-sm font-mono py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
         const iconHtml = icon
             ? `<img src="${icon}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`
             : '<span class="inline-block mr-2 h-6 w-6"></span>';
@@ -331,32 +422,32 @@ export const tableFormatters: Formatters = {
     },
     dd: (dd: DD ) => {
         if(!dd?.lat || !dd?.lon) return '';
-        return `<span class="text-xs font-bold white/50">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`
+        return `<span class="text-xs font-bold white/50 font-mono">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`
     },
     lastSeen: (lastSeen) => {
         if(lastSeen < 0) {
             return ''
         }
-        return `<span class="text-xs">${timeAgo(lastSeen*1000)}</span>`;
+        return `<span class="text-xs font-mono">${timeAgo(lastSeen*1000)}</span>`;
     },
     seenTimes: (seenTimes) => {
-        return `<span class="rounded-full bg-white/20 dark:bg-black/20 py-1 px-2 font-bold">${seenTimes}</span>`
+        return `<span class="rounded-full bg-white/20 dark:bg-black/20 py-1 px-2 font-bold font-mono">${seenTimes}</span>`
     },
     rtt: (rtt) => {
         const wholeNum = Math.round(rtt)
         if(wholeNum <= 0) return '';
         const rttColor = wholeNum < 500? 'text-green-400': wholeNum < 1000? 'text-orange-400/80': 'text-red-600';
-        return `<span class="text-xs font-mono font-bold ${rttColor}">${wholeNum}ms`;
+        return `<span class="font-mono text-xs font-mono font-bold ${rttColor}">${wholeNum}ms`;
     }, 
     ipv4: (ipv4) => {
         if(!ipv4) return '';
-        return ipv4.map(ip => `<span class="p-1 mr-1 block text-xs clear-right">${ip}</span>`).join('');
+        return ipv4.map(ip => `<span class="p-1 mr-1 block text-xs clear-right font-mono">${ip}</span>`).join('');
     },
     nip11ValidationErrors: (errorsCount) => {
         if(errorsCount === 0) 
             return ``; 
         else 
-            return `<span class="text-xs font-bold bg-red-600/50 px-2 py-1 rounded-full inline-block">
+            return `<span class="font-mono text-xs font-bold bg-red-600/50 px-2 py-1 rounded-full inline-block">
                 ${errorsCount}
                 </span>`;    
     },

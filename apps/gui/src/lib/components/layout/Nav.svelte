@@ -3,10 +3,10 @@
     import { derived } from 'svelte/store';
     
     export let navLinks = [
-      { href: '/', label: 'relays' },
+      // { href: '/', label: 'relays' },
       // { href: '/relays', label: 'relays' },
-      { href: '/operators', label: 'operators' },
-      { href: '/monitors', label: 'monitors' },
+      // { href: '/operators', label: 'operators' },
+      // { href: '/monitors', label: 'monitors' },
       { href: '/preferences', label: '⚙', class: 'text-xl' }
     ];
 

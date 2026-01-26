@@ -548,10 +548,10 @@
 		<Popover.Trigger asChild let:builder>
 			<Button builders={[builder]} size="sm" variant="secondary" class={toolbarButtonClass}>Filters</Button>
 		</Popover.Trigger>
-		<Popover.Content class="z-[5999] mt-3 min-w-[600px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg">
+		<Popover.Content class="font-mono z-[5999] mt-3 min-w-[600px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg">
 			<Tabs.Root value="visiblity" class="">
 				<Tabs.List>
-					<Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>
+					<Tabs.Trigger value="visiblity" class="font-mono">Visiblity</Tabs.Trigger>
 					<Tabs.Trigger value="order">Order</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="visiblity" class="py-4 px-8">

@@ -246,7 +246,7 @@
             <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">
                 <Badge variant="secondary" class="cursor-pointer text-sm">Columns</Badge>
             </Popover.Trigger>
-            <Popover.Content class="z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
+            <Popover.Content class="font-mono text-xs z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
                 <Tabs.Root value="visiblity" class="">
                     <Tabs.List>
                         <Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>

@@ -141,10 +141,19 @@
 
         justData = derived(filteredData, $filteredData => $filteredData.data);
         justColumns = derived(filteredData, $filteredData => $filteredData.columns);
-
-        // Restore sidebar collapsed state on mount
-        if (initialSidebarCollapsed && sidebarPaneApi) {
-            setTimeout(() => sidebarPaneApi?.collapse(), 1);
+        
+        // Migrate legacy per-view collapsed state to the global key.
+        if (initialSidebarSource === 'legacyKey' || initialSidebarSource === 'legacyTableConfig') {
+            let hasGlobal = false;
+            try {
+                hasGlobal = typeof StateManager.get(GLOBAL_SIDEBAR_COLLAPSED_KEY) === 'boolean';
+            } catch {}
+            if (!hasGlobal) {
+                try {
+                    StateManager.set(GLOBAL_SIDEBAR_COLLAPSED_KEY, initialSidebarCollapsed);
+                } catch {}
+                void stateManagerSet(GLOBAL_SIDEBAR_COLLAPSED_KEY, initialSidebarCollapsed);
+            }
         }
         
         return () => {
@@ -158,7 +167,9 @@
     }
 
     // Sidebar persistence key (separate from main config to avoid expensive subscription cascades)
-    const SIDEBAR_COLLAPSED_KEY = `preferences:${key}:sidebarCollapsed`;
+    // This must be global so the drawer state persists across contexts (relays/operators/monitors/etc).
+    const GLOBAL_SIDEBAR_COLLAPSED_KEY = `preferences:dataView:sidebarCollapsed`;
+    const LEGACY_SIDEBAR_COLLAPSED_KEY = `preferences:${key}:sidebarCollapsed`;
 
     const toggleSidebarPane = () => {
         // Toggle the pane - callbacks will update sidebarHidden for UI
@@ -170,40 +181,49 @@
         }
     }
 
-    // Persist sidebar state separately (called from callbacks, debounced)
-    let sidebarPersistTimeout: ReturnType<typeof setTimeout> | null = null;
+    // Persist sidebar state separately (called from callbacks).
     const persistSidebarState = (collapsed: boolean) => {
-        if (sidebarPersistTimeout) clearTimeout(sidebarPersistTimeout);
-        sidebarPersistTimeout = setTimeout(() => {
-            void stateManagerSet(SIDEBAR_COLLAPSED_KEY, collapsed);
-        }, 500);
+        // Optimistic local write so "toggle then navigate" works even in follower tabs.
+        try {
+            StateManager.set(GLOBAL_SIDEBAR_COLLAPSED_KEY, collapsed);
+        } catch {}
+        void stateManagerSet(GLOBAL_SIDEBAR_COLLAPSED_KEY, collapsed);
     };
 
-    function readInitialSidebarCollapsed(): boolean {
-        if (typeof window === 'undefined') return true;
+    type SidebarCollapsedSource = 'global' | 'legacyKey' | 'legacyTableConfig' | 'config' | 'default';
+    function readInitialSidebarCollapsed(): { collapsed: boolean; source: SidebarCollapsedSource } {
+        if (typeof window === 'undefined') return { collapsed: true, source: 'default' };
 
         // 1) New dedicated key (authoritative).
         try {
-            const stored = StateManager.get(SIDEBAR_COLLAPSED_KEY);
-            if (typeof stored === 'boolean') return stored;
+            const stored = StateManager.get(GLOBAL_SIDEBAR_COLLAPSED_KEY);
+            if (typeof stored === 'boolean') return { collapsed: stored, source: 'global' };
         } catch {}
 
-        // 2) Back-compat: older persisted tableConfig value.
+        // 2) Back-compat: older per-view dedicated key.
+        try {
+            const stored = StateManager.get(LEGACY_SIDEBAR_COLLAPSED_KEY);
+            if (typeof stored === 'boolean') return { collapsed: stored, source: 'legacyKey' };
+        } catch {}
+
+        // 3) Back-compat: older persisted tableConfig value.
         try {
             const tableConfig = StateManager.get(`preferences:${key}:tableConfig`);
             const legacy = (tableConfig as any)?.sidebarCollapsed;
-            if (typeof legacy === 'boolean') return legacy;
+            if (typeof legacy === 'boolean') return { collapsed: legacy, source: 'legacyTableConfig' };
         } catch {}
 
-        // 3) Fall back to current config value when present.
+        // 4) Fall back to current config value when present.
         const fromConfig = ($config as any)?.sidebarCollapsed;
-        if (typeof fromConfig === 'boolean') return fromConfig;
+        if (typeof fromConfig === 'boolean') return { collapsed: fromConfig, source: 'config' };
 
-        // 4) Default: collapsed.
-        return true;
+        // 5) Default: collapsed.
+        return { collapsed: true, source: 'default' };
     }
 
-    const initialSidebarCollapsed = readInitialSidebarCollapsed();
+    const initialSidebar = readInitialSidebarCollapsed();
+    const initialSidebarCollapsed = initialSidebar.collapsed;
+    const initialSidebarSource = initialSidebar.source;
 
     let sidebarHidden = initialSidebarCollapsed;
     $: isCollapsed = sidebarHidden;
@@ -216,6 +236,13 @@
 	}
 
     let loading = false 
+
+    // Apply initial collapsed state once the pane API exists.
+    let didApplyInitialSidebarState = false;
+    $: if (!didApplyInitialSidebarState && initialSidebarCollapsed && sidebarPaneApi) {
+        didApplyInitialSidebarState = true;
+        setTimeout(() => sidebarPaneApi?.collapse(), 1);
+    }
 
 	type LivenessCounts = { online: number; offline: number; dead: number } | null;
 	let livenessCounts: LivenessCounts = null;

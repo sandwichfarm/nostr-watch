@@ -546,7 +546,7 @@
 
 	<Popover.Root>
 		<Popover.Trigger asChild let:builder>
-			<Button builders={[builder]} size="sm" variant="secondary" class={toolbarButtonClass}>Filter Visibility</Button>
+			<Button builders={[builder]} size="sm" variant="secondary" class={toolbarButtonClass}>Filters</Button>
 		</Popover.Trigger>
 		<Popover.Content class="z-[5999] mt-3 min-w-[600px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg">
 			<Tabs.Root value="visiblity" class="">

@@ -11,15 +11,42 @@
     import { doBootstrap } from '$lib/stores/routines';
     import { doAggregateCache, tabState } from '$lib/stores/app';
     import { get, writable, type Writable } from 'svelte/store';
+	import type { DataViewViews } from '$lib/components/data-view/DataTableTypes';
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
 	import { bootstrapMonitorData } from '$utils/lifecycle';
 	import { dataRegister } from '$stores/data-register';
 	import DataViewRoot from '$lib/components/data-view/DataViewRoot.svelte';
+	import { HeaderConfigStore } from '$stores/header-config';
 
     const dataKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
+
+	const enabledViews: DataViewViews[] = ['table'];
+	const activeView: Writable<DataViewViews> = writable(enabledViews.length === 1 ? enabledViews[0] : 'table');
+
+	const HEADER_SELECTORS_ID = 'monitors:list';
+
+	const setHeaderSelectors = () => {
+		HeaderConfigStore.set({
+			selectors: {
+				id: HEADER_SELECTORS_ID,
+				className: 'ml-2',
+				showPresets: false,
+				showView: true,
+				enabledViews,
+				activeView,
+			},
+		});
+	};
+
+	const clearHeaderSelectors = () => {
+		HeaderConfigStore.update((current) => {
+			if (current.selectors?.id !== HEADER_SELECTORS_ID) return current;
+			return { ...current, selectors: null };
+		});
+	};
 
 	const setConfig = () => {
 		
@@ -44,6 +71,7 @@
 
     onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+		setHeaderSelectors();
         doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
@@ -55,6 +83,10 @@
             .require(keys)
             .catch((err) => console.error('[DataRegister] require failed', err));
     });
+
+	onDestroy(() => {
+		clearHeaderSelectors();
+	});
 
     $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: any) => { return !monitor.active && monitor.enabled }).length;
     $: countEnabledMonitors = $monitorRows.filter((monitor: any) => monitor.enabled).length;
@@ -112,6 +144,9 @@
             {config}
             data={monitorRows}
             key={dataKey}
+			{enabledViews}
+			{activeView}
+			showViewSelector={false}
             actionsComponent={MonitorsActions}
         />
     {/if}

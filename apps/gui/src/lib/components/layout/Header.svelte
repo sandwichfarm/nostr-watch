@@ -10,23 +10,23 @@
 
     $: isHomepage = $page.url.pathname === '/';
     $: disabledHrefs = navDisabled ? ['/relays', '/operators', '/monitors'] : [];
+
+    $: selectors = $HeaderConfigStore.selectors;
 </script>
 
 <header id="site-header">
     {#if !$unsupported}
         <h1>nostr.watch</h1>
         
-        {#if $HeaderConfigStore.selectors}
-            <RelayDataViewSelectors
-                class={$HeaderConfigStore.selectors.className}
-                showDimension={$HeaderConfigStore.selectors.showDimension}
-                showPresets={$HeaderConfigStore.selectors.showPresets}
-                showView={$HeaderConfigStore.selectors.showView}
-                enabledViews={$HeaderConfigStore.selectors.enabledViews}
-                activeView={$HeaderConfigStore.selectors.activeView}
-                onPresetSelect={$HeaderConfigStore.selectors.onPresetSelect}
-            />
-        {/if}
+        <RelayDataViewSelectors
+            class={selectors?.className ?? 'ml-2'}
+            showDimension={true}
+            showPresets={selectors?.showPresets ?? false}
+            showView={selectors?.showView ?? false}
+            enabledViews={selectors?.enabledViews}
+            activeView={selectors?.activeView}
+            onPresetSelect={selectors?.onPresetSelect}
+        />
 
         <Nav {disabledHrefs} />
         

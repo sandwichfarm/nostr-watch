@@ -234,22 +234,17 @@
 
         <div id="dataViewTopBar" class="border-b-[1px] mb-2">
         <!-- **Search Input for Global Filtering** -->
-        <Input
+        <!-- <Input
             type="text"
             placeholder="Search"
             class="md:ml-auto md:max-w-[300px] inline-block float-right mt-2 mr-2"
             bind:value={globalFilter}
             on:input={handleGlobalFilterChange}
-        />
-
-        <DataTableShowResults {config}  />
-        <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
-
-        </div>
+        /> -->
 
         <Popover.Root>
             <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">
-                <Badge variant="secondary" class="cursor-pointer text-sm">Column Visiblity</Badge>
+                <Badge variant="secondary" class="cursor-pointer text-sm">Columns</Badge>
             </Popover.Trigger>
             <Popover.Content class="z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
                 <Tabs.Root value="visiblity" class="">
@@ -266,6 +261,13 @@
                 </Tabs.Root>
             </Popover.Content>
         </Popover.Root>
+
+        <DataTableShowResults {config}  />
+        <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
+
+        </div>
+
+
 
 
 

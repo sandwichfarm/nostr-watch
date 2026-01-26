@@ -4,7 +4,7 @@
 	import DropdownSelect, { type DropdownSelectOption } from "$lib/components/partials/DropdownSelect.svelte";
 	import { cn } from "$lib/utils/ui.js";
 
-	type DimensionKey = "relay" | "software" | "geo" | "isps";
+	type DimensionKey = "relay" | "operators" | "monitors" | "software" | "geo" | "isps";
 
 	const options: DropdownSelectOption<DimensionKey>[] = [
 		{ value: "relay", label: "relay", searchText: "relays", meta: { href: "/" } },
@@ -18,6 +18,8 @@
 	$: pathname = $page.url.pathname;
 	$: current = ((): DimensionKey => {
 		if (pathname === "/" || pathname === "/relays") return "relay";
+		if (pathname.startsWith("/operators")) return "operators";
+		if (pathname.startsWith("/monitors")) return "monitors";
 		if (pathname.startsWith("/relays/software")) return "software";
 		if (pathname.startsWith("/relays/geography")) return "geo";
 		if (pathname.startsWith("/relays/isps")) return "isps";

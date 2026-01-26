@@ -201,7 +201,7 @@
 </script>
 
 
-<main class="mt-12"> 
+<main class="mt-8"> 
 	{#if $ready}
 	<!-- I need this to fade in and out every time I trigger pseudo transition, without unmounting the component -->
 	<div

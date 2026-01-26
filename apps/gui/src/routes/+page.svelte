@@ -193,7 +193,7 @@
 </script>
 
 
-<main class="mt-12"> 
+<main class="mt-8"> 
 	{#if $ready}
 
   <!-- <Counts /> -->

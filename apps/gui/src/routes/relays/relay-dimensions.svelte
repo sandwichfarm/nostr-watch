@@ -2,6 +2,7 @@
 	import { goto } from "$app/navigation";
 	import { page } from "$app/stores";
 	import DropdownSelect, { type DropdownSelectOption } from "$lib/components/partials/DropdownSelect.svelte";
+	import { cn } from "$lib/utils/ui.js";
 
 	type DimensionKey = "relay" | "software" | "geo" | "isps";
 
@@ -28,6 +29,9 @@
 		if (!href) return;
 		goto(href);
 	};
+
+	let className: string | undefined = undefined;
+	export { className as class };
 </script>
 
-<DropdownSelect class="ml-3 opacity-70" label="Dimension" value={current} {options} on:change={(e) => onDimensionChange(e.detail.value)} />
+<DropdownSelect class={cn(className)} label="Dimension" value={current} {options} on:change={(e) => onDimensionChange(e.detail.value)} />

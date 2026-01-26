@@ -25,6 +25,9 @@
     export let actionsComponent: any | undefined = undefined;
 
     export let sidebarPaneApi: Resizable.PaneApi | null = null;
+
+	export let showViewSelector: boolean = true;
+	export let viewSelectorClass: string | undefined = undefined;
     
     let keysEnable: string[];
 
@@ -184,7 +187,11 @@
     $: isCollapsed = sidebarHidden;
     $: activeFilters = Object.keys($filters || {}).length
 
-    export let activeView: Writable<'table' | 'grid' | 'map'>;
+	export let activeView: Writable<DataViewViews> = writable("table");
+
+	$: if (enabledViews?.length && !enabledViews.includes($activeView)) {
+		activeView.set(enabledViews[0]);
+	}
 
     let loading = false 
 
@@ -215,9 +222,11 @@
 	}
 </script>
 
-<DataViewSelector {enabledViews} bind:activeView />
+{#if showViewSelector}
+	<DataViewSelector {enabledViews} {activeView} class={viewSelectorClass} />
+{/if}
 
-<Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
+<Resizable.PaneGroup direction="horizontal" class="min-h-[100%] z-1">
 
     <Resizable.Pane defaultSize={75}>
         {#if $filteredData && $justColumns?.length}

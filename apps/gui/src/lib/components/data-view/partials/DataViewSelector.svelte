@@ -2,9 +2,12 @@
 	import { writable, type Writable } from "svelte/store";
 	import type { DataViewViews } from "../DataTableTypes";
 	import DropdownSelect, { type DropdownSelectOption } from "$lib/components/partials/DropdownSelect.svelte";
+	import { cn } from "$lib/utils/ui.js";
 
-    export let enabledViews: DataViewViews[] | undefined = ['table'];
-    export const activeView: Writable<DataViewViews> = writable(enabledViews.length===1? enabledViews[0]: 'table');
+	export let enabledViews: DataViewViews[] | undefined = ["table"];
+	export let activeView: Writable<DataViewViews> = writable(
+		enabledViews?.length === 1 ? enabledViews[0] : "table"
+	);
 
 	const viewLabels: Record<DataViewViews, string> = {
 		table: "Table",
@@ -18,11 +21,14 @@
 			label: viewLabels[view] ?? view,
 		} satisfies DropdownSelectOption<DataViewViews>;
 	});
+
+	let className: string | undefined = undefined;
+	export { className as class };
 </script>
 
 {#if enabledViews && enabledViews.length > 1}
 	<DropdownSelect
-		class="ml-3 opacity-70"
+		class={cn(className)}
 		label="View"
 		value={$activeView}
 		options={viewOptions}

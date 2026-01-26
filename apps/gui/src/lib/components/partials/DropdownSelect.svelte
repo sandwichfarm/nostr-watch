@@ -195,13 +195,21 @@
 <details
   bind:this={detailsEl}
   open={open}
-  class={cn("nw-dropdown relative inline-block text-sm", className)}
+  class={cn(
+    "nw-dropdown relative inline-block text-sm",
+    // When callers pass `opacity-*` for a dimmed trigger, it also affects the
+    // panel. Force full opacity while open.
+    open && "!opacity-100",
+    // Ensure the open dropdown stacks above table headers/content.
+    open && "z-[6500]",
+    className
+  )}
   on:toggle={handleToggle}
 >
   <summary
     bind:this={summaryEl}
     class={cn(
-      "nw-dropdown__summary inline-flex items-center gap-2 rounded-sm px-2 py-1 bg-black/5 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-black/20 select-none",
+      "nw-dropdown__summary inline-flex items-center gap-2 rounded-sm px-2 py-1 border border-border bg-popover text-popover-foreground hover:bg-muted select-none",
       disabled && "opacity-50 cursor-not-allowed pointer-events-none"
     )}
     aria-haspopup="listbox"
@@ -222,7 +230,7 @@
   {#if open}
     <div
       class={cn(
-        "nw-dropdown__panel absolute z-[2000] mt-2 min-w-[260px] rounded-md border border-white/10 bg-black/80 backdrop-blur-lg text-white shadow-lg",
+        "nw-dropdown__panel absolute mt-2 min-w-[260px] rounded-md border border-border bg-popover text-popover-foreground shadow-lg",
         align === "right" ? "right-0" : "left-0"
       )}
       in:flyAndScale={{ y: -6, start: 0.98, duration: 140 }}
@@ -237,7 +245,7 @@
             value={filterText}
             on:input={(e) => (filterText = (e.currentTarget as HTMLInputElement).value)}
             placeholder={filterPlaceholder}
-            class="h-8 bg-white/5 border-white/10 text-white placeholder:text-white/40"
+            class="h-8 bg-background"
             disabled={disabled}
             aria-label={`${label} filter`}
           />
@@ -256,16 +264,16 @@
         {:else}
           {#each filteredOptions as opt, index (opt.value)}
             <button
-              bind:this={(el) => (optionEls[index] = el)}
+              bind:this={optionEls[index]}
               type="button"
               role="option"
               aria-selected={opt.value === value}
               disabled={disabled || opt.disabled}
               class={cn(
                 "nw-dropdown__option w-full flex items-center gap-2 rounded-sm px-2 py-1.5 text-left",
-                opt.value === value && "bg-white/15",
-                index === activeIndex && "bg-white/10",
-                !(disabled || opt.disabled) && "hover:bg-white/15"
+                opt.value === value && "bg-accent text-accent-foreground",
+                index === activeIndex && "bg-accent/70",
+                !(disabled || opt.disabled) && "hover:bg-accent hover:text-accent-foreground"
               )}
               on:click={() => selectValue(opt.value)}
               on:mouseenter={() => (activeIndex = index)}
@@ -318,9 +326,6 @@
     pointer-events: none;
     left: -9999px;
     top: 0;
-  }
-  .nw-dropdown__panel {
-    @apply bg-black/80 dark:bg-black/80;
   }
   .nw-dropdown__option:disabled {
     @apply opacity-40 cursor-not-allowed;

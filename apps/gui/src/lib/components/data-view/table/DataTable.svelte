@@ -191,7 +191,7 @@
 <!-- <pre>{JSON.stringify($config.filtersShow, null, 2)}</pre> -->
 
 {#if tableInstance !== null}
-    <div class="px-4 shadow-md my-4">
+    <div class="relative z-0 px-4 shadow-md my-4">
         <!-- **Search Input for Global Filtering** -->
         <Input
             type="text"

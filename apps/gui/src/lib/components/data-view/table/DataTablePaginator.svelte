@@ -8,7 +8,7 @@
 
 <div class="inline-block">
         
-    <div class="flex items-center gap-2 py-2">
+    <div class="flex items-center gap-2">
         <div class="flex items-center gap-0">
             <Button
                 size="icon"

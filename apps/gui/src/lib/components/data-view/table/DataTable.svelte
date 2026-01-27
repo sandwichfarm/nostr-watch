@@ -230,9 +230,9 @@
 <!-- <pre>{JSON.stringify($config.filtersShow, null, 2)}</pre> -->
 
 {#if tableInstance !== null}
-    <div class="relative z-0 shadow-md mb-4">
+    <div class="relative z-0 shadow-md p-0 m-0">
 
-        <div id="dataViewTopBar" class="border-b-[1px] mb-2">
+        <div id="dataViewTopBar" class="border-b-[1px]">
         <!-- **Search Input for Global Filtering** -->
         <!-- <Input
             type="text"
@@ -244,7 +244,7 @@
 
         <Popover.Root>
             <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">
-                <Badge variant="secondary" class="cursor-pointer text-sm">Columns</Badge>
+                <Badge variant="secondary" class="cursor-pointer text-xs">columns</Badge>
             </Popover.Trigger>
             <Popover.Content class="font-mono text-xs z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
                 <Tabs.Root value="visiblity" class="">
@@ -279,9 +279,9 @@
                     <svelte:component this={actionsComponent} view='head' />
                     {/if}
                     {#each tableInstance?.columns as column (column.id)}
-                        <Table.Head>
+                        <Table.Head class="bg-purple-700/5">
                             <button
-                                class="flex items-center"
+                                class="flex items-center lowercase text-xs font-mono"
                                 on:click={() => { 
                                     if(tableInstance) {
                                         tableInstance.toggleSort(column.id) 

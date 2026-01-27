@@ -56,15 +56,18 @@
     }
 
     onMount(async () => {
-        $dataRegister.require(
-            ['sync:relay:nip11'],
-            {'sync:relay:nip11': [relayUrl]}
-        ).then( async () => {
-            await ready();
-            if(timedOut) return;
-            validate()
-            console.log('synckey', nip11SyncKey)
-        })
+        void $dataRegister
+            .require(
+                ['sync:relay:nip11'],
+                {'sync:relay:nip11': [relayUrl]}
+            )
+            .then(async () => {
+                await ready();
+                if(timedOut) return;
+                validate()
+                console.log('synckey', nip11SyncKey)
+            })
+            .catch((err) => console.error('[DataRegister] require failed', err));
         
     });
 

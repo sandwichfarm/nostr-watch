@@ -141,6 +141,7 @@ export class RechartsAdapter implements ChartAdapter<RechartsConfig, null> {
         end,
         duration,
         status: period.online ? 'Online' : 'Offline',
+        fill: period.online ? colors.online : colors.offline,
         rtt: period.rtt,
         formattedStart: new Date(start).toLocaleString(),
         formattedEnd: new Date(end).toLocaleString(),
@@ -190,10 +191,9 @@ export class RechartsAdapter implements ChartAdapter<RechartsConfig, null> {
         Bar: [{
           dataKey: 'duration',
           name: 'Duration (minutes)',
-          fill: colors.primary,
-          isAnimationActive: options?.animation !== false,
-          // Custom cell coloring based on status
-          // Note: shape function would need to be added at runtime with JSX
+          // Note: fill color is provided in the data for each bar
+          // Consumers should handle this via Cell components in their React code
+          isAnimationActive: options?.animation !== false
         }],
       },
       containerProps: {

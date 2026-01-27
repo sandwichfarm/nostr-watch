@@ -14,11 +14,21 @@
     export let placeholderText: string | undefined;
 
     let relayData: Readable<any[]> = derived([relayCheckAggregates, relaysForMiniSearch], ([$relayCheckAggregates, $relaysForMiniSearch]) => {
-        return  $relayCheckAggregates.length? 
-                    $relayCheckAggregates: 
-                    $relaysForMiniSearch?.length? 
-                        $relaysForMiniSearch:
-                        []
+        const onlineFromLive = $relayCheckAggregates
+            .filter((item: any) => item?.liveness === 'online')
+            .map((item: any) => ({
+                relay: item.relay,
+                operatorPubkey: item.operatorPubkey,
+                isp: item.isp,
+                supportedNips: item.supportedNips,
+                id: item.relay,
+            }));
+
+        return onlineFromLive.length
+            ? onlineFromLive
+            : $relaysForMiniSearch?.length
+                ? $relaysForMiniSearch
+                : [];
     })
 </script>
 

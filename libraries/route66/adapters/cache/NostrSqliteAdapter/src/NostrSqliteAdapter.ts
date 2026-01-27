@@ -1,6 +1,6 @@
 /// <reference types="vite/types/importMeta.d.ts" />
 
-import { delay, isBrowser } from "@nostrwatch/utils";
+import { delay, getGlobalLogLevel, isBrowser, normalizeLogLevel, type LogLevel } from "@nostrwatch/utils";
 
 import { AdapterCacheWorkerCommand, CacheAdapter, IAdapterCacheWorker, ICacheAdapter } from "@nostrwatch/route66/core";
 import { IEvent } from "@nostrwatch/route66/models";
@@ -35,14 +35,59 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
     private _relay?: WorkerRelayInterface;
     protected _ready: boolean = false;
     handleSetupInternally: boolean = true;
+    private logLevelListener?: (event: Event) => void;
 
     constructor(worker?: Worker | URL) {
         super(worker)
         // ////console.log('NostrSqliteAdapter constructor')
+        if (isBrowser()) {
+            this.logLevelListener = (event: Event) => {
+                const level = normalizeLogLevel(
+                    (event as CustomEvent<LogLevel>).detail,
+                    getGlobalLogLevel()
+                );
+                void this._relay?.setLogLevel(level).catch(() => {});
+            };
+            try {
+                window.addEventListener('nostrwatch:loglevel', this.logLevelListener);
+            } catch {}
+        }
     }
 
-    destroy(){
-       this.abort()
+    async destroy(){
+       await this.shutdown();
+    }
+
+    /**
+     * Properly shutdown the adapter by closing the SQLite database before terminating the worker.
+     * This ensures the OPFS SAH Pool is released properly.
+     * This method is idempotent - calling it multiple times is safe.
+     */
+    async shutdown(): Promise<void> {
+        const relay = this._relay;
+        if (this.logLevelListener) {
+            try {
+                window.removeEventListener('nostrwatch:loglevel', this.logLevelListener);
+            } catch {}
+            this.logLevelListener = undefined;
+        }
+        if (!relay) return;
+
+        // Clear reference first to prevent double-shutdown
+        this._relay = undefined;
+        this._ready = false;
+
+        try {
+            // Close the database properly before terminating the worker
+            // This releases the OPFS SAH Pool lock
+            await relay.close('shutdown');
+            // Give time for the database to fully close
+            await delay(100);
+        } catch (e) {
+            console.warn('[NostrSqliteAdapter] Error closing relay during shutdown:', e);
+        }
+        // Now terminate the worker
+        relay.abort();
     }
 
     setup(){}
@@ -102,6 +147,7 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         if(!ready ) {
             throw new Error('NostrSqliteAdapter: failed to setup')
         }
+        void this.relay.setLogLevel(getGlobalLogLevel()).catch(() => {});
         setTimeout(() => this._ready = ready, 500)
         return this.relay.worker; 
     }

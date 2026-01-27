@@ -5,6 +5,7 @@ export type WorkerMessageCommand =
   | "reply"
   | "setup"
   | "init"
+  | "status"
   | "event"
   | "req"
   | "count"
@@ -15,6 +16,7 @@ export type WorkerMessageCommand =
   | "forYouFeed"
   | "setEventMetadata"
   | "debug"
+  | "logLevel"
   | "delete"
   | "countNip11s"
   | "countUniqueNip11s"
@@ -23,6 +25,14 @@ export type WorkerMessageCommand =
   | "upsertNip11" 
   | "getNip11"
   | "wipe";
+
+export type RelayStorageKind = "sqlite" | "memory" | "unknown";
+
+export interface RelayStorageStatus {
+  kind: RelayStorageKind;
+  reason?: string;
+  errorMessage?: string;
+}
 
 export interface WorkerMessage<T> {
   id: string;
@@ -72,12 +82,12 @@ export interface RelayHandler extends EventEmitter<RelayHandlerEvents> {
   event(ev: NostrEvent): boolean;
   eventBatch(evs: Array<NostrEvent>): boolean;
 
-  // countNip11s(): Promise<number>;
-  // countUniqueNip11s(): Promise<number>;
-  // dumpNip11s(): Promise<any[]>;
-  // batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean>;
-  // upsertNip11(nip11Args: Nip11Args): Promise<boolean>;
-  // getNip11(relay: string): Promise<any>;
+  countNip11s(): Promise<number>;
+  countUniqueNip11s(): Promise<number>;
+  dumpNip11s(): Promise<any[]>;
+  batchUpsertNip11(relayNip11s: batchNip11s): Promise<boolean>;
+  upsertNip11(nip11Args: Nip11Args): Promise<boolean>;
+  getNip11(relay: string): Promise<any>;
 
   /**
    * Run any SQL command

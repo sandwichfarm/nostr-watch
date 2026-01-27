@@ -1,6 +1,6 @@
 import { header } from "../utils/header.ts";
 import { loadConfig } from "../config/config.ts";
-import { runDaemon } from "./daemon.ts";
+import { runDaemon, getPrivateKey, heartbeatTracker, errorTracker } from "./daemon.ts";
 import { existsSync } from "https://deno.land/std@0.218.2/fs/mod.ts";
 import { join } from "https://deno.land/std@0.218.2/path/mod.ts";
 import { initializeDB } from "../db/db.ts";
@@ -9,6 +9,8 @@ import { DB } from "https://deno.land/x/sqlite/mod.ts";
 import { parseRelayNetwork } from "npm:@nostrwatch/utils";
 import { loadHostnameBlocklist } from "../utils/blocklists.ts";
 import { runInteractive } from "../cli/interactive.ts";
+import { buildHealthSnapshot } from "../health/index.ts";
+import { QueueManager } from "../utils/queueManager.ts";
 
 const logger = getLogger("Main");
 
@@ -27,13 +29,15 @@ OPTIONS:
   -c, --config <PATH>     Specify a custom configuration file path (default: ./config.yaml)
   -m, --migrate           Run network migration on existing database (updates relay network types)
   -i, --interactive       Run in interactive mode with a menu-based interface
+  --health                Check health status and exit (returns JSON, exit 0 for up/degraded, non-zero for down)
 
 EXAMPLES:
   relaymon                        Run with default config (./config.yaml)
   relaymon -c custom-config.yaml  Run with a custom config file
   relaymon --migrate              Run network migration before starting monitor
   relaymon -i                     Run in interactive mode
-  
+  relaymon --health               Check health and exit
+
 RelayMon creates a PID file in the system's temporary directory to prevent multiple instances.
 When running, press Ctrl+C to stop the monitor gracefully.
 `);
@@ -263,6 +267,92 @@ export async function main() {
     Deno.exit(0);
   }
 
+  // Check if health check is requested
+  if (args.includes("--health")) {
+    // Parse config path from arguments
+    let configPath = "./config.yaml";
+    const configArgIndex = Math.max(args.indexOf("-c"), args.indexOf("--config"));
+    if (configArgIndex !== -1 && configArgIndex < args.length - 1) {
+      configPath = args[configArgIndex + 1];
+    }
+
+    // Check if file exists
+    if (!existsSync(configPath)) {
+      console.error(JSON.stringify({
+        status: "down",
+        error: `Config file not found at "${configPath}"`,
+        timestamp: new Date().toISOString(),
+      }, null, 2));
+      Deno.exit(1);
+    }
+
+    try {
+      // Load configuration
+      const config = await loadConfig(configPath);
+
+      // Initialize database
+      if (config.db?.path) {
+        await initializeDB(config.db.path, config.db.enableWAL);
+      } else {
+        console.error(JSON.stringify({
+          status: "down",
+          error: "Database path not specified in config",
+          timestamp: new Date().toISOString(),
+        }, null, 2));
+        Deno.exit(1);
+      }
+
+      // Get private key
+      const privkey = getPrivateKey();
+
+      // Create a minimal queue manager for health check
+      const queueManager = new QueueManager(1, 1, config);
+
+      // Get thresholds (use defaults if health not configured)
+      const thresholds = config.health?.thresholds || {
+        checkIdleMs: 300000, // 5 minutes
+        publishBacklogMax: 100,
+        errorRatePerMin: 10,
+        startupGraceMs: 30000, // 30 seconds
+      };
+
+      // Build health snapshot
+      const snapshot = await buildHealthSnapshot({
+        queueManager,
+        privkey,
+        heartbeat: heartbeatTracker,
+        thresholds,
+        errorTracker,
+      });
+
+      // Print minimal JSON
+      console.log(JSON.stringify({
+        status: snapshot.state,
+        timestamp: snapshot.timestamp,
+        uptime: snapshot.uptime,
+        checks: {
+          database: snapshot.checks.database.status,
+          signing: snapshot.checks.signing.status,
+          checkQueue: snapshot.checks.checkQueue.status,
+          publishQueue: snapshot.checks.publishQueue.status,
+          checkLoop: snapshot.checks.checkLoop.status,
+        },
+        reasons: snapshot.reasons,
+      }, null, 2));
+
+      // Exit with appropriate code
+      const exitCode = snapshot.state === "down" ? 1 : 0;
+      Deno.exit(exitCode);
+    } catch (error) {
+      console.error(JSON.stringify({
+        status: "down",
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      }, null, 2));
+      Deno.exit(1);
+    }
+  }
+
   // Check if interactive mode is requested
   if (args.includes("-i") || args.includes("--interactive")) {
     // Parse config path from arguments
@@ -271,7 +361,7 @@ export async function main() {
     if (configArgIndex !== -1 && configArgIndex < args.length - 1) {
       configPath = args[configArgIndex + 1];
     }
-    
+
     // Run in interactive mode by using Deno.run to start the interactive script
     try {
       // @ts-ignore - Ignore TypeScript error for runtime feature

@@ -8,20 +8,6 @@
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"sourceMap": true,
-		"strict": true,
-		"baseUrl": "./",
-		"paths": {
-			"@nostrwatch/*": ["../../libraries/*/dist"],
-			"$stores/*": ["src/lib/stores/*"],
-			"$utils/*": ["src/lib/utils/*"],
-			"$ui/*": ["src/lib/components/ui/*"],
-			"$components/*": ["src/components/*"],
-			"$layouts/*": ["src/layouts/*"],
-			"$routes/*": ["src/routes/*"],
-			"$relay/*": ["src/routes/relays/[protocol]/[...relay]/*"],
-			"$relays/*": ["src/routes/relays/*"],
-			"$lib/*": ["src/lib/*"],
-			"src/*": ["src/*"]
-		},
+		"strict": true
 	}
 }

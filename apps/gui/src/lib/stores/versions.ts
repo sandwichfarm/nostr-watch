@@ -1,22 +1,42 @@
-import { get } from 'svelte/store';
-import { eventsArray } from './events.js'; 
+import { derived, get, type Readable } from 'svelte/store';
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
-import { doAggregateCache } from './app.js';
+import { relayCheckAggregates } from './checks.js';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
+import { useWorkerVersions, workerVersions } from './dimension-stores';
 
-export const versions = throttledDerived(eventsArray, ($eventsArray) => {
-    const versions = new Set();
+// ============================================================================
+// LEGACY STORE (Derived from relayCheckAggregates)
+// ============================================================================
 
-    $eventsArray.forEach((check) => {
-        if(check?.version)
-            versions.add(check.version);
+export const versions_legacy = throttledDerived(relayCheckAggregates, ($relayCheckAggregates) => {
+    const versions = new Set<string>();
+
+    $relayCheckAggregates.forEach((relayCheck) => {
+        if(relayCheck?.version)
+            versions.add(relayCheck.version);
     });
-    let finalVersions = Array.from(versions).sort()
+    const finalVersions = Array.from(versions).sort()
     if(finalVersions.length){
-        if(get(doAggregateCache)) StateManager.set('aggregate:versions', finalVersions);
+        if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+            StateManager.set('aggregate:versions', finalVersions);
+        }
+        return finalVersions;
     }
-    else {
-        finalVersions = StateManager.get('aggregate:versions')
-    }
-    return finalVersions
+
+    const cached = StateManager.get('aggregate:versions');
+    return Array.isArray(cached) ? cached : [];
 });
+
+// ============================================================================
+// HYBRID STORE (Worker-fed with legacy fallback)
+// ============================================================================
+
+/** List of unique version strings sorted alphabetically */
+export const versions: Readable<string[]> = derived(
+    [useWorkerVersions, workerVersions, versions_legacy],
+    ([$useWorker, $worker, $legacy]) => {
+        if ($useWorker && $worker.length > 0) return $worker;
+        return $legacy;
+    }
+);

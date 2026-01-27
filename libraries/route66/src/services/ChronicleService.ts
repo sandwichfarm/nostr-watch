@@ -96,6 +96,7 @@ export class ChronicleService extends Service {
   public storage: Route66EventStorage;
   private options: ChronicleServiceOptions;
   private kind1066Subscriptions: Map<string, string> = new Map();
+  private syncInFlight: Map<string, Promise<void>> = new Map();
 
   constructor(
     adapters: IAdaptersArgument,
@@ -141,40 +142,50 @@ export class ChronicleService extends Service {
       return;
     }
 
-    const filters: Filter[] = [
-      {
-        kinds: [1066],
-        '#r': [relay],
-        since: options?.since,
-      },
-    ];
+    const existing = this.syncInFlight.get(relay);
+    if (existing) return existing;
 
-    const args: WebsocketRequestBody = {
-      filters,
-      relays: this.options.syncRelays,
-      options: {
-        cache: true,
-        stream: true,
-        keepAlive: options?.keepAlive ?? this.options.autoSync ?? false,
-        returnResults: false,
-      },
-    };
+    const task = (async () => {
+      const filters: Filter[] = [
+        {
+          kinds: [1066],
+          '#r': [relay],
+          since: options?.since,
+        },
+      ];
 
-    const callbacks: SubscribeHandlers = {
-      onevent: (event) => {
-        console.log(`[Chronicle] Received Kind 1066 for ${relay}`, event.id.slice(0, 8));
-      },
-      oneose: () => {
-        console.log(`[Chronicle] EOSE for ${relay}`);
-      },
-    };
+      const args: WebsocketRequestBody = {
+        filters,
+        relays: this.options.syncRelays,
+        hash: deterministicHash(filters),
+        options: {
+          cache: true,
+          stream: true,
+          keepAlive: options?.keepAlive ?? this.options.autoSync ?? false,
+          returnResults: false,
+        },
+      };
 
-    // Subscribe via websocket adapter - leverages existing connections
-    await this.subscribe(args, callbacks);
+      const callbacks: SubscribeHandlers = {
+        onevent: (event) => {
+          console.log(`[Chronicle] Received Kind 1066 for ${relay}`, event.id.slice(0, 8));
+        },
+        oneose: () => {
+          console.log(`[Chronicle] EOSE for ${relay}`);
+        },
+      };
 
-    const hash = deterministicHash(args);
-    this.kind1066Subscriptions.set(relay, hash);
-    console.log(`[Chronicle] Syncing ${relay} (hash: ${hash.slice(0, 8)})`);
+      // Subscribe via websocket adapter - leverages existing connections
+      await this.subscribe(args, callbacks);
+
+      this.kind1066Subscriptions.set(relay, args.hash!);
+      console.log(`[Chronicle] Syncing ${relay} (hash: ${args.hash})`);
+    })().finally(() => {
+      this.syncInFlight.delete(relay);
+    });
+
+    this.syncInFlight.set(relay, task);
+    return task;
   }
 
   /**

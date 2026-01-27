@@ -87,7 +87,7 @@ integrationTest("Delta Events Integration: First check flow", async () => {
   });
 
   assertEquals(event.kind, 1066, "Should be Kind 1066");
-  assert(event.tags.some(t => t[0] === "d" && t[1] === relayUrl), "Should have d tag with URL");
+  assert(event.tags.some(t => t[0] === "r" && t[1] === relayUrl), "Should have r tag with URL");
   assert(event.tags.some(t => t[0] === "rtt-open"), "Should have rtt-open tag");
   assert(event.tags.some(t => t[0].startsWith("+")), "Should have addition tags");
 
@@ -171,7 +171,7 @@ integrationTest("Delta Events Integration: Offline relay with retry count", asyn
   });
 
   assertEquals(event.kind, 1066);
-  assert(event.tags.some(t => t[0] === "d" && t[1] === relayUrl), "Should have d tag");
+  assert(event.tags.some(t => t[0] === "r" && t[1] === relayUrl), "Should have r tag");
   assert(event.tags.some(t => t[0] === "retry" && t[1] === "5"), "Should have retry tag");
   assert(!event.tags.some(t => t[0] === "rtt-open"), "Should NOT have rtt-open when offline");
   assert(!event.tags.some(t => t[0].startsWith("+")), "Should NOT have delta tags when offline");

@@ -1,8 +1,7 @@
-import { dataFormatters } from "$lib/config/dataTable/relays";
-
 type ValueGetter<T, V> = (row: T) => V;
 type Sorter<T, V> = (a: V, b: V, rowA: T, rowB: T) => number;
 type Filter<T, V> = (value: V, filterValue: V, row: T) => boolean;
+type DataFormatter = (value: any, row?: any) => any;
 
 export interface ColumnDef<T, V = any> {
 	id: string;
@@ -23,6 +22,7 @@ type TableConfig<T> = {
 	initialSort?: string;
 	initialSortDirection?: SortDirection;
 	initialFilters?: { [id: string]: any[] };
+	dataFormatters?: Record<string, DataFormatter>;
 };
 
 /**
@@ -32,6 +32,7 @@ type TableConfig<T> = {
 export class DataTable<T> {
 	#columns: ColumnDef<T>[];
 	#pageSize: number;
+	#dataFormatters: Record<string, DataFormatter> | undefined;
 
 	#originalData = $state<T[]>([]);
 	#currentPage = $state(1);
@@ -56,6 +57,7 @@ export class DataTable<T> {
 		this.#originalData = [...config.data];
 		this.#columns = config.columns;
 		this.#pageSize = config.pageSize || 10;
+		this.#dataFormatters = config.dataFormatters;
 		if (config.initialSort) {
 			this.#sortState = {
 				columnId: config.initialSort,
@@ -133,14 +135,14 @@ export class DataTable<T> {
 		const { columnId, direction } = this.#sortState;
 		if (columnId && direction) {
 			const colDef = this.#getColumnDef(columnId);
-			const formatter = dataFormatters?.[columnId];
+			const formatter = this.#dataFormatters?.[columnId];
 			
 			this.#sortedData = [...this.#filteredData].sort((a, b) => {
 				const aVal = formatter
-					? formatter(this.#getValue(a, columnId))
+					? formatter(this.#getValue(a, columnId), a)
 					: this.#getValue(a, columnId);
 				const bVal = formatter
-					? formatter(this.#getValue(b, columnId))
+					? formatter(this.#getValue(b, columnId), b)
 					: this.#getValue(b, columnId);
 	
 				const isAInvalid = aVal === undefined || aVal === null || aVal < 0 || aVal === '';
@@ -186,7 +188,7 @@ export class DataTable<T> {
 	 * @param {T[]} rows - The array of rows to reset the base data to.
 	 */
 	set baseRows(rows: T[]) {
-		// this.#currentPage = 1;
+		this.#currentPage = 1;
 		this.#isFilterDirty = true;
 		this.#originalData = [...rows];
 	}

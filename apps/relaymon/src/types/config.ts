@@ -31,9 +31,12 @@ export interface GeoConfig {
  * Monitor profile information
  */
 export interface MonitorInfoConfig {
-  name: string;
-  about: string;
+  name?: string;
+  about?: string;
   nip05?: string;
+  lud16?: string; 
+  picture?: string; 
+  banner?: string;
 }
 
 /**
@@ -42,7 +45,7 @@ export interface MonitorInfoConfig {
 export interface MonitorConfig {
   slug: string;
   info: MonitorInfoConfig;
-  owner: string;
+  owner?: string;
   geo?: GeoConfig;
 }
 
@@ -123,6 +126,7 @@ export interface CheckOptionsConfig {
   timeout: CheckTimeoutConfig;
   max: number | string;
   statusInterval: number;
+  checks: string[];
 }
 
 /**
@@ -197,6 +201,52 @@ export interface DbConfig {
   enableWAL?: boolean;
 }
 
+export interface AnnounceConfig {
+  userMetaRelays?: string[];
+  nip66Relays?: string[];
+}
+
+/**
+ * Health server configuration
+ */
+export interface HealthServerConfig {
+  enabled: boolean;
+  host: string;
+  port: number;
+  authEnabled: boolean;
+}
+
+/**
+ * Uptime Kuma push configuration
+ */
+export interface KumaConfig {
+  enabled: boolean;
+  intervalMs: number | string;
+  degradedAsUp: boolean;
+  startupGraceMs: number | string;
+  msgVerbosity: "summary" | "detailed";
+}
+
+/**
+ * Health check thresholds
+ */
+export interface HealthThresholdsConfig {
+  checkIdleMs: number | string;
+  publishBacklogMax: number;
+  errorRatePerMin: number;
+  startupGraceMs: number | string;
+}
+
+/**
+ * Health monitoring configuration
+ */
+export interface HealthConfig {
+  enabled: boolean;
+  server: HealthServerConfig;
+  kuma: KumaConfig;
+  thresholds: HealthThresholdsConfig;
+}
+
 /**
  * Complete RelayMon configuration
  */
@@ -204,9 +254,11 @@ export interface Config {
   monitor: MonitorConfig;
   publisher: PublisherConfig;
   relaymon: RelaymonConfig;
+  announce: AnnounceConfig;
   queue?: QueueConfig;
   logLevel?: LogLevel;
   db?: DbConfig;
+  health?: HealthConfig;
 }
 
 /**
@@ -260,9 +312,9 @@ export function validateConfig(config: unknown): Config {
     throw new Error("Missing required field: monitor.info.about");
   }
 
-  if (!c.monitor.owner || typeof c.monitor.owner !== "string") {
-    throw new Error("Missing required field: monitor.owner");
-  }
+  // if (!c.monitor.owner || typeof c.monitor.owner !== "string") {
+  //   throw new Error("Missing required field: monitor.owner");
+  // }
 
   // Validate publisher section
   if (!c.publisher || typeof c.publisher !== "object") {
@@ -332,6 +384,86 @@ export function validateConfig(config: unknown): Config {
 
   if (!c.relaymon.checks.options || typeof c.relaymon.checks.options !== "object") {
     throw new Error("Missing required field: relaymon.checks.options");
+  }
+
+  // Validate health configuration if present (optional)
+  if (c.health !== undefined) {
+    if (typeof c.health !== "object") {
+      throw new Error("health must be an object");
+    }
+
+    if (typeof c.health.enabled !== "boolean") {
+      throw new Error("Missing required field: health.enabled (must be boolean)");
+    }
+
+    if (c.health.enabled) {
+      // Validate server config
+      if (!c.health.server || typeof c.health.server !== "object") {
+        throw new Error("Missing required field: health.server");
+      }
+
+      if (typeof c.health.server.enabled !== "boolean") {
+        throw new Error("Missing required field: health.server.enabled (must be boolean)");
+      }
+
+      if (typeof c.health.server.host !== "string") {
+        throw new Error("Missing required field: health.server.host (must be string)");
+      }
+
+      if (typeof c.health.server.port !== "number") {
+        throw new Error("Missing required field: health.server.port (must be number)");
+      }
+
+      if (typeof c.health.server.authEnabled !== "boolean") {
+        throw new Error("Missing required field: health.server.authEnabled (must be boolean)");
+      }
+
+      // Validate kuma config
+      if (!c.health.kuma || typeof c.health.kuma !== "object") {
+        throw new Error("Missing required field: health.kuma");
+      }
+
+      if (typeof c.health.kuma.enabled !== "boolean") {
+        throw new Error("Missing required field: health.kuma.enabled (must be boolean)");
+      }
+
+      if (typeof c.health.kuma.intervalMs !== "number" && typeof c.health.kuma.intervalMs !== "string") {
+        throw new Error("Missing required field: health.kuma.intervalMs (must be number or timestring)");
+      }
+
+      if (typeof c.health.kuma.degradedAsUp !== "boolean") {
+        throw new Error("Missing required field: health.kuma.degradedAsUp (must be boolean)");
+      }
+
+      if (typeof c.health.kuma.startupGraceMs !== "number" && typeof c.health.kuma.startupGraceMs !== "string") {
+        throw new Error("Missing required field: health.kuma.startupGraceMs (must be number or timestring)");
+      }
+
+      if (!["summary", "detailed"].includes(c.health.kuma.msgVerbosity)) {
+        throw new Error("health.kuma.msgVerbosity must be 'summary' or 'detailed'");
+      }
+
+      // Validate thresholds config
+      if (!c.health.thresholds || typeof c.health.thresholds !== "object") {
+        throw new Error("Missing required field: health.thresholds");
+      }
+
+      if (typeof c.health.thresholds.checkIdleMs !== "number" && typeof c.health.thresholds.checkIdleMs !== "string") {
+        throw new Error("Missing required field: health.thresholds.checkIdleMs (must be number or timestring)");
+      }
+
+      if (typeof c.health.thresholds.publishBacklogMax !== "number") {
+        throw new Error("Missing required field: health.thresholds.publishBacklogMax (must be number)");
+      }
+
+      if (typeof c.health.thresholds.errorRatePerMin !== "number") {
+        throw new Error("Missing required field: health.thresholds.errorRatePerMin (must be number)");
+      }
+
+      if (typeof c.health.thresholds.startupGraceMs !== "number" && typeof c.health.thresholds.startupGraceMs !== "string") {
+        throw new Error("Missing required field: health.thresholds.startupGraceMs (must be number or timestring)");
+      }
+    }
   }
 
   // All required validations passed, return typed config

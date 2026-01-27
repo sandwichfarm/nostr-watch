@@ -19,12 +19,12 @@ try {
   
   // Pass the configuration to the trawl function
   const trawlOptions = {
-    dbPath: config.trawler.db?.path,
-    enableWAL: config.trawler.db?.enableWAL,
+    dbPath: config?.trawler?.db?.path,
+    enableWAL: config?.trawler?.db?.enableWAL,
     nostrawlOptions: {
       relaysPerBatch: config?.trawler?.relaysPerBatch || 10,
       adapterOptions: {
-        concurrency: config.trawler.concurrency || 2
+        concurrency: config?.trawler?.concurrency || 2
       }
     }
   };

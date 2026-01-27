@@ -10,7 +10,7 @@
     "dry-prerelease": "./scripts/prerelease.sh --dry-run",
     "dev:setup": "node ./scripts/dev-link-deps.js",
     "packages:update": "node ./scripts/upkg.js",
-    "deno:compile@relaymon": "deno compile --unstable-sloppy-imports  --no-check --allow-ffi --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon apps/relaymon/src/index.ts",
+    "deno:compile@relaymon": "deno compile --unstable-sloppy-imports  --no-check --allow-ffi --allow-net --allow-env --allow-read --allow-write --allow-run --output dist/relaymon apps/relaymon/index.ts",
     "docker:build@relaymon": "docker compose -f apps/relaymon/.docker/docker-compose.yml build",
     "deploy:gui": "pnpm run workspace @nostrwatch/gui build && gh-pages -d apps/gui/dist -t true",
     "deploy:nocapd@all": "ansible-playbook .ansible/nocapd/deploy.yaml -i .ansible/inventories/johannesburg -i .ansible/inventories/amsterdam -i .ansible/inventories/mumbai -i .ansible/inventories/newyork -i .ansible/inventories/saopaulo -i .ansible/inventories/seoul -i .ansible/inventories/siliconvalley -i .ansible/inventories/sydney",

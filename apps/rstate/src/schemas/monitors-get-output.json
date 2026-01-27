@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "monitor": {
+      "oneOf": [
+        { "type": "object", "description": "MonitorAnnouncement" },
+        { "type": "null" }
+      ]
+    },
+    "analytics": { "type": "object", "description": "MonitorAnalytics (optional)" }
+  },
+  "required": ["monitor"]
+}
+

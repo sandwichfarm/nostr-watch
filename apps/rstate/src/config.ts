@@ -12,14 +12,17 @@ export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
 export type LogDestination = 'stdout' | 'stderr' | 'file'
 
 export interface Config {
-  // CVM Server
-  cvmRelays: string[]
-  serverKey: string  // nsec or hex
-  encryptionMode: EncryptionMode
-  allowedPubkeys: string[]  // empty = no restrictions
-  auth: {
+  // CVM Server (Optional - only required if CVM transport is enabled)
+  cvm?: {
     enabled: boolean
-    allowAny: boolean
+    cvmRelays: string[]
+    serverKey: string  // nsec or hex
+    encryptionMode: EncryptionMode
+    allowedPubkeys: string[]  // empty = no restrictions
+    auth: {
+      enabled: boolean
+      allowAny: boolean
+    }
   }
 
   // REST API
@@ -27,6 +30,7 @@ export interface Config {
     enabled: boolean
     host: string
     port: number
+    apiBaseUrl?: string  // Base URL for OpenAPI spec (e.g., https://api.nostr.watch)
     corsOrigins: string[] | '*'
     enableSwagger: boolean
     allowPolicyUpdate: boolean
@@ -154,8 +158,18 @@ function validatePrivateKey(key: string | undefined): string {
 
 /**
  * Validate that transport relays are local only (prevent production pollution)
+ * Can be bypassed with CVM_ALLOW_PRODUCTION_RELAYS=true or NODE_ENV=production
  */
 function validateLocalRelaysOnly(relays: string[], env: string): void {
+  // Allow production relays if explicitly enabled
+  const allowProductionRelays =
+    process.env.CVM_ALLOW_PRODUCTION_RELAYS?.toLowerCase() === 'true' ||
+    process.env.NODE_ENV === 'production'
+
+  if (allowProductionRelays) {
+    return
+  }
+
   const productionHosts = [
     'relay.contextvm.org',
     'relay.nostr.watch',
@@ -182,7 +196,8 @@ function validateLocalRelaysOnly(relays: string[], env: string): void {
           `CRITICAL: ${env} contains PRODUCTION relay: ${relay}\n` +
           `Transport relays MUST be local to prevent polluting production with test data!\n` +
           `Use: ws://localhost:6969 (start with: nak serve --port 6969)\n` +
-          `See .env.development.safe for safe configuration.`
+          `See .env.development.safe for safe configuration.\n` +
+          `To allow production relays, set: CVM_ALLOW_PRODUCTION_RELAYS=true or NODE_ENV=production`
         )
       }
 
@@ -200,21 +215,48 @@ function validateLocalRelaysOnly(relays: string[], env: string): void {
  * Load configuration from environment
  */
 export function loadConfig(): Config {
-  // CVM Server
-  const cvmRelays = parseList(process.env.CVM_RELAYS)
-  if (cvmRelays.length === 0) {
-    throw new Error('CVM_RELAYS is required (comma-separated wss:// URLs)')
+  // Transport configuration
+  const cvmEnabled = (process.env.CVM_ENABLED ?? 'true').toLowerCase() === 'true'
+  const restEnabled = (process.env.REST_ENABLED ?? 'false').toLowerCase() === 'true'
+
+  // Validate at least one transport is enabled
+  if (!cvmEnabled && !restEnabled) {
+    throw new Error(
+      'At least one transport must be enabled: CVM_ENABLED=true or REST_ENABLED=true\n' +
+      'Set CVM_ENABLED=true for Nostr MCP transport, or REST_ENABLED=true for HTTP REST API'
+    )
   }
-  validateRelayUrls(cvmRelays)
 
-  // CRITICAL: Validate transport relays are local only
-  validateLocalRelaysOnly(cvmRelays, 'CVM_RELAYS')
+  // CVM Server (conditional - only if enabled)
+  let cvmConfig: Config['cvm'] | undefined
+  if (cvmEnabled) {
+    const cvmRelays = parseList(process.env.CVM_RELAYS)
+    if (cvmRelays.length === 0) {
+      throw new Error('CVM_RELAYS is required when CVM_ENABLED=true (comma-separated wss:// URLs)')
+    }
+    validateRelayUrls(cvmRelays)
 
-  const serverKey = validatePrivateKey(process.env.CVM_SERVER_NSEC)
-  const encryptionMode = validateEncryptionMode(process.env.CVM_ENCRYPTION_MODE)
-  const allowedPubkeys = parseList(process.env.CVM_ALLOWED_PUBKEYS)
-  const authEnabled = (process.env.CVM_AUTH_ENABLED ?? 'true').toLowerCase() !== 'false'
-  const authAllowAny = (process.env.CVM_AUTH_ALLOW_ANY ?? 'false').toLowerCase() === 'true'
+    // CRITICAL: Validate transport relays are local only
+    validateLocalRelaysOnly(cvmRelays, 'CVM_RELAYS')
+
+    const serverKey = validatePrivateKey(process.env.CVM_SERVER_NSEC)
+    const encryptionMode = validateEncryptionMode(process.env.CVM_ENCRYPTION_MODE)
+    const allowedPubkeys = parseList(process.env.CVM_ALLOWED_PUBKEYS)
+    const authEnabled = (process.env.CVM_AUTH_ENABLED ?? 'true').toLowerCase() !== 'false'
+    const authAllowAny = (process.env.CVM_AUTH_ALLOW_ANY ?? 'false').toLowerCase() === 'true'
+
+    cvmConfig = {
+      enabled: true,
+      cvmRelays,
+      serverKey,
+      encryptionMode,
+      allowedPubkeys,
+      auth: {
+        enabled: authEnabled,
+        allowAny: authAllowAny,
+      },
+    }
+  }
 
   // Ingestion
   const ingestRelays = parseList(process.env.INGEST_RELAYS)
@@ -234,9 +276,15 @@ export function loadConfig(): Config {
   }
 
   // REST API
-  const restEnabled = (process.env.REST_ENABLED ?? 'false').toLowerCase() === 'true'
   const restHost = process.env.REST_HOST || '127.0.0.1'
   const restPort = parseNumber(process.env.REST_PORT, 3000)
+
+  // API Base URL for OpenAPI spec - defaults to production URL in production, otherwise local
+  const restApiBaseUrl = process.env.API_BASE_URL ||
+    (process.env.NODE_ENV === 'production'
+      ? 'https://api.nostr.watch'
+      : undefined)  // undefined = use host:port format
+
   const restCorsOrigins = process.env.REST_CORS_ORIGINS === '*'
     ? '*'
     : parseList(process.env.REST_CORS_ORIGINS, ['http://localhost:3000'])
@@ -260,18 +308,12 @@ export function loadConfig(): Config {
   const cacheTtlSeconds = parseNumber(process.env.CACHE_TTL_SECONDS, 60)
 
   return {
-    cvmRelays,
-    serverKey,
-    encryptionMode,
-    allowedPubkeys,
-    auth: {
-      enabled: authEnabled,
-      allowAny: authAllowAny,
-    },
+    cvm: cvmConfig,
     rest: {
       enabled: restEnabled,
       host: restHost,
       port: restPort,
+      apiBaseUrl: restApiBaseUrl,
       corsOrigins: restCorsOrigins,
       enableSwagger: restEnableSwagger,
       allowPolicyUpdate: restAllowPolicyUpdate,

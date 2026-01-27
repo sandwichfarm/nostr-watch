@@ -79,6 +79,40 @@ export class IgnoreListSync {
   }
 
   /**
+   * Convert a pubkey in various formats (hex, npub, nprofile) to hex
+   * Returns null if input is invalid
+   */
+  private toHexPubkey(input: string): string | null {
+    try {
+      const pk = (input || "").trim();
+      if (!pk) return null;
+
+      // If already hex (64 chars) use it
+      if (/^[0-9a-fA-F]{64}$/.test(pk)) return pk.toLowerCase();
+
+      // Try to decode NIP-19 (npub/nprofile)
+      if (pk.startsWith("npub1") || pk.startsWith("nprofile1")) {
+        const decoded = nip19.decode(pk);
+        if (decoded.type === "npub") {
+          return (decoded.data as string).toLowerCase();
+        }
+        if (decoded.type === "nprofile") {
+          // nprofile.data may be an object with pubkey
+          const data = decoded.data as unknown as { pubkey?: string };
+          if (data && typeof data.pubkey === "string" && /^[0-9a-fA-F]{64}$/.test(data.pubkey)) {
+            return data.pubkey.toLowerCase();
+          }
+        }
+      }
+
+      // Anything else is invalid for authors filter
+      return null;
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  /**
    * Get relays to append to this monitor's kind 10002
    */
   getRelaysForKind10002(): string[] {
@@ -130,10 +164,17 @@ export class IgnoreListSync {
       this.logger.info(`Fetching kind 10002 for ${pubkey.slice(0, 8)}... from ${this.metaRelays.length} relays`);
       this.logger.info(`  Meta relays: ${this.metaRelays.join(", ")}`);
 
-      const events = await this.pool.querySync(
-        this.metaRelays,
-        { kinds: [10002], authors: [pubkey], limit: 1 }
-      );
+      const hex = this.toHexPubkey(pubkey);
+      if (!hex) {
+        this.logger.warn(`Invalid pubkey format for authors filter: ${pubkey}`);
+        return [];
+      }
+
+      const events = await this.pool.querySync(this.metaRelays, {
+        kinds: [10002],
+        authors: [hex],
+        limit: 1,
+      });
 
       this.logger.info(`  Received ${events?.length || 0} kind 10002 events for ${pubkey.slice(0, 8)}...`);
 
@@ -170,10 +211,17 @@ export class IgnoreListSync {
     try {
       this.logger.debug(`Fetching kind 10006 for ${pubkey.slice(0, 8)}... from ${relays.length} relays`);
 
-      const events = await this.pool.querySync(
-        relays,
-        { kinds: [10006], authors: [pubkey], limit: 1 }
-      );
+      const hex = this.toHexPubkey(pubkey);
+      if (!hex) {
+        this.logger.warn(`Invalid pubkey format for authors filter: ${pubkey}`);
+        return [];
+      }
+
+      const events = await this.pool.querySync(relays, {
+        kinds: [10006],
+        authors: [hex],
+        limit: 1,
+      });
 
       if (!events || events.length === 0) {
         this.logger.debug(`No kind 10006 found for ${pubkey.slice(0, 8)}...`);
@@ -300,12 +348,12 @@ export class IgnoreListSync {
     let deletionCount = 0;
     for (const relayUrl of this.localIgnoredRelays) {
       try {
-        await deleteRelayCheckEvent(
+        const ok = await deleteRelayCheckEvent(
           relayUrl,
           "Relay marked as ignored by deduplication",
-          this.config
+          this.fullConfig
         );
-        deletionCount++;
+        if (ok) deletionCount++;
       } catch (e: unknown) {
         this.logger.error(`Error publishing deletion for ${relayUrl}: ${getErrorMessage(e)}`);
       }

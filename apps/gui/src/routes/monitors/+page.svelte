@@ -9,17 +9,44 @@
 
     import { StateManager } from '@nostrwatch/route66';
     import { doBootstrap } from '$lib/stores/routines';
-    import { doAggregateCache } from '$lib/stores/app';
-    import { writable, type Writable } from 'svelte/store';
+    import { doAggregateCache, tabState } from '$lib/stores/app';
+    import { get, writable, type Writable } from 'svelte/store';
+	import type { DataViewViews } from '$lib/components/data-view/DataTableTypes';
 	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
     import builtInTableConfig from '$lib/config/dataTable/monitors.js'
 	import { bootstrapMonitorData } from '$utils/lifecycle';
 	import { dataRegister } from '$stores/data-register';
 	import DataViewRoot from '$lib/components/data-view/DataViewRoot.svelte';
+	import { HeaderConfigStore } from '$stores/header-config';
 
     const dataKey: string = 'monitors'
     const config: Writable<DataTableConfig | null> = writable(null);
     const ready: Writable<boolean> = writable(false);
+
+	const enabledViews: DataViewViews[] = ['table'];
+	const activeView: Writable<DataViewViews> = writable(enabledViews.length === 1 ? enabledViews[0] : 'table');
+
+	const HEADER_SELECTORS_ID = 'monitors:list';
+
+	const setHeaderSelectors = () => {
+		HeaderConfigStore.set({
+			selectors: {
+				id: HEADER_SELECTORS_ID,
+				className: 'ml-2',
+				showPresets: false,
+				showView: true,
+				enabledViews,
+				activeView,
+			},
+		});
+	};
+
+	const clearHeaderSelectors = () => {
+		HeaderConfigStore.update((current) => {
+			if (current.selectors?.id !== HEADER_SELECTORS_ID) return current;
+			return { ...current, selectors: null };
+		});
+	};
 
 	const setConfig = () => {
 		
@@ -28,6 +55,12 @@
 		
 		if(userTableConfig) {
 			conf = {...conf, ...userTableConfig}
+			// Keep newly-added columns visible even when a user has an older saved table config.
+			const ensureColumns = ['reportingOffline', 'likelyDead']
+			conf.columnsShow = Array.isArray(conf.columnsShow)? conf.columnsShow: []
+			for(const col of ensureColumns){
+				if(!conf.columnsShow.includes(col)) conf.columnsShow.push(col)
+			}
 			config.set(conf)
 		}
 		else {
@@ -38,15 +71,22 @@
 
     onMount(() => {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+		setHeaderSelectors();
         doBootstrap.set(true)
         doAggregateCache.set(true)
         setConfig();
-        $dataRegister.require([
-        	'sync:cache',
-        	'sync:monitors',
-            'sync:checks',
-    	]); 
+        const keys = ['sync:cache'];
+        if (get(tabState) === 'leader') {
+            keys.push('sync:monitors', 'sync:checks');
+        }
+        void $dataRegister
+            .require(keys)
+            .catch((err) => console.error('[DataRegister] require failed', err));
     });
+
+	onDestroy(() => {
+		clearHeaderSelectors();
+	});
 
     $: countInactiveMonitorsEnabled = $monitorRows.filter((monitor: any) => { return !monitor.active && monitor.enabled }).length;
     $: countEnabledMonitors = $monitorRows.filter((monitor: any) => monitor.enabled).length;
@@ -55,7 +95,7 @@
     $: warnHasLessThanRecommendedMonitors = countEnabledMonitors < 3;
     $: warnHasMoreThanRecommendedMonitors = countEnabledMonitors > 8;
 </script>
-<main class="pt-16">
+<main class="mt-10">
 <!-- {$ready? 'true': 'false'}
 <pre>{countEnabledMonitors}</pre>
 <pre>{JSON.stringify($monitorRows, null, 2)}</pre>
@@ -80,7 +120,7 @@
                 </Alert.Root>
             {/if}
         
-            {#if criticalInactiveMonitorsEnabled}
+            <!-- {#if criticalInactiveMonitorsEnabled}
                 <Alert.Root class="mb-2">
                     <Alert.Title class="text-orange-500 font-bold" >Warning</Alert.Title>
                     <Alert.Description class="opacity-80">
@@ -96,7 +136,7 @@
                         You have more than 8 monitors enabled, this might cause performance issues and consume extraneous bandwidth.
                     </Alert.Description>
                 </Alert.Root>
-            {/if}
+            {/if} -->
 
         </div>
         <!-- <DataTable data={monitorRows} {config} actionsComponent={MonitorsActions} {dataKey} /> -->
@@ -104,6 +144,9 @@
             {config}
             data={monitorRows}
             key={dataKey}
+			{enabledViews}
+			{activeView}
+			showViewSelector={false}
             actionsComponent={MonitorsActions}
         />
     {/if}

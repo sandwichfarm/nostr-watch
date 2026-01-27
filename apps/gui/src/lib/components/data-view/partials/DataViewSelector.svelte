@@ -1,50 +1,41 @@
 <script lang="ts">
-	import { page } from "$app/stores";
-	import Button from "$ui/button/button.svelte";
 	import { writable, type Writable } from "svelte/store";
 	import type { DataViewViews } from "../DataTableTypes";
+	import DropdownSelect, { type DropdownSelectOption } from "$lib/components/partials/DropdownSelect.svelte";
+	import { cn } from "$lib/utils/ui.js";
 
-    export let enabledViews: DataViewViews[] | undefined = ['table'];
-    export const activeView: Writable<DataViewViews> = writable(enabledViews.length===1? enabledViews[0]: 'table');
+	export let enabledViews: DataViewViews[] | undefined = ["table"];
+	export let activeView: Writable<DataViewViews> = writable(
+		enabledViews?.length === 1 ? enabledViews[0] : "table"
+	);
+
+	const viewLabels: Record<DataViewViews, string> = {
+		table: "table",
+		grid: "grid",
+		map: "map",
+	};
+
+	$: viewOptions = (enabledViews || []).map((view) => {
+		return {
+			value: view,
+			label: viewLabels[view] ?? view,
+		} satisfies DropdownSelectOption<DataViewViews>;
+	});
+
+	let className: string | undefined = undefined;
+	export { className as class };
 </script>
 
 {#if enabledViews && enabledViews.length > 1}
-<div class="flex flex-row ml-3 opacity-70 my-5">
-    <span class="py-1 px-2 text-sm italic">View</span>
-    {#if enabledViews.includes('table')}
-        <button 
-            on:click={() => activeView.set('table')}
-            class="dimension-link {$activeView === 'table'? 'dimension-link-active': ''}">
-                Table
-        </button>
-    {/if}
-
-    {#if enabledViews.includes('grid')}
-        <button 
-            on:click={() => activeView.set('grid')}
-            class="dimension-link {$activeView === 'grid'? 'dimension-link-active': ''}">
-            Grid
-        </button>
-    {/if}
-
-    {#if enabledViews.includes('map')}
-        <button 
-            on:click={() => activeView.set('map')}
-            class="dimension-link {$activeView === 'map'? 'dimension-link-active': ''}">
-            Map
-        </button>
-    {/if}
-
-</div>
+	<DropdownSelect
+		class={cn(className)}
+		label="view"
+		value={$activeView}
+		options={viewOptions}
+		on:change={(e) => {
+			const next = e.detail.value as DataViewViews | null;
+			if (!next) return;
+			activeView.set(next);
+		}}
+	/>
 {/if}
-
-<style lang="postcss">
-
-	.dimension-link {
-		@apply py-1 px-2 ml-3 text-sm rounded-sm bg-black/5 dark:bg-white/5 hover:bg-white/20;
-	}
-
-    .dimension-link-active {
-        @apply py-1 px-2 ml-3 rounded-sm bg-white/20 dark:bg-black/20;
-    }
-</style>

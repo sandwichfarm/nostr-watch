@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "relays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "description": "RelayState object with optional distance field"
+      }
+    },
+    "center": {
+      "type": "object",
+      "properties": {
+        "lat": { "type": "number" },
+        "lon": { "type": "number" }
+      },
+      "required": ["lat", "lon"]
+    },
+    "radius": { "type": "number" }
+  },
+  "required": ["relays", "center", "radius"]
+}
+

@@ -8,6 +8,8 @@ import type { WebsocketAdapterOptions } from "@nostrwatch/route66/core/Websocket
 import { operatorsPubkeys, operatorsPubkeysValid } from "$stores/operators";
 import { delay } from "@nostrwatch/utils";
 import { relaysWithNip11s$, relaysWithoutNip11s$ } from "$stores/helpers/helpers-nip11s";
+import { isBootstrapping, lastCompleteSync, setStatsAsOf } from "$lib/stores/app";
+import { StateManager } from "@nostrwatch/route66";
 
 export const fetchMonitors = async () => {
     const $route66 = await instance();
@@ -16,11 +18,40 @@ export const fetchMonitors = async () => {
     await $route66?.services?.monitors?.bootstrapMonitors();
 }
 
-export const fetchMonitorsChecks = async () => {
+export const fetchMonitorsChecks = async (): Promise<IEvent[]> => {
     const $route66 = await instance();
     await $route66.ready();
     bindBootstrapEmitters();
-    await $route66?.services?.monitors?.bootstrapMonitorsChecks();
+    const res = await $route66?.services?.monitors?.bootstrapMonitorsChecks();
+    const events = Array.isArray(res) ? (res as IEvent[]) : [];
+
+    // Only advance the UI "as of" reference when this sync is not part of a larger
+    // bootstrapping composite; composites update `statsAsOf` on completion.
+    if (!get(isBootstrapping) && events.length) {
+        const now = Math.round(Date.now() / 1000);
+        let maxCreatedAt = 0;
+        for (const ev of events as any[]) {
+            const seconds = typeof (ev as any)?.created_at === "number" ? (ev as any).created_at : Number((ev as any)?.created_at);
+            if (Number.isFinite(seconds) && seconds > maxCreatedAt) maxCreatedAt = seconds;
+        }
+        lastCompleteSync.set(now);
+        try {
+            StateManager.set('lastCompleteSync', now);
+        } catch {}
+        setStatsAsOf(maxCreatedAt > 0 ? maxCreatedAt : now, { persist: true });
+    }
+
+    return events;
+}
+
+// Fetch additional checks from active-but-disabled monitors to broaden relay coverage.
+// This should run after `fetchMonitors()` has populated monitors + active status.
+export const fetchDisabledMonitorsChecks = async (): Promise<IEvent[]> => {
+    const $route66 = await instance();
+    await $route66.ready();
+    bindBootstrapEmitters();
+    const res = await $route66?.services?.monitors?.fetchDisabledMonitorsChecks();
+    return Array.isArray(res) ? (res as IEvent[]) : [];
 }
 
 export const fetchNip11s = async () => {
@@ -39,6 +70,66 @@ export const fetchNip11s = async () => {
     }
     return Promise.allSettled(promises);
 }
+
+/**
+ * Backfill historical check events for offline/dead relay counts.
+ * Fetches events older than the "online" window up to the dead threshold (30 days).
+ * Runs at low priority after initial sync completes.
+ */
+export const backfillMonitorChecks = async () => {
+    const $route66 = await instance();
+    await $route66.ready();
+    bindBootstrapEmitters();
+
+    const monitorService = $route66?.services?.monitors;
+    if (!monitorService) return;
+
+    const enabledMonitors = monitorService.enabledMonitors || [];
+    if (!enabledMonitors.length) return;
+
+    const now = Math.round(Date.now() / 1000);
+    const DEAD_THRESHOLD_SECONDS = 30 * 24 * 60 * 60; // 30 days
+
+    // Build filters for historical events (between online window and dead threshold)
+    const filters: Filter[] = [];
+    for (const monitor of enabledMonitors) {
+        const frequency = monitor?.registration?.frequency || (12 * 60 * 60);
+        const onlineAfter = now - frequency;
+        const deadBefore = now - DEAD_THRESHOLD_SECONDS;
+
+        // Get events from dead threshold up to online window (offline + dead range)
+        filters.push({
+            kinds: [30166],
+            authors: [monitor.pubkey],
+            since: deadBefore,
+            until: onlineAfter - 1, // Don't overlap with online window
+        });
+    }
+
+    if (!filters.length) return;
+
+    const relays = monitorService.nip66Relays || [];
+    const options: WebsocketAdapterOptions = {
+        cache: true,
+        returnResults: true,
+        keepAlive: false,
+        stream: true,
+        batch: 50, // Smaller batches for background work
+    };
+
+    // Fetch in chunks to avoid overwhelming relays
+    const chunkSize = 5;
+    for (let i = 0; i < filters.length; i += chunkSize) {
+        const chunk = filters.slice(i, i + chunkSize);
+        try {
+            await $route66.fetch({ relays, filters: chunk, options, priority: 10 });
+        } catch (e) {
+            console.warn('[backfillMonitorChecks] chunk failed:', e);
+        }
+        // Yield to browser between chunks
+        await delay(100);
+    }
+};
 
 export const fetchOperators = async (pubkeys?: string[]) => {
     // await delay(1000)

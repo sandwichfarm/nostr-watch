@@ -353,8 +353,8 @@ importers:
         specifier: ^0.22.0
         version: 0.22.0(rollup@4.56.0)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
       vite-plugin-static-copy:
-        specifier: ^2.2.0
-        version: 2.3.1(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
+        specifier: ^2.3.2
+        version: 2.3.2(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
       vite-plugin-top-level-await:
         specifier: ^1.4.4
         version: 1.5.0(@swc/helpers@0.5.17)(rollup@4.56.0)(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0))
@@ -12919,8 +12919,8 @@ packages:
     peerDependencies:
       vite: ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0
 
-  vite-plugin-static-copy@2.3.1:
-    resolution: {integrity: sha512-EfsPcBm3ewg3UMG8RJaC0ADq6/qnUZnokXx4By4+2cAcipjT9i0Y0owIJGqmZI7d6nxk4qB1q5aXOwNuSyPdyA==}
+  vite-plugin-static-copy@2.3.2:
+    resolution: {integrity: sha512-iwrrf+JupY4b9stBttRWzGHzZbeMjAHBhkrn67MNACXJVjEMRpCI10Q3AkxdBkl45IHaTfw/CNVevzQhP7yTwg==}
     engines: {node: ^18.0.0 || >=20.0.0}
     peerDependencies:
       vite: ^5.0.0 || ^6.0.0
@@ -25562,7 +25562,7 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
-  vite-plugin-static-copy@2.3.1(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)):
+  vite-plugin-static-copy@2.3.2(vite@5.4.21(@types/node@22.15.3)(sass-embedded@1.87.0)(terser@5.46.0)):
     dependencies:
       chokidar: 3.6.0
       fast-glob: 3.3.3

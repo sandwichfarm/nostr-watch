@@ -210,7 +210,6 @@ export class Monitor {
     const since = now - this?.frequency;
     const until = now;
     const authors = [this.pubkey];
-    console.log('enabledMonitor:checkFilter', {kinds, since, until, authors})
     return { kinds, since, until, authors };
   }
 

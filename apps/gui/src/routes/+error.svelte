@@ -10,7 +10,7 @@
 			<p class="text-lg text-muted-foreground">{$page.error?.message || 'Something went wrong'}</p>
 		</div>
 		
-		<div class="mt-8">
+		<div class="mt-10">
 			<Button href="/" variant="default">Return to home</Button>
 		</div>
 	</div>

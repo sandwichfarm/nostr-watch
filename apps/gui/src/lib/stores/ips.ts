@@ -1,8 +1,13 @@
 import { derived, type Readable } from "svelte/store";
 import { relayCheckAggregates, relayCheckMap } from "./checks";
+import { useWorkerIps, workerIpRelayMap } from "./dimension-stores";
 
-export const ipRelayMap: Readable<Map<string, string[]>> = derived(
-    relayCheckMap, 
+// ============================================================================
+// LEGACY STORE (Derived from relayCheckMap)
+// ============================================================================
+
+export const ipRelayMap_legacy: Readable<Map<string, string[]>> = derived(
+    relayCheckMap,
     ($relayCheckMap) => {
         const map: Map<string, string[]> = new Map();
         for(const [ relay, check ] of $relayCheckMap){
@@ -25,5 +30,21 @@ export const ipRelayMap: Readable<Map<string, string[]>> = derived(
             }
         }
         return map;
+    }
+)
+
+// ============================================================================
+// HYBRID STORE (Worker-fed with legacy fallback)
+// ============================================================================
+
+/** Map of IP address -> array of relay URLs (returns Map for backward compatibility) */
+export const ipRelayMap: Readable<Map<string, string[]>> = derived(
+    [useWorkerIps, workerIpRelayMap, ipRelayMap_legacy],
+    ([$useWorker, $worker, $legacy]) => {
+        if ($useWorker && Object.keys($worker).length > 0) {
+            // Convert Record to Map for backward compatibility
+            return new Map(Object.entries($worker));
+        }
+        return $legacy;
     }
 )

@@ -1,0 +1,18 @@
+{
+  "$schema": "./nip66-relays.schema.json",
+  "description": "Default NIP-66 relays for nostr.watch. These relays provide relay metadata and monitoring data.",
+  "relays": [
+    {
+      "url": "wss://relay.nostr.watch",
+      "description": "Primary nostr.watch relay"
+    },
+    {
+      "url": "wss://relaypag.es",
+      "description": "Relaypages NIP-66 relay"
+    },
+    {
+      "url": "wss://monitorlizard.nostr1.com",
+      "description": "Monitor Lizard relay"
+    }
+  ]
+}

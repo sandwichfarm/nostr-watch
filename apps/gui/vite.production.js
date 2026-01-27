@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import nodePolyfills from 'rollup-plugin-node-polyfills';
+import viteCompression from 'vite-plugin-compression';
 
 const debug = process.env.DEBUG === 'true';
 
@@ -95,6 +96,16 @@ export default defineConfig({
   },
   plugins: [
     sveltekit(),
-    nodePolyfills()
+    nodePolyfills(),
+    viteCompression({
+      algorithm: 'brotliCompress',
+      ext: '.br',
+      apply: 'build',
+    }),
+    viteCompression({
+      algorithm: 'gzip',
+      ext: '.gz',
+      apply: 'build',
+    }),
   ],
 });

@@ -98,21 +98,25 @@
   const sync = async () => {
       if(hasSynced) return;
       await $route66?.ready();
-      await $dataRegister.require(
-          [
-              'sync:cache', 
-              'sync:relay:checks', 
-              'sync:relay:nip11', 
-              'sync:relay:operator',
-              'sync:relay:live'
-          ],
-          {
-              'sync:relay:checks': [ relayUrl ],
-              'sync:relay:nip11': [ relayUrl ],
-              'sync:relay:operator': [ relayUrl ],
-              'sync:relay:live': [ relayUrl ]
-          }
-      );
+      try {
+        await $dataRegister.require(
+            [
+                'sync:cache', 
+                'sync:relay:checks', 
+                'sync:relay:nip11', 
+                'sync:relay:operator',
+                'sync:relay:live'
+            ],
+            {
+                'sync:relay:checks': [ relayUrl ],
+                'sync:relay:nip11': [ relayUrl ],
+                'sync:relay:operator': [ relayUrl ],
+                'sync:relay:live': [ relayUrl ]
+            }
+        );
+      } catch (err) {
+        console.error('[DataRegister] require failed', err);
+      }
       hasSynced = true;
   }
 

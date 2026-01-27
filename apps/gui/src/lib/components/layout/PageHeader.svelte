@@ -15,11 +15,14 @@
 <header
   id="relay-header"
   class="relative bg-center bg-cover bg-no-repeat px-3 pb-10 gradient-purple pt-24"
-  style={banner? `background: linear-gradient(rgba(0, 0, 0, ${bgOpacity}), rgba(0, 0, 0, ${bgOpacity})),  url('${banner}'); 
-    background-repeat: no-repeat; 
+  style={banner? `background: linear-gradient(rgba(0, 0, 0, ${bgOpacity}), rgba(0, 0, 0, ${bgOpacity})),  url('${banner}');
+    background-repeat: no-repeat;
     background-size: cover;`: ''}
 >
-  <div class="relative z-10 flex justify-between p-6 h-full">
+  <!-- Absolute positioned slot for overlays like maps -->
+  <slot name="absolute" />
+
+  <div class="relative z-10 flex justify-between items-start p-6 h-full">
     <div class="flex">
     <div class="flex-shrink-0 mr-2">
         {#if icon}
@@ -30,14 +33,20 @@
     </div>
       <div class="">
         <h1 class="copy-this relative">
-          <span 
-            class="inline-block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg cursor-pointer hover:bg-white/50 hover:dark:bg-black/50" 
-            {...(copyable ? { use: clickToCopy } : {})}
-            aria-label="Copy software descriptor"
-          >
-            {title}
-          </span>
-          <span class="copy-message">click to copy</span>
+          {#if copyable}
+            <span
+              class="inline-block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg cursor-pointer hover:bg-white/50 hover:dark:bg-black/50"
+              use:clickToCopy
+              aria-label="Copy to clipboard"
+            >
+              {title}
+            </span>
+            <span class="copy-message">click to copy</span>
+          {:else}
+            <span class="inline-block -mt-2 relative text-black/50 dark:text-white text-6xl py-2 px-3 rounded-lg">
+              {title}
+            </span>
+          {/if}
         </h1>
         {#if subtitle}
             <span class="ml-3 text-lg block">{@html subtitle}</span>
@@ -45,6 +54,7 @@
         <slot />
       </div>
     </div>
+    <slot name="right" />
   </div>
 </header>
 
@@ -57,4 +67,3 @@
         @apply block -top-1;
     }
 </style>
-

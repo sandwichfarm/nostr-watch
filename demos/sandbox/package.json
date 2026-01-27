@@ -4,7 +4,6 @@
   "dependencies": {
     "@nostrwatch/nocap": "workspace:^",
     "@nostrwatch/nocap-every-adapter-default": "workspace:^",
-    "@nostrwatch/nocap-websocket-adapter-default": "workspace:^",
-    "@sandwichfarm/torfetch": "https://github.com/sandwichfarm/torfetch.git#df1f432dcca3de4ab56069324c47d543bd41a277"
+    "@nostrwatch/nocap-websocket-adapter-default": "workspace:^"
   }
 }

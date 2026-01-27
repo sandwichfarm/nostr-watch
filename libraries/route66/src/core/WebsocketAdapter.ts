@@ -101,6 +101,8 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   private _subscriptions: Set<string> = new Set()
   private _hashData: Record<string, any> = {}
 
+  private static readonly DEFAULT_RESPONSE_TIMEOUT_MS = 120_000;
+
   constructor(worker?: Worker | SharedWorker | URL) {
     super(worker)
     // StateManager.on('destroy', () => {
@@ -133,29 +135,41 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   async unsubscribe(hash?: string): Promise<boolean> {
-    console.log('WebsocketAdapter:unsubscribe', hash)
-    if(hash && !this.subscriptions.has(hash)) return true;
-    console.log('WebsocketAdapter:unsubscribe:found', hash) 
-    const unsub = this.request({
+    if(!hash) return true;
+
+    // Best-effort local cleanup first to avoid leaks/stale subscription state,
+    // even if the worker never acknowledges the unsubscribe.
+    this.subscriptions.delete(hash);
+    try { delete this._hashData[hash]; } catch {}
+
+    // Resolve any in-flight `response()` waiters for this hash.
+    try {
+      StateManager.emit(hash, { type: 'unsubscribed', result: true, hash } as any);
+    } catch {}
+    try {
+      StateManager.off(hash);
+    } catch {}
+
+    // Fire-and-forget worker unsubscribe (worker implementations may not reply).
+    this.request({
       action: 'unsubscribe',
       args: {
-        ...defaultWebsocketRequestBody, 
+        ...defaultWebsocketRequestBody,
         hash,
         options: {
           ...defaultWebsocketAdapterOptions,
-          returnResults: true
-        }
-      }
-    })
-    console.log('WebsocketAdapter:unsubscribe:sentrequest', hash)
-    return this.response(unsub) as Promise<boolean>
+          returnResults: false,
+        },
+      },
+    });
+
+    return true;
   }
 
   async unsubscribeAll(hash?: string): Promise<boolean> {
     const hashes = [...Array.from(this.subscriptions)]
-    for(let hash of hashes){
-      console.log('WebsocketAdapter:unsubscribeAll', hash)
-      await this.unsubscribe(hash)
+    for(const hash of hashes){
+      void this.unsubscribe(hash)
     }
     return true;
   }
@@ -206,8 +220,18 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{
     let { hash } = args
-    if(callbacks && Object.keys(callbacks).length > 0) {
-      args.options.stream = true
+    const hasCallbacks = Boolean(callbacks && Object.keys(callbacks).length > 0);
+    if (hasCallbacks) {
+      args.options.stream = true;
+      // Streamed callbacks require the worker to forward results to the adapter.
+      args.options.returnResults = true;
+    } else {
+      // Without callbacks, stream mode provides no benefit and can hang when
+      // `returnResults=false` (worker won't forward streamed messages).
+      args.options.stream = false;
+    }
+    if (args?.options?.keepAlive && !hasCallbacks) {
+      throw new Error('WebsocketAdapter.subscribe: keepAlive requires callbacks');
     }
     const hash_ = this.request({
       action: 'subscribe',
@@ -219,12 +243,21 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       return true;
     }
     this.subscriptions.add(hash)
-    return this.response(hash, callbacks) as Promise<IEvent[] | boolean>
+    if (args?.options?.keepAlive) {
+      // Do not await completion for keepAlive subscriptions; keep the listener running.
+      this.listen(hash, callbacks);
+      return true;
+    }
+    return this.response(hash, callbacks, { timeoutMs: WebsocketAdapter.DEFAULT_RESPONSE_TIMEOUT_MS }) as Promise<IEvent[] | boolean>
   }
 
   async fetch(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean> {
-    if(callbacks && Object.keys(callbacks).length > 0) {
-      args.options.stream = true
+    const hasCallbacks = Boolean(callbacks && Object.keys(callbacks).length > 0);
+    if (hasCallbacks) {
+      args.options.stream = true;
+      args.options.returnResults = true;
+    } else {
+      args.options.stream = false;
     }
     const hash = this.request({
       action: 'fetch',
@@ -235,7 +268,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       return true;
     }
     this.subscriptions.add(hash)
-    const result = this.response(hash, callbacks) as Promise<IEvent[] | boolean> 
+    const result = this.response(hash, callbacks, { timeoutMs: WebsocketAdapter.DEFAULT_RESPONSE_TIMEOUT_MS }) as Promise<IEvent[] | boolean> 
     return result;
   } 
 
@@ -261,16 +294,58 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
     return hash
   }
 
-  async response(hash: string, callbacks?: SubscribeHandlers): Promise<boolean | any[]>{
-    return new Promise( resolve => {
+  private listen(hash: string, callbacks?: SubscribeHandlers): void {
+    const responseHandler = (message: WebsocketResponseBody) => {
+      let { result, type } = message
+      if(type === 'events') {
+        if(callbacks?.onevents){
+          callbacks.onevents(result)
+          return
+        }
+        for(let event of result){
+          callbacks?.onevent?.(event)
+        }
+      }
+      else if(type === 'event'){
+        callbacks?.onevent?.(result)
+      }
+      else if(type === 'complete' || type === 'unsubscribed' || type === 'aborted' || type === 'terminated'){
+        this.subscriptions.delete(hash)
+        try { delete this._hashData[hash]; } catch {}
+        StateManager.off(hash)
+        callbacks?.onclose?.(hash)
+      }
+      else {
+        console.warn(`[WebsocketAdapter] Unknown response type: ${type}`)
+      }
+    }
+    StateManager.on(hash, responseHandler)
+  }
+
+  async response(
+    hash: string,
+    callbacks?: SubscribeHandlers,
+    options?: { timeoutMs?: number }
+  ): Promise<boolean | any[]>{
+    const timeoutMs = options?.timeoutMs;
+    return new Promise( (resolve) => {
       const results: any[] = []
+      let resolved = false;
+      let timeout: ReturnType<typeof setTimeout> | null = null;
+
+      const finish = (value: boolean | any[]) => {
+        if(resolved) return;
+        resolved = true;
+        if(timeout) clearTimeout(timeout)
+        cleanup();
+        resolve(value)
+      }
+
       const responseHandler = (message: WebsocketResponseBody) => {
         let { result, type } = message
-        if(type === 'unsubscribed'){
-          return true
-        }
-        if(type === 'aborted'){
-          return true
+        if(type === 'unsubscribed' || type === 'aborted' || type === 'terminated'){
+          callbacks?.onclose?.(hash)
+          return finish(true)
         }
         if(type === 'events') {
           if(callbacks?.onevents){
@@ -295,18 +370,37 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           }
         }
         else if(type == 'complete'){
-          this.subscriptions.delete(hash)
-          StateManager.off(hash)
           if(callbacks?.onevent){
-            resolve(true)
+            return finish(true)
           }
           else if(results){
-            resolve(results)
+            return finish(results)
           }
         }
         else {
           console.warn(`[WebsocketAdapter] Unknown response type: ${type}`)
         }
+      }
+
+      const cleanup = () => {
+        this.subscriptions.delete(hash)
+        try { delete this._hashData[hash]; } catch {}
+        try {
+          StateManager.off(hash, responseHandler as any)
+        } catch {
+          try { StateManager.off(hash) } catch {}
+        }
+      }
+
+      if(typeof timeoutMs === 'number' && Number.isFinite(timeoutMs) && timeoutMs > 0) {
+        timeout = setTimeout(() => {
+          if(callbacks?.onevent || callbacks?.onevents) {
+            finish(true)
+          }
+          else {
+            finish(results)
+          }
+        }, timeoutMs)
       }
       StateManager.on(hash, responseHandler)
     });

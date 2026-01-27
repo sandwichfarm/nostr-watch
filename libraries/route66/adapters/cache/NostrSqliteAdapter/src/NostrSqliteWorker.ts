@@ -31,8 +31,6 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
     }
 
     async setup(command: AdapterWorkerMessage) {
-        console.log('NostrSqliteWorker: Setup (command)', command);
-
         const { id } = command;
         const { channelPort } = command.args;
 
@@ -68,7 +66,6 @@ export class NostrSqliteWorker extends AdapterCacheWorker {
             : this.mainThread as DedicatedWorkerGlobalScope;
     
         const onmessage = async (message: MessageEvent) => {
-            console.log(`NostrSqliteWorker: Received:`, message.data);
             if (message.data?.cmd === 'setup') {
                 await this.setup(message.data);
             } else {

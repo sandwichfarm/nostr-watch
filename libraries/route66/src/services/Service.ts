@@ -84,10 +84,13 @@ export class Service {
     if(!hash) {
       hash = deterministicHash(args)
     }
+    args.hash = hash;
     this.subscriptions.add(hash)
 
     let result: IEvent[] = [];
     
+    const hasCallbacks = Boolean(callbacks && Object.keys(callbacks).length > 0);
+
     if(filters && !nocache) {
       let cacheCallbacks: SubscribeHandlers = {}
       if(callbacks) {
@@ -99,25 +102,39 @@ export class Service {
       }
     }
 
-    let wsCallbacks: SubscribeHandlers = {}
-    if(callbacks) {
-      callbacks.onclose = (subId: string) => {
-        this.subscriptions.delete(subId)
-        callbacks?.onclose?.(subId)
+    let wsCallbacks: SubscribeHandlers | undefined = undefined;
+    if(hasCallbacks && callbacks) {
+      const originalOnclose = callbacks.onclose;
+      const wrappedCallbacks: SubscribeHandlers = {
+        ...callbacks,
+        onclose: (subId: string) => {
+          this.subscriptions.delete(subId)
+          originalOnclose?.(subId)
+        }
       }
-      wsCallbacks = this.addSymbolToCallbacks(callbacks, 'ws');
+      wsCallbacks = this.addSymbolToCallbacks(wrappedCallbacks, 'ws');
     }
-    if(options?.stream === true){
-      await this.websocketAdapter.subscribe(args, wsCallbacks);
+
+    const shouldStream = Boolean(options?.stream === true && hasCallbacks);
+    if(shouldStream){
+      if(options?.keepAlive){
+        void this.websocketAdapter.subscribe(args, wsCallbacks);
+      }
+      else {
+        await this.websocketAdapter.subscribe(args, wsCallbacks);
+      }
     }
     else {
+      // Stream subscriptions without callbacks can hang (worker won't forward streamed messages
+      // when `returnResults=false`). Force non-stream behavior when no callbacks are present.
+      args.options = { ...defaultWebsocketAdapterOptions, ...(options ?? {}), stream: false };
       result = this.addSymbolToEvents(await this._fetch(args, wsCallbacks), 'ws');
     }
     if(!options?.keepAlive) {
       this.subscriptions.delete(hash)
     }
 
-    return options?.stream && callbacks? []: result;
+    return shouldStream ? [] : result;
   }
 
   subscribeRelatives(note: IEvent | NostrEvent, relays?: string[], callbacks?: SubscribeHandlers): Promise<IEvent[]> {
@@ -317,5 +334,24 @@ export class Service {
   removeRelay(from: keyof IGroupedRelays, relay: string): void {
     if (!this._groupedRelays?.[from]) return;
     this._groupedRelays[from] = this._groupedRelays[from].filter((r) => r !== relay);
+  }
+
+  /**
+   * Replace all relays in a group with new ones
+   * Note: Empty arrays are ignored to prevent accidentally wiping out relay lists
+   */
+  setRelays(group: keyof IGroupedRelays, relays: string[]): void {
+    if (!relays || relays.length === 0) {
+      console.warn(`setRelays called with empty array for group '${group}', ignoring`);
+      return;
+    }
+    this._groupedRelays[group] = [...relays];
+  }
+
+  /**
+   * Clear all relays from a group
+   */
+  clearRelays(group: keyof IGroupedRelays): void {
+    this._groupedRelays[group] = [];
   }
 }

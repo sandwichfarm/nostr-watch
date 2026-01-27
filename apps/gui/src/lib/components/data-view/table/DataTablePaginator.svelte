@@ -5,9 +5,9 @@
     export let totalCount: number | undefined = undefined;
 </script>
 
-<div class="inline-block">
+<div class="inline-block font-mono">
         
-    <div class="flex items-center gap-2 py-2">
+    <div class="flex items-center gap-2">
         <div class="flex items-center gap-0">
             <Button
                 size="icon"
@@ -27,11 +27,15 @@
             </Button>
         </div>
         <p class="text-sm">
-            Page <span class="font-semibold">{tableInstance?.currentPage}</span> of
+            page <span class="font-semibold">{tableInstance?.currentPage}</span> of
             <span class="font-semibold">{tableInstance?.totalPages}</span>
         </p>
-        <span class="text-xs">
-            ({tableInstance?.allRows.length} / {totalCount || tableInstance?.baseRows.length})
-        </span>
+        {#if typeof totalCount === 'number' && tableInstance?.allRows?.length !== totalCount}
+            <span class="text-xs opacity-60">
+                (showing {tableInstance?.allRows.length} / {totalCount})
+            </span>
+        {/if}
     </div>
+
+    
 </div>

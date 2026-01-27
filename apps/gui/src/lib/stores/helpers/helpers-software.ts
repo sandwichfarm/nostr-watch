@@ -1,19 +1,46 @@
 import type Nip66Check from "$lib/components/partials/Nip66Check.svelte";
 import { relayCheckAggregates } from "$stores/checks";
+import { workerAggregates } from "$stores/dimension-stores";
 import { ispsBySoftware, softwareGeocodesStore, softwareOperatorPubkeysMap, softwareRelaysStore } from "$stores/softwares";
 import { isPubkey } from "$utils/nostr";
 import { derived, get, type Readable } from "svelte/store";
 
+// ============================================================================
+// HELPER: Get aggregates source (prefer worker, fallback to legacy)
+// ============================================================================
+
+function getAggregates(): any[] {
+    const worker = get(workerAggregates);
+    if (worker && worker.length > 0) return worker;
+    return get(relayCheckAggregates);
+}
+
+/**
+ * Shared derived store that uses worker aggregates with fallback.
+ * IMPORTANT: This is a single shared store, NOT a factory function.
+ * Creating new derived stores on every call was causing memory leaks.
+ */
+const aggregatesSource$: Readable<any[]> = derived(
+    [workerAggregates, relayCheckAggregates],
+    ([$worker, $legacy]) => {
+        if ($worker && $worker.length > 0) return $worker;
+        return $legacy;
+    }
+);
+
+// ============================================================================
+// SOFTWARE HELPERS
+// ============================================================================
 
 export const softwareRelays = (softwareKey: string): Nip66Check[] => {
-    return Array.from(new Set(get(relayCheckAggregates).filter((relayCheck) => {
+    return Array.from(new Set(getAggregates().filter((relayCheck) => {
         return softwareKey === relayCheck?.software;
     })))
 }
 
 export const softwareRelays$ = (softwareKey: string): Readable<Nip66Check[]> => {
-    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
-        return Array.from(new Set($relayCheckAggregates.filter((relayCheck) => {
+    return derived(aggregatesSource$, ($aggregates) => {
+        return Array.from(new Set($aggregates.filter((relayCheck) => {
             return softwareKey === relayCheck?.software;
         })))
     })

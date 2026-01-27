@@ -10,7 +10,19 @@
         bootstrapped = true;
     });
 
-    $: miniSearchData = bootstrapped? $relayCheckAggregates: $relaysForMiniSearch?.length? $relaysForMiniSearch: null
+    $: miniSearchData = bootstrapped
+        ? $relayCheckAggregates
+            .filter((item: any) => item?.liveness === 'online')
+            .map((item: any) => ({
+                relay: item.relay,
+                operatorPubkey: item.operatorPubkey,
+                isp: item.isp,
+                supportedNips: item.supportedNips,
+                id: item.relay,
+            }))
+        : $relaysForMiniSearch?.length
+            ? $relaysForMiniSearch
+            : null
 </script>
 
 {#if miniSearchData}

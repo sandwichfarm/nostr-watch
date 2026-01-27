@@ -19,6 +19,8 @@ interface CheckData {
       supported_nips?: (string|number)[];
       language_tags?: string[];
       tags?: string[];
+      attributes?: string[];
+      kinds?: (string|number)[];
       limitation?: {
         auth_required?: boolean;
         payment_required?: boolean;
@@ -178,8 +180,8 @@ export class Kind30166 extends Event {
         const { kinds } = info 
         kinds.length = 21;
         for(const kind of info.kinds){
-          if(typeof attr === 'string') {
-            tags.push(['k', kind]);
+          if(typeof kind === 'string' || typeof kind === 'number') {
+            tags.push(['k', String(kind)]);
           }
         }
       }

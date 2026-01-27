@@ -275,9 +275,9 @@
 	<DataViewSelector {enabledViews} {activeView} class={viewSelectorClass} />
 {/if}
 
-<Resizable.PaneGroup direction="horizontal" class="min-h-[100%] z-1">
+<Resizable.PaneGroup direction="horizontal" class="min-h-[100%] z-1 !overflow-visible">
 
-    <Resizable.Pane defaultSize={75}>
+    <Resizable.Pane defaultSize={75} class="!overflow-visible">
         {#if $filteredData && $justColumns?.length}
             {#if $activeView === 'table'}
                 <DataTable

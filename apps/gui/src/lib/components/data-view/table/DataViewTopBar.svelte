@@ -10,15 +10,20 @@
     export let dataKey
     export let tableInstance
     export let dataUnfilteredLength
+	export let element: HTMLDivElement | null = null;
 
 </script>
 
-<div id="dataViewTopBar" class="bg-purple-300/5 border-b-[1px] p-0">
-        <div class="flex items-center gap-2">
+<div
+	id="dataViewTopBar"
+	bind:this={element}
+	class="sticky top-[42px] z-30 bg-purple-300/5 border-b-[1px] p-0"
+>
+	        <div class="flex items-center gap-2">
 
-            <Popover.Root>
-                <Popover.Trigger class="inline-block relative -top-1.5 ml-2">
-                    <Badge variant="secondary" class="mt-3.5 cursor-pointer text-xs text-purple-300/50">columns</Badge>
+	            <Popover.Root>
+	                <Popover.Trigger class="inline-block relative -top-1.5 ml-2">
+	                    <Badge variant="secondary" class="mt-3.5 cursor-pointer text-xs text-purple-300/50">columns</Badge>
                 </Popover.Trigger>
                 <Popover.Content class="font-mono text-xs z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
                     <Tabs.Root value="visiblity" class="">

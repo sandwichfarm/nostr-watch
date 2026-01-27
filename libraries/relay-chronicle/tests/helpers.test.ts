@@ -19,9 +19,40 @@ import type { EventStorage, DeltaEvent } from "../src/types.ts";
 class MockStorage implements EventStorage {
   constructor(private events: DeltaEvent[]) {}
 
-  async query(): Promise<DeltaEvent[]> {
-    // Return events sorted by timestamp
-    return [...this.events].sort((a, b) => a.created_at - b.created_at);
+  async query(options: any = {}): Promise<DeltaEvent[]> {
+    let results = [...this.events];
+
+    if (options.relay) {
+      results = results.filter((e) =>
+        e.tags.some((t) => t[0] === "r" && t[1] === options.relay)
+      );
+    }
+
+    if (options.statusOnly) {
+      results = results.filter((e) => e.tags.some((t) => t[0] === "O" && t[1]));
+    }
+
+    if (options.periods && Array.isArray(options.periods) && options.periods.length > 0) {
+      const set = new Set<string>(options.periods);
+      results = results.filter((e) => e.tags.some((t) => t[0] === "T" && set.has(t[1])));
+    }
+
+    if (options.since !== undefined) {
+      results = results.filter((e) => e.created_at >= options.since);
+    }
+
+    if (options.until !== undefined) {
+      results = results.filter((e) => e.created_at <= options.until);
+    }
+
+    // Mimic typical relay behavior: limits apply to most-recent events.
+    if (options.limit !== undefined) {
+      results = results
+        .sort((a, b) => b.created_at - a.created_at)
+        .slice(0, options.limit);
+    }
+
+    return results.sort((a, b) => a.created_at - b.created_at);
   }
 }
 
@@ -294,6 +325,46 @@ Deno.test("uptimeHistory: Multiple periods", async () => {
   assertEquals(history[3].start, 4000);
   assertEquals(history[3].ongoing, true);
   assertEquals(history[3].end, undefined);
+});
+
+Deno.test("uptimeHistory: Seeds state before since", async () => {
+  const events: DeltaEvent[] = [
+    createMockEvent(1000, [
+      ["r", "wss://relay.example.com"],
+      ["O", "init"],
+    ]),
+  ];
+
+  const storage = new MockStorage(events);
+
+  const history = await uptimeHistory(storage, "wss://relay.example.com", { since: 2000 });
+
+  assertEquals(history.length, 1);
+  assertEquals(history[0].type, "uptime");
+  assertEquals(history[0].start, 2000);
+  assertEquals(history[0].ongoing, true);
+});
+
+Deno.test("uptimeHistory: Seeds downtime state before since", async () => {
+  const events: DeltaEvent[] = [
+    createMockEvent(1000, [
+      ["r", "wss://relay.example.com"],
+      ["O", "init"],
+    ]),
+    createMockEvent(1500, [
+      ["r", "wss://relay.example.com"],
+      ["O", "down"],
+    ], "down-event"),
+  ];
+
+  const storage = new MockStorage(events);
+
+  const history = await uptimeHistory(storage, "wss://relay.example.com", { since: 2000 });
+
+  assertEquals(history.length, 1);
+  assertEquals(history[0].type, "downtime");
+  assertEquals(history[0].start, 2000);
+  assertEquals(history[0].ongoing, true);
 });
 
 Deno.test("lastChange: Find most recent field change", async () => {

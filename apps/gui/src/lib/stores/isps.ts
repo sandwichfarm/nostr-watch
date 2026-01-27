@@ -30,17 +30,27 @@ export type StoreIsp = {
 // ============================================================================
 
 export const isps_legacy: Readable<StoreIsp[]> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
-    const ispsMap = new Map();
+    const ispsMap = new Map<string, StoreIsp>();
     $relayCheckAggregates.forEach((event) => {
-        if (event?.asname) {
-            ispsMap.set(event.asname, {
-                title: event.isp,
-                as: event.as,
-                asname: event.asname
+        const title: string = event?.isp || 'unknown';
+        const nextAs = event?.as || '';
+        const nextAsname = event?.asname || '';
+        const existing = ispsMap.get(title);
+        if (!existing) {
+            ispsMap.set(title, {
+                title,
+                as: nextAs,
+                asname: nextAsname
+            });
+        } else if ((!existing.as && nextAs) || (!existing.asname && nextAsname)) {
+            ispsMap.set(title, {
+                title: existing.title,
+                as: existing.as || nextAs,
+                asname: existing.asname || nextAsname
             });
         }
     });
-    let ispsArray = Array.from(ispsMap.values()).sort((a, b) => a.asname.localeCompare(b.asname));
+    let ispsArray = Array.from(ispsMap.values()).sort((a, b) => a.title.localeCompare(b.title));
     if(ispsArray.length) {
         if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
             StateManager.set('aggregate:isps', ispsArray);
@@ -48,7 +58,7 @@ export const isps_legacy: Readable<StoreIsp[]> = derived(relayCheckAggregates, (
     }
     else {
         const cached = StateManager.get('aggregate:isps');
-        ispsArray = Array.isArray(cached) ? cached : [];
+        ispsArray = Array.isArray(cached) ? (cached as StoreIsp[]) : [];
     }
 
     return ispsArray;
@@ -121,7 +131,7 @@ export const ispRows_legacy = derived(
         const softwaresCount = softwares?.length;
         const { title:prettyName, asname, as } = isp;
         return {
-            id: as,
+            id: prettyName,
             prettyName,
             asname,
             as,

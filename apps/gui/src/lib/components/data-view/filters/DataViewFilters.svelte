@@ -732,7 +732,7 @@
                             </div>
                             <!-- Display Filter Buttons -->
                             {#if filter.filteredDistinctValues.length > 0}
-                                {#each filter.filteredDistinctValues.slice(0, $showAllFilters[filter.key] ? undefined : maxBadgeLength) as value (value)}
+                                {#each filter.filteredDistinctValues.slice(0, $showAllFilters[filter.key] ? undefined : maxBadgeLength) as value, valueIndex (`${value}:${valueIndex}`)}
                                     <Button size="small"
                                         variant="secondary"
                                         on:click={() => applyFilter(filter.key, value)}
@@ -784,7 +784,7 @@
                             </div>
                             <!-- Display Array Filter Buttons -->
                             {#if filter.filteredDistinctValues.length > 0}
-                                {#each filter.filteredDistinctValues.slice(0, $showAllFilters[filter.key] ? undefined : maxBadgeLength) as value (value)}
+                                {#each filter.filteredDistinctValues.slice(0, $showAllFilters[filter.key] ? undefined : maxBadgeLength) as value, valueIndex (`${value}:${valueIndex}`)}
                                     <Button size="small"
                                         variant="secondary"
                                         on:click={() => applyFilter(filter.key, value)}

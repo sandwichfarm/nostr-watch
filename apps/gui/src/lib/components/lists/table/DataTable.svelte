@@ -251,9 +251,9 @@
 <!-- <pre>{JSON.stringify($config.filtersShow, null, 2)}</pre> -->
 
 <!-- **UI Layout with Resizable Panes** -->
-<Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
+<Resizable.PaneGroup direction="horizontal" class="min-h-[100%] !overflow-visible">
     <!-- **Main Table Pane** -->
-    <Resizable.Pane defaultSize={75}>
+    <Resizable.Pane defaultSize={75} class="!overflow-visible">
         {#if tableInstance !== null}
             <div class="px-4 shadow-md my-4">
                 <!-- **Search Input for Global Filtering** -->
@@ -290,12 +290,12 @@
                 <!-- **Data Table Structure** -->
                 <Table.Root>
                     <Table.Header>
-                        <Table.Row class="sticky top-0 z-10 bg-background">
+                        <Table.Row class="bg-background">
                             {#if actionsComponent}
                             <svelte:component this={actionsComponent} view='head' />
                             {/if}
                             {#each tableInstance?.columns as column (column.id)}
-                                <Table.Head>
+                                <Table.Head class="sticky top-[42px] z-10 bg-background">
                                     <button
                                         class="flex items-center"
                                         on:click={() => { 
@@ -330,7 +330,7 @@
                         </Table.Row>
                     </Table.Header>
                     <Table.Body>
-                        {#each tableInstance?.rows as row (row.id)}
+                        {#each tableInstance?.rows as row, rowIndex (`${row.id ?? ''}:${rowIndex}`)}
                             <Table.Row 
                                 class="{$rowStyles.get(row.pubkey)}" 
                                 style="{
@@ -361,11 +361,13 @@
                                         </Table.Cell>
                                     {:else}
                                         <Table.Cell class="font-mono">
-                                            {#if $config.tableFormatters?.[column.key]}
-                                                {@html $config.tableFormatters[column.key](row[column.key], row)}
-                                            {:else}
-                                                {@html row[column.key]}
-                                            {/if}    
+                                            <div class="max-w-full truncate">
+                                                {#if $config.tableFormatters?.[column.key]}
+                                                    {@html $config.tableFormatters[column.key](row[column.key], row)}
+                                                {:else}
+                                                    {@html row[column.key]}
+                                                {/if}
+                                            </div>
                                         </Table.Cell>
                                     {/if}
                                 {/each}

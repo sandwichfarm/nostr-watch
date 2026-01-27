@@ -146,7 +146,7 @@ export type ProgressMessage = {
 const ctx: DedicatedWorkerGlobalScope = self as any;
 
 let currentAggregates: AggregateRow[] = [];
-let config = { onlineOnly: true };
+let config = { onlineOnly: false };
 
 let computeTimer: ReturnType<typeof setTimeout> | null = null;
 const COMPUTE_DEBOUNCE_MS = 100;
@@ -363,11 +363,20 @@ function computeIsps(aggregates: AggregateRow[]): {
     const isp = agg.isp || 'unknown';
 
     // Build ISP info
-    if (agg.asname) {
-      ispsMap.set(agg.asname, {
-        title: agg.isp || '',
-        as: agg.as || '',
-        asname: agg.asname,
+    const existing = ispsMap.get(isp);
+    const nextAs = agg.as || '';
+    const nextAsname = agg.asname || '';
+    if (!existing) {
+      ispsMap.set(isp, {
+        title: isp,
+        as: nextAs,
+        asname: nextAsname,
+      });
+    } else if ((!existing.as && nextAs) || (!existing.asname && nextAsname)) {
+      ispsMap.set(isp, {
+        title: existing.title,
+        as: existing.as || nextAs,
+        asname: existing.asname || nextAsname,
       });
     }
 
@@ -393,11 +402,11 @@ function computeIsps(aggregates: AggregateRow[]): {
   }
 
   // Sort ISPs
-  const isps = Array.from(ispsMap.values()).sort((a, b) => a.asname.localeCompare(b.asname));
+  const isps = Array.from(ispsMap.values()).sort((a, b) => a.title.localeCompare(b.title));
 
   // Build rows
   const ispRows: IspRow[] = isps.map(isp => ({
-    id: isp.as,
+    id: isp.title,
     prettyName: isp.title,
     asname: isp.asname,
     as: isp.as,

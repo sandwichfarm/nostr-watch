@@ -129,7 +129,7 @@ jobs:
 
       - name: Deploy to nsite
         if: matrix.package == 'gui'
-        uses: sandwichfarm/nsite-action@v0.2.2
+        uses: sandwichfarm/nsite-action@v0.1.3
         id: nsite_deploy
         with:
           directory: "./apps/gui/dist"

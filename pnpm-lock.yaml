@@ -1721,8 +1721,8 @@ importers:
         specifier: 3.1.1
         version: 3.1.1(vitest@1.6.1)
       esbuild:
-        specifier: ^0.20.0
-        version: 0.20.2
+        specifier: ^0.25.0
+        version: 0.25.12
       rimraf:
         specifier: ^5.0.5
         version: 5.0.10

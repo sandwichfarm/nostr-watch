@@ -21,6 +21,7 @@
 	import { darkMode, isBootstrapped } from '$lib/stores/app';
 	import type { DataViewColumns } from '../DataTableTypes';
 	import Loading from '$lib/components/partials/Loading.svelte';
+	import RelayLivenessCounts from '$lib/components/partials/RelayLivenessCounts.svelte';
 
     export let dataKey: string;
     export let data: Readable<any[]>;
@@ -230,141 +231,134 @@
 <!-- <pre>{JSON.stringify($config.filtersShow, null, 2)}</pre> -->
 
 {#if tableInstance !== null}
-    <div class="relative z-0 shadow-md p-0 m-0">
+<div class="relative z-0 shadow-md p-0 m-0">
 
-        <div id="dataViewTopBar" class="border-b-[1px]">
-        <!-- **Search Input for Global Filtering** -->
-        <!-- <Input
-            type="text"
-            placeholder="Search"
-            class="md:ml-auto md:max-w-[300px] inline-block float-right mt-2 mr-2"
-            bind:value={globalFilter}
-            on:input={handleGlobalFilterChange}
-        /> -->
+    <div id="dataViewTopBar" class="bg-purple-900/40 border-b-[1px] p-0">
+        <div class="flex items-center gap-2">
+    <Popover.Root>
+        <Popover.Trigger class="inline-block relative -top-1.5 ml-2">
+            <Badge variant="secondary" class="cursor-pointer text-xs text-purple-400/50">columns</Badge>
+        </Popover.Trigger>
+        <Popover.Content class="font-mono text-xs z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
+            <Tabs.Root value="visiblity" class="">
+                <Tabs.List>
+                    <Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>
+                    <Tabs.Trigger value="order">Order</Tabs.Trigger>
+                </Tabs.List>
+                <Tabs.Content value="visiblity"  class="py-4 px-8">
+                    <TableOptions {config} {dataKey} />
+                </Tabs.Content>
+                <Tabs.Content value="order" class=" bg-white/20 dark:bg-black/20">
+                    coming soon...
+                </Tabs.Content>
+            </Tabs.Root>
+        </Popover.Content>
+    </Popover.Root>
 
-        <Popover.Root>
-            <Popover.Trigger class="inline-block relative -top-1.5 ml-2">
-                <Badge variant="secondary" class="cursor-pointer text-xs text-purple-400/50">columns</Badge>
-            </Popover.Trigger>
-            <Popover.Content class="font-mono text-xs z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
-                <Tabs.Root value="visiblity" class="">
-                    <Tabs.List>
-                        <Tabs.Trigger value="visiblity">Visiblity</Tabs.Trigger>
-                        <Tabs.Trigger value="order">Order</Tabs.Trigger>
-                    </Tabs.List>
-                    <Tabs.Content value="visiblity"  class="py-4 px-8">
-                        <TableOptions {config} {dataKey} />
-                    </Tabs.Content>
-                    <Tabs.Content value="order" class=" bg-white/20 dark:bg-black/20">
-                        coming soon...
-                    </Tabs.Content>
-                </Tabs.Root>
-            </Popover.Content>
-        </Popover.Root>
+    <DataTableShowResults {config}  />
+    <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
 
-        <DataTableShowResults {config}  />
-        <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
+    <RelayLivenessCounts />
+    </div>
 
-        </div>
+    </div>
 
-
-
-
-
-        <!-- **Data Table Structure** -->
-        <Table.Root>
-            <Table.Header>
-                <Table.Row class="sticky top-0 z-10 bg-background">
+    <!-- **Data Table Structure** -->
+    <Table.Root>
+        <Table.Header>
+            <Table.Row class="sticky top-0 z-10 bg-background">
+                {#if actionsComponent}
+                <svelte:component this={actionsComponent} view='head' />
+                {/if}
+                {#each tableInstance?.columns as column (column.id)}
+                    <Table.Head class="bg-purple-700/5">
+                        <button
+                            class="flex items-center lowercase text-xs font-mono"
+                            on:click={() => { 
+                                if(tableInstance) {
+                                    tableInstance.toggleSort(column.id) 
+                                    config.update( (currentConfig: DataTableConfig) => {
+                                        if(tableInstance?.sortState){
+                                            currentConfig.sortState = tableInstance.sortState
+                                        }
+                                        return currentConfig;
+                                    })
+                                }
+                            }}
+                            disabled={!tableInstance?.isSortable(column.id)}
+                        >
+                            {column.name}
+                            {#if tableInstance?.isSortable(column.id)}
+                                <span class="ml-2">
+                                    {#if tableInstance.getSortState(column.id) === 'asc'}
+                                        ↑
+                                    {:else if tableInstance.getSortState(column.id) === 'desc'}
+                                        ↓
+                                    {:else}
+                                        ⇕
+                                    {/if}
+                                </span>
+                            {/if}
+                        </button>
+                    </Table.Head>
+                {/each}
+                
+            </Table.Row>
+        </Table.Header>
+        <Table.Body>
+            {#each tableInstance?.rows as row (row.id)}
+            <!-- {(console.log('row data', row?.active, row?.enabled, $config.tableRowStyler(row)))} -->
+                <Table.Row 
+                    class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
+                    style="{
+                        $config.rowBannerEnabled !== false && row.banner && row.banner !== ''
+                            ? 
+                                $darkMode
+                                    ? 
+                                        `background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),  url('${row.banner}'); 
+                                        background-repeat: no-repeat; 
+                                        background-size: cover;`
+                                    :
+                                        `background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)),  url('${row.banner}'); 
+                                        background-repeat: no-repeat; 
+                                        background-size: cover;`
+                                
+                            : ''
+                    }"
+                    >
                     {#if actionsComponent}
-                    <svelte:component this={actionsComponent} view='head' />
+                        <svelte:component this={actionsComponent} data={row} />
                     {/if}
                     {#each tableInstance?.columns as column (column.id)}
-                        <Table.Head class="bg-purple-700/5">
-                            <button
-                                class="flex items-center lowercase text-xs font-mono"
-                                on:click={() => { 
-                                    if(tableInstance) {
-                                        tableInstance.toggleSort(column.id) 
-                                        config.update( (currentConfig: DataTableConfig) => {
-                                            if(tableInstance?.sortState){
-                                                currentConfig.sortState = tableInstance.sortState
-                                            }
-                                            return currentConfig;
-                                        })
-                                    }
-                                }}
-                                disabled={!tableInstance?.isSortable(column.id)}
-                            >
-                                {column.name}
-                                {#if tableInstance?.isSortable(column.id)}
-                                    <span class="ml-2">
-                                        {#if tableInstance.getSortState(column.id) === 'asc'}
-                                            ↑
-                                        {:else if tableInstance.getSortState(column.id) === 'desc'}
-                                            ↓
-                                        {:else}
-                                            ⇕
-                                        {/if}
-                                    </span>
-                                {/if}
-                            </button>
-                        </Table.Head>
-                    {/each}
-                    
-                </Table.Row>
-            </Table.Header>
-            <Table.Body>
-                {#each tableInstance?.rows as row (row.id)}
-                <!-- {(console.log('row data', row?.active, row?.enabled, $config.tableRowStyler(row)))} -->
-                    <Table.Row 
-                        class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
-                        style="{
-                            $config.rowBannerEnabled !== false && row.banner && row.banner !== ''
-                                ? 
-                                    $darkMode
-                                        ? 
-                                            `background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),  url('${row.banner}'); 
-                                            background-repeat: no-repeat; 
-                                            background-size: cover;`
-                                        :
-                                            `background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)),  url('${row.banner}'); 
-                                            background-repeat: no-repeat; 
-                                            background-size: cover;`
-                                    
-                                : ''
-                        }"
-                        >
-                        {#if actionsComponent}
-                            <svelte:component this={actionsComponent} data={row} />
+                        {#if column.id === 'status'}
+                            <Table.Cell>
+                                <Badge variant={row.status === 'active' ? 'secondary' : 'outline'}>
+                                    {row.status === 'active' ? 'Active' : 'Inactive'}
+                                </Badge>
+                            </Table.Cell>
+                        {:else}
+                            <Table.Cell>
+                                {#if $config.tableFormatters?.[column.key]}
+                                    {@html $config.tableFormatters[column.key](row[column.key], row)}
+                                {:else}
+                                    {@html row[column.key]}
+                                {/if}    
+                            </Table.Cell>
                         {/if}
-                        {#each tableInstance?.columns as column (column.id)}
-                            {#if column.id === 'status'}
-                                <Table.Cell>
-                                    <Badge variant={row.status === 'active' ? 'secondary' : 'outline'}>
-                                        {row.status === 'active' ? 'Active' : 'Inactive'}
-                                    </Badge>
-                                </Table.Cell>
-                            {:else}
-                                <Table.Cell>
-                                    {#if $config.tableFormatters?.[column.key]}
-                                        {@html $config.tableFormatters[column.key](row[column.key], row)}
-                                    {:else}
-                                        {@html row[column.key]}
-                                    {/if}    
-                                </Table.Cell>
-                            {/if}
-                        {/each}
-                                
-                    </Table.Row>
-                {/each}
-            </Table.Body>
-        </Table.Root>
+                    {/each}
+                            
+                </Table.Row>
+            {/each}
+        </Table.Body>
+    </Table.Root>
 
-        <DataTableShowResults />
-        <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
-    </div>
+    <DataTableShowResults />
+    <DataTablePaginator {tableInstance} totalCount={dataUnfilteredLength} {livenessCounts} />
+
+    
+</div>
 {:else}
-    <Loading />
+<Loading />
 {/if}
 
 <style lang="postcss" global>

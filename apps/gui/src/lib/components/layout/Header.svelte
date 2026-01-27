@@ -5,7 +5,6 @@
 	import Nav from './Nav.svelte';
     import { HeaderConfigStore } from '$stores/header-config';
 	import RelayDataViewSelectors from '$routes/(components)/RelayDataViewSelectors.svelte';
-	import { relayLivenessCounts } from '$stores';
 
     export let navDisabled: boolean = false;
 
@@ -21,9 +20,11 @@
 <header id="site-header">
     {#if !$unsupported}
         <h1>nostr.watch</h1>
+
+        
         
         <RelayDataViewSelectors
-            class={selectors?.className ?? 'ml-2'}
+            class={selectors?.className ?? 'ml-0'}
             showDimension={true}
             showPresets={selectors?.showPresets ?? false}
             showView={selectors?.showView ?? false}
@@ -34,15 +35,7 @@
 
         <Nav {disabledHrefs} />
 
-        <div>
-            <span class="text-xs flex items-center gap-1 font-mono font-bold opacity-50">
-                <span class="text-green-500" title="online">{$relayLivenessCounts.online}</span>
-                <span class="opacity-50">/</span>
-                <span class="text-yellow-500" title="offline">{$relayLivenessCounts.offline}</span>
-                <span class="opacity-50">/</span>
-                <span class="text-red-500" title="dead">{$relayLivenessCounts.dead}</span>
-            </span>
-        </div>
+
         
          {#if !navDisabled}
             <div class="search-container">

@@ -108,7 +108,7 @@
 
   <input
       type="number"
-      class="h-4 text-xs font-mono relative -top-1.5"
+      class="flex items-center gap-2 text-xs font-mono"
       bind:value={pageSize}
       min={minValue}
       on:input={handleInput}

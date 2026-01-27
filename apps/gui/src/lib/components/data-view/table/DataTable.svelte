@@ -243,7 +243,7 @@
         /> -->
 
         <Popover.Root>
-            <Popover.Trigger class="text-lg inline-block ml-2 relative -top-1">
+            <Popover.Trigger class="inline-block relative -top-1.5 ml-2">
                 <Badge variant="secondary" class="cursor-pointer text-xs">columns</Badge>
             </Popover.Trigger>
             <Popover.Content class="font-mono text-xs z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">

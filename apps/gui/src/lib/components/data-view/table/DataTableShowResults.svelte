@@ -108,6 +108,7 @@
 
   <input
       type="number"
+      class="h-4 text-xs font-mono relative -top-1.5"
       bind:value={pageSize}
       min={minValue}
       on:input={handleInput}

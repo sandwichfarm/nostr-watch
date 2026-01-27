@@ -7,7 +7,7 @@
 	type DimensionKey = "relay" | "operators" | "monitors" | "software" | "geo" | "isps";
 
 	const options: DropdownSelectOption<DimensionKey>[] = [
-		{ value: "relay", label: "relay", searchText: "relays", meta: { href: "/" } },
+		{ value: "relay", label: "relays", searchText: "relays", meta: { href: "/" } },
         { value: "operators", label: "operators", searchText: "operators", meta: { href: "/operators" } },
         { value: "monitors", label: "monitors", searchText: "monitors", meta: { href: "/monitors" } },
 		{ value: "software", label: "software", meta: { href: "/relays/software" } },

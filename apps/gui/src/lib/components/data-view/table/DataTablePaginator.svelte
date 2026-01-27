@@ -6,7 +6,7 @@
     export let livenessCounts: { online: number; offline: number; dead: number } | null = null;
 </script>
 
-<div class="inline-block">
+<div class="inline-block font-mono">
         
     <div class="flex items-center gap-2">
         <div class="flex items-center gap-0">
@@ -28,9 +28,15 @@
             </Button>
         </div>
         <p class="text-sm">
-            Page <span class="font-semibold">{tableInstance?.currentPage}</span> of
+            page <span class="font-semibold">{tableInstance?.currentPage}</span> of
             <span class="font-semibold">{tableInstance?.totalPages}</span>
         </p>
+        {#if typeof totalCount === 'number' && tableInstance?.allRows?.length !== totalCount}
+            <span class="text-xs opacity-60">
+                (showing {tableInstance?.allRows.length} / {totalCount})
+            </span>
+        {/if}
+        <div class="flex float-right">
         {#if livenessCounts}
             <span class="text-xs flex items-center gap-1">
                 <span class="text-green-500" title="online">{livenessCounts.online}</span>
@@ -39,15 +45,13 @@
                 <span class="opacity-50">/</span>
                 <span class="text-red-500" title="dead">{livenessCounts.dead}</span>
             </span>
-            {#if typeof totalCount === 'number' && tableInstance?.allRows?.length !== totalCount}
-                <span class="text-xs opacity-60">
-                    (showing {tableInstance?.allRows.length} / {totalCount})
-                </span>
-            {/if}
         {:else}
             <span class="text-xs">
                 ({tableInstance?.allRows.length} / {totalCount || tableInstance?.baseRows.length})
             </span>
         {/if}
     </div>
+    </div>
+
+    
 </div>

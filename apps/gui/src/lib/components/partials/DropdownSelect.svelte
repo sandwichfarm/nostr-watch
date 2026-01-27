@@ -282,7 +282,7 @@
     aria-invalid={invalid}
     on:keydown={onSummaryKeydown}
   >
-    <span class="italic opacity-80">{label}:</span>
+    <!-- <span class="italic opacity-80">{label}:</span> -->
     <span class="opacity-90 font-bold">{display}</span>
     <span class={cn("nw-dropdown__chevron ml-1 opacity-60 transition-transform", open && "rotate-180")}>
       ▼

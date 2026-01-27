@@ -224,7 +224,7 @@ export const instance = async (): Promise<Route66> => {
 
     // If mode changed (follower -> leader takeover), force a fresh instance.
     if ($route66 && runtimeMode && runtimeMode !== desiredMode) {
-        destroy();
+        await destroy();
     }
 
     if(initializing) {

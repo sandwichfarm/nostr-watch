@@ -42,7 +42,7 @@
     "performance-now": "^2.1.0",
     "promise-deferred": "2.0.4",
     "socks-proxy-agent": "8.0.2",
-    "ws": "8.16.0"
+    "ws": "8.17.1"
   },
   "peerDependencies": {
     "@nostrwatch/websocket": "workspace:^"

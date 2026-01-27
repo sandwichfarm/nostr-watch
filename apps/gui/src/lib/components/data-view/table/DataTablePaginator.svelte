@@ -3,7 +3,6 @@
     import { ArrowLeft, ArrowRight } from 'svelte-radix';
     export let tableInstance;
     export let totalCount: number | undefined = undefined;
-    export let livenessCounts: { online: number; offline: number; dead: number } | null = null;
 </script>
 
 <div class="inline-block font-mono">
@@ -36,21 +35,6 @@
                 (showing {tableInstance?.allRows.length} / {totalCount})
             </span>
         {/if}
-        <div class="flex float-right">
-        {#if livenessCounts}
-            <span class="text-xs flex items-center gap-1">
-                <span class="text-green-500" title="online">{livenessCounts.online}</span>
-                <span class="opacity-50">/</span>
-                <span class="text-yellow-500" title="offline">{livenessCounts.offline}</span>
-                <span class="opacity-50">/</span>
-                <span class="text-red-500" title="dead">{livenessCounts.dead}</span>
-            </span>
-        {:else}
-            <span class="text-xs">
-                ({tableInstance?.allRows.length} / {totalCount || tableInstance?.baseRows.length})
-            </span>
-        {/if}
-    </div>
     </div>
 
     

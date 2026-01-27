@@ -244,7 +244,7 @@
 
         <Popover.Root>
             <Popover.Trigger class="inline-block relative -top-1.5 ml-2">
-                <Badge variant="secondary" class="cursor-pointer text-xs">columns</Badge>
+                <Badge variant="secondary" class="cursor-pointer text-xs text-purple-400/50">columns</Badge>
             </Popover.Trigger>
             <Popover.Content class="font-mono text-xs z-[5999] mt-3 min-w-[600px] backdrop-blur-md bg-black/50">
                 <Tabs.Root value="visiblity" class="">

@@ -319,6 +319,7 @@ function scheduleCacheSave(data: any[]) {
 export const relayCheckAggregates: Readable<any[]> = throttledDerived(
   [relayChecks, monitorsSorted, monitorsLivenessLeniency, monitorsLivenessDeadThreshold, tabState, isBootstrapping, statsAsOf],
   ([$relayChecks, $monitorsSorted, $livenessLeniency, $deadThreshold, $tabState, $isBootstrapping, $statsAsOf]) => {
+
   // Fast path: if no relay checks yet, return cached data
   const relayEntries = Object.entries($relayChecks);
   if (!relayEntries.length) {
@@ -326,10 +327,12 @@ export const relayCheckAggregates: Readable<any[]> = throttledDerived(
     return cached.length ? cached : [];
   }
 
+  
+
   let aggregates = relayEntries.map(([relay, item]) => {
     // Skip URL normalization for performance - relay URLs should already be normalized
     return {
-      relay,
+      relay: new URL(relay).toString(),
       ...item.aggregate,
       id: relay
     }
@@ -488,6 +491,20 @@ export const relaySpeedGroupResolver: Readable<(value: number) => SpeedGroups> =
     };
   }
 );
+
+export interface RelayLivenessCounts {
+  online: number,
+  offline: number,
+  dead: number
+}
+
+export const relayLivenessCounts: Readable<RelayLivenessCounts> = derived( relayCheckAggregates, $relayCheckAggregates => {
+  return {
+    online: $relayCheckAggregates.filter( c => c.liveness === 'online' )?.length || 0,
+    offline: $relayCheckAggregates.filter( c => c.liveness === 'offline' )?.length || 0,
+    dead: $relayCheckAggregates.filter( c => c.liveness === 'dead' )?.length || 0
+  }
+})
 
 export const SpeedGroupBars: Record<SpeedGroups, string> = {
   [SpeedGroups.LightningFast]: '▁▂▃▅█',

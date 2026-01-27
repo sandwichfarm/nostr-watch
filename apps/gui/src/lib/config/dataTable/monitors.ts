@@ -1,11 +1,12 @@
-import { inactiveDisabledMonitorChecksCount, monitors, monitorsMap } from '$lib/stores/monitors.js';
+import { monitorsMap } from '$lib/stores/monitors.js';
 import type { Monitor } from "@nostrwatch/route66/models"
 import { PFP } from '$lib/utils/pfp.js';
 import { get } from 'svelte/store';
 import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 import { validNip05s } from '$lib/stores/nip05s.js';
-import { activeMonitorChecksCount } from '$lib/stores';
 import type { DataKeys, Formatters, NameFormatter } from '$lib/components/data-view/DataTableTypes';
+
+import { pastelPairFromString } from '$utils/colors'; 
 
 export const normalizeKeys = (keys: DataKeys | string) => {
     if(typeof keys === 'string') 
@@ -17,29 +18,84 @@ export const normalizeKeys = (keys: DataKeys | string) => {
 export const columnsDisable: DataKeys = ['asname']
 export const filtersDisable: DataKeys = ['pubkey', 'as', 'asname']
 
-export const columnsShow: DataKeys = ['pubkey', 'networks', 'frequency', 'reportingOnline', 'lastActive', 'checks']
+// All available column keys for the monitors table
+export const availableColumnKeys: string[] = [
+    'pubkey',
+    'name',
+    'networks',
+    'frequency',
+    'reportingOnline',
+    'reportingOffline',
+    'likelyDead',
+    'lastActive',
+    'checks',
+    'nip05',
+    'about',
+    'geohash',
+    'relays',
+    'enabled',
+    'active',
+    'priority'
+]
+
+// All available filter keys for the monitors table
+export const availableFilterKeys: string[] = [
+    'networks',
+    'checks',
+    'relays',
+    'enabled',
+    'active'
+]
+
+export const columnsShow: DataKeys = ['pubkey', 'networks', 'frequency', 'reportingOnline', 'reportingOffline', 'likelyDead', 'lastActive', 'checks']
 export const filtersShow: DataKeys = ['relays', 'checks', 'networks']
 
 export const prettyNames: NameFormatter = {
     pubkey: {
         long: 'Monitor',
+    },
+    reportingOnline: {
+        long: 'Reporting Online',
+        short: 'Reporting Online',
+    },
+    reportingOffline: {
+        long: 'Reporting Offline',
+        short: 'Reporting Offline',
+    },
+    likelyDead: {
+        long: 'Likely Dead',
+        short: 'Likely Dead',
+    },
+    lastActive: {
+        long: 'Last Active',
+        short: 'Last Active',
     }
 };
 
 export const tableFormatters: Formatters = {
     frequency: (frequency) => {
-        return formatSeconds(frequency)
+        return `<span class="block text-center">${formatSeconds(frequency)}</span>`
     },
-    reportingOnline: (reportingOnline, {pubkey}) => {
-        if(reportingOnline > 0) return reportingOnline;
-        const count = get(activeMonitorChecksCount)?.[pubkey]
-        return count? count: 0;
+    reportingOnline: (reportingOnline) => {
+        const value = reportingOnline ?? 0;
+        const colorClass = value > 0 ? 'text-green-400' : 'text-gray-500';
+        return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;
+    },
+    reportingOffline: (reportingOffline) => {
+        const value = reportingOffline ?? 0;
+        const colorClass = value > 0 ? 'text-orange-400' : 'text-gray-500';
+        return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;
+    },
+    likelyDead: (likelyDead) => {
+        const value = likelyDead ?? 0;
+        const colorClass = value > 0 ? 'text-red-400' : 'text-gray-500';
+        return `<span class="block text-center font-medium ${colorClass}">${value}</span>`;
     },
     lastActive: (lastActive) => {
         if(lastActive < 0) {
-            return ''
+            return '<span class="block text-center">-</span>'
         }
-        return timeAgo(lastActive*1000)
+        return `<span class="block text-center">${timeAgo(lastActive*1000)}</span>`
     },
     nip05: (nip05, row) => {
         if(!nip05) return '';
@@ -52,31 +108,30 @@ export const tableFormatters: Formatters = {
         let monitor: Monitor | undefined;
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
         if(!monitor) return pubkey;
-        let profile: string = '<div class="flex">';
-        profile += '<div class="flex-shrink-0 mr-2">'
-        if(monitor?.photo){
-            profile += `
-                <span class="inline-block rounded-full overflow-hidden w-10 h-10">
-                    <img src="${monitor.photo}" alt=${monitor.photo} class="w-full h-auto" />
-                </span>
-                `
-        }
+        let profile: string = `<a href="/monitors/${pubkey}" class="flex hover:opacity-80 transition-opacity">`;
+	        profile += '<div class="flex-shrink-0 mr-2">'
+	        if(monitor?.photo){
+	            profile += `
+	                <span class="inline-block rounded-full overflow-hidden w-10 h-10">
+	                    <img src="${monitor.photo}" alt="${monitor.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
+	                </span>
+	                `
+	        }
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
-            profile += `<span class="inline-block my-1 text-md bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${monitor.profile.name}</span>`
-            // profile += `<div class="text-sm">${monitor.profile.name}</div>`
+            profile += `<span class="inline-block my-1 text-sm font-mono lowercase" style="color:${pastelPairFromString(monitor.pubkey)};">${monitor.profile.name}</span>`
         }
-        profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis">${monitor.pubkey}</div>`
+        profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis" style="color:${pastelPairFromString(monitor.pubkey)};">${monitor.pubkey}</div>`
         profile += '</div>'
-        profile += '</div>'
+        profile += '</a>'
         return profile
     },
     checks: (checks) => {
         if(!checks || checks.length === 0) return '';
         let output = '';
         for(const check of checks) {
-            output += `<span class="p-1 mr-1 inline text-xs bg-white bg-opacity-5 rounded-sm">${check}</span>`;
+            output += `<span class="p-1 mr-1.5 inline text-xs bg-white bg-opacity-5 font-mono">${check}</span>`;
         }
         return output;
     },
@@ -91,26 +146,26 @@ export const filterFormatters: Formatters = {
         monitorsMap.subscribe((monitors) => { monitor = monitors.get(pubkey) })
         let profile: string = '<div class="flex">';
         profile += '<div class="flex-grow-0 mr-2">'
-        if(monitor?.profile?.photo){
-            profile += `
-            <span class="rounded-full overflow-hidden">
-                <img src="${monitor?.profile?.photo}" alt="${monitor?.profile?.photo}" class="w-20 h-24" />
-            </span>
-            `
-        }
-        else {
-            profile += `
-            <span class="rounded-full overflow-hidden inline-block">
-                <img src=${PFP.generate(monitor.pubkey)}" alt={photo} class="w-8 h-8" />
-            </span>
-            `
-        }
+	        if(monitor?.profile?.photo){
+	            profile += `
+	            <span class="overflow-hidden">
+	                <img src="${monitor?.profile?.photo}" alt="${monitor?.profile?.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-16 h-16" />
+	            </span>
+	            `
+	        }
+	        else {
+	            profile += `
+	            <span class="overflow-hidden inline-block">
+	                <img src="${PFP.generate(monitor.pubkey)}" alt="${monitor.pubkey}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-8 h-8" />
+	            </span>
+	            `
+	        }
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
-            profile += `<div class="text-sm">${monitor.profile.name}</div>`
+            profile += `<div class="text-sm font-mono" style="color:${pastelPairFromString(pubkey)?.dark};">${monitor.profile.name}</div>`
         }
-        profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis">${monitor.pubkey}</div>`
+        profile += `<div class="text-xs block max-w-44 overflow-hidden overflow-ellipsis opacity-50"  style="color:${pastelPairFromString(pubkey)?.dark};">${monitor.pubkey}</div>`
         profile += '</div>'
         profile += '</div>'
         return profile
@@ -162,5 +217,7 @@ export default {
     filtersDisable,
     columnsShow,
     filtersShow,
+    availableColumnKeys,
+    availableFilterKeys,
     tableRowStyler
 }

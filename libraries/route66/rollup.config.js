@@ -117,6 +117,7 @@ export default [
     },
     external: [
       '@nostrwatch/route66',
+      '@nostrwatch/relay-chronicle',
       '@base/*',
       '@models/*',
     ],
@@ -142,7 +143,7 @@ export default [
       entryFileNames: '[name].amd.js',
       exports: 'auto'
     },
-    external: [],
+    external: ['@nostrwatch/relay-chronicle'],
     plugins: [
       ...commonPlugins,
       ...browserPlugins
@@ -165,7 +166,7 @@ export default [
       entryFileNames: '[name].cjs.js',
       exports: 'auto'
     },
-    external: [],
+    external: ['@nostrwatch/relay-chronicle'],
     plugins: [
       ...commonPlugins,
       ...serverPlugins
@@ -175,7 +176,7 @@ export default [
       clearScreen: false
     },
     onwarn
-  }, 
+  },
   {
     treeshake: true,
     input,
@@ -187,7 +188,7 @@ export default [
       preserveModulesRoot: 'src',
       entryFileNames: '[name].esm.js'
     },
-    external: [],
+    external: ['@nostrwatch/relay-chronicle'],
     plugins: [
       ...commonPlugins,
       ...serverPlugins

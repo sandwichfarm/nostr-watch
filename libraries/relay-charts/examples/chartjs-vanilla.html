@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chart.js Adapter Example</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #1f2937;
+      color: #f3f4f6;
+    }
+    .chart-container {
+      background: #374151;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    canvas {
+      max-width: 100%;
+      height: 400px;
+    }
+    h1 {
+      margin-top: 0;
+    }
+    h2 {
+      margin-top: 2rem;
+      border-bottom: 2px solid #3b82f6;
+      padding-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>@nostrwatch/relay-charts - Chart.js Example</h1>
+
+  <h2>RTT Time Series</h2>
+  <div class="chart-container">
+    <canvas id="rtt-chart"></canvas>
+  </div>
+
+  <h2>Uptime Timeline</h2>
+  <div class="chart-container">
+    <canvas id="timeline-chart"></canvas>
+  </div>
+
+  <h2>State Changes</h2>
+  <div class="chart-container">
+    <canvas id="state-chart"></canvas>
+  </div>
+
+  <script type="module">
+    // Import adapter (adjust path as needed)
+    import { createChartJsAdapter } from '../dist/adapters/chartjs.js';
+
+    // Make Chart.js available globally
+    window.Chart = Chart;
+
+    // Create adapter
+    const adapter = createChartJsAdapter();
+
+    // Sample RTT data
+    const rttData = Array.from({ length: 50 }, (_, i) => ({
+      timestamp: Date.now() / 1000 - (50 - i) * 300,
+      value: 100 + Math.random() * 100,
+      label: 'RTT (ms)',
+    }));
+
+    // Create RTT chart
+    const rttConfig = adapter.createTimeSeriesChart(rttData, {
+      theme: 'dark',
+      title: 'Response Time Over Last 4 Hours',
+      showGrid: true,
+      showTooltip: true,
+    });
+
+    new Chart(
+      document.getElementById('rtt-chart').getContext('2d'),
+      rttConfig
+    );
+
+    // Sample uptime data
+    const now = Date.now() / 1000;
+    const uptimeData = [
+      { start: now - 14400, end: now - 10800, online: true, rtt: 145 },
+      { start: now - 10800, end: now - 7200, online: false },
+      { start: now - 7200, end: now - 3600, online: true, rtt: 152 },
+      { start: now - 3600, end: now - 1800, online: false },
+      { start: now - 1800, end: null, online: true, rtt: 138 },
+    ];
+
+    // Create timeline chart
+    const timelineConfig = adapter.createTimelineChart(uptimeData, {
+      theme: 'dark',
+      title: 'Relay Uptime/Downtime Periods',
+      showTooltip: true,
+    });
+
+    new Chart(
+      document.getElementById('timeline-chart').getContext('2d'),
+      timelineConfig
+    );
+
+    // Sample state change data
+    const stateData = [
+      { timestamp: now - 7200, from: null, to: 'v2.0.0', field: 'software' },
+      { timestamp: now - 5400, from: 'v2.0.0', to: 'v2.1.0', field: 'software' },
+      { timestamp: now - 3600, from: 'v2.1.0', to: 'v2.1.1', field: 'software' },
+      { timestamp: now - 7000, from: 10, to: 15, field: 'supported_nips' },
+      { timestamp: now - 4000, from: 15, to: 18, field: 'supported_nips' },
+    ];
+
+    // Create state chart
+    const stateConfig = adapter.createStateChart(stateData, {
+      theme: 'dark',
+      title: 'Relay Configuration Changes',
+      showTooltip: true,
+      showLegend: true,
+    });
+
+    new Chart(
+      document.getElementById('state-chart').getContext('2d'),
+      stateConfig
+    );
+  </script>
+</body>
+</html>

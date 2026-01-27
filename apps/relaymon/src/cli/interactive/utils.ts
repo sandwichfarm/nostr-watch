@@ -2,6 +2,7 @@ import * as colors from "https://deno.land/std@0.218.2/fmt/colors.ts";
 import { parse, stringify } from "https://deno.land/std@0.218.2/yaml/mod.ts";
 import { getLogger } from "../../utils/logger.ts";
 import { state } from "./state.ts";
+import type { Config } from "../../config/config.ts";
 
 const logger = getLogger("Interactive");
 
@@ -12,10 +13,10 @@ export const clearScreen = (): void => {
 };
 
 // Load configuration
-export async function loadConfig(path: string): Promise<any> {
+export async function loadConfig(path: string): Promise<Config> {
   try {
     const fileText = await Deno.readTextFile(path);
-    return parse(fileText);
+    return parse(fileText) as Config;
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(`Error loading config: ${errorMessage}`);
@@ -24,7 +25,7 @@ export async function loadConfig(path: string): Promise<any> {
 }
 
 // Save configuration
-export async function saveConfig(config: any, path: string): Promise<void> {
+export async function saveConfig(config: Config, path: string): Promise<void> {
   try {
     const yamlString = stringify(config);
     await Deno.writeTextFile(path, yamlString);

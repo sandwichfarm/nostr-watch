@@ -22,9 +22,9 @@
   export let maxResults: number | undefined;
   export let autoFocus: boolean = false;
 
-  export let inputClass: string = "w-full p-2 mr-4 border border-black/10 rounded-t-md dark:bg-black/5 dark:border-black/10 dark:text-white/60 focus:border-transparent focus:ring-0" 
+  export let inputClass: string = "mr-0 font-mono text-sm w-full p-1 border-l-[1px] border-black/10 dark:bg-white/5 dark:border-white/10 dark:text-white/60 focus:border-transparent focus:ring-0" 
   export let resultWrapperClass: string = "shadow-md absolute top-full left-0 right-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-black/60 dark:border-white/10"
-  export let placeholderText: string = "Search for relay, operator pubkey, ISP, or NIPs";
+  export let placeholderText: string = "find relays";
 
   const { searchResults, initializeIndex, performSearch, selectSuggestion } = searchConfig;
 
@@ -152,7 +152,7 @@
   }
 </script>
 
-<div class="relative m-4 w-full h-full">
+<div class="relative mr-0 w-full h-full">
   <!-- Input Field -->
   <input
     type="text"

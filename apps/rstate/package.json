@@ -1,0 +1,72 @@
+{
+  "name": "@nostr-watch/rstate",
+  "version": "0.1.0",
+  "description": "NIP-66 relay intelligence state machine with ContextVM and REST Enpoints.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "relayvm": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "cli": "tsx src/cli.ts",
+    "cli:validate": "tsx src/cli.ts config:validate",
+    "cli:health": "tsx src/cli.ts health",
+    "cli:cache": "tsx src/cli.ts cache:stats",
+    "generate:client": "ctxcn generate",
+    "test:smoke": "tsx test/smoke.ts",
+    "test:smoke:full": "tsx test/smoke-full.ts",
+    "test:smoke:watch": "./test/run-smoke-tests.sh",
+    "docker:build": "docker build -t nostr-watch/cvm:latest .",
+    "docker:run": "docker-compose up",
+    "docker:stop": "docker-compose down"
+  },
+  "dependencies": {
+    "@contextvm/sdk": "^0.1.37",
+    "@fastify/cors": "^11.1.0",
+    "@fastify/swagger": "^9.5.2",
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "@noble/hashes": "^1.5.0",
+    "@noble/secp256k1": "^2.1.0",
+    "@scalar/fastify-api-reference": "^1.29.6",
+    "ajv": "^8.17.1",
+    "dotenv": "^17.2.3",
+    "fastify": "^5.6.1",
+    "pino": "^9.5.0",
+    "pino-pretty": "^13.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "nostr",
+    "nip-66",
+    "mcp",
+    "contextvm",
+    "relay",
+    "monitoring",
+    "aggregation"
+  ],
+  "license": "MIT"
+}

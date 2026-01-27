@@ -21,7 +21,7 @@ async function getVersion(): Promise<string> {
 /**
  * Format configuration into an ASCII box
  */
-function formatConfig(config: any): string {
+function formatConfig(config: Config): string {
   const c = chalk;
   const boxWidth = 88;
   const title = c.bold.bgBlue.white;
@@ -326,7 +326,7 @@ function formatConfig(config: any): string {
   return box;
 }
 
-export async function header(config?: any) {
+export async function header(config?: Config) {
   const version = await getVersion();
   
   console.log(chalk.bold(`

@@ -16,6 +16,7 @@ export type DataTableConfig = {
     tableRowStyler: (row: any) => string;
 
     availableColumnKeys: string[];
+    dataFormatters?: Formatters;
     tableFormatters: Formatters;
     columnsDisable: string[];
     columnsShow: string[];
@@ -48,7 +49,8 @@ export const defaultDataTableConfig: DataTableConfig = {
     filtersShow: [],
     filterFormatters: {},
 
-    sidebarCollapsed: false,
+    // Filters drawer: collapsed by default (user preference in stored config wins).
+    sidebarCollapsed: true,
     sortState: { columnId: '', direction: 'desc' },
 
     activeFilters: {},

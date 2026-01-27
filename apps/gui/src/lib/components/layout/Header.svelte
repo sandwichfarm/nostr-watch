@@ -1,38 +1,63 @@
-<script lang="ts">;
+<script lang="ts">
     import { page } from '$app/stores';
 	import AutoSuggestRelays from '../partials/AutoSuggestRelaysCompact.svelte';
-    import { doBootstrap } from '$lib/stores/routines';
-	import { hasBeenBootstrapped } from '$lib/stores/app';
-    import { totalMonitors } from '$lib/stores';
 	import { unsupported } from '$lib/stores/app';
 	import Nav from './Nav.svelte';
-  
+    import { HeaderConfigStore } from '$stores/header-config';
+	import RelayDataViewSelectors from '$routes/(components)/RelayDataViewSelectors.svelte';
+
+    export let navDisabled: boolean = false;
+
+
     $: isHomepage = $page.url.pathname === '/';
-    $: isBootstrapped = hasBeenBootstrapped();
-    $: loadedEnough = hasBeenBootstrapped() || $totalMonitors > 1
+    $: disabledHrefs = navDisabled ? ['/relays', '/operators', '/monitors'] : [];
+
+    $: selectors = $HeaderConfigStore.selectors;
+
+    
 </script>
 
 <header id="site-header">
-    {#if (loadedEnough || !$doBootstrap) && !$unsupported}
-    <h1>nostr.watch</h1>
-    <Nav />
+    {#if !$unsupported}
+        <h1>nostr.watch</h1>
+
+        
+        
+        <RelayDataViewSelectors
+            class={selectors?.className ?? 'ml-0'}
+            showDimension={true}
+            showPresets={selectors?.showPresets ?? false}
+            showView={selectors?.showView ?? false}
+            enabledViews={selectors?.enabledViews}
+            activeView={selectors?.activeView}
+            onPresetSelect={selectors?.onPresetSelect}
+        />
+
+        <Nav {disabledHrefs} />
+
+
+        
+         {#if !navDisabled}
+            <div class="search-container">
+                <search>
+                    <AutoSuggestRelays maxResults={6} />
+                </search>
+            </div>
+        {/if}
+
+        
+        
     {/if}
-    {#if !isHomepage && (loadedEnough || !$doBootstrap) && !$unsupported}
-    <div class="search-container">
-        <search>
-            <AutoSuggestRelays maxResults={6} />        
-        </search>
-    </div>
-    {/if}
+
 </header>
 
 <style lang="postcss" global>
     #site-header {
-        @apply fixed top-0 right-0 left-0 flex items-center h-16 bg-black/25 dark:bg-white/25 backdrop-blur-lg text-white dark:text-black z-[999];
+        @apply !h-[42px] gradient-purple border-b-[1px] border-white/10 fixed top-0 right-0 left-0 flex items-center h-12 bg-black/25 dark:bg-white/25 backdrop-blur-lg text-white dark:text-black z-[9999];
     }
 
     #site-header h1 {
-        @apply ml-4 text-xl;
+        @apply ml-4 text-sm font-bold font-mono;
     }
 
     nav {

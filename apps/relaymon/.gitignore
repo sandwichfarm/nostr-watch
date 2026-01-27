@@ -1,4 +1,4 @@
-config*.yaml
+config.yaml
 !*.sample.*
 *.env*
 node_modules

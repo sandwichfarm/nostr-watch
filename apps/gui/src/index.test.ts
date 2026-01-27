@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DataTable, type ColumnDef } from '$lib/DataTable.svelte.js';
+import { DataTable, type ColumnDef } from './lib/components/@Careswitch/svelte-data-table/DataTable.svelte.ts';
 
 describe('DataTable', () => {
 	const sampleData = [

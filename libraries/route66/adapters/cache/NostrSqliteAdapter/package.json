@@ -1,5 +1,6 @@
 {
   "name": "@nostrwatch/route66-cacheadapter-nostrsqlite",
+  "version": "0.0.1",
   "type": "module",
   "main": "dist/browser/index.js",
   "files": [

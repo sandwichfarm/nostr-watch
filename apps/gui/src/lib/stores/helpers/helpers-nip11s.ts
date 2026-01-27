@@ -2,6 +2,28 @@ import { derived, get, readable, writable, type Readable, type Writable } from "
 import { nip11s, nip11sLocal } from "../nip11s"
 import type { Limitations, Nip11 } from "@nostrwatch/route66/models/Nip11";
 import { relayCheckAggregates } from "$stores/checks";
+import { workerAggregates } from "$stores/dimension-stores";
+
+// ============================================================================
+// HELPER: Get aggregates source (prefer worker, fallback to legacy)
+// ============================================================================
+
+/**
+ * Shared derived store that uses worker aggregates with fallback.
+ * IMPORTANT: This is a single shared store, NOT a factory function.
+ * Creating new derived stores on every call was causing memory leaks.
+ */
+const aggregatesSource$: Readable<any[]> = derived(
+    [workerAggregates, relayCheckAggregates],
+    ([$worker, $legacy]) => {
+        if ($worker && $worker.length > 0) return $worker;
+        return $legacy;
+    }
+);
+
+// ============================================================================
+// NIP-11 HELPERS
+// ============================================================================
 
 export const relayNip11 = (relay: string): Nip11 | undefined => {
     return get(nip11s).get(relay)?.[0];
@@ -90,9 +112,9 @@ export const relaysWithNip11s$ = (): Readable<string[]> => {
 }
 
 export const relaysWithoutNip11s$ = (): Readable<string[]> => {
-    return derived(relayCheckAggregates, ($relayCheckAggregates) => {
+    return derived(aggregatesSource$, ($aggregates) => {
         const result = new Set()
-        $relayCheckAggregates.forEach( (check: any) => { 
+        $aggregates.forEach( (check: any) => {
             if(!check.hasNip11) {
                 result.add(check.relay)
             }

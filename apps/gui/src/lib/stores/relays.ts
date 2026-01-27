@@ -1,9 +1,7 @@
 import { derived, get, readable, writable, type Readable, type Writable } from 'svelte/store';
-import { eventsArray } from './events.js';
 import { StateManager } from '@nostrwatch/route66';
 import { relayCheckAggregates, relayChecks } from './checks.js';
-import { doAggregateCache } from './app.js';
-import type { Nip66CheckEvent } from '@nostrwatch/route66/models/Nip66CheckEvent';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
 import type { IResult } from '@nostrwatch/nocap';
 
 export const relays: Readable<string[]> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
@@ -29,10 +27,13 @@ export const relays: Readable<string[]> = derived(relayCheckAggregates, ($relayC
     let relaysArr = Array.from(relays);
 
     if(relaysArr.length){
-        if(get(doAggregateCache)) StateManager.set('aggregate:relays', relaysArr);
+        if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+            StateManager.set('aggregate:relays', relaysArr);
+        }
     }
     else {
-        relaysArr = StateManager.get('aggregate:relays')
+        const cached = StateManager.get('aggregate:relays')
+        relaysArr = Array.isArray(cached) ? cached : [];
     } 
 
     return relaysArr;
@@ -48,7 +49,7 @@ export enum RelayLivenessType {
 
 export type RelayLivenessObject = {
     relay: string;
-    remoteChecks: Nip66CheckEvent[];
+    remoteSeenTimes: number;
     localCheck: Partial<IResult>;
     determination: RelayLivenessType;
 }
@@ -56,7 +57,7 @@ export type RelayLivenessObject = {
 export const relayLivenessObjectFactory = (relay: string): RelayLivenessObject => {
     return {
         relay,
-        remoteChecks: [],
+        remoteSeenTimes: 0,
         localCheck: { open: { data: false, duration: -1 } },
         determination: RelayLivenessType.Unknown
     }
@@ -69,9 +70,9 @@ export const relaysLiveness: Readable<Map<string, RelayLivenessObject>> = derive
     ([$localRelayChecks, $relayChecks]) => {
         const relaysLiveness = new Map();
         for( const [relay, check] of Object.entries($relayChecks)){
-            const { checks:remoteChecks } = check
+            const remoteSeenTimes = check?.aggregate?.seenTimes ?? 0;
             const localCheck = $localRelayChecks.get(relay);
-            const remoteDetermination: RelayLivenessType = remoteChecks.length > 0? RelayLivenessType.Online: RelayLivenessType.Offline;
+            const remoteDetermination: RelayLivenessType = remoteSeenTimes > 0? RelayLivenessType.Online: RelayLivenessType.Offline;
             let localDetermination: RelayLivenessType | undefined = undefined;
             let determination: RelayLivenessType | undefined = undefined;
             if(typeof localCheck !== 'undefined') {
@@ -90,7 +91,7 @@ export const relaysLiveness: Readable<Map<string, RelayLivenessObject>> = derive
             else {
                 determination = RelayLivenessType.Offline;
             }
-            relaysLiveness.set(relay, { relay, remoteChecks, localCheck, determination });
+            relaysLiveness.set(relay, { relay, remoteSeenTimes, localCheck, determination });
         };
         return relaysLiveness;
     }

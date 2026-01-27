@@ -211,17 +211,10 @@
 
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
 
-    // Give the ActivityManager a tick to claim/follow leadership before boot.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    // Leader-tab runtime RPC server (only runs in the elected leader tab).
-    if (get(tabState) === 'leader') startLeaderTabRpcServer(leaderRpcOptions);
-    else stopLeaderTabRpcServer();
-
     lastRole = get(tabState);
-    await runBoot();
 
-    // React to leader/follower role changes after initial boot.
+    // React to leader/follower role changes immediately (even during boot),
+    // so follower tabs don't time out waiting for a leader RPC server.
     unsubscribeTabState = tabState.subscribe(async (role) => {
       if (!role || role === lastRole) return;
 
@@ -233,12 +226,24 @@
         await shutdown();
       }
 
+      lastRole = role;
+
       if (role === 'leader' || role === 'follower') {
+        // If boot was running while we changed roles, complete it and then run again
+        // so Route66/leader RPC reflects the current leader/follower mode.
+        if (bootInFlight) await bootInFlight;
         await runBoot();
       }
-
-      lastRole = role;
     });
+
+    // Leader-tab runtime RPC server (only runs in the elected leader tab).
+    if (get(tabState) === 'leader') startLeaderTabRpcServer(leaderRpcOptions);
+    else stopLeaderTabRpcServer();
+
+    // Give the ActivityManager a tick to claim/follow leadership before boot.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await runBoot();
 
     isReady = true;
   });

@@ -26,6 +26,19 @@ export async function stateManagerSet(key: string, value: any, options: { timeou
   }
 
   // Followers ask the leader to persist, which also triggers a broadcast.
+  // If the leader RPC server isn't available yet (startup/role transitions), avoid long
+  // timeouts and fall back to a local write so navigation doesn't hang.
+  try {
+    await getLeaderTabRpcClient().waitForLeader({ timeoutMs: Math.min(750, options.timeoutMs ?? 5_000) });
+  } catch {
+    try {
+      StateManager.set(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   try {
     return await leaderRpcCall('state.stateManagerSet', [key, value], {
       timeoutMs: options.timeoutMs ?? 5_000,
@@ -40,4 +53,3 @@ export async function stateManagerSet(key: string, value: any, options: { timeou
     }
   }
 }
-

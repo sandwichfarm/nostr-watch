@@ -120,9 +120,9 @@ export const tableFormatters: Formatters = {
         profile += '</div>'
          profile += '<div class="">'
         if(monitor?.profile?.name){
-            profile += `<span class="inline-block my-1 text-sm font-mono lowercase">${monitor.profile.name}</span>`
+            profile += `<span class="inline-block my-1 text-sm font-mono lowercase" style="color:${pastelPairFromString(monitor.pubkey)};">${monitor.profile.name}</span>`
         }
-        profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis">${monitor.pubkey}</div>`
+        profile += `<div class="text-xs text-gray-500 block max-w-44 overflow-hidden overflow-ellipsis" style="color:${pastelPairFromString(monitor.pubkey)};">${monitor.pubkey}</div>`
         profile += '</div>'
         profile += '</a>'
         return profile
@@ -131,7 +131,7 @@ export const tableFormatters: Formatters = {
         if(!checks || checks.length === 0) return '';
         let output = '';
         for(const check of checks) {
-            output += `<span class="p-1 mr-1 inline text-xs bg-white bg-opacity-5 rounded-sm">${check}</span>`;
+            output += `<span class="p-1 mr-1.5 inline text-xs bg-white bg-opacity-5 font-mono">${check}</span>`;
         }
         return output;
     },

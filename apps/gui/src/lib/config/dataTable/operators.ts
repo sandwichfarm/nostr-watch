@@ -77,14 +77,14 @@ export const tableFormatters: Formatters = {
         }
 
         const nameHtml = hasProfile
-            ? `<a class="my-1 text-sm font-mono" href="/operators/${pubkey}" style="color:${pastelPairFromString(displayName)?.dark};">${displayName}</a>`
-            : `<a class="text-sm font-mono" href="/operators/${pubkey}" style="color:${pastelPairFromString(displayName)?.dark};">${displayName}</a>`;
+            ? `<a class="my-1 text-sm font-mono" href="/operators/${pubkey}" style="color:${pastelPairFromString(pubkey)?.dark};">${displayName}</a>`
+            : `<a class="text-sm font-mono" href="/operators/${pubkey}" style="color:${pastelPairFromString(pubkey)?.dark};">${displayName}</a>`;
 
         return `<span class="block min-w-[300px] flex items-center">${photo}${nameHtml}</span>`;
     },
-    about: (about: string, state: any) => {
+    about: (about: string, row: any) => {
         if(typeof about !== 'string') return '-';
-        const aboutHtml = `<span class="text-sm max-w-[400px] block opacity-80" style="color:${state?.pubkey? pastelPairFromString(state?.pubkey)?.dark: "#444"};">${truncateWithEllipsis(about, 100)}</span>`;
+        const aboutHtml = `<span class="text-sm max-w-[400px] block opacity-80" style="color:${row?.pubkey? pastelPairFromString(row?.pubkey)?.dark: "#444"};">${truncateWithEllipsis(about, 100)}</span>`;
         return aboutHtml;
     },
     reference: (reference: string) => {

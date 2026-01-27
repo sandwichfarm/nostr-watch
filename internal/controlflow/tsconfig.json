@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ES2020",
+    "module": "ESNext",
     "lib": ["ES2020"],
     "sourceMap": true,
-    "outDir": "./dist/server",
+    "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "declaration": true,
     "emitDeclarationOnly": false,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true, 
     "skipLibCheck": true

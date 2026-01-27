@@ -8,9 +8,6 @@
 		"resolveJsonModule": true,
 		"skipLibCheck": true,
 		"sourceMap": true,
-		"strict": true,
-		"module": "NodeNext",
-		"moduleResolution": "bundler",
-		"baseUrl": "./"
+		"strict": true
 	}
 }

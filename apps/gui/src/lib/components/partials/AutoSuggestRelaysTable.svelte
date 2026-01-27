@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { relayAggregates, relaysForMiniSearch } from "$lib/stores/checks.js";
-    import { StateManager } from "@nostrwatch/nip66";
+	import { relayCheckAggregates, relaysForMiniSearch } from "$lib/stores/checks.js";
+    import { StateManager } from "@nostrwatch/route66";
 	import AutoSuggest from "./AutoSuggest.svelte";
     import * as searchConfig from "$lib/stores/search-relays.js";
 
@@ -10,7 +10,19 @@
         bootstrapped = true;
     });
 
-    $: miniSearchData = bootstrapped? $relayAggregates: $relaysForMiniSearch?.length? $relaysForMiniSearch: null
+    $: miniSearchData = bootstrapped
+        ? $relayCheckAggregates
+            .filter((item: any) => item?.liveness === 'online')
+            .map((item: any) => ({
+                relay: item.relay,
+                operatorPubkey: item.operatorPubkey,
+                isp: item.isp,
+                supportedNips: item.supportedNips,
+                id: item.relay,
+            }))
+        : $relaysForMiniSearch?.length
+            ? $relaysForMiniSearch
+            : null
 </script>
 
 {#if miniSearchData}

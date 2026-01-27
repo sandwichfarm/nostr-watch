@@ -1,0 +1,16 @@
+version: "3"
+services:
+  cache:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    volumes: 
+      - ./.redis:/data:rw
+    command: redis-server
+
+  nostrawl:
+    build: 
+      context: ../../
+      dockerfile: examples/bullmq/Dockerfile
+    depends_on:
+      - cache

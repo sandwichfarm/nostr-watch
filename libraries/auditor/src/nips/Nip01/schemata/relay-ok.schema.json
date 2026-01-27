@@ -1,9 +1,17 @@
 {
   "type": "array",
   "items": [
-    { "const": "OK" },
-    { "type": "string", "description": "event_id" },
-    { "type": "boolean", "description": "true if accepted by the relay, false otherwise" },
+    {
+      "const": "OK"
+    },
+    {
+      "type": "string",
+      "description": "event_id"
+    },
+    {
+      "type": "boolean",
+      "description": "true if accepted by the relay, false otherwise"
+    },
     {
       "type": "string",
       "description": "response message",

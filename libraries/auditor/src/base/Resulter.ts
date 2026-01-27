@@ -1,6 +1,6 @@
 import { type ISuiteTestResult } from "./SuiteTest.js";
 import { type ISuiteResult } from "./Suite.js";
-import { type IResult } from "./Auditor.js";
+import { type IAuditorResult } from "./Auditor.js";
 
 type NestedKey<T> = T extends Record<string, any> ? keyof T : never;
 
@@ -42,8 +42,8 @@ class BaseResulter<T extends Record<string, any>> {
   }
 }
 
-export class Resulter extends BaseResulter<IResult> {
-  constructor(defaultResult: IResult) {
+export class Resulter extends BaseResulter<IAuditorResult> {
+  constructor(defaultResult: IAuditorResult) {
     super(structuredClone(defaultResult));
   }
 }

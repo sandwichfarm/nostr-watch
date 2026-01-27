@@ -1,0 +1,13 @@
+{
+  "fallback": "index.html",
+  "relays": [
+    "wss://relay.nosto.re",
+    "wss://relay.nsite.lol",
+    "wss://nos.lol"
+  ],
+  "servers": [
+    "https://cdn.hzrd149.com",
+    "https://blossom.yakihonne.com"
+  ],
+  "bunkerPubkey": "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019"
+}

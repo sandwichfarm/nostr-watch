@@ -11,7 +11,9 @@ import nodeResolve from '@rollup/plugin-node-resolve';
 import json from '@rollup/plugin-json';
 import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
 
-import * as glob from 'glob';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const glob = require('glob');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

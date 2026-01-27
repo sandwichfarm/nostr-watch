@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es2022",
     "module": "ESNext",
-    "lib": ["ES6", "DOM"],
+    "lib": ["es2022", "DOM"],
     "moduleResolution": "bundler",
 
     "outDir": "./dist/server",

@@ -1,10 +1,13 @@
 /// <reference path="./types/global.d.ts" />
-import { AbstractAdapter, type IResultData, type IAdapter, type Nocap as Base } from '@nostrwatch/nocap';
+import { AbstractAdapter, type IResultData, type IAdapter, type Nocap as Base, AdapterType } from '@nostrwatch/nocap';
 import { isBrowser } from '@nostrwatch/utils';
 
 const resultTpl: IResultData = { data: {}, duration: -1 };
 
 export class SslAdapterDefault extends AbstractAdapter implements IAdapter {
+
+  static type: AdapterType = 'ssl';
+  readonly slug: string = 'SslAdapterDefault';
 
   constructor(parent: Base) {
     super(parent);

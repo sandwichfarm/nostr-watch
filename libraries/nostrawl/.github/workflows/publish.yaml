@@ -1,0 +1,65 @@
+name: GH Release and NPM Publish
+on:
+  workflow_dispatch: 
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  publish:  
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Publish Package
+        id: publish
+        uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: '.'
+          access: public
+
+      - name: Create Release
+        if: steps.publish.outputs.type != 'none'
+        uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ steps.publish.outputs.version }}
+          name: v${{ steps.publish.outputs.version }}
+          generateReleaseNotes: true
+          prerelease: ${{ contains(steps.publish.outputs.version, '-') }}
+          token: ${{ secrets.GITHUB_TOKEN }}

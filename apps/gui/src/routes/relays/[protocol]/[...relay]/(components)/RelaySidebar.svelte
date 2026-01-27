@@ -1,0 +1,56 @@
+<script lang="ts">
+	import { type Readable } from "svelte/store";
+	import { cubicInOut } from "svelte/easing";
+	import { crossfade } from "svelte/transition";
+	import { cn } from "$lib/components/utils.js";
+	import { page } from "$app/stores";
+	import { Button } from "$lib/components/ui/button/index.js";
+	import RelayLiveness from "./partials/RelayLiveness.svelte";
+
+	let className: string | undefined | null = undefined;
+
+	export let items: Readable<{ href: string; title: string }[]>;
+	export { className as class };
+	const [send, receive] = crossfade({
+		duration: 250,
+		easing: cubicInOut,
+	});
+
+</script>
+<!-- <nav class={cn("flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1", className)}> -->
+	<RelayLiveness class="block relative justify-start hover:bg-transparent text-lg py-1.5 px-3 rounded-md ml-14 -mr-4 capitalize mb-3" />
+
+	<nav class={cn("", className)}>
+
+	{#each $items as item}
+		{@const isActive = $page.url.pathname === item.href}
+		
+		<Button
+			href={item?.href? item.href: "#"}
+			size="lg"
+			variant="ghost"
+			class={cn(
+				!isActive && "hover:underline",
+				item?.href? "!text-black dark:!text-white": "!text-black/30 dark:!text-white/30 hover:!no-underline",
+				"block w-full relative justify-start hover:bg-transparent text-lg py-1.5 px-3 mb-3"
+			)}
+			data-sveltekit-noscroll
+		>
+			{#if isActive}
+				<div
+					class="bg-muted absolute inset-0 rounded-md bg-purple-600/25 "
+					in:send={{ key: "active-sidebar-tab" }}
+					out:receive={{ key: "active-sidebar-tab" }}
+				/>
+			{/if}
+			<div class="relative ">
+				{item.title}
+				{#if item?.errorCount}
+				<span class="relative -top-0.5 ml-1 rounded-full bg-red-700  text-xs font-bold py-1 px-2 ">
+					{item.errorCount}
+				</span>
+				{/if}
+			</div>
+		</Button>
+	{/each}
+</nav>

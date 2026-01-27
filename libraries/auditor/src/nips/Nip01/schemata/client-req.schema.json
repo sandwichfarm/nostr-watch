@@ -6,5 +6,5 @@
     { "$ref": "./filter.schema.json" }
   ],
   "minItems": 3,
-  "additionalItems": { "$ref": "#/definitions/filter" }
+  "additionalItems": { "$ref": "./filter.schema.json" }
 }

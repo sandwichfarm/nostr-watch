@@ -12,3 +12,6 @@ export * from "./ClientEventMessage";
 export * from "./ClientReqMessage";
 
 export * from "./INip01RelayMessage";
+
+export * from "./MachineReadableStatus";
+export * from "./HumanReadableStatus";

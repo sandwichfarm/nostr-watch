@@ -1,0 +1,49 @@
+{
+  "name": "@nostrwatch/route66-cacheadapter-nostrsqlite",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/browser/index.js",
+  "files": [
+    "dist/browser/index.js",
+    "dist/browser/workers/nostrsqlite.worker.js"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/browser/index.js",
+      "require": "./dist/browser/index.js"
+    },
+    "./worker": "./dist/browser/workers/nostrsqlite.worker.js",
+    "./worker?worker": "./dist/browser/workers/nostrsqlite.worker.js"
+  },
+  "dependencies": {
+    "@nostrwatch/route66": "workspace:^",
+    "@nostrwatch/worker-relay": "workspace:^"
+  },
+  "devDependencies": {
+    "@aidenlx/esbuild-plugin-inline-worker": "^1.0.1",
+    "@chialab/esbuild-plugin-meta-url": "^0.18.2",
+    "@chialab/esbuild-plugin-worker": "^0.18.1",
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
+    "@jgoz/esbuild-plugin-livereload": "^2.1.2",
+    "esbuild": "^0.24.0",
+    "esbuild-plugin-alias": "^0.2.1",
+    "esbuild-plugin-clean": "^1.0.1",
+    "esbuild-plugin-inline-worker": "^0.1.1",
+    "esbuild-plugin-polyfill-node": "^0.3.0",
+    "esbuild-plugin-tsc": "^0.4.0",
+    "esbuild-plugin-wasm": "^1.1.0",
+    "get-port": "^7.1.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.21",
+    "vite-plugin-node-polyfills": "^0.22.0"
+  },
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:esm",
+    "build:esm": "node build.js",
+    "dev": "node build.js --watch",
+    "clean": "rm -rf dist",
+    "clean:source": "find src -name \"*.d.ts\" -type f -delete && find src -name \"*.d.ts.map\" -type f -delete",
+    "test": "jest"
+  }
+}

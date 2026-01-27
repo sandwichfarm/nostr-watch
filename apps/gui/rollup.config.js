@@ -5,7 +5,11 @@ import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import livereload from 'rollup-plugin-livereload';
 import css from 'rollup-plugin-css-only';
+import replace from '@rollup/plugin-replace';
+import { globSync } from 'glob';
 // import { cleandir } from "rollup-plugin-cleandir";
+
+const workerFiles = globSync('src/**/*.worker.ts'); // Find all worker files
 
 const production = !process.env.ROLLUP_WATCH;
 const OUT_DIR = 'public/build';
@@ -30,6 +34,7 @@ function serve() {
 	};
 }
 
+
 export default [
 	{
 		treeshake: production,
@@ -50,7 +55,7 @@ export default [
 			css({ output: 'bundle.css' }),
 			resolve({
 				browser: true,
-				dedupe: ['svelte', '@nostrwatch/nip66', '@nostrwatch/nip66-cacheadapter-dexieetl', '@nostrwatch/nip66-wsadapter-nostrtools'],
+				dedupe: ['svelte', '@nostrwatch/route66', '@nostrwatch/route66-cacheadapter-dexieetl', '@nostrwatch/route66-wsadapter-nostrtools'],
 				exportConditions: ['svelte']
 			}),
 			commonjs({
@@ -65,34 +70,17 @@ export default [
 			clearScreen: false
 		}
 	},
-	{
-		treeshake: production,
-		input: 'src/main.js',
+	...workerFiles.map((workerFile) => ({
+		input: workerFile,
 		output: {
-			sourcemap: true,
-			format: 'iife',
-			name: 'app',
-			file: 'public/build/bundle.js',
-			inlineDynamicImports: true
+		  file: workerFile.replace('src/', 'dist/').replace('.ts', '.js'),
+		  format: 'esm'
 		},
 		plugins: [
-			svelte({
-				compilerOptions: {
-					dev: !production
-				}
-			}),
-			css({ output: 'bundle.css' }),
-			resolve({
-				browser: true,
-				dedupe: ['svelte', '@nostrwatch/nip66', '@nostrwatch/nip66-cacheadapter-dexieetl', '@nostrwatch/nip66-wsadapter-nostrtools'],
-				exportConditions: ['svelte']
-			}),
-			commonjs(),
-			!production && livereload('public'),
-			production && terser()
-		],
-		watch: {
-			clearScreen: false
-		}
-	}
+			replace({
+				preventAssignment: true,
+				global: 'self' // Only applies to *.worker.ts files
+			})
+		]
+	}))
 ];

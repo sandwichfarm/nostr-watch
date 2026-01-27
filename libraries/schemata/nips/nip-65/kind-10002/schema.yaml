@@ -1,0 +1,18 @@
+$id: 'https://schemata.nostr.watch/note/kind/3'
+$schema: http://json-schema.org/draft-07/schema#
+title: kind10002
+allOf: 
+  - $ref: "@/note.yaml"
+  - type: object
+    properties: 
+      tags: 
+        type: array
+        items: 
+          $ref: "@/tag/r.yaml"
+        additionalItems: false
+        minItems: 1
+        errorMessage:
+          type: "tags must be an array of r tags"
+          minItems: "tags array must have at least one r tag"
+    required:
+      - tags

@@ -3,7 +3,8 @@
     AbstractAdapter, 
     type IResultData, 
     type IAdapter,
-    type Nocap as Base
+    type Nocap as Base,
+    AdapterType
   } from '@nostrwatch/nocap';
 
   const IPV4 = /\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
@@ -19,6 +20,9 @@
   };
 
   export class GeoAdapterDefault extends AbstractAdapter implements IAdapter {
+
+    static type: AdapterType = 'geo';
+    readonly slug: string = 'GeoAdapterDefault';
     
     constructor(parent: Base) { 
       super(parent);

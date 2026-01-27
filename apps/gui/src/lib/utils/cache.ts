@@ -1,8 +1,10 @@
-import type Nip66 from '@nostrwatch/nip66';
+import type Route66 from '@nostrwatch/route66';
 import { get } from 'svelte/store';
-import { hasBeenBoostrapped, isBootstrapping, isLivesyncing, isSeeded } from '../stores/app';
-import { instance, stopLiveSync } from './lifecycle';
-import { StateManager } from '@nostrwatch/nip66';
+import { hasBeenBootstrapped, isBootstrapping, isLivesyncing, isSeeded, route66Ready } from '../stores/app';
+import { instance } from './lifecycle';
+import { stopLiveSync } from './live-sync'
+import { StateManager } from '@nostrwatch/route66';
+import { delay } from '@nostrwatch/utils';
 
 export interface LocalStorageUsage {
     currentSizeMB: number;
@@ -11,31 +13,34 @@ export interface LocalStorageUsage {
 }
 
 export const wipeCache = async () => {
-    const $nip66 = await instance();
-    await abortWebsocket($nip66);
-    await wipeCacheAdapter($nip66);
+    await route66Ready()
+    const $route66 = await instance();
+    await abortWebsocket($route66);
+    await wipeCacheAdapter($route66);
     await wipeEventsStore();
     await wipeAppStores();
     await wipeEventsStore();
-    $nip66.destroy();
+    $route66.destroy();
     await wipeState();
     StateManager.emit('wipe')
+    await delay(1000)
+    document.location = '/'
 }
 
-const abortWebsocket = async ($nip66: Nip66) => {
+const abortWebsocket = async ($route66: Route66) => {
     if(get(isLivesyncing)) {
         await stopLiveSync()
     }
-    $nip66.adapters.websocketAdapter.unsubscribeAll();
-    $nip66.adapters.websocketAdapter.abort();
+    $route66.adapters.websocketAdapter.unsubscribeAll();
+    $route66.adapters.websocketAdapter.abort();
 }
 
-export const wipeCacheAdapter = async ($nip66: Nip66) => {
-    $nip66.adapters.cacheAdapter.WIPE();
+export const wipeCacheAdapter = async ($route66: Route66) => {
+    await $route66.adapters.cacheAdapter.WIPE();
 }
 
 export const wipeState = async () => {
-    const StateManager = (await import('@nostrwatch/nip66')).StateManager;
+    const StateManager = (await import('@nostrwatch/route66')).StateManager;
     StateManager.clear();
 }
 
@@ -98,4 +103,61 @@ export const getLocalStorageUsage = (maxSizeMB: number = 5): LocalStorageUsage =
         maxSizeMB,
         percentageUsed,
     };
+}
+
+export type ObjectSizeType = { size: number, unit: 'bytes' | 'KB' | 'MB' }
+
+export const calculateSize = (input: any): ObjectSizeType => {
+    function getSizeInBytes(value: any): number {
+        const objectList = new Set();
+        const stack = [value];
+        let bytes = 0;
+
+        while (stack.length) {
+            const currentValue = stack.pop();
+
+            if (currentValue === null || currentValue === undefined) {
+                bytes += 0;
+            } else if (typeof currentValue === 'boolean') {
+                bytes += 4;
+            } else if (typeof currentValue === 'string') {
+                bytes += currentValue.length * 2;
+            } else if (typeof currentValue === 'number') {
+                bytes += 8;
+            } else if (typeof currentValue === 'object') {
+                if (!objectList.has(currentValue)) {
+                    objectList.add(currentValue);
+                    for (const key in currentValue) {
+                        if (currentValue.hasOwnProperty(key)) {
+                            bytes += key.length * 2;
+                            stack.push(currentValue[key]);
+                        }
+                    }
+
+                    if (currentValue instanceof Map) {
+                        currentValue.forEach((v, k) => {
+                            stack.push(k);
+                            stack.push(v);
+                        });
+                    } else if (currentValue instanceof Set) {
+                        currentValue.forEach(v => stack.push(v));
+                    } else if (Array.isArray(currentValue)) {
+                        stack.push(...currentValue);
+                    }
+                }
+            }
+        }
+
+        return bytes;
+    }
+
+    const bytes = getSizeInBytes(input);
+
+    if (bytes >= 1024 * 1024) {
+        return { size: bytes / (1024 * 1024), unit: 'MB' };
+    } else if (bytes >= 1024) {
+        return { size: bytes / 1024, unit: 'KB' };
+    } else {
+        return { size: bytes, unit: 'bytes' };
+    }
 }

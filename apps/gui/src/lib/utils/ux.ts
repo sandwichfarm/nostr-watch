@@ -30,22 +30,36 @@ export const clickToCopy = (node: HTMLElement, target?: string) => {
   };
 };
 
-export function observeViewport(node: HTMLElement, options = {}) {
-  let lastIsIntersecting = false; // Track state to avoid redundant events
+export function observeViewport(node: HTMLElement, options: { infiniteScroll?: boolean } = { infiniteScroll: true }, debounceTime = 500) {
+  const { infiniteScroll } = options;
+  let lastIsIntersecting = false;
+  let timeoutId: number | null = null;
+  
+  if(!infiniteScroll) return;
+
+  const debounceEvent = (callback: () => void, delay: number) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = window.setTimeout(callback, delay);
+  };
 
   const observer = new IntersectionObserver(([entry]) => {
     const isIntersecting = entry.isIntersecting;
 
     if (isIntersecting !== lastIsIntersecting) {
       lastIsIntersecting = isIntersecting;
-      node.dispatchEvent(
-        new CustomEvent('viewportchange', {
-          detail: {
-            isIntersecting: isIntersecting,
-            intersectionRatio: entry.intersectionRatio,
-          },
-        })
-      );
+
+      debounceEvent(() => {
+        node.dispatchEvent(
+          new CustomEvent('viewportchange', {
+            detail: {
+              isIntersecting: isIntersecting,
+              intersectionRatio: entry.intersectionRatio,
+            },
+          })
+        );
+      }, debounceTime);
     }
   }, options);
 
@@ -53,7 +67,43 @@ export function observeViewport(node: HTMLElement, options = {}) {
 
   return {
     destroy() {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       observer.unobserve(node);
     },
   };
+}
+
+export const randomLoadingMessage = () => { 
+  const messages = [
+    'trying to find the lost city of Atlantis',
+    'searching for the Holy Grail',
+    'looking for the needle in the haystack',
+    'searching for the pot of gold at the end of the rainbow',
+    'trying to find the end of the rainbow',
+    'looking for the end of the universe',
+    'searching for the end of the internet',
+    'trying to find the end of the world',
+    'searching for the end of time',
+    'looking for the end of the rainbow',
+    'pondering the meaning of life',
+    'searching for the meaning of life',
+    'asking tough questions',
+    'rm -fr /',
+    'busy annoying fiatjaf, need a sec.',
+    '...hopefully the pages are still purple',
+    'running branl.',
+    'meat good.',
+    `showing benthecarman this isn't the dumbest thing he's ever heard`,
+    'telling fiatjaf websockets suck',
+    'deduplicating fuzzy strings in relay lists',
+    'one day relays have pubkeys',
+    'NIPs that have no impact on relays should be called NAPs',
+    `wondering why some relays don't support NIP-01`,
+    `wondering why most NIP-50 relays do case sensitive searches`,
+    `[terminating websocket connection with beligerent relay]`,
+  ]
+
+  return messages[Math.floor(Math.random() * messages.length)];
 }

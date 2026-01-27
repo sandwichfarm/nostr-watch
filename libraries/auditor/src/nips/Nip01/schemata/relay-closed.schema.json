@@ -1,8 +1,13 @@
 {
   "type": "array",
   "items": [
-    { "const": "CLOSED" },
-    { "type": "string", "description": "subscription_id" },
+    {
+      "const": "CLOSED"
+    },
+    {
+      "type": "string",
+      "description": "subscription_id"
+    },
     {
       "type": "string",
       "description": "response message",

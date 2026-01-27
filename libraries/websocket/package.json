@@ -1,0 +1,34 @@
+{
+  "name": "@nostrwatch/websocket",
+  "type": "module",
+  "main": "./dist/server/index.js",
+  "module": "./dist/web/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "worker": "./dist/worker/index.js",
+      "import": "./dist/web/index.js",
+      "require": "./dist/server/index.js",
+      "default": "./dist/web/index.js"
+    },
+    "./*": "./dist/*"
+  },
+  "dependencies": {
+    "https-browserify": "^1.0.0",
+    "modern-isomorphic-ws": "^1.0.5",
+    "tslib": "^2.7.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13",
+    "esbuild": "^0.24.0",
+    "esbuild-plugin-polyfill-node": "^0.3.0",
+    "tsc-alias": "^1.8.10",
+    "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "build": "node build.js && tsc && tsc-alias",
+    "dev": "tsc --watch & tsc-alias -w & node build.js --watch"
+  }
+}

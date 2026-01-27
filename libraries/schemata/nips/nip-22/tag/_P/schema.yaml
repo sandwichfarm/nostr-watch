@@ -1,0 +1,4 @@
+$id: 'https://schemata.nostr.watch/note/tag/P'
+$schema: "http://json-schema.org/draft-07/schema#"
+allOf: 
+  - $ref: "@/tag/p.yaml"

@@ -14,12 +14,17 @@
   import * as Table from "$lib/components/ui/table/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import { cn } from "$lib/components/utils.js";
+	import { delay } from "@nostrwatch/utils";
 
   export let payload: any = [];
   export let searchConfig: any = {};
   export let mode: 'compact' | 'table' = 'compact';
   export let maxResults: number | undefined;
   export let autoFocus: boolean = false;
+
+  export let inputClass: string = "mr-0 font-mono text-sm w-full p-1 border-l-[1px] border-black/10 dark:bg-white/5 dark:border-white/10 dark:text-white/60 focus:border-transparent focus:ring-0" 
+  export let resultWrapperClass: string = "shadow-md absolute top-full left-0 right-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-black/60 dark:border-white/10"
+  export let placeholderText: string = "find relays";
 
   const { searchResults, initializeIndex, performSearch, selectSuggestion } = searchConfig;
 
@@ -37,11 +42,15 @@
     supportedNips: string[];
   };
 
+  let inputId: string = `search-${Math.random().toString(36).substring(2, 15)}`;
+
   let inputElement: HTMLInputElement;
 
   onMount(async () => {
+    inputElement = document.getElementById(inputId) as HTMLInputElement;
     initializeIndex(payload);
     document.addEventListener("click", handleClickOutside); 
+    await delay(100);
     if(autoFocus) inputElement.focus();
   });
 
@@ -131,12 +140,7 @@
       table.column({
         header: "ISP",
         accessor: "isp",
-      }),
-      // table.column({
-      //   header: "Supported NIPs",
-      //   accessor: "supportedNips",
-      //   cell: ({ value }) => value.join(", "),
-      // }),
+      })
     ]);
 
     const viewModel = table.createViewModel(columns);
@@ -148,22 +152,23 @@
   }
 </script>
 
-<div class="relative m-4 w-full h-full">
+<div class="relative mr-0 w-full h-full">
   <!-- Input Field -->
   <input
     type="text"
+    id={inputId}
     bind:this={inputElement}
     bind:value={state.query}
     on:input={handleSearch}
     on:keydown={handleKeyDown}
-    placeholder="Search for relay, operator pubkey, ISP, or NIPs"
-    class="w-full p-2 border border-black/10 rounded-t-md dark:bg-black/5 dark:border-black/10 dark:text-white/60 focus:border-transparent focus:ring-0"
+    placeholder={placeholderText}
+    class="{inputClass}"
   />
 
   {#if mode === 'compact'}
     <!-- Autosuggest Dropdown -->
     {#if state.showSuggestions && $searchResults.length > 0}
-      <div class="shadow-md absolute top-full left-0 right-0 z-100 backdrop-blur-lg border border-white/10 dark:bg-black/60 dark:border-white/10">
+      <div class="{resultWrapperClass}">
         {#each $searchResults.slice(0, maxResults || undefined) as result, index}
           <div
             role="option"
@@ -186,7 +191,7 @@
             }}
           >
             <strong class="text-lg"> {result.relay || "N/A"} </strong><br />
-            <small class="text-sm italic text-white/50">{result.operatorPubkey || "N/A"}</small>
+            <small class="text-sm italic text-black/70 dark:text-white/70">{result.operatorPubkey || "N/A"}</small>
           </div>
         {/each}
       </div>  

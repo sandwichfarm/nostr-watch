@@ -3,12 +3,11 @@ export * from './browser';
 export * from './config';
 export * from './controlflow';
 export * from './class';  
-// export * from './env';
 export * from './network';
 export * from './object';
-export * from './redis';
 export * from './redis';
 export * from './string';
 export * from './time';
 export * from './url';
 export * from './rng'
+export * from './logger';

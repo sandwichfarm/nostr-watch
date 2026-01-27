@@ -1,0 +1,7 @@
+$id: 'https://schemata.nostr.watch/message/client/auth'
+type: "array"
+items: 
+- const: "AUTH"
+- $ref: "@/note.yaml"
+minItems: "2"
+maxItems: "2"

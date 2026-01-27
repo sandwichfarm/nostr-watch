@@ -7,6 +7,18 @@ const config = {
   preprocess: [preprocess(), vitePreprocess({})],
 
   kit: {
+    alias: {
+      "$stores": "./src/lib/stores",
+			"$utils": "./src/lib/utils",
+      "$ui": "./src/lib/components/ui",
+			"$components": "./src/components",
+			"$layouts": "./src/layouts",
+			"$routes": "./src/routes",
+      "$relay": './src/routes/relays/[protocol]/[...relay]',
+      "$relays": './src/routes/relays',
+			"$lib": "./src/lib",
+      "$src": "./src"
+    },
     adapter: adapter({
       pages: "dist",
       assets: "dist",
@@ -19,12 +31,34 @@ const config = {
         '/',
         '/monitors',
         '/monitors/[pubkey]',
-        '/note/[id]',
-        '/preferences',
+        '/operators',
+        '/operators/[operator]',
+
         '/relays',
         '/relays/map',
+        '/relays/software',
+        '/relays/software/[name]',
+        '/relays/geography',
+        '/relays/geography/[country]',
+        '/relays/isps',
+        
+        '/relays/[protocol]',
         '/relays/[protocol]/[...relay]',
-        '/reload/[...path]'
+        '/relays/[protocol]/[...relay]/audits',
+        '/relays/[protocol]/[...relay]/checks',
+        '/relays/[protocol]/[...relay]/feed',
+        '/relays/[protocol]/[...relay]/insights',
+        '/relays/[protocol]/[...relay]/nip-11',
+        '/relays/[protocol]/[...relay]/operator',
+        
+        '/reload/[...path]',
+        '/unsupported',
+        '/mobile',
+        
+        '/relays/isps/[isp]',
+
+        '/note/[id]',
+        '/preferences',
       ]
     },
   }

@@ -1,0 +1,10 @@
+$id: 'https://schemata.nostr.watch/message/client/req'
+type: "array"
+items: 
+- const: "REQ"
+- type: "string"
+  description: "An identifier for the subscription, this should be unique."
+- $ref: "@/message/filter.yaml"
+minItems: 3
+additionalItems: 
+  $ref:  "@/message/filter.yaml"

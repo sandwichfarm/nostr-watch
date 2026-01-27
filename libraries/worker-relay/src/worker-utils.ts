@@ -1,11 +1,13 @@
 import { SqliteRelay } from "./sqlite/sqlite-relay";
 import { InMemoryRelay } from "./memory-relay";
 import { setLogging } from "./debug";
+import { installConsoleLogLevelFilter, normalizeLogLevel, setGlobalLogLevel } from "@nostrwatch/utils";
 
 import {
     NostrEvent,
     ReqCommand,
     ReqFilter,
+    RelayStorageStatus,
     WorkerMessage,
     unixNowMs,
     EventMetadata,
@@ -15,7 +17,7 @@ import {
 
 import { getForYouFeed } from "./forYouFeed";
 
-let processed = 0
+installConsoleLogLevelFilter();
 
 export interface InitAargs {
   databasePath: string;
@@ -29,17 +31,21 @@ export interface WorkerState {
   eventWriteQueue: Array<NostrEvent>;
   messageChannel?: MessagePort;
 
+  storageStatus?: RelayStorageStatus;
+
   insertBatchSize: number;
   insertBatchEvery: number;
   lastBatch: number;
+
+
 }
 
 export const defaultWorkerState = {
   self: self as DedicatedWorkerGlobalScope | SharedWorkerGlobalScope,
   relay: undefined,
   eventWriteQueue: [],
-  insertBatchSize: 10,
-  insertBatchEvery: 1000,
+  insertBatchSize: 5,
+  insertBatchEvery: 500,
   lastBatch: 0,
 }
 
@@ -63,37 +69,105 @@ export async function insertBatch(state: WorkerState) {
         state.eventWriteQueue = state.eventWriteQueue.slice(batch.length);
         state.relay.eventBatch(batch);
         state.lastBatch = Date.now();
-        // console.log("batches processed:", processed);
-        processed++
       }
     }
   }
-  setTimeout(() => insertBatch(state), 100);
+  setTimeout(() => insertBatch(state), state.insertBatchEvery);
 }
 
 export const messageChannelInit = (state: WorkerState, channelPort: MessagePort) => {
   state.messageChannel = channelPort
 }
 
+let retries = 0;
+
 export const relayInit = async (state: WorkerState, args: InitAargs) => {
-  console.log("Relay init", args)
+  console.debug("[worker-relay] Relay init", args);
   state.insertBatchSize = args.insertBatchSize ?? 10;
+  const opfsCapable =
+    (globalThis as any).crossOriginIsolated === true &&
+    typeof (globalThis as any).SharedArrayBuffer !== "undefined" &&
+    typeof (globalThis as any).Atomics !== "undefined";
   try {
-    if ("WebAssembly" in state.self) {
+    if ("WebAssembly" in state.self && opfsCapable) {
       state.relay = new SqliteRelay();
+      state.storageStatus = { kind: "sqlite" };
     } else {
       state.relay = new InMemoryRelay();
+      state.storageStatus = opfsCapable
+        ? { kind: "memory", reason: "no-wasm" }
+        : {
+            kind: "memory",
+            reason: "opfs-unavailable",
+            errorMessage: "Missing SharedArrayBuffer/Atomics (COOP/COEP required)",
+          };
     }
     if(args.channelPort) {
-      console.log("Channel port init")
+      console.debug("[worker-relay] Channel port init");
       messageChannelInit(state, args.channelPort)
     }
+    // await new Promise(resolve => setTimeout(resolve, 1000))
     await state.relay.init(args.databasePath);
-  } catch (e) {
+    if (!state.storageStatus) {
+      state.storageStatus = state.relay instanceof InMemoryRelay ? { kind: "memory" } : { kind: "sqlite" };
+    }
+  } catch (e: any) {
+    const code = e.code || e.result?.code;
+    const corrupt = code === "SQLITE_CORRUPT" || code === 11;
+    const message = e.message || (e.result && e.result.message) || String(e);
+
+    const opfsUnavailable =
+      code === "OPFS_TIMEOUT" ||
+      message.includes("OPFS") ||
+      message.includes("SharedArrayBuffer") ||
+      message.includes("crossOriginIsolated") ||
+      message.includes("installOpfsSAHPoolVfs") ||
+      message.includes("NoModificationAllowedError") ||
+      message.includes("No modification allowed");
+
+    if (opfsUnavailable) {
+      console.warn("OPFS/SQLite unavailable, falling back to InMemoryRelay", e);
+      try {
+        state.relay?.close();
+      } catch {}
+      state.relay = new InMemoryRelay();
+      state.storageStatus = {
+        kind: "memory",
+        reason: "opfs-unavailable",
+        errorMessage: message,
+      };
+      await state.relay.init(args.databasePath);
+      return;
+    }
+
+    if (corrupt || message.includes("malformed") || message.includes("not a database")) {
+      try {
+        await state.relay?.destroy();
+      } catch (e) {
+        console.warn("Failed to destroy relay", e);
+      }
+      await relayInit(state, args);
+      return;
+    } else {
+      if(retries <= 5){
+        state.relay?.close();
+        if (retries === 0) {
+          console.warn("Sqlite relay failed, retrying in 1 second", e);
+        } else {
+          console.debug("Sqlite relay failed, retrying in 1 second", e);
+        }
+        retries++
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        await relayInit(state, args)
+        return
+      }
+    }
     console.error("Fallback to InMemoryRelay", e);
     state.relay = new InMemoryRelay();
+    state.storageStatus = { kind: "memory", reason: "error", errorMessage: message };
     await state.relay.init(args.databasePath);
   }
+  
 }
 
 export const relayEvent = (state: WorkerState, ev: NostrEvent) => {
@@ -167,6 +241,15 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
     switch (msg.cmd) {
       case "debug": {
         setLogging(true);
+        setGlobalLogLevel("debug");
+        installConsoleLogLevelFilter();
+        reply(msg.id, true);
+        break;
+      }
+      case "logLevel": {
+        const nextLevel = normalizeLogLevel(msg.args, "warn");
+        setGlobalLogLevel(nextLevel);
+        installConsoleLogLevelFilter();
         reply(msg.id, true);
         break;
       }
@@ -174,6 +257,17 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
         const args = msg.args as InitAargs; 
         await relayInit(state, args)
         reply(msg.id, true);
+        break;
+      }
+      case "status": {
+        const status =
+          state.storageStatus ??
+          (state.relay instanceof InMemoryRelay
+            ? ({ kind: "memory" } as RelayStorageStatus)
+            : state.relay
+              ? ({ kind: "sqlite" } as RelayStorageStatus)
+              : ({ kind: "unknown", reason: "not-initialized" } as RelayStorageStatus));
+        reply(msg.id, status);
         break;
       }
       case "event": {
@@ -232,6 +326,36 @@ export const handleMsg = async (state: WorkerState, ev: MessageEvent, port?: Mes
       case "setEventMetadata": {
         const [id, metadata] = msg.args as [string, EventMetadata];
         state.relay!.setEventMetadata(id, metadata);
+        break;
+      }
+      case "upsertNip11": {
+        const res = await state.relay!.upsertNip11(msg.args as any);
+        reply(msg.id, res);
+        break;
+      }
+      case "getNip11": {
+        const res = await state.relay!.getNip11(msg.args as any);
+        reply(msg.id, res);
+        break;
+      }
+      case "countNip11s": {
+        const res = await state.relay!.countNip11s();
+        reply(msg.id, res);
+        break;
+      }
+      case "countUniqueNip11s": {
+        const res = await state.relay!.countUniqueNip11s();
+        reply(msg.id, res);
+        break;
+      }
+      case "dumpNip11s": {
+        const res = await state.relay!.dumpNip11s();
+        reply(msg.id, res);
+        break;
+      }
+      case "batchUpsertNip11": {
+        const res = await state.relay!.batchUpsertNip11(msg.args as any);
+        reply(msg.id, res);
         break;
       }
       default: {

@@ -4,6 +4,10 @@
   "type": "module",
   "license": "MIT",
   "entry": "src/index.ts",
+  "main": "dist/server/cjs/index.cjs.js",
+  "browser": "./dist/web/index.js",
+  "module": "./dist/server/index.js",
+  "types": "./dist/web/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/server/index.js",
@@ -13,12 +17,16 @@
     "./web": {
       "import": "./dist/web/index.js",
       "types": "./dist/web/types/index.d.ts"
+    },
+    "./web-worker": {
+      "import": "./dist/web/index.js",
+      "types": "./dist/web/types/index.d.ts"
     }
   },
   "scripts": {
     "build": "pnpm run clean && pnpm run transpile && rollup -c && pnpm run transpile:alias",
     "build:server": "pnpm run clean && pnpm run transpile:server && rollup -c && pnpm run transpile:alias",
-    "clean": "rimraf dist",
+    "clean": "rm -fr ./dist && mkdir -p ./dist",
     "transpile": "pnpm run transpile:server && pnpm run transpile:web",
     "transpile:web": "tsc -p tsconfig.web.json",
     "transpile:server": "tsc -p tsconfig.server.json",
@@ -26,20 +34,18 @@
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
-    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "@nostrwatch/nocap-dns-adapter-default": "workspace:*",
-    "@nostrwatch/nocap-geo-adapter-default": "workspace:*",
-    "@nostrwatch/nocap-info-adapter-default": "workspace:*",
-    "@nostrwatch/nocap-ssl-adapter-default": "workspace:*",
-    "@nostrwatch/nocap-websocket-adapter-default": "workspace:*",
+    "@nostrwatch/nocap": "workspace:^",
+    "@nostrwatch/websocket": "workspace:^",
+    "buffer": "^6.0.3",
+    "core-js": "^3.40.0",
+    "globalthis": "^1.0.4",
     "websocket-polyfill": "^0.0.3",
-    "ws": "8.17.1",
-    "@nostrwatch/nocap": "workspace:*"
+    "ws": "8.18.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

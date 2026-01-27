@@ -1,140 +1,439 @@
-import { derived, writable, type Writable, type Readable, get } from "svelte/store";
+import { derived, readable, writable, type Writable, type Readable, get } from "svelte/store";
 import { compress, decompress } from 'compress-json'
-
-interface Check {
-  relay: string;
-  monitorPubkey: string;
-  [id: string]: any;
-}
 
 import { eventsArray } from './events.js';
 
-import { Nip66Event } from '@nostrwatch/nip66/models';
-import { StateManager } from "@nostrwatch/nip66";
-import { doAggregateCache } from "./app.js";
+import { Nip66CheckEvent } from '@nostrwatch/route66/models';
+import { StateManager } from "@nostrwatch/route66";
+import { doAggregateCache, isBootstrapping, statsAsOf, tabState } from "./app.js";
+import { throttledDerived } from "$utils/stores.js";
+import { nip11ValidationErrorCount } from "./nip11-validations.js";
+import { eventKey } from "$lib/utils/event-keys";
+import { relayCheckAggregator as aggregateRelayChecks, type RelayChecksByRelay } from "$lib/derivations/relay-checks-aggregate";
+import { useWorkerRelayChecks } from "./dimension-stores.js";
+import {
+  monitorsLivenessDeadThreshold,
+  monitorsLivenessLeniency,
+  monitorsSorted,
+  parseDeadThresholdSeconds,
+} from "./monitors.js";
 
-export const relayCheckAggregator = ($checks: Nip66Event[]) => {
-  const countMap: Record<
-    string,
-    { a: Record<string, any>; checks: Check[]; aggregate?: any }
-  > = {};
+const AGGREGATE_COMPLETE_CACHE_KEY = 'aggregate:complete';
+const aggregateCompleteVersion = writable(0);
 
-  const relayAverages: Record<string, number> = {};
-  const relayCounts: Record<string, number> = {};
-
-  $checks.forEach((check) => {
-    const relay = check.relay;
-
-    if (!relayAverages[relay]) {
-      relayAverages[relay] = 0;
-      relayCounts[relay] = 0;
-    }
-
-    const rtt = check.rtt;
-    if (typeof rtt === 'number') {
-      relayAverages[relay] += rtt;
-      relayCounts[relay] += 1;
-    }
-
-    if (!countMap[relay]) {
-      countMap[relay] = { a: {}, checks: [] };
-    }
-    countMap[relay].checks.push(check);
-  });
-
-  Object.keys(relayAverages).forEach((relay) => {
-    const sum = relayAverages[relay];
-    const count = relayCounts[relay];
-    const avg = count > 0 ? sum / count : 0;
-    relayAverages[relay] = avg;
-  });
-
-  const averageValues = Object.values(relayAverages);
-  const globalMin = Math.min(...averageValues);
-  const globalMax = Math.max(...averageValues);
-  const range = globalMax - globalMin || 1;
-
-  Object.keys(countMap).forEach((relay) => {
-    countMap[relay].aggregate = countMap[relay].checks.reduceRight((acc: any, nip66Event: Nip66Event) => {
-      [...Nip66Event.keys, 'seenTimes'].forEach((key: string) => {
-        const value = nip66Event[key];
-        
-        const isNonNull = value !== null && value !== undefined;
-  
-        const isArray = Array.isArray(value);
-        const isAccArray = Array.isArray(acc[key]);
-
-        if(key === 'seenTimes') {
-          if(!acc?.seenTimes) {
-            acc.seenTimes = 1;
-          }
-          else {
-            acc.seenTimes += 1;
-          }
-        }
-        else if(key === 'monitorPubkey'){
-          if(!acc?.seenBy) {
-            acc.seenBy = [];
-          }
-          acc.seenBy.push(value);
-        }
-        else if(key === 'created_at'){
-          if(!acc?.lastSeen) {
-            acc.lastSeen = value;
-          }
-          else if(value > acc.lastSeen) {
-            acc.lastSeen = value;
-          }
-        }
-        else if (isArray) {
-          acc[key] = isAccArray
-            ? [...new Set([...acc[key], ...value])]
-            : value;
-        } else if (!isArray && isNonNull) {
-          acc[key] = value;
-        }
-      });
-  
-      return acc;
-    }, {});
-  });
-
-  Object.keys(relayAverages).forEach((relay) => {
-    const avg = relayAverages[relay];
-    const normalized = (avg - globalMin) / range;
-    countMap[relay].aggregate.rtt = avg
-    countMap[relay].aggregate.rttNormalized = Math.round(normalized * 10000) / 10000
-  });
-
-  return countMap;
+function storageKey(key: string): string {
+  const prefix = (StateManager as any)?.localStorage?.prefix ?? "state";
+  return `${prefix}:${key}`;
 }
 
-export const relayChecks: Readable<
-  Record<string, { a: Record<string, any>; checks: Check[]; aggregate?: any }>
-> = derived(eventsArray, relayCheckAggregator);
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (!event.key) return;
+    if (event.key === storageKey(AGGREGATE_COMPLETE_CACHE_KEY)) {
+      aggregateCompleteVersion.update((value) => value + 1);
+    }
+  });
+}
 
-export const relayAggregates: Readable<any[]> = derived(relayChecks, ($relayChecks) => {
-  let aggregates = Object.entries($relayChecks).map(([relay, item], index) => ({
-    relay,
-    ...item.aggregate,
-    id: index,
-  }));
-  if(!aggregates.length) {
-    const agg = StateManager.get('aggregate:complete');
-    aggregates = agg? decompress(agg): aggregates
+let aggregateCompleteLastWriteMs = 0;
+
+export const overrideRelayChecksActiveKeys: Writable<string[]> = writable([]);
+
+export type RelayChecksDerivationStats = {
+  checks: number;
+  relays: number;
+  computeMs: number;
+} | null;
+
+export const relayChecksDerivationStats: Writable<RelayChecksDerivationStats> = writable(null);
+
+export const relayChecksActiveKeys = derived(overrideRelayChecksActiveKeys, ($overrideRelayChecksActiveKeys) => {
+  const alwaysKeys = [
+    "relay",
+    "created_at",
+    "icon",
+    "banner",
+    "seenBy",
+    "lastSeen",
+    "seenTimes",
+    "monitorPubkey",
+    "operatorPubkey",
+    "hasNip11",
+    "dd",
+    "network"
+  ]
+  const derivedKeys = [
+    'nip11IsValid', 
+    'nip11ValidationErrors'
+  ]
+  let keys = []
+  if($overrideRelayChecksActiveKeys.length) { 
+    keys = [ 
+      ...alwaysKeys,
+      ...$overrideRelayChecksActiveKeys
+    ]
   }
   else {
-    if(get(doAggregateCache) === true) StateManager.set('aggregate:complete', compress(aggregates))
+    keys = [
+      ...alwaysKeys,
+      ...Nip66CheckEvent.keys,
+      ...derivedKeys
+    ]
   }
-  return aggregates 
+  return Array.from(new Set(keys))
+})
+
+export const relayCheckAggregator = aggregateRelayChecks;
+
+export const eventsChecks: Readable<Nip66CheckEvent[]> = derived(eventsArray, ($events) => {
+  return $events.filter(event => event.kind === 30166) as Nip66CheckEvent[];
+})
+
+
+
+const canUseDerivationWorker = typeof window !== 'undefined' && typeof Worker !== 'undefined';
+
+function createRelayChecksWorkerStore(): Readable<RelayChecksByRelay> {
+  return readable<RelayChecksByRelay>({}, (set) => {
+    let seededBaseline: RelayChecksByRelay | null = null;
+    let seededBaselineRelays = 0;
+
+    // Seed from cached aggregates for fast first paint.
+    try {
+      const cached = StateManager.get('aggregate:complete');
+      if (cached) {
+        const aggDecompressed = decompress(cached) as any;
+        if (Array.isArray(aggDecompressed)) {
+          const seeded: RelayChecksByRelay = {};
+          for (const item of aggDecompressed) {
+            const relay = item?.relay;
+            if (!relay) continue;
+            const { relay: _relay, id: _id, ...rest } = item;
+            seeded[relay] = { aggregate: rest };
+          }
+          if (Object.keys(seeded).length) {
+            seededBaseline = seeded;
+            seededBaselineRelays = Object.keys(seeded).length;
+            set(seeded);
+          }
+        }
+      }
+    } catch {}
+
+    let worker: Worker | null = null;
+    try {
+      worker = new Worker(new URL('../workers/relay-checks-aggregation.worker.ts', import.meta.url), {
+        type: 'module',
+      });
+    } catch (e) {
+      console.error('[relayChecks] failed to start derivation worker, falling back', e);
+    }
+
+    if (!worker) {
+      relayChecksDerivationStats.set(null);
+      const unsub = derived(
+        [eventsChecks, relayChecksActiveKeys, nip11ValidationErrorCount],
+        ([$eventsChecks, $relayChecksActiveKeys, $nip11Errors]) => {
+          if (!$eventsChecks.length) return {};
+          return relayCheckAggregator($eventsChecks as any, $relayChecksActiveKeys, $nip11Errors);
+        }
+      ).subscribe(set);
+      return () => unsub();
+    }
+
+    const onMessage = (ev: MessageEvent) => {
+      const data = ev.data as any;
+      if (!data || typeof data !== 'object') return;
+      if (data.type !== 'result') return;
+      const next = (data.relayChecks ?? {}) as RelayChecksByRelay;
+
+      // Followers often only receive a partial stream of check events (e.g. from a limited
+      // leader snapshot). To avoid collapsing the UI dataset, merge worker results into the
+      // cached per-relay aggregates baseline until we catch up.
+      if (seededBaseline && seededBaselineRelays > 0) {
+        const nextRelays = Object.keys(next).length;
+        if (nextRelays < seededBaselineRelays) {
+          for (const [relay, entry] of Object.entries(next)) {
+            seededBaseline[relay] = entry;
+          }
+          set(seededBaseline);
+        } else {
+          seededBaseline = null;
+          seededBaselineRelays = 0;
+          set(next);
+        }
+      } else {
+        set(next);
+      }
+      relayChecksDerivationStats.set((data.stats ?? null) as any);
+    };
+    worker.addEventListener('message', onMessage);
+
+    const unsubActiveKeys = relayChecksActiveKeys.subscribe((keys) => {
+      try {
+        worker!.postMessage({ type: 'setActiveKeys', activeKeys: keys });
+      } catch {}
+    });
+
+    const unsubNip11Errors = nip11ValidationErrorCount.subscribe((map) => {
+      try {
+        worker!.postMessage({ type: 'setNip11Errors', entries: Array.from(map.entries()) });
+      } catch {}
+    });
+
+    let prevByKey = new Map<string, string>();
+
+    const unsubChecks = eventsChecks.subscribe(($checks) => {
+      const nextByKey = new Map<string, string>();
+      const upserts: { key: string; event: any }[] = [];
+
+      for (const check of $checks) {
+        const raw: any = (check as any)?.json ?? check;
+        if (!raw) continue;
+        const key = eventKey(raw);
+        if (!key) continue;
+        const id = raw?.id;
+        if (!id) continue;
+
+        nextByKey.set(key, id);
+        if (prevByKey.get(key) !== id) {
+          upserts.push({ key, event: raw });
+        }
+      }
+
+      const removals: string[] = [];
+      for (const key of prevByKey.keys()) {
+        if (!nextByKey.has(key)) removals.push(key);
+      }
+
+      prevByKey = nextByKey;
+
+      if (upserts.length || removals.length) {
+        try {
+          worker!.postMessage({ type: 'patch', upserts, removals });
+        } catch {}
+      }
+    });
+
+    return () => {
+      unsubChecks();
+      unsubActiveKeys();
+      unsubNip11Errors();
+      worker?.removeEventListener('message', onMessage);
+      relayChecksDerivationStats.set(null);
+      try {
+        worker?.terminate();
+      } catch {}
+    };
+  });
+}
+
+// Worker store (created once, lazy)
+let workerStore: Readable<RelayChecksByRelay> | null = null;
+function getWorkerStore(): Readable<RelayChecksByRelay> {
+  if (!workerStore) workerStore = createRelayChecksWorkerStore();
+  return workerStore;
+}
+
+// Legacy derived store (created once, lazy)
+let legacyStore: Readable<RelayChecksByRelay> | null = null;
+function getLegacyStore(): Readable<RelayChecksByRelay> {
+  if (!legacyStore) {
+    legacyStore = derived(
+      [eventsChecks, relayChecksActiveKeys, nip11ValidationErrorCount],
+      ([$eventsChecks, $relayChecksActiveKeys, $nip11Errors]) => {
+        if (!$eventsChecks.length) return {};
+        return relayCheckAggregator($eventsChecks as any, $relayChecksActiveKeys, $nip11Errors);
+      }
+    );
+  }
+  return legacyStore;
+}
+
+// Hybrid store that switches between worker and legacy based on feature flag
+export const relayChecks: Readable<RelayChecksByRelay> = readable<RelayChecksByRelay>({}, (set) => {
+  let currentUnsub: (() => void) | null = null;
+
+  const switchStore = (useWorker: boolean) => {
+    if (currentUnsub) currentUnsub();
+
+    const store = (useWorker && canUseDerivationWorker) ? getWorkerStore() : getLegacyStore();
+    currentUnsub = store.subscribe(set);
+  };
+
+  // Initial subscription based on current flag value
+  switchStore(get(useWorkerRelayChecks));
+
+  // Re-subscribe when flag changes
+  const flagUnsub = useWorkerRelayChecks.subscribe((useWorker) => {
+    switchStore(useWorker);
+  });
+
+  return () => {
+    if (currentUnsub) currentUnsub();
+    flagUnsub();
+  };
 });
 
-export const relaysForMiniSearch: Readable<any[]> = derived(relayAggregates, ($relayAggregates) => {
-  let ag = $relayAggregates.map((item, index) => {
-    const { relay, isp, operatorPubkey, supportedNips, lastSeen }  = item
+export const relayCheckMap: Readable<Map<string, any>> = derived(relayChecks, ($relayChecks) => {
+  const map = new Map();
+  for(const [relay, item] of Object.entries($relayChecks)){
+    map.set(relay, item.aggregate)
+  }
+  return map;
+})
+
+// Cache for aggregate data - loaded once, updated separately
+let cachedAggregateData: any[] | null = null;
+let cachedAggregateLoaded = false;
+
+function loadCachedAggregate(): any[] {
+  if (cachedAggregateLoaded) return cachedAggregateData || [];
+  cachedAggregateLoaded = true;
+  try {
+    const agg = StateManager.get(AGGREGATE_COMPLETE_CACHE_KEY);
+    if (agg) {
+      cachedAggregateData = decompress(agg) as any[];
+      return cachedAggregateData || [];
+    }
+  } catch {}
+  return [];
+}
+
+// Separate function to save cache - called asynchronously
+let saveCacheTimeout: ReturnType<typeof setTimeout> | null = null;
+function scheduleCacheSave(data: any[]) {
+  if (saveCacheTimeout) clearTimeout(saveCacheTimeout);
+  saveCacheTimeout = setTimeout(() => {
+    const nowMs = Date.now();
+    if (nowMs - aggregateCompleteLastWriteMs > 5_000) {
+      aggregateCompleteLastWriteMs = nowMs;
+      try {
+        StateManager.set(AGGREGATE_COMPLETE_CACHE_KEY, compress(data));
+        aggregateCompleteVersion.update((value) => value + 1);
+      } catch {}
+    }
+  }, 1000);
+}
+
+export const relayCheckAggregates: Readable<any[]> = throttledDerived(
+  [relayChecks, monitorsSorted, monitorsLivenessLeniency, monitorsLivenessDeadThreshold, tabState, isBootstrapping, statsAsOf],
+  ([$relayChecks, $monitorsSorted, $livenessLeniency, $deadThreshold, $tabState, $isBootstrapping, $statsAsOf]) => {
+
+  // Fast path: if no relay checks yet, return cached data
+  const relayEntries = Object.entries($relayChecks);
+  if (!relayEntries.length) {
+    const cached = loadCachedAggregate();
+    return cached.length ? cached : [];
+  }
+
+  
+
+  let aggregates = relayEntries.map(([relay, item]) => {
+    // Skip URL normalization for performance - relay URLs should already be normalized
+    return {
+      relay: new URL(relay).toString(),
+      ...item.aggregate,
+      id: relay
+    }
+  });
+
+  // Derive per-relay liveness from `lastSeen` and user-configured thresholds.
+  let onlineAfter: number | null = null;
+  let deadBefore: number | null = null;
+  try {
+    const enabledFrequencies: number[] = [];
+    for (const monitor of $monitorsSorted || []) {
+      if (monitor?.enabled === false) continue;
+      const raw = monitor?.registration?.frequency;
+      if (typeof raw === "number" && Number.isFinite(raw) && raw > 0) enabledFrequencies.push(raw);
+    }
+    enabledFrequencies.sort((a, b) => a - b);
+    const baselineFrequency =
+      enabledFrequencies.length > 0 ? enabledFrequencies[Math.floor((enabledFrequencies.length - 1) / 2)] : 60 * 60 * 12;
+
+    const leniencyRaw = $livenessLeniency;
+    const leniency = Math.min(2, Math.max(1, typeof leniencyRaw === "number" ? leniencyRaw : Number(leniencyRaw)));
+    const deadThresholdSeconds = parseDeadThresholdSeconds($deadThreshold);
+
+    // Use the latest known-good dataset timestamp as "now" so seed/cached datasets
+    // don't collapse to all-dead just because they're older than wall-clock time.
+    const wallNow = Math.round(Date.now() / 1000);
+    const refNowRaw = typeof $statsAsOf === "number" && Number.isFinite($statsAsOf) ? Math.round($statsAsOf) : 0;
+    const now = refNowRaw > 0 ? Math.min(wallNow, refNowRaw) : wallNow;
+    onlineAfter = now - Math.max(0, Math.round(baselineFrequency * leniency));
+    deadBefore = now - Math.max(0, deadThresholdSeconds | 0);
+
+    // Compute liveness in-place to avoid extra array allocation
+    for (let i = 0; i < aggregates.length; i++) {
+      const row = aggregates[i];
+      const lastSeen = row?.lastSeen;
+      let liveness: "online" | "offline" | "dead" = "dead";
+      if (typeof lastSeen === "number" && Number.isFinite(lastSeen)) {
+        if (onlineAfter !== null && lastSeen >= onlineAfter) liveness = "online";
+        else if (deadBefore !== null && lastSeen < deadBefore) liveness = "dead";
+        else liveness = "offline";
+      }
+      aggregates[i] = { ...row, liveness };
+    }
+  } catch {}
+
+  // Merge with cached data if we have fewer relays (follower tab scenario)
+  const cached = loadCachedAggregate();
+  const cacheHasMoreRelays = cached.length > aggregates.length;
+  const shouldMergeWithCache = cached.length > 0 && ($tabState !== 'leader' || $isBootstrapping || cacheHasMoreRelays);
+
+  let result = aggregates;
+  if (shouldMergeWithCache) {
+    // Merge: use fresh data where available, fall back to cached
+    const freshByRelay = new Map<string, any>();
+    for (const row of aggregates) {
+      if (typeof row?.relay === "string") freshByRelay.set(row.relay, row);
+    }
+
+    result = cached.map((row: any) => {
+      const relay = row?.relay;
+      if (typeof relay === "string" && freshByRelay.has(relay)) {
+        const next = freshByRelay.get(relay);
+        freshByRelay.delete(relay);
+        return next;
+      }
+      // Add liveness to cached rows if missing
+      if (typeof row?.liveness !== "string" && typeof row?.lastSeen === "number") {
+        let liveness: "online" | "offline" | "dead" = "dead";
+        if (onlineAfter !== null && row.lastSeen >= onlineAfter) liveness = "online";
+        else if (deadBefore !== null && row.lastSeen < deadBefore) liveness = "dead";
+        else liveness = "offline";
+        return { ...row, liveness };
+      }
+      return row;
+    });
+
+    // Add any new relays not in cache
+    for (const row of freshByRelay.values()) result.push(row);
+  }
+
+  // Schedule async cache save for leader tab
+  if (get(doAggregateCache) === true && $tabState === 'leader' && result.length > cached.length) {
+    scheduleCacheSave(result);
+  }
+
+  return result;
+  },
+  250 // Throttle to max 4 updates per second
+);
+
+export const relaysForMiniSearch: Readable<any[]> = throttledDerived(relayCheckAggregates, ($relayCheckAggregates) => {
+  let ag = $relayCheckAggregates
+  .filter((item) => item?.liveness === 'online')
+  .map((item, index) => {
+    const { relay, isp, operatorPubkey, supportedNips }  = item
     return { 
-      ...{ relay, isp, operatorPubkey, supportedNips, lastSeen },
-      id: index,
+      relay,
+      operatorPubkey,
+      isp,
+      supportedNips,
+      id: relay,
     }
   });
   if(ag.length) {
@@ -145,7 +444,7 @@ export const relaysForMiniSearch: Readable<any[]> = derived(relayAggregates, ($r
   }
   
   return ag || [];
-});
+}, 1000);
 
 export enum SpeedGroups {
   LightningFast = 100,
@@ -192,6 +491,20 @@ export const relaySpeedGroupResolver: Readable<(value: number) => SpeedGroups> =
     };
   }
 );
+
+export interface RelayLivenessCounts {
+  online: number,
+  offline: number,
+  dead: number
+}
+
+export const relayLivenessCounts: Readable<RelayLivenessCounts> = derived( relayCheckAggregates, $relayCheckAggregates => {
+  return {
+    online: $relayCheckAggregates.filter( c => c.liveness === 'online' )?.length || 0,
+    offline: $relayCheckAggregates.filter( c => c.liveness === 'offline' )?.length || 0,
+    dead: $relayCheckAggregates.filter( c => c.liveness === 'dead' )?.length || 0
+  }
+})
 
 export const SpeedGroupBars: Record<SpeedGroups, string> = {
   [SpeedGroups.LightningFast]: '▁▂▃▅█',

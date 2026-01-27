@@ -1,5 +1,3 @@
-import now from 'performance-now';
-
 export class LatencyHelper {
   begin: Record<string, Record<string, number>>;
   end: Record<string, Record<string, number>>;
@@ -21,28 +19,28 @@ export class LatencyHelper {
     this.setup();
   }
 
-  session(): string {
+  get session(): string {
     return this.$session.get();
   }
 
   start(key: string): void {
-    const sessionKey = this.session();
+    const sessionKey = this.session;
     if (!this.begin[sessionKey]) {
       this.begin[sessionKey] = {};
     }
-    this.begin[sessionKey][key] = now();
+    this.begin[sessionKey][key] = Date.now();
   }
 
   finish(key: string): void {
-    const sessionKey = this.session();
+    const sessionKey = this.session;
     if (!this.end[sessionKey]) {
       this.end[sessionKey] = {};
     }
-    this.end[sessionKey][key] = now();
+    this.end[sessionKey][key] = Date.now();
   }
 
   duration(key: string): number {
-    const sessionKey = this.session();
+    const sessionKey = this.session;
     return this.end[sessionKey][key] - this.begin[sessionKey][key];
   }
 }

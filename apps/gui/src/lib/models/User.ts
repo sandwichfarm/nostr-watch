@@ -1,5 +1,5 @@
 import type { UserService } from "$lib/services/UserService";
-import { PubkeyProfile, PubkeyRelays, type IEvent } from "@nostrwatch/nip66/models";
+import { PubkeyProfile, PubkeyRelays, type IEvent } from "@nostrwatch/route66/models";
 import { nip19, type NostrEvent } from "nostr-tools";
 
 export type Pubkey = string;
@@ -22,6 +22,14 @@ export class User {
         }
     }
 
+    static from(profile: IEvent, relays: IEvent): User {
+        const instance = new User(profile.pubkey);
+        instance.#profile = new PubkeyProfile(profile);
+        instance.#relays = new PubkeyRelays(relays);
+        instance.forceReady();
+        return instance;
+    }
+
     async initialize(): Promise<void> {
         if(!this.#service) return;
         this.#service.meta(this).then( (metas: IEvent[]) =>{
@@ -29,7 +37,7 @@ export class User {
                 if( meta.kind === 0) this.#profile = new PubkeyProfile(meta);
                 if( meta.kind === 10002 ) this.#relays = new PubkeyRelays(meta);
             }
-            //console.log('user initialize', metas);
+            //////console.log('user initialize', metas);
             this.#ready = true;
         })
     }
@@ -38,6 +46,32 @@ export class User {
         while(!this.#ready){
             await new Promise(resolve => setTimeout(resolve, 100));
         }
+    }
+
+    forceReady(){
+        this.#ready = true;
+    }
+
+    get events(): IEvent[] {
+        const events: IEvent[] = [];
+        if(this.#profile) events.push(this.#profile);
+        if(this.#relays) events.push(this.#relays);
+        return events;
+    }
+
+    get keys(): (keyof this)[] {
+        return [
+            'pubkey',
+            'name',
+            'about',
+            'lud06',
+            'lud16',
+            'lnaddr',
+            'photo',
+            'banner',
+            'relays',
+            'reference'
+        ]
     }
 
     get pubkey(): Pubkey {
@@ -50,6 +84,10 @@ export class User {
 
     get name(): string | undefined {
         return this.#profile?.name;
+    }
+
+    get about(): string | undefined {
+        return this.#profile?.about;
     }
 
     get lud06(): string | undefined {
@@ -84,11 +122,56 @@ export class User {
         return this.#relays?.relays
     }
 
+    set relays(instance: PubkeyRelays){
+        this.#relays = instance;
+    }
+
+    set profile(instance: PubkeyProfile){
+        this.#profile = instance;
+    }
+
+    get npub(): string | undefined {
+        return nip19.npubEncode(this.#pubkey)
+    }
+
     get reference(): string | undefined {
-        const pointer: nip19.ProfilePointer = {
-            pubkey: this.#pubkey,
-            relays: this.relays
+        try {
+            const relayList = this.relays || [];
+            let limitedRelays = relayList;
+            
+            // Start with all relays and progressively reduce if encoding fails
+            while (limitedRelays.length > 0) {
+                const pointer: nip19.ProfilePointer = {
+                    pubkey: this.#pubkey,
+                    relays: limitedRelays
+                }
+                
+                try {
+                    const encoded = nip19.nprofileEncode(pointer);
+                    if (encoded.length <= 5000) {
+                        return encoded;
+                    }
+                    // If still too long, reduce relay count
+                    limitedRelays = limitedRelays.slice(0, Math.floor(limitedRelays.length * 0.8));
+                } catch (e: any) {
+                    if (e.message?.includes('exceeds limit')) {
+                        // Reduce relay count and try again
+                        limitedRelays = limitedRelays.slice(0, Math.floor(limitedRelays.length * 0.8));
+                    } else {
+                        throw e;
+                    }
+                }
+            }
+            
+            // If no relays work, encode without relays
+            const pointer: nip19.ProfilePointer = {
+                pubkey: this.#pubkey,
+                relays: []
+            }
+            return nip19.nprofileEncode(pointer);
+        } catch (e) {
+            console.error('Failed to encode nprofile:', e);
+            return undefined;
         }
-        return nip19.nprofileEncode(pointer)
     }
 }

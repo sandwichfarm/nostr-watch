@@ -5,7 +5,8 @@ import {
   AbstractAdapter, 
   type IResultData,
   type IAdapter,
-  type Nocap as Base
+  type Nocap as Base,
+  AdapterType
 } from '@nostrwatch/nocap';
 
 const resultTpl: IResultData = { data: null, duration: -1 };
@@ -17,6 +18,9 @@ const error = (message: string, data: Record<string, any> = {}): IResultData => 
 };
 
 export class InfoAdapterDefault extends AbstractAdapter implements IAdapter {
+
+  static type: AdapterType = 'info';
+  readonly slug: string = 'InfoAdapterDefault';
   
   constructor(parent: Base) { 
     super(parent);
@@ -35,9 +39,7 @@ export class InfoAdapterDefault extends AbstractAdapter implements IAdapter {
     const method = 'GET';
     const network = this?.base?.results?.get('network')
 
-    if (network === 'tor') {
-      url.protocol = 'onion:';
-    } else if (url.protocol === 'ws:') {
+    if (url.protocol === 'ws:') {
       url.protocol = 'http:';
     } else if (url.protocol === 'wss:') {
       url.protocol = 'https:';
@@ -46,6 +48,10 @@ export class InfoAdapterDefault extends AbstractAdapter implements IAdapter {
     try {
       let response;
       if(network === 'tor') {
+        response = await fetch(url.toString(), { method, headers, signal }).catch((e) => {
+          result = error(e.message, data);
+          return null;
+        });
         // response = await torfetch(url.toString(), { method, headers, signal }).catch((e) => {
         //   result = error(e.message, data);
         //   return null;

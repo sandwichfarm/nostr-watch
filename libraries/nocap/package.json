@@ -4,25 +4,22 @@
   "license": "MIT",
   "type": "module",
   "entry": "src/index.ts",
-  "main": "dist/server/cjs/index.cjs.js",
-  "module": "dist/server/index.js",
-  "types": "./dist/web/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/server/types/index.d.ts",
       "import": "./dist/server/index.js",
-      "require": "./dist/server/cjs/index.cjs.js",
-      "types": "./dist/server/types/index.d.ts"
+      "require": "./dist/server/cjs/index.cjs.js"
     },
     "./web": {
-      "import": "./dist/web/index.esm.js",
-      "types": "./dist/web/index.d.ts"
+      "types": "./dist/web/index.d.ts",
+      "import": "./dist/web/index.esm.js"
     }
   },
   "scripts": {
     "build": "pnpm run clean && pnpm run transpile && rollup -c && pnpm run transpile:alias",
     "build:all": "pnpm run build && pnpm run build:adapters",
     "build:server": "pnpm run clean && pnpm run transpile:server && rollup -c && pnpm run transpile:alias",
-    "clean": "rimraf dist",
+    "clean": "rm -fr ./dist && mkdir -p ./dist",
     "transpile": "pnpm run transpile:server && pnpm run transpile:web",
     "transpile:web": "tsc -p tsconfig.web.json",
     "transpile:server": "tsc -p tsconfig.server.json",
@@ -30,14 +27,13 @@
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
-    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "@nostrwatch/logger": "workspace:*",
-    "@nostrwatch/utils": "workspace:*",
+    "@nostrwatch/logger": "workspace:^",
+    "@nostrwatch/utils": "workspace:^",
     "fetch-h2": "3.0.2",
     "get-ssl-certificate": "2.3.3",
     "jest": "29.7.0",
@@ -48,16 +44,21 @@
     "socks-proxy-agent": "8.0.2",
     "ws": "8.17.1"
   },
+  "peerDependencies": {
+    "@nostrwatch/websocket": "workspace:^"
+  },
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
     "@rollup/plugin-alias": "5.1.1",
     "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-inject": "^5.0.5",
     "@rollup/plugin-json": "^5.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-replace": "^5.0.0",
     "@rollup/plugin-typescript": "^10.0.0",
     "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.2",
     "@types/promise-deferred": "2.0.5",
     "@types/ws": "^8.5.12",
     "@vitest/ui": "0.34.6",
@@ -74,8 +75,5 @@
     "vitest": "0.34.6",
     "vitest-nostr": "0.4.1",
     "vitest-websocket-mock": "0.2.2"
-  },
-  "peerDependencies": {
-    "vitest": "^0.32.0"
   }
 }

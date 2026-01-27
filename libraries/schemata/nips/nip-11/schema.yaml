@@ -1,0 +1,193 @@
+"$id": https://schemata.nostr.watch/document/info
+"$schema": http://json-schema.org/draft-07/schema#
+title: NIP-11
+type: object
+properties:
+  name:
+    type: string
+    errorMessage: "Name must be a string."
+  description:
+    type: string
+    errorMessage: "Description must be a string."
+  pubkey:
+    allOf:
+      - $ref: "@/secp256k1.yaml"
+    description: "The public key for the operator of the relay."
+    errorMessage: "Pubkey must be a valid hex secp256k1 public key, not an npub or nprofile."
+  contact:
+    type: string
+    description: "Contact information for the operator of the relay."
+    errorMessage: "Contact must be a string."
+  supported_nips:
+    type: array
+    items:
+      type: number
+    description: "An array of NIPs that the relay supports."
+    errorMessage: "Supported NIPs must be an array of numbers."
+  relay_countries:
+    type: array
+    items:
+      - type: string
+  software:
+    type: string
+    description: "The software that the relay is running."
+    errorMessage: "Software must be a string."
+  version:
+    type: string
+    description: "The version of the software that the relay is running."
+    errorMessage: "Version must be a string."
+  retention:
+    type: array
+    items:
+      - allOf:
+          - $ref: "#/$defs/retent"
+        description: "The retention policy of the relay."
+        errorMessage: "Retention must be an object with at least one of kinds, count or time."
+  banner:
+    type: string
+    pattern: "^https?://"
+  icon:
+    type: string
+    pattern: "^https?://"
+  language_tags:
+    type: array
+    items:
+      type: string
+  tags:
+    type: array
+    items:
+      type: string
+  posting_policy:
+    type: string
+    anyOf:
+      - pattern: "^$"  # Allows empty string
+      - pattern: "^https?://"
+    errorMessage: "If provided, posting_policy must be a valid URL."
+  limitation:
+    type: object
+    properties:
+      max_message_length:
+        type: number
+      max_subscriptions:
+        type: number
+      max_filters:
+        type: number
+      max_limit:
+        type: number
+      max_subid_length:
+        type: number
+      max_event_tags:
+        type: number
+      max_content_length:
+        type: number
+      min_pow_difficulty:
+        type: number
+      auth_required:
+        type: boolean
+      payment_required:
+        type: boolean
+      restricted_writes:
+        type: boolean
+      created_at_lower_limit:
+        type: number
+      created_at_upper_limit:
+        type: number
+  payments_url:
+    type: string
+    anyOf:
+      - pattern: "^$"  # Allows empty string
+      - pattern: "^https?://"
+    errorMessage: "If provided, payments_url must be a valid URL."
+  fees:
+    type: object
+    properties:
+      admission:
+        $ref: "#/$defs/fee"
+      subscription:
+        $ref: "#/$defs/fee"
+      publication:
+        $ref: "#/$defs/fee"
+    additionalProperties: false
+# additionalProperties:
+#   not: true
+#   errorMessage: "NIP-11 Relay Information Document should not have any additional properties, invalid property is ${0#}"
+allOf:
+  - if:
+      properties:
+        limitation:
+          properties:
+            payment_required:
+              const: true
+          required:
+            - payment_required
+      required:
+        - limitation
+    then:
+      properties:
+        payments_url:
+          errorMessage: "payments_url must be provided and must be a valid URL when payment_required is true."
+          type: string
+          pattern: "^https?://"
+        fees:
+          errorMessage: "A admission, subscription and/or publication member should be in fees when payment_required is true."
+          anyOf:
+            - properties:
+                admission:
+                  type: array
+                  minItems: 1
+              required:
+                - admission
+            - properties:
+                subscription:
+                  type: array
+                  minItems: 1
+              required:
+                - subscription
+            - properties:
+                publication:
+                  type: array
+                  minItems: 1
+              required:
+                - publication
+      required:
+        - payments_url
+        - fees
+
+"$defs":
+  saneUrl:
+    type: string
+    pattern: "^https?://"
+  fee:
+    type: array
+    items:
+      type: object
+      properties:
+        amount:
+          type: number
+        unit:
+          type: string
+        period:
+          type: number
+        kinds:
+          type: array
+          items:
+            type: number
+      required:
+        - amount
+        - unit
+  retent:
+    type: object
+    properties:
+      kinds:
+        type: array
+        items:
+          anyOf:
+            - type: number
+            - type: array
+              items:
+                type: number
+      count:
+        type: number
+      time:
+        type: number
+    additionalProperties: false

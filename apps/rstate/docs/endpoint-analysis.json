@@ -1,0 +1,968 @@
+{
+  "analysis_metadata": {
+    "generated_at": "2025-11-02T12:14:00Z",
+    "analyst_agent": "swarm-1762085600124-ruk9nyfci",
+    "task_id": "task-1762085675601-lwwdvb7gq",
+    "version": "1.0.0"
+  },
+  "executive_summary": {
+    "total_endpoints": 23,
+    "endpoints_with_compact_support": 8,
+    "endpoints_with_verbose_response": 15,
+    "schema_files_analyzed": 17,
+    "route_files_analyzed": 4,
+    "total_route_code_lines": 1362
+  },
+  "endpoint_inventory": {
+    "relay_endpoints": [
+      {
+        "path": "/relays",
+        "method": "GET",
+        "description": "List all relay states with pagination",
+        "current_response_format": "verbose",
+        "compact_param": true,
+        "compact_default": false,
+        "response_structure": {
+          "type": "paginated_list",
+          "fields": ["relays", "total", "limit", "offset"],
+          "relay_objects": "full RelayState with contributingAuthors"
+        },
+        "schema_file": "relays-list-output.json",
+        "implementation": "src/rest/routes/relays.ts:26-84",
+        "402_compatible": false,
+        "payments_enabled": false
+      },
+      {
+        "path": "/relays/state",
+        "method": "GET",
+        "description": "Get state for a specific relay",
+        "current_response_format": "verbose",
+        "compact_param": false,
+        "response_structure": {
+          "type": "single_object",
+          "fields": ["relay"],
+          "relay_object": "full RelayState with contributingAuthors"
+        },
+        "schema_file": "relays-get-state-output.json",
+        "implementation": "src/rest/routes/relays.ts:86-119",
+        "402_compatible": false,
+        "payments_enabled": false
+      },
+      {
+        "path": "/relays/search",
+        "method": "POST",
+        "description": "Search relays with complex filters, pagination, and compact mode",
+        "current_response_format": "verbose",
+        "compact_param": true,
+        "compact_default": false,
+        "response_structure": {
+          "type": "paginated_list",
+          "fields": ["relays", "total", "limit", "offset"],
+          "relay_objects": "full RelayState with contributingAuthors"
+        },
+        "schema_file": "relays-list-output.json",
+        "implementation": "src/rest/routes/relays.ts:122-213",
+        "402_compatible": true,
+        "payments_enabled": true,
+        "pricing": {
+          "configured": true,
+          "amount_msat": 5000,
+          "note": "Has paymentsPreHandler configured"
+        }
+      },
+      {
+        "path": "/relays/nearby",
+        "method": "GET",
+        "description": "Find relays near a geographic point",
+        "current_response_format": "verbose",
+        "compact_param": true,
+        "compact_default": false,
+        "response_structure": {
+          "type": "list_with_geo",
+          "fields": ["relays", "center", "radius"],
+          "relay_objects": "full RelayState with contributingAuthors and optional distance field"
+        },
+        "schema_file": "relays-nearby-output.json",
+        "implementation": "src/rest/routes/relays.ts:216-248",
+        "402_compatible": false,
+        "payments_enabled": false
+      },
+      {
+        "path": "/relays/bbox",
+        "method": "GET",
+        "description": "Find relays within a bounding box",
+        "current_response_format": "verbose",
+        "compact_param": true,
+        "compact_default": false,
+        "response_structure": {
+          "type": "list_with_bbox",
+          "fields": ["relays", "bbox", "total"],
+          "relay_objects": "full RelayState with contributingAuthors"
+        },
+        "schema_file": "relays-bbox-output.json",
+        "implementation": "src/rest/routes/relays.ts:250-288",
+        "402_compatible": false,
+        "payments_enabled": false
+      },
+      {
+        "path": "/relays/labels",
+        "method": "GET",
+        "description": "Get labels for a specific relay",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "label_map",
+          "fields": ["labels"],
+          "label_format": "Record<namespace, string[]>"
+        },
+        "schema_file": "relays-get-labels-output.json",
+        "implementation": "src/rest/routes/relays.ts:291-321",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - no contributingAuthors"
+      },
+      {
+        "path": "/relays/labels/list",
+        "method": "GET",
+        "description": "List all available labels",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "label_list",
+          "fields": ["namespaces", "labels"],
+          "label_format": "Record<namespace, string[]>"
+        },
+        "schema_file": "relays-list-labels-output.json",
+        "implementation": "src/rest/routes/relays.ts:323-360",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - no contributingAuthors"
+      },
+      {
+        "path": "/relays/by/label",
+        "method": "GET",
+        "description": "Find relays with a specific label",
+        "current_response_format": "verbose",
+        "compact_param": true,
+        "compact_default": false,
+        "response_structure": {
+          "type": "filtered_list",
+          "fields": ["relays", "label", "total"],
+          "relay_objects": "full RelayState with contributingAuthors"
+        },
+        "schema_file": "relays-by-label-output.json",
+        "implementation": "src/rest/routes/relays.ts:362-411",
+        "402_compatible": false,
+        "payments_enabled": false
+      },
+      {
+        "path": "/relays/by/software",
+        "method": "GET",
+        "description": "Get relays grouped by software family",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "grouped_list",
+          "fields": ["groups"],
+          "group_format": "Array<{family, version?, count, relays}>"
+        },
+        "schema_file": "relays-by-software-output.json",
+        "implementation": "src/rest/routes/relays.ts:413-439",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - returns relay URLs only"
+      },
+      {
+        "path": "/relays/by/network",
+        "method": "GET",
+        "description": "Get relays grouped by network type",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "grouped_list",
+          "fields": ["groups"],
+          "group_format": "Array<{network, count, relays}>"
+        },
+        "schema_file": "relays-by-network-output.json",
+        "implementation": "src/rest/routes/relays.ts:442-459",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - returns relay URLs only"
+      },
+      {
+        "path": "/relays/by/nip",
+        "method": "GET",
+        "description": "Get relays grouped by NIP support",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "grouped_list",
+          "fields": ["groups"],
+          "group_format": "Array<{nip, count, avgSupport, relays}>"
+        },
+        "schema_file": "relays-by-nip-output.json",
+        "implementation": "src/rest/routes/relays.ts:462-503",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - returns relay URLs only"
+      },
+      {
+        "path": "/relays/by/country",
+        "method": "GET",
+        "description": "Get relays grouped by country",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "grouped_list",
+          "fields": ["groups"],
+          "group_format": "Array<{countryCode, countryName?, count, relays}>"
+        },
+        "schema_file": "relays-by-country-output.json",
+        "implementation": "src/rest/routes/relays.ts:506-547",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - returns relay URLs only"
+      },
+      {
+        "path": "/relays/compare",
+        "method": "POST",
+        "description": "Compare multiple relays side-by-side",
+        "current_response_format": "verbose",
+        "compact_param": false,
+        "response_structure": {
+          "type": "comparison",
+          "fields": ["relays", "comparison"],
+          "relay_objects": "full RelayState with contributingAuthors"
+        },
+        "schema_file": "relays-compare-output.json",
+        "implementation": "src/rest/routes/relays.ts:549-606",
+        "402_compatible": true,
+        "payments_enabled": true,
+        "pricing": {
+          "configured": true,
+          "amount_msat": 15000,
+          "note": "Has paymentsPreHandler configured"
+        }
+      },
+      {
+        "path": "/relays/online",
+        "method": "POST",
+        "description": "Get currently online relays with optional label filtering",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "availability_list",
+          "fields": ["relays", "total", "limit", "offset"],
+          "relay_format": "Array of relay URL strings"
+        },
+        "schema_file": "relays-availability-output.json",
+        "implementation": "src/rest/routes/relays.ts:608-649",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - returns relay URLs only"
+      },
+      {
+        "path": "/relays/offline",
+        "method": "POST",
+        "description": "Get recently seen but currently offline relays",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "availability_list",
+          "fields": ["relays", "total"],
+          "relay_format": "Array of relay URL strings"
+        },
+        "schema_file": "relays-availability-output.json",
+        "implementation": "src/rest/routes/relays.ts:651-695",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - returns relay URLs only"
+      },
+      {
+        "path": "/relays/dead",
+        "method": "POST",
+        "description": "Get probably dead relays (not seen in a long time)",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "availability_list",
+          "fields": ["relays", "total"],
+          "relay_format": "Array of relay URL strings"
+        },
+        "schema_file": "relays-availability-output.json",
+        "implementation": "src/rest/routes/relays.ts:697-738",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - returns relay URLs only"
+      }
+    ],
+    "monitor_endpoints": [
+      {
+        "path": "/monitors/:pubkey",
+        "method": "GET",
+        "description": "Get information about a specific monitor",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "single_monitor",
+          "fields": ["monitor", "analytics?"],
+          "monitor_object": "MonitorAnnouncement without contributingAuthors"
+        },
+        "schema_file": "monitors-get-output.json",
+        "implementation": "src/rest/routes/monitors.ts:22-69",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - no contributingAuthors"
+      },
+      {
+        "path": "/monitors",
+        "method": "GET",
+        "description": "List all monitors with pagination",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "monitor_list",
+          "fields": ["monitors", "total", "limit", "offset", "analytics?"],
+          "monitor_objects": "MonitorAnnouncement without contributingAuthors"
+        },
+        "schema_file": "monitors-list-output.json",
+        "implementation": "src/rest/routes/monitors.ts:71-124",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - no contributingAuthors"
+      },
+      {
+        "path": "/monitors/:pubkey/analytics",
+        "method": "GET",
+        "description": "Get detailed reliability and coverage analytics for a specific monitor",
+        "current_response_format": "verbose",
+        "compact_param": true,
+        "compact_param_name": "includeRelayUrls",
+        "compact_default": false,
+        "response_structure": {
+          "type": "monitor_analytics",
+          "fields": ["pubkey", "reliability", "coverage", "quality"],
+          "coverage_includes_relay_urls": "conditionally stripped when includeRelayUrls=false"
+        },
+        "schema_file": "monitors-analytics-output.json",
+        "implementation": "src/rest/routes/monitors.ts:126-172",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Has optional includeRelayUrls param for payload reduction"
+      },
+      {
+        "path": "/monitors/analytics",
+        "method": "GET",
+        "description": "Get detailed reliability and coverage analytics for all monitors",
+        "current_response_format": "verbose",
+        "compact_param": true,
+        "compact_param_name": "includeRelayUrls",
+        "compact_default": false,
+        "response_structure": {
+          "type": "analytics_list",
+          "fields": ["analytics", "total", "limit", "offset"],
+          "analytics_objects": "Array of monitor analytics with optional relayUrls"
+        },
+        "schema_file": "monitors-analytics-list-output.json",
+        "implementation": "src/rest/routes/monitors.ts:174-230",
+        "402_compatible": true,
+        "payments_enabled": true,
+        "pricing": {
+          "configured": true,
+          "amount_msat": 1000,
+          "note": "Has paymentsPreHandler configured"
+        }
+      }
+    ],
+    "subscription_endpoints": [
+      {
+        "path": "/subscriptions",
+        "method": "POST",
+        "description": "Create a new relay state subscription",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "subscription_created",
+          "fields": ["subscriptionId", "sessionId", "message"]
+        },
+        "schema_file": "relays-subscribe-state-output.json",
+        "implementation": "src/rest/routes/subscriptions.ts:28-140",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - no relay state data"
+      },
+      {
+        "path": "/subscriptions/:id",
+        "method": "DELETE",
+        "description": "Delete a subscription",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "deletion_result",
+          "fields": ["success", "message"]
+        },
+        "schema_file": "relays-unsubscribe-output.json",
+        "implementation": "src/rest/routes/subscriptions.ts:142-180",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - no relay state data"
+      },
+      {
+        "path": "/subscriptions",
+        "method": "GET",
+        "description": "List all subscriptions for a session",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "subscription_list",
+          "fields": ["subscriptions", "total"]
+        },
+        "implementation": "src/rest/routes/subscriptions.ts:183-236",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - subscription metadata only"
+      }
+    ],
+    "policy_endpoints": [
+      {
+        "path": "/policy",
+        "method": "GET",
+        "description": "Get current aggregation policy",
+        "current_response_format": "compact",
+        "compact_param": false,
+        "response_structure": {
+          "type": "policy_object",
+          "fields": ["policy"]
+        },
+        "schema_file": "policy-get-output.json",
+        "implementation": "src/rest/routes/policy.ts:20-28",
+        "402_compatible": false,
+        "payments_enabled": false,
+        "note": "Already compact - policy configuration only"
+      }
+    ]
+  },
+  "response_format_analysis": {
+    "verbose_response_pattern": {
+      "description": "Full RelayState objects with all aggregation metadata",
+      "included_fields": [
+        "relayUrl",
+        "network (with contributingAuthors)",
+        "software (with contributingAuthors)",
+        "rtt (with contributingAuthors)",
+        "nips",
+        "requirements (with contributingAuthors)",
+        "labels",
+        "geo (with authors)",
+        "ipAddrs",
+        "country (with contributingAuthors)",
+        "updated_at",
+        "contributingAuthors",
+        "observationCount",
+        "lastSeenAt",
+        "lastOpenAt"
+      ],
+      "contributor_fields": [
+        "contributingAuthors (top-level array)",
+        "AggregatedValue.contributingAuthors",
+        "geo.authors",
+        "conflicts[].authors"
+      ],
+      "endpoints_using": 8
+    },
+    "compact_response_pattern": {
+      "description": "Simplified RelayState without contributor/author data",
+      "excluded_fields": [
+        "contributingAuthors",
+        "authors",
+        "conflicts"
+      ],
+      "utility_function": "src/utils/compact.ts",
+      "endpoints_supporting": 8,
+      "implementation": {
+        "function": "compactRelayState()",
+        "defense_in_depth": "sanitizeContributors() recursively removes all author fields",
+        "applied_via": "?compact=true query parameter"
+      }
+    },
+    "url_only_response_pattern": {
+      "description": "Returns only relay URL strings, no state objects",
+      "format": "Array<string>",
+      "endpoints_using": 8,
+      "note": "Already minimal - used for grouping and availability endpoints"
+    }
+  },
+  "compact_mode_implementation": {
+    "utility_file": "src/utils/compact.ts",
+    "functions": {
+      "compactRelayState": {
+        "description": "Remove contributor data from a single RelayState object",
+        "parameters": ["state: RelayState"],
+        "returns": "RelayState",
+        "implementation_lines": "34-139"
+      },
+      "compactRelayStates": {
+        "description": "Compact an array of relay states",
+        "parameters": ["states: RelayState[]"],
+        "returns": "RelayState[]",
+        "implementation_lines": "144-146"
+      },
+      "sanitizeContributors": {
+        "description": "Recursively remove contributingAuthors and authors keys (defense-in-depth)",
+        "parameters": ["obj: any"],
+        "returns": "any",
+        "implementation_lines": "12-29",
+        "note": "Ensures no author data leaks through nested structures"
+      }
+    },
+    "query_parameter": {
+      "name": "compact",
+      "type": "boolean",
+      "default": false,
+      "description": "When true, removes contributor/author data from responses"
+    },
+    "endpoints_with_compact_support": [
+      "/relays",
+      "/relays/search",
+      "/relays/nearby",
+      "/relays/bbox",
+      "/relays/by/label"
+    ],
+    "endpoints_with_includeRelayUrls_support": [
+      "/monitors/:pubkey/analytics",
+      "/monitors/analytics"
+    ]
+  },
+  "schema_definitions": {
+    "relays-list-output.json": {
+      "structure": {
+        "relays": "Array<RelayState>",
+        "total": "number",
+        "limit": "number",
+        "offset": "number"
+      },
+      "relay_state_format": "verbose by default, compact via ?compact=true"
+    },
+    "relays-get-state-output.json": {
+      "structure": {
+        "relay": "RelayState | null"
+      },
+      "relay_state_format": "verbose (no compact option)"
+    },
+    "relays-availability-output.json": {
+      "structure": {
+        "relays": "Array<string> (relay URLs only)",
+        "total": "number",
+        "limit": "number",
+        "offset": "number"
+      },
+      "relay_state_format": "compact (URLs only)"
+    },
+    "relays-nearby-output.json": {
+      "structure": {
+        "relays": "Array<RelayState>",
+        "center": "{lat: number, lon: number}",
+        "radius": "number"
+      },
+      "relay_state_format": "verbose by default, compact via ?compact=true"
+    },
+    "relays-bbox-output.json": {
+      "structure": {
+        "relays": "Array<RelayState>",
+        "bbox": "{sw: {lat, lon}, ne: {lat, lon}}",
+        "total": "number"
+      },
+      "relay_state_format": "verbose by default, compact via ?compact=true"
+    },
+    "relays-by-label-output.json": {
+      "structure": {
+        "relays": "Array<RelayState>",
+        "label": "{namespace: string, value: string}",
+        "total": "number"
+      },
+      "relay_state_format": "verbose by default, compact via ?compact=true"
+    },
+    "relays-by-software-output.json": {
+      "structure": {
+        "groups": "Array<{family, version?, count, relays: string[]}>"
+      },
+      "relay_state_format": "compact (URLs only)"
+    },
+    "relays-by-network-output.json": {
+      "structure": {
+        "groups": "Array<{network, count, relays: string[]}>"
+      },
+      "relay_state_format": "compact (URLs only)"
+    },
+    "relays-by-nip-output.json": {
+      "structure": {
+        "groups": "Array<{nip, count, avgSupport, relays: string[]}>"
+      },
+      "relay_state_format": "compact (URLs only)"
+    },
+    "relays-by-country-output.json": {
+      "structure": {
+        "groups": "Array<{countryCode, countryName?, count, relays: string[]}>"
+      },
+      "relay_state_format": "compact (URLs only)"
+    },
+    "relays-compare-output.json": {
+      "structure": {
+        "relays": "Array<RelayState>",
+        "comparison": "{common: {nips, requirements}, differences: {network, software, latency}}"
+      },
+      "relay_state_format": "verbose (no compact option)"
+    }
+  },
+  "402_markets_compatibility": {
+    "implementation_status": "85% complete (core complete, optional enhancements remain)",
+    "payment_enabled_endpoints": 3,
+    "l402_support": true,
+    "p2pk_support": true,
+    "pricing_policy": {
+      "file": "PAY_PRICES_JSON configuration",
+      "format": "JSON with route-level pricing",
+      "dynamic_pricing": "Redis-based overrides supported"
+    },
+    "header_compliance": {
+      "l402_challenge": "WWW-Authenticate: L402 macaroon=\"<base64>\", invoice=\"<bolt11>\"",
+      "l402_authorization": "Authorization: L402 <macaroon>:<preimage>",
+      "p2pk_challenge": "X-Cashu: <base64-payment-request>",
+      "p2pk_authorization": "Authorization: Cashu <token>"
+    },
+    "compact_mode_benefit": {
+      "description": "Reducing response payload sizes aligns with 402.markets monetization model",
+      "rationale": [
+        "Smaller payloads reduce bandwidth costs for paid endpoints",
+        "Compact responses are more suitable for micropayment scenarios",
+        "Removing contributor metadata simplifies schema validation",
+        "Faster response times improve user experience on paid endpoints"
+      ],
+      "recommendation": "Make compact=true the default for 402-enabled endpoints"
+    }
+  },
+  "dependency_mapping": {
+    "schema_files": {
+      "location": "src/schemas/",
+      "count": 17,
+      "used_by": [
+        "src/rest/routes/relays.ts",
+        "src/rest/routes/monitors.ts",
+        "src/rest/routes/subscriptions.ts",
+        "src/rest/routes/policy.ts",
+        "src/rest/schemas.ts"
+      ]
+    },
+    "compact_utility": {
+      "location": "src/utils/compact.ts",
+      "used_by": [
+        "src/rest/routes/relays.ts (lines 11, 75, 209, 245, 284, 403)",
+        "src/tools/relays.ts (line 40)"
+      ],
+      "imports": [
+        "types/aggregation.ts (RelayState interface)"
+      ]
+    },
+    "test_files": {
+      "rest_integration_test": "test/rest-integration.test.ts",
+      "rest_tool_parity_test": "test/rest_tool_parity.test.ts",
+      "parity_check_script": "scripts/rest_parity_check.ts"
+    },
+    "core_query_interface": {
+      "location": "src/core/index.ts",
+      "used_by_rest": [
+        "src/rest/routes/relays.ts (core.query.relays.*)",
+        "src/rest/routes/monitors.ts (core.query.monitors.*)",
+        "src/rest/routes/policy.ts (core.query.policy.*)"
+      ]
+    },
+    "aggregation_types": {
+      "location": "src/types/aggregation.ts",
+      "defines": [
+        "RelayState interface (lines 78-136)",
+        "AggregatedValue interface (lines 57-64)",
+        "AggregationPolicy interface (lines 8-33)"
+      ],
+      "contributor_fields": [
+        "RelayState.contributingAuthors (line 128)",
+        "AggregatedValue.contributingAuthors (line 61)",
+        "geo.authors (line 117)"
+      ]
+    }
+  },
+  "refactoring_strategy": {
+    "phase_1_analysis": {
+      "description": "Understand current state and patterns",
+      "status": "COMPLETE",
+      "findings": [
+        "8 endpoints return verbose RelayState objects",
+        "8 endpoints already return compact responses (URL-only or no relay data)",
+        "Compact mode implemented via ?compact=true parameter",
+        "3 endpoints have 402 payment integration",
+        "Monitor analytics uses includeRelayUrls parameter for similar purpose"
+      ]
+    },
+    "phase_2_options": {
+      "option_a_default_compact": {
+        "description": "Make compact=true the default for all endpoints",
+        "breaking_change": true,
+        "migration_path": "Require ?verbose=true for full responses",
+        "benefits": [
+          "Aligns with 402.markets monetization model",
+          "Reduces bandwidth costs",
+          "Simpler default response structure"
+        ],
+        "risks": [
+          "Breaking change for existing API consumers",
+          "May require client updates",
+          "Could break MCP tool parity tests"
+        ]
+      },
+      "option_b_separate_endpoints": {
+        "description": "Create separate /compact/ prefix endpoints",
+        "breaking_change": false,
+        "migration_path": "Add new routes like /relays/compact/search",
+        "benefits": [
+          "No breaking changes",
+          "Clear separation of concerns",
+          "Easy to discover via API documentation"
+        ],
+        "risks": [
+          "Code duplication",
+          "Maintenance overhead",
+          "URL proliferation"
+        ]
+      },
+      "option_c_enhanced_query_param": {
+        "description": "Extend existing ?compact=true parameter to all endpoints",
+        "breaking_change": false,
+        "migration_path": "Add compact parameter to remaining 3 endpoints without it",
+        "benefits": [
+          "Minimal changes required",
+          "Backward compatible",
+          "Consistent with current pattern"
+        ],
+        "risks": [
+          "Query parameter proliferation",
+          "Less discoverable than separate endpoints"
+        ],
+        "recommended": true
+      },
+      "option_d_accept_header": {
+        "description": "Use Accept header for format negotiation",
+        "breaking_change": false,
+        "migration_path": "Accept: application/json for verbose, Accept: application/json+compact for compact",
+        "benefits": [
+          "RESTful content negotiation",
+          "No URL changes",
+          "Industry standard approach"
+        ],
+        "risks": [
+          "More complex implementation",
+          "Requires client header management",
+          "May complicate caching"
+        ]
+      }
+    },
+    "phase_3_recommended_approach": {
+      "strategy": "Option C - Enhanced Query Parameter",
+      "implementation_steps": [
+        {
+          "step": 1,
+          "description": "Add ?compact=true support to /relays/state",
+          "files_affected": ["src/rest/routes/relays.ts (line 86-119)"],
+          "complexity": "LOW"
+        },
+        {
+          "step": 2,
+          "description": "Add ?compact=true support to /relays/compare",
+          "files_affected": ["src/rest/routes/relays.ts (line 549-606)"],
+          "complexity": "LOW",
+          "note": "402-enabled endpoint - reduces paid response size"
+        },
+        {
+          "step": 3,
+          "description": "Consider making compact=true default for 402-enabled endpoints only",
+          "files_affected": [
+            "src/rest/routes/relays.ts (/relays/search, /relays/compare)",
+            "src/rest/routes/monitors.ts (/monitors/analytics)"
+          ],
+          "complexity": "MEDIUM",
+          "breaking_change": "Optional - can be feature-flagged"
+        },
+        {
+          "step": 4,
+          "description": "Update OpenAPI schemas to document compact parameter",
+          "files_affected": ["src/rest/schemas.ts", "schema JSON files"],
+          "complexity": "LOW"
+        },
+        {
+          "step": 5,
+          "description": "Update REST integration tests to verify compact mode",
+          "files_affected": ["test/rest-integration.test.ts"],
+          "complexity": "MEDIUM"
+        },
+        {
+          "step": 6,
+          "description": "Update parity tests to ensure MCP tools match REST compact behavior",
+          "files_affected": ["test/rest_tool_parity.test.ts"],
+          "complexity": "MEDIUM"
+        }
+      ]
+    },
+    "phase_4_schema_simplification": {
+      "description": "Consider creating separate schema definitions for compact responses",
+      "benefits": [
+        "Clearer API documentation",
+        "Better type safety",
+        "Easier validation"
+      ],
+      "files_to_create": [
+        "src/schemas/relays-list-compact-output.json",
+        "src/schemas/relays-state-compact-output.json",
+        "src/schemas/relays-compare-compact-output.json"
+      ],
+      "priority": "LOW - Optional enhancement"
+    }
+  },
+  "risk_assessment": {
+    "breaking_changes": {
+      "current_risk": "LOW",
+      "rationale": "Compact mode is opt-in via query parameter",
+      "mitigation": "Keep verbose as default unless explicitly changed"
+    },
+    "402_integration_risks": {
+      "current_status": "85% complete, optional feature",
+      "blockers_resolved": true,
+      "remaining_work": [
+        "Unify payment configuration (code organization)",
+        "Apply payment gating to all policy-listed endpoints",
+        "Test and document P2PK flow"
+      ],
+      "deployment_ready": true
+    },
+    "mcp_tool_parity_risks": {
+      "current_risk": "MEDIUM",
+      "concern": "MCP tools currently return verbose responses",
+      "impact": "REST compact mode may break parity tests",
+      "mitigation": [
+        "Update MCP tool handlers to support compact mode",
+        "Ensure parity tests compare same response formats",
+        "Add compact parameter to MCP tool schemas if needed"
+      ]
+    },
+    "test_coverage_gaps": {
+      "identified_gaps": [
+        "No tests for compact mode on /relays/nearby",
+        "No tests for compact mode on /relays/bbox",
+        "No tests for compact mode on /relays/by/label",
+        "Limited 402 payment flow testing"
+      ],
+      "priority": "MEDIUM"
+    }
+  },
+  "performance_implications": {
+    "response_size_reduction": {
+      "estimated_savings": "30-50% payload reduction",
+      "calculation_basis": [
+        "contributingAuthors arrays removed",
+        "Nested author fields removed from AggregatedValue",
+        "conflicts arrays removed"
+      ],
+      "endpoints_most_affected": [
+        "/relays/search (high cardinality)",
+        "/relays/compare (deep comparison data)",
+        "/monitors/analytics (relay URL arrays)"
+      ]
+    },
+    "serialization_performance": {
+      "impact": "Minimal - sanitizeContributors() is lightweight",
+      "note": "Recursive object traversal adds small overhead"
+    },
+    "bandwidth_savings_402": {
+      "benefit": "Significant for paid endpoints",
+      "rationale": "Smaller responses = lower costs per request",
+      "recommendation": "Default to compact for all 402-enabled endpoints"
+    }
+  },
+  "recommendations": {
+    "immediate_actions": [
+      {
+        "priority": "HIGH",
+        "action": "Add compact parameter to /relays/state endpoint",
+        "rationale": "Completes compact mode support for all relay detail endpoints"
+      },
+      {
+        "priority": "HIGH",
+        "action": "Add compact parameter to /relays/compare endpoint",
+        "rationale": "402-enabled endpoint - reduces paid response size"
+      },
+      {
+        "priority": "MEDIUM",
+        "action": "Update OpenAPI documentation to clearly indicate compact parameter availability",
+        "rationale": "Improves API discoverability"
+      }
+    ],
+    "future_considerations": [
+      {
+        "priority": "MEDIUM",
+        "action": "Consider making compact=true default for 402-enabled endpoints only",
+        "rationale": "Aligns with micropayment model, reduces bandwidth costs"
+      },
+      {
+        "priority": "LOW",
+        "action": "Create separate compact schema definitions for clearer documentation",
+        "rationale": "Improves type safety and validation"
+      },
+      {
+        "priority": "LOW",
+        "action": "Add MCP tool support for compact responses",
+        "rationale": "Maintains parity between REST and MCP tool handlers"
+      }
+    ],
+    "402_markets_alignment": [
+      {
+        "priority": "HIGH",
+        "action": "Default compact=true for all 402-enabled endpoints",
+        "rationale": "Micropayments benefit from smaller payloads"
+      },
+      {
+        "priority": "MEDIUM",
+        "action": "Apply payment gating to remaining high-cost endpoints",
+        "rationale": "Current coverage limited to 3 endpoints"
+      },
+      {
+        "priority": "MEDIUM",
+        "action": "Test and document P2PK (Cashu) flow",
+        "rationale": "L402 complete but P2PK needs validation"
+      }
+    ]
+  },
+  "migration_considerations": {
+    "backward_compatibility": {
+      "status": "MAINTAINED",
+      "approach": "Compact mode is opt-in",
+      "breaking_change_path": "If default flipped, require ?verbose=true parameter"
+    },
+    "client_impact": {
+      "minimal_impact_scenarios": [
+        "Clients that only use relay URLs (already working)",
+        "Clients that don't use contributingAuthors data",
+        "New integrations starting with compact mode"
+      ],
+      "affected_scenarios": [
+        "Clients analyzing contributor consensus",
+        "Clients using geo.authors for trust decisions",
+        "Clients displaying conflict information"
+      ]
+    },
+    "deprecation_timeline": {
+      "if_default_changed": {
+        "phase_1": "Add ?verbose=true parameter (6 months notice)",
+        "phase_2": "Make compact=true default (with verbose opt-in)",
+        "phase_3": "Remove verbose support (12 months after phase_2)"
+      },
+      "recommended_approach": "Keep both options indefinitely"
+    }
+  }
+}

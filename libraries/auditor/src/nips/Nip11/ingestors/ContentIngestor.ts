@@ -12,7 +12,6 @@ export class ContentIngestor extends Ingestor {
   }
 
   feed(note: Note): void {
-    if(!this?.signal) throw new Error('Ingestor not registered with signal');
     if(!isNaturalLanguage(note.content) || this.searches.has(note.content)) return;
     this.searches.add(note.content);
     if(this.searches.size >= this.sampleSize) {

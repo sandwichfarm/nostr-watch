@@ -9,14 +9,16 @@ import livereload from 'rollup-plugin-livereload';
 import nodePolyfills from 'rollup-plugin-polyfill-node';
 import nodeResolve from '@rollup/plugin-node-resolve';
 
-import * as glob from 'glob';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const glob = require('glob')
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const production = !process.env.ROLLUP_WATCH;
 
-const input = glob.sync('src/**/index.ts');
+const input = glob.sync('src/**/*.ts');
 
 console.log('inputs', input);
 

@@ -1,29 +1,18 @@
-import type { WebSocketWrapper as WebSocket } from '#base/WebSocketWrapper.js';
+import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 
 import { Suite } from '#base/Suite.js';
 import type { ISuite } from '#base/Suite.js';
 
-import type { 
-  RelayEoseMessage, 
-  RelayEventMessage, 
-  RelayNoticeMessage, 
-  RelayOkMessage,
-  RelayClosedMessage, 
-} from '#nips/Nip01/interfaces/index.js';
-
 //nip01
 export class Nip50 extends Suite implements ISuite {
 
-  public readonly slug: string = 'Nip50';
-
-  constructor(ws: WebSocket) {
-    super(ws, import.meta.url);  
+  public get slug(): string {
+    return 'Nip50';
   }
-  protected onMessageEvent(message: RelayEventMessage): void {}
-  protected onMessageOk(message: RelayOkMessage): void {}
-  protected onMessageEose(message: RelayEoseMessage): void {}
-  protected onMessageNotice(message: RelayNoticeMessage): void {}
-  protected onMessageClosed(message: RelayClosedMessage): void {}
+
+  constructor(socket: WebSocket) {
+    super(socket, import.meta.url);  
+  }
 }
 
 export default Nip50;

@@ -18,7 +18,7 @@ export function makeReadableSoftwareMap(items: string[]): SoftwareMap {
 export function makeSoftwareReadable(urlString: string): string {
     if(!urlString) return urlString;
     if(urlString.includes(' ')){
-        return "eats/ass"
+        return "invalid software identifier"
     }
     if (urlString.startsWith('git+')) {
         urlString = urlString.slice(4);

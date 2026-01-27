@@ -1,13 +1,13 @@
 <script lang="ts">
-    import { type Monitor } from '@nostrwatch/nip66/models';
-    import { monitorChecksCount } from '$lib/stores/monitors.js';
+    import { type Monitor } from '@nostrwatch/route66/models';
+    import { monitorRelayLivenessCounts } from '$lib/stores/monitors.js';
     import Badge from '$lib/components/ui/badge/Badge.svelte';
 	import { PFP } from '$lib/utils/pfp.js';
     import Time from "svelte-time";
     export let monitor: Monitor;
 
     $: photo = monitor?.profile?.photo || monitor?.profile?.picture;
-    $: checksCount = $monitorChecksCount?.[monitor.pubkey]
+    $: checksCount = $monitorRelayLivenessCounts?.[monitor.pubkey]?.online
     $: lastActive = monitor?.lastActive
     $: relays = monitor?.relays
     $: checks = monitor?.checks
@@ -18,7 +18,7 @@
     <div class="flex-shrink-0">
         {#if monitor?.profile?.photo}
             <span class="rounded-full overflow-hidden">
-                <img src={photo} alt={photo} class="w-20 h-24" />
+                <img src="{photo}" alt={photo} class="w-20 h-24" />
             </span>
         {:else}
             <span class="rounded-full overflow-hidden">

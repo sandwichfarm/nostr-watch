@@ -1,0 +1,24 @@
+{
+    "name": "@nostrwatch/umon",
+    "version": "0.1.0",
+    "description": "A browser extension for monitoring Nostr activity.",
+    "main": "dist/index.js",
+    "scripts": {
+      "lint": "pnpm exec eslint src --ext .ts,.svelte",
+      "build": "pnpm exec rollup -c",
+      "test": "pnpm exec jest",
+      "prettify": "pnpm exec prettier --write 'src/**/*.{ts,svelte}'"
+    },
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+      "@rollup/plugin-typescript": "^10.0.1",
+      "@sveltejs/rollup-plugin-svelte": "^8.0.0",
+      "rollup": "^3.0.0",
+      "rollup-plugin-css-only": "^4.0.0",
+      "rollup-plugin-terser": "^7.0.2",
+      "typescript": "^5.0.0",
+      "svelte": "^4.0.0"
+    }
+  }
+  

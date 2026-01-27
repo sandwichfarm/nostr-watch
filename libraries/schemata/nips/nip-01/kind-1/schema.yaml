@@ -1,0 +1,5 @@
+$id: "https://schemata.nostr.watch/note/kind/1"
+$schema: http://json-schema.org/draft-07/schema#
+title: kind1
+allOf: 
+  - $ref: "@/note.yaml"

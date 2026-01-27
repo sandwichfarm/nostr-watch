@@ -32,7 +32,6 @@
     "transpile:alias": "pnpm run transpile:server:alias",
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
-    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
@@ -42,11 +41,11 @@
     "publisher"
   ],
   "dependencies": {
-    "@nostrwatch/logger": "workspace:*",
+    "@noble/hashes": "1.5.0",
+    "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/publisher-nostrtools": "workspace:^",
     "@nostrwatch/utils": "workspace:^",
-    "nostr-geotags": "^0.7.1",
-    "nostr-tools": "^1.0.0"
+    "nostr-geotags": "^0.7.1"
   },
   "devDependencies": {
     "@rollup/plugin-alias": "^5.1.1",
@@ -60,7 +59,8 @@
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
-    "prettier": "^3.0.0",
+    "nostr-tools": "2.11.0",
+    "prettier": "^3.4.2",
     "rimraf": "^5.0.0",
     "rollup": "^4.24.0",
     "rollup-plugin-livereload": "^2.0.5",
@@ -71,12 +71,15 @@
     "tsc-alias": "^1.8.10",
     "tslib": "^2.7.0",
     "typescript": "^5.6.2",
-    "vitest": "^0.34.1"
+    "vitest": "^0.34.6"
   },
   "files": [
     "dist/**/*"
   ],
   "engines": {
     "node": ">=14.0.0"
+  },
+  "peerDependencies": {
+    "nostr-tools": "2.11.0"
   }
 }

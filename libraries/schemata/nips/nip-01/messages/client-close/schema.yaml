@@ -1,0 +1,11 @@
+$id: 'https://schemata.nostr.watch/message/client/close'
+type: "array"
+items: 
+- const: "CLOSE"
+- type: "string"
+  description: "an id of the subscription to close"
+  errorMessage: {
+    type: "subscription id must be a string and should be unique."
+  }
+minItems: 2
+maxItems: 2

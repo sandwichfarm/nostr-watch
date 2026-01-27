@@ -1,0 +1,622 @@
+import { db } from "../db/db.ts";
+import { getLogger, LogLevel } from "../utils/logger.ts";
+import chalk from "npm:chalk";
+import { getExpiredRelays } from "../db/db.ts";
+import { RetryManager } from "../utils/retryManager.ts";
+import { loadConfig } from "../config/config.ts";
+import type { QueueManager } from "../utils/queueManager.ts";
+
+const logger = getLogger("Status");
+
+// Simple counter for checks
+let checksCounter = 0;
+
+// Session statistics (reset when the program restarts)
+const sessionStats = {
+  checksTotal: 0,
+  checksErrors: 0,
+  wentOffline: new Set<string>(), // Track unique relays that went offline
+  newRelaysFound: 0,
+  relaysRecovered: 0 // Track relays that went from offline to online
+};
+
+// Update session stats when a relay is checked
+export function updateSessionStats(relay: string, wasSuccessful: boolean, wasOnline: boolean, wentOffline: boolean): void {
+  sessionStats.checksTotal++;
+  
+  if (!wasSuccessful) {
+    sessionStats.checksErrors++;
+  }
+  
+  if (wentOffline) {
+    sessionStats.wentOffline.add(relay);
+  }
+}
+
+// Update the count of new relays found - now only counts online relays
+export function incrementNewRelaysFound(count: number = 1, isOnline: boolean = false): void {
+  // Only increment if the relay is online
+  if (isOnline) {
+    sessionStats.newRelaysFound += count;
+  }
+}
+
+// Increment the count of relays that went from offline to online
+export function incrementRelaysRecovered(count: number = 1): void {
+  sessionStats.relaysRecovered += count;
+}
+
+// Statistics to track
+interface StatusStats {
+  // Queue stats
+  active: number;
+  waiting: number;
+  failed: number;
+  paused: number;
+  totalQueue: number;
+  
+  // Cache stats
+  online: number;
+  onlinePublishable: number;
+  onlineIgnored: number;
+  onlineExpired: number;
+  offline: number;
+  expired: number;
+  unchecked: number;
+  total: number;
+  ignored: number;
+  parents: number;
+  children: number;
+  
+  // Publish queue stats
+  publishSize: number;
+  publishPending: number;
+  publishedEvents: number;
+  publishedChecks: number;
+  publishedDeltas: number;
+  publishedDeletions: number;
+  publishedAnnouncements: number;
+  publishedOther: number;
+  failedPublishes: number;
+  retryingPublishes: number;
+  successRate: string;
+  
+  // Session stats (since program start)
+  checksTotal: number;
+  checksErrors: number;
+  wentOfflineCount: number;
+  newRelaysFound: number;
+  relaysRecovered: number; // New stat for relays that recovered
+  queueSize: number;
+  // Warmup indicator
+  warmingUp?: boolean;
+}
+
+/**
+ * Get current statistics from the database and queue
+ */
+export function getStats(queueManager: QueueManager): StatusStats {
+  // Get queue stats from queueManager
+  const queueStats = {
+    active: queueManager.checkQueue.pending || 0,
+    waiting: queueManager.checkQueue.size || 0,
+    failed: queueManager.checkQueue.sizeFailed || 0,
+    paused: queueManager.checkQueue.isPaused ? 1 : 0,
+    totalQueue: (queueManager.checkQueue.pending || 0) + (queueManager.checkQueue.size || 0)
+  };
+
+  // Get publish queue stats if available
+  const publishStats = queueManager.getPublishingStats ? queueManager.getPublishingStats() : {
+    size: queueManager.publishQueue?.size || 0,
+    pending: queueManager.publishQueue?.pending || 0,
+    published: queueManager.publishedEvents || 0,
+    publishedChecks: 0,
+    publishedDeltas: 0,
+    publishedDeletions: 0,
+    publishedAnnouncements: 0,
+    publishedOther: 0,
+    failed: queueManager.failedPublishes || 0,
+    retrying: queueManager.retryingPublishes || 0,
+    success_rate: 'N/A'
+  };
+
+  // Get database stats
+  const now = Math.round(Date.now()/1000);
+  
+  // Use the SAME config that the daemon uses
+  const config = queueManager.config;
+  
+  // Get expiry time from config
+  let expiryTime = 60; // Default fallback
+  if (config?.relaymon?.checks?.options?.expires) {
+    // Get seconds value
+    expiryTime = Math.round(config.relaymon.checks.options.expires/1000);
+    logger.debug(`Using config expiry time: ${expiryTime}s`);
+  } else {
+    logger.debug(`Using fallback expiry time: ${expiryTime}s`);
+  }
+  
+  // Get networks from config
+  const networks = ["clearnet"]; // Default fallback
+  if (config?.relaymon?.networks && Array.isArray(config.relaymon.networks)) {
+    networks.length = 0; // Clear default
+    networks.push(...config.relaymon.networks);
+    logger.debug(`Using config networks: ${JSON.stringify(networks)}`);
+  } else {
+    logger.debug(`Using fallback networks: ${JSON.stringify(networks)}`);
+  }
+
+  // Initialize the RetryManager to match the worker's behavior
+  // Provide a default configuration if none exists to prevent "Cannot read property 'delay' of undefined" errors
+  const defaultRetryConfig = [{ max: 999, delay: 60000 }]; // Default: retry after 1 minute
+  let retryConfig = defaultRetryConfig;
+  
+  if (config?.relaymon?.retry?.expiry && Array.isArray(config.relaymon.retry.expiry) && config.relaymon.retry.expiry.length > 0) {
+    retryConfig = config.relaymon.retry.expiry;
+    logger.debug(`Using retry config from configuration: ${JSON.stringify(retryConfig)}`);
+  } else {
+    logger.debug(`Using fallback retry config: ${JSON.stringify(retryConfig)}`);
+  }
+  
+  const retryManager = new RetryManager(retryConfig);
+
+  // Query all necessary counts in one go to avoid multiple DB reads
+  const dbStats = {
+    online: 0,
+    onlinePublishable: 0,
+    onlineIgnored: 0,
+    onlineExpired: 0,
+    offline: 0,
+    expired: 0,
+    unchecked: 0,
+    total: 0,
+    ignored: 0,
+    parents: 0,
+    children: 0
+  };
+
+  // Get total count
+  dbStats.total = db.query("SELECT COUNT(*) FROM relay_status")[0][0] as number;
+  
+  // Get online count
+  dbStats.online = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 1")[0][0] as number;
+  
+  // Get offline count
+  dbStats.offline = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 0")[0][0] as number;
+
+  // Get online ignored and publishable counts
+  dbStats.onlineIgnored = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 1 AND ignore = 1")[0][0] as number;
+  dbStats.onlinePublishable = Math.max(0, (dbStats.online as number) - (dbStats.onlineIgnored as number));
+  
+  // Get expired relays using the same function as the daemon - with retry logic
+  // This will correctly account for the retry backoff
+  const expiredRelays = getExpiredRelays(expiryTime, networks, retryManager);
+  
+  // Show ALL expired relays in the status display, regardless of queue state
+  dbStats.expired = expiredRelays.length;
+  
+  // Get online-only expired relays
+  if (expiredRelays.length > 0) {
+    const placeholders = expiredRelays.map(() => '?').join(',');
+    const onlineExpiredUrls = db.query(
+      `SELECT url FROM relay_status 
+       WHERE url IN (${placeholders})
+       AND online = 1`,
+      [...expiredRelays]
+    ).map(([url]) => url);
+    
+    dbStats.onlineExpired = onlineExpiredUrls.length;
+  } else {
+    dbStats.onlineExpired = 0;
+  }
+  
+  // We can show the queue size separately to indicate how many relays are being processed
+  logger.debug(`Status calculation: Found ${dbStats.expired} expired relays, ${dbStats.onlineExpired} online expired, Queue size: ${queueStats.totalQueue}`);
+  
+  // Get unchecked count (never checked)
+  dbStats.unchecked = db.query("SELECT COUNT(*) FROM relay_status WHERE checked_at = -1")[0][0] as number;
+  
+  // Get ignored count
+  dbStats.ignored = db.query("SELECT COUNT(*) FROM relay_status WHERE ignore = 1")[0][0] as number;
+  
+  // Get parents count (relays that have child relays)
+  dbStats.parents = db.query("SELECT COUNT(*) FROM relay_status WHERE parent = ''")[0][0] as number;
+  
+  // Get children count (relays that have a parent)
+  dbStats.children = db.query("SELECT COUNT(*) FROM relay_status WHERE parent != ''")[0][0] as number;
+
+  // Add session stats
+  const sessionDataStats = {
+    checksTotal: sessionStats.checksTotal,
+    checksErrors: sessionStats.checksErrors,
+    wentOfflineCount: sessionStats.wentOffline.size,
+    newRelaysFound: sessionStats.newRelaysFound,
+    relaysRecovered: sessionStats.relaysRecovered
+  };
+
+  // Return combined stats
+  return {
+    ...queueStats,
+    ...dbStats,
+    publishSize: publishStats.size,
+    publishPending: publishStats.pending,
+    publishedEvents: publishStats.published,
+    publishedChecks: publishStats.publishedChecks,
+    publishedDeltas: publishStats.publishedDeltas,
+    publishedDeletions: publishStats.publishedDeletions,
+    publishedAnnouncements: publishStats.publishedAnnouncements,
+    publishedOther: publishStats.publishedOther,
+    failedPublishes: publishStats.failed,
+    retryingPublishes: publishStats.retrying,
+    successRate: publishStats.success_rate,
+    checksTotal: sessionStats.checksTotal,
+    checksErrors: sessionStats.checksErrors,
+    wentOfflineCount: sessionStats.wentOffline.size,
+    newRelaysFound: sessionStats.newRelaysFound,
+    relaysRecovered: sessionStats.relaysRecovered,
+    queueSize: queueStats.totalQueue,
+    warmingUp: (queueManager as any).warmupActive === true
+  };
+}
+
+/**
+ * Create an ASCII box with stats
+ */
+function createAsciiBox(stats: StatusStats): string {
+  const c = chalk;
+  const title = c.bold.bgBlue.white;
+  const header = c.bold.cyan;
+  const subheader = c.bold.blue;
+  const value = c.yellow;
+  const highlight = c.bold.green;
+  const warning = c.bold.red;
+  
+  // Calculate visible string length (without ANSI codes)
+  const strLength = (str: string): number => {
+    // Remove ANSI escape codes when calculating length
+    return str.replace(/\u001b\[.*?m/g, '').length;
+  };
+
+  // Truncate a possibly ANSI-colored string to a target visible length
+  const truncateAnsi = (input: string, maxVisible: number): string => {
+    if (maxVisible <= 0) return '';
+    let out = '';
+    let visible = 0;
+    for (let i = 0; i < input.length; i++) {
+      const ch = input[i];
+      if (ch === "\u001b") { // start of ANSI sequence
+        // copy through the end of the sequence (ending at 'm')
+        const match = /\u001b\[[0-9;]*m/.exec(input.slice(i));
+        if (match) {
+          out += match[0];
+          i += match[0].length - 1; // -1 because for-loop will i++
+          continue;
+        }
+      }
+      if (visible < maxVisible) {
+        out += ch;
+        visible += 1;
+      } else {
+        break;
+      }
+    }
+    return out;
+  };
+
+  // Render a cell to exactly fit the given width, truncating label if needed
+  const renderCell = (
+    labelStyled: string,
+    valueStyled: string,
+    colWidth: number,
+    withLeftGap = true,
+  ): string => {
+    // compute allowed space for label considering value
+    const leftPad = withLeftGap ? 1 : 0;
+    const valuePart = valueStyled ? ` ${valueStyled}` : '';
+    const valueLen = strLength(valuePart);
+    const allowedLabel = Math.max(0, colWidth - leftPad - valueLen);
+
+    // truncate label to fit
+    const labelTrunc = truncateAnsi(labelStyled, allowedLabel);
+    const labelPad = ' '.repeat(Math.max(0, allowedLabel - strLength(labelTrunc)));
+
+    let cell = '';
+    if (withLeftGap) cell += ' ';
+    cell += labelTrunc + labelPad + valuePart;
+
+    // right pad to fill colWidth exactly
+    const padRight = Math.max(0, colWidth - strLength(cell));
+    cell += ' '.repeat(padRight);
+    // if cell somehow exceeded, truncate raw (rare due to ANSI), last resort
+    if (strLength(cell) > colWidth) {
+      // Try to trim without breaking ANSI by truncating visible
+      cell = truncateAnsi(cell, colWidth);
+    }
+    return cell;
+  };
+  
+  // Helper function to pad numbers and ensure consistent spacing
+  const pad = (value: number | string): string => {
+    if (typeof value === 'number') {
+      return value.toString().padStart(5, ' ');
+    } else if (typeof value === 'string') {
+      return value.padStart(5, ' ');
+    }
+    return '     '; // Default padding for empty or undefined values
+  };
+  
+  // Box dimensions
+  const boxWidth = 88; // Adjusted to prevent extra vertical bars
+  const columnWidth = Math.floor((boxWidth - 2) / 3);
+  const titleText = ' RELAYMON STATUS ';
+  const titlePadding = Math.floor((boxWidth - 2 - titleText.length) / 2);
+  
+  // Create the box
+  let box = '\n';
+  
+  // Top border
+  box += '╔' + '═'.repeat(boxWidth - 2) + '╗\n';
+  
+  // Title
+  const titleLine = `${' '.repeat(titlePadding)}${title(titleText)}${' '.repeat(boxWidth - 2 - titlePadding - titleText.length)}`;
+  box += `║${titleLine}║\n`;
+  
+  // Separator
+  box += '╠' + '═'.repeat(boxWidth - 2) + '╣\n';
+  
+  // Headers for the three columns
+  const queueHeader = `${header('QUEUE')}`;
+  const cacheHeader = `${header('CACHE')}`;
+  const sessionHeader = `${header('SESSION')}`;
+  
+  // Create a header row with exact width
+  let headerContent = '';
+  
+  // Pad each header to fit exactly one column width
+  headerContent += ` ${queueHeader}${' '.repeat(Math.max(0, columnWidth - strLength(queueHeader) - 1))}`;
+  headerContent += `${cacheHeader}${' '.repeat(Math.max(0, columnWidth - strLength(cacheHeader)))}`;
+  
+  // For the last column, calculate remaining width exactly like we do for data rows
+  const remainingHeaderWidth = (boxWidth - 2) - strLength(headerContent) - strLength(sessionHeader);
+  headerContent += `${sessionHeader}${' '.repeat(Math.max(0, remainingHeaderWidth))}`;
+  
+  // Ensure exact width
+  if (strLength(headerContent) < boxWidth - 2) {
+    headerContent += ' '.repeat((boxWidth - 2) - strLength(headerContent));
+  } else if (strLength(headerContent) > boxWidth - 2) {
+    headerContent = headerContent.substring(0, boxWidth - 2);
+  }
+  
+  // Add headers row
+  box += `║${headerContent}║\n`;
+  
+  // Separator line
+  box += `║${' '.repeat(boxWidth - 2)}║\n`;
+  
+  // Define type for the data items
+  interface StatsItem {
+    key: string;
+    value: number | string;
+    highlight?: boolean;
+    warning?: boolean;
+  }
+  
+  // Define the data for each table
+  const queueData: StatsItem[] = [
+    // Check queue section
+    { key: `${header('CHECK QUEUE')}`, value: '' },
+    { key: 'Active:', value: stats.active },
+    { key: 'Waiting:', value: stats.waiting },
+    { key: 'Failed:', value: stats.failed, warning: stats.failed > 0 },
+    { key: 'Paused:', value: stats.paused },
+    { key: 'Total:', value: stats.totalQueue },
+    // Add space between sections
+    { key: '', value: '' },
+    // Publish queue section
+    { key: `${header('PUBLISH QUEUE')}`, value: '' },
+    { key: 'Active:', value: stats.publishPending },
+    { key: 'Waiting:', value: stats.publishSize },
+    { key: 'Published:', value: stats.publishedEvents, highlight: true },
+    { key: 'Published (checks):', value: stats.publishedChecks },
+    { key: 'Published (deltas):', value: stats.publishedDeltas },
+    { key: 'Published (deletions):', value: stats.publishedDeletions },
+    { key: 'Published (announcements):', value: stats.publishedAnnouncements },
+    { key: 'Published (other):', value: stats.publishedOther },
+    { key: 'Failed:', value: stats.failedPublishes, warning: stats.failedPublishes > 0 },
+    { key: 'Retrying:', value: stats.retryingPublishes, warning: stats.retryingPublishes > 0 },
+    { key: 'Success Rate:', value: stats.successRate }
+  ];
+  
+  const cacheData: StatsItem[] = [
+    { key: `${header('WARMUP')}`, value: '' },
+    { key: 'Warming Up:', value: (stats.warmingUp ? 'Yes' : 'No') + (stats.warmingUp ? ` (${stats.unchecked} unchecked)` : '') , warning: !!stats.warmingUp },
+    { key: '', value: '' },
+    { key: 'Online:', value: stats.online, highlight: true },
+    { key: 'Online (publishable):', value: stats.onlinePublishable },
+    { key: 'Online (ignored):', value: stats.onlineIgnored },
+    { key: 'Online & Expired:', value: stats.onlineExpired, warning: true },
+    { key: 'Offline:', value: stats.offline },
+    { key: 'Expired (Total):', value: stats.expired, warning: stats.expired > 0 },
+    { key: 'Unchecked:', value: stats.unchecked },
+    { key: 'Total Relays:', value: stats.total, highlight: true },
+    { key: 'Ignored:', value: stats.ignored },
+    { key: 'Parents:', value: stats.parents },
+    { key: 'Children:', value: stats.children }
+  ];
+  
+  const sessionData: StatsItem[] = [
+    { key: 'Checks Total:', value: stats.checksTotal, highlight: true },
+    { key: 'Check Errors:', value: stats.checksErrors, warning: true },
+    { key: 'Went Offline:', value: stats.wentOfflineCount, warning: true },
+    { key: 'New Relays Found:', value: stats.newRelaysFound, highlight: true },
+    { key: 'Relays Recovered:', value: stats.relaysRecovered, highlight: true }
+  ];
+  
+  // Find the max number of rows needed
+  const maxRows = Math.max(queueData.length, cacheData.length, sessionData.length);
+  
+  // Find the longest key in each column for better alignment
+  const findLongestKey = (data: StatsItem[]): number => {
+    return Math.max(...data.map(item => strLength(item.key.toString())));
+  };
+  
+  const queueKeyLength = findLongestKey(queueData);
+  const cacheKeyLength = findLongestKey(cacheData);
+  const sessionKeyLength = findLongestKey(sessionData);
+  
+  // Generate rows for the tables
+  for (let i = 0; i < maxRows; i++) {
+    let rowContent = '';
+
+    // Queue column
+    if (i < queueData.length) {
+      const item = queueData[i];
+      let formattedValue: string;
+      if (item.key === 'Success Rate:' || typeof item.value === 'string') {
+        formattedValue = item.warning ?
+          warning(item.value.toString()) :
+          (item.highlight ? highlight(item.value.toString()) : value(item.value.toString()));
+      } else {
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
+          (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
+      }
+      const cell = renderCell(subheader(item.key), formattedValue, columnWidth, true);
+      rowContent += cell;
+    } else {
+      rowContent += ' '.repeat(columnWidth);
+    }
+
+    // Cache column
+    if (i < cacheData.length) {
+      const item = cacheData[i];
+      let formattedValue: string;
+      if (typeof item.value === 'string') {
+        formattedValue = item.warning ?
+          warning(item.value) :
+          (item.highlight ? highlight(item.value) : value(item.value));
+      } else {
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
+          (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
+      }
+      const cell = renderCell(subheader(item.key), formattedValue, columnWidth, false);
+      rowContent += cell;
+    } else {
+      rowContent += ' '.repeat(columnWidth);
+    }
+
+    // Session column
+    if (i < sessionData.length) {
+      const item = sessionData[i];
+      let formattedValue: string;
+      if (typeof item.value === 'string') {
+        formattedValue = item.warning ?
+          warning(item.value) :
+          (item.highlight ? highlight(item.value) : value(item.value));
+      } else {
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
+          (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
+      }
+      // Remaining width for last column in this row
+      const remainingWidth = (boxWidth - 2) - strLength(rowContent);
+      const cell = renderCell(subheader(item.key), formattedValue, remainingWidth, false);
+      rowContent += cell;
+    } else {
+      const remainingWidth = (boxWidth - 2) - strLength(rowContent);
+      rowContent += ' '.repeat(Math.max(0, remainingWidth));
+    }
+
+    // Add the row to the box
+    box += `║${rowContent}║\n`;
+  }
+  
+  // Bottom border
+  box += '╚' + '═'.repeat(boxWidth - 2) + '╝\n';
+  
+  return box;
+}
+
+export function incrementChecksCounter(): void {
+  checksCounter++;
+}
+
+export function statuses(queueManager: QueueManager, interval: number = 20): ReturnType<typeof setInterval> {
+  return setInterval(() => {
+    logStatus(queueManager, interval);
+  }, interval * 100);
+}
+
+/**
+ * Log status information every N checks
+ */
+export function logStatus(queueManager: QueueManager, interval: number = 20): void {
+  checksCounter++;
+  if (checksCounter >= interval) {
+    checksCounter = 0; // Reset counter
+    try {
+      showStatus(queueManager);
+    } catch (error) {
+      logger.error(`Error getting stats: ${error}`);
+    }
+  }
+}
+
+export function showStatus(queueManager: QueueManager): void {
+  const stats = getStats(queueManager);
+  console.log(createAsciiBox(stats));
+}
+
+/**
+ * Format a simple metric for inline display
+ */
+export function formatCompactStats(queueManager: QueueManager): string {
+  try {
+    const stats = getStats(queueManager);
+    return `Online: ${stats.online} | Expired: ${stats.expired} | Queued: ${stats.totalQueue}`;
+  } catch (error) {
+    return `Error: ${error.message}`;
+  }
+}
+
+// Run when executed directly
+if (import.meta.main) {
+  async function runStatus() {
+    // Default config path
+    let configPath = "./config.yaml";
+    
+    // Simple command line argument parsing
+    for (let i = 0; i < Deno.args.length; i++) {
+      const arg = Deno.args[i];
+      if (arg === "-c" || arg === "--config") {
+        if (i + 1 < Deno.args.length) {
+          configPath = Deno.args[i + 1];
+          i++; // Skip the next argument as we've used it
+        }
+      }
+    }
+    
+    // Load the configuration
+    try {
+      const config = await loadConfig(configPath);
+      console.log(`Configuration loaded from ${configPath}`);
+      
+      // Create a minimal QueueManager for status display
+      const queueManager = {
+        checkQueue: { pending: 0, size: 0, sizeFailed: 0, isPaused: false },
+        config,
+        // Add placeholder for isRelayEnqueued
+        isRelayEnqueued: (relay: string) => false, // Assume no relays are enqueued when run standalone
+        enqueuedRelays: new Set<string>()
+      };
+      
+      const stats = getStats(queueManager);
+      console.log(createAsciiBox(stats));
+    } catch (error) {
+      logger.error(`Error getting stats: ${error}`);
+    }
+  }
+  
+  runStatus();
+} 

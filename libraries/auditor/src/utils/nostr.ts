@@ -1,3 +1,5 @@
+import { INip01RelayMessage } from "#src/nips/Nip01/interfaces";
+
 export const generateSubId = (length: number = 32): string => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
@@ -13,4 +15,8 @@ export const generateSubId = (length: number = 32): string => {
 export function is64CharHex(value: string): boolean {
   const hexPattern = /^[a-f0-9]{64}$/;
   return hexPattern.test(value);
+}
+
+export function messageKey(message: INip01RelayMessage): string {
+  return message[0];
 }

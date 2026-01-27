@@ -1,0 +1,10 @@
+$id: 'https://schemata.nostr.watch/message/relay/event'
+type: "array"
+description: "A message sent by relays to clients in response to a client request."
+items: 
+- const: "EVENT"
+- type: "string"
+  description: "The id of the subscription that the note is being sent in response to"
+- $ref: "@/note.yaml"
+minItems: 3
+maxItems: 3

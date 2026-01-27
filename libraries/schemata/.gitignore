@@ -1,0 +1,11 @@
+
+dist/*
+**/dist/*
+!**/dist
+!**/dist/.gitkeep
+
+**/node_modules
+**/packages/**/*.ts
+**/src/serialize.ts
+**/src/types.ts
+**/*.code-workspace

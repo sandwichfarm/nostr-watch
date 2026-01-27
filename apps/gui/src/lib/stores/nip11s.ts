@@ -1,98 +1,193 @@
+import { compress, decompress } from "compress-json";
+
 import { derived, get, writable, type Readable, type Writable } from "svelte/store";
-import { Nip66Event, type INip11 } from "@nostrwatch/nip66/models"
-import { deterministicHash } from "@nostrwatch/nip66/utils";
+
+import type { StateManager as StateManagerType } from "@nostrwatch/route66";
+import type { Nip66CheckEvent as Nip66CheckEventType, Nip11 as Nip11Type, RelayInformation } from "@nostrwatch/route66/models"
+
+import { doAggregateCache, hasBeenBootstrapped, hasBeenSeeded } from "./app.js";
+import { nip11sLocal } from "./nip11s-local.js";
+
+import { isPubkey } from "../utils/nostr.js";
+import { throttledDerived } from "$utils/stores.js";
 
 import { eventsArray } from './events.js'; 
-import { Nip11Service } from "$lib/services/Nip11Service";
-import { StateManager } from "@nostrwatch/nip66";
-import { compress, decompress } from "compress-json";
-import { Nip11 } from "@nostrwatch/nip66/models";
-import { doAggregateCache, hasBeenBoostrapped, hasBeenSeeded } from "./app.js";
-import type { RelayInformation } from "@nostrwatch/nip66/models";
-import type { nip11 } from "nostr-tools";
+
+// Define a proper type for the imported modules
+interface ImportedModules {
+  Nip11: typeof Nip11Type | null;
+  StateManager: typeof StateManagerType | null;
+}
+
+// Creating a store to track when the imports are ready
+const importsReady = writable(false);
+// Store for the imported modules
+const importedModules = writable<ImportedModules>({
+  Nip11: null,
+  StateManager: null
+});
+
+// Promise for loading the modules
+const loadModules = async () => {
+  try {
+    const [routeModels, route66] = await Promise.all([
+      import("@nostrwatch/route66/models"),
+      import("@nostrwatch/route66")
+    ]);
+    
+    importedModules.set({
+      Nip11: routeModels.Nip11,
+      StateManager: route66.StateManager
+    });
+    
+    importsReady.set(true);
+  } catch (e) {
+    console.error('Error importing modules:', e);
+  }
+};
+
+// Start loading modules immediately
+loadModules();
 
 type RelayUrl = string
 
-export const nip11Service: Writable<Nip11Service> = writable(new Nip11Service());
+// Re-export from separate files to avoid circular dependencies
+export { nip11sLocal } from "./nip11s-local.js";
+export { nip11Service } from "./nip11-service.js";
 
-export const nip11sLocal: Writable<Map<string, Nip11>> = writable(new Map())
-
-const processNip11 = ( json: any ) => {
-  const result = { json: null, hash: null }
-  try {
-    if(json instanceof Object ) {
-      result.json = json
-    }
-    else {
-      result.json = JSON.parse(json);
-    }
-    result.hash = deterministicHash(json);
-  } catch (error) {
-    console.error('Failed to parse JSON content:', error);
-  }
-  return result;
-}
-
-export const nip11s = derived(
-    [eventsArray, nip11sLocal], 
-    ([$eventsArray, $nip11sLocal]
-  ) => {
+export const nip11s: Readable<Map<string, Nip11Type[]>> = derived(
+  [eventsArray, nip11sLocal, importsReady, importedModules],
+  ([$eventsArray, $nip11sLocal, $importsReady, $importedModules]) => {
+    let nip11Map = new Map<string, Nip11Type[]>();
     
-    let nip11Map = new Map();
+    // If imports aren't ready yet, return empty map
+    if (!$importsReady) {
+      return nip11Map;
+    }
+    
+    const { Nip11, StateManager } = $importedModules;
+    if (!Nip11 || !StateManager) {
+      console.warn('Nip11 or StateManager not loaded yet');
+      return nip11Map;
+    }
 
-    const updateEntry = (relay: string, nip11Entry: Nip11) => {
+    function updateEntry(relay: string, nip11Entry: Nip11Type) {
       let existing = nip11Map.get(relay);
-      if(!existing) existing = []
-      existing.push(nip11Entry)
+      if (!existing) {
+        existing = [];
+      }
+      existing.push(nip11Entry);
       nip11Map.set(relay, existing);
     }
 
-    let nip66Nip11s: number = 0
-    let localNip11s: number = 0
+    let nip66Nip11s = 0;
+    let localNip11s = 0;
 
-    $eventsArray.forEach((event: Nip66Event) => {
-      if(!event.nip11 || !event.relay) return;
-      updateEntry(event.relay, event.nip11)
+    for (const [relayUrl, nip11Entry] of $nip11sLocal.entries()) {
+      if (!nip11Entry) continue;
+      updateEntry(relayUrl, nip11Entry);
+      localNip11s++;
+    }
+
+    for (const _event of $eventsArray) {
+      if(_event.kind !== 30166) continue;
+      const event = _event as Nip66CheckEventType;
+      if (!event?.nip11 || !event?.relay) continue;
+      updateEntry(event.relay, event.nip11);
       nip66Nip11s++;
-    });
-
-    for(const relayUrl of $nip11sLocal.keys()) {
-      const nip11 = $nip11sLocal.get(relayUrl)
-      if(!nip11) continue;
-      updateEntry(relayUrl, nip11)
-      localNip11s++
     }
 
-    const totalWithotLocal = nip66Nip11s - localNip11s
-
-    if( totalWithotLocal > 0 && hasBeenBoostrapped() && hasBeenSeeded() && get(doAggregateCache) === true ) {
-      console.log('!!! HAS BEEN BOOTSTRAPPED AND SEEDED')
-      StateManager.set('aggregate:nip11s', compress(
-        Array.from(nip11Map.entries()).map(([relay, entries]) => [relay, entries.map((nip11: Nip11) => nip11.json)])
-      ));
-    }
-    else if( hasBeenSeeded() ){
-      console.log('!!! HAS BEEN SEEDED')
-      const cachedMap = StateManager.get('aggregate:nip11s')
-      console.log('cached nip11 compressed', nip11Map)
+    const totalWithoutLocal = nip66Nip11s - localNip11s;
+    if (
+      totalWithoutLocal > 0 &&
+      hasBeenBootstrapped() &&
+      hasBeenSeeded() &&
+      get(doAggregateCache) === true
+    ) {
+      const arrayified = Array.from(nip11Map.entries()).map(
+        ([relay, entries]) => [relay, entries.map((n: Nip11Type) => n.json)]
+      );
+      StateManager.set('aggregate:nip11s', compress(arrayified));
+    } else if (hasBeenSeeded()) {
+      let cachedMap;
+      cachedMap = StateManager.get('aggregate:nip11s');
       if (cachedMap) {
         try {
           let decompressed = decompress(cachedMap);
           if (Array.isArray(decompressed)) {
-            decompressed = decompressed.map( ([relay, entries]: [string, RelayInformation[]]) => [relay, entries?.map( (nip11: RelayInformation) => new Nip11(nip11) )] )
+            // Rebuild the Map with real Nip11 objects
+            decompressed = decompressed.map(
+              ([relay, entries]: [string, RelayInformation[]]) => [
+                relay,
+                entries?.map((item: RelayInformation) => new Nip11(item))
+              ]
+            );
             nip11Map = new Map(decompressed);
-            console.log('nip11Map cached nip11Map', nip11Map);
           } else {
-            console.error('nip11Map Decompressed value is not a valid array:', decompressed);
+            console.error(
+              'Decompressed nip11Map value is not a valid array:',
+              decompressed
+            );
           }
         } catch (e) {
-          console.error('nip11Map Error during decompression:', e);
+          console.error('Error during nip11Map decompression:', e);
         }
       }
-    }
-    else {
-      // console.log('!!! HAS NOT BEEN BOOTSTRAPPED OR SEEDED')
-    }
-      
+    } 
     return nip11Map;
-});
+  }
+);
+
+export const operatorPubkeys: Readable<string[]> = derived(
+  nip11s,
+  ($nip11s) => {
+    const result: Set<string> = new Set();
+    if(!$nip11s) return [];
+    
+    // Use Array.from to convert Map to array of entries, and iterate through it
+    const nip11Entries = Array.from($nip11s.entries());
+    
+    for(const [relay, nip11Array] of nip11Entries) {
+      if (!nip11Array || !nip11Array.length) continue;
+      
+      const json = nip11Array[0].json;
+      if(!json) continue;
+      
+      const { pubkey } = json;
+      if(pubkey){
+        result.add(pubkey);
+      }
+    }
+    return Array.from(result);
+  }
+)
+
+export const operatorPubkeysValid: Readable<string[]> = derived(
+  operatorPubkeys,
+  ($operatorPubkeys) => {
+    return $operatorPubkeys.filter(isPubkey)
+  }
+)
+
+export const operatorPubkeysInvalid: Readable<string[]> = derived(
+  operatorPubkeys,
+  ($operatorPubkeys) => {
+    return $operatorPubkeys.filter((pubkey: string) => !isPubkey(pubkey))
+  }
+)
+
+export const relayNip11s = (relay: string): Readable<Nip11Type | undefined> => {
+  return throttledDerived(
+    [nip11s],
+    ([$nip11s]) => {
+      // Make sure $nip11s is a Map before using get()
+      if ($nip11s instanceof Map) {
+        const entries = $nip11s.get(relay);
+        return entries && entries.length > 0 ? entries[0] : undefined;
+      }
+      // If $nip11s is not a Map (which should not happen), return undefined
+      return undefined;
+    },
+    100
+  );
+};

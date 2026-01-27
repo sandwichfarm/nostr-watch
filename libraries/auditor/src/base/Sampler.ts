@@ -1,51 +1,71 @@
-import type { WebSocketWrapper as WebSocket } from './WebSocketWrapper.js';
-
 import { EventEmitter } from "tseep";
 
-import { Ingestor } from "./Ingestor.js";
+import { Ingestor } from "#base/Ingestor.js";
+import Logger from "#base/Logger.js";  
+import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 
-import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/index.js";
+import { Nip01ClientMessageGenerator } from "#src/nips/Nip01/utils/generators.js";
 import type { Note, RelayEventMessage } from "#src/nips/Nip01/interfaces/index.js";
 import { generateSubId } from "#utils/nostr.js";  
-
-import Logger from "#base/Logger.js";  
+import { Emitter } from "./Emitter";
 
 export class Sampler {
-  private ws: WebSocket;
+  private socket: WebSocket;
   private subId: string = "test";
-  private _maximumSamples: number = 200;
+  private _maximumSamples: number = 500;
   private _timeout: ReturnType<typeof setTimeout>;
   private _timeoutMs: number = 5000;
   private _totalSamples: number = 0;  
   private _abort: boolean = false;
-  private signal = new EventEmitter();
-  private logger: Logger = new Logger('@nostrwatch/auditor:Sampler');
+  // private signal = new EventEmitter();
+  private logger: Logger = new Logger('@nostrwatch/auditor:Sampler', {level: 'debug'});
+  private _ingestors: Ingestor[] = [];  
 
-  constructor(ws: WebSocket, maximumSamples?: number, timeout?: number) {
-    this.ws = ws;
+  constructor(socket: WebSocket, maximumSamples?: number, timeout?: number) {
+    this.socket = socket;
     if(maximumSamples) this._maximumSamples = maximumSamples;
     if(timeout) this._timeoutMs = timeout
+    Emitter.on('all:abort', this.abort.bind(this))
+  }
+
+  get ingestors(): Ingestor[] {
+    return this._ingestors;
+  }
+
+  get samplable() {
+    return this.ingestors.length > 0;
+  }
+
+  private set ingestor(ingestor: Ingestor) {
+    this._ingestors.push(ingestor);
+  }
+
+  async runIngestors(note: Note) {
+    for(const ingestor of this._ingestors) {
+      ingestor.feed(note);
+    }
+    await Promise.allSettled(this._ingestors.map(ingestor => ingestor.completed()));
+    this.abort()
   }
 
   registerIngestor(ingestor: Ingestor) {
-    ingestor.registerSignal(this.signal);
-    this.signal.on('ingestor:abort', this.abort.bind(this));
-    this.signal.on('ingest', ingestor.feed.bind(ingestor));
+    this.ingestor = ingestor;
   }
 
   setupHandlers() {
-    this.ws.on('message', (msg: string) => {
-      const message = JSON.parse(msg);
+    this.socket.on('message', (msg: MessageEvent<any>) => {
+      const message = JSON.parse(msg.data);
       const type = message[0];
       switch(type) {
         case 'EVENT': {
           const note = (message as RelayEventMessage)[2] as Note;
           this._totalSamples++;
-          this.signal.emit('ingest', note);
+          this.runIngestors(note);
           break;
         }
         case 'EOSE': {
-          this.signal.emit('WS:EOSE');
+          // this.signal.emit('socket:eose');
+          Emitter.emit(`socket:eose:${this.subId}`);
           break;
         }
       }
@@ -57,23 +77,25 @@ export class Sampler {
   }
 
   async sample() {
-    try {
-      await this.ws.connect();
+    return new Promise((resolve, reject) => {
       this.setupHandlers();
-  
+      this.socket.connect();
       const timeout = this.setAbortTimeout();
-  
-      this.newSubId();
-      this.sendRequest();
-  
-      const result = await this.waitForEoseOrAbort(timeout);
-  
-      this.logger.debug(`done`);
-    } catch (error) {
-      this.logger.error(`Error in sample method: ${error.message}`);
-    } finally {
-      this.cleanupWebSocket();
-    }
+      this.socket.on("open", async () => {
+        let result: boolean = false;
+        try {
+          this.newSubId();
+          this.sendRequest();
+          result = await this.waitForEoseOrAbort(timeout);
+        } catch (error) {
+          this.logger.error(`Error in sample method: ${error.message}`);
+          return reject(error);
+        } finally {
+          this.cleanupWebSocket();
+        }
+        resolve(result);
+      });
+    });
   }
   
   private setAbortTimeout() {
@@ -84,8 +106,8 @@ export class Sampler {
   }
   
   private sendRequest() {
-    const message = Nip01ClientMessageGenerator.REQ(this.subId, [{ limit: this._maximumSamples }]);
-    this.ws.send(message);
+    const message = Nip01ClientMessageGenerator.REQ(this.subId, [{ limit: this._maximumSamples, since: 0 }]);
+    this.socket.send(message);
   }
   
   private async waitForEoseOrAbort(timeout: NodeJS.Timeout): Promise<boolean> {
@@ -104,18 +126,20 @@ export class Sampler {
       }, 100);
   
       const cleanup = () => {
-        this.signal.off('WS:EOSE', onEose);
+        Emitter.off(`socket:eose:${this.subId}`, onEose);
+        // this.signal.off('socket:eose', onEose);
         clearTimeout(timeout);
         clearInterval(interval);
       };
-  
-      this.signal.once('WS:EOSE', onEose);
+      
+      Emitter.once(`socket:eose:${this.subId}`, onEose);
+      // this.signal.once('socket:eose', onEose);
     });
   }
   
   private async cleanupWebSocket() {
-    this.ws.terminate();
-    await this.ws.closed();
+    this.socket.close();
+    await this.socket.closed();
   }
   
   get aborted () {

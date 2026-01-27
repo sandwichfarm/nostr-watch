@@ -1,8 +1,13 @@
 {
   "type": "array",
   "items": [
-    { "const": "CLOSE" },
-    { "type": "string", "description": "subscription_id" }
+    {
+      "const": "CLOSE"
+    },
+    {
+      "type": "string",
+      "description": "subscription_id"
+    }
   ],
   "minItems": 2,
   "maxItems": 2

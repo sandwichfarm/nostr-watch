@@ -1,11 +1,9 @@
-import type { Nip05 } from 'nostr-tools/nip05';
-import { generateNip05MapKey, type INip05Map, type INip05Result } from '$lib/stores/nip05s.js';
 import { get, writable, type Writable } from 'svelte/store';
-import {  } from "@nostrwatch/nocap"
+import { type CheckKey } from "@nostrwatch/nocap"
 
 export type NocapRequestMessage = {
     relay: string,
-    checks: string[]
+    checks: CheckKey[]
 }
 
 export type NocapResultMessage = {
@@ -27,7 +25,9 @@ export class NocapService {
     }
 
     async check(relay: string, checks: string | string[] = 'open'): Promise<any | undefined> {
+        // console.log('checking', relay)
         this.worker.postMessage({ relay, checks } as NocapRequestMessage)
+        // console.log('message posted', { relay, checks })
         let result: any | undefined;
         while(!result){
             result = get(nocapResults).get(relay)

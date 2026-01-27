@@ -1,0 +1,50 @@
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+  });
+  
+  self.addEventListener('activate', (event) => {
+    self.registration.unregister().then(() => {
+      return self.clients.matchAll();
+    }).then((clients) => {
+      // Optionally refresh all controlled pages.
+      clients.forEach(client => client.navigate(client.url));
+    });
+  });
+
+// self.addEventListener('install', (event) => {
+//     console.log('Service Worker installed');
+//     self.skipWaiting();
+// });
+
+// self.addEventListener('activate', (event) => {
+//     console.log('Service Worker activated');
+//     event.waitUntil(self.clients.claim());
+// });
+
+// self.addEventListener('fetch', (event) => {
+//     const url = new URL(event.request.url);
+
+//     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname.includes('nostr.watch')) {
+//         event.respondWith(fetch(event.request));
+//         return;
+//     }
+
+//     if (url.pathname.match(/\.(webp|jpg|png|gif|svg|jpeg)$/) || url.pathname.includes('.well-known')) {
+//         const proxyUrl = `https://proxy.nostr.watch/${url.href}`;
+//         console.log(`Proxying request to: ${proxyUrl}`);
+
+//         event.respondWith(
+//             fetch(proxyUrl, {
+//                 mode: 'cors',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                 },
+//             }).catch((error) => {
+//                 console.warn('Failed to fetch:', event.request.url, error);
+//             }),
+//         );
+//         return;
+//     }
+
+//     event.respondWith(fetch(event.request));
+// });

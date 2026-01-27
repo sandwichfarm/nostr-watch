@@ -1,5 +1,6 @@
-import { EventMetadata, NostrEvent, OkResponse, ReqCommand, WorkerMessage, WorkerMessageCommand } from "./types";
+import { EventMetadata, NostrEvent, OkResponse, ReqCommand, RelayStorageStatus, WorkerMessage, WorkerMessageCommand } from "./types";
 import { v4 as uuid } from "uuid";
+import type { LogLevel } from "@nostrwatch/utils";
 
 export interface InitAargs {
   /**
@@ -13,9 +14,18 @@ export interface InitAargs {
   insertBatchSize?: number;
 }
 
+export interface Nip11Args {
+  relay: string;
+  nip11: any;
+}
+
+export type batchNip11s = Nip11Args[];
+
 export class WorkerRelayInterface {
   #worker: Worker | SharedWorker;
   #commandQueue: Map<string, (v: unknown, ports: ReadonlyArray<MessagePort>) => void> = new Map();
+  #timeouts: any[] = [];
+  #channelPort?: MessagePort; 
 
   // Command timeout
   timeout: number = 30_000;
@@ -48,28 +58,64 @@ export class WorkerRelayInterface {
         this.#commandQueue.delete(cmd.id);
       }
     };
+
     if(this.#worker instanceof Worker) {
       this.#worker.onmessage = onmessage; 
     }
     else if(this.#worker instanceof SharedWorker) {
       this.#worker.port.onmessage = onmessage;
     }
-    if(channelPort) {
-      if(this.#worker instanceof Worker) {
-        this.#worker.postMessage({ type: "setup", channelPort }, [channelPort]);
-      }
-      else if(this.#worker instanceof SharedWorker) {
-        this.#worker.port.postMessage({ type: "setup", channelPort }, [channelPort]);
-      }
-    }
+
+    this.#channelPort = channelPort;
   }
 
   get worker() {
     return this.#worker;
   }
 
+  async setup() {
+    // alert(this.#channelPort? 'channelPort exists' : 'channelPort does not exist');
+    if(!this.#channelPort) return;
+    const channelPort = this.#channelPort;
+    // if(this.#worker instanceof Worker) {
+    //   this.#worker.postMessage({ type: "setup", channelPort }, [channelPort]);
+    // }
+    // else if(this.#worker instanceof SharedWorker) {
+    //   this.#worker.port.postMessage({ type: "setup", channelPort }, [channelPort]);
+    // }
+    return await this.#workerRpc<any, boolean>("setup", { type: "setup", channelPort }, [channelPort]);
+  }
+
   async init(args: InitAargs) {
     return await this.#workerRpc<InitAargs, boolean>("init", args);
+  }
+
+  async status() {
+    return await this.#workerRpc<void, RelayStorageStatus>("status");
+  }
+
+  async countNip11s() {
+    return await this.#workerRpc<void, number>("countNip11s");
+  }
+
+  async countUniqueNip11s() {
+    return await this.#workerRpc<void, number>("countUniqueNip11s");
+  }
+
+  async dumpNip11s() {
+    return await this.#workerRpc<void, any[]>("dumpNip11s");
+  }
+
+  async batchUpsertNip11(relayNip11s: batchNip11s) {
+    return await this.#workerRpc<batchNip11s, boolean>("batchUpsertNip11", relayNip11s);
+  }
+
+  async upsertNip11(nip11Args: Nip11Args) {
+    return await this.#workerRpc<Nip11Args, boolean>("upsertNip11", nip11Args);
+  }
+
+  async getNip11(relay: string) {
+    return await this.#workerRpc<string, any>("getNip11", relay);
   }
 
   async event(ev: NostrEvent) {
@@ -116,7 +162,23 @@ export class WorkerRelayInterface {
     return await this.#workerRpc<string, boolean>("debug", v);
   }
 
-  async #workerRpc<T, R>(cmd: WorkerMessageCommand, args?: T) {
+  async setLogLevel(level: LogLevel) {
+    return await this.#workerRpc<LogLevel, boolean>("logLevel", level);
+  }
+
+  abort() {
+    this.#timeouts.forEach(t => clearTimeout(t));
+    this.#timeouts = [];
+    this.#commandQueue.clear();
+    if(this.#worker instanceof Worker) {
+      this.#worker.terminate();
+    }
+    else if(this.#worker instanceof SharedWorker) {
+      this.#worker.port.close();
+    }
+  }
+
+  async #workerRpc<T, R>(cmd: WorkerMessageCommand, args?: T, transfer?: Transferable[]) {
     const id = uuid();
     const msg = {
       id,
@@ -125,17 +187,18 @@ export class WorkerRelayInterface {
     } as WorkerMessage<T>;
     return await new Promise<R>((resolve, reject) => {
       if(this.#worker instanceof Worker) {
-        this.#worker.postMessage(msg);
+        this.#worker.postMessage(msg, transfer || []);
       }
       else if(this.#worker instanceof SharedWorker) {
-        this.#worker.port.postMessage(msg);
+        this.#worker.port.postMessage(msg, transfer || []);
       }
       const t = setTimeout(() => {
         this.#commandQueue.delete(id);
         reject(new Error("Timeout"));
       }, this.timeout);
+      this.#timeouts.push(t);
       this.#commandQueue.set(id, (v, port) => {
-        clearTimeout(t);
+        if(t) clearTimeout(t);
         const cmdReply = v as WorkerMessage<R & { error?: any }>;
         if (cmdReply.args.error) {
           reject(cmdReply.args.error);

@@ -1,10 +1,10 @@
 import WebSocket from 'ws';
 
 import Logger from "@nostrwatch/logger";
-import { parseRelayNetwork } from "@nostrwatch/utils";
+import { capitalize, parseRelayNetwork } from "@nostrwatch/utils";
 
 import { ConfigValidator, ConfigValidatorInterface, IConfig } from "../validators/ConfigValidator";
-import { IResult, ResultDefaults, ResultValidator, ResultValidatorInterface, type IResultData } from "../validators/ResultValidator";
+import { IResult, ResultValidator, type IResultData } from "../validators/ResultValidator";
 
 import { SessionHelper } from "./SessionHelper";
 import { TimeoutHelper } from "./TimeoutHelper";
@@ -21,12 +21,12 @@ import { CheckKey, CheckMethodKey, PreCheckKey, StrictCheckKey } from '../types/
 import SAMPLE_EVENT from "../data/sample_event";
 import { isBrowser } from '@nostrwatch/utils';
 import { AbstractAdapter } from './AbstractAdapter';
-import { CompatibleWebSocket } from './CompatibleWebsocket';
+import { UniversalWebSocket } from '@nostrwatch/websocket';
 
 type WebSocketType = WebSocket | import('ws').WebSocket;
 
 export default class Base {
-  ws: CompatibleWebSocket | null = null;
+  ws: UniversalWebSocket | null = null;
   network?: string;
   auditor = new Auditor();
   cb: Record<string, Function> = {};
@@ -151,6 +151,9 @@ export default class Base {
     this.checksRequested = keys;
     this.evaluate_requested_checks();
     for await (const key of this.checksRequested) {
+      if(key === null){
+        this.logger.debug(`${this.url}: check(${keys}): key is null [${JSON.stringify(this.checksRequested)}]`);
+      }
       if (this.hard_fail === true) continue;
       this.logger.debug(`${key}: check(${keys}): setting current and running this._check()`);
       this.current = key;
@@ -295,7 +298,6 @@ export default class Base {
     if(typeof adapter?.[adapterMethodName] !== 'function'){
       return this.throw(new Error(`start(${key}): ${adapterMethodName} is not a function`));
     }
-
     this.precheck(key)
       .then(async () => {
         this.logger.debug(`${key}: precheck resolved`);
@@ -379,7 +381,7 @@ export default class Base {
   produce_result(key: string, data: IResultData): Record<string, any> {
     const result: Record<string, any> = {};
     const adapter_key = this.routeAdapter(key);
-    const adapter_name = this.adapters[adapter_key].constructor.name;
+    const adapter_name = this.adapters[adapter_key].slug;
     result.url = this?.results?.get('url');
     result.network = this?.results?.get('network');
     result.hostname = this?.results?.get('hostname');
@@ -563,7 +565,7 @@ export default class Base {
     this.maybeExecuteAdapterMethod(
       'websocket', 
       'terminate',
-      () => this.ws?.terminate()
+      () => (this.ws as any)?.terminate()
     )
   }
 
@@ -602,8 +604,8 @@ export default class Base {
    * @private
    * @returns null
    */
-  on_open(e: Event): void {
-    this.cbcall('open', e);
+  on_open(): void {
+    this.cbcall('open');
     this.track('relay', 'open');
     this.handle_connect_check(true);
   }
@@ -615,7 +617,7 @@ export default class Base {
    * @private
    * @returns null
    */
-  on_error(err: Error): void {
+  on_error(err: Event): void {
     this.cbcall('error');
     this.track('relay', 'error', err);
     this.handle_error(err);
@@ -627,12 +629,44 @@ export default class Base {
    * @private
    * @returns null
    */
-  handle_error(err: Error): void {
+  handle_error(err: Event): void {
     if (this.hard_fail) return;
     this.logger.debug(`handle_error(): ${err}`);
     this.websocket_hard_fail(err);
   }
   
+
+  /**
+   * on_close
+   * Standard WebSocket event triggered by Adapter 
+   * 
+   * @private
+   * @returns null
+   */ 
+  on_closed(subId: string, message?: string): void {
+    this.cbcall('closed');
+    this.track('relay', 'closed', { subId, message });
+    this.handle_close();
+  }   
+
+  /**
+   * on_event
+   * Special Nostr event triggered by Adapter
+   * 
+   * @private
+   * @returns null
+   */
+  on_event(subid: string, ev: any): void {
+    this.track('relay', 'event', ev.id);
+
+    // Cast `this.adapters.websocket` as IAdapter to ensure TypeScript knows it's an instance
+    const handler = (this.adapters?.websocket as IAdapter)?.handle_event;
+
+    if (!handler) return;
+
+    handler(subid, ev);
+  }
+
 
   /**
    * on_close
@@ -647,23 +681,6 @@ export default class Base {
     this.handle_close();
   }
 
-/**
- * on_event
- * Special Nostr event triggered by Adapter
- * 
- * @private
- * @returns null
- */
-on_event(subid: string, ev: any): void {
-  this.track('relay', 'event', ev.id);
-
-  // Cast `this.adapters.websocket` as IAdapter to ensure TypeScript knows it's an instance
-  const handler = (this.adapters?.websocket as IAdapter)?.handle_event;
-
-  if (!handler) return;
-
-  handler(subid, ev);
-}
 
   /**
    * on_limits
@@ -864,8 +881,13 @@ on_event(subid: string, ev: any): void {
           message = err.open.message
         else if(typeof err ==='string')
           message = err
-        else 
+        else if(typeof err === 'object' && !Array.isArray(err))
+          message = Object.entries(err)
+            .map(([key, value]) => `${capitalize(key)} is ${value}`)
+            .join(', ') + '.';
+        else {
           message = "unknown error"
+        }
       else
         message = "Check skipped because no connection could be made to relay's websocket."
       this?.results?.set(key as keyof IResult, { data: false, duration: -1, status: "error", message }) 
@@ -986,7 +1008,7 @@ on_event(subid: string, ev: any): void {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isConnecting', 
-      () => this.ws?.readyState && (this.ws?.readyState as number) === WebSocket.CONNECTING ? true : false
+      () => this.ws?.readyState && (this.ws?.readyState as number) === 0 ? true : false
     )
   }
 
@@ -1001,7 +1023,9 @@ on_event(subid: string, ev: any): void {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isConnected', 
-      () => this.ws?.readyState && this.ws.readyState === WebSocket.OPEN ? true : false
+      () => {
+        return this.ws?.readyState && this.ws.readyState === 1 ? true : false
+      }
     )
   }
 
@@ -1018,7 +1042,7 @@ on_event(subid: string, ev: any): void {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isClosing', 
-      () => this.ws?.readyState && this.ws.readyState === WebSocket.CLOSING ? true : false
+      () => this.ws?.readyState && this.ws.readyState === 2 ? true : false
     )
   }
 
@@ -1033,7 +1057,22 @@ on_event(subid: string, ev: any): void {
     return this.maybeExecuteAdapterMethod(
       'websocket', 
       'isClosed', 
-      () => this.ws?.readyState && this.ws.readyState === WebSocket.CLOSED ? true : false
+      () => this.ws?.readyState && this.ws.readyState === 3 ? true : false
+    )
+  }
+
+  /**
+   * isBusy
+   * Checks if the websocket is busy (connecting or closing)
+   * 
+   * @private
+   * @returns {boolean} - True if closed, false otherwise
+   */
+  isBusy(): boolean {
+    return this.maybeExecuteAdapterMethod(
+      'websocket', 
+      'isBusy', 
+      () => this.isConnecting() || this.isClosing()
     )
   }
 
@@ -1089,14 +1128,11 @@ on_event(subid: string, ev: any): void {
    * @param Adapter - The Adapter class to use
    */
   async useAdapter(Adapter: IAdapterConstructor): Promise<void> {
-    const name = Adapter.name;
-    const adapterKey = this.getAdapterType(name);
-    
-    if (this.adapters?.[adapterKey]) {
-      throw new Error(`${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.getAdapterName(this.adapters?.[adapterKey])}`);
+    const { type } = Adapter;
+    if (this.adapters?.[type]) {
+      throw new Error(`${type.charAt(0).toUpperCase() + type.slice(1)} Adapter has already been initialized with ${this.getAdapterName(this.adapters?.[type])}`);
     }
-
-    this.adapters[adapterKey] = new Adapter(this as Base); 
+    this.adapters[type] = new Adapter(this as Base); 
   }
 
 
@@ -1125,73 +1161,14 @@ on_event(subid: string, ev: any): void {
     }
   
     for (const Adapter of adapterArray) {
-      const name = Adapter.name;
-      const adapterKey = this.getAdapterType(name);
-  
-      if (this.adapters[adapterKey]) {
+      const { type } = Adapter;
+      if (this.adapters[type]) {
         throw new Error(
-          `${adapterKey.charAt(0).toUpperCase() + adapterKey.slice(1)} Adapter has already been initialized with ${this.adapters[adapterKey].constructor.name}`
+          `${type.charAt(0).toUpperCase() + type.slice(1)} Adapter has already been initialized with ${this.adapters[type].constructor.name}`
         );
       }
-  
-      this.adapters[adapterKey] = new Adapter(this);
+      this.adapters[type] = new Adapter(this);
     }
-  }
-  
-
-  // /**
-  //  * defaultAdapterKeys
-  //  * Retrieves the default keys for adapters
-  //  * 
-  //  * @private
-  //  * @returns - The array of default adapter keys
-  //  */
-  // async defaultAdapterKeys(EveryDefaultAdapter: IEveryAdapterDefault): Promise<string[]> {
-  //   return Object.keys(EveryDefaultAdapter);
-  // }
-
-  // /**
-  //  * Initializes the default adapters
-  //  * 
-  //  * @private
-  //  * @returns The initialized adapters
-  //  */
-  // async defaultAdapters(): Promise<Record<string, IAdapter>> {
-  //   this.logger?.debug('defaultAdapters()');
-    
-  //   if (this.adaptersInitialized) return this.adapters;
-    
-  //   const EveryDefaultAdapterModule = await import('@nostrwatch/nocap-every-adapter-default') as IEveryAdapterDefault;
-  //   const keys = await this.defaultAdapterKeys(EveryDefaultAdapterModule);
-    
-  //   for (const adapterKey of keys) {
-  //     const adapterType = this.getAdapterType(adapterKey);
-      
-  //     if (!this.adapters[adapterType]) {
-  //       const AdapterClass = EveryDefaultAdapterModule[adapterKey];
-  //       this.adapters[adapterType] = new AdapterClass(this);
-  //     }
-  //   }
-    
-  //   this.adaptersInitialized = true;
-  //   return this.adapters;
-  // }
-
-  /**
-   * getAdapterType
-   * Helper that determines the type of an adapter based on its class name
-   * 
-   * @private
-   * @param {string} adapterName - The name of the adapter
-   * @returns {string} - The type of the adapter
-   */
-  getAdapterType(adapterName: string): string {
-    let type: string | undefined;
-    this.adaptersValid.forEach(adapterKey => {
-      if (adapterName.toLowerCase().startsWith(adapterKey)) type = adapterKey;
-    });
-    if (typeof type === 'undefined') throw new Error(`Adapter ${adapterName} is not a valid adapter`);
-    return type;
   }
 
   /**

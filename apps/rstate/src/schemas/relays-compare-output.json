@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "relays": {
+      "type": "array",
+      "items": { "type": "object", "description": "RelayState object" }
+    },
+    "comparison": {
+      "type": "object",
+      "properties": {
+        "common": {
+          "type": "object",
+          "properties": {
+            "nips": { "type": "array", "items": { "type": "number" } },
+            "requirements": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["nips", "requirements"]
+        },
+        "differences": {
+          "type": "object",
+          "properties": {
+            "network": { "type": "boolean" },
+            "software": { "type": "boolean" },
+            "latency": { "type": "boolean" }
+          },
+          "required": ["network", "software", "latency"]
+        }
+      },
+      "required": ["common", "differences"]
+    }
+  },
+  "required": ["relays", "comparison"]
+}
+

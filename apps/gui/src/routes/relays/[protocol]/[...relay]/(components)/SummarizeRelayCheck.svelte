@@ -1,0 +1,22 @@
+<script lang="ts">
+    import { monitors } from '$lib/stores/monitors.js';
+    import type { Monitor } from "@nostrwatch/route66/models"
+    import { PFP } from '$lib/utils/pfp.js';
+	import { timeAgo } from "$lib/utils/time";
+    
+    export let check: any;
+
+    $: pubkey = check?.pubkey ?? null
+    $: monitor = pubkey? $monitors.find( (monitor: Monitor) => monitor.pubkey === pubkey ): null
+    $: monitorProfile = monitor? monitor?.profile: null;
+    $: monitorRelays = monitor? monitor?.relays: null;
+    $: monitorName = monitor?.name
+    $: monitorPhoto = monitor?.photo ?? PFP.generate(pubkey)
+</script>
+
+<div class="py-2">
+<img src="{monitorPhoto}" alt="{monitorName}'s profile photo" class="h-6 w-6 mr-2 overflow-hidden rounded-full inline-block" /> <span class="inline-block">
+    {monitorName}
+    <span class="text-black/70 dark:text-white/70 text-sm italic">{timeAgo(check.created_at*1000)}</span>
+</span> 
+</div>

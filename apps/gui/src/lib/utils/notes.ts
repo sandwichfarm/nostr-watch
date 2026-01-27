@@ -4,12 +4,12 @@ import { writable, type Writable } from 'svelte/store';
 import { nip19 } from "nostr-tools";
 import { get } from 'svelte/store';
 import type { UserService } from "$lib/services/UserService";
-import { userService } from '$lib/stores/user.js';
+import { userService } from '$lib/stores/services.js';
 
 type SyncTransform = (input: string) => string;
 type AsyncTransform = (input: string, update: (output: string) => void) => Promise<void>;
 
-interface ParseConfig {
+export type ParseConfig = {
   removeHashtags?: boolean;
   nip19?: boolean;
   markdown?: boolean;
@@ -31,7 +31,7 @@ const defaultConfig: ParseConfig = {
   videos: true,
   truncate: false,
   truncateLength: 50,
-  sanitize: false,
+  sanitize: true,
   replaceAmpersand: true,
 };
 
@@ -112,46 +112,56 @@ function replaceYoutubeLink(text: string): string {
 
 
 async function replaceNip19(text: string, update: (output: string) => void): Promise<void> {
-  const NIP19_REGEX = /nostr:(nevent|nprofile|naddr|nrelay|npub|note)[\w\d]+/gi;
-  const matches = [...text.matchAll(NIP19_REGEX)];
-  if (matches.length === 0) return;
+  try {
+    const NIP19_REGEX = /nostr:(nevent|nprofile|naddr|nrelay|npub|note)[\w\d]+/gi;
+    const matches = [...text.matchAll(NIP19_REGEX)];
+    if (matches.length === 0) return;
 
-  const replacements = await Promise.all(matches.map(async (m) => {
-    const original = m[0];
-    const encoded = original.replace('nostr:', '');
-    const { type, data } = nip19.decode(encoded);
-    const classes = "inline-block px-2 py-1 rounded-sm bg-black/20 text-white/70 hover:text-white/80 hover:bg-black/10"
+    const replacements = await Promise.all(matches.map(async (m) => {
+      const original = m[0];
+      let replacement = original;
+      try {
+        
+        const encoded = original.replace('nostr:', '');
+        const { type, data } = nip19.decode(encoded);
+        const classes = "inline-block px-2 py-1 rounded-sm bg-black/20 text-white/70 hover:text-white/80 hover:bg-black/10"
 
-    let replacement = original;
-    if (type === 'npub') {
-      const service: UserService | null = get(userService);
-      if (!service) {
-        return { original, replacement: encoded };
+        if (type === 'npub') {
+          const service: UserService | null = get(userService);
+          if (!service) {
+            return { original, replacement: encoded };
+          }
+          const user = service.userFromPubkey(data);
+          await user.ready();
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes}">${user.name}</a>`;
+        } else if (type === 'nevent') {
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
+        } else if (type === 'naddr') {
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
+        } else if (type === 'nprofile') {
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Profile</a>`;
+        } else if (type === 'note'){
+          replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Note</a>`;
+        }
       }
-      const user = service.userFromPubkey(data);
-      await user.ready();
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes}">${user.name}</a>`;
-    } else if (type === 'nevent') {
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
-    } else if (type === 'naddr') {
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Event</a>`;
-    } else if (type === 'nprofile') {
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Profile</a>`;
-    } else if (type === 'note'){
-      replacement = `<a href="https://njump.me/${encoded}" class="${classes} block mt-3">View Attached Note</a>`;
-    }
+      catch(e){
+        console.error('Error in replaceNip19:', e);
+      }
 
-    console.log('nip19', { original, replacement });
+      ////console.log('nip19', { original, replacement });
 
-    return { original, replacement };
-  }));
+      return { original, replacement };
+    }));
 
-  replacements.forEach(({ original, replacement }) => {
-    console.log("Replacing:", original, "with:", replacement);
-    text = text.replace(original, replacement);
-  });
+    replacements.forEach(({ original, replacement }) => {
+      ////console.log("Replacing:", original, "with:", replacement);
+      text = text.replace(original, replacement);
+    });
 
-  update(text);
+    update(text);
+  } catch(e: any){
+    console.error('Error in replaceNip19:', e);
+  }
 }
 
 
@@ -199,16 +209,16 @@ export function parseNote(input: string, config: ParseConfig = defaultConfig): W
     parser.addAsync(replaceNip19);
   }
 
-  if (config.markdown) {
-    parser.addAsync(async (text: string, update: (output: string) => void) => {
-      await applyMarkdown(text, update, config.markdownOptions!);
-    });
-  }
-
   if (config.sanitize) {
     parser.addAsync((text: string, update: (output: string) => void) => {
       applySanitize(text, update);
       return Promise.resolve();
+    });
+  }
+
+  if (config.markdown) {
+    parser.addAsync(async (text: string, update: (output: string) => void) => {
+      await applyMarkdown(text, update, config.markdownOptions!);
     });
   }
 

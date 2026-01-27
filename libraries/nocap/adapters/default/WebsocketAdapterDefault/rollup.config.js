@@ -19,9 +19,9 @@ export default [
       sourcemap: true,
       entryFileNames: '[name].cjs.js',
       strict: false,
-      exports: 'auto',
-      external: ['torfetch'],
+      exports: 'auto'
     },
+    external: ['@nostrwatch/nocap', '@nostrwatch/websocket'],
     plugins: [
       resolve({
         extensions: ['.js'],
@@ -33,41 +33,15 @@ export default [
       json({
         sourceMap: true,
       }),
-      nodePolyfills(),
       terser(),
     ],
     onwarn
   },
 
-  // {
-  //   input: 'dist/server/index.js',
-  //   output: {
-  //     dir: 'dist/server/esm',
-  //     format: 'es',
-  //     sourcemap: true,
-  //     entryFileNames: '[name].esm.js',
-  //     strict: false,
-  //   },
-  //   plugins: [
-  //     resolve({
-  //       extensions: ['.js'],
-  //       preferBuiltins: true,
-  //     }),
-  //     commonjs({
-  //       sourceMap: true,
-  //     }),
-  //     json({
-  //       sourceMap: true,
-  //     }),
-  //     terser(),
-  //   ],
-  //   onwarn
-  // },
-
   {
     input: 'dist/web/index.js',
     output: {
-      dir: 'dist/web',
+      dir: 'dist/worker',
       format: 'es',
       sourcemap: true,
       strict: false,
@@ -80,12 +54,39 @@ export default [
       commonjs({
         sourceMap: true,
       }),
+      nodePolyfills(),
+      json({
+        sourceMap: true,
+      })
+    ],
+    onwarn
+  },
+
+  {
+    input: 'dist/web/index.js',
+    output: {
+      dir: 'dist/web',
+      format: 'es',
+      sourcemap: true,
+      strict: false,
+    },
+    plugins: [
+      nodePolyfills(),
+      resolve({
+        browser: true,
+        extensions: ['.js'],
+      }),
+      commonjs({
+        sourceMap: true,
+      }),
       json({
         sourceMap: true,
       }),
-      nodePolyfills(),
+      
       // terser(),
     ],
     onwarn
   },
+
+  
 ];

@@ -4,6 +4,7 @@ import { ISuite } from '#base/Suite.js';
 ;
 import { INip01Filter, RelayEventMessage } from '../interfaces/index.js';
 import { RangeIngestor } from "../ingestors/RangeIngestor.js";
+import { AssertWrap } from '#src/base/Expect.js';
 
 export class FilterRange extends SuiteTest implements ISuiteTest {
   readonly slug: string = 'FilterRange';
@@ -15,11 +16,14 @@ export class FilterRange extends SuiteTest implements ISuiteTest {
 
   constructor(suite: ISuite) {
     super(suite);
-    this.registerIngestor(new RangeIngestor());
+    this.suiteIngest(new RangeIngestor(30));
+  }
+
+  digest(){
+    this.range = this.selectRangeFromSample(this.getSamples<number[]>());
   }
 
   get filters(): INip01Filter[] {
-    this.range = this.selectRangeFromSample(this.ingestor.poop());
     return [{ ...this.range, limit: this.limit }];
   }
   
@@ -28,12 +32,23 @@ export class FilterRange extends SuiteTest implements ISuiteTest {
     this.timestampsReturned.push(note.created_at);
   }
 
-  test({behavior, conditions}){
-    conditions.toBeOk(this?.range?.since && this?.range?.until && this.range.since != this.range.until, 'sample data to be sufficient')
+  precheck(conditions: AssertWrap){
+    const bothRangeValuesAreNumbers = typeof this?.range?.since === 'number' && typeof this?.range?.until === 'number';
+    const rangeValuesAreDifferent = this?.range?.since != this?.range?.until;
+    const untilIsGreaterThanSince = this?.range?.until > this?.range?.since;
+    const sampleSufficient = bothRangeValuesAreNumbers && rangeValuesAreDifferent && untilIsGreaterThanSince;
+    conditions.toBeOk(untilIsGreaterThanSince, 'until is greater than since');
+    conditions.toBeOk(bothRangeValuesAreNumbers, 'since and until are numbers');
+    conditions.toNotEqual(this?.range?.since, this?.range?.until, 'since and until are different values');
+    conditions.toBeOk(sampleSufficient, 'sample data to be sufficient')
+    
+  }
 
+
+  test({behavior}){
     behavior.toEqual(this.timestampsReturned.length, this.limit, `returned number of events requested`);
     behavior.toBeOk(this.timestampsReturned.length > 0, 'returned at least one event');
-    behavior.toBeOk(this.withinRange(), 'return only events within range')
+    behavior.toBeOk(() => this.withinRange(), 'return only events within range')
   }
 
   private withinRange(): boolean {

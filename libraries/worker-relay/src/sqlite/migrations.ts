@@ -11,6 +11,7 @@ const migrations = [
   { version: 4, script: migrate_v4 },
   { version: 5, script: migrate_v5 },
   { version: 6, script: migrate_v6 },
+  { version: 7, script: migrate_v7 },
 ];
 
 async function migrate(relay: SqliteRelay) {
@@ -113,4 +114,32 @@ async function migrate_v6(relay: SqliteRelay) {
   });
 }
 
+async function migrate_v7(relay: SqliteRelay) {
+  return relay.db?.transaction(db => {
+
+    db.exec(
+      "CREATE TABLE nip11s (\
+        hash TEXT(64) PRIMARY KEY, \
+        json TEXT NOT NULL \
+      )"
+    );
+    
+    db.exec(
+      "CREATE TABLE relay_nip11s (\
+        relay TEXT(64) NOT NULL, \
+        hash TEXT NOT NULL, \
+        PRIMARY KEY (relay, hash), \
+        FOREIGN KEY (hash) REFERENCES nip11s(hash) \
+      )"
+    );
+
+    db.exec("INSERT INTO __migration VALUES (7, ?)", {
+      bind: [new Date().getTime() / 1000],
+    });
+  });
+}
+
+
 export default migrate;
+
+

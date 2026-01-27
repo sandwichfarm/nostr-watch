@@ -1,0 +1,36 @@
+{
+  "name": "@nostrwatch/schemata-js-ajv",
+  "version": "1.0.1",
+  "description": "",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/web/index.js",
+      "require": "./dist/server/index.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm tsc --emitDeclarationOnly && node build.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@nostrwatch/schemata": "workspace:^",
+    "@nostrwatch/utils": "workspace:^",
+    "@types/ajv-errors": "^2.0.5",
+    "ajv-errors": "^3.0.0",
+    "nostr-tools": "^2.10.4"
+  },
+  "peerDependencies": {
+    "ajv": "^8.17.1"
+  },
+  "devDependencies": {
+    "@hyrious/esbuild-plugin-commonjs": "^0.2.4",
+    "esbuild": "^0.24.2",
+    "esbuild-plugin-polyfill-node": "^0.3.0",
+    "typescript": "^5.7.2",
+    "vitest": "3.1.2"
+  }
+}

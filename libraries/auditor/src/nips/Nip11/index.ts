@@ -1,16 +1,17 @@
-import type { WebSocketWrapper as WebSocket } from '#base/WebSocketWrapper.js';
-import fetch from 'cross-fetch';
+import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 
 import { Suite } from '#base/Suite.js';
-import type { ISuite, ISuiteResult } from '#base/Suite.js';
+import type { ISuite } from '#base/Suite.js';
 
-import nip11Schema from './schemata/nip11.schema.json' with { type: "json" };
+import { nip11Schema } from '@nostrwatch/schemata';
 import { SchemaValidator } from '#src/base/SchemaValidator.js';
 
 //nip01
 export class Nip11 extends Suite implements ISuite {
 
-  public readonly slug: string = 'Nip11';
+  public get slug(): string {
+    return 'Nip11';
+  }
 
   readonly jsonValidators: Record<string, SchemaValidator<any>> = {
     'NIP11': new SchemaValidator<any>(nip11Schema),
@@ -20,8 +21,8 @@ export class Nip11 extends Suite implements ISuite {
   readonly requires: string[] = [];
   readonly pretest: boolean = true;
 
-  constructor(ws: WebSocket) {
-    super(ws, import.meta.url);  
+  constructor(socket: WebSocket) {
+    super(socket, import.meta.url);  
   }
   
 }

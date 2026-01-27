@@ -1,7 +1,7 @@
 import MiniSearch, { type SearchResult } from "minisearch";
 import { writable, type Writable } from "svelte/store";
 import { goto } from '$app/navigation';
-import { formatRelayUrl } from '$lib/utils/routing.js';
+import { generateRelayPathFromUrl } from '$lib/utils/routing.js';
 
 export const searchResults: Writable<SearchResult[]> = writable([]);
 
@@ -21,16 +21,33 @@ const miniSearch = new MiniSearch({
   },
 });
 
-export function initializeIndex(data) {
-  if(miniSearch.documentCount === 0) {
-    miniSearch.addAll(data);
+function uniqueById(data: any[]) {
+  const unique: any[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of data || []) {
+    const id = entry?.id;
+    if (typeof id !== "string" || id.length === 0) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    unique.push(entry);
   }
-  else {
-    for(const entry of data) {
-      if(!miniSearch.has(entry.id)) {
-        miniSearch.add(entry);
-      }
-    } 
+
+  return unique;
+}
+
+export function initializeIndex(data) {
+  const unique = uniqueById(data);
+
+  if(miniSearch.documentCount === 0) {
+    miniSearch.addAll(unique);
+    return;
+  }
+
+  for(const entry of unique) {
+    if(!miniSearch.has(entry.id)) {
+      miniSearch.add(entry);
+    }
   }
 }
 
@@ -40,6 +57,6 @@ export function performSearch(query: string) {
 }
 
 export function selectSuggestion(result: SearchResult, state: any) {
-  goto(`/reload/relays/${formatRelayUrl(result.relay)}`);
+  goto(`/reload/relays/${generateRelayPathFromUrl(result.relay)}`);
   state.showSuggestions = false;
 } 

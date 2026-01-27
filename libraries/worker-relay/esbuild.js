@@ -1,10 +1,12 @@
 import esbuild from 'esbuild';
 import { wasmLoader } from 'esbuild-plugin-wasm'
 
+const production = process.env.NODE_ENV === 'prod';
+
 esbuild.build({
   entryPoints: ['src/worker.ts'],
   bundle: true,
-  minify: false,
+  minify: production,
   sourcemap: true,
   outdir: 'dist/esm',
   format: 'esm',

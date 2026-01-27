@@ -1,0 +1,17 @@
+$id: 'https://schemata.nostr.watch/note/kind/3/content'
+$schema: http://json-schema.org/draft-07/schema#
+title: kind3Content
+type: object
+patternProperties: 
+  "^(wss://|ws://).*$":
+    type: object 
+    properties:
+      write: 
+        type: boolean
+      read:
+        type: boolean
+    required:
+      - write
+      - read
+    additionalProperties: false
+additionalProperties: false

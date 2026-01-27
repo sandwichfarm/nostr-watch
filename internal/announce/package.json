@@ -3,22 +3,25 @@
   "version": "0.4.5",
   "description": "Generates a NIP-66 10166 event, NIP-65 10002 event and NIP-01 0 events for monitors on *every* boot.",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
     "test": "vitest",
-    "test-ui": "vitest --ui",
-    "prepare": "pnpm run build"
+    "test-ui": "vitest --ui"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/utils": "workspace:^",
+    "chalk": "^5.3.0"
+  },
+  "peerDependencies": {
     "nostr-tools": "2.1.4"
   },
   "devDependencies": {
-    "@nostrwatch/publisher": "*",
+    "@nostrwatch/publisher": "workspace:^",
     "@types/node": "^20.11.24",
     "@types/ws": "8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.1.1",

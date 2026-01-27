@@ -1,4 +1,4 @@
-import { StateManager } from "@nostrwatch/nip66";
+import { StateManager } from "@nostrwatch/route66";
 
 type Primitive = string | number | boolean | undefined;
 type PreferenceValue<T> = T | Preferences<T>;

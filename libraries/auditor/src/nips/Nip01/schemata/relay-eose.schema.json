@@ -1,8 +1,13 @@
 {
   "type": "array",
   "items": [
-    { "const": "EOSE" },
-    { "type": "string", "description": "subscription_id" }
+    {
+      "const": "EOSE"
+    },
+    {
+      "type": "string",
+      "description": "subscription_id"
+    }
   ],
   "minItems": 2,
   "maxItems": 2

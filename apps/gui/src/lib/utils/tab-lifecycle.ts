@@ -9,6 +9,7 @@ interface LifecycleMessage {
 interface TabLifecycleOptions {
   channelName?: string;
   releaseWaitTimeoutMs?: number;
+  tabActivityTimeoutMs?: number; // New option
 }
 
 type Handler = () => Promise<void> | void;
@@ -16,24 +17,30 @@ type Handler = () => Promise<void> | void;
 export class TabLifecycle {
   private channelName: string;
   private releaseWaitTimeoutMs: number;
+  private tabActivityTimeoutMs: number;
   private channel: BroadcastChannel | null = null;
   private myId: string;
   private leaderId: string | null = null;
-  private isLeader = false;
+  private _isLeader = false;
 
   private onStartLeaderHandler: Handler = () => {};
   private onReleaseLeaderHandler: Handler = () => {};
   private onWaitForLeaderReleaseHandler: Handler = () => {};
   private onLeaderAcquiredHandler: Handler = () => {};
+  private onTabActiveHandler: Handler = () => {};
+  private onTabInactiveHandler: Handler = () => {};
 
   private releaseWaitTimeoutId: number | null = null;
+  private tabActivityTimeoutId: number | null = null;
 
   constructor({
     channelName = 'myAppLifecycle',
     releaseWaitTimeoutMs = 5000,
+    tabActivityTimeoutMs = 3000,
   }: TabLifecycleOptions = {}) {
     this.channelName = channelName;
     this.releaseWaitTimeoutMs = releaseWaitTimeoutMs;
+    this.tabActivityTimeoutMs = tabActivityTimeoutMs;
     this.myId = crypto.randomUUID();
 
     if (typeof BroadcastChannel !== 'undefined') {
@@ -58,11 +65,43 @@ export class TabLifecycle {
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
+  get isLeader() {
+    return this._isLeader;
+  }
+
+  private set isLeader(value: boolean) {
+    this._isLeader = value;
+  }
+
   private handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
-      this.acquireLeadership();
+      this.onTabActive();
+    } else if (document.visibilityState === 'hidden') {
+      this.scheduleTabInactive();
     }
   };
+
+  private scheduleTabInactive() {
+    if (this.tabActivityTimeoutId) clearTimeout(this.tabActivityTimeoutId);
+    this.tabActivityTimeoutId = window.setTimeout(() => {
+      this.onTabInactive();
+    }, this.tabActivityTimeoutMs);
+  }
+
+  private onTabActive() {
+    if (this.tabActivityTimeoutId) clearTimeout(this.tabActivityTimeoutId);
+    this.onTabActiveHandler();
+  }
+
+  public async onTabInactive(fn: Handler) {
+    await this.onTabInactiveHandler();
+    // If the tab is the leader, release leadership when inactive
+    if (this.isLeader) {
+      console.log('[TabLifecycle] Tab inactive, releasing leadership.');
+      await this.releaseLeadership();
+    }
+  }
+  
 
   private sendMessage(type: LifecycleEventType, payload: Record<string, unknown> = {}): void {
     const message: LifecycleMessage = {

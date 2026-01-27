@@ -3,9 +3,9 @@
 PARENT_DIR="adapters/default"
 for dir in "$PARENT_DIR"/*/; do
   if [ -d "$dir" ]; then
-    echo "Running yarn build in $dir"
+    echo "Running pnpm build in $dir"
     cd "$dir" || exit
-    yarn build
+    pnpm build
     cd - || exit
   fi
 done

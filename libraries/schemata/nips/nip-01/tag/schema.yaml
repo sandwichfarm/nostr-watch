@@ -1,0 +1,6 @@
+$id: 'https://schemata.nostr.watch/tag'
+$schema: "http://json-schema.org/draft-07/schema#"
+type: array
+items:
+  type: string
+uniqueItems: false

@@ -2,7 +2,7 @@
   "name": "@nostrwatch/nocapd",
   "type": "module",
   "version": "1.12.2",
-  "main": "index.js",
+  "main": "src/index.js",
   "license": "MIT",
   "dependencies": {
     "@nostr-fetch/adapter-nostr-tools": "0.14.1",
@@ -11,7 +11,7 @@
     "@nostrwatch/logger": "workspace:^",
     "@nostrwatch/nocap": "workspace:^",
     "@nostrwatch/nocap-every-adapter-default": "workspace:^",
-    "@nostrwatch/nocap-nip66": "workspace:^",
+    "@nostrwatch/nocap-route66": "workspace:^",
     "@nostrwatch/nwcache": "workspace:^",
     "@nostrwatch/publisher": "workspace:^",
     "@nostrwatch/publisher-nostrtools": "workspace:^",

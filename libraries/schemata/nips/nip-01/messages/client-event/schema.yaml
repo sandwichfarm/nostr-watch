@@ -1,0 +1,11 @@
+$id: 'https://schemata.nostr.watch/message/client/event'
+type: "array"
+title: "Client Event Message"
+description: "A message for publishing a NIP-01 note to a relay"
+items: 
+- const: "EVENT"
+- allOf: 
+  - $ref: "@/note.yaml"
+  description: "The NIP-01 note to be published"
+minItems: 2
+maxItems: 2

@@ -20,7 +20,7 @@
   "scripts": {
     "build": "pnpm run clean && pnpm run transpile && rollup -c && pnpm run transpile:alias",
     "build:server": "pnpm run clean && pnpm run transpile:server && rollup -c && pnpm run transpile:alias",
-    "clean": "rimraf dist",
+    "clean": "rm -fr ./dist && mkdir -p ./dist",
     "transpile": "pnpm run transpile:server && pnpm run transpile:web",
     "transpile:web": "tsc -p tsconfig.web.json",
     "transpile:server": "tsc -p tsconfig.server.json",
@@ -28,22 +28,21 @@
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
-    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
-    "@nostrwatch/utils": "workspace:*",
     "get-ssl-cert": "2.3.3",
     "ssl-checker": "2.0.8",
-    "@nostrwatch/nocap": "workspace:*"
+    "@nostrwatch/utils": "workspace:^",
+    "@nostrwatch/nocap": "workspace:^"
   },
+  "peerDependencies": {},
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@babel/plugin-transform-modules-commonjs": "7.23.3",
     "@nostrwatch/nocap": "*",
-    "@nostrwatch/nocap-every-adapter-default": "workspace:^",
     "@rollup/plugin-commonjs": "^28.0.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.3.0",

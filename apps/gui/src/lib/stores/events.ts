@@ -1,11 +1,13 @@
 import { writable, derived, type Writable, type Readable, get } from "svelte/store";
-import { Monitor, Nip66Event, type IEvent } from '@nostrwatch/nip66/models'
-import { StateManager } from "@nostrwatch/nip66";
+import { Nip66CheckEvent, Geocoded, NostrEvent, type IEvent, Monitor } from '@nostrwatch/route66/models'
+import { Route66, StateManager } from "@nostrwatch/route66";
 import { doAggregateCache } from "./app";
 
+export type StoreEventType = Nip66CheckEvent | Geocoded | NostrEvent
 
-export const events: Writable<Map<string, Nip66Event>> = writable(new Map());
-export const eventsArray: Readable<Nip66Event[]> = derived(
+export const events: Writable<Map<string, StoreEventType>> = writable(new Map());
+
+export const eventsArray: Readable<StoreEventType[]> = derived(
     events, 
     ($events) => {
         const eventsArr = Array.from($events?.values() || []);
@@ -16,34 +18,14 @@ export const eventsArray: Readable<Nip66Event[]> = derived(
     }
 )
 
-export const totalMonitors: Readable<Set<string>> = derived(    
+export const totalMonitors: Readable<number> = derived(    
     eventsArray,
-    ($events): Set<string> => {
+    ($events): number => {
         const monitors: Set<string> = new Set();
         $events.forEach(event => {
             if(event.kind !== 30166) return;
             monitors.add(event.pubkey);
         })
-        return monitors;
+        return monitors.size;
     }
 )
-
-
-        
-
-// export const checkEventsByRelay: Readable<Map<string, Nip66Event>> = derived(
-//     eventsArray,
-//     $events => {
-//         const map = new Map();
-//         $events.forEach(event => {
-//             if(event.kind !== '30166') return;
-//             const relay = event.tags.find((t: string[]) => t[0] === 'd')?.[1];
-//             if(!relay) return ;
-//             let entry = map.get(relay);
-//             if(!entry) entry = [];
-//             entry.push(event);
-//             map.set(relay, entry);
-//         })
-//     }
-// )
-

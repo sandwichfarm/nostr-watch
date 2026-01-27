@@ -1,14 +1,16 @@
-import { Service, type FetchOptions } from "@nostrwatch/nip66/services"
-import type { IAdaptersArgument } from "@nostrwatch/nip66/interfaces"
+import { Service, type WebsocketRequestBody } from "@nostrwatch/route66/services"
+import type { IAdaptersArgument } from "@nostrwatch/route66/interfaces"
 import { User } from "$lib/models/User.js"
-import { NostrEvent, type IEvent } from "@nostrwatch/nip66/models"
+import { NostrEvent, type IEvent } from "@nostrwatch/route66/models"
 import type { Pubkey } from "$lib/models/User.js";
-import type { SubscribeHandlers, WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/nip66/core/WebsocketAdapter";
+import type {  WebsocketAdapterOptions, WebsocketRequestBody } from "@nostrwatch/route66/core/WebsocketAdapter";
 import type { Filter } from "nostr-tools";
-import { events } from "$lib/stores";
-import { get } from "svelte/store";
-import { nip66 } from "$lib/stores";
-import type Nip66 from "@nostrwatch/nip66"
+import { get, writable, type Writable } from "svelte/store";
+import { route66 } from "$lib/stores";
+import type Route66 from "@nostrwatch/route66"
+import { publishEventsToMemoryRelay } from "$lib/stores/events-helpers";
+import { eventsStoreMemoryRelay } from "$lib/stores/memory-relays/memory-relay-events";
+import { SvelteMemoryRelay } from "@nostrwatch/memory-relay";
 
 export type UserFeedItem = {
     user: User,
@@ -23,23 +25,26 @@ export type UserFeedItemRelatives = {
 
 export type UserFeed = UserFeedItem[]
 
-export interface UserFetchOptions extends WebsocketAdapterOptions {}
+export interface UserWebsocketRequestBody extends WebsocketAdapterOptions {}
 
-export interface UserFetchArgs extends FetchOptions {
+export interface UserFetchArgs extends WebsocketRequestBody {
     filters: Filter[];
     relays: string[],
-    options: UserFetchOptions,
-    hash?: string
+    options: UserWebsocketRequestBody,
+    hash?: string,
+    priority?: number
 }
 
 export class UserService extends Service {
 
     private _subIds: string[] = []
+    private _relay: SvelteMemoryRelay<IEvent, NostrEvent> = new SvelteMemoryRelay<IEvent, NostrEvent>(writable(new Map()))
 
     constructor(adapters: IAdaptersArgument){
         super(adapters)
         this.addRelay('userMeta', 'wss://purplepag.es')
         this.addRelay('userMeta', 'wss://user.kindpag.es')
+        this._ready = true;
     }
 
     get subIds(): string[] {
@@ -50,6 +55,14 @@ export class UserService extends Service {
         this._subIds.push(id)
     }
 
+    private get relay(): SvelteMemoryRelay<IEvent, NostrEvent> {
+        return this._relay
+    }
+
+    get store(): Writable<Map<string, NostrEvent>> {
+        return this.relay.store
+    }
+
     userFromPubkey(pubkey: Pubkey): User {
         return new User(pubkey, this);
     }
@@ -57,47 +70,39 @@ export class UserService extends Service {
     async userNotes(user: User, limit: number = 30, until?: number): Promise<IEvent[]> {
         until = until || Math.round(Date.now() / 1000);
         const filter: Filter = { authors: [user.pubkey], kinds: [1], limit, until};
+        const onevent = (ev: IEvent) => {
+            this.relay.event(ev);
+        }
         const options: WebsocketAdapterOptions = {
-            cache: false,
-            stream: false,
+            cache: true,
+            stream: true,
             returnResults: true,
             keepAlive: false,
-            priority: 10
         };
         const args: UserFetchArgs = {
             filters: [filter],
             relays: user.relays || [],
-            options
+            options,
+            priority: 10
         };
-        // const onevent = (event: IEvent) => {
-        //     if(callbacks) callbacks?.onevent?.(event);
-        // }
-        let notes = (await this.subscribe(args))?.sort((a, b) => (b.created_at as number) - (a.created_at as number));
-        // return notes.filter(isNotComment);
+        let notes = (await this.subscribe(args, { onevent }))?.sort((a, b) => (b.created_at as number) - (a.created_at as number));
         return notes;
     }
 
-    async unsubscribe(hash?: string): Promise<void> {
-        const $nip66: Nip66 = get(nip66)
-        await $nip66.adapters?.websocket?.unsubscribe(hash)
-    }
+    // async unsubscribe(hash?: string): Promise<void> {
+    //     const $route66: Route66 = get(route66)
+    //     await $route66.adapters?.websocket?.unsubscribe(hash)
+    // }
 
-    async unsubscribeAll(): Promise<void> {
-        const $nip66: Nip66 = get(nip66)
-        const promises: Promise<boolean>[] = []
-        for(const id of this._subIds) {
-            promises.push($nip66.adapters?.websocket?.unsubscribe(id))
-        }
-        await Promise.all(promises)
-        this._subIds = []
-    }
+    // async unsubscribeAll(): Promise<void> {
+    //     const $route66: Route66 = get(route66)
+    //     const promises: Promise<boolean>[] = []
+    //     this.unsubscribeMany(this._subIds)
+    // }
 
     async feed(user: User, limit: number = 1, until?: number): Promise<UserFeedItem[]> {
         const { relays } = user
         const notes = await this.userNotes(user, limit, until)
-        const relatives: IEvent[][] = [[]]
-        // const relatives = await Promise.all(notes.map((note: IEvent) => this.noteRelatives(user, note)));
-    
         return notes
             .map((_note: IEvent, index: number) => {
                 const note = new NostrEvent(_note, { relays: relays ?? [] })
@@ -105,26 +110,24 @@ export class UserService extends Service {
                     const fetcher = this.noteRelatives.bind(this)
                     const relatives = await fetcher(user, note)
                     const reactions = relatives.filter(rel => rel.kind === 7);
-                    const zaps = relatives.filter(rel => rel.kind === 9734 || rel.kind === 9321);
+                    const zaps = relatives.filter(rel => rel.kind === 9735 || rel.kind === 9321);
                     const comments = relatives.filter(rel => rel.kind === 1 || rel.kind === 1111);
-                    return { reactions, zaps, comments};
+                    return { reactions, zaps, comments };
                 }
                 return { user, note, fetchRelatives };
             })
-            // .filter( (note: UserFeedItem | undefined) => typeof note !== 'undefined');
     }
 
     async noteRelatives(user: User, note: IEvent): Promise<IEvent[]> {
-        const { id } = note
+        const { id, pubkey } = note
         const filters: Filter[] = [
-            { kinds: [9734, 9321], '#e': [id] },
-            { kinds: [1, 7, 1111], '#e': [id]  },
-            { kinds: [1111], '#E': [id] }
+            { kinds: [9735, 9321], '#e': [id] }, //zaps
+            { kinds: [1, 7, 1111], '#e': [id] }, //commments, mentions
+            { kinds: [1111], '#E': [id] } //NIP-22 comments
         ]
-        //console.log('user note relatives', filters)
-        const relays: string[] = [ ...(user.relays || []), 'wss://relay.nostr.band', 'wss://relay.damus.io' ]
+        const relays: string[] = [ ...(user.relays || []), 'wss://relay.damus.io' ]
         const options: WebsocketAdapterOptions  = {
-            cache: false,
+            cache: true,
             stream: true,
             returnResults: true,
             keepAlive: false
@@ -135,16 +138,16 @@ export class UserService extends Service {
             filters,
             relays,
             options,
-            hash
+            hash,
+            priority: 5
         }
         return this.subscribe(args) as Promise<IEvent[]>
     }
 
     async meta(user: User): Promise<IEvent[] | boolean | undefined> {
-        //console.log('user meta relays', user, this.userMetaRelays)
         const filter: Filter = {authors: [user.pubkey], kinds: [0, 10002]}
         const options: WebsocketAdapterOptions  = {
-            cache: false,
+            cache: true,
             stream: false,
             returnResults: true,
             keepAlive: false
@@ -158,7 +161,6 @@ export class UserService extends Service {
     }
 
     async fetch(args: UserFetchArgs): Promise<IEvent[]> {
-        //console.log('user ffetch', args)
         return this._fetch(args);
     }
 

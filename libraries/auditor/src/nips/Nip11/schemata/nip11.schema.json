@@ -32,7 +32,32 @@
     "retention": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/retent"
+        "type": "object",
+        "properties": {
+          "kinds": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              ]
+            }
+          },
+          "count": {
+            "type": "number"
+          },
+          "time": {
+            "type": "number"
+          }
+        },
+        "required": ["kinds", "count", "time"]
       }
     },
     "relay_country": {
@@ -42,11 +67,8 @@
       }
     },
     "icon": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/saneUrl"
-        }
-      ]
+      "type": "string",
+      "pattern": "^https?://"
     },
     "language_tags": {
       "type": "array",
@@ -61,11 +83,8 @@
       }
     },
     "posting_policy": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/saneUrl"
-        }
-      ]
+      "type": "string",
+      "pattern": "^https?://"
     },
     "limitation": {
       "type": "object",
@@ -109,27 +128,104 @@
         "created_at_upper_limit": {
           "type": "number"
         }
-      }
-    },
-    "payments_url": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/saneUrl"
-        }
+      },
+      "required": [
+        "max_message_length",
+        "max_subscriptions",
+        "max_filters",
+        "max_limit",
+        "max_subid_length",
+        "max_event_tags",
+        "max_content_length",
+        "min_pow_difficulty",
+        "auth_required",
+        "payment_required",
+        "restricted_writes",
+        "created_at_lower_limit",
+        "created_at_upper_limit"
       ]
     },
+    "payments_url": {
+      "type": "string",
+      "pattern": "^https?://"
+    },
     "fees": {
+      "type": "object",
       "properties": {
         "admission": {
-          "$ref": "#/$defs/fee"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "period": {
+                "type": "number"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": ["amount", "unit", "period", "kinds"]
+          }
         },
         "subscription": {
-          "$ref": "#/$defs/fee"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "period": {
+                "type": "number"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": ["amount", "unit", "period", "kinds"]
+          }
         },
         "publication": {
-          "$ref": "#/$defs/fee"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "period": {
+                "type": "number"
+              },
+              "kinds": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": ["amount", "unit", "period", "kinds"]
+          }
         }
-      }
+      },
+      "additionalProperties": false
     }
   },
   "required": [
@@ -139,7 +235,69 @@
     "contact",
     "supported_nips",
     "software",
-    "version"
+    "version",
+    "retention",
+    "relay_country",
+    "icon",
+    "language_tags",
+    "tags",
+    "posting_policy",
+    "limitation",
+    "payments_url",
+    "fees"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "limitation": {
+            "properties": {
+              "payment_required": {
+                "const": true
+              }
+            },
+            "required": ["payment_required"]
+          }
+        },
+        "required": ["limitation"]
+      },
+      "then": {
+        "properties": {
+          "fees": {
+            "anyOf": [
+              {
+                "properties": {
+                  "admission": {
+                    "type": "array",
+                    "minItems": 1
+                  }
+                },
+                "required": ["admission"]
+              },
+              {
+                "properties": {
+                  "subscription": {
+                    "type": "array",
+                    "minItems": 1
+                  }
+                },
+                "required": ["subscription"]
+              },
+              {
+                "properties": {
+                  "publication": {
+                    "type": "array",
+                    "minItems": 1
+                  }
+                },
+                "required": ["publication"]
+              }
+            ]
+          }
+        },
+        "required": ["fees"]
+      }
+    }
   ],
   "$defs": {
     "saneUrl": {
@@ -166,7 +324,8 @@
               "type": "number"
             }
           }
-        }
+        },
+        "required": ["amount", "unit", "period", "kinds"]
       }
     },
     "retent": {
@@ -194,7 +353,9 @@
         "time": {
           "type": "number"
         }
-      }
+      },
+      "required": ["kinds", "count", "time"]
     }
-  }
+  },
+  "additionalProperties": false
 }

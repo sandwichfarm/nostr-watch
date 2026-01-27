@@ -16,7 +16,10 @@ export class Nip42RelayMessageGenerator {
 }
 
 export class Nip42 {
-  public readonly slug: string = 'Nip01';
+  
+  public get slug(): string {
+    return 'Nip42';
+  }
 
   readonly messageValidators = {
     'AUTH': new SchemaValidator<RelayAuthMessage>(schemata.RelayAuthMessage),

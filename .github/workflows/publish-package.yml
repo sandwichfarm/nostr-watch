@@ -1,6 +1,11 @@
 name: GH Release and NPM Publish
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Deploy GUI only (skip npm publish + GitHub releases)'
+        type: boolean
+        default: true
   push:
     branches:
       - 'next'
@@ -11,48 +16,85 @@ on:
       - 'package.json'
       - '.github/workflows/publish-package.yml'
       - 'apps/gui/**'
+      - 'pnpm-lock.yaml'
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Libraries
+        run: pnpm -r --filter '!@nostrwatch/gui' build
+
+      - name: Build Seeded GUI
+        run: pnpm --filter @nostrwatch/gui build:seeded
+
+      # - name: Build Worker Relay
+      #   run: |
+      #     pnpm --filter @nostrwatch/worker-relay run clean
+      #     pnpm --filter @nostrwatch/worker-relay run tsc
+      #     pnpm --filter @nostrwatch/worker-relay run copy:wasm
+      #     pnpm --filter @nostrwatch/worker-relay run build:esm
+      
+      # - name: Build GUI
+      #   run: pnpm --filter @nostrwatch/gui build
+
+      - name: Check Artifact Size
+        run: du -sh libraries/**/dist internal/**/dist apps/gui/dist
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-packages
+          include-hidden-files: true
+          path: |
+            libraries/**/dist/
+            libraries/**/src/sqlite/sqlite3.wasm
+            libraries/**/package.json
+            internal/**/dist/
+            internal/**/package.json
+            apps/gui/dist/
+            apps/gui/package.json
+    
+
   publish:
     runs-on: ubuntu-latest
+    needs: build
+    environment: ${{ matrix.package == 'gui' && 'next.nostr.watch' || 'default' }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - package: 'nostrings'
-            nodeVersion: '20'
-          - package: 'announce'
-            nodeVersion: '20'
-          - package: 'logger'
-            nodeVersion: '20'
-          - package: 'seed'
-            nodeVersion: '20'
-          - package: 'utils'
-            nodeVersion: '20'
-          - package: 'nwcache'
-            nodeVersion: '20'
-          - package: 'controlflow'
-            nodeVersion: '20'
-          - package: 'publisher'
-            nodeVersion: '20'
           - package: 'nocap'
-            nodeVersion: '20'
           - package: 'nocap-websocket-adapter-default'
-            nodeVersion: '20'
-          - package: 'nocap-websocket-browser-adapter-default'
-            nodeVersion: '20'
           - package: 'nocap-info-adapter-default'
-            nodeVersion: '20'
           - package: 'nocap-dns-adapter-default'
-            nodeVersion: '20'
           - package: 'nocap-geo-adapter-default'
-            nodeVersion: '20'
           - package: 'nocap-ssl-adapter-default'
-            nodeVersion: '20'
           - package: 'nocap-every-adapter-default'
-            nodeVersion: '20'
+          - package: 'route66'
+          - package: 'route66/adapters/cache/NostrSqliteAdapter'
+          - package: 'route66/adapters/websocket/NostrToolsAdapter'
+          - package: 'memory-relay'
           - package: 'gui'
-            nodeVersion: '20'
+          - package: 'schemata'
+          - package: 'schemata-js-ajv'
+          - package: 'auditor'
 
     steps:
       - uses: actions/checkout@v4
@@ -60,111 +102,297 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.nodeVersion }}
+          node-version: 20
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
+      - name: Check Lockfile Consistency (Diagnostics)
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: built-packages
+          path: .
+
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Build All Packages
-        run: pnpm -r run build
-
-      # Deploy GUI steps only if the current matrix package is 'gui'
-      - name: Install jq
-        if: matrix.package == 'gui'
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Get package version (GUI)
-        if: matrix.package == 'gui'
-        id: get_version
+      - name: Debug relays/servers
         run: |
-          VERSION=$(jq -r '.version' ./apps/gui/package.json)
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Relays: $NSITE_RELAYS"
+          echo "Servers: $NSITE_SERVERS"
 
-      - name: Prepare Directories (GUI)
+      - name: Deploy to nsite
         if: matrix.package == 'gui'
-        run: |
-          VERSION=${{ env.VERSION }}
-          echo "Deploying version $VERSION"
-          ssh -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
-          set -e
-          mkdir -p /var/www/${VERSION}
-          rm -rf /var/www/html/
-          ln -s /var/www/${VERSION} /var/www/html
-          EOF
+        uses: sandwichfarm/nsite-action@v0.1.3
+        id: nsite_deploy
+        with:
+          directory: "./apps/gui/dist"
+          nbunksec: ${{ secrets.NBUNKSEC }}
+          relays: | 
+            ${{ env.NSITE_RELAYS }}
+          servers: |
+            ${{ env.NSITE_SERVERS }}
+          purge: true
 
-      - name: Upload Build (GUI)
+      - name: Deploy to Bunny
         if: matrix.package == 'gui'
-        run: |
-          scp -i ${{ secrets.GUI_SSH_KEY }} -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/html/${{ env.VERSION }}
+        uses: R-J-dev/bunny-deploy@v2.0.3 
+        with:
+          access-key: ${{ secrets.BUNNY_API_KEY }}
+          directory-to-upload: "./apps/gui/dist"
+          storage-endpoint: "https://sg.storage.bunnycdn.com"
+          storage-zone-name: "nostr-watch"
+          storage-zone-password: ${{ secrets.BUNNY_STORAGE_ZONE_PASSWORD }}
+          concurrency: "50"
+          enable-delete-action: true
+          enable-purge-pull-zone: true
+          pull-zone-id: "3313140"
+          replication-timeout: "15000"  
 
+
+      # - name: Install jq
+      #   if: matrix.package == 'gui'
+      #   run: sudo apt-get update && sudo apt-get install -y jq
+
+      # - name: Get package version (GUI)
+      #   if: matrix.package == 'gui'
+      #   id: get_version
+      #   run: |
+      #     VERSION=$(jq -r '.version' ./apps/gui/package.json)
+      #     echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
+      # - name: Prepare SSH Key
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     echo "${{ secrets.GUI_SSH_KEY }}" > ~/.ssh/gui_ssh_key
+      #     chmod 600 ~/.ssh/gui_ssh_key
+
+      # - name: Validate Secrets
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     if [ -z "${{ secrets.GUI_HOST_USER }}" ] || [ -z "${{ secrets.GUI_HOST_IP }}" ]; then
+      #       echo "Secrets GUI_HOST_USER or GUI_HOST_IP are missing."
+      #       exit 1
+      #     else
+      #       echo "Secrets are set correctly."
+      #     fi
+
+
+      # - name: Debug Command Construction
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     echo ssh -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
+
+      # - name: Debug SSH Command
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     echo "Testing SSH Connection..."
+      #     echo "Host User: ${{ secrets.GUI_HOST_USER }}"
+      #     echo "Host IP: ${{ secrets.GUI_HOST_IP }}"
+      #     ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no "${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}" echo "Connection Successful"
+
+      # - name: Prepare Directories (GUI)
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     VERSION=${{ env.VERSION }}
+      #     echo "Deploying version $VERSION"
+      #     ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+      #     set -e
+      #     mkdir -p /var/www/${VERSION}
+      #     EOF
+
+      # - name: Upload Build (GUI)
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     scp -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no -r ./apps/gui/dist/* ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }}:/var/www/${{ env.VERSION }}/
+
+      # - name: Update Symlink & Permissions
+      #   if: matrix.package == 'gui' 
+      #   run: |
+      #     ssh -v -i ~/.ssh/gui_ssh_key -o StrictHostKeyChecking=no ${{ secrets.GUI_HOST_USER }}@${{ secrets.GUI_HOST_IP }} << EOF
+      #     set -e
+      #     ln -sfn /var/www/${{ env.VERSION }} /var/www/html
+      #     chown -R caddy:www-data /var/www/html
+      #     chown -R caddy:www-data /var/www/${{ env.VERSION }}
+      #     EOF
+
+      # - name: Cleanup SSH Key
+      #   if: matrix.package == 'gui'
+      #   run: |
+      #     rm -f ~/.ssh/gui_ssh_key
+        
       - name: Find Package
         id: find_package
+        shell: bash
         run: |
-          PKG_PATH=$(find libraries -type d -name "${{ matrix.package }}" -print -quit)
-          if [ -z "$PKG_PATH" ]; then
-            PKG_PATH=$(find internal -type d -name "${{ matrix.package }}" -print -quit)
+          set -euo pipefail
+
+          PKG_INPUT="${{ matrix.package }}"
+
+          if [[ "$PKG_INPUT" == "gui" ]]; then
+            echo "the_path=apps/gui" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-          if [ -z "$PKG_PATH" ]; then
-            PKG_PATH=$(find apps -type d -name "${{ matrix.package }}" -print -quit)
+
+          # For nested entries, treat the matrix value as a relative path under a workspace root.
+          if [[ "$PKG_INPUT" == */* ]]; then
+            for root in libraries internal apps; do
+              if [[ -f "$root/$PKG_INPUT/package.json" ]]; then
+                echo "the_path=$root/$PKG_INPUT" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            done
+
+            echo "::error::Could not locate package directory for '$PKG_INPUT' (expected <root>/$PKG_INPUT/package.json under libraries/internal/apps)." >&2
+            exit 1
           fi
+
+          # Otherwise resolve by workspace package name (directory names don't always match package names).
+          EXPECTED_NAME="@nostrwatch/$PKG_INPUT"
+
+          PKG_PATH="$(
+            pnpm -r list --depth -1 --json | EXPECTED="$EXPECTED_NAME" node -e "const fs=require('fs');const expected=process.env.EXPECTED;const pkgs=JSON.parse(fs.readFileSync(0,'utf8'));const match=pkgs.find((p)=>p&&p.name===expected);if(match&&match.path)process.stdout.write(match.path);"
+          )"
+
+          if [[ -z "$PKG_PATH" ]]; then
+            echo "::error::Could not find workspace package '$EXPECTED_NAME' for matrix.package '$PKG_INPUT'." >&2
+            exit 1
+          fi
+
+          if [[ -n "${GITHUB_WORKSPACE:-}" ]]; then
+            PKG_PATH="${PKG_PATH#"$GITHUB_WORKSPACE"/}"
+          fi
+
           echo "the_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
+
+      # - name: Get package version (GUI)
+      #   if: matrix.package == 'gui'
+      #   id: get_version
+      #   run: |
+      #     VERSION=$(jq -r '.version' ./apps/gui/package.json)
+      #     echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Publish Package
         id: publish
+        if: matrix.package != 'gui' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: ${{ steps.find_package.outputs.the_path }}/package.json
           strategy: all
           access: public
+        
+
+      - name: Read Package Version
+        if: matrix.package != 'gui'
+        id: pkg_version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PKG_JSON="${{ steps.find_package.outputs.the_path }}/package.json"
+
+          if [[ ! -f "$PKG_JSON" ]]; then
+            echo "::error::Missing package.json at: $PKG_JSON" >&2
+            exit 1
+          fi
+
+          VERSION="$(node -e "const fs=require('fs');const p=process.argv[1];const j=JSON.parse(fs.readFileSync(p,'utf8'));process.stdout.write(String(j.version||''));" "$PKG_JSON")"
+
+          if [[ -z "$VERSION" ]]; then
+            echo "::error::Missing or empty version in: $PKG_JSON" >&2
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set Meta
+        if: matrix.package != 'gui'
         id: meta
+        shell: bash
         run: |
-          RELEASE_SLUG="${{ matrix.package }}@v${{ steps.publish.outputs.version }}"
-          echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
 
-      - name: Check for Tag
-        id: slug_exists
+          RELEASE_SLUG="${{ matrix.package }}@v${{ steps.pkg_version.outputs.version }}"
+          ASSET_BASENAME="${RELEASE_SLUG//\//-}"
+
+          echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
+          echo "asset_basename=$ASSET_BASENAME" >> "$GITHUB_OUTPUT"
+          echo "asset_file=${ASSET_BASENAME}.zip" >> "$GITHUB_OUTPUT"
+
+
+      - name: Debug Directory Before Zipping
+        if: matrix.package != 'gui'
         run: |
-          git fetch --tags
-          TAG="${{ steps.meta.outputs.release_slug }}"
-          if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
-            echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "release_slug_exists=false" >> "$GITHUB_OUTPUT"
+          echo "Checking contents of: ${{ steps.find_package.outputs.the_path }}"
+          ls -l "${{ steps.find_package.outputs.the_path }}"
 
       - name: Archive Subdirectory
-        if: steps.slug_exists.outputs.release_slug_exists != 'true'
+        if: matrix.package != 'gui'
         id: archive
+        shell: bash
         run: |
-          zip -r "${{ steps.meta.outputs.release_slug }}.zip" "${{ steps.find_package.outputs.the_path }}"
+          set -euo pipefail
 
-      - name: Create Release ${{ steps.meta.outputs.release_slug }}
-        if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != 'true' && steps.slug_exists.outputs.release_slug_exists != 'true'
-        id: create_release
-        uses: actions/create-release@latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.meta.outputs.release_slug }}
-          release_name: ${{ steps.meta.outputs.release_slug }}
-          body: ""
-          draft: false
-          prerelease: true
+          PKG_DIR="${{ steps.find_package.outputs.the_path }}"
+          ASSET_FILE="${{ steps.meta.outputs.asset_file }}"
 
-      - name: Upload Release Asset ${{ steps.meta.outputs.release_slug }}.zip
-        if: steps.slug_exists.outputs.release_slug_exists != 'true'
-        uses: actions/upload-release-asset@v1
+          if [[ ! -d "$PKG_DIR" ]]; then
+            echo "::error::Directory not found: $PKG_DIR" >&2
+            exit 1
+          fi
+
+          pushd "$PKG_DIR" >/dev/null
+
+          files=("package.json")
+          [[ -d "dist" ]] && files+=("dist")
+
+          for f in README.md LICENSE CHANGELOG.md; do
+            [[ -f "$f" ]] && files+=("$f")
+          done
+
+          zip -r "$GITHUB_WORKSPACE/$ASSET_FILE" "${files[@]}"
+          popd >/dev/null
+
+      - name: Create/Update GitHub Release
+        if: matrix.package != 'gui' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ steps.meta.outputs.release_slug }}.zip
-          asset_name: ${{ steps.meta.outputs.release_slug }}.zip
-          asset_content_type: application/zip
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.meta.outputs.release_slug }}"
+
+          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            echo "Release already exists: $TAG"
+            exit 0
+          fi
+
+          gh release create "$TAG" \
+            --repo "$GH_REPO" \
+            --title "$TAG" \
+            --notes "" \
+            --prerelease
+
+      - name: Upload Release Asset
+        if: matrix.package != 'gui' && !(github.event_name == 'workflow_dispatch' && inputs.dry_run)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ steps.meta.outputs.release_slug }}"
+          ASSET_FILE="${{ steps.meta.outputs.asset_file }}"
+
+          gh release upload "$TAG" "$ASSET_FILE" --repo "$GH_REPO" --clobber

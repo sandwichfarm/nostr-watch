@@ -3,24 +3,23 @@
   "version": "0.1.9",
   "license": "MIT",
   "type": "module",
-  "entry": "src/index.ts",
-  "main": "./dist/server/index.cjs.js",
-  "module": "./dist/server/index.esm.js",
-  "types": "./dist/types/index.d.ts",
+  "module": "src/index.ts",
+  "main": "dist/server/index.cjs.js",
+  "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
       "node": {
+        "types": "./dist/types/index.d.ts",
         "import": "./dist/server/index.esm.js",
-        "require": "./dist/server/index.cjs.js",
-        "types": "./dist/types/index.d.ts"
+        "require": "./dist/server/index.cjs.js"
       },
       "browser": {
-        "import": "./dist/browser/index.esm.js",
-        "types": "./dist/types/index.d.ts"
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/browser/index.esm.js"
       },
       "default": {
-        "import": "./dist/browser/index.esm.js",
-        "types": "./dist/types/index.d.ts"
+        "types": "./dist/types/index.d.ts",
+        "import": "./dist/browser/index.esm.js"
       }
     }
   },
@@ -32,12 +31,12 @@
     "dev:server": "pnpm run dev",
     "dev:web": "pnpm run dev",
     "test": "vitest",
-    "lint": "eslint . --ext .ts",
-    "prepare": "pnpm run clean && pnpm run build"
+    "lint": "eslint . --ext .ts"
   },
   "dependencies": {
     "dotenv": "16.3.1",
-    "rollup": "^4.24.0"
+    "rollup": "^4.24.0",
+    "tslib": "^2.7.0"
   },
   "devDependencies": {
     "@rollup/plugin-alias": "5.1.1",
@@ -52,8 +51,9 @@
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "glob": "^10.0.0",
     "node-polyfill-webpack-plugin": "4.0.0",
-    "prettier": "^3.0.0",
+    "prettier": "^3.4.2",
     "rimraf": "^5.0.0",
     "rollup-plugin-livereload": "2.0.5",
     "rollup-plugin-polyfill-node": "0.13.0",

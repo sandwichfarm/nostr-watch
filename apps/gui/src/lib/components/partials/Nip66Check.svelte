@@ -1,12 +1,12 @@
 <script lang="ts">
   import * as Tabs from "$lib/components/ui/tabs";
-  import { Monitor, type Nip66Event } from '@nostrwatch/nip66/models';
+  import { Monitor, type Nip66CheckEvent } from '@nostrwatch/route66/models';
   import { onMount } from 'svelte';
   import { formatSeconds, timeAgo } from '$lib/utils/time.js';
 	import { clickToCopy } from "$lib/utils/ux";
 	import { nip19 } from "nostr-tools";
 
-  export let check: Nip66Event;
+  export let check: Nip66CheckEvent;
   // export let monitor: Monitor | undefined;
 
   onMount(() => {});
@@ -15,7 +15,7 @@
   $: reference = check.reference;
 </script>
 
-<div id="encoded" class="overflow-hidden overflow-ellipsis bg-white/5 py-3 px-6 rounded-md cursor-pointer font-mono max-w-full" use:clickToCopy>
+<div id="encoded" class="overflow-hidden overflow-ellipsis bg-black/5 dark:bg-white/5 py-3 px-6 rounded-md cursor-pointer font-mono max-w-full" use:clickToCopy>
   {reference}
 </div>
 
@@ -116,7 +116,7 @@
       </tbody>
     </table>
     
-    {#if check.networks.includes('clearnet')}
+    {#if check?.networks?.includes('clearnet')}
     <table>
       <thead>
         <tr>
@@ -168,7 +168,7 @@
   </Tabs.Content>
 
   <Tabs.Content value="empty">
-    <pre class="m-4 py-5 px-7 bg-white/10 rounded-lg text-sm">{JSON.stringify(check.json, null, 2)}</pre>
+    <pre class="m-4 py-5 px-7 bg-black/10 dark:bg-white/10 rounded-lg text-sm">{JSON.stringify(check.json, null, 2)}</pre>
   </Tabs.Content>
 </Tabs.Root>
 
@@ -182,19 +182,19 @@
   }
 
   th {
-    @apply bg-white/10
+    @apply  bg-black/10 dark:bg-white/10;
   }
 
   table tbody tr td:first-child {
-    @apply w-64 text-white/50;
+    @apply w-64;
 
   }
 
   pre {
-    white-space: pre-wrap;       /* Since CSS 2.1 */
-    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
-    white-space: -pre-wrap;      /* Opera 4-6 */
-    white-space: -o-pre-wrap;    /* Opera 7 */
-    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+    white-space: pre-wrap;       
+    white-space: -moz-pre-wrap;
+    white-space: -pre-wrap;    
+    white-space: -o-pre-wrap;  
+    word-wrap: break-word;     
   }
 </style>

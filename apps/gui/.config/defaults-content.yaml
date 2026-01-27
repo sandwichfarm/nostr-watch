@@ -1,0 +1,33 @@
+# sensible defaults
+
+sources: 
+  # Defaults for finding 0, 3, 10002 events
+  - kinds:
+    - 0
+    - 3
+    - 10002
+    relays:
+    - 'wss://purplepag.es'
+    - 'wss://user.kindpag.es'
+    - 'wss://relay.nostr.band'
+
+  # Defaults for finding 10166 and 30166 events
+  - kinds:
+    - 10166
+    - 30166
+  - relays: 
+    - wss://relay.nostr.watch
+    - wss://relaypag.es
+    
+    # These are considered "preferred" and as default for unauthenticated users 
+    # this is used to prevent abuse that has no recourse.
+    pubkeys: 
+    - ''
+
+  # Defaults for finding wiki events
+  kinds: 
+    - 30818
+    relays:
+      - 'wss://relay.wikifreedia.xyz'
+    pubkeys: 
+      - ''

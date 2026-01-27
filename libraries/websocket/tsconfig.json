@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "nodenext",
+    "lib": ["ES6", "DOM"],
+    "outDir": "./dist",
+    "sourceMap": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "./dist/types",
+    "moduleResolution": "nodenext",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmitHelpers": true,
+    "importHelpers": true,
+    "baseUrl": ".", 
+    "paths": {
+      "#src/*": ["src/*"],
+      "#utils/*": ["src/utils/*"],
+      "#base/*": ["src/base/*"],
+      "#protocol/*": ["src/protocol/*"],
+      "#types/*": ["src/types/*"],
+      "#interfaces/*": ["src/interfaces/*"],
+      "#nips/*": ["src/nips/*"]
+    }
+  },
+  "include": ["src/index.ts", "src/**/*.ts", "src/nips/*/index.ts"],
+  "exclude": ["node_modules", "dist"],
+
+}

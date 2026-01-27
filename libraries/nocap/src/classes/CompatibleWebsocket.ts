@@ -1,26 +1,36 @@
 import { isBrowser } from '@nostrwatch/utils';
 
 export class CompatibleWebSocket {
-    private ws: WebSocket | import('ws').WebSocket;
+    private ws?: WebSocket | import('ws').WebSocket;
+    private _ready: boolean = false;
   
     constructor(url: string, options?: { agent?: any; timeout?: number }) {
       if (isBrowser()) {
         this.ws = new WebSocket(url);
+        this._ready = true;
       } else {
-        const { WebSocket: NodeWebSocket } = require('ws');
-        this.ws = new NodeWebSocket(url, options);
+        import('ws').then( ({ WebSocket } ) => {
+          this.ws = new WebSocket(url, options);
+          this._ready = true;
+        })
       }
     }
-  
+
+    async ready(): Promise<void> {
+      while (!this._ready) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 100));
+      }
+    }
+
     get readyState(): number | undefined {
       return (this.ws as WebSocket).readyState || (this.ws as import('ws').WebSocket).readyState;
     }
   
     on(event: keyof WebSocketEventMap, listener: (...args: any[]) => void): void {
-      if ('on' in this.ws) {
+      if (this.ws && 'on' in this.ws) {
         (this.ws as import('ws').WebSocket).on(event, listener);
       } else {
-        this.ws.addEventListener(event, listener as EventListener);
+        this.ws?.addEventListener(event, listener as EventListener);
       }
     }
   
@@ -33,11 +43,11 @@ export class CompatibleWebSocket {
     }
   
     close(code?: number, reason?: string): void {
-      this.ws.close(code, reason);
+      this.ws?.close(code, reason);
     }
   
     terminate(): void {
-      if ('terminate' in this.ws) {
+      if (this.ws && 'terminate' in this.ws) {
         (this.ws as import('ws').WebSocket).terminate();
       } else {
         this.close();

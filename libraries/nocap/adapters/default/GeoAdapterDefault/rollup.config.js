@@ -21,6 +21,7 @@ export default [
       strict: false,
       exports: 'named',
     },
+    external: ['@nostrwatch/nocap'],
     plugins: [
       resolve({
         extensions: ['.js'],
@@ -37,31 +38,6 @@ export default [
     ],
     onwarn
   },
-
-  // {
-  //   input: 'dist/server/index.js',
-  //   output: {
-  //     dir: 'dist/server/esm',
-  //     format: 'es',
-  //     sourcemap: true,
-  //     entryFileNames: '[name].esm.js',
-  //     strict: false,
-  //   },
-  //   plugins: [
-  //     resolve({
-  //       extensions: ['.js'],
-  //       preferBuiltins: true,
-  //     }),
-  //     commonjs({
-  //       sourceMap: true,
-  //     }),
-  //     json({
-  //       sourceMap: true,
-  //     }),
-  //     terser(),
-  //   ],
-  //   onwarn
-  // },
 
   {
     input: 'dist/web/index.js',
@@ -83,7 +59,7 @@ export default [
         sourceMap: true,
       }),
       nodePolyfills(),
-      terser(),
+      // terser(),
     ],
     onwarn
   },

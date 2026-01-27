@@ -1,0 +1,13 @@
+$id: 'https://schemata.nostr.watch/note/tag/a'
+$schema: "http://json-schema.org/draft-07/schema#"
+allOf:
+  - $ref: "@/tag.yaml"
+  - type: array
+    minItems: 2
+    items:
+      - const: "a"
+      - type: string
+        pattern: '^\d+:[a-f0-9]{64}:.+$'
+      - type: string
+        pattern: '^(ws://|wss://).+$'
+    additionalItems: true

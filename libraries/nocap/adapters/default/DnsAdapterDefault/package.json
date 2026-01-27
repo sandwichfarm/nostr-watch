@@ -20,7 +20,7 @@
   "scripts": {
     "build": "pnpm run clean && pnpm run transpile && rollup -c && pnpm run transpile:alias",
     "build:server": "pnpm run clean && pnpm run transpile:server && rollup -c && pnpm run transpile:alias",
-    "clean": "rimraf dist",
+    "clean": "rm -fr ./dist && mkdir -p ./dist",
     "transpile": "pnpm run transpile:server && pnpm run transpile:web",
     "transpile:web": "tsc -p tsconfig.web.json",
     "transpile:server": "tsc -p tsconfig.server.json",
@@ -28,14 +28,13 @@
     "transpile:server:alias": "tsc-alias -p tsconfig.server.json",
     "build:adapters": "./scripts/build-adapters.sh",
     "dev": "rollup -c -w",
-    "prepare": "pnpm run clean && pnpm run build",
     "lint": "eslint . --ext .ts",
     "test": "vitest",
     "test-ui": "vitest --ui --testTimeout=15000"
   },
   "dependencies": {
     "cross-fetch": "^4.0.0",
-    "@nostrwatch/nocap": "workspace:*"
+    "@nostrwatch/nocap": "workspace:^"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -50,7 +49,5 @@
     "vitest-websocket-mock": "^0.4.0",
     "webpack": "^5.96.1"
   },
-  "peerDependencies": {
-    "vitest": "^0.32.0"
-  }
+  "peerDependencies": {}
 }

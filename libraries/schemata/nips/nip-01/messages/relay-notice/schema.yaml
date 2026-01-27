@@ -1,0 +1,8 @@
+$id: 'https://schemata.nostr.watch/message/relay/notice'
+type: "array"
+description: "A message sent by relays to clients in response to a client request, usually to inform them of an issue."
+items: 
+- const: "NOTICE"
+- type: "string"
+minItems: 2
+maxItems: 2

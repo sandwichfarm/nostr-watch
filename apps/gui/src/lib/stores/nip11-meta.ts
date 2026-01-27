@@ -2,7 +2,13 @@ import { derived, get, readable } from 'svelte/store';
 import { relayCheckAggregates } from './checks.js';
 import { StateManager } from '@nostrwatch/route66';
 import type { Readable } from 'svelte/store';
-import { doAggregateCache } from './app.js';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
+import {
+    useWorkerNips,
+    workerNips,
+    workerNipCounts,
+    workerNipPercentages,
+} from './dimension-stores';
 
 export type Nip = number;
 export type NipFormatted = NipFormattedLower | NipFormattedUpper
@@ -12,7 +18,11 @@ export type NipFormattedAlt = NipFormattedNumber | NipFormattedProgrammatic
 export type NipFormattedNumber = `0${number}` | `${number}`;
 export type NipFormattedProgrammatic = `nip_0${number}` | `nip_${number}`;
 
-export const nips: Readable<number[]> = derived(relayCheckAggregates, ($relayCheckAggregates): Nip[] => {
+// ============================================================================
+// LEGACY STORES (Derived from relayCheckAggregates)
+// ============================================================================
+
+export const nips_legacy: Readable<number[]> = derived(relayCheckAggregates, ($relayCheckAggregates): Nip[] => {
     return Array.from($relayCheckAggregates.reduce((nips, relayCheck): Set<Nip> => {
         if (relayCheck?.supportedNips?.length > 0) {
             relayCheck.supportedNips.forEach((nip: Nip) => {
@@ -23,8 +33,8 @@ export const nips: Readable<number[]> = derived(relayCheckAggregates, ($relayChe
     }, new Set<Nip>()))
 })
 
-export const nipCounts = derived(relayCheckAggregates, ($relayCheckAggregates) => {
-    const counts = new Map();
+export const nipCounts_legacy = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+    const counts = new Map<number, number>();
 
     $relayCheckAggregates.forEach((relayCheck) => {
         if (relayCheck?.supportedNips?.length > 0) {
@@ -37,20 +47,22 @@ export const nipCounts = derived(relayCheckAggregates, ($relayCheckAggregates) =
     if (!counts.size) {
         const cachedCounts = StateManager.get('aggregate:nipCounts');
         if (cachedCounts) {
-            for (const [nip, count] of cachedCounts) {
-                counts.set(nip, count);
+            for (const [nip, count] of Object.entries(cachedCounts)) {
+                counts.set(Number(nip), count as number);
             }
         }
     } else {
-        if(get(doAggregateCache)) StateManager.set('aggregate:nipCounts', Object.fromEntries(counts));
+        if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+            StateManager.set('aggregate:nipCounts', Object.fromEntries(counts));
+        }
     }
 
     return counts;
 });
 
-export const nipPercentages = derived(nipCounts, ($nipCounts) => {
+export const nipPercentages_legacy = derived(nipCounts_legacy, ($nipCounts) => {
     const total = Array.from($nipCounts.values()).reduce((sum, count) => sum + count, 0);
-    const percentages = new Map();
+    const percentages = new Map<number, number>();
 
     $nipCounts.forEach((count, nip) => {
         const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
@@ -59,6 +71,43 @@ export const nipPercentages = derived(nipCounts, ($nipCounts) => {
 
     return percentages;
 });
+
+// ============================================================================
+// HYBRID STORES (Worker-fed with legacy fallback)
+// ============================================================================
+
+/** List of unique NIP numbers sorted numerically */
+export const nips: Readable<number[]> = derived(
+    [useWorkerNips, workerNips, nips_legacy],
+    ([$useWorker, $worker, $legacy]) => {
+        if ($useWorker && $worker.length > 0) return $worker;
+        return $legacy;
+    }
+);
+
+/** Map of NIP number -> relay count (returns Map for backward compatibility) */
+export const nipCounts: Readable<Map<number, number>> = derived(
+    [useWorkerNips, workerNipCounts, nipCounts_legacy],
+    ([$useWorker, $worker, $legacy]) => {
+        if ($useWorker && Object.keys($worker).length > 0) {
+            // Convert Record to Map for backward compatibility
+            return new Map(Object.entries($worker).map(([k, v]) => [Number(k), v]));
+        }
+        return $legacy;
+    }
+);
+
+/** Map of NIP number -> percentage (returns Map for backward compatibility) */
+export const nipPercentages: Readable<Map<number, number>> = derived(
+    [useWorkerNips, workerNipPercentages, nipPercentages_legacy],
+    ([$useWorker, $worker, $legacy]) => {
+        if ($useWorker && Object.keys($worker).length > 0) {
+            // Convert Record to Map for backward compatibility
+            return new Map(Object.entries($worker).map(([k, v]) => [Number(k), v]));
+        }
+        return $legacy;
+    }
+);
 
 export const NIP_NAMES: Readable<Record<string, string>> = readable({
     "01": "Basic protocol",

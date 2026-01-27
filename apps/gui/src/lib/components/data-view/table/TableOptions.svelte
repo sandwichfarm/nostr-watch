@@ -1,9 +1,9 @@
-<script lang="ts">
+    <script lang="ts">
     import Checkbox from "../../ui/checkbox/checkbox.svelte";
-    import { StateManager } from "@nostrwatch/route66";
     import type { Writable } from "svelte/store";
     import { capitalize } from "@nostrwatch/utils";
 	import type { DataTableConfig } from "./DataTableTypes";
+    import { stateManagerSet } from "$lib/runtime/state-manager-sync";
 
     export let dataKey: string;
     export let config: Writable<DataTableConfig | null>;
@@ -22,7 +22,7 @@
             }
             const sortedColumnsShow = $config?.availableColumnKeys.filter(k => newColumnsShow.includes(k)) || [];
             const newConfig = { ...currentConfig, columnsShow: sortedColumnsShow };
-            StateManager.set(`preferences:${dataKey}:tableConfig`, {
+            void stateManagerSet(`preferences:${dataKey}:tableConfig`, {
                 ...$config,
                 columnsShow: sortedColumnsShow
             });

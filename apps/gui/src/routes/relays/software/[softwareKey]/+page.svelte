@@ -85,7 +85,7 @@
             note={wiki} 
             triggerText="Read more" 
             readerTitle="About" 
-            parserOptions={{markdown: true}} 
+            parserOptions={{markdown: false}} 
             clickFn={() => {}}
             />
     <!-- </div> -->

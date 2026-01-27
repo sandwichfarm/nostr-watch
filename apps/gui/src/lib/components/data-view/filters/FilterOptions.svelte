@@ -4,6 +4,7 @@
     import type { Writable } from "svelte/store";
     import { capitalize, delay } from "@nostrwatch/utils";
 	import type { DataTableConfig, Formatters } from "./DataTableTypes";
+    import { stateManagerSet } from "$lib/runtime/state-manager-sync";
 
     export let dataKey: string;
     export let config: Writable<DataTableConfig | null>;
@@ -24,7 +25,7 @@
             const sortedFiltersShow = $config?.availableFilterKeys.filter(k => newFiltersShow.includes(k)) || [];
             const newConfig = { ...currentConfig, filtersShow: sortedFiltersShow };
             const tableConfigCache = StateManager.get(`preferences:${dataKey}:filtersConfig`);
-            StateManager.set(`preferences:${dataKey}:filtersConfig`, {
+            void stateManagerSet(`preferences:${dataKey}:filtersConfig`, {
                 ...tableConfigCache,
                 filtersShow: sortedFiltersShow || []
             });

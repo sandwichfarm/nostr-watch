@@ -1,15 +1,15 @@
 <script lang="ts">
     import { onDestroy, onMount } from 'svelte';
-    import { StateManager } from '@nostrwatch/route66';
-    import { doBootstrap } from '$lib/stores/routines';
-    import { doAggregateCache } from '$lib/stores/app';
-    import { writable, type Writable } from 'svelte/store';
-	import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
-    import builtInTableConfig from '$lib/config/dataTable/softwares.js'
-	import { softwareRows as data } from '$lib/stores';
-    import { type default as DataTableType } from '$lib/components/lists/table/DataTable.svelte';
-	import RelayDimensions from '../relay-dimensions.svelte';
-	import DataViewRoot from '$lib/components/data-view/DataViewRoot.svelte';
+	    import { StateManager } from '@nostrwatch/route66';
+	    import { doBootstrap } from '$lib/stores/routines';
+	    import { doAggregateCache } from '$lib/stores/app';
+	    import { writable, type Writable } from 'svelte/store';
+		import { HeaderConfigStore } from '$stores/header-config';
+		import { type DataTableConfig, defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
+	    import builtInTableConfig from '$lib/config/dataTable/softwares.js'
+		import { softwareRows as data } from '$lib/stores';
+	    import { type default as DataTableType } from '$lib/components/lists/table/DataTable.svelte';
+		import DataViewRoot from '$lib/components/data-view/DataViewRoot.svelte';
 
     let DataTable: DataTableType;
     const componentsLoaded: Writable<boolean> = writable(false);
@@ -24,11 +24,32 @@
 		componentsLoaded.set(true);
 	}
 
-    const dataKey: string = 'softwares'
-    const config: Writable<DataTableConfig | null> = writable(null);
-    const ready: Writable<boolean> = writable(false);
+	    const dataKey: string = 'softwares'
+	    const config: Writable<DataTableConfig | null> = writable(null);
+	    const ready: Writable<boolean> = writable(false);
 
-	const setConfig = () => {
+		const HEADER_SELECTORS_ID = 'relays:software';
+
+		const setHeaderSelectors = () => {
+			HeaderConfigStore.set({
+				selectors: {
+					id: HEADER_SELECTORS_ID,
+					className: 'ml-2',
+					showDimension: true,
+					showPresets: false,
+					showView: false,
+				},
+			});
+		};
+
+		const clearHeaderSelectors = () => {
+			HeaderConfigStore.update((current) => {
+				if (current.selectors?.id !== HEADER_SELECTORS_ID) return current;
+				return { ...current, selectors: null };
+			});
+		};
+
+		const setConfig = () => {
 		
 		let conf = {...defaultDataTableConfig, ...builtInTableConfig}
 
@@ -49,22 +70,23 @@
 		ready.set(true)
 	}
 
-    onMount(async () => {
-        if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-        doBootstrap.set(true)
-        doAggregateCache.set(true)
-        loadComponents().then(setConfig);
-    });
+	    onMount(async () => {
+	        if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+			setHeaderSelectors();
+	        doBootstrap.set(true)
+	        doAggregateCache.set(true)
+	        loadComponents().then(setConfig);
+	    });
 
-    onDestroy(() => {
-        ready.set(false)
-    });
+	    onDestroy(() => {
+			clearHeaderSelectors();
+	        ready.set(false)
+	    });
 
 </script>
-<main class="mt-20"> 
+<main class="mt-10"> 
 <!-- <pre>{JSON.stringify($data, null, 4)}</pre> -->
 {#if $ready}
-    <RelayDimensions />
     <DataViewRoot {data} {config} key={dataKey} activeView={writable("table")} />
     <!-- <DataTable {data} {config} {dataKey} /> -->
 {/if}

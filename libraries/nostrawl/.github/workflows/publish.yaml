@@ -15,12 +15,36 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: Install Package
-        id: install_package
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
         run: |
-          yarn install
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Run tests
+        run: pnpm test
 
       - name: Publish Package
         id: publish
@@ -28,52 +52,14 @@ jobs:
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: '.'
-          strategy: all
           access: public
 
-      - name: Set Meta
-        id: meta
-        run: |
-          RELEASE_SLUG="v${{ steps.publish.outputs.version }}"
-          echo "release_slug=$RELEASE_SLUG" >> "$GITHUB_OUTPUT"
-
-      - name: Check for Tag
-        id: slug_exists
-        run: |
-          git fetch --tags
-          TAG="${{ steps.meta.outputs.release_slug}}"
-          if git show-ref --tags --verify --quiet "refs/tags/${TAG}"; then
-            echo "release_slug_exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "release_slug_exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create Archive
-        if: steps.slug_exists.outputs.release_slug_exists != 'true'
-        id: archive
-        run: |
-          zip -r "${{ steps.meta.outputs.release_slug}}.zip" ./
-
-      - name: Create Release ${{ steps.meta.outputs.release_slug }}
-        if: steps.publish.outputs.type != 'none' && steps.publish.outputs.dry_run != 'true' && steps.slug_exists.outputs.release_slug_exists != 'true'
-        id: create_release
-        uses: actions/create-release@latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        if: steps.publish.outputs.type != 'none'
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ steps.meta.outputs.release_slug }}
-          release_name: ${{ steps.meta.outputs.release_slug }}
-          body: ""
-          draft: false
-          prerelease: true
-
-      - name: Upload Release Asset ${{ steps.meta.outputs.release_slug }}.zip
-        if: steps.slug_exists.outputs.release_slug_exists != 'true'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./${{ steps.meta.outputs.release_slug}}.zip
-          asset_name: ${{ steps.meta.outputs.release_slug}}.zip
-          asset_content_type: application/zip
+          tag: v${{ steps.publish.outputs.version }}
+          name: v${{ steps.publish.outputs.version }}
+          generateReleaseNotes: true
+          prerelease: ${{ contains(steps.publish.outputs.version, '-') }}
+          token: ${{ secrets.GITHUB_TOKEN }}

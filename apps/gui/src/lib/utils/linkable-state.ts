@@ -28,6 +28,22 @@ export interface LinkableState<T> extends Writable<T> {
  * @returns A Svelte store bound to the URL hash.
  */
 export function linkableState<T extends object>(defaultState: T): LinkableState<T> {
+  function sanitizeForHash(value: unknown): unknown {
+    if (value === undefined) return undefined;
+    if (Array.isArray(value)) {
+      return value.map((item) => (item === undefined ? null : sanitizeForHash(item)));
+    }
+    if (value && typeof value === 'object') {
+      const out: Record<string, unknown> = {};
+      for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+        if (v === undefined) continue;
+        out[key] = sanitizeForHash(v);
+      }
+      return out;
+    }
+    return value;
+  }
+
   function decodeState(hash: string): T {
     if (!hash) return defaultState;
     if (hash.startsWith('#')) hash = hash.slice(1);
@@ -57,7 +73,8 @@ export function linkableState<T extends object>(defaultState: T): LinkableState<
         }
         state = newState;
       }
-      const compressed = compress(state);
+      const sanitized = sanitizeForHash(state) as T;
+      const compressed = compress(sanitized);
       const jsonString = JSON.stringify(compressed);
       return '#' + btoa(jsonString);
     } catch (e) {

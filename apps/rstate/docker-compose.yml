@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  cvm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nostr-watch/cvm:latest
+    container_name: nostr-watch-cvm
+    restart: unless-stopped
+
+    # Ports
+    ports:
+      - "${REST_PORT:-3000}:3000"
+
+    # Environment configuration
+    environment:
+      # Server configuration
+      CVM_SERVER_NSEC: ${CVM_SERVER_NSEC}
+      CVM_ENCRYPTION_MODE: ${CVM_ENCRYPTION_MODE:-OPTIONAL}
+
+      # Relay configuration
+      CVM_RELAYS: ${CVM_RELAYS}
+      INGEST_RELAYS: ${INGEST_RELAYS}
+
+      # Aggregation policy
+      AGG_LOOKBACK_SECONDS: ${AGG_LOOKBACK_SECONDS:-21600}
+      AGG_QUORUM: ${AGG_QUORUM:-0.5}
+      AGG_LABEL_QUORUM: ${AGG_LABEL_QUORUM:-0.3}
+      AGG_MAD_SCALE: ${AGG_MAD_SCALE:-3.0}
+
+      # Access control
+      CVM_ALLOWED_PUBKEYS: ${CVM_ALLOWED_PUBKEYS:-}
+      CVM_AUTH_ENABLED: ${CVM_AUTH_ENABLED:-true}
+      CVM_AUTH_ALLOW_ANY: ${CVM_AUTH_ALLOW_ANY:-false}
+
+      # REST API
+      REST_ENABLED: ${REST_ENABLED:-true}
+      REST_HOST: 0.0.0.0
+      REST_PORT: 3000
+      API_BASE_URL: ${API_BASE_URL:-https://api.nostr.watch}
+      REST_CORS_ORIGINS: ${REST_CORS_ORIGINS:-*}
+      REST_ENABLE_SWAGGER: ${REST_ENABLE_SWAGGER:-true}
+      REST_ALLOW_POLICY_UPDATE: ${REST_ALLOW_POLICY_UPDATE:-false}
+      REST_RATE_LIMIT_ENABLED: ${REST_RATE_LIMIT_ENABLED:-true}
+      REST_RATE_LIMIT_RPS: ${REST_RATE_LIMIT_RPS:-10}
+      REST_RATE_LIMIT_BURST: ${REST_RATE_LIMIT_BURST:-100}
+
+      # Cache
+      CACHE_MAX_SIZE: ${CACHE_MAX_SIZE:-10000}
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-60}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DESTINATION: ${LOG_DESTINATION:-stdout}
+      LOG_ENABLED: ${LOG_ENABLED:-true}
+
+      # Node environment
+      NODE_ENV: production
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "console.log('healthy')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    # Logging
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+
+networks:
+  default:
+    name: nostr-watch

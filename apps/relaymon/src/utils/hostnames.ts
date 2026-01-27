@@ -4,6 +4,9 @@ import { normalizeURL } from "npm:nostr-tools/utils";
 import hash from "npm:object-hash";
 import { getOnlineRelays, getRelayInfo, storeRelayInfo, getRelaysWithSameInfo } from "../db/db.ts";
 import { deleteRelayCheckEvent } from "./deletion.ts";
+import type { Config } from "../config/config.ts";
+import type { RelayCheckResult, RelayInfo } from "../types/relay.ts";
+import { getErrorMessage } from "../types/errors.ts";
 
 // Force console output for debugging
 
@@ -11,18 +14,35 @@ import { deleteRelayCheckEvent } from "./deletion.ts";
 const logger = getLogger("Hostnames");
 
 // Global variable to store the application config
-let appConfig: any = null;
+let appConfig: Config | null = null;
 
 /**
  * Set the application config for use in deletion
  * @param config The application config
  */
-export function setConfig(config: any): void {
+export function setConfig(config: Config): void {
   appConfig = config;
 }
 
 const isPubkey = (str: string): boolean => /^[0-9a-fA-F]{64}$/.test(str);
 const containsPubkey = (str: string): boolean => /[0-9a-fA-F]{64}/.test(str);
+
+// Define IgnoreListSync interface for type safety
+interface IgnoreListSyncInterface {
+  isIgnored(url: string): boolean;
+  addToIgnoreList(url: string): void;
+}
+
+// Import IgnoreListSync type (will be set via setIgnoreListSync function)
+let ignoreListSyncInstance: IgnoreListSyncInterface | null = null;
+
+/**
+ * Set the IgnoreListSync instance for use in deduplication
+ * @param ignoreListSync The IgnoreListSync instance
+ */
+export function setIgnoreListSync(ignoreListSync: IgnoreListSyncInterface): void {
+  ignoreListSyncInstance = ignoreListSync;
+}
 
 /**
  * Groups an array of URLs by their protocol+hostname.
@@ -63,8 +83,8 @@ export const relayArrToHostnameProtocolKeyedMap = (urls: string[]): Map<string, 
 /**
  * Deduplicates an array of relay results by hostname.
  */
-export const relayListHostnameDedup = async (relays: any[]): Promise<any[]> => {
-  const maybeModifiedRelays: any[] = [];
+export const relayListHostnameDedup = async (relays: RelayCheckResult[]): Promise<RelayCheckResult[]> => {
+  const maybeModifiedRelays: RelayCheckResult[] = [];
   for (const relay of relays) {
     maybeModifiedRelays.push(await relayHostnameDedup(relay));
   }
@@ -83,16 +103,16 @@ function isRootUrl(url: string): boolean {
 /**
  * Safely creates a hash from NIP-11 info data, normalizing it to ensure consistent comparison
  */
-export function createInfoHash(infoData: any): string {
+export function createInfoHash(infoData: RelayInfo | Record<string, unknown> | null | undefined): string {
   if (!infoData || typeof infoData !== 'object' || Object.keys(infoData).length === 0) {
     return "";  // Return empty string instead of null for type safety
   }
-  
+
   try {
     // Sort the keys to ensure consistent hashing regardless of object property order
-    const normalized = {};
+    const normalized: Record<string, unknown> = {};
     Object.keys(infoData).sort().forEach(key => {
-      normalized[key] = infoData[key];
+      normalized[key] = (infoData as Record<string, unknown>)[key];
     });
     return `RelayCheckInfo@${hash(normalized)}`;
   } catch (e) {
@@ -106,15 +126,23 @@ export function createInfoHash(infoData: any): string {
  * It uses online relay data from the database (via getOnlineRelays) to determine whether the relay should be ignored
  * or marked as a child of another relay based on its NIP-11 info and URL characteristics.
  */
-export const relayHostnameDedup = async (result: any): Promise<any> => {
+export const relayHostnameDedup = async (result: RelayCheckResult): Promise<RelayCheckResult> => {
   // Force direct console output at the start of function
-  
+
   const { url: mURL, hostname: HOSTNAME, protocol: PROTOCOL } = result;
 
   logger.debug(`HOSTNAME: ${HOSTNAME}`);
   try {
     if (!mURL || !HOSTNAME || !PROTOCOL) {
       throw new Error(`Invalid result object: ${JSON.stringify(result)}`);
+    }
+
+    // Check if this relay is in the synced ignore list from other monitors
+    if (ignoreListSyncInstance && ignoreListSyncInstance.isIgnored(mURL)) {
+      logger.warn(`${mURL} is in synced ignore list from other monitors`);
+      result.ignore = true;
+      result.parent = ""; // We don't know the parent from synced lists
+      return result;
     }
 
     // First, check if this relay has NIP-11 info and store it if available
@@ -204,7 +232,14 @@ export const relayHostnameDedup = async (result: any): Promise<any> => {
       }
     });
 
-    const hostnameFamily = online.filter((r: any) =>
+    interface OnlineRelay {
+      url: string;
+      hostname: string;
+      protocol: string;
+      info: { info: RelayInfo; infoHash: string } | null;
+    }
+
+    const hostnameFamily = online.filter((r: OnlineRelay) =>
       r.hostname === HOSTNAME && r.protocol === PROTOCOL && r.url !== mURL
     );
     const hostnameRelatives = [...hostnameFamily];
@@ -329,7 +364,7 @@ export const relayHostnameDedup = async (result: any): Promise<any> => {
       const reason1 = "Eldest is root AND eldest has NIP11 data AND current segment NIP11 data is same as eldest relative";
       const case1 = eldestIsRoot && eldestHasHash && isSameAsEldest;
       const reason2 = "Eldest is root, current segment has NIP11 data AND NIP11 data is the same as any other relay in the hostname group";
-      const case2 = eldestIsRoot && infoHash !== "" && isSameAsAnyRelative;
+      const case2 = eldestIsRoot && infoHash !== "" && (isSameAsAnyRelative || isSameAsEldest);
       const reason3 = "Eldest is not root AND eldest NIP11 is same as an older AND younger relative";
       const case3 = !eldestIsRoot && isSameAsOlderRelative && isSameAsYoungerRelative;
       const reason4 = "Eldest is root AND eldest has NIP11 data AND current segment has no NIP11 data";
@@ -359,7 +394,12 @@ export const relayHostnameDedup = async (result: any): Promise<any> => {
         if (case8) logger.warn(`${mURL} | Ignored because: ${reason8}`);
         logger.debug(`${mURL} has been ignored because of: case [1:${case1}] [2:${case2}] [3:${case3}] [4:${case4}] [5:${case5}] [6:${case6}] [7:${case7}] [8:${case8}]`);
         result.ignore = true;
-        
+
+        // Add to IgnoreListSync if it has a parent (i.e., is a deduplication ignore, not remote sync)
+        if (result.parent && ignoreListSyncInstance) {
+          ignoreListSyncInstance.addToIgnoreList(mURL);
+        }
+
         // Generate deletion event when a relay is ignored
         if (appConfig) {
           let reason = "Duplicated relay with same hostname";
@@ -371,11 +411,11 @@ export const relayHostnameDedup = async (result: any): Promise<any> => {
           if (case6) reason = reason6;
           if (case7) reason = reason7;
           if (case8) reason = reason8;
-          
+
           if (result.parent) {
             reason += ` (parent: ${result.parent})`;
           }
-          
+
           await deleteRelayCheckEvent(mURL, reason, appConfig);
         }
       } else {
@@ -390,4 +430,152 @@ export const relayHostnameDedup = async (result: any): Promise<any> => {
     logger.error(`Error in relayHostnameDedup: ${error}`);
   }
   return result;
+};
+
+/**
+ * Re-evaluate deduplication for all online relays in the database
+ * This should be run periodically to catch relays that were checked before their relatives
+ * Only fetches fresh NIP-11 data when stale (older than nip11_cache_ttl)
+ * @param nip11CacheTtl - How long to consider NIP-11 fresh (milliseconds), default 24 hours
+ * @returns Array of relays that had their ignore status changed
+ */
+export const reevaluateAllDeduplication = async (nip11CacheTtl: number = 24 * 60 * 60 * 1000): Promise<any[]> => {
+  logger.info("Starting periodic deduplication re-evaluation for all relays...");
+
+  const onlineRelays = getOnlineRelays();
+  logger.info(`Re-evaluating ${onlineRelays.length} online relays`);
+
+  // Import nocap dynamically (only if needed)
+  const { Nocap } = await import("npm:@nostrwatch/nocap");
+  const InfoAdapterDefault = (await import("npm:@nostrwatch/nocap-info-adapter-default")).default;
+
+  // Group relays by hostname to batch NIP-11 checks
+  const relaysByHostname = new Map<string, string[]>();
+  for (const url of onlineRelays) {
+    try {
+      const parsed = new URL(url);
+      const hostnameKey = `${parsed.protocol}//${parsed.hostname}`;
+      if (!relaysByHostname.has(hostnameKey)) {
+        relaysByHostname.set(hostnameKey, []);
+      }
+      relaysByHostname.get(hostnameKey)?.push(url);
+    } catch (e) {
+      logger.error(`Error parsing URL ${url}: ${e}`);
+    }
+  }
+
+  logger.info(`Found ${relaysByHostname.size} unique hostnames`);
+
+  interface ChangedRelay {
+    url: string;
+    previousIgnore: boolean;
+    newIgnore: boolean;
+    parent: string;
+  }
+
+  const changedRelays: ChangedRelay[] = [];
+  const now = Date.now();
+  let nip11ChecksPerformed = 0;
+
+  for (const [hostnameKey, relaysInGroup] of relaysByHostname.entries()) {
+    try {
+      // For each hostname group, only fetch NIP-11 once if any relay is stale
+      let needsNip11Refresh = false;
+      let nip11Data = null;
+
+      // Check if any relay in this hostname group has stale NIP-11
+      for (const relayUrl of relaysInGroup) {
+        const info = getRelayInfo(relayUrl);
+        const checkedAt = db.query("SELECT checked_at FROM relay_status WHERE url = ?", [relayUrl]);
+        const age = checkedAt.length > 0 && checkedAt[0][0] !== -1
+          ? now - (checkedAt[0][0] as number)
+          : Infinity;
+
+        if (age > nip11CacheTtl || !info) {
+          needsNip11Refresh = true;
+          break;
+        }
+      }
+
+      if (needsNip11Refresh) {
+        // Fetch fresh NIP-11 once for this hostname (using any relay from the group)
+        const sampleRelay = relaysInGroup[0];
+
+        const nocap = new Nocap(sampleRelay, { timeout: 10000, logLevel: "error" });
+        await nocap.useAdapters([InfoAdapterDefault]);
+        const checkResult = await nocap.check(["info"]).catch((err: unknown) => {
+          logger.debug(`Failed to fetch NIP-11 for ${hostnameKey}: ${getErrorMessage(err)}`);
+          return null;
+        });
+
+        if (checkResult?.info?.data) {
+          nip11Data = checkResult.info;
+          nip11ChecksPerformed++;
+          logger.debug(`Fetched fresh NIP-11 for ${hostnameKey} (${relaysInGroup.length} relays in group)`);
+        }
+      }
+
+      // Re-evaluate each relay in the group
+      for (const relayUrl of relaysInGroup) {
+        try {
+          const parsed = new URL(relayUrl);
+          const previousIgnoreStatus = db.query("SELECT ignore FROM relay_status WHERE url = ?", [relayUrl]);
+          const wasIgnored = previousIgnoreStatus.length > 0 && previousIgnoreStatus[0][0] === 1;
+
+          // Build result object - use fresh NIP-11 if fetched, otherwise use cached info
+          const result: RelayCheckResult = {
+            url: relayUrl,
+            hostname: parsed.hostname,
+            protocol: parsed.protocol,
+            info: nip11Data || getRelayInfo(relayUrl),
+            ignore: wasIgnored,
+            parent: "",
+            checked_at: Date.now(),
+            online: !wasIgnored,
+            network: "clearnet" // Will be determined by actual check
+          };
+
+          // Get parent from DB if it exists
+          const parentQuery = db.query("SELECT parent FROM relay_status WHERE url = ?", [relayUrl]);
+          if (parentQuery.length > 0 && parentQuery[0][0]) {
+            result.parent = parentQuery[0][0] as string;
+          }
+
+          // Re-run deduplication
+          const updatedResult = await relayHostnameDedup(result).catch((err: unknown) => {
+            logger.error(`Error re-evaluating ${relayUrl}: ${getErrorMessage(err)}`);
+            return { url: relayUrl, ignore: wasIgnored, parent: result.parent, hostname: result.hostname, protocol: result.protocol, checked_at: result.checked_at, online: result.online, network: result.network };
+          });
+
+          // If ignore status changed, update the database and track it
+          if (updatedResult.ignore !== wasIgnored) {
+            logger.info(`${relayUrl}: ignore status changed from ${wasIgnored} to ${updatedResult.ignore}`);
+
+            db.query(
+              "UPDATE relay_status SET ignore = ?, parent = ? WHERE url = ?",
+              [updatedResult.ignore ? 1 : 0, updatedResult.parent || null, relayUrl]
+            );
+
+            changedRelays.push({
+              url: relayUrl,
+              previousIgnore: wasIgnored,
+              newIgnore: updatedResult.ignore,
+              parent: updatedResult.parent
+            });
+
+            // If newly ignored and has a parent, it was already added to ignore list in relayHostnameDedup
+          }
+        } catch (err: unknown) {
+          logger.error(`Error processing relay ${relayUrl}: ${getErrorMessage(err)}`);
+        }
+      }
+    } catch (err: unknown) {
+      logger.error(`Error processing hostname group ${hostnameKey}: ${getErrorMessage(err)}`);
+    }
+  }
+
+  logger.info(
+    `Deduplication re-evaluation complete. Performed ${nip11ChecksPerformed} NIP-11 checks for ${relaysByHostname.size} hostnames. ${changedRelays.length} relays changed status.`
+  );
+  return changedRelays;
 };

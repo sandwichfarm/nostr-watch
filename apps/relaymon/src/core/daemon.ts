@@ -5,12 +5,82 @@ import { getLogger, setGlobalLogLevel } from "../utils/logger.ts";
 import { delay } from "npm:@nostrwatch/utils";
 import { db, getExpiredRelays } from "npm:@nostrwatch/db";
 import { maybeAnnounce } from "../utils/announce.ts";
-import { getPublicKey } from "npm:nostr-tools";
+import { getPublicKey, nip19 } from "npm:nostr-tools";
 import { RetryManager } from "../utils/retryManager.ts";
 import { formatCompactStats, showStatus } from "./status.ts";
-import { deleteRelayCheckEvent } from "../utils/deletion.ts";
+import { deleteRelayCheckEvent, setDeletionPublishSuppressed } from "../utils/deletion.ts";
+import { IgnoreListSync } from "../utils/IgnoreListSync.ts";
+import { setIgnoreListSync, reevaluateAllDeduplication } from "../utils/hostnames.ts";
+import { checkSigning } from "../health/index.ts";
+import { ErrorTracker } from "../health/index.ts";
+import { loadHealthAuthToken, loadKumaPushUrl, redactUrl } from "../health/index.ts";
+import { startHealthServer } from "../health/server.ts";
+import { startKumaPusher } from "../health/kuma.ts";
+import type { Config } from "../config/config.ts";
+import type { HeartbeatTracker } from "../health/types.ts";
+import type { HealthServer } from "../health/server.ts";
+import type { KumaPusher } from "../health/kuma.ts";
 
-export async function runDaemon(config: any): Promise<void> {
+/**
+ * Get hex private key from RELAYMON_NSEC environment variable
+ * Supports both NIP-19 encoded nsec format and raw hex format
+ * @returns hex-encoded private key string, or empty string on error
+ */
+export function getPrivateKey(): string {
+  const key = Deno.env.get("RELAYMON_NSEC");
+  if (!key) return "";
+
+  // Check if it's nsec format (starts with "nsec1")
+  if (key.startsWith("nsec1")) {
+    try {
+      const decoded = nip19.decode(key);
+      if (decoded.type === "nsec") {
+        return decoded.data as string;
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
+  // Otherwise treat as raw hex (64 characters)
+  if (key.length === 64 && /^[0-9a-f]+$/i.test(key)) {
+    return key;
+  }
+
+  return "";
+}
+
+/**
+ * Parse interval string like "1h", "30m", "24h" to milliseconds
+ */
+function parseInterval(interval: string): number {
+  const match = interval.match(/^(\d+)([smhd])$/);
+  if (!match) {
+    throw new Error(`Invalid interval format: ${interval}`);
+  }
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+
+  switch (unit) {
+    case 's': return value * 1000;
+    case 'm': return value * 60 * 1000;
+    case 'h': return value * 60 * 60 * 1000;
+    case 'd': return value * 24 * 60 * 60 * 1000;
+    default: throw new Error(`Unknown time unit: ${unit}`);
+  }
+}
+
+// Global heartbeat tracker for health monitoring
+export const heartbeatTracker: HeartbeatTracker = {
+  startupTime: Date.now(),
+};
+
+// Global error tracker for health monitoring
+export const errorTracker = new ErrorTracker();
+
+export async function runDaemon(config: Config): Promise<void> {
   // Set global log level from config if specified
   if (config.logLevel) {
     setGlobalLogLevel(config.logLevel);
@@ -20,8 +90,12 @@ export async function runDaemon(config: any): Promise<void> {
 
   // Set up global error handlers
   const processError = (error: Error, source: string): void => {
-    logger.error(`Unhandled error in ${source}: ${error?.message || JSON.stringify(error)}`);
+    const message = error?.message || JSON.stringify(error);
+    logger.error(`Unhandled error in ${source}: ${message}`);
     logger.error(error?.stack || "No stack trace available");
+
+    // Track error for health monitoring
+    errorTracker.track(message, source);
   };
 
   // In Deno, we need to use self which is the global scope
@@ -53,11 +127,66 @@ export async function runDaemon(config: any): Promise<void> {
       1,
       config
     );
-    
+
+    // Initialize ignore list sync
+    const staticMetaRelays = [
+      ...(config?.publisher?.relays || []),
+      "wss://purplepag.es",
+      "wss://user.kindpag.es",
+      "wss://profiles.nostr1.com"
+    ];
+    const ignoreListSync = new IgnoreListSync(config, staticMetaRelays);
+
+    // Set the global IgnoreListSync instance for use in hostname deduplication
+    setIgnoreListSync(ignoreListSync);
+
+    // Suppress deletion publishing during warmup (set true early to catch initial deletion publish call)
+    setDeletionPublishSuppressed(true);
+
+    if (ignoreListSync && config?.relaymon?.ignorelist?.enabled) {
+      logger.info("Performing initial ignore list sync...");
+      await ignoreListSync.sync().catch((err) => logger.error(`Initial sync error: ${err.message}`));
+      // Publish initial deletions on startup
+      logger.info("Publishing initial NIP-09 deletions...");
+      await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Initial deletions error: ${err.message}`));
+    }
+
     // Move maybeAnnounce call after creating queueManager so we can pass it
     await maybeAnnounce(config, queueManager);
-    
-    const pubkey = Deno.env.get("DAEMON_PRIVKEY")? getPublicKey(Deno.env.get("DAEMON_PRIVKEY") || "") : "";
+
+    // Safely derive pubkey from RELAYMON_NSEC with error handling
+    // Supports both nsec (NIP-19) and hex formats
+    let pubkey = "";
+    const privkey = getPrivateKey();
+    if (privkey) {
+      try {
+        pubkey = getPublicKey(privkey);
+        logger.info("Successfully derived public key from RELAYMON_NSEC");
+
+        // Run signing self-test if health monitoring is enabled
+        if (config.health?.enabled) {
+          logger.info("Running signing self-test...");
+          const signingCheck = await checkSigning(privkey);
+          if (signingCheck.status === "fail") {
+            logger.error(`Signing self-test failed: ${signingCheck.message}`);
+            logger.error(`Error: ${signingCheck.error}`);
+            logger.error("Daemon will start but publish jobs will fail");
+            errorTracker.track(`Signing self-test failed: ${signingCheck.message}`, "daemon");
+          } else {
+            logger.info("Signing self-test passed");
+          }
+        }
+      } catch (error) {
+        logger.warn(`Invalid RELAYMON_NSEC, cannot derive public key: ${error.message}`);
+        logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
+        errorTracker.track(`Invalid RELAYMON_NSEC: ${error.message}`, "daemon");
+      }
+    } else {
+      logger.warn("Missing or invalid RELAYMON_NSEC environment variable");
+      logger.warn("Daemon will start but publish jobs will fail and be counted as failures");
+      errorTracker.track("Missing or invalid RELAYMON_NSEC", "daemon");
+    }
+
     const worker = new Worker(pubkey, queueManager, config);
 
     let seeder: RelaySeeder | undefined
@@ -135,20 +264,28 @@ export async function runDaemon(config: any): Promise<void> {
                 await worker.processRelay(relay);
               } catch (error) {
                 logger.error(`Error processing relay ${relay}: ${error.message}`);
+                errorTracker.track(`Error processing relay ${relay}: ${error.message}`, "worker");
               }
             }, relay); // Pass the relay URL to QueueManager
           }
-          
+
+          // Update heartbeat after enqueuing work
+          heartbeatTracker.checkLoop = Date.now();
+
           logger.info(`Waiting for ${config.relaymon.checks.options.interval} before checking for more expired relays`);
           await delay(config.relaymon.checks.options.interval);
         } catch (error) {
           logger.error(`Error in checkExpiredRelays: ${error.message}`);
           logger.error(error.stack || "No stack trace available");
+          errorTracker.track(`Error in checkExpiredRelays: ${error.message}`, "daemon");
           // If there was an error, wait a bit before retrying
           await delay(30000); // Wait 30 seconds before retrying after an error
         }
       }
     }
+
+    // Enable deletion publish suppression immediately to prevent any deletions during warmup
+    setDeletionPublishSuppressed(true);
 
     if(seeder) {
       // First run the seeder to populate the database
@@ -164,6 +301,243 @@ export async function runDaemon(config: any): Promise<void> {
     }
     else {
       logger.info("No seeder found, skipping initial seeding.");
+    }
+
+    // Warmup runner - checks all unchecked relays (checked_at = -1) for configured networks
+    async function runWarmup(): Promise<void> {
+      try {
+        // Turn on warmup mode in the worker to suppress publishing and bypass DB-ignore for first checks
+        worker.setWarmupMode(true);
+        queueManager.setWarmupActive(true);
+        while (true) {
+          // Build network filter from config
+          const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
+          const placeholders = networks.map(() => '?').join(',');
+          const query = `SELECT url FROM relay_status WHERE checked_at = -1 AND network IN (${placeholders})`;
+          const rows = db.query(query, networks);
+          const urls: string[] = rows.map(([url]) => url as string);
+
+          if (urls.length === 0) {
+            logger.info("Warmup complete: no unchecked relays remain");
+            break;
+          }
+
+          logger.info(`Warmup: processing ${urls.length} unchecked relays`);
+          // Enqueue all unchecked relays
+          for (const url of urls) {
+            // Skip any malformed items defensively
+            if (typeof url !== 'string' || url.includes('|')) continue;
+            queueManager.addCheckJob(async () => {
+              try {
+                await worker.processRelay(url);
+              } catch (error) {
+                logger.error(`Warmup error processing ${url}: ${error?.message || error}`);
+              }
+            }, url);
+          }
+
+          // Wait for warmup batch to drain
+          await queueManager.waitEmpty([queueManager.checkQueue]);
+          // Loop to re-check in case seeder or other inputs added more unchecked
+        }
+      } catch (e) {
+        logger.error(`Warmup runner failed: ${e?.message || e}`);
+      } finally {
+        // Disable warmup mode and re-enable deletion publishing
+        worker.setWarmupMode(false);
+        setDeletionPublishSuppressed(false);
+        queueManager.setWarmupActive(false);
+      }
+    }
+
+    // Run warmup before starting normal loops
+    await runWarmup();
+
+    // Kickstart publishing immediately after warmup so we don't wait for expiry
+    async function kickstartPublishing(): Promise<void> {
+      try {
+        const networks: string[] = Array.isArray(config.relaymon.networks) ? config.relaymon.networks : ["clearnet"];
+        const placeholders = networks.map(() => '?').join(',');
+        const query = `SELECT url FROM relay_status WHERE network IN (${placeholders})`;
+        const rows = db.query(query, networks);
+        const allUrls: string[] = rows.map(([url]) => url as string).filter(u => typeof u === 'string' && !u.includes('|'));
+
+        if (allUrls.length === 0) {
+          logger.info("Kickoff: no relays found to enqueue after warmup");
+          return;
+        }
+
+        let toEnqueue: string[] = [];
+        const maxValue = config.relaymon.checks.options.max;
+        if (typeof maxValue === "number") {
+          toEnqueue = allUrls.slice(0, maxValue);
+          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays (numeric max: ${maxValue}) for immediate publishing`);
+        } else if (typeof maxValue === "string" && maxValue.trim().endsWith("%")) {
+          const percentage = parseFloat(maxValue) / 100;
+          const count = Math.ceil(allUrls.length * percentage);
+          toEnqueue = allUrls.slice(0, count);
+          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays (percentage: ${maxValue}, count: ${count}) for immediate publishing`);
+        } else {
+          toEnqueue = allUrls;
+          logger.info(`Kickoff: enqueuing ${toEnqueue.length} relays for immediate publishing`);
+        }
+
+        for (const url of toEnqueue) {
+          queueManager.addCheckJob(async () => {
+            try {
+              await worker.processRelay(url);
+            } catch (error) {
+              logger.error(`Kickoff error processing ${url}: ${error?.message || error}`);
+            }
+          }, url);
+        }
+      } catch (e) {
+        logger.error(`Kickoff publishing failed: ${e?.message || e}`);
+      }
+    }
+
+    await kickstartPublishing();
+
+    // Schedule ignore list sync if enabled
+    async function runIgnoreListSync() {
+      if (!ignoreListSync || !config?.relaymon?.ignorelist?.enabled) {
+        logger.debug("IgnoreListSync is disabled, skipping");
+        return;
+      }
+
+      const interval = config.relaymon.ignorelist.interval || "24h";
+      const intervalMs = parseInterval(interval);
+      logger.info(`Scheduling ignore list sync every ${interval}`);
+
+      while (true) {
+        try {
+          await delay(intervalMs);
+          logger.info("Running scheduled ignore list sync and publish...");
+          await ignoreListSync.sync().catch((err) => logger.error(`Sync error: ${err.message}`));
+          await ignoreListSync.publish(getPrivateKey()).catch((err) => logger.error(`Publish error: ${err.message}`));
+        } catch (error) {
+          logger.error(`Error in runIgnoreListSync: ${error.message}`);
+          await delay(60000); // Wait 1 minute before retrying
+        }
+      }
+    }
+
+    // Schedule ignore list deletions if enabled
+    async function runIgnoreListDeletions() {
+      if (!ignoreListSync || !config?.relaymon?.ignorelist?.enabled) {
+        logger.debug("IgnoreListSync is disabled, skipping deletions");
+        return;
+      }
+
+      const interval = config.relaymon.ignorelist.deletion_interval || "24h";
+      const intervalMs = parseInterval(interval);
+      logger.info(`Scheduling ignore list deletions every ${interval}`);
+
+      while (true) {
+        try {
+          await delay(intervalMs);
+          logger.info("Running scheduled ignore list deletion publish...");
+          await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Deletions error: ${err.message}`));
+        } catch (error) {
+          logger.error(`Error in runIgnoreListDeletions: ${error.message}`);
+          await delay(60000); // Wait 1 minute before retrying
+        }
+      }
+    }
+
+    // Schedule deduplication re-evaluation
+    async function runDedupReevaluation() {
+      const interval = config?.relaymon?.deduplication?.reevaluation_interval || "24h";
+      const nip11CacheTtl = config?.relaymon?.deduplication?.nip11_cache_ttl || "24h";
+      const intervalMs = parseInterval(interval);
+      const ttlMs = parseInterval(nip11CacheTtl);
+      logger.info(`Scheduling deduplication re-evaluation every ${interval}`);
+      logger.info(`NIP-11 cache TTL: ${nip11CacheTtl}`);
+
+      while (true) {
+        try {
+          await delay(intervalMs);
+          logger.info("Running scheduled deduplication re-evaluation...");
+          const changedRelays = await reevaluateAllDeduplication(ttlMs).catch((err) => {
+            logger.error(`Re-evaluation error: ${err.message}`);
+            return [];
+          });
+          if (changedRelays && changedRelays.length > 0) {
+            logger.info(`Re-evaluation changed ${changedRelays.length} relay(s) ignore status`);
+            // Publish deletions for newly ignored relays
+            if (ignoreListSync) {
+              await ignoreListSync.publishDeletions(getPrivateKey()).catch((err) => logger.error(`Deletions after re-eval error: ${err.message}`));
+            }
+          }
+        } catch (error) {
+          logger.error(`Error in runDedupReevaluation: ${error.message}`);
+          await delay(60000); // Wait 1 minute before retrying
+        }
+      }
+    }
+
+    // Initialize health server if enabled
+    let healthServer: HealthServer | null = null;
+    if (config.health?.enabled && config.health.server.enabled) {
+      try {
+        logger.info("Starting health server...");
+
+        // Load auth token if auth is enabled
+        let authToken: string | undefined;
+        if (config.health.server.authEnabled) {
+          authToken = await loadHealthAuthToken();
+          if (!authToken) {
+            logger.warn("Health server auth enabled but no token configured (RELAYMON_HEALTH_AUTH_TOKEN)");
+          }
+        }
+
+        healthServer = await startHealthServer(
+          config.health.server,
+          {
+            queueManager,
+            privkey,
+            heartbeat: heartbeatTracker,
+            errorTracker,
+            authToken,
+            thresholds: config.health.thresholds,
+          },
+        );
+      } catch (error) {
+        logger.error(`Failed to start health server: ${error.message}`);
+        errorTracker.track(`Failed to start health server: ${error.message}`, "daemon");
+      }
+    }
+
+    // Initialize Kuma pusher if enabled
+    let kumaPusher: KumaPusher | null = null;
+    if (config.health?.enabled && config.health.kuma.enabled) {
+      try {
+        logger.info("Starting Kuma pusher...");
+
+        // Load Kuma push URL
+        const kumaPushUrl = await loadKumaPushUrl();
+        if (!kumaPushUrl) {
+          logger.error("Kuma pusher enabled but no push URL configured");
+          logger.error("Set RELAYMON_KUMA_PUSH_URL or RELAYMON_KUMA_BASE_URL + RELAYMON_KUMA_TOKEN");
+        } else {
+          logger.info(`Kuma push URL configured: ${redactUrl(kumaPushUrl)}`);
+
+          kumaPusher = await startKumaPusher(
+            config.health.kuma,
+            {
+              queueManager,
+              privkey,
+              heartbeat: heartbeatTracker,
+              errorTracker,
+              thresholds: config.health.thresholds,
+            },
+            kumaPushUrl,
+          );
+        }
+      } catch (error) {
+        logger.error(`Failed to start Kuma pusher: ${error.message}`);
+        errorTracker.track(`Failed to start Kuma pusher: ${error.message}`, "daemon");
+      }
     }
 
     const tasks: Promise<void>[] = []
@@ -183,6 +557,26 @@ export async function runDaemon(config: any): Promise<void> {
         logger.error(`Check process error: ${error.message}`);
         logger.error(error.stack || "No stack trace available");
         // This shouldn't happen due to the try/catch inside checkExpiredRelays
+      })
+    )
+
+    // Add scheduled tasks
+    if (config?.relaymon?.ignorelist?.enabled) {
+      tasks.push(
+        runIgnoreListSync().catch(error => {
+          logger.error(`Ignore list sync process error: ${error.message}`);
+        })
+      );
+      tasks.push(
+        runIgnoreListDeletions().catch(error => {
+          logger.error(`Ignore list deletions process error: ${error.message}`);
+        })
+      );
+    }
+
+    tasks.push(
+      runDedupReevaluation().catch(error => {
+        logger.error(`Dedup re-evaluation process error: ${error.message}`);
       })
     )
 

@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "analytics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pubkey": { "type": "string" },
+          "score": {
+            "type": "object",
+            "properties": {
+              "pubkey": { "type": "string" },
+              "reliabilityScore": { "type": "number" },
+              "timelinessScore": { "type": "number" },
+              "consistencyScore": { "type": "number" },
+              "errorRate": { "type": "number" },
+              "lastUpdated": { "type": "number" },
+              "observationCount": { "type": "number" }
+            },
+            "required": ["pubkey", "reliabilityScore", "timelinessScore", "consistencyScore", "errorRate", "lastUpdated", "observationCount"]
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "pubkey": { "type": "string" },
+              "relayCount": { "type": "number" },
+              "relayUrls": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "checks": {
+                "type": "object",
+                "properties": {
+                  "open": { "type": "boolean" },
+                  "read": { "type": "boolean" },
+                  "write": { "type": "boolean" },
+                  "info": { "type": "boolean" },
+                  "dns": { "type": "boolean" },
+                  "geo": { "type": "boolean" }
+                },
+                "required": ["open", "read", "write", "info", "dns", "geo"]
+              },
+              "namespaces": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "labelCount": { "type": "number" },
+              "firstSeen": { "type": "number" },
+              "lastSeen": { "type": "number" },
+              "frequency": { "type": "number" }
+            },
+            "required": ["pubkey", "relayCount", "relayUrls", "checks", "namespaces", "labelCount", "firstSeen", "lastSeen"]
+          }
+        },
+        "required": ["pubkey", "score", "coverage"]
+      }
+    },
+    "total": { "type": "number" },
+    "limit": { "type": "number" },
+    "offset": { "type": "number" }
+  },
+  "required": ["analytics", "total"]
+}

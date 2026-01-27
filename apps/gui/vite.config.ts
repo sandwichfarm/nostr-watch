@@ -49,7 +49,8 @@ export default defineConfig(({ mode }) => {
         "@nostrwatch/worker-relay",
         "@sqlite.org/sqlite-wasm",
         "@nostrwatch/auditor",
-        "@nostrwatch/nocap"
+        "@nostrwatch/nocap",
+        "sveaflet"
       ],
       esbuildOptions: {
         target: "esnext",
@@ -68,6 +69,13 @@ export default defineConfig(({ mode }) => {
       },
       fs: {
         strict: false,
+      },
+    },
+    preview: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Resource-Policy': 'cross-origin'
       },
     },
     resolve: {

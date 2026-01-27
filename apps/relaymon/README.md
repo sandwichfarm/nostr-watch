@@ -1,3 +1,5 @@
+> `@nostrwatch/relaymon` requires domain knowledge to run. It is highly configurable and the documentation required to express how to configure the variety of configurations does not yet exist. Additionally, `@nostrwatch/relaymon` relies on external data to know which relays to check, and `@nostrwatch/trawler` (relay URL scraper) is not presently stable. It can be seeded with static relays, from other NIP-66 events and relays from nostr.watch api's for now.
+
 # Relaymon
 
 Relaymon is a Nostr relay monitoring application written in Deno. It deduplicates, validates, and checks the liveness of relays, then publishes events (such as monitor announcements and relay lists) based on configurable settings. Relaymon leverages modular seeding from multiple sources (static configuration, files, database, API, events, subscriptions) and uses SQLite for caching relay statuses. It also implements configurable retry/backoff logic and job scheduling using p-queue.
@@ -16,7 +18,7 @@ Relaymon is a Nostr relay monitoring application written in Deno. It deduplicate
     - **Static File:** YAML or JSON seed file.
     - **Cache:** Relay data stored in a SQLite database.
     - **API:** Fetching relay information from a REST API.
-    - **Events:** Extracting relay URLs from Nostr events.
+    - **Events:** Extracting relay URLs from NIP-66 30166 events. 
     - **External DB:** Connect to another @nostrwatch/db compatible database to seed relays from all its stored relay URLs.
     - **Subscription:** (Dummy implementation available, extendable for real-time updates.)
 
@@ -40,14 +42,14 @@ Clone the repository:
 
 Relaymon is fully configurable via a YAML file (config.yaml). Below is a sample configuration:
 
-```
+```yaml
 monitor:
-  slug: trawler.eighteen
+  slug: tor-i2p-clearnet-monitor
   info:
-    name: "trawler"
-    about: "Trrawls nostr for relays, dedupes, validates, checks liveness, and publishes events."
-    nip05: trawler@nostr.watch
-  owner: "9bbabc5e36297b6f7d15dd21b90ef85b2f1cb80e15c37fcc0c7f6c05acfd0019"
+    name: "tor i2p clearnet relay monitor"
+    about: ""
+    nip05: ""
+  owner: ""
   geo:
     city: "Frankfurt am Main"
     country: "Germany"
@@ -82,45 +84,32 @@ relaymon:
     sources:
       - config              # Seed from a static list provided in the config
       - static              # Seed from a static file (YAML or JSON)
-      - cache               # Seed from the SQLite database (relay cache)
       - api                 # Seed from a REST API
       - events              # Seed from Nostr events
       - db                  # Seed from an external @nostrwatch/db database (retrieves all relays regardless of status)
-      - subscription        # Seed from relay subscriptions (if available)
     options:
       db:
-        path: "./relay.db"  # SQLite database path for storing relay information
+        path: "./relay.db"  # @nostrwatch/db path for storing relay information
         enableWAL: true     # Enable Write-Ahead Logging for the database (for db seeding)
       static:
         path: "./seed.yaml"
-      config: []            # Optional static relay list provided in the config
+      api:
+        remote: ""          # api.nostr.watch/v1 api
   checks:
     enabled:
       - open
       - read
     options:
-      expires: "24h"       # A relay's check is considered expired after 24 hours
-      interval: "15s"      # Poll the database for expired relays every 15 seconds
+      expires: "6h"       # A relay's check is considered expired after 24 hours
+      interval: "5m"      # Poll the database for expired relays every 15 seconds
       timeout:
         open: 30000        # 30 seconds timeout for the "open" check
         read: 5000         # 5 seconds timeout for the "read" check
-      max: "200"           # Enqueue up to 200 expired relays per polling iteration
+      max: "100"           # Enqueue up to 200 expired relays per polling iteration
       statusInterval: 20   # Show status report every 20 checks
 
 queue:
-  workerConcurrency: 20  # p-queue concurrency for check jobs
-
-## Database Configuration
-
-RelayMon uses SQLite to store relay data. You can specify the database path and other settings in the configuration file:
-
-```yaml
-relaymon:
-  seed:
-    options:
-      db:
-        path: "./custom-database-path.db"  # Custom database path
-        enableWAL: true                    # Enable Write-Ahead Logging for better performance (default: true)
+  workerConcurrency: 10  # p-queue concurrency for check jobs
 ```
 
 If no path is specified, RelayMon will use the default database location ("relaymon.db") in the current directory.
@@ -210,7 +199,7 @@ relaymon/
 
 ## Environment Variables
 
-- DAEMON_PRIVKEY: The private key used to sign announcements and events.
+- `RELAYMON_NSEC`: The private key used to sign announcements and events.
 
 ## Development
 

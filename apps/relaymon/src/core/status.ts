@@ -4,6 +4,7 @@ import chalk from "npm:chalk";
 import { getExpiredRelays } from "../db/db.ts";
 import { RetryManager } from "../utils/retryManager.ts";
 import { loadConfig } from "../config/config.ts";
+import type { QueueManager } from "../utils/queueManager.ts";
 
 const logger = getLogger("Status");
 
@@ -56,6 +57,8 @@ interface StatusStats {
   
   // Cache stats
   online: number;
+  onlinePublishable: number;
+  onlineIgnored: number;
   onlineExpired: number;
   offline: number;
   expired: number;
@@ -69,6 +72,11 @@ interface StatusStats {
   publishSize: number;
   publishPending: number;
   publishedEvents: number;
+  publishedChecks: number;
+  publishedDeltas: number;
+  publishedDeletions: number;
+  publishedAnnouncements: number;
+  publishedOther: number;
   failedPublishes: number;
   retryingPublishes: number;
   successRate: string;
@@ -80,12 +88,14 @@ interface StatusStats {
   newRelaysFound: number;
   relaysRecovered: number; // New stat for relays that recovered
   queueSize: number;
+  // Warmup indicator
+  warmingUp?: boolean;
 }
 
 /**
  * Get current statistics from the database and queue
  */
-export function getStats(queueManager: any): StatusStats {
+export function getStats(queueManager: QueueManager): StatusStats {
   // Get queue stats from queueManager
   const queueStats = {
     active: queueManager.checkQueue.pending || 0,
@@ -100,6 +110,11 @@ export function getStats(queueManager: any): StatusStats {
     size: queueManager.publishQueue?.size || 0,
     pending: queueManager.publishQueue?.pending || 0,
     published: queueManager.publishedEvents || 0,
+    publishedChecks: 0,
+    publishedDeltas: 0,
+    publishedDeletions: 0,
+    publishedAnnouncements: 0,
+    publishedOther: 0,
     failed: queueManager.failedPublishes || 0,
     retrying: queueManager.retryingPublishes || 0,
     success_rate: 'N/A'
@@ -148,6 +163,8 @@ export function getStats(queueManager: any): StatusStats {
   // Query all necessary counts in one go to avoid multiple DB reads
   const dbStats = {
     online: 0,
+    onlinePublishable: 0,
+    onlineIgnored: 0,
     onlineExpired: 0,
     offline: 0,
     expired: 0,
@@ -166,6 +183,10 @@ export function getStats(queueManager: any): StatusStats {
   
   // Get offline count
   dbStats.offline = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 0")[0][0] as number;
+
+  // Get online ignored and publishable counts
+  dbStats.onlineIgnored = db.query("SELECT COUNT(*) FROM relay_status WHERE online = 1 AND ignore = 1")[0][0] as number;
+  dbStats.onlinePublishable = Math.max(0, (dbStats.online as number) - (dbStats.onlineIgnored as number));
   
   // Get expired relays using the same function as the daemon - with retry logic
   // This will correctly account for the retry backoff
@@ -220,6 +241,11 @@ export function getStats(queueManager: any): StatusStats {
     publishSize: publishStats.size,
     publishPending: publishStats.pending,
     publishedEvents: publishStats.published,
+    publishedChecks: publishStats.publishedChecks,
+    publishedDeltas: publishStats.publishedDeltas,
+    publishedDeletions: publishStats.publishedDeletions,
+    publishedAnnouncements: publishStats.publishedAnnouncements,
+    publishedOther: publishStats.publishedOther,
     failedPublishes: publishStats.failed,
     retryingPublishes: publishStats.retrying,
     successRate: publishStats.success_rate,
@@ -228,7 +254,8 @@ export function getStats(queueManager: any): StatusStats {
     wentOfflineCount: sessionStats.wentOffline.size,
     newRelaysFound: sessionStats.newRelaysFound,
     relaysRecovered: sessionStats.relaysRecovered,
-    queueSize: queueStats.totalQueue
+    queueSize: queueStats.totalQueue,
+    warmingUp: (queueManager as any).warmupActive === true
   };
 }
 
@@ -248,6 +275,64 @@ function createAsciiBox(stats: StatusStats): string {
   const strLength = (str: string): number => {
     // Remove ANSI escape codes when calculating length
     return str.replace(/\u001b\[.*?m/g, '').length;
+  };
+
+  // Truncate a possibly ANSI-colored string to a target visible length
+  const truncateAnsi = (input: string, maxVisible: number): string => {
+    if (maxVisible <= 0) return '';
+    let out = '';
+    let visible = 0;
+    for (let i = 0; i < input.length; i++) {
+      const ch = input[i];
+      if (ch === "\u001b") { // start of ANSI sequence
+        // copy through the end of the sequence (ending at 'm')
+        const match = /\u001b\[[0-9;]*m/.exec(input.slice(i));
+        if (match) {
+          out += match[0];
+          i += match[0].length - 1; // -1 because for-loop will i++
+          continue;
+        }
+      }
+      if (visible < maxVisible) {
+        out += ch;
+        visible += 1;
+      } else {
+        break;
+      }
+    }
+    return out;
+  };
+
+  // Render a cell to exactly fit the given width, truncating label if needed
+  const renderCell = (
+    labelStyled: string,
+    valueStyled: string,
+    colWidth: number,
+    withLeftGap = true,
+  ): string => {
+    // compute allowed space for label considering value
+    const leftPad = withLeftGap ? 1 : 0;
+    const valuePart = valueStyled ? ` ${valueStyled}` : '';
+    const valueLen = strLength(valuePart);
+    const allowedLabel = Math.max(0, colWidth - leftPad - valueLen);
+
+    // truncate label to fit
+    const labelTrunc = truncateAnsi(labelStyled, allowedLabel);
+    const labelPad = ' '.repeat(Math.max(0, allowedLabel - strLength(labelTrunc)));
+
+    let cell = '';
+    if (withLeftGap) cell += ' ';
+    cell += labelTrunc + labelPad + valuePart;
+
+    // right pad to fill colWidth exactly
+    const padRight = Math.max(0, colWidth - strLength(cell));
+    cell += ' '.repeat(padRight);
+    // if cell somehow exceeded, truncate raw (rare due to ANSI), last resort
+    if (strLength(cell) > colWidth) {
+      // Try to trim without breaking ANSI by truncating visible
+      cell = truncateAnsi(cell, colWidth);
+    }
+    return cell;
   };
   
   // Helper function to pad numbers and ensure consistent spacing
@@ -332,13 +417,23 @@ function createAsciiBox(stats: StatusStats): string {
     { key: 'Active:', value: stats.publishPending },
     { key: 'Waiting:', value: stats.publishSize },
     { key: 'Published:', value: stats.publishedEvents, highlight: true },
+    { key: 'Published (checks):', value: stats.publishedChecks },
+    { key: 'Published (deltas):', value: stats.publishedDeltas },
+    { key: 'Published (deletions):', value: stats.publishedDeletions },
+    { key: 'Published (announcements):', value: stats.publishedAnnouncements },
+    { key: 'Published (other):', value: stats.publishedOther },
     { key: 'Failed:', value: stats.failedPublishes, warning: stats.failedPublishes > 0 },
     { key: 'Retrying:', value: stats.retryingPublishes, warning: stats.retryingPublishes > 0 },
     { key: 'Success Rate:', value: stats.successRate }
   ];
   
   const cacheData: StatsItem[] = [
+    { key: `${header('WARMUP')}`, value: '' },
+    { key: 'Warming Up:', value: (stats.warmingUp ? 'Yes' : 'No') + (stats.warmingUp ? ` (${stats.unchecked} unchecked)` : '') , warning: !!stats.warmingUp },
+    { key: '', value: '' },
     { key: 'Online:', value: stats.online, highlight: true },
+    { key: 'Online (publishable):', value: stats.onlinePublishable },
+    { key: 'Online (ignored):', value: stats.onlineIgnored },
     { key: 'Online & Expired:', value: stats.onlineExpired, warning: true },
     { key: 'Offline:', value: stats.offline },
     { key: 'Expired (Total):', value: stats.expired, warning: stats.expired > 0 },
@@ -372,91 +467,67 @@ function createAsciiBox(stats: StatusStats): string {
   // Generate rows for the tables
   for (let i = 0; i < maxRows; i++) {
     let rowContent = '';
-    
+
     // Queue column
     if (i < queueData.length) {
       const item = queueData[i];
-      const keyPadding = ' '.repeat(queueKeyLength - strLength(item.key.toString()));
-      let formattedValue;
-      
+      let formattedValue: string;
       if (item.key === 'Success Rate:' || typeof item.value === 'string') {
-        // Special handling for string values like success rate
-        formattedValue = item.warning ? 
-          warning(item.value.toString()) : 
+        formattedValue = item.warning ?
+          warning(item.value.toString()) :
           (item.highlight ? highlight(item.value.toString()) : value(item.value.toString()));
       } else {
-        // Number values
-        formattedValue = item.warning ? 
-          warning(pad(item.value as number)) : 
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
           (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
       }
-      
-      const cellContent = ` ${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      rowContent += `${cellContent}${' '.repeat(Math.max(0, columnWidth - strLength(cellContent)))}`;
+      const cell = renderCell(subheader(item.key), formattedValue, columnWidth, true);
+      rowContent += cell;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }
-    
+
     // Cache column
     if (i < cacheData.length) {
       const item = cacheData[i];
-      const keyPadding = ' '.repeat(cacheKeyLength - strLength(item.key.toString()));
-      let formattedValue;
-      
+      let formattedValue: string;
       if (typeof item.value === 'string') {
-        // String values
-        formattedValue = item.warning ? 
-          warning(item.value) : 
+        formattedValue = item.warning ?
+          warning(item.value) :
           (item.highlight ? highlight(item.value) : value(item.value));
       } else {
-        // Number values
-        formattedValue = item.warning ? 
-          warning(pad(item.value as number)) : 
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
           (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
       }
-      
-      const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      rowContent += `${cellContent}${' '.repeat(Math.max(0, columnWidth - strLength(cellContent)))}`;
+      const cell = renderCell(subheader(item.key), formattedValue, columnWidth, false);
+      rowContent += cell;
     } else {
       rowContent += ' '.repeat(columnWidth);
     }
-    
+
     // Session column
     if (i < sessionData.length) {
       const item = sessionData[i];
-      const keyPadding = ' '.repeat(sessionKeyLength - strLength(item.key.toString()));
-      let formattedValue;
-      
+      let formattedValue: string;
       if (typeof item.value === 'string') {
-        // String values
-        formattedValue = item.warning ? 
-          warning(item.value) : 
+        formattedValue = item.warning ?
+          warning(item.value) :
           (item.highlight ? highlight(item.value) : value(item.value));
       } else {
-        // Number values
-        formattedValue = item.warning ? 
-          warning(pad(item.value as number)) : 
+        formattedValue = item.warning ?
+          warning(pad(item.value as number)) :
           (item.highlight ? highlight(pad(item.value as number)) : value(pad(item.value as number)));
       }
-      
-      const cellContent = `${subheader(item.key)}${keyPadding} ${formattedValue}`;
-      // Make sure we pad exactly to the remaining width to ensure straight right border
-      const remainingWidth = (boxWidth - 2) - strLength(rowContent) - strLength(cellContent);
-      rowContent += `${cellContent}${' '.repeat(Math.max(0, remainingWidth))}`;
+      // Remaining width for last column in this row
+      const remainingWidth = (boxWidth - 2) - strLength(rowContent);
+      const cell = renderCell(subheader(item.key), formattedValue, remainingWidth, false);
+      rowContent += cell;
     } else {
-      // Fill the remaining width exactly
       const remainingWidth = (boxWidth - 2) - strLength(rowContent);
       rowContent += ' '.repeat(Math.max(0, remainingWidth));
     }
-    
-    // Ensure rowContent is exactly the right width for proper alignment
-    if (strLength(rowContent) < boxWidth - 2) {
-      rowContent += ' '.repeat((boxWidth - 2) - strLength(rowContent));
-    } else if (strLength(rowContent) > boxWidth - 2) {
-      // Trim if somehow too long (shouldn't happen with correct calculations)
-      rowContent = rowContent.substring(0, boxWidth - 2);
-    }
-    
+
     // Add the row to the box
     box += `║${rowContent}║\n`;
   }
@@ -471,7 +542,7 @@ export function incrementChecksCounter(): void {
   checksCounter++;
 }
 
-export function statuses(queueManager: any, interval: number = 20): ReturnType<typeof setInterval> {
+export function statuses(queueManager: QueueManager, interval: number = 20): ReturnType<typeof setInterval> {
   return setInterval(() => {
     logStatus(queueManager, interval);
   }, interval * 100);
@@ -480,7 +551,7 @@ export function statuses(queueManager: any, interval: number = 20): ReturnType<t
 /**
  * Log status information every N checks
  */
-export function logStatus(queueManager: any, interval: number = 20): void {
+export function logStatus(queueManager: QueueManager, interval: number = 20): void {
   checksCounter++;
   if (checksCounter >= interval) {
     checksCounter = 0; // Reset counter
@@ -492,7 +563,7 @@ export function logStatus(queueManager: any, interval: number = 20): void {
   }
 }
 
-export function showStatus(queueManager: any): void {
+export function showStatus(queueManager: QueueManager): void {
   const stats = getStats(queueManager);
   console.log(createAsciiBox(stats));
 }
@@ -500,7 +571,7 @@ export function showStatus(queueManager: any): void {
 /**
  * Format a simple metric for inline display
  */
-export function formatCompactStats(queueManager: any): string {
+export function formatCompactStats(queueManager: QueueManager): string {
   try {
     const stats = getStats(queueManager);
     return `Online: ${stats.online} | Expired: ${stats.expired} | Queued: ${stats.totalQueue}`;

@@ -24,6 +24,15 @@ monitor:
     - 'wss://relay.nostr.watch'
     - 'wss://relaypag.es'
 
+# Publisher configuration for publishing check results and delta events
+publisher:
+  relays:  # Relays for Kind 1066 delta events and Kind 20166 ephemeral state change events
+    - 'wss://relay.nostr.watch'
+    - 'wss://relaypag.es'
+  # retry:
+  #   maxRetries: 5
+  #   initialBackoffMs: 60000
+
 announce:
   relays: 
     - 'wss://purplepag.es'
@@ -88,3 +97,67 @@ relaymon:
         open: 30000
         read: 5000
       max: 200
+
+  # Delta events (Kind 1066) - track changes in relay state over time
+  # delta:
+  #   enabled: false
+  #   max_retries: 10  # Stop publishing delta events after N offline retries
+  #   periods:
+  #     enabled: false
+  #     definitions:
+  #       - '6h'   # 6 hour aggregates
+  #       - '1d'   # Daily aggregates
+  #       - '7d'   # Weekly aggregates
+  #       - '30d'  # Monthly aggregates (approximate)
+
+
+# RelayMon Health Monitoring Configuration Example
+#
+# Add this section to your config.yaml to enable health monitoring
+
+health:
+  # Enable health monitoring system
+  enabled: true
+
+  # HTTP health server configuration
+  server:
+    enabled: true
+    host: "127.0.0.1"  # Bind to localhost (use 0.0.0.0 for all interfaces)
+    port: 8080         # Health server port
+    authEnabled: false # Enable token authentication (requires RELAYMON_HEALTH_AUTH_TOKEN env var)
+
+  # Uptime Kuma push configuration
+  kuma:
+    enabled: true
+    intervalMs: 1m           # Push interval (supports timestrings: 1m = 60000ms)
+    degradedAsUp: true       # Report "degraded" state as "up" to Kuma (with message)
+    startupGraceMs: 30s      # Wait 30s after startup before first push (30s = 30000ms)
+    msgVerbosity: "summary"  # Message verbosity: "summary" or "detailed"
+
+  # Health check thresholds
+  # Note: All time values support timestrings (ms, s, m, h, d) or numeric milliseconds
+  thresholds:
+    checkIdleMs: 5m             # Check loop idle threshold (5m = 300000ms)
+    publishBacklogMax: 100      # Max pending publish events before degraded
+    errorRatePerMin: 10         # Max errors per minute before degraded
+    startupGraceMs: 30s         # Startup grace period (30s = 30000ms)
+
+# Environment variables for secrets (DO NOT put secrets in this file):
+#
+# Kuma push URL (choose one pattern):
+#   RELAYMON_KUMA_PUSH_URL=https://uptime.example.com/api/push/YOUR_TOKEN
+#     OR
+#   RELAYMON_KUMA_BASE_URL=https://uptime.example.com
+#   RELAYMON_KUMA_TOKEN=YOUR_TOKEN
+#
+# Optional: Use _FILE variants for Docker/Kubernetes secrets:
+#   RELAYMON_KUMA_PUSH_URL_FILE=/run/secrets/kuma_push_url
+#   RELAYMON_KUMA_TOKEN_FILE=/run/secrets/kuma_token
+#
+# Health server authentication (optional):
+#   RELAYMON_HEALTH_AUTH_TOKEN=your-secret-token
+#   RELAYMON_HEALTH_AUTH_TOKEN_FILE=/run/secrets/health_auth_token
+#
+# Signing key (already supported):
+#   RELAYMON_NSEC=nsec1... or hex
+#   RELAYMON_NSEC_FILE=/run/secrets/nsec

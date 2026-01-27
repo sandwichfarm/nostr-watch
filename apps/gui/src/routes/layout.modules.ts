@@ -1,6 +1,5 @@
 
 export type ModuleKey =
-  | 'Header'
   | 'lifecycle'
   | 'utils'
   | 'Debugger'
@@ -18,10 +17,6 @@ type ModuleDefinition = {
 };
 
 export const moduleLoaders: Record<ModuleKey, ModuleDefinition> = {
-  Header: {
-    loader: () => import('$lib/components/layout/Header.svelte'),
-    path: '$lib/components/layout/Header.svelte'
-  },
   lifecycle: {
     loader: () => import('$lib/utils/lifecycle'),
     path: '$lib/utils/lifecycle'
@@ -65,7 +60,6 @@ export const moduleLoaders: Record<ModuleKey, ModuleDefinition> = {
 };
 
 export type Modules = {
-  Header: (typeof import('$lib/components/layout/Header.svelte'))["default"];
   lifecycle: typeof import('$lib/utils/lifecycle');
   utils: typeof import('@nostrwatch/utils');
   Debugger: (typeof import('$lib/components/partials/Debugger.svelte'))["default"];
@@ -83,24 +77,25 @@ export async function loadModules(
 ): Promise<Modules> {
   const loadedModules = {} as Partial<Modules>;
 
-  for (const key of Object.keys(moduleLoaders) as ModuleKey[]) {
-    const { loader, path } = moduleLoaders[key];
-    try {
-      const mod = await loader();
-      const loaded: Modules[typeof key] = mod.default ?? mod;
-      loadedModules[key] = loaded;
-      if (onProgress) {
-        onProgress(key, loaded);
+  const keys = Object.keys(moduleLoaders) as ModuleKey[];
+  await Promise.all(
+    keys.map(async (key) => {
+      const { loader, path } = moduleLoaders[key];
+      try {
+        const mod = await loader();
+        const loaded: Modules[typeof key] = mod.default ?? mod;
+        loadedModules[key] = loaded;
+        onProgress?.(key, loaded);
+      } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(
+          `Failed to load module "${key}" from path "${path}". Error: ${errorMsg}\n` +
+            `Please verify that the file exists and that the import path is correct.`
+        );
+        throw new Error(`Failed to load module "${key}" from path "${path}": ${errorMsg}`);
       }
-    } catch (error: unknown) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(
-        `Failed to load module "${key}" from path "${path}". Error: ${errorMsg}\n` +
-        `Please verify that the file exists and that the import path is correct.`
-      );
-      throw new Error(`Failed to load module "${key}" from path "${path}": ${errorMsg}`);
-    }
-  }
+    })
+  );
 
   return loadedModules as Modules;
 }

@@ -1,6 +1,5 @@
 
 export type ModuleKey =
-  | 'Header'
   | 'lifecycle'
   | 'utils'
   | 'Debugger'
@@ -18,10 +17,6 @@ type ModuleDefinition = {
 };
 
 export const moduleLoaders: Record<ModuleKey, ModuleDefinition> = {
-  Header: {
-    loader: () => import('$lib/components/layout/Header.svelte'),
-    path: '$lib/components/layout/Header.svelte'
-  },
   lifecycle: {
     loader: () => import('$lib/utils/lifecycle'),
     path: '$lib/utils/lifecycle'
@@ -65,7 +60,6 @@ export const moduleLoaders: Record<ModuleKey, ModuleDefinition> = {
 };
 
 export type Modules = {
-  Header: (typeof import('$lib/components/layout/Header.svelte'))["default"];
   lifecycle: typeof import('$lib/utils/lifecycle');
   utils: typeof import('@nostrwatch/utils');
   Debugger: (typeof import('$lib/components/partials/Debugger.svelte'))["default"];

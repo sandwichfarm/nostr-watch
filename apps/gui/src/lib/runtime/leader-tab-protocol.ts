@@ -19,6 +19,11 @@ export type LeaderTabRpcOpMap = {
   'sys.hello': { args: []; result: LeaderTabHello };
   'sys.snapshot': { args: [LeaderTabSnapshotOptions?]; result: LeaderTabSnapshotResponse };
 
+  // Cross-tab preference/state persistence (leader tab is the single writer).
+  'state.localStorageSet': { args: [string, any]; result: boolean };
+  'state.stateManagerSet': { args: [string, any]; result: boolean };
+  'monitors.setEnabled': { args: [string, boolean]; result: boolean };
+
   'cache.REQ': { args: [any[]]; result: IEvent[] };
   'cache.COUNT': { args: [any[]]; result: number };
   'cache.DELETE': { args: [any[]]; result: string[] };

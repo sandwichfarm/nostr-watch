@@ -52,7 +52,13 @@ let count = 0
 /**
  * Update OPFS status stores based on the cache adapter type
  */
-const updateOpfsStatus = (r66: Route66 | null) => {
+type CacheStorageStatus = {
+    kind: 'sqlite' | 'memory' | 'unknown';
+    reason?: string;
+    errorMessage?: string;
+};
+
+const updateOpfsStatus = async (r66: Route66 | null) => {
     if (!r66) {
         opfsStatus.set('pending');
         return;
@@ -66,34 +72,29 @@ const updateOpfsStatus = (r66: Route66 | null) => {
         opfsStatus.set('online'); // Consider it "online" since it's working via RPC
         opfsError.set(null);
     } else if (adapterName === 'NostrSqliteAdapter') {
-        // Check if the relay is using SQLite or InMemoryRelay
-        const relay = (cacheAdapter as any)?._relay;
-        if (relay) {
-            // Try to detect if it's using InMemoryRelay (fallback)
-            // The relay.worker exists for both, but we can check the relay state
-            const state = (relay as any)?.state;
-            const relayHandler = state?.relay;
-            const relayType = relayHandler?.constructor?.name;
+        const relay = (cacheAdapter as any)?._relay as { status?: () => Promise<CacheStorageStatus> } | undefined;
+        if (!relay?.status) {
+            opfsStatus.set('error');
+            opfsError.set('Cache adapter relay not initialized');
+            return;
+        }
 
-            if (relayType === 'InMemoryRelay') {
+        opfsStatus.set('pending');
+        try {
+            const status = await relay.status();
+            if (status?.kind === 'memory') {
                 opfsStatus.set('fallback');
-                opfsError.set('OPFS unavailable, using in-memory storage');
-            } else if (relayType === 'SqliteRelay') {
+                opfsError.set(status.errorMessage ?? 'OPFS unavailable, using in-memory storage');
+            } else if (status?.kind === 'sqlite') {
                 opfsStatus.set('online');
                 opfsError.set(null);
             } else {
-                // Worker-based relay - we can't easily check the type
-                // Assume it's working if the adapter is ready
-                if (cacheAdapter.isReady) {
-                    opfsStatus.set('online');
-                    opfsError.set(null);
-                } else {
-                    opfsStatus.set('pending');
-                }
+                opfsStatus.set('pending');
+                opfsError.set(status?.errorMessage ?? null);
             }
-        } else {
+        } catch (e) {
             opfsStatus.set('error');
-            opfsError.set('Cache adapter relay not initialized');
+            opfsError.set(e instanceof Error ? e.message : String(e));
         }
     } else {
         opfsStatus.set('pending');
@@ -126,8 +127,16 @@ const configureNip66Relays = () => {
     // Subscribe to changes (only once)
     if (!nip66RelayUnsubscriber) {
         nip66RelayUnsubscriber = enabledNip66RelayUrls.subscribe((urls) => {
-            if ($route66?.services?.monitors && urls.length > 0) {
-                $route66.services.monitors.setRelays('route66', urls);
+            if (urls.length > 0) {
+                if ($route66?.services?.monitors) {
+                    $route66.services.monitors.setRelays('route66', urls);
+                }
+                if (($route66 as any)?.services?.relay) {
+                    ($route66 as any).services.relay.setRelays('route66', urls);
+                }
+                if (($route66 as any)?.services?.trustAssertions) {
+                    ($route66 as any).services.trustAssertions.setRelays('route66', urls);
+                }
                 if (DEV) {
                     console.log('NIP-66 relays updated:', urls);
                 }
@@ -143,6 +152,14 @@ export const bindBootstrapEmitters = (from?: string) => {
     
     if (!$route66 || typeof $route66.on !== 'function') {
         throw new Error('Invalid nip66Instance: missing `on` method.');
+    }
+
+    const onEvent = (event: IEvent) => {
+        if (!event) return;
+        // Check events are expected to arrive in batches via the `events` emitter; handling
+        // them here would create a hot path during cache hydration.
+        if ((event as any)?.kind === 30166) return;
+        publishEventsToMemoryRelay([event], 'onEvent')
     }
 
     const onEvents = (_events: IEvent[]) => {
@@ -172,13 +189,15 @@ export const bindBootstrapEmitters = (from?: string) => {
         });
 
         try {
-            const all: any[] | undefined = ($route66 as any)?.services?.monitors?.array;
-            if (all?.length) {
-                const cached = all
-                    .map((m: any) => (typeof m?.toCache === 'function' ? m.toCache() : null))
-                    .filter(Boolean);
-                if (cached.length) {
-                    StateManager.set('cache:monitors', cached);
+            if (get(tabState) === 'leader') {
+                const all: any[] | undefined = ($route66 as any)?.services?.monitors?.array;
+                if (all?.length) {
+                    const cached = all
+                        .map((m: any) => (typeof m?.toCache === 'function' ? m.toCache() : null))
+                        .filter(Boolean);
+                    if (cached.length) {
+                        StateManager.set('cache:monitors', cached);
+                    }
                 }
             }
         } catch {}
@@ -187,8 +206,10 @@ export const bindBootstrapEmitters = (from?: string) => {
 
     $route66.off('monitor:update', onMonitorUpdate);
     $route66.off('events', onEvents);
+    $route66.off('event', onEvent);
     $route66.on('monitor:update', onMonitorUpdate);    
     $route66.on('events', onEvents);
+    $route66.on('event', onEvent);
 
     emittersBoundTo = $route66;
 };
@@ -203,7 +224,7 @@ export const instance = async (): Promise<Route66> => {
 
     // If mode changed (follower -> leader takeover), force a fresh instance.
     if ($route66 && runtimeMode && runtimeMode !== desiredMode) {
-        destroy();
+        await destroy();
     }
 
     if(initializing) {
@@ -253,7 +274,7 @@ export const instance = async (): Promise<Route66> => {
     await $route66.ready();
 
     // Update OPFS status based on which adapter is in use
-    updateOpfsStatus($route66);
+    await updateOpfsStatus($route66);
 
     // Configure NIP-66 relays from user preferences
     configureNip66Relays();

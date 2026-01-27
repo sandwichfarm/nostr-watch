@@ -5,7 +5,7 @@ import { eventsArray } from './events.js';
 
 import { Nip66CheckEvent } from '@nostrwatch/route66/models';
 import { StateManager } from "@nostrwatch/route66";
-import { doAggregateCache, isBootstrapping, tabState } from "./app.js";
+import { doAggregateCache, isBootstrapping, statsAsOf, tabState } from "./app.js";
 import { throttledDerived } from "$utils/stores.js";
 import { nip11ValidationErrorCount } from "./nip11-validations.js";
 import { eventKey } from "$lib/utils/event-keys";
@@ -317,8 +317,9 @@ function scheduleCacheSave(data: any[]) {
 }
 
 export const relayCheckAggregates: Readable<any[]> = throttledDerived(
-  [relayChecks, monitorsSorted, monitorsLivenessLeniency, monitorsLivenessDeadThreshold, tabState, isBootstrapping],
-  ([$relayChecks, $monitorsSorted, $livenessLeniency, $deadThreshold, $tabState, $isBootstrapping]) => {
+  [relayChecks, monitorsSorted, monitorsLivenessLeniency, monitorsLivenessDeadThreshold, tabState, isBootstrapping, statsAsOf],
+  ([$relayChecks, $monitorsSorted, $livenessLeniency, $deadThreshold, $tabState, $isBootstrapping, $statsAsOf]) => {
+
   // Fast path: if no relay checks yet, return cached data
   const relayEntries = Object.entries($relayChecks);
   if (!relayEntries.length) {
@@ -326,10 +327,12 @@ export const relayCheckAggregates: Readable<any[]> = throttledDerived(
     return cached.length ? cached : [];
   }
 
+  
+
   let aggregates = relayEntries.map(([relay, item]) => {
     // Skip URL normalization for performance - relay URLs should already be normalized
     return {
-      relay,
+      relay: new URL(relay).toString(),
       ...item.aggregate,
       id: relay
     }
@@ -353,7 +356,11 @@ export const relayCheckAggregates: Readable<any[]> = throttledDerived(
     const leniency = Math.min(2, Math.max(1, typeof leniencyRaw === "number" ? leniencyRaw : Number(leniencyRaw)));
     const deadThresholdSeconds = parseDeadThresholdSeconds($deadThreshold);
 
-    const now = Math.round(Date.now() / 1000);
+    // Use the latest known-good dataset timestamp as "now" so seed/cached datasets
+    // don't collapse to all-dead just because they're older than wall-clock time.
+    const wallNow = Math.round(Date.now() / 1000);
+    const refNowRaw = typeof $statsAsOf === "number" && Number.isFinite($statsAsOf) ? Math.round($statsAsOf) : 0;
+    const now = refNowRaw > 0 ? Math.min(wallNow, refNowRaw) : wallNow;
     onlineAfter = now - Math.max(0, Math.round(baselineFrequency * leniency));
     deadBefore = now - Math.max(0, deadThresholdSeconds | 0);
 
@@ -484,6 +491,20 @@ export const relaySpeedGroupResolver: Readable<(value: number) => SpeedGroups> =
     };
   }
 );
+
+export interface RelayLivenessCounts {
+  online: number,
+  offline: number,
+  dead: number
+}
+
+export const relayLivenessCounts: Readable<RelayLivenessCounts> = derived( relayCheckAggregates, $relayCheckAggregates => {
+  return {
+    online: $relayCheckAggregates.filter( c => c.liveness === 'online' )?.length || 0,
+    offline: $relayCheckAggregates.filter( c => c.liveness === 'offline' )?.length || 0,
+    dead: $relayCheckAggregates.filter( c => c.liveness === 'dead' )?.length || 0
+  }
+})
 
 export const SpeedGroupBars: Record<SpeedGroups, string> = {
   [SpeedGroups.LightningFast]: '▁▂▃▅█',

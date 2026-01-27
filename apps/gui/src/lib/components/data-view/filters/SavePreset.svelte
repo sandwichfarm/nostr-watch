@@ -5,13 +5,16 @@
     import Checkbox from '$ui/checkbox/checkbox.svelte';
     import Label from '$ui/label/label.svelte';
     import Button from '$ui/button/button.svelte';
+	import { cn } from '$lib/utils/ui.js';
     import { StateManager } from '@nostrwatch/route66';
+    import { stateManagerSet } from '$lib/runtime/state-manager-sync';
     import { sharableConfig, type SharableConfigKeys } from '../table/utils';
     import type { DataTableConfig } from '../DataTableTypes';
     import { compress } from 'compress-json';
 
     export let config: Writable<DataTableConfig>;
     export let onSave: () => void = () => {};
+	export let triggerClass: string | undefined = undefined;
 
     const USER_PRESETS_KEY = 'preferences:relays:userPresets';
 
@@ -93,7 +96,7 @@
         };
 
         // Save to storage
-        StateManager.set(USER_PRESETS_KEY, [...existingPresets, newPreset]);
+        void stateManagerSet(USER_PRESETS_KEY, [...existingPresets, newPreset]);
 
         // Reset form
         presetName.set('');
@@ -112,9 +115,9 @@
 </script>
 
 <Dialog.Root bind:open={dialogOpen}>
-    <Dialog.Trigger>
-        <Button variant="secondary" size="small" class="mb-2 text-sm font-bold py-1 px-2 mr-1">
-            Save Preset
+    <Dialog.Trigger asChild let:builder>
+        <Button builders={[builder]} variant="secondary" size="sm" class={cn("whitespace-nowrap", triggerClass)}>
+            Save
         </Button>
     </Dialog.Trigger>
     <Dialog.Content class="p-10 z-[9999]">

@@ -36,7 +36,9 @@ describe('nostrawl', () => {
   it('should create a BullMqAdapter instance when specified', () => {
     const bullMqOptions = { ...options, adapter: 'bullmq' as const };
     nostrawl(relays, bullMqOptions);
-    expect(BullMqAdapter).toHaveBeenCalledWith(relays, expect.objectContaining(bullMqOptions));
+    // In this monorepo build, only the PQueue adapter is supported.
+    expect(BullMqAdapter).not.toHaveBeenCalled();
+    expect(PQueueAdapter).toHaveBeenCalledWith(relays, expect.objectContaining(bullMqOptions));
   });
 
   it('should return the adapter instance', () => {

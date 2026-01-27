@@ -17,7 +17,11 @@ import type { DataFormatters, DataTableConfigDependencies, NameFormatter } from 
 import { nip11 } from 'nostr-tools';
 import { nip11ValidationErrorCount } from '$stores/nip11-validations';
 
+import { pastelPairFromString } from '$utils/colors'; 
+
 import pickaxe from 'lucide-svelte/icons/pickaxe';
+
+
 
 let $monitorsMap: Map<string, Monitor>;
 
@@ -291,10 +295,14 @@ export const dataFormatters: DataFormatters = {
 }
 
 export const tableFormatters: Formatters = {
+    
+
     relay: (relay: string, row: any) => {
         const { icon } = row;
-        const formatted = `<span class="inline-block my-1 text-xl bg-black/10 dark:bg-white/10 py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
-        const iconHtml = icon? `<img src="${icon}" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`: '<span class="inline-block mr-2 h-6 w-6"></span>'
+        const formatted = `<span style="color: ${pastelPairFromString(relay)?.dark};" class="inline-block my-1 text-sm font-mono py-1 px-2 rounded-sm">${truncateWithEllipsis(relay, 44).replace('wss://', '').replace('ws://', '')}</span>`;
+        const iconHtml = icon
+            ? `<img src="${icon}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="mr-2 h-6 w-6 rounded-full overflow-hidden inline-block" />`
+            : '<span class="inline-block mr-2 h-6 w-6"></span>';
         return `<a class="text-lg" href="/relays/${generateRelayPathFromUrl(relay)}">${iconHtml}${formatted}</a>`;
     },
     // monitorPubkey: (pubkey) => {
@@ -329,32 +337,32 @@ export const tableFormatters: Formatters = {
     },
     dd: (dd: DD ) => {
         if(!dd?.lat || !dd?.lon) return '';
-        return `<span class="text-xs font-bold white/50">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`
+        return `<span class="text-xs font-bold white/50 font-mono">${dd.lat.toFixed(3)}, ${dd.lon.toFixed(3)}</span>`
     },
     lastSeen: (lastSeen) => {
         if(lastSeen < 0) {
             return ''
         }
-        return `<span class="text-xs">${timeAgo(lastSeen*1000)}</span>`;
+        return `<span class="text-xs font-mono">${timeAgo(lastSeen*1000)}</span>`;
     },
     seenTimes: (seenTimes) => {
-        return `<span class="rounded-full bg-white/20 dark:bg-black/20 py-1 px-2 font-bold">${seenTimes}</span>`
+        return `<span class="rounded-full bg-white/20 dark:bg-black/20 py-1 px-2 font-bold font-mono">${seenTimes}</span>`
     },
     rtt: (rtt) => {
         const wholeNum = Math.round(rtt)
         if(wholeNum <= 0) return '';
         const rttColor = wholeNum < 500? 'text-green-400': wholeNum < 1000? 'text-orange-400/80': 'text-red-600';
-        return `<span class="text-xs font-mono font-bold ${rttColor}">${wholeNum}ms`;
+        return `<span class="font-mono text-xs font-mono font-bold ${rttColor}">${wholeNum}ms`;
     }, 
     ipv4: (ipv4) => {
         if(!ipv4) return '';
-        return ipv4.map(ip => `<span class="p-1 mr-1 block text-xs clear-right">${ip}</span>`).join('');
+        return ipv4.map(ip => `<span class="p-1 mr-1 block text-xs clear-right font-mono">${ip}</span>`).join('');
     },
     nip11ValidationErrors: (errorsCount) => {
         if(errorsCount === 0) 
             return ``; 
         else 
-            return `<span class="text-xs font-bold bg-red-600/50 px-2 py-1 rounded-full inline-block">
+            return `<span class="font-mono text-xs font-bold bg-red-600/50 px-2 py-1 rounded-full inline-block">
                 ${errorsCount}
                 </span>`;    
     },
@@ -372,7 +380,7 @@ export const tableFormatters: Formatters = {
             const monitor = $monitorsMap.get(pk);
             if (!monitor) return;
     
-            str += `<img src="${monitor.photo}" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
+            str += `<img src="${monitor.photo}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="border border-[1px] border-black w-5 h-5 relative rounded-full inline-block opacity-${100-i*20} ${i>0? '-ml-[10px]': ''}" style="z-index: ${z};" />`;
             i++;
             z--;
         });
@@ -479,7 +487,7 @@ export const tableFormatters: Formatters = {
         let name = ''
         if(profile?.photo) {
             image = `<a href="/operators/${profile.pubkey}" class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
-                <img src=${profile.photo} alt=${profile.photo} class="w-full h-auto" />
+                <img src="${profile.photo}" alt="${profile.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
             </a>`
         }
         return `<div class="flex">${image}</div>`
@@ -487,13 +495,21 @@ export const tableFormatters: Formatters = {
     operatorPubkeyValid: (value?: boolean) => {
         if(!value) return ''
         const icon =  value? IconCheckGreen: IconCheckRed;
-        return `<img src="${icon}" />`
+        return `<img src="${icon}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`
     },
     software: (software) => {
         if(typeof software !== 'string') return '-';
         software = makeSoftwareReadable(software);
         return truncateWithEllipsis(software, 33);
     },
+    name: (name, row) => {
+        const { relay } = row;
+        return `<span class="text-xs lowercase font-mono opacity-80" style="color: ${pastelPairFromString(relay)?.dark}">${name}</div>`
+    },
+    description: (description, row) => {
+        const { relay } = row;
+        return `<span class="text-xs lowercase font-mono opacity-80" style="color: ${pastelPairFromString(relay)?.dark}">${description}</div>`
+    }
 }
 
 export const filterFormatters: Formatters = {
@@ -519,7 +535,7 @@ export const filterFormatters: Formatters = {
             name = truncateWithEllipsis(profile.name, 33);
         }
         let image = `<span class="inline-block rounded-full overflow-hidden w-8 h-8 mr-2">
-             <img src="${profile.photo}" alt="${profile.photo}" class="w-full h-auto" />
+             <img src="${profile.photo}" alt="${profile.photo}" loading="lazy" decoding="async" referrerpolicy="no-referrer" class="w-full h-auto" />
             </span>`
         return `<div class="flex">
             <div>${image}</div>
@@ -557,6 +573,7 @@ export default {
     availableColumnKeys,
     availableFilterKeys,
     tableRowStyler,
+    rowBannerEnabled: false,
     sortState: {
         columnId: 'lastSeen',
         direction: 'desc'

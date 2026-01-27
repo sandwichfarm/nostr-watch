@@ -14,6 +14,7 @@ import {
 } from './leader-tab-protocol';
 
 type PendingCall = {
+  promise: Promise<any>;
   resolve: (value: any) => void;
   reject: (reason?: any) => void;
   timeoutId?: number;
@@ -48,7 +49,7 @@ export class LeaderTabRpcClient {
 
   private channel: BroadcastChannel | null = null;
   private pending = new Map<string, PendingCall>();
-  private streams = new Map<string, StreamHandler>();
+  private streams = new Map<string, Set<StreamHandler>>();
   private streamSources = new Map<string, string>();
   private broadcasts = new Set<(msg: BroadcastMessage) => void>();
 
@@ -103,9 +104,15 @@ export class LeaderTabRpcClient {
       if (stream.targetId !== this.id) return;
       const expectedSource = this.streamSources.get(stream.requestId);
       if (expectedSource && stream.sourceId !== expectedSource) return;
-      const handler = this.streams.get(stream.requestId);
-      if (!handler) return;
-      handler(stream);
+      const handlers = this.streams.get(stream.requestId);
+      if (!handlers || handlers.size === 0) return;
+      for (const handler of handlers) {
+        try {
+          handler(stream);
+        } catch {
+          // Avoid letting a single subscriber crash all stream processing.
+        }
+      }
       return;
     }
   }
@@ -123,31 +130,40 @@ export class LeaderTabRpcClient {
     const requestId = options.requestId ?? createId();
     const timeoutMs = options.timeoutMs ?? 30_000;
 
-    if (this.pending.has(requestId)) {
-      return Promise.reject(new Error(`Leader RPC request already pending: ${requestId}`));
+    const existing = this.pending.get(requestId);
+    if (existing) {
+      return existing.promise as Promise<LeaderTabRpcOpMap[K]['result']>;
     }
 
-    return new Promise((resolve, reject) => {
-      const timeoutId =
-        timeoutMs > 0
-          ? window.setTimeout(() => {
-              this.pending.delete(requestId);
-              reject(new Error(`Leader RPC timeout: ${op}`));
-            }, timeoutMs)
-          : undefined;
+    let timeoutId: number | undefined = undefined;
+    let resolveFn!: (value: any) => void;
+    let rejectFn!: (reason?: any) => void;
 
-      this.pending.set(requestId, { resolve, reject, timeoutId });
-
-      const req: RpcRequestMessage = {
-        v: LEADER_TAB_PROTOCOL_VERSION,
-        type: 'rpc',
-        requestId,
-        sourceId: this.id,
-        op,
-        args: args as unknown as any[],
-      };
-      this.post(req);
+    const promise = new Promise((resolve, reject) => {
+      resolveFn = resolve;
+      rejectFn = reject;
     });
+
+    if (timeoutMs > 0) {
+      timeoutId = window.setTimeout(() => {
+        this.pending.delete(requestId);
+        rejectFn(new Error(`Leader RPC timeout: ${op}`));
+      }, timeoutMs);
+    }
+
+    this.pending.set(requestId, { promise, resolve: resolveFn, reject: rejectFn, timeoutId });
+
+    const req: RpcRequestMessage = {
+      v: LEADER_TAB_PROTOCOL_VERSION,
+      type: 'rpc',
+      requestId,
+      sourceId: this.id,
+      op,
+      args: args as unknown as any[],
+    };
+    this.post(req);
+
+    return promise as Promise<LeaderTabRpcOpMap[K]['result']>;
   }
 
   async waitForLeader(options: WaitForLeaderOptions = {}) {
@@ -237,56 +253,80 @@ export class LeaderTabRpcClient {
     const timeoutMs = options.timeoutMs ?? 30_000;
     const autoCloseOnResponse = options.autoCloseOnResponse ?? true;
 
-    if (this.pending.has(requestId)) {
-      return Promise.reject(new Error(`Leader RPC request already pending: ${requestId}`));
+    // Deduplicate concurrent stream requests for the same `requestId`. This commonly happens when
+    // multiple components race to subscribe to the same deterministic hash. We fan-out stream
+    // events to all registered handlers and return the in-flight promise.
+    const existing = this.pending.get(requestId);
+    if (existing) {
+      this.addStreamHandler(requestId, options.onStream);
+      return existing.promise as Promise<LeaderTabRpcOpMap[K]['result']>;
     }
 
-    this.streams.set(requestId, options.onStream);
+    // New stream request (not a join): replace any prior handlers for this requestId.
+    this.streams.set(requestId, new Set([options.onStream]));
 
-    return new Promise((resolve, reject) => {
-      const timeoutId =
-        timeoutMs > 0
-          ? window.setTimeout(() => {
-              this.pending.delete(requestId);
-              // If a stream never establishes, keeping it around just leaks.
-              // Established keepAlive streams should resolve quickly (leader returns immediately).
-              this.streams.delete(requestId);
-              reject(new Error(`Leader RPC timeout: ${op}`));
-            }, timeoutMs)
-          : undefined;
+    let timeoutId: number | undefined = undefined;
+    let resolveFn!: (value: any) => void;
+    let rejectFn!: (reason?: any) => void;
 
-      this.pending.set(requestId, {
-        resolve: (value) => {
-          if (autoCloseOnResponse) {
-            this.streams.delete(requestId);
-            this.streamSources.delete(requestId);
-          }
-          resolve(value);
-        },
-        reject: (err) => {
+    const promise = new Promise((resolve, reject) => {
+      resolveFn = resolve;
+      rejectFn = reject;
+    });
+
+    if (timeoutMs > 0) {
+      timeoutId = window.setTimeout(() => {
+        this.pending.delete(requestId);
+        // If a stream never establishes, keeping it around just leaks.
+        // Established keepAlive streams should resolve quickly (leader returns immediately).
+        this.streams.delete(requestId);
+        rejectFn(new Error(`Leader RPC timeout: ${op}`));
+      }, timeoutMs);
+    }
+
+    this.pending.set(requestId, {
+      promise,
+      resolve: (value) => {
+        if (autoCloseOnResponse) {
           this.streams.delete(requestId);
           this.streamSources.delete(requestId);
-          reject(err);
-        },
-        timeoutId,
-      });
-
-      const req: RpcRequestMessage = {
-        v: LEADER_TAB_PROTOCOL_VERSION,
-        type: 'rpc',
-        requestId,
-        sourceId: this.id,
-        op,
-        args: args as unknown as any[],
-        stream: true,
-      };
-      this.post(req);
+        }
+        resolveFn(value);
+      },
+      reject: (err) => {
+        this.streams.delete(requestId);
+        this.streamSources.delete(requestId);
+        rejectFn(err);
+      },
+      timeoutId,
     });
+
+    const req: RpcRequestMessage = {
+      v: LEADER_TAB_PROTOCOL_VERSION,
+      type: 'rpc',
+      requestId,
+      sourceId: this.id,
+      op,
+      args: args as unknown as any[],
+      stream: true,
+    };
+    this.post(req);
+
+    return promise as Promise<LeaderTabRpcOpMap[K]['result']>;
   }
 
   closeStream(requestId: string) {
     this.streams.delete(requestId);
     this.streamSources.delete(requestId);
+  }
+
+  private addStreamHandler(requestId: string, handler: StreamHandler) {
+    const existing = this.streams.get(requestId);
+    if (existing) {
+      existing.add(handler);
+      return;
+    }
+    this.streams.set(requestId, new Set([handler]));
   }
 
   onBroadcast(handler: (msg: BroadcastMessage) => void): () => void {

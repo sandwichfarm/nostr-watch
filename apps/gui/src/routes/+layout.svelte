@@ -4,35 +4,39 @@
 
   import 'nostr-zap'
 
-  import { page, navigating } from '$app/stores';
+  import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
   import { writable, type Writable, get } from 'svelte/store';
   import { loadModules, type ModuleKey, type Modules } from './layout.modules.js';
   import { startLeaderTabRpcServer, stopLeaderTabRpcServer } from '$lib/runtime/leader-tab-server';
+  import HeaderComponent from '$lib/components/layout/Header.svelte';
 
-  import { doBootstrap } from '$lib/stores/routines.js';
-  import {
-    type TabStateType,
-    unsupported,
-    appState,
-    tabState,
-    hasBeenBootstrapped,
-    isSeeded,
-  } from '$lib/stores/app';
-  import { showDebugButton } from '$lib/stores/preferences';
-  import BootstrapLoading from './(components)/BootstrapLoading.svelte';
-  import {
-    startBootActivity,
-    completeBootActivity,
-    resetBootActivities,
-  } from '$lib/stores/boot-activity';
+	  import { doBootstrap } from '$lib/stores/routines.js';
+	  import {
+	    type TabStateType,
+	    unsupported,
+	    appState,
+	    tabState,
+	    hasBeenBootstrapped,
+	    isSeeded,
+	    opfsStatus,
+	  } from '$lib/stores/app';
+	  import { relayCheckAggregates } from '$lib/stores';
+	  import { showDebugButton } from '$lib/stores/preferences';
+	  import BootstrapLoading from './(components)/BootstrapLoading.svelte';
+	  import FollowerLoading from './(components)/FollowerLoading.svelte';
+	  import {
+	    startBootActivity,
+	    completeBootActivity,
+	    resetBootActivities,
+	  } from '$lib/stores/boot-activity';
+	  import { seedBootStatus } from '$lib/stores/boot-state';
 
 
   let modules: Record<ModuleKey, any> | null = null;
   let progressList: ModuleKey[] = [];
 
-  let Header: Modules['Header'];
   let Debugger: Modules['Debugger'];
   let ActivityList: Modules['ActivityList'];
 
@@ -106,23 +110,25 @@
     if (DEV) console.log('Booting...');
     if (get(unsupported)) return;
 
-    startBootActivity('init', 'Initializing app');
+    // startBootActivity('init', 'Initialization');
     appState.set('booting');
     await initServices();
     appState.set('running');
     const route66 = await instance();
     await route66.ready();
-    completeBootActivity('init');
+    // completeBootActivity('init');
 
-    dataRegisterInit();
-    const datas: string[] = ['sync:cache'];
-    if (get(tabState) === 'leader') {
-      datas.push(hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
-    }
-    void get(dataRegister)
-      .require(datas)
-      .catch((err) => console.error('[DataRegister] require failed', err));
-  }
+	    dataRegisterInit();
+	    const datas: string[] = ['sync:cache'];
+	    if (get(tabState) === 'leader') {
+	      const opfs = get(opfsStatus);
+	      const forceFullSync = opfs === 'fallback' || opfs === 'error';
+	      datas.push(forceFullSync ? 'sync:all-force' : hasBeenBootstrapped() ? 'sync:all' : 'sync:all-force');
+	    }
+	    void get(dataRegister)
+	      .require(datas)
+	      .catch((err) => console.error('[DataRegister] require failed', err));
+	  }
 
   const initServices = async () => {
     userService.set(new UserService((await instance()).adapters));
@@ -152,7 +158,7 @@
   const load = async () => {
     // Reset and start tracking asset loading
     resetBootActivities();
-    startBootActivity('assets', 'Loading assets');
+    startBootActivity('assets', 'Assets');
 
     modules = await loadModules((key, mod) => {
       progressList = [...progressList, key];
@@ -160,7 +166,7 @@
     });
     ({lifecycle} = modules.lifecycle);
     ({ instance, destroy } = modules.lifecycle);
-    ({ Header, Debugger, ActivityList } = modules);
+    ({ Debugger, ActivityList } = modules);
     ({ userService } = modules.services);
     ({ resetStores } = modules.routines);
     ({ totalMonitors } = modules.events);
@@ -205,17 +211,10 @@
 
     activityManager = new ActivityManager(IDLE_TIMEOUT_MS);
 
-    // Give the ActivityManager a tick to claim/follow leadership before boot.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    // Leader-tab runtime RPC server (only runs in the elected leader tab).
-    if (get(tabState) === 'leader') startLeaderTabRpcServer(leaderRpcOptions);
-    else stopLeaderTabRpcServer();
-
     lastRole = get(tabState);
-    await runBoot();
 
-    // React to leader/follower role changes after initial boot.
+    // React to leader/follower role changes immediately (even during boot),
+    // so follower tabs don't time out waiting for a leader RPC server.
     unsubscribeTabState = tabState.subscribe(async (role) => {
       if (!role || role === lastRole) return;
 
@@ -227,12 +226,24 @@
         await shutdown();
       }
 
+      lastRole = role;
+
       if (role === 'leader' || role === 'follower') {
+        // If boot was running while we changed roles, complete it and then run again
+        // so Route66/leader RPC reflects the current leader/follower mode.
+        if (bootInFlight) await bootInFlight;
         await runBoot();
       }
-
-      lastRole = role;
     });
+
+    // Leader-tab runtime RPC server (only runs in the elected leader tab).
+    if (get(tabState) === 'leader') startLeaderTabRpcServer(leaderRpcOptions);
+    else stopLeaderTabRpcServer();
+
+    // Give the ActivityManager a tick to claim/follow leadership before boot.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    await runBoot();
 
     isReady = true;
   });
@@ -245,39 +256,26 @@
     activityManager?.destroy?.();
   });
 
+  // --------------------------------------------------------------------------------
+	  // Render gating
+	  // --------------------------------------------------------------------------------
+	  $: hasActualData = $relayCheckAggregates?.length > 0;
+	  $: seedInProgress = $seedBootStatus === 'in_progress';
+	  // "bootloaded" === seed import completed (or no seed payload available).
+	  $: seedReady = $isSeeded || $seedBootStatus === 'complete';
 
+	  // Fresh state: no prior bootstrap markers AND no seed marker.
+	  // This supports old installs (bootstrapped pre-seed) without forcing seed boot UI.
+	  $: isFreshState = !hasBeenBootstrapped() && !$isSeeded;
 
-  $: loadedEnough = hasBeenBootstrapped() || $isSeeded || $totalMonitors > 1
+	  // Bootloader = build-seed import (first run / after reset).
+	  $: needsSeedBootstrap = isFreshState && !seedReady;
 
-  let loadingThresholdPassed = false;
-  let loadingThresholdTimeout: ReturnType<typeof setTimeout>;
-
-  $: {
-    if($navigating?.to){
-      if (DEV) console.log('navigating to:', $navigating.to)
-      clearTimeout(loadingThresholdTimeout)
-      loadingThresholdPassed = false
-    }
-    if($navigating?.from){
-      if (DEV) console.log('navigating from:', $navigating.from)
-      loadingThresholdTimeout = setTimeout(() => loadingThresholdPassed = true, 1000 )
-    }
-  }
-
-  setTimeout(() => loadingThresholdPassed = true, 1000 )
-
-  let loadedEnoughSignal = false;
-
-  $: {
-    if(loadedEnough){
-      setTimeout(() => {
-        if (DEV) console.log('loaded enough.')
-        loadedEnoughSignal = true;
-      }, 1000);
-    }
-  }
-
-  $: loading = loadingThresholdPassed && (!isReady || !loadedEnoughSignal);
+	  // Only show full-screen boot UI when a seed import is required.
+	  // After seed is loaded, show the app immediately; network sync continues in background.
+	  $: showBootstrapLoading = needsSeedBootstrap && ($tabState === 'leader' || !seedInProgress);
+	  $: showFollowerWaiting = needsSeedBootstrap && seedInProgress && $tabState === 'follower';
+	  $: showContent = !needsSeedBootstrap;
 </script>
 
 {#if $unsupported}
@@ -286,25 +284,16 @@
   <div class="text-xs opacity-30">This version of nostr.watch does not support mobile devices.</div>
 </div>
 {:else}
-  {#if loading && !hasBeenBootstrapped() && !$isSeeded}
-    <BootstrapLoading {isReady} />
-  {:else if isReady}
-    {#if $tabState === 'leader' || $tabState === 'follower'}
-      {#if loadedEnoughSignal}
-        <Header />
-        <div id="content-wrapper" class="block">
-          <slot />
-        </div>
-      {/if}
-    {:else}
-      <div class="flex flex-col items-center justify-center h-screen px-4">
-        <div class="text-7xl mb-3">booting.</div>
-        {#if $tabState}
-        <div class="text-xs opacity-30">[{$tabState}]</div>
-        {/if}
-      </div>
-    {/if}
-  {/if}
+	  <HeaderComponent navDisabled={!hasActualData || needsSeedBootstrap || seedInProgress} />
+	  {#if showBootstrapLoading}
+	    <BootstrapLoading {isReady} />
+	  {:else if showFollowerWaiting}
+	    <FollowerLoading />
+	  {:else if showContent}
+	    <div id="content-wrapper" class="block">
+	      <slot />
+	    </div>
+	  {/if}
 {/if}
 
 {#if $showDebugButton}

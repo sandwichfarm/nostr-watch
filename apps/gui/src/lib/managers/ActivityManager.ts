@@ -5,8 +5,6 @@ export type ActivityState = 'leader' | 'follower';
 
 type LeaderStorageRecord = { id: string; ts: number; shutdown?: boolean };
 
-const DEV = import.meta.env.DEV;
-
 interface LifecycleMessage {
   type: 'leader-claimed' | 'leader-released';
   payload?: Record<string, any>;
@@ -96,14 +94,12 @@ export class ActivityManager {
   private updateTabState(newState: TabStateType) {
     if (get(tabState) !== newState) {
       tabState.update(() => newState);
-      if (DEV) console.log(`Tab state updated to: ${newState}`);
     }
   }
 
   private async transitionState(newState: ActivityState) {
     if (this.transitioning || this.currentState === newState) return;
     this.transitioning = true;
-    if (DEV) console.log(`ActivityManager: Transitioning from ${this.currentState} to ${newState}`);
     if (newState === 'leader') {
       await this.externalHandlers.leader();
     } else {
@@ -123,7 +119,15 @@ export class ActivityManager {
     this.stopHeartbeat();
     this.heartbeatIntervalId = window.setInterval(() => {
       if (!this.isLeader) return;
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now() }));
+      try {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now() }));
+      } catch {
+        // If persistence fails (e.g. storage disabled/quota), stop claiming leadership
+        // so another tab can attempt to take over.
+        this.isLeader = false;
+        this.stopHeartbeat();
+        this.updateTabState('follower');
+      }
     }, this.HEARTBEAT_INTERVAL_MS);
   }
 
@@ -139,14 +143,19 @@ export class ActivityManager {
     this.leaderWatchIntervalId = window.setInterval(() => {
       if (this.destroyed) return;
       if (this.isLeader) return;
-      if (document.visibilityState !== 'visible') return;
 
       const leader = parseLeaderStorage(localStorage.getItem(this.STORAGE_KEY));
       if (!leader) {
         void this.acquireLeadership();
         return;
       }
-      if (leader.shutdown) return;
+      if (leader.shutdown) {
+        try {
+          localStorage.removeItem(this.STORAGE_KEY);
+        } catch {}
+        void this.acquireLeadership();
+        return;
+      }
       if (this.isStale(leader)) {
         try {
           localStorage.removeItem(this.STORAGE_KEY);
@@ -170,8 +179,14 @@ export class ActivityManager {
   private async becomeLeader() {
     if (this.isLeader) return;
     this.isLeader = true;
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now() }));
-    this.sendMessage('leader-claimed', { leaderId: this.myId });
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now() }));
+      this.sendMessage('leader-claimed', { leaderId: this.myId });
+    } catch {
+      this.isLeader = false;
+      await this.transitionState('follower');
+      return;
+    }
 
     // In fallback mode, we may "race" other visible tabs. Confirm we actually won.
     await delay(this.LEADER_CONFIRM_DELAY_MS);
@@ -205,9 +220,13 @@ export class ActivityManager {
 
   private async releaseLeadership() {
     if (!this.isLeader) return;
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now(), shutdown: true }));
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: this.myId, ts: Date.now(), shutdown: true }));
+    } catch {}
     this.sendMessage('leader-released', { oldLeaderId: this.myId });
-    localStorage.removeItem(this.STORAGE_KEY);
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+    } catch {}
     this.isLeader = false;
     this.stopHeartbeat();
     await this.transitionState('follower');
@@ -227,9 +246,7 @@ export class ActivityManager {
     if (message.type === 'leader-released') {
       // Small delay to allow the old leader to finish teardown.
       await delay(100);
-      if (document.visibilityState === 'visible') {
-        await this.acquireLeadership();
-      }
+      await this.acquireLeadership();
     }
   }
 

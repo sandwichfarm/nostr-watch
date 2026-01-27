@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SimplePool } from 'nostr-tools';
+import { SimplePool, useWebSocketImplementation } from 'nostr-tools/pool';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +20,8 @@ const USER_META_RELAYS_DEFAULT = [
   'wss://purplepag.es',
   'wss://user.kindpag.es',
   'wss://relay.nostr.band',
+  'wss://relay.damus.io',
+  'wss://relay.primal.net',
 ];
 
 function envNumber(name, fallback) {
@@ -141,7 +143,11 @@ async function queryMany(pool, relays, filters, { maxWaitMs }) {
 
 async function main() {
   const websocketImplementation = await ensureWebSocketImpl();
-  const pool = new SimplePool({ websocketImplementation });
+  // nostr-tools' SimplePool reads a module-level WebSocket implementation.
+  // In Node (especially <=20), global WebSocket may be missing.
+  useWebSocketImplementation(websocketImplementation);
+  const pool = new SimplePool();
+  const allowEmpty = envString('SEED_ALLOW_EMPTY', 'false').toLowerCase() === 'true';
 
   let nip66Relays = uniq(
     (envString('SEED_NIP66_RELAYS', '').split(',').map((s) => s.trim()).filter(Boolean).length
@@ -167,18 +173,18 @@ async function main() {
       .filter(Boolean)
   );
 
-  const maxWaitMs = envNumber('SEED_MAX_WAIT_MS', 15_000);
-  const maxActiveMonitors = envNumber('SEED_MAX_ACTIVE_MONITORS', 200);
+  const maxWaitMs = envNumber('SEED_MAX_WAIT_MS', 120_000);
+  const maxActiveMonitors = envNumber('SEED_MAX_ACTIVE_MONITORS', 500);
   const checksPerMonitorLimit = envNumber('SEED_CHECKS_PER_MONITOR_LIMIT', 500);
-  const maxCheckEvents = envNumber('SEED_MAX_CHECK_EVENTS', 20_000);
-  const operatorPubkeyLimit = envNumber('SEED_MAX_OPERATOR_PUBKEYS', 2_000);
+  const maxCheckEvents = envNumber('SEED_MAX_CHECK_EVENTS', 100_000);
+  const operatorPubkeyLimit = envNumber('SEED_MAX_OPERATOR_PUBKEYS', 5_000);
   const filtersPerReq = envNumber('SEED_MAX_FILTERS_PER_REQ', 10);
-  const checksChunkSize = envNumber('SEED_CHECKS_CHUNK_SIZE', 2_500);
+  const checksChunkSize = envNumber('SEED_CHECKS_CHUNK_SIZE', 5_000);
   const operatorsChunkSize = envNumber('SEED_OPERATORS_CHUNK_SIZE', 2_500);
   const nip11sChunkSize = envNumber('SEED_NIP11S_CHUNK_SIZE', 500);
-  const maxNip11Relays = envNumber('SEED_MAX_NIP11_RELAYS', 2_000);
+  const maxNip11Relays = envNumber('SEED_MAX_NIP11_RELAYS', 5_000);
   const nip11TimeoutMs = envNumber('SEED_NIP11_TIMEOUT_MS', 5_000);
-  const nip11Concurrency = envNumber('SEED_NIP11_CONCURRENCY', 20);
+  const nip11Concurrency = envNumber('SEED_NIP11_CONCURRENCY', 30);
 
   console.log('[seed] relays', { nip66: nip66Relays.length, userMeta: userMetaRelays.length });
 
@@ -201,6 +207,11 @@ async function main() {
   }
   const registrations = Array.from(registrationsByPubkey.values());
   console.log('[seed] registrations', registrations.length);
+  if (!allowEmpty && registrations.length === 0) {
+    throw new Error(
+      `[seed] No registrations received. This usually means the build environment cannot connect to the configured NIP-66 relays over WebSocket (wss://), or maxWaitMs (${maxWaitMs}) is too low. Set SEED_ALLOW_EMPTY=true to write empty seed files anyway.`
+    );
+  }
 
   const monitorPubkeys = registrations.map((ev) => ev.pubkey).filter((v) => typeof v === 'string');
 
@@ -230,6 +241,41 @@ async function main() {
 
   const monitorMeta = Array.from(monitorMetaByKey.values());
   console.log('[seed] monitor meta', monitorMeta.length);
+
+  // ---------------------------------------------------------------------------
+  // 2b) Monitor blocklists (kind 10006)
+  // ---------------------------------------------------------------------------
+  const monitorBlocklistsByKey = new Map();
+  for (const authors of authorChunks) {
+    const limit = Math.min(metaLimitMax, Math.max(50, authors.length * metaLimitMultiplier));
+    const { events, closes } = await queryMany(
+      pool,
+      [...userMetaRelays, ...nip66Relays],
+      [{ kinds: [10006], authors, limit }],
+      { maxWaitMs }
+    );
+    if (closes.length) console.warn('[seed] monitor-blocklists closes:', closes);
+    for (const ev of events) {
+      if (ev?.kind !== 10006) continue;
+      if (typeof ev?.pubkey !== 'string') continue;
+      upsertNewest(monitorBlocklistsByKey, ev.pubkey, ev);
+    }
+  }
+
+  const monitorBlocklists = Array.from(monitorBlocklistsByKey.values());
+  console.log('[seed] monitor blocklists (10006)', monitorBlocklists.length);
+
+  // Extract all blocked relay URLs from blocklists for filtering
+  const blockedRelayUrls = new Set();
+  for (const ev of monitorBlocklists) {
+    const tags = Array.isArray(ev?.tags) ? ev.tags : [];
+    for (const tag of tags) {
+      if (!Array.isArray(tag) || (tag[0] !== 'r' && tag[0] !== 'relay')) continue;
+      const url = normalizeRelayUrl(tag[1]);
+      if (url) blockedRelayUrls.add(url);
+    }
+  }
+  console.log('[seed] blocked relay URLs from blocklists:', blockedRelayUrls.size);
 
   // Bootstrap logic adds monitors' own relay lists to the nip66 relay pool.
   // This improves coverage for check events that may not land on the defaults.
@@ -287,26 +333,35 @@ async function main() {
     }
   }
 
+  // Sort by most recently active, but include ALL registered monitors up to cap
+  // This ensures we get data from all monitors, not just the most active
+  const allMonitorPubkeys = registrations.map((ev) => ev.pubkey).filter((v) => typeof v === 'string');
+
   const activeMonitorsSorted = Array.from(activeLastSeen.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, maxActiveMonitors)
     .map(([pubkey]) => pubkey);
 
-  console.log('[seed] active monitors (capped)', activeMonitorsSorted.length);
+  // Include monitors that weren't detected as "active" but have registrations
+  const inactiveMonitors = allMonitorPubkeys.filter((pk) => !activeLastSeen.has(pk));
+  const monitorsToFetch = [...activeMonitorsSorted, ...inactiveMonitors.slice(0, Math.max(0, maxActiveMonitors - activeMonitorsSorted.length))];
+
+  console.log('[seed] monitors to fetch checks from:', monitorsToFetch.length, '(active:', activeMonitorsSorted.length, ', inactive:', inactiveMonitors.length, ')');
 
   // ---------------------------------------------------------------------------
   // 4) Checks (kind 30166) for active monitors
   // ---------------------------------------------------------------------------
   const checksByKey = new Map(); // `${pubkey}:${d}` -> event
 
+  // Use a 7-day window to get comprehensive seed data
+  const checksSinceSeconds = envNumber('SEED_CHECKS_SINCE_DAYS', 7) * 24 * 60 * 60;
+
   const checkFilters = [];
-  for (const pubkey of activeMonitorsSorted) {
-    const reg = registrationsByPubkey.get(pubkey);
-    const freq = extractFrequencySeconds(reg);
+  for (const pubkey of monitorsToFetch) {
     const filter = {
       kinds: [30166],
       authors: [pubkey],
-      since: now - freq,
+      since: now - checksSinceSeconds,
       until: now,
     };
     if (Number.isFinite(checksPerMonitorLimit) && checksPerMonitorLimit > 0) {
@@ -325,6 +380,9 @@ async function main() {
       if (typeof ev?.pubkey !== 'string') continue;
       const d = dTagValue(ev);
       if (typeof d === 'string' && d.includes('echo.websocket.org')) continue;
+      // Filter out blocked relays
+      const normalizedD = d ? normalizeRelayUrl(d) : null;
+      if (normalizedD && blockedRelayUrls.has(normalizedD)) continue;
       const key = d ? `${ev.pubkey}:${d}` : ev.id;
       upsertNewest(checksByKey, key, ev);
       if (checksByKey.size >= maxCheckEvents) break;
@@ -335,6 +393,11 @@ async function main() {
     (a, b) => (b?.created_at ?? 0) - (a?.created_at ?? 0)
   );
   console.log('[seed] checks', checks.length);
+  if (!allowEmpty && checks.length === 0) {
+    throw new Error(
+      `[seed] No check events (kind 30166) received. This usually means monitor relays are unreachable from this environment. Set SEED_ALLOW_EMPTY=true to write empty seed files anyway.`
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // 5) Operator pubkeys -> meta (kinds 0 + 10002)
@@ -430,12 +493,16 @@ async function main() {
   await fs.rm(outDir, { recursive: true, force: true });
   await fs.mkdir(outDir, { recursive: true });
 
-  const monitorsPayload = [...registrations, ...monitorMeta].sort((a, b) => {
+  const monitorsPayload = [...registrations, ...monitorMeta, ...monitorBlocklists].sort((a, b) => {
     const ak = `${a.kind}:${a.pubkey}:${a.created_at ?? 0}`;
     const bk = `${b.kind}:${b.pubkey}:${b.created_at ?? 0}`;
     return ak.localeCompare(bk);
   });
   await fs.writeFile(path.join(outDir, 'monitors.json'), JSON.stringify(monitorsPayload));
+
+  // Write blocklist URLs as a simple array for quick loading
+  const blocklistUrls = Array.from(blockedRelayUrls);
+  await fs.writeFile(path.join(outDir, 'blocklist.json'), JSON.stringify(blocklistUrls));
 
   const checksFiles = [];
   const checkChunks = chunk(checks, checksChunkSize);
@@ -479,6 +546,7 @@ async function main() {
     },
     groups: {
       monitors: { files: ['/seed/monitors.json'], events: monitorsPayload.length },
+      blocklist: { files: ['/seed/blocklist.json'], count: blocklistUrls.length },
       checks: { files: checksFiles, events: checks.length },
       operators: { files: operatorFiles, events: operatorMeta.length },
       nip11s: { files: nip11Files, count: nip11Results.length },
@@ -491,6 +559,7 @@ async function main() {
   console.log('[seed] wrote', {
     outDir,
     monitors: monitorsPayload.length,
+    blocklist: blocklistUrls.length,
     checks: checks.length,
     operators: operatorMeta.length,
     nip11s: nip11Results.length,

@@ -1,7 +1,7 @@
 import { derived, get, readable, writable, type Readable, type Writable } from 'svelte/store';
 import { StateManager } from '@nostrwatch/route66';
 import { relayCheckAggregates, relayChecks } from './checks.js';
-import { doAggregateCache } from './app.js';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
 import type { IResult } from '@nostrwatch/nocap';
 
 export const relays: Readable<string[]> = derived(relayCheckAggregates, ($relayCheckAggregates) => {
@@ -27,10 +27,13 @@ export const relays: Readable<string[]> = derived(relayCheckAggregates, ($relayC
     let relaysArr = Array.from(relays);
 
     if(relaysArr.length){
-        if(get(doAggregateCache)) StateManager.set('aggregate:relays', relaysArr);
+        if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+            StateManager.set('aggregate:relays', relaysArr);
+        }
     }
     else {
-        relaysArr = StateManager.get('aggregate:relays')
+        const cached = StateManager.get('aggregate:relays')
+        relaysArr = Array.isArray(cached) ? cached : [];
     } 
 
     return relaysArr;

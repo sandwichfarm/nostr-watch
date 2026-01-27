@@ -71,6 +71,13 @@ export default defineConfig(({ mode }) => {
         strict: false,
       },
     },
+    preview: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin',
+        'Cross-Origin-Embedder-Policy': 'require-corp',
+        'Cross-Origin-Resource-Policy': 'cross-origin'
+      },
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

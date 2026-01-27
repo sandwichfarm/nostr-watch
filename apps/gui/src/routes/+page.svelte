@@ -1,72 +1,257 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
-	import AutoSuggestRelaysCompact from '$lib/components/partials/AutoSuggestRelaysCompact.svelte';
-	import Counts from '$routes/(components)/Counts.svelte';
+	import { relayCheckAggregates, overrideRelayChecksActiveKeys, relayChecksActiveKeys } from '$lib/stores/checks.js';
+	import { onDestroy, onMount } from 'svelte';
+	import { derived, get, writable, type Readable, type Unsubscriber, type Writable } from 'svelte/store';
+	import { StateManager } from '@nostrwatch/route66';
+	import { type default as DataViewType } from '$lib/components/data-view/DataViewRoot.svelte';
+	import { type default as StatsType } from '$lib/components/layout/Stats.svelte';
+	import { defaultDataTableConfig } from '$lib/components/lists/table/DataTableTypes';
+	import { default as relaysTableConfig } from '$lib/config/dataTable/relays.js';
+	import type { DataTableConfig, DataViewViews } from '$lib/components/data-view/DataTableTypes';
+	import { dataRegister } from '$stores/data-register';
 	import RelayDataViewShortcut from '$lib/components/shortcuts/RelayDataViewShortcut.svelte';
+	import { deterministicHash } from '@nostrwatch/route66/utils';
+	import { page } from '$app/stores';
+	import { linkableState } from '$utils/linkable-state';
+	import { decompress } from 'compress-json';
+	import { replace } from 'lodash';
+	import { ConfigDefaults } from '@nostrwatch/nocap';
+	import { DataTable } from '$lib/components/@Careswitch/svelte-data-table';
+	import { delay } from '@nostrwatch/utils';
+	import { fade } from 'svelte/transition';
+	import { tabState } from '$lib/stores/app';
+	import { HeaderConfigStore } from '$stores/header-config';
 
-	onMount(() => {
-        if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
-        if(!isHomepage) return;
+  import RelayDimensions from '$routes/relays/relay-dimensions.svelte';
+	import DataViewSelector from '$lib/components/data-view/partials/DataViewSelector.svelte';
+
+  	import AutoSuggestRelaysCompact from '$lib/components/partials/AutoSuggestRelaysCompact.svelte';
+	import Counts from '$routes/(components)/Counts.svelte';
+	// import RelayDataViewShortcut from '$lib/components/shortcuts/RelayDataViewShortcut.svelte';
+
+	const TRANSITION_DURATION = 100;
+
+	export const prerender = true;
+
+	const dataKey: string = "relays";
+	const enabledViews: DataViewViews[] = ['table','map']
+
+	let Stats: StatsType;
+	let DataView: DataViewType;
+	
+	const config: Writable<DataTableConfig | null> = writable(null);
+	const ready: Writable<boolean> = writable(false);
+
+	const componentsLoaded: Writable<boolean> = writable(false);
+
+
+	/***
+	 * This sets active keys override, which optimizes the data view by only aggregating keys
+	 * needed by the table or filters. Huge improvement to performance, reduces clock-time
+	 * of aggregate derived by ~85% in default view. The more columns/filters/monitors enabled,
+	 * the worse the performance. It can be measured, and hints can be given to user.
+	*/
+	let activeKeysTimeout: ReturnType<typeof setTimeout> | null = null;
+	const configUnsub: Unsubscriber = config.subscribe(($config) => {
+		if(!$config) return;
+
+		// Debounce to avoid cascading re-aggregations during init
+		if (activeKeysTimeout) clearTimeout(activeKeysTimeout);
+		activeKeysTimeout = setTimeout(() => {
+			const { columnsShow, filtersShow, dataDependencies } = $config;
+			let keys: string[] = []
+			if(columnsShow?.length) {
+				keys.push(...columnsShow)
+			}
+			if(filtersShow?.length) {
+				keys.push(...filtersShow)
+			}
+			keys.forEach((key) => {
+				if(dataDependencies?.[key]) {
+					keys.unshift(...dataDependencies[key])
+				}
+			})
+			overrideRelayChecksActiveKeys.set( Array.from(new Set(keys)) )
+		}, 50);
+	})
+		
+
+	const loadComponents = async () => {
+		const imports = [
+			import('$lib/components/layout/Stats.svelte'),
+			import('$lib/components/data-view/DataViewRoot.svelte')
+		];
+
+		const results = await Promise.allSettled(imports);
+		[ Stats, DataView ] = results.map(result => (result.status === 'fulfilled' ? result.value.default || result.value : null));
+		componentsLoaded.set(true);
+	}
+
+	const setConfig = () => {
+		let conf = {...defaultDataTableConfig, ...relaysTableConfig}
+		const userTableConfig = StateManager.get(`preferences:${dataKey}:tableConfig`);
+		
+		if(userTableConfig) {
+			conf = {...conf, ...userTableConfig}
+			// Ensure newly-added relay liveness filter exists even for older saved configs.
+			conf.filtersShow = Array.isArray(conf.filtersShow)? conf.filtersShow: [];
+			if(!conf.filtersShow.includes('liveness')) conf.filtersShow.unshift('liveness');
+
+			conf.filtersActive = (conf.filtersActive && typeof conf.filtersActive === 'object')? conf.filtersActive: {};
+			if(!conf.filtersActive?.liveness) conf.filtersActive.liveness = ['online'];
+
+			////console.log('setting config with user config', conf)
+			config.set(conf)
+		}
+		else {
+			conf.filtersShow = Array.isArray(conf.filtersShow)? conf.filtersShow: [];
+			if(!conf.filtersShow.includes('liveness')) conf.filtersShow.unshift('liveness');
+
+			conf.filtersActive = (conf.filtersActive && typeof conf.filtersActive === 'object')? conf.filtersActive: {};
+			if(!conf.filtersActive?.liveness) conf.filtersActive.liveness = ['online'];
+
+			////console.log('setting config without user config', conf)
+			config.set(conf)
+			}
+			ready.set(true)
+			setHeaderSelectors('full');
+		}
+
+  	onMount(() => {
+        
   });
 
   $: isHomepage = $page.url.pathname === '/'
-</script> 
-{#if isHomepage}
 
-  <section class="
-    flex flex-col justify-center items-center relative z-[200]
-    h-[450px] lg:h-[420px] 
-    pt-26 md:pt-16 md:pb-0 gradient-purple">
-    
-    <div class="
-      absolute top-0 right-0 left-0 bottom-0 z-[10]
-      bg-black/20 dark:bg-white/5 
-      ">
-    </div>
+		const mount = async ( ) => {
+	    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+	    if(!isHomepage) return;
+			setHeaderSelectors('dimension');
+			loadComponents().then(setConfig);
+			const keys = ['sync:cache'];
+		if (get(tabState) === 'leader') keys.push('sync:all');
+		void $dataRegister
+			.require(keys)
+			.catch((err) => console.error('[DataRegister] require failed', err));
+	}
 
-    <h1 class="w-full text-center text-2xl md:text-3xl mb-4 max-w-[600px] relative z-[20]">
-      nostr.watch is a client for browsing, testing and researching nostr relays.
-    </h1>
-    
-    <div class="w-full max-w-xl relative z-[100]">
-      <AutoSuggestRelaysCompact 
-        maxResults={5} 
-        autoFocus={true} 
-        placeholderText={"find your relays"}
-        inputClass="
-          
-          w-[85%] md:w-full py-2 px-4
-          text-center
-          border border-black/20 
-          text-2xl md:text-3xl 
-          rounded-xl 
+		const destroy = () => {
+			overrideRelayChecksActiveKeys.set([])
+			clearHeaderSelectors();
+			configUnsub()
+		}
+	
+	onMount(mount)  
+	onDestroy(destroy)  
+	const view: Writable<'table' | 'map'> = writable('table');
 
-          dark:bg-black/20 dark:border-black/30 dark:text-white/60 
-          placeholder:text-gray-400 dark:placeholder:text-gray-500 
-          focus:outline-none focus:border-transparent focus:ring-0
-          shadow-[0_0_40px_rgba(255,255,255,0.05)]"
-        resultWrapperClass="
-          result-wrapper
-          shadow-md absolute top-full -mt-8 
-          left-0 right-0 z-9999 backdrop-blur-lg 
-          border border-white/10 dark:bg-black/60 dark:border-white/10"
-        />
-        
-    </div>
-    <div class=" relative z-[20] mt-2 max-w-[600px]">
-      <!-- <span class="inline-block mr-2 text-sm">shortcuts:</span>  -->
-      <RelayDataViewShortcut 
-        class="text-center items-center justify-center opacity-60 hover:opacity-100" 
-        buttonActiveClass="" 
-        />
-    </div>
-  </section>
-  <Counts />
-{/if}
+	// const data = derived(relayCheckAggregates, ($relayCheckAggregates) => {
+	// 	return $relayCheckAggregates.map((relayCheckAggregate) => {
+	// 		const { relay:id, dd } = relayCheckAggregate;
+	// 		if( !dd ) return undefined
+	// 		const { lat, lon } = dd;
+	// 		if( !lat || !lon ) return undefined
+	// 		return { id, lat, lon };
+	// 	}).filter( res => res !== undefined );
+	// });
 
-<style lang="postcss" global>
-  .result-wrapper > div {
-    @apply rounded-sm bg-transparent bg-gradient-to-b from-black/90 to-black/0; 
-  }
-</style>
+	let onFilterChange: (config: DataTableConfig) => void = (_config) => {}
+	let onPresetSave: () => void = () => {}
+
+	let showDataView = true; // Controls opacity transition
+
+	const activeView: Writable<DataViewViews> = writable(enabledViews.length === 1 ? enabledViews[0] : 'table');
+
+	const HEADER_SELECTORS_ID = 'relays:list';
+
+	const setHeaderSelectors = (mode: 'dimension' | 'full' = 'full') => {
+		HeaderConfigStore.set({
+			selectors: {
+				id: HEADER_SELECTORS_ID,
+				className: 'ml-2',
+				showDimension: true,
+				showPresets: mode === 'full',
+				showView: mode === 'full',
+				enabledViews,
+				activeView,
+				onPresetSelect: loadPreset,
+			},
+		});
+	};
+
+	const clearHeaderSelectors = () => {
+		HeaderConfigStore.update((current) => {
+			if (current.selectors?.id !== HEADER_SELECTORS_ID) return current;
+			return { ...current, selectors: null };
+		});
+	};
+
+	// Reference to the shortcut component to reload presets
+	let shortcutComponent: any;
+
+		const loadPreset = (path: string) => { 
+				const hash = path.split('#')?.[1]
+				if(!hash) return;
+				let linkableData: Partial<DataTableConfig> | null = null;
+				try {
+					linkableData = decompress(JSON.parse(atob(hash))) as Partial<DataTableConfig>;
+				} catch {
+					return;
+				}
+
+				showDataView = false;
+				delay(TRANSITION_DURATION).then(() => {
+					config.update((currentConfig: DataTableConfig | null) => {
+						if (!currentConfig || !linkableData) return currentConfig;
+						const merged = { ...currentConfig, ...linkableData } as DataTableConfig;
+						const filtersActive =
+							merged.filtersActive && typeof merged.filtersActive === 'object' ? merged.filtersActive : {};
+						const filtersShow = Array.isArray(merged.filtersShow) ? [...merged.filtersShow] : [];
+						for (const key of Object.keys(filtersActive)) {
+							if (!filtersShow.includes(key)) filtersShow.push(key);
+						}
+						return { ...merged, filtersShow };
+					});
+					delay(TRANSITION_DURATION).then(() => {
+						showDataView = true;
+					})
+				})
+				//trigger a pseudo transition 
+			}
+</script>
+
+
+<main class="mt-10"> 
+	{#if $ready}
+
+  <!-- <Counts /> -->
+	<!-- <div class="flex flex-wrap items-center gap-3 px-3 pt-2">
+		<RelayDimensions />
+		<RelayDataViewShortcut
+			bind:this={shortcutComponent}
+			onClick={loadPreset}
+			label="Presets"
+		/>
+		<DataViewSelector {enabledViews} {activeView} />
+	</div> -->
+
+	<!-- I need this to fade in and out every time I trigger pseudo transition, without unmounting the component -->
+	<div
+		style="opacity: {showDataView || $activeView !== 'table' ? 1 : 0}; transition: opacity {TRANSITION_DURATION}ms ease-in-out;"
+			>
+		<DataView
+			bind:onFilterChange
+			onPresetSave={() => shortcutComponent?.reloadPresets?.()}
+			data={relayCheckAggregates}
+			{config}
+			key={dataKey}
+			{enabledViews}
+			{activeView}
+			showViewSelector={false}
+		/>
+	</div>
+
+	<!-- <Stats /> -->
+	<!-- <DataTable data={relayCheckAggregates} {config} {dataKey} /> -->
+	{/if}
+</main>

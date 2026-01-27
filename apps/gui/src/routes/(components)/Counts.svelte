@@ -2,32 +2,20 @@
 	import { geocodes, relayCheckAggregates } from "$lib/stores";
 	import { isps, softwares } from "$lib/stores";
 	import { operatorsPubkeysValid } from "$stores/operators";
-	import { instance } from "$utils/lifecycle";
-	import { onMount } from "svelte";
-	import { derived, writable, type Readable, type Writable } from "svelte/store";
+	import { monitorRows } from "$stores/monitors";
+	import { derived, type Readable } from "svelte/store";
 	import CountCard from "./CountCard.svelte";
-
-    const activeMonitors: Writable<number | null> = writable(null);
-    const enabledMonitors: Writable<number | null> = writable(null);    
-
-    const mount = async () => {
-        const $route66 = await instance();
-        await $route66.ready()
-        activeMonitors.set($route66!.services.monitors!.activeMonitors?.length || 0)
-        enabledMonitors.set($route66!.services.monitors!.activeEnabledMonitors?.length)
-    }
-
-    onMount(mount)
 
     const countRelays = derived(relayCheckAggregates, ($relayCheckAggregates) => {
         if(!$relayCheckAggregates?.length) return null;
         return $relayCheckAggregates.filter((relay: any) => relay?.liveness === 'online').length || null;
     });
-    const countMonitorsEnabled = derived(enabledMonitors, $enabledMonitors => $enabledMonitors || null);
-    const countMonitorsActive = derived(activeMonitors, $activeMonitors => $activeMonitors || null);
-    const countMonitors = derived([countMonitorsEnabled, countMonitorsActive], ([$countMonitorsEnabled, $countMonitorsActive]) => {
-        if(!$countMonitorsEnabled || !$countMonitorsActive) return null;
-        return `${$countMonitorsEnabled}/${$countMonitorsActive}`
+    const countMonitors = derived(monitorRows, ($rows) => {
+        if (!$rows?.length) return null;
+        const active = $rows.filter((row: any) => row?.active).length;
+        const enabledActive = $rows.filter((row: any) => row?.enabled && row?.active).length;
+        if (!active || !enabledActive) return null;
+        return `${enabledActive}/${active}`;
     });
     const countSoftwares = derived(softwares, $softwares => $softwares?.length || null);
     const countIsps = derived(isps, $isps => $isps?.length || null);
@@ -81,7 +69,7 @@
     ]
 </script>
 
-<div class="grid lg:grid-cols-3 xl:grid-cols-6 mt-9 mx-10">
+<div class="grid lg:grid-cols-3 xl:grid-cols-6 mt-10">
     {#each values as { topText, bottomText, value, link }, index}
         <CountCard {topText} {value} {bottomText} {link} {index} class="" innerClass={'gradient-purple'} />
     {/each}

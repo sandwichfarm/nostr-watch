@@ -41,15 +41,16 @@
         <div class="h-2 rounded-full bg-purple-700" style="width: {$progress}%"></div>
       </div>
       {Math.round($progress)}%
-      <div class="mt-6 hidden grid-cols-4 text-sm font-medium text-gray-600 sm:grid">
-        <div class="{isReady ? 'text-purple-700' : ''}">Loading Assets</div>
-        <div class="{$bootActivities.find(a => a.slug === 'seed:monitors')?.complete ? 'text-purple-700' : ''}">Loading Monitors</div>
-        <div class="{$bootActivities.find(a => a.slug === 'seed:checks')?.complete ? 'text-purple-700' : ''}">Loading Checks</div>
-        <div class="{$bootActivities.find(a => a.slug === 'seed:nip11s')?.complete ? 'text-purple-700' : ''}">Loading NIP-11s</div>
+      <div class="mt-6 hidden grid-cols-4 text-sm font-medium text-gray-600 sm:grid w-[500px]">
+        <div class="{isReady ? 'text-purple-700' : ''}">Assets</div>
+        <div class="{$bootActivities.find(a => a.slug === 'seed:monitors')?.complete ? 'text-purple-700' : ''}">Monitors</div>
+        <div class="{$bootActivities.find(a => a.slug === 'seed:checks')?.complete ? 'text-purple-700' : ''}">Checks</div>
+        <div class="{$bootActivities.find(a => a.slug === 'seed:nip11s')?.complete ? 'text-purple-700' : ''}">NIP-11s</div>
       </div>
     </div>
   </div>
   <div class="h-[400px] pt-36">
+    
     {#if $bootActivities.length > 0}
       <div class="">
         {#each $bootActivities as item, index (item.slug)}
@@ -60,8 +61,10 @@
               transform: translateY({(index - currentIndex) * 20}px);
             "
           >
-            {#if !item.complete}
+
+           {#if !item.active && !item.complete}
               <!-- Loading Indicator -->
+            {:else if item.active && !item.complete}
               <svg class="w-6 h-6 animate-spin text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>

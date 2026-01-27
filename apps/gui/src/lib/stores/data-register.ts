@@ -1,14 +1,14 @@
 import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
-import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, tabState } from "$stores/app";
+import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, lastCompleteSync, setStatsAsOf, tabState } from "$stores/app";
 import { backfillMonitorChecks, fetchDisabledMonitorsChecks, fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
-import { seedBuildData } from "$lib/fetchers/seed";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
 import { publishEventsToMemoryRelay } from "./events-helpers";
 import { delay } from "@nostrwatch/utils";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
+import { StateManager } from "@nostrwatch/route66";
 import { fetchRelayChecks, fetchRelayNip11, fetchRelayOperator } from "$lib/fetchers/relay";
 import { SchemaValidationService, type SchemaValidationServiceResponse } from "$lib/services/SchemaValidationService";
 import { nip11s } from "./nip11s";
@@ -16,19 +16,106 @@ import type { Nip11 } from "@nostrwatch/route66/models/Nip11";
 import { relayNip11Validations } from "./nip11-validations";
 import { page } from "$app/stores";
 import { relayLiveSync } from "$utils/live-sync";
+import { eventsArray } from "$lib/stores/events";
 import { SYNC_CHECKS_EXPIRY, SYNC_MONITORS_EXPIRY, SYNC_NIP11_EXPIRY, SYNC_OPERATORS_EXPIRY, SYNC_RELAY_ALL_EXPIRY, SYNC_RELAY_CHECKS_EXPIRY, SYNC_RELAY_NIP11_EXPIRY, SYNC_RELAY_OPERATOR_EXPIRY, VALIDATE_NIP11S_EXPIRY } from "$lib/constants/synchronization";
 import { initDimensionsWorker } from "$lib/workers/dimensions-worker-manager";
+import { syncBlocklists, cleanBlockedRelaysFromCache } from "./blocklist";
+
+// Dynamic import to avoid circular dependency issues
+let _startBootActivity: ((slug: string, text: string) => void) | null = null;
+let _completeBootActivity: ((slug: string, value?: string | number) => void) | null = null;
+
+async function loadBootActivityFunctions() {
+    if (!_startBootActivity) {
+        const mod = await import('$lib/stores/boot-activity');
+        _startBootActivity = mod.startBootActivity;
+        _completeBootActivity = mod.completeBootActivity;
+    }
+}
+
+function startBootActivity(slug: string, text: string) {
+    if (_startBootActivity) _startBootActivity(slug, text);
+}
+
+function completeBootActivity(slug: string, value?: string | number) {
+    if (_completeBootActivity) _completeBootActivity(slug, value);
+}
+
+function computeMaxCheckTimestampSeconds(): number {
+    try {
+        const arr = get(eventsArray) as any[];
+        let max = 0;
+        for (const raw of arr) {
+            const event = (raw as any)?.json ?? raw;
+            if (event?.kind !== 30166) continue;
+            const seconds = typeof event?.created_at === "number" ? event.created_at : Number(event?.created_at);
+            if (Number.isFinite(seconds) && seconds > max) max = seconds;
+        }
+        return max;
+    } catch {
+        return 0;
+    }
+}
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
 
 export const dataRegisterInit = async () => {
     const data = get(dataRegister);
 
+    // Load boot activity functions (dynamic import to avoid circular deps)
+    await loadBootActivityFunctions();
+
+    // Register boot activities upfront so user sees what's coming
+    startBootActivity('data:register', 'Data sources');
+
+    // Pre-register seed activities so progress bar shows them as pending
+    // These will be updated/completed by seedBuildData when it runs
+    startBootActivity('seed:manifest', 'Manifest');
+    startBootActivity('seed:monitors', 'Monitors');
+    startBootActivity('seed:checks', 'Relay checks');
+    startBootActivity('seed:operators', 'Operators');
+    startBootActivity('seed:nip11s', 'NIP-11 info');
+
     //state
     data.register({
         key: 'seed:build',
         priority: 0,
-        fn: seedBuildData
+        condition: async () => {
+            // Only the leader tab should download + ingest the (potentially large) build-seed payload.
+            if (get(tabState) !== 'leader') return false;
+
+            // Normal first-run: no bootstrap markers and no prior seed import.
+            if (!get(isBootstrapped) && !get(isSeeded)) return true;
+
+            // Recovery path: localStorage can say "seeded/bootstrapped" while the actual cache
+            // is empty (e.g. OPFS/SQLite fallback, corruption reset, or user wiped SQLite only).
+            try {
+                const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+                    const ms = Number.isFinite(timeoutMs) ? Math.max(0, timeoutMs) : 0;
+                    if (ms === 0) return await promise;
+                    return await Promise.race([
+                        promise,
+                        new Promise<T>((_resolve, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)),
+                    ]);
+                };
+
+                const $route66 = await instance();
+                await $route66.ready();
+                const cache: any = $route66.adapters.cacheAdapter;
+                if (typeof cache?.ready === 'function') {
+                    await withTimeout(cache.ready(), 5_000);
+                }
+                const checkCount = await withTimeout(cache.COUNT([{ kinds: [30166] }]), 5_000);
+                return !Number.isFinite(checkCount) || checkCount < 100;
+            } catch {
+                // If we cannot verify cache health, attempt build-seed so the UI can recover.
+                return true;
+            }
+        },
+        fn: async () => {
+            const mod = await import("$lib/fetchers/seed");
+            return mod.seedBuildData();
+        }
     });
 
     data.register({
@@ -87,6 +174,23 @@ export const dataRegisterInit = async () => {
         fn: fetchMonitors,
         onComplete: publishEventsToMemoryRelay
     });
+
+    // Sync blocklists from monitors (kind 10006) - must run after monitors are loaded
+    data.register({
+        key: 'sync:blocklists',
+        priority: 20.5,
+        expiry: SYNC_MONITORS_EXPIRY, // Same expiry as monitors
+        condition: async () => get(tabState) === 'leader',
+        fn: syncBlocklists,
+        onComplete: async () => {
+            // Clean blocked relays from cache after syncing
+            const cleaned = await cleanBlockedRelaysFromCache();
+            if (cleaned > 0) {
+                console.log(`[blocklist] Cleaned ${cleaned} blocked relay events from cache`);
+            }
+        }
+    });
+
     data.register({
         key: 'sync:checks',
         priority: 21,
@@ -193,18 +297,15 @@ export const dataRegisterInit = async () => {
         key: 'sync:cache',
         priority: 3,
         condition: async () => {
-            if (get(isSeeded)) {
-                console.log('[DataRegister] skipping sync:cache: already seeded');
-                return false;
-            }
             // Followers should always try to hydrate from the leader/cache, even
             // when this origin hasn't been "bootstrapped" yet.
             if (get(tabState) !== 'leader') return true;
             const bootstrapped = get(isBootstrapped);
             if (!bootstrapped) {
                 console.log('[DataRegister] skipping sync:cache: fresh state');
+                return false;
             }
-            return bootstrapped;
+            return true;
         },
         fn: seedFromCache,
         onComplete: async (events: IEvent[]): Promise<any> => {
@@ -228,6 +329,7 @@ export const dataRegisterInit = async () => {
         keys: [
             'seed:build',
             'sync:monitors',
+            'sync:blocklists',
             'sync:checks',
             'sync:checks:disabled',
             'sync:checks:backfill',
@@ -237,13 +339,21 @@ export const dataRegisterInit = async () => {
             'validate:nip11s'
         ],
         priority: -10,
-        // fn: async () => {
-        //     isBootstrapping.set(true)
-        //     return true;
-        // },
+        fn: async () => {
+            isBootstrapping.set(true);
+            startBootActivity('sync:network', 'Network sync');
+        },
         onComplete: async () => {
+            completeBootActivity('sync:network');
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            const now = Math.round(Date.now() / 1000);
+            lastCompleteSync.set(now);
+            try {
+                StateManager.set('lastCompleteSync', now);
+            } catch {}
+            const maxCheck = computeMaxCheckTimestampSeconds();
+            setStatsAsOf(maxCheck > 0 ? maxCheck : now, { persist: true });
             // Ensure isSeeded is set so UI can progress
             if (!get(isSeeded)) {
                 isSeeded.set(true)
@@ -258,6 +368,7 @@ export const dataRegisterInit = async () => {
         keys: [
             'seed:build',
             'sync:monitors',
+            'sync:blocklists',
             'sync:checks',
             'sync:checks:disabled',
             'sync:checks:backfill',
@@ -270,11 +381,20 @@ export const dataRegisterInit = async () => {
         priority: -10,
         fn: async () => {
             isBootstrapping.set(true)
+            startBootActivity('sync:network', 'Network sync');
             return true;
         },
         onComplete: async () => {
+            completeBootActivity('sync:network');
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            const now = Math.round(Date.now() / 1000);
+            lastCompleteSync.set(now);
+            try {
+                StateManager.set('lastCompleteSync', now);
+            } catch {}
+            const maxCheck = computeMaxCheckTimestampSeconds();
+            setStatsAsOf(maxCheck > 0 ? maxCheck : now, { persist: true });
             // Ensure isSeeded is set so UI can progress even without seed files
             if (!get(isSeeded)) {
                 isSeeded.set(true)
@@ -282,6 +402,7 @@ export const dataRegisterInit = async () => {
         },
         ignoreConditions: {
             'sync:monitors': true,
+            'sync:blocklists': true,
             'sync:checks': true,
             'sync:checks:disabled': true,
             'sync:checks:backfill': true,
@@ -290,6 +411,7 @@ export const dataRegisterInit = async () => {
         },
         ignoreExpiries: {
             'sync:monitors': true,
+            'sync:blocklists': true,
             'sync:checks': true,
             'sync:checks:disabled': true,
             'sync:checks:backfill': true,
@@ -310,7 +432,12 @@ export const dataRegisterInit = async () => {
         priority: -20
     });
 
+    completeBootActivity('data:register');
+
+    startBootActivity('data:ready', 'Database');
     await (await instance()).ready()
+    completeBootActivity('data:ready');
+
     await delay(20)
     data.unlock();
 

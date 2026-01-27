@@ -2,7 +2,7 @@ import { derived, get, type Readable } from 'svelte/store';
 import { throttledDerived } from '$lib/utils/stores.js';
 import { StateManager } from '@nostrwatch/route66';
 import { relayCheckAggregates } from './checks.js';
-import { doAggregateCache, tabState } from './app.js';
+import { doAggregateCache, isBootstrapping, tabState } from './app.js';
 import { deterministicHash } from '@nostrwatch/route66/utils';
 import type { Pubkey } from '$lib/models/User.js';
 import {
@@ -47,10 +47,13 @@ export const softwares_legacy: Readable<string[]> = throttledDerived(relayCheckA
   let softwaresArray: string[] = Array.from(software).sort();
 
   if(softwaresArray.length){
-    if(get(doAggregateCache) && get(tabState) === 'leader') StateManager.set('aggregate:softwares', softwaresArray);
+    if(get(doAggregateCache) && get(tabState) === 'leader' && !get(isBootstrapping)) {
+      StateManager.set('aggregate:softwares', softwaresArray);
+    }
   }
   else {
-    softwaresArray = StateManager.get('aggregate:softwares')
+    const cached = StateManager.get('aggregate:softwares')
+    softwaresArray = Array.isArray(cached) ? cached : [];
   }
 
   return softwaresArray;

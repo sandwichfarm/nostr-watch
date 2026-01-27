@@ -5,6 +5,7 @@ export type WorkerMessageCommand =
   | "reply"
   | "setup"
   | "init"
+  | "status"
   | "event"
   | "req"
   | "count"
@@ -15,6 +16,7 @@ export type WorkerMessageCommand =
   | "forYouFeed"
   | "setEventMetadata"
   | "debug"
+  | "logLevel"
   | "delete"
   | "countNip11s"
   | "countUniqueNip11s"
@@ -23,6 +25,14 @@ export type WorkerMessageCommand =
   | "upsertNip11" 
   | "getNip11"
   | "wipe";
+
+export type RelayStorageKind = "sqlite" | "memory" | "unknown";
+
+export interface RelayStorageStatus {
+  kind: RelayStorageKind;
+  reason?: string;
+  errorMessage?: string;
+}
 
 export interface WorkerMessage<T> {
   id: string;

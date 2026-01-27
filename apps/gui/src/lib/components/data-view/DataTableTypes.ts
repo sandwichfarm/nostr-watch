@@ -32,6 +32,8 @@ export type DataTableConfigDependencies = Record<string, string[]>
 export type DataTableConfig = { 
     prettyNames: NameFormatter;
     tableRowStyler: (row: any) => string;
+    /** Whether to apply `row.banner` as a table row background image (can be expensive). */
+    rowBannerEnabled?: boolean;
 
     availableColumnKeys: string[];
     columnsDisable: string[];
@@ -60,6 +62,7 @@ export type DataTableConfig = {
 export const defaultDataTableConfig: DataTableConfig = {
     prettyNames: {},
     tableRowStyler: () => '',
+    rowBannerEnabled: true,
 
     availableColumnKeys: [],
     tableFormatters: {},
@@ -70,11 +73,13 @@ export const defaultDataTableConfig: DataTableConfig = {
     filtersDisable: [],
     filtersShow: [],
     filterFormatters: {},
+    filterDataFormatters: {},
 
-    sidebarCollapsed: false,
+    // Filters drawer: collapsed by default (user preference in stored config wins).
+    sidebarCollapsed: true,
     sortState: { columnId: '', direction: 'desc' },
 
-    activeFilters: {},
+    filtersActive: {},
 
     maxBadgeLength: 0,
     pageSize: 50

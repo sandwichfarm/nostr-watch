@@ -1,5 +1,6 @@
-import { EventMetadata, NostrEvent, OkResponse, ReqCommand, WorkerMessage, WorkerMessageCommand } from "./types";
+import { EventMetadata, NostrEvent, OkResponse, ReqCommand, RelayStorageStatus, WorkerMessage, WorkerMessageCommand } from "./types";
 import { v4 as uuid } from "uuid";
+import type { LogLevel } from "@nostrwatch/utils";
 
 export interface InitAargs {
   /**
@@ -89,6 +90,10 @@ export class WorkerRelayInterface {
     return await this.#workerRpc<InitAargs, boolean>("init", args);
   }
 
+  async status() {
+    return await this.#workerRpc<void, RelayStorageStatus>("status");
+  }
+
   async countNip11s() {
     return await this.#workerRpc<void, number>("countNip11s");
   }
@@ -155,6 +160,10 @@ export class WorkerRelayInterface {
 
   async debug(v: string) {
     return await this.#workerRpc<string, boolean>("debug", v);
+  }
+
+  async setLogLevel(level: LogLevel) {
+    return await this.#workerRpc<LogLevel, boolean>("logLevel", level);
   }
 
   abort() {

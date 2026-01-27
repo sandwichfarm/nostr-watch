@@ -1,13 +1,14 @@
 import { DataRegister } from "$lib/managers/DataRegister";
 import { get, writable, type Writable } from "svelte/store";
 import { doBootstrap } from "$stores/routines";
-import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, tabState } from "$stores/app";
+import { doAggregateCache, doLiveSync, isBootstrapped, isBootstrapping, isSeeded, lastCompleteSync, setStatsAsOf, tabState } from "$stores/app";
 import { backfillMonitorChecks, fetchDisabledMonitorsChecks, fetchMonitors, fetchMonitorsChecks, fetchNip11s, fetchOperators } from "$lib/fetchers/bootstrap";
 import { instance, removeStaleChecksFromStore, seedFromCache } from "$utils/lifecycle";
 import { liveSync } from "$utils/live-sync";
 import { publishEventsToMemoryRelay } from "./events-helpers";
 import { delay } from "@nostrwatch/utils";
 import type { IEvent } from "@nostrwatch/route66/models/Event";
+import { StateManager } from "@nostrwatch/route66";
 import { fetchRelayChecks, fetchRelayNip11, fetchRelayOperator } from "$lib/fetchers/relay";
 import { SchemaValidationService, type SchemaValidationServiceResponse } from "$lib/services/SchemaValidationService";
 import { nip11s } from "./nip11s";
@@ -15,6 +16,7 @@ import type { Nip11 } from "@nostrwatch/route66/models/Nip11";
 import { relayNip11Validations } from "./nip11-validations";
 import { page } from "$app/stores";
 import { relayLiveSync } from "$utils/live-sync";
+import { eventsArray } from "$lib/stores/events";
 import { SYNC_CHECKS_EXPIRY, SYNC_MONITORS_EXPIRY, SYNC_NIP11_EXPIRY, SYNC_OPERATORS_EXPIRY, SYNC_RELAY_ALL_EXPIRY, SYNC_RELAY_CHECKS_EXPIRY, SYNC_RELAY_NIP11_EXPIRY, SYNC_RELAY_OPERATOR_EXPIRY, VALIDATE_NIP11S_EXPIRY } from "$lib/constants/synchronization";
 import { initDimensionsWorker } from "$lib/workers/dimensions-worker-manager";
 import { syncBlocklists, cleanBlockedRelaysFromCache } from "./blocklist";
@@ -37,6 +39,22 @@ function startBootActivity(slug: string, text: string) {
 
 function completeBootActivity(slug: string, value?: string | number) {
     if (_completeBootActivity) _completeBootActivity(slug, value);
+}
+
+function computeMaxCheckTimestampSeconds(): number {
+    try {
+        const arr = get(eventsArray) as any[];
+        let max = 0;
+        for (const raw of arr) {
+            const event = (raw as any)?.json ?? raw;
+            if (event?.kind !== 30166) continue;
+            const seconds = typeof event?.created_at === "number" ? event.created_at : Number(event?.created_at);
+            if (Number.isFinite(seconds) && seconds > max) max = seconds;
+        }
+        return max;
+    } catch {
+        return 0;
+    }
 }
 
 export const dataRegister: Writable<DataRegister> = writable(new DataRegister())
@@ -72,11 +90,22 @@ export const dataRegisterInit = async () => {
             // Recovery path: localStorage can say "seeded/bootstrapped" while the actual cache
             // is empty (e.g. OPFS/SQLite fallback, corruption reset, or user wiped SQLite only).
             try {
+                const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+                    const ms = Number.isFinite(timeoutMs) ? Math.max(0, timeoutMs) : 0;
+                    if (ms === 0) return await promise;
+                    return await Promise.race([
+                        promise,
+                        new Promise<T>((_resolve, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)),
+                    ]);
+                };
+
                 const $route66 = await instance();
                 await $route66.ready();
-                const cache = $route66.adapters.cacheAdapter;
-                await cache.ready();
-                const checkCount = await cache.COUNT([{ kinds: [30166] }]);
+                const cache: any = $route66.adapters.cacheAdapter;
+                if (typeof cache?.ready === 'function') {
+                    await withTimeout(cache.ready(), 5_000);
+                }
+                const checkCount = await withTimeout(cache.COUNT([{ kinds: [30166] }]), 5_000);
                 return !Number.isFinite(checkCount) || checkCount < 100;
             } catch {
                 // If we cannot verify cache health, attempt build-seed so the UI can recover.
@@ -318,6 +347,13 @@ export const dataRegisterInit = async () => {
             completeBootActivity('sync:network');
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            const now = Math.round(Date.now() / 1000);
+            lastCompleteSync.set(now);
+            try {
+                StateManager.set('lastCompleteSync', now);
+            } catch {}
+            const maxCheck = computeMaxCheckTimestampSeconds();
+            setStatsAsOf(maxCheck > 0 ? maxCheck : now, { persist: true });
             // Ensure isSeeded is set so UI can progress
             if (!get(isSeeded)) {
                 isSeeded.set(true)
@@ -352,6 +388,13 @@ export const dataRegisterInit = async () => {
             completeBootActivity('sync:network');
             isBootstrapping.set(false)
             isBootstrapped.set(true)
+            const now = Math.round(Date.now() / 1000);
+            lastCompleteSync.set(now);
+            try {
+                StateManager.set('lastCompleteSync', now);
+            } catch {}
+            const maxCheck = computeMaxCheckTimestampSeconds();
+            setStatsAsOf(maxCheck > 0 ? maxCheck : now, { persist: true });
             // Ensure isSeeded is set so UI can progress even without seed files
             if (!get(isSeeded)) {
                 isSeeded.set(true)

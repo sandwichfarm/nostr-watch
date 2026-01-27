@@ -1,14 +1,14 @@
 <script lang="ts">
     import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
-	import Page from "$routes/+page.svelte";
-	import Badge from "$ui/badge/badge.svelte";
-	import Button from "$ui/button/button.svelte";
 	import { compress } from "compress-json";
-	import { filter } from "lodash";
 	import { onMount } from "svelte";
 	import { writable, type Writable } from "svelte/store";
 	import { StateManager } from "@nostrwatch/route66";
+	import DropdownSelect, { type DropdownSelectOption } from "$lib/components/partials/DropdownSelect.svelte";
+	import { cn } from "$lib/utils/ui.js";
+	import { getLeaderTabRpcClient } from "$lib/runtime/leader-tab-client";
+	import { stateManagerSet, stateManagerStorageKey } from "$lib/runtime/state-manager-sync";
 
     // Built-in Presets
 	import AllRelays from "./presets/AllRelays";
@@ -27,12 +27,8 @@
 
     const className = $$props.class;
 
-    export let buttonClass = "inline-block py-1 px-2 mr-2 mb-2 text-sm rounded-sm bg-black/5 dark:bg-white/5 hover:bg-white/20";
-    export let buttonSize = "sm";
-    export let buttonActiveClass = "bg-black/20 dark:bg-white/20"
-    export let buttonVariant = "ghost";
     export let onClick = (hash:string) => { goto(hash) }
-    export let label = ""
+    export let label = "Presets"
 
     // Built-in presets (static)
     const builtInPresets = [
@@ -72,19 +68,19 @@
     const loadUserPresets = () => {
         const stored = StateManager.get(USER_PRESETS_KEY) || [];
         userPresets.set(stored);
+		return stored as UserPreset[];
     };
 
     // Combined shortcuts (built-in + user)
-    $: shortcuts = [...builtInPresets, ...$userPresets.map(p => ({ ...p, isUserPreset: true }))];
+    $: shortcuts = [...$userPresets.map(p => ({ ...p, isUserPreset: true })), ...builtInPresets];
 
     const active = writable(builtInPresets[0].title);
 
     // Delete a user preset
-    const deleteUserPreset = (title: string, event: Event) => {
-        event.stopPropagation();
+    const deleteUserPreset = (title: string) => {
         const stored: UserPreset[] = StateManager.get(USER_PRESETS_KEY) || [];
         const updated = stored.filter(p => p.title !== title);
-        StateManager.set(USER_PRESETS_KEY, updated);
+        void stateManagerSet(USER_PRESETS_KEY, updated);
         userPresets.set(updated);
 
         // If deleted preset was active, switch to default
@@ -102,7 +98,7 @@
         // Persist the selected preset
         if (persist) {
             try {
-                StateManager.set(LAST_PRESET_KEY, shortcut.title);
+                void stateManagerSet(LAST_PRESET_KEY, shortcut.title);
             } catch {}
         }
 
@@ -125,19 +121,19 @@
     }
 
     onMount(() => {
-        loadUserPresets();
+        const storedUserPresets = loadUserPresets();
+		const allShortcuts = [...storedUserPresets.map(p => ({ ...p, isUserPreset: true })), ...builtInPresets] as any[];
 
         // Initialize from URL hash, persisted preference, or default
         if (window.location.hash) {
             const hash = window.location.hash.replace('#', '');
-            // Use builtInPresets for initial check since userPresets may not be loaded yet
-            const shortcut = builtInPresets.find(s => s.hash === hash);
+            const shortcut = allShortcuts.find(s => s.hash === hash);
             if (shortcut) setActive(shortcut);
-        } else if ($page.url.pathname === "/relays") {
+        } else if ($page.url.pathname === "/" || $page.url.pathname === "/relays") {
             // Try to load last used preset from storage
             const lastPresetTitle = StateManager.get(LAST_PRESET_KEY);
             const lastPreset = lastPresetTitle
-                ? builtInPresets.find(s => s.title === lastPresetTitle)
+                ? allShortcuts.find(s => s.title === lastPresetTitle)
                 : null;
 
             if (lastPreset) {
@@ -146,35 +142,78 @@
                 setActive(builtInPresets[0], false); // Default to first preset
             }
         }
+
+		const onStorage = (event: StorageEvent) => {
+			if (!event.key) return;
+			if (event.key === stateManagerStorageKey(USER_PRESETS_KEY)) loadUserPresets();
+			if (event.key === stateManagerStorageKey(LAST_PRESET_KEY)) {
+				const next = StateManager.get(LAST_PRESET_KEY);
+				if (typeof next === "string" && next.length) active.set(next);
+			}
+		};
+
+		window.addEventListener("storage", onStorage);
+
+		let stopBroadcast: (() => void) | null = null;
+		try {
+			stopBroadcast = getLeaderTabRpcClient().onBroadcast((msg) => {
+				if (msg.kind !== "state.stateManager") return;
+				const data = msg.data as any;
+				if (data?.key === USER_PRESETS_KEY) loadUserPresets();
+				if (data?.key === LAST_PRESET_KEY) {
+					const next = data?.value;
+					if (typeof next === "string" && next.length) active.set(next);
+				}
+			});
+		} catch {}
+
+		return () => {
+			stopBroadcast?.();
+			window.removeEventListener("storage", onStorage);
+		};
     });
 
+	$: dropdownOptions = shortcuts.map((shortcut) => {
+		const isUserPreset = Boolean(shortcut.isUserPreset);
+		return {
+			value: shortcut.title,
+			label: shortcut.title,
+			group: isUserPreset ? "user" : "built-in",
+			searchText: isUserPreset ? "user" : "built-in",
+			className: isUserPreset ? "font-medium text-primary" : undefined,
+			meta: { isUserPreset },
+		} satisfies DropdownSelectOption;
+	});
+
+	const onPresetChange = (nextTitle: string | null) => {
+		if (!nextTitle) return;
+		const shortcut = shortcuts.find((s) => s.title === nextTitle);
+		if (!shortcut) return;
+		setActive(shortcut);
+	};
     
 </script>
-<div class="leading-9 {className}">
-{#if label}
-    <span class="inline-block italic text-sm mr-2 ml-2">
-        {label}
-    </span>
-{/if}
-{#each shortcuts as shortcut}
-    <span class="inline-flex items-center mr-1 mb-1">
-        <Button
-            size="small"
-            variant={buttonVariant}
-            on:click={() => setActive(shortcut)}
-            class="{buttonClass} {$active === shortcut.title ? buttonActiveClass : ''} {shortcut.isUserPreset ? 'pr-1 border border-dashed border-purple-500/40 text-purple-300' : ''}"
-        >
-            {shortcut.title}
-            {#if shortcut.isUserPreset}
-                <button
-                    on:click={(e) => deleteUserPreset(shortcut.title, e)}
-                    class="ml-1 px-1 opacity-40 hover:opacity-100 hover:text-red-400"
-                    title="Delete preset"
-                >
-                    ×
-                </button>
-            {/if}
-        </Button>
-    </span>
-{/each}
-</div>
+
+<DropdownSelect
+	class={cn(className)}
+	label={label}
+	value={$active}
+	options={dropdownOptions}
+	on:change={(e) => onPresetChange(e.detail.value)}
+>
+	<svelte:fragment slot="optionRight" let:option>
+		{#if option?.meta?.isUserPreset}
+			<span class="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-sm bg-primary/15 text-primary">
+				user
+			</span>
+			<button
+				type="button"
+				class="ml-2 px-1 opacity-50 hover:opacity-100 hover:text-red-300"
+				title="Delete preset"
+				on:click|stopPropagation={() => deleteUserPreset(option.value)}
+			>
+				×
+			</button>
+		{/if}
+	</svelte:fragment>
+</DropdownSelect>

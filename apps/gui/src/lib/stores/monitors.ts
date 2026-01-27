@@ -9,6 +9,7 @@ import type Route66 from "@nostrwatch/route66";
 import { publishEventsToMemoryRelay } from "./events-helpers.js";
 import { doAggregateCache, statsAsOf, tabState } from "./app.js";
 import timestring from "timestring";
+import { getLeaderTabRpcClient } from "$lib/runtime/leader-tab-client";
 
 let $route66: Route66 | null;
 
@@ -19,6 +20,9 @@ export const MONITOR_LIVENESS_DEAD_THRESHOLD_KEY = "preferences:monitors:livenes
 
 export const DEFAULT_MONITOR_LIVENESS_LENIENCY = 1.2;
 export const DEFAULT_MONITOR_LIVENESS_DEAD_THRESHOLD = "30d";
+
+const MONITORS_CACHE_KEY = "cache:monitors";
+let suppressMonitorsCachePersist = false;
 
 function clampLeniency(value: unknown): number {
   const parsed = typeof value === "number" ? value : Number(value);
@@ -58,6 +62,34 @@ const initialDeadThreshold =
 export const monitorsLivenessLeniency = writable<number>(initialLeniency);
 export const monitorsLivenessDeadThreshold = writable<string>(initialDeadThreshold);
 
+function buildMonitorsMap(monitorsArr: any[] | undefined): Map<string, Monitor> {
+  if (!monitorsArr?.length) return new Map();
+  const map: Map<string, Monitor> = new Map();
+  for (const monitor of monitorsArr) {
+    const mon: Monitor | undefined = Monitor.fromCache(monitor);
+    if (!mon) continue;
+    publishEventsToMemoryRelay(mon.events, 'monitorsMapFromCache');
+    map.set(monitor.pubkey, mon);
+  }
+  return map;
+}
+
+function applyMonitorsCache(monitorsArr: any[] | undefined) {
+  suppressMonitorsCachePersist = true;
+  try {
+    if (Array.isArray(monitorsArr)) {
+      try {
+        $route66?.services?.monitors?.loadMonitors(monitorsArr);
+      } catch {}
+      monitorsMap.set(buildMonitorsMap(monitorsArr));
+    } else {
+      monitorsMap.set(new Map());
+    }
+  } finally {
+    suppressMonitorsCachePersist = false;
+  }
+}
+
 if (typeof window !== "undefined") {
   monitorsLivenessLeniency.subscribe((value) => {
     const next = clampLeniency(value);
@@ -91,21 +123,18 @@ if (typeof window !== "undefined") {
       const next = normalizeDeadThreshold(StateManager.get(MONITOR_LIVENESS_DEAD_THRESHOLD_KEY));
       if (get(monitorsLivenessDeadThreshold) !== next) monitorsLivenessDeadThreshold.set(next);
     }
+    if (event.key === storageKey(MONITORS_CACHE_KEY)) {
+      try {
+        const cached = StateManager.get(MONITORS_CACHE_KEY);
+        applyMonitorsCache(Array.isArray(cached) ? cached : undefined);
+      } catch {}
+    }
   });
 }
 
 export const monitorsMapFromCache = (): Map<string, Monitor>  => {
-  const monitorsArr = StateManager.get('cache:monitors');  
-  if(!monitorsArr?.length) return new Map()
-  const map: Map<string, Monitor> = new Map()
-  for(const monitor of monitorsArr) {
-    const mon: Monitor | undefined = Monitor.fromCache(monitor)
-    if(!mon) continue
-    // console.log('monitor from cache', mon)
-    publishEventsToMemoryRelay(mon.events, 'monitorsMapFromCache')
-    map.set(monitor.pubkey, mon)
-  }
-  return map
+  const monitorsArr = StateManager.get(MONITORS_CACHE_KEY);
+  return buildMonitorsMap(Array.isArray(monitorsArr) ? monitorsArr : undefined);
 }
 
 // monitorsMapFromCache()
@@ -155,10 +184,12 @@ export const monitors = derived(
     }
     if(arr.length){
       const toCache = arr.map(( monitor: Monitor) => monitor.toCache())
-      StateManager.set('cache:monitors', toCache); 
-      console.log('monitors set to cache', toCache)
+      if (!suppressMonitorsCachePersist && get(tabState) === 'leader') {
+        try {
+          StateManager.set(MONITORS_CACHE_KEY, toCache);
+        } catch {}
+      }
     }
-    console.log('monitors derived', arr)
     return arr;
   }
 )
@@ -212,6 +243,16 @@ function readCachedRelayLiveness(): MonitorRelayLivenessMap {
 export const monitorRelayLivenessCounts: Writable<MonitorRelayLivenessMap> = writable(readCachedRelayLiveness());
 
 if (typeof window !== "undefined") {
+  // Ensure monitor selection changes propagate across tabs, including into the leader tab.
+  try {
+    getLeaderTabRpcClient().onBroadcast((msg) => {
+      if (msg.kind !== 'state.stateManager') return;
+      const data = msg.data as any;
+      if (data?.key !== MONITORS_CACHE_KEY) return;
+      applyMonitorsCache(Array.isArray(data?.value) ? data.value : undefined);
+    });
+  } catch {}
+
   window.addEventListener("storage", (event) => {
     if (!event.key) return;
     if (event.key !== storageKey(MONITOR_RELAY_LIVENESS_CACHE_KEY)) return;

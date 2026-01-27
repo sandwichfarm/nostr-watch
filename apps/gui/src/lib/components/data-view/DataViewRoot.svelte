@@ -7,6 +7,7 @@
     import { Badge } from '$lib/components/ui/badge/index.js';
     import DataTable from '$lib/components/data-view/table/DataTable.svelte';
     import { StateManager } from '@nostrwatch/route66';
+    import { stateManagerSet } from '$lib/runtime/state-manager-sync';
 
 	import Button from '$lib/components/ui/button/button.svelte';
 	import type { DataTableConfig } from './DataTableTypes.svelte';
@@ -25,6 +26,9 @@
     export let actionsComponent: any | undefined = undefined;
 
     export let sidebarPaneApi: Resizable.PaneApi | null = null;
+
+	export let showViewSelector: boolean = true;
+	export let viewSelectorClass: string | undefined = undefined;
     
     let keysEnable: string[];
 
@@ -137,10 +141,19 @@
 
         justData = derived(filteredData, $filteredData => $filteredData.data);
         justColumns = derived(filteredData, $filteredData => $filteredData.columns);
-
-        // Restore sidebar collapsed state on mount
-        if (initialSidebarCollapsed && sidebarPaneApi) {
-            setTimeout(() => sidebarPaneApi?.collapse(), 1);
+        
+        // Migrate legacy per-view collapsed state to the global key.
+        if (initialSidebarSource === 'legacyKey' || initialSidebarSource === 'legacyTableConfig') {
+            let hasGlobal = false;
+            try {
+                hasGlobal = typeof StateManager.get(GLOBAL_SIDEBAR_COLLAPSED_KEY) === 'boolean';
+            } catch {}
+            if (!hasGlobal) {
+                try {
+                    StateManager.set(GLOBAL_SIDEBAR_COLLAPSED_KEY, initialSidebarCollapsed);
+                } catch {}
+                void stateManagerSet(GLOBAL_SIDEBAR_COLLAPSED_KEY, initialSidebarCollapsed);
+            }
         }
         
         return () => {
@@ -154,7 +167,9 @@
     }
 
     // Sidebar persistence key (separate from main config to avoid expensive subscription cascades)
-    const SIDEBAR_COLLAPSED_KEY = `preferences:${key}:sidebarCollapsed`;
+    // This must be global so the drawer state persists across contexts (relays/operators/monitors/etc).
+    const GLOBAL_SIDEBAR_COLLAPSED_KEY = `preferences:dataView:sidebarCollapsed`;
+    const LEGACY_SIDEBAR_COLLAPSED_KEY = `preferences:${key}:sidebarCollapsed`;
 
     const toggleSidebarPane = () => {
         // Toggle the pane - callbacks will update sidebarHidden for UI
@@ -166,27 +181,68 @@
         }
     }
 
-    // Persist sidebar state separately (called from callbacks, debounced)
-    let sidebarPersistTimeout: ReturnType<typeof setTimeout> | null = null;
+    // Persist sidebar state separately (called from callbacks).
     const persistSidebarState = (collapsed: boolean) => {
-        if (sidebarPersistTimeout) clearTimeout(sidebarPersistTimeout);
-        sidebarPersistTimeout = setTimeout(() => {
-            try { StateManager.set(SIDEBAR_COLLAPSED_KEY, collapsed); } catch {}
-        }, 500);
+        // Optimistic local write so "toggle then navigate" works even in follower tabs.
+        try {
+            StateManager.set(GLOBAL_SIDEBAR_COLLAPSED_KEY, collapsed);
+        } catch {}
+        void stateManagerSet(GLOBAL_SIDEBAR_COLLAPSED_KEY, collapsed);
     };
 
-    // Load initial sidebar state from separate storage key
-    const initialSidebarCollapsed = typeof window !== 'undefined'
-        ? (StateManager.get(SIDEBAR_COLLAPSED_KEY) ?? $config?.sidebarCollapsed ?? false)
-        : false;
+    type SidebarCollapsedSource = 'global' | 'legacyKey' | 'legacyTableConfig' | 'config' | 'default';
+    function readInitialSidebarCollapsed(): { collapsed: boolean; source: SidebarCollapsedSource } {
+        if (typeof window === 'undefined') return { collapsed: true, source: 'default' };
+
+        // 1) New dedicated key (authoritative).
+        try {
+            const stored = StateManager.get(GLOBAL_SIDEBAR_COLLAPSED_KEY);
+            if (typeof stored === 'boolean') return { collapsed: stored, source: 'global' };
+        } catch {}
+
+        // 2) Back-compat: older per-view dedicated key.
+        try {
+            const stored = StateManager.get(LEGACY_SIDEBAR_COLLAPSED_KEY);
+            if (typeof stored === 'boolean') return { collapsed: stored, source: 'legacyKey' };
+        } catch {}
+
+        // 3) Back-compat: older persisted tableConfig value.
+        try {
+            const tableConfig = StateManager.get(`preferences:${key}:tableConfig`);
+            const legacy = (tableConfig as any)?.sidebarCollapsed;
+            if (typeof legacy === 'boolean') return { collapsed: legacy, source: 'legacyTableConfig' };
+        } catch {}
+
+        // 4) Fall back to current config value when present.
+        const fromConfig = ($config as any)?.sidebarCollapsed;
+        if (typeof fromConfig === 'boolean') return { collapsed: fromConfig, source: 'config' };
+
+        // 5) Default: collapsed.
+        return { collapsed: true, source: 'default' };
+    }
+
+    const initialSidebar = readInitialSidebarCollapsed();
+    const initialSidebarCollapsed = initialSidebar.collapsed;
+    const initialSidebarSource = initialSidebar.source;
 
     let sidebarHidden = initialSidebarCollapsed;
     $: isCollapsed = sidebarHidden;
     $: activeFilters = Object.keys($filters || {}).length
 
-    export let activeView: Writable<'table' | 'grid' | 'map'>;
+	export let activeView: Writable<DataViewViews> = writable("table");
+
+	$: if (enabledViews?.length && !enabledViews.includes($activeView)) {
+		activeView.set(enabledViews[0]);
+	}
 
     let loading = false 
+
+    // Apply initial collapsed state once the pane API exists.
+    let didApplyInitialSidebarState = false;
+    $: if (!didApplyInitialSidebarState && initialSidebarCollapsed && sidebarPaneApi) {
+        didApplyInitialSidebarState = true;
+        setTimeout(() => sidebarPaneApi?.collapse(), 1);
+    }
 
 	type LivenessCounts = { online: number; offline: number; dead: number } | null;
 	let livenessCounts: LivenessCounts = null;
@@ -215,9 +271,11 @@
 	}
 </script>
 
-<DataViewSelector {enabledViews} bind:activeView />
+{#if showViewSelector}
+	<DataViewSelector {enabledViews} {activeView} class={viewSelectorClass} />
+{/if}
 
-<Resizable.PaneGroup direction="horizontal" class="min-h-[100%]">
+<Resizable.PaneGroup direction="horizontal" class="min-h-[100%] z-1">
 
     <Resizable.Pane defaultSize={75}>
         {#if $filteredData && $justColumns?.length}
@@ -250,7 +308,7 @@
     {#if enableFilters}
     <Resizable.Handle withHandle />
     <Resizable.Pane
-        class="min-h-[100%] overflow-hidden"
+        class="min-h-[100%] overflow-hidden gradient-purple-200"
         defaultSize={25}
         collapsedSize={5}
         collapsible={true}

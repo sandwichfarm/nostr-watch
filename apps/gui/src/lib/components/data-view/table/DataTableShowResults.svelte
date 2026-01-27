@@ -108,6 +108,7 @@
 
   <input
       type="number"
+      class="flex items-center gap-2 text-xs font-mono"
       bind:value={pageSize}
       min={minValue}
       on:input={handleInput}
@@ -117,12 +118,12 @@
 
 <style>
   input {
-    background: none;
+    background:rgba(255,255,255,0.01);
     text-align: center;
+    margin-top:2px;
     padding: 0.2rem;
     width: 3rem;
     position:relative;
-    top: -0.2rem;
     display: inline-block;
     outline: none; 
     border:none;

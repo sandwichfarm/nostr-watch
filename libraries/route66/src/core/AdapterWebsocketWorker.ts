@@ -190,13 +190,15 @@ export class AdapterWebsocketWorker extends AdapterWorker {
 
   async fetch(request: WebsocketRequestBody = defaultWebsocketRequestBody){
     if(this.signal.aborted) this.abortControllerReset()
-    const { options } = request
+    const { options, hash } = request
     const { stream } = options ?? defaultWebsocketAdapterOptions;
+    console.log(`[Worker] fetch: hash=${hash?.slice(0,8)}, stream=${stream}, returnResults=${options?.returnResults}`);
     let callbacks: SubscribeHandlers | undefined;
     if(stream){
       callbacks = this.requestCallbacks(request);
     }
     const result = await this._fetch(request, callbacks)
+    console.log(`[Worker] fetch: _fetch returned ${Array.isArray(result) ? result.length + ' events' : typeof result}`);
     if(!stream){
       this.requestSyncResponse(request, result as IEvent[])
     }
@@ -224,9 +226,11 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   respond(type: ResponseType, request: WebsocketRequestBody, result?: IEvent | IEvent[]){
     const { hash, options } = request;
     const { cache, returnResults } = options;
-    
+
+    console.log(`[Worker] respond: type=${type}, hash=${hash?.slice(0,8)}, returnResults=${returnResults}, cache=${cache}`);
+
     const response = {
-      type, 
+      type,
       result,
       hash: hash as string
     }
@@ -235,7 +239,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       this.send({to: 'cache', args: response})
     }
     if(returnResults === true){
-      //console.log('respond to websocket adapter', hash, result instanceof Array? result.length : result)
+      console.log(`[Worker] sending to adapter: type=${type}`);
       this.send({to: 'adapter', args: response})
     }
   }
@@ -268,8 +272,9 @@ export class AdapterWebsocketWorker extends AdapterWorker {
   requestSyncResponse(request: WebsocketRequestBody, result: IEvent[]){
     const { hash, options } = request
     const { cache, returnResults } = options
+    console.log(`[Worker] requestSyncResponse: hash=${hash?.slice(0,8)}, events=${result?.length ?? 0}, returnResults=${returnResults}, cache=${cache}`);
     let args: WebsocketResponseBody = {
-      type: ResponseType.events, 
+      type: ResponseType.events,
       result,
       hash: hash as string
     }
@@ -277,6 +282,7 @@ export class AdapterWebsocketWorker extends AdapterWorker {
       this.send({to: 'cache', args})
     }
     if(returnResults === true){
+      console.log(`[Worker] requestSyncResponse: sending ${result?.length ?? 0} events to adapter`);
       this.send({to: 'adapter', args})
     }
     //complete message.

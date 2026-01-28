@@ -87,9 +87,12 @@ export class Service {
     args.hash = hash;
     this.subscriptions.add(hash)
 
+    console.log(`[Service] subscribe: hash=${hash?.slice(0,8)}, nocache=${nocache}, stream=${options?.stream}, keepAlive=${options?.keepAlive}, adapterType=${this.websocketAdapter?.constructor?.name}`);
+
     let result: IEvent[] = [];
-    
+
     const hasCallbacks = Boolean(callbacks && Object.keys(callbacks).length > 0);
+    console.log(`[Service] subscribe: hasCallbacks=${hasCallbacks}`);
 
     if(filters && !nocache) {
       let cacheCallbacks: SubscribeHandlers = {}
@@ -116,17 +119,26 @@ export class Service {
     }
 
     const shouldStream = Boolean(options?.stream === true && hasCallbacks);
+    console.log(`[Service] subscribe: shouldStream=${shouldStream}`);
     if(shouldStream){
+      console.log(`[Service] subscribe: calling websocketAdapter.subscribe, subscribeIsFn=${typeof this.websocketAdapter?.subscribe === 'function'}`);
       if(options?.keepAlive){
         void this.websocketAdapter.subscribe(args, wsCallbacks);
       }
       else {
-        await this.websocketAdapter.subscribe(args, wsCallbacks);
+        try {
+          await this.websocketAdapter.subscribe(args, wsCallbacks);
+        } catch (err) {
+          console.error(`[Service] subscribe error:`, err);
+          throw err;
+        }
       }
+      console.log(`[Service] subscribe: websocketAdapter.subscribe returned`);
     }
     else {
       // Stream subscriptions without callbacks can hang (worker won't forward streamed messages
       // when `returnResults=false`). Force non-stream behavior when no callbacks are present.
+      console.log(`[Service] subscribe: using _fetch instead of websocket subscribe`);
       args.options = { ...defaultWebsocketAdapterOptions, ...(options ?? {}), stream: false };
       result = this.addSymbolToEvents(await this._fetch(args, wsCallbacks), 'ws');
     }
@@ -245,12 +257,13 @@ export class Service {
   async fetchFromWebsocket(args: WebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[]> {
     await this.ready();
     // console.log('Service.fetchFromWebsocket: ready', args);
-    const { relays, filters, options } = args;
+    const { relays, filters, options, hash } = args;
     const websocketEvents: IEvent[] = await this.websocketAdapter.fetch(
         {
             relays: relays || [],
             filters,
             options: options || defaultWebsocketAdapterOptions,
+            hash,
         },
         callbacks
     ) as IEvent[];

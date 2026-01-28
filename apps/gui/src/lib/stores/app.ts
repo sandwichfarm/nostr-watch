@@ -104,7 +104,7 @@ darkModeQuery.addEventListener('change', (event) => {
 
 export const route66Ready = async () => {
     while(!get(route66Initialized)) {
-        await delay(200);
+        await delay(100);
     }
 }
 

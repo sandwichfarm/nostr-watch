@@ -1,6 +1,7 @@
 export * from './_'
 export { type IEvent, NostrEvent, SOURCE } from './Event';
 export { Nip66CheckEvent } from './Nip66CheckEvent';
+export { DeltaEvent, type OperationalStatus } from './DeltaEvent';
 export { RelayCheckAggregate, RelayCheckAggregator } from './RelayCheckAggregate';
 export { Geocoded } from './Geocoded';
 export { type IMonitor, Monitor } from './Monitor';

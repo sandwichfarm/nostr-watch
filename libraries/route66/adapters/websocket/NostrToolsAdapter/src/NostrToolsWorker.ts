@@ -121,8 +121,13 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
         filters = Array.isArray(filters) ? filters : [filters];
         await this.connect();
         
+        console.log(`[NostrToolsWorker] subscribeMany to ${effectiveRelays.length} relays:`, effectiveRelays);
+        console.log(`[NostrToolsWorker] subscribeMany filters:`, JSON.stringify(filters));
+        console.log(`[NostrToolsWorker] subscribeMany stream=${stream}, keepAlive=${keepAlive}, hash=${hash?.slice(0,8)}`);
+
         const onevent = (event: IEvent) => {
           if(this.signal.aborted) return;
+          console.log(`[NostrToolsWorker] onevent: kind=${(event as any).kind}, hash=${hash?.slice(0,8)}`);
           if(stream){
             callbacks!.onevent?.(event);
             count++
@@ -202,59 +207,119 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   
       for (let filter of filters) {
         if (this.signal.aborted) return;
-  
-        const { since, until, ...remainingFilter } = filter;
-        const range: Record<string, number> = {};
-        if (since) range.since = since;
-        if (until) range.until = until;
-  
+
         let totalEvents = 0;
-  
+        const eventMap = new Map<string, IEvent>();
+
         try {
-          // console.log('allEventsIterator:filter', remainingFilter)
-          const eventMap = new Map<string, IEvent>();
-          const iterator = this.fetcher!.allEventsIterator(
-            effectiveRelays,
-            remainingFilter as FetchFilter,
-            range,
-            {
-              signal: this.signal,
-              // skipFilterMatching: true,
-              // skipVerification: true,
-              abortSubBeforeEoseTimeoutMs: 20000,
-              connectTimeoutMs: 5000,
+          console.log('[NostrToolsWorker] _fetch: filter=', JSON.stringify(filter));
+          console.log('[NostrToolsWorker] _fetch: relays=', effectiveRelays);
+
+          // Use pool.querySync for filters with tag queries (nostr-fetch has issues with #r tag filter)
+          const hasTagFilter = Object.keys(filter).some(k => k.startsWith('#'));
+
+          if (hasTagFilter) {
+            console.log('[NostrToolsWorker] _fetch: using subscribeMany for tag filter');
+            console.log('[NostrToolsWorker] _fetch: subscribeMany starting with relays=', effectiveRelays, 'filter=', JSON.stringify(filter));
+
+            // Use subscribeMany instead of querySync (which has timing issues with tag filters)
+            const poolEvents = await new Promise<any[]>((resolve) => {
+              const events: any[] = [];
+              let resolved = false;
+
+              const closer = this.pool!.subscribeMany(
+                effectiveRelays,
+                [filter],
+                {
+                  onevent: (event: any) => {
+                    console.log('[NostrToolsWorker] _fetch subscribeMany onevent:', event.kind, event.id?.slice(0, 8));
+                    events.push(event);
+                  },
+                  oneose: () => {
+                    console.log('[NostrToolsWorker] _fetch subscribeMany oneose, events:', events.length);
+                    if (!resolved) {
+                      resolved = true;
+                      closer.close();
+                      resolve(events);
+                    }
+                  },
+                  onclose: (reasons: string[]) => {
+                    console.log('[NostrToolsWorker] _fetch subscribeMany onclose:', reasons);
+                    if (!resolved) {
+                      resolved = true;
+                      resolve(events);
+                    }
+                  }
+                }
+              );
+
+              // Timeout fallback in case EOSE never comes
+              setTimeout(() => {
+                if (!resolved) {
+                  console.log('[NostrToolsWorker] _fetch subscribeMany timeout, events:', events.length);
+                  resolved = true;
+                  closer.close();
+                  resolve(events);
+                }
+              }, 15000);
+            });
+
+            console.log('[NostrToolsWorker] _fetch: subscribeMany returned', poolEvents.length, 'events');
+            if (poolEvents.length > 0) {
+              console.log('[NostrToolsWorker] _fetch: first event=', JSON.stringify(poolEvents[0]).slice(0, 200));
             }
-          );
-  
-          // Process events in the iterator
-          for await (const event of iterator) {
-            if (this.signal.aborted) return;
-            if (eventMap.has(event.id)) continue;
-  
-            eventMap.set(event.id, event as IEvent);
-            totalEvents++;
-  
-            if (stream) {
-              callbacks?.onevent?.(event);
+            for (const event of poolEvents) {
+              if (this.signal.aborted) return;
+              if (eventMap.has(event.id)) continue;
+              eventMap.set(event.id, event as IEvent);
+              totalEvents++;
+              if (stream) {
+                callbacks?.onevent?.(event);
+              }
+            }
+          } else {
+            // Use nostr-fetch for queries without tag filters
+            const { since, until, ...remainingFilter } = filter;
+            const range: Record<string, number> = {};
+            if (since) range.since = since;
+            if (until) range.until = until;
+
+            const iterator = this.fetcher!.allEventsIterator(
+              effectiveRelays,
+              remainingFilter as FetchFilter,
+              range,
+              {
+                signal: this.signal,
+                skipFilterMatching: true,
+                abortSubBeforeEoseTimeoutMs: 20000,
+                connectTimeoutMs: 5000,
+              }
+            );
+
+            for await (const event of iterator) {
+              if (this.signal.aborted) return;
+              if (eventMap.has(event.id)) continue;
+              eventMap.set(event.id, event as IEvent);
+              totalEvents++;
+              if (stream) {
+                callbacks?.onevent?.(event);
+              }
             }
           }
-  
+
           if (stream) {
-            // Resolve to boolean for streaming mode
             events.push(totalEvents > 0);
           } else {
-            // Collect unique events for non-streaming mode
             events.push(Array.from(eventMap.values()));
           }
-  
-          // Callbacks after End of Stream
+
           callbacks?.oneose?.();
-  
+
         } catch (error) {
-          console.warn('Error during fetch:', error);
+          console.warn('[NostrToolsWorker] _fetch error:', error);
         }
-  
-        // console.log(`NostrToolsWorker: _fetch #${count}: complete, total events: ${totalEvents}`);
+
+        console.log(`[NostrToolsWorker] _fetch #${count}: complete, totalEvents=${totalEvents}`);
         count++;
       }
 
@@ -268,6 +333,7 @@ export class NostrToolsWorker extends AdapterWebsocketWorker implements IAdapter
   
       // Aggregate and return results
       const result = events.flat();
+      console.log(`[NostrToolsWorker] _fetch: returning ${Array.isArray(result) ? result.length : typeof result} events, stream=${options?.stream}`);
       return options?.stream ? result.length > 0 : result;
     }) as Promise<IEvent[] | boolean>;
   }

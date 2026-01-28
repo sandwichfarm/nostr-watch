@@ -10,7 +10,7 @@ import { Route66EventStorage } from '@nostrwatch/relay-chronicle';
 import type {
   TimeSeriesPoint,
   UptimeState,
-  DeltaEvent,
+  DeltaEvent as IDeltaEvent,
   EventStorage,
   QueryOptions,
 } from '@nostrwatch/relay-chronicle';
@@ -23,6 +23,7 @@ import type { IAdaptersArgument } from '@base/interfaces';
 import type { Filter } from 'nostr-tools';
 import type { WebsocketRequestBody, SubscribeHandlers } from '@base/core';
 import { deterministicHash } from '@base/utils';
+import { DeltaEvent } from '@base/models';
 
 /**
  * Configuration options for ChronicleService
@@ -97,7 +98,7 @@ export interface UptimePeriod {
  */
 export class ChronicleService extends Service {
   public storage: Route66EventStorage;
-  private memoryByRelay: Map<string, Map<string, DeltaEvent>> = new Map();
+  private memoryByRelay: Map<string, Map<string, IDeltaEvent>> = new Map();
   private options: ChronicleServiceOptions;
   private kind1066Subscriptions: Map<string, string> = new Map();
   private syncInFlight: Map<string, Promise<void>> = new Map();
@@ -137,10 +138,16 @@ export class ChronicleService extends Service {
 
     let relayMap = this.memoryByRelay.get(relayKey);
     if (!relayMap) {
-      relayMap = new Map<string, DeltaEvent>();
+      relayMap = new Map<string, IDeltaEvent>();
       this.memoryByRelay.set(relayKey, relayMap);
     }
-    relayMap.set(ev.id, ev as DeltaEvent);
+
+    // Store the raw event - it should already have the correct DeltaEvent structure
+    // Validate it's a proper Kind 1066 event before storing
+    if (DeltaEvent.KIND === ev.kind) {
+      relayMap.set(ev.id, ev as IDeltaEvent);
+      console.log(`[Chronicle] Stored event ${ev.id?.slice(0, 8)} for ${relayKey}, map size: ${relayMap.size}`);
+    }
   }
 
   private getMemoryStorage(): EventStorage {
@@ -149,17 +156,20 @@ export class ChronicleService extends Service {
     const normalizeRelayKey = this.normalizeRelayKey.bind(this);
 
     return {
-      async query(options: QueryOptions): Promise<DeltaEvent[]> {
+      async query(options: QueryOptions): Promise<IDeltaEvent[]> {
         const relayKeys = relayTagValues(options.relay);
+        console.log(`[Chronicle] Memory query for relay: ${options.relay}, keys: ${JSON.stringify(relayKeys)}`);
+        console.log(`[Chronicle] memoryByRelay has ${memoryByRelay.size} entries:`, Array.from(memoryByRelay.keys()));
         const relayMaps = relayKeys
           .map((key) => memoryByRelay.get(normalizeRelayKey(key)))
-          .filter((m): m is Map<string, DeltaEvent> => Boolean(m && m.size));
+          .filter((m): m is Map<string, IDeltaEvent> => Boolean(m && m.size));
 
+        console.log(`[Chronicle] Found ${relayMaps.length} matching maps`);
         if (relayMaps.length === 0) return [];
 
-        const byId = new Map<string, DeltaEvent>();
+        const byId = new Map<string, IDeltaEvent>();
         for (const relayMap of relayMaps) {
-          for (const [id, ev] of relayMap.entries()) byId.set(id, ev);
+          relayMap.forEach((ev, id) => byId.set(id, ev));
         }
 
         let events = Array.from(byId.values());
@@ -192,6 +202,7 @@ export class ChronicleService extends Service {
           events = events.slice(-options.limit);
         }
 
+        console.log(`[Chronicle] Memory query returning ${events.length} events`);
         return events;
       },
     };
@@ -236,54 +247,92 @@ export class ChronicleService extends Service {
     const task = (async () => {
       const relayValues = this.relayTagValues(relay);
 
-      const filters: Filter[] = [];
-
-      // Always fetch the requested window (for RTT + check-frequency style charts)
-      filters.push({
+      // Build filter for Kind 1066 delta events
+      // Note: Don't use 'since' filter - relays may not index Kind 1066 by time properly
+      const filter: Filter = {
         kinds: [1066],
         '#r': relayValues,
-        since: options?.since,
-      });
-
-      // Also fetch status transition events (O tags) so uptime history can be
-      // computed even when there are no transitions in the requested window.
-      filters.push({
-        kinds: [1066],
-        '#r': relayValues,
-        '#O': ['init', 'up', 'down'],
-        limit: 1000,
-      });
-
-      const args: WebsocketRequestBody = {
-        filters,
-        relays: this.options.syncRelays,
-        hash: deterministicHash(filters),
-        options: {
-          // One-shot chart fetches should not depend on the cache worker (OPFS/COOP/COEP),
-          // otherwise Kind 1066 streaming can fail entirely when OPFS isn't available.
-          cache: keepAlive,
-          stream: true,
-          keepAlive,
-          returnResults: false,
-        },
       };
 
-      const callbacks: SubscribeHandlers = {
-        onevent: (event) => {
-          this.rememberEvent(relay, event);
-          console.log(`[Chronicle] Received Kind 1066 for ${relay}`, event.id.slice(0, 8));
-        },
-        oneose: () => {
-          console.log(`[Chronicle] EOSE for ${relay}`);
-        },
-      };
+      const filters: Filter[] = [filter];
 
-      // Subscribe via websocket adapter - leverages existing connections
-      await this.subscribe(args, callbacks, !keepAlive);
+      console.log(`[Chronicle] syncRelay starting for ${relay}, keepAlive=${keepAlive}`);
+      console.log(`[Chronicle] Filter #r values:`, relayValues);
+      console.log(`[Chronicle] Sync relays:`, this.options.syncRelays);
+      console.log(`[Chronicle] Full filters:`, JSON.stringify(filters));
+
+      let eventCount = 0;
 
       if (keepAlive) {
+        // Use subscribe for live streaming updates
+        const args: WebsocketRequestBody = {
+          filters,
+          relays: this.options.syncRelays,
+          hash: deterministicHash(filters),
+          options: {
+            cache: true,
+            stream: true,
+            keepAlive: true,
+            returnResults: true,
+          },
+        };
+
+        const callbacks: SubscribeHandlers = {
+          onevent: (event) => {
+            this.rememberEvent(relay, event);
+            eventCount++;
+            console.log(`[Chronicle] Received Kind 1066 for ${relay}`, (event as any).id?.slice(0, 8));
+          },
+          oneose: () => {
+            console.log(`[Chronicle] EOSE for ${relay} (${eventCount} events)`);
+          },
+        };
+
+        // Subscribe for live updates - don't await since it's keepAlive
+        this.subscribe(args, callbacks, false).catch((err) => {
+          console.warn(`[Chronicle] Subscribe error for ${relay}:`, err);
+        });
+
         this.kind1066Subscriptions.set(relay, args.hash!);
         console.log(`[Chronicle] Syncing ${relay} (hash: ${args.hash})`);
+      } else {
+        // Use fetch for one-shot queries - this is more reliable than subscribe
+        const args: WebsocketRequestBody = {
+          filters,
+          relays: this.options.syncRelays,
+          hash: deterministicHash(filters),
+          options: {
+            cache: false,
+            stream: false,
+            keepAlive: false,
+            returnResults: true,
+          },
+        };
+
+        // Use fetch() for one-shot queries - uses fetcher.allEventsIterator internally
+        // which is more reliable than pool.subscribeMany for single queries
+        console.log(`[Chronicle] Using fetch() for one-shot query`);
+        console.log(`[Chronicle] Fetch args:`, JSON.stringify({
+          filters: args.filters,
+          relays: args.relays,
+          options: args.options,
+        }));
+        try {
+          const events = await this.fetch(args);
+          console.log(`[Chronicle] Fetch returned:`, Array.isArray(events) ? `${events.length} events` : typeof events);
+          if (Array.isArray(events)) {
+            for (const event of events) {
+              const ev = event as any;
+              console.log(`[Chronicle] Processing event: kind=${ev.kind}, id=${ev.id?.slice(0, 8)}`);
+              this.rememberEvent(relay, event);
+              eventCount++;
+            }
+          }
+        } catch (err) {
+          console.warn(`[Chronicle] Fetch error for ${relay}:`, err);
+        }
+
+        console.log(`[Chronicle] Sync complete for ${relay} (${eventCount} events in memory)`);
       }
     })().finally(() => {
       this.syncInFlight.delete(relay);
@@ -310,7 +359,8 @@ export class ChronicleService extends Service {
   /**
    * Get time series data for charting
    *
-   * Extracts time series data from cached Kind 1066 events.
+   * Extracts time series data from Kind 1066 events.
+   * Queries memory first (events captured during sync), then falls back to cache.
    * Optionally syncs the relay first if autoSync is enabled.
    *
    * @param options - Time series query options
@@ -327,21 +377,21 @@ export class ChronicleService extends Service {
       !this.kind1066Subscriptions.has(options.relay)
     ) {
       await this.syncRelay(options.relay, { since: options.since });
-      // Wait a moment for events to arrive
-      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    // Prefer cached events; fall back to in-memory events captured during sync
-    let storage: EventStorage = this.storage;
-    let events = await storage.query({
+    // Query memory FIRST (events captured during sync), then fall back to cache
+    const memoryStorage = this.getMemoryStorage();
+    let storage: EventStorage = memoryStorage;
+    let events = await memoryStorage.query({
       relay: options.relay,
       since: options.since,
       until: options.until,
     });
 
+    // Fall back to cache storage if memory is empty
     if (events.length === 0) {
-      storage = this.getMemoryStorage();
-      events = await storage.query({
+      storage = this.storage;
+      events = await this.storage.query({
         relay: options.relay,
         since: options.since,
         until: options.until,
@@ -352,6 +402,8 @@ export class ChronicleService extends Service {
       console.warn(`[Chronicle] No events found for ${options.relay}`);
       return [];
     }
+
+    console.log(`[Chronicle] Found ${events.length} events for ${options.relay} time series`);
 
     let timeSeries: TimeSeriesPoint[] = [];
 
@@ -401,6 +453,8 @@ export class ChronicleService extends Service {
   /**
    * Get uptime/downtime periods for timeline visualization
    *
+   * Queries memory first (events captured during sync), then falls back to cache.
+   *
    * @param relay - Relay URL
    * @param options - Query options
    * @returns Array of uptime/downtime periods
@@ -411,10 +465,15 @@ export class ChronicleService extends Service {
   ): Promise<UptimePeriod[]> {
     await this.ready();
 
-    let periods = await uptimeHistory(this.storage, relay, options);
+    // Query memory FIRST, then fall back to cache
+    const memoryStorage = this.getMemoryStorage();
+    let periods = await uptimeHistory(memoryStorage, relay, options);
+
     if (periods.length === 0) {
-      periods = await uptimeHistory(this.getMemoryStorage(), relay, options);
+      periods = await uptimeHistory(this.storage, relay, options);
     }
+
+    console.log(`[Chronicle] Found ${periods.length} uptime periods for ${relay}`);
 
     // Convert to UptimePeriod format
     return periods.map((period) => ({

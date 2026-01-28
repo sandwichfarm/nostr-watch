@@ -214,12 +214,14 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   }
 
   onMessage(response: WebsocketResponseBody): void {
-    const { hash } = response
+    const { hash, type, result } = response
+    console.log(`[WebsocketAdapter] onMessage: type=${type}, hash=${hash?.slice(0,8)}, result=`, Array.isArray(result) ? `${result.length} items` : typeof result);
     StateManager.emit(hash, response)
   } 
 
   async subscribe(args: WebsocketRequestBody = defaultWebsocketRequestBody, callbacks?: SubscribeHandlers): Promise<IEvent[] | boolean>{
     let { hash } = args
+    console.log(`[WebsocketAdapter] subscribe called: hash=${hash?.slice(0,8)}, hasWorker=${!!this.worker}`);
     const hasCallbacks = Boolean(callbacks && Object.keys(callbacks).length > 0);
     if (hasCallbacks) {
       args.options.stream = true;
@@ -233,10 +235,12 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
     if (args?.options?.keepAlive && !hasCallbacks) {
       throw new Error('WebsocketAdapter.subscribe: keepAlive requires callbacks');
     }
+    console.log(`[WebsocketAdapter] subscribe: calling request()`);
     const hash_ = this.request({
       action: 'subscribe',
       args
     })
+    console.log(`[WebsocketAdapter] subscribe: request() returned hash=${hash_?.slice(0,8)}`);
     if(!hash) hash = hash_
     if(this.subscriptions.has(hash)) {
       console.warn(`[WebsocketAdapter] Already subscribed to ${hash}`)
@@ -248,6 +252,7 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       this.listen(hash, callbacks);
       return true;
     }
+    console.log(`[WebsocketAdapter] subscribe: awaiting response()`);
     return this.response(hash, callbacks, { timeoutMs: WebsocketAdapter.DEFAULT_RESPONSE_TIMEOUT_MS }) as Promise<IEvent[] | boolean>
   }
 
@@ -280,17 +285,21 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
   request(message: Partial<WebsocketRequest> = defaultWebsocketRequest): string {
     if(!message?.args) throw new Error('No args found in message')
     if(!message?.args?.hash) {
-      message.args.hash = deterministicHash(message?.args?.filters ?? {})  
+      message.args.hash = deterministicHash(message?.args?.filters ?? {})
     }
     const { hash } = message.args
+    console.log(`[WebsocketAdapter] request: action=${message?.action}, hash=${hash?.slice(0,8)}, workerExists=${!!this?.worker}`);
     if(!this?.worker) {
       console.warn('[WebsocketAdapter] Error sending command: no worker found')
       return hash
-    }    
+    }
     if(this.worker instanceof Worker) {
+      console.log(`[WebsocketAdapter] request: posting to Worker`);
       this.worker.postMessage(message)
-    } else if(this.worker instanceof SharedWorker)
+    } else if(this.worker instanceof SharedWorker) {
+      console.log(`[WebsocketAdapter] request: posting to SharedWorker`);
       this.worker.port.postMessage(message)
+    }
     return hash
   }
 
@@ -309,7 +318,15 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
       else if(type === 'event'){
         callbacks?.onevent?.(result)
       }
-      else if(type === 'complete' || type === 'unsubscribed' || type === 'aborted' || type === 'terminated'){
+      else if(type === 'complete'){
+        // Call oneose when complete is received (EOSE from relay)
+        callbacks?.oneose?.();
+        this.subscriptions.delete(hash)
+        try { delete this._hashData[hash]; } catch {}
+        StateManager.off(hash)
+        callbacks?.onclose?.(hash)
+      }
+      else if(type === 'unsubscribed' || type === 'aborted' || type === 'terminated'){
         this.subscriptions.delete(hash)
         try { delete this._hashData[hash]; } catch {}
         StateManager.off(hash)
@@ -370,6 +387,8 @@ export class WebsocketAdapter extends Adapter implements IWebsocketAdapter {
           }
         }
         else if(type == 'complete'){
+          // Call oneose when complete is received (EOSE from relay)
+          callbacks?.oneose?.();
           if(callbacks?.onevent){
             return finish(true)
           }

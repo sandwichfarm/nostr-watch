@@ -11,6 +11,7 @@
 	} from '$lib/stores/chronicle';
 	import { createChartJsAdapter } from '@nostrwatch/relay-charts/chartjs';
 	import Chart from 'chart.js/auto';
+	import 'chartjs-adapter-date-fns';
 
 	const relayUrl = generateRelayUrlFromPath() as string;
 
@@ -67,9 +68,6 @@
 					since,
 					keepAlive: false, // One-time fetch
 				});
-
-				// Wait a moment for events to arrive
-				await new Promise(resolve => setTimeout(resolve, 1000));
 				syncing = false;
 			}
 

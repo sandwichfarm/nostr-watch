@@ -8,14 +8,19 @@ import { writable, type Writable } from 'svelte/store';
 import { ChronicleService, type TimeSeriesOptions, type ChronicleServiceOptions, type UptimePeriod } from '@nostrwatch/route66/services';
 import type { TimeSeriesPoint } from '@nostrwatch/relay-chronicle';
 import { route66 } from './route66';
+import { route66Ready } from './app';
 import { get } from 'svelte/store';
 
 let chronicleService: ChronicleService | null = null;
 
 /**
  * Initialize ChronicleService
+ * Waits for Route66 to be fully ready before initializing.
  */
-export function initializeChronicleService() {
+export async function initializeChronicleService(): Promise<ChronicleService | null> {
+  // Wait for route66 to be fully initialized
+  await route66Ready();
+
   const r66 = get(route66);
   if (!r66) {
     console.warn('[Chronicle] Route66 not initialized');
@@ -27,7 +32,6 @@ export function initializeChronicleService() {
       autoSync: false, // Manual sync control
       syncRelays: [
         'wss://relay.nostr.watch',
-        'wss://relaypag.es',
       ],
     });
     console.log('[Chronicle] Service initialized');
@@ -39,9 +43,9 @@ export function initializeChronicleService() {
 /**
  * Get ChronicleService instance
  */
-export function getChronicleService(): ChronicleService | null {
+export async function getChronicleService(): Promise<ChronicleService | null> {
   if (!chronicleService) {
-    return initializeChronicleService();
+    return await initializeChronicleService();
   }
   return chronicleService;
 }
@@ -53,7 +57,7 @@ export async function syncRelay(
   relay: string,
   options?: { since?: number; keepAlive?: boolean }
 ): Promise<void> {
-  const service = getChronicleService();
+  const service = await getChronicleService();
   if (!service) {
     throw new Error('[Chronicle] Service not initialized');
   }
@@ -65,7 +69,7 @@ export async function syncRelay(
  * Stop syncing a relay
  */
 export async function unsyncRelay(relay: string): Promise<void> {
-  const service = getChronicleService();
+  const service = await getChronicleService();
   if (!service) return;
 
   await service.unsyncRelay(relay);
@@ -77,7 +81,7 @@ export async function unsyncRelay(relay: string): Promise<void> {
 export async function getTimeSeriesData(
   options: TimeSeriesOptions
 ): Promise<TimeSeriesPoint[]> {
-  const service = getChronicleService();
+  const service = await getChronicleService();
   if (!service) {
     throw new Error('[Chronicle] Service not initialized');
   }
@@ -92,7 +96,7 @@ export async function getUptimeHistory(
   relay: string,
   options?: { since?: number; until?: number }
 ): Promise<UptimePeriod[]> {
-  const service = getChronicleService();
+  const service = await getChronicleService();
   if (!service) {
     throw new Error('[Chronicle] Service not initialized');
   }
@@ -104,26 +108,24 @@ export async function getUptimeHistory(
  * Check if a relay is currently being synced
  */
 export function isSyncing(relay: string): boolean {
-  const service = getChronicleService();
-  if (!service) return false;
-
-  return service.isSyncing(relay);
+  // Use cached service directly for synchronous check
+  if (!chronicleService) return false;
+  return chronicleService.isSyncing(relay);
 }
 
 /**
  * Get list of currently synced relays
  */
 export function getSyncedRelays(): string[] {
-  const service = getChronicleService();
-  if (!service) return [];
-
-  return service.getSyncedRelays();
+  // Use cached service directly for synchronous check
+  if (!chronicleService) return [];
+  return chronicleService.getSyncedRelays();
 }
 
 /**
  * Get ChronicleService storage for direct queries
  */
 export function getChronicleStorage() {
-  const service = getChronicleService();
-  return service?.storage;
+  // Use cached service directly for synchronous access
+  return chronicleService?.storage;
 }

@@ -3,7 +3,7 @@ import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 import { Suite } from '#base/Suite.js';
 import type { ISuite } from '#base/Suite.js';
 
-import { nip11Schema } from '@nostrwatch/schemata';
+import { nip11Schema } from '@nostrability/schemata';
 import { SchemaValidator } from '#src/base/SchemaValidator.js';
 
 //nip01

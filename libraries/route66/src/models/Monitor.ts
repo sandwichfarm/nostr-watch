@@ -49,6 +49,8 @@ export class Monitor {
   
   private _lastActive: number = -1;
   private _frequencyMutiplier: number = 1.5;
+  private _minFrequencySeconds: number = 60 * 60; // 1h
+  private _maxFrequencySeconds: number = 60 * 60 * 24; // 1d
 
   constructor(event: IEvent) {
     if(event.kind !== 10166) throw new Error('Monitor must be created from a 10166 event');
@@ -197,7 +199,10 @@ export class Monitor {
 
   get frequency(): number {
     const f = this.registration?.frequency;
-    return (f || 60*60*12) * this.frequencyMultiplier
+    const base = f && f > 0 ? f : 60 * 60 * 12;
+    const scaled = base * this.frequencyMultiplier;
+    const clamped = Math.min(this._maxFrequencySeconds, Math.max(this._minFrequencySeconds, scaled));
+    return Math.round(clamped);
   }
 
   get geocode(): string | null {

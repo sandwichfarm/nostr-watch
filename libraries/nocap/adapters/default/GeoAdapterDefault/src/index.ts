@@ -79,7 +79,7 @@
         await this.base.finish('geo', result);
         return 
       } else {
-        const ips = [...(dns?.ipv4 || []), ...(dns?.ipv6 || [])];
+        const ips = Array.from(new Set([...(dns?.ipv4 || []), ...(dns?.ipv6 || [])])).sort();
         for (const ip of ips) {
           const geoData = await this.getGeoData(ip);
           if (geoData) {

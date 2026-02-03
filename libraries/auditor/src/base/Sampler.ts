@@ -20,6 +20,23 @@ export class Sampler {
   // private signal = new EventEmitter();
   private logger: Logger = new Logger('@nostrwatch/auditor:Sampler', {level: 'debug'});
   private _ingestors: Ingestor[] = [];  
+  private readonly handleMessage = (msg: MessageEvent<any>) => {
+    const message = JSON.parse(msg.data);
+    const type = message[0];
+    switch(type) {
+      case 'EVENT': {
+        const note = (message as RelayEventMessage)[2] as Note;
+        this._totalSamples++;
+        this.runIngestors(note);
+        break;
+      }
+      case 'EOSE': {
+        // this.signal.emit('socket:eose');
+        Emitter.emit(`socket:eose:${this.subId}`);
+        break;
+      }
+    }
+  };
 
   constructor(socket: WebSocket, maximumSamples?: number, timeout?: number) {
     this.socket = socket;
@@ -53,49 +70,38 @@ export class Sampler {
   }
 
   setupHandlers() {
-    this.socket.on('message', (msg: MessageEvent<any>) => {
-      const message = JSON.parse(msg.data);
-      const type = message[0];
-      switch(type) {
-        case 'EVENT': {
-          const note = (message as RelayEventMessage)[2] as Note;
-          this._totalSamples++;
-          this.runIngestors(note);
-          break;
-        }
-        case 'EOSE': {
-          // this.signal.emit('socket:eose');
-          Emitter.emit(`socket:eose:${this.subId}`);
-          break;
-        }
-      }
-    });
+    this.socket.off('message');
+    this.socket.on('message', this.handleMessage);
   }
 
   private newSubId() {
     this.subId = generateSubId()
   }
 
-  async sample() {
-    return new Promise((resolve, reject) => {
-      this.setupHandlers();
-      this.socket.connect();
-      const timeout = this.setAbortTimeout();
-      this.socket.on("open", async () => {
-        let result: boolean = false;
-        try {
-          this.newSubId();
-          this.sendRequest();
-          result = await this.waitForEoseOrAbort(timeout);
-        } catch (error) {
-          this.logger.error(`Error in sample method: ${error.message}`);
-          return reject(error);
-        } finally {
-          this.cleanupWebSocket();
-        }
-        resolve(result);
-      });
-    });
+  async sample(): Promise<boolean> {
+    this._abort = false;
+    this._totalSamples = 0;
+
+    this.setupHandlers();
+
+    const timeout = this.setAbortTimeout();
+    try {
+      const ok = await this.socket.connect();
+      if (!ok || !this.socket.CONNECTED) return false;
+
+      this.newSubId();
+
+      const wait = this.waitForEoseOrAbort(timeout);
+      this.sendRequest();
+      return await wait;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error in sample method: ${message}`);
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+      await this.cleanupWebSocket();
+    }
   }
   
   private setAbortTimeout() {
@@ -110,7 +116,7 @@ export class Sampler {
     this.socket.send(message);
   }
   
-  private async waitForEoseOrAbort(timeout: NodeJS.Timeout): Promise<boolean> {
+  private async waitForEoseOrAbort(timeout: ReturnType<typeof setTimeout>): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       const onEose = () => {
         this.logger.debug('on eose: fulfilled.');

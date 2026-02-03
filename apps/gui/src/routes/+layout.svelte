@@ -290,7 +290,7 @@
 	  {:else if showFollowerWaiting}
 	    <FollowerLoading />
 	  {:else if showContent}
-	    <div id="content-wrapper" class="block">
+	    <div id="content-wrapper" class="block flow-root">
 	      <slot />
 	    </div>
 	  {/if}

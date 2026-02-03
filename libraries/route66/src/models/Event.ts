@@ -11,10 +11,10 @@ export enum Kinds {
 
   RelayCheck = 30166,
   RelayMonitorRegistration = 10166,
+  RelayCheckDelta = 1066,
 
   Wiki = 30818
 }
-
 
 export type NostrTag = string[];
 

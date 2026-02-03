@@ -121,7 +121,6 @@ export async function whenInit(
 ): Promise<InitInfo | null> {
   const events = await storage.query({
     relay,
-    statusOnly: true,
     limit: 1000,
   });
 
@@ -284,12 +283,32 @@ export async function uptimeHistory(
   relay: string,
   options?: { since?: number; until?: number }
 ): Promise<Period[]> {
-  const events = await storage.query({
+  const since = options?.since;
+  const until = options?.until;
+
+  let events = await storage.query({
     relay,
     statusOnly: true,
-    since: options?.since,
-    until: options?.until,
+    since,
+    until,
   });
+
+  // If we are querying a bounded window, seed with the latest status event
+  // immediately before `since` so we can render an "ongoing" period even
+  // when there were no transitions inside the window.
+  if (since !== undefined) {
+    const seedEvents = await storage.query({
+      relay,
+      statusOnly: true,
+      until: since,
+    });
+
+    const seed = seedEvents.length > 0 ? seedEvents[seedEvents.length - 1] : null;
+    const first = events.length > 0 ? events[0] : null;
+    if (seed && (!first || seed.created_at < first.created_at)) {
+      events = [seed, ...events];
+    }
+  }
 
   const periods: Period[] = [];
   let currentPeriod: Period | null = null;
@@ -333,6 +352,35 @@ export async function uptimeHistory(
       };
       periods.push(currentPeriod);
     }
+  }
+
+  // Clip periods to requested time window, if provided.
+  if (since !== undefined || until !== undefined) {
+    const clipped: Period[] = [];
+    for (const period of periods) {
+      let start = period.start;
+      let end = period.end;
+
+      if (since !== undefined && start < since) {
+        start = since;
+      }
+
+      if (until !== undefined) {
+        // If the period is ongoing, cap it to `until` for bounded queries.
+        const effectiveEnd = end ?? until;
+        end = Math.min(effectiveEnd, until);
+      }
+
+      if (end !== undefined && end <= start) continue;
+
+      clipped.push({
+        ...period,
+        start,
+        ...(end !== undefined ? { end } : {}),
+        ...(end !== undefined ? { duration: (end - start) * 1000, ongoing: false } : {}),
+      });
+    }
+    return clipped;
   }
 
   return periods;

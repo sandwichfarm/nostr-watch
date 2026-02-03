@@ -75,6 +75,97 @@ export function observeViewport(node: HTMLElement, options: { infiniteScroll?: b
   };
 }
 
+export type InViewChangeDetail = {
+  inView: boolean;
+  intersectionRatio: number;
+};
+
+export function observeInView(
+  node: HTMLElement,
+  options: (IntersectionObserverInit & { disabled?: boolean; debounceMs?: number }) = {}
+) {
+  if (typeof window === 'undefined' || typeof IntersectionObserver === 'undefined') {
+    return { destroy() {} };
+  }
+
+  let observer: IntersectionObserver | null = null;
+  let timeoutId: number | null = null;
+  let lastInView: boolean | null = null;
+
+  function stop() {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    if (observer) {
+      observer.unobserve(node);
+      observer.disconnect();
+      observer = null;
+    }
+  }
+
+  function start(opts: (IntersectionObserverInit & { disabled?: boolean; debounceMs?: number }) = {}) {
+    if (opts.disabled) return;
+
+    const debounceMs = Math.max(0, Math.floor(opts.debounceMs ?? 100));
+    const inputThreshold = opts.threshold;
+    const thresholds = Array.isArray(inputThreshold)
+      ? Array.from(new Set([0, ...inputThreshold]))
+      : typeof inputThreshold === 'number' && Number.isFinite(inputThreshold) && inputThreshold !== 0
+        ? [0, inputThreshold]
+        : 0;
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        const inView = entry.isIntersecting;
+        if (lastInView === inView) return;
+        lastInView = inView;
+
+        const emit = () => {
+          node.dispatchEvent(
+            new CustomEvent<InViewChangeDetail>('inviewchange', {
+              detail: {
+                inView,
+                intersectionRatio: entry.intersectionRatio,
+              },
+            })
+          );
+        };
+
+        if (debounceMs === 0) {
+          emit();
+          return;
+        }
+
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = window.setTimeout(() => {
+          timeoutId = null;
+          emit();
+        }, debounceMs);
+      },
+      {
+        root: opts.root ?? null,
+        rootMargin: opts.rootMargin,
+        threshold: thresholds,
+      }
+    );
+
+    observer.observe(node);
+  }
+
+  start(options);
+
+  return {
+    update(next: IntersectionObserverInit & { disabled?: boolean; debounceMs?: number }) {
+      stop();
+      start(next);
+    },
+    destroy() {
+      stop();
+    },
+  };
+}
+
 export const randomLoadingMessage = () => { 
   const messages = [
     'trying to find the lost city of Atlantis',

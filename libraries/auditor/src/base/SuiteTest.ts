@@ -77,6 +77,7 @@ export abstract class SuiteTest implements ISuiteTest {
   protected subId: string = generateSubId();  
   protected notices: RelayNoticeMessage[] = [];
   protected timeoutMs: number = 10000;
+  protected requiresSuiteSamples: boolean = false;
 
   public resulter: SuiteTestResulter = new SuiteTestResulter(defaultSuiteTestResult);
   
@@ -127,6 +128,7 @@ export abstract class SuiteTest implements ISuiteTest {
   }
 
   suiteIngest(ingestor: Ingestor[] | Ingestor) {
+    this.requiresSuiteSamples = true;
     if(Array.isArray(ingestor)) {
       this.suite.registerIngestors(this.slug, ingestor);
     }
@@ -196,6 +198,25 @@ export abstract class SuiteTest implements ISuiteTest {
     this.suite.reset()
     this.suite.testKey = this.slug
 
+    if (this.requiresSuiteSamples) {
+      const samples = this.getSamples<unknown>();
+      const hasSamples =
+        samples !== undefined &&
+        samples !== null &&
+        (Array.isArray(samples)
+          ? samples.length > 0
+          : typeof samples === 'object'
+            ? Object.keys(samples as Record<string, unknown>).length > 0
+            : true);
+
+      if (!hasSamples) {
+        this.expect.behavior.skip = true;
+        this.expect.behavior.toBeOk(true, 'Skipped: requires samples but none were obtained');
+        this.finish();
+        return;
+      }
+    }
+
     if(this.suite.requires.includes('websocket')) {
       this.suite.setupHandlers();
       await this.socket.connect();
@@ -235,7 +256,8 @@ export abstract class SuiteTest implements ISuiteTest {
   private finish(): void {
     this.logger.debug(`testKey: ${this.suite.testKey}`, 2);
     const { passing, passed, failed, skipped, errors } = this.expect;
-    const passrate = passed.length / (passed.length + failed.length);
+    const denom = passed.length + failed.length;
+    const passrate = denom > 0 ? passed.length / denom : 0;
     const pass = passing
     const { filters, notices, events } = this;
     const result = {

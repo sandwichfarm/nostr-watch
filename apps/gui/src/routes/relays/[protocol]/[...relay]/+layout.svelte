@@ -120,33 +120,37 @@
       hasSynced = true;
   }
 
-  const mount = () => {
-    // doLiveSync.set(true);
-    if (currentRelay === relayUrl) return;
-    
-    let resume: LiveSyncResumer;
-    pauseLiveSync().then( (r) => resume = r);
-    sync().then( () => {
-      nip11 = relayNip11$(relayUrl);
-      operatorPubkey = relayOperatorPubkey$(relayUrl);
-      if($operatorPubkey) {
-        operatorProfile = operatorProfile$($operatorPubkey);
-        operatorRelays = operatorRelays$($operatorPubkey);
-      }
-      relayAggregate = relayLivenessAggregate$(relayUrl);
-      loading = false
-    })
-    return () => {
-      stopRelayLiveSync();
-      resume();
-    }
-    };
+	  const mount = () => {
+	    // doLiveSync.set(true);
+	    if (currentRelay === relayUrl) return;
+	    
+	    let resume: LiveSyncResumer = async () => {};
+	    void pauseLiveSync()
+	      .then((r) => {
+	        resume = r;
+	      })
+	      .catch((err) => {
+	        console.warn('[relay layout] pauseLiveSync failed', err);
+	      });
+	    sync().then( () => {
+	      nip11 = relayNip11$(relayUrl);
+	      operatorPubkey = relayOperatorPubkey$(relayUrl);
+	      if($operatorPubkey) {
+	        operatorProfile = operatorProfile$($operatorPubkey);
+	        operatorRelays = operatorRelays$($operatorPubkey);
+	      }
+	      relayAggregate = relayLivenessAggregate$(relayUrl);
+	      loading = false
+	    })
+	    return () => {
+	      void stopRelayLiveSync().catch(() => {});
+	      void resume().catch(() => {});
+	    }
+	    };
 
-    relayNip11$
-
-  const destroy = () => {
-      if (currentRelay === relayUrl) return;
-      loading = true;
+	  const destroy = () => {
+	      if (currentRelay === relayUrl) return;
+	      loading = true;
       // doLiveSync.set(false);
       // currentRelay = '';
       // monitors.set([]);
@@ -158,9 +162,9 @@
   onMount(mount);
   onDestroy(destroy);
 
-  $: description = $nip11?.description || null;
-  $: banner = $nip11?.banner || null;
-  $: icon = $nip11?.icon || null;4
+	  $: description = $nip11?.description || null;
+	  $: banner = $nip11?.banner || null;
+	  $: icon = $nip11?.icon || null;
 
   // $: relayData = {
   //     url: relayUrl,

@@ -5,7 +5,7 @@ import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import alias from '@rollup/plugin-alias'
 import replace from '@rollup/plugin-replace'
-import terser from '@rollup/plugin-terser'
+import { terser } from 'rollup-plugin-terser'
 import livereload from 'rollup-plugin-livereload'
 import webWorkerLoader from 'rollup-plugin-web-worker-loader'
 import nodePolyfills from 'rollup-plugin-node-polyfills'
@@ -98,7 +98,11 @@ const browserPlugins = [
     inline: false, 
     targetPlatform: 'browser',
   }),
-  !production && livereload('dist/browser'),
+  !production &&
+    livereload({
+      watch: "dist/browser",
+      port: 35729,
+    }),
 ]
 
 const serverPlugins = [];

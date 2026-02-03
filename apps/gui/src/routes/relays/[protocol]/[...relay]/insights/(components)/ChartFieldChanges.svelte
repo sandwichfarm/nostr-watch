@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onDestroy } from 'svelte';
 	import * as Card from '$lib/components/ui/card';
+	import { observeInView, type InViewChangeDetail } from '$utils/ux';
 	import {
-		syncRelay,
-		unsyncRelay,
-		isSyncing,
+		subscribeRelayDeltas,
+		type RelayDeltasSubscriptionHandle,
+		updateRelayDeltasSince,
 		getChronicleStorage
 	} from '$lib/stores/chronicle';
 	import { generateChangeTimeline, parseDeltas } from '@nostrwatch/relay-chronicle';
@@ -18,36 +19,62 @@
 	let syncing = false;
 	let changes: any[] = [];
 	let showAnyways = false;
+	let inView = false;
+	let subscription: RelayDeltasSubscriptionHandle | null = null;
 
 	// Minimum data points for meaningful chart
 	const MIN_DATA_POINTS = 3;
 
-	onMount(async () => {
-		await loadData();
-	});
-
 	onDestroy(async () => {
-		if (isSyncing(relayUrl)) {
-			await unsyncRelay(relayUrl);
+		if (subscription) {
+			await subscription.stop();
+			subscription = null;
 		}
 	});
 
+	async function startVisibleSync() {
+		const since = timeRange === 'all' ? 0 : Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		subscription = subscribeRelayDeltas(relayUrl, { since });
+		syncing = true;
+		try {
+			await subscription.ready;
+		} finally {
+			syncing = false;
+		}
+	}
+
+	async function handleInViewChange(e: CustomEvent<InViewChangeDetail>) {
+		const nextInView = Boolean(e.detail?.inView);
+		if (nextInView === inView) return;
+		inView = nextInView;
+
+		if (!inView) {
+			if (subscription) {
+				void subscription.stop();
+				subscription = null;
+			}
+			return;
+		}
+
+		if (!subscription) {
+			try {
+				await startVisibleSync();
+			} catch (err) {
+				console.warn('[ChartFieldChanges] Failed to start visible sync:', err);
+			}
+		}
+
+		await loadData();
+	}
+
 	async function loadData() {
+		if (!inView) return;
+
 		loading = true;
 		error = null;
 
 		try {
 			const since = timeRange === 'all' ? 0 : Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
-
-			if (!isSyncing(relayUrl)) {
-				syncing = true;
-				await syncRelay(relayUrl, {
-					since,
-					keepAlive: false,
-				});
-				await new Promise(resolve => setTimeout(resolve, 1000));
-				syncing = false;
-			}
 
 			// Get real field changes from Kind 1066 events
 			const storage = getChronicleStorage();
@@ -88,12 +115,15 @@
 		return new Date(ts * 1000).toLocaleString();
 	}
 
-	$: if (timeRange) {
+	$: if (timeRange && inView) {
 		showAnyways = false; // Reset override when time range changes
+		const since = timeRange === 'all' ? 0 : Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		if (subscription) void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
 		loadData();
 	}
 </script>
 
+<div use:observeInView={{ threshold: 0.25, debounceMs: 150 }} on:inviewchange={handleInViewChange}>
 <Card.Root class="w-full bg-black/20 border-white/10 rounded-[3px]">
 	<Card.Header>
 		<Card.Title class='font-mono text-white/80'>
@@ -158,3 +188,4 @@
 		</div>
 	</Card.Footer>
 </Card.Root>
+</div>

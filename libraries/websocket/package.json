@@ -8,6 +8,7 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "worker": "./dist/worker/index.js",
+      "node": "./dist/server/index.js",
       "import": "./dist/web/index.js",
       "require": "./dist/server/index.js",
       "default": "./dist/web/index.js"

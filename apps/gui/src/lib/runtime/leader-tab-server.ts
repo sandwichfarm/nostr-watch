@@ -355,14 +355,19 @@ export class LeaderTabRpcServer {
             } else {
               entry.owned = true;
               const callbacks: SubscribeHandlers = {
-                oneevent: (event: any) => {
+                onevent: (event: any) => {
                   for (const clientId of entry!.clients) {
                     this.stream(clientId, hash, 'event', event);
                   }
                 },
-                oneevents: (events: any[]) => {
+                onevents: (events: any[]) => {
                   for (const clientId of entry!.clients) {
                     this.stream(clientId, hash, 'events', events);
+                  }
+                },
+                oneose: () => {
+                  for (const clientId of entry!.clients) {
+                    this.stream(clientId, hash, 'eose', null);
                   }
                 },
               };
@@ -377,8 +382,9 @@ export class LeaderTabRpcServer {
         }
 
         const callbacks: SubscribeHandlers = {
-          oneevent: (event: any) => emitStream('event', event),
-          oneevents: (events: any[]) => emitStream('events', events),
+          onevent: (event: any) => emitStream('event', event),
+          onevents: (events: any[]) => emitStream('events', events),
+          oneose: () => emitStream('eose', null),
         };
 
         return await ws[method](request, callbacks);

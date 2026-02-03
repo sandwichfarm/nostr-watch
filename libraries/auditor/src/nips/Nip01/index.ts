@@ -26,7 +26,7 @@ import {
   relayEventSchema, 
   relayNoticeSchema, 
   relayOkSchema 
-} from '@nostrwatch/schemata';
+} from '@nostrability/schemata';
 
 //nip01
 export class Nip01 extends Suite implements ISuite {

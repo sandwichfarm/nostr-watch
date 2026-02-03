@@ -6,16 +6,22 @@
 
 import { writable, type Writable } from 'svelte/store';
 import { ChronicleService, type TimeSeriesOptions, type ChronicleServiceOptions, type UptimePeriod } from '@nostrwatch/route66/services';
-import type { TimeSeriesPoint } from '@nostrwatch/relay-chronicle';
+import type { DeltaEvent, QueryOptions, TimeSeriesPoint } from '@nostrwatch/relay-chronicle';
 import { route66 } from './route66';
+import { route66Ready } from './app';
 import { get } from 'svelte/store';
+import { DEFAULT_NIP66_RELAY_URLS } from '$lib/config/nip66-defaults';
 
 let chronicleService: ChronicleService | null = null;
 
 /**
  * Initialize ChronicleService
+ * Waits for Route66 to be fully ready before initializing.
  */
-export function initializeChronicleService() {
+export async function initializeChronicleService(): Promise<ChronicleService | null> {
+  // Wait for route66 to be fully initialized
+  await route66Ready();
+
   const r66 = get(route66);
   if (!r66) {
     console.warn('[Chronicle] Route66 not initialized');
@@ -25,10 +31,7 @@ export function initializeChronicleService() {
   if (!chronicleService) {
     chronicleService = new ChronicleService(r66.adapters, {
       autoSync: false, // Manual sync control
-      syncRelays: [
-        'wss://relay.nostr.watch',
-        'wss://relaypag.es',
-      ],
+      syncRelays: DEFAULT_NIP66_RELAY_URLS,
     });
     console.log('[Chronicle] Service initialized');
   }
@@ -39,9 +42,9 @@ export function initializeChronicleService() {
 /**
  * Get ChronicleService instance
  */
-export function getChronicleService(): ChronicleService | null {
+export async function getChronicleService(): Promise<ChronicleService | null> {
   if (!chronicleService) {
-    return initializeChronicleService();
+    return await initializeChronicleService();
   }
   return chronicleService;
 }
@@ -53,7 +56,7 @@ export async function syncRelay(
   relay: string,
   options?: { since?: number; keepAlive?: boolean }
 ): Promise<void> {
-  const service = getChronicleService();
+  const service = await getChronicleService();
   if (!service) {
     throw new Error('[Chronicle] Service not initialized');
   }
@@ -65,7 +68,7 @@ export async function syncRelay(
  * Stop syncing a relay
  */
 export async function unsyncRelay(relay: string): Promise<void> {
-  const service = getChronicleService();
+  const service = await getChronicleService();
   if (!service) return;
 
   await service.unsyncRelay(relay);
@@ -77,7 +80,7 @@ export async function unsyncRelay(relay: string): Promise<void> {
 export async function getTimeSeriesData(
   options: TimeSeriesOptions
 ): Promise<TimeSeriesPoint[]> {
-  const service = getChronicleService();
+  const service = await getChronicleService();
   if (!service) {
     throw new Error('[Chronicle] Service not initialized');
   }
@@ -92,7 +95,7 @@ export async function getUptimeHistory(
   relay: string,
   options?: { since?: number; until?: number }
 ): Promise<UptimePeriod[]> {
-  const service = getChronicleService();
+  const service = await getChronicleService();
   if (!service) {
     throw new Error('[Chronicle] Service not initialized');
   }
@@ -101,29 +104,160 @@ export async function getUptimeHistory(
 }
 
 /**
+ * Get raw Kind 1066 delta events for a relay
+ */
+export async function getDeltaEvents(options: QueryOptions): Promise<DeltaEvent[]> {
+  const service = await getChronicleService();
+  if (!service) {
+    throw new Error('[Chronicle] Service not initialized');
+  }
+
+  return await service.getDeltaEvents(options);
+}
+
+/**
  * Check if a relay is currently being synced
  */
 export function isSyncing(relay: string): boolean {
-  const service = getChronicleService();
-  if (!service) return false;
-
-  return service.isSyncing(relay);
+  // Use cached service directly for synchronous check
+  if (!chronicleService) return false;
+  return chronicleService.isSyncing(relay);
 }
 
 /**
  * Get list of currently synced relays
  */
 export function getSyncedRelays(): string[] {
-  const service = getChronicleService();
-  if (!service) return [];
-
-  return service.getSyncedRelays();
+  // Use cached service directly for synchronous check
+  if (!chronicleService) return [];
+  return chronicleService.getSyncedRelays();
 }
 
 /**
  * Get ChronicleService storage for direct queries
  */
 export function getChronicleStorage() {
-  const service = getChronicleService();
-  return service?.storage;
+  // Use cached service directly for synchronous access
+  return chronicleService?.storage;
+}
+
+export interface RelayDeltasSubscriptionHandle {
+  /**
+   * Resolves once the keep-alive subscription attempt has completed.
+   *
+   * Note: this does not guarantee EOSE; it only guarantees that Route66 was asked to subscribe.
+   */
+  ready: Promise<void>;
+  /** Decrement subscription ref count and unsync if last consumer */
+  stop: () => Promise<void>;
+}
+
+const relayDeltasRefCount = new Map<string, number>();
+const relayDeltasEnsureInFlight = new Map<string, Promise<void>>();
+const relayDeltasSinceMin = new Map<string, number | undefined>();
+
+function normalizeSince(since?: number): number | undefined {
+  if (typeof since !== 'number') return undefined;
+  if (!Number.isFinite(since)) return undefined;
+  return since;
+}
+
+async function ensureRelayDeltasSubscription(
+  relay: string,
+  options?: { since?: number }
+): Promise<void> {
+  const existing = relayDeltasEnsureInFlight.get(relay);
+  if (existing) return existing;
+
+  const task = (async () => {
+    const requestedSince = normalizeSince(options?.since);
+    const currentSince = relayDeltasSinceMin.get(relay);
+
+    // Track earliest requested since for this relay while subscribed.
+    const shouldUpgradeSince =
+      requestedSince !== undefined &&
+      (currentSince === undefined || requestedSince < currentSince);
+
+    if (shouldUpgradeSince) {
+      relayDeltasSinceMin.set(relay, requestedSince);
+    }
+
+    const desiredSince = relayDeltasSinceMin.get(relay);
+
+    // If already subscribed and we didn't need to expand the time window, nothing to do.
+    if (isSyncing(relay) && !shouldUpgradeSince) return;
+
+    // If we need to expand the time window, restart the subscription with an earlier `since`.
+    if (isSyncing(relay) && shouldUpgradeSince) {
+      await unsyncRelay(relay);
+    }
+
+    await syncRelay(relay, { since: desiredSince, keepAlive: true });
+
+    // If a one-shot sync was in-flight, the first call above can return without creating a keepAlive
+    // subscription. Double-check and retry once if we still want the subscription.
+    const wantsSubscription = (relayDeltasRefCount.get(relay) ?? 0) > 0;
+    if (wantsSubscription && !isSyncing(relay)) {
+      await syncRelay(relay, { since: desiredSince, keepAlive: true });
+    }
+
+    // If nobody wants it anymore (e.g. scrolled out quickly), clean up.
+    if ((relayDeltasRefCount.get(relay) ?? 0) <= 0) {
+      await unsyncRelay(relay);
+    }
+  })().finally(() => {
+    relayDeltasEnsureInFlight.delete(relay);
+  });
+
+  relayDeltasEnsureInFlight.set(relay, task);
+  return task;
+}
+
+/**
+ * Reference-counted keepAlive subscription to Kind 1066 deltas for a relay.
+ *
+ * Use this from UI components that should only keep websocket subscriptions alive while visible.
+ */
+export function subscribeRelayDeltas(
+  relay: string,
+  options?: { since?: number }
+): RelayDeltasSubscriptionHandle {
+  const current = relayDeltasRefCount.get(relay) ?? 0;
+  relayDeltasRefCount.set(relay, current + 1);
+
+  const ready = ensureRelayDeltasSubscription(relay, options);
+
+  let stopped = false;
+  const stop = async () => {
+    if (stopped) return;
+    stopped = true;
+
+    const cur = relayDeltasRefCount.get(relay) ?? 0;
+    const next = Math.max(0, cur - 1);
+
+    if (next === 0) {
+      relayDeltasRefCount.delete(relay);
+      relayDeltasSinceMin.delete(relay);
+      await unsyncRelay(relay);
+      return;
+    }
+
+    relayDeltasRefCount.set(relay, next);
+  };
+
+  return { ready, stop };
+}
+
+/**
+ * Hint that an active relay deltas subscription should include at least `since`.
+ *
+ * This does not change the subscription ref-count. If `since` expands the currently subscribed
+ * time window, the websocket subscription is restarted.
+ */
+export async function updateRelayDeltasSince(
+  relay: string,
+  options?: { since?: number }
+): Promise<void> {
+  if ((relayDeltasRefCount.get(relay) ?? 0) <= 0) return;
+  await ensureRelayDeltasSubscription(relay, options);
 }

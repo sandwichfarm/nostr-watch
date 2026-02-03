@@ -139,7 +139,7 @@
             <div class="ml-20 flex-grow mt-2">
                 {#if $operators.length > 0}
                     <div class="flex flex-wrap gap-2">
-                        {#each $operators as operator (operator)}
+                        {#each $operators as operator, operatorIndex (`${operator}:${operatorIndex}`)}
                             <PubkeyPhoto pubkey={operator} />
                         {/each}
                     </div>
@@ -159,7 +159,7 @@
             <div class="ml-20 flex-grow mt-2 relative z-[200]">
                 {#if $geocodes.length > 0}
                     <div class="flex flex-wrap gap-2 text-7xl">
-                        {#each $geocodes as geocode (geocode)}
+                        {#each $geocodes as geocode, geocodeIndex (`${geocode}:${geocodeIndex}`)}
                             <span>{countryCodeToFlagEmoji(geocode)}</span>
                         {/each}
                     </div>
@@ -184,7 +184,7 @@
             <div class="ml-20 flex-grow mt-2">
                 {#if $isps.length > 0}
                     <div class="flex flex-wrap gap-2">
-                        {#each $isps as isp (isp)}
+                        {#each $isps as isp, ispIndex (`${isp}:${ispIndex}`)}
                             <span class="mr-2 mb-2 py-2 px-4 inline-block rounded-sm bg-white/20">{isp}</span>
                         {/each}
                     </div>
@@ -204,7 +204,7 @@
             <div class="ml-20 flex-grow mt-2">
                 {#if $relays.length > 0}
                     <div class="flex flex-wrap gap-2">
-                        {#each $relays as check (check)}
+                        {#each $relays as check, checkIndex (`${check?.relay ?? ''}:${checkIndex}`)}
                             <a class="mr-2 mb-1 py-2 px-2 text-md inline-block text-white/80 hover:text-white rounded-sm bg-white/10 hover:bg-white/30" href="/relays/{generateRelayPathFromUrl(check.relay)}">{check.relay.replace('wss://', '').replace('ws://')}</a>
                         {/each}
                     </div>
@@ -243,4 +243,3 @@
         @apply flex-shrink-0;
     }
 </style>
-

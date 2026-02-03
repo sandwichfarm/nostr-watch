@@ -6,8 +6,42 @@ import { INip11 } from '#src/nips/Nip11/interfaces/INip11.js';
 import { Emitter } from '#base/Emitter.js';
 import { Listener } from './Emitter.js';
 import { nipManifest } from '#src/nips/manifest.js';
+import { suiteTests } from '#src/nips/suite-test-manifest.js';
 
 type SuiteSet = Set<string>;
+type SuiteConstructor = new (socket: WebSocket) => Suite;
+
+const isRunnableSuiteKey = (suiteKey: string): boolean =>
+  Boolean((nipManifest as any)?.[suiteKey]) && Boolean((suiteTests as any)?.[suiteKey]);
+
+const resolveSuiteConstructor = (mod: unknown, suiteSlug: string): SuiteConstructor => {
+  const candidates: unknown[] = [
+    (mod as any)?.default?.default,
+    (mod as any)?.default,
+    mod,
+    ...Object.values((mod as any) ?? {}),
+  ].filter(Boolean);
+
+  const looksLikeSuite = (value: unknown): value is SuiteConstructor =>
+    typeof value === 'function' && typeof (value as any)?.prototype?.test === 'function';
+
+  const suiteCtor = candidates.find(looksLikeSuite);
+  if (suiteCtor) return suiteCtor;
+
+  const fallbackCtor = candidates.find((value) => typeof value === 'function');
+  if (fallbackCtor) return fallbackCtor as SuiteConstructor;
+
+  throw new TypeError(`Auditor: suite ${suiteSlug} did not export a constructor`);
+};
+
+const skippedSuiteResult = (reason: string): ISuiteResult => ({
+  pass: false,
+  reason,
+  tests: {},
+  data: null,
+  messages: new Map() as any,
+  skipped: true,
+});
 
 const defaultAuditorConf: IAuditorConf = {
   nips: new Set<string>(["Nip01"]) as SuiteSet,
@@ -49,7 +83,13 @@ export class Auditor {
   constructor(conf?: IAuditorConf) {
     if(conf) this._conf = conf;
     if(this._conf.nips.size) {
-      this._suites = this._conf.nips;
+      const filtered = new Set<string>();
+      for (const suiteKey of this._conf.nips) {
+        if (isRunnableSuiteKey(suiteKey)) {
+          filtered.add(suiteKey);
+        }
+      }
+      this._suites = filtered;
     }
   }
 
@@ -66,6 +106,7 @@ export class Auditor {
   }
 
   addSuite(suite: string, options?: any) {
+    if (!isRunnableSuiteKey(suite)) return;
     this.suites.add(suite);
     if(options) this._conf.options[suite] = options;
   }
@@ -78,22 +119,36 @@ export class Auditor {
     return this.test(relay);
   }
 
-  async checkNip11(): Promise<ISuiteResult> {
-    const Suite = await import(`../nips/Nip11/index.js`);
-    const $Suite = new Suite.default(this.socket as WebSocket);
+  private extractFirstDataValue<T = unknown>(result: ISuiteResult): T | undefined {
+    if (!result?.data) return undefined;
+    const values = Object.values(result.data);
+    return values[0] as T | undefined;
+  }
+
+  async checkNip11(relay?: string): Promise<ISuiteResult> {
+    const mod = await import(`../nips/Nip11/index.js`);
+    const SuiteCtor = resolveSuiteConstructor(mod, 'Nip11');
+    const socket =
+      this.socket ??
+      (relay ? new WebSocket(relay, undefined, { autoConnect: false }) : undefined);
+    if (!socket) {
+      throw new Error('Auditor.checkNip11: relay required when auditor socket is not initialized');
+    }
+    const $Suite = new SuiteCtor(socket as WebSocket);
     const result = await $Suite.test()
     return result; 
   }
 
-  async getNip11(): Promise<Record<string, any>> {
-    const result = await this.checkNip11();
-    return result?.data?.Default || {}
+  async getNip11(relay?: string): Promise<Record<string, any> | unknown> {
+    const result = await this.checkNip11(relay);
+    return this.extractFirstDataValue(result) || {}
   }
 
   async detectSupportedNips(relay: string): Promise<void> {
-    const result = await this.checkNip11();
+    const result = await this.checkNip11(relay);
     this.resulter.set('suites', 'Nip11', result);
-    this.addNipSuites(result?.data?.Default || []);
+    const supported = this.extractFirstDataValue<unknown>(result);
+    this.addNipSuites(Array.isArray(supported) ? supported : []);
     return 
   }
 
@@ -106,7 +161,9 @@ export class Auditor {
     if(!(nips instanceof Array)) return console.warn('Auditor: nips must be an array');
     if(nips.length){
       for(const nip of nips){
-        this.addSuite(formatNip(nip));
+        const suiteKey = formatNip(nip);
+        if (!suiteTests?.[suiteKey]) continue;
+        this.addSuite(suiteKey);
       }
       this.logger.debug(`Auditor: detected supported nips: ${Array.from(this.suites || new Set()).join(', ')}`);
     }
@@ -117,31 +174,50 @@ export class Auditor {
     this.socket = new WebSocket(relay);
     const suites = Array.from(this.suites);
     this.logger.debug(`Auditor: testing suites: ${suites.join(', ')}`);  
-    const SuiteInstances = [];
-    for (const suite of suites) { 
-        try {
-            const Suite = await nipManifest?.[suite]?.()
-            if(!Suite) continue;
-            this.logger.info(`Auditor: suite ${suite} loaded.`);
-            const $Suite = new Suite.default(this.socket as WebSocket);
-            console.log('$suite', $Suite)
-            if (!$Suite.pretest) {
-              console.log('no pretest')
-              SuiteInstances.push($Suite);
-            }
-        } catch (error) {
-          console.error(error)
-        }
+
+    for (const suiteKey of suites) { 
+      let $Suite: any;
+      try {
+        const mod = await nipManifest?.[suiteKey]?.();
+        if(!mod) continue;
+        this.logger.info(`Auditor: suite ${suiteKey} loaded.`);
+        const SuiteCtor = resolveSuiteConstructor(mod, suiteKey);
+        $Suite = new SuiteCtor(this.socket as WebSocket);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const result = skippedSuiteResult(`Skipped: ${message}`);
+        Emitter.emit('auditor.suite:start', suiteKey);
+        Emitter.emit('auditor.suite:finish', suiteKey, result);
+        this.resulter.set('suites', suiteKey, result);
+        continue;
+      }
+
+      const slug = typeof $Suite?.slug === 'string' ? $Suite.slug : suiteKey;
+
+      if (typeof $Suite?.test !== 'function') {
+        const result = skippedSuiteResult(`Skipped: suite ${slug} is not runnable (missing test())`);
+        Emitter.emit('auditor.suite:start', slug);
+        Emitter.emit('auditor.suite:finish', slug, result);
+        this.resulter.set('suites', slug, result);
+        continue;
+      }
+
+      Emitter.emit('auditor.suite:start', slug);
+      let result: ISuiteResult;
+      try {
+        result = await $Suite.test(relay);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        result = {
+          ...skippedSuiteResult(`Error: ${message}`),
+          skipped: false,
+        };
+      }
+      Emitter.emit('auditor.suite:finish', slug, result);
+      this.resulter.set('suites', slug, result);
+      this.logger.info(`Auditor: Suite ${slug}: ${result.skipped ? 'skip' : result.pass ? 'pass' : 'fail'}`); 
     }
-    console.log('suite instances', SuiteInstances)
-    for (const $Suite of SuiteInstances) {
-      Emitter.emit('auditor.suite:start', $Suite.slug);
-      const result = await $Suite.test(relay);
-      console.log('suite finished', result)
-      Emitter.emit('auditor.suite:finish', $Suite.slug, result);
-      this.resulter.set('suites', $Suite.slug, result);
-      this.logger.info(`Auditor: Suite ${$Suite.slug}: ${result.pass ? 'pass' : 'fail'}`); 
-    }
+
     const passrate = this.calculatePassrate()
     this.resulter.set('relay', relay);
     this.resulter.set('passrate', passrate);
@@ -151,8 +227,10 @@ export class Auditor {
 
   calculatePassrate(): number {
     const suites = this.resulter.get('suites');
-    const totalSuites = Object.keys(suites).length;
-    const passedSuites = Object.values(suites).filter(suite => suite.pass === true).length;
+    const scoredSuites = Object.values(suites).filter((suite) => !suite?.skipped);
+    const totalSuites = scoredSuites.length;
+    if (totalSuites === 0) return 0;
+    const passedSuites = scoredSuites.filter((suite) => suite.pass === true).length;
     return passedSuites / totalSuites;
   }
 

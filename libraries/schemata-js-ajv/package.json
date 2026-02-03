@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@nostrwatch/schemata": "workspace:^",
+    "@nostrability/schemata": "^0.1.6",
     "@nostrwatch/utils": "workspace:^",
     "@types/ajv-errors": "^2.0.5",
     "ajv-errors": "^3.0.0",

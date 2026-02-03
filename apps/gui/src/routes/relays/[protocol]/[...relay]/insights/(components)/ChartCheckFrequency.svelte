@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onDestroy } from 'svelte';
 	import * as Card from '$lib/components/ui/card';
+	import { observeInView, type InViewChangeDetail } from '$utils/ux';
 	import {
-		syncRelay,
-		unsyncRelay,
-		isSyncing,
+		subscribeRelayDeltas,
+		type RelayDeltasSubscriptionHandle,
+		updateRelayDeltasSince,
 		getChronicleStorage
 	} from '$lib/stores/chronicle';
 	import { createChartJsAdapter } from '@nostrwatch/relay-charts/chartjs';
@@ -21,6 +22,8 @@
 	let syncing = false;
 	let checkData: any[] = [];
 	let showAnyways = false;
+	let inView = false;
+	let subscription: RelayDeltasSubscriptionHandle | null = null;
 
 	// Minimum data points for meaningful chart
 	const MIN_DATA_POINTS = 5; // At least 5 buckets to show a trend
@@ -30,38 +33,61 @@
 		(globalThis as any).Chart = Chart;
 	}
 
-	onMount(async () => {
-		await loadChart();
-	});
-
 	onDestroy(async () => {
 		if (chart) {
 			chart.destroy();
 			chart = null;
 		}
-		if (isSyncing(relayUrl)) {
-			await unsyncRelay(relayUrl);
+		if (subscription) {
+			await subscription.stop();
+			subscription = null;
 		}
 	});
 
+	async function startVisibleSync() {
+		const since = timeRange === 'all' ? 0 : Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		subscription = subscribeRelayDeltas(relayUrl, { since });
+		syncing = true;
+		try {
+			await subscription.ready;
+		} finally {
+			syncing = false;
+		}
+	}
+
+	async function handleInViewChange(e: CustomEvent<InViewChangeDetail>) {
+		const nextInView = Boolean(e.detail?.inView);
+		if (nextInView === inView) return;
+		inView = nextInView;
+
+		if (!inView) {
+			if (subscription) {
+				void subscription.stop();
+				subscription = null;
+			}
+			return;
+		}
+
+		if (!subscription) {
+			try {
+				await startVisibleSync();
+			} catch (err) {
+				console.warn('[ChartCheckFrequency] Failed to start visible sync:', err);
+			}
+		}
+
+		await loadChart();
+	}
+
 	async function loadChart() {
+		if (!inView) return;
+
 		loading = true;
 		error = null;
 
 		try {
 			const adapter = createChartJsAdapter();
 			const since = timeRange === 'all' ? 0 : Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
-
-			// Sync relay data
-			if (!isSyncing(relayUrl)) {
-				syncing = true;
-				await syncRelay(relayUrl, {
-					since,
-					keepAlive: false,
-				});
-				await new Promise(resolve => setTimeout(resolve, 1000));
-				syncing = false;
-			}
 
 			// Get real check frequency from Kind 1066 events
 			const storage = getChronicleStorage();
@@ -118,12 +144,15 @@
 		}
 	}
 
-	$: if (timeRange) {
+	$: if (timeRange && inView) {
 		showAnyways = false; // Reset override when time range changes
+		const since = timeRange === 'all' ? 0 : Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		if (subscription) void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
 		loadChart();
 	}
 </script>
 
+<div use:observeInView={{ threshold: 0.25, debounceMs: 150 }} on:inviewchange={handleInViewChange}>
 <Card.Root class="w-full bg-black/20 border-white/10 rounded-[3px]">
 	<Card.Header>
 		<Card.Title class='font-mono text-white/80'>
@@ -176,6 +205,7 @@
 		</div>
 	</Card.Footer>
 </Card.Root>
+</div>
 
 <style>
 	canvas {

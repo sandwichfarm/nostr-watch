@@ -12,9 +12,40 @@ import type { EventStorage, DeltaEvent } from "../src/types.ts";
 class MockStorage implements EventStorage {
   constructor(private events: DeltaEvent[]) {}
 
-  async query(): Promise<DeltaEvent[]> {
-    // Return events sorted by timestamp
-    return [...this.events].sort((a, b) => a.created_at - b.created_at);
+  async query(options: any = {}): Promise<DeltaEvent[]> {
+    let results = [...this.events];
+
+    if (options.relay) {
+      results = results.filter((e) =>
+        e.tags.some((t) => t[0] === "r" && t[1] === options.relay)
+      );
+    }
+
+    if (options.statusOnly) {
+      results = results.filter((e) => e.tags.some((t) => t[0] === "O" && t[1]));
+    }
+
+    if (options.periods && Array.isArray(options.periods) && options.periods.length > 0) {
+      const set = new Set<string>(options.periods);
+      results = results.filter((e) => e.tags.some((t) => t[0] === "T" && set.has(t[1])));
+    }
+
+    if (options.since !== undefined) {
+      results = results.filter((e) => e.created_at >= options.since);
+    }
+
+    if (options.until !== undefined) {
+      results = results.filter((e) => e.created_at <= options.until);
+    }
+
+    // Mimic typical relay behavior: limits apply to most-recent events.
+    if (options.limit !== undefined) {
+      results = results
+        .sort((a, b) => b.created_at - a.created_at)
+        .slice(0, options.limit);
+    }
+
+    return results.sort((a, b) => a.created_at - b.created_at);
   }
 }
 

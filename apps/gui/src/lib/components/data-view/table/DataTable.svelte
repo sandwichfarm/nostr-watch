@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { writable, derived, type Writable, type Readable, type Unsubscriber } from 'svelte/store';
     import { DataTable } from '$lib/components/@Careswitch/svelte-data-table';
     import * as Resizable from '$lib/components/ui/resizable'; 
@@ -37,7 +37,12 @@
     let resultsPerPage: number = $config?.pageSize || 50; 
     let keysEnable: string[];
     let tableInstance: DataTable<any> | null = null;
-    let globalFilter = '';
+	let globalFilter = '';
+	const SITE_HEADER_HEIGHT_PX = 42;
+	let topBarEl: HTMLDivElement | null = null;
+	let topBarHeight = 0;
+	let tableHeaderTopPx = SITE_HEADER_HEIGHT_PX;
+	$: tableHeaderTopPx = SITE_HEADER_HEIGHT_PX + topBarHeight;
 
     $: keysEnable = ($config.columnsShow?.length && $config.filtersShow?.length )? Array.from(new Set([...$config.columnsShow, ...$config.filtersShow])) : [];
     
@@ -125,11 +130,11 @@
         }
     }
 
-    onMount(async (): Promise<any> => {
-        let isInitialMount = true;
-        let suppressPersist = false;
-        let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-        let tableTimeout: ReturnType<typeof setTimeout> | null = null;
+	    onMount(async (): Promise<any> => {
+	        let isInitialMount = true;
+	        let suppressPersist = false;
+	        let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+	        let tableTimeout: ReturnType<typeof setTimeout> | null = null;
         const TABLE_CONFIG_KEY = `preferences:${dataKey}:tableConfig`;
 
         const applyRemoteConfig = (next: any) => {
@@ -187,24 +192,40 @@
         // Create table once on mount
         createTable();
 
-        // Mark initial mount complete after a tick
-        setTimeout(() => { isInitialMount = false; }, 0);
-        return () => {
-            unsubConfig();
-            unsubTableConfig();
+	        // Mark initial mount complete after a tick
+	        setTimeout(() => { isInitialMount = false; }, 0);
+	        return () => {
+	            unsubConfig();
+	            unsubTableConfig();
             dataSubscription?.();
             if (tableInstance) {
                 tableInstance = null;
             }
             stopBroadcast?.();
             window.removeEventListener('storage', onStorage);
-        };
-    });
+	        };
+	    });
 
-    // filters.subscribe((newFilters: any) => {
-    //     ////console.log('Filters updated', newFilters);
-    //     config.update( (currentConfig: DataTableConfig) => {
-    //         currentConfig.activeFilters = newFilters;
+		onMount(async () => {
+			await tick();
+			if (!topBarEl) return;
+
+			const updateTopBarHeight = () => {
+				topBarHeight = Math.ceil(topBarEl?.getBoundingClientRect().height ?? 0);
+			};
+
+			updateTopBarHeight();
+
+			if (typeof ResizeObserver === 'undefined') return;
+			const observer = new ResizeObserver(() => updateTopBarHeight());
+			observer.observe(topBarEl);
+			return () => observer.disconnect();
+		});
+
+	    // filters.subscribe((newFilters: any) => {
+	    //     ////console.log('Filters updated', newFilters);
+	    //     config.update( (currentConfig: DataTableConfig) => {
+	    //         currentConfig.activeFilters = newFilters;
     //         return currentConfig;
     //     });
     // });
@@ -234,17 +255,20 @@
 {#if tableInstance !== null}
 <div class="relative z-0 shadow-md p-0 m-0">
 
-    <DataViewTopBar {config} {dataKey} {tableInstance} {dataUnfilteredLength} />
+    <DataViewTopBar bind:element={topBarEl} {config} {dataKey} {tableInstance} {dataUnfilteredLength} />
 
     <!-- **Data Table Structure** -->
-    <Table.Root>
+    <Table.Root
+        containerClass="overflow-auto"
+        containerStyle={`max-height: calc(100vh - ${tableHeaderTopPx}px);`}
+    >
         <Table.Header>
-            <Table.Row class="sticky top-0 z-10 bg-background">
+            <Table.Row class="bg-background">
                 {#if actionsComponent}
                 <svelte:component this={actionsComponent} view='head' />
                 {/if}
                 {#each tableInstance?.columns as column (column.id)}
-                    <Table.Head class="bg-purple-700/5">
+                    <Table.Head class="sticky top-0 z-20 bg-background">
                         <button
                             class="flex items-center lowercase text-xs font-mono"
                             on:click={() => { 
@@ -279,7 +303,7 @@
             </Table.Row>
         </Table.Header>
         <Table.Body>
-            {#each tableInstance?.rows as row (row.id)}
+            {#each tableInstance?.rows as row, rowIndex (`${row.id ?? ''}:${rowIndex}`)}
             <!-- {(console.log('row data', row?.active, row?.enabled, $config.tableRowStyler(row)))} -->
                 <Table.Row 
                     class="{$config.tableRowStyler(row)} flash-record {$recordChanged.get(row.id) ? 'animate-flash' : ''}" 
@@ -311,11 +335,13 @@
                             </Table.Cell>
                         {:else}
                             <Table.Cell>
-                                {#if $config.tableFormatters?.[column.key]}
-                                    {@html $config.tableFormatters[column.key](row[column.key], row)}
-                                {:else}
-                                    {@html row[column.key]}
-                                {/if}    
+                                <div class="max-w-full truncate">
+                                    {#if $config.tableFormatters?.[column.key]}
+                                        {@html $config.tableFormatters[column.key](row[column.key], row)}
+                                    {:else}
+                                        {@html row[column.key]}
+                                    {/if}
+                                </div>
                             </Table.Cell>
                         {/if}
                     {/each}

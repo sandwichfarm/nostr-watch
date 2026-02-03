@@ -35,7 +35,8 @@
         reason: string;
         tests: TestResult[];
         samples: Record<string, any[]>; // Dynamic samples data
-        status: 'running' | 'finished';
+        status: 'pending' | 'running' | 'finished';
+        skipped?: boolean;
     }
 
     const auditResults: Writable<SuiteResult[]> = writable([]);
@@ -44,17 +45,20 @@
 
     const onSuiteStart = (suiteKey: string) => {
         auditResults.update(suites => {
-            if (!suites.find(s => s.suiteKey === suiteKey)) {
-                return [...suites, {
-                    suiteKey,
-                    pass: false,
-                    reason: '',
-                    tests: [],
-                    samples: {},
-                    status: 'running'
-                }];
-            }
-            return suites;
+            const existingIndex = suites.findIndex(s => s.suiteKey === suiteKey);
+            const freshSuite: SuiteResult = {
+                suiteKey,
+                pass: false,
+                reason: '',
+                tests: [],
+                samples: {},
+                status: 'running',
+                skipped: false
+            };
+            if (existingIndex === -1) return [...suites, freshSuite];
+            const next = [...suites];
+            next[existingIndex] = freshSuite;
+            return next;
         });
     };
 
@@ -65,6 +69,7 @@
                 suite.pass = result.pass;
                 suite.reason = result.reason;
                 suite.status = 'finished';
+                suite.skipped = !!result.skipped;
             }
             return suites;
         });
@@ -173,27 +178,96 @@
         setTimeout(() => ready.set(true), 400)
     });
 
-    const run = async () => {
-        const audit = new Auditor();
-        if ($nip11 && $nip11?.supportedNips) {
-            audit.applySupportedNips($nip11.supportedNips);
-        } else {
-            await audit.detectSupportedNips()
+    const suiteNumber = (suiteKey: string): number => {
+        const match = suiteKey.match(/Nip(\d+)/i);
+        if (!match) return Number.POSITIVE_INFINITY;
+        const num = Number(match[1]);
+        return Number.isFinite(num) ? num : Number.POSITIVE_INFINITY;
+    };
+
+    const sortSuites = (suiteKeys: string[]): string[] => {
+        return [...suiteKeys].sort((a, b) => {
+            const aNum = suiteNumber(a);
+            const bNum = suiteNumber(b);
+            if (aNum !== bNum) return aNum - bNum;
+            return a.localeCompare(b);
+        });
+    };
+
+    const pendingSuite = (suiteKey: string): SuiteResult => ({
+        suiteKey,
+        pass: false,
+        reason: '',
+        tests: [],
+        samples: {},
+        status: 'pending',
+        skipped: false,
+    });
+
+    const runAudit = async (suiteKeys?: string[]) => {
+        if (!suiteKeys?.length) auditResults.set([]);
+
+        const audit = suiteKeys?.length
+            ? new Auditor({ nips: new Set(suiteKeys), options: {} })
+            : new Auditor();
+
+        // Pre-populate pending suite cards so the UI can show what's queued up.
+        if (suiteKeys?.length) {
+            auditResults.update((suites) => {
+                const existingKeys = new Set(suites.map((s) => s.suiteKey));
+                const nextKeys = sortSuites(Array.from(audit.suites));
+
+                const nextSuites = suites.map((suite) =>
+                    nextKeys.includes(suite.suiteKey) ? pendingSuite(suite.suiteKey) : suite
+                );
+
+                for (const suiteKey of nextKeys) {
+                    if (!existingKeys.has(suiteKey)) nextSuites.push(pendingSuite(suiteKey));
+                }
+
+                return nextSuites;
+            });
         }
 
-        audit.on('auditor.suite:start', (suiteKey: string) => onSuiteStart(suiteKey));
-        audit.on('auditor.suite:finish', (suiteKey: string, result: any) => onSuiteFinish(suiteKey, result));
-        audit.on('auditor.suite.test:start', (suiteKey: string, testKey: string | undefined) => onSuiteTestStart(suiteKey, testKey));
-        audit.on('auditor.suite.test:finish', (suiteKey: string, testResult: any) => onSuiteTestFinish(suiteKey, testResult));
-        audit.on('auditor.suite:samples', (suiteKey: string, samples: Record<string, any[]>) => onSuiteSamples(suiteKey, samples));
+        if (!suiteKeys?.length) {
+            if ($nip11 && $nip11?.supportedNips) {
+                audit.applySupportedNips($nip11.supportedNips);
+            } else {
+                await audit.detectSupportedNips(relayUrl)
+            }
 
-        // Start the audit process
-        await audit.test(relayUrl).catch(err => {
+            const queued = sortSuites(Array.from(audit.suites));
+            auditResults.set(queued.map(pendingSuite));
+        }
+
+        const onStart = (suiteKey: string) => onSuiteStart(suiteKey);
+        const onFinish = (suiteKey: string, result: any) => onSuiteFinish(suiteKey, result);
+        const onTestStart = (suiteKey: string, testKey: string | undefined) => onSuiteTestStart(suiteKey, testKey);
+        const onTestFinish = (suiteKey: string, testResult: any) => onSuiteTestFinish(suiteKey, testResult);
+        const onSamples = (suiteKey: string, samples: Record<string, any[]>) => onSuiteSamples(suiteKey, samples);
+
+        audit.on('auditor.suite:start', onStart);
+        audit.on('auditor.suite:finish', onFinish);
+        audit.on('auditor.suite.test:start', onTestStart);
+        audit.on('auditor.suite.test:finish', onTestFinish);
+        audit.on('auditor.suite:samples', onSamples);
+
+        try {
+            await audit.test(relayUrl);
+        } catch (err) {
             console.error('Audit failed:', err);
-        });
-
-        // await resumer();
+        } finally {
+            audit.off('auditor.suite:start', onStart);
+            audit.off('auditor.suite:finish', onFinish);
+            audit.off('auditor.suite.test:start', onTestStart);
+            audit.off('auditor.suite.test:finish', onTestFinish);
+            audit.off('auditor.suite:samples', onSamples);
+        }
     }
+
+    const retrySuite = async (suiteKey: string) => {
+        await runAudit([suiteKey]);
+    };
 
     // Function to toggle the expansion of a sample-set
     function toggleSampleExpansion(suiteKey: string, sampleKey: string) {
@@ -205,7 +279,7 @@
 
 {#if ready}
 <Button 
-    on:click={run}
+    on:click={() => runAudit()}
     variant="default" 
     >Run Audit</Button>
 
@@ -227,23 +301,40 @@
 
     <div class="space-y-6">
         {#each $auditResults as suite (suite.suiteKey)}
-            <div class="bg-black/5 dark:bg-white/10 shadow-lg rounded-lg p-5">
+            <div
+                class="bg-black/5 dark:bg-white/10 shadow-lg rounded-lg p-5"
+                class:opacity-60={suite.status === 'pending'}
+            >
                 <div class="flex justify-between items-center">
                     <div class="flex items-center">
                         {#if suite.status === 'running'}
                             <div class="w-4 h-4 border-2 border-t-2 border-gray-400 rounded-sm animate-spin mr-2"></div>
+                        {:else if suite.status === 'pending'}
+                            <div class="w-4 h-4 border border-white/20 bg-white/5 rounded-sm mr-2"></div>
                         {/if}
                         <span class="text-xl font-semibold text-black dark:text-white bg-black/20 dark:bg-white/20">
                             Suite: {suite.suiteKey}
                         </span>
                     </div>
-                    {#if suite.status !== 'running'}
+                    {#if suite.status === 'pending'}
+                        <span class="text-white/50 text-sm font-medium">Waiting…</span>
+                    {:else if suite.status === 'running'}
+                        <span class="text-yellow-400 font-medium">Running…</span>
+                    {:else}
                         <!-- Compute metrics -->
                         <div class="flex space-x-4">
+                            {#if suite.skipped || Object.values(suite.samples).flat().length === 0}
+                                <button
+                                    class="rounded bg-white/5 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+                                    on:click={() => retrySuite(suite.suiteKey)}
+                                >
+                                    Retry suite
+                                </button>
+                            {/if}
                             <span class="text-green-400 font-medium">
                                 Pass Rate: 
-                                {#if suite.tests.length > 0}
-                                    {Math.round((suite.tests.filter(t => t.pass).length / suite.tests.length) * 100)}%
+                                {#if suite.tests.filter(t => t.skipped.length === 0).length > 0}
+                                    {Math.round((suite.tests.filter(t => t.pass && t.skipped.length === 0).length / suite.tests.filter(t => t.skipped.length === 0).length) * 100)}%
                                 {:else}
                                     N/A
                                 {/if}
@@ -252,7 +343,7 @@
                                 Passed: {suite.tests.filter(t => t.pass && t.skipped.length === 0).length}
                             </span>
                             <span class="text-red-400 font-medium">
-                                Failed: {suite.tests.filter(t => !t.pass && t.status === 'finished').length}
+                                Failed: {suite.tests.filter(t => !t.pass && t.status === 'finished' && t.skipped.length === 0).length}
                             </span>
                             <span class="text-yellow-400 font-medium">
                                 Skipped: {suite.tests.filter(t => t.skipped.length > 0).length}
@@ -263,6 +354,12 @@
                 {#if suite.reason}
                     <div class="mt-2 text-sm text-gray-400">
                         Reason: {suite.reason}
+                    </div>
+                {/if}
+
+                {#if suite.status === 'pending'}
+                    <div class="mt-3 text-xs text-white/40">
+                        Queued (waiting to start)
                     </div>
                 {/if}
 

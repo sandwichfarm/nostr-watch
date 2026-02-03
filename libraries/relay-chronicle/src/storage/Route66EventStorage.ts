@@ -38,6 +38,14 @@ export interface Route66CacheAdapter {
 export class Route66EventStorage implements EventStorage {
   constructor(private cacheAdapter: Route66CacheAdapter) {}
 
+  private relayTagValues(relay: string): string[] {
+    const trimmed = (relay || '').trim();
+    if (!trimmed) return [];
+    const withoutTrailingSlash = trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+    const withTrailingSlash = `${withoutTrailingSlash}/`;
+    return Array.from(new Set([trimmed, withoutTrailingSlash, withTrailingSlash]));
+  }
+
   /**
    * Query delta events matching the given options
    *
@@ -54,7 +62,7 @@ export class Route66EventStorage implements EventStorage {
     // Build filter for Kind 1066 events
     const filter: any = {
       kinds: [1066],
-      '#r': [options.relay],
+      '#r': this.relayTagValues(options.relay),
     };
 
     // Add time range if specified
@@ -78,7 +86,8 @@ export class Route66EventStorage implements EventStorage {
 
     // Filter by specific time periods if specified
     if (options.periods && options.periods.length > 0) {
-      filter['#P'] = options.periods;
+      // Period tags are emitted as "T" tags (e.g., ["T","1h"])
+      filter['#T'] = options.periods;
     }
 
     // Query events from cache adapter

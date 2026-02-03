@@ -141,8 +141,10 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
 
         this.relay = new WorkerRelayInterface(worker, channelPort);
         
-        
-        const ready = await this.relay.setup().catch((err?: any) => this.handleWorkerError('setup', err)) as boolean
+
+        const ready = await this.relay
+            .setup({ timeoutMs: 45_000 })
+            .catch((err?: any) => this.handleWorkerError('setup', err));
         // console.log('ready?', ready  );
         if(!ready ) {
             throw new Error('NostrSqliteAdapter: failed to setup')
@@ -232,12 +234,13 @@ export class NostrSqliteAdapter extends CacheAdapter implements INostrSqliteAdap
         return this.relay.wipe();
     }
 
-    private handleWorkerError(context?: any, err?: any) {
+    private handleWorkerError(context?: any, err?: any): false {
         if(err) {   
             console.error('context:', context, err)
         }
         if(isBrowser()) {
             // setTimeout( () => location.reload(), 2000 )
         }
+        return false;
     }
 }

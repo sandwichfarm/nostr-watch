@@ -4,8 +4,9 @@
   "type": "module",
   "main": "./dist/server/index.js",
   "module": "./dist/web/index.js",
-  "types": "./dist/types/index.d.ts",
+  "types": "./dist/server/types/index.d.ts",
   "exports": {
+    "types": "./dist/server/types/index.d.ts",
     "node": "./dist/server/index.js",
     "import": "./dist/web/index.js",
     "require": "./dist/server/index.js",
@@ -13,6 +14,7 @@
   },
   "dependencies": {
     "@jspm/core": "^2.1.0",
+    "@nostrability/schemata": "^0.1.6",
     "@nostrwatch/websocket": "workspace:^",
     "ajv": "^8.17.1",
     "ajv-errors": "^3.0.0",
@@ -39,9 +41,6 @@
     "url": "^0.11.4",
     "util": "^0.12.5",
     "ws": "^8.18.0"
-  },
-  "peerDependencies": {
-    "@nostrwatch/schemata": "workspace:^"
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.7.2",
@@ -72,6 +71,7 @@
   "scripts": {
     "nip01": "node --no-warnings ./example/nip01.js",
     "nip50": "node --no-warnings ./example/nip50.js",
+    "test": "vitest run",
     "build": "tsc && tsc-alias && node build.js",
     "dev": "tsc --watch & tsc-alias -w & node build.js --watch",
     "prepare": "node ./scripts/generateIndices.js && node ./scripts/generateSuiteManifest.js && node ./scripts/generateSuiteTestManifests.js"

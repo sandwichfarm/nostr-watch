@@ -3,7 +3,7 @@ import { EventEmitter } from "tseep";
 import type { UniversalWebSocket as WebSocket } from '@nostrwatch/websocket';
 import { SchemaValidator } from "./SchemaValidator.js";
 import { SuiteResulter } from "./Resulter.js";
-import type { ISuiteTest, ISuiteTestResult } from "./SuiteTest.js";
+import { type ISuiteTest, type ISuiteTestResult } from "./SuiteTest.js";
 
 import { capitalize, truncate } from '#utils/string.js';
 import { Expect } from './Expect.js';
@@ -37,6 +37,7 @@ export interface ISuiteResult {
   tests: Record<string, ISuiteTestResult>;
   data: Record<string, any> | null; 
   messages: MessagesMapType;
+  skipped?: boolean;
 }
 
 export const defaultSuiteResult: ISuiteResult = {
@@ -212,6 +213,46 @@ export abstract class Suite implements ISuite {
     Emitter.emit('auditor.suite:samples', this.slug, poops);
   }
 
+  private countSampleItems(samples: ISuiteSampleData | undefined): number {
+    if (!samples) return 0;
+    let total = 0;
+    for (const value of Object.values(samples)) {
+      if (Array.isArray(value)) {
+        total += value.length;
+        continue;
+      }
+      if (value instanceof Set) {
+        total += value.size;
+        continue;
+      }
+      if (value && typeof value === 'object') {
+        total += Object.keys(value).length > 0 ? 1 : 0;
+        continue;
+      }
+      if (value !== undefined && value !== null && value !== '') {
+        total += 1;
+      }
+    }
+    return total;
+  }
+
+  private skippedTestResult(testKey: string, message: string): ISuiteTestResult {
+    return {
+      testKey,
+      pass: false,
+      passrate: 0,
+      passed: [],
+      failed: [],
+      skipped: [
+        { type: 'behavior', code: 'SKIPPED', message, pass: false, skipped: true } as any,
+      ],
+      notices: [],
+      filters: [],
+      errors: [],
+      events: [],
+    } satisfies ISuiteTestResult;
+  }
+
   public async test(): Promise<ISuiteResult> {
     this.logger.info(`BEGIN: ${this.slug} Suite`, 1);
     
@@ -219,6 +260,25 @@ export abstract class Suite implements ISuite {
     if(this?.sampler?.samplable) {
       await this.sampler.sample();
       this.toilet();
+
+      const samples = this.state.get<ISuiteSampleData>('samples');
+      const totalSamples = this.countSampleItems(samples);
+      if (totalSamples === 0) {
+        const reason = 'Skipped: failed to obtain samples';
+        for (const test of Object.entries(this.testers)) {
+          const [testName] = test;
+          Emitter.emit('auditor.suite.test:start', this.slug, testName);
+          const result = this.skippedTestResult(testName, reason);
+          Emitter.emit('auditor.suite.test:finish', this.slug, result);
+          this.resulter.set('tests', testName, result);
+        }
+        this.resulter.set('pass', false);
+        this.resulter.set('reason', reason);
+        this.resulter.set('skipped', true);
+        this.resulter.set('messages', this.messages);
+        this.beforeResults();
+        return this.resulter.result
+      }
     }
 
     for(const test of Object.entries(this.testers)) {
@@ -226,7 +286,6 @@ export abstract class Suite implements ISuite {
       Emitter.emit('auditor.suite.test:start', this.slug, testName);
       await suiteTest.run();
       const results = suiteTest.resulter.result;
-      console.log('the results', results)
       Emitter.emit('auditor.suite.test:finish', this.slug, results);
       this.resulter.set('tests', testName, results);
       if(suiteTest?.data !== null) {
@@ -261,12 +320,22 @@ export abstract class Suite implements ISuite {
 
   validateJson(key: string, json: GenericJson) {
     key = key.toUpperCase();
-    this.expect.json.toBeOk(this?.jsonValidators?.[key]?.validate, `json ${key} is valid`);
+    const isValid = this?.jsonValidators?.[key]?.validate(json);
+    this.expect.json.toBeOk(isValid, `json ${key} is valid`);
+  }
+
+  private handlerSuffix(key: string): string {
+    return key
+      .split(/[^a-zA-Z0-9]+/g)
+      .filter(Boolean)
+      .map((part) => capitalize(part))
+      .join("");
   }
 
   protected handleMessage({ data }): void {
     const message: INip01RelayMessage = JSON.parse(data);
     const key = message[0];
+    const suffix = this.handlerSuffix(key);
 
     const testInstance = this?.testers?.[this.testKey] as ISuiteTest;
 
@@ -274,8 +343,6 @@ export abstract class Suite implements ISuite {
 
     const messageArr = this.messages.get(key) ?? [];
     this.messages.set(key, [...messageArr, message]);
-
-    console.log('wtf', key, message)
 
     if(key == 'NOTICE') {
       this.logger.custom('notice', message[1], 3);
@@ -286,13 +353,13 @@ export abstract class Suite implements ISuite {
       testInstance.addEvent(message[2]);
     }
 
-    let suiteHandler = (this[`onMessage${capitalize(key)}` as keyof typeof this] as unknown as MessageHandler<any>)
+    let suiteHandler = (this[`onMessage${suffix}` as keyof typeof this] as unknown as MessageHandler<any>)
     if (suiteHandler) {
       suiteHandler = suiteHandler.bind(this);
       suiteHandler(message as any);
     }
     
-    let qualifiedTestHandler = (testInstance?.[`_onMessage${capitalize(key)}` as keyof typeof testInstance] as QualifyingMessageHandler<any>)
+    let qualifiedTestHandler = (testInstance?.[`_onMessage${suffix}` as keyof typeof testInstance] as QualifyingMessageHandler<any>)
     let resume: boolean = true;
     if (qualifiedTestHandler) {
       qualifiedTestHandler = qualifiedTestHandler.bind(testInstance);
@@ -301,7 +368,7 @@ export abstract class Suite implements ISuite {
 
     if(resume) {
       if(this.testKey === 'unset') return 
-      const testHandler = (testInstance?.[`onMessage${capitalize(key)}` as keyof typeof testInstance] as MessageHandler<any>)?.bind(testInstance);
+      const testHandler = (testInstance?.[`onMessage${suffix}` as keyof typeof testInstance] as MessageHandler<any>)?.bind(testInstance);
       if (testHandler) {
         testHandler(message as any);
       }

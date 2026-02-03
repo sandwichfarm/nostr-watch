@@ -1,21 +1,53 @@
 <script lang="ts">
-    import Button from '$lib/components/ui/button/button.svelte';
+    import { browser } from '$app/environment';
     import * as Card from '$lib/components/ui/card';
-	import { readable, type Readable, type Writable } from 'svelte/store';
+	import { readable, type Readable } from 'svelte/store';
 	import SummarizeRelayChecks from '../SummarizeRelayChecks.svelte';
-	import RelayMap from '../RelayMap.svelte';
 	import { generateRelayUrlFromPath } from '$utils/routing';
-	import { relayLivenessChecks, relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
+	import { relayLivenessChecks$ } from '$stores/helpers/helpers-relay';
 	import { onMount } from 'svelte';
 	import type { Nip66CheckEvent } from '@nostrwatch/route66/models/Nip66CheckEvent';
 
     const relayUrl = generateRelayUrlFromPath() as string;
 
     let checks: Readable<Nip66CheckEvent[]> = readable([]); 
+	let RelayMapComponent: any = null;
+	let mapLoading = false;
+	let mapError: string | null = null;
 
-    onMount( () => {
+	async function loadRelayMap() {
+		if (!browser) return;
+		if (RelayMapComponent || mapLoading || mapError) return;
+
+		mapLoading = true;
+		try {
+			const mod = await import('../RelayMap.svelte');
+			RelayMapComponent = mod.default;
+		} catch (err) {
+			mapError = err instanceof Error ? err.message : String(err);
+			console.warn('[CardChecks] Failed to load RelayMap:', err);
+		} finally {
+			mapLoading = false;
+		}
+	}
+
+    onMount(() => {
         checks = relayLivenessChecks$(relayUrl);
-    })
+
+		// Only attempt to load the map once we have actual checks to display.
+		let unsubscribe: (() => void) | undefined;
+		let didScheduleUnsubscribe = false;
+		unsubscribe = checks.subscribe((val) => {
+			if (didScheduleUnsubscribe) return;
+			if (val?.length) {
+				didScheduleUnsubscribe = true;
+				void loadRelayMap();
+				queueMicrotask(() => unsubscribe?.());
+			}
+		});
+
+		return () => unsubscribe?.();
+    });
 
 </script>
 
@@ -31,7 +63,19 @@
                 <div class="flex-grow">
                     <SummarizeRelayChecks {checks} />
                 </div>
-                <RelayMap class="flex-grow" />
+				<div class="flex-grow">
+					{#if RelayMapComponent}
+						<svelte:component this={RelayMapComponent} class="flex-grow" />
+					{:else if mapError}
+						<div class="rounded border border-white/10 bg-black/30 p-3 text-xs text-white/50">
+							Map unavailable: {mapError}
+						</div>
+					{:else}
+						<div class="rounded border border-white/10 bg-black/30 p-3 text-xs text-white/50">
+							Loading map…
+						</div>
+					{/if}
+				</div>
             </div>
         </Card.Content>
         <Card.Footer>

@@ -50,6 +50,7 @@ const browserConfig = {
   platform: 'browser',
   sourcemap: false,
   allowOverwrite: true,
+  external: ['ws'],
   plugins: [
     polyfillNode({
       globals: {
@@ -72,6 +73,7 @@ const workerConfig = {
   platform: 'browser',
   sourcemap: false,
   allowOverwrite: true,
+  external: ['ws'],
   plugins: [
     polyfillNode({
       globals: {

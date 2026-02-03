@@ -9,6 +9,7 @@ import type {
   ChartAdapter,
   ChartData,
   ChartOptions,
+  DeltaBlotterPoint,
   TimeSeriesPoint,
   UptimePeriod,
   StateChange,
@@ -54,22 +55,48 @@ export class ChartJsAdapter implements ChartAdapter<ChartJsConfig, any> {
     options?: ChartOptions
   ): ChartJsConfig {
     const colors = this.getColors(options);
+    const values = data.map(d => typeof d.value === 'number' ? d.value : 0);
+
+    const datasets: ChartJsConfig['data']['datasets'] = [{
+      label: options?.title || 'Value',
+      data: values,
+      borderColor: colors.primary,
+      backgroundColor: this.hexToRgba(colors.primary, 0.1),
+      borderWidth: 2,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 3,
+      pointHoverRadius: 5,
+    }];
+
+    const smaWindow = Math.floor(options?.sma?.window ?? 0);
+    if (smaWindow > 1 && values.length >= smaWindow) {
+      const sma: Array<number | null> = values.map((_, idx) => {
+        if (idx < smaWindow - 1) return null;
+        const start = idx - (smaWindow - 1);
+        let sum = 0;
+        for (let i = start; i <= idx; i++) sum += values[i]!;
+        return sum / smaWindow;
+      });
+
+      datasets.push({
+        label: `SMA (${smaWindow})`,
+        data: sma,
+        borderColor: this.hexToRgba(colors.text, 0.35),
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        fill: false,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 0,
+      });
+    }
 
     return {
       type: 'line',
       data: {
         labels: data.map(d => new Date(d.timestamp * 1000)),
-        datasets: [{
-          label: options?.title || 'Value',
-          data: data.map(d => typeof d.value === 'number' ? d.value : 0),
-          borderColor: colors.primary,
-          backgroundColor: this.hexToRgba(colors.primary, 0.1),
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-        }],
+        datasets,
       },
       options: {
         responsive: options?.responsive !== false,
@@ -210,6 +237,178 @@ export class ChartJsAdapter implements ChartAdapter<ChartJsConfig, any> {
             text: options.title,
             color: colors.text,
           } : undefined,
+        },
+        animation: options?.animation !== false ? {} : false,
+      },
+    };
+  }
+
+  /**
+   * Create a delta "blotter" chart (scatter plot)
+   *
+   * Intended for Kind 1066 delta events where each point represents a change-bucket
+   * (e.g. DNS/Geo/Info) at a given timestamp.
+   */
+  createDeltaBlotterChart(
+    data: DeltaBlotterPoint[],
+    options?: ChartOptions
+  ): ChartJsConfig {
+    const colors = this.getColors(options);
+
+    const points = (data ?? []).filter((p) => typeof p?.timestamp === 'number' && Number.isFinite(p.timestamp));
+    if (points.length === 0) {
+      return {
+        type: 'scatter',
+        data: { datasets: [] },
+        options: {
+          responsive: options?.responsive !== false,
+          maintainAspectRatio: false,
+        },
+      };
+    }
+
+    const categories = Array.from(new Set(points.map((p) => p.category))).filter(Boolean);
+    const preferredCategoryOrder = ['operational', 'dns', 'geo', 'limitation', 'info'] as const;
+    categories.sort((a, b) => {
+      const ai = preferredCategoryOrder.indexOf(a as any);
+      const bi = preferredCategoryOrder.indexOf(b as any);
+      if (ai !== -1 || bi !== -1) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      return String(a).localeCompare(String(b));
+    });
+    const minTs = Math.min(...points.map((p) => p.timestamp));
+    const maxTs = Math.max(...points.map((p) => p.timestamp));
+
+    const palette = {
+      add: colors.online,
+      remove: colors.offline,
+      mixed: colors.secondary,
+      change: colors.primary,
+    } as const;
+
+    const directionOrder: Array<DeltaBlotterPoint['direction']> = ['add', 'remove', 'mixed', 'change'];
+
+    const datasets: ChartJsConfig['data']['datasets'] = directionOrder.map((direction) => {
+      const color = palette[direction];
+      return {
+        label: direction === 'add'
+          ? 'Additions'
+          : direction === 'remove'
+            ? 'Removals'
+            : direction === 'mixed'
+              ? 'Mixed'
+              : 'Changes',
+        data: points
+          .filter((p) => p.direction === direction)
+          .map((p) => ({
+            x: new Date(p.timestamp * 1000),
+            y: p.category,
+            eventId: p.eventId,
+            items: p.items,
+          })),
+        backgroundColor: this.hexToRgba(color, 0.35),
+        borderColor: this.hexToRgba(color, 0.7),
+        borderWidth: 1,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointStyle:
+          direction === 'add'
+            ? 'triangle'
+            : direction === 'remove'
+              ? 'triangle'
+              : direction === 'mixed'
+                ? 'rectRot'
+                : 'circle',
+        pointRotation: direction === 'remove' ? 180 : 0,
+      } as any;
+    });
+
+    return {
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: options?.responsive !== false,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'time',
+            min: new Date(minTs * 1000),
+            max: new Date(maxTs * 1000),
+            time: {
+              displayFormats: {
+                hour: 'MMM d, HH:mm',
+                day: 'MMM d',
+              },
+            },
+            grid: {
+              display: options?.showGrid !== false,
+              color: this.hexToRgba(colors.text, 0.1),
+            },
+            ticks: {
+              color: colors.text,
+              source: 'data',
+              autoSkip: true,
+              maxRotation: 45,
+            },
+          },
+          y: {
+            type: 'category',
+            labels: categories,
+            grid: {
+              display: options?.showGrid !== false,
+              color: this.hexToRgba(colors.text, 0.1),
+            },
+            ticks: {
+              color: colors.text,
+            },
+          },
+        },
+        plugins: {
+          legend: {
+            display: options?.showLegend !== false,
+            labels: {
+              color: colors.text,
+            },
+          },
+          tooltip: {
+            enabled: options?.showTooltip !== false,
+            callbacks: {
+              title: (items: any[]) => {
+                const first = items?.[0];
+                const raw = first?.raw;
+                const x = raw?.x;
+                const date = x instanceof Date ? x : x ? new Date(x) : null;
+                return date ? date.toLocaleString() : '';
+              },
+              label: (context: any) => {
+                const raw = context?.raw as any;
+                const items: Array<{ op?: string; key?: string; value?: string | null }> = raw?.items ?? [];
+                if (!Array.isArray(items) || items.length === 0) return '';
+
+                const maxLines = 10;
+                const lines = items.slice(0, maxLines).map((i) => {
+                  const op = i?.op === 'add' ? '+' : i?.op === 'remove' ? '-' : '·';
+                  const key = i?.key ?? '(unknown)';
+                  const value = i?.value ?? '(missing)';
+                  return `${op}${key}: ${value}`;
+                });
+                const remaining = items.length - maxLines;
+                if (remaining > 0) lines.push(`… +${remaining} more`);
+                return lines;
+              },
+              afterLabel: (context: any) => {
+                const raw = context?.raw as any;
+                const eventId = raw?.eventId;
+                return eventId ? `event: ${String(eventId).slice(0, 16)}…` : '';
+              },
+            },
+          },
+          title: options?.title
+            ? {
+                display: true,
+                text: options.title,
+                color: colors.text,
+              }
+            : undefined,
         },
         animation: options?.animation !== false ? {} : false,
       },

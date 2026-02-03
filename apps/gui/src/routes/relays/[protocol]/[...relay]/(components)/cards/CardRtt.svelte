@@ -1,13 +1,14 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import * as Card from '$lib/components/ui/card';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { generateRelayUrlFromPath } from '$utils/routing';
+	import { observeInView, type InViewChangeDetail } from '$utils/ux';
 	import {
-		syncRelay,
-		unsyncRelay,
+		subscribeRelayDeltas,
+		type RelayDeltasSubscriptionHandle,
+		updateRelayDeltasSince,
 		getTimeSeriesData,
-		isSyncing
 	} from '$lib/stores/chronicle';
 	import { createChartJsAdapter } from '@nostrwatch/relay-charts/chartjs';
 	import Chart from 'chart.js/auto';
@@ -20,7 +21,10 @@
 	let loading = true;
 	let error: string | null = null;
 	let syncing = false;
+	let inView = false;
+	let subscription: RelayDeltasSubscriptionHandle | null = null;
 	let timeRange = '24h'; // Default time range
+	let smaWindow = '5'; // SMA window (points)
 
 	// Time range options
 	const timeRanges = {
@@ -36,10 +40,6 @@
 		(globalThis as any).Chart = Chart;
 	}
 
-	onMount(async () => {
-		await loadChart();
-	});
-
 	onDestroy(async () => {
 		// Clean up chart
 		if (rttChart) {
@@ -47,76 +47,152 @@
 			rttChart = null;
 		}
 
-		// Stop syncing when card is destroyed
-		if (isSyncing(relayUrl)) {
-			await unsyncRelay(relayUrl);
+		if (subscription) {
+			await subscription.stop();
+			subscription = null;
 		}
 	});
 
+	async function startVisibleSync() {
+		const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		subscription = subscribeRelayDeltas(relayUrl, { since });
+		syncing = true;
+		try {
+			await subscription.ready;
+		} finally {
+			syncing = false;
+		}
+	}
+
+	async function handleInViewChange(e: CustomEvent<InViewChangeDetail>) {
+		const nextInView = Boolean(e.detail?.inView);
+		if (nextInView === inView) return;
+		inView = nextInView;
+
+		if (!inView) {
+			if (subscription) {
+				void subscription.stop();
+				subscription = null;
+			}
+			return;
+		}
+
+		if (!subscription) {
+			try {
+				await startVisibleSync();
+			} catch (err) {
+				console.warn('[CardRtt] Failed to start visible sync:', err);
+			}
+		}
+
+		await loadChart();
+	}
+
 	async function loadChart() {
+		if (!inView) return;
+
 		loading = true;
 		error = null;
+
+		let rttData: any[] = [];
 
 		try {
 			const adapter = createChartJsAdapter();
 			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
-
-			// Start syncing the relay if not already syncing
-			if (!isSyncing(relayUrl)) {
-				syncing = true;
-				await syncRelay(relayUrl, {
-					since,
-					keepAlive: false, // One-time fetch
-				});
-				syncing = false;
-			}
+			const smaWindowNum = Math.max(0, Math.floor(Number(smaWindow) || 0));
+			const aggregate =
+				timeRange === '30d'
+					? { bucketSize: 86400, fn: 'avg' as const }
+					: undefined;
 
 			// Get RTT time series data
-			const rttData = await getTimeSeriesData({
+			rttData = await getTimeSeriesData({
 				relay: relayUrl,
 				type: 'rtt',
 				since,
+				aggregate,
 			});
 			console.log('[CardRtt] RTT data received:', rttData?.length, 'points', rttData?.slice(0, 3));
-
-			// Create RTT chart
-			if (rttData && rttData.length > 0) {
-				const rttConfig = adapter.createTimeSeriesChart(rttData, {
-					title: 'Response Time (RTT)',
-					theme: 'dark',
-					showGrid: true,
-					showTooltip: true,
-					responsive: true,
-				});
-
-				if (rttChart) {
-					rttChart.destroy();
-				}
-
-				if (rttCanvas) {
-					rttChart = new Chart(rttCanvas.getContext('2d')!, rttConfig);
-				}
-			}
-
-			loading = false;
 		} catch (err: any) {
 			console.error('[CardRtt] Error loading chart:', err);
 			error = err.message || 'Failed to load RTT chart';
+		} finally {
 			loading = false;
+		}
+
+		if (error) return;
+
+		// Ensure canvas is mounted before creating Chart.js instance.
+		await tick();
+
+		const adapter = createChartJsAdapter();
+		const smaWindowNum = Math.max(0, Math.floor(Number(smaWindow) || 0));
+
+		// Create RTT chart
+		if (rttData && rttData.length > 0) {
+			const rttConfig = adapter.createTimeSeriesChart(rttData, {
+				title: 'Response Time (RTT)',
+				theme: 'dark',
+				showGrid: true,
+				showTooltip: true,
+				responsive: true,
+				...(smaWindowNum > 1 ? { sma: { window: smaWindowNum } } : {})
+			});
+
+			if (rttChart) {
+				rttChart.destroy();
+			}
+
+			if (rttCanvas) {
+				rttChart = new Chart(rttCanvas.getContext('2d')!, rttConfig);
+			}
+		} else if (rttChart) {
+			rttChart.destroy();
+			rttChart = null;
 		}
 	}
 
 	async function changeTimeRange(range: string) {
 		timeRange = range;
+		if (inView) {
+			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+			if (subscription) {
+				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
+			} else {
+				void startVisibleSync().catch(() => {});
+			}
+		}
+		await loadChart();
+	}
+
+	async function changeSmaWindow(window: string) {
+		smaWindow = window;
 		await loadChart();
 	}
 </script>
 
+<div use:observeInView={{ threshold: 0.25, debounceMs: 150 }} on:inviewchange={handleInViewChange}>
 <Card.Root class="w-full bg-black/20 border-white/10 rounded-[3px]">
 	<Card.Header>
 		<Card.Title class='font-mono text-white/80 flex items-center justify-between'>
 			<span>response time (rtt)</span>
-			<div class="flex gap-2">
+			<div class="flex items-center gap-2">
+				<div class="flex items-center gap-2">
+					<span class="text-xs text-white/50">SMA</span>
+					<select
+						class="h-8 rounded-md border border-white/10 bg-black/30 px-2 text-xs text-white/80"
+						value={smaWindow}
+						on:change={(e) => changeSmaWindow((e.target as HTMLSelectElement).value)}
+						disabled={loading || syncing}
+					>
+						<option value="0">Off</option>
+						<option value="3">3</option>
+						<option value="5">5</option>
+						<option value="10">10</option>
+						<option value="20">20</option>
+					</select>
+				</div>
+				<div class="flex gap-2">
 				{#each Object.entries(timeRanges) as [key, { label }]}
 					<Button
 						variant={timeRange === key ? 'default' : 'secondary'}
@@ -127,6 +203,7 @@
 						{label}
 					</Button>
 				{/each}
+				</div>
 			</div>
 		</Card.Title>
 		<Card.Description></Card.Description>
@@ -163,6 +240,7 @@
 		</div>
 	</Card.Footer>
 </Card.Root>
+</div>
 
 <style>
 	/* Ensure canvas is responsive */

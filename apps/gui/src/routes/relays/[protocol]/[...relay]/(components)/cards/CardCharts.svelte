@@ -1,27 +1,31 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import * as Card from '$lib/components/ui/card';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { generateRelayUrlFromPath } from '$utils/routing';
+	import { observeInView, type InViewChangeDetail } from '$utils/ux';
 	import {
-		syncRelay,
-		unsyncRelay,
+		subscribeRelayDeltas,
+		type RelayDeltasSubscriptionHandle,
+		updateRelayDeltasSince,
 		getTimeSeriesData,
-		getUptimeHistory,
-		isSyncing
+		getDeltaEvents,
 	} from '$lib/stores/chronicle';
+	import { buildDeltaBlotterPoints } from '$utils/delta-blotter';
 	import { createChartJsAdapter } from '@nostrwatch/relay-charts/chartjs';
 	import Chart from 'chart.js/auto';
 
 	const relayUrl = generateRelayUrlFromPath() as string;
 
 	let rttCanvas: HTMLCanvasElement;
-	let uptimeCanvas: HTMLCanvasElement;
+	let changesCanvas: HTMLCanvasElement;
 	let rttChart: any = null;
-	let uptimeChart: any = null;
+	let changesChart: any = null;
 	let loading = true;
 	let error: string | null = null;
 	let syncing = false;
+	let inView = false;
+	let subscription: RelayDeltasSubscriptionHandle | null = null;
 	let timeRange = '24h'; // Default time range
 
 	// Time range options
@@ -38,110 +42,160 @@
 		(globalThis as any).Chart = Chart;
 	}
 
-	onMount(async () => {
-		await loadCharts();
-	});
-
 	onDestroy(async () => {
 		// Clean up charts
 		if (rttChart) {
 			rttChart.destroy();
 			rttChart = null;
 		}
-		if (uptimeChart) {
-			uptimeChart.destroy();
-			uptimeChart = null;
+		if (changesChart) {
+			changesChart.destroy();
+			changesChart = null;
 		}
 
-		// Stop syncing when card is destroyed
-		if (isSyncing(relayUrl)) {
-			await unsyncRelay(relayUrl);
+		if (subscription) {
+			await subscription.stop();
+			subscription = null;
 		}
 	});
 
+	async function startVisibleSync() {
+		const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		subscription = subscribeRelayDeltas(relayUrl, { since });
+		syncing = true;
+		try {
+			await subscription.ready;
+		} finally {
+			syncing = false;
+		}
+	}
+
+	async function handleInViewChange(e: CustomEvent<InViewChangeDetail>) {
+		const nextInView = Boolean(e.detail?.inView);
+		if (nextInView === inView) return;
+		inView = nextInView;
+
+		if (!inView) {
+			if (subscription) {
+				void subscription.stop();
+				subscription = null;
+			}
+			return;
+		}
+
+		if (!subscription) {
+			try {
+				await startVisibleSync();
+			} catch (err) {
+				console.warn('[CardCharts] Failed to start visible sync:', err);
+			}
+		}
+
+		await loadCharts();
+	}
+
 	async function loadCharts() {
+		if (!inView) return;
+
 		loading = true;
 		error = null;
 
+		let rttData: any[] = [];
+		let blotterPoints: any[] = [];
+
 		try {
-			const adapter = createChartJsAdapter();
 			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
-
-			// Start syncing the relay if not already syncing
-			if (!isSyncing(relayUrl)) {
-				syncing = true;
-				await syncRelay(relayUrl, {
-					since,
-					keepAlive: false, // One-time fetch
-				});
-
-				// Wait a moment for events to arrive
-				await new Promise(resolve => setTimeout(resolve, 1000));
-				syncing = false;
-			}
+			const aggregate =
+				timeRange === '30d'
+					? { bucketSize: 86400, fn: 'avg' as const }
+					: undefined;
 
 			// Get RTT time series data
-			const rttData = await getTimeSeriesData({
+			rttData = await getTimeSeriesData({
 				relay: relayUrl,
 				type: 'rtt',
 				since,
+				aggregate,
 			});
 
-			// Get uptime periods
-			const uptimeData = await getUptimeHistory(relayUrl, { since });
-
-			// Create RTT chart
-			if (rttData && rttData.length > 0) {
-				const rttConfig = adapter.createTimeSeriesChart(rttData, {
-					title: 'Response Time (RTT)',
-					theme: 'dark',
-					showGrid: true,
-					showTooltip: true,
-					responsive: true,
-				});
-
-				if (rttChart) {
-					rttChart.destroy();
-				}
-
-				if (rttCanvas) {
-					rttChart = new Chart(rttCanvas.getContext('2d')!, rttConfig);
-				}
-			}
-
-			// Create uptime timeline chart
-			if (uptimeData && uptimeData.length > 0) {
-				const uptimeConfig = adapter.createTimelineChart(uptimeData, {
-					title: 'Uptime Timeline',
-					theme: 'dark',
-					showGrid: true,
-					showTooltip: true,
-					responsive: true,
-				});
-
-				if (uptimeChart) {
-					uptimeChart.destroy();
-				}
-
-				if (uptimeCanvas) {
-					uptimeChart = new Chart(uptimeCanvas.getContext('2d')!, uptimeConfig);
-				}
-			}
-
-			loading = false;
+			// Get delta blotter points
+			const deltaEvents = await getDeltaEvents({ relay: relayUrl, since });
+			blotterPoints = buildDeltaBlotterPoints(deltaEvents);
 		} catch (err: any) {
 			console.error('[CardCharts] Error loading charts:', err);
 			error = err.message || 'Failed to load charts';
+		} finally {
 			loading = false;
+		}
+
+		if (error) return;
+
+		// Ensure canvases are mounted before creating Chart.js instances.
+		await tick();
+
+		const adapter = createChartJsAdapter();
+
+		// Create RTT chart
+		if (rttData && rttData.length > 0) {
+			const rttConfig = adapter.createTimeSeriesChart(rttData, {
+				title: 'Response Time (RTT)',
+				theme: 'dark',
+				showGrid: true,
+				showTooltip: true,
+				responsive: true,
+			});
+
+			if (rttChart) {
+				rttChart.destroy();
+			}
+
+			if (rttCanvas) {
+				rttChart = new Chart(rttCanvas.getContext('2d')!, rttConfig);
+			}
+		} else if (rttChart) {
+			rttChart.destroy();
+			rttChart = null;
+		}
+
+		// Create delta blotter chart
+		if (blotterPoints && blotterPoints.length > 0) {
+			const changesConfig = adapter.createDeltaBlotterChart(blotterPoints, {
+				title: 'Delta Changes',
+				theme: 'dark',
+				showGrid: true,
+				showTooltip: true,
+				showLegend: true,
+				responsive: true,
+			});
+
+			if (changesChart) {
+				changesChart.destroy();
+			}
+
+			if (changesCanvas) {
+				changesChart = new Chart(changesCanvas.getContext('2d')!, changesConfig);
+			}
+		} else if (changesChart) {
+			changesChart.destroy();
+			changesChart = null;
 		}
 	}
 
 	async function changeTimeRange(range: string) {
 		timeRange = range;
+		if (inView) {
+			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+			if (subscription) {
+				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
+			} else {
+				void startVisibleSync().catch(() => {});
+			}
+		}
 		await loadCharts();
 	}
 </script>
 
+<div use:observeInView={{ threshold: 0.25, debounceMs: 150 }} on:inviewchange={handleInViewChange}>
 <Card.Root class="w-full bg-black/20 border-white/10 rounded-[3px]">
 	<Card.Header>
 		<Card.Title class='font-mono text-white/80 flex items-center justify-between'>
@@ -188,9 +242,9 @@
 					<canvas bind:this={rttCanvas} style="max-height: 300px;"></canvas>
 				</div>
 
-				<!-- Uptime Timeline Chart -->
+				<!-- Delta Changes Chart -->
 				<div class="bg-black/30 p-4 rounded">
-					<canvas bind:this={uptimeCanvas} style="max-height: 300px;"></canvas>
+					<canvas bind:this={changesCanvas} style="max-height: 300px;"></canvas>
 				</div>
 			</div>
 		{/if}
@@ -201,6 +255,7 @@
 		</div>
 	</Card.Footer>
 </Card.Root>
+</div>
 
 <style>
 	/* Ensure canvas is responsive */

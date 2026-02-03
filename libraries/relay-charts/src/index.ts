@@ -23,6 +23,8 @@ export type {
   ChartData,
   ChartOptions,
   ChartDataType,
+  DeltaBlotterItem,
+  DeltaBlotterPoint,
   TimeSeriesPoint,
   UptimePeriod,
   StateChange,

@@ -103,16 +103,81 @@ export class ChronicleService extends Service {
   private kind1066Subscriptions: Map<string, string> = new Map();
   private syncInFlight: Map<string, Promise<void>> = new Map();
 
+  private aggregateTimeSeries(
+    points: TimeSeriesPoint[],
+    bucketSize: number,
+    fn: 'avg' | 'min' | 'max' | 'sum'
+  ): TimeSeriesPoint[] {
+    if (!Array.isArray(points) || points.length === 0) return [];
+    if (!Number.isFinite(bucketSize) || bucketSize <= 0) return points;
+
+    const buckets = new Map<number, { values: number[]; eventId?: string }>();
+
+    for (const point of points) {
+      const timestamp = point?.timestamp;
+      if (typeof timestamp !== 'number' || !Number.isFinite(timestamp)) continue;
+
+      const bucketTimestamp = Math.floor(timestamp / bucketSize) * bucketSize;
+
+      const raw = (point as any)?.value;
+      const value =
+        typeof raw === 'number'
+          ? raw
+          : typeof raw === 'boolean'
+            ? raw
+              ? 1
+              : 0
+            : null;
+      if (value == null || !Number.isFinite(value)) continue;
+
+      const bucket = buckets.get(bucketTimestamp) ?? { values: [] as number[] };
+      bucket.values.push(value);
+      if ((point as any)?.eventId) bucket.eventId = (point as any).eventId;
+      buckets.set(bucketTimestamp, bucket);
+    }
+
+    const aggregated: TimeSeriesPoint[] = [];
+    buckets.forEach((bucket, timestamp) => {
+      const values = bucket.values;
+      if (!values.length) return;
+
+      let aggregatedValue = 0;
+      switch (fn) {
+        case 'avg':
+          aggregatedValue = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+          break;
+        case 'min':
+          aggregatedValue = Math.min(...values);
+          break;
+        case 'max':
+          aggregatedValue = Math.max(...values);
+          break;
+        case 'sum':
+          aggregatedValue = values.reduce((a: number, b: number) => a + b, 0);
+          break;
+      }
+
+      aggregated.push({
+        timestamp,
+        date: new Date(timestamp * 1000).toISOString(),
+        value: aggregatedValue,
+        ...(bucket.eventId ? { eventId: bucket.eventId } : {}),
+      } as any);
+    });
+
+    return aggregated.sort((a, b) => a.timestamp - b.timestamp);
+  }
+
   private normalizeRelayKey(relay: string): string {
     const trimmed = (relay || '').trim();
     if (!trimmed) return '';
-    return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+    return trimmed.replace(/\/+$/, '');
   }
 
   private relayTagValues(relay: string): string[] {
     const trimmed = (relay || '').trim();
     if (!trimmed) return [];
-    const withoutTrailingSlash = trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+    const withoutTrailingSlash = trimmed.replace(/\/+$/, '');
     const withTrailingSlash = `${withoutTrailingSlash}/`;
     return Array.from(new Set([trimmed, withoutTrailingSlash, withTrailingSlash]));
   }
@@ -247,12 +312,15 @@ export class ChronicleService extends Service {
     const task = (async () => {
       const relayValues = this.relayTagValues(relay);
 
-      // Build filter for Kind 1066 delta events
-      // Note: Don't use 'since' filter - relays may not index Kind 1066 by time properly
+      // Build filter for Kind 1066 delta events.
+      // Include both trailing-slash and non-trailing-slash relay tag variants.
       const filter: Filter = {
         kinds: [1066],
         '#r': relayValues,
       };
+      if (typeof options?.since === 'number' && Number.isFinite(options.since)) {
+        filter.since = options.since;
+      }
 
       const filters: Filter[] = [filter];
 
@@ -438,14 +506,14 @@ export class ChronicleService extends Service {
         console.warn(`[Chronicle] Unknown time series type: ${options.type}`);
     }
 
-    // TODO: Apply aggregation if specified
-    // if (options.aggregate) {
-    //   timeSeries = aggregateTimeSeries(
-    //     timeSeries,
-    //     options.aggregate.bucketSize,
-    //     options.aggregate.fn
-    //   );
-    // }
+    // Apply aggregation if specified
+    if (options.aggregate) {
+      timeSeries = this.aggregateTimeSeries(
+        timeSeries,
+        options.aggregate.bucketSize,
+        options.aggregate.fn
+      );
+    }
 
     return timeSeries;
   }
@@ -482,6 +550,29 @@ export class ChronicleService extends Service {
       online: period.type === 'uptime',
       rtt: undefined, // TODO: Extract RTT from period if available
     }));
+  }
+
+  /**
+   * Get raw Kind 1066 delta events for a relay
+   *
+   * Queries memory first (events captured during sync), then falls back to cache storage.
+   * Optionally syncs the relay first if autoSync is enabled.
+   */
+  async getDeltaEvents(options: QueryOptions): Promise<IDeltaEvent[]> {
+    await this.ready();
+
+    if (this.options.autoSync && !this.kind1066Subscriptions.has(options.relay)) {
+      await this.syncRelay(options.relay, { since: options.since });
+    }
+
+    const memoryStorage = this.getMemoryStorage();
+    let events = await memoryStorage.query(options);
+
+    if (events.length === 0) {
+      events = await this.storage.query(options);
+    }
+
+    return events;
   }
 
   /**

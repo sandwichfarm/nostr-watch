@@ -21,21 +21,30 @@ const STORAGE_KEY = 'nostrwatch:preferences';
 export interface AppPreferences {
     showDebugButton: boolean;
     logLevel: LogLevel;
+    relayInsightsCardView: RelayInsightsCardView;
 }
+
+export type RelayInsightsCardView = 'percent' | 'count' | 'chart';
 
 const DEFAULT_PREFERENCES: AppPreferences = {
     showDebugButton: false,
-    logLevel: 'warn'
+    logLevel: 'warn',
+    relayInsightsCardView: 'percent'
 };
 
 function normalizePreferences(value: unknown): AppPreferences {
     if (!value || typeof value !== 'object') return { ...DEFAULT_PREFERENCES };
     const raw = value as Partial<AppPreferences>;
+    const view = (raw as any)?.relayInsightsCardView;
     return {
         ...DEFAULT_PREFERENCES,
         ...raw,
         showDebugButton: Boolean(raw.showDebugButton),
-        logLevel: normalizeLogLevel((raw as any).logLevel, DEFAULT_PREFERENCES.logLevel)
+        logLevel: normalizeLogLevel((raw as any).logLevel, DEFAULT_PREFERENCES.logLevel),
+        relayInsightsCardView:
+            view === 'percent' || view === 'count' || view === 'chart'
+                ? view
+                : DEFAULT_PREFERENCES.relayInsightsCardView
     };
 }
 
@@ -141,6 +150,16 @@ function createPreferencesStore() {
             update(p => ({ ...p, logLevel: value }));
         },
 
+        setRelayInsightsCardView(value: RelayInsightsCardView) {
+            update(p => ({
+                ...p,
+                relayInsightsCardView:
+                    value === 'percent' || value === 'count' || value === 'chart'
+                        ? value
+                        : DEFAULT_PREFERENCES.relayInsightsCardView
+            }));
+        },
+
         reset() {
             set({ ...DEFAULT_PREFERENCES });
         }
@@ -161,3 +180,13 @@ export const logLevel = {
         return preferences.subscribe(p => fn(p.logLevel));
     }
 };
+
+export const relayInsightsCardView = {
+    subscribe: (fn: (value: RelayInsightsCardView) => void) => {
+        return preferences.subscribe(p => fn(p.relayInsightsCardView));
+    }
+};
+
+export function setRelayInsightsCardView(value: RelayInsightsCardView) {
+    preferences.setRelayInsightsCardView(value);
+}

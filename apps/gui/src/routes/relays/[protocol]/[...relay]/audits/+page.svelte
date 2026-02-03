@@ -215,7 +215,7 @@
         if (suiteKeys?.length) {
             auditResults.update((suites) => {
                 const existingKeys = new Set(suites.map((s) => s.suiteKey));
-                const nextKeys = sortSuites(Array.from(new Set([...suiteKeys])));
+                const nextKeys = sortSuites(Array.from(audit.suites));
 
                 const nextSuites = suites.map((suite) =>
                     nextKeys.includes(suite.suiteKey) ? pendingSuite(suite.suiteKey) : suite

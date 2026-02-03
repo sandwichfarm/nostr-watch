@@ -21,6 +21,7 @@
 	let loading = true;
 	let error: string | null = null;
 	let syncing = false;
+	let hydrating = false;
 	let inView = false;
 	let subscription: RelayDeltasSubscriptionHandle | null = null;
 	let timeRange = '24h'; // Default time range
@@ -40,12 +41,42 @@
 		(globalThis as any).Chart = Chart;
 	}
 
+	const DEFAULT_SMA_PAD_SECONDS = 3600;
+
+	function getVisibleSinceSeconds(): number {
+		return Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+	}
+
+	function getSmaWindow(): number {
+		return Math.max(0, Math.floor(Number(smaWindow) || 0));
+	}
+
+	function getChartSinceSeconds(
+		visibleSinceSeconds: number,
+		smaWindowNum: number,
+		aggregate?: { bucketSize: number }
+	): number {
+		if (smaWindowNum <= 1) return visibleSinceSeconds;
+		const padSeconds = aggregate?.bucketSize
+			? aggregate.bucketSize * smaWindowNum
+			: DEFAULT_SMA_PAD_SECONDS * smaWindowNum;
+		return Math.max(0, visibleSinceSeconds - padSeconds);
+	}
+
+	function getClampSinceSeconds(visibleSinceSeconds: number, aggregate?: { bucketSize: number }): number {
+		if (!aggregate?.bucketSize) return visibleSinceSeconds;
+		return Math.floor(visibleSinceSeconds / aggregate.bucketSize) * aggregate.bucketSize;
+	}
+
 	onDestroy(async () => {
 		// Clean up chart
 		if (rttChart) {
 			rttChart.destroy();
 			rttChart = null;
 		}
+
+		hydrateToken++;
+		hydrating = false;
 
 		if (subscription) {
 			await subscription.stop();
@@ -54,7 +85,10 @@
 	});
 
 	async function startVisibleSync() {
-		const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		const visibleSince = getVisibleSinceSeconds();
+		const smaWindowNum = getSmaWindow();
+		const aggregate = timeRange === '30d' ? { bucketSize: 86400, fn: 'avg' as const } : undefined;
+		const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
 		subscription = subscribeRelayDeltas(relayUrl, { since });
 		syncing = true;
 		try {
@@ -70,6 +104,8 @@
 		inView = nextInView;
 
 		if (!inView) {
+			hydrateToken++;
+			hydrating = false;
 			if (subscription) {
 				void subscription.stop();
 				subscription = null;
@@ -85,25 +121,64 @@
 			}
 		}
 
-		await loadChart();
+		await hydrateChart();
 	}
 
-	async function loadChart() {
+	let hydrateToken = 0;
+
+	async function hydrateChart() {
 		if (!inView) return;
+		const token = ++hydrateToken;
+		hydrating = true;
+		const delaysMs = timeRange === '30d' ? [0, 400, 900, 1500, 2500, 4000] : [0, 250, 600, 1200, 2200];
+		let lastPoints = -1;
+		let stable = 0;
+		try {
+			for (const delayMs of delaysMs) {
+				if (token !== hydrateToken || !inView) return;
+				if (delayMs > 0) {
+					await new Promise((resolve) => setTimeout(resolve, delayMs));
+				}
+				if (token !== hydrateToken || !inView) return;
+				const points = await loadChart({ background: delayMs > 0 });
+				if (token !== hydrateToken || !inView) return;
+				if (points > 0) {
+					stable = points === lastPoints ? stable + 1 : 0;
+					lastPoints = points;
+					if (stable >= 1) break;
+				}
+			}
+		} finally {
+			if (token === hydrateToken) {
+				hydrating = false;
+			}
+		}
+	}
 
-		loading = true;
-		error = null;
+	async function loadChart(opts?: { background?: boolean }): Promise<number> {
+		if (!inView) return 0;
 
+		const background = opts?.background ?? false;
+		if (!background) {
+			loading = true;
+			error = null;
+		}
+
+		const visibleSince = getVisibleSinceSeconds();
+		const smaWindowNum = getSmaWindow();
 		let rttData: any[] = [];
 
 		try {
-			const adapter = createChartJsAdapter();
-			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
-			const smaWindowNum = Math.max(0, Math.floor(Number(smaWindow) || 0));
 			const aggregate =
 				timeRange === '30d'
 					? { bucketSize: 86400, fn: 'avg' as const }
 					: undefined;
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
+
+			// When SMA is enabled we need pre-range data to compute the first SMA point.
+			if (smaWindowNum > 1 && subscription) {
+				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
+			}
 
 			// Get RTT time series data
 			rttData = await getTimeSeriesData({
@@ -112,21 +187,28 @@
 				since,
 				aggregate,
 			});
-			console.log('[CardRtt] RTT data received:', rttData?.length, 'points', rttData?.slice(0, 3));
 		} catch (err: any) {
 			console.error('[CardRtt] Error loading chart:', err);
-			error = err.message || 'Failed to load RTT chart';
+			if (!background) {
+				error = err.message || 'Failed to load RTT chart';
+			}
 		} finally {
-			loading = false;
+			if (!background) {
+				loading = false;
+			}
 		}
 
-		if (error) return;
+		if (error) return 0;
 
 		// Ensure canvas is mounted before creating Chart.js instance.
 		await tick();
 
 		const adapter = createChartJsAdapter();
-		const smaWindowNum = Math.max(0, Math.floor(Number(smaWindow) || 0));
+		const aggregate =
+			timeRange === '30d'
+				? { bucketSize: 86400, fn: 'avg' as const }
+				: undefined;
+		const clampSince = getClampSinceSeconds(visibleSince, aggregate);
 
 		// Create RTT chart
 		if (rttData && rttData.length > 0) {
@@ -139,35 +221,69 @@
 				...(smaWindowNum > 1 ? { sma: { window: smaWindowNum } } : {})
 			});
 
-			if (rttChart) {
-				rttChart.destroy();
+			if (smaWindowNum > 1) {
+				(rttConfig.options as any).scales.x.min = new Date(clampSince * 1000);
 			}
 
 			if (rttCanvas) {
-				rttChart = new Chart(rttCanvas.getContext('2d')!, rttConfig);
+				if (rttChart) {
+					rttChart.config.data = rttConfig.data;
+					rttChart.config.options = rttConfig.options;
+					rttChart.update('none');
+				} else {
+					rttChart = new Chart(rttCanvas.getContext('2d')!, rttConfig);
+				}
 			}
 		} else if (rttChart) {
 			rttChart.destroy();
 			rttChart = null;
 		}
+
+		return rttData.length;
 	}
 
 	async function changeTimeRange(range: string) {
+		hydrateToken++;
 		timeRange = range;
 		if (inView) {
-			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+			const visibleSince = getVisibleSinceSeconds();
+			const smaWindowNum = getSmaWindow();
+			const aggregate = timeRange === '30d' ? { bucketSize: 86400, fn: 'avg' as const } : undefined;
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
 			if (subscription) {
-				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
+				syncing = true;
+				try {
+					await updateRelayDeltasSince(relayUrl, { since });
+				} catch {}
+				finally {
+					syncing = false;
+				}
 			} else {
 				void startVisibleSync().catch(() => {});
 			}
 		}
-		await loadChart();
+		await hydrateChart();
 	}
 
 	async function changeSmaWindow(window: string) {
+		hydrateToken++;
 		smaWindow = window;
-		await loadChart();
+		if (inView) {
+			const visibleSince = getVisibleSinceSeconds();
+			const smaWindowNum = getSmaWindow();
+			const aggregate = timeRange === '30d' ? { bucketSize: 86400, fn: 'avg' as const } : undefined;
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
+			if (subscription) {
+				syncing = true;
+				try {
+					await updateRelayDeltasSince(relayUrl, { since });
+				} catch {}
+				finally {
+					syncing = false;
+				}
+			}
+		}
+		await hydrateChart();
 	}
 </script>
 
@@ -183,7 +299,7 @@
 						class="h-8 rounded-md border border-white/10 bg-black/30 px-2 text-xs text-white/80"
 						value={smaWindow}
 						on:change={(e) => changeSmaWindow((e.target as HTMLSelectElement).value)}
-						disabled={loading || syncing}
+						disabled={loading || syncing || hydrating}
 					>
 						<option value="0">Off</option>
 						<option value="3">3</option>
@@ -198,7 +314,7 @@
 						variant={timeRange === key ? 'default' : 'secondary'}
 						size="sm"
 						on:click={() => changeTimeRange(key)}
-						disabled={loading || syncing}
+						disabled={loading || syncing || hydrating}
 					>
 						{label}
 					</Button>
@@ -209,30 +325,32 @@
 		<Card.Description></Card.Description>
 	</Card.Header>
 	<Card.Content>
-		{#if loading || syncing}
-			<div class="flex items-center justify-center p-8">
-				<div class="text-white/60">
-					{syncing ? 'Syncing relay data...' : 'Loading chart...'}
+		<div class="relative bg-black/30 p-4 rounded" style="height: 320px;">
+			<canvas bind:this={rttCanvas}></canvas>
+
+			{#if error}
+				<div class="absolute inset-0 flex items-center justify-center rounded bg-black/70 p-6">
+					<div class="max-w-md text-center">
+						<div class="text-red-300 font-semibold">Error loading chart</div>
+						<div class="mt-1 text-sm text-red-200/80">{error}</div>
+						<Button
+							variant="secondary"
+							size="sm"
+							class="mt-4"
+							on:click={() => hydrateChart()}
+						>
+							Retry
+						</Button>
+					</div>
 				</div>
-			</div>
-		{:else if error}
-			<div class="bg-red-900/20 border border-red-500/30 rounded p-4 text-red-300">
-				<p class="font-semibold">Error loading chart</p>
-				<p class="text-sm mt-1">{error}</p>
-				<Button
-					variant="secondary"
-					size="sm"
-					class="mt-3"
-					on:click={() => loadChart()}
-				>
-					Retry
-				</Button>
-			</div>
-		{:else}
-			<div class="bg-black/30 p-4 rounded">
-				<canvas bind:this={rttCanvas} style="max-height: 300px;"></canvas>
-			</div>
-		{/if}
+			{:else if loading || syncing || hydrating}
+				<div class="absolute inset-0 flex items-center justify-center rounded bg-black/60">
+					<div class="text-white/60">
+						{syncing ? 'Syncing relay data...' : hydrating ? 'Hydrating chart data…' : 'Loading chart...'}
+					</div>
+				</div>
+			{/if}
+		</div>
 	</Card.Content>
 	<Card.Footer>
 		<div class="text-xs text-white/40">
@@ -246,6 +364,6 @@
 	/* Ensure canvas is responsive */
 	canvas {
 		width: 100% !important;
-		height: auto !important;
+		height: 100% !important;
 	}
 </style>

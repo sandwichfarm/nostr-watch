@@ -1,11 +1,15 @@
 <script lang="ts">
 	import AlwaysSquare from "$lib/components/partials/AlwaysSquare.svelte";
+	import DonutRing from "$lib/components/partials/DonutRing.svelte";
 import { onMount } from "svelte";
 	import { writable, type Readable, type Writable } from "svelte/store";
 	import { fly, fade } from "svelte/transition";
 
 	export let topText: string | undefined = undefined;
 	export let value: Readable<string | number | null>;
+	export let display: 'text' | 'donut' = 'text';
+	export let donutPercent: number | null = null;
+	export let donutTitle: string | undefined = undefined;
 	export let link: string | undefined = undefined;
 	export let bottomText: string | undefined = undefined;
     export let index: number = 0;
@@ -24,17 +28,21 @@ import { onMount } from "svelte";
 	<AlwaysSquare>
 	<div class="hp-card {innerClass? innerClass: 'bg-white/10 dark:bg-black/10'}">
 		
-		{#if $show && $value !== null && $value !== undefined}
+		{#if $show && (($value !== null && $value !== undefined) || (display === 'donut' && donutPercent !== null && donutPercent !== undefined))}
 			<div class="content" in:fade>
                 <div in:fly={{ y: 20, duration: 300 }}>
 					{#if topText}
                     <div class="label text-center">{@html topText}</div>
 					{/if}
                     <div class="value text-7xl font-bold text-center">
-						{#if link}
-							<a href={link}>{@html $value}</a>
+						{#if display === 'donut' && donutPercent !== null && donutPercent !== undefined}
+							<DonutRing percent={donutPercent} title={donutTitle} />
 						{:else}
-							{@html $value}
+							{#if link}
+								<a href={link}>{@html $value}</a>
+							{:else}
+								{@html $value}
+							{/if}
 						{/if}
                         
                     </div>

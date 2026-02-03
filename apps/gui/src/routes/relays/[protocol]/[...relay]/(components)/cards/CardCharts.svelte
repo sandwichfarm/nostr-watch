@@ -39,6 +39,33 @@
 		'30d': { label: '30 Days', seconds: 2592000 },
 	};
 
+	const DEFAULT_SMA_PAD_SECONDS = 3600;
+
+	function getVisibleSinceSeconds(): number {
+		return Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+	}
+
+	function getSmaWindow(): number {
+		return Math.max(0, Math.floor(Number(smaWindow) || 0));
+	}
+
+	function getChartSinceSeconds(
+		visibleSinceSeconds: number,
+		smaWindowNum: number,
+		aggregate?: { bucketSize: number }
+	): number {
+		if (smaWindowNum <= 1) return visibleSinceSeconds;
+		const padSeconds = aggregate?.bucketSize
+			? aggregate.bucketSize * smaWindowNum
+			: DEFAULT_SMA_PAD_SECONDS * smaWindowNum;
+		return Math.max(0, visibleSinceSeconds - padSeconds);
+	}
+
+	function getClampSinceSeconds(visibleSinceSeconds: number, aggregate?: { bucketSize: number }): number {
+		if (!aggregate?.bucketSize) return visibleSinceSeconds;
+		return Math.floor(visibleSinceSeconds / aggregate.bucketSize) * aggregate.bucketSize;
+	}
+
 	// Make Chart.js available globally for the adapter
 	if (typeof window !== 'undefined') {
 		(globalThis as any).Chart = Chart;
@@ -62,7 +89,10 @@
 	});
 
 	async function startVisibleSync() {
-		const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		const visibleSince = getVisibleSinceSeconds();
+		const smaWindowNum = getSmaWindow();
+		const aggregate = timeRange === '30d' ? { bucketSize: 86400, fn: 'avg' as const } : undefined;
+		const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
 		subscription = subscribeRelayDeltas(relayUrl, { since });
 		syncing = true;
 		try {
@@ -106,11 +136,18 @@
 		let blotterPoints: any[] = [];
 
 		try {
-			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+			const visibleSince = getVisibleSinceSeconds();
+			const smaWindowNum = getSmaWindow();
 			const aggregate =
 				timeRange === '30d'
 					? { bucketSize: 86400, fn: 'avg' as const }
 					: undefined;
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
+
+			// When SMA is enabled we need pre-range data to compute the first SMA point.
+			if (smaWindowNum > 1 && subscription) {
+				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
+			}
 
 			// Get RTT time series data
 			rttData = await getTimeSeriesData({
@@ -136,10 +173,13 @@
 		await tick();
 
 		const adapter = createChartJsAdapter();
+		const smaWindowNum = getSmaWindow();
+		const visibleSince = getVisibleSinceSeconds();
+		const aggregate = timeRange === '30d' ? { bucketSize: 86400, fn: 'avg' as const } : undefined;
+		const clampSince = getClampSinceSeconds(visibleSince, aggregate);
 
 		// Create RTT chart
 		if (rttData && rttData.length > 0) {
-			const smaWindowNum = Math.max(0, Math.floor(Number(smaWindow) || 0));
 			const rttConfig = adapter.createTimeSeriesChart(rttData, {
 				title: 'Response Time (RTT)',
 				theme: 'dark',
@@ -148,6 +188,10 @@
 				responsive: true,
 				...(smaWindowNum > 1 ? { sma: { window: smaWindowNum } } : {}),
 			});
+
+			if (smaWindowNum > 1) {
+				(rttConfig.options as any).scales.x.min = new Date(clampSince * 1000);
+			}
 
 			if (rttChart) {
 				rttChart.destroy();
@@ -188,7 +232,10 @@
 	async function changeTimeRange(range: string) {
 		timeRange = range;
 		if (inView) {
-			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+			const visibleSince = getVisibleSinceSeconds();
+			const smaWindowNum = getSmaWindow();
+			const aggregate = timeRange === '30d' ? { bucketSize: 86400, fn: 'avg' as const } : undefined;
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
 			if (subscription) {
 				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
 			} else {
@@ -200,6 +247,15 @@
 
 	async function changeSmaWindow(window: string) {
 		smaWindow = window;
+		if (inView) {
+			const visibleSince = getVisibleSinceSeconds();
+			const smaWindowNum = getSmaWindow();
+			const aggregate = timeRange === '30d' ? { bucketSize: 86400, fn: 'avg' as const } : undefined;
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
+			if (subscription) {
+				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
+			}
+		}
 		await loadCharts();
 	}
 </script>

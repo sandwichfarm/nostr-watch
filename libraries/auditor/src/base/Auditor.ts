@@ -11,6 +11,9 @@ import { suiteTests } from '#src/nips/suite-test-manifest.js';
 type SuiteSet = Set<string>;
 type SuiteConstructor = new (socket: WebSocket) => Suite;
 
+const isRunnableSuiteKey = (suiteKey: string): boolean =>
+  Boolean((nipManifest as any)?.[suiteKey]) && Boolean((suiteTests as any)?.[suiteKey]);
+
 const resolveSuiteConstructor = (mod: unknown, suiteSlug: string): SuiteConstructor => {
   const candidates: unknown[] = [
     (mod as any)?.default?.default,
@@ -80,7 +83,13 @@ export class Auditor {
   constructor(conf?: IAuditorConf) {
     if(conf) this._conf = conf;
     if(this._conf.nips.size) {
-      this._suites = this._conf.nips;
+      const filtered = new Set<string>();
+      for (const suiteKey of this._conf.nips) {
+        if (isRunnableSuiteKey(suiteKey)) {
+          filtered.add(suiteKey);
+        }
+      }
+      this._suites = filtered;
     }
   }
 
@@ -97,6 +106,7 @@ export class Auditor {
   }
 
   addSuite(suite: string, options?: any) {
+    if (!isRunnableSuiteKey(suite)) return;
     this.suites.add(suite);
     if(options) this._conf.options[suite] = options;
   }

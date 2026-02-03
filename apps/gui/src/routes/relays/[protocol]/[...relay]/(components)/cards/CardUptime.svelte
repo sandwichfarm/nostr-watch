@@ -31,6 +31,7 @@
 	let loading = true;
 	let error: string | null = null;
 	let syncing = false;
+	let hydrating = false;
 	let inView = false;
 	let subscription: RelayDeltasSubscriptionHandle | null = null;
 	let timeRange = '24h'; // Default time range
@@ -44,17 +45,38 @@
 	let deltaEvents: DeltaEvent[] = [];
 	let eventsRequestId = 0;
 
-	const DAY_SECONDS = 86400;
-	const UPTIME_COLORS = {
-		up: '#10b981',
-		partial: '#f59e0b',
-		down: '#ef4444',
-	};
+		const DAY_SECONDS = 86400;
+		const DEFAULT_SMA_PAD_SECONDS = 3600;
+		const UPTIME_COLORS = {
+			up: '#10b981',
+			partial: '#f59e0b',
+			down: '#ef4444',
+		};
 
-	function dayKey(timestampSeconds: number): number {
-		return Math.floor(timestampSeconds / DAY_SECONDS) * DAY_SECONDS;
-	}
+		function getVisibleSinceSeconds(): number {
+			return Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		}
 
+		function getSmaWindow(): number {
+			return Math.max(0, Math.floor(Number(smaWindow) || 0));
+		}
+
+		function getChartSinceSeconds(
+			visibleSinceSeconds: number,
+			smaWindowNum: number,
+			aggregate?: { bucketSize: number }
+		): number {
+			if (smaWindowNum <= 1) return visibleSinceSeconds;
+			const padSeconds = aggregate?.bucketSize
+				? aggregate.bucketSize * smaWindowNum
+				: DEFAULT_SMA_PAD_SECONDS * smaWindowNum;
+			return Math.max(0, visibleSinceSeconds - padSeconds);
+		}
+
+		function getClampSinceSeconds(visibleSinceSeconds: number, aggregate?: { bucketSize: number }): number {
+			if (!aggregate?.bucketSize) return visibleSinceSeconds;
+			return Math.floor(visibleSinceSeconds / aggregate.bucketSize) * aggregate.bucketSize;
+		}
 	// Time range options
 	const timeRanges = {
 		'1h': { label: '1 Hour', seconds: 3600 },
@@ -91,6 +113,9 @@
 			uptimeChart = null;
 		}
 
+		hydrateToken++;
+		hydrating = false;
+
 		if (subscription) {
 			await subscription.stop();
 			subscription = null;
@@ -98,7 +123,13 @@
 	});
 
 	async function startVisibleSync() {
-		const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+		const visibleSince = getVisibleSinceSeconds();
+		const smaWindowNum = getSmaWindow();
+		const aggregate =
+			timeRange === '7d' || timeRange === '30d'
+				? { bucketSize: DAY_SECONDS, fn: 'avg' as const }
+				: undefined;
+		const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
 		subscription = subscribeRelayDeltas(relayUrl, { since });
 		syncing = true;
 		try {
@@ -114,6 +145,8 @@
 		inView = nextInView;
 
 		if (!inView) {
+			hydrateToken++;
+			hydrating = false;
 			if (subscription) {
 				void subscription.stop();
 				subscription = null;
@@ -129,78 +162,170 @@
 			}
 		}
 
-		await loadChart();
-
-		void loadEvents().catch(() => {});
+		await hydrateChart();
+		void loadEvents({ reset: true }).catch(() => {});
 	}
 
-	async function loadChart() {
+	let hydrateToken = 0;
+
+	async function hydrateChart() {
 		if (!inView) return;
+		const token = ++hydrateToken;
+		hydrating = true;
+		const delaysMs = timeRange === '30d' ? [0, 400, 900, 1500, 2500, 4000] : [0, 250, 600, 1200, 2200];
+		let lastPoints = -1;
+		let stable = 0;
+		try {
+			for (const delayMs of delaysMs) {
+				if (token !== hydrateToken || !inView) return;
+				if (delayMs > 0) {
+					await new Promise((resolve) => setTimeout(resolve, delayMs));
+				}
+				if (token !== hydrateToken || !inView) return;
+				const points = await loadChart({ background: delayMs > 0 });
+				if (token !== hydrateToken || !inView) return;
+				if (points > 0) {
+					stable = points === lastPoints ? stable + 1 : 0;
+					lastPoints = points;
+					// After we see the same non-zero point count twice, assume the backfill has settled.
+					if (stable >= 1) break;
+				}
+			}
+		} finally {
+			if (token === hydrateToken) {
+				hydrating = false;
+			}
+		}
+	}
 
-		loading = true;
-		error = null;
+	async function loadChart(opts?: { background?: boolean }): Promise<number> {
+		if (!inView) return 0;
 
-		let seriesData: any[] = [];
-		let downtimeColors: string[] | null = null;
+		const background = opts?.background ?? false;
+		if (!background) {
+			loading = true;
+			error = null;
+		}
+
+		type UptimeChartState = 'up' | 'partial' | 'down';
+		type UptimeChartPoint = { timestamp: number; value: number; state: UptimeChartState };
+
+		let seriesData: UptimeChartPoint[] = [];
 
 		try {
-			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
-			const includeDowntimeIndicators = timeRange === '7d' || timeRange === '30d';
+			const visibleSince = getVisibleSinceSeconds();
+			const smaWindowNum = getSmaWindow();
 			const aggregate =
 				timeRange === '7d' || timeRange === '30d'
 					? { bucketSize: DAY_SECONDS, fn: 'avg' as const }
 					: undefined;
+			const clampSince = getClampSinceSeconds(visibleSince, aggregate);
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
+			const until = Math.floor(Date.now() / 1000);
 
-			seriesData = await getTimeSeriesData({
-				relay: relayUrl,
-				type: 'rtt',
-				since,
-				aggregate,
-			});
+			if (subscription) {
+				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
+			}
 
-			if (includeDowntimeIndicators && seriesData?.length) {
-				const uptimeData = await getTimeSeriesData({
-					relay: relayUrl,
-					type: 'uptime',
-					since,
-				});
+			if (aggregate) {
+				const [rttAgg, uptimeAgg] = await Promise.all([
+					getTimeSeriesData({
+						relay: relayUrl,
+						type: 'rtt',
+						since,
+						aggregate,
+					}),
+					getTimeSeriesData({
+						relay: relayUrl,
+						type: 'uptime',
+						since,
+						aggregate,
+					}),
+				]);
 
-				if (uptimeData?.length) {
-					const dayCounts = new Map<number, { total: number; down: number }>();
+				const rttByTimestamp = new Map<number, number>();
+				for (const point of rttAgg) {
+					const ts = Number((point as any)?.timestamp);
+					const value = Number((point as any)?.value);
+					if (!Number.isFinite(ts) || !Number.isFinite(value)) continue;
+					rttByTimestamp.set(ts, value);
+				}
 
-					for (const point of uptimeData) {
+				seriesData = uptimeAgg
+					.map((point) => {
 						const ts = Number((point as any)?.timestamp);
-						if (!Number.isFinite(ts)) continue;
-						const key = dayKey(ts);
-						const counts = dayCounts.get(key) ?? { total: 0, down: 0 };
-						counts.total += 1;
-						if (Number((point as any)?.value) === 0) counts.down += 1;
-						dayCounts.set(key, counts);
-					}
+						const uptimeFraction = Number((point as any)?.value);
+						if (!Number.isFinite(ts) || !Number.isFinite(uptimeFraction)) return null;
 
-					downtimeColors = seriesData.map((point) => {
-						const key = dayKey(Number((point as any)?.timestamp));
-						const counts = dayCounts.get(key);
-						if (!counts || counts.total === 0 || counts.down === 0) return UPTIME_COLORS.up;
-						if (counts.down === counts.total) return UPTIME_COLORS.down;
-						return UPTIME_COLORS.partial;
-					});
+						const state: UptimeChartState =
+							uptimeFraction <= 0 ? 'down' : uptimeFraction >= 1 ? 'up' : 'partial';
+
+						const rttValue = rttByTimestamp.get(ts);
+						const value = state === 'down' ? 0 : Number.isFinite(rttValue) ? rttValue : 0;
+
+						return { timestamp: ts, value, state };
+					})
+					.filter(Boolean) as UptimeChartPoint[];
+			} else {
+				const events = await getDeltaEvents({ relay: relayUrl, since, until });
+				seriesData = events
+					.map((event) => {
+						const online = isRelayOnline(event);
+						if (online) {
+							const rtt = parseRttOpen(event);
+							if (rtt === undefined) return null;
+							return { timestamp: event.created_at, value: rtt, state: 'up' as const };
+						}
+						return { timestamp: event.created_at, value: 0, state: 'down' as const };
+					})
+					.filter(Boolean) as UptimeChartPoint[];
+			}
+
+			// Ensure the chart covers the full visible time range, even if the last event is old.
+			if (seriesData.length > 0) {
+				let startPoint = seriesData[0]!;
+				for (const point of seriesData) {
+					if (point.timestamp <= clampSince) startPoint = point;
+					else break;
+				}
+
+				const hasStart = seriesData.some((point) => point.timestamp === clampSince);
+				if (!hasStart) {
+					const insertAt = seriesData.findIndex((point) => point.timestamp > clampSince);
+					const synthetic = { ...startPoint, timestamp: clampSince };
+					if (insertAt === -1) seriesData.push(synthetic);
+					else seriesData.splice(insertAt, 0, synthetic);
+				}
+
+				const lastPoint = seriesData[seriesData.length - 1]!;
+				if (lastPoint.timestamp < until) {
+					seriesData.push({ ...lastPoint, timestamp: until });
 				}
 			}
 		} catch (err: any) {
 			console.error('[CardUptime] Error loading chart:', err);
-			error = err.message || 'Failed to load uptime chart';
+			if (!background) {
+				error = err.message || 'Failed to load uptime chart';
+			}
 		} finally {
-			loading = false;
+			if (!background) {
+				loading = false;
+			}
 		}
 
-		if (error) return;
+		if (error) return 0;
 
 		// Ensure canvas is mounted before creating Chart.js instance.
 		await tick();
 
 		const adapter = createChartJsAdapter();
-		const smaWindowNum = Math.max(0, Math.floor(Number(smaWindow) || 0));
+		const smaWindowNum = getSmaWindow();
+		const visibleSince = getVisibleSinceSeconds();
+		const aggregate =
+			timeRange === '7d' || timeRange === '30d'
+				? { bucketSize: DAY_SECONDS, fn: 'avg' as const }
+				: undefined;
+		const clampSince = getClampSinceSeconds(visibleSince, aggregate);
 
 		// Create uptime chart
 		if (seriesData && seriesData.length > 0) {
@@ -215,26 +340,42 @@
 				...(smaWindowNum > 1 ? { sma: { window: smaWindowNum } } : {})
 			});
 
-			if (Array.isArray(downtimeColors) && downtimeColors.length === seriesData.length) {
-				const main = uptimeConfig.data.datasets[0] as any;
-				main.pointBackgroundColor = downtimeColors;
-				main.pointBorderColor = downtimeColors;
-				main.segment = {
-					borderColor: (ctx: any) => downtimeColors?.[ctx?.p1DataIndex] ?? UPTIME_COLORS.up,
-				};
-			}
+			const until = Math.floor(Date.now() / 1000);
+			(uptimeConfig.options as any).scales.x.min = new Date(clampSince * 1000);
+			(uptimeConfig.options as any).scales.x.max = new Date(until * 1000);
 
-			if (uptimeChart) {
-				uptimeChart.destroy();
-			}
+			const statusColors = seriesData.map((point) =>
+				point.state === 'down'
+					? UPTIME_COLORS.down
+					: point.state === 'partial'
+						? UPTIME_COLORS.partial
+						: UPTIME_COLORS.up
+			);
+
+			const main = uptimeConfig.data.datasets[0] as any;
+			main.fill = false;
+			main.backgroundColor = 'transparent';
+			main.pointBackgroundColor = statusColors;
+			main.pointBorderColor = statusColors;
+			main.segment = {
+				borderColor: (ctx: any) => statusColors?.[ctx?.p1DataIndex] ?? UPTIME_COLORS.up,
+			};
 
 			if (uptimeCanvas) {
-				uptimeChart = new Chart(uptimeCanvas.getContext('2d')!, uptimeConfig);
+				if (uptimeChart) {
+					uptimeChart.config.data = uptimeConfig.data;
+					uptimeChart.config.options = uptimeConfig.options;
+					uptimeChart.update('none');
+				} else {
+					uptimeChart = new Chart(uptimeCanvas.getContext('2d')!, uptimeConfig);
+				}
 			}
 		} else if (uptimeChart) {
 			uptimeChart.destroy();
 			uptimeChart = null;
 		}
+
+		return seriesData.length;
 	}
 
 	async function loadEvents(options?: { reset?: boolean }) {
@@ -289,22 +430,54 @@
 	}
 
 	async function changeTimeRange(range: string) {
+		hydrateToken++;
 		timeRange = range;
 		if (inView) {
-			const since = Math.floor(Date.now() / 1000) - timeRanges[timeRange].seconds;
+			const visibleSince = getVisibleSinceSeconds();
+			const smaWindowNum = getSmaWindow();
+			const aggregate =
+				timeRange === '7d' || timeRange === '30d'
+					? { bucketSize: DAY_SECONDS, fn: 'avg' as const }
+					: undefined;
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
 			if (subscription) {
-				void updateRelayDeltasSince(relayUrl, { since }).catch(() => {});
+				syncing = true;
+				try {
+					await updateRelayDeltasSince(relayUrl, { since });
+				} catch {}
+				finally {
+					syncing = false;
+				}
 			} else {
 				void startVisibleSync().catch(() => {});
 			}
 		}
-		await loadChart();
+		await hydrateChart();
 		await loadEvents({ reset: true });
 	}
 
 	async function changeSmaWindow(window: string) {
+		hydrateToken++;
 		smaWindow = window;
-		await loadChart();
+		if (inView) {
+			const visibleSince = getVisibleSinceSeconds();
+			const smaWindowNum = getSmaWindow();
+			const aggregate =
+				timeRange === '7d' || timeRange === '30d'
+					? { bucketSize: DAY_SECONDS, fn: 'avg' as const }
+					: undefined;
+			const since = getChartSinceSeconds(visibleSince, smaWindowNum, aggregate);
+			if (subscription) {
+				syncing = true;
+				try {
+					await updateRelayDeltasSince(relayUrl, { since });
+				} catch {}
+				finally {
+					syncing = false;
+				}
+			}
+		}
+		await hydrateChart();
 	}
 </script>
 
@@ -320,7 +493,7 @@
 						class="h-8 rounded-md border border-white/10 bg-black/30 px-2 text-xs text-white/80"
 						value={smaWindow}
 						on:change={(e) => changeSmaWindow((e.target as HTMLSelectElement).value)}
-						disabled={loading || syncing}
+						disabled={loading || syncing || hydrating}
 					>
 						<option value="0">Off</option>
 						<option value="3">3</option>
@@ -335,7 +508,7 @@
 							variant={timeRange === key ? 'default' : 'secondary'}
 							size="sm"
 							on:click={() => changeTimeRange(key)}
-							disabled={loading || syncing}
+							disabled={loading || syncing || hydrating}
 						>
 							{label}
 						</Button>
@@ -343,33 +516,35 @@
 				</div>
 			</div>
 		</Card.Title>
-		<Card.Description></Card.Description>
+	<Card.Description></Card.Description>
 	</Card.Header>
 	<Card.Content>
-		{#if loading || syncing}
-			<div class="flex items-center justify-center p-8">
-				<div class="text-white/60">
-					{syncing ? 'Syncing relay data...' : 'Loading chart...'}
+		<div class="relative bg-black/30 p-4 rounded" style="height: 320px;">
+			<canvas bind:this={uptimeCanvas}></canvas>
+
+			{#if error}
+				<div class="absolute inset-0 flex items-center justify-center rounded bg-black/70 p-6">
+					<div class="max-w-md text-center">
+						<div class="text-red-300 font-semibold">Error loading chart</div>
+						<div class="mt-1 text-sm text-red-200/80">{error}</div>
+						<Button
+							variant="secondary"
+							size="sm"
+							class="mt-4"
+							on:click={() => hydrateChart()}
+						>
+							Retry
+						</Button>
+					</div>
 				</div>
-			</div>
-		{:else if error}
-			<div class="bg-red-900/20 border border-red-500/30 rounded p-4 text-red-300">
-				<p class="font-semibold">Error loading chart</p>
-				<p class="text-sm mt-1">{error}</p>
-				<Button
-					variant="secondary"
-					size="sm"
-					class="mt-3"
-					on:click={() => loadChart()}
-				>
-					Retry
-				</Button>
-			</div>
-		{:else}
-			<div class="bg-black/30 p-4 rounded">
-				<canvas bind:this={uptimeCanvas} style="max-height: 300px;"></canvas>
-			</div>
-		{/if}
+			{:else if loading || syncing || hydrating}
+				<div class="absolute inset-0 flex items-center justify-center rounded bg-black/60">
+					<div class="text-white/60">
+						{syncing ? 'Syncing relay data...' : hydrating ? 'Hydrating chart data…' : 'Loading chart...'}
+					</div>
+				</div>
+			{/if}
+		</div>
 
 		<div class="mt-4">
 			<div class="flex items-center justify-between gap-2">
@@ -516,7 +691,7 @@
 	/* Ensure canvas is responsive */
 	canvas {
 		width: 100% !important;
-		height: auto !important;
+		height: 100% !important;
 	}
 
 	details > summary {

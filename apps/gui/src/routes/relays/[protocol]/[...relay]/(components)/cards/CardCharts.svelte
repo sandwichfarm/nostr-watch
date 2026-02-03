@@ -14,6 +14,7 @@
 	import { buildDeltaBlotterPoints } from '$utils/delta-blotter';
 	import { createChartJsAdapter } from '@nostrwatch/relay-charts/chartjs';
 	import Chart from 'chart.js/auto';
+	import 'chartjs-adapter-date-fns';
 
 	const relayUrl = generateRelayUrlFromPath() as string;
 
@@ -27,6 +28,7 @@
 	let inView = false;
 	let subscription: RelayDeltasSubscriptionHandle | null = null;
 	let timeRange = '24h'; // Default time range
+	let smaWindow = '5'; // SMA window (points)
 
 	// Time range options
 	const timeRanges = {
@@ -137,12 +139,14 @@
 
 		// Create RTT chart
 		if (rttData && rttData.length > 0) {
+			const smaWindowNum = Math.max(0, Math.floor(Number(smaWindow) || 0));
 			const rttConfig = adapter.createTimeSeriesChart(rttData, {
 				title: 'Response Time (RTT)',
 				theme: 'dark',
 				showGrid: true,
 				showTooltip: true,
 				responsive: true,
+				...(smaWindowNum > 1 ? { sma: { window: smaWindowNum } } : {}),
 			});
 
 			if (rttChart) {
@@ -193,6 +197,11 @@
 		}
 		await loadCharts();
 	}
+
+	async function changeSmaWindow(window: string) {
+		smaWindow = window;
+		await loadCharts();
+	}
 </script>
 
 <div use:observeInView={{ threshold: 0.25, debounceMs: 150 }} on:inviewchange={handleInViewChange}>
@@ -200,17 +209,34 @@
 	<Card.Header>
 		<Card.Title class='font-mono text-white/80 flex items-center justify-between'>
 			<span>charts</span>
-			<div class="flex gap-2">
-				{#each Object.entries(timeRanges) as [key, { label }]}
-					<Button
-						variant={timeRange === key ? 'default' : 'secondary'}
-						size="sm"
-						on:click={() => changeTimeRange(key)}
+			<div class="flex items-center gap-2">
+				<div class="flex items-center gap-2">
+					<span class="text-xs text-white/50">SMA</span>
+					<select
+						class="h-8 rounded-md border border-white/10 bg-black/30 px-2 text-xs text-white/80"
+						value={smaWindow}
+						on:change={(e) => changeSmaWindow((e.target as HTMLSelectElement).value)}
 						disabled={loading || syncing}
 					>
-						{label}
-					</Button>
-				{/each}
+						<option value="0">Off</option>
+						<option value="3">3</option>
+						<option value="5">5</option>
+						<option value="10">10</option>
+						<option value="20">20</option>
+					</select>
+				</div>
+				<div class="flex gap-2">
+					{#each Object.entries(timeRanges) as [key, { label }]}
+						<Button
+							variant={timeRange === key ? 'default' : 'secondary'}
+							size="sm"
+							on:click={() => changeTimeRange(key)}
+							disabled={loading || syncing}
+						>
+							{label}
+						</Button>
+					{/each}
+				</div>
 			</div>
 		</Card.Title>
 		<Card.Description></Card.Description>

@@ -24,7 +24,8 @@
   
 	const availableCards = [
 	  'general',
-	  'charts',
+	  'uptime',
+	  'deltas',
 	  'issues',
 	  'nip11Limitation',
 	  'nip11SupportedNips',
@@ -34,17 +35,17 @@
 	  'insights',
 	  'checks',
 	  'rtt',
-	  'uptime'
+	  
 	];
 
 	const defaultCardsView = [
+	  'uptime',
 	  'general',
 	  'fees',
 	  'operator',
 	  'insights',
 	  'checks',
-	  'charts',
-	  'uptime'
+	  'deltas'
 	];
 
 	const unHidableCards = ['fees'];

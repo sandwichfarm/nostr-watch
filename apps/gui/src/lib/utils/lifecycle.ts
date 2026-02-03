@@ -266,18 +266,45 @@ export const instance = async (): Promise<Route66> => {
     }
 
     if (!$route66.initialized) {
-        await $route66.init();
-        //console.log('route66 initialized');
-        loadMonitorsFromCache();
+        try {
+            await $route66.init();
+            //console.log('route66 initialized');
+            loadMonitorsFromCache();
+        } catch (e) {
+            console.error('[lifecycle] route66.init failed:', e);
+            opfsStatus.set('error');
+            opfsError.set(e instanceof Error ? e.message : String(e));
+
+            // Prevent callers from hanging on `route66Ready()` / `$route66.ready()`.
+            try {
+                ($route66 as any)._initialized = true;
+            } catch {}
+
+            route66.set($route66);
+            initializing = false;
+            return $route66;
+        }
     }
 
-    await $route66.ready();
+    try {
+        await $route66.ready();
+    } finally {
+        initializing = false;
+    }
 
     // Update OPFS status based on which adapter is in use
-    await updateOpfsStatus($route66);
+    try {
+        await updateOpfsStatus($route66);
+    } catch (e) {
+        console.warn('[lifecycle] updateOpfsStatus failed:', e);
+    }
 
     // Configure NIP-66 relays from user preferences
-    configureNip66Relays();
+    try {
+        configureNip66Relays();
+    } catch (e) {
+        console.warn('[lifecycle] configureNip66Relays failed:', e);
+    }
 
     route66.set($route66);
     return $route66;

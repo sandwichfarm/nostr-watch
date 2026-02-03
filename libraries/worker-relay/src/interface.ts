@@ -23,8 +23,14 @@ export type batchNip11s = Nip11Args[];
 
 export class WorkerRelayInterface {
   #worker: Worker | SharedWorker;
-  #commandQueue: Map<string, (v: unknown, ports: ReadonlyArray<MessagePort>) => void> = new Map();
-  #timeouts: any[] = [];
+  #commandQueue: Map<
+    string,
+    {
+      resolve: (value: unknown) => void;
+      reject: (reason: unknown) => void;
+      timeoutId?: ReturnType<typeof setTimeout>;
+    }
+  > = new Map();
   #channelPort?: MessagePort; 
 
   // Command timeout
@@ -43,19 +49,28 @@ export class WorkerRelayInterface {
     }
     this.#worker.onerror = e => {
       console.error(e.message, e);
+      this.#failAll(new Error(e.message));
     };
     if(this.#worker instanceof Worker) {
       this.#worker.onmessageerror = e => {
         console.error(e);
+        this.#failAll(new Error("Worker message error"));
       };
     }
 
     const onmessage = (e: MessageEvent) => {
       const cmd = e.data as WorkerMessage<any>;
       if (cmd.cmd === "reply") {
-        const q = this.#commandQueue.get(cmd.id);
-        q?.(cmd, e.ports);
+        const entry = this.#commandQueue.get(cmd.id);
+        if (!entry) return;
         this.#commandQueue.delete(cmd.id);
+        if (entry.timeoutId) clearTimeout(entry.timeoutId);
+        const payload: any = cmd.args;
+        if (payload && typeof payload === "object" && "error" in payload && payload.error) {
+          entry.reject(payload.error);
+          return;
+        }
+        entry.resolve(payload);
       }
     };
 
@@ -73,7 +88,7 @@ export class WorkerRelayInterface {
     return this.#worker;
   }
 
-  async setup() {
+  async setup(opts?: { timeoutMs?: number }) {
     // alert(this.#channelPort? 'channelPort exists' : 'channelPort does not exist');
     if(!this.#channelPort) return;
     const channelPort = this.#channelPort;
@@ -83,7 +98,7 @@ export class WorkerRelayInterface {
     // else if(this.#worker instanceof SharedWorker) {
     //   this.#worker.port.postMessage({ type: "setup", channelPort }, [channelPort]);
     // }
-    return await this.#workerRpc<any, boolean>("setup", { type: "setup", channelPort }, [channelPort]);
+    return await this.#workerRpc<any, boolean>("setup", { type: "setup", channelPort }, [channelPort], opts);
   }
 
   async init(args: InitAargs) {
@@ -167,8 +182,7 @@ export class WorkerRelayInterface {
   }
 
   abort() {
-    this.#timeouts.forEach(t => clearTimeout(t));
-    this.#timeouts = [];
+    this.#failAll(new Error("Aborted"));
     this.#commandQueue.clear();
     if(this.#worker instanceof Worker) {
       this.#worker.terminate();
@@ -178,7 +192,18 @@ export class WorkerRelayInterface {
     }
   }
 
-  async #workerRpc<T, R>(cmd: WorkerMessageCommand, args?: T, transfer?: Transferable[]) {
+  #failAll(reason: unknown) {
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    for (const [, entry] of this.#commandQueue.entries()) {
+      if (entry.timeoutId) clearTimeout(entry.timeoutId);
+      try {
+        entry.reject(err);
+      } catch {}
+    }
+    this.#commandQueue.clear();
+  }
+
+  async #workerRpc<T, R>(cmd: WorkerMessageCommand, args?: T, transfer?: Transferable[], opts?: { timeoutMs?: number }) {
     const id = uuid();
     const msg = {
       id,
@@ -186,6 +211,7 @@ export class WorkerRelayInterface {
       args,
     } as WorkerMessage<T>;
     return await new Promise<R>((resolve, reject) => {
+      const timeoutMs = opts?.timeoutMs ?? this.timeout;
       if(this.#worker instanceof Worker) {
         this.#worker.postMessage(msg, transfer || []);
       }
@@ -195,17 +221,8 @@ export class WorkerRelayInterface {
       const t = setTimeout(() => {
         this.#commandQueue.delete(id);
         reject(new Error("Timeout"));
-      }, this.timeout);
-      this.#timeouts.push(t);
-      this.#commandQueue.set(id, (v, port) => {
-        if(t) clearTimeout(t);
-        const cmdReply = v as WorkerMessage<R & { error?: any }>;
-        if (cmdReply.args.error) {
-          reject(cmdReply.args.error);
-          return;
-        }
-        resolve(cmdReply.args);
-      });
+      }, timeoutMs);
+      this.#commandQueue.set(id, { resolve: resolve as any, reject, timeoutId: t });
     });
   }
 }

@@ -19,6 +19,19 @@ import { getForYouFeed } from "./forYouFeed";
 
 installConsoleLogLevelFilter();
 
+const RELAY_INIT_TIMEOUT_MS = 25_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, onTimeout: () => Error): Promise<T> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<T>((_resolve, reject) => {
+    timeoutId = setTimeout(() => reject(onTimeout()), timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+  });
+}
+
 export interface InitAargs {
   databasePath: string;
   insertBatchSize?: number;
@@ -107,7 +120,14 @@ export const relayInit = async (state: WorkerState, args: InitAargs) => {
       messageChannelInit(state, args.channelPort)
     }
     // await new Promise(resolve => setTimeout(resolve, 1000))
-    await state.relay.init(args.databasePath);
+    const initPromise = Promise.resolve(state.relay.init(args.databasePath));
+    // If `withTimeout` wins the race, the init promise can later reject; swallow it.
+    void initPromise.catch(() => {});
+    await withTimeout(initPromise, RELAY_INIT_TIMEOUT_MS, () => {
+      const err = new Error(`Timed out waiting for relay init (${RELAY_INIT_TIMEOUT_MS}ms)`);
+      (err as any).code = "OPFS_TIMEOUT";
+      return err;
+    });
     if (!state.storageStatus) {
       state.storageStatus = state.relay instanceof InMemoryRelay ? { kind: "memory" } : { kind: "sqlite" };
     }

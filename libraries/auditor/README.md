@@ -19,12 +19,12 @@ A framework to test relays against their advertised supported NIPs. (name pendin
 Test detected NIPs (will also test NIP-11 against schema)
 
 ```js
-import Auditor from "@nostrwatch/auditor"
+import { Auditor } from "@nostrwatch/auditor"
 
 const relay = "wss://relay.damus.io"
 const audit = new Auditor(options)
-await audit.detectSupportedNips()
-const results = audit.test(relay)
+await audit.detectSupportedNips(relay)
+const results = await audit.test(relay)
 ```
 
 Test only NIP-50

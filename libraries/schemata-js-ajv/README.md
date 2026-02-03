@@ -1,6 +1,6 @@
 # @nostrwatch/schemata-js-ajv
 
-A simple library written in Typescript for validating nostr JSON payloads. Presently support validation of notes, several kinds, NIP-11 information documents and some protocol messages. Implements [`@nostrwatch/schemata`](../schemata/)
+A simple library written in Typescript for validating nostr JSON payloads. Presently support validation of notes, several kinds, NIP-11 information documents and some protocol messages. Uses `@nostrability/schemata`.
 
 # important notes
 
@@ -11,7 +11,7 @@ A simple library written in Typescript for validating nostr JSON payloads. Prese
 
 # install
 ```
-pnpm install ajv @nostrwatch/schemata-js-ajv
+pnpm install ajv @nostrability/schemata @nostrwatch/schemata-js-ajv
 ```
 
 # usage 
@@ -58,4 +58,3 @@ example fail result
     }
 }
 ```
-

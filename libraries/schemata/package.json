@@ -1,5 +1,5 @@
 {
-  "name": "@nostrability/schemata",
+  "name": "@nostrwatch/schemata",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/bundle/schemas.js",

@@ -109,23 +109,36 @@ export class Auditor {
     return this.test(relay);
   }
 
-  async checkNip11(): Promise<ISuiteResult> {
+  private extractFirstDataValue<T = unknown>(result: ISuiteResult): T | undefined {
+    if (!result?.data) return undefined;
+    const values = Object.values(result.data);
+    return values[0] as T | undefined;
+  }
+
+  async checkNip11(relay?: string): Promise<ISuiteResult> {
     const mod = await import(`../nips/Nip11/index.js`);
     const SuiteCtor = resolveSuiteConstructor(mod, 'Nip11');
-    const $Suite = new SuiteCtor(this.socket as WebSocket);
+    const socket =
+      this.socket ??
+      (relay ? new WebSocket(relay, undefined, { autoConnect: false }) : undefined);
+    if (!socket) {
+      throw new Error('Auditor.checkNip11: relay required when auditor socket is not initialized');
+    }
+    const $Suite = new SuiteCtor(socket as WebSocket);
     const result = await $Suite.test()
     return result; 
   }
 
-  async getNip11(): Promise<Record<string, any>> {
-    const result = await this.checkNip11();
-    return result?.data?.Default || {}
+  async getNip11(relay?: string): Promise<Record<string, any> | unknown> {
+    const result = await this.checkNip11(relay);
+    return this.extractFirstDataValue(result) || {}
   }
 
   async detectSupportedNips(relay: string): Promise<void> {
-    const result = await this.checkNip11();
+    const result = await this.checkNip11(relay);
     this.resulter.set('suites', 'Nip11', result);
-    this.addNipSuites(result?.data?.Default || []);
+    const supported = this.extractFirstDataValue<unknown>(result);
+    this.addNipSuites(Array.isArray(supported) ? supported : []);
     return 
   }
 
@@ -170,8 +183,6 @@ export class Auditor {
       }
 
       const slug = typeof $Suite?.slug === 'string' ? $Suite.slug : suiteKey;
-
-      if ($Suite?.pretest) continue;
 
       if (typeof $Suite?.test !== 'function') {
         const result = skippedSuiteResult(`Skipped: suite ${slug} is not runnable (missing test())`);

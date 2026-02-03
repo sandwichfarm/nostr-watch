@@ -326,6 +326,27 @@ deltaTest("Delta Detector: DNS addition should be detected", () => {
   assertExists(addressesDelta, "Should detect DNS addresses addition");
 });
 
+deltaTest("Delta Detector: DNS Answer TTL changes should not emit deltas", () => {
+  const previousState = {
+    ...createMockRelayInfo(),
+    "dns.Answer": [
+      { name: "purplerelay.com", type: 1, TTL: 10, data: "35.157.217.147" },
+      { name: "purplerelay.com", type: 1, TTL: 10, data: "3.126.203.34" },
+    ],
+  } as any;
+
+  const currentState = {
+    ...createMockRelayInfo(),
+    "dns.Answer": [
+      { name: "purplerelay.com", type: 1, TTL: 60, data: "3.126.203.34" },
+      { name: "purplerelay.com", type: 1, TTL: 60, data: "35.157.217.147" },
+    ],
+  } as any;
+
+  const deltas = detectDeltas(previousState, currentState);
+  assertEquals(deltas.length, 0, "TTL-only changes should not produce deltas");
+});
+
 deltaTest("Delta Detector: Geo changes should be detected with geo prefix", () => {
   const previousState = {
     ...createMockRelayInfo(),

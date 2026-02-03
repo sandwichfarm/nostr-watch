@@ -499,11 +499,11 @@ export class ChartJsAdapter implements ChartAdapter<ChartJsConfig, any> {
               },
             },
           },
-          title: options?.title ? {
-            display: true,
-            text: options.title,
+          title: {
+            display: options?.showTitle !== false,
+            text: options?.title,
             color: colors.text,
-          } : undefined,
+          },
         },
         animation: options?.animation !== false ? {} : false,
       },

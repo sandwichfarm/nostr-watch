@@ -1,7 +1,7 @@
 import { Ajv, type ErrorObject } from 'ajv';
 import ajvErrors from 'ajv-errors';
 
-import * as NostrSchemata from '@nostrwatch/schemata'
+import * as NostrSchemata from '@nostrability/schemata'
 import { type NostrEvent } from 'nostr-tools'
 
 type NostrSchemataType = typeof NostrSchemata;
@@ -94,7 +94,29 @@ const validate = (schema: any, data: any): SchemaValidatorResult => {
     });
     ajvErrors(ajv);
     const result = structuredClone(defaultResult);
-    const validate = ajv.compile(schema);
+    const clonedSchema =
+        typeof structuredClone === 'function' ? structuredClone(schema) : JSON.parse(JSON.stringify(schema));
+    const stripNestedSchemaIds = (value: any) => {
+        if (!value || typeof value !== 'object') return;
+        const seen = new WeakSet();
+        const visit = (node: any, depth: number) => {
+            if (!node || typeof node !== 'object') return;
+            if (seen.has(node)) return;
+            seen.add(node);
+            if (!Array.isArray(node) && depth > 0 && typeof node.$id === 'string') {
+                delete node.$id;
+            }
+            if (Array.isArray(node)) {
+                node.forEach((item) => visit(item, depth + 1));
+                return;
+            }
+            Object.values(node).forEach((child) => visit(child, depth + 1));
+        };
+        visit(value, 0);
+    };
+    stripNestedSchemaIds(clonedSchema);
+
+    const validate = ajv.compile(clonedSchema);
     const valid = validate(data);
     
     if(valid) {

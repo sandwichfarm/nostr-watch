@@ -112,6 +112,7 @@ export interface ChartOptions {
     start?: number;
     end?: number;
   };
+  showTitle?: boolean;
   showLegend?: boolean;
   showGrid?: boolean;
   showTooltip?: boolean;

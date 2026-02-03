@@ -35,7 +35,7 @@
         reason: string;
         tests: TestResult[];
         samples: Record<string, any[]>; // Dynamic samples data
-        status: 'running' | 'finished';
+        status: 'pending' | 'running' | 'finished';
         skipped?: boolean;
     }
 
@@ -178,6 +178,32 @@
         setTimeout(() => ready.set(true), 400)
     });
 
+    const suiteNumber = (suiteKey: string): number => {
+        const match = suiteKey.match(/Nip(\d+)/i);
+        if (!match) return Number.POSITIVE_INFINITY;
+        const num = Number(match[1]);
+        return Number.isFinite(num) ? num : Number.POSITIVE_INFINITY;
+    };
+
+    const sortSuites = (suiteKeys: string[]): string[] => {
+        return [...suiteKeys].sort((a, b) => {
+            const aNum = suiteNumber(a);
+            const bNum = suiteNumber(b);
+            if (aNum !== bNum) return aNum - bNum;
+            return a.localeCompare(b);
+        });
+    };
+
+    const pendingSuite = (suiteKey: string): SuiteResult => ({
+        suiteKey,
+        pass: false,
+        reason: '',
+        tests: [],
+        samples: {},
+        status: 'pending',
+        skipped: false,
+    });
+
     const runAudit = async (suiteKeys?: string[]) => {
         if (!suiteKeys?.length) auditResults.set([]);
 
@@ -185,12 +211,33 @@
             ? new Auditor({ nips: new Set(suiteKeys), options: {} })
             : new Auditor();
 
+        // Pre-populate pending suite cards so the UI can show what's queued up.
+        if (suiteKeys?.length) {
+            auditResults.update((suites) => {
+                const existingKeys = new Set(suites.map((s) => s.suiteKey));
+                const nextKeys = sortSuites(Array.from(new Set([...suiteKeys])));
+
+                const nextSuites = suites.map((suite) =>
+                    nextKeys.includes(suite.suiteKey) ? pendingSuite(suite.suiteKey) : suite
+                );
+
+                for (const suiteKey of nextKeys) {
+                    if (!existingKeys.has(suiteKey)) nextSuites.push(pendingSuite(suiteKey));
+                }
+
+                return nextSuites;
+            });
+        }
+
         if (!suiteKeys?.length) {
             if ($nip11 && $nip11?.supportedNips) {
                 audit.applySupportedNips($nip11.supportedNips);
             } else {
                 await audit.detectSupportedNips(relayUrl)
             }
+
+            const queued = sortSuites(Array.from(audit.suites));
+            auditResults.set(queued.map(pendingSuite));
         }
 
         const onStart = (suiteKey: string) => onSuiteStart(suiteKey);
@@ -254,17 +301,26 @@
 
     <div class="space-y-6">
         {#each $auditResults as suite (suite.suiteKey)}
-            <div class="bg-black/5 dark:bg-white/10 shadow-lg rounded-lg p-5">
+            <div
+                class="bg-black/5 dark:bg-white/10 shadow-lg rounded-lg p-5"
+                class:opacity-60={suite.status === 'pending'}
+            >
                 <div class="flex justify-between items-center">
                     <div class="flex items-center">
                         {#if suite.status === 'running'}
                             <div class="w-4 h-4 border-2 border-t-2 border-gray-400 rounded-sm animate-spin mr-2"></div>
+                        {:else if suite.status === 'pending'}
+                            <div class="w-4 h-4 border border-white/20 bg-white/5 rounded-sm mr-2"></div>
                         {/if}
                         <span class="text-xl font-semibold text-black dark:text-white bg-black/20 dark:bg-white/20">
                             Suite: {suite.suiteKey}
                         </span>
                     </div>
-                    {#if suite.status !== 'running'}
+                    {#if suite.status === 'pending'}
+                        <span class="text-white/50 text-sm font-medium">Waiting…</span>
+                    {:else if suite.status === 'running'}
+                        <span class="text-yellow-400 font-medium">Running…</span>
+                    {:else}
                         <!-- Compute metrics -->
                         <div class="flex space-x-4">
                             {#if suite.skipped || Object.values(suite.samples).flat().length === 0}
@@ -298,6 +354,12 @@
                 {#if suite.reason}
                     <div class="mt-2 text-sm text-gray-400">
                         Reason: {suite.reason}
+                    </div>
+                {/if}
+
+                {#if suite.status === 'pending'}
+                    <div class="mt-3 text-xs text-white/40">
+                        Queued (waiting to start)
                     </div>
                 {/if}
 

@@ -208,7 +208,7 @@
 <Card.Root class="w-full bg-black/20 border-white/10 rounded-[3px]">
 	<Card.Header>
 		<Card.Title class='font-mono text-white/80 flex items-center justify-between'>
-			<span>charts</span>
+			<span>deltas</span>
 			<div class="flex items-center gap-2">
 				<div class="flex items-center gap-2">
 					<span class="text-xs text-white/50">SMA</span>
@@ -263,11 +263,6 @@
 			</div>
 		{:else}
 			<div class="space-y-6">
-				<!-- RTT Chart -->
-				<div class="bg-black/30 p-4 rounded">
-					<canvas bind:this={rttCanvas} style="max-height: 300px;"></canvas>
-				</div>
-
 				<!-- Delta Changes Chart -->
 				<div class="bg-black/30 p-4 rounded">
 					<canvas bind:this={changesCanvas} style="max-height: 300px;"></canvas>

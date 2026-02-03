@@ -6,6 +6,7 @@ import { INip11 } from '#src/nips/Nip11/interfaces/INip11.js';
 import { Emitter } from '#base/Emitter.js';
 import { Listener } from './Emitter.js';
 import { nipManifest } from '#src/nips/manifest.js';
+import { suiteTests } from '#src/nips/suite-test-manifest.js';
 
 type SuiteSet = Set<string>;
 type SuiteConstructor = new (socket: WebSocket) => Suite;
@@ -137,7 +138,9 @@ export class Auditor {
     if(!(nips instanceof Array)) return console.warn('Auditor: nips must be an array');
     if(nips.length){
       for(const nip of nips){
-        this.addSuite(formatNip(nip));
+        const suiteKey = formatNip(nip);
+        if (!suiteTests?.[suiteKey]) continue;
+        this.addSuite(suiteKey);
       }
       this.logger.debug(`Auditor: detected supported nips: ${Array.from(this.suites || new Set()).join(', ')}`);
     }

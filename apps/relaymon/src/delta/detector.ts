@@ -42,6 +42,18 @@ function deepEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
+function normalizeDnsAnswerRecords(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.map((record) => {
+    if (!record || typeof record !== "object") return record;
+    const r = record as Record<string, unknown>;
+    const rest: Record<string, unknown> = { ...r };
+    delete rest.TTL;
+    delete rest.ttl;
+    return rest;
+  });
+}
+
 /**
  * Flatten nested object to dot notation
  * @param obj The object to flatten
@@ -58,6 +70,12 @@ function flattenObject(
 
   for (const [key, value] of Object.entries(obj)) {
     const fullKey = prefix ? `${prefix}.${key}` : key;
+
+    // DNS Answer TTL is noisy and should not create deltas on its own
+    if (fullKey === "dns.Answer") {
+      flattened[fullKey] = normalizeDnsAnswerRecords(value);
+      continue;
+    }
 
     // Check if this is a complex array that should be JSON stringified
     const isComplexArray = complexArrays.some(

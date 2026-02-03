@@ -42,7 +42,7 @@
     "ws": "^8.18.0"
   },
   "peerDependencies": {
-    "@nostrwatch/schemata": "workspace:^"
+    "@nostrability/schemata": "workspace:^"
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.7.2",

@@ -8,6 +8,7 @@
 
 	const cardModules = import.meta.glob('./**/cards/*.svelte');
 	const cardImports = {
+		uptime: cardModules['./(components)/cards/CardUptime.svelte'],
 		general: cardModules['./(components)/cards/CardGeneral.svelte'],
 		charts: cardModules['./(components)/cards/CardCharts.svelte'],
 		fees: cardModules['./(components)/cards/CardFees.svelte'],
@@ -15,7 +16,6 @@
 		insights: cardModules['./(components)/cards/CardInsights.svelte'],
 		checks: cardModules['./(components)/cards/CardChecks.svelte'],
 		rtt: cardModules['./(components)/cards/CardRtt.svelte'],
-		uptime: cardModules['./(components)/cards/CardUptime.svelte'],
 		nip11Limitation: cardModules['./(components)/cards/CardLimitation.svelte'],
 		nip11SupportedNips: cardModules['./(components)/cards/CardNips.svelte'],
 		issues: cardModules['./(components)/cards/CardIssues.svelte'],

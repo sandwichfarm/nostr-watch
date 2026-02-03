@@ -35,14 +35,18 @@
         checks = relayLivenessChecks$(relayUrl);
 
 		// Only attempt to load the map once we have actual checks to display.
-		const unsubscribe = checks.subscribe((val) => {
+		let unsubscribe: (() => void) | undefined;
+		let didScheduleUnsubscribe = false;
+		unsubscribe = checks.subscribe((val) => {
+			if (didScheduleUnsubscribe) return;
 			if (val?.length) {
+				didScheduleUnsubscribe = true;
 				void loadRelayMap();
-				unsubscribe();
+				queueMicrotask(() => unsubscribe?.());
 			}
 		});
 
-		return () => unsubscribe();
+		return () => unsubscribe?.();
     });
 
 </script>

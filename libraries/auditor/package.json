@@ -4,8 +4,9 @@
   "type": "module",
   "main": "./dist/server/index.js",
   "module": "./dist/web/index.js",
-  "types": "./dist/types/index.d.ts",
+  "types": "./dist/server/types/index.d.ts",
   "exports": {
+    "types": "./dist/server/types/index.d.ts",
     "node": "./dist/server/index.js",
     "import": "./dist/web/index.js",
     "require": "./dist/server/index.js",

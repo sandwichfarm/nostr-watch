@@ -54,19 +54,20 @@
     // Handler for when a suite starts
     const onSuiteStart = (suiteKey: string) => {
         auditResults.update(suites => {
-            // Avoid adding duplicate suites
-            if (!suites.find(s => s.suiteKey === suiteKey)) {
-                return [...suites, {
-                    suiteKey,
-                    pass: false,
-                    reason: '',
-                    tests: [],
-                    samples: {},
-                    status: 'running',
-                    skipped: false
-                }];
-            }
-            return suites;
+            const existingIndex = suites.findIndex(s => s.suiteKey === suiteKey);
+            const freshSuite: SuiteResult = {
+                suiteKey,
+                pass: false,
+                reason: '',
+                tests: [],
+                samples: {},
+                status: 'running',
+                skipped: false
+            };
+            if (existingIndex === -1) return [...suites, freshSuite];
+            const next = [...suites];
+            next[existingIndex] = freshSuite;
+            return next;
         });
         ////console.log(`Suite Start: ${suiteKey}`);
     };
@@ -203,7 +204,7 @@
         if ($nip11 && $nip11?.supportedNips) {
             audit.applySupportedNips($nip11.supportedNips);
         } else {
-            await audit.detectSupportedNips()
+            await audit.detectSupportedNips(relayUrl)
         }
 
         // Register event listeners
@@ -266,8 +267,8 @@
                         <div class="flex space-x-4">
                             <span class="text-green-400 font-medium">
                                 Pass Rate: 
-                                {#if suite.tests.length > 0}
-                                    {Math.round((suite.tests.filter(t => t.pass).length / suite.tests.length) * 100)}%
+                                {#if suite.tests.filter(t => t.skipped.length === 0).length > 0}
+                                    {Math.round((suite.tests.filter(t => t.pass && t.skipped.length === 0).length / suite.tests.filter(t => t.skipped.length === 0).length) * 100)}%
                                 {:else}
                                     N/A
                                 {/if}
@@ -276,7 +277,7 @@
                                 Passed: {suite.tests.filter(t => t.pass && t.skipped.length === 0).length}
                             </span>
                             <span class="text-red-400 font-medium">
-                                Failed: {suite.tests.filter(t => !t.pass && t.status === 'finished').length}
+                                Failed: {suite.tests.filter(t => !t.pass && t.status === 'finished' && t.skipped.length === 0).length}
                             </span>
                             <span class="text-yellow-400 font-medium">
                                 <!-- Count tests with skipped conditions -->

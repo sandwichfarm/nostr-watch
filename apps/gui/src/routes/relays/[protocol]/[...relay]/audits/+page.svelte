@@ -36,6 +36,7 @@
         tests: TestResult[];
         samples: Record<string, any[]>; // Dynamic samples data
         status: 'running' | 'finished';
+        skipped?: boolean;
     }
 
     const auditResults: Writable<SuiteResult[]> = writable([]);
@@ -44,17 +45,20 @@
 
     const onSuiteStart = (suiteKey: string) => {
         auditResults.update(suites => {
-            if (!suites.find(s => s.suiteKey === suiteKey)) {
-                return [...suites, {
-                    suiteKey,
-                    pass: false,
-                    reason: '',
-                    tests: [],
-                    samples: {},
-                    status: 'running'
-                }];
-            }
-            return suites;
+            const existingIndex = suites.findIndex(s => s.suiteKey === suiteKey);
+            const freshSuite: SuiteResult = {
+                suiteKey,
+                pass: false,
+                reason: '',
+                tests: [],
+                samples: {},
+                status: 'running',
+                skipped: false
+            };
+            if (existingIndex === -1) return [...suites, freshSuite];
+            const next = [...suites];
+            next[existingIndex] = freshSuite;
+            return next;
         });
     };
 
@@ -65,6 +69,7 @@
                 suite.pass = result.pass;
                 suite.reason = result.reason;
                 suite.status = 'finished';
+                suite.skipped = !!result.skipped;
             }
             return suites;
         });
@@ -173,27 +178,49 @@
         setTimeout(() => ready.set(true), 400)
     });
 
-    const run = async () => {
-        const audit = new Auditor();
-        if ($nip11 && $nip11?.supportedNips) {
-            audit.applySupportedNips($nip11.supportedNips);
-        } else {
-            await audit.detectSupportedNips()
+    const runAudit = async (suiteKeys?: string[]) => {
+        if (!suiteKeys?.length) auditResults.set([]);
+
+        const audit = suiteKeys?.length
+            ? new Auditor({ nips: new Set(suiteKeys), options: {} })
+            : new Auditor();
+
+        if (!suiteKeys?.length) {
+            if ($nip11 && $nip11?.supportedNips) {
+                audit.applySupportedNips($nip11.supportedNips);
+            } else {
+                await audit.detectSupportedNips(relayUrl)
+            }
         }
 
-        audit.on('auditor.suite:start', (suiteKey: string) => onSuiteStart(suiteKey));
-        audit.on('auditor.suite:finish', (suiteKey: string, result: any) => onSuiteFinish(suiteKey, result));
-        audit.on('auditor.suite.test:start', (suiteKey: string, testKey: string | undefined) => onSuiteTestStart(suiteKey, testKey));
-        audit.on('auditor.suite.test:finish', (suiteKey: string, testResult: any) => onSuiteTestFinish(suiteKey, testResult));
-        audit.on('auditor.suite:samples', (suiteKey: string, samples: Record<string, any[]>) => onSuiteSamples(suiteKey, samples));
+        const onStart = (suiteKey: string) => onSuiteStart(suiteKey);
+        const onFinish = (suiteKey: string, result: any) => onSuiteFinish(suiteKey, result);
+        const onTestStart = (suiteKey: string, testKey: string | undefined) => onSuiteTestStart(suiteKey, testKey);
+        const onTestFinish = (suiteKey: string, testResult: any) => onSuiteTestFinish(suiteKey, testResult);
+        const onSamples = (suiteKey: string, samples: Record<string, any[]>) => onSuiteSamples(suiteKey, samples);
 
-        // Start the audit process
-        await audit.test(relayUrl).catch(err => {
+        audit.on('auditor.suite:start', onStart);
+        audit.on('auditor.suite:finish', onFinish);
+        audit.on('auditor.suite.test:start', onTestStart);
+        audit.on('auditor.suite.test:finish', onTestFinish);
+        audit.on('auditor.suite:samples', onSamples);
+
+        try {
+            await audit.test(relayUrl);
+        } catch (err) {
             console.error('Audit failed:', err);
-        });
-
-        // await resumer();
+        } finally {
+            audit.off('auditor.suite:start', onStart);
+            audit.off('auditor.suite:finish', onFinish);
+            audit.off('auditor.suite.test:start', onTestStart);
+            audit.off('auditor.suite.test:finish', onTestFinish);
+            audit.off('auditor.suite:samples', onSamples);
+        }
     }
+
+    const retrySuite = async (suiteKey: string) => {
+        await runAudit([suiteKey]);
+    };
 
     // Function to toggle the expansion of a sample-set
     function toggleSampleExpansion(suiteKey: string, sampleKey: string) {
@@ -205,7 +232,7 @@
 
 {#if ready}
 <Button 
-    on:click={run}
+    on:click={() => runAudit()}
     variant="default" 
     >Run Audit</Button>
 
@@ -240,10 +267,18 @@
                     {#if suite.status !== 'running'}
                         <!-- Compute metrics -->
                         <div class="flex space-x-4">
+                            {#if suite.skipped || Object.values(suite.samples).flat().length === 0}
+                                <button
+                                    class="rounded bg-white/5 px-2 py-1 text-xs text-white/70 hover:bg-white/10"
+                                    on:click={() => retrySuite(suite.suiteKey)}
+                                >
+                                    Retry suite
+                                </button>
+                            {/if}
                             <span class="text-green-400 font-medium">
                                 Pass Rate: 
-                                {#if suite.tests.length > 0}
-                                    {Math.round((suite.tests.filter(t => t.pass).length / suite.tests.length) * 100)}%
+                                {#if suite.tests.filter(t => t.skipped.length === 0).length > 0}
+                                    {Math.round((suite.tests.filter(t => t.pass && t.skipped.length === 0).length / suite.tests.filter(t => t.skipped.length === 0).length) * 100)}%
                                 {:else}
                                     N/A
                                 {/if}
@@ -252,7 +287,7 @@
                                 Passed: {suite.tests.filter(t => t.pass && t.skipped.length === 0).length}
                             </span>
                             <span class="text-red-400 font-medium">
-                                Failed: {suite.tests.filter(t => !t.pass && t.status === 'finished').length}
+                                Failed: {suite.tests.filter(t => !t.pass && t.status === 'finished' && t.skipped.length === 0).length}
                             </span>
                             <span class="text-yellow-400 font-medium">
                                 Skipped: {suite.tests.filter(t => t.skipped.length > 0).length}
